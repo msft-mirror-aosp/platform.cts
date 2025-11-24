@@ -471,8 +471,8 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                                     android.hardware.camera2.CameraDevice.TEMPLATE_PREVIEW);
                     if (Flags.vendorDefinedCameraExtensions()) {
                         CaptureRequest sessionParams = captureBuilder.build();
-                        configuration.setSessionParameters(sessionParams);
-                        assertEquals(sessionParams, configuration.getSessionParameters());
+                        configuration.setSessionWideParams(sessionParams);
+                        assertEquals(sessionParams, configuration.getSessionWideParams());
                     }
                     camera.createExtensionSession(configuration);
                     CameraExtensionSession extensionSession =
@@ -1454,7 +1454,6 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
     // Verify still frame output.
     @Test
     public void testRepeatingAndCaptureCombined() throws Exception {
-        final double LATENCY_MARGIN = .3f; // Account for system load, capture call duration etc.
         for (String id : getCameraIdsUnderTest()) {
             StaticMetadata staticMeta =
                     new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
@@ -1641,16 +1640,22 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                                 stillCaptureLatency.getProcessingLatency() >= 0);
                         long estimatedTotalLatency = stillCaptureLatency.getCaptureLatency() +
                                 stillCaptureLatency.getProcessingLatency();
-                        long estimatedTotalLatencyMin =
-                                (long) (estimatedTotalLatency * (1.f - LATENCY_MARGIN));
-                        long estimatedTotalLatencyMax =
-                                (long) (estimatedTotalLatency * (1.f + LATENCY_MARGIN));
-                        assertTrue(String.format("Camera %s: Measured still capture latency " +
-                                                "doesn't match: %d ms, expected [%d,%d]ms.", id,
-                                        captureTime, estimatedTotalLatencyMin,
-                                        estimatedTotalLatencyMax),
-                                (captureTime <= estimatedTotalLatencyMax) &&
-                                        (captureTime >= estimatedTotalLatencyMin));
+                        String streamName = "test_extension_repeating_and_capture_combined";
+                        mReportLog = new DeviceReportLog(REPORT_LOG_NAME, streamName);
+                        mReportLog.addValue("camera_id", id, ResultType.NEUTRAL, ResultUnit.NONE);
+                        mReportLog.addValue("extension_id", extension, ResultType.NEUTRAL,
+                                ResultUnit.NONE);
+                        mReportLog.addValue("width", captureMaxSize.getWidth(), ResultType.NEUTRAL,
+                                ResultUnit.NONE);
+                        mReportLog.addValue("height", captureMaxSize.getHeight(),
+                                ResultType.NEUTRAL, ResultUnit.NONE);
+                        mReportLog.addValue("format", captureFormat, ResultType.NEUTRAL,
+                                ResultUnit.NONE);
+                        mReportLog.addValue("estimated_total_latency", estimatedTotalLatency,
+                                ResultType.LOWER_BETTER, ResultUnit.MS);
+                        mReportLog.addValue("measured_total_latency", captureTime,
+                                ResultType.LOWER_BETTER, ResultUnit.MS);
+                        mReportLog.submit(InstrumentationRegistry.getInstrumentation());
                     }
 
                     verify(captureCallback, times(1))

@@ -17,6 +17,7 @@
 package android.media.audio.cts;
 
 import static android.media.audio.Flags.speakerCleanupUsage;
+import static android.media.audio.Flags.vibrationSoundUsage;
 
 import static org.testng.Assert.assertThrows;
 
@@ -29,6 +30,8 @@ import com.android.compatibility.common.util.CtsAndroidTestCase;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.List;
 
 @FrameworkSpecificTest
 public class AudioAttributesTest extends CtsAndroidTestCase {
@@ -41,20 +44,26 @@ public class AudioAttributesTest extends CtsAndroidTestCase {
 
     @Override
     protected void setUp() throws Exception {
-        if (speakerCleanupUsage()) {
-            int[] newSystemUsages = { AudioAttributes.USAGE_CALL_ASSISTANT,
-                    AudioAttributes.USAGE_EMERGENCY, AudioAttributes.USAGE_SAFETY,
-                    AudioAttributes.USAGE_VEHICLE_STATUS, AudioAttributes.USAGE_ANNOUNCEMENT,
-                    // new usage under flag
-                    AudioAttributes.USAGE_SPEAKER_CLEANUP };
-            sSystemUsages = newSystemUsages;
+        List<Integer> systemUsages = new ArrayList<>();
+        systemUsages.add(AudioAttributes.USAGE_CALL_ASSISTANT);
+        systemUsages.add(AudioAttributes.USAGE_EMERGENCY);
+        systemUsages.add(AudioAttributes.USAGE_SAFETY);
+        systemUsages.add(AudioAttributes.USAGE_VEHICLE_STATUS);
+        systemUsages.add(AudioAttributes.USAGE_ANNOUNCEMENT);
 
-        } else {
-            int[] legacySystemUsages = { AudioAttributes.USAGE_CALL_ASSISTANT,
-                    AudioAttributes.USAGE_EMERGENCY, AudioAttributes.USAGE_SAFETY,
-                    AudioAttributes.USAGE_VEHICLE_STATUS, AudioAttributes.USAGE_ANNOUNCEMENT };
-            sSystemUsages = legacySystemUsages;
+        // Flag: android.media.audio.speaker_cleanup_usage
+        if (speakerCleanupUsage()) {
+            systemUsages.add(AudioAttributes.USAGE_SPEAKER_CLEANUP);
         }
+
+        // Flag: android.media.audio.vibration_sound_usage
+        // TODO: b/460849718 - Add tests for these new attributes
+        if (vibrationSoundUsage()) {
+            systemUsages.add(AudioAttributes.USAGE_NOTIFICATION_VIBRATION);
+            systemUsages.add(AudioAttributes.USAGE_RINGTONE_VIBRATION);
+        }
+
+        sSystemUsages = systemUsages.stream().mapToInt(Integer::intValue).toArray();
     }
 
     // -----------------------------------------------------------------

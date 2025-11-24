@@ -20,6 +20,7 @@ import android.graphics.Insets
 import android.graphics.Rect
 import android.os.Binder
 import android.service.chooser.ChooserSession
+import android.service.chooser.Flags.interactiveChooserDefaultBounds
 
 internal abstract class InteractiveTestActivityControllerCallback : Binder() {
     abstract fun setTestActivityController(controller: InteractiveTestActivityController)
@@ -33,8 +34,10 @@ internal data class InteractiveTestActivityReport(
     val hasActiveSession: Boolean,
     val chooserSessionState: Int,
     val chooserBounds: Rect?,
+    val chooserDefaultBounds: Rect?,
     val stateUpdateHistory: List<Int>,
     val boundsUpdateHistory: List<Rect>,
+    val defaultBoundsUpdateHistory: List<Rect?>,
     val windowHeight: Int,
     val windowInsets: Insets?,
 )
@@ -42,6 +45,7 @@ internal data class InteractiveTestActivityReport(
 internal class InteractiveTestActivityReportBuilder {
     private val reportedStates = ArrayList<Int>()
     private val reportedBounds = ArrayList<Rect>()
+    private val reportedDefaultBounds = ArrayList<Rect?>()
     private var session: ChooserSession? = null
     private var windowInsets: Insets? = null
     private var windowHeight: Int = -1
@@ -54,6 +58,11 @@ internal class InteractiveTestActivityReportBuilder {
     @Synchronized
     fun addReportedBound(bound: Rect) {
         reportedBounds.add(bound)
+    }
+
+    @Synchronized
+    fun addReportedDefaultBounds(defaultBounds: Rect?) {
+        reportedDefaultBounds.add(defaultBounds)
     }
 
     @Synchronized
@@ -71,13 +80,17 @@ internal class InteractiveTestActivityReportBuilder {
         windowHeight = height
     }
 
-    fun build(): InteractiveTestActivityReport = InteractiveTestActivityReport(
-        hasActiveSession = session != null,
-        chooserSessionState = session?.state ?: -1,
-        chooserBounds = session?.bounds,
-        stateUpdateHistory = ArrayList(reportedStates),
-        boundsUpdateHistory = ArrayList(reportedBounds),
-        windowHeight = windowHeight,
-        windowInsets = windowInsets,
-    )
+    fun build(): InteractiveTestActivityReport =
+        InteractiveTestActivityReport(
+            hasActiveSession = session != null,
+            chooserSessionState = session?.state ?: -1,
+            chooserBounds = session?.bounds,
+            chooserDefaultBounds =
+                if (interactiveChooserDefaultBounds()) session?.defaultLaunchBounds else null,
+            stateUpdateHistory = ArrayList(reportedStates),
+            boundsUpdateHistory = ArrayList(reportedBounds),
+            defaultBoundsUpdateHistory = ArrayList(reportedDefaultBounds),
+            windowHeight = windowHeight,
+            windowInsets = windowInsets,
+        )
 }

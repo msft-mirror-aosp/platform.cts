@@ -16,9 +16,9 @@
 
 package com.android.bedstead.enterprise.annotations
 
-import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.DO_PO_PRIORITY
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.UserType.INSTRUMENTED_USER
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.DO_PO_PRIORITY
 import com.android.bedstead.harrier.annotations.RequireFeature
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor

@@ -19,6 +19,9 @@ package android.telecom.cts;
 import static android.telecom.PhoneAccount.CAPABILITY_CALL_PROVIDER;
 import static android.telecom.PhoneAccount.CAPABILITY_SELF_MANAGED;
 
+import static com.android.compatibility.common.util.ShellIdentityUtils.invokeMethodWithShellPermissions;
+import static com.android.compatibility.common.util.ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn;
+
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -734,6 +737,86 @@ public class PhoneAccountRegistrarTest extends BaseTelecomTestWithMockServices {
             // allow test pass ...
         } finally {
             cleanupPhoneAccounts();
+        }
+    }
+
+    public void testPhoneAccountGroup() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        PhoneAccountHandle existingDefault = null;
+        TelecomManager tm = mContext.getSystemService(TelecomManager.class);
+        try {
+            PhoneAccount testPhoneAccount =
+                    PhoneAccount.builder(
+                                    TestUtils.TEST_PHONE_ACCOUNT_HANDLE, TestUtils.ACCOUNT_LABEL)
+                            .setCapabilities(
+                                    PhoneAccount.CAPABILITY_CALL_PROVIDER
+                                            | PhoneAccount.CAPABILITY_SIM_SUBSCRIPTION)
+                            .setGroupId("testGroup")
+                            .build();
+            existingDefault =
+                    invokeMethodWithShellPermissions(
+                            tm, TelecomManager::getUserSelectedOutgoingPhoneAccount);
+
+            // Register first account in the group.
+            invokeMethodWithShellPermissionsNoReturn(
+                    tm, (tcm) -> tcm.registerPhoneAccount(testPhoneAccount));
+            // It needs to be the default outgoing account.
+            invokeMethodWithShellPermissionsNoReturn(
+                    tm,
+                    (tcmd) ->
+                            tcmd.setUserSelectedOutgoingPhoneAccount(
+                                    testPhoneAccount.getAccountHandle()));
+
+            // Check if the account is registered!
+            List<PhoneAccount> accounts =
+                    invokeMethodWithShellPermissions(tm, TelecomManager::getAllPhoneAccounts);
+            assertTrue(
+                    accounts.stream()
+                            .anyMatch(
+                                    acct ->
+                                            acct.getAccountHandle()
+                                                    .getId()
+                                                    .equals(TestUtils.ACCOUNT_ID_1)));
+
+            // Make another account; same package/component but different phone account id.
+            PhoneAccount testPhoneAccount2 =
+                    PhoneAccount.builder(
+                                    TestUtils.TEST_PHONE_ACCOUNT_HANDLE_2, TestUtils.ACCOUNT_LABEL)
+                            .setCapabilities(
+                                    PhoneAccount.CAPABILITY_CALL_PROVIDER
+                                            | PhoneAccount.CAPABILITY_SIM_SUBSCRIPTION)
+                            .setGroupId("testGroup")
+                            .build();
+            invokeMethodWithShellPermissionsNoReturn(
+                    tm, (tcm2) -> tcm2.registerPhoneAccount(testPhoneAccount2));
+
+            // Now make sure the second one replaced the first one.
+            List<PhoneAccount> accounts2 =
+                    invokeMethodWithShellPermissions(tm, TelecomManager::getAllPhoneAccounts);
+            assertFalse(
+                    accounts2.stream()
+                            .anyMatch(
+                                    acct ->
+                                            acct.getAccountHandle()
+                                                    .getId()
+                                                    .equals(TestUtils.ACCOUNT_ID_1)));
+            assertTrue(
+                    accounts2.stream()
+                            .anyMatch(
+                                    acct ->
+                                            acct.getAccountHandle()
+                                                    .getId()
+                                                    .equals(TestUtils.ACCOUNT_ID_2)));
+
+            invokeMethodWithShellPermissionsNoReturn(
+                    tm,
+                    (tcm3) -> tcm3.unregisterPhoneAccount(testPhoneAccount2.getAccountHandle()));
+        } finally {
+            final PhoneAccountHandle existingAccountFinal = existingDefault;
+            invokeMethodWithShellPermissionsNoReturn(
+                    tm, (tcmd) -> tcmd.setUserSelectedOutgoingPhoneAccount(existingAccountFinal));
         }
     }
 

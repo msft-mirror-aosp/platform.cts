@@ -44,10 +44,24 @@ annotation class CannotSetPolicyTest(
      * If multiple policies are specified, then they will be merged so that all valid states for
      * all specified policies are considered as valid.
      *
+     * This is used to calculate which states are required to be tested.
+     *
+     * Only 1 of policy/scope must be set at a time.
+     */
+    val policy: Array<KClass<*>> = [],
+    /**
+     * The policy scope (POLICY_SCOPE_USER or POLICY_SCOPE_DEVICE or POLICY_SCOPE_PARENT_USER) being tested.
+     *
+     * Setting scope will inspect the parent class for the {@code UsesEnerprisePolicies} annotation to find
+     * the states where the policy can be set.
+     * It will then run the test in all states where the policy can not be set.
+     *
+     * Only 1 of policy/scope must be set at a time
      *
      * This is used to calculate which states are required to be tested.
      */
-    val policy: Array<KClass<*>>,
+    val scope: Int = 0,
+
     /**
      * If true, then this will run in states where the app is a device admin but is not one which is
      * allowed to make the call.
@@ -76,12 +90,14 @@ annotation class CannotSetPolicyTest(
 
 @AutoAnnotation
 fun cannotSetPolicyTest(
-    policy: Array<Class<*>>,
+    policy: Array<Class<*>>? = emptyArray(),
+    scope: Int = 0,
     includeDeviceAdminStates: Boolean = true,
     includeNonDeviceAdminStates: Boolean = true
 ): CannotSetPolicyTest {
     return AutoAnnotation_CannotSetPolicyTestKt_cannotSetPolicyTest(
         policy,
+        scope,
         includeDeviceAdminStates,
         includeNonDeviceAdminStates
     )

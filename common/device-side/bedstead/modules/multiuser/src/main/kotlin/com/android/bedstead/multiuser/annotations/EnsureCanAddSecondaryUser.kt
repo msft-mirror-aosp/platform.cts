@@ -28,7 +28,7 @@ package com.android.bedstead.multiuser.annotations
     AnnotationTarget.CLASS
 )
 @Retention(AnnotationRetention.RUNTIME)
-@RequireMultiUserSupport
+@RequireSwitchableUserSupport
 @EnsureCanAddUser("android.os.usertype.full.SECONDARY")
 annotation class EnsureCanAddSecondaryUser(
     // This annotation is just a convenient shorthand for the default-valued above-noted

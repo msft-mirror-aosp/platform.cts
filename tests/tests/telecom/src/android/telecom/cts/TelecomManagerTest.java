@@ -35,7 +35,6 @@ import android.telecom.TelecomManager;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.server.telecom.flags.Flags;
 
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -272,6 +271,17 @@ public class TelecomManagerTest extends BaseTelecomTestWithMockServices {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
         }
+    }
+
+    public void testEnforceConfigureCallLogPreferenceSettings() {
+        if (!mShouldTestTelecom || !android.telecom.flags.Flags.integratedCallLogsStage2()) {
+            return;
+        }
+        // Verify that there's an app that can handle the intent.
+        // Todo: Uncomment below lines once action is handled by phone settings activity
+        // Intent intent = new Intent(TelecomManager.ACTION_CONFIGURE_CALL_LOG_INTEGRATION);
+        // PackageManager pm = mContext.getPackageManager();
+        // assertNotNull(intent.resolveActivity(pm));
     }
 
     private boolean isWiredHeadsetPluggedIn() {

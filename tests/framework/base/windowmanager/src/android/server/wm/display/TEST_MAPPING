@@ -3,5 +3,10 @@
     {
       "name": "CtsWindowManagerDeviceDisplay"
     }
+  ],
+  "desktop-presubmit": [
+    {
+      "name": "CtsWindowManagerDeviceDisplay"
+    }
   ]
 }

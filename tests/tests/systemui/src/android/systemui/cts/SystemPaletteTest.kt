@@ -68,6 +68,10 @@ class SystemPaletteTest(private val params: PaletteParams) : BasePaletteTest() {
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
         fun testData(): Collection<PaletteParams> {
+            if (!isDynamicColorSupported) {
+                return listOf(PaletteParams("Existing", ThemeStyle.TONAL_SPOT, "Current", 0))
+            }
+
             val dataList = mutableListOf<PaletteParams>()
 
             COLORS.forEach { color ->
@@ -83,8 +87,8 @@ class SystemPaletteTest(private val params: PaletteParams) : BasePaletteTest() {
     @Test
     @CddTest(requirements = ["3.8.6/C-1-4,C-1-5,C-1-6"])
     fun testSystemPalette() {
-        assumeTrue(isSupportedStyle(params.style))
         assumeTrue(isDynamicColorSupported)
+        assumeTrue(isSupportedStyle(params.style))
         val goldenName = "Palette_$params"
         val bitmap = generatePaletteBitmap()
         assertGoldenImage(bitmap, goldenName)

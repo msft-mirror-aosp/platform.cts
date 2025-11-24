@@ -42,6 +42,7 @@
         -->
         <option name="force-install-mode" value="FULL"/>
         <option name="test-file-name" value="CtsMockInputMethod.apk" />
+        <option name="test-file-name" value="CtsMockInputMethod2.apk" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">

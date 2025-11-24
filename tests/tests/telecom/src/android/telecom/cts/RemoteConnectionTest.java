@@ -29,6 +29,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Looper;
+import android.telecom.AudioState;
 import android.telecom.Call;
 import android.telecom.Conference;
 import android.telecom.Connection;
@@ -399,6 +401,22 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
         assertEquals(mRemoteConnectionObject, callbackInvoker.getArgs(0)[0]);
         assertTrue((boolean) callbackInvoker.getArgs(0)[1]);
         mRemoteConnectionObject.unregisterCallback(callback);
+
+        // Call method with no handler; it does the same thing, but we need coverage.
+        Looper.prepare();
+        mRemoteConnectionObject.registerCallback(callback);
+        mRemoteConnectionObject.unregisterCallback(callback);
+    }
+
+    public void testRemoteConnectionSetAudioState() {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
+            return;
+        }
+        Handler handler = setupRemoteConnectionCallbacksTest();
+
+        mRemoteConnectionObject.setAudioState(
+                new AudioState(false, AudioState.ROUTE_EARPIECE, AudioState.ROUTE_EARPIECE));
+        mRemoteConnection.getOnCallAudioStateChangedCounter().waitForCount(1);
     }
 
     public void testRemoteConnectionCallbacks_ConnectionCapabilities() {
@@ -486,9 +504,9 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
         assertEquals(mRemoteConnectionObject, callbackInvoker.getArgs(0)[0]);
         assertEquals(postDialSequence, callbackInvoker.getArgs(0)[1]);
 
-        mRemoteConnectionObject.postDialContinue(true);
         final InvokeCounter counter =
                 mRemoteConnection.getInvokeCounter(MockConnection.ON_POST_DIAL_WAIT);
+        mRemoteConnectionObject.postDialContinue(true);
         counter.waitForCount(1, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
 
         mRemoteConnectionObject.unregisterCallback(callback);

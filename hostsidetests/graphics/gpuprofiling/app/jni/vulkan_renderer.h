@@ -33,6 +33,8 @@ public:
     void cleanupSwapChain();
     void reset(ANativeWindow *newWindow, AAssetManager *newManager);
     bool initialized = false;
+    // The renderer MUST be initialized for this value to be valid.
+    bool supportsRaytracing = false;
 
 private:
     struct ANativeWindowDeleter {
@@ -62,6 +64,9 @@ private:
     void establishDisplaySizeIdentity();
 
     std::vector<const char *> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+    std::vector<const char *> rayTracingPipelineExtensions = {
+            VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME};
+    std::vector<const char *> rayQueryExtensions = {VK_KHR_RAY_QUERY_EXTENSION_NAME};
     std::unique_ptr<ANativeWindow, ANativeWindowDeleter> window;
     AAssetManager *assetManager;
 

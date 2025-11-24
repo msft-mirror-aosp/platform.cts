@@ -141,6 +141,17 @@ fun DeviceState.profileOwner(onUser: UserReference): RemoteDpc =
     getDependency(ProfileOwnersComponent::class.java).profileOwner(onUser)
 
 /**
+ * Get the [RemoteDpc] for the user controller on the given user controlled by Harrier set using
+ * [EnsureHasUserController].
+ *
+ * If no Harrier-managed user controller exists, an exception will be thrown.
+ *
+ * If the user controller is not a RemoteDPC then an exception will be thrown.
+ */
+fun DeviceState.userController(onUserType: UserType): RemoteDpc =
+    getDependency(ProfileOwnersComponent::class.java).userController(onUserType)
+
+/**
  * Get the [RemoteDeviceAdmin] for the device admin set using
  * `EnsureHasDeviceAdmin` without specifying a custom key.
  *

@@ -63,8 +63,11 @@ public final class BedsteadFrameworkMethod extends FrameworkMethod {
 
     private void calculateAnnotations() {
         List<Annotation> annotations =
-                getAnnotationWithReplacements(getDeclaringClass().getAnnotations());
-        annotations.addAll(getAnnotationWithReplacements(getMethod().getAnnotations()));
+                getAnnotationWithReplacements(
+                        getDeclaringClass().getAnnotations(), getClassAnnotationsRecursively());
+        annotations.addAll(
+                getAnnotationWithReplacements(
+                        getMethod().getAnnotations(), getClassAnnotationsRecursively()));
 
         mBedsteadJUnit4.resolveRecursiveAnnotations(annotations, mParameterizedAnnotations);
 
@@ -92,10 +95,17 @@ public final class BedsteadFrameworkMethod extends FrameworkMethod {
         }
     }
 
-    private static List<Annotation> getAnnotationWithReplacements(Annotation[] sourceAnnotations) {
+    // Returns all annotations from the class (and its superclasses)
+    private List<Annotation> getClassAnnotationsRecursively() {
+        return mBedsteadJUnit4.getClassAnnotationsRecursively(getDeclaringClass());
+    }
+
+    private static List<Annotation> getAnnotationWithReplacements(
+            Annotation[] sourceAnnotations, List<Annotation> classAnnotations) {
         var annotations = new ArrayList<Annotation>();
         for (Annotation annotation : sourceAnnotations) {
-            var replacements = BedsteadJUnit4.generateReplacementAnnotations(annotation);
+            var replacements =
+                    BedsteadJUnit4.generateReplacementAnnotations(annotation, classAnnotations);
             if (replacements == null) {
                 annotations.add(annotation);
             } else {

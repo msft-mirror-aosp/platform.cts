@@ -44,7 +44,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
-import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport;
+import com.android.bedstead.multiuser.annotations.RequireSwitchableUserSupport;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.compatibility.common.util.PollingCheck;
@@ -67,7 +67,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 @LargeTest
-@RequireMultiUserSupport
+@RequireSwitchableUserSupport
 @RunWith(BedsteadJUnit4.class)
 public final class AdditionalSubtypeLifecycleTest {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(15);

@@ -26,8 +26,8 @@ import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.xts.root.annotations.RequireAdbRoot
 import com.android.bedstead.nene.TestApis
+import com.android.xts.root.annotations.RequireAdbRoot
 import kotlin.test.assertFailsWith
 import kotlin.time.Duration.Companion.seconds
 import org.junit.Assert.assertEquals
@@ -38,7 +38,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Test [android.companion.datatransfer.continuity.TaskContinuityManager.enableHandoffForDevice].
+ * Test
+ * [android.companion.datatransfer.continuity.TaskContinuityManager.setHandoffForDeviceEnabled].
  *
  * Run: atest CtsCompanionDeviceManagerCoreTestCases:EnableAndDisableHandoffTest
  */
@@ -50,10 +51,10 @@ class EnableAndDisableHandoffTest : CoreTestBase() {
     @get:Rule val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @Test
-    fun testEnableHandoffForDevice_requiresPermission() {
+    fun testSetHandoffForDeviceEnabled_requiresPermission() {
         val taskContinuityManager = context.getSystemService(TaskContinuityManager::class.java)!!
         assertFailsWith(SecurityException::class) {
-            taskContinuityManager.enableHandoffForDevice(true)
+            taskContinuityManager.setHandoffForDeviceEnabled(true)
         }
     }
 
@@ -69,7 +70,7 @@ class EnableAndDisableHandoffTest : CoreTestBase() {
             val listener = RecordingHandoffFeatureStateListener()
             val taskContinuityManager =
                 context.getSystemService(TaskContinuityManager::class.java)!!
-            taskContinuityManager.enableHandoffForDevice(true)
+            taskContinuityManager.setHandoffForDeviceEnabled(true)
 
             listener.assertInvokedByActions {
                 taskContinuityManager.registerHandoffFeatureStateListener(SIMPLE_EXECUTOR, listener)
@@ -97,7 +98,7 @@ class EnableAndDisableHandoffTest : CoreTestBase() {
     }
 
     @Test
-    fun testEnableHandoffForDevice_notifiesListeners() {
+    fun testSetHandoffForDeviceEnabled_notifiesListeners() {
         withShellPermissionIdentity(
             Manifest.permission.READ_HANDOFF_SETTINGS,
             Manifest.permission.MODIFY_HANDOFF_SETTINGS,
@@ -105,7 +106,7 @@ class EnableAndDisableHandoffTest : CoreTestBase() {
             val listener = RecordingHandoffFeatureStateListener()
             val taskContinuityManager =
                 context.getSystemService(TaskContinuityManager::class.java)!!
-            taskContinuityManager.enableHandoffForDevice(true)
+            taskContinuityManager.setHandoffForDeviceEnabled(true)
 
             listener.assertInvokedByActions {
                 taskContinuityManager.registerHandoffFeatureStateListener(SIMPLE_EXECUTOR, listener)
@@ -119,7 +120,7 @@ class EnableAndDisableHandoffTest : CoreTestBase() {
             listener.clearRecordedInvocations()
 
             listener.assertInvokedByActions(timeout = 10.seconds) {
-                taskContinuityManager.enableHandoffForDevice(false)
+                taskContinuityManager.setHandoffForDeviceEnabled(false)
             }
             assertEquals(listener.invocations.size, 1)
             assertFalse(listener.invocations[0].isHandoffEnabled)
@@ -129,7 +130,9 @@ class EnableAndDisableHandoffTest : CoreTestBase() {
             )
             listener.clearRecordedInvocations()
 
-            listener.assertInvokedByActions { taskContinuityManager.enableHandoffForDevice(true) }
+            listener.assertInvokedByActions {
+                taskContinuityManager.setHandoffForDeviceEnabled(true)
+            }
             assertEquals(listener.invocations.size, 1)
             assertTrue(listener.invocations[0].isHandoffEnabled)
             assertEquals(

@@ -16,9 +16,11 @@
 
 package android.media.router.cts;
 
+import static android.Manifest.permission.NEARBY_WIFI_DEVICES;
 import static android.content.Intent.ACTION_CLOSE_SYSTEM_DIALOGS;
 import static android.content.Intent.FLAG_RECEIVER_FOREGROUND;
 import static android.media.MediaRoute2Info.FEATURE_LIVE_AUDIO;
+import static android.media.RouteListingPreference.ACTION_RESOLVE_MISSING_PERMISSIONS;
 import static android.media.router.cts.StubMediaRoute2ProviderService.FEATURE_SAMPLE;
 import static android.media.router.cts.StubMediaRoute2ProviderService.FEATURE_SPECIAL;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID1;
@@ -26,6 +28,9 @@ import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID2;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID4_TO_SELECT_AND_DESELECT;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID5_TO_TRANSFER_TO;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID9_REMOTE;
+import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID_REQ_INTERNET_PERM;
+import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID_REQ_NEARBY_PERM;
+import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID_REQ_UNDECLARED_PERM;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID_SPECIAL_FEATURE;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME1;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME2;
@@ -33,6 +38,7 @@ import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME5;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME9;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME_SPECIAL_FEATURE;
+import static android.permission.flags.Flags.FLAG_ACCESS_LOCAL_NETWORK_PERMISSION_ENABLED;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -45,6 +51,9 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import android.app.Activity;
+import android.app.Instrumentation;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -53,6 +62,7 @@ import android.media.MediaRoute2Info;
 import android.media.MediaRouter2;
 import android.media.MediaRouter2.RoutingController;
 import android.media.RouteDiscoveryPreference;
+import android.media.RouteListingPreference;
 import android.media.session.MediaSession;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -91,14 +101,18 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -126,6 +140,11 @@ public class OutputSwitcherTest {
     // com.android.systemui.R.string.cast_to_other_device_stop_dialog_button
     // (frameworks/base/packages/SystemUI/res/values/strings.xml)
     private static final String STOP_CASTING_BUTTON_TITLE = "Stop casting";
+
+    // This comes from R.id.warning_text and R.id.warning_fix_button
+    // (frameworks/base/packages/SystemUI/res/layout/media_output_dialog.xml)
+    private static final String WARNING_TEXT_ID = "warning_text";
+    private static final String WARNING_FIX_BTN_ID = "warning_fix_button";
 
     public static final String SESSION_TEST_TITLE_1 = "session_title_1";
     public static final String SESSION_TEST_TITLE_2 = "session_title_2";
@@ -565,6 +584,152 @@ public class OutputSwitcherTest {
                 deselectableRoutes(controller).get(ROUTE_ID4_TO_SELECT_AND_DESELECT));
 
         UiAutomatorUtils2.waitFindObject(addDeviceToGroupSelector(ROUTE_NAME4));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ACCESS_LOCAL_NETWORK_PERMISSION_ENABLED)
+    public void showSystemOutputSwitcher_missingPermissions_showsWarning() throws Exception {
+        mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID_REQ_NEARBY_PERM));
+        registerRouteCallback(List.of(FEATURE_SAMPLE));
+
+        ComponentName resolveComponent =
+                new ComponentName(mContext, MediaRouter2TestActivity.class);
+        RouteListingPreference preference =
+                new RouteListingPreference.Builder()
+                        .setMissingPermissionsComponentName(resolveComponent)
+                        .setItems(
+                                List.of(
+                                        new RouteListingPreference.Item.Builder(
+                                                        getRouteUniqueId(ROUTE_ID1))
+                                                .build()))
+                        .build();
+        mRouter2.setRouteListingPreference(preference);
+
+        assertThat(mRouter2.showSystemOutputSwitcher()).isTrue();
+
+        UiAutomatorUtils2.waitFindObject(By.res(SYSTEM_UI_PACKAGE, WARNING_TEXT_ID), TIMEOUT_MS);
+        UiObject2 fixButton =
+                UiAutomatorUtils2.waitFindObject(
+                        By.res(SYSTEM_UI_PACKAGE, WARNING_FIX_BTN_ID), TIMEOUT_MS);
+
+        Instrumentation.ActivityMonitor activityMonitor =
+                InstrumentationRegistry.getInstrumentation()
+                        .addMonitor(MediaRouter2TestActivity.class.getName(), null, false);
+
+        fixButton.click();
+
+        Activity activity = activityMonitor.waitForActivityWithTimeout(TIMEOUT_MS);
+        assertThat(activity).isNotNull();
+        assertThat(activity).isInstanceOf(MediaRouter2TestActivity.class);
+
+        // Verify the intent was sent to the resolve component.
+        Intent startedIntent = activity.getIntent();
+        assertThat(startedIntent).isNotNull();
+        assertThat(startedIntent.getAction()).isEqualTo(ACTION_RESOLVE_MISSING_PERMISSIONS);
+        assertThat(startedIntent.getComponent()).isEqualTo(resolveComponent);
+        ArrayList<String> missingPermissions =
+                startedIntent.getStringArrayListExtra(
+                        RouteListingPreference.EXTRA_MISSING_PERMISSIONS);
+        assertThat(missingPermissions).containsExactly(NEARBY_WIFI_DEVICES);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ACCESS_LOCAL_NETWORK_PERMISSION_ENABLED)
+    public void showSystemOutputSwitcher_withRequiredPermissions_noWarning() throws Exception {
+        mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID_REQ_INTERNET_PERM));
+        registerRouteCallback(List.of(FEATURE_SAMPLE));
+
+        ComponentName component = new ComponentName(mContext, MediaRouter2TestActivity.class);
+        RouteListingPreference preference =
+                new RouteListingPreference.Builder()
+                        .setMissingPermissionsComponentName(component)
+                        .setItems(
+                                List.of(
+                                        new RouteListingPreference.Item.Builder(
+                                                        getRouteUniqueId(ROUTE_ID1))
+                                                .build()))
+                        .build();
+        mRouter2.setRouteListingPreference(preference);
+
+        assertThat(mRouter2.showSystemOutputSwitcher()).isTrue();
+
+        UiAutomatorUtils2.waitFindObject(By.text(ROUTE_NAME1).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
+        UiAutomatorUtils2.waitUntilObjectGone(By.res(SYSTEM_UI_PACKAGE, "warning_text"));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ACCESS_LOCAL_NETWORK_PERMISSION_ENABLED)
+    public void showSystemOutputSwitcher_missingUndeclaredPermissions_noWarning() throws Exception {
+        mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID_REQ_UNDECLARED_PERM));
+        registerRouteCallback(List.of(FEATURE_SAMPLE));
+
+        ComponentName component = new ComponentName(mContext, MediaRouter2TestActivity.class);
+        RouteListingPreference preference =
+                new RouteListingPreference.Builder()
+                        .setMissingPermissionsComponentName(component)
+                        .setItems(
+                                List.of(
+                                        new RouteListingPreference.Item.Builder(
+                                                        getRouteUniqueId(ROUTE_ID1))
+                                                .build()))
+                        .build();
+        mRouter2.setRouteListingPreference(preference);
+
+        // The required permission is not declared in the manifest, so no warning should be shown.
+        assertThat(mRouter2.showSystemOutputSwitcher()).isTrue();
+
+        UiAutomatorUtils2.waitFindObject(By.text(ROUTE_NAME1).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
+        UiAutomatorUtils2.waitUntilObjectGone(By.res(SYSTEM_UI_PACKAGE, "warning_text"));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ACCESS_LOCAL_NETWORK_PERMISSION_ENABLED)
+    public void showSystemOutputSwitcher_noResolveComponent_noWarning() throws Exception {
+        mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID_REQ_NEARBY_PERM));
+        registerRouteCallback(List.of(FEATURE_SAMPLE));
+
+        // No resolve component set in the preference.
+        RouteListingPreference preference =
+                new RouteListingPreference.Builder()
+                        .setItems(
+                                List.of(
+                                        new RouteListingPreference.Item.Builder(
+                                                        getRouteUniqueId(ROUTE_ID1))
+                                                .build()))
+                        .build();
+        mRouter2.setRouteListingPreference(preference);
+
+        assertThat(mRouter2.showSystemOutputSwitcher()).isTrue();
+
+        UiAutomatorUtils2.waitFindObject(By.text(ROUTE_NAME1).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
+        UiAutomatorUtils2.waitUntilObjectGone(By.res(SYSTEM_UI_PACKAGE, "warning_text"));
+    }
+
+    /** Get a route unique ID, which includes the provider ID. */
+    private String getRouteUniqueId(String id) {
+        CompletableFuture<String> idFuture = new CompletableFuture<>();
+        MediaRouter2.RouteCallback cb =
+                new MediaRouter2.RouteCallback() {
+                    @Override
+                    public void onRoutesUpdated(List<MediaRoute2Info> routes) {
+                        for (MediaRoute2Info route : routes) {
+                            if (route.getOriginalId().equals(id)) {
+                                idFuture.complete(route.getId());
+                            }
+                        }
+                    }
+                };
+        mRouter2.registerRouteCallback(
+                mExecutor,
+                cb,
+                new RouteDiscoveryPreference.Builder(List.of(FEATURE_SAMPLE), true).build());
+        try {
+            return idFuture.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        } catch (ExecutionException | InterruptedException | TimeoutException e) {
+            throw new AssertionError("Could not find route with ID " + id, e);
+        } finally {
+            mRouter2.unregisterRouteCallback(cb);
+        }
     }
 
     private void registerRouteCallback(List<String> features) {

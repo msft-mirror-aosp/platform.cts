@@ -20,11 +20,13 @@ import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_Format32bitAB
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
+import static android.media.MediaMuxer.OutputFormat.MUXER_OUTPUT_WEBM;
 import static android.media.codec.Flags.apvSupport;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
-import static android.mediav2.common.cts.MuxerUtils.getMuxerFormatForMediaType;
+import static android.mediav2.common.cts.MuxerUtils.getMuxerFormatsListForMediaType;
 import static android.mediav2.common.cts.MuxerUtils.getTempFilePath;
 import static android.mediav2.common.cts.MuxerUtils.muxOutput;
+import static android.mediav2.common.cts.MuxerUtils.muxerFormatToString;
 
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
@@ -38,7 +40,6 @@ import android.media.ImageWriter;
 import android.media.MediaCodec;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
-import android.media.cts.TestUtils;
 import android.mediav2.common.cts.CodecDecoderTestBase;
 import android.mediav2.common.cts.CodecEncoderTestBase;
 import android.mediav2.common.cts.CodecTestBase;
@@ -66,6 +67,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.IntStream;
 
 /**
  * Color Primaries, Color Standard and Color Transfer are essential information to display the
@@ -95,7 +97,6 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
     private int mLatency;
     private boolean mReviseLatency;
     private final ArrayList<String> mTmpFiles = new ArrayList<>();
-    private final boolean mTestingContainerColorAspects = !TestUtils.isTestingModules();
 
     static {
         IGNORE_COLOR_BOX_LIST.add(MediaFormat.MIMETYPE_VIDEO_AV1);
@@ -355,6 +356,10 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
                 + mTestConfig + mTestEnv, mActiveRawRes);
         setUpSource(mActiveRawRes.mFileName);
 
+        int[] muxerFormats = getMuxerFormatsListForMediaType(mMediaType);
+        assertTrue("no muxers available for media Type : " + mMediaType + "\n" + mTestConfig
+                        + mTestEnv, muxerFormats.length > 0);
+
         {
             mSaveToMem = true;
             mOutputBuff = new OutputManager();
@@ -381,7 +386,17 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
                         .setDataSpace(DataSpace.DATASPACE_UNKNOWN).build();
             }
             mCodec.start();
-            doWork(4);
+            int frameLimit = 4;
+            // WebM writers in pre-U versions suffered from a race condition that MAY result in
+            // last few frames to be omitted from the final muxed output. If only 1 to 2 frames were
+            // encoded and muxed, it is possible that writer does not write any frame and closes the
+            // file. For details refer b/267933226. This was fixed. But, as muxer is not a mainline
+            // module, this fix may not be present on older revisions. To avoid failures on older
+            // revisions, encode 10 frames and mux.
+            if (IS_BEFORE_U && IntStream.of(muxerFormats).anyMatch(x -> x == MUXER_OUTPUT_WEBM)) {
+                frameLimit = 10;
+            }
+            doWork(frameLimit);
             queueEOS();
             waitForAllOutputs();
 
@@ -401,31 +416,36 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
             mCodec.stop();
             mCodec.release();
 
-            // TODO(b/361213055) muxOutput on all supported writers instead of just first.
-            if (mTestingContainerColorAspects) {
-                int muxerFormat = getMuxerFormatForMediaType(mMediaType);
-                String tmpPath = getTempFilePath((mActiveEncCfg.mInputBitDepth == 10) ? "10bit"
-                                                                                      : "");
-                mTmpFiles.add(tmpPath);
-                muxOutput(tmpPath, muxerFormat, outFormat, mOutputBuff.getBuffer(), mInfoList);
+            MediaCodecList codecList = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
+            String decoder = codecList.findDecoderForFormat(outFormat);
+            assertNotNull("Device advertises support for encoding " + outFormat + " but not "
+                    + "decoding it. \n" + mTestConfig + mTestEnv, decoder);
 
-                // verify if the muxed file contains color aspects as expected
-                MediaCodecList codecList = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
-                String decoder = codecList.findDecoderForFormat(outFormat);
-                assertNotNull("Device advertises support for encoding " + outFormat + " but not "
-                        + "decoding it. \n" + mTestConfig + mTestEnv, decoder);
-                CodecDecoderTestBase cdtb = new CodecDecoderTestBase(decoder, mMediaType, tmpPath,
-                        mAllTestParams);
-                cdtb.validateColorAspects(mActiveEncCfg.mRange, mActiveEncCfg.mStandard,
-                        mActiveEncCfg.mTransfer, false);
-
-                // if color metadata can also be signalled via elementary stream then verify if the
-                // elementary stream contains color aspects as expected
-                if (IGNORE_COLOR_BOX_LIST.contains(mMediaType)) {
+            // write the output with all muxers and verify if the muxed file contains
+            // color-aspects as expected
+            {
+                for (int muxFormat : muxerFormats) {
+                    String tmpPath =
+                            getTempFilePath((mActiveEncCfg.mInputBitDepth == 10) ? "10bit" : "");
+                    mTmpFiles.add(tmpPath);
+                    muxOutput(tmpPath, muxFormat, outFormat, mOutputBuff.getBuffer(), mInfoList);
+                    String testParamsExtended = String.format(
+                            "\nTest Parameters Extended :- [ muxer format: %s, file: %s ]",
+                            muxerFormatToString(muxFormat), tmpPath);
+                    CodecDecoderTestBase cdtb = new CodecDecoderTestBase(
+                            decoder, mMediaType, tmpPath, mAllTestParams + testParamsExtended);
+                    cdtb.setUpCodecDecoderTestBase();
+                    cdtb.setUpCodecTestBase();
                     cdtb.validateColorAspects(mActiveEncCfg.mRange, mActiveEncCfg.mStandard,
-                            mActiveEncCfg.mTransfer, true);
+                            mActiveEncCfg.mTransfer, false);
+
+                    // if color metadata can also be signalled via elementary stream then verify
+                    // if the elementary stream contains color aspects as expected
+                    if (IGNORE_COLOR_BOX_LIST.contains(mMediaType)) {
+                        cdtb.validateColorAspects(mActiveEncCfg.mRange, mActiveEncCfg.mStandard,
+                                mActiveEncCfg.mTransfer, true);
+                    }
                 }
-                new File(tmpPath).delete();
             }
         }
     }

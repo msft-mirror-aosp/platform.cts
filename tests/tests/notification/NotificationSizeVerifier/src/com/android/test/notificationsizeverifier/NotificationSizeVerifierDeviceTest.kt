@@ -17,6 +17,7 @@
 package com.android.test.notificationsizeverifier
 
 import android.content.Context
+import android.content.res.Resources
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.interactive.Step
@@ -31,6 +32,7 @@ import com.android.interactive.steps.sysui.VerifyNotificationUriOverChangeEnable
 import com.android.interactive.steps.sysui.VerifyNotificationUriUnderChangeDisabled
 import com.android.interactive.steps.sysui.VerifyNotificationUriUnderChangeEnabled
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -61,6 +63,33 @@ class NotificationSizeVerifierDeviceTest {
     fun tearDown() {
         if (this::poster.isInitialized) {
             poster.cancelAllNotifications()
+        }
+    }
+
+    @Test
+    fun config_NotificationStripSizeBytes_VerifyValue() {
+        try {
+            val systemRes = Resources.getSystem()
+            val resId =
+                systemRes.getIdentifier(
+                    "config_notificationStripRemoteViewSizeBytes",
+                    "integer",
+                    "android"
+                )
+            if (resId != 0) {
+                assertEquals(
+                    "config_notificationStripRemoteViewSizeBytes should be set to " +
+                            "${NOTIFICATION_STRIP_SIZE_BYTES} for consistency across the ecosystem",
+                    NOTIFICATION_STRIP_SIZE_BYTES,
+                    systemRes.getInteger(resId)
+                )
+            } else {
+                throw AssertionError(
+                    "Failed to get resource id for config_notificationStripRemoteViewSizeBytes."
+                )
+            }
+        } catch (e: Exception) {
+            throw AssertionError("Error accessing system resource: ${e.message}")
         }
     }
 

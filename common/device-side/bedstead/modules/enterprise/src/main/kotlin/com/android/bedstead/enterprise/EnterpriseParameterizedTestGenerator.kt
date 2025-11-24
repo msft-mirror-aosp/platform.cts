@@ -15,11 +15,15 @@
  */
 package com.android.bedstead.enterprise
 
+import android.app.admin.DevicePolicyManager.POLICY_SCOPE_DEVICE
+import android.app.admin.DevicePolicyManager.POLICY_SCOPE_PARENT_USER
+import android.app.admin.DevicePolicyManager.POLICY_SCOPE_USER
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
 import com.android.bedstead.enterprise.annotations.EnterprisePolicy
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest
+import com.android.bedstead.enterprise.annotations.UsesEnterprisePolicies
 import com.android.bedstead.harrier.ParameterizedTestGenerator
 import com.google.common.collect.ImmutableSet
 import kotlin.reflect.KClass
@@ -28,24 +32,46 @@ import kotlin.reflect.KClass
 @Suppress("unused")
 class EnterpriseParameterizedTestGenerator : ParameterizedTestGenerator {
 
-    override fun generateReplacementAnnotations(annotation: Annotation): List<Annotation> =
+    override fun generateReplacementAnnotations(
+        annotation: Annotation,
+        classAnnotations: List<Annotation>,
+    ): List<Annotation> =
         when (annotation) {
             is PolicyAppliesTest -> Policy.policyAppliesStates(unionPolicies(annotation.policy))
             is PolicyDoesNotApplyTest ->
                 Policy.policyDoesNotApplyStates(unionPolicies(annotation.policy))
 
-            is CannotSetPolicyTest ->
-                Policy.cannotSetPolicyStates(
-                    unionPolicies(annotation.policy),
-                    annotation.includeDeviceAdminStates,
-                    annotation.includeNonDeviceAdminStates,
-                )
-
-            is CanSetPolicyTest -> annotation.logic()
+            is CannotSetPolicyTest -> annotation.logic(classAnnotations)
+            is CanSetPolicyTest -> annotation.logic(classAnnotations)
             else -> emptyList()
         }
 
-    private fun CanSetPolicyTest.logic(): List<Annotation> {
+    private fun CannotSetPolicyTest.logic(classAnnotations: List<Annotation>): List<Annotation> {
+        validate()
+
+        val enterprisePolicy =
+            if (policy.isNotEmpty()) {
+                unionPolicies(policy)
+            } else {
+                check(scope != 0) { "validate() should have rejected this annotation" }
+                getPolicyWithScope(classAnnotations, scope)
+            }
+
+        return Policy.cannotSetPolicyStates(
+            enterprisePolicy,
+            includeDeviceAdminStates,
+            includeNonDeviceAdminStates,
+        )
+    }
+
+    private fun CannotSetPolicyTest.validate() {
+        var numberOfUniquePolicySet = 0
+        if (policy.isNotEmpty()) numberOfUniquePolicySet++
+        if (scope != 0) numberOfUniquePolicySet++
+        check(numberOfUniquePolicySet == 1) { "Exactly 1 of policy/scope must be set" }
+    }
+
+    private fun CanSetPolicyTest.logic(classAnnotations: List<Annotation>): List<Annotation> {
         validate()
 
         val enterprisePolicy =
@@ -53,8 +79,11 @@ class EnterpriseParameterizedTestGenerator : ParameterizedTestGenerator {
                 unionPolicies(policy)
             } else if (policyUnion.isNotEmpty()) {
                 unionPolicies(policyUnion)
-            } else {
+            } else if (policyIntersection.isNotEmpty()) {
                 intersectPolicies(policyIntersection.map { it.java }.toTypedArray())
+            } else {
+                check(scope != 0) { "validate() should have rejected this annotation" }
+                getPolicyWithScope(classAnnotations, scope)
             }
 
         return Policy.canSetPolicyStates(enterprisePolicy, singleTestOnly)
@@ -65,8 +94,9 @@ class EnterpriseParameterizedTestGenerator : ParameterizedTestGenerator {
         if (policy.isNotEmpty()) numberOfUniquePolicySet++
         if (policyUnion.isNotEmpty()) numberOfUniquePolicySet++
         if (policyIntersection.isNotEmpty()) numberOfUniquePolicySet++
+        if (scope != 0) numberOfUniquePolicySet++
         check(numberOfUniquePolicySet == 1) {
-            "Exactly 1 of policy/policyUnion/policyIntersection must be set"
+            "Exactly 1 of policy/policyUnion/policyIntersection/scope must be set"
         }
     }
 
@@ -96,7 +126,7 @@ class EnterpriseParameterizedTestGenerator : ParameterizedTestGenerator {
         check(policies.isNotEmpty()) { "Cannot union 0 policies" }
         if (policies.size == 1) {
             // Nothing to merge, just return the only one
-            return policies[0].getAnnotation(EnterprisePolicy::class.java)
+            return policies[0].getAnnotation(EnterprisePolicy::class.java)!!
         }
 
         val dpc: MutableSet<Int> = mutableSetOf()
@@ -152,7 +182,7 @@ class EnterpriseParameterizedTestGenerator : ParameterizedTestGenerator {
         check(policies.isNotEmpty()) { "Cannot intersect 0 policies" }
         if (policies.size == 1) {
             // Nothing to intersect, just return the only one
-            return policies[0].getAnnotation(EnterprisePolicy::class.java)
+            return policies[0].getAnnotation(EnterprisePolicy::class.java)!!
         }
 
         val permissions: MutableSet<EnterprisePolicy.Permission> = HashSet()
@@ -194,5 +224,34 @@ class EnterpriseParameterizedTestGenerator : ParameterizedTestGenerator {
             appOps.toTypedArray(),
             delegatedScopes.toTypedArray(),
         )
+    }
+
+    /**
+     * Finds the [UsesEnterprisePolicies] annotation from the parent class's annotations, and
+     * returns the [EnterprisePolicy] for the given [scope].
+     */
+    private fun getPolicyWithScope(
+        classAnnotations: List<Annotation>,
+        scope: Int,
+    ): EnterprisePolicy {
+        val policyUnderTest =
+            classAnnotations.find { it is UsesEnterprisePolicies } as? UsesEnterprisePolicies?
+        if (policyUnderTest == null) {
+            throw IllegalStateException(
+                "UsesEnterprisePolicies annotation must be present on the parent class if scope is used"
+            )
+        }
+        val policyClass =
+            when (scope) {
+                POLICY_SCOPE_USER -> policyUnderTest.scopeUser
+                POLICY_SCOPE_DEVICE -> policyUnderTest.scopeDevice
+                POLICY_SCOPE_PARENT_USER -> policyUnderTest.scopeParentUser
+                else ->
+                    throw IllegalStateException(
+                        "Invalid scope $scope. " +
+                            "Must be one of POLICY_SCOPE_USER, POLICY_SCOPE_DEVICE, POLICY_SCOPE_PARENT_USER"
+                    )
+            }
+        return policyClass.java.getAnnotation(EnterprisePolicy::class.java)!!
     }
 }

@@ -28,6 +28,7 @@ import static android.app.Notification.EXTRA_PREFER_SMALL_ICON;
 import static android.app.Notification.FLAG_FOREGROUND_SERVICE;
 import static android.app.Notification.FLAG_NO_CLEAR;
 import static android.app.Notification.FLAG_USER_INITIATED_JOB;
+import static android.app.NotificationChannel.NEWS_ID;
 import static android.app.NotificationManager.IMPORTANCE_DEFAULT;
 import static android.app.NotificationManager.IMPORTANCE_HIGH;
 import static android.app.NotificationManager.IMPORTANCE_LOW;
@@ -36,6 +37,8 @@ import static android.app.NotificationManager.IMPORTANCE_NONE;
 import static android.app.NotificationManager.IMPORTANCE_UNSPECIFIED;
 import static android.content.pm.PackageManager.FEATURE_LEANBACK;
 import static android.content.pm.PackageManager.FEATURE_WATCH;
+import static android.service.notification.Adjustment.KEY_TYPE;
+import static android.service.notification.Adjustment.TYPE_NEWS;
 import static android.service.notification.NotificationListenerService.META_DATA_DEFAULT_AUTOBIND;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -63,6 +66,7 @@ import android.app.role.RoleManager;
 import android.app.stubs.GetResultActivity;
 import android.app.stubs.R;
 import android.app.stubs.shared.FutureServiceConnection;
+import android.app.stubs.shared.NotificationHelper;
 import android.app.stubs.shared.NotificationHelper.SEARCH_TYPE;
 import android.app.stubs.shared.TestNotificationListener;
 import android.content.ComponentName;
@@ -95,7 +99,10 @@ import android.platform.test.annotations.RequiresDevice;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.Settings;
+import android.service.notification.Adjustment;
+import android.service.notification.DynamicBundle;
 import android.service.notification.NotificationListenerService;
+import android.service.notification.NotificationListenerService.Ranking;
 import android.service.notification.StatusBarNotification;
 import android.util.ArrayMap;
 import android.util.Log;
@@ -110,6 +117,7 @@ import androidx.test.uiautomator.UiDevice;
 
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingSupplier;
@@ -119,6 +127,8 @@ import com.android.test.notificationlistener.INLSControlService;
 import com.android.test.notificationlistener.INotificationUriAccessService;
 
 import com.google.common.base.Preconditions;
+
+import junit.framework.Assert;
 
 import org.junit.After;
 import org.junit.Before;
@@ -1085,7 +1095,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         // wait for notification listener to get response
         notificationRankingLatch.await(500, TimeUnit.MILLISECONDS);
         NotificationListenerService.RankingMap rankingMap = mListener.mRankingMap;
-        NotificationListenerService.Ranking outRanking = new NotificationListenerService.Ranking();
+        Ranking outRanking = new Ranking();
         for (String key : rankingMap.getOrderedKeys()) {
             if (key.contains(mListener.getPackageName())) {
                 rankingMap.getRanking(key, outRanking);
@@ -1343,7 +1353,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         postedLatch.await(500, TimeUnit.MILLISECONDS);
         assertEquals(1, mListener.mPosted.size()); // apps targeting P receive notification
         NotificationListenerService.RankingMap rankingMap = mListener.mRankingMap;
-        NotificationListenerService.Ranking outRanking = new NotificationListenerService.Ranking();
+        Ranking outRanking = new Ranking();
         for (String key : rankingMap.getOrderedKeys()) {
             if (key.contains(mListener.getPackageName())) {
                 rankingMap.getRanking(key, outRanking);
@@ -1390,8 +1400,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             // wait for notification listener to receive notification
             postedLatch.await(500, TimeUnit.MILLISECONDS);
             NotificationListenerService.RankingMap rankingMap = mListener.mRankingMap;
-            NotificationListenerService.Ranking outRanking =
-                    new NotificationListenerService.Ranking();
+            Ranking outRanking =
+                    new Ranking();
             for (String key : rankingMap.getOrderedKeys()) {
                 if (key.contains(mListener.getPackageName())) {
                     rankingMap.getRanking(key, outRanking);
@@ -1410,7 +1420,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             rankingUpdateLatch.await(500, TimeUnit.MILLISECONDS);
 
             rankingMap = mListener.mRankingMap;
-            outRanking = new NotificationListenerService.Ranking();
+            outRanking = new Ranking();
             for (String key : rankingMap.getOrderedKeys()) {
                 if (key.contains(mListener.getPackageName())) {
                     assertFalse(outRanking.canShowBadge());
@@ -1440,8 +1450,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         postedLatch.await(500, TimeUnit.MILLISECONDS);
 
         NotificationListenerService.RankingMap rankingMap = mListener.mRankingMap;
-        NotificationListenerService.Ranking outRanking =
-                new NotificationListenerService.Ranking();
+        Ranking outRanking =
+                new Ranking();
 
         StatusBarNotification sbn = mNotificationHelper.findPostedNotification(null, notificationId,
                 SEARCH_TYPE.POSTED);
@@ -2998,7 +3008,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         assertEquals(1, mListener.mPosted.size());
 
         NotificationListenerService.RankingMap rankingMap = mListener.mRankingMap;
-        NotificationListenerService.Ranking outRanking = new NotificationListenerService.Ranking();
+        Ranking outRanking = new Ranking();
         for (String key : rankingMap.getOrderedKeys()) {
             if (key.contains(mListener.getPackageName())) {
                 rankingMap.getRanking(key, outRanking);
@@ -3680,7 +3690,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.app.Flags.FLAG_BRIDGED_NOTIFICATIONS_API)
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_BRIDGED_NOTIFICATIONS)
     public void testSetBridgedNotificationMetadata_noPermission() throws Exception {
         int id = 99;
 
@@ -3705,7 +3715,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.app.Flags.FLAG_BRIDGED_NOTIFICATIONS_API)
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_BRIDGED_NOTIFICATIONS)
     public void testSetBridgedNotificationMetadata_hasPermission() throws Exception {
         int id = 99;
 
@@ -3765,7 +3775,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
                 SEARCH_TYPE.POSTED);
 
         NotificationListenerService.RankingMap rankingMap = mListener.mRankingMap;
-        NotificationListenerService.Ranking outRanking = new NotificationListenerService.Ranking();
+        Ranking outRanking = new Ranking();
 
         rankingMap.getRanking(lowSbn.getKey(), outRanking);
         assertFalse(outRanking.isAmbient());
@@ -4052,6 +4062,157 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
                 mNotificationManager.setCanPostPromotedNotifications(
                         mContext.getPackageName(), android.os.Process.myUid(), initialValue);
             });
+        }
+    }
+
+    @Test
+    @ApiTest(apis = {"android.service.notification.NotificationListenerService#getActiveNotifications",
+            "android.service.notification.NotificationListenerService#getCurrentRanking"})
+    public void testListenerCanSeeAutobundledNotifications() throws Exception {
+        EventCallback callback = new EventCallback();
+        int notificationId1 = 6007;
+        int notificationId2 = 6008;
+
+        mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
+        assertNotNull(mListener);
+        // wait for the two notifications + the autogroup summary to be posted
+        CountDownLatch postedLatch = mListener.setPostedCountDown(3);
+
+        sendTrampolineMessage(TRAMPOLINE_SERVICE_API_30, MESSAGE_SERVICE_NOTIFICATION,
+                notificationId1, callback);
+        sendTrampolineMessage(TRAMPOLINE_SERVICE_API_30, MESSAGE_SERVICE_NOTIFICATION,
+                notificationId2, callback);
+        postedLatch.await(POST_TIMEOUT, TimeUnit.MILLISECONDS);
+
+        StatusBarNotification sbn1 = mNotificationHelper.findPostedNotification(
+                null, notificationId1, SEARCH_TYPE.LISTENER);
+        assertThat(sbn1).isNotNull();
+        Ranking ranking1 = mNotificationHelper.findPostedNotificationRanking(
+                sbn1.getKey(), SEARCH_TYPE.LISTENER);
+        assertThat(ranking1).isNotNull();
+
+        StatusBarNotification sbn2 = mNotificationHelper.findPostedNotification(
+                null, notificationId2, SEARCH_TYPE.LISTENER);
+        assertThat(sbn2).isNotNull();
+        Ranking ranking2 = mNotificationHelper.findPostedNotificationRanking(
+                sbn2.getKey(), SEARCH_TYPE.LISTENER);
+        assertThat(ranking2).isNotNull();
+
+        StatusBarNotification sbnSummary = mNotificationHelper.findPostedNotificationWithFlags(
+                Notification.FLAG_AUTOGROUP_SUMMARY, SEARCH_TYPE.LISTENER);
+        assertThat(sbnSummary).isNotNull();
+        Ranking rankingSummary = mNotificationHelper.findPostedNotificationRanking(
+                sbnSummary.getKey(), SEARCH_TYPE.LISTENER);
+        assertThat(rankingSummary).isNotNull();
+    }
+
+    @Test
+    @ApiTest(apis = {"android.service.notification.NotificationListenerService#getActiveNotifications",
+            "android.service.notification.NotificationListenerService#getCurrentRanking",
+            "android.service.notification.NotificationAssistantService#adjustNotification"})
+    public void testListenerCanSeeClassifiedNotifications() throws Exception {
+        EventCallback callback = new EventCallback();
+        int notificationId1 = 6007;
+
+        mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
+        assertNotNull(mListener);
+        mListener.addTestPackage(TRAMPOLINE_APP_API_30);
+        mAssistant = mNotificationHelper.enableAssistant(STUB_PACKAGE_NAME);
+        assertNotNull(mAssistant);
+
+        SystemUtil.runWithShellPermissionIdentity(() ->
+                mNotificationManager.setAssistantAdjustmentKeyTypeState(TYPE_NEWS, true));
+        try {
+            CountDownLatch postedLatch = mListener.setPostedCountDown(1);
+            sendTrampolineMessage(TRAMPOLINE_SERVICE_API_30, MESSAGE_SERVICE_NOTIFICATION,
+                    notificationId1, callback);
+            postedLatch.await(POST_TIMEOUT, TimeUnit.MILLISECONDS);
+            StatusBarNotification preClassification = mNotificationHelper.findPostedNotification(
+                    null, notificationId1, NotificationHelper.SEARCH_TYPE.POSTED);
+            assertThat(preClassification).isNotNull();
+
+            Bundle signals = new Bundle();
+            signals.putInt(KEY_TYPE, Adjustment.TYPE_NEWS);
+            Adjustment adjustment = new Adjustment(preClassification.getPackageName(),
+                    preClassification.getKey(), signals, "", preClassification.getUser());
+
+            CountDownLatch rankingUpdateLatch = mListener.setRankingUpdateCountDown(1);
+            mAssistant.adjustNotification(adjustment);
+            rankingUpdateLatch.await(1000, TimeUnit.MILLISECONDS);
+
+            StatusBarNotification sbn = mNotificationHelper.findPostedNotification(
+                    null, notificationId1, SEARCH_TYPE.LISTENER);
+            assertThat(sbn).isNotNull();
+            Ranking ranking = mNotificationHelper.findPostedNotificationRanking(
+                    sbn.getKey(), SEARCH_TYPE.LISTENER);
+            assertThat(ranking).isNotNull();
+
+            Assert.assertEquals(NEWS_ID, ranking.getChannel().getId());
+        } finally {
+            SystemUtil.runWithShellPermissionIdentity(() ->
+                    mNotificationManager.setAssistantAdjustmentKeyTypeState(TYPE_NEWS, false));
+        }
+    }
+
+    private int getUnusedDynamicBundleId() {
+        int dynamicBundleId = 100;
+        for (DynamicBundle db : mAssistant.getDynamicBundles()) {
+            if (db.getDynamicBundleType() > dynamicBundleId) {
+                dynamicBundleId = db.getDynamicBundleType();
+            }
+        }
+        dynamicBundleId++;
+        return dynamicBundleId;
+    }
+
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_NM_CONTEXTUAL_DISPLAY)
+    @Test
+    @ApiTest(apis = {"android.service.notification.NotificationListenerService#getActiveNotifications",
+            "android.service.notification.NotificationListenerService#getCurrentRanking",
+            "android.service.notification.NotificationAssistantService#adjustNotification"})
+    public void testListenerCanSeeDynamicallyClassifiedNotifications() throws Exception {
+        EventCallback callback = new EventCallback();
+        int notificationId1 = 6007;
+
+        mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
+        assertNotNull(mListener);
+        mListener.addTestPackage(TRAMPOLINE_APP_API_30);
+
+        mAssistant = mNotificationHelper.enableAssistant(STUB_PACKAGE_NAME);
+        assertNotNull(mAssistant);
+        int dynamicBundleId = getUnusedDynamicBundleId();
+
+        try {
+            CountDownLatch postedLatch = mListener.setPostedCountDown(1);
+            sendTrampolineMessage(TRAMPOLINE_SERVICE_API_30, MESSAGE_SERVICE_NOTIFICATION,
+                    notificationId1, callback);
+            postedLatch.await(POST_TIMEOUT, TimeUnit.MILLISECONDS);
+            StatusBarNotification preClassification = mNotificationHelper.findPostedNotification(
+                    null, notificationId1, NotificationHelper.SEARCH_TYPE.POSTED);
+            assertThat(preClassification).isNotNull();
+
+            mAssistant.createDynamicBundle(dynamicBundleId, "bundle name");
+
+            Bundle signals = new Bundle();
+            signals.putInt(KEY_TYPE, dynamicBundleId);
+            Adjustment adjustment = new Adjustment(preClassification.getPackageName(),
+                    preClassification.getKey(), signals, "", preClassification.getUser());
+
+            CountDownLatch rankingUpdateLatch = mListener.setRankingUpdateCountDown(1);
+            mAssistant.adjustNotification(adjustment);
+            rankingUpdateLatch.await(1000, TimeUnit.MILLISECONDS);
+
+            StatusBarNotification sbn = mNotificationHelper.findPostedNotification(
+                    null, notificationId1, SEARCH_TYPE.LISTENER);
+            assertThat(sbn).isNotNull();
+            Ranking ranking = mNotificationHelper.findPostedNotificationRanking(
+                    sbn.getKey(), SEARCH_TYPE.LISTENER);
+            assertThat(ranking).isNotNull();
+
+            assertThat(ranking.getChannel().isBundleChannel()).isTrue();
+            assertThat(ranking.getChannel().getName()).isEqualTo("bundle name");
+        } finally {
+            mAssistant.deleteDynamicBundle(dynamicBundleId);
         }
     }
 

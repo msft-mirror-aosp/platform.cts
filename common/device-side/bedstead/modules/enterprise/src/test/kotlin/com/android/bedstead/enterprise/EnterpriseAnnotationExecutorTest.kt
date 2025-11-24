@@ -31,8 +31,10 @@ import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc
 import com.android.bedstead.enterprise.annotations.EnsureHasNoProfileOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasNoTestDeviceAdmin
+import com.android.bedstead.enterprise.annotations.EnsureHasNoUserController
 import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
+import com.android.bedstead.enterprise.annotations.EnsureHasUserController
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.enterprise.annotations.EnsureTestAppInstalledAsPrimaryDPC
 import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest
@@ -54,12 +56,13 @@ import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSec
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSingleDeviceOwnerUser
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSystemDeviceOwnerUser
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnUnaffiliatedDeviceOwnerSecondaryUser
+import com.android.bedstead.enterprise.policies.DisallowBluetooth
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled
+import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters
-import com.android.bedstead.enterprise.policies.DisallowBluetooth
 import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
 import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode
 import com.android.bedstead.multiuser.profile
@@ -343,6 +346,44 @@ class EnterpriseAnnotationExecutorTest {
     @Test
     fun additionalQueryParameters_ensureHasProfileOwner_isRespected() {
         assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(30)
+    }
+
+    @Test
+    @RequireRunOnInitialUser()
+    @EnsureHasUserController()
+    fun ensureHasUserControllerAnnotation_defaultUser_userControllerIsSet() {
+        assertThat(sDeviceState.userController(UserType.INSTRUMENTED_USER)).isNotNull()
+    }
+
+    @Test
+    @RequireRunOnInitialUser()
+    @EnsureHasUserController(isPrimary = true)
+    fun ensureHasUserControllerAnnotation_defaultUser_primary_userControllerIsSet() {
+        assertThat(
+            sDeviceState.userController(UserType.INSTRUMENTED_USER)
+        ).isNotNull()
+        assertThat(
+            sDeviceState.dpc() is RemoteDpc
+        ).isTrue()
+        assertThat(
+            sDeviceState.userController(UserType.INSTRUMENTED_USER).devicePolicyController()
+        ).isEqualTo((sDeviceState.dpc() as RemoteDpc).devicePolicyController())
+    }
+
+    @Test
+    @EnsureHasSecondaryUser
+    @EnsureHasUserController(onUser = UserType.SECONDARY_USER)
+    fun ensureHasUserControllerAnnotation_otherUser_userControllerIsSet() {
+        assertThat(sDeviceState.userController(UserType.SECONDARY_USER)).isNotNull()
+    }
+
+    @Test
+    @RequireRunOnInitialUser()
+    @EnsureHasNoUserController()
+    fun ensureHasNoUserControllerAnnotation_defaultUser_userControllerIsNotSet() {
+        assertThrows(IllegalStateException::class.java) {
+            sDeviceState.userController(UserType.INSTRUMENTED_USER)
+        }
     }
 
     @Test
@@ -805,7 +846,8 @@ class EnterpriseAnnotationExecutorTest {
     }
 
     @EnsureTestAppInstalledAsPrimaryDPC(
-        query = Query(packageName = StringQuery(isEqualTo = TEST_APP_PACKAGE_NAME)))
+        query = Query(packageName = StringQuery(isEqualTo = TEST_APP_PACKAGE_NAME))
+    )
     @Test
     fun dpc_primaryTestApp_returnsTestApp() {
         assertThat(sDeviceState.dpc().packageName()).isEqualTo(TEST_APP_PACKAGE_NAME)

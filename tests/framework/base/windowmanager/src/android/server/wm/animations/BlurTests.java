@@ -44,7 +44,6 @@ import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerTestBase;
 import android.server.wm.cts.R;
 import android.server.wm.settings.SettingsSession;
-import android.util.TypedValue;
 import android.view.RoundedCorner;
 import android.view.View;
 import android.view.WindowInsets;
@@ -53,15 +52,16 @@ import android.view.WindowManager;
 import androidx.annotation.ColorInt;
 import androidx.annotation.Nullable;
 import androidx.core.view.WindowCompat;
+import androidx.lifecycle.Lifecycle;
+import androidx.test.core.app.ActivityScenario;
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.filters.FlakyTest;
-import androidx.test.rule.ActivityTestRule;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.ColorUtils;
 import com.android.compatibility.common.util.PollingCheck;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
@@ -69,6 +69,7 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.mockito.Mockito;
 
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 @Presubmit
@@ -95,50 +96,62 @@ public class BlurTests extends WindowManagerTestBase {
             Settings.Global::putFloat,
             0f);
 
-    private final ActivityTestRule<BackgroundActivity> mBackgroundActivity =
-            new ActivityTestRule<>(BackgroundActivity.class, false, false);
+    private final ActivityScenarioRule<BackgroundActivity> mBackgroundActivityRule =
+            createFullscreenActivityScenarioRule(BackgroundActivity.class);
 
-    private final TestRule mSetupRule = new ExternalResource() {
-        @Override
-        protected void before() throws Throwable {
-            assumeTrue(supportsBlur());
+    private final TestRule mSetupRule =
+            new ExternalResource() {
+                @Override
+                protected void before() throws Throwable {
+                    assumeTrue(supportsBlur());
 
-            ComponentName cn = mBackgroundActivity.launchActivity(null).getComponentName();
-            waitAndAssertResumedActivity(cn, cn + " must be resumed");
-            mBackgroundActivity.getActivity().waitAndAssertWindowFocusState(true);
+                    final ActivityScenario<BackgroundActivity> scenario =
+                            mBackgroundActivityRule.getScenario();
+                    final AtomicReference<BackgroundActivity> activity = new AtomicReference<>();
+                    scenario.moveToState(Lifecycle.State.RESUMED).onActivity(activity::set);
 
-            // Use the background activity's bounds when taking the device screenshot.
-            // This is needed for multi-screen devices (foldables) where
-            // the launched activity covers just one screen
-            WindowManagerState.WindowState windowState = mWmState.getWindowState(cn);
-            WindowManagerState.Activity act = mWmState.getActivity(cn);
-            mBackgroundActivityBounds = act.getBounds();
+                    final BackgroundActivity backgroundActivity = activity.get();
+                    final ComponentName cn = backgroundActivity.getComponentName();
+                    waitAndAssertResumedActivity(cn, cn + " must be resumed");
+                    backgroundActivity.waitAndAssertWindowFocusState(true);
 
-            // Wait for the first frame *after* the splash screen is removed to take screenshots.
-            // Currently there isn't a definite event / callback for this.
-            mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
-            waitForActivityIdle(mBackgroundActivity.getActivity());
+                    // Use the background activity's bounds when taking the device screenshot.
+                    // This is needed for multi-screen devices (foldables) where
+                    // the launched activity covers just one screen
+                    WindowManagerState.WindowState windowState = mWmState.getWindowState(cn);
+                    WindowManagerState.Activity act = mWmState.getActivity(cn);
+                    mBackgroundActivityBounds = act.getBounds();
 
-            insetGivenFrame(windowState,
-                    insetsSource -> (insetsSource.is(WindowInsets.Type.captionBar())),
-                    mBackgroundActivityBounds);
+                    // Wait for the first frame *after* the splash screen is removed to take
+                    // screenshots.
+                    // Currently there isn't a definite event / callback for this.
+                    mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
+                    waitForActivityIdle(backgroundActivity);
 
-            // Exclude rounded corners from screenshot comparisons.
-            mPixelTestBounds = new Rect(mBackgroundActivityBounds);
-            mPixelTestBounds.inset(mBackgroundActivity.getActivity().getInsetsToBeIgnored());
+                    insetGivenFrame(
+                            windowState,
+                            insetsSource -> (insetsSource.is(WindowInsets.Type.captionBar())),
+                            mBackgroundActivityBounds);
 
-            // Basic checks common to all tests
-            verifyOnlyBackgroundImageVisible();
-            assertTrue(mContext.getSystemService(WindowManager.class).isCrossWindowBlurEnabled());
-        }
-    };
+                    // Exclude rounded corners from screenshot comparisons.
+                    mPixelTestBounds = new Rect(mBackgroundActivityBounds);
+                    mPixelTestBounds.inset(backgroundActivity.getInsetsToBeIgnored());
+
+                    // Basic checks common to all tests
+                    verifyOnlyBackgroundImageVisible();
+                    assertTrue(
+                            mContext.getSystemService(WindowManager.class)
+                                    .isCrossWindowBlurEnabled());
+                }
+            };
 
     @Rule(order = 1)
-    public final TestRule methodRules = RuleChain.outerRule(mDumpOnFailure)
-            .around(mEnableBlurRule)
-            .around(mDisableTransitionAnimationRule)
-            .around(mBackgroundActivity)
-            .around(mSetupRule);
+    public final TestRule methodRules =
+            RuleChain.outerRule(mDumpOnFailure)
+                    .around(mEnableBlurRule)
+                    .around(mDisableTransitionAnimationRule)
+                    .around(mBackgroundActivityRule)
+                    .around(mSetupRule);
 
     public BlurTests() {
         setUseRuleForSetup();
@@ -543,7 +556,7 @@ public class BlurTests extends WindowManagerTestBase {
     }
 
     private <T extends FocusableActivity> T startTestActivity(Class<T> activityClass) {
-        T activity = startActivity(activityClass);
+        T activity = startActivityInWindowingModeFullScreen(activityClass);
         ComponentName activityName = activity.getComponentName();
         waitAndAssertResumedActivity(activityName, activityName + " must be resumed");
         waitForActivityIdle(activity);

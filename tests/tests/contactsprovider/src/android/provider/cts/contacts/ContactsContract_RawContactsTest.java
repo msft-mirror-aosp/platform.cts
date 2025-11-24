@@ -96,8 +96,6 @@ public class ContactsContract_RawContactsTest extends AndroidTestCase {
 
     public void testGetLookupUriBySourceId() throws Exception {
         TestRawContact rawContact = mBuilder.newRawContact()
-                .with(RawContacts.ACCOUNT_TYPE, "test_type")
-                .with(RawContacts.ACCOUNT_NAME, "test_name")
                 .with(RawContacts.SOURCE_ID, "source_id")
                 .insert();
 
@@ -117,8 +115,6 @@ public class ContactsContract_RawContactsTest extends AndroidTestCase {
 
     public void testGetLookupUriByDisplayName() throws Exception {
         TestRawContact rawContact = mBuilder.newRawContact()
-                .with(RawContacts.ACCOUNT_TYPE, "test_type")
-                .with(RawContacts.ACCOUNT_NAME, "test_name")
                 .insert();
         rawContact.newDataRow(StructuredName.CONTENT_ITEM_TYPE)
                 .with(StructuredName.DISPLAY_NAME, "test name")
@@ -385,8 +381,6 @@ public class ContactsContract_RawContactsTest extends AndroidTestCase {
 
     public void testProjection() throws Exception {
         TestRawContact rawContact = mBuilder.newRawContact()
-                .with(RawContacts.ACCOUNT_TYPE, "test_type")
-                .with(RawContacts.ACCOUNT_NAME, "test_name")
                 .insert();
         rawContact.newDataRow(StructuredName.CONTENT_ITEM_TYPE)
                 .with(StructuredName.DISPLAY_NAME, "test name")
@@ -405,8 +399,6 @@ public class ContactsContract_RawContactsTest extends AndroidTestCase {
         final long now = System.currentTimeMillis();
         {
             TestRawContact rawContact = mBuilder.newRawContact()
-                    .with(RawContacts.ACCOUNT_TYPE, "test_type")
-                    .with(RawContacts.ACCOUNT_NAME, "test_name")
                     .with(RawContacts.TIMES_CONTACTED, 12345)
                     .with(RawContacts.LAST_TIME_CONTACTED, now)
                     .insert();
@@ -418,8 +410,6 @@ public class ContactsContract_RawContactsTest extends AndroidTestCase {
 
         {
             TestRawContact rawContact = mBuilder.newRawContact()
-                    .with(RawContacts.ACCOUNT_TYPE, "test_type")
-                    .with(RawContacts.ACCOUNT_NAME, "test_name")
                     .with(RawContacts.TIMES_CONTACTED, 5)
                     .insert();
 
@@ -429,8 +419,6 @@ public class ContactsContract_RawContactsTest extends AndroidTestCase {
         }
         {
             TestRawContact rawContact = mBuilder.newRawContact()
-                    .with(RawContacts.ACCOUNT_TYPE, "test_type")
-                    .with(RawContacts.ACCOUNT_NAME, "test_name")
                     .with(RawContacts.LAST_TIME_CONTACTED, now)
                     .insert();
 
@@ -445,8 +433,6 @@ public class ContactsContract_RawContactsTest extends AndroidTestCase {
 
         final long now = System.currentTimeMillis();
         TestRawContact rawContact = mBuilder.newRawContact()
-                .with(RawContacts.ACCOUNT_TYPE, "test_type")
-                .with(RawContacts.ACCOUNT_NAME, "test_name")
                 .with(RawContacts.TIMES_CONTACTED, 12345)
                 .with(RawContacts.LAST_TIME_CONTACTED, now)
                 .insert();

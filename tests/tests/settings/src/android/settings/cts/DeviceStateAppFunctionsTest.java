@@ -25,10 +25,19 @@ import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.test
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
 
+import android.Manifest;
 import android.app.KeyguardManager;
+import android.app.appfunctions.AppFunctionException;
+import android.app.appfunctions.AppFunctionManager;
+import android.app.appfunctions.ExecuteAppFunctionRequest;
+import android.app.appfunctions.ExecuteAppFunctionResponse;
+import android.app.appsearch.GenericDocument;
 import android.os.Build;
+import android.os.CancellationSignal;
+import android.os.OutcomeReceiver;
 
 import androidx.test.filters.SdkSuppress;
 
@@ -48,6 +57,7 @@ import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.ShellCommand;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.compatibility.common.util.FeatureUtil;
 
 import org.junit.ClassRule;
@@ -55,21 +65,27 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 /** For testing device state related app function capabilities. */
 @RunWith(BedsteadJUnit4.class)
 public class DeviceStateAppFunctionsTest {
 
     @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
 
+    private static final String VALID_DEVICE_STATE_RESPONSE_OUTPUT = "perScreenDeviceStates";
+    private static final String VALID_METADATA_RESPONSE_OUTPUT = "perScreenMetadata";
+    private static final int EXECUTION_TIMEOUT_SECONDS = 60;
     private static final String SETTINGS_PACKAGE = "com.android.settings";
-
-    private static final String VALID_DEVICE_STATE_RESPONSE_OUTPUT = "\"perScreenDeviceStates\": [";
-    private static final String VALID_METADATA_RESPONSE_OUTPUT = "\"perScreenMetadata\": [";
 
     private static final KeyguardManager sLocalKeyguardManager =
             TestApis.context().instrumentedContext().getSystemService(KeyguardManager.class);
 
     @Test
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasWorkProfile
     @EnsureTestAppInstalled(onUser = WORK_PROFILE)
     @EnsureHasNoDeviceOwner
@@ -79,13 +95,16 @@ public class DeviceStateAppFunctionsTest {
     public void testGetUncategorizedDeviceState_shouldNotReturnWorkData() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getUncategorizedDeviceState"));
 
-        String response = executeAppFunction("getUncategorizedDeviceState", SETTINGS_PACKAGE);
+        ExecuteAppFunctionResponse response =
+                executeAppFunction("getUncategorizedDeviceState", SETTINGS_PACKAGE, null);
 
-        assertThat(response).contains(VALID_DEVICE_STATE_RESPONSE_OUTPUT);
-        assertThat(response).doesNotContain(testApp(sDeviceState).packageName());
+        String responseString = response.getResultDocument().toString();
+        assertThat(responseString).contains(VALID_DEVICE_STATE_RESPONSE_OUTPUT);
+        assertThat(responseString).doesNotContain(testApp(sDeviceState).packageName());
     }
 
     @Test
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasWorkProfile
     @EnsureTestAppInstalled(onUser = WORK_PROFILE)
     @EnsureHasNoDeviceOwner
@@ -95,13 +114,16 @@ public class DeviceStateAppFunctionsTest {
     public void testGetStorageDeviceState_shouldNotReturnWorkData() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getStorageDeviceState"));
 
-        String response = executeAppFunction("getStorageDeviceState", SETTINGS_PACKAGE);
+        ExecuteAppFunctionResponse response =
+                executeAppFunction("getStorageDeviceState", SETTINGS_PACKAGE, null);
 
-        assertThat(response).contains(VALID_DEVICE_STATE_RESPONSE_OUTPUT);
-        assertThat(response).doesNotContain(testApp(sDeviceState).packageName());
+        String responseString = response.getResultDocument().toString();
+        assertThat(responseString).contains(VALID_DEVICE_STATE_RESPONSE_OUTPUT);
+        assertThat(responseString).doesNotContain(testApp(sDeviceState).packageName());
     }
 
     @Test
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasWorkProfile
     @EnsureTestAppInstalled(onUser = WORK_PROFILE)
     @EnsureHasNoDeviceOwner
@@ -111,13 +133,16 @@ public class DeviceStateAppFunctionsTest {
     public void testGetBatteryDeviceState_shouldNotReturnWorkData() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getBatteryDeviceState"));
 
-        String response = executeAppFunction("getBatteryDeviceState", SETTINGS_PACKAGE);
+        ExecuteAppFunctionResponse response =
+                executeAppFunction("getBatteryDeviceState", SETTINGS_PACKAGE, null);
 
-        assertThat(response).contains(VALID_DEVICE_STATE_RESPONSE_OUTPUT);
-        assertThat(response).doesNotContain(testApp(sDeviceState).packageName());
+        String responseString = response.getResultDocument().toString();
+        assertThat(responseString).contains(VALID_DEVICE_STATE_RESPONSE_OUTPUT);
+        assertThat(responseString).doesNotContain(testApp(sDeviceState).packageName());
     }
 
     @Test
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasWorkProfile
     @EnsureTestAppInstalled(onUser = WORK_PROFILE)
     @EnsureHasNoDeviceOwner
@@ -127,13 +152,16 @@ public class DeviceStateAppFunctionsTest {
     public void testGetMobileDataUsageDeviceState_shouldNotReturnWorkData() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getMobileDataUsageDeviceState"));
 
-        String response = executeAppFunction("getMobileDataUsageDeviceState", SETTINGS_PACKAGE);
+        ExecuteAppFunctionResponse response =
+                executeAppFunction("getMobileDataUsageDeviceState", SETTINGS_PACKAGE, null);
 
-        assertThat(response).contains(VALID_DEVICE_STATE_RESPONSE_OUTPUT);
-        assertThat(response).doesNotContain(testApp(sDeviceState).packageName());
+        String responseString = response.getResultDocument().toString();
+        assertThat(responseString).contains(VALID_DEVICE_STATE_RESPONSE_OUTPUT);
+        assertThat(responseString).doesNotContain(testApp(sDeviceState).packageName());
     }
 
     @Test
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasWorkProfile
     @EnsureTestAppInstalled(onUser = WORK_PROFILE)
     @EnsureHasNoDeviceOwner
@@ -143,13 +171,16 @@ public class DeviceStateAppFunctionsTest {
     public void testGetNotificationsDeviceState_shouldNotReturnWorkData() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getNotificationsDeviceState"));
 
-        String response = executeAppFunction("getNotificationsDeviceState", SETTINGS_PACKAGE);
+        ExecuteAppFunctionResponse response =
+                executeAppFunction("getNotificationsDeviceState", SETTINGS_PACKAGE, null);
 
-        assertThat(response).contains(VALID_DEVICE_STATE_RESPONSE_OUTPUT);
-        assertThat(response).doesNotContain(testApp(sDeviceState).packageName());
+        String responseString = response.getResultDocument().toString();
+        assertThat(responseString).contains(VALID_DEVICE_STATE_RESPONSE_OUTPUT);
+        assertThat(responseString).doesNotContain(testApp(sDeviceState).packageName());
     }
 
     @Test
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasWorkProfile
     @EnsureTestAppInstalled(onUser = WORK_PROFILE)
     @EnsureHasNoDeviceOwner
@@ -159,13 +190,16 @@ public class DeviceStateAppFunctionsTest {
     public void testGetAppsDeviceState_shouldNotReturnWorkData() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getAppsDeviceState"));
 
-        String response = executeAppFunction("getAppsDeviceState", SETTINGS_PACKAGE);
+        ExecuteAppFunctionResponse response =
+                executeAppFunction("getAppsDeviceState", SETTINGS_PACKAGE, null);
 
-        assertThat(response).contains(VALID_DEVICE_STATE_RESPONSE_OUTPUT);
-        assertThat(response).doesNotContain(testApp(sDeviceState).packageName());
+        String responseString = response.getResultDocument().toString();
+        assertThat(responseString).contains(VALID_DEVICE_STATE_RESPONSE_OUTPUT);
+        assertThat(responseString).doesNotContain(testApp(sDeviceState).packageName());
     }
 
     @Test
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasWorkProfile
     @EnsureTestAppInstalled(onUser = WORK_PROFILE)
     @EnsureHasNoDeviceOwner
@@ -175,10 +209,12 @@ public class DeviceStateAppFunctionsTest {
     public void testGetDeviceStateMetadata_shouldNotReturnWorkData() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getDeviceStateMetadata"));
 
-        String response = executeAppFunction("getDeviceStateMetadata", SETTINGS_PACKAGE);
+        ExecuteAppFunctionResponse response =
+                executeAppFunction("getDeviceStateMetadata", SETTINGS_PACKAGE, null);
 
-        assertThat(response).contains(VALID_METADATA_RESPONSE_OUTPUT);
-        assertThat(response).doesNotContain(testApp(sDeviceState).packageName());
+        String responseString = response.getResultDocument().toString();
+        assertThat(responseString).contains(VALID_METADATA_RESPONSE_OUTPUT);
+        assertThat(responseString).doesNotContain(testApp(sDeviceState).packageName());
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
@@ -188,6 +224,7 @@ public class DeviceStateAppFunctionsTest {
     @Postsubmit(reason = "New test")
     @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     public void testGetDeviceStateMetadata_deviceLocked_throwsException() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getDeviceStateMetadata"));
         assumeTrue(supportsSecureLock());
@@ -198,8 +235,11 @@ public class DeviceStateAppFunctionsTest {
                 .errorOnFail()
                 .await();
 
-        assertThat(executeAppFunction("getDeviceStateMetadata", SETTINGS_PACKAGE))
-                .contains("android.app.appfunctions.AppFunctionException");
+        ExecutionException e =
+                assertThrows(
+                        ExecutionException.class,
+                        () -> executeAppFunction("getDeviceStateMetadata", SETTINGS_PACKAGE, null));
+        assertThat(e.getCause()).isInstanceOf(AppFunctionException.class);
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
@@ -209,6 +249,7 @@ public class DeviceStateAppFunctionsTest {
     @Postsubmit(reason = "New test")
     @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     public void testGetDeviceStateMetadata_requestInitiatedWhileUnlockedSet_doesNotThrowException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("getDeviceStateMetadata"));
@@ -220,16 +261,15 @@ public class DeviceStateAppFunctionsTest {
                 .errorOnFail()
                 .await();
 
-        assertThat(
-                        executeAppFunctionWithParams(
-                                "getDeviceStateMetadata",
-                                SETTINGS_PACKAGE,
-                                "\"getDeviceStateMetadataParams\":{\"requestInitiatedWhileUnlocked\":true}"))
-                .doesNotContain("android.app.appfunctions.AppFunctionException");
+        executeAppFunction(
+                "getDeviceStateMetadata",
+                SETTINGS_PACKAGE,
+                buildInitiatedWhileUnlockedParams("getDeviceStateMetadataParams"));
     }
 
     @Postsubmit(reason = "New test")
     @Test
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasNoDeviceOwner
     @EnsureUnlocked
     @EnsurePasswordNotSet
@@ -238,8 +278,7 @@ public class DeviceStateAppFunctionsTest {
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("getDeviceStateMetadata"));
 
-        assertThat(executeAppFunction("getDeviceStateMetadata", SETTINGS_PACKAGE))
-                .doesNotContain("android.app.appfunctions.AppFunctionException");
+        executeAppFunction("getDeviceStateMetadata", SETTINGS_PACKAGE, null);
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
@@ -249,6 +288,7 @@ public class DeviceStateAppFunctionsTest {
     @Postsubmit(reason = "New test")
     @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     public void testGetUncategorizedDeviceState_deviceLocked_throwsException() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getUncategorizedDeviceState"));
         assumeTrue(supportsSecureLock());
@@ -259,8 +299,13 @@ public class DeviceStateAppFunctionsTest {
                 .errorOnFail()
                 .await();
 
-        assertThat(executeAppFunction("getUncategorizedDeviceState", SETTINGS_PACKAGE))
-                .contains("android.app.appfunctions.AppFunctionException");
+        ExecutionException e =
+                assertThrows(
+                        ExecutionException.class,
+                        () ->
+                                executeAppFunction(
+                                        "getUncategorizedDeviceState", SETTINGS_PACKAGE, null));
+        assertThat(e.getCause()).isInstanceOf(AppFunctionException.class);
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
@@ -270,6 +315,7 @@ public class DeviceStateAppFunctionsTest {
     @Postsubmit(reason = "New test")
     @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     public void
             testGetUncategorizedDeviceState_requestInitiatedWhileUnlockedSet_doesNotThrowException()
                     throws Exception {
@@ -282,16 +328,15 @@ public class DeviceStateAppFunctionsTest {
                 .errorOnFail()
                 .await();
 
-        assertThat(
-                        executeAppFunctionWithParams(
-                                "getUncategorizedDeviceState",
-                                SETTINGS_PACKAGE,
-                                "\"getUncategorizedDeviceStateParams\":{\"requestInitiatedWhileUnlocked\":true}"))
-                .doesNotContain("android.app.appfunctions.AppFunctionException");
+        executeAppFunction(
+                "getUncategorizedDeviceState",
+                SETTINGS_PACKAGE,
+                buildInitiatedWhileUnlockedParams("getUncategorizedDeviceStateParams"));
     }
 
     @Postsubmit(reason = "New test")
     @Test
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasNoDeviceOwner
     @EnsureUnlocked
     @EnsurePasswordNotSet
@@ -300,8 +345,7 @@ public class DeviceStateAppFunctionsTest {
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("getUncategorizedDeviceState"));
 
-        assertThat(executeAppFunction("getUncategorizedDeviceState", SETTINGS_PACKAGE))
-                .doesNotContain("android.app.appfunctions.AppFunctionException");
+        executeAppFunction("getUncategorizedDeviceState", SETTINGS_PACKAGE, null);
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
@@ -311,6 +355,7 @@ public class DeviceStateAppFunctionsTest {
     @Postsubmit(reason = "New test")
     @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     public void testGetStorageDeviceState_deviceLocked_throwsException() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getStorageDeviceState"));
         assumeTrue(supportsSecureLock());
@@ -321,8 +366,11 @@ public class DeviceStateAppFunctionsTest {
                 .errorOnFail()
                 .await();
 
-        assertThat(executeAppFunction("getStorageDeviceState", SETTINGS_PACKAGE))
-                .contains("android.app.appfunctions.AppFunctionException");
+        ExecutionException e =
+                assertThrows(
+                        ExecutionException.class,
+                        () -> executeAppFunction("getStorageDeviceState", SETTINGS_PACKAGE, null));
+        assertThat(e.getCause()).isInstanceOf(AppFunctionException.class);
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
@@ -332,6 +380,7 @@ public class DeviceStateAppFunctionsTest {
     @Postsubmit(reason = "New test")
     @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     public void testGetStorageDeviceState_requestInitiatedWhileUnlockedSet_doesNotThrowException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("getStorageDeviceState"));
@@ -343,16 +392,15 @@ public class DeviceStateAppFunctionsTest {
                 .errorOnFail()
                 .await();
 
-        assertThat(
-                        executeAppFunctionWithParams(
-                                "getStorageDeviceState",
-                                SETTINGS_PACKAGE,
-                                "\"getStorageDeviceStateParams\":{\"requestInitiatedWhileUnlocked\":true}"))
-                .doesNotContain("android.app.appfunctions.AppFunctionException");
+        executeAppFunction(
+                "getStorageDeviceState",
+                SETTINGS_PACKAGE,
+                buildInitiatedWhileUnlockedParams("getStorageDeviceStateParams"));
     }
 
     @Postsubmit(reason = "New test")
     @Test
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasNoDeviceOwner
     @EnsureUnlocked
     @EnsurePasswordNotSet
@@ -360,8 +408,7 @@ public class DeviceStateAppFunctionsTest {
     public void testGetStorageDeviceState_deviceNotLocked_doesNotThrowException() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getStorageDeviceState"));
 
-        assertThat(executeAppFunction("getStorageDeviceState", SETTINGS_PACKAGE))
-                .doesNotContain("android.app.appfunctions.AppFunctionException");
+        executeAppFunction("getStorageDeviceState", SETTINGS_PACKAGE, null);
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
@@ -371,6 +418,7 @@ public class DeviceStateAppFunctionsTest {
     @Postsubmit(reason = "New test")
     @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     public void testGetBatteryDeviceState_deviceLocked_throwsException() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getBatteryDeviceState"));
         assumeTrue(supportsSecureLock());
@@ -381,8 +429,11 @@ public class DeviceStateAppFunctionsTest {
                 .errorOnFail()
                 .await();
 
-        assertThat(executeAppFunction("getBatteryDeviceState", SETTINGS_PACKAGE))
-                .contains("android.app.appfunctions.AppFunctionException");
+        ExecutionException e =
+                assertThrows(
+                        ExecutionException.class,
+                        () -> executeAppFunction("getBatteryDeviceState", SETTINGS_PACKAGE, null));
+        assertThat(e.getCause()).isInstanceOf(AppFunctionException.class);
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
@@ -392,6 +443,7 @@ public class DeviceStateAppFunctionsTest {
     @Postsubmit(reason = "New test")
     @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     public void testGetBatteryDeviceState_requestInitiatedWhileUnlockedSet_doesNotThrowException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("getBatteryDeviceState"));
@@ -403,16 +455,15 @@ public class DeviceStateAppFunctionsTest {
                 .errorOnFail()
                 .await();
 
-        assertThat(
-                        executeAppFunctionWithParams(
-                                "getBatteryDeviceState",
-                                SETTINGS_PACKAGE,
-                                "\"getBatteryDeviceStateParams\":{\"requestInitiatedWhileUnlocked\":true}"))
-                .doesNotContain("android.app.appfunctions.AppFunctionException");
+        executeAppFunction(
+                "getBatteryDeviceState",
+                SETTINGS_PACKAGE,
+                buildInitiatedWhileUnlockedParams("getBatteryDeviceStateParams"));
     }
 
     @Postsubmit(reason = "New test")
     @Test
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasNoDeviceOwner
     @EnsureUnlocked
     @EnsurePasswordNotSet
@@ -420,8 +471,7 @@ public class DeviceStateAppFunctionsTest {
     public void testGetBatteryDeviceState_deviceNotLocked_doesNotThrowException() throws Exception {
         assumeTrue(deviceSupportsAppFunction("getBatteryDeviceState"));
 
-        assertThat(executeAppFunction("getBatteryDeviceState", SETTINGS_PACKAGE))
-                .doesNotContain("android.app.appfunctions.AppFunctionException");
+        executeAppFunction("getBatteryDeviceState", SETTINGS_PACKAGE, null);
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
@@ -431,6 +481,7 @@ public class DeviceStateAppFunctionsTest {
     @Postsubmit(reason = "New test")
     @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     public void testSetDeviceStateItem_deviceLocked_throwsException() throws Exception {
         assumeTrue(deviceSupportsAppFunction("setDeviceStateItem"));
         assumeTrue(supportsSecureLock());
@@ -441,13 +492,18 @@ public class DeviceStateAppFunctionsTest {
                 .errorOnFail()
                 .await();
 
-        assertThat(
-                        executeAppFunctionWithParams(
-                                "setDeviceStateItem",
-                                SETTINGS_PACKAGE,
-                                "\"setDeviceStateItemParams\":{\"key\":\"key\","
-                                        + "\"value\":\"value\"}"))
-                .contains("android.app.appfunctions.AppFunctionException");
+        GenericDocument params =
+                new GenericDocument.Builder<GenericDocument.Builder<?>>(
+                                "", "", "setDeviceStateItemParams")
+                        .setPropertyString("key", "key")
+                        .setPropertyString("value", "value")
+                        .build();
+
+        ExecutionException e =
+                assertThrows(
+                        ExecutionException.class,
+                        () -> executeAppFunction("setDeviceStateItem", SETTINGS_PACKAGE, params));
+        assertThat(e.getCause()).isInstanceOf(AppFunctionException.class);
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
@@ -457,6 +513,7 @@ public class DeviceStateAppFunctionsTest {
     @Postsubmit(reason = "New test")
     @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     public void testSetDeviceStateItem_requestInitiatedWhileUnlockedSet_doesNotThrowException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("setDeviceStateItem"));
@@ -468,31 +525,44 @@ public class DeviceStateAppFunctionsTest {
                 .errorOnFail()
                 .await();
 
-        assertThat(
-                        executeAppFunctionWithParams(
-                                "setDeviceStateItem",
-                                SETTINGS_PACKAGE,
-                                "\"setDeviceStateItemParams\":{\"key\":\"key\","
-                                        + "\"value\":\"value\","
-                                        + "\"requestInitiatedWhileUnlocked\":true}"))
-                .doesNotContain("android.app.appfunctions.AppFunctionException");
+        GenericDocument innerDoc =
+                new GenericDocument.Builder<GenericDocument.Builder<?>>(
+                                "namespace", "id", "setDeviceStateItemParams")
+                        .setPropertyString("key", "key")
+                        .setPropertyString("value", "value")
+                        .setPropertyBoolean("requestInitiatedWhileUnlocked", true)
+                        .build();
+        GenericDocument params =
+                new GenericDocument.Builder<GenericDocument.Builder<?>>(
+                                "namespace", "id", "requestSchema")
+                        .setPropertyDocument("setDeviceStateItemParams", innerDoc)
+                        .build();
+
+        executeAppFunction("setDeviceStateItem", SETTINGS_PACKAGE, params);
     }
 
     @Postsubmit(reason = "New test")
     @Test
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureUnlocked
     @EnsurePasswordNotSet
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     public void testSetDeviceStateItem_deviceNotLocked_doesNotThrowException() throws Exception {
         assumeTrue(deviceSupportsAppFunction("setDeviceStateItem"));
 
-        assertThat(
-                        executeAppFunctionWithParams(
-                                "setDeviceStateItem",
-                                SETTINGS_PACKAGE,
-                                "\"setDeviceStateItemParams\":{\"key\":\"key\","
-                                        + "\"value\":\"value\"}"))
-                .doesNotContain("android.app.appfunctions.AppFunctionException");
+        GenericDocument innerDoc =
+                new GenericDocument.Builder<GenericDocument.Builder<?>>(
+                                "namespace", "id", "setDeviceStateItemParams")
+                        .setPropertyString("key", "key")
+                        .setPropertyString("value", "value")
+                        .build();
+        GenericDocument params =
+                new GenericDocument.Builder<GenericDocument.Builder<?>>(
+                                "namespace", "id", "requestSchema")
+                        .setPropertyDocument("setDeviceStateItemParams", innerDoc)
+                        .build();
+
+        executeAppFunction("setDeviceStateItem", SETTINGS_PACKAGE, params);
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
@@ -502,6 +572,7 @@ public class DeviceStateAppFunctionsTest {
     @Postsubmit(reason = "New test")
     @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     public void testOffsetNumericDeviceStateItemByValue_deviceLocked_throwsException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("offsetNumericDeviceStateItemByValue"));
@@ -513,13 +584,22 @@ public class DeviceStateAppFunctionsTest {
                 .errorOnFail()
                 .await();
 
-        assertThat(
-                        executeAppFunctionWithParams(
-                                "offsetNumericDeviceStateItemByValue",
-                                SETTINGS_PACKAGE,
-                                "\"offsetNumericDeviceStateItemByValueParams\":{\"key\":\"key\","
-                                        + "\"valueAdjustment\":0}"))
-                .contains("android.app.appfunctions.AppFunctionException");
+        GenericDocument params =
+                new GenericDocument.Builder<GenericDocument.Builder<?>>(
+                                "", "", "offsetNumericDeviceStateItemByValueParams")
+                        .setPropertyString("key", "key")
+                        .setPropertyDouble("valueAdjustment", 0.0)
+                        .build();
+
+        ExecutionException e =
+                assertThrows(
+                        ExecutionException.class,
+                        () ->
+                                executeAppFunction(
+                                        "offsetNumericDeviceStateItemByValue",
+                                        SETTINGS_PACKAGE,
+                                        params));
+        assertThat(e.getCause()).isInstanceOf(AppFunctionException.class);
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
@@ -529,6 +609,7 @@ public class DeviceStateAppFunctionsTest {
     @Postsubmit(reason = "New test")
     @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     public void
             testOffsetNumericDeviceStateItemByValue_requestInitiatedWhileUnlockedSet_doesNotThrowException()
                     throws Exception {
@@ -541,18 +622,25 @@ public class DeviceStateAppFunctionsTest {
                 .errorOnFail()
                 .await();
 
-        assertThat(
-                        executeAppFunctionWithParams(
-                                "offsetNumericDeviceStateItemByValue",
-                                SETTINGS_PACKAGE,
-                                "\"offsetNumericDeviceStateItemByValueParams\":{\"key\":\"key\","
-                                        + "\"valueAdjustment\":0,"
-                                        + "\"requestInitiatedWhileUnlocked\":true}"))
-                .doesNotContain("android.app.appfunctions.AppFunctionException");
+        GenericDocument innerDoc =
+                new GenericDocument.Builder<GenericDocument.Builder<?>>(
+                                "namespace", "id", "offsetNumericDeviceStateItemByValueParams")
+                        .setPropertyString("key", "key")
+                        .setPropertyDouble("valueAdjustment", 0.0)
+                        .setPropertyBoolean("requestInitiatedWhileUnlocked", true)
+                        .build();
+        GenericDocument params =
+                new GenericDocument.Builder<GenericDocument.Builder<?>>(
+                                "namespace", "id", "requestSchema")
+                        .setPropertyDocument("offsetNumericDeviceStateItemByValueParams", innerDoc)
+                        .build();
+
+        executeAppFunction("offsetNumericDeviceStateItemByValue", SETTINGS_PACKAGE, params);
     }
 
     @Postsubmit(reason = "New test")
     @Test
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureUnlocked
     @EnsurePasswordNotSet
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
@@ -560,13 +648,19 @@ public class DeviceStateAppFunctionsTest {
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("offsetNumericDeviceStateItemByValue"));
 
-        assertThat(
-                        executeAppFunctionWithParams(
-                                "offsetNumericDeviceStateItemByValue",
-                                SETTINGS_PACKAGE,
-                                "\"offsetNumericDeviceStateItemByValueParams\":{\"key\":\"key\","
-                                        + "\"valueAdjustment\":0}"))
-                .doesNotContain("android.app.appfunctions.AppFunctionException");
+        GenericDocument innerDoc =
+                new GenericDocument.Builder<GenericDocument.Builder<?>>(
+                                "namespace", "id", "offsetNumericDeviceStateItemByValueParams")
+                        .setPropertyString("key", "key")
+                        .setPropertyDouble("valueAdjustment", 0.0)
+                        .build();
+        GenericDocument params =
+                new GenericDocument.Builder<GenericDocument.Builder<?>>(
+                                "namespace", "id", "requestSchema")
+                        .setPropertyDocument("offsetNumericDeviceStateItemByValueParams", innerDoc)
+                        .build();
+
+        executeAppFunction("offsetNumericDeviceStateItemByValue", SETTINGS_PACKAGE, params);
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
@@ -576,6 +670,7 @@ public class DeviceStateAppFunctionsTest {
     @Postsubmit(reason = "New test")
     @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     public void testAdjustNumericDeviceStateItemByPercentage_deviceLocked_throwsException()
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("adjustNumericDeviceStateItemByPercentage"));
@@ -587,13 +682,22 @@ public class DeviceStateAppFunctionsTest {
                 .errorOnFail()
                 .await();
 
-        assertThat(
-                        executeAppFunctionWithParams(
-                                "adjustNumericDeviceStateItemByPercentage",
-                                SETTINGS_PACKAGE,
-                                "\"adjustNumericDeviceStateItemByPercentageParams\":{\"key\":\"key\","
-                                    + "\"percentageAdjustment\":0}"))
-                .contains("android.app.appfunctions.AppFunctionException");
+        GenericDocument params =
+                new GenericDocument.Builder<GenericDocument.Builder<?>>(
+                                "", "", "adjustNumericDeviceStateItemByPercentageParams")
+                        .setPropertyString("key", "key")
+                        .setPropertyLong("percentageAdjustment", 0)
+                        .build();
+
+        ExecutionException e =
+                assertThrows(
+                        ExecutionException.class,
+                        () ->
+                                executeAppFunction(
+                                        "adjustNumericDeviceStateItemByPercentage",
+                                        SETTINGS_PACKAGE,
+                                        params));
+        assertThat(e.getCause()).isInstanceOf(AppFunctionException.class);
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
@@ -603,6 +707,7 @@ public class DeviceStateAppFunctionsTest {
     @Postsubmit(reason = "New test")
     @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     public void
             testAdjustNumericDeviceStateItemByPercentage_requestInitiatedWhileUnlockedSet_doesNotThrowException()
                     throws Exception {
@@ -615,18 +720,26 @@ public class DeviceStateAppFunctionsTest {
                 .errorOnFail()
                 .await();
 
-        assertThat(
-                        executeAppFunctionWithParams(
-                                "adjustNumericDeviceStateItemByPercentage",
-                                SETTINGS_PACKAGE,
-                                "\"adjustNumericDeviceStateItemByPercentageParams\":{\"key\":\"key\","
-                                    + "\"percentageAdjustment\":0"
-                                    + "\"requestInitiatedWhileUnlocked\":true}"))
-                .doesNotContain("android.app.appfunctions.AppFunctionException");
+        GenericDocument innerDoc =
+                new GenericDocument.Builder<GenericDocument.Builder<?>>(
+                                "namespace", "id", "adjustNumericDeviceStateItemByPercentageParams")
+                        .setPropertyString("key", "key")
+                        .setPropertyLong("percentageAdjustment", 0)
+                        .setPropertyBoolean("requestInitiatedWhileUnlocked", true)
+                        .build();
+        GenericDocument params =
+                new GenericDocument.Builder<GenericDocument.Builder<?>>(
+                                "namespace", "id", "requestSchema")
+                        .setPropertyDocument(
+                                "adjustNumericDeviceStateItemByPercentageParams", innerDoc)
+                        .build();
+
+        executeAppFunction("adjustNumericDeviceStateItemByPercentage", SETTINGS_PACKAGE, params);
     }
 
     @Postsubmit(reason = "New test")
     @Test
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureUnlocked
     @EnsurePasswordNotSet
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
@@ -634,33 +747,64 @@ public class DeviceStateAppFunctionsTest {
             throws Exception {
         assumeTrue(deviceSupportsAppFunction("adjustNumericDeviceStateItemByPercentage"));
 
-        assertThat(
-                        executeAppFunctionWithParams(
-                                "adjustNumericDeviceStateItemByPercentage",
-                                SETTINGS_PACKAGE,
-                                "\"adjustNumericDeviceStateItemByPercentageParams\":{\"key\":\"key\","
-                                    + "\"percentageAdjustment\":0}"))
-                .doesNotContain("android.app.appfunctions.AppFunctionException");
+        GenericDocument innerDoc =
+                new GenericDocument.Builder<GenericDocument.Builder<?>>(
+                                "namespace", "id", "adjustNumericDeviceStateItemByPercentageParams")
+                        .setPropertyString("key", "key")
+                        .setPropertyLong("percentageAdjustment", 0)
+                        .build();
+        GenericDocument params =
+                new GenericDocument.Builder<GenericDocument.Builder<?>>(
+                                "namespace", "id", "requestSchema")
+                        .setPropertyDocument(
+                                "adjustNumericDeviceStateItemByPercentageParams", innerDoc)
+                        .build();
+
+        executeAppFunction("adjustNumericDeviceStateItemByPercentage", SETTINGS_PACKAGE, params);
     }
 
-    private String executeAppFunction(String functionName, String packageName) throws AdbException {
-        return executeAppFunctionWithParams(functionName, packageName, /* params= */ "");
+    private ExecuteAppFunctionResponse executeAppFunction(
+            String functionName, String packageName, GenericDocument params)
+            throws InterruptedException, ExecutionException, TimeoutException {
+        AppFunctionManager appFunctionManager =
+                TestApis.context().instrumentedContext().getSystemService(AppFunctionManager.class);
+        ExecuteAppFunctionRequest.Builder requestBuilder =
+                new ExecuteAppFunctionRequest.Builder(packageName, functionName);
+        if (params != null) {
+            requestBuilder.setParameters(params);
+        }
+        ExecuteAppFunctionRequest request = requestBuilder.build();
+
+        CompletableFuture<ExecuteAppFunctionResponse> future = new CompletableFuture<>();
+        appFunctionManager.executeAppFunction(
+                request,
+                TestApis.context().instrumentedContext().getMainExecutor(),
+                new CancellationSignal(),
+                new OutcomeReceiver<ExecuteAppFunctionResponse, AppFunctionException>() {
+                    @Override
+                    public void onResult(ExecuteAppFunctionResponse result) {
+                        future.complete(result);
+                    }
+
+                    @Override
+                    public void onError(AppFunctionException error) {
+                        future.completeExceptionally(error);
+                    }
+                });
+        return future.get(EXECUTION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
     }
 
-    private String executeAppFunctionWithParams(
-            String functionName, String packageName, String params) throws AdbException {
-        String command =
-                "cmd app_function execute-app-function "
-                        + "--package "
-                        + packageName
-                        + " --function "
-                        + functionName
-                        + " --parameters {"
-                        + params
-                        + "}";
-        return ShellCommand.builder(command).execute().trim();
+    private GenericDocument buildInitiatedWhileUnlockedParams(String schemaType) {
+        GenericDocument innerDoc =
+                new GenericDocument.Builder<GenericDocument.Builder<?>>(
+                                "namespace", "id", schemaType)
+                        .setPropertyBoolean("requestInitiatedWhileUnlocked", true)
+                        .build();
+        return new GenericDocument.Builder<GenericDocument.Builder<?>>(
+                        "namespace", "id", "requestSchema")
+                .setPropertyDocument(schemaType, innerDoc)
+                .build();
     }
-
 
     private boolean deviceSupportsAppFunction(String functionName) throws AdbException {
         String command = "dumpsys app_function";

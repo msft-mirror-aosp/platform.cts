@@ -244,6 +244,7 @@
     <option name="compatibility:exclude-filter" value="CtsPermissionTestCasesSdk28" />
     <option name="compatibility:exclude-filter" value="CtsLocationTimeZoneManagerHostTest" />
     <option name="compatibility:exclude-filter" value="CtsPackageWatchdogTestCases" />
+    <option name="compatibility:exclude-filter" value="NotificationManagerZenTest" />
 
 
 
@@ -554,4 +555,17 @@
 
     <!-- b/444601505 -->
     <option name="compatibility:exclude-filter" value="CtsNetTestCases android.net.cts.NetworkAgentTest#testSetAcceptUnvalidated" />
+
+    <!-- b/432196139 -->
+    <option name="compatibility:exclude-filter" value="CtsNetTestCases android.net.NetworkTest#testParcelingRoundTripFromB" />
+    <option name="compatibility:exclude-filter" value="CtsNetTestCases android.net.NetworkTest#testGetNonPrivateDnsBypassingCopy" />
+    <option name="compatibility:exclude-filter" value="CtsNetTestCases android.net.netstats.NetworkTemplateTest#testBuilderTransportTypes" />
+    <option name="compatibility:exclude-filter" value="CtsNetTestCases android.net.netstats.NetworkTemplateTest#testValidateTransportTypesNoTransportsSetSuccess" />
+    <option name="compatibility:exclude-filter" value="CtsNetTestCases android.net.netstats.NetworkTemplateTest#testValidateTransportTypesDeducedTransportPlusCompatibleSuccess" />
+    <option name="compatibility:exclude-filter" value="CtsNetTestCases android.net.netstats.NetworkTemplateTest#testBuilderMatchRules" />
+    <option name="compatibility:exclude-filter" value="CtsNetTestCases android.net.netstats.NetworkTemplateTest#testValidateTransportTypesDeducedTransportMissingThrows" />
+    <option name="compatibility:exclude-filter" value="CtsNetTestCases android.net.netstats.NetworkTemplateTest#testBuilderWifiNetworkKeys" />
+    <option name="compatibility:exclude-filter" value="CtsRoleTestCases" />
+    <option name="compatibility:exclude-filter" value="CtsTetheringTest" />
+    <option name="compatibility:exclude-filter" value="CtsTetheringTest[run-on-secondary-user]" />
 </configuration>

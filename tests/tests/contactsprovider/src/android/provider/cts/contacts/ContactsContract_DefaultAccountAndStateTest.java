@@ -16,13 +16,10 @@
 
 package android.provider.cts.contacts;
 
-import static android.provider.Flags.FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 import android.accounts.Account;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.ContactsContract.RawContacts.DefaultAccount.DefaultAccountAndState;
@@ -36,7 +33,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 
-@RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
 @RunWith(AndroidJUnit4.class)
 @MediumTest
 public class ContactsContract_DefaultAccountAndStateTest {
@@ -48,7 +44,6 @@ public class ContactsContract_DefaultAccountAndStateTest {
             StaticAccountAuthenticator.TYPE);
 
     @Test
-    @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     public void testDefaultContactsAccountClass_cloud() {
         DefaultAccountAndState defaultContactsAccount = DefaultAccountAndState.ofCloud(ACCT_1);
         assertEquals(DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_CLOUD,
@@ -58,7 +53,6 @@ public class ContactsContract_DefaultAccountAndStateTest {
 
 
     @Test
-    @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     public void testDefaultContactsAccountClass_sim() {
         DefaultAccountAndState defaultContactsAccount = DefaultAccountAndState.ofSim(ACCT_1);
         assertEquals(DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_SIM,
@@ -67,7 +61,6 @@ public class ContactsContract_DefaultAccountAndStateTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     public void testDefaultContactsAccountClass_local() {
         DefaultAccountAndState defaultContactsAccount = DefaultAccountAndState.ofLocal();
         assertEquals(DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_LOCAL,
@@ -76,7 +69,6 @@ public class ContactsContract_DefaultAccountAndStateTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     public void testDefaultContactsAccountClass_notSet() {
         DefaultAccountAndState defaultContactsAccount = DefaultAccountAndState.ofNotSet();
         assertEquals(DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_NOT_SET,

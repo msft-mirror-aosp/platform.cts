@@ -32,6 +32,7 @@
     <string name="retry_button_text">Retry</string>
     <string name="finish_button_text">Finish</string>
     <string name="fail_and_next_button_text">Fail and Next</string>
+    <string name="skip_button_text">Skip</string>
     <string name="yes_string">Yes</string>
     <string name="no_string">No</string>
     <string name="search_label">TestListActivity</string>
@@ -67,6 +68,7 @@
     <string name="test_category_car">Car</string>
     <string name="test_category_device_admin">Device Administration</string>
     <string name="test_category_hardware">Hardware</string>
+    <string name="test_category_media">Media</string>
     <string name="test_category_networking">Networking</string>
     <string name="test_category_sensors">Sensors</string>
     <string name="test_category_location">Location</string>
@@ -1865,6 +1867,21 @@
     </string>
     <string name="camera_performance_spinner_text">Running CTS performance test case...</string>
     <string name="camera_performance_result_title">Test Result</string>
+
+    <!-- Strings for the Secure Playback test activity -->
+    <string name="secure_playback_test">Secure Playback Test</string>
+    <string name="secure_playback_test_info">
+        This test verifies that the secure playback feature works correctly. If the pass button is not enabled, please follow the instructions below.
+        \n\nInstructions for Test Run:
+        \n1. Connect your Android device to a computer with adb installed via a USB cable.
+        \n\n2. Make sure your device is connected to the internet.
+        \n\n3. Follow the instructions in the README file found in the SecurePlaybackTestApp
+        directory (cts/apps/SecurePlaybackTestApp/README.md).
+        \n\n4. Make sure that patctl is in PATH.
+        \n\n5. Run the test script.
+        (cts/apps/SecurePlaybackTestApp; source build/envsetup.sh; python3 secure_playback_test.py -c config.yml).
+        \n\n6. After the test is complete, the host-side script will print out the results and automatically complete the test if the results are a PASS.
+     </string>
 
     <!-- Strings for StreamingVideoActivity -->
     <string name="streaming_video">Streaming Video Quality Verifier</string>
@@ -7832,6 +7849,20 @@ You should be prompted to select credentials; choose the ones you just installed
         \n2. Press \"Send notification\". Verify the notification popup includes the text \"Sensitive Text\".
         \n3. End local recording and verify the recording output does not redact any content".
         \n4. If local screen recording is has content, click \"Pass\", otherwise (if blank) click \"Fail\".
+    </string>
+    <string name="notif_hiding_shade_local_screen_recorder_test_instructions_low_ram">
+        1. Start \"Screen record\", from Quick Settings then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
+        \n2. Press \"Send notification\". Verify the notification popup includes the text \"Sensitive Text\".
+        \n3. Open the notification shade, and verify there is a notification that includes the text \"Sensitive Text\".
+        \n4. If there is such a notification, click \"Pass\", otherwise click \"Fail\".
+        \n\nIf the device does not have a local screen recorder available in quick settings or on device, this test may be skipped.
+    </string>
+    <string name="notif_hiding_app_local_screen_recorder_test_instructions_low_ram">
+        1. Start \"Screen record\", from Quick Settings then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
+        \n2. Press \"Send notification\". Verify the notification popup includes the text \"Sensitive Text\".
+        \n3. End local recording and verify the recording output does not redact any content".
+        \n4. If local screen recording is has content, click \"Pass\", otherwise (if blank) click \"Fail\".
+        \n\nIf the device does not have a local screen recorder available in quick settings or on device, this test may be skipped.
     </string>
     <string name="notif_hiding_shade_disable_protections_test_instructions">
         1. Go to the "Disable screen share protections" developer setting. It is often located under \"Developer options\".

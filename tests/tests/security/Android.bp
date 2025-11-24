@@ -82,11 +82,14 @@ android_test {
         "src/android/security/cts/activity/ISecureRandomService.aidl",
         "aidl/android/security/cts/IBitmapService.aidl",
         "aidl/android/security/cts/IIsolatedService.aidl",
-        "aidl/android/security/cts/IPccService.aidl",
         "aidl/android/security/cts/ICertCheckService.aidl",
         "aidl/android/security/cts/CVE_2021_0327/IBadProvider.aidl",
         "testdata/dynamicpermissiontestattackerapp/src/**/*.aidl",
         ":advanced-protection-config",
+    ],
+    exclude_srcs: [
+        "src/android/security/cts/pcc/PccProcessSecurityTest.java",
+        "src/android/security/cts/pcc/PccService.java",
     ],
     //sdk_version: "current",
     platform_apis: true,
@@ -119,6 +122,7 @@ android_test {
         ":TestIntrusionDetectionApp",
         ":CtsMultiuserCPInitial",
         ":CtsMultiuserCPOther",
+        ":LargeInputMethodTestApp",
     ],
     assets: [":all_apex_certs{.der}"],
     use_embedded_native_libs: false,
@@ -374,4 +378,42 @@ android_test {
     ],
     test_config: "AndroidMultiUserTest.xml",
     manifest: "AndroidMultiUserManifest.xml",
+}
+
+android_test {
+    name: "CtsPccSecurityTestCases",
+    team: "trendy_team_private_compute_core",
+
+    defaults: ["cts_defaults"],
+
+    static_libs: [
+        "android.app.privatecompute.flags-aconfig-java",
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+        "androidx.test.runner",
+        "android-common",
+        "flag-junit",
+        "guava",
+        "platform-test-annotations",
+        "truth",
+    ],
+    libs: [
+        "android.test.runner.stubs.system",
+        "org.apache.http.legacy.stubs.system",
+        "android.test.base.stubs.system",
+    ],
+    sdk_version: "test_current",
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+    per_testcase_directory: true,
+    srcs: [
+        "src/android/security/cts/pcc/PccProcessSecurityTest.java",
+        "src/android/security/cts/pcc/PccService.java",
+        "aidl/android/security/cts/pcc/IPccService.aidl",
+    ],
+    test_config: "PccProcessSecurityTest.xml",
+    manifest: "AndroidManifestPcc.xml",
 }

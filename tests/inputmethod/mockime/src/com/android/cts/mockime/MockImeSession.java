@@ -530,7 +530,7 @@ public class MockImeSession implements AutoCloseable {
     }
 
     @Nullable
-    String retrieveExitReasonIfMockImeCrashed() {
+    public String retrieveExitReasonIfMockImeCrashed() {
         final ApplicationExitInfo lastExitReason = findLatestMockImeSessionExitInfo();
         if (lastExitReason == null) {
             return null;
@@ -2021,5 +2021,11 @@ public class MockImeSession implements AutoCloseable {
     @NonNull
     public ImeCommand callGetImeCaptionBarHeight() {
         return callCommandInternal("getImeCaptionBarHeight", new Bundle());
+    }
+
+    /** Calls {@link android.os.Process#myPid} on MockIme. */
+    @NonNull
+    public ImeCommand callGetPid() {
+        return callCommandInternal("getPid", new Bundle());
     }
 }

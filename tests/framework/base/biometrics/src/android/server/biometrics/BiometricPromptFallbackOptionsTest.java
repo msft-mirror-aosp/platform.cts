@@ -165,12 +165,8 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
                 mDevice.waitForIdle();
 
                 // Wait for transition between pages
-                final BySelector credentialSelector = By.res(FALLBACK_PAGE_CREDENTIAL_BUTTON);
-                UiObject2 credentialButton =
-                        mDevice.wait(Until.findObject(credentialSelector), VIEW_WAIT_TIME_MS);
-
+                UiObject2 credentialButton = waitForView(FALLBACK_PAGE_CREDENTIAL_BUTTON);
                 assertThat(credentialButton).isNotNull();
-                assertThat(credentialButton.getVisibleBounds()).isNotNull();
 
                 // Click credential button
                 credentialButton.click();

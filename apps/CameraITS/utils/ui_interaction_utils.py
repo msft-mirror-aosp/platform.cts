@@ -161,6 +161,7 @@ TAKE_PHOTO_CMD = 'input keyevent KEYCODE_CAMERA'
 WAIT_INTERVAL_FIVE_SECONDS = datetime.timedelta(seconds=5)
 WATCH_WAIT_TIME_SECONDS = 2
 ZOOM_RATIO_STR = 'zoomRatio'
+MORE_BUTTON_TXT = 'More'
 
 
 @dataclasses.dataclass(frozen=True)
@@ -749,6 +750,9 @@ def launch_and_take_capture(dut, pkg_name, camera_facing, log_path,
     if dut.ui(text=OK_BUTTON_TXT).wait.exists(
         timeout=WAIT_INTERVAL_FIVE_SECONDS):
       dut.ui(text=OK_BUTTON_TXT).click.wait()
+    if dut.ui(text=MORE_BUTTON_TXT).wait.exists(
+        timeout=WAIT_INTERVAL_FIVE_SECONDS):
+      dut.ui(text=MORE_BUTTON_TXT).click.wait()
     if dut.ui(text=DONE_BUTTON_TXT).wait.exists(
         timeout=WAIT_INTERVAL_FIVE_SECONDS):
       dut.ui(text=DONE_BUTTON_TXT).click.wait()

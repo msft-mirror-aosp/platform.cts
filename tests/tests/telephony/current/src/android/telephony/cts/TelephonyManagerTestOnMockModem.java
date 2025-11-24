@@ -513,6 +513,10 @@ public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
         // Insert a SIM
         Log.d(TAG, "Start to insert a SIM");
         sMockModemManager.insertSimCard(slotId, MOCK_SIM_PROFILE_ID_TWN_FET);
+
+        Log.d(TAG, "Init service as OOS");
+        sMockModemManager.changeNetworkService(slotId, MOCK_SIM_PROFILE_ID_TWN_FET, false);
+
         TimeUnit.SECONDS.sleep(1);
 
         // Register service state change callback

@@ -129,3 +129,14 @@ android_test {
     min_sdk_version: "29",
     sdk_version: "system_current",
 }
+
+filegroup {
+    name: "harrier-host-srcs",
+    srcs: [
+        "common/src/main/java/com/android/bedstead/harrier/annotations/TestOrder.kt",
+        "common/src/main/java/com/android/bedstead/harrier/annotations/meta/RequiresBedsteadJUnit4.java",
+        "common/src/main/java/com/android/bedstead/harrier/annotations/AnnotationCostRunPrecedence.java",
+        "src/main/java/com/android/bedstead/harrier/FrameworkMethodSorter.java",
+        "src/main/java/com/android/bedstead/harrier/BedsteadServiceLocator.kt",
+    ],
+}

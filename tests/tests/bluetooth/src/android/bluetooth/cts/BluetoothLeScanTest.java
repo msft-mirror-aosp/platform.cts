@@ -136,7 +136,7 @@ public class BluetoothLeScanTest {
                 android.Manifest.permission.BLUETOOTH_CONNECT,
                 android.Manifest.permission.BLUETOOTH_SCAN);
         List<ScanFilter> filters = new ArrayList<>();
-        ScanFilter filter = createScanFilter();
+        ScanFilter filter = scanToCreateFilterForStrongestNearbyBeacon();
         if (filter == null) {
             Log.d(TAG, "no appropriate filter can be set");
             return;
@@ -144,8 +144,7 @@ public class BluetoothLeScanTest {
         filters.add(filter);
 
         BleScanCallback filterLeScanCallback = new BleScanCallback();
-        ScanSettings settings =
-                new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build();
+        var settings = createScanSettings(ScanSettings.SCAN_MODE_LOW_LATENCY);
         mScanner.startScan(filters, settings, filterLeScanCallback);
         TestUtils.sleep(SCAN_DURATION_MILLIS);
         mScanner.stopScan(filterLeScanCallback);
@@ -183,47 +182,12 @@ public class BluetoothLeScanTest {
                 android.Manifest.permission.BLUETOOTH_SCAN,
                 android.Manifest.permission.UPDATE_DEVICE_STATS);
         BleScanCallback filterLeScanCallback = new BleScanCallback();
-        ScanSettings settings =
-                new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build();
+        var settings = createScanSettings(ScanSettings.SCAN_MODE_LOW_LATENCY);
         mScanner.startScanFromSource(null, settings, null, filterLeScanCallback);
         TestUtils.sleep(SCAN_DURATION_MILLIS);
         mScanner.stopScan(filterLeScanCallback);
         TestUtils.sleep(SCAN_STOP_TIMEOUT);
         assertThat(filterLeScanCallback.getScanResults()).isNotEmpty();
-    }
-
-    // Create a scan filter based on the nearby beacon with highest signal strength.
-    private ScanFilter createScanFilter() {
-        // Get a list of nearby beacons.
-        List<ScanResult> scanResults = new ArrayList<>(scan());
-        assertThat(scanResults).isNotEmpty();
-        // Find the beacon with strongest signal strength, which is the target device for filter
-        // scan.
-        Collections.sort(scanResults, new RssiComparator());
-        ScanResult result = scanResults.get(0);
-        ScanRecord record = result.getScanRecord();
-        if (record == null) {
-            return null;
-        }
-        Map<ParcelUuid, byte[]> serviceData = record.getServiceData();
-        if (serviceData != null && !serviceData.isEmpty()) {
-            ParcelUuid uuid = serviceData.keySet().iterator().next();
-            return new ScanFilter.Builder()
-                    .setServiceData(uuid, new byte[] {0}, new byte[] {0})
-                    .build();
-        }
-        SparseArray<byte[]> manufacturerSpecificData = record.getManufacturerSpecificData();
-        if (manufacturerSpecificData != null && manufacturerSpecificData.size() > 0) {
-            return new ScanFilter.Builder()
-                    .setManufacturerData(
-                            manufacturerSpecificData.keyAt(0), new byte[] {0}, new byte[] {0})
-                    .build();
-        }
-        List<ParcelUuid> serviceUuids = record.getServiceUuids();
-        if (serviceUuids != null && !serviceUuids.isEmpty()) {
-            return new ScanFilter.Builder().setServiceUuid(serviceUuids.get(0)).build();
-        }
-        return null;
     }
 
     /** Test of opportunistic BLE scans. */
@@ -234,10 +198,7 @@ public class BluetoothLeScanTest {
     public void opportunisticScan() {
         mUIAutomation.adoptShellPermissionIdentity(android.Manifest.permission.BLUETOOTH_SCAN);
 
-        ScanSettings opportunisticScanSettings =
-                new ScanSettings.Builder()
-                        .setScanMode(ScanSettings.SCAN_MODE_OPPORTUNISTIC)
-                        .build();
+        var opportunisticScanSettings = createScanSettings(ScanSettings.SCAN_MODE_OPPORTUNISTIC);
         BleScanCallback emptyScanCallback = new BleScanCallback();
         assertThat(emptyScanCallback.getScanResults()).isEmpty();
 
@@ -247,10 +208,9 @@ public class BluetoothLeScanTest {
         assertThat(emptyScanCallback.getScanResults()).isEmpty();
 
         BleScanCallback regularScanCallback = new BleScanCallback();
-        ScanSettings regularScanSettings =
-                new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build();
+        var regularScanSettings = createScanSettings(ScanSettings.SCAN_MODE_LOW_LATENCY);
         List<ScanFilter> filters = new ArrayList<>();
-        ScanFilter filter = createScanFilter();
+        ScanFilter filter = scanToCreateFilterForStrongestNearbyBeacon();
         if (filter != null) {
             filters.add(filter);
         } else {
@@ -281,11 +241,9 @@ public class BluetoothLeScanTest {
                 android.Manifest.permission.BLUETOOTH_CONNECT,
                 android.Manifest.permission.BLUETOOTH_SCAN);
 
-        ScanSettings batchScanSettings =
-                new ScanSettings.Builder()
-                        .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-                        .setReportDelay(BATCH_SCAN_REPORT_DELAY_MILLIS)
-                        .build();
+        var batchScanSettings =
+                createScanSettings(
+                        ScanSettings.SCAN_MODE_LOW_LATENCY, BATCH_SCAN_REPORT_DELAY_MILLIS);
         BleScanCallback batchScanCallback = new BleScanCallback();
         mScanner.startScan(Collections.emptyList(), batchScanSettings, batchScanCallback);
         TestUtils.sleep(SCAN_DURATION_MILLIS);
@@ -336,12 +294,8 @@ public class BluetoothLeScanTest {
                 android.Manifest.permission.BLUETOOTH_CONNECT,
                 android.Manifest.permission.BLUETOOTH_SCAN);
 
-        ScanSettings batchScanSettings =
-                new ScanSettings.Builder()
-                        .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-                        .setReportDelay(0)
-                        .build();
-        ScanFilter filter = createScanFilter();
+        var batchScanSettings = createScanSettings(ScanSettings.SCAN_MODE_LOW_LATENCY, 0);
+        ScanFilter filter = scanToCreateFilterForStrongestNearbyBeacon();
         ArrayList<ScanFilter> filters = null;
         if (filter != null) {
             filters = new ArrayList<>();
@@ -361,6 +315,16 @@ public class BluetoothLeScanTest {
         assertThat(gotResults).isTrue();
     }
 
+    // Perform a BLE scan to get results of nearby BLE devices.
+    private Set<ScanResult> scan() {
+        BleScanCallback regularLeScanCallback = new BleScanCallback();
+        mScanner.startScan(regularLeScanCallback);
+        TestUtils.sleep(SCAN_DURATION_MILLIS);
+        mScanner.stopScan(regularLeScanCallback);
+        TestUtils.sleep(SCAN_STOP_TIMEOUT);
+        return regularLeScanCallback.getScanResults();
+    }
+
     // Verify timestamp of all scan results are within [scanStartMillis, scanEndMillis].
     private void verifyTimestamp(
             Collection<ScanResult> results, long scanStartMillis, long scanEndMillis) {
@@ -371,14 +335,46 @@ public class BluetoothLeScanTest {
         }
     }
 
-    // Perform a BLE scan to get results of nearby BLE devices.
-    private Set<ScanResult> scan() {
-        BleScanCallback regularLeScanCallback = new BleScanCallback();
-        mScanner.startScan(regularLeScanCallback);
-        TestUtils.sleep(SCAN_DURATION_MILLIS);
-        mScanner.stopScan(regularLeScanCallback);
-        TestUtils.sleep(SCAN_STOP_TIMEOUT);
-        return regularLeScanCallback.getScanResults();
+    private ScanSettings createScanSettings(int scanMode) {
+        return createScanSettings(scanMode, 0); // 0 is the default report delay in ScanSettings
+    }
+
+    private ScanSettings createScanSettings(int scanMode, long reportDelay) {
+        return new ScanSettings.Builder().setScanMode(scanMode).setReportDelay(reportDelay).build();
+    }
+
+    // Create a scan filter based on the nearby beacon with highest signal strength.
+    private ScanFilter scanToCreateFilterForStrongestNearbyBeacon() {
+        // Get a list of nearby beacons.
+        List<ScanResult> scanResults = new ArrayList<>(scan());
+        assertThat(scanResults).isNotEmpty();
+        // Find the beacon with strongest signal strength, which is the target device for filter
+        // scan.
+        Collections.sort(scanResults, new RssiComparator());
+        ScanResult result = scanResults.get(0);
+        ScanRecord record = result.getScanRecord();
+        if (record == null) {
+            return null;
+        }
+        Map<ParcelUuid, byte[]> serviceData = record.getServiceData();
+        if (serviceData != null && !serviceData.isEmpty()) {
+            ParcelUuid uuid = serviceData.keySet().iterator().next();
+            return new ScanFilter.Builder()
+                    .setServiceData(uuid, new byte[] {0}, new byte[] {0})
+                    .build();
+        }
+        SparseArray<byte[]> manufacturerSpecificData = record.getManufacturerSpecificData();
+        if (manufacturerSpecificData != null && manufacturerSpecificData.size() > 0) {
+            return new ScanFilter.Builder()
+                    .setManufacturerData(
+                            manufacturerSpecificData.keyAt(0), new byte[] {0}, new byte[] {0})
+                    .build();
+        }
+        List<ParcelUuid> serviceUuids = record.getServiceUuids();
+        if (serviceUuids != null && !serviceUuids.isEmpty()) {
+            return new ScanFilter.Builder().setServiceUuid(serviceUuids.get(0)).build();
+        }
+        return null;
     }
 
     private boolean isBleBatchScanSupported() {

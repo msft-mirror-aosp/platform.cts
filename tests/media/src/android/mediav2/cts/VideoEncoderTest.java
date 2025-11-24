@@ -24,6 +24,7 @@ import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_HW;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_HW_RECOMMENDED;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_SHOULD;
+import static android.mediav2.common.cts.MuxerUtils.getMuxerFormatsListForMediaType;
 
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
@@ -31,7 +32,6 @@ import static org.junit.Assert.assertNotNull;
 
 import android.media.MediaFormat;
 import android.mediav2.common.cts.CodecEncoderTestBase;
-import android.mediav2.common.cts.CodecTestBase;
 import android.mediav2.common.cts.EncoderConfigParams;
 import android.mediav2.common.cts.RawResource;
 
@@ -283,10 +283,7 @@ public class VideoEncoderTest extends CodecEncoderTestBase {
         assertNotNull("no raw resource found for testing config : " + mActiveEncCfg + mTestConfig
                 + mTestEnv, res);
 
-        boolean muxOutput = true;
-        if (mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_AV1) && CodecTestBase.IS_BEFORE_U) {
-            muxOutput = false;
-        }
+        boolean muxOutput = getMuxerFormatsListForMediaType(mMediaType).length > 0;
         encodeToMemory(mCodecName, mEncCfgParams[0], res, mFrameLimit, false, muxOutput);
 
         // validate output

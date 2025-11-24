@@ -49,32 +49,15 @@ class TaskContinuityManagerEnforcesPermissionsTest : CoreTestBase() {
     @ApiTest(
         apis =
             [
-                "android.companion.datatransfer.continuity.TaskContinuityManager#enableHandoffForDevice"
+                "android.companion.datatransfer.continuity.TaskContinuityManager#setHandoffForDeviceEnabled"
             ]
     )
     @Test
-    fun testEnableHandoffForDevice_failsWithoutPermission() {
+    fun testSetHandoffForDeviceEnabled_failsWithoutPermission() {
         val taskContinuityManager = context.getSystemService(TaskContinuityManager::class.java)!!
         assertFailsWith(SecurityException::class) {
-            taskContinuityManager.enableHandoffForDevice(true)
+            taskContinuityManager.setHandoffForDeviceEnabled(true)
         }
-    }
-
-    @ApiTest(
-        apis =
-            [
-                "android.companion.datatransfer.continuity.TaskContinuityManager#registerHandoffFeatureStateListener"
-            ]
-    )
-    @Test
-    fun testRegisterHandoffFeatureStateListener_failsWithoutPermission() {
-        val listener = RecordingHandoffFeatureStateListener()
-        assertFailsWith(SecurityException::class) {
-            val taskContinuityManager =
-                context.getSystemService(TaskContinuityManager::class.java)!!
-            taskContinuityManager.registerHandoffFeatureStateListener(SIMPLE_EXECUTOR, listener)
-        }
-        assertEquals(listener.invocations.size, 0)
     }
 
     @ApiTest(

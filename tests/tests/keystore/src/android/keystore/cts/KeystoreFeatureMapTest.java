@@ -56,7 +56,7 @@ public class KeystoreFeatureMapTest {
                         "HARDWARE_TYPE",
                         "IDENTITY_CREDENTIAL_KEY",
                         "MAX_BOOT_LEVEL",
-                        "ML_DSA_VARIANT", // TODO(b/395069628): remove this exception when v5 frozen
+                        "ML_DSA_VARIANT", // TODO(b/380020528): remove this exception when v5 frozen
                         "OS_PATCHLEVEL",
                         "OS_VERSION",
                         "ROLLBACK_RESISTANCE",

@@ -28,7 +28,8 @@ import com.android.bedstead.permissions.annotations.PermissionTest
 class PermissionsParameterizedTestGenerator : ParameterizedTestGenerator {
 
     override fun generateReplacementAnnotations(
-        annotation: Annotation
+        annotation: Annotation,
+        classAnnotations: List<Annotation>,
     ): List<DynamicParameterizedAnnotation> {
         if (annotation is PermissionTest) {
             return generatePermissionAnnotations(annotation)

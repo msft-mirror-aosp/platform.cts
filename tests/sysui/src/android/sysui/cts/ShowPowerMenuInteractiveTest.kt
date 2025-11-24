@@ -18,8 +18,8 @@ package android.sysui.cts
 
 import android.Manifest
 import android.accessibilityservice.AccessibilityService
-import android.app.ShowPowerMenuCallback
 import android.app.StatusBarManager
+import android.os.OutcomeReceiver
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -70,10 +70,13 @@ class ShowPowerMenuInteractiveTest {
         val statusBarManager = InstrumentationRegistry.getInstrumentation().context
             .getSystemService(StatusBarManager::class.java)
         assumeTrue(statusBarManager != null)
-        val callback = Callback(latch)
-        statusBarManager.showPowerMenu(Runnable::run, callback)
+        val receiver = Receiver(latch)
+        statusBarManager.showPowerMenu(Runnable::run, receiver)
         assertTrue(latch.await(5, TimeUnit.SECONDS))
-        assertEquals(CallbackStatus.POWER_MENU_TRUE, callback.callbackStatus)
+        assertEquals(
+            CallbackResult.OnResult(StatusBarManager.SHOW_POWER_MENU_RESULT_SHOWING),
+            receiver.callbackResult
+        )
         assertTrue(Step.execute(IsPowerMenuVisible::class.java))
     }
 
@@ -87,13 +90,19 @@ class ShowPowerMenuInteractiveTest {
         val statusBarManager = InstrumentationRegistry.getInstrumentation().context
             .getSystemService(StatusBarManager::class.java)
         assumeTrue(statusBarManager != null)
-        val callback1 = Callback(latch)
-        val callback2 = Callback(latch)
-        statusBarManager.showPowerMenu(Runnable::run, callback1)
-        statusBarManager.showPowerMenu(Runnable::run, callback2)
+        val receiver1 = Receiver(latch)
+        val receiver2 = Receiver(latch)
+        statusBarManager.showPowerMenu(Runnable::run, receiver1)
+        statusBarManager.showPowerMenu(Runnable::run, receiver2)
         assertTrue(latch.await(5, TimeUnit.SECONDS))
-        assertEquals(CallbackStatus.POWER_MENU_TRUE, callback1.callbackStatus)
-        assertEquals(CallbackStatus.POWER_MENU_TRUE, callback2.callbackStatus)
+        assertEquals(
+            CallbackResult.OnResult(StatusBarManager.SHOW_POWER_MENU_RESULT_SHOWING),
+            receiver1.callbackResult
+        )
+        assertEquals(
+            CallbackResult.OnResult(StatusBarManager.SHOW_POWER_MENU_RESULT_SHOWING),
+            receiver2.callbackResult
+        )
         assertTrue(Step.execute(IsPowerMenuVisible::class.java))
     }
 
@@ -109,49 +118,46 @@ class ShowPowerMenuInteractiveTest {
         // Show power menu. We know that this should succeed.
 
         val latch1 = CountDownLatch(1)
-        val callback1 = Callback(latch1)
-        statusBarManager.showPowerMenu(Runnable::run, callback1)
+        val receiver1 = Receiver(latch1)
+        statusBarManager.showPowerMenu(Runnable::run, receiver1)
         assertTrue(latch1.await(5L, TimeUnit.SECONDS))
-        assertEquals(CallbackStatus.POWER_MENU_TRUE, callback1.callbackStatus)
+        assertEquals(
+            CallbackResult.OnResult(StatusBarManager.SHOW_POWER_MENU_RESULT_SHOWING),
+            receiver1.callbackResult
+        )
 
         // Now try to show again
         val latch2 = CountDownLatch(1)
-        val callback2 = Callback(latch2)
+        val receiver2 = Receiver(latch2)
 
-        statusBarManager.showPowerMenu(Runnable::run, callback2)
+        statusBarManager.showPowerMenu(Runnable::run, receiver2)
         assertTrue(latch2.await(5, TimeUnit.SECONDS))
-        assertEquals(CallbackStatus.POWER_MENU_TRUE, callback2.callbackStatus)
+        assertEquals(
+            CallbackResult.OnResult(StatusBarManager.SHOW_POWER_MENU_RESULT_SHOWING),
+            receiver2.callbackResult
+        )
         assertTrue(Step.execute(IsPowerMenuVisible::class.java))
     }
 
-    private class Callback(private val latch: CountDownLatch) : ShowPowerMenuCallback {
-        var callbackStatus: CallbackStatus = CallbackStatus.NOT_CALLED
+    private class Receiver(private val latch: CountDownLatch) : OutcomeReceiver<Int, Throwable> {
+        var callbackResult: CallbackResult = CallbackResult.NotCalled
             private set
 
-        override fun onPowerMenuShown(showing: Boolean) {
-            callbackStatus = if (showing) {
-                CallbackStatus.POWER_MENU_TRUE
-            } else {
-                CallbackStatus.POWER_MENU_FALSE
-            }
+        override fun onResult(result: Int) {
+            callbackResult = CallbackResult.OnResult(result)
             latch.countDown()
         }
 
-        override fun onError(error: Int) {
-            callbackStatus = when (error) {
-                ShowPowerMenuCallback.ERROR_TIMEOUT -> CallbackStatus.ERROR_TIMEOUT
-                else -> CallbackStatus.ERROR_UNKNOWN
-            }
+        override fun onError(error: Throwable) {
+            callbackResult = CallbackResult.OnError(error)
             latch.countDown()
         }
     }
 
-    private enum class CallbackStatus {
-        NOT_CALLED,
-        POWER_MENU_TRUE,
-        POWER_MENU_FALSE,
-        ERROR_TIMEOUT,
-        ERROR_UNKNOWN,
+    private sealed interface CallbackResult {
+        data class OnResult(val result: Int) : CallbackResult
+        data class OnError(val error: Throwable) : CallbackResult
+        data object NotCalled : CallbackResult
     }
 
     @After

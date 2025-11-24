@@ -562,7 +562,7 @@ public class AccessibilityNodeInfoTest {
         AccessibilityNodeInfo.MathInfo mathInfo =
                 new AccessibilityNodeInfo.MathInfo(
                         AccessibilityNodeInfo.MathInfo.MATH_TAG_FRACTION);
-        mathInfo.addAttribute(AccessibilityNodeInfo.MathInfo.MATH_ATTRIBUTE_INTENT, "division");
+        mathInfo.putAttribute(AccessibilityNodeInfo.MathInfo.MATH_ATTRIBUTE_INTENT, "division");
         assertThat(mathInfo.getTag()).isEqualTo(AccessibilityNodeInfo.MathInfo.MATH_TAG_FRACTION);
         assertThat(mathInfo.getAttribute(AccessibilityNodeInfo.MathInfo.MATH_ATTRIBUTE_INTENT))
                 .isEqualTo("division");
@@ -590,7 +590,7 @@ public class AccessibilityNodeInfoTest {
     public void testMathInfoParceling() {
         AccessibilityNodeInfo.MathInfo mathInfo =
                 new AccessibilityNodeInfo.MathInfo(AccessibilityNodeInfo.MathInfo.MATH_TAG_ROOT);
-        mathInfo.addAttribute(AccessibilityNodeInfo.MathInfo.MATH_ATTRIBUTE_INTENT, "sqrt");
+        mathInfo.putAttribute(AccessibilityNodeInfo.MathInfo.MATH_ATTRIBUTE_INTENT, "sqrt");
 
         AccessibilityNodeInfo node = new AccessibilityNodeInfo();
         node.setStructuredDataInfo(mathInfo);
@@ -687,7 +687,7 @@ public class AccessibilityNodeInfoTest {
             AccessibilityNodeInfo.MathInfo mathInfo =
                     new AccessibilityNodeInfo.MathInfo(
                             AccessibilityNodeInfo.MathInfo.MATH_TAG_FRACTION);
-            mathInfo.addAttribute(AccessibilityNodeInfo.MathInfo.MATH_ATTRIBUTE_INTENT, "division");
+            mathInfo.putAttribute(AccessibilityNodeInfo.MathInfo.MATH_ATTRIBUTE_INTENT, "division");
             info.setStructuredDataInfo(mathInfo);
         }
 

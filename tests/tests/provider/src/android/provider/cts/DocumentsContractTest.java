@@ -533,10 +533,11 @@ public class DocumentsContractTest {
     public void testQueryTrashDocuments() throws Exception {
         final Cursor res = new MatrixCursor(new String[0]);
 
-        doReturn(res).when(mProvider).queryTrashDocuments(null /*projections*/);
-
+        doReturn(res).when(mProvider).queryTrashDocuments(DOC_RED, null, Bundle.EMPTY, null);
         assertEquals(
-                res, mResolver.query(buildTrashDocumentsUri(AUTHORITY), null, Bundle.EMPTY, null));
+                res,
+                mResolver.query(
+                        buildTrashDocumentsUri(AUTHORITY, DOC_RED), null, Bundle.EMPTY, null));
     }
 
     @Test

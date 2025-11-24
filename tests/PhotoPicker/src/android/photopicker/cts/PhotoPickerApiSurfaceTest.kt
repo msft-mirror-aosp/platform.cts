@@ -28,11 +28,14 @@ import android.cts.photopicker.lib.TestMedia
 import android.cts.photopicker.lib.WithTestMedia
 import android.os.Build
 import android.os.Process
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.provider.MediaStore
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.bedstead.nene.TestApis
+import com.android.providers.media.flags.Flags
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertFailsWith
@@ -50,6 +53,9 @@ class PhotoPickerApiSurfaceTest {
     val photoPickerRule =
         PhotoPickerTestRule(InstrumentationRegistry.getInstrumentation().targetContext)
 
+    @get:Rule
+    val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+
     @Before
     fun setup() {
         Assume.assumeTrue(PhotoPickerTestRule.isHardwareSupported())
@@ -66,7 +72,6 @@ class PhotoPickerApiSurfaceTest {
             ]
     )
     @LegacyPhotopickerOnly
-    @Ignore("TODO(b/452860731): Disabled for convergance between 25Q4 and M-11")
     fun testSelectSingleImageAndVerifyResult_legacy() {
         val resultFuture = photoPickerRule.launchPhotoPicker()
 
@@ -88,7 +93,6 @@ class PhotoPickerApiSurfaceTest {
             ]
     )
     @ModernPhotopickerOnly
-    @Ignore("TODO(b/452860731): Disabled for convergance between 25Q4 and M-11")
     fun testSelectSingleImageAndVerifyResult_modern() {
         val resultFuture = photoPickerRule.launchPhotoPicker()
 
@@ -171,7 +175,6 @@ class PhotoPickerApiSurfaceTest {
     @Test
     @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE, count = 2)])
     @LegacyPhotopickerOnly
-    @Ignore("TODO(b/452860731): Disabled for convergance between 25Q4 and M-11")
     fun testSingleSelect_ignoresExtraAllowMultiple_legacy() {
         val intent =
             Intent(MediaStore.ACTION_PICK_IMAGES).putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
@@ -187,7 +190,6 @@ class PhotoPickerApiSurfaceTest {
     @Test
     @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE, count = 2)])
     @ModernPhotopickerOnly
-    @Ignore("TODO(b/452860731): Disabled for convergance between 25Q4 and M-11")
     fun testSingleSelect_ignoresExtraAllowMultiple_modern() {
         val intent =
             Intent(MediaStore.ACTION_PICK_IMAGES).putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
@@ -232,7 +234,6 @@ class PhotoPickerApiSurfaceTest {
     @Test
     @ModernPhotopickerOnly
     @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
-    @Ignore("TODO(b/452860731): Disabled for convergance between 25Q4 and M-11")
     fun testLaunchModern_withInvalidTab_ignoresInvalid() {
         val intent =
             Intent(MediaStore.ACTION_PICK_IMAGES)
@@ -264,6 +265,20 @@ class PhotoPickerApiSurfaceTest {
         future.get(5, TimeUnit.SECONDS)
     }
 
+    @Test
+    @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
+    @ModernPhotopickerOnly
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PICKER_LOCATION_METADATA_API)
+    fun testLaunch_withLocationMetadataExtra_succeeds() {
+        val intent =
+            Intent(MediaStore.ACTION_PICK_IMAGES)
+                .putExtra(MediaStore.EXTRA_PICK_IMAGES_REQUEST_LOCATION_METADATA_ACCESS, true)
+        val future = photoPickerRule.launchPhotoPicker(intent)
+        // press back to ensure picker launches successfully
+        photoPickerRule.device.pressBack()
+        future.get(5, TimeUnit.SECONDS)
+    }
+
     // GET_CONTENT
 
     // GET_CONTENT takeover requires a DeviceConfig override on S, so skip in CTS.
@@ -271,7 +286,6 @@ class PhotoPickerApiSurfaceTest {
     @Test
     @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
     @LegacyPhotopickerOnly
-    @Ignore("TODO(b/452860731): Disabled for convergance between 25Q4 and M-11")
     fun testGetContent_withImageMimeType_launchesPicker_legacy() {
         val intent = Intent(Intent.ACTION_GET_CONTENT).apply { type = "image/*" }
         val resultFuture = photoPickerRule.launchPhotoPicker(intent)
@@ -287,7 +301,6 @@ class PhotoPickerApiSurfaceTest {
     @Test
     @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
     @ModernPhotopickerOnly
-    @Ignore("TODO(b/452860731): Disabled for convergance between 25Q4 and M-11")
     fun testGetContent_withImageMimeType_launchesPicker_modern() {
         val intent = Intent(Intent.ACTION_GET_CONTENT).apply { type = "image/*" }
         val resultFuture = photoPickerRule.launchPhotoPicker(intent)
@@ -304,7 +317,6 @@ class PhotoPickerApiSurfaceTest {
     @Test
     @WithTestMedia(media = [TestMedia(type = MediaType.VIDEO)])
     @LegacyPhotopickerOnly
-    @Ignore("TODO(b/452860731): Disabled for convergance between 25Q4 and M-11")
     fun testGetContent_withVideoMimeType_launchesPicker_legacy() {
         val intent = Intent(Intent.ACTION_GET_CONTENT).apply { type = "video/*" }
         val resultFuture = photoPickerRule.launchPhotoPicker(intent)
@@ -320,7 +332,6 @@ class PhotoPickerApiSurfaceTest {
     @Test
     @WithTestMedia(media = [TestMedia(type = MediaType.VIDEO)])
     @ModernPhotopickerOnly
-    @Ignore("TODO(b/452860731): Disabled for convergance between 25Q4 and M-11")
     fun testGetContent_withVideoMimeType_launchesPicker_modern() {
         val intent = Intent(Intent.ACTION_GET_CONTENT).apply { type = "video/*" }
         val resultFuture = photoPickerRule.launchPhotoPicker(intent)
@@ -353,6 +364,21 @@ class PhotoPickerApiSurfaceTest {
         val result = resultFuture.get(10, TimeUnit.SECONDS)
         assertThat(result.resultCode).isEqualTo(Activity.RESULT_OK)
         assertThat(result.getSelectedMedia().size).isEqualTo(2)
+    }
+
+    @Test
+    @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE, count = 3)])
+    @ModernPhotopickerOnly
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PICKER_LOCATION_METADATA_API)
+    fun testGetContent_locationMetadataExtra_failsToLaunchPicker() {
+        val intent =
+            Intent(Intent.ACTION_GET_CONTENT).apply {
+                type = "image/*"
+                putExtra(MediaStore.EXTRA_PICK_IMAGES_REQUEST_LOCATION_METADATA_ACCESS, true)
+            }
+
+        val result = photoPickerRule.launchPhotoPicker(intent).get(5, TimeUnit.SECONDS)
+        assertThat(result.resultCode).isEqualTo(Activity.RESULT_CANCELED)
     }
 
     // USER_SELECT - Only available U+ SDK.
@@ -420,6 +446,23 @@ class PhotoPickerApiSurfaceTest {
 
         assertFailsWith<ActivityNotFoundException> {
             photoPickerRule.launchPhotoPicker(intent).get(5, TimeUnit.SECONDS)
+        }
+    }
+
+    @Test
+    @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE, count = 3)])
+    @ModernPhotopickerOnly
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PICKER_LOCATION_METADATA_API)
+    fun testUserSelect_locationMetadataExtra_failsToLaunchPicker() {
+        val intent =
+            Intent(MediaStore.ACTION_USER_SELECT_IMAGES_FOR_APP).apply {
+                putExtra(MediaStore.EXTRA_PICK_IMAGES_REQUEST_LOCATION_METADATA_ACCESS, true)
+            }
+
+        TestApis.permissions().withPermission(Manifest.permission.GRANT_RUNTIME_PERMISSIONS).use {
+            val resultFuture = photoPickerRule.launchPhotoPicker(intent)
+            val result = resultFuture.get(5, TimeUnit.SECONDS)
+            assertThat(result.resultCode).isEqualTo(Activity.RESULT_CANCELED)
         }
     }
 }

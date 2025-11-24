@@ -28,6 +28,7 @@ import android.app.UiAutomation;
 import android.content.ComponentName;
 import android.content.Context;
 import android.os.ParcelFileDescriptor;
+import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.util.Log;
 
@@ -43,6 +44,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.function.Predicate;
 
 public class NotificationHelper {
 
@@ -101,10 +103,41 @@ public class NotificationHelper {
      */
     public StatusBarNotification findPostedNotification(
             @Nullable String tag, int id, SEARCH_TYPE searchType) {
+        return findPostedNotification(searchType, statusBarNotification ->
+                statusBarNotification.getId() == id
+                        && Objects.equal(statusBarNotification.getTag(), tag));
+    }
+
+    /**
+     * Call this after you've found the full SBN, because the method does not poll or wait.
+     */
+    public NotificationListenerService.Ranking findPostedNotificationRanking(
+            String key, SEARCH_TYPE searchType) {
+        NotificationListenerService.RankingMap rankingMap = getRankingMap(searchType);
+        if (rankingMap == null) {
+            return null;
+        }
+        NotificationListenerService.Ranking ranking = new NotificationListenerService.Ranking();
+        rankingMap.getRanking(key, ranking);
+        return ranking;
+    }
+
+    /**
+     * Looks for a Notification in the list of posted ones, giving up after {@link #MAX_WAIT_TIME}
+     * ms if not seen.
+     */
+    public StatusBarNotification findPostedNotificationWithFlags(
+            int flags, SEARCH_TYPE searchType) {
+        return findPostedNotification(searchType, statusBarNotification ->
+                (statusBarNotification.getNotification().flags & flags) != 0);
+    }
+
+    private StatusBarNotification findPostedNotification(SEARCH_TYPE searchType,
+            Predicate<StatusBarNotification> predicate) {
         // notification posting is asynchronous so it may take a few hundred ms to appear.
         // we will check for it for up to MAX_WAIT_TIME ms before giving up.
         for (long totalWait = 0; totalWait < MAX_WAIT_TIME; totalWait += SHORT_WAIT_TIME) {
-            StatusBarNotification n = findNotificationNoWait(tag, id, searchType);
+            StatusBarNotification n = findNotificationNoWait(searchType, predicate);
             if (n != null) {
                 return n;
             }
@@ -114,7 +147,7 @@ public class NotificationHelper {
                 // pass
             }
         }
-        return findNotificationNoWait(null, id, searchType);
+        return findNotificationNoWait(searchType, predicate);
     }
 
     /**
@@ -167,10 +200,10 @@ public class NotificationHelper {
         return false;
     }
 
-    private StatusBarNotification findNotificationNoWait(
-            @Nullable String tag, int id, SEARCH_TYPE searchType) {
+    private StatusBarNotification findNotificationNoWait(SEARCH_TYPE searchType,
+            Predicate<StatusBarNotification> predicate) {
         for (StatusBarNotification sbn : getNotifications(searchType)) {
-            if (sbn.getId() == id && Objects.equal(sbn.getTag(), tag)) {
+            if (predicate.test(sbn)) {
                 return sbn;
             }
         }
@@ -193,6 +226,17 @@ public class NotificationHelper {
             default:
                 return new ArrayList<>(
                         Arrays.asList(mNotificationListener.getActiveNotifications()));
+        }
+    }
+
+    private NotificationListenerService.RankingMap getRankingMap(SEARCH_TYPE searchType) {
+        switch (searchType) {
+            case POSTED:
+                return mNotificationListener.mRankingMap;
+            case LISTENER:
+                return mNotificationListener.getCurrentRanking();
+            default:
+                return null;
         }
     }
 

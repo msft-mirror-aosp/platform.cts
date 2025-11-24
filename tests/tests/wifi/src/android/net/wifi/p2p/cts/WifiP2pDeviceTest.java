@@ -18,7 +18,6 @@ package android.net.wifi.p2p.cts;
 
 import static org.junit.Assert.assertFalse;
 
-import android.annotation.RequiresApi;
 import android.net.wifi.cts.WifiJUnit4TestBase;
 import android.net.wifi.p2p.WifiP2pConnectionInfo;
 import android.net.wifi.p2p.WifiP2pDevice;
@@ -100,7 +99,7 @@ public class WifiP2pDeviceTest extends WifiJUnit4TestBase {
                 "android.net.wifi.p2p.WifiP2pConnectionInfo#getTxNss",
                 "android.net.wifi.p2p.WifiP2pConnectionInfo#getRxNss"
             })
-    @RequiresApi(37)
+    @SdkSuppress(minSdkVersion = 37)
     @RequiresFlagsEnabled(Flags.FLAG_WIFI_P2P_CONNECTION_INFO)
     @Test
     public void testGetWifiP2pConnectionInfo() {

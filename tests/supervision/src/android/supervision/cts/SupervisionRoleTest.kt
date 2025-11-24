@@ -23,7 +23,6 @@ import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.multiuser.annotations.EnsureCanAddSecondaryUser
 import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser
-import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
@@ -44,7 +43,6 @@ class SupervisionRoleTest : BaseSupervisionTest() {
     @Test
     @EnsureHasPermission(MANAGE_ROLE_HOLDERS, QUERY_USERS)
     @EnsureHasNoAdditionalUser
-    @RequireMultiUserSupport
     @RequireRootInstrumentation(reason = "Use of MANAGE_ROLE_HOLDERS")
     fun shouldAllowBypassingSupervisionRoleQualification_noAdditionalUsers_returnsTrue() {
         setSupervisionEnabled(false)
@@ -56,7 +54,6 @@ class SupervisionRoleTest : BaseSupervisionTest() {
     @EnsureHasPermission(MANAGE_ROLE_HOLDERS, QUERY_USERS)
     @EnsureCanAddSecondaryUser
     @EnsureHasNoAdditionalUser
-    @RequireMultiUserSupport
     @RequireRootInstrumentation(reason = "Use of MANAGE_ROLE_HOLDERS")
     fun shouldAllowBypassingSupervisionRoleQualification_withTestUsers_returnsTrue() {
         setSupervisionEnabled(false)
@@ -73,7 +70,6 @@ class SupervisionRoleTest : BaseSupervisionTest() {
     @EnsureHasPermission(MANAGE_ROLE_HOLDERS, QUERY_USERS)
     @EnsureCanAddSecondaryUser
     @EnsureHasNoAdditionalUser
-    @RequireMultiUserSupport
     @RequireRootInstrumentation(reason = "Use of MANAGE_ROLE_HOLDERS")
     fun shouldAllowBypassingSupervisionRoleQualification_withNonTestUsers_returnsFalse() {
         setSupervisionEnabled(false)
@@ -87,7 +83,6 @@ class SupervisionRoleTest : BaseSupervisionTest() {
     @Test
     @EnsureHasPermission(MANAGE_ROLE_HOLDERS, QUERY_USERS)
     @EnsureHasNoAdditionalUser
-    @RequireMultiUserSupport
     @RequireRootInstrumentation(reason = "Use of MANAGE_ROLE_HOLDERS")
     fun shouldAllowBypassingSupervisionRoleQualification_supervisionEnabled_noAdditionalUsers_returnsFalse() {
         setSupervisionEnabled(true)
@@ -99,7 +94,6 @@ class SupervisionRoleTest : BaseSupervisionTest() {
     @EnsureDoesNotHavePermission(MANAGE_ROLE_HOLDERS)
     @EnsureHasNoAdditionalUser
     @EnsureHasPermission(QUERY_USERS)
-    @RequireMultiUserSupport
     fun createConfirmSupervisionCredentialsIntent_noPermission_throwsException() {
         setSupervisionEnabled(false)
 

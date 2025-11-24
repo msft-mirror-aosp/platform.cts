@@ -25,7 +25,6 @@ import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive
 import com.android.bedstead.harrier.annotations.RequireNotTv
 import com.android.bedstead.harrier.annotations.RequireNotWatch
-import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.compatibility.common.util.ApiTest
@@ -75,7 +74,6 @@ class SupervisionCredentialsTest : BaseSupervisionTest() {
     }
 
     @Test
-    @RequireMultiUserSupport
     @EnsureHasPermission(QUERY_USERS, CREATE_USERS)
     fun createConfirmSupervisionCredentialsIntent_supervisionNotEnabled_returnsNull() {
         withSupervisingUser(supervisionEnabled = false) {
@@ -91,7 +89,6 @@ class SupervisionCredentialsTest : BaseSupervisionTest() {
     }
 
     @Test
-    @RequireMultiUserSupport
     @EnsureHasPermission(QUERY_USERS, CREATE_USERS)
     fun createConfirmSupervisionCredentialsIntent_supervisingUserMissingSecureLock_returnsNull() {
         withSupervisingUser(hasPin = false) {

@@ -60,6 +60,7 @@ android_test {
         ":CtsInputMethod2",
         ":CtsInputMethodStandaloneTestApp",
         ":CtsMockInputMethod",
+        ":CtsMockInputMethod2",
     ],
     per_testcase_directory: true,
 }

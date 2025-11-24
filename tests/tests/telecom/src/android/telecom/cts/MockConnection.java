@@ -62,7 +62,9 @@ public class MockConnection extends Connection {
     private RemoteConnection mRemoteConnection = null;
     private RttTextStream mRttTextStream;
     private final TestUtils.InvokeCounter mConnectionOnCallEndpointChangedCounter =
-            new TestUtils.InvokeCounter("ConnectionOnCallEndpointChanged");;
+            new TestUtils.InvokeCounter("ConnectionOnCallEndpointChanged");
+    private final TestUtils.InvokeCounter mOnCallAudioStateChanged =
+            new TestUtils.InvokeCounter("mOnCallAudioStateChanged");
     private boolean mAutoDestroy = true;
 
     private SparseArray<InvokeCounter> mInvokeCounterMap = new SparseArray<>(13);
@@ -176,6 +178,7 @@ public class MockConnection extends Connection {
     public void onCallAudioStateChanged(CallAudioState state) {
         super.onCallAudioStateChanged(state);
         mCallAudioState = state;
+        mOnCallAudioStateChanged.invoke(state);
         if (mRemoteConnection != null) {
             mRemoteConnection.setCallAudioState(state);
         }
@@ -402,6 +405,10 @@ public class MockConnection extends Connection {
 
     public TestUtils.InvokeCounter getConnectionOnCallEndpointChangedCounter() {
         return mConnectionOnCallEndpointChangedCounter;
+    }
+
+    public TestUtils.InvokeCounter getOnCallAudioStateChangedCounter() {
+        return mOnCallAudioStateChanged;
     }
 
     private static String getCounterLabel(int counterIndex) {

@@ -134,12 +134,8 @@
   <option name="compatibility:include-filter" value="CtsTelephony2TestCases"/>
   <option name="compatibility:include-filter" value="CtsSliceTestCases"/>
   <option name="compatibility:include-filter" value="CtsVrTestCases"/>
-  <option name="compatibility:include-filter" value="CtsSandboxedFledgeManagerTests"/>
   <option name="compatibility:include-filter" value="CtsUiAutomationTestCases"/>
-  <option name="compatibility:include-filter" value="CtsSandboxedAppSetIdManagerTests"/>
-  <option name="compatibility:include-filter" value="CtsSandboxedMeasurementManagerTests"/>
   <option name="compatibility:include-filter" value="CtsProtoTestCases"/>
-  <option name="compatibility:include-filter" value="CtsSandboxedAdIdManagerTests"/>
   <option name="compatibility:include-filter" value="CtsLocationCoarseTestCases"/>
   <option name="compatibility:include-filter" value="CtsNfcTestCases"/>
   <option name="compatibility:include-filter" value="CtsClasspathDeviceInfoTestCases"/>
