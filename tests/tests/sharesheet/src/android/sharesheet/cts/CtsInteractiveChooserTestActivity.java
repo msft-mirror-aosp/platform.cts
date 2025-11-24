@@ -74,7 +74,7 @@ public class CtsInteractiveChooserTestActivity extends Activity {
                             bounds,
                             chooserSession == null
                                     ? null
-                                    : chooserSession.getDefaultLaunchBounds());
+                                    : chooserSession.getInitialRestingBounds());
                 }
             };
 
