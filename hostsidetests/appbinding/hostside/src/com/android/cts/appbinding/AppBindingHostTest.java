@@ -756,27 +756,14 @@ ACTIVITY MANAGER RUNNING PROCESSES (dumpsys activity processes)
         });
     }
 
-    @Test
-    @RequiresFlagsEnabled(com.android.server.am.Flags.FLAG_LOWER_SMS_OOM_IMPORTANCE)
-    public void testOomAdjustment() throws Throwable {
-        if (!isSmsCapable()) {
-            // device not supporting sms. cannot run the test.
-            return;
-        }
-
-        installAndCheckBound(APK_1, PACKAGE_A, SERVICE_1, mCurrentUserId);
-        assertOomAdjustment(PACKAGE_A, PACKAGE_A_PROC, 201);
+@Test
+public void testOomAdjustment() throws Throwable {
+    if (!isSmsCapable()) {
+        // device not supporting sms. cannot run the test.
+        return;
     }
 
-    @Test
-    @RequiresFlagsDisabled(com.android.server.am.Flags.FLAG_LOWER_SMS_OOM_IMPORTANCE)
-    public void testOomAdjustment_legacyImeScore() throws Throwable {
-        if (!isSmsCapable()) {
-            // device not supporting sms. cannot run the test.
-            return;
-        }
-
-        installAndCheckBound(APK_1, PACKAGE_A, SERVICE_1, mCurrentUserId);
-        assertOomAdjustment(PACKAGE_A, PACKAGE_A_PROC, 200);
-    }
+    installAndCheckBound(APK_1, PACKAGE_A, SERVICE_1, mCurrentUserId);
+    assertOomAdjustment(PACKAGE_A, PACKAGE_A_PROC, 201);
+}
 }
