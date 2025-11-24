@@ -1,0 +1,22 @@
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+android_test_helper_app {
+    name: "CtsAllowComponentAccessClientAllow",
+    manifest: "Client_Allow_AndroidManifest.xml",
+    sdk_version: "current",
+}
+
+android_test_helper_app {
+    name: "CtsAllowComponentAccessClientNoTag",
+    manifest: "Client_NoTag_AndroidManifest.xml",
+    sdk_version: "current",
+}
+
+android_test_helper_app {
+    name: "CtsAllowComponentAccessServer",
+    srcs: ["src/**/*.java"],
+    manifest: "Server_AndroidManifest.xml",
+    sdk_version: "current",
+}

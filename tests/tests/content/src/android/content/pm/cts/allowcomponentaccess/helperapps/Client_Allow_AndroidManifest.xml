@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.android.cts.allowcomponentaccess.client_allow">
+
+    <allow-component-access>
+        <package android:name="com.android.cts.allowcomponentaccess.server" />
+    </allow-component-access>
+
+    <application />
+
+    <queries>
+        <package android:name="com.android.cts.allowcomponentaccess.server" />
+    </queries>
+</manifest>
