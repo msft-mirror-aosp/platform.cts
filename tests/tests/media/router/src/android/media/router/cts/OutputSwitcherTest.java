@@ -705,6 +705,66 @@ public class OutputSwitcherTest {
         UiAutomatorUtils2.waitUntilObjectGone(By.res(SYSTEM_UI_PACKAGE, "warning_text"));
     }
 
+    @Test
+    public void showSystemOutputSwitcher_showsCustomSubtextForRoute() throws Exception {
+        mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID2));
+        registerRouteCallback(List.of(FEATURE_SAMPLE));
+        String[] mFullRouteId = new String[2];
+        PollingCheck.waitFor(
+                TIMEOUT_MS,
+                () -> {
+                    boolean isFoundRoute1 = false, isFoundRoute2 = false;
+                    List<MediaRoute2Info> routes = mRouter2.getRoutes();
+                    for (MediaRoute2Info route : routes) {
+                        if (ROUTE_NAME1.equals(route.getName().toString())) {
+                            mFullRouteId[0] = route.getId();
+                            isFoundRoute1 = true;
+                        }
+                        if (ROUTE_NAME2.equals(route.getName().toString())) {
+                            mFullRouteId[1] = route.getId();
+                            isFoundRoute2 = true;
+                        }
+                    }
+                    return isFoundRoute1 && isFoundRoute2;
+                });
+
+        RouteListingPreference.Item customSubtextItem1 =
+                new RouteListingPreference.Item.Builder(mFullRouteId[0])
+                        .setSubText(RouteListingPreference.Item.SUBTEXT_CUSTOM)
+                        .setCustomSubtextMessage("message1")
+                        .build();
+        RouteListingPreference.Item customSubtextItem2 =
+                new RouteListingPreference.Item.Builder(mFullRouteId[1])
+                        .setSubText(RouteListingPreference.Item.SUBTEXT_CUSTOM)
+                        .setCustomSubtextMessage("message2")
+                        .build();
+        RouteListingPreference routeListingPreference =
+                new RouteListingPreference.Builder()
+                        .setItems(List.of(customSubtextItem1, customSubtextItem2))
+                        .build();
+        mRouter2.setRouteListingPreference(routeListingPreference);
+
+        assertThat(mRouter2.showSystemOutputSwitcher()).isTrue();
+        BySelector subtextSelector1 = By.text("message1").pkg(SYSTEM_UI_PACKAGE);
+        BySelector subtextSelector2 = By.text("message2").pkg(SYSTEM_UI_PACKAGE);
+        UiObject2 route1NameObject =
+                UiAutomatorUtils2.waitFindObject(
+                        By.text(ROUTE_NAME1).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
+        UiObject2 route1TextContainer = route1NameObject.getParent();
+        UiObject2 message1ForRoute1 = route1TextContainer.findObject(subtextSelector1);
+        assertThat(message1ForRoute1).isNotNull();
+        UiObject2 message2ForRoute1 = route1TextContainer.findObject(subtextSelector2);
+        assertThat(message2ForRoute1).isNull();
+        UiObject2 route2NameObject =
+                UiAutomatorUtils2.waitFindObject(
+                        By.text(ROUTE_NAME2).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
+        UiObject2 route2TextContainer = route2NameObject.getParent();
+        UiObject2 message1ForRoute2 = route2TextContainer.findObject(subtextSelector1);
+        assertThat(message1ForRoute2).isNull();
+        UiObject2 message2ForRoute2 = route2TextContainer.findObject(subtextSelector2);
+        assertThat(message2ForRoute2).isNotNull();
+    }
+
     /** Get a route unique ID, which includes the provider ID. */
     private String getRouteUniqueId(String id) {
         CompletableFuture<String> idFuture = new CompletableFuture<>();
