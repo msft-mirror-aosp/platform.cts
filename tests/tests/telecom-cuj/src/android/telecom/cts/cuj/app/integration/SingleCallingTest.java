@@ -469,7 +469,7 @@ public class SingleCallingTest extends BaseAppVerifier {
      * SIMULATED_RINGING state without errors
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_AUDIO_PROCESSING_USE_CASE)
+    @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_ENABLE_AUDIO_PROCESSING_USE_CASE)
     public void testIncomingCallAudioProcessing_ManagedConnectionServiceApp() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -583,7 +583,7 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  Catch the IllegalStateException and assert the call was not transitioned to AUDIO_PROCESSING.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_AUDIO_PROCESSING_USE_CASE)
+    @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_ENABLE_AUDIO_PROCESSING_USE_CASE)
     public void testIncomingCallGetAudioProcessingUseCase_shouldFail_ManagedConnectionServiceApp()
         throws Exception {
         if (!mShouldTestTelecom) {
@@ -618,7 +618,7 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  Assert that the returned AudioProcessingUseCase is equal to AUDIO_PROCESSING_USE_CASE_VOICEMAIL.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_AUDIO_PROCESSING_USE_CASE)
+    @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_ENABLE_AUDIO_PROCESSING_USE_CASE)
     public void testIncomingCallGetAudioProcessingUseCase_ManagedConnectionServiceApp()
         throws Exception {
         if (!mShouldTestTelecom) {

@@ -31,6 +31,7 @@ android_test {
         "telephony_flags_core_java_lib",
         "flag-junit",
         "android.media.audio-aconfig-java",
+        "telecom_module_flags-export-java",
     ],
     libs: [
         "android.test.base.stubs.test",
