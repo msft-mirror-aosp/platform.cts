@@ -41,7 +41,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.media.projection.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -155,7 +154,6 @@ public class MediaProjectionStoppingTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_STOP_ON_DISPLAY_REMOVAL)
     public void mediaProjectionOnConnectedDisplay_connectedDisplayRemoved_sessionStops()
             throws Exception {
         assumeFalse(
@@ -193,7 +191,6 @@ public class MediaProjectionStoppingTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_STOP_ON_DISPLAY_REMOVAL)
     public void mediaProjectionOnDefaultDisplay_connectedDisplayRemoved_sessionContinues()
             throws Exception {
         assumeFalse(
