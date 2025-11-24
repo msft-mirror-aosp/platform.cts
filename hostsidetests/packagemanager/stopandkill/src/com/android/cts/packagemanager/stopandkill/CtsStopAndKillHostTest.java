@@ -19,13 +19,21 @@ package com.android.cts.packagemanager.stopandkill;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.fail;
+
+import android.cts.statsdatom.lib.AtomTestUtils;
+import android.cts.statsdatom.lib.ConfigUtils;
+import android.cts.statsdatom.lib.ReportUtils;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
+import com.android.os.AtomsProto;
+import com.android.os.StatsLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
+import com.android.tradefed.util.RunUtil;
 import com.android.window.flags.Flags;
 
 import org.junit.After;
@@ -33,6 +41,11 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Host-side test for the PackageManager's wait-for-kill-on-package-update feature.
@@ -51,6 +64,8 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
     private static final int FLAG_ACTIVITY_MULTIPLE_TASK = 0x08000000;
 
     private static final int WINDOWING_MODE_FREEFORM = 5;
+
+    private static final int STEP_FREEZE_INSTALL_STOP_AND_KILL = 9;
 
     private static final boolean DEBUG = true;
 
@@ -76,6 +91,9 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
     }
 
     private void cleanUp() throws Exception {
+        ConfigUtils.removeConfig(getDevice());
+        ReportUtils.clearReports(getDevice());
+
         mApp1.uninstall();
         mApp2.uninstall();
         mApp3.uninstall();
@@ -154,9 +172,9 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
         // Activity shouldn't have been stopped before we update
         mApp1.assertStateFileCreatedOnStop(/* shouldExist= */ false);
 
-        final long startTime = System.currentTimeMillis();
+        long startTime = System.currentTimeMillis();
         mApp1.installPackage("-r");
-        final long installTime = System.currentTimeMillis() - startTime;
+        long installTime = System.currentTimeMillis() - startTime;
 
         // Assert that the app was not stopped because it timed out.
         mApp1.assertStateFileCreatedOnStop(/* shouldExist= */ false);
@@ -172,7 +190,7 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
         mApp1.installPackage();
         mApp2.installPackage();
 
-        final String setting = "enable_freeform_support";
+        String setting = "enable_freeform_support";
         String originalSetting = getDevice().executeShellCommand("settings get global " + setting);
         try {
             getDevice().executeShellCommand("settings put global " + setting + " 1");
@@ -207,7 +225,7 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
         mApp2.installPackage();
         mApp3.installPackage();
 
-        final String setting = "enable_freeform_support";
+        String setting = "enable_freeform_support";
         String originalSetting = getDevice().executeShellCommand("settings get global " + setting);
         try {
             getDevice().executeShellCommand("settings put global " + setting + " 1");
@@ -245,6 +263,83 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
         }
     }
 
+    /**
+     * Verifies that when the 'wait_for_kill_on_package_update' flag is enabled, the app's instance
+     * state is saved during an update and restored in the new version.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_RESTART_AFTER_UPDATE)
+    public void testUpdate_flagEnabled_emitsStopAndKillMetric() throws Exception {
+        ConfigUtils.uploadConfigForPushedAtom(
+                getDevice(),
+                mApp1.pkg,
+                AtomsProto.Atom.PACKAGE_INSTALLATION_SESSION_REPORTED_FIELD_NUMBER);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
+
+        mApp1.installPackage();
+
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
+
+        List<AtomsProto.PackageInstallationSessionReported> reports = new ArrayList<>();
+        for (StatsLog.EventMetricData data : ReportUtils.getEventMetricDataList(getDevice())) {
+            if (data.getAtom().hasPackageInstallationSessionReported()) {
+                reports.add(data.getAtom().getPackageInstallationSessionReported());
+            }
+        }
+
+        assertThat(reports.size()).isEqualTo(1);
+        AtomsProto.PackageInstallationSessionReported report = reports.get(0);
+
+        // Find a report that contains the STEP_FREEZE_INSTALL_STOP_AND_KILL
+        for (int i = 0; i < report.getInstallStepsCount(); i++) {
+            if (report.getInstallSteps(i) == STEP_FREEZE_INSTALL_STOP_AND_KILL) {
+                assertThat(report.getStepDurationMillis(i)).isAtLeast(0);
+                // INSTALL_FROM_ADB is true
+                assertThat(report.getInstallFlags() & 0x00000020).isNotEqualTo(0);
+                // When installed from adb, package name is empty
+                assertThat(report.getPackageName()).isEmpty();
+                assertThat(report.getUid()).isEqualTo(getAppUid(mApp1.pkg));
+                return;
+            }
+        }
+        fail("Didn't find report with STOP_AND_KILL step");
+    }
+
+    /**
+     * Verifies that when the 'wait_for_kill_on_package_update' flag is enabled, the app's instance
+     * state is saved during an update and restored in the new version.
+     */
+    @Test
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_APP_RESTART_AFTER_UPDATE)
+    public void testUpdate_flagDisabled_doesNotEmitStopAndKillMetric() throws Exception {
+        ConfigUtils.uploadConfigForPushedAtom(
+                getDevice(),
+                mApp1.pkg,
+                AtomsProto.Atom.PACKAGE_INSTALLATION_SESSION_REPORTED_FIELD_NUMBER);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
+
+        mApp1.installPackage();
+
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
+
+        List<AtomsProto.PackageInstallationSessionReported> reports = new ArrayList<>();
+        for (StatsLog.EventMetricData data : ReportUtils.getEventMetricDataList(getDevice())) {
+            if (data.getAtom().hasPackageInstallationSessionReported()) {
+                reports.add(data.getAtom().getPackageInstallationSessionReported());
+            }
+        }
+
+        assertThat(reports.size()).isEqualTo(1);
+        AtomsProto.PackageInstallationSessionReported report = reports.get(0);
+
+        // Find a report that contains the STEP_FREEZE_INSTALL_STOP_AND_KILL
+        for (int i = 0; i < report.getInstallStepsCount(); i++) {
+            if (report.getInstallSteps(i) == STEP_FREEZE_INSTALL_STOP_AND_KILL) {
+                fail("Emitted STOP_AND_KILL step when flag disabled");
+            }
+        }
+    }
+
     private void launchActivityAndAssertResumed(String componentName) throws Exception {
         getDevice()
                 .executeShellCommand(
@@ -272,7 +367,7 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
     }
 
     private void launchActivityInFreeForm(String... componentNames) throws Exception {
-        final int flags = FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_MULTIPLE_TASK;
+        int flags = FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_MULTIPLE_TASK;
 
         for (String component : componentNames) {
             String command =
@@ -284,6 +379,24 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
                             + WINDOWING_MODE_FREEFORM;
             getDevice().executeShellCommand(command);
         }
+    }
+
+    private int getAppUid(String pkgName) throws Exception {
+        int currentUser = getDevice().getCurrentUser();
+        String uidLine =
+                getDevice()
+                        .executeShellCommand(
+                                "cmd package list packages --match-libraries -U --user "
+                                        + currentUser
+                                        + " "
+                                        + pkgName);
+        Pattern pattern = Pattern.compile("package:" + pkgName + " uid:(\\d+)");
+        Matcher matcher = pattern.matcher(uidLine);
+        if (matcher.find()) {
+            return Integer.parseInt(matcher.group(1));
+        }
+        throw new IllegalStateException(
+                "Package " + pkgName + " is not installed for user " + currentUser);
     }
 
     /**
