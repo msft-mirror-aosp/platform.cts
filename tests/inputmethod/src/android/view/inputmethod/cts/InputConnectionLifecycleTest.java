@@ -32,16 +32,12 @@ import android.app.Instrumentation;
 import android.content.Context;
 import android.graphics.Color;
 import android.os.Process;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.system.Os;
 import android.text.InputType;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
-import android.view.inputmethod.Flags;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.cts.util.EndToEndImeTestBase;
@@ -81,9 +77,6 @@ public final class InputConnectionLifecycleTest extends EndToEndImeTestBase {
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
 
@@ -346,7 +339,6 @@ public final class InputConnectionLifecycleTest extends EndToEndImeTestBase {
      * InputMethodManager#restartInput(View)} when called repeatedly.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_INVALIDATE_INPUT_CALLS_RESTART)
     public void verifyNoRaceBetweenInvalidateAndRestartInput() throws Exception {
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         try (MockImeSession imeSession =
