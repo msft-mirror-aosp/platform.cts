@@ -64,6 +64,13 @@ public class NetworkSelectionModeTest {
         return mPackageManager.hasSystemFeature(feature);
     }
 
+    // Version codes prior to 35 use a 1-per-year scheme; however, starting with 36 the scheme
+    // was changed "in place" so that the vendor API level no longer is an API level, but rather
+    // an interface freeze date. It increments by 100 (1 year) for each major SDK beyond SDK 35.
+    // By convention the "year" starts in April.
+    private static final int VENDOR_API_LEVEL_BAKLAVA =
+            100 * (Build.VERSION_CODES.BAKLAVA - 35) + 202404;
+
     @Before
     public void setUp() throws Exception {
         mPackageManager = getContext().getPackageManager();
@@ -161,7 +168,7 @@ public class NetworkSelectionModeTest {
                                     tm.setNetworkSelectionModeManual(
                                             TESTING_PLMN /* operatorNumeric */,
                                             false /* persistSelection */));
-            if (getVendorApiLevel() > Build.VERSION_CODES.BAKLAVA) {
+            if (getVendorApiLevel() > VENDOR_API_LEVEL_BAKLAVA) {
                 assertTrue("Failed to setNetworkSelectionModeManual", result);
             }
             String plmn =
@@ -177,7 +184,7 @@ public class NetworkSelectionModeTest {
                                             TESTING_PLMN_2 /* operatorNumeric */,
                                             false /* persistSelection */));
 
-            if (getVendorApiLevel() > Build.VERSION_CODES.BAKLAVA) {
+            if (getVendorApiLevel() > VENDOR_API_LEVEL_BAKLAVA) {
                 assertTrue("Failed to setNetworkSelectionModeManual again", result);
             }
             plmn =
@@ -204,7 +211,7 @@ public class NetworkSelectionModeTest {
                                     tm.setNetworkSelectionModeManual(
                                             TESTING_PLMN /* operatorNumeric */,
                                             true /* persistSelection */));
-            if (getVendorApiLevel() > Build.VERSION_CODES.BAKLAVA) {
+            if (getVendorApiLevel() > VENDOR_API_LEVEL_BAKLAVA) {
                 assertTrue("Failed to setNetworkSelectionModeManual again", result);
             }
             String plmn =
