@@ -3698,7 +3698,9 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         BridgedNotificationMetadata metadata =
                 new BridgedNotificationMetadata(
                         BridgedNotificationMetadata.BRIDGED_METADATA_TYPE_PHONE,
+                        "test_display_name",
                         "test_package",
+                        "test_channel_id",
                         icon);
         final Notification notification =
                 new Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
@@ -3723,7 +3725,9 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         BridgedNotificationMetadata metadata =
                 new BridgedNotificationMetadata(
                         BridgedNotificationMetadata.BRIDGED_METADATA_TYPE_PHONE,
+                        "test_display_name",
                         "test_package",
+                        "test_channel_id",
                         icon);
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
@@ -4066,9 +4070,12 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @ApiTest(apis = {"android.service.notification.NotificationListenerService#getActiveNotifications",
-            "android.service.notification.NotificationListenerService#getCurrentRanking",
-            "android.service.notification.NotificationAssistantService#adjustNotification"})
+    @ApiTest(
+            apis = {
+                "android.service.notification.NotificationListenerService#getActiveNotifications",
+                "android.service.notification.NotificationListenerService#getCurrentRanking",
+                "android.service.notification.NotificationAssistantService#adjustNotification"
+            })
     public void testListenerCanSeeClassifiedNotifications() throws Exception {
         FutureServiceConnection pressureService00 = bindServiceConnection(PRESSURE_SERVICE_00);
         EventCallback callback = new EventCallback();
@@ -4131,9 +4138,12 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @RequiresFlagsEnabled(android.app.Flags.FLAG_NM_CONTEXTUAL_DISPLAY)
     @Test
-    @ApiTest(apis = {"android.service.notification.NotificationListenerService#getActiveNotifications",
-            "android.service.notification.NotificationListenerService#getCurrentRanking",
-            "android.service.notification.NotificationAssistantService#adjustNotification"})
+    @ApiTest(
+            apis = {
+                "android.service.notification.NotificationListenerService#getActiveNotifications",
+                "android.service.notification.NotificationListenerService#getCurrentRanking",
+                "android.service.notification.NotificationAssistantService#adjustNotification"
+            })
     public void testListenerCanSeeDynamicallyClassifiedNotifications() throws Exception {
         FutureServiceConnection pressureService00 = bindServiceConnection(PRESSURE_SERVICE_00);
         EventCallback callback = new EventCallback();
