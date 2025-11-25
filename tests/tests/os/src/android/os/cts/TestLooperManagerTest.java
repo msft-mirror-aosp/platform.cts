@@ -87,6 +87,47 @@ public class TestLooperManagerTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_MESSAGE_QUEUE_TESTABILITY)
+    public void testNonBlockingMethodsWhenLooperNotHeld() {
+        final HandlerThread thread = new HandlerThread(TAG);
+        thread.start();
+        final Looper looper = thread.getLooper();
+        final TestLooperManager tlm =
+                InstrumentationRegistry.getInstrumentation()
+                        .acquireLooperManager(looper);
+
+        try {
+            // When TestLooperManager is created for a different thread, it posts a LooperHolder
+            // message to that thread's queue. There is a small window of time before that
+            // message is processed. During this time, the looper is not yet "held".
+
+            // The non-blocking methods should not block and return empty/default results
+            // in this state. This test verifies that behavior. It is slightly racy, as the
+            // LooperHolder might be processed very quickly, but it's a reasonable check.
+
+            assertNull("poll() should not block and return null", tlm.poll());
+            assertNull("peekWhen() should not block and return null", tlm.peekWhen());
+            assertFalse("isBlockedOnSyncBarrier() should not block and return false",
+                    tlm.isBlockedOnSyncBarrier());
+
+            // To confirm the looper eventually gets held, we use next(), which is blocking.
+            // Post a message to be retrieved by next().
+            final Handler handler = new Handler(looper);
+            handler.sendEmptyMessage(1);
+            Message msg = tlm.next();
+            assertNotNull(msg);
+            assertEquals(1, msg.what);
+            tlm.recycle(msg);
+
+            // Now the looper is held, and the queue should be empty.
+            assertNull("poll() should return null from empty queue", tlm.poll());
+        } finally {
+            tlm.release();
+            thread.quit();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MESSAGE_QUEUE_TESTABILITY)
     public void peekWhen_future() {
         final HandlerThread thread = new HandlerThread(TAG);
         thread.start();
