@@ -532,10 +532,6 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
                 "android.telecom.CallControl#setContactUri"
             })
     public void testSetGroupCallStateAndContactUri() {
-        // Todo: b/463464793 - Re-enable this test once the bug is fixed.
-        if (true) {
-            return;
-        }
         if (!mShouldTestTelecom || !android.telecom.flags.Flags.integratedCallLogsStage2()) {
             return;
         }
