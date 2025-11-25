@@ -53,11 +53,13 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
 
 import java.time.Duration;
 import java.util.Collection;
@@ -66,6 +68,8 @@ import java.util.Collection;
 @LargeTest
 public class BluetoothA2dpTest {
     private static final String TAG = BluetoothA2dpTest.class.getSimpleName();
+
+    @Rule public final MockitoRule mockito = MockitoJUnit.rule();
 
     @Mock private BluetoothProfile.ServiceListener mListener;
 
@@ -81,8 +85,6 @@ public class BluetoothA2dpTest {
 
     @Before
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
-
         assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_BLUETOOTH));
         assumeTrue(BluetoothProperties.isProfileA2dpSourceEnabled().orElse(false));
 

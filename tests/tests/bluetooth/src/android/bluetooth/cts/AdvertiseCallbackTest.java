@@ -31,10 +31,12 @@ import com.android.compatibility.common.util.CddTest;
 
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -42,12 +44,13 @@ import java.util.Set;
 /** Test of {@link AdvertiseCallback}. */
 @RunWith(AndroidJUnit4.class)
 public class AdvertiseCallbackTest {
+    @Rule public final MockitoRule mockito = MockitoJUnit.rule();
+
     private final MockAdvertiser mMockAdvertiser = new MockAdvertiser();
     @Mock private AdvertiseCallback mAdvertiseCallback;
 
     @Before
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
         Assume.assumeTrue(
                 TestUtils.isBleSupported(
                         InstrumentationRegistry.getInstrumentation().getTargetContext()));

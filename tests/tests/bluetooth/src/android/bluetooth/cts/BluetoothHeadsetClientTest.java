@@ -47,11 +47,13 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
 
 import java.time.Duration;
 
@@ -59,6 +61,8 @@ import java.time.Duration;
 @LargeTest
 public class BluetoothHeadsetClientTest {
     private static final String TAG = BluetoothHeadsetClientTest.class.getSimpleName();
+
+    @Rule public final MockitoRule mockito = MockitoJUnit.rule();
 
     @Mock private BluetoothProfile.ServiceListener mListener;
 
@@ -74,8 +78,6 @@ public class BluetoothHeadsetClientTest {
 
     @Before
     public void setUp() throws Exception {
-        MockitoAnnotations.initMocks(this);
-
         assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_BLUETOOTH));
         assumeTrue(BluetoothProperties.isProfileHfpHfEnabled().orElse(false));
 
