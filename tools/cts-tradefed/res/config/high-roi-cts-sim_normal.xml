@@ -487,9 +487,6 @@
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.MissedCallTest#testMissedCall_NotifyDialer"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.NonUiInCallServiceWoExportTest#testTelecomCanBindToNonUiInCallServiceThatIsNotExported"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.NullBindingCallScreeningServiceTest#testNullBindingOnIncomingCall"/>
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.OutgoingCallScreeningServiceTest#testOutgoingScreeningAllowed"/>
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.OutgoingCallScreeningServiceTest#testOutgoingScreeningBlocked"/>
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.OutgoingCallScreeningServiceTest#testOutgoingScreeningNoResponse_callGoesThrough"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.OutgoingCallTest#testAccountSelectionAvailable"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.OutgoingCallTest#testExtraPhoneAccountHandleAvailable"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.PhoneAccountSuggestionServiceTest#testEmptySuggestions"/>
