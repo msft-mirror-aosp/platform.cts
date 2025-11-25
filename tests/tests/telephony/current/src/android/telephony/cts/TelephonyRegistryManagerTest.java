@@ -10,6 +10,9 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.CallAttributes;
 import android.telephony.CallState;
@@ -36,9 +39,11 @@ import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
+import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -59,6 +64,9 @@ public class TelephonyRegistryManagerTest {
     private LocationHelper mLocationHelper;
     private static final long TIMEOUT_MILLIS = 1000;
     private static final String TAG = "TelephonyRegistryManagerTest";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -1113,6 +1121,112 @@ public class TelephonyRegistryManagerTest {
                 ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
                         (tm) -> tm.unregisterTelephonyCallback(listener));
             }
+        }
+    }
+
+    private static class DomainSelectionEmergencyModeListener extends TelephonyCallback
+            implements TelephonyCallback.DomainSelectionEmergencyModeListener {
+        final LinkedBlockingQueue<Pair<Integer, Boolean>> mEmergencyModeQueue;
+
+        DomainSelectionEmergencyModeListener() {
+            mEmergencyModeQueue = new LinkedBlockingQueue<>(2);
+        }
+
+        @Override
+        public void onDomainSelectionEmergencyModeEntered(
+                @TelephonyManager.DomainSelectionEmergencyType int type,
+                int slotIndex,
+                int subscriptionId) {
+            mEmergencyModeQueue.offer(Pair.create(type, true));
+        }
+
+        @Override
+        public void onDomainSelectionEmergencyModeExited(
+                @TelephonyManager.DomainSelectionEmergencyType int type,
+                int slotIndex,
+                int subscriptionId) {
+            mEmergencyModeQueue.offer(Pair.create(type, false));
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DOMAIN_SELECTION_EMERGENCY_MODE_NOTIFICATION)
+    public void testNotifyDomainSelectionEmergencyModeEntered() throws Exception {
+        DomainSelectionEmergencyModeListener listener = new DomainSelectionEmergencyModeListener();
+
+        Context context = InstrumentationRegistry.getContext();
+        TelephonyManager telephonyManager = context.getSystemService(TelephonyManager.class);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                telephonyManager,
+                (tm) -> tm.registerTelephonyCallback(context.getMainExecutor(), listener),
+                "android.permission.READ_BASIC_PHONE_STATE");
+
+        int defaultSubId = SubscriptionManager.getDefaultSubscriptionId();
+        int phoneId = SubscriptionManager.getSlotIndex(defaultSubId);
+        Pair<Integer, Boolean> expectedVal =
+                Pair.create(TelephonyManager.DOMAIN_SELECTION_EMERGENCY_TYPE_CALL, true);
+
+        // Consume the initial value set by registering the listener.
+        listener.mEmergencyModeQueue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS); // Call
+        listener.mEmergencyModeQueue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS); // SMS
+
+        try {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mTelephonyRegistryMgr,
+                    (trm) ->
+                            trm.notifyDomainSelectionEmergencyModeEntered(
+                                    phoneId, defaultSubId, expectedVal.first));
+
+            Pair<Integer, Boolean> actualVal =
+                    listener.mEmergencyModeQueue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+            assertNotNull("No emergency mode notification received", actualVal);
+            assertEquals(expectedVal, actualVal);
+        } finally {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mTelephonyRegistryMgr,
+                    (trm) ->
+                            trm.notifyDomainSelectionEmergencyModeExited(
+                                    phoneId, defaultSubId, expectedVal.first));
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    telephonyManager, (tm) -> tm.unregisterTelephonyCallback(listener));
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DOMAIN_SELECTION_EMERGENCY_MODE_NOTIFICATION)
+    public void testNotifyDomainSelectionEmergencyModeExited() throws Exception {
+        DomainSelectionEmergencyModeListener listener = new DomainSelectionEmergencyModeListener();
+
+        Context context = InstrumentationRegistry.getContext();
+        TelephonyManager telephonyManager = context.getSystemService(TelephonyManager.class);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                telephonyManager,
+                (tm) -> tm.registerTelephonyCallback(context.getMainExecutor(), listener),
+                "android.permission.READ_BASIC_PHONE_STATE");
+
+        int defaultSubId = SubscriptionManager.getDefaultSubscriptionId();
+        int phoneId = SubscriptionManager.getSlotIndex(defaultSubId);
+        Pair<Integer, Boolean> expectedVal =
+                Pair.create(TelephonyManager.DOMAIN_SELECTION_EMERGENCY_TYPE_CALL, false);
+
+        // Consume the initial value set by registering the listener.
+        listener.mEmergencyModeQueue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS); // Call
+        listener.mEmergencyModeQueue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS); // SMS
+
+        try {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mTelephonyRegistryMgr,
+                    (trm) ->
+                            trm.notifyDomainSelectionEmergencyModeExited(
+                                    phoneId, defaultSubId, expectedVal.first));
+
+            Pair<Integer, Boolean> actualVal =
+                    listener.mEmergencyModeQueue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+            assertNotNull("No emergency mode notification received", actualVal);
+            assertEquals(expectedVal, actualVal);
+        } finally {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    telephonyManager, (tm) -> tm.unregisterTelephonyCallback(listener));
         }
     }
 }
