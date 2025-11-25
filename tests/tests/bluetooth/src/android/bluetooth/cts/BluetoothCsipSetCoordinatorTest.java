@@ -49,11 +49,13 @@ import com.android.modules.utils.build.SdkLevel;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
 
 import java.time.Duration;
 import java.util.List;
@@ -63,6 +65,8 @@ import java.util.concurrent.Executor;
 @RunWith(AndroidJUnit4.class)
 public class BluetoothCsipSetCoordinatorTest {
     private static final String TAG = BluetoothCsipSetCoordinatorTest.class.getSimpleName();
+
+    @Rule public final MockitoRule mockito = MockitoJUnit.rule();
 
     @Mock private BluetoothCsipSetCoordinator.ClientLockCallback mCallback;
     @Mock private BluetoothProfile.ServiceListener mListener;
@@ -79,8 +83,6 @@ public class BluetoothCsipSetCoordinatorTest {
 
     @Before
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
-
         assumeTrue(SdkLevel.isAtLeastT());
         assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_BLUETOOTH_LE));
 

@@ -32,10 +32,12 @@ import com.android.compatibility.common.util.CddTest;
 
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -43,12 +45,14 @@ import java.util.Set;
 /** Test cases for {@link ScanCallback}. */
 @RunWith(AndroidJUnit4.class)
 public class ScanCallbackTest {
+
+    @Rule public final MockitoRule mockito = MockitoJUnit.rule();
+
     private MockScanner mMockScanner = new MockScanner();
     @Mock private ScanCallback mScanCallback;
 
     @Before
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
         Assume.assumeTrue(
                 TestUtils.isBleSupported(
                         InstrumentationRegistry.getInstrumentation().getContext()));

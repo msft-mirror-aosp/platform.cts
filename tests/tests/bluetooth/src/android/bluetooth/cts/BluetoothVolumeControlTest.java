@@ -56,7 +56,8 @@ import org.junit.function.ThrowingRunnable;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
 
 import java.time.Duration;
 import java.util.List;
@@ -65,6 +66,8 @@ import java.util.concurrent.Executor;
 @RunWith(AndroidJUnit4.class)
 public class BluetoothVolumeControlTest {
     private static final String TAG = BluetoothVolumeControlTest.class.getSimpleName();
+
+    @Rule public final MockitoRule mockito = MockitoJUnit.rule();
 
     @Mock private BluetoothVolumeControl.Callback mCallback;
     @Mock private BluetoothProfile.ServiceListener mListener;
@@ -83,8 +86,6 @@ public class BluetoothVolumeControlTest {
 
     @Before
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
-
         assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_BLUETOOTH));
 
         /* If Le Audio is supported then Volume Control shall be supported */

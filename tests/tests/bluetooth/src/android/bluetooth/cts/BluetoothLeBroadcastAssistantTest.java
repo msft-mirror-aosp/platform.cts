@@ -65,7 +65,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -76,6 +77,8 @@ import java.util.concurrent.Executor;
 @SmallTest
 public class BluetoothLeBroadcastAssistantTest {
     private static final String TAG = BluetoothLeBroadcastAssistantTest.class.getSimpleName();
+
+    @Rule public final MockitoRule mockito = MockitoJUnit.rule();
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -96,8 +99,6 @@ public class BluetoothLeBroadcastAssistantTest {
 
     @Before
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
-
         assumeTrue(SdkLevel.isAtLeastT());
         assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_BLUETOOTH_LE));
 
