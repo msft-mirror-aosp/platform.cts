@@ -27,11 +27,15 @@ import static android.view.WindowInsets.Type.statusBars;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withDisplayId;
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withMotionAction;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 
+import static org.hamcrest.Matchers.allOf;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
@@ -85,6 +89,7 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule;
 
 import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.cts.input.BlockingQueueEventVerifier;
 
 import org.junit.After;
 import org.junit.Before;
@@ -96,7 +101,7 @@ import org.junit.rules.TestRule;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public abstract class WindowUntrustedTouchTestBase {
     // Tags must not exceed 23 chars.
@@ -126,7 +131,6 @@ public abstract class WindowUntrustedTouchTestBase {
     private static final int ACTIVITY_COLOR = 0xFFFFFFFF;
     static final String WINDOW_1 = "W1";
     static final String WINDOW_2 = "W2";
-
     final WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
     private final Map<ComponentName, FutureConnection<IUntrustedTouchTestService>> mConnections =
             new ArrayMap<>();
@@ -146,7 +150,7 @@ public abstract class WindowUntrustedTouchTestBase {
     float mPreviousTouchOpacity;
     private int mPreviousSawAppOp;
     private final Set<String> mSawWindowsAdded = new ArraySet<>();
-    private final AtomicInteger mTouchesReceived = new AtomicInteger(0);
+    private BlockingQueueEventVerifier mEventVerifier;
     private final WindowInsetsAnimationWaiter mInsetsAnimationWaiter =
             new WindowInsetsAnimationWaiter();
 
@@ -194,7 +198,7 @@ public abstract class WindowUntrustedTouchTestBase {
                 "Failed to wait for activity to be on top",
                 CtsWindowInfoUtils.waitForWindowOnTop(mActivity.getWindow()));
         mActivityDisplayId = mActivity.getDisplayId();
-
+        mEventVerifier = new BlockingQueueEventVerifier(new LinkedBlockingQueue<>());
         mInstrumentation = getInstrumentation();
         mContext = mInstrumentation.getContext();
         mAppSelf = mContext.getPackageName();
@@ -214,7 +218,6 @@ public abstract class WindowUntrustedTouchTestBase {
     @After
     public void tearDown() throws Throwable {
         mWmState.waitForAppTransitionIdleOnDisplay(mActivityDisplayId);
-        mTouchesReceived.set(0);
         removeOverlays();
         for (FutureConnection<IUntrustedTouchTestService> connection : mConnections.values()) {
             mContext.unbindService(connection);
@@ -227,23 +230,23 @@ public abstract class WindowUntrustedTouchTestBase {
         AppOpsUtils.setOpMode(mAppSelf, OPSTR_SYSTEM_ALERT_WINDOW, mPreviousSawAppOp);
     }
 
-    private boolean onTouchEvent(View view, MotionEvent event) {
-        if (event.getAction() == MotionEvent.ACTION_DOWN) {
-            mTouchesReceived.incrementAndGet();
-        }
-        return true;
+    private boolean onTouchEvent(View unused, MotionEvent event) {
+        return mEventVerifier.getQueue().add(MotionEvent.obtain(event));
     }
 
     void assertTouchReceived() {
         mInstrumentation.waitForIdleSync();
-        assertThat(mTouchesReceived.get()).isEqualTo(1);
-        mTouchesReceived.set(0);
+        mEventVerifier.assertReceivedMotion(
+                allOf(
+                        withMotionAction(MotionEvent.ACTION_DOWN),
+                        withDisplayId(mActivityDisplayId)));
+        mEventVerifier.assertReceivedMotion(
+                allOf(withMotionAction(MotionEvent.ACTION_UP), withDisplayId(mActivityDisplayId)));
     }
 
     void assertTouchNotReceived() {
         mInstrumentation.waitForIdleSync();
-        assertThat(mTouchesReceived.get()).isEqualTo(0);
-        mTouchesReceived.set(0);
+        mEventVerifier.assertNoEvents();
     }
 
     void assertAnimationRunning() {

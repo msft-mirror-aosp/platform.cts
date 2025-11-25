@@ -92,6 +92,16 @@ fun withCoordsForHistoryPos(historyPos: Int, pt: PointF, epsilon: Float = EPSILO
     }
 }
 
+fun withDisplayId(displayId: Int): Matcher<InputEvent> = object : TypeSafeMatcher<InputEvent>() {
+    override fun describeTo(description: Description) {
+        description.appendText("With displayId = $displayId")
+    }
+
+    override fun matchesSafely(event: InputEvent): Boolean {
+        return event.displayId == displayId
+    }
+}
+
 fun withRawCoords(pt: PointF, epsilon: Float = EPSILON):
         Matcher<MotionEvent> = object : TypeSafeMatcher<MotionEvent>() {
     override fun describeTo(description: Description) {
