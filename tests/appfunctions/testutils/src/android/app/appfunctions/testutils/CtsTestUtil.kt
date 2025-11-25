@@ -16,7 +16,11 @@
 
 package android.app.appfunctions.testutils
 
+import android.app.UiAutomation
+import android.os.ParcelFileDescriptor
 import com.android.bedstead.nene.TestApis.permissions
+import java.io.BufferedReader
+import java.io.InputStreamReader
 import kotlinx.coroutines.delay
 
 /** Contains testing utilities related to AppFunction's Sidecar library. */
@@ -54,6 +58,55 @@ object CtsTestUtil {
             }
         }
         throw lastError!!
+    }
+
+    /**
+     * Gets a list of force queryable packages.
+     *
+     * When calling `adb shell dumpsys package queries`, a section started with "forceQueryable:"
+     * will contain a list of system apps which are visible by all apps by default.
+     */
+    fun getForceQueryablePackages(uiAutomation: UiAutomation): List<String> {
+        val pfd = uiAutomation.executeShellCommand("dumpsys package queries")
+        return buildList {
+            ParcelFileDescriptor.AutoCloseInputStream(pfd).use { inputStream ->
+                BufferedReader(InputStreamReader(inputStream)).use { reader ->
+                    var line: String? = reader.readLine()
+                    var insideForceQueryableBlock = false
+                    var headerIndentationLevel = -1
+
+                    while (line != null) {
+                        val rawLine = line
+                        val trimmedLine = rawLine.trim()
+
+                        if (!insideForceQueryableBlock) {
+                            if (trimmedLine == "forceQueryable:") {
+                                insideForceQueryableBlock = true
+                                headerIndentationLevel = rawLine.indexOf("forceQueryable:")
+                            }
+                        } else {
+                            if (trimmedLine.isNotEmpty()) {
+                                val currentIndentation = rawLine.indexOf(trimmedLine)
+                                // End of force queryable section
+                                if (currentIndentation <= headerIndentationLevel) {
+                                    break
+                                }
+
+                                val cleanLine = trimmedLine.replace("[", "").replace("]", "")
+                                val packageList = cleanLine.split(",")
+
+                                for (pkg in packageList) {
+                                    if (pkg.isNotBlank()) {
+                                        add(pkg.trim())
+                                    }
+                                }
+                            }
+                        }
+                        line = reader.readLine()
+                    }
+                }
+            }
+        }
     }
 
     private const val RETRY_CHECK_INTERVAL_MILLIS: Long = 1000
