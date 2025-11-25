@@ -28,6 +28,13 @@
     </target_preparer>
     <test class="com.android.tradefed.testtype.AndroidJUnitTest">
         <option name="package" value="android.app.appinteraction.cts"/>
+        <!-- Tests with these annotations should only be ran with their corresponding
+             configurations, e.g. Tests with the RequireRunOnSecondaryUser annotation should be
+             ran with the run_on_work_profile configuration. Exclude these tests from running
+             with the normal configuration.
+             See go/bedstead-devicestate#androidtestxml
+        -->
+        <option name="exclude-annotation" value="com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser" />
     </test>
 
 </configuration>
