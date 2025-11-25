@@ -643,7 +643,7 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_OUTPUT_CONFIGURATION_GETTER, Flags.FLAG_SURFACE_FORMAT_FIX})
+    @RequiresFlagsEnabled(Flags.FLAG_OUTPUT_CONFIGURATION_GETTER)
     public void testOutputConfigurationFormatSizeGetter() throws Exception {
         Size size = new Size(2, 2);
         int maxImages = 1;
