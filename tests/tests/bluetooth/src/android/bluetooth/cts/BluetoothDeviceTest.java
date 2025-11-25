@@ -903,7 +903,8 @@ public class BluetoothDeviceTest {
     @RequiresFlagsEnabled(Flags.FLAG_PRIORITIZED_IN_EAR_ROUTING)
     @Test
     public void testSetOnHeadDetectionEnabled_permissionsAndEdgeCases() {
-        assumeTrue(mHasBluetooth);
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
         Permissions.enforceEachPermissions(
                 () -> mFakeDevice.setOnHeadDetectionEnabled(true),
                 List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
@@ -918,7 +919,8 @@ public class BluetoothDeviceTest {
     @RequiresFlagsEnabled(Flags.FLAG_PRIORITIZED_IN_EAR_ROUTING)
     @Test
     public void testSetOnHead_permissionsAndEdgeCases() {
-        assumeTrue(mHasBluetooth);
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
         Permissions.enforceEachPermissions(
                 () -> mFakeDevice.setOnHead(true),
                 List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
