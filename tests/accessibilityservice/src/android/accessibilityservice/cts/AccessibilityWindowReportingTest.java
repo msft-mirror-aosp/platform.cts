@@ -27,6 +27,7 @@ import static android.accessibilityservice.cts.utils.CtsTestUtils.DEFAULT_IDLE_T
 import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 import static android.accessibilityservice.cts.utils.DisplayUtils.VirtualDisplaySession;
 import static android.accessibilityservice.cts.utils.WindowCreationUtils.TOP_WINDOW_TITLE;
+import static android.content.pm.PackageManager.FEATURE_LEANBACK;
 import static android.content.pm.PackageManager.FEATURE_PICTURE_IN_PICTURE;
 import static android.view.accessibility.AccessibilityEvent.TYPE_WINDOWS_CHANGED;
 import static android.view.accessibility.AccessibilityEvent.WINDOWS_CHANGE_ACCESSIBILITY_FOCUSED;
@@ -274,6 +275,10 @@ public class AccessibilityWindowReportingTest {
                 .hasSystemFeature(FEATURE_PICTURE_IN_PICTURE)) {
             return;
         }
+        // TODO(b/434237438) Remove once TV sends AccessibilityEvent.WINDOWS_CHANGE_PIP
+        assumeFalse(sInstrumentation.getContext().getPackageManager()
+                .hasSystemFeature(FEATURE_LEANBACK));
+
         sUiAutomation.executeAndWaitForEvent(
                 () ->
                         mActivityRule
