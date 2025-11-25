@@ -244,6 +244,12 @@ public class DeveloperVerifierServiceTest {
 
     @Test
     public void testDeveloperVerificationSessionMethods() throws Exception {
+        int verificationFlags = 0;
+        if (android.content.pm.Flags.verificationServiceAdb()) {
+            verificationFlags =
+                    DeveloperVerificationSession.FLAG_VERIFICATION_IS_ADB
+                            | DeveloperVerificationSession.FLAG_VERIFICATION_FORCED_ON_ADB;
+        }
         DeveloperVerificationSession session =
                 new DeveloperVerificationSession(
                         RANDOM_SESSION_ID,
@@ -255,7 +261,8 @@ public class DeveloperVerifierServiceTest {
                         null,
                         DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_OPEN,
                         (IDeveloperVerificationSessionInterface)
-                                new TesIDeveloperVerificationSessionInterface());
+                                new TesIDeveloperVerificationSessionInterface(),
+                        verificationFlags);
         // Test parcel
         Parcel parcel = Parcel.obtain();
         session.writeToParcel(parcel, 0);
@@ -295,6 +302,9 @@ public class DeveloperVerifierServiceTest {
         sessionFromParcel.reportVerificationComplete(testStatus);
         // Test reportVerificationBypassed
         sessionFromParcel.reportVerificationBypassed(/* bypassReason= */ 20);
+        if (android.content.pm.Flags.verificationServiceAdb()) {
+            assertThat(sessionFromParcel.getVerificationFlags()).isEqualTo(verificationFlags);
+        }
     }
 
     private static class TesIDeveloperVerificationSessionInterface
@@ -402,7 +412,8 @@ public class DeveloperVerifierServiceTest {
                         new ArrayList<>(),
                         null,
                         DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_OPEN,
-                        null);
+                        null,
+                        0);
         binder.onVerificationRequired(sessionForRequired);
         assertThat(onVerificationRequiredCalled.get(ASYNC_TIMEOUT_SECONDS, TimeUnit.SECONDS))
                 .isEqualTo(sessionForRequired);
@@ -418,7 +429,8 @@ public class DeveloperVerifierServiceTest {
                         new ArrayList<>(),
                         null,
                         DEVELOPER_VERIFICATION_POLICY_BLOCK_FAIL_OPEN,
-                        null);
+                        null,
+                        0);
         binder.onVerificationRetry(sessionForRetry);
         assertThat(onVerificationRetryCalled.get(ASYNC_TIMEOUT_SECONDS, TimeUnit.SECONDS))
                 .isEqualTo(sessionForRetry);
