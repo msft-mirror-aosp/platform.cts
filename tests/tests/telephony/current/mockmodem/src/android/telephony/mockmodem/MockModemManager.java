@@ -1421,25 +1421,4 @@ public class MockModemManager {
             + " rilErrorCode=" + rilErrorCode);
         mMockModemService.getIRadioMessaging((byte) slotId).setSendSmsErrorCode(sendSmsErrorCode, rilErrorCode);
     }
-
-    /**
-     * Sets the Non-Terrestrial Network (NTN) status for the mock modem on the specified slot.
-     *
-     * @param slotId The logical slot index to configure.
-     * @param isNtn True to indicate the network is NTN, false otherwise.
-     */
-    public void setNetworkIsNtn(int slotId, boolean isNtn) {
-        Log.d(TAG, "setNetworkIsNtn: slotId=" + slotId + ", isNtn=" + isNtn);
-        if (mMockModemService == null) {
-            Log.e(TAG, "setNetworkIsNtn: mMockModemService is null");
-            return;
-        }
-        // Get the specific IRadioNetworkImpl instance for the slotId
-        IRadioNetworkImpl radioNetwork = mMockModemService.getIRadioNetwork((byte) slotId);
-        if (radioNetwork != null) {
-            radioNetwork.setIsNonTerrestrialNetwork(isNtn);
-        } else {
-            Log.e(TAG, "setNetworkIsNtn: IRadioNetworkImpl for slot " + slotId + " is null");
-        }
-    }
 }
