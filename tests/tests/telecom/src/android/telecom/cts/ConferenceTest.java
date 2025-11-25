@@ -492,6 +492,12 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
             assertDoesNotHaveCallProperties(conf, Call.Details.PROPERTY_CONFERENCE);
             assertEquals(false, mConferenceObject.isConferenceState());
 
+            // The direction of a conference is only applicable when setConferenceState is false.
+            mConferenceObject.setCallDirection(Call.Details.DIRECTION_OUTGOING);
+            assertCallDirection(conf, Call.Details.DIRECTION_OUTGOING);
+            mConferenceObject.setCallDirection(Call.Details.DIRECTION_INCOMING);
+            assertCallDirection(conf, Call.Details.DIRECTION_INCOMING);
+
             mConferenceObject.setConferenceState(true);
             assertCallProperties(conf, Call.Details.PROPERTY_CONFERENCE);
             assertEquals(true, mConferenceObject.isConferenceState());
