@@ -811,6 +811,7 @@ class ProvisioningTest {
     @Postsubmit(reason = "new test")
     @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING)
+    @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
     @RequireRunOnSystemUser
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserManagedUser"])
