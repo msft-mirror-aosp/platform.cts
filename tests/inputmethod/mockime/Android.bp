@@ -41,8 +41,9 @@ java_test_helper_library {
     ],
 }
 
-android_test_helper_app {
-    name: "CtsMockInputMethod",
+java_defaults {
+    name: "CtsMockInputMethodBase",
+
     defaults: ["cts_defaults"],
     optimize: {
         enabled: false,
@@ -59,6 +60,11 @@ android_test_helper_app {
     static_libs: [
         "CtsMockInputMethodLib",
     ],
+}
+
+android_test_helper_app {
+    name: "CtsMockInputMethod",
+    defaults: ["CtsMockInputMethodBase"],
     manifest: "AndroidManifest_mockime1.xml",
     additional_manifests: [
         "AndroidManifest_template.xml",
@@ -67,22 +73,7 @@ android_test_helper_app {
 
 android_test_helper_app {
     name: "CtsMockInputMethod2",
-    defaults: ["cts_defaults"],
-    optimize: {
-        enabled: false,
-    },
-    sdk_version: "current",
-    min_sdk_version: "21",
-    // tag this module as a cts test artifact
-    test_suites: [
-        "cts",
-        "general-tests",
-        "mts",
-        "sts",
-    ],
-    static_libs: [
-        "CtsMockInputMethodLib",
-    ],
+    defaults: ["CtsMockInputMethodBase"],
     manifest: "AndroidManifest_mockime2.xml",
     additional_manifests: [
         "AndroidManifest_template.xml",
