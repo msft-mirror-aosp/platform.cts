@@ -33,6 +33,7 @@ android_test {
         "android.app.wearable.flags-aconfig-java",
         "android.permission.flags-aconfig-java",
         "android.service.voice.flags-aconfig-java",
+        "com.android.server.voiceinteraction.flags-java",
         "android.app.privatecompute.flags-aconfig-java",
         "bedstead-enterprise",
         "ActivityContext",
