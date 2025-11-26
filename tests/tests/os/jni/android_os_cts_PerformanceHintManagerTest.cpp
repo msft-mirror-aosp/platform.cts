@@ -515,7 +515,6 @@ static jstring nativeTestCreateGraphicsPipelineSession(JNIEnv* env, jobject) {
     if (!manager) return toJString(env, "null manager");
 
     int errCode = 0;
-    const int count = APerformanceHint_getMaxGraphicsPipelineThreadsCount(manager);
     auto config = configFromCreator({.graphicsPipeline = true});
     auto session = createSessionWithConfig(manager, config, &errCode);
     CHECK_SESSION_RETURN(errCode, session, "Graphics pipeline session creation");
