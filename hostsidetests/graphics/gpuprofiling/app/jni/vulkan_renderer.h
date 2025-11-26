@@ -33,6 +33,7 @@ public:
     void cleanupSwapChain();
     void reset(ANativeWindow *newWindow, AAssetManager *newManager);
     bool initialized = false;
+    double lastFrameDurationMs = -1.0;
     // The renderer MUST be initialized for this value to be valid.
     bool supportsRaytracing = false;
 

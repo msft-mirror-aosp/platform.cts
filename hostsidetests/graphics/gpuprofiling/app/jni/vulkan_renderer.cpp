@@ -231,6 +231,7 @@ void VulkanRenderer::recreateSwapChain() {
 
 void VulkanRenderer::render(uint32_t trianglesCount) {
     if (!initialized) {
+        lastFrameDurationMs = -1.0;
         return;
     }
 
@@ -241,6 +242,7 @@ void VulkanRenderer::render(uint32_t trianglesCount) {
                                             &imageIndex);
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         recreateSwapChain();
+        lastFrameDurationMs = -1.0;
         return;
     }
     assert(result == VK_SUCCESS ||
@@ -265,7 +267,13 @@ void VulkanRenderer::render(uint32_t trianglesCount) {
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
+    vkDeviceWaitIdle(device);
+    auto gpuFrameStartTime = std::chrono::high_resolution_clock::now();
     VK_CHECK(vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]));
+    vkDeviceWaitIdle(device);
+    lastFrameDurationMs = std::chrono::duration<double, std::milli>(
+                                  std::chrono::high_resolution_clock::now() - gpuFrameStartTime)
+                                  .count();
 
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;

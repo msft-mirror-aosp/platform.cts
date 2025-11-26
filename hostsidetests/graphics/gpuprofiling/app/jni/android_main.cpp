@@ -17,6 +17,7 @@
 #include <android/native_window_jni.h>
 #include <android/trace.h>
 #include <android_native_app_glue.h>
+#include <unistd.h>
 
 #include <chrono>
 
@@ -26,6 +27,17 @@ struct AppState {
     VulkanRenderer renderer;
     bool canRender = false;
 };
+
+enum class Mode {
+    LOW_GPU_USAGE = 0,
+    HIGH_GPU_USAGE,
+    N_MODES,
+};
+
+constexpr Mode &operator++(Mode &s) {
+    s = (s == Mode::HIGH_GPU_USAGE) ? Mode::LOW_GPU_USAGE : Mode::HIGH_GPU_USAGE;
+    return s;
+}
 
 static void onAppCmd(struct android_app *app, int32_t cmd) {
     auto *appState = (AppState *)app->userData;
@@ -61,10 +73,9 @@ void android_main(struct android_app *app) {
     app->userData = &appState;
     app->onAppCmd = onAppCmd;
 
-    int frame = 0;
     int trianglesCount = 1;
+    Mode mode = Mode::LOW_GPU_USAGE;
     auto periodStartTime = std::chrono::high_resolution_clock::now();
-    auto prevFrameStartTime = periodStartTime;
 
     while (true) {
         auto frameStartTime = std::chrono::high_resolution_clock::now();
@@ -79,30 +90,38 @@ void android_main(struct android_app *app) {
         }
 
         appState.renderer.render(static_cast<int>(trianglesCount));
+        double lastFrameDurationMs = appState.renderer.lastFrameDurationMs;
+
         std::chrono::duration<double, std::milli> elapsedMs = frameStartTime - periodStartTime;
         if (elapsedMs.count() > 2000) {
-            // High GPU usage period
-            if (trianglesCount == 1) {
-                trianglesCount = 30;
-                // Since we don't know when the trace capture starts, report
-                // the raytracing support status every once in a while.
-                ATrace_setCounter("CtsTestDeviceRayTracingSupport",
-                                  appState.renderer.supportsRaytracing);
-            }
-            if (frame % 5 == 0) {
-                std::chrono::duration<double, std::milli> lastFrameTimeMs =
-                        frameStartTime - prevFrameStartTime;
-                if (lastFrameTimeMs.count() < 60) {
-                    trianglesCount *= 2;
-                }
-            }
-            if (elapsedMs.count() > 4000) {
-                // Start next low GPU usage period
-                periodStartTime = std::chrono::high_resolution_clock::now();
-                trianglesCount = 1;
-            }
+            ++mode;
+            periodStartTime = std::chrono::high_resolution_clock::now();
+            // Since we don't know when the trace capture starts, report
+            // the raytracing support status every once in a while.
+            ATrace_setCounter("CtsTestDeviceRayTracingSupport",
+                              appState.renderer.supportsRaytracing);
         }
-        prevFrameStartTime = frameStartTime;
-        ++frame;
+        if (lastFrameDurationMs > 0) {
+            double desiredFrameDuration = 10.5;
+            // Adjust the number of triangles based on the previous frame time.
+            switch (mode) {
+                case Mode::LOW_GPU_USAGE:
+                    usleep(20000);
+                    break;
+                case Mode::HIGH_GPU_USAGE:
+                    desiredFrameDuration = 60.0;
+                    break;
+                case Mode::N_MODES:
+                    // Should not happen
+                    break;
+            }
+            // Shift triangles count at most 20% at a time towards the desired frame duration.
+            trianglesCount *= 0.8 + 0.2 * desiredFrameDuration / lastFrameDurationMs;
+
+            if (trianglesCount < 1) trianglesCount = 1;
+        }
+        ATrace_setCounter("CtsTestLastFrameTime", lastFrameDurationMs);
+        ATrace_setCounter("CtsTestTriangleCount", trianglesCount);
+        ATrace_setCounter("CtsTestGpuUsageMode", (int)mode);
     }
 }
