@@ -377,9 +377,6 @@
     <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.changelogs.HealthConnectChangeLogsTests#testGetChangeLogToken_emptyRecordTypes_throwsException" />
     <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.changelogs.HealthConnectChangeLogsTests#testGetChangeLogToken_superRecordTypes_throwsException" />
 
-    <!-- b/459304702 -->
-    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.newia.AllDataFragmentTest" />
-
     <!-- b/378989105 -->
     <option name="compatibility:exclude-filter" value="CtsSliceTestCases" />
 
