@@ -284,30 +284,12 @@ public abstract class ActivityManagerTestBase {
      */
     private final TombstoneCollectorRule mTombstoneCollectorRule = new TombstoneCollectorRule();
 
-    private boolean mUseRuleForSetup;
-
-    public void setUseRuleForSetup() {
-        mUseRuleForSetup = true;
-    }
-
     /** The necessary procedures of set up and tear down. */
     @Rule
     public final TestRule mBaseRule =
             RuleChain.outerRule(mPostAssertionRule)
                     .around(mTombstoneCollectorRule)
-                    .around(new ExternalResource() {
-                        @Override
-                        protected void before() throws Exception {
-                            if (mUseRuleForSetup) {
-                                setUpBase();
-                            }
-                        }
-
-                        @Override
-                        protected void after() {
-                            tearDownBase();
-                        }
-                    });
+                    .around(new ActivityManagerBaseRule());
 
     /** Indicate to wait for all non-home activities to be destroyed when test finished. */
     protected boolean mShouldWaitForAllNonHomeActivitiesToDestroyed = false;
@@ -722,64 +704,69 @@ public abstract class ActivityManagerTestBase {
         }
     }
 
-    @Before
+    private class ActivityManagerBaseRule extends ExternalResource {
+        /**
+         * Always executes before {@link org.junit.Before}.
+         */
+        @Override public void before() throws Exception {
+            UiDeviceUtils.wakeUpAndUnlock(mContext);
+            if (isKeyguardLocked()) {
+                unlockUnexpectedLockedKeyguard();
+            }
+
+            launchHomeActivityNoWait();
+
+            finishAndRemoveCurrentTestActivityTasks();
+            // Stop any residual tasks from the test package.
+            forceStopAllTestPackages();
+
+            runWithShellPermission(() -> {
+                // TaskOrganizer ctor requires MANAGE_ACTIVITY_TASKS permission
+                mTaskOrganizer = new TestTaskOrganizer();
+                // Clear launch params for all test packages to make sure each test is run in a
+                // clean state.
+                mAtm.clearLaunchParamsForPackages(TEST_PACKAGES);
+            });
+            mSplitScreenActivityUtils = new SplitScreenActivityUtils(mWmState, mTaskOrganizer);
+        }
+
+        /**
+         * Always executes after {@link org.junit.After}.
+         */
+        @Override
+        public void after() {
+            mObjectTracker.tearDown(mPostAssertionRule::addError);
+
+            if (mTaskOrganizer != null) {
+                mTaskOrganizer.unregisterOrganizerIfNeeded();
+            }
+
+            UiDeviceUtils.wakeUpAndUnlock(mContext);
+            launchHomeActivityNoWait();
+
+            // Releases the wake lock after wakeUpAndUnlock wakes up the device.
+            mPartialWakeLockSession.close();
+
+            // Synchronous execution of finishAndRemoveCurrentTestActivityTasks() ensures that
+            // activity tasks associated with this test package are cleaned up at the end of each
+            // test. Am force stop shell commands might be asynchronous and could interrupt the task
+            // cleanup process if executed first.
+            finishAndRemoveCurrentTestActivityTasks();
+            forceStopAllTestPackages();
+
+            if (mShouldWaitForAllNonHomeActivitiesToDestroyed) {
+                mWmState.waitForAllNonHomeActivitiesToDestroyed();
+            }
+
+            if (!mWmState.waitForAppTransitionIdleOnDisplay(getMainDisplayId())) {
+                mPostAssertionRule.addError(
+                        new IllegalStateException("Shell transition left unfinished!"));
+            }
+        }
+    }
+
+    /** @deprecated base setup is now done in ActivityManagerBaseRule */
     public void setUp() throws Exception {
-        if (!mUseRuleForSetup) {
-            setUpBase();
-        }
-    }
-
-    private void setUpBase() throws Exception {
-        UiDeviceUtils.wakeUpAndUnlock(mContext);
-        if (isKeyguardLocked()) {
-            unlockUnexpectedLockedKeyguard();
-        }
-
-        launchHomeActivityNoWait();
-
-        finishAndRemoveCurrentTestActivityTasks();
-        // Stop any residual tasks from the test package.
-        forceStopAllTestPackages();
-
-        runWithShellPermission(() -> {
-            // TaskOrganizer ctor requires MANAGE_ACTIVITY_TASKS permission
-            mTaskOrganizer = new TestTaskOrganizer();
-            // Clear launch params for all test packages to make sure each test is run in a clean
-            // state.
-            mAtm.clearLaunchParamsForPackages(TEST_PACKAGES);
-        });
-        mSplitScreenActivityUtils = new SplitScreenActivityUtils(mWmState, mTaskOrganizer);
-    }
-
-    /** It always executes after {@link org.junit.After}. */
-    private void tearDownBase() {
-        mObjectTracker.tearDown(mPostAssertionRule::addError);
-
-        if (mTaskOrganizer != null) {
-            mTaskOrganizer.unregisterOrganizerIfNeeded();
-        }
-
-        UiDeviceUtils.wakeUpAndUnlock(mContext);
-        launchHomeActivityNoWait();
-
-        // Releases the wake lock after wakeUpAndUnlock wakes up the device.
-        mPartialWakeLockSession.close();
-
-        // Synchronous execution of finishAndRemoveCurrentTestActivityTasks() ensures that activity
-        // tasks associated with this test package are cleaned up at the end of each test. Am force
-        // stop shell commands might be asynchronous and could interrupt the task cleanup process
-        // if executed first.
-        finishAndRemoveCurrentTestActivityTasks();
-        forceStopAllTestPackages();
-
-        if (mShouldWaitForAllNonHomeActivitiesToDestroyed) {
-            mWmState.waitForAllNonHomeActivitiesToDestroyed();
-        }
-
-        if (!mWmState.waitForAppTransitionIdleOnDisplay(getMainDisplayId())) {
-            mPostAssertionRule.addError(
-                    new IllegalStateException("Shell transition left unfinished!"));
-        }
     }
 
     private void forceStopAllTestPackages() {

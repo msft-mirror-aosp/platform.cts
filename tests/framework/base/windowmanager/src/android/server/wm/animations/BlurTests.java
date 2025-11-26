@@ -153,10 +153,6 @@ public class BlurTests extends WindowManagerTestBase {
                     .around(mBackgroundActivityRule)
                     .around(mSetupRule);
 
-    public BlurTests() {
-        setUseRuleForSetup();
-    }
-
     @Test
     @ApiTest(apis = {"android.view.Window#setBackgroundBlurRadius(int)"})
     public void testBackgroundBlurSimple() {
