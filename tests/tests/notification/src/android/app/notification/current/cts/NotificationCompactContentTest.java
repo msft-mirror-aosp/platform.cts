@@ -17,6 +17,7 @@
 package android.app.notification.current.cts;
 
 import static android.app.Notification.SEMANTIC_STYLE_DANGER;
+import static android.app.Notification.SEMANTIC_STYLE_UNSPECIFIED;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -209,14 +210,27 @@ public class NotificationCompactContentTest {
                 getBuilderWithEverything()
                         .setShortCriticalText("Short")
                         .setCompactContent(
-                                new BasicCompactContent(
-                                        CompactText.useShortCriticalText()
-                                                .setSemanticStyle(SEMANTIC_STYLE_DANGER)))
+                                new BasicCompactContent(CompactText.useShortCriticalText())
+                                        .setSemanticStyle(SEMANTIC_STYLE_DANGER))
                         .build();
 
         ResolvedBasicCompactContent resolved = resolveBasicCompactContent(n);
 
         assertThat(resolved.getSemanticStyle()).isEqualTo(SEMANTIC_STYLE_DANGER);
+    }
+
+    @Test
+    public void resolveCompactContent_basic_defaultSemanticStyle() {
+        Notification n =
+                getBuilderWithEverything()
+                        .setShortCriticalText("Short")
+                        .setCompactContent(
+                                new BasicCompactContent(CompactText.useShortCriticalText()))
+                        .build();
+
+        ResolvedBasicCompactContent resolved = resolveBasicCompactContent(n);
+
+        assertThat(resolved.getSemanticStyle()).isEqualTo(SEMANTIC_STYLE_UNSPECIFIED);
     }
 
     @Test
