@@ -29,8 +29,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
+import android.Manifest;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.content.BroadcastReceiver;
@@ -57,6 +59,7 @@ import android.telephony.satellite.stub.NTRadioTechnology;
 import android.util.Log;
 import android.util.Pair;
 
+import androidx.annotation.RequiresPermission;
 import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CarrierPrivilegeUtils;
@@ -71,9 +74,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
     private static final String TAG = "CarrierRoamingSatelliteTestBase";
@@ -1312,6 +1318,175 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
                 .overrideSatelliteEntilementStatusResponseForCtsTest(null, false);
             sMockSatelliteServiceManager.setMaxAllowedDataModeForCtsTest(-1);
         }
+    }
+
+    @RequiresPermission(Manifest.permission.SATELLITE_COMMUNICATION)
+    public void testRequestEntitlementRefresh_Success_And_BypassThrottling(int slotId)
+            throws Exception {
+        logd(TAG, "testRequestEntitlementRefresh_Success_And_BypassThrottling: slotId = " + slotId);
+
+        // [Setup] Override internal entitlement query conditions for the Mock Service.
+        // Arg 1 (ignoreInternet = true): Assume internet is available.
+        // Arg 2 (ignoreRefreshCondition = FALSE): ENFORCE the timeout logic.
+        // We need to prove that our API explicitly requests a bypass; if we set this to true,
+        // the test would pass even if the bypass logic was broken.
+        assertTrue(
+                sMockSatelliteServiceManager.overrideSatelliteEntilementQueryConditions(
+                        true, false));
+
+        // [Setup] Allow 'Unconstrained' data mode so the entitlement flow can fully complete.
+        sMockSatelliteServiceManager.setMaxAllowedDataModeForCtsTest(
+                SatelliteManager.SATELLITE_DATA_SUPPORT_UNCONSTRAINED);
+
+        final int subId = SubscriptionManager.getSubscriptionId(slotId);
+
+        try {
+            // [State Prep] Start with entitlement "Disabled".
+            // This ensures Call 1 performs a visible state transition (Disabled -> Enabled).
+            prepareValidDisabledEntitlementStatus();
+            enableSatelliteEntitlementSupport(subId);
+
+            // Wait for the "Disabled" state to settle in Telephony.
+            waitForSatelliteDisabledForCarrier(slotId);
+
+            // [State Cleanup] Clear events from the Prep phase.
+            // If we don't, Call 1 might match with the old "Disabled" event and fail.
+            sMockModemManager.clearEventOnSetSatellitePlmn();
+            sMockModemManager.clearEventOnSetSatelliteEnabledForCarrier();
+            sMockSatelliteServiceManager.clearEventOnSetSatellitePlmn();
+            sMockSatelliteServiceManager.clearEventOnSetSatelliteEnabledForCarrier();
+
+            // [State Prep] Prepare "Enabled" response for the API call.
+            final EntilementStatusResponseGenerator generator =
+                    prepareValidEnabledEntitlementStatus(false);
+            final List<String> allowedPlmnList = generator.getAllowedPlmns();
+
+            // --- CALL 1: The "Happy Path" ---
+            logd(TAG, "Executing Call 1 (Happy Path)...");
+
+            final CompletableFuture<Integer> future1 = new CompletableFuture<>();
+            sSatelliteManager.requestEntitlementRefresh(subId, Runnable::run, future1::complete);
+
+            // [Verification 1] Check Result Code is SUCCESS.
+            final int result1 = future1.get(5, TimeUnit.SECONDS);
+            assertEquals(
+                    "Call 1 (Happy Path) should return SUCCESS",
+                    SatelliteManager.SATELLITE_RESULT_SUCCESS,
+                    result1);
+
+            // [Verification 1] Check Side Effects (Carrier Config updated).
+            waitForCarrierPlmnListConfigured(slotId, allowedPlmnList);
+
+            // --- CALL 2: The "Throttling Bypass" Check ---
+            logd(TAG, "Executing Call 2 (Throttling Bypass Check)...");
+
+            // [State Prep] Change server response to "Disabled" for the second call.
+            prepareValidDisabledEntitlementStatus();
+
+            // [State Cleanup] Clear events again before Call 2.
+            sMockModemManager.clearEventOnSetSatellitePlmn();
+            sMockModemManager.clearEventOnSetSatelliteEnabledForCarrier();
+            sMockSatelliteServiceManager.clearEventOnSetSatellitePlmn();
+            sMockSatelliteServiceManager.clearEventOnSetSatelliteEnabledForCarrier();
+
+            // [Execution] Trigger the refresh AGAIN immediately.
+            // Since we enforced timeouts in Setup, a standard call would fail here.
+            // Success proves the API correctly passed 'true' for ignoreApiThrottle.
+            final CompletableFuture<Integer> future2 = new CompletableFuture<>();
+            sSatelliteManager.requestEntitlementRefresh(subId, Runnable::run, future2::complete);
+
+            // [Verification 2] Check Result Code is still SUCCESS.
+            final int result2 = future2.get(5, TimeUnit.SECONDS);
+            assertEquals(
+                    "Call 2 (Throttling Bypass) should also return SUCCESS",
+                    SatelliteManager.SATELLITE_RESULT_SUCCESS,
+                    result2);
+
+            // [Verification 2] Check System State updated to Disabled.
+            waitForSatelliteDisabledForCarrier(slotId);
+        } finally {
+            // [Cleanup] Restore default test environment state.
+            sMockSatelliteServiceManager.overrideSatelliteEntilementQueryConditions(false, false);
+            sMockSatelliteServiceManager.overrideSatelliteEntilementStatusResponseForCtsTest(
+                    null, false);
+            sMockSatelliteServiceManager.setMaxAllowedDataModeForCtsTest(-1);
+        }
+    }
+
+    @RequiresPermission(Manifest.permission.SATELLITE_COMMUNICATION)
+    public void testRequestEntitlementRefresh_NoPermission_ThrowsSecurityException(int slotId) {
+        logd(
+                TAG,
+                "testRequestEntitlementRefresh_NoPermission_ThrowsSecurityException: slotId = "
+                        + slotId);
+
+        // [Setup] Drop all permissions to simulate a standard 3rd party app.
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .dropShellPermissionIdentity();
+
+        final int subId = SubscriptionManager.getSubscriptionId(slotId);
+
+        try {
+            // [Execution] Execute API call.
+            sSatelliteManager.requestEntitlementRefresh(subId, Runnable::run, result -> {});
+
+            // [Verification] Expect failure before this line is reached.
+            fail(
+                    "SecurityException expected when calling requestEntitlementRefresh without"
+                            + " permission");
+        } catch (SecurityException e) {
+            // [Verification] Expected behavior.
+        } finally {
+            // [Cleanup] Restore Shell Identity for subsequent tests.
+            adoptShellIdentity();
+        }
+    }
+
+    @RequiresPermission(Manifest.permission.SATELLITE_COMMUNICATION)
+    public void testRequestEntitlementRefresh_NullArguments_ThrowsNPE(int slotId) {
+        logd(TAG, "testRequestEntitlementRefresh_NullArguments_ThrowsNPE: slotId = " + slotId);
+
+        final int subId = SubscriptionManager.getSubscriptionId(slotId);
+        final Consumer<Integer> validListener = result -> {};
+        final Executor validExecutor = Runnable::run;
+
+        // [Case A] Null Executor
+        try {
+            sSatelliteManager.requestEntitlementRefresh(subId, null, validListener);
+            fail("NullPointerException expected for null Executor");
+        } catch (NullPointerException e) {
+            // Expected
+        }
+
+        // [Case B] Null Listener
+        try {
+            sSatelliteManager.requestEntitlementRefresh(subId, validExecutor, null);
+            fail("NullPointerException expected for null Listener");
+        } catch (NullPointerException e) {
+            // Expected
+        }
+    }
+
+    @RequiresPermission(Manifest.permission.SATELLITE_COMMUNICATION)
+    public void testRequestEntitlementRefresh_InvalidSubId(int invalidSubId) throws Exception {
+        logd(TAG, "testRequestEntitlementRefresh_InvalidSubId: invalidSubId = " + invalidSubId);
+
+        final CompletableFuture<Integer> resultFuture = new CompletableFuture<>();
+
+        // [Execution] Call API with invalid ID.
+        // Note: The API does not throw for invalid subIds, it returns an error code.
+        sSatelliteManager.requestEntitlementRefresh(
+                invalidSubId, Runnable::run, resultFuture::complete);
+
+        // [Verification] Expect REQUEST_NOT_SUPPORTED.
+        // Invalid subscriptions do not have the carrier config overlay needed to support the
+        // feature.
+        final int result = resultFuture.get(2, TimeUnit.SECONDS);
+        assertEquals(
+                "Should return REQUEST_NOT_SUPPORTED for invalid subId",
+                SatelliteManager.SATELLITE_RESULT_REQUEST_NOT_SUPPORTED,
+                result);
     }
 
     private static void setupEnvironmentForSatelliteDataTest(int slotId,
