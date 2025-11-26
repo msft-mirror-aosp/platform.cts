@@ -240,24 +240,11 @@ public final class Policy {
     private static BiFunction<EnterprisePolicy, Boolean, Set<Annotation>> userControllerIfCanSet() {
         return (enterprisePolicy, canSet) -> {
             if (!canSet) {
-                // Do not include `APPLIED_BY_USER_CONTROLLER` in CannotSetPolicyTest if
-                // `enterprisePolicy.dpc()` has PO states.
-                // If `DevicePolicyManager` APIs are available as PO they may or may not support
-                // `APPLIED_BY_USER_CONTROLLER`, because User Controller is essentially
-                // equivalent to PO on Full User.
-                // For now it is unknown what APIs exactly support User Controller, that's why
-                // we need to skip User Controller state.
-                // TODO (b/462060557): Include this in cannotSetPolicyTest for all PO states once
-                // all existing policy APIs are audited for the UC support.
-                int allFlags = Arrays.stream(enterprisePolicy.dpc()).reduce(0,
-                        (currentFlags, flag) -> currentFlags | flag);
-                int profileOwnerStates =
-                        APPLIED_BY_PROFILE_OWNER | APPLIED_BY_AFFILIATED_PROFILE_OWNER
-                                | APPLIED_BY_PARENT_INSTANCE_OF_PROFILE_OWNER_PROFILE;
-                boolean hasProfileOwnerState = (allFlags & profileOwnerStates) != 0;
-                if (hasProfileOwnerState) {
-                    return ImmutableSet.of();
-                }
+                // Do not include `APPLIED_BY_USER_CONTROLLER` in CannotSetPolicyTest to not
+                // accidentally break existing tests.
+                // TODO (b/463924962): Include this in cannotSetPolicyTest once existing tests
+                // do not fail.
+                return ImmutableSet.of();
             }
 
             return singleAnnotation(includeRunOnUserController()).apply(enterprisePolicy);
