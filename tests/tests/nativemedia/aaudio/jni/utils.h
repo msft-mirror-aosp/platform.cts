@@ -97,6 +97,8 @@ const static std::set<AAudio_DeviceType> ALL_VALID_INPUT_DEVICES = {
         AAUDIO_DEVICE_HDMI_ARC,
         AAUDIO_DEVICE_HDMI_EARC,
         AAUDIO_DEVICE_BLE_HEARING_AID,
+        AAUDIO_DEVICE_BLE_CENTRAL,
+        AAUDIO_DEVICE_BLE_CENTRAL_BROADCAST,
 };
 
 class StreamBuilderHelper {
