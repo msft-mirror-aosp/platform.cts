@@ -60,6 +60,7 @@ import android.server.wm.app.Components;
 import android.server.wm.settings.SettingsSession;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -72,6 +73,7 @@ public class AssistantStackTests extends ActivityManagerTestBase {
     private static final String TEST_APP_PACKAGE = Components.getPackageName();
     private int mAssistantDisplayId = DEFAULT_DISPLAY;
 
+    @Before
     public void setUp() throws Exception {
         super.setUp();
         // TODO(b/354950619): Re-enable tests when assistant is supported on non-default displays.
