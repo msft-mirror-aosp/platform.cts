@@ -59,7 +59,7 @@ import android.media.RouteDiscoveryPreference;
 import android.media.RouteListingPreference;
 import android.media.RoutingSessionInfo;
 import android.media.cts.ResourceReleaser;
-import android.os.UserHandle;
+import android.os.Process;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -1496,7 +1496,8 @@ public class SystemMediaRouter2Test {
         // that corresponds to this test. For this router we use the system_server package, which
         // is a placeholder real package name that's guaranteed to be present.
         MediaRouter2 systemServerProxyRouter =
-                MediaRouter2.getInstance(mContext, SYSTEM_SERVER_PACKAGE_NAME, UserHandle.SYSTEM);
+                MediaRouter2.getInstance(
+                        mContext, SYSTEM_SERVER_PACKAGE_NAME, Process.myUserHandle());
         RoutingController systemController = systemServerProxyRouter.getSystemController();
         systemServerProxyRouter.registerControllerCallback(mExecutor, controllerCallback);
         mResourceReleaser.add(
