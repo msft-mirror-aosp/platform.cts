@@ -67,6 +67,7 @@ public class TestJobSchedulerReceiver extends BroadcastReceiver {
             PACKAGE_NAME + ".extra.SET_NOTIFICATION_JOB_END_POLICY";
     public static final String EXTRA_SLOW_START = PACKAGE_NAME + ".extra.SLOW_START";
     public static final String EXTRA_SLOW_STOP = PACKAGE_NAME + ".extra.SLOW_STOP";
+    public static final String EXTRA_PENDING_REASONS = PACKAGE_NAME + ".extra.PENDING_REASONS";
     public static final String ACTION_SCHEDULE_JOB = PACKAGE_NAME + ".action.SCHEDULE_JOB";
     public static final String ACTION_CANCEL_JOBS = PACKAGE_NAME + ".action.CANCEL_JOBS";
     public static final String ACTION_POST_UI_INITIATING_NOTIFICATION =
@@ -78,6 +79,10 @@ public class TestJobSchedulerReceiver extends BroadcastReceiver {
             PACKAGE_NAME + ".action.NOTIFICATION_POSTED";
     public static final String ACTION_ALARM_SCHEDULED =
             PACKAGE_NAME + ".action.ALARM_SCHEDULED";
+    public static final String ACTION_GET_PENDING_JOB_REASONS =
+            PACKAGE_NAME + ".action.ACTION_GET_PENDING_JOB_REASONS";
+    public static final String ACTION_PENDING_JOB_REASONS_RESULT =
+            PACKAGE_NAME + ".action.ACTION_PENDING_JOB_REASONS_RESULT";
     public static final int JOB_INITIAL_BACKOFF = 10_000;
 
     @Override
@@ -141,6 +146,14 @@ public class TestJobSchedulerReceiver extends BroadcastReceiver {
                 scheduleJobResultIntent.putExtra(EXTRA_JOB_ID_KEY, jobId);
                 scheduleJobResultIntent.putExtra(EXTRA_SCHEDULE_RESULT, result);
                 context.sendBroadcast(scheduleJobResultIntent);
+                break;
+            case ACTION_GET_PENDING_JOB_REASONS:
+                final int jobId2 = intent.getIntExtra(EXTRA_JOB_ID_KEY, -1);
+                final int[] pendingReasons = jobScheduler.getPendingJobReasons(jobId2);
+                final Intent resultIntent = new Intent(ACTION_PENDING_JOB_REASONS_RESULT);
+                resultIntent.putExtra(EXTRA_JOB_ID_KEY, jobId2);
+                resultIntent.putExtra(EXTRA_PENDING_REASONS, pendingReasons);
+                context.sendBroadcast(resultIntent);
                 break;
             case ACTION_POST_UI_INITIATING_NOTIFICATION:
                 NotificationManager notificationManager =

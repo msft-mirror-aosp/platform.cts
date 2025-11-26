@@ -31,6 +31,7 @@ import static android.text.format.DateUtils.HOUR_IN_MILLIS;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -43,6 +44,7 @@ import android.jobscheduler.MockJobService.TestEnvironment.Event;
 import android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver;
 import android.os.SystemClock;
 import android.os.Temperature;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -880,6 +882,7 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
     }
 
     @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
+    @RequiresFlagsDisabled(android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API)
     @Test
     public void testPendingJobReasons_thermal() throws Exception {
         try {
@@ -892,6 +895,119 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
                     .isEqualTo(new int[] {JobScheduler.PENDING_JOB_REASON_DEVICE_STATE});
         } finally {
             ThermalUtils.resetThermalStatus();
+        }
+    }
+
+    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API)
+    @Test
+    public void testEnhancedPendingJobReasons_thermal() throws Exception {
+        try {
+            ThermalUtils.overrideThermalStatus(Temperature.THROTTLING_CRITICAL);
+
+            JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent).build();
+            mJobScheduler.schedule(jobInfo);
+            SystemClock.sleep(1000); // Adding 1s delay to make sure job stays in pending state.
+
+            assertThat(mJobScheduler.getPendingJobReasons(JOB_ID))
+                    .isEqualTo(new int[] {JobScheduler.PENDING_JOB_REASON_DEVICE_STATE_THERMAL});
+        } finally {
+            ThermalUtils.resetThermalStatus();
+        }
+    }
+
+    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API)
+    @Test
+    public void testPendingJobReason_thermal() throws Exception {
+        try {
+            ThermalUtils.overrideThermalStatus(Temperature.THROTTLING_CRITICAL);
+
+            JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent).build();
+            mJobScheduler.schedule(jobInfo);
+            SystemClock.sleep(1000); // Adding 1s delay to make sure job stays in pending state.
+
+            assertThat(mJobScheduler.getPendingJobReason(JOB_ID))
+                    .isEqualTo(JobScheduler.PENDING_JOB_REASON_DEVICE_STATE_THERMAL);
+        } finally {
+            ThermalUtils.resetThermalStatus();
+        }
+    }
+
+    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API)
+    @Test
+    public void testPendingJobReason_BatterySaver() throws Exception {
+        try (TestAppInterface testAppInterface = new TestAppInterface(getContext(), JOB_ID)) {
+            BatteryUtils.assumeBatterySaverFeature();
+
+            try {
+                makeTestPackageIdle();
+
+                setBatteryState(false, 20);
+                BatteryUtils.enableBatterySaver(true);
+
+                testAppInterface.scheduleJob(false, JobInfo.NETWORK_TYPE_NONE, false);
+
+                assertThat(
+                                testAppInterface.awaitJobScheduleResult(
+                                        DEFAULT_WAIT_TIMEOUT_MS, JobScheduler.RESULT_SUCCESS))
+                        .isTrue();
+
+                // Allow some time for the system to process the pending state
+                SystemClock.sleep(1000);
+
+                testAppInterface.requestPendingJobReasons(JOB_ID);
+
+                SystemUtil.eventually(
+                        () -> {
+                            int[] reasons = testAppInterface.getPendingJobReasons(JOB_ID);
+                            assertNotNull("Pending job reasons were not retrieved.", reasons);
+                            assertThat(reasons)
+                                    .asList()
+                                    .contains(
+                                            JobScheduler
+                                                    .PENDING_JOB_REASON_DEVICE_STATE_BATTERY_SAVER);
+                        });
+            } finally {
+                makeTestPackageActive();
+                BatteryUtils.resetBatterySaver();
+            }
+        }
+    }
+
+    @RequiresFlagsDisabled(android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API)
+    @Test
+    public void testDisabledFlagPendingJobReason_BatterySaver() throws Exception {
+        try (TestAppInterface testAppInterface = new TestAppInterface(getContext(), JOB_ID)) {
+            BatteryUtils.assumeBatterySaverFeature();
+            try {
+                makeTestPackageIdle();
+
+                setBatteryState(false, 20);
+                BatteryUtils.enableBatterySaver(true);
+
+                testAppInterface.scheduleJob(false, JobInfo.NETWORK_TYPE_NONE, false);
+
+                assertThat(
+                                testAppInterface.awaitJobScheduleResult(
+                                        DEFAULT_WAIT_TIMEOUT_MS, JobScheduler.RESULT_SUCCESS))
+                        .isTrue();
+
+                // Allow some time for the system to process the pending state
+                SystemClock.sleep(1000);
+
+                testAppInterface.requestPendingJobReasons(JOB_ID);
+
+                SystemUtil.eventually(
+                        () -> {
+                            int[] reasons = testAppInterface.getPendingJobReasons(JOB_ID);
+                            assertNotNull("Pending job reasons were not retrieved.", reasons);
+                            assertThat(reasons)
+                                    .asList()
+                                    .contains(JobScheduler.PENDING_JOB_REASON_DEVICE_STATE);
+                        });
+            } finally {
+                makeTestPackageActive();
+                BatteryUtils.resetBatterySaver();
+            }
         }
     }
 
@@ -1095,5 +1211,15 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
                 .setMinimumLatency(HOUR_IN_MILLIS)
                 .build();
         assertThrows(IllegalStateException.class, () -> mJobScheduler.schedule(extraJob));
+    }
+
+    private void makeTestPackageIdle() throws Exception {
+        UiDevice.getInstance(getInstrumentation())
+                .executeShellCommand("am make-uid-idle --user current " + TEST_APP_PACKAGE);
+    }
+
+    private void makeTestPackageActive() throws Exception {
+        UiDevice.getInstance(getInstrumentation())
+                .executeShellCommand("am make-uid-active --user current " + TEST_APP_PACKAGE);
     }
 }
