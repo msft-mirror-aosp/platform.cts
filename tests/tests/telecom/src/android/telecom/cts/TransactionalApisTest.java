@@ -1284,7 +1284,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
         assertNull(mIncomingCallAttributes.getContactUri());
         assertNull(mOutgoingCallAttributes.getContactUri());
 
-        Uri testUri = Uri.parse("content://0@com.android.contacts/contacts/lookup/2");
+        Uri testUri = Uri.parse("content://com.android.contacts/contacts/lookup/2");
         CallAttributes callAttributes =
                 new CallAttributes.Builder(
                                 DEFAULT_T_HANDLE, DIRECTION_OUTGOING, TEST_NAME_1, TEST_URI_1)
