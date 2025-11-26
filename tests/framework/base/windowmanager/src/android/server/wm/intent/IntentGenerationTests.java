@@ -26,6 +26,7 @@ import android.server.wm.intent.Persistence.TestCase;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -104,9 +105,8 @@ public class IntentGenerationTests extends IntentTestBase {
         mLaunchRunner.runAndWrite(mTargetContext, "clearCases", CASES.clearCases());
     }
 
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void createLaunchRunner() throws Exception {
         mLaunchRunner = new LaunchRunner(this);
     }
 

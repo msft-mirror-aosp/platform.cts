@@ -76,6 +76,7 @@ import androidx.test.filters.FlakyTest;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -92,14 +93,14 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
     @Rule
     public final DisableScreenDozeRule mDisableScreenDozeRule = new DisableScreenDozeRule();
 
-    @Override
+    @Before
     public void setUp() throws Exception {
         super.setUp();
         acquirePartialWakeLock();
     }
 
     @After
-    public void tearDown() {
+    public void forceStopTestPackages() {
         Components.forceStopPackage();
     }
 
