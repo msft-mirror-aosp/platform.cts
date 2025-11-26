@@ -39,6 +39,7 @@ import android.graphics.Rect;
 import android.hardware.display.DisplayManager;
 import android.os.PowerManager;
 import android.os.SystemClock;
+import android.os.UserHandle;
 import android.view.Display;
 import android.view.InputDevice;
 import android.view.KeyEvent;
@@ -58,17 +59,16 @@ import com.android.cts.input.UinputStylus;
 import com.android.cts.input.UinputTouchDevice;
 import com.android.cts.input.UinputTouchScreen;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
-import java.time.Duration;
 
 public final class TestUtils {
     private static final long TIME_SLICE = 100;  // msec
@@ -268,6 +268,16 @@ public final class TestUtils {
         instrumentation.getUiAutomation().injectInputEvent(
                 new KeyEvent(timestamp, timestamp, KeyEvent.ACTION_UP, keyCode, 0)
                         , true /* sync */);
+    }
+
+    /** Install an APK on the current user. */
+    public static void installApk(@NonNull String path) {
+        runShellCommandOrThrow("pm install -r --user " + UserHandle.myUserId() + " " + path);
+    }
+
+    /** Uninstall a specified package on the current user. */
+    public static void uninstallPackage(@NonNull String packageName) {
+        runShellCommandOrThrow("pm uninstall --user " + UserHandle.myUserId() + " " + packageName);
     }
 
     /**

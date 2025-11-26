@@ -32,6 +32,7 @@
         <package android:name="com.android.cts.mocklargeresourceime" />
         <package android:name="com.android.cts.mockime"/>
         <package android:name="com.android.cts.mockime2"/>
+        <package android:name="com.android.cts.mockimemanysubtypes"/>
         <package android:name="com.android.cts.mockimewithsubtypes" />
     </queries>
 

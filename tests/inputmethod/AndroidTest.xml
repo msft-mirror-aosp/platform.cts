@@ -111,10 +111,12 @@
     <target_preparer class="com.android.compatibility.common.tradefed.targetprep.FilePusher">
         <option name="cleanup" value="true" />
         <!--
-            CtsMockLargeResourceInputMethod should not always be installed, but the apk must be
-            available.
+            These APKs contain a large number of subtypes/services and are not installed
+            by default to avoid slowing down package scanning. They are pushed to the
+            device and installed only by the specific tests that need them.
         -->
         <option name="push" value="CtsMockLargeResourceInputMethod.apk->/data/local/tmp/cts/inputmethod/CtsMockLargeResourceInputMethod.apk" />
+        <option name="push" value="CtsMockInputMethodWithManySubtypes.apk->/data/local/tmp/cts/inputmethod/CtsMockInputMethodWithManySubtypes.apk" />
     </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
@@ -193,6 +195,8 @@
         <option name="teardown-command" value="am compat reset ALLOW_TEST_API_ACCESS com.android.cts.mockime" />
         <option name="run-command" value="am compat enable ALLOW_TEST_API_ACCESS com.android.cts.mockime2"  />
         <option name="teardown-command" value="am compat reset ALLOW_TEST_API_ACCESS com.android.cts.mockime2" />
+        <option name="run-command" value="am compat enable ALLOW_TEST_API_ACCESS com.android.cts.mockimemanysubtypes"  />
+        <option name="teardown-command" value="am compat reset ALLOW_TEST_API_ACCESS com.android.cts.mockimemanysubtypes" />
         <option name="run-command" value="am compat enable ALLOW_TEST_API_ACCESS com.android.cts.mocka11yime"  />
         <option name="teardown-command" value="am compat reset ALLOW_TEST_API_ACCESS com.android.cts.mocka11yime" />
         <option name="run-command" value="am compat enable ALLOW_TEST_API_ACCESS android.view.inputmethod.ctstestapp"  />
