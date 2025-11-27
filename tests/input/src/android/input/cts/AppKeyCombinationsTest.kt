@@ -24,9 +24,9 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.ShellUtils
 import com.android.cts.input.CaptureEventActivity
-import com.android.cts.input.inputeventmatchers.withKeyFlags
 import com.android.cts.input.inputeventmatchers.withKeyAction
 import com.android.cts.input.inputeventmatchers.withKeyCode
+import com.android.cts.input.inputeventmatchers.withKeyFlags
 import com.android.cts.input.inputeventmatchers.withModifierState
 import org.hamcrest.Matchers.allOf
 import org.junit.Before
