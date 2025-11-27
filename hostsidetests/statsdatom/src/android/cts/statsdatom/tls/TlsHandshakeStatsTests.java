@@ -29,6 +29,7 @@ import com.android.os.StatsLog;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.testtype.DeviceTestCase;
 import com.android.tradefed.testtype.IBuildReceiver;
+import com.android.tradefed.util.RunUtil;
 
 import java.util.List;
 
@@ -66,6 +67,9 @@ public class TlsHandshakeStatsTests extends DeviceTestCase implements IBuildRece
                 atomTag);
 
         DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".AtomTests", "testTlsHandshake");
+
+        // Wait for the atom to be uploaded since it is done so asynchronously.
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
 
         // Sorted list of events in order in which they occurred.
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
