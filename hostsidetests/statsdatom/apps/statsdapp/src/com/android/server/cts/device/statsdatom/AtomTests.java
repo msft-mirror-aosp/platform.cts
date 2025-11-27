@@ -376,7 +376,6 @@ public class AtomTests {
         noteAppOp(appOpsManager, AppOpsManager.OPSTR_COARSE_LOCATION);
         sleep(500);
 
-        // TODO(b/149098800): Start fgs a second time and log OPSTR_CAMERA again
     }
 
     @Test
