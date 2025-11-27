@@ -16,6 +16,8 @@
 
 package android.app.appsearch.cts.appsindexer;
 
+import static android.app.appfunctions.flags.Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PRINT_APP_FUNCTION;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_COMMON_SCHEMA_METADATA;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_PRINT_APP_FUNCTION;
@@ -32,15 +34,19 @@ import static android.app.appsearch.testutil.AppFunctionTestUtils.PROPERTY_SCHEM
 import static android.app.appsearch.testutil.AppFunctionTestUtils.PROPERTY_SCHEMA_NAME;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.PROPERTY_SCHEMA_VERSION;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_A_APP_FUNCTION_SERVICE_DISABLED;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_A_BOTH_APP_AND_SERVICE_FUNCTIONS;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PATH;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_PATH;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_A_DYNAMIC_SCHEMA_PATH;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_A_DYNAMIC_SCHEMA_PATH_APP_LEVEL;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_A_DYNAMIC_SCHEMA_PATH_APP_LEVEL_FUNCTIONS_ONLY;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_A_V3_PATH;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_B_DYNAMIC_SCHEMA_PATH;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_B_PKG;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_B_V1_PATH;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.assertContainsAppFunctionDocument;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.clearTimestampsAndParentTypesInDocument;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.installAppAndGetAppFunctions;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.searchAppFunctionDocumentsIntoMap;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.searchAppFunctionsWithPackageName;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.updateAppFunctionServiceEnabledState;
@@ -365,27 +371,55 @@ public class AppFunctionCtsTest {
                 .isEqualTo(APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
     }
 
-    @RequiresFlagsEnabled(android.app.appfunctions.flags.Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
+    @RequiresFlagsEnabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     @Test
     public void indexAppWithDynamicSchema_appLevelDefinition() throws Throwable {
-        installPackage(mContext, TEST_APP_A_DYNAMIC_SCHEMA_PATH_APP_LEVEL);
+        Map<String, GenericDocument> appFnMap =
+                installAppAndGetAppFunctions(
+                        mContext, TEST_APP_A_DYNAMIC_SCHEMA_PATH_APP_LEVEL, TEST_APP_A_PKG);
 
-        // Retry till the indexer has completed a run.
-        retryAssert(
-                () -> {
-                    // A MobileApplication for it should be inserted.
-                    GenericDocument mobileApplication =
-                            searchMobileApplicationWithId(TEST_APP_A_PKG);
-                    assertThat(mobileApplication).isNotNull();
-                });
-        // Its app functions should be indexed.
-        Map<String, GenericDocument> appFnMap = searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
         assertThat(appFnMap).hasSize(1);
-        assertThat(
-                        clearTimestampsAndParentTypesInDocument(
-                                appFnMap.get(TEST_APP_A_PKG + "/com.example.utils#print1")))
-                .isEqualTo(APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
+        assertContainsAppFunctionDocument(
+                appFnMap,
+                TEST_APP_A_PKG + "/com.example.utils#print1",
+                APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
+    }
+
+    @RequiresFlagsEnabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
+    @Test
+    public void indexAppWithDynamicSchema_noServiceAppLevelFunctionsOnly() throws Throwable {
+        Map<String, GenericDocument> appFnMap =
+                installAppAndGetAppFunctions(
+                        mContext,
+                        TEST_APP_A_DYNAMIC_SCHEMA_PATH_APP_LEVEL_FUNCTIONS_ONLY,
+                        TEST_APP_A_PKG);
+
+        assertThat(appFnMap).hasSize(1);
+        assertContainsAppFunctionDocument(
+                appFnMap,
+                TEST_APP_A_PKG + "/com.example.utils#appPrint1",
+                APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION);
+    }
+
+    @RequiresFlagsEnabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
+    @Test
+    public void indexAppWithDynamicSchema_appAndServiceLevelFunctions() throws Throwable {
+        Map<String, GenericDocument> appFnMap =
+                installAppAndGetAppFunctions(
+                        mContext, TEST_APP_A_BOTH_APP_AND_SERVICE_FUNCTIONS, TEST_APP_A_PKG);
+
+        assertThat(appFnMap).hasSize(2);
+        assertContainsAppFunctionDocument(
+                appFnMap,
+                TEST_APP_A_PKG + "/com.example.utils#appPrint1",
+                APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION);
+        assertContainsAppFunctionDocument(
+                appFnMap,
+                TEST_APP_A_PKG + "/com.example.utils#print1",
+                APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
@@ -605,6 +639,87 @@ public class AppFunctionCtsTest {
                                                         TEST_APP_A_PKG
                                                                 + "/com.example.utils#print1")))
                                 .isEqualTo(APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PRINT_APP_FUNCTION);
+                    });
+        }
+    }
+
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER,
+        FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS
+    })
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    @Test
+    public void indexApp_updateToAppWithAppLevelFunctions() throws Throwable {
+        {
+            Map<String, GenericDocument> appFnMap =
+                    installAppAndGetAppFunctions(
+                            mContext, TEST_APP_A_DYNAMIC_SCHEMA_PATH, TEST_APP_A_PKG);
+
+            assertThat(appFnMap).hasSize(1);
+            assertContainsAppFunctionDocument(
+                    appFnMap,
+                    TEST_APP_A_PKG + "/com.example.utils#print1",
+                    APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
+        }
+
+        {
+            installPackage(mContext, TEST_APP_A_BOTH_APP_AND_SERVICE_FUNCTIONS);
+
+            // Retry till the indexer has completed another run.
+            retryAssert(
+                    () -> {
+                        Map<String, GenericDocument> appFnMap =
+                                searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
+                        assertThat(appFnMap).hasSize(2);
+                        assertContainsAppFunctionDocument(
+                                appFnMap,
+                                TEST_APP_A_PKG + "/com.example.utils#appPrint1",
+                                APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION);
+                        assertContainsAppFunctionDocument(
+                                appFnMap,
+                                TEST_APP_A_PKG + "/com.example.utils#print1",
+                                APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
+                    });
+        }
+    }
+
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER,
+        FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS
+    })
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    @Test
+    public void indexApp_withAppLevelFunctions_updateToAppWithoutAppLevelFunctions()
+            throws Throwable {
+        {
+            Map<String, GenericDocument> appFnMap =
+                    installAppAndGetAppFunctions(
+                            mContext, TEST_APP_A_BOTH_APP_AND_SERVICE_FUNCTIONS, TEST_APP_A_PKG);
+
+            assertThat(appFnMap).hasSize(2);
+            assertContainsAppFunctionDocument(
+                    appFnMap,
+                    TEST_APP_A_PKG + "/com.example.utils#appPrint1",
+                    APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION);
+            assertContainsAppFunctionDocument(
+                    appFnMap,
+                    TEST_APP_A_PKG + "/com.example.utils#print1",
+                    APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
+        }
+
+        {
+            installPackage(mContext, TEST_APP_A_DYNAMIC_SCHEMA_PATH);
+            // Retry till the indexer has completed another run.
+            retryAssert(
+                    () -> {
+                        Map<String, GenericDocument> appFnMap =
+                                searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
+
+                        assertThat(appFnMap).hasSize(1);
+                        assertContainsAppFunctionDocument(
+                                appFnMap,
+                                TEST_APP_A_PKG + "/com.example.utils#print1",
+                                APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
                     });
         }
     }
