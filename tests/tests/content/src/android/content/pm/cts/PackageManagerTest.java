@@ -62,6 +62,11 @@ import static android.content.pm.PackageManager.MATCH_SYSTEM_ONLY;
 import static android.content.pm.PackageManager.MATCH_UNINSTALLED_PACKAGES;
 import static android.content.pm.PackageManager.SYSTEM_APP_STATE_HIDDEN_UNTIL_INSTALLED_HIDDEN;
 import static android.content.pm.cts.PackageManagerShellCommandIncrementalTest.parsePackageDump;
+import static android.content.pm.cts.util.PackageTestUtils.APP_LOCK_SUPPORTED_APK;
+import static android.content.pm.cts.util.PackageTestUtils.APP_LOCK_SUPPORTED_PACKAGE_NAME;
+import static android.content.pm.cts.util.PackageTestUtils.hasLockAppsPermission;
+import static android.content.pm.cts.util.PackageTestUtils.installPackageScoped;
+import static android.content.pm.cts.util.PackageTestUtils.setHomeRoleHolderScoped;
 import static android.os.UserHandle.CURRENT;
 import static android.os.UserHandle.USER_CURRENT;
 
@@ -85,6 +90,7 @@ import android.app.Activity;
 import android.app.ActivityOptions;
 import android.app.ActivityThread;
 import android.app.Instrumentation;
+import android.app.PendingIntent;
 import android.app.usage.StorageStats;
 import android.app.usage.StorageStatsManager;
 import android.content.BroadcastReceiver;
@@ -128,6 +134,7 @@ import android.content.pm.SigningInfoException;
 import android.content.pm.SuspendDialogInfo;
 import android.content.pm.cts.PackageManagerShellCommandInstallTest.PackageBroadcastReceiver;
 import android.content.pm.cts.util.AbandonAllPackageSessionsRule;
+import android.content.pm.cts.util.RequiresAppLockSupported;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
@@ -144,6 +151,7 @@ import android.os.SystemClock;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -158,6 +166,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ServiceTestRule;
 import androidx.test.uiautomator.UiDevice;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.FileUtils;
 import com.android.compatibility.common.util.PollingCheck;
@@ -4323,5 +4332,47 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
                                 "com.android.settings",
                                 PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
                                 PackageManager.DONT_KILL_APP));
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(apis = {"android.content.pm.PackageManager#getEnableAppLockIntentForPackage"})
+    public void testGetEnableAppLockIntentForPackage_withoutPermission_throwsSecurityException()
+            throws Exception {
+        try (AutoCloseable withAppLockSupportedApp =
+                installPackageScoped(APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME)) {
+            assertThat(hasLockAppsPermission(mContext)).isFalse();
+
+            assertThrows(
+                    SecurityException.class,
+                    () ->
+                            mContext.getPackageManager()
+                                    .getEnableAppLockIntentForPackage(
+                                            APP_LOCK_SUPPORTED_PACKAGE_NAME, /* enabled= */ true));
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(apis = {"android.content.pm.PackageManager#getEnableAppLockIntentForPackage"})
+    public void testGetEnableAppLockIntentForPackage_withPermission_returnsPendingIntent()
+            throws Exception {
+        try (AutoCloseable withAppLockSupportedApp =
+                        installPackageScoped(
+                                APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME);
+                AutoCloseable withLockAppsPermission = setHomeRoleHolderScoped(mContext)) {
+            assertThat(hasLockAppsPermission(mContext)).isTrue();
+
+            PendingIntent pendingIntent =
+                    mContext.getPackageManager()
+                            .getEnableAppLockIntentForPackage(
+                                    APP_LOCK_SUPPORTED_PACKAGE_NAME, /* enabled= */ true);
+
+            assertThat(pendingIntent).isNotNull();
+        }
     }
 }
