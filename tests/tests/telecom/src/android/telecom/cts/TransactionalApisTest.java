@@ -543,12 +543,12 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             assertCallState(getLastAddedCall(), Call.STATE_ACTIVE);
 
             // Update the group call state with valid contact uri
-            Uri uri = Uri.parse("content://0@com.android.contacts/contacts/lookup/2");
+            Uri uri = Uri.parse("content://com.android.contacts/contacts/lookup/2");
             requestAndAssertGroupCallStateChange(mCall1, true);
             requestAndAssertContactUriChange(mCall1, uri);
 
             // Update the group call state once more
-            uri = Uri.parse("content://0@com.android.contacts/contacts/lookup/4");
+            uri = Uri.parse("content://com.android.contacts/contacts/lookup/4");
             requestAndAssertGroupCallStateChange(mCall1, false);
             requestAndAssertContactUriChange(mCall1, uri);
 
@@ -565,7 +565,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             }
             // Update the group call state with a uri from a different user to verify that an
             // exception is thrown.
-            uri = Uri.parse("content://10@com.android.contacts/contacts/lookup/4");
+            uri = Uri.parse("content://11@com.android.contacts/contacts/lookup/4");
             try {
                 callControlAction(SET_CONTACT_URI, mCall1, uri);
                 fail(
