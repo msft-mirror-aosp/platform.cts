@@ -24,9 +24,9 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
-import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.ShellUtils
 import com.android.compatibility.common.util.UserHelper
+import com.android.compatibility.common.util.WindowUtil
 import com.android.cts.input.BlockingQueueEventVerifier
 import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.inputeventmatchers.withAxisValue
@@ -67,7 +67,7 @@ class InputShellCommandTest {
         activityRule.getScenario().onActivity {
             activity = it
         }
-        PollingCheck.waitFor { activity.hasWindowFocus() }
+        WindowUtil.waitForFocus(activity)
         WindowManagerStateHelper().waitUntilActivityReadyForInputInjection(
             activity,
             instrumentation,
