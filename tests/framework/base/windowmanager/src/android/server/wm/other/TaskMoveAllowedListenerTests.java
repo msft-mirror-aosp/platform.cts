@@ -231,9 +231,12 @@ public class TaskMoveAllowedListenerTests extends TaskMoveTestBase {
         // wait for the *next* callback, which should be triggered by the display connection.
         clearBroadcastData(ACTION_NOTIFY_LISTENER_CALLED);
 
-        // Make TMA state on the display false by changing the windowing mode to fullscreen.
+        // Try to make TMA state on the display false by changing the windowing mode to fullscreen.
         launchActivityOnDisplay(TEST_ACTIVITY, WINDOWING_MODE_FULLSCREEN, displayId);
         mWmState.computeState(TEST_ACTIVITY);
+
+        // Check whether the TMA state was actually changed to false.
+        assumeTaskMoveNotAllowedOnDisplay(displayId);
 
         final SparseBooleanArray tmaValues = assertListenerGotCalled();
         assertFalse(
