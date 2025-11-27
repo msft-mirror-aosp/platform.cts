@@ -411,9 +411,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
         for (FrameworkMethod m : basicTests) {
             Set<Annotation> parameterizedAnnotations =
-                    getParameterizedAnnotations(
-                            m.getAnnotations(),
-                            getClassAnnotationsRecursively(m.getDeclaringClass()));
+                    getParameterizedAnnotations(m.getAnnotations(), getRuntimeClassAnnotations());
 
             if (parameterizedAnnotations.isEmpty()) {
                 // Unparameterized, just add the original
@@ -449,8 +447,8 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
             }
         }
 
-        modifiedTests = FrameworkMethodSorter.sort(
-                generateGeneralParameterizationMethods(modifiedTests));
+        modifiedTests =
+                FrameworkMethodSorter.sort(generateGeneralParameterizationMethods(modifiedTests));
 
         return modifiedTests;
     }
@@ -558,17 +556,11 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     }
 
     /**
-     * Collect all annotations from the class and its superclasses.
-     * Used to collect the list of class annotations to be passed into {@link
-     * #generateReplacementAnnotations(Annotation, List<Annotation>)}
+     * Collect all annotations from the *runtime* class, which might be a subclass
+     * of the class where the test method is *declared*.
      */
-    public static List<Annotation> getClassAnnotationsRecursively(Class<?> clazz) {
-        List<Annotation> annotations = new ArrayList<>();
-        while (clazz != null) {
-            annotations.addAll(Arrays.asList(clazz.getAnnotations()));
-            clazz = clazz.getSuperclass();
-        }
-        return annotations;
+    List<Annotation> getRuntimeClassAnnotations(){
+        return Arrays.asList(getTestClass().getAnnotations());
     }
 
     HarrierRule getHarrierRule() {
