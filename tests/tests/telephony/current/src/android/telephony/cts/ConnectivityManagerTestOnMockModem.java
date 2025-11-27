@@ -34,9 +34,12 @@ import android.net.Uri;
 import android.os.Build;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.NetworkRegistrationInfo;
+import android.telephony.PreciseDataConnectionState;
 import android.telephony.ServiceState;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
+import android.telephony.TelephonyCallback;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -52,6 +55,7 @@ import org.junit.Test;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 /** Test MockModemService interfaces. */
@@ -145,6 +149,22 @@ public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
 
         @Override
         public void onLinkPropertiesChanged(Network network, LinkProperties linkProperties) {}
+    }
+
+    private PreciseDataConnectionStateListener mPreciseDataConnectionStateCallback;
+    private PreciseDataConnectionState mPreciseDataConnectionState;
+    private final Object mLock = new Object();
+    private final Executor mSimpleExecutor = Runnable::run;
+
+    private class PreciseDataConnectionStateListener extends TelephonyCallback
+            implements TelephonyCallback.PreciseDataConnectionStateListener {
+        @Override
+        public void onPreciseDataConnectionStateChanged(PreciseDataConnectionState state) {
+            synchronized (mLock) {
+                mPreciseDataConnectionState = state;
+                mLock.notify();
+            }
+        }
     }
 
     @BeforeClass
@@ -471,6 +491,130 @@ public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
 
         waitForNullActiveNetwork(TIMEOUT_ACTIVATE_NETWORK);
         assertNull(sConnectivityManager.getActiveNetwork());
+    }
+
+    @Test
+    public void testExplicitDisconnect() throws Throwable {
+        int slotId_0 = 0;
+        assumeTrue(hasApns(MCC_MNC_TWN_CHT));
+        try {
+            mPreciseDataConnectionStateCallback = new PreciseDataConnectionStateListener();
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    sTelephonyManager,
+                    (tm) ->
+                            tm.registerTelephonyCallback(
+                                    mSimpleExecutor, mPreciseDataConnectionStateCallback));
+            // Insert a SIM
+            sMockModemManager.insertSimCard(slotId_0, MOCK_SIM_PROFILE_ID_TWN_CHT);
+            // Enter Service
+            Log.d(TAG, "testExplicitDisconnectBehavior: Enter Service");
+            sMockModemManager.changeNetworkService(slotId_0, MOCK_SIM_PROFILE_ID_TWN_CHT, true);
+
+            // Get the list of available subscriptions
+            List<SubscriptionInfo> subscriptionInfoList =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            sSubscriptionManager, (sm) -> sm.getActiveSubscriptionInfoList());
+
+            Log.d(TAG, "subscriptionInfoList: " + subscriptionInfoList);
+
+            // Loop through the subscriptions to get the phone id
+            // Set the data enable by phone id
+            for (SubscriptionInfo subscriptionInfo : subscriptionInfoList) {
+                InstrumentationRegistry.getInstrumentation()
+                        .getUiAutomation()
+                        .adoptShellPermissionIdentity("android.permission.MODIFY_PHONE_STATE");
+                int slotId = subscriptionInfo.getSimSlotIndex();
+                if (slotId == slotId_0) {
+                    sSubscriptionManager.setDefaultDataSubId(subscriptionInfo.getSubscriptionId());
+                    sTelephonyManager.setDataEnabled(subscriptionInfo.getSubscriptionId(), true);
+                    Log.d(TAG, "Set Data on slot: " + slotId);
+                }
+            }
+
+            sNetworkCallback.awaitNetwork();
+            assertTrue("Network should be available", getNetworkOnAvailable());
+            assertTrue(
+                    "Network should be connected",
+                    mPreciseDataConnectionState.getState() == TelephonyManager.DATA_CONNECTED);
+            Log.d(TAG, "testExplicitDisconnectBehavior: Leave Service");
+            sMockModemManager.changeNetworkService(slotId_0, MOCK_SIM_PROFILE_ID_TWN_CHT, false);
+
+            sMockModemManager.removeSimCard(slotId_0);
+
+            waitForNullActiveNetwork(TIMEOUT_ACTIVATE_NETWORK);
+            assertNull("Active network should be null", sConnectivityManager.getActiveNetwork());
+            assertTrue(
+                    "Network should be connected",
+                    mPreciseDataConnectionState.getState() == TelephonyManager.DATA_DISCONNECTED);
+        } finally {
+            if (sMockModemManager.isSimCardPresent(slotId_0)) {
+                sMockModemManager.removeSimCard(slotId_0);
+            }
+            sTelephonyManager.unregisterTelephonyCallback(mPreciseDataConnectionStateCallback);
+        }
+    }
+
+    @Test
+    public void testExplicitDisconnectWithOldHAL() throws Throwable {
+        int slotId_0 = 0;
+        assumeTrue(hasApns(MCC_MNC_TWN_CHT));
+        try {
+            mPreciseDataConnectionStateCallback = new PreciseDataConnectionStateListener();
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    sTelephonyManager,
+                    (tm) ->
+                            tm.registerTelephonyCallback(
+                                    mSimpleExecutor, mPreciseDataConnectionStateCallback));
+            sMockModemManager.setUseNewHalDataCallListChanged(slotId_0, false);
+            // Insert a SIM
+            sMockModemManager.insertSimCard(slotId_0, MOCK_SIM_PROFILE_ID_TWN_CHT);
+            // Enter Service
+            Log.d(TAG, "testExplicitDisconnectWithOldHAL: Enter Service");
+            sMockModemManager.changeNetworkService(slotId_0, MOCK_SIM_PROFILE_ID_TWN_CHT, true);
+
+            // Get the list of available subscriptions
+            List<SubscriptionInfo> subscriptionInfoList =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            sSubscriptionManager, (sm) -> sm.getActiveSubscriptionInfoList());
+
+            Log.d(TAG, "testExplicitDisconnectWithOldHAL: " + subscriptionInfoList);
+
+            // Loop through the subscriptions to get the phone id
+            // Set the data enable by phone id
+            for (SubscriptionInfo subscriptionInfo : subscriptionInfoList) {
+                InstrumentationRegistry.getInstrumentation()
+                        .getUiAutomation()
+                        .adoptShellPermissionIdentity("android.permission.MODIFY_PHONE_STATE");
+                int slotId = subscriptionInfo.getSimSlotIndex();
+                if (slotId == slotId_0) {
+                    sSubscriptionManager.setDefaultDataSubId(subscriptionInfo.getSubscriptionId());
+                    sTelephonyManager.setDataEnabled(subscriptionInfo.getSubscriptionId(), true);
+                    Log.d(TAG, "Set Data on slot: " + slotId);
+                }
+            }
+
+            sNetworkCallback.awaitNetwork();
+            assertTrue("Network should be available", getNetworkOnAvailable());
+            assertTrue(
+                    "Network should be connected",
+                    mPreciseDataConnectionState.getState() == TelephonyManager.DATA_CONNECTED);
+            Log.d(TAG, "testExplicitDisconnectBehavior: Leave Service");
+            sMockModemManager.changeNetworkService(slotId_0, MOCK_SIM_PROFILE_ID_TWN_CHT, false);
+
+            sMockModemManager.removeSimCard(slotId_0);
+
+            waitForNullActiveNetwork(TIMEOUT_ACTIVATE_NETWORK);
+            assertNull("Active network should be null", sConnectivityManager.getActiveNetwork());
+            assertTrue(
+                    "Network should not be connected",
+                    mPreciseDataConnectionState.getState() == TelephonyManager.DATA_DISCONNECTED);
+        } finally {
+            sMockModemManager.setUseNewHalDataCallListChanged(slotId_0, true);
+            if (sMockModemManager.isSimCardPresent(slotId_0)) {
+                sMockModemManager.removeSimCard(slotId_0);
+            }
+            sTelephonyManager.unregisterTelephonyCallback(mPreciseDataConnectionStateCallback);
+        }
     }
 
     private static void waitForNullActiveNetwork(long timeout)
