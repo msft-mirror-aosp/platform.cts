@@ -20,14 +20,13 @@
 
     <application>
         <uses-library android:name="android.test.runner"/>
-        <private-compute>
-            <service android:name="android.security.cts.pcc.PccService"
-            android:exported="true">
-                <intent-filter>
-                <action android:name="android.security.cts.pcc.PccProcessSecurityTest" />
-                </intent-filter>
-            </service>
-        </private-compute>
+        <service android:name="android.security.cts.pcc.PccService"
+          android:exported="true"
+          android:isPrivateComputeCoreProcess="true">
+            <intent-filter>
+            <action android:name="android.security.cts.pcc.PccProcessSecurityTest" />
+            </intent-filter>
+        </service>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
