@@ -103,6 +103,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.window.InputTransferToken;
 import android.window.WindowInfosListenerForTest.WindowInfo;
@@ -121,7 +122,6 @@ import com.android.cts.input.UinputTouchScreen;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.MockImeSession;
 import com.android.window.flags.Flags;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -545,7 +545,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         });
 
         try {
-            if (!latch.await(3, TimeUnit.SECONDS)) {
+            if (!latch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS)) {
                 return false;
             }
         } catch (InterruptedException e) {
@@ -2366,5 +2366,119 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         assertEquals(200, lp.getWidth());
         assertEquals(300, lp.getHeight());
         assertFalse(lp.isFocusable());
+    }
+
+    private void assertViewHasFocus(String message, View view) {
+        if (!waitForViewFocus(view, true)) {
+            final StringBuilder currentFocusInfo = new StringBuilder();
+            try {
+                mActivityRule.runOnUiThread(
+                        () -> {
+                            View hostFocus = mActivity.getCurrentFocus();
+                            currentFocusInfo.append("Host focus: ").append(hostFocus);
+                            if (mVr != null && mVr.getView() != null) {
+                                View embeddedFocus = mVr.getView().findFocus();
+                                currentFocusInfo.append(", Embedded focus: ").append(embeddedFocus);
+                            }
+                        });
+            } catch (Throwable t) {
+                currentFocusInfo.append("Error getting focus info: ").append(t);
+            }
+            fail(message + ". " + currentFocusInfo.toString());
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.view.flags.Flags.FLAG_ENABLE_WINDOWLESS_WINDOW_FOCUS_NAVIGATION)
+    public void testFocusNavigationWithKeys() throws Throwable {
+        mEmbeddedViewWidth = 300;
+        mEmbeddedViewHeight = 300;
+
+        LinearLayout embeddedLayout = new LinearLayout(mActivity);
+        embeddedLayout.setOrientation(LinearLayout.VERTICAL);
+        Button embeddedButton1 = new Button(mActivity);
+        embeddedLayout.addView(embeddedButton1);
+        Button embeddedButton2 = new Button(mActivity);
+        embeddedLayout.addView(embeddedButton2);
+        mEmbeddedView = embeddedLayout;
+
+        final Button hostButton1 = new Button(mActivity);
+        final Button hostButton2 = new Button(mActivity);
+
+        mActivityRule.runOnUiThread(
+                () -> {
+                    LinearLayout hostLayout = new LinearLayout(mActivity);
+                    hostLayout.setOrientation(LinearLayout.VERTICAL);
+                    hostLayout.addView(hostButton1);
+                    mSurfaceView = new MotionConsumingSurfaceView(mActivity);
+                    mSurfaceView.setZOrderOnTop(true);
+                    mSurfaceView.setFocusable(true);
+                    hostLayout.addView(
+                            mSurfaceView,
+                            new LinearLayout.LayoutParams(mEmbeddedViewWidth, mEmbeddedViewHeight));
+                    hostLayout.addView(hostButton2);
+                    mViewParent = hostLayout;
+                    mActivity.setContentView(hostLayout);
+                    mSurfaceView.getHolder().addCallback(this);
+                });
+        mInstrumentation.waitForIdleSync();
+        waitUntilEmbeddedViewDrawn();
+
+        // Request focus on the first host button
+        mActivityRule.runOnUiThread(hostButton1::requestFocus);
+        assertViewHasFocus("Host button 1 should have focus", hostButton1);
+
+        // Tab into the embedded window (EmbeddedButton1)
+        mInstrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_TAB);
+        assertViewHasFocus("Host mSurfaceView should have focus", mSurfaceView);
+        assertWindowFocused(mEmbeddedView, true);
+        assertViewHasFocus("Embedded button 1 should have focus", embeddedButton1);
+
+        // Tab to next view in embedded window (EmbeddedButton2)
+        mInstrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_TAB);
+        assertViewHasFocus("Embedded button 2 should have focus", embeddedButton2);
+
+        // Tab out of embedded window back to SurfaceView then HostButton2
+        mInstrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_TAB);
+        assertWindowFocused(mSurfaceView, true);
+        assertViewHasFocus("Host button 2 should have focus", hostButton2);
+
+        // To keep things interesting we provide embedded button 1 instead of 2 focused.
+        // This is a limitation with the existing implementation of the focus search. Fix
+        // is tracked by b/464073515
+        // Shift+Tab to previous view in embedded window (EmbeddedButton1)
+        sendShiftTab();
+        assertViewHasFocus("Embedded button 1 should have focus", embeddedButton1);
+
+        // Shift+Tab out of embedded window to HostButton1
+        sendShiftTab();
+        assertWindowFocused(mSurfaceView, true);
+        assertViewHasFocus("Host button 1 should have focus", hostButton1);
+    }
+
+    private void sendShiftTab() {
+        long downTime = SystemClock.uptimeMillis();
+        long eventTime = SystemClock.uptimeMillis();
+        KeyEvent down =
+                new KeyEvent(
+                        downTime,
+                        eventTime,
+                        KeyEvent.ACTION_DOWN,
+                        KeyEvent.KEYCODE_TAB,
+                        0,
+                        KeyEvent.META_SHIFT_ON);
+        mInstrumentation.sendKeySync(down);
+
+        downTime = SystemClock.uptimeMillis();
+        eventTime = SystemClock.uptimeMillis();
+        KeyEvent up =
+                new KeyEvent(
+                        downTime,
+                        eventTime,
+                        KeyEvent.ACTION_UP,
+                        KeyEvent.KEYCODE_TAB,
+                        0,
+                        KeyEvent.META_SHIFT_ON);
+        mInstrumentation.sendKeySync(up);
     }
 }
