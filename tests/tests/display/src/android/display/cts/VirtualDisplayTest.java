@@ -335,9 +335,9 @@ public class VirtualDisplayTest {
                         | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
                         | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
         Display display = virtualDisplay.getDisplay();
-        launchTestActivityOnDisplay(display.getDisplayId());
 
         try {
+            launchTestActivityOnDisplay(display.getDisplayId());
             assertEquals(display.getState(), Display.STATE_ON);
             {
                 DisplayChangeWaiter waiter = new DisplayChangeWaiter(display);
@@ -371,9 +371,9 @@ public class VirtualDisplayTest {
                         | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
                         | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
         Display display = virtualDisplay.getDisplay();
-        launchTestActivityOnDisplay(display.getDisplayId());
 
         try {
+            launchTestActivityOnDisplay(display.getDisplayId());
             assertEquals(display.getState(), Display.STATE_ON);
             {
                 DisplayChangeWaiter waiter = new DisplayChangeWaiter(display);
@@ -528,9 +528,9 @@ public class VirtualDisplayTest {
 
         Display display = virtualDisplay.getDisplay();
         assertEquals(Surface.ROTATION_0, display.getRotation());
-        SimpleActivity activity = launchTestActivityOnDisplay(display.getDisplayId());
         try (IgnoreOrientationRequestSession unused =
                      new IgnoreOrientationRequestSession(/* enable= */ false)) {
+            SimpleActivity activity = launchTestActivityOnDisplay(display.getDisplayId());
             {
                 DisplayChangeWaiter waiter = new DisplayChangeWaiter(display);
                 activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
@@ -562,8 +562,9 @@ public class VirtualDisplayTest {
 
         Display display = virtualDisplay.getDisplay();
         assertEquals(Surface.ROTATION_0, display.getRotation());
-        SimpleActivity activity = launchTestActivityOnDisplay(display.getDisplayId());
+        SimpleActivity activity = null;
         try {
+            activity = launchTestActivityOnDisplay(display.getDisplayId());
             {
                 DisplayChangeWaiter waiter = new DisplayChangeWaiter(display);
                 activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
@@ -578,7 +579,9 @@ public class VirtualDisplayTest {
             }
         } finally {
             // Clean up after the test completes.
-            activity.finish();
+            if (activity != null) {
+                activity.finish();
+            }
             virtualDisplay.release();
         }
         assertDisplayUnregistered(display);
@@ -616,9 +619,9 @@ public class VirtualDisplayTest {
 
         Display display = virtualDisplay.getDisplay();
         assertEquals(Surface.ROTATION_0, display.getRotation());
-        // Without an activity we're not going to receive display rotation changes
-        launchTestActivityOnDisplay(display.getDisplayId());
         try {
+            // Without an activity we're not going to receive display rotation changes
+            launchTestActivityOnDisplay(display.getDisplayId());
             {
                 DisplayChangeWaiter waiter = new DisplayChangeWaiter(display);
                 virtualDisplay.setRotation(Surface.ROTATION_270);
