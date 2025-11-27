@@ -79,7 +79,10 @@ class VirtualKeyboardTest {
     @After
     fun tearDown() {
         if (this::virtualKeyboard.isInitialized) {
-            virtualKeyboard.close()
+            SystemUtil.runWithShellPermissionIdentity(
+                virtualKeyboard::close,
+                "android.permission.INJECT_KEY_EVENTS",
+            )
         }
     }
 
@@ -108,20 +111,24 @@ class VirtualKeyboardTest {
     @Test
     fun testInjectSimpleEvents() {
         createVirtualKeyboard(INVALID_DISPLAY)
-
-        // Down event with no modifiers.
-        virtualKeyboard.sendKeyEvent(
-            VirtualKeyEvent.Builder()
-                .setKeyCode(KeyEvent.KEYCODE_A)
-                .setAction(VirtualKeyEvent.ACTION_DOWN)
-                .build()
-        )
-        // Up event with no modifiers.
-        virtualKeyboard.sendKeyEvent(
-            VirtualKeyEvent.Builder()
-                .setKeyCode(KeyEvent.KEYCODE_A)
-                .setAction(VirtualKeyEvent.ACTION_UP)
-                .build()
+        SystemUtil.runWithShellPermissionIdentity(
+            {
+                // Down event with no modifiers.
+                virtualKeyboard.sendKeyEvent(
+                    VirtualKeyEvent.Builder()
+                        .setKeyCode(KeyEvent.KEYCODE_A)
+                        .setAction(VirtualKeyEvent.ACTION_DOWN)
+                        .build()
+                )
+                // Up event with no modifiers.
+                virtualKeyboard.sendKeyEvent(
+                    VirtualKeyEvent.Builder()
+                        .setKeyCode(KeyEvent.KEYCODE_A)
+                        .setAction(VirtualKeyEvent.ACTION_UP)
+                        .build()
+                )
+            },
+            "android.permission.INJECT_KEY_EVENTS",
         )
 
         assertReceivedEvent(KeyEvent.KEYCODE_A, KeyEvent.ACTION_DOWN, 0)
@@ -131,43 +138,47 @@ class VirtualKeyboardTest {
     @Test
     fun testInjectModifierEvents() {
         createVirtualKeyboard(INVALID_DISPLAY)
+        SystemUtil.runWithShellPermissionIdentity(
+            {
+                virtualKeyboard.sendKeyEvent(
+                    VirtualKeyEvent.Builder()
+                        .setKeyCode(KeyEvent.KEYCODE_CTRL_LEFT)
+                        .setAction(VirtualKeyEvent.ACTION_DOWN)
+                        .build()
+                )
+                virtualKeyboard.sendKeyEvent(
+                    VirtualKeyEvent.Builder()
+                        .setKeyCode(KeyEvent.KEYCODE_SHIFT_LEFT)
+                        .setAction(VirtualKeyEvent.ACTION_DOWN)
+                        .build()
+                )
+                virtualKeyboard.sendKeyEvent(
+                    VirtualKeyEvent.Builder()
+                        .setKeyCode(KeyEvent.KEYCODE_ALT_LEFT)
+                        .setAction(VirtualKeyEvent.ACTION_DOWN)
+                        .build()
+                )
 
-        virtualKeyboard.sendKeyEvent(
-            VirtualKeyEvent.Builder()
-                .setKeyCode(KeyEvent.KEYCODE_CTRL_LEFT)
-                .setAction(VirtualKeyEvent.ACTION_DOWN)
-                .build()
-        )
-        virtualKeyboard.sendKeyEvent(
-            VirtualKeyEvent.Builder()
-                .setKeyCode(KeyEvent.KEYCODE_SHIFT_LEFT)
-                .setAction(VirtualKeyEvent.ACTION_DOWN)
-                .build()
-        )
-        virtualKeyboard.sendKeyEvent(
-            VirtualKeyEvent.Builder()
-                .setKeyCode(KeyEvent.KEYCODE_ALT_LEFT)
-                .setAction(VirtualKeyEvent.ACTION_DOWN)
-                .build()
-        )
-
-        virtualKeyboard.sendKeyEvent(
-            VirtualKeyEvent.Builder()
-                .setKeyCode(KeyEvent.KEYCODE_CTRL_LEFT)
-                .setAction(VirtualKeyEvent.ACTION_UP)
-                .build()
-        )
-        virtualKeyboard.sendKeyEvent(
-            VirtualKeyEvent.Builder()
-                .setKeyCode(KeyEvent.KEYCODE_SHIFT_LEFT)
-                .setAction(VirtualKeyEvent.ACTION_UP)
-                .build()
-        )
-        virtualKeyboard.sendKeyEvent(
-            VirtualKeyEvent.Builder()
-                .setKeyCode(KeyEvent.KEYCODE_ALT_LEFT)
-                .setAction(VirtualKeyEvent.ACTION_UP)
-                .build()
+                virtualKeyboard.sendKeyEvent(
+                    VirtualKeyEvent.Builder()
+                        .setKeyCode(KeyEvent.KEYCODE_CTRL_LEFT)
+                        .setAction(VirtualKeyEvent.ACTION_UP)
+                        .build()
+                )
+                virtualKeyboard.sendKeyEvent(
+                    VirtualKeyEvent.Builder()
+                        .setKeyCode(KeyEvent.KEYCODE_SHIFT_LEFT)
+                        .setAction(VirtualKeyEvent.ACTION_UP)
+                        .build()
+                )
+                virtualKeyboard.sendKeyEvent(
+                    VirtualKeyEvent.Builder()
+                        .setKeyCode(KeyEvent.KEYCODE_ALT_LEFT)
+                        .setAction(VirtualKeyEvent.ACTION_UP)
+                        .build()
+                )
+            },
+            "android.permission.INJECT_KEY_EVENTS",
         )
 
         // Down events.
@@ -208,18 +219,22 @@ class VirtualKeyboardTest {
     @Test
     fun testInjectMetaEvents() {
         createVirtualKeyboard(INVALID_DISPLAY)
-
-        virtualKeyboard.sendKeyEvent(
-            VirtualKeyEvent.Builder()
-                .setKeyCode(KeyEvent.KEYCODE_META_LEFT)
-                .setAction(VirtualKeyEvent.ACTION_DOWN)
-                .build()
-        )
-        virtualKeyboard.sendKeyEvent(
-            VirtualKeyEvent.Builder()
-                .setKeyCode(KeyEvent.KEYCODE_META_LEFT)
-                .setAction(VirtualKeyEvent.ACTION_UP)
-                .build()
+        SystemUtil.runWithShellPermissionIdentity(
+            {
+                virtualKeyboard.sendKeyEvent(
+                    VirtualKeyEvent.Builder()
+                        .setKeyCode(KeyEvent.KEYCODE_META_LEFT)
+                        .setAction(VirtualKeyEvent.ACTION_DOWN)
+                        .build()
+                )
+                virtualKeyboard.sendKeyEvent(
+                    VirtualKeyEvent.Builder()
+                        .setKeyCode(KeyEvent.KEYCODE_META_LEFT)
+                        .setAction(VirtualKeyEvent.ACTION_UP)
+                        .build()
+                )
+            },
+            "android.permission.INJECT_KEY_EVENTS",
         )
 
         assertReceivedEvent(
