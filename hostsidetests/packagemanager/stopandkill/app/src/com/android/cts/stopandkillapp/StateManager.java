@@ -17,25 +17,42 @@
 package com.android.cts.stopandkillapp;
 
 import android.content.Context;
+import android.os.Environment;
 import android.util.Log;
 
 import java.io.File;
 import java.io.IOException;
 
 public class StateManager {
-    private static final String STATE_FILE = "state.txt";
+    private static final String STATE_FILE_FORMAT = "%s-state.txt";
+    private static final String TAG = "CtsStopAndKillTestApp";
 
     /**
-     * Creates a state file in the app's external files directory.
+     * Creates a state file in the public Documents directory.
      *
      * @param context The context of the calling application.
      */
     public static void createStateFile(Context context) {
         try {
-            File stateFile = new File(context.getExternalFilesDir(null), STATE_FILE);
-            stateFile.createNewFile();
+            final String stateFileName = String.format(STATE_FILE_FORMAT, context.getPackageName());
+            // Get the public Documents directory.
+            File documentsDir =
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
+            // Ensure the directory exists.
+            documentsDir.mkdirs();
+            File stateFile = new File(documentsDir, stateFileName);
+            if (stateFile.exists()) {
+                Log.d(TAG, "State file already exists: " + stateFile);
+            } else {
+                Log.d(TAG, "Creating file at " + stateFile);
+                if (stateFile.createNewFile()) {
+                    Log.d(TAG, "State file created successfully: " + stateFile);
+                } else {
+                    Log.e(TAG, "Failed to create state file: " + stateFile);
+                }
+            }
         } catch (IOException e) {
-            Log.e("StateManager", "Failed to create state file", e);
+            Log.e(TAG, "Failed to create state file", e);
         }
     }
 }
