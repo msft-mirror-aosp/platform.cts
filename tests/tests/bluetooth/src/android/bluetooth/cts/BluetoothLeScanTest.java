@@ -91,7 +91,6 @@ public class BluetoothLeScanTest {
     @Before
     public void setUp() {
         Assume.assumeTrue(TestUtils.isBleSupported(mContext));
-        mUIAutomation.adoptShellPermissionIdentity(android.Manifest.permission.BLUETOOTH_CONNECT);
 
         assertThat(BlockingBluetoothAdapter.enable()).isTrue();
 
@@ -138,9 +137,7 @@ public class BluetoothLeScanTest {
     @MediumTest
     @Test
     public void scanFilter() {
-        mUIAutomation.adoptShellPermissionIdentity(
-                android.Manifest.permission.BLUETOOTH_CONNECT,
-                android.Manifest.permission.BLUETOOTH_SCAN);
+        mUIAutomation.adoptShellPermissionIdentity(android.Manifest.permission.BLUETOOTH_SCAN);
 
         var filters = scanToCreateFiltersForTopStrongestNearbyBeacons();
         if (filters.isEmpty()) {
@@ -174,7 +171,6 @@ public class BluetoothLeScanTest {
     @Test
     public void scanFromSourceWithoutFilters() {
         mUIAutomation.adoptShellPermissionIdentity(
-                android.Manifest.permission.BLUETOOTH_CONNECT,
                 android.Manifest.permission.BLUETOOTH_PRIVILEGED,
                 android.Manifest.permission.BLUETOOTH_SCAN,
                 android.Manifest.permission.UPDATE_DEVICE_STATS);
@@ -193,7 +189,6 @@ public class BluetoothLeScanTest {
     @Test
     public void scanFromSourceWithFilters() {
         mUIAutomation.adoptShellPermissionIdentity(
-                android.Manifest.permission.BLUETOOTH_CONNECT,
                 android.Manifest.permission.BLUETOOTH_PRIVILEGED,
                 android.Manifest.permission.BLUETOOTH_SCAN,
                 android.Manifest.permission.UPDATE_DEVICE_STATS);
@@ -257,9 +252,7 @@ public class BluetoothLeScanTest {
     @Test
     public void batchScan() {
         Assume.assumeTrue(isBleBatchScanSupported());
-        mUIAutomation.adoptShellPermissionIdentity(
-                android.Manifest.permission.BLUETOOTH_CONNECT,
-                android.Manifest.permission.BLUETOOTH_SCAN);
+        mUIAutomation.adoptShellPermissionIdentity(android.Manifest.permission.BLUETOOTH_SCAN);
 
         var batchScanSettings =
                 createScanSettings(
@@ -290,9 +283,7 @@ public class BluetoothLeScanTest {
     @Test
     public void startScanPendingIntent_nullnull() throws Exception {
         Assume.assumeTrue(isBleBatchScanSupported());
-        mUIAutomation.adoptShellPermissionIdentity(
-                android.Manifest.permission.BLUETOOTH_CONNECT,
-                android.Manifest.permission.BLUETOOTH_SCAN);
+        mUIAutomation.adoptShellPermissionIdentity(android.Manifest.permission.BLUETOOTH_SCAN);
 
         Intent broadcastIntent = new Intent();
         broadcastIntent.setClass(mContext, BluetoothScanReceiver.class);
@@ -313,9 +304,7 @@ public class BluetoothLeScanTest {
     @Test
     public void startScanPendingIntent() throws Exception {
         Assume.assumeTrue(isBleBatchScanSupported());
-        mUIAutomation.adoptShellPermissionIdentity(
-                android.Manifest.permission.BLUETOOTH_CONNECT,
-                android.Manifest.permission.BLUETOOTH_SCAN);
+        mUIAutomation.adoptShellPermissionIdentity(android.Manifest.permission.BLUETOOTH_SCAN);
 
         var batchScanSettings = createScanSettings(ScanSettings.SCAN_MODE_LOW_LATENCY, 0);
         var filters = scanToCreateFiltersForTopStrongestNearbyBeacons();
