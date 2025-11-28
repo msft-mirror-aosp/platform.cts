@@ -52,7 +52,7 @@ public abstract class EventDeliveryTestBase {
     private static final String TEST_MESSENGER = "MESSENGER";
 
     private Instrumentation mInstrumentation;
-    protected Context mContext;
+    private Context mContext;
     private ActivityManager mActivityManager;
     private ActivityManager.OnUidImportanceListener mUidImportanceListener;
     protected CountDownLatch mLatchActivityLaunch;
