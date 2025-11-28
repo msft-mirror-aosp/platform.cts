@@ -24,8 +24,9 @@
     <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS_FULL"/>
 
     <queries>
-        <package android:name="android.app.appfunctions.helper" />
-        <package android:name="android.app.appfunctions.dynamic.schema" />
+        <package android:name="android.app.appfunctions.cts.helper" />
+        <package android:name="android.app.appfunctions.cts.helper.sidecar" />
+        <package android:name="android.app.appfunctions.cts.dynamic.schema" />
     </queries>
     <application>
         <uses-library android:name="android.test.runner"/>
