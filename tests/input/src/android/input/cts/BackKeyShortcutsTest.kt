@@ -17,7 +17,6 @@
 package android.input.cts
 
 import android.hardware.input.InputManager
-import android.view.KeyEvent
 import android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -31,8 +30,6 @@ import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_LEFTMETA
 import com.android.cts.input.UinputKeyboard
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test

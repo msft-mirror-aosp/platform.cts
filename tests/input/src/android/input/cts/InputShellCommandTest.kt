@@ -121,9 +121,11 @@ class InputShellCommandTest {
     fun testDefaultScroll() {
         ShellUtils.runShellCommand("input -d $displayId scroll")
 
-        verifier.assertReceivedMotion(allOf(
-            withSource(InputDevice.SOURCE_ROTARY_ENCODER),
-            withMotionAction(MotionEvent.ACTION_SCROLL)),
+        verifier.assertReceivedMotion(
+            allOf(
+                withSource(InputDevice.SOURCE_ROTARY_ENCODER),
+                withMotionAction(MotionEvent.ACTION_SCROLL),
+            ),
         )
     }
 
