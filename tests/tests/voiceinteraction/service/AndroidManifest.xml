@@ -18,6 +18,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="android.voiceinteraction.service">
 
+    <!-- Added so that sessions started via this test package have access to AssistStructure view data. -->
+    <uses-permission android:name="android.permission.READ_ASSIST_STRUCTURE_SCREEN_CONTENT" />
+
     <application android:label="Voice service" android:debuggable="true">
       <uses-library android:name="android.test.runner" />
       <service android:name=".MainInteractionService"
@@ -94,6 +97,78 @@
               android:label="CTS helper service to bind to another voice interaction service"
               android:process=":interactor"
               android:exported="true">
+      </service>
+      <service android:name=".MainInteractionServiceAssistData"
+              android:label="CTS test voice interaction service Assist Data"
+              android:permission="android.permission.BIND_VOICE_INTERACTION"
+              android:process=":interactor"
+              android:exported="true"
+              android:visibleToInstantApps="true">
+          <meta-data android:name="android.voice_interaction"
+                     android:resource="@xml/interaction_service_assist_data" />
+          <intent-filter>
+              <action android:name="android.service.voice.VoiceInteractionService" />
+          </intent-filter>
+      </service>
+      <service android:name=".MainInteractionServiceAssistScreenshot"
+              android:label="CTS test voice interaction service Assist Screenshot"
+              android:permission="android.permission.BIND_VOICE_INTERACTION"
+              android:process=":interactor"
+              android:exported="true"
+              android:visibleToInstantApps="true">
+          <meta-data android:name="android.voice_interaction"
+                     android:resource="@xml/interaction_service_screenshot" />
+          <intent-filter>
+              <action android:name="android.service.voice.VoiceInteractionService" />
+          </intent-filter>
+      </service>
+      <service android:name=".MainInteractionServiceAllDisabled"
+              android:label="CTS test voice interaction service All Disabled"
+              android:permission="android.permission.BIND_VOICE_INTERACTION"
+              android:process=":interactor"
+              android:exported="true"
+              android:visibleToInstantApps="true">
+          <meta-data android:name="android.voice_interaction"
+                     android:resource="@xml/interaction_service_all_disabled" />
+          <intent-filter>
+              <action android:name="android.service.voice.VoiceInteractionService" />
+          </intent-filter>
+      </service>
+      <service android:name=".MainInteractionServiceAllEnabled"
+              android:label="CTS test voice interaction service All Enabled"
+              android:permission="android.permission.BIND_VOICE_INTERACTION"
+              android:process=":interactor"
+              android:exported="true"
+              android:visibleToInstantApps="true">
+          <meta-data android:name="android.voice_interaction"
+                     android:resource="@xml/interaction_service_all_enabled" />
+          <intent-filter>
+              <action android:name="android.service.voice.VoiceInteractionService" />
+          </intent-filter>
+      </service>
+      <service android:name=".MainInteractionServiceAssistStructure"
+              android:label="CTS test voice interaction service Assist Structure"
+              android:permission="android.permission.BIND_VOICE_INTERACTION"
+              android:process=":interactor"
+              android:exported="true"
+              android:visibleToInstantApps="true">
+          <meta-data android:name="android.voice_interaction"
+                     android:resource="@xml/interaction_service_assist_structure" />
+          <intent-filter>
+              <action android:name="android.service.voice.VoiceInteractionService" />
+          </intent-filter>
+      </service>
+      <service android:name=".MainInteractionServiceAssistStructureNoPermission"
+              android:label="CTS test voice interaction service Assist Structure No Permission"
+              android:permission="android.permission.BIND_VOICE_INTERACTION"
+              android:process=":interactor"
+              android:exported="true"
+              android:visibleToInstantApps="true">
+          <meta-data android:name="android.voice_interaction"
+                     android:resource="@xml/interaction_service_assist_structure" />
+          <intent-filter>
+              <action android:name="android.service.voice.VoiceInteractionService" />
+          </intent-filter>
       </service>
     </application>
 </manifest>

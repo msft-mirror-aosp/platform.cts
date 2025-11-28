@@ -40,6 +40,10 @@ public class MainInteractionSession extends VoiceInteractionSession {
     public static final String ACTION_ASSIST_DATA_RECEIVED = "assist_data_received";
     public static final String ACTION_ON_SHOW_RECEIVED = "on_show_received";
     public static final String EXTRA_RECEIVED = "received";
+    public static final String EXTRA_SHOW_FLAGS = "show_flags";
+    public static final String EXTRA_HAS_STRUCTURE = "has_structure";
+    public static final String EXTRA_HAS_WINDOW_DATA = "has_window_data";
+    public static final String EXTRA_HAS_VIEW_DATA = "has_view_data";
 
     Intent mStartIntent;
     List<MyTask> mUsedTasks = new ArrayList<MyTask>();
@@ -75,6 +79,7 @@ public class MainInteractionSession extends VoiceInteractionSession {
             return;
         }
         mStartIntent = args.getParcelable("intent");
+        args.putInt(EXTRA_SHOW_FLAGS, showFlags);
         notifyTestReceiver(ACTION_ON_SHOW_RECEIVED, args);
         if (mStartIntent != null) {
             startVoiceActivity(mStartIntent);
@@ -255,7 +260,33 @@ public class MainInteractionSession extends VoiceInteractionSession {
         Log.d(TAG, "onHandleAssist: " + state);
 
         Bundle extras = new Bundle();
-        extras.putBoolean(EXTRA_RECEIVED,  state.getAssistStructure() != null);
+        boolean hasStructure = state.getAssistStructure() != null;
+        extras.putBoolean(EXTRA_RECEIVED, hasStructure);
+        extras.putBoolean(EXTRA_HAS_STRUCTURE, hasStructure);
+
+        boolean hasWindowData = false;
+        boolean hasViewData = false;
+
+        if (hasStructure) {
+            android.app.assist.AssistStructure structure = state.getAssistStructure();
+            int windowCount = structure.getWindowNodeCount();
+            if (windowCount > 0) {
+                hasWindowData = true;
+                for (int i = 0; i < windowCount; i++) {
+                    android.app.assist.AssistStructure.WindowNode window =
+                            structure.getWindowNodeAt(i);
+                    if (window.getRootViewNode() != null
+                            && window.getRootViewNode().getChildCount() > 0) {
+                        hasViewData = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        extras.putBoolean(EXTRA_HAS_WINDOW_DATA, hasWindowData);
+        extras.putBoolean(EXTRA_HAS_VIEW_DATA, hasViewData);
+
         notifyTestReceiver(ACTION_ASSIST_DATA_RECEIVED, extras);
     }
 

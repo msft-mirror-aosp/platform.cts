@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,24 +14,23 @@
  * limitations under the License.
  */
 
-package android.voiceinteraction.service;
+package android.voiceinteraction.nopermission;
 
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.voiceinteraction.common.Utils;
 import android.widget.TextView;
 
-public class VoiceInteractionMain extends Activity {
-    static final String TAG = "VoiceInteractionMain";
+public class NoPermissionTrampolineActivity extends Activity {
+    private static final String TAG = "NoPermissionTrampoline";
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         TextView tv = new TextView(this);
-        tv.setText("VoiceInteractionMain");
+        tv.setText("NoPermissionTrampolineActivity");
         setContentView(tv);
     }
 
@@ -39,17 +38,13 @@ public class VoiceInteractionMain extends Activity {
     protected void onResume() {
         super.onResume();
         Intent intent = new Intent();
-        String targetService = getIntent().getStringExtra("target_service");
-        if (targetService != null) {
-            intent.setClassName(this, targetService);
-        } else {
-            intent.setComponent(new ComponentName(this, MainInteractionService.class));
-        }
-        intent.putExtra(Utils.KEY_TEST_EVENT, Utils.VIS_NORMAL_TEST);
+        intent.setComponent(new ComponentName(this, NoPermissionInteractionService.class));
+
         final Bundle intentExtras = getIntent().getExtras();
         if (intentExtras != null) {
             intent.putExtras(intentExtras);
         }
+
         ComponentName serviceName = startService(intent);
         Log.i(TAG, "Started service: " + serviceName);
     }

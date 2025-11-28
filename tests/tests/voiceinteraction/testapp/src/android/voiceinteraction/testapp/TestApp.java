@@ -30,11 +30,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.voiceinteraction.common.Utils;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-
-import android.voiceinteraction.common.Utils;
 
 public class TestApp extends Activity {
     static final String TAG = "TestApp";
@@ -48,6 +48,9 @@ public class TestApp extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        TextView tv = new TextView(this);
+        tv.setText("TestApp");
+        setContentView(tv);
         Log.i(TAG, "TestApp created");
     }
 
