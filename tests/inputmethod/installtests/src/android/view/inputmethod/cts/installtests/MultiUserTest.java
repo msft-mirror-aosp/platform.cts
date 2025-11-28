@@ -150,19 +150,21 @@ public class MultiUserTest {
         assertImeNotCurrentInputMethodInfo(Ime2Constants.IME_ID, currentUserId);
         assertImeNotCurrentInputMethodInfo(Ime2Constants.IME_ID, additionalUserId);
 
-        additionalUser.switchTo();
+        try {
+            additionalUser.switchTo();
 
-        assertImeNotExistInApiResult(Ime1Constants.IME_ID, currentUserId);
-        assertImeExistsInApiResult(Ime1Constants.IME_ID, additionalUserId);
-        assertIme1ImplicitlyEnabledSubtypeNotExist(currentUserId);
-        assertIme1ImplicitlyEnabledSubtypeExists(additionalUserId);
-        // check getCurrentInputMethodInfoAsUser(userId)
-        assertImeInCurrentInputMethodInfo(Ime1Constants.IME_ID, additionalUserId);
-        assertImeNotCurrentInputMethodInfo(Ime1Constants.IME_ID, currentUserId);
-        assertImeNotCurrentInputMethodInfo(Ime2Constants.IME_ID, currentUserId);
-        assertImeNotCurrentInputMethodInfo(Ime2Constants.IME_ID, additionalUserId);
-
-        currentUser.switchTo();
+            assertImeNotExistInApiResult(Ime1Constants.IME_ID, currentUserId);
+            assertImeExistsInApiResult(Ime1Constants.IME_ID, additionalUserId);
+            assertIme1ImplicitlyEnabledSubtypeNotExist(currentUserId);
+            assertIme1ImplicitlyEnabledSubtypeExists(additionalUserId);
+            // check getCurrentInputMethodInfoAsUser(userId)
+            assertImeInCurrentInputMethodInfo(Ime1Constants.IME_ID, additionalUserId);
+            assertImeNotCurrentInputMethodInfo(Ime1Constants.IME_ID, currentUserId);
+            assertImeNotCurrentInputMethodInfo(Ime2Constants.IME_ID, currentUserId);
+            assertImeNotCurrentInputMethodInfo(Ime2Constants.IME_ID, additionalUserId);
+        } finally {
+            currentUser.switchTo();
+        }
 
         // For devices that have config_multiuserDelayUserDataLocking set to true, the
         // additionalUserId will be stopped after switching to the currentUserId. This means that
