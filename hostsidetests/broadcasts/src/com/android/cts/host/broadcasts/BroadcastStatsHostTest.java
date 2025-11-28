@@ -36,7 +36,6 @@ import com.android.os.StatsLog;
 import com.android.os.broadcasts.BroadcastProcessed;
 import com.android.os.broadcasts.BroadcastSent;
 import com.android.os.broadcasts.BroadcastsExtensionAtoms;
-import com.android.server.am.Flags;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
@@ -111,7 +110,6 @@ public class BroadcastStatsHostTest extends BaseHostJUnit4Test implements IBuild
                 ProcessStateEnum.PROCESS_STATE_FOREGROUND_SERVICE);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_LOG_BROADCAST_PROCESSED_EVENT)
     @Test
     public void testBroadcastProcessed() throws Exception {
         uploadConfigForBroadcastProcessedEvent(TEST_PKG, TEST_BROADCAST_ACTION, RECEIVER_PKG);
