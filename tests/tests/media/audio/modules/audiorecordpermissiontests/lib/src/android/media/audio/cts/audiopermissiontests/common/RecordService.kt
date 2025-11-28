@@ -30,12 +30,8 @@ import android.os.Bundle
 import android.os.IBinder
 import android.permission.PermissionManager
 import android.util.Log
-
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Executors
-import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicReference
-
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
@@ -85,7 +81,7 @@ open class RecordService : Service() {
     private val mRecordings = HashMap<Int, Channel<Boolean>>()
 
     lateinit var mPermissionManager: PermissionManager
-    val mAttributionSource: AtomicReference<AttributionSource> = AtomicReference();
+    val mAttributionSource: AtomicReference<AttributionSource> = AtomicReference()
 
     override fun onCreate() {
         mPermissionManager = getSystemService(PermissionManager::class.java)
@@ -108,7 +104,8 @@ open class RecordService : Service() {
                                         AttributionSource.Builder(old.getUid())
                                                 .setPackageName(old.getPackageName())
                                                 .setNext(next)
-                                                .build())
+                                                .build()
+                                    )
                             }
                         }
                         ?.let { mAttributionSource.set(it) }
@@ -146,12 +143,14 @@ open class RecordService : Service() {
                         Intent(PREFIX + ACTION_SEND_ATTRIBUTION).apply {
                             setPackage(TARGET_PACKAGE)
                             putExtras(Bundle().apply {
-                                putBinder(EXTRA_ATTRIBUTION, object: IAttrProvider.Stub() {
+                                putBinder(EXTRA_ATTRIBUTION, object : IAttrProvider.Stub() {
                                     override fun inject(x: IAttrConsumer) = x.provideAttribution(
-                                            mAttributionSource.get())
+                                            mAttributionSource.get()
+                                    )
                                 })
                             })
-                        })
+                        }
+                    )
             }
         }
         return START_NOT_STICKY
@@ -179,7 +178,8 @@ open class RecordService : Service() {
             Intent(PREFIX + action).apply {
                 setPackage(TARGET_PACKAGE)
                 recordId?.let { putExtra(EXTRA_RECORD_ID, it) }
-            })
+            }
+        )
     }
 
     /**
@@ -199,7 +199,8 @@ open class RecordService : Service() {
                         .setEncoding(format)
                         .setSampleRate(sampleRate)
                         .setChannelMask(channelConfig)
-                        .build())
+                        .build()
+                )
                 .setBufferSizeInBytes(bufferSizeInBytes)
                 .setContext(this)
                 .build()
@@ -230,9 +231,13 @@ open class RecordService : Service() {
                         if (isSilenced != newIsSilenced) {
                             mScope.launch {
                                 respond(
-                                    if (newIsSilenced) ACTION_BEGAN_RECEIVE_SILENCE
-                                    else ACTION_BEGAN_RECEIVE_AUDIO,
-                                    recordId)
+                                    if (newIsSilenced) {
+                                        ACTION_BEGAN_RECEIVE_SILENCE
+                                    } else {
+                                        ACTION_BEGAN_RECEIVE_AUDIO
+                                    },
+                                    recordId
+                                )
                             }
                         }
                         isSilenced = newIsSilenced
@@ -249,13 +254,13 @@ open class RecordService : Service() {
         }
     }
 
-    private fun getAttribution(prov: IAttrProvider) : AttributionSource {
+    private fun getAttribution(prov: IAttrProvider): AttributionSource {
         val res = CompletableFuture<AttributionSource>()
         prov.inject(object : IAttrConsumer.Stub() {
             override fun provideAttribution(attr: AttributionSource) = res.complete(attr).let {}
         })
         return res.get().also {
-            Log.i(TAG, "Received attr source ${it}")
+            Log.i(TAG, "Received attr source $it")
         }
     }
 
@@ -305,7 +310,8 @@ open class RecordService : Service() {
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         manager.createNotificationChannel(
-            NotificationChannel("all", "All Notifications", NotificationManager.IMPORTANCE_NONE))
+            NotificationChannel("all", "All Notifications", NotificationManager.IMPORTANCE_NONE)
+        )
 
         return Notification.Builder(this, "all")
             .setContentTitle("Recording audio")
