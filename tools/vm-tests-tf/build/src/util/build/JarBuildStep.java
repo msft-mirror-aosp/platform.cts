@@ -79,10 +79,10 @@ public class JarBuildStep extends BuildStep {
             // Use a JarOutputStream to create the output jar file.
             File jarOutFile = outputFile.fileName;
             try (JarOutputStream jarOut = new JarOutputStream(new FileOutputStream(jarOutFile))) {
-                // Create the JAR entry for the file. Use destFileName, and copy the timestamp
-                // from the input.
+                // Create the JAR entry for the file.
                 JarEntry entry = new JarEntry(outputJarEntryName);
-                entry.setTime(absoluteInputFile.lastModified());
+                // Use constant time for build reproducibility. See b/456400432.
+                entry.setTime(0);
 
                 // Push the entry. The stream will then be ready to accept content.
                 jarOut.putNextEntry(entry);
