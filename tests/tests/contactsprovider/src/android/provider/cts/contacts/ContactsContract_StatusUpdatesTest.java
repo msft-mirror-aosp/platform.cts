@@ -47,8 +47,8 @@ public class ContactsContract_StatusUpdatesTest extends AndroidTestCase {
         ArrayList<ContentProviderOperation> ops = new ArrayList<ContentProviderOperation>();
 
         ops.add(ContentProviderOperation.newInsert(RawContacts.CONTENT_URI)
-                .withValue(RawContacts.ACCOUNT_TYPE, ACCOUNT_TYPE)
-                .withValue(RawContacts.ACCOUNT_NAME, ACCOUNT_NAME)
+                .withValue(RawContacts.ACCOUNT_TYPE, null)
+                .withValue(RawContacts.ACCOUNT_NAME, null)
                 .build());
 
         ops.add(ContentProviderOperation.newInsert(Data.CONTENT_URI)
