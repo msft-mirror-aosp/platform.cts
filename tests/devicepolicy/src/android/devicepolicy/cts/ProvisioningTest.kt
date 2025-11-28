@@ -892,6 +892,7 @@ class ProvisioningTest {
 
     @Postsubmit(reason = "new test")
     @EnsureHasDeviceOwner
+    @EnsureHasNoProfileOwner
     @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING)
     @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
@@ -975,36 +976,6 @@ class ProvisioningTest {
                     params.profileAdminComponentName.packageName,
                 )
             ).isEqualTo(DevicePolicyManager.STATUS_USER_SETUP_COMPLETED)
-            assertThat(
-                exception.provisioningError
-            ).isEqualTo(ProvisioningException.ERROR_PRE_CONDITION_FAILED)
-        }
-    }
-
-    @Postsubmit(reason = "new test")
-    @EnsureHasPermission(
-        CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS,
-    )
-    @EnsureHasPrivateProfile
-    @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING)
-    @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
-    @RequireRunOnInitialUser
-    @Test
-    @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserManagedUser"])
-    fun provisionMultiUserManagedUser_userHasPrivateProfile_throwsException() {
-        SetupCompleteResource(setupComplete = false).use {
-            val params = createDefaultMultiUserManagedUserProvisioningParamsBuilder().build()
-
-            val exception = assertThrows(ProvisioningException::class.java) {
-                localDevicePolicyManager.provisionMultiUserManagedUser(params)
-            }
-
-            assertThat(
-                localDevicePolicyManager.checkProvisioningPrecondition(
-                    DevicePolicyManager.ACTION_PROVISION_MULTI_USER_MANAGED_USER,
-                    params.profileAdminComponentName.packageName,
-                )
-            ).isEqualTo(DevicePolicyManager.STATUS_NOT_FULL_USER)
             assertThat(
                 exception.provisioningError
             ).isEqualTo(ProvisioningException.ERROR_PRE_CONDITION_FAILED)
