@@ -337,7 +337,15 @@ public class WifiNetworkSpecifierTest extends WifiJUnit4TestBase {
                 && ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU)) {
             CountDownLatch blocker = new CountDownLatch(1);
             WifiManager.LocalOnlyDisconnectionStatusListener listener =
-                    (networkSpecifier, isTriggeredByUser, reason) -> blocker.countDown();
+                    new WifiManager.LocalOnlyDisconnectionStatusListener() {
+                        @Override
+                        public void onDisconnectionStatus(
+                                @androidx.annotation.NonNull WifiNetworkSpecifier networkSpecifier,
+                                boolean isTriggeredByUser,
+                                int reason) {
+                            blocker.countDown();
+                        }
+                    };
             try {
                 assertThrows(
                         SecurityException.class,
