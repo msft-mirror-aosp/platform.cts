@@ -40,7 +40,6 @@ class ScreenOrientationComponent : DeviceStateComponent {
     }
 
     override fun teardownNonShareableState() {
-        // TODO(b/329570492): Support sharing of orientation in bedstead across tests
         originalScreenOrientation?.let {
             setScreenOrientation(it)
             originalScreenOrientation = null
