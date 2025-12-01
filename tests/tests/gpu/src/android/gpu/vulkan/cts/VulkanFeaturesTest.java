@@ -457,7 +457,6 @@ public class VulkanFeaturesTest {
     }
 
     @CddTest(requirements = {"7.1.4.2/C-1-7", "3.3.1/C-0-12"})
-    @RequiresFlagsEnabled(Flags.FLAG_PRESENT_ID2_KHR)
     @Test
     public void testVulkanRequiredExtensions() throws JSONException {
         assumeTrue("Skipping because Vulkan is not supported", mVulkanDevices.length > 0);
@@ -469,7 +468,9 @@ public class VulkanFeaturesTest {
         assertVulkanDeviceExtension(VK_KHR_INCREMENTAL_PRESENT,
                 VK_KHR_INCREMENTAL_PRESENT_SPEC_VERSION);
         assertVulkanDeviceExtension(VK_KHR_MAINTENANCE1, VK_KHR_MAINTENANCE1_SPEC_VERSION);
-        assertVulkanDeviceExtension(VK_KHR_PRESENT_ID2, VK_KHR_PRESENT_ID2_SPEC_VERSION);
+        if (Flags.presentId2Khr()) {
+            assertVulkanDeviceExtension(VK_KHR_PRESENT_ID2, VK_KHR_PRESENT_ID2_SPEC_VERSION);
+        }
     }
 
     @CddTest(requirements = {"7.9.2/C-1-5"})
