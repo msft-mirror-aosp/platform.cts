@@ -41,23 +41,23 @@ import android.devicepolicy.cts.utils.BundleUtils;
 import android.os.Bundle;
 import android.stats.devicepolicy.EventId;
 
-import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder;
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner;
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.enterprise.policies.ApplicationRestrictions;
+import com.android.bedstead.enterprise.policies.ApplicationRestrictionsManagingPackage;
+import com.android.bedstead.enterprise.policies.DmrhOnlyApplicationRestrictions;
+import com.android.bedstead.enterprise.policies.DpcOnlyApplicationRestrictions;
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.harrier.annotations.UserTest;
-import com.android.bedstead.enterprise.policies.ApplicationRestrictions;
-import com.android.bedstead.enterprise.policies.ApplicationRestrictionsManagingPackage;
-import com.android.bedstead.enterprise.policies.DmrhOnlyApplicationRestrictions;
-import com.android.bedstead.enterprise.policies.DpcOnlyApplicationRestrictions;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
@@ -162,7 +162,7 @@ public final class ApplicationRestrictionsTest {
                         .getApplicationRestrictions(
                                 dpc(sDeviceState).componentName(), sTestApp.packageName());
         Bundle bundle = BundleUtils.createBundle(
-            "getApplicationRestrictions_applicationRestrictionsAreSet_returnsApplicationRestrictions");
+                "getApplicationRestrictions_applicationRestrictionsAreSet_returnsApplicationRestrictions");
 
         try {
             dpc(sDeviceState).devicePolicyManager()
@@ -545,7 +545,10 @@ public final class ApplicationRestrictionsTest {
                 Flags.appRestrictionsCoexistence());
 
         ComponentName admin = dpc(sDeviceState).componentName();
-        Bundle originalApplicationRestrictions = dpc(sDeviceState).devicePolicyManager()
+        Bundle originalApplicationRestrictions =
+                dpc(sDeviceState)
+                        .devicePolicyManager()
+                        .getParentProfileInstance(admin)
                         .getApplicationRestrictions(admin, sTestApp.packageName());
 
         String bundleName = "parentUserBundle";
@@ -567,8 +570,11 @@ public final class ApplicationRestrictionsTest {
             assertThat(testApp.events().broadcastReceived().whereIntent().action().isEqualTo(
                     ACTION_APPLICATION_RESTRICTIONS_CHANGED)).eventOccurred();
         } finally {
-            dpc(sDeviceState).devicePolicyManager().setApplicationRestrictions(
-                    admin, sTestApp.packageName(), originalApplicationRestrictions);
+            dpc(sDeviceState)
+                    .devicePolicyManager()
+                    .getParentProfileInstance(admin)
+                    .setApplicationRestrictions(
+                            admin, sTestApp.packageName(), originalApplicationRestrictions);
         }
     }
 
