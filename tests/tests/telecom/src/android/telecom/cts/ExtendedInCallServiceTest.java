@@ -976,6 +976,71 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
         assertEquals(call2, calls.get(1));
     }
 
+    /**
+     * Tests Blind and Assured Transfer Flows
+     */
+    public void testTransferCallToNumber() {
+        if (!mShouldTestTelecom || !Flags.explicitCallTransfer()) {
+            return;
+        }
+
+        placeAndVerifyCall();
+        final MockConnection connection = verifyConnectionForOutgoingCall();
+        final MockInCallService inCallService = mInCallCallbacks.getService();
+        final Call call = inCallService.getLastCall();
+
+        connection.setActive();
+        assertCallState(call, Call.STATE_ACTIVE);
+
+        int capabilities = connection.getConnectionCapabilities();
+        connection.setConnectionCapabilities(capabilities | Connection.CAPABILITY_TRANSFER);
+
+        Uri transferNumber = createTestNumber();
+        call.transfer(transferNumber, false);
+
+        TestUtils.InvokeCounter counter = connection.getInvokeCounter(MockConnection.ON_TRANSFER);
+        counter.waitForCount(1);
+
+        assertEquals(transferNumber, counter.getArgs(0)[0]);
+        assertEquals(false, counter.getArgs(0)[1]);
+    }
+
+    /**
+     * Tests Consultative Transfer flow
+     */
+    public void testTransferCallToConnection() {
+        if (!mShouldTestTelecom || !Flags.explicitCallTransfer()) {
+            return;
+        }
+
+        placeAndVerifyCall(); // call 1
+        final MockConnection connection1 = verifyConnectionForOutgoingCall(0);
+        final MockInCallService inCallService = mInCallCallbacks.getService();
+
+        // There can be more than one call, so we get the list of calls.
+        final Call call1 = inCallService.getCalls().get(0);
+        connection1.setActive();
+        assertCallState(call1, Call.STATE_ACTIVE);
+
+        placeAndVerifyCall(); // call 2
+        final MockConnection connection2 = verifyConnectionForOutgoingCall(1);
+        final Call call2 = inCallService.getCalls().get(1);
+        connection2.setActive();
+        assertCallState(call2, Call.STATE_ACTIVE);
+
+        int capabilities = connection1.getConnectionCapabilities();
+        connection1.setConnectionCapabilities(
+                capabilities | Connection.CAPABILITY_TRANSFER_CONSULTATIVE);
+
+        // Calling with call1 as parameter, as the otherCall.state == HOLD is
+        // expected in transfer()
+        call2.transfer(call1);
+
+        TestUtils.InvokeCounter counter = connection2.getInvokeCounter(MockConnection.ON_TRANSFER);
+        counter.waitForCount(1);
+        assertEquals(connection1, counter.getArgs(0)[0]);
+    }
+
     private void assertGetCannedTextResponsesNotEmpty(final Call call) {
         waitUntilConditionIsTrueOrTimeout(
                 new Condition() {
