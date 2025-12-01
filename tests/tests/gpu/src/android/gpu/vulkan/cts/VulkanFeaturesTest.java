@@ -84,6 +84,9 @@ public class VulkanFeaturesTest {
     private static final String VK_KHR_SWAPCHAIN = "VK_KHR_swapchain";
     private static final int VK_KHR_SWAPCHAIN_SPEC_VERSION = 68;
 
+    private static final String VK_KHR_PRESENT_ID2 = "VK_KHR_present_id2";
+    private static final int VK_KHR_PRESENT_ID2_SPEC_VERSION = 1;
+
     private static final String VK_KHR_MAINTENANCE1 = "VK_KHR_maintenance1";
     private static final int VK_KHR_MAINTENANCE1_SPEC_VERSION = 1;
 
@@ -255,6 +258,7 @@ public class VulkanFeaturesTest {
                     "VK_KHR_external_memory_capabilities",
                     "VK_KHR_external_semaphore_capabilities",
                     "VK_KHR_external_fence_capabilities",
+                    "VK_KHR_present_id2",
                     "VK_ANDROID_external_memory_android_hardware_buffer",
                     "VK_GOOGLE_display_timing"});
     }
@@ -455,6 +459,7 @@ public class VulkanFeaturesTest {
         assertVulkanDeviceExtension(VK_KHR_INCREMENTAL_PRESENT,
                 VK_KHR_INCREMENTAL_PRESENT_SPEC_VERSION);
         assertVulkanDeviceExtension(VK_KHR_MAINTENANCE1, VK_KHR_MAINTENANCE1_SPEC_VERSION);
+        assertVulkanDeviceExtension(VK_KHR_PRESENT_ID2, VK_KHR_PRESENT_ID2_SPEC_VERSION);
     }
 
     @CddTest(requirements = {"7.9.2/C-1-5"})
