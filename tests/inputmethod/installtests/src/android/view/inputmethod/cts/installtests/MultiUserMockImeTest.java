@@ -38,6 +38,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
@@ -895,7 +896,8 @@ public final class MultiUserMockImeTest {
 
                     final var exitInfo = PollingCheck.waitFor(MOCKIME_CRASH_TIMEOUT,
                             session2::findLatestMockImeSessionExitInfo, Objects::nonNull);
-                    assertEquals("Expected MockImeSession to crash due to removed user",
+                    assertNotNull("Expected MockImeSession to crash after user removal", exitInfo);
+                    assertEquals("Expected MockImeSession to crash due to user removal",
                             ApplicationExitInfo.REASON_USER_STOPPED, exitInfo.getReason());
 
                     lockScreenSession.wakeUpDevice();
