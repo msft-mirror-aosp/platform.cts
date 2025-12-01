@@ -209,26 +209,29 @@ public class TelephonyManagerReadPhoneStatePermissionTest {
                 fail("getVoiceNetworkType() must not throw a SecurityException"
                         + " with READ_PHONE_STATE" + e);
             }
-            try {
-                ShellIdentityUtils.invokeMethodWithShellPermissions(
-                        mTelephonyManager, (tm) -> tm.getVoiceMailNumber());
-            } catch (SecurityException e) {
-                fail("getVoiceMailNumber() must not throw a SecurityException"
-                        + " with READ_PHONE_STATE" + e);
-            }
-            try {
-                ShellIdentityUtils.invokeMethodWithShellPermissions(
-                        mTelephonyManager, (tm) -> tm.getVisualVoicemailPackageName());
-            } catch (SecurityException e) {
-                fail("getVisualVoicemailPackageName() must not throw a SecurityException"
-                        + " with READ_PHONE_STATE" + e);
-            }
-            try {
-                ShellIdentityUtils.invokeMethodWithShellPermissions(
-                        mTelephonyManager, (tm) -> tm.getVoiceMailAlphaTag());
-            } catch (SecurityException e) {
-                fail("getVoiceMailAlphaTag() must not throw a SecurityException"
-                        + " with READ_PHONE_STATE" + e);
+            // Voicemail APIs are not supported on watch devices.
+            if (!isWatch()) {
+                try {
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            mTelephonyManager, (tm) -> tm.getVoiceMailNumber());
+                } catch (SecurityException e) {
+                    fail("getVoiceMailNumber() must not throw a SecurityException"
+                            + " with READ_PHONE_STATE" + e);
+                }
+                try {
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            mTelephonyManager, (tm) -> tm.getVisualVoicemailPackageName());
+                } catch (SecurityException e) {
+                    fail("getVisualVoicemailPackageName() must not throw a SecurityException"
+                            + " with READ_PHONE_STATE" + e);
+                }
+                try {
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            mTelephonyManager, (tm) -> tm.getVoiceMailAlphaTag());
+                } catch (SecurityException e) {
+                    fail("getVoiceMailAlphaTag() must not throw a SecurityException"
+                            + " with READ_PHONE_STATE" + e);
+                }
             }
             try {
                 ShellIdentityUtils.invokeMethodWithShellPermissions(
@@ -321,5 +324,9 @@ public class TelephonyManagerReadPhoneStatePermissionTest {
 
     private boolean hasSystemFeature(String feature) {
         return mContext.getPackageManager().hasSystemFeature(feature);
+    }
+
+    private boolean isWatch() {
+        return hasSystemFeature(PackageManager.FEATURE_WATCH);
     }
 }
