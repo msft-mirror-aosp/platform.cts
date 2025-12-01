@@ -136,7 +136,9 @@ filegroup {
         "common/src/main/java/com/android/bedstead/harrier/annotations/TestOrder.kt",
         "common/src/main/java/com/android/bedstead/harrier/annotations/meta/RequiresBedsteadJUnit4.java",
         "common/src/main/java/com/android/bedstead/harrier/annotations/AnnotationCostRunPrecedence.java",
+        "common/src/main/java/com/android/bedstead/harrier/DynamicParameterizedAnnotation.java",
         "src/main/java/com/android/bedstead/harrier/FrameworkMethodSorter.java",
         "src/main/java/com/android/bedstead/harrier/BedsteadServiceLocator.kt",
+        "src/main/java/com/android/bedstead/harrier/AnnotationSorter.kt",
     ],
 }

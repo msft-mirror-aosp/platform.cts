@@ -112,8 +112,7 @@ public final class BedsteadFrameworkMethod extends FrameworkMethod {
                 annotations.addAll(replacements);
             }
         }
-        annotations.sort(BedsteadJUnit4::annotationSorter);
-        return annotations;
+        return AnnotationSorterKt.sortedByPriority(annotations);
     }
 
     @Override
@@ -125,10 +124,17 @@ public final class BedsteadFrameworkMethod extends FrameworkMethod {
         for (Annotation annotation : mParameterizedAnnotations) {
             newMethodName
                     .append("[")
-                    .append(BedsteadJUnit4.getParameterName(annotation))
+                    .append(getParameterName(annotation))
                     .append("]");
         }
         return newMethodName.toString();
+    }
+
+    private String getParameterName(Annotation annotation) {
+        if (annotation instanceof DynamicParameterizedAnnotation) {
+            return ((DynamicParameterizedAnnotation) annotation).name();
+        }
+        return annotation.annotationType().getSimpleName();
     }
 
     @Override
