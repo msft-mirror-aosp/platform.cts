@@ -312,7 +312,7 @@ public class MockImeSession implements AutoCloseable {
         return null;
     }
 
-    private void initialize(@Nullable ImeSettings.Builder imeSettings) throws Exception {
+    private void initialize(@NonNull ImeSettings.Builder imeSettings) throws Exception {
         PollingCheck.check("MockIME was not in getInputMethodList() after timeout.", TIMEOUT_MILLIS,
                 () -> getInputMethodInfo() != null);
 
@@ -408,7 +408,7 @@ public class MockImeSession implements AutoCloseable {
     public static MockImeSession create(
             @NonNull Context context,
             @NonNull UiAutomation uiAutomation,
-            @Nullable ImeSettings.Builder imeSettings) throws Exception {
+            @NonNull ImeSettings.Builder imeSettings) throws Exception {
         final String unavailabilityReason = getUnavailabilityReason(context);
         if (unavailabilityReason != null) {
             throw new AssumptionViolatedException(unavailabilityReason);
