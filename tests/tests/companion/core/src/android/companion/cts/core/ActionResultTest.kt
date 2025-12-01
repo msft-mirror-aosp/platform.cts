@@ -43,7 +43,6 @@ import java.util.function.BiConsumer
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -56,7 +55,6 @@ import org.junit.runner.RunWith
 @AppModeFull(reason = "CompanionDeviceManager APIs are not available to the instant apps.")
 @RunWith(AndroidJUnit4::class)
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DATA_SYNC)
-@Ignore
 class ActionResultTest : CoreTestBase() {
     @get:Rule
     val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
@@ -69,6 +67,10 @@ class ActionResultTest : CoreTestBase() {
 
     override fun setUp() {
         super.setUp()
+
+        withShellPermissionIdentity(USE_COMPANION_TRANSPORTS) {
+            cdm.setRequestActionAllowList(listOf(SERVICE_NAME_A, SERVICE_NAME_B))
+        }
         associationIdA = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A)
         associationIdB = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_B)
 
@@ -80,7 +82,9 @@ class ActionResultTest : CoreTestBase() {
         withShellPermissionIdentity(USE_COMPANION_TRANSPORTS) {
             cdm.removeOnActionResultListener(SERVICE_NAME_A)
             cdm.removeOnActionResultListener(SERVICE_NAME_B)
+            cdm.setRequestActionAllowList(null)
         }
+
         super.tearDown()
     }
 
