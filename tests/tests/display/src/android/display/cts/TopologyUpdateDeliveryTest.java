@@ -25,7 +25,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 
 import android.content.Intent;
 import android.hardware.display.DisplayTopology;
@@ -167,8 +166,6 @@ public class TopologyUpdateDeliveryTest extends EventDeliveryTestBase {
 
     private void testTopologyUpdateInternal(boolean cached) {
         Log.d(TAG, "Start test testTopologyUpdate " + cached);
-        assumeDesktopModeSupported();
-
         // Launch activity and start listening to topology updates
         int pid = launchTestActivity();
 
@@ -217,14 +214,6 @@ public class TopologyUpdateDeliveryTest extends EventDeliveryTestBase {
             // updates
             waitTopologyUpdate(predicate);
         }
-    }
-
-    private void assumeDesktopModeSupported() {
-        int resId =
-                mContext.getResources()
-                        .getIdentifier("config_isDesktopModeSupported", "bool", "android");
-        boolean isDesktopModeSupported = mContext.getResources().getBoolean(resId);
-        assumeTrue("Device does not support desktop mode", isDesktopModeSupported);
     }
 
     @Test
