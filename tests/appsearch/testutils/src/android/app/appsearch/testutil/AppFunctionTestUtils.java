@@ -72,11 +72,15 @@ public final class AppFunctionTestUtils {
 
     public static final String TEST_APP_B_PKG = "com.android.cts.appsearch.indexertestapp.b";
 
+    public static final String TEST_APP_FUNCTIONS_SERVICE =
+            "com.android.cts.appsearch.helper.AppFunctionService";
+
     public static final String PROPERTY_FUNCTION_ID = "functionId";
     public static final String PROPERTY_PACKAGE_NAME = "packageName";
     public static final String PROPERTY_SCHEMA_NAME = "schemaName";
     public static final String PROPERTY_SCHEMA_VERSION = "schemaVersion";
     public static final String PROPERTY_SCHEMA_CATEGORY = "schemaCategory";
+    public static final String PROPERTY_SERVICE_NAME = "serviceName";
     public static final String PROPERTY_DISPLAY_NAME_STRING_RES = "displayNameStringRes";
     public static final String PROPERTY_ENABLED_BY_DEFAULT = "enabledByDefault";
     public static final String PROPERTY_RESTRICT_CALLERS_WITH_EXECUTE_APP_FUNCTIONS =
@@ -84,55 +88,24 @@ public final class AppFunctionTestUtils {
 
     /** Print app function generic document as defined in the appfunctions.xml of App A V2. */
     public static final GenericDocument APP_A_V2_PRINT_APP_FUNCTION =
-            new GenericDocument.Builder<>(
-                            NAMESPACE_APP_FUNCTIONS,
-                            TEST_APP_A_PKG + "/com.example.utils#print1",
-                            "AppFunctionStaticMetadata-" + TEST_APP_A_PKG)
-                    .setCreationTimestampMillis(0)
-                    .setPropertyString("functionId", "com.example.utils#print1")
-                    .setPropertyString("packageName", TEST_APP_A_PKG)
-                    .setPropertyString("schemaName", "print")
-                    .setPropertyString("schemaCategory", "utils")
-                    .setPropertyLong("schemaVersion", 1L)
-                    .setPropertyBoolean("enabledByDefault", false)
-                    .setPropertyBoolean("restrictCallersWithExecuteAppFunctions", true)
-                    .setPropertyLong("displayNameStringRes", 10)
-                    .setPropertyString(
-                            "mobileApplicationQualifiedId",
-                            "android$apps-db/apps#" + TEST_APP_A_PKG)
-                    .build();
+            createAppAV2PrintAppFunction();
 
     /** Print app function generic document as defined in the appfunctions.xml of App B. */
-    public static final GenericDocument APP_B_PRINT_APP_FUNCTION =
-            new GenericDocument.Builder<>(
-                            NAMESPACE_APP_FUNCTIONS,
-                            TEST_APP_B_PKG + "/com.example.utils#print5",
-                            "AppFunctionStaticMetadata-" + TEST_APP_B_PKG)
-                    .setCreationTimestampMillis(0)
-                    .setPropertyString("functionId", "com.example.utils#print5")
-                    .setPropertyString("packageName", TEST_APP_B_PKG)
-                    .setPropertyString("schemaName", "print")
-                    .setPropertyString("schemaCategory", "utils")
-                    .setPropertyLong("schemaVersion", 1L)
-                    .setPropertyBoolean("enabledByDefault", true)
-                    .setPropertyString(
-                            "mobileApplicationQualifiedId",
-                            "android$apps-db/apps#" + TEST_APP_B_PKG)
-                    .build();
+    public static final GenericDocument APP_B_PRINT_APP_FUNCTION = createAppBPrintFunction();
 
     /**
      * Print app function generic document as defined in the appfunctions_v2.xml of dynamic schema
      * test app A.
      */
     public static final GenericDocument APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION =
-            buildAppFunctionDocument(TEST_APP_A_PKG, "print1");
+            buildAppFunctionDocument(TEST_APP_A_PKG, "print1", TEST_APP_FUNCTIONS_SERVICE);
 
     /**
      * Print app function generic document as defined in the app_appfunctions_v2.xml of dynamic
      * schema test app A.
      */
     public static final GenericDocument APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION =
-            buildAppFunctionDocument(TEST_APP_A_PKG, "appPrint1");
+            buildAppFunctionDocument(TEST_APP_A_PKG, "appPrint1", "@null");
 
     /**
      * Print app function generic document as defined in the appfunctions_v2.xml of dynamic schema
@@ -183,7 +156,7 @@ public final class AppFunctionTestUtils {
      * test app B.
      */
     public static final GenericDocument APP_B_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION =
-            buildAppFunctionDocument(TEST_APP_B_PKG, "print1");
+            buildAppFunctionDocument(TEST_APP_B_PKG, "print1", TEST_APP_FUNCTIONS_SERVICE);
 
     /** Updates the enabled state of the AppFunctionService for a given package. */
     public static void updateAppFunctionServiceEnabledState(
@@ -283,6 +256,55 @@ public final class AppFunctionTestUtils {
                 .isEqualTo(expectedDocument);
     }
 
+    private static GenericDocument createAppAV2PrintAppFunction() {
+        GenericDocument.Builder builder =
+                new GenericDocument.Builder<>(
+                                NAMESPACE_APP_FUNCTIONS,
+                                TEST_APP_A_PKG + "/com.example.utils#print1",
+                                "AppFunctionStaticMetadata-" + TEST_APP_A_PKG)
+                        .setCreationTimestampMillis(0)
+                        .setPropertyString("functionId", "com.example.utils#print1")
+                        .setPropertyString("packageName", TEST_APP_A_PKG)
+                        .setPropertyString("schemaName", "print")
+                        .setPropertyString("schemaCategory", "utils")
+                        .setPropertyLong("schemaVersion", 1L)
+                        .setPropertyBoolean("enabledByDefault", false)
+                        .setPropertyBoolean("restrictCallersWithExecuteAppFunctions", true)
+                        .setPropertyLong("displayNameStringRes", 10)
+                        .setPropertyString(
+                                "mobileApplicationQualifiedId",
+                                "android$apps-db/apps#" + TEST_APP_A_PKG);
+        if (android.app.appfunctions.flags.Flags.enableDynamicAppFunctions()) {
+            builder.setPropertyString(
+                    "serviceName", "com.android.cts.appsearch.indexertestapp.a.AppFunctionService");
+        }
+        return builder.build();
+    }
+
+    private static GenericDocument createAppBPrintFunction() {
+        GenericDocument.Builder builder =
+                new GenericDocument.Builder<>(
+                                NAMESPACE_APP_FUNCTIONS,
+                                TEST_APP_B_PKG + "/com.example.utils#print5",
+                                "AppFunctionStaticMetadata-" + TEST_APP_B_PKG)
+                        .setCreationTimestampMillis(0)
+                        .setPropertyString("functionId", "com.example.utils#print5")
+                        .setPropertyString("packageName", TEST_APP_B_PKG)
+                        .setPropertyString("schemaName", "print")
+                        .setPropertyString("schemaCategory", "utils")
+                        .setPropertyLong("schemaVersion", 1L)
+                        .setPropertyBoolean("enabledByDefault", true)
+                        .setPropertyString(
+                                "mobileApplicationQualifiedId",
+                                "android$apps-db/apps#" + TEST_APP_B_PKG);
+
+        if (android.app.appfunctions.flags.Flags.enableDynamicAppFunctions()) {
+            builder.setPropertyString("serviceName", TEST_APP_FUNCTIONS_SERVICE);
+        }
+
+        return builder.build();
+    }
+
     /**
      * Builds the generic document for print app function defined in app A with dynamic schema.
      *
@@ -366,7 +388,7 @@ public final class AppFunctionTestUtils {
      * </ul>
      */
     private static GenericDocument buildAppFunctionDocument(
-            String packageName, String functionSuffix) {
+            String packageName, String functionSuffix, String serviceName) {
         GenericDocument.Builder builder =
                 new GenericDocument.Builder<>(
                                 NAMESPACE_APP_FUNCTIONS,
@@ -385,6 +407,10 @@ public final class AppFunctionTestUtils {
                 .setPropertyLong("displayNameStringRes", 12)
                 .setPropertyString(
                         "mobileApplicationQualifiedId", "android$apps-db/apps#" + packageName);
+
+        if (android.app.appfunctions.flags.Flags.enableDynamicAppFunctions()) {
+            builder.setPropertyString(PROPERTY_SERVICE_NAME, serviceName);
+        }
 
         GenericDocument schemaMetadata =
                 new GenericDocument.Builder<>(
