@@ -336,6 +336,46 @@ public class CtsConnectionService extends ConnectionService {
     }
 
     @Override
+    public void onConnectionAdded(Connection connection) {
+        ConnectionService testImpl = getTestImpl();
+        if (testImpl != null) {
+            testImpl.onConnectionAdded(connection);
+        } else {
+            Log.e(LOG_TAG, "onConnectionAdded called when sConnectionServiceTestImpl is null!");
+        }
+    }
+
+    @Override
+    public void onConnectionRemoved(Connection connection) {
+        ConnectionService testImpl = getTestImpl();
+        if (testImpl != null) {
+            testImpl.onConnectionRemoved(connection);
+        } else {
+            Log.e(LOG_TAG, "onConnectionRemoved called when sConnectionServiceTestImpl is null!");
+        }
+    }
+
+    @Override
+    public void onConferenceAdded(Conference conference) {
+        ConnectionService testImpl = getTestImpl();
+        if (testImpl != null) {
+            testImpl.onConferenceAdded(conference);
+        } else {
+            Log.e(LOG_TAG, "onConferenceAdded called when sConnectionServiceTestImpl is null!");
+        }
+    }
+
+    @Override
+    public void onConferenceRemoved(Conference conference) {
+        ConnectionService testImpl = getTestImpl();
+        if (testImpl != null) {
+            testImpl.onConferenceRemoved(conference);
+        } else {
+            Log.e(LOG_TAG, "onConferenceRemoved called when sConnectionServiceTestImpl is null!");
+        }
+    }
+
+    @Override
     public void onConnectionServiceFocusGained() {
         ConnectionService telecomConn = getTestImpl();
         if (telecomConn != null) {
