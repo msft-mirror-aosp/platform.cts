@@ -110,6 +110,7 @@ public abstract class BasePrintTest {
 
     protected static final long OPERATION_TIMEOUT_MILLIS = 20000;
     protected static final String PRINT_JOB_NAME = "Test";
+    protected static final String PRINT_SERVICE_PACKAGE = "android.print.cts";
     static final String TEST_ID = "BasePrintTest.EXTRA_TEST_ID";
 
     private static final String PRINT_SPOOLER_PACKAGE_NAME = "com.android.printspooler";
