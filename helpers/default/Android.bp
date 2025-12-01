@@ -34,6 +34,7 @@ android_test_helper_app {
         "cts-helpers-core",
         "cts-helpers-interfaces",
         "androidx.test.uiautomator_uiautomator",
+        "android.print.flags-aconfig-java",
         "printspooler_aconfig_flags_java_lib",
     ],
 }
