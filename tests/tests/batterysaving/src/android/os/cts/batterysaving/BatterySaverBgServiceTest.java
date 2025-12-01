@@ -18,8 +18,7 @@ package android.os.cts.batterysaving;
 import static android.os.cts.batterysaving.common.Values.APP_25_PACKAGE;
 import static android.os.cts.batterysaving.common.Values.getRandomInt;
 
-import static com.android.compatibility.common.util.AmUtils.runKill;
-import static com.android.compatibility.common.util.AmUtils.runMakeUidIdle;
+import static com.android.compatibility.common.util.AmUtils.runStopApp;
 import static com.android.compatibility.common.util.BatteryUtils.assumeBatterySaverFeature;
 import static com.android.compatibility.common.util.BatteryUtils.enableBatterySaver;
 import static com.android.compatibility.common.util.BatteryUtils.runDumpsysBatteryUnplug;
@@ -29,12 +28,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import android.os.SystemClock;
 import android.os.cts.batterysaving.common.BatterySavingCtsCommon.Payload;
 import android.os.cts.batterysaving.common.BatterySavingCtsCommon.Payload.TestServiceRequest;
 import android.os.cts.batterysaving.common.BatterySavingCtsCommon.Payload.TestServiceRequest.StartServiceRequest;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
-import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -44,13 +44,12 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Tests related to battery saver:
  *
- * atest $ANDROID_BUILD_TOP/cts/tests/tests/batterysaving/src/android/os/cts/batterysaving/BatterySaverBgServiceTest.java
+ * <p>atest $ANDROID_BUILD_TOP/cts/tests/tests/batterysaving/src/android/os/cts/batterysaving
+ * /BatterySaverBgServiceTest.java
  */
 @MediumTest
 @RunWith(AndroidJUnit4.class)
-public class BatterySaverBgServiceTest extends BatterySavingTestBase {
-    private static final String TAG = "BatterySaverBgServiceTest";
-
+public final class BatterySaverBgServiceTest extends BatterySavingTestBase {
     /**
      * Make sure BG services on pre-O apps can't be started when BS is on.
      */
@@ -66,9 +65,8 @@ public class BatterySaverBgServiceTest extends BatterySavingTestBase {
 
         // Make sure a BG service on pre-O app can be started with BS off.
         {
-            runMakeUidIdle(targetPackage);
-            runKill(targetPackage);
-            Thread.sleep(500);
+            runStopApp(targetPackage);
+            waitUntilProcessGone(targetPackage);
 
             requestClearIntent(targetPackage);
 
@@ -84,9 +82,8 @@ public class BatterySaverBgServiceTest extends BatterySavingTestBase {
         // Make sure a BG service on pre-O app *cannot* be started with BS on.
         {
             // Do the same thing again.
-            runMakeUidIdle(targetPackage);
-            runKill(targetPackage);
-            Thread.sleep(500);
+            runStopApp(targetPackage);
+            waitUntilProcessGone(targetPackage);
 
             requestClearIntent(targetPackage);
 
@@ -95,16 +92,16 @@ public class BatterySaverBgServiceTest extends BatterySavingTestBase {
             tryStartTestServiceAndReturnAction(targetPackage, false);
 
             // Wait a little bit and make sure the service didn't start.
-            Thread.sleep(5000);
+            SystemClock.sleep(2000); // We can't use waitUntil here, as we're waiting for nothing
+            // to happen.
 
             assertNull(requestLastIntent(targetPackage));
         }
 
         // Make sure an FG service on pre-O app *can* be started with BS on.
         {
-            runMakeUidIdle(targetPackage);
-            runKill(targetPackage);
-            Thread.sleep(500);
+            runStopApp(targetPackage);
+            waitUntilProcessGone(targetPackage);
 
             requestClearIntent(targetPackage);
 
@@ -116,20 +113,26 @@ public class BatterySaverBgServiceTest extends BatterySavingTestBase {
 
     /** Ask to clear the last received intent in the test service. */
     private void requestClearIntent(String targetPackage) throws Exception {
-        final Payload response = mRpc.sendRequest(targetPackage,
-                Payload.newBuilder().setTestServiceRequest(
-                        TestServiceRequest.newBuilder().setClearLastIntent(true))
-                        .build());
+        final Payload response =
+                mRpc.sendRequest(
+                        targetPackage,
+                        Payload.newBuilder()
+                                .setTestServiceRequest(
+                                        TestServiceRequest.newBuilder().setClearLastIntent(true))
+                                .build());
         assertTrue(response.hasTestServiceResponse()
                 && response.getTestServiceResponse().getClearLastIntentAck());
     }
 
     /** Get the last received intent in the test service. */
     private String requestLastIntent(String targetPackage) throws Exception {
-        final Payload response = mRpc.sendRequest(targetPackage,
-                Payload.newBuilder().setTestServiceRequest(
-                        TestServiceRequest.newBuilder().setGetLastIntent(true))
-                        .build());
+        final Payload response =
+                mRpc.sendRequest(
+                        targetPackage,
+                        Payload.newBuilder()
+                                .setTestServiceRequest(
+                                        TestServiceRequest.newBuilder().setGetLastIntent(true))
+                                .build());
         assertTrue(response.hasTestServiceResponse());
 
         return response.getTestServiceResponse().hasGetLastIntentAction()
@@ -155,13 +158,18 @@ public class BatterySaverBgServiceTest extends BatterySavingTestBase {
             throws Exception {
         final String action = "start_service_" + getRandomInt() + "_fg=" + foreground;
 
-        final Payload response = mRpc.sendRequest(targetPackage,
-                Payload.newBuilder().setTestServiceRequest(
-                        TestServiceRequest.newBuilder().setStartService(
-                            StartServiceRequest.newBuilder()
-                                    .setForeground(foreground)
-                                    .setAction(action).build()
-                        )).build());
+        final Payload response =
+                mRpc.sendRequest(
+                        targetPackage,
+                        Payload.newBuilder()
+                                .setTestServiceRequest(
+                                        TestServiceRequest.newBuilder()
+                                                .setStartService(
+                                                        StartServiceRequest.newBuilder()
+                                                                .setForeground(foreground)
+                                                                .setAction(action)
+                                                                .build()))
+                                .build());
         assertTrue(response.hasTestServiceResponse()
                 && response.getTestServiceResponse().getStartServiceAck());
         return action;
