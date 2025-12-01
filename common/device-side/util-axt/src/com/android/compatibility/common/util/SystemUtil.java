@@ -234,6 +234,21 @@ public class SystemUtil {
      */
     public static <T> T runWithShellPermissionIdentity(@NonNull ThrowingSupplier<T> supplier) {
         final UiAutomation automan = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        return runWithShellPermissionIdentity(automan, supplier);
+    }
+
+    /**
+     * Runs a {@link ThrowingSupplier}, adopting Shell's permissions, and returning the result,
+     * where you can specify the uiAutomation used.
+     *
+     * <p><b>Note:</b> After this method is called, all previously adopted permissions will be
+     * dropped.
+     *
+     * @see UiAutomation#adoptShellPermissionIdentity()
+     * @see UiAutomation#dropShellPermissionIdentity()
+     */
+    public static <T> T runWithShellPermissionIdentity(
+            @NonNull UiAutomation automan, @NonNull ThrowingSupplier<T> supplier) {
         AtomicReference<T> result = new AtomicReference<>();
         runWithShellPermissionIdentity(automan, () -> result.set(supplier.get()));
         return result.get();
