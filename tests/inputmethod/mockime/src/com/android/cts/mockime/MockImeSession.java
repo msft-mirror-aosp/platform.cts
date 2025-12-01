@@ -440,7 +440,7 @@ public class MockImeSession implements AutoCloseable {
      */
     public boolean isFinishInputNoFallbackConnectionEnabled() {
         AtomicBoolean result = new AtomicBoolean();
-        runWithShellPermissionIdentity(() ->
+        runWithShellPermissionIdentity(mUiAutomation, () ->
                 result.set(CompatChanges.isChangeEnabled(FINISH_INPUT_NO_FALLBACK_CONNECTION,
                         mMockImePackageName, mTargetUser)));
         return result.get();
@@ -451,13 +451,12 @@ public class MockImeSession implements AutoCloseable {
      * will throw a {@link java.util.concurrent.TimeoutException} if the wait times out.
      *
      * @param timeoutMs the timeout in milliseconds.
-     *
      * @see InputMethodManager#waitUntilNoPendingRequests
-     *
      */
     public void waitUntilNoPendingRequests(long timeoutMs) {
         final var imm = mContext.getSystemService(InputMethodManager.class);
-        runWithShellPermissionIdentity(() -> imm.waitUntilNoPendingRequests(timeoutMs));
+        runWithShellPermissionIdentity(mUiAutomation,
+                () -> imm.waitUntilNoPendingRequests(timeoutMs));
     }
 
     /**
@@ -563,7 +562,8 @@ public class MockImeSession implements AutoCloseable {
     /** Checks whether the IME Switcher button should be shown when the IME is shown. */
     public boolean shouldShowImeSwitcherButtonForTest() {
         final var imm = mContext.getSystemService(InputMethodManager.class);
-        return runWithShellPermissionIdentity(imm::shouldShowImeSwitcherButtonForTest);
+        return runWithShellPermissionIdentity(mUiAutomation,
+                imm::shouldShowImeSwitcherButtonForTest);
     }
 
     /**
@@ -1766,7 +1766,7 @@ public class MockImeSession implements AutoCloseable {
      */
     public void hideSoftInputFromServerForTest() {
         final var imm = mContext.getSystemService(InputMethodManager.class);
-        runWithShellPermissionIdentity(imm::hideSoftInputFromServerForTest);
+        runWithShellPermissionIdentity(mUiAutomation, imm::hideSoftInputFromServerForTest);
     }
 
     /**
