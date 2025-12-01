@@ -69,7 +69,7 @@ public class TlsHandshakeStatsTests extends DeviceTestCase implements IBuildRece
         DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".AtomTests", "testTlsHandshake");
 
         // Wait for the atom to be uploaded since it is done so asynchronously.
-        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         // Sorted list of events in order in which they occurred.
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
