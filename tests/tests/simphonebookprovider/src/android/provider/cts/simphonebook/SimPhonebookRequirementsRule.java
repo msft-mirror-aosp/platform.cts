@@ -19,9 +19,11 @@ package android.provider.cts.simphonebook;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeThat;
 
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.telephony.TelephonyManager;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -46,7 +48,12 @@ class SimPhonebookRequirementsRule extends ExternalResource {
     @Override
     protected void before() {
         Context context = ApplicationProvider.getApplicationContext();
+        PackageManager pm = context.getPackageManager();
         TelephonyManager telephonyManager = context.getSystemService(TelephonyManager.class);
+
+        assumeFalse(
+                "Skipping SIM Phonebook tests on Automotive devices",
+                pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
 
         // Skip the test if the device doesn't appear to have any multi-SIM capability. The checks
         // that follow this one are a bit flaky on devices that have an eSIM but don't support
