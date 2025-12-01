@@ -31,6 +31,7 @@ import lighting_control_utils
 import opencv_processing_utils
 import ui_interaction_utils
 
+_BGR = 'BGR'
 _JETPACK_CAMERA_APP_PACKAGE_NAME = 'com.google.jetpackcamera'
 _MEAN_DELTA_ATOL = 15  # mean used for reflective charts
 _PATCH_H = 0.25  # center 25%
@@ -39,6 +40,8 @@ _PATCH_X = 0.5 - _PATCH_W/2
 _PATCH_Y = 0.5 - _PATCH_H/2
 _SAVE_IMAGE_DELAY = 10  # empirically determined
 _TEST_NAME = os.path.splitext(os.path.basename(__file__))[0]
+_ZOOM_1X = 1.0
+_ZOOM_MAX = 1.5  # avoid physical camera switch to tele
 
 
 class AutoFlashTest(its_base_test.UiAutomatorItsBaseTest):
@@ -54,7 +57,7 @@ class AutoFlashTest(its_base_test.UiAutomatorItsBaseTest):
         'am start -n com.android.cts.verifier/.CtsVerifierActivity')
     # establish connection with lighting controller
     self.use_gen2 = (self.lighting_cntl ==
-                gen2_rig_controller_utils.DEFAULT_GEN2_LIGHTS_NAME)
+                     gen2_rig_controller_utils.DEFAULT_GEN2_LIGHTS_NAME)
     self.lighting_control_port = lighting_control_utils.lighting_control(
         self.lighting_cntl, self.lighting_ch, self.use_gen2)
 
@@ -71,14 +74,18 @@ class AutoFlashTest(its_base_test.UiAutomatorItsBaseTest):
       props = cam.get_camera_properties()
       props = cam.override_with_hidden_physical_camera_props(props)
       test_name = os.path.join(self.log_path, _TEST_NAME)
-
+      z_range = props['android.control.zoomRatioRange']
+      z_min, z_max = float(z_range[0]), float(z_range[1])
+      z_max = _ZOOM_MAX if z_max > _ZOOM_MAX else z_max
+      zoom_ratios = (z_min, _ZOOM_1X, z_max)
       # close camera after props retrieved, so that ItsTestActivity can open it
       cam.close_camera()
 
       # check SKIP conditions
       first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
-      facing_front = (props['android.lens.facing'] ==
-                      camera_properties_utils.LENS_FACING['FRONT'])
+      lens_facing = props['android.lens.facing']
+      facing_front = (
+          lens_facing == camera_properties_utils.LENS_FACING['FRONT'])
       should_run_front = (
           facing_front and
           first_api_level >= its_session_utils.ANDROID15_API_LEVEL
@@ -94,61 +101,85 @@ class AutoFlashTest(its_base_test.UiAutomatorItsBaseTest):
           self.lighting_control_port, self.lighting_ch,
           lighting_control_utils.LIGHT_OFF, self.use_gen2)
 
-      # take capture with no flash as baseline
-      path = pathlib.Path(
-          cam.do_jca_capture(
-              self.dut,
-              self.log_path,
-              flash_mode_desc=ui_interaction_utils.FLASH_MODE_OFF_CONTENT_DESC,
-              lens_facing=props['android.lens.facing'],
-          ).capture_path
-      )
-      no_flash_capture_path = path.with_name(
-          f'{path.stem}_no_flash{path.suffix}'
-      )
-      os.rename(path, no_flash_capture_path)
-      cv2_no_flash_image = cv2.imread(str(no_flash_capture_path))
-      y = opencv_processing_utils.convert_to_y(cv2_no_flash_image, 'BGR')
-      # Add a color channel dimension for interoperability
-      y = np.expand_dims(y, axis=2)
-      patch = image_processing_utils.get_image_patch(
-          y, _PATCH_X, _PATCH_Y, _PATCH_W, _PATCH_H
-      )
-      no_flash_mean = image_processing_utils.compute_image_means(patch)[0]
-      image_processing_utils.write_image(y, f'{test_name}_no_flash_Y.jpg')
-      logging.debug('No flash frames Y mean: %.4f', no_flash_mean)
+      # TODO: b/462784889 - use do_jca_captures_across_zoom_ratios()
+      zoom_ratios_physical_id = {}
+      failed_zoom_ratios = {}
+      for zoom_ratio in zoom_ratios:
+        # take capture with no flash as baseline
+        cap = cam.do_jca_capture(
+            self.dut,
+            self.log_path,
+            flash_mode_desc=ui_interaction_utils.FLASH_MODE_OFF_CONTENT_DESC,
+            lens_facing=lens_facing,
+            zoom_ratio=zoom_ratio,
+        )
+        path = pathlib.Path(cap.capture_path)
+        physical_id = cap.physical_id
+        logging.debug(
+            'Zoom Ratio: %f, Physical camera id: %s', zoom_ratio, physical_id)
+        zoom_ratios_physical_id[zoom_ratio] = physical_id
+        # Skip zoom ratios that cause physical camera switch
+        if (zoom_ratio > _ZOOM_1X
+            and physical_id != zoom_ratios_physical_id[_ZOOM_1X]):
+          logging.debug(
+              'Skip zoom ratio %f due to physical camera switch. '
+              'Physical camera id at 1x zoom: %s, '
+              'Physical camera id at %f zoom: %s',
+              zoom_ratio, zoom_ratios_physical_id[_ZOOM_1X],
+              zoom_ratio, physical_id)
+          continue
+        no_flash_capture_path = path.with_name(
+            f'{path.stem}_no_flash_{zoom_ratio}{path.suffix}'
+        )
+        os.rename(path, no_flash_capture_path)
+        cv2_no_flash_image = cv2.imread(str(no_flash_capture_path))
+        y = opencv_processing_utils.convert_to_y(cv2_no_flash_image, _BGR)
+        # Add a color channel dimension for interoperability
+        y = np.expand_dims(y, axis=2)
+        patch = image_processing_utils.get_image_patch(
+            y, _PATCH_X, _PATCH_Y, _PATCH_W, _PATCH_H
+        )
+        no_flash_mean = image_processing_utils.compute_image_means(patch)[0]
+        image_processing_utils.write_image(y, f'{test_name}_no_flash_Y.jpg')
+        logging.debug('No flash frames Y mean: %.4f', no_flash_mean)
 
-      # take capture with auto flash enabled
-      logging.debug('Taking capture with auto flash enabled.')
-      path = pathlib.Path(
-          cam.do_jca_capture(
-              self.dut,
-              self.log_path,
-              flash_mode_desc=ui_interaction_utils.FLASH_MODE_AUTO_CONTENT_DESC,
-              lens_facing=props['android.lens.facing'],
-              save_image_delay=_SAVE_IMAGE_DELAY,
-          ).capture_path
-      )
-      auto_flash_capture_path = path.with_name(
-          f'{path.stem}_auto_flash{path.suffix}'
-      )
-      os.rename(path, auto_flash_capture_path)
-      cv2_auto_flash_image = cv2.imread(str(auto_flash_capture_path))
-      y = opencv_processing_utils.convert_to_y(cv2_auto_flash_image, 'BGR')
-      # Add a color channel dimension for interoperability
-      y = np.expand_dims(y, axis=2)
-      patch = image_processing_utils.get_image_patch(
-          y, _PATCH_X, _PATCH_Y, _PATCH_W, _PATCH_H
-      )
-      flash_mean = image_processing_utils.compute_image_means(patch)[0]
-      image_processing_utils.write_image(y, f'{test_name}_auto_flash_Y.jpg')
-      logging.debug('Flash frames Y mean: %.4f', flash_mean)
+        # take capture with auto flash enabled
+        logging.debug('Taking capture with auto flash enabled.')
+        path = pathlib.Path(
+            cam.do_jca_capture(
+                self.dut,
+                self.log_path,
+                flash_mode_desc=ui_interaction_utils.FLASH_MODE_AUTO_CONTENT_DESC,
+                lens_facing=lens_facing,
+                zoom_ratio=zoom_ratio,
+                save_image_delay=_SAVE_IMAGE_DELAY,
+            ).capture_path
+        )
+        auto_flash_capture_path = path.with_name(
+            f'{path.stem}_auto_flash_{zoom_ratio}{path.suffix}'
+        )
+        os.rename(path, auto_flash_capture_path)
+        cv2_auto_flash_image = cv2.imread(str(auto_flash_capture_path))
+        y = opencv_processing_utils.convert_to_y(cv2_auto_flash_image, _BGR)
+        # Add a color channel dimension for interoperability
+        y = np.expand_dims(y, axis=2)
+        patch = image_processing_utils.get_image_patch(
+            y, _PATCH_X, _PATCH_Y, _PATCH_W, _PATCH_H
+        )
+        flash_mean = image_processing_utils.compute_image_means(patch)[0]
+        image_processing_utils.write_image(y, f'{test_name}_auto_flash_Y.jpg')
+        logging.debug('Flash frames Y mean: %.4f', flash_mean)
 
-      # confirm correct behavior
-      mean_delta = flash_mean - no_flash_mean
-      if mean_delta <= _MEAN_DELTA_ATOL:
-        raise AssertionError(f'mean FLASH-OFF: {mean_delta:.3f}, '
-                             f'ATOL: {_MEAN_DELTA_ATOL}')
+        # confirm correct behavior
+        mean_delta = flash_mean - no_flash_mean
+        if mean_delta <= _MEAN_DELTA_ATOL:
+          failed_zoom_ratios[zoom_ratio] = mean_delta
+
+      if failed_zoom_ratios:
+        error_message = f'ATOL: {_MEAN_DELTA_ATOL}:\n'
+        for ratio, delta in failed_zoom_ratios.items():
+          error_message += f'Ratio: {ratio} | Mean FLASH-OFF: {delta:.3f}\n'
+        raise AssertionError(error_message)
 
       # turn lights back ON
       lighting_control_utils.set_lighting_state(
