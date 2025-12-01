@@ -36,11 +36,15 @@ _EXPECTED_NUMBER_OF_CODES = 256
 _HOST_SIDE_SERVER_PORT = 51501  # Arbitrary port number
 _HTTP_SERVER_STR = 'http.server'
 _MAX_DROPPED_FRAMES = 5
+_SECURE_PLAYBACK_CODEC_NAME = 'media.secureplayback.extra.CODEC_NAME'
 _SECURE_PLAYBACK_EXTRA_STREAMING_URI = (
     'media.secureplayback.extra.STREAMING_URI'
 )
 _SECURE_PLAYBACK_EXTRA_VIDEO_SCALING = (
     'media.secureplayback.extra.VIDEO_SCALING'
+)
+_SECURE_PLAYBACK_NUM_DROPPED_FRAMES = (
+    'media.secureplayback.extra.NUM_DROPPED_FRAMES'
 )
 _SECURE_PLAYBACK_RESULTS_KEY = 'media.secureplayback.extra.RESULTS'
 _TEST_ACTIVITY = 'com.android.cts.verifier/.media.SecurePlaybackTestActivity'
@@ -103,6 +107,15 @@ class SecurePlaybackTest(secure_playback_base_test.SecurePlaybackBaseTest):
         '--activity-brought-to-front --activity-reorder-to-front'
     )
     time.sleep(_APP_START_WAIT_TIME_SEC)
+
+  def teardown_test(self):
+    super().teardown_test()
+    self.dut.adb.shell(
+        f'am broadcast -a {_ACTION_SECURE_PLAYBACK_RESULT} '
+        f'--es {_SECURE_PLAYBACK_RESULTS_KEY} INCOMPLETE '
+        f'--es {_SECURE_PLAYBACK_CODEC_NAME} {self.codec_name} '
+        f'--ei {_SECURE_PLAYBACK_NUM_DROPPED_FRAMES} {self.total_dropped}'
+    )
 
   def _align_playback_tool(self, video_url):
     """Prompts user to align the playback analysis tool with the video.
@@ -187,29 +200,33 @@ class SecurePlaybackTest(secure_playback_base_test.SecurePlaybackBaseTest):
     dropped_frames = processed_json_data[
         'video_analysis']['metrics']['dropped_frames']
     logging.info('dropped frames: %s', dropped_frames)
-    total_dropped = dropped_frames['total_dropped']
-    if total_dropped > _MAX_DROPPED_FRAMES:
+    self.total_dropped = dropped_frames['total_dropped']
+    if self.total_dropped > _MAX_DROPPED_FRAMES:
       asserts.skip(
           f'Expected no more than {_MAX_DROPPED_FRAMES} dropped frames, '
-          f'got {total_dropped}'
+          f'got {self.total_dropped}'
       )
 
   def test_secure_playback_avc_60fps(self):
+    self.codec_name = 'avc'
     self._test_secure_playback(
         f'http://localhost:{_APP_SIDE_SERVER_PORT}/wv-cenc-avc-1080p-60fps.mpd'
     )
 
   def test_secure_playback_hevc_60fps(self):
+    self.codec_name = 'hevc'
     self._test_secure_playback(
         f'http://localhost:{_APP_SIDE_SERVER_PORT}/wv-cenc-hevc-1080p-60fps.mpd'
     )
 
   def test_secure_playback_vp9_60fps(self):
+    self.codec_name = 'vp9'
     self._test_secure_playback(
         f'http://localhost:{_APP_SIDE_SERVER_PORT}/wv-cenc-vp9-1080p-60fps.mpd'
     )
 
   def test_secure_playback_av1_60fps(self):
+    self.codec_name = 'av1'
     self._test_secure_playback(
         f'http://localhost:{_APP_SIDE_SERVER_PORT}/wv-cenc-av1-1080p-60fps.mpd'
     )
