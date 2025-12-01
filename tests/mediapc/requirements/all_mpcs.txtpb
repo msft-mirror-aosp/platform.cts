@@ -14,4 +14,11 @@
 #
 # proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: RequirementList
-all_mpcs: [30, 31, 33, 34, 35, 37]
+all_mpcs: [
+  30,
+  31,
+  33,
+  34,
+  35,
+  37
+]
