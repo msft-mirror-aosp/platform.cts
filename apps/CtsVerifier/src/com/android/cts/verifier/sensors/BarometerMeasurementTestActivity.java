@@ -712,7 +712,7 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         if (failed) {
             Assert.fail("FAILED - abs(max(p_delta) - min(p_delta)) is larger than 0.2 hPa");
         }
-        return failed ? "PASSED" : "FAILED";
+        return failed ? "FAILED" : "PASSED";
     }
 
     /**
