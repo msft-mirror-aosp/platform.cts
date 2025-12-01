@@ -20,6 +20,7 @@ import static android.hardware.camera2.cts.CameraTestUtils.ImageAndMultiResStrea
 import static android.hardware.camera2.cts.CameraTestUtils.SimpleMultiResolutionImageReaderListener;
 import static android.hardware.camera2.cts.CameraTestUtils.StreamCombinationTargets;
 import static android.hardware.camera2.cts.CameraTestUtils.checkSessionConfigurationSupported;
+import static android.hardware.camera2.cts.CameraTestUtils.getZoomRatiosToTest;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
@@ -39,6 +40,8 @@ import android.hardware.camera2.MultiResolutionImageReader;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.cts.CameraTestUtils.HandlerExecutor;
 import android.hardware.camera2.cts.CameraTestUtils.SimpleCaptureCallback;
+import android.hardware.camera2.cts.CameraTestUtils.ZoomDirection;
+import android.hardware.camera2.cts.CameraTestUtils.ZoomRange;
 import android.hardware.camera2.cts.helpers.StaticMetadata;
 import android.hardware.camera2.cts.testcases.Camera2AndroidTestCase;
 import android.hardware.camera2.params.MandatoryStreamCombination;
@@ -67,6 +70,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Basic test for MultiResolutionImageReader APIs.
@@ -92,6 +97,7 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
     // Capture result timeout
     private static final int WAIT_FOR_RESULT_TIMEOUT_MS = 3000;
     private static final int CAPTURE_TIMEOUT = 1500; //ms
+    private static final int CONFIGURE_TIMEOUT = 5000; //ms
 
     private MultiResolutionImageReader mMultiResolutionImageReader;
     private SimpleMultiResolutionImageReaderListener mListener;
@@ -305,6 +311,226 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
         }
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_MULTI_RESOLUTION_CONCURRENT_READERS)
+    @Test
+    public void testMultiResolutionImageReaderConcurrentReaders() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            if (VERBOSE) {
+                Log.v(
+                        TAG,
+                        "Testing multi-resolution capture with concurrent readers for Camera "
+                                + id);
+            }
+            StaticMetadata info = mAllStaticInfo.get(id);
+            CameraCharacteristics c = info.getCharacteristics();
+            MultiResolutionStreamConfigurationMap multiResolutionMap =
+                    c.get(CameraCharacteristics.SCALER_MULTI_RESOLUTION_STREAM_CONFIGURATION_MAP);
+            if (multiResolutionMap == null) {
+                Log.i(TAG, "Camera " + id + " doesn't support multi-resolution capture.");
+                continue;
+            }
+            int[] multiResolutionOutputFormats = multiResolutionMap.getOutputFormats();
+            for (int format : multiResolutionOutputFormats) {
+                if (multiResolutionMap.isConcurrentReadersSupported(format)) {
+                    testMultiResolutionConcurrentReadersForCamera(
+                            id, info, multiResolutionMap, format);
+                } else {
+                    testMultiResolutionConcurrentReadersNotSupported(
+                            id, info, multiResolutionMap, format);
+                }
+            }
+        }
+    }
+
+    private static class MultiResOutputSurfacesHolder {
+        public List<Surface> outputSurfaces;
+        public long timestamp;
+        public long frameNumber;
+
+        public MultiResOutputSurfacesHolder(
+                List<Surface> outputSurfaces, long timestamp, long frameNumber) {
+            this.outputSurfaces = outputSurfaces;
+            this.timestamp = timestamp;
+            this.frameNumber = frameNumber;
+        }
+    }
+
+    private static class MultiResOutputSurfacesListener
+            implements MultiResolutionImageReader.OnActiveOutputSurfacesListener {
+        private final LinkedBlockingQueue<MultiResOutputSurfacesHolder> mQueue =
+                new LinkedBlockingQueue<>();
+
+        @Override
+        public void onActiveOutputSurfaces(
+                java.util.List<android.view.Surface> activeOutputSurfaces,
+                long timestamp, long frameNumber) {
+            try {
+                mQueue.put(new MultiResOutputSurfacesHolder(
+                        activeOutputSurfaces, timestamp, frameNumber));
+            } catch (InterruptedException e) {
+                throw new UnsupportedOperationException(
+                        "Can't handle InterruptedException in onActiveOutputSurfaces");
+            }
+        }
+
+        public MultiResOutputSurfacesHolder getOutputSurfaces(long timeoutMs) {
+            try {
+                long currentTs = -1L;
+                MultiResOutputSurfacesHolder outputSurfacesHolder;
+                outputSurfacesHolder = mQueue.poll(timeoutMs, TimeUnit.MILLISECONDS);
+                if (outputSurfacesHolder == null) {
+                    throw new RuntimeException(
+                            "Wait for an onActiveOutputSurfaces callback timed out in "
+                            + timeoutMs + "ms");
+                }
+                return outputSurfacesHolder;
+
+            } catch (InterruptedException e) {
+                throw new UnsupportedOperationException("Unhandled interrupted exception", e);
+            }
+        }
+    }
+
+    private void testMultiResolutionConcurrentReadersForCamera(
+            String cameraId,
+            StaticMetadata staticInfo,
+            MultiResolutionStreamConfigurationMap multiResolutionMap,
+            int format)
+            throws Exception {
+        Collection<MultiResolutionStreamInfo> multiResolutionStreams =
+                multiResolutionMap.getOutputInfo(format);
+        double[] ratiosToTest =
+                getZoomRatiosToTest(
+                        staticInfo,
+                        /*checkSmoothZoom*/ true,
+                        ZoomDirection.ZOOM_IN,
+                        ZoomRange.RATIO_FULL_RANGE);
+
+        try {
+            openDevice(cameraId);
+
+            mMultiResolutionImageReader =
+                    new MultiResolutionImageReader(
+                            multiResolutionStreams,
+                            format,
+                            MAX_NUM_IMAGES, /*usage*/
+                            0,
+                            /*concurrentReaders*/ true);
+            mListener =
+                    new SimpleMultiResolutionImageReaderListener(
+                            mMultiResolutionImageReader, MAX_NUM_IMAGES, /*acquireLatest*/ false);
+            mMultiResolutionImageReader.setOnImageAvailableListener(
+                    mListener, new HandlerExecutor(mHandler));
+
+            MultiResOutputSurfacesListener surfacesListener = new MultiResOutputSurfacesListener();
+            mMultiResolutionImageReader.setOnActiveOutputSurfacesListener(
+                    new HandlerExecutor(mHandler), surfacesListener);
+
+            Collection<OutputConfiguration> outputConfigs =
+                    OutputConfiguration.createInstancesForMultiResolutionOutput(
+                            mMultiResolutionImageReader);
+            ArrayList<OutputConfiguration> outputConfigsList =
+                    new ArrayList<OutputConfiguration>(outputConfigs);
+
+            // Create session
+            createSessionByConfigs(outputConfigsList);
+            CaptureRequest.Builder captureBuilder =
+                    mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            assertNotNull("Failed to create captureRequest", captureBuilder);
+            captureBuilder.addTarget(mMultiResolutionImageReader.getSurface());
+
+            // Capture images at different zoom ratios
+            SimpleCaptureCallback listener = new SimpleCaptureCallback();
+            for (Double zoomRatio : ratiosToTest) {
+                captureBuilder.set(CaptureRequest.CONTROL_ZOOM_RATIO, zoomRatio.floatValue());
+                CaptureRequest request = captureBuilder.build();
+
+                mCameraSession.capture(request, listener, mHandler);
+
+                // Validate MultiResolutionImageReader.OnActiveOutputSurfaces
+                long nextFrameNumber = listener.getNextCaptureStartFrameNumber();
+                MultiResOutputSurfacesHolder outputSurfacesHolder =
+                        surfacesListener.getOutputSurfaces(WAIT_FOR_RESULT_TIMEOUT_MS);
+                assertNotNull("MultiResolutionImageReader onActiveOutputSurfaces missing!",
+                        outputSurfacesHolder);
+                List<Surface> outputSurfaces = outputSurfacesHolder.outputSurfaces;
+                assertTrue("MultiResolutionImageReader onActiveOutputSurfaces returned "
+                        + "0 surfaces. Must be at least 1",
+                        outputSurfaces.size() > 0);
+                assertTrue("MultiResolutionImageReader onActiveOutputSurfaces returned "
+                        + outputSurfaces.size() + " surfaces. Must be at most "
+                        + multiResolutionStreams.size(),
+                        outputSurfaces.size() <= multiResolutionStreams.size());
+                assertEquals("MultiResolutionImageReader onActiveOutputSurfaces frameNumber "
+                        + outputSurfacesHolder.frameNumber + " doesn't match onCaptureStarted "
+                        + "frameNumber " + nextFrameNumber, outputSurfacesHolder.frameNumber,
+                        nextFrameNumber);
+
+                /**
+                 * For MultiResolutionImageReader with concurrency, the number of images to be
+                 * verified could be more than the captureCount, because each sensor capture may
+                 * generate concurrent outputs on a single MultiResolutionImageReader.
+                 */
+                long expectedTimestamp = outputSurfacesHolder.timestamp;
+                for (Surface expectedSurface : outputSurfaces) {
+                    validateImage(
+                            format,
+                            multiResolutionStreams,
+                            /*numFrameVerified*/ 1,
+                            listener,
+                            /*repeating*/ false,
+                            expectedSurface,
+                            expectedTimestamp);
+                }
+            }
+        } finally {
+            closeDevice(cameraId);
+
+            // Close MultiResolutionImageReader
+            if (mMultiResolutionImageReader != null) {
+                mMultiResolutionImageReader.close();
+            }
+            mMultiResolutionImageReader = null;
+        }
+    }
+
+    private void testMultiResolutionConcurrentReadersNotSupported(
+            String cameraId,
+            StaticMetadata staticInfo,
+            MultiResolutionStreamConfigurationMap multiResolutionMap,
+            int format) throws Exception {
+        Collection<MultiResolutionStreamInfo> multiResolutionStreams =
+                multiResolutionMap.getOutputInfo(format);
+
+        try {
+            openDevice(cameraId);
+            mMultiResolutionImageReader =
+                    new MultiResolutionImageReader(
+                            multiResolutionStreams,
+                            format,
+                            MAX_NUM_IMAGES,
+                            /*usage*/ 0,
+                            /*concurrentReaders*/ true);
+
+            Collection<OutputConfiguration> outputConfigs =
+                    OutputConfiguration.createInstancesForMultiResolutionOutput(
+                            mMultiResolutionImageReader);
+            ArrayList<OutputConfiguration> outputConfigsList =
+                    new ArrayList<OutputConfiguration>(outputConfigs);
+
+            // Create session
+            CameraCaptureSession.StateCallback sessionListener =
+                    mock(CameraCaptureSession.StateCallback.class);
+            CameraCaptureSession session =
+                    CameraTestUtils.configureCameraSessionWithConfig(mCamera, outputConfigsList,
+                            sessionListener, mHandler);
+            verify(sessionListener, timeout(CONFIGURE_TIMEOUT).atLeastOnce()).
+                    onConfigureFailed(any(CameraCaptureSession.class));
+        } finally {
+            closeDevice(cameraId);
+        }
+    }
+
     private void testMultiResolutionMandatoryStreamCombination(String cameraId,
             StaticMetadata staticInfo, MandatoryStreamCombination combination,
             MultiResolutionStreamConfigurationMap multiResStreamConfig) throws Exception {
@@ -494,8 +720,14 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
                 }
 
                 // Validate  images
-                validateImage(format, multiResolutionStreams, numFrameVerified, listener,
-                        repeating);
+                validateImage(
+                        format,
+                        multiResolutionStreams,
+                        numFrameVerified,
+                        listener,
+                        repeating,
+                        /*expectedSurface*/ null,
+                        /*expectedTimestamp*/ 0);
 
                 if (repeating) {
                     mCameraSession.stopRepeating();
@@ -517,8 +749,15 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
         }
     }
 
-    private void validateImage(int format, Collection<MultiResolutionStreamInfo> streams,
-            int captureCount, SimpleCaptureCallback listener, boolean repeating) throws Exception {
+    private void validateImage(
+            int format,
+            Collection<MultiResolutionStreamInfo> streams,
+            int captureCount,
+            SimpleCaptureCallback listener,
+            boolean repeating,
+            Surface expectedSurface,
+            long expectedTimestamp)
+            throws Exception {
         ImageAndMultiResStreamInfo imgAndStreamInfo;
         final int MAX_RETRY_COUNT = 20;
         int retryCount = 0;
@@ -534,12 +773,26 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
 
             Image img = imgAndStreamInfo.image;
             MultiResolutionStreamInfo streamInfoForImage = imgAndStreamInfo.streamInfo;
+            Surface readerSurface = imgAndStreamInfo.surface;
             mCollector.expectEquals(String.format("Output image width %d doesn't match " +
                     " the expected width %d", img.getWidth(), streamInfoForImage.getWidth()),
                     img.getWidth(), streamInfoForImage.getWidth());
             mCollector.expectEquals(String.format("Output image height %d doesn't match " +
                     " the expected height %d", img.getHeight(), streamInfoForImage.getHeight()),
                     img.getHeight(), streamInfoForImage.getHeight());
+            if (expectedSurface != null) {
+                mCollector.expectEquals(
+                        "Output surface doesn't match with the expected value",
+                        readerSurface,
+                        expectedSurface);
+            }
+            if (expectedTimestamp != 0) {
+                long imageTimestamp = img.getTimestamp();
+                mCollector.expectEquals(
+                        String.format("Output image timestamp %d doesn't match " +
+                        " the expected timestamp %d", imageTimestamp, expectedTimestamp),
+                        imageTimestamp, expectedTimestamp);
+            }
 
             if (format != ImageFormat.PRIVATE) {
                 CameraTestUtils.validateImage(img, img.getWidth(), img.getHeight(), format,

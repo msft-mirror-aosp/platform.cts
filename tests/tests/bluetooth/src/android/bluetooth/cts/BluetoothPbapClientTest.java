@@ -45,11 +45,13 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
 
 import java.time.Duration;
 
@@ -57,6 +59,8 @@ import java.time.Duration;
 @LargeTest
 public class BluetoothPbapClientTest {
     private static final String TAG = BluetoothPbapClientTest.class.getSimpleName();
+
+    @Rule public final MockitoRule mockito = MockitoJUnit.rule();
 
     @Mock private BluetoothProfile.ServiceListener mListener;
 
@@ -74,8 +78,6 @@ public class BluetoothPbapClientTest {
     public void setUp() throws Exception {
         assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_BLUETOOTH));
         assumeTrue(BluetoothProperties.isProfilePbapClientEnabled().orElse(false));
-
-        MockitoAnnotations.initMocks(this);
 
         assertThat(BlockingBluetoothAdapter.enable()).isTrue();
 

@@ -47,11 +47,13 @@ import com.android.modules.utils.build.SdkLevel;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
 
 import java.time.Duration;
 
@@ -59,6 +61,8 @@ import java.time.Duration;
 @LargeTest
 public class BluetoothMapTest {
     private static final String TAG = BluetoothMapTest.class.getSimpleName();
+
+    @Rule public final MockitoRule mockito = MockitoJUnit.rule();
 
     @Mock private BluetoothProfile.ServiceListener mListener;
 
@@ -74,8 +78,6 @@ public class BluetoothMapTest {
 
     @Before
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
-
         assumeTrue(SdkLevel.isAtLeastT());
         assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_BLUETOOTH));
         assumeTrue(BluetoothProperties.isProfileMapServerEnabled().orElse(false));

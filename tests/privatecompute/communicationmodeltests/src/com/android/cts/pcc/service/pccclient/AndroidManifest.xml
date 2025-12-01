@@ -19,14 +19,14 @@
     package="com.android.cts.pcc.service.pccclient">
 
     <application>
-        <private-compute>
-            <service
-                android:name="com.android.cts.pcc.service.common.TestPccService"
-                android:exported="true" />
-            <service
-                android:name="com.android.cts.pcc.service.common.TestPccRegularService"
-                android:exported="true" />
-        </private-compute>
+        <service
+            android:name="com.android.cts.pcc.service.common.TestPccService"
+            android:exported="true"
+            android:isPrivateComputeCoreProcess="true" />
+        <service
+            android:name="com.android.cts.pcc.service.common.TestPccRegularService"
+            android:exported="true"
+            android:isPrivateComputeCoreProcess="true" />
         <uses-library android:name="android.test.runner" />
     </application>
 

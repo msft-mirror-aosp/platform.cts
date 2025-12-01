@@ -20,6 +20,7 @@ import android.app.QueuedWork;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.StrictMode;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.preference.PreferenceManager;
 import android.test.AndroidTestCase;
 import android.util.Log;
@@ -318,6 +319,7 @@ public class SharedPreferencesTest extends AndroidTestCase {
         }
     }
 
+    @DisabledOnRavenwood(blockedBy = StrictMode.class)
     public void testModeMultiProcess() throws InterruptedException {
         // Pre-load it.
         mContext.getSharedPreferences("multiprocessTest", 0);

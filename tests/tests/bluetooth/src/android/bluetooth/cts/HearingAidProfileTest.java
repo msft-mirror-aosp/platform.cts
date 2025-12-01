@@ -65,11 +65,13 @@ import com.android.compatibility.common.util.CddTest;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
 
 import java.time.Duration;
 import java.util.List;
@@ -78,6 +80,8 @@ import java.util.List;
 @RunWith(AndroidJUnit4.class)
 public class HearingAidProfileTest {
     private static final String TAG = HearingAidProfileTest.class.getSimpleName();
+
+    @Rule public final MockitoRule mockito = MockitoJUnit.rule();
 
     @Mock private BluetoothProfile.ServiceListener mListener;
 
@@ -106,8 +110,6 @@ public class HearingAidProfileTest {
 
     @Before
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
-
         assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_BLUETOOTH_LE));
         boolean isAshaEnabledByDefault =
                 !(mContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE)

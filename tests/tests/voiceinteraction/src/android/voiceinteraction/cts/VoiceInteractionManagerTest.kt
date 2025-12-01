@@ -16,17 +16,29 @@
 
 package android.voiceinteraction.cts
 
+import android.app.Activity
+import android.app.AppOpsManager
+import android.app.role.RoleManager
 import android.app.voiceinteraction.VoiceInteractionManager
 import android.app.voiceinteraction.VoiceInteractionManager.ACTION_REQUEST_ASSIST_STRUCTURE
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.permission.flags.Flags.FLAG_ASSIST_SETTINGS_PRIVACY_IMPROVEMENTS_ENABLED
 import android.platform.test.annotations.RequiresFlagsEnabled
-import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import android.platform.test.rule.SecureSettingRule
+import android.voiceinteraction.cts.testcore.Helper
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.rule.ActivityTestRule
 import com.android.compatibility.common.util.ApiTest
+import com.android.compatibility.common.util.SystemUtil.eventually
+import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
+import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
+import org.junit.After
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -35,18 +47,56 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 @RequiresFlagsEnabled(FLAG_ASSIST_SETTINGS_PRIVACY_IMPROVEMENTS_ENABLED)
 class VoiceInteractionManagerTest {
-    @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+    @get:Rule val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+    @get:Rule val assistStructureSetting = SecureSettingRule<Boolean>(ASSIST_STRUCTURE_ENABLED)
+    @get:Rule val assistScreenshotSetting = SecureSettingRule<Boolean>(ASSIST_SCREENSHOT_ENABLED)
+    @get:Rule val activityRule = ActivityTestRule(WaitForResultActivity::class.java)
 
     private val context = ApplicationProvider.getApplicationContext<Context>()
-    private val manager = context.getSystemService(VoiceInteractionManager::class.java)
+    private val appOpsManager = context.getSystemService(AppOpsManager::class.java)!!
+    private val roleManager = context.getSystemService(RoleManager::class.java)!!
+
+    // VoiceInteractionManager will be null if flag disabled, move init to setup method so it only
+    // gets invoked when flag enabled
+    private lateinit var voiceInteractionManager: VoiceInteractionManager
+
+    private val assistantRoleHolderPackageUid =
+        context.packageManager.getPackageUid(ASSISTANT_ROLE_HOLDER_PACKAGE, 0)
+    private var originalRoleHolder: String? = null
+
+    @Before
+    fun setup() {
+        voiceInteractionManager =
+            context.getSystemService(VoiceInteractionManager::class.java)!!
+
+        // assistant is singleton role
+        originalRoleHolder = Helper.getAssistRoleHolders(roleManager).getOrNull(0)
+
+        if (originalRoleHolder == ASSISTANT_ROLE_HOLDER_PACKAGE) {
+            Helper.removeAssistRoleHolder(ASSISTANT_ROLE_HOLDER_PACKAGE, context, roleManager)
+            originalRoleHolder = null
+        }
+    }
+
+    @After
+    fun cleanup() {
+        Helper.removeAssistRoleHolder(ASSISTANT_ROLE_HOLDER_PACKAGE, context, roleManager)
+
+        // Restore to original, assistant is singleton role
+        originalRoleHolder?.let {
+            Helper.addAssistRoleHolder(it, context, roleManager)
+        }
+
+        assertThat(Helper.getAssistRoleHolders(roleManager))
+            .doesNotContain(ASSISTANT_ROLE_HOLDER_PACKAGE)
+    }
 
     @ApiTest(
         apis = ["android.app.voiceinteraction.VoiceInteractionManager#createRequestAssistStructureIntent"]
     )
     @Test
     fun testCreateRequestAssistStructureIntent() {
-        val testPkgName = "com.android.test"
-        val intent = manager.createRequestAssistStructureIntent()
+        val intent = voiceInteractionManager.createRequestAssistStructureIntent()
         assertWithMessage(
             "Expected intent action to be ${ACTION_REQUEST_ASSIST_STRUCTURE}"
         )
@@ -55,5 +105,141 @@ class VoiceInteractionManagerTest {
         assertWithMessage("Expected intent to be directed to PermissionController")
             .that(intent.getPackage())
             .isEqualTo(context.packageManager.permissionControllerPackageName)
+    }
+
+    @Test
+    @ApiTest(
+        apis = ["android.app.voiceinteraction.VoiceInteractionManager#canReadAssistStructure"]
+    )
+    fun testCanReadAssistStructure() {
+        Helper.addAssistRoleHolder(ASSISTANT_ROLE_HOLDER_PACKAGE, context, roleManager)
+
+        // Mode Allowed
+        setAppOpMode(AppOpsManager.MODE_ALLOWED)
+        assertCanReadAssistStructure(true)
+        eventually {
+            assertThat(assistStructureSetting.getSettingValue<Boolean>()).isTrue()
+            assertThat(assistScreenshotSetting.getSettingValue<Boolean>()).isTrue()
+        }
+
+        // Mode ignored
+        setAppOpMode(AppOpsManager.MODE_IGNORED)
+        assertCanReadAssistStructure(false)
+        eventually {
+            assertThat(assistStructureSetting.getSettingValue<Boolean>()).isFalse()
+            assertThat(assistScreenshotSetting.getSettingValue<Boolean>()).isFalse()
+        }
+
+        // Mode default
+        setAppOpMode(AppOpsManager.MODE_DEFAULT)
+        assertCanReadAssistStructure(true)
+        eventually {
+            assertThat(assistStructureSetting.getSettingValue<Boolean>()).isTrue()
+            assertThat(assistScreenshotSetting.getSettingValue<Boolean>()).isTrue()
+        }
+
+        // Mode errored
+        setAppOpMode(AppOpsManager.MODE_ERRORED)
+        assertCanReadAssistStructure(false)
+        eventually {
+            assertThat(assistStructureSetting.getSettingValue<Boolean>()).isFalse()
+            assertThat(assistScreenshotSetting.getSettingValue<Boolean>()).isFalse()
+        }
+    }
+
+    @Test
+    @ApiTest(
+        apis = ["android.app.voiceinteraction.VoiceInteractionManager#canReadAssistStructure"]
+    )
+    fun testCanReadAssistStructure_nonRoleHolder() {
+        Helper.removeAssistRoleHolder(ASSISTANT_ROLE_HOLDER_PACKAGE, context, roleManager)
+
+        val initialAssistSecureSettings =
+            (assistStructureSetting.getSettingValue<Boolean>() ?: false) &&
+                (assistScreenshotSetting.getSettingValue<Boolean>() ?: false)
+
+        // Mode Allowed
+        setAppOpMode(AppOpsManager.MODE_ALLOWED)
+        assertCanReadAssistStructure(false)
+        assertThat(assistStructureSetting.getSettingValue<Boolean>())
+            .isEqualTo(initialAssistSecureSettings)
+        assertThat(assistScreenshotSetting.getSettingValue<Boolean>())
+            .isEqualTo(initialAssistSecureSettings)
+
+        // Mode ignored
+        setAppOpMode(AppOpsManager.MODE_IGNORED)
+        assertCanReadAssistStructure(false)
+        assertThat(assistStructureSetting.getSettingValue<Boolean>())
+            .isEqualTo(initialAssistSecureSettings)
+        assertThat(assistScreenshotSetting.getSettingValue<Boolean>())
+            .isEqualTo(initialAssistSecureSettings)
+
+        // Mode default
+        setAppOpMode(AppOpsManager.MODE_DEFAULT)
+        assertCanReadAssistStructure(false)
+        assertThat(assistStructureSetting.getSettingValue<Boolean>())
+            .isEqualTo(initialAssistSecureSettings)
+        assertThat(assistScreenshotSetting.getSettingValue<Boolean>())
+            .isEqualTo(initialAssistSecureSettings)
+
+        // Mode errored
+        setAppOpMode(AppOpsManager.MODE_ERRORED)
+        assertCanReadAssistStructure(false)
+        assertThat(assistStructureSetting.getSettingValue<Boolean>())
+            .isEqualTo(initialAssistSecureSettings)
+        assertThat(assistScreenshotSetting.getSettingValue<Boolean>())
+            .isEqualTo(initialAssistSecureSettings)
+    }
+
+    private fun getAppOpMode(): Int =
+        runWithShellPermissionIdentity<Int> {
+            appOpsManager.checkOpNoThrow(
+                AppOpsManager.OPSTR_VOICE_INTERACTION_ASSIST_STRUCTURE,
+                assistantRoleHolderPackageUid,
+                ASSISTANT_ROLE_HOLDER_PACKAGE,
+            )
+        }
+
+    private fun setAppOpMode(mode: Int) =
+        runWithShellPermissionIdentity {
+            appOpsManager.setUidMode(
+                AppOpsManager.OPSTR_VOICE_INTERACTION_ASSIST_STRUCTURE,
+                assistantRoleHolderPackageUid,
+                mode,
+            )
+        }
+
+    @Throws(InterruptedException::class)
+    private fun assertCanReadAssistStructure(assistStructureIsReadable: Boolean) {
+        val intent: Intent = Intent()
+            .setComponent(
+                ComponentName(
+                    ASSISTANT_ROLE_HOLDER_PACKAGE,
+                    APP_CAN_READ_ASSIST_STRUCTURE_ACTIVITY_NAME
+                )
+            )
+        activityRule.activity.startActivityToWaitForResult(intent)
+
+        val result = activityRule.activity.waitForActivityResult(ACTIVITY_WAIT_TIMEOUT_MILLIS)
+
+        assertThat(result.first).isEqualTo(Activity.RESULT_OK)
+        assertThat(result.second).isNotNull()
+        assertThat(result.second.hasExtra(EXTRA_CAN_READ_ASSIST_STRUCTURE)).isTrue()
+        assertThat(result.second.getBooleanExtra(
+            EXTRA_CAN_READ_ASSIST_STRUCTURE,
+            !assistStructureIsReadable
+        ))
+            .isEqualTo(assistStructureIsReadable)
+    }
+
+    private companion object {
+        private const val ASSISTANT_ROLE_HOLDER_PACKAGE = "android.voiceinteraction.testassistant"
+        private const val APP_CAN_READ_ASSIST_STRUCTURE_ACTIVITY_NAME =
+            "$ASSISTANT_ROLE_HOLDER_PACKAGE.CanReadAssistStructureActivity"
+        private const val EXTRA_CAN_READ_ASSIST_STRUCTURE =
+            "android.voiceinteraction.testassistant.extra.CAN_READ_ASSIST_STRUCTURE"
+        private const val ASSIST_STRUCTURE_ENABLED = "assist_structure_enabled"
+        private const val ASSIST_SCREENSHOT_ENABLED = "assist_screenshot_enabled"
+        private const val ACTIVITY_WAIT_TIMEOUT_MILLIS: Long = 5000
     }
 }

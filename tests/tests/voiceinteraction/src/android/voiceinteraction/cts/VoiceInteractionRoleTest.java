@@ -16,19 +16,15 @@
 
 package android.voiceinteraction.cts;
 
-import static com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity;
-import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import android.app.role.RoleManager;
 import android.content.ComponentName;
 import android.content.Context;
-import android.os.Process;
 import android.platform.test.annotations.AppModeFull;
 import android.provider.Settings;
 import android.text.TextUtils;
-import android.util.Log;
 import android.voiceinteraction.cts.testcore.Helper;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -44,9 +40,6 @@ import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 /**
  * Tests for successfully changing ROLE_ASSISTANT. The test focuses on changing ROLE_ASSISTANT role,
@@ -55,10 +48,6 @@ import java.util.function.Consumer;
 @AppModeFull(reason = "No need for testing role for instant app")
 @RunWith(AndroidJUnit4.class)
 public class VoiceInteractionRoleTest {
-
-    private static final String TAG = "VoiceInteractionRoleTest";
-
-    private static final long TIMEOUT_MILLIS = 15 * 1000;
     private static final String VOICE_INTERACTION_HAS_RECOGNITION_SERVICE =
             Helper.CTS_SERVICE_PACKAGE;
     private static final String VOICE_INTERACTION_NO_RECOGNITION_SERVICE =
@@ -77,14 +66,14 @@ public class VoiceInteractionRoleTest {
 
     @Before
     public void setup() throws Exception {
-        mOriginalRoleHolders = getAssistRoleHolders();
+        mOriginalRoleHolders = Helper.getAssistRoleHolders(sRoleManager);
     }
 
     @After
     public void cleanup() throws Exception {
         if (mOriginalRoleHolders != null && mOriginalRoleHolders.size() > 0) {
             // Restore to original, assistant is singleton role
-            addAssistRoleHolder(mOriginalRoleHolders.get(0));
+            Helper.addAssistRoleHolder(mOriginalRoleHolders.get(0), sContext, sRoleManager);
         }
     }
 
@@ -103,15 +92,15 @@ public class VoiceInteractionRoleTest {
     // TODO: Use helpers and move the assertion in Test instead of move together
     private void roleTestingForPackage(String packageName, boolean hasRecognition)
             throws Exception {
-        assertThat(getAssistRoleHolders()).doesNotContain(packageName);
+        assertThat(Helper.getAssistRoleHolders(sRoleManager)).doesNotContain(packageName);
 
-        addAssistRoleHolder(packageName);
+        Helper.addAssistRoleHolder(packageName, sContext, sRoleManager);
         if (mOriginalRoleHolders != null && mOriginalRoleHolders.size() > 0) {
             String originalHolder = mOriginalRoleHolders.get(0);
-            removeAssistRoleHolder(originalHolder);
-            assertThat(getAssistRoleHolders()).doesNotContain(originalHolder);
+            Helper.removeAssistRoleHolder(originalHolder, sContext, sRoleManager);
+            assertThat(Helper.getAssistRoleHolders(sRoleManager)).doesNotContain(originalHolder);
         }
-        assertThat(getAssistRoleHolders()).containsExactly(packageName);
+        assertThat(Helper.getAssistRoleHolders(sRoleManager)).containsExactly(packageName);
 
         Callable<Boolean> condition = hasRecognition
                 ? () -> !TextUtils.isEmpty(Settings.Secure.getString(sContext.getContentResolver(),
@@ -131,49 +120,7 @@ public class VoiceInteractionRoleTest {
         }
         assertThat(curVoiceInteractionPackageName).isEqualTo(hasRecognition ? packageName : "");
 
-        removeAssistRoleHolder(packageName);
-        assertThat(getAssistRoleHolders()).doesNotContain(packageName);
-    }
-
-    private List<String> getAssistRoleHolders() throws Exception {
-        return callWithShellPermissionIdentity(
-                () -> sRoleManager.getRoleHolders(RoleManager.ROLE_ASSISTANT));
-    }
-
-    private void addAssistRoleHolder(String packageName)
-            throws Exception {
-        Log.i(TAG, "addAssistRoleHolder for " + packageName);
-        final CallbackFuture future = new CallbackFuture("addAssistRoleHolder");
-        runWithShellPermissionIdentity(() -> {
-            sRoleManager.addRoleHolderAsUser(RoleManager.ROLE_ASSISTANT, packageName,
-                    RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP, Process.myUserHandle(),
-                    sContext.getMainExecutor(), future);
-        });
-        assertThat(future.get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)).isTrue();
-    }
-
-    private void removeAssistRoleHolder(String packageName)
-            throws Exception {
-        Log.i(TAG, "removeAssistRoleHolder for " + packageName);
-        final CallbackFuture future = new CallbackFuture("removeAssistRoleHolder");
-        runWithShellPermissionIdentity(
-                () -> sRoleManager.removeRoleHolderAsUser(RoleManager.ROLE_ASSISTANT, packageName,
-                        0, Process.myUserHandle(), sContext.getMainExecutor(), future));
-        future.get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
-    }
-
-    private static class CallbackFuture extends CompletableFuture<Boolean>
-            implements Consumer<Boolean> {
-        String mMethodName;
-
-        CallbackFuture(String methodName) {
-            mMethodName = methodName;
-        }
-
-        @Override
-        public void accept(Boolean successful) {
-            Log.i(TAG, mMethodName + " result " + successful);
-            complete(successful);
-        }
+        Helper.removeAssistRoleHolder(packageName, sContext, sRoleManager);
+        assertThat(Helper.getAssistRoleHolders(sRoleManager)).doesNotContain(packageName);
     }
 }

@@ -130,6 +130,7 @@ public class TelephonyCallbackTest {
     private boolean mOnCarrierRoamingNtnSignalStrengthCalled;
     private boolean mOnSecurityAlgorithmsChangedCalled;
     private boolean mOnCellularIdentifierDisclosedChangedCalled;
+    private boolean mOnDomainSelectionEmergencyModeChangedCalled;
     @RadioPowerState
     private int mRadioPowerState;
     @SimActivationState
@@ -1758,5 +1759,49 @@ public class TelephonyCallbackTest {
 
         unRegisterTelephonyCallback(
                 mOnCarrierRoamingNtnSignalStrengthCalled, mCarrierRoamingNtnListener);
+    }
+
+    private DomainSelectionEmergencyModeListener mDomainSelectionEmergencyModeListener;
+
+    private class DomainSelectionEmergencyModeListener extends TelephonyCallback
+            implements TelephonyCallback.DomainSelectionEmergencyModeListener {
+        @Override
+        public void onDomainSelectionEmergencyModeEntered(
+                @TelephonyManager.DomainSelectionEmergencyType int type,
+                int slotIndex,
+                int subscriptionId) {}
+
+        @Override
+        public void onDomainSelectionEmergencyModeExited(
+                @TelephonyManager.DomainSelectionEmergencyType int type,
+                int slotIndex,
+                int subscriptionId) {
+            synchronized (mLock) {
+                mOnDomainSelectionEmergencyModeChangedCalled = true;
+                mLock.notify();
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DOMAIN_SELECTION_EMERGENCY_MODE_NOTIFICATION)
+    public void testOnDomainSelectionEmergencyModeExited() throws Throwable {
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+
+        assertFalse(mOnDomainSelectionEmergencyModeChangedCalled);
+        mDomainSelectionEmergencyModeListener = new DomainSelectionEmergencyModeListener();
+        registerTelephonyCallback(mDomainSelectionEmergencyModeListener);
+
+        synchronized (mLock) {
+            while (!mOnDomainSelectionEmergencyModeChangedCalled) {
+                mLock.wait(WAIT_TIME);
+            }
+        }
+
+        assertTrue(mOnDomainSelectionEmergencyModeChangedCalled);
+
+        unRegisterTelephonyCallback(
+                mOnDomainSelectionEmergencyModeChangedCalled,
+                mDomainSelectionEmergencyModeListener);
     }
 }

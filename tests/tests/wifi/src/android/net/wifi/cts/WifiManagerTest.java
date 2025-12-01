@@ -134,6 +134,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FeatureUtil;
@@ -7496,6 +7498,66 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 sWifiManager.updateNetwork(wifi7Network);
             }
             uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    /**
+     * Tests {@link WifiInfo#getMaxSupportedTxLinkSpeedMbps()} and {@link
+     * WifiInfo#getMaxSupportedRxLinkSpeedMbps()}.
+     */
+    @ApiTest(
+            apis = {
+                "android.net.wifi.WifiInfo#getMaxSupportedTxLinkSpeedMbps",
+                "android.net.wifi.WifiInfo#getMaxSupportedRxLinkSpeedMbps"
+            })
+    @RequiresFlagsEnabled(Flags.FLAG_MLO_LINK_SPEED_API)
+    @Test
+    public void testMloLinkSpeedApi() throws Exception {
+        setWifiEnabled(true);
+        WifiConfiguration wifi7Network = null;
+        TestActionListener actionListener = new TestActionListener(mLock);
+
+        try (PermissionContext p =
+                TestApis.permissions().withPermission("android.permission.OVERRIDE_WIFI_CONFIG")) {
+            // Make sure device supports Wi-Fi 7
+            assumeTrue(sWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11BE));
+
+            List<WifiConfiguration> savedNetworks = sWifiManager.getConfiguredNetworks();
+            wifi7Network =
+                    TestHelper.findFirstAvailableSavedNetwork(
+                            sWifiManager, savedNetworks, TestHelper.AP_CAPABILITY_BIT_WIFI7);
+            assumeTrue("Unable to locate Wi-Fi 7 networks in range.\n", wifi7Network != null);
+            assertTrue("Wi-Fi 7 is not enabled in the profile", wifi7Network.isWifi7Enabled());
+
+            // Connect to the Wi-Fi 7 network
+            sWifiManager.disconnect();
+            waitForDisconnection();
+            sWifiManager.connect(wifi7Network.networkId, actionListener);
+            waitForConnection();
+            int wifiStandard = sWifiManager.getConnectionInfo().getWifiStandard();
+            assertEquals(
+                    "Expected 11be connection, but was " + wifiStandard,
+                    ScanResult.WIFI_STANDARD_11BE,
+                    wifiStandard);
+
+            WifiInfo wifiInfo = sWifiManager.getConnectionInfo();
+            assertNotNull("WifiInfo should not be null after connection", wifiInfo);
+
+            List<MloLink> mloLinks = wifiInfo.getAssociatedMloLinks();
+            if (mloLinks != null && !mloLinks.isEmpty()) {
+                for (MloLink link : mloLinks) {
+
+                    // Verify the new APIs return non-negative values
+                    assertWithMessage(
+                                    "MloLink getMaxSupportedTxLinkSpeedMbps should be non-negative")
+                            .that(link.getMaxSupportedTxLinkSpeedMbps())
+                            .isAtLeast(0);
+                    assertWithMessage(
+                                    "MloLink getMaxSupportedRxLinkSpeedMbps should be non-negative")
+                            .that(link.getMaxSupportedRxLinkSpeedMbps())
+                            .isAtLeast(0);
+                }
+            }
         }
     }
 

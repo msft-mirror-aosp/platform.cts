@@ -44,6 +44,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.SystemUtil;
 
+import org.junit.Before;
 import org.junit.After;
 import org.junit.Test;
 
@@ -73,9 +74,8 @@ public class ToastWindowTest extends ActivityManagerTestBase {
         }
     };
 
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUpToastWindowTest() throws Exception {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
 
         SystemUtil.runWithShellPermissionIdentity(() -> {
@@ -96,7 +96,7 @@ public class ToastWindowTest extends ActivityManagerTestBase {
     }
 
     @After
-    public void tearDown() {
+    public void tearDownToastWindowTest() {
         mContext.unregisterReceiver(mAppCommunicator);
         SystemUtil.runWithShellPermissionIdentity(() -> {
             Settings.Global.putString(mContext.getContentResolver(), SETTING_HIDDEN_API_POLICY,

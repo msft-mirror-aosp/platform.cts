@@ -22,7 +22,6 @@ import static android.server.wm.InputMethodVisibilityVerifier.expectImeVisible;
 import static android.server.wm.MockImeHelper.createManagedMockImeSession;
 import static android.server.wm.UiDeviceUtils.pressBackButton;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
-import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.WindowManager.DISPLAY_IME_POLICY_FALLBACK_DISPLAY;
 import static android.view.WindowManager.DISPLAY_IME_POLICY_HIDE;
 import static android.view.WindowManager.DISPLAY_IME_POLICY_LOCAL;
@@ -114,16 +113,6 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
 
         assumeTrue(supportsMultiDisplay());
         assumeTrue(MSG_NO_MOCK_IME, supportsInstallableIme());
-    }
-
-    // TODO(b/383228193): Remove this method once fallbackDisplayForSecondaryUserOnSecondaryDisplay
-    //     flag is promoted.
-    @Override
-    protected int getMainDisplayId() {
-        if (!android.view.inputmethod.Flags.fallbackDisplayForSecondaryUserOnSecondaryDisplay()) {
-            return DEFAULT_DISPLAY;
-        }
-        return super.getMainDisplayId();
     }
 
     @Test

@@ -966,9 +966,8 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
                 Log.i(TAG, "Testing Camera " + id);
 
                 StaticMetadata staticInfo = mAllStaticInfo.get(id);
-                Set<CaptureRequest.Key<?>> requestKeys = new HashSet<>();
-                requestKeys.add(CaptureRequest.LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS);
-                if (!staticInfo.areRequestKeysAvailable(requestKeys)) {
+                if (!staticInfo.areKeysAvailable(
+                        CaptureRequest.LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS)) {
                     Log.i(
                             TAG,
                             "Camera " + id + " does not support additional results, skipping");
@@ -979,11 +978,6 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
                     Log.i(TAG, "Camera " + id + " does not support color outputs, skipping");
                     continue;
                 }
-
-                mCollector.expectTrue(
-                        "the logical multi camera additional results key can only be available"
-                                + " on logical multi camera",
-                        staticInfo.isLogicalMultiCamera());
 
                 openDevice(id);
                 Size yuvSize = mOrderedPreviewSizes.get(0);
@@ -1020,6 +1014,17 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
                 mCollector.expectTrue(
                         "additional result feature should also set the key on in the result",
                         additionalResultKey != null && additionalResultKey);
+
+                Set<String> physicalCameraIds = staticInfo.getCharacteristics()
+                        .getPhysicalCameraIds();
+                Map<String, CaptureResult> physicalResults =
+                        result.getPhysicalCameraResults();
+                for (String physicalId : physicalResults.keySet()) {
+                    mCollector.expectTrue(
+                            "The physical camera Id " + physicalId + " for the additional result"
+                                    + " doesn't belong to this logical camera",
+                                    physicalCameraIds.contains(physicalId));
+                }
 
                 if (mSession != null) {
                     mSession.close();

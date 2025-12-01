@@ -362,9 +362,9 @@ public class TestHelper {
         public void onConnectionFailed(
                 @androidx.annotation.NonNull WifiNetworkSpecifier wifiNetworkSpecifier,
                 int failureReason) {
-            mBlocker.countDown();
             onFailureCalled = true;
             this.failureReason = failureReason;
+            mBlocker.countDown();
         }
 
         public boolean await(long timeout) throws Exception {

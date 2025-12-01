@@ -66,6 +66,7 @@ import android.os.Build;
 import android.os.ConditionVariable;
 import android.os.Handler;
 import android.os.Looper;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 import android.util.Pair;
 import android.util.Range;
@@ -164,6 +165,7 @@ public class CameraTestUtils extends Assert {
     private static final float EXIF_APERTURE_ERROR_MARGIN = 0.001f;
 
     private static final float ZOOM_RATIO_THRESHOLD = 0.01f;
+    private static final int NUM_ZOOM_STEPS = 10;
 
     // Set such that 1920x1080 and 1920x1088 be treated as the same aspect ratio.
     private static final float ASPECT_RATIO_MATCH_THRESHOLD = 0.014f;
@@ -778,10 +780,13 @@ public class CameraTestUtils extends Assert {
     public static class ImageAndMultiResStreamInfo {
         public final Image image;
         public final MultiResolutionStreamInfo streamInfo;
+        public final Surface surface;
 
-        public ImageAndMultiResStreamInfo(Image image, MultiResolutionStreamInfo streamInfo) {
+        public ImageAndMultiResStreamInfo(
+                Image image, MultiResolutionStreamInfo streamInfo, Surface surface) {
             this.image = image;
             this.streamInfo = streamInfo;
+            this.surface = surface;
         }
     }
 
@@ -818,7 +823,9 @@ public class CameraTestUtils extends Assert {
                     Image image = reader.acquireNextImage();
                     MultiResolutionStreamInfo multiResStreamInfo =
                             mOwner.getStreamInfoForImageReader(reader);
-                    mQueue.offer(new ImageAndMultiResStreamInfo(image, multiResStreamInfo));
+                    mQueue.offer(
+                            new ImageAndMultiResStreamInfo(
+                                    image, multiResStreamInfo, reader.getSurface()));
                 }
             }
         }
@@ -827,9 +834,11 @@ public class CameraTestUtils extends Assert {
                 throws Exception {
             if (mAcquireLatest) {
                 Image image = null;
+                ImageReader reader = null;
                 if (mImageAvailable.block(timeoutMs)) {
                     synchronized (mLock) {
                         if (mLastReader != null) {
+                            reader = mLastReader;
                             image = mLastReader.acquireLatestImage();
                             if (VERBOSE) Log.v(TAG, "acquireLatestImage from "
                                     + mLastReader.toString() + " produces " + image);
@@ -841,8 +850,12 @@ public class CameraTestUtils extends Assert {
                 } else {
                     fail("wait for image available time out after " + timeoutMs + "ms");
                 }
-                return image == null ? null : new ImageAndMultiResStreamInfo(image,
-                        mOwner.getStreamInfoForImageReader(mLastReader));
+                return image == null
+                        ? null
+                        : new ImageAndMultiResStreamInfo(
+                                image,
+                                mOwner.getStreamInfoForImageReader(reader),
+                                reader.getSurface());
             } else {
                 ImageAndMultiResStreamInfo imageAndInfo = mQueue.poll(timeoutMs,
                         java.util.concurrent.TimeUnit.MILLISECONDS);
@@ -859,8 +872,6 @@ public class CameraTestUtils extends Assert {
                 assertNotNull("Acquired image is not valid", imageAndInfo.image);
                 imageAndInfo.image.close();
             }
-            mImageAvailable.close();
-            mLastReader = null;
         }
 
         private LinkedBlockingQueue<ImageAndMultiResStreamInfo> mQueue =
@@ -874,6 +885,7 @@ public class CameraTestUtils extends Assert {
     }
 
     public static class SimpleCaptureCallback extends CameraCaptureSession.CaptureCallback {
+
         private final LinkedBlockingQueue<TotalCaptureResult> mQueue =
                 new LinkedBlockingQueue<TotalCaptureResult>();
         private final LinkedBlockingQueue<CaptureFailure> mFailureQueue =
@@ -885,6 +897,9 @@ public class CameraTestUtils extends Assert {
                 new LinkedBlockingQueue<>();
         // Pair<CaptureRequest, Long> is a pair of capture request and start of exposure timestamp.
         private final LinkedBlockingQueue<Pair<CaptureRequest, Long>> mCaptureStartQueue =
+                new LinkedBlockingQueue<>();
+        // Pair<CaptureRequest, Long> is a pair of a capture request and the frame number.
+        private final LinkedBlockingQueue<Pair<CaptureRequest, Long>> mCaptureStartFrameNumberQueue =
                 new LinkedBlockingQueue<>();
         // Pair<CaptureRequest, Long> is a pair of capture request and readout timestamp.
         private final LinkedBlockingQueue<Pair<CaptureRequest, Long>> mReadoutStartQueue =
@@ -900,6 +915,7 @@ public class CameraTestUtils extends Assert {
                 long timestamp, long frameNumber) {
             try {
                 mCaptureStartQueue.put(new Pair(request, timestamp));
+                mCaptureStartFrameNumberQueue.put(new Pair(request, frameNumber));
             } catch (InterruptedException e) {
                 throw new UnsupportedOperationException(
                         "Can't handle InterruptedException in onCaptureStarted");
@@ -1326,6 +1342,19 @@ public class CameraTestUtils extends Assert {
                     timestamps.add(captureStart.second);
                 }
                 return timestamps;
+            } catch (InterruptedException e) {
+                throw new UnsupportedOperationException("Unhandled interrupted exception", e);
+            }
+        }
+
+        public long getNextCaptureStartFrameNumber() {
+            try {
+                Pair<CaptureRequest, Long> captureStartFrameNumber = mCaptureStartFrameNumberQueue.poll(
+                        CAPTURE_RESULT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                assertNotNull("Wait for a capture start timed out in "
+                        + CAPTURE_RESULT_TIMEOUT_MS + "ms", captureStartFrameNumber);
+
+                return captureStartFrameNumber.second;
             } catch (InterruptedException e) {
                 throw new UnsupportedOperationException("Unhandled interrupted exception", e);
             }
@@ -5674,5 +5703,67 @@ public class CameraTestUtils extends Assert {
 
         return (stabilizationMode == null
                 || stabilizationMode == CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_OFF);
+    }
+
+    // Direction of zoom: in or out
+    public enum ZoomDirection {
+        ZOOM_IN,
+        ZOOM_OUT;
+    }
+
+    // Range of zoom: >= 1.0x, <= 1.0x, or full range.
+    public enum ZoomRange {
+        RATIO_1_OR_LARGER,
+        RATIO_1_OR_SMALLER,
+        RATIO_FULL_RANGE;
+    }
+
+    /** Get zoom ratios to be tested for zoom settings override test */
+    public static double[] getZoomRatiosToTest(
+            StaticMetadata staticMetadata,
+            boolean checkSmoothZoom,
+            ZoomDirection direction,
+            ZoomRange range) {
+        Range<Float> zoomRatioRange = staticMetadata.getZoomRatioRangeChecked();
+        final float kSmoothZoomStep = 0.1f;
+        final float kMaxZoomRatio = 10.0f;
+        float startRatio = zoomRatioRange.getLower();
+        float endRatio = Math.min(zoomRatioRange.getUpper(), kMaxZoomRatio);
+
+        if (range == ZoomRange.RATIO_1_OR_LARGER) {
+            startRatio = 1.0f;
+        } else if (range == ZoomRange.RATIO_1_OR_SMALLER) {
+            endRatio = 1.0f;
+        }
+
+        ArrayList<Double> zoomRatios = new ArrayList<>();
+        if (!checkSmoothZoom) {
+            // If not checking smooth zoom, equally divide zoom range into NUM_ZOOM_STEPS
+            // equal pieces.
+            for (int i = 0; i <= NUM_ZOOM_STEPS; i++) {
+                double ratio = startRatio + (endRatio - startRatio) * i / NUM_ZOOM_STEPS;
+                zoomRatios.add(ratio);
+            }
+        } else {
+            // If checking smooth zoom:
+            // 1. Divide zoom range logarithmically to align with user perception.
+            // 2. Smaller steps to simulate pinch zoom better, and at the same time giving
+            //    lens switch enough time.
+            double stepLog = Math.log(1.0f + kSmoothZoomStep);
+            // Add zoom-out ratios
+            for (double logRatio = 0.0f; logRatio >= Math.log(startRatio); logRatio -= stepLog) {
+                zoomRatios.add(Math.exp(logRatio));
+            }
+            Collections.reverse(zoomRatios);
+            // Add zoom-in ratios
+            for (double logRatio = stepLog; logRatio <= Math.log(endRatio); logRatio += stepLog) {
+                zoomRatios.add(Math.exp(logRatio));
+            }
+        }
+
+        if (direction == ZoomDirection.ZOOM_OUT) {
+            Collections.reverse(zoomRatios);
+        }
+        return zoomRatios.stream().mapToDouble(d -> d).toArray();
     }
 }

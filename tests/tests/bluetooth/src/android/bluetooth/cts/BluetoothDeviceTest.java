@@ -903,7 +903,8 @@ public class BluetoothDeviceTest {
     @RequiresFlagsEnabled(Flags.FLAG_PRIORITIZED_IN_EAR_ROUTING)
     @Test
     public void testSetOnHeadDetectionEnabled_permissionsAndEdgeCases() {
-        assumeTrue(mHasBluetooth);
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
         Permissions.enforceEachPermissions(
                 () -> mFakeDevice.setOnHeadDetectionEnabled(true),
                 List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
@@ -918,7 +919,8 @@ public class BluetoothDeviceTest {
     @RequiresFlagsEnabled(Flags.FLAG_PRIORITIZED_IN_EAR_ROUTING)
     @Test
     public void testSetOnHead_permissionsAndEdgeCases() {
-        assumeTrue(mHasBluetooth);
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
         Permissions.enforceEachPermissions(
                 () -> mFakeDevice.setOnHead(true),
                 List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
@@ -1005,6 +1007,9 @@ public class BluetoothDeviceTest {
     @Test(expected = NullPointerException.class)
     @RequiresFlagsEnabled(Flags.FLAG_GATT_CONN_SETTINGS)
     public void illegalArgumentsToConnectGattWithNullConnectionSettings() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
         // No support for Gatt connection without Gatt Callback handler
         mFakeDevice.connectGatt(
                 (BluetoothGattConnectionSettings) null,
@@ -1015,6 +1020,9 @@ public class BluetoothDeviceTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_GATT_CONN_SETTINGS)
     public void connectGattUsingConnectionSettingsTest() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
         BluetoothGattConnectionSettings settings =
                 new BluetoothGattConnectionSettings.Builder()
                         .setTransport(BluetoothDevice.TRANSPORT_LE)

@@ -2255,6 +2255,32 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         );
     }
 
+
+    /**
+     * Asserts that a call's direction is as expected.
+     *
+     * @param call The call.
+     * @param expectedDirection The expected call direction.
+     */
+    public void assertCallDirection(final Call call, final int expectedDirection) {
+        waitUntilConditionIsTrueOrTimeout(
+                new Condition() {
+                    @Override
+                    public Object expected() {
+                        return true;
+                    }
+
+                    @Override
+                    public Object actual() {
+                        return call.getDetails() != null &&
+                                call.getDetails().getCallDirection() == expectedDirection;
+                    }
+                },
+                TestUtils.WAIT_FOR_STATE_CHANGE_TIMEOUT_MS,
+                "Call should have direction = " + expectedDirection
+        );
+    }
+
     /**
      * Asserts that a call does not have any of the specified call capability bits specified.
      *

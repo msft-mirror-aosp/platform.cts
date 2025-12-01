@@ -16,6 +16,9 @@
 
 package com.android.cts.verifier.audio;
 
+import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
+import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
+
 import android.media.AudioDeviceInfo;
 import android.os.Bundle;
 
@@ -29,6 +32,9 @@ import org.hyphonate.megaaudio.recorder.Recorder;
 import org.hyphonate.megaaudio.recorder.sinks.AppCallbackAudioSinkProvider;
 
 public class AudioDataPathsSpeakerMicActivity extends AudioDataPathsBaseActivity {
+    // ReportLog Schema
+    private static final String SECTION_DATAPATHS_SPEAKERMIC = "data_paths_speaker_mic";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         setContentView(R.layout.audio_datapaths_speakermic);
@@ -43,6 +49,11 @@ public class AudioDataPathsSpeakerMicActivity extends AudioDataPathsBaseActivity
 
     protected String getTestCategory() {
         return "Audio Datapaths Speaker/Mic Test";
+    }
+
+    @Override
+    public String getReportSectionName() {
+        return setTestNameSuffix(sCurrentDisplayMode, SECTION_DATAPATHS_SPEAKERMIC);
     }
 
     void gatherTestModules(TestManager testManager) {

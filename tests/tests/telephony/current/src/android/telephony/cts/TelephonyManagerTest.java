@@ -3193,9 +3193,20 @@ public class TelephonyManagerTest {
     @Test
     public void testIccOpenLogicalChannelBySlotAndPort() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        var slotAndPort = getValidSlotIndexAndPort();
+        int slotIndex = slotAndPort.getKey();
+        int portIndex = slotAndPort.getValue();
         // just verify no crash
-        ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, (tm) -> tm.iccOpenLogicalChannelByPort(0, 0, null, 0));
+        try {
+            ShellIdentityUtils.invokeMethodWithShellPermissions(
+                    mTelephonyManager,
+                    (tm) -> tm.iccOpenLogicalChannelByPort(slotIndex, portIndex, null, 0));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            // IllegalArgumentException and IllegalStateException is okay, just not
+            // SecurityException
+        } catch (SecurityException e) {
+            throw new AssertionError("iccOpenLogicalChannelByPort: SecurityException not expected", e);
+        }
     }
 
     @Test

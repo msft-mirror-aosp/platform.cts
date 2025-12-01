@@ -86,7 +86,7 @@ internal class InteractiveTestActivityReportBuilder {
             chooserSessionState = session?.state ?: -1,
             chooserBounds = session?.bounds,
             chooserDefaultBounds =
-                if (interactiveChooserDefaultBounds()) session?.defaultLaunchBounds else null,
+                if (interactiveChooserDefaultBounds()) session?.initialRestingBounds else null,
             stateUpdateHistory = ArrayList(reportedStates),
             boundsUpdateHistory = ArrayList(reportedBounds),
             defaultBoundsUpdateHistory = ArrayList(reportedDefaultBounds),

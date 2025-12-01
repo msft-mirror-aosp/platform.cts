@@ -35,8 +35,7 @@ public final class BedsteadFrameworkMethod extends FrameworkMethod {
 
     private final BedsteadJUnit4 mBedsteadJUnit4;
     private final List<Annotation> mParameterizedAnnotations;
-    private final Map<Class<? extends Annotation>, Annotation> mAnnotationsMap =
-            new HashMap<>();
+    private final Map<Class<? extends Annotation>, Annotation> mAnnotationsMap = new HashMap<>();
     private final Equivalence<Iterable<Annotation>> equivalence =
             Equivalence.equals().pairwise(); // For element-wise comparison
 
@@ -64,16 +63,23 @@ public final class BedsteadFrameworkMethod extends FrameworkMethod {
     private void calculateAnnotations() {
         List<Annotation> annotations =
                 getAnnotationWithReplacements(
-                        getDeclaringClass().getAnnotations(), getClassAnnotationsRecursively());
+                        getDeclaringClass().getAnnotations(),
+                        mBedsteadJUnit4.getRuntimeClassAnnotations());
         annotations.addAll(
                 getAnnotationWithReplacements(
-                        getMethod().getAnnotations(), getClassAnnotationsRecursively()));
+                        getMethod().getAnnotations(),
+                        mBedsteadJUnit4.getRuntimeClassAnnotations()));
 
         mBedsteadJUnit4.resolveRecursiveAnnotations(annotations, mParameterizedAnnotations);
 
-        boolean hasRequireRunOnAnnotation = annotations.stream().anyMatch(it ->
-                it.annotationType().getDeclaredAnnotation(RequireRunOnAnnotation.class) != null
-        );
+        boolean hasRequireRunOnAnnotation =
+                annotations.stream()
+                        .anyMatch(
+                                it ->
+                                        it.annotationType()
+                                                        .getDeclaredAnnotation(
+                                                                RequireRunOnAnnotation.class)
+                                                != null);
 
         // If there is no RequireRunOn annotation, we'll add and resolve RequireRunOnInitialUser
         if (!hasRequireRunOnAnnotation) {
@@ -93,11 +99,6 @@ public final class BedsteadFrameworkMethod extends FrameworkMethod {
             }
             mAnnotationsMap.put(annotation.annotationType(), annotation);
         }
-    }
-
-    // Returns all annotations from the class (and its superclasses)
-    private List<Annotation> getClassAnnotationsRecursively() {
-        return mBedsteadJUnit4.getClassAnnotationsRecursively(getDeclaringClass());
     }
 
     private static List<Annotation> getAnnotationWithReplacements(

@@ -19,62 +19,72 @@ package android.server.wm.animations;
 import static android.server.wm.StateLogger.log;
 import static android.server.wm.animations.DialogFrameTestActivity.EXTRA_TEST_CASE;
 
-import static org.junit.Assert.assertTrue;
-
 import android.app.Activity;
+import android.app.ActivityOptions;
+import android.app.WindowConfiguration;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.server.wm.ActivityManagerTestBase;
+import android.server.wm.Condition;
 import android.server.wm.WindowManagerState.WindowState;
 
-import androidx.test.rule.ActivityTestRule;
+import androidx.lifecycle.Lifecycle;
+import androidx.test.core.app.ActivityScenario;
 
 abstract class ParentChildTestBase<T extends Activity> extends ActivityManagerTestBase {
 
-    interface ParentChildTest {
-        void doTest(WindowState parent, WindowState child);
+    interface ParentChildTest<U extends Activity> {
+        void doTest(WindowState parent, WindowState child, ActivityScenario<U> scenario);
     }
 
-    private void startTestCase(String testCase) throws Exception {
-        final Intent intent = new Intent()
-                .putExtra(EXTRA_TEST_CASE, testCase);
-        activityRule().launchActivity(intent);
+    private ActivityScenario<T> startTestCase(String testCase, boolean isFullscreen)
+            throws Exception {
+        final Intent intent =
+                new Intent().putExtra(EXTRA_TEST_CASE, testCase).setComponent(activityName());
+        final ActivityOptions options = ActivityOptions.makeBasic();
+        if (isFullscreen) {
+            options.setLaunchWindowingMode(WindowConfiguration.WINDOWING_MODE_FULLSCREEN);
+        }
+        final ActivityScenario<T> scenario = ActivityScenario.launch(intent, options.toBundle());
+        scenario.moveToState(Lifecycle.State.RESUMED);
+        return scenario;
     }
 
-    private void startTestCaseDocked(String testCase) throws Exception {
-        startTestCase(testCase);
+    private ActivityScenario<T> startTestCaseDocked(String testCase) throws Exception {
+        final ActivityScenario<T> scenario = startTestCase(testCase, false /* isFullscreen */);
         mWmState.computeState(activityName());
         putActivityInPrimarySplit(activityName());
+        return scenario;
     }
 
     abstract ComponentName activityName();
-    abstract ActivityTestRule<T> activityRule();
 
-    abstract void doSingleTest(ParentChildTest t) throws Exception;
+    abstract void doSingleTest(ParentChildTest<T> t, ActivityScenario<T> scenario) throws Exception;
 
-    void doFullscreenTest(String testCase, ParentChildTest t) throws Exception {
+    void doFullscreenTest(String testCase, ParentChildTest<T> t) throws Exception {
         log("Running test fullscreen");
-        startTestCase(testCase);
-        doSingleTest(t);
-        activityRule().finishActivity();
+        try (ActivityScenario<T> scenario = startTestCase(testCase, true /* isFullscreen */)) {
+            doSingleTest(t, scenario);
+        }
     }
 
-    private void doDockedTest(String testCase, ParentChildTest t) throws Exception {
+    private void doDockedTest(String testCase, ParentChildTest<T> t) throws Exception {
         log("Running test docked");
         if (!supportsSplitScreenMultiWindow()) {
             log("Skipping test: no split multi-window support");
             return;
         }
-        startTestCaseDocked(testCase);
-        doSingleTest(t);
-        activityRule().finishActivity();
+        try (ActivityScenario<T> scenario = startTestCaseDocked(testCase)) {
+            doSingleTest(t, scenario);
+        }
 
         mWmState.waitFor(wmState -> !wmState.containsActivity(activityName()),
                 "activity must be removed");
-        assertTrue(mTaskOrganizer.getPrimarySplitTaskCount() == 0);
+        Condition.waitFor(
+                "primary split to be empty", () -> mTaskOrganizer.getPrimarySplitTaskCount() == 0);
     }
 
-    void doParentChildTest(String testCase, ParentChildTest t) throws Exception {
+    void doParentChildTest(String testCase, ParentChildTest<T> t) throws Exception {
         doFullscreenTest(testCase, t);
         doDockedTest(testCase, t);
     }

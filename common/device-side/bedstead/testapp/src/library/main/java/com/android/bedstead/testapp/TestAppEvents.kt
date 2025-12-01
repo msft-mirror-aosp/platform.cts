@@ -15,6 +15,7 @@
  */
 package com.android.bedstead.testapp
 
+import com.android.bedstead.nene.users.UserReference
 import com.android.eventlib.events.activities.ActivityCreatedEvent
 import com.android.eventlib.events.activities.ActivityCreatedEvent.ActivityCreatedEventQuery
 import com.android.eventlib.events.activities.ActivityDestroyedEvent
@@ -114,6 +115,11 @@ import com.android.eventlib.events.services.ServiceTaskRemovedEvent
 import com.android.eventlib.events.services.ServiceTaskRemovedEvent.ServiceTaskRemovedEventQuery
 import com.android.eventlib.events.services.ServiceUnboundEvent
 import com.android.eventlib.events.services.ServiceUnboundEvent.ServiceUnboundEventQuery
+import com.android.eventlib.events.supervisionappservice.SupervisionAppServiceEvents
+import com.android.eventlib.events.supervisionappservice.SupervisionAppServiceOnSupervisionDisabledEvent
+import com.android.eventlib.events.supervisionappservice.SupervisionAppServiceOnSupervisionDisabledEvent.SupervisionAppServiceOnSupervisionDisabledEventQuery
+import com.android.eventlib.events.supervisionappservice.SupervisionAppServiceOnSupervisionEnabledEvent
+import com.android.eventlib.events.supervisionappservice.SupervisionAppServiceOnSupervisionEnabledEvent.SupervisionAppServiceOnSupervisionEnabledEventQuery
 
 /**
  * Quick access to events on this test app.
@@ -126,7 +132,7 @@ import com.android.eventlib.events.services.ServiceUnboundEvent.ServiceUnboundEv
  */
 class TestAppEvents constructor(private val mTestApp: TestAppInstance) : ActivityEvents,
     BroadcastReceiverEvents, DeviceAdminReceiverEvents, DelegatedAdminReceiverEvents,
-    ServiceEvents {
+    SupervisionAppServiceEvents, ServiceEvents {
 
     override fun activityCreated(): ActivityCreatedEventQuery =
         ActivityCreatedEvent.queryPackage(mTestApp.packageName()).onUser(mTestApp.user())
@@ -268,4 +274,10 @@ class TestAppEvents constructor(private val mTestApp: TestAppInstance) : Activit
 
     override fun delegateSecurityLogsAvailable(): DelegatedAdminSecurityLogsAvailableEventQuery =
         DelegatedAdminSecurityLogsAvailableEvent.queryPackage(mTestApp.testApp().packageName()).onUser(mTestApp.user())
+
+    override fun supervisionEnabled(): SupervisionAppServiceOnSupervisionEnabledEventQuery =
+        SupervisionAppServiceOnSupervisionEnabledEvent.queryPackage(mTestApp.testApp().packageName()).onUser(mTestApp.user())
+
+    override fun supervisionDisabled(): SupervisionAppServiceOnSupervisionDisabledEventQuery =
+        SupervisionAppServiceOnSupervisionDisabledEvent.queryPackage(mTestApp.testApp().packageName()).onUser(mTestApp.user())
 }

@@ -135,8 +135,10 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
     private static List<Object[]> getTvUHDParams() {
         List<Object[]> uhdParams = new ArrayList<>(Arrays.asList(new Object[][] {
                 // @CddTest(requirements = {"2.3.2/5.3.5/T-2-1"})
-                {MEDIA_TYPE_HEVC, new String[] {"bbb_3840x2160_60fps_hevc_main10_l5.mp4"}, null,
+                {MEDIA_TYPE_HEVC, new String[]{"bbb_3840x2160_60fps_hevc_main_l5.mp4"}, null,
                         -1.0f, 3762286888L, -1, -1, 3840, 2160},
+                {MEDIA_TYPE_HEVC, new String[]{"bbb_3840x2160_60fps_hevc_main10_l5.mp4"}, null,
+                        -1.0f, 989655828L, -1, -1, 3840, 2160},
                 // @CddTest(requirements = {"2.3.2/5.3.7/T-2-1"})
                 {MEDIA_TYPE_VP9, new String[] {"bbb_3840x2160_60fps_vp9_profile0.webm"}, null,
                         -1.0f, 2669556628L, -1, -1, 3840, 2160},

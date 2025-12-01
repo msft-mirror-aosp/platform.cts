@@ -51,6 +51,7 @@ import android.server.wm.WindowManagerState.Task;
 import android.util.Log;
 import android.view.Display;
 
+import com.android.server.wm.DesktopModeHelper;
 import com.android.window.flags.Flags;
 
 import com.google.common.collect.ImmutableSet;
@@ -191,6 +192,7 @@ public class CrossAppDragAndDropTests extends ActivityManagerTestBase {
 
                 @Override
                 void assumeDeviceSupportsLaunchMode() {
+                    assumeTrue(DesktopModeHelper.canEnterDesktopMode(mTestCase.mContext));
                     assumeTrue(Flags.enableConnectedDisplaysDnd());
                     assumeFalse(
                             mTestCase

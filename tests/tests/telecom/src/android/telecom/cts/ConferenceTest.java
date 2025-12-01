@@ -483,15 +483,24 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
         // Expect no change; not calling withe correct permission.
         mConferenceObject.setConferenceState(false);
         assertCallProperties(conf, Call.Details.PROPERTY_CONFERENCE);
+        assertEquals(false, mConferenceObject.isConferenceState());
 
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .adoptShellPermissionIdentity("android.permission.MODIFY_PHONE_STATE");
         try {
             mConferenceObject.setConferenceState(false);
             assertDoesNotHaveCallProperties(conf, Call.Details.PROPERTY_CONFERENCE);
+            assertEquals(false, mConferenceObject.isConferenceState());
+
+            // The direction of a conference is only applicable when setConferenceState is false.
+            mConferenceObject.setCallDirection(Call.Details.DIRECTION_OUTGOING);
+            assertCallDirection(conf, Call.Details.DIRECTION_OUTGOING);
+            mConferenceObject.setCallDirection(Call.Details.DIRECTION_INCOMING);
+            assertCallDirection(conf, Call.Details.DIRECTION_INCOMING);
 
             mConferenceObject.setConferenceState(true);
             assertCallProperties(conf, Call.Details.PROPERTY_CONFERENCE);
+            assertEquals(true, mConferenceObject.isConferenceState());
         } finally {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();

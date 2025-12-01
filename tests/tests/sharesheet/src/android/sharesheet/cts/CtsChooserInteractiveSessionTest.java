@@ -222,7 +222,7 @@ public class CtsChooserInteractiveSessionTest {
                 "android.service.chooser.ChooserSession#addStateListener",
                 "android.service.chooser.ChooserSession.StateListener#onBoundsChanged",
                 "android.service.chooser.ChooserSession#getBounds",
-                "android.service.chooser.ChooserSession#getDefaultLaunchBounds",
+                "android.service.chooser.ChooserSession#getInitialRestingBounds",
             })
     @Test
     @RequiresFlagsEnabled(FLAG_INTERACTIVE_CHOOSER_DEFAULT_BOUNDS)

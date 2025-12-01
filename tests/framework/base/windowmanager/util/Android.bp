@@ -58,6 +58,7 @@ java_test_helper_library {
         "hamcrest-library",
         "perfetto_winscope-lite",
         "platformprotosnano",
+        "services.core",
     ],
 
     sdk_version: "test_current",

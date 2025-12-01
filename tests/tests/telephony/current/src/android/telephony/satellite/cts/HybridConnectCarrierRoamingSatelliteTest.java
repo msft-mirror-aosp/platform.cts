@@ -40,10 +40,12 @@ import android.telephony.satellite.SatelliteManager;
 import android.telephony.satellite.stub.SatelliteModemState;
 import android.telephony.satellite.stub.SatelliteResult;
 
+import com.android.bedstead.harrier.annotations.NotificationsTest;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.notifications.NotificationListener;
 import com.android.bedstead.nene.notifications.NotificationListenerQuery;
 import com.android.internal.R;
+import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -73,7 +75,7 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
         logd(TAG, "beforeAllTests");
 
         sActiveSubscriptionRequired = false;
-        if (!shouldTestSatelliteWithMockService()) return;
+        if (!shouldTestHybridConnectCarrierRoamingSatellite()) return;
 
         TimeUnit.MILLISECONDS.sleep(30000);
         beforeAllCarrierRoamingTestsBase();
@@ -87,19 +89,23 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
     @AfterClass
     public static void afterAllTests() throws Exception {
         logd(TAG, "afterAllTests");
-        if (!shouldTestSatelliteWithMockService()) return;
+        if (!shouldTestHybridConnectCarrierRoamingSatellite()) return;
         afterAllCarrierRoamingTestsBase();
     }
 
     @Before
     public void setUp() throws Exception {
         logd(TAG, "setUp()");
-        assumeTrue(shouldTestSatelliteWithMockService());
+        if (!shouldTestHybridConnectCarrierRoamingSatellite()) return;
     }
 
     @After
     public void tearDown() throws Exception {
         logd(TAG, "tearDown()");
+    }
+
+    protected static boolean shouldTestHybridConnectCarrierRoamingSatellite() {
+        return (shouldTestSatelliteWithMockService() && Flags.vzwAstSkyloFallback());
     }
 
     /**
@@ -176,6 +182,7 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
     @Ignore("b/449612427 - Need to fix and re-enable this test.")
     public void testCarrierRoamingNtnModeListener_AutoConnect() throws Exception {
         logd(TAG, "testCarrierRoamingNtnModeListener_AutoConnect");
+        if (!shouldTestHybridConnectCarrierRoamingSatellite()) return;
         setUp_AutoConnect(true);
 
         CarrierRoamingNtnListenerTest listener = new CarrierRoamingNtnListenerTest();
@@ -228,6 +235,7 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
     @Test
     public void testCarrierRoamingNtnModeListener_ManualConnect() throws Exception {
         logd(TAG, "testCarrierRoamingNtnModeListener_ManualConnect");
+        if (!shouldTestHybridConnectCarrierRoamingSatellite()) return;
         setUp_ManualConnect(true);
 
         CarrierRoamingNtnListenerTest listener = new CarrierRoamingNtnListenerTest();
@@ -287,8 +295,10 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
     }
 
     @Test
+    @NotificationsTest
     public void testNotificationContent_AutoConnect() throws Exception {
         logd(TAG, "testNotificationContent_AutoConnect");
+        if (!shouldTestHybridConnectCarrierRoamingSatellite()) return;
 
         CarrierRoamingNtnListenerTest ntnStateListener = new CarrierRoamingNtnListenerTest();
         ntnStateListener.clearModeChanges();
@@ -348,8 +358,10 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
     }
 
     @Test
+    @NotificationsTest
     public void testNotificationDismissed_AutoConnect() throws Exception {
         logd(TAG, "testNotificationDismissed_AutoConnect");
+        if (!shouldTestHybridConnectCarrierRoamingSatellite()) return;
 
         CarrierRoamingNtnListenerTest ntnStateListener = new CarrierRoamingNtnListenerTest();
         ntnStateListener.clearModeChanges();

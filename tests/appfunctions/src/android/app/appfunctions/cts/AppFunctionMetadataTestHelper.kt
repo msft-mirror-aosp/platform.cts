@@ -36,8 +36,24 @@ class AppFunctionMetadataTestHelper {
             AppFunctionName(TEST_HELPER_DYNAMIC_SCHEMA_PKG, "appFunctionDisabledByDefault_noSchema")
         val HIGH_SCHEMA_VERSION =
             AppFunctionName(TEST_HELPER_DYNAMIC_SCHEMA_PKG, "appFunctionWithHighSchemaVersion")
-        val SAME_PACKAGE_ENABLED_BY_DEFAULT = AppFunctionName(CURRENT_PKG, "add")
-        val SAME_PACKAGE_DISABLED_BY_DEFAULT = AppFunctionName(CURRENT_PKG, "add_disabledByDefault")
+        val SAME_PACKAGE_THROW_EXCEPTION = AppFunctionName(CURRENT_PKG, "throwException")
+        val SAME_PACKAGE_UNCAUGHT_CLIENT_EXCEPTION =
+            AppFunctionName(CURRENT_PKG, "uncaughtClientException")
+        val SAME_PACKAGE_ADD_INVOKE_CALLBACK_TWICE =
+            AppFunctionName(CURRENT_PKG, "add_invokeCallbackTwice")
+        val SAME_PACKAGE_CONTEXT_LONG_RUNNING = AppFunctionName(CURRENT_PKG, "contextLongRunning")
+        val SAME_PACKAGE_ADD_ASYNC = AppFunctionName(CURRENT_PKG, "addAsync")
+        val SAME_PACKAGE_NOT_INVOKE_CALLBACK = AppFunctionName(CURRENT_PKG, "notInvokeCallback")
+        val SAME_PACKAGE_CONTEXT_CONCAT_STRINGS =
+            AppFunctionName(CURRENT_PKG, "contextConcatStrings")
+        val SAME_PACKAGE_RUN_FOREVER = AppFunctionName(CURRENT_PKG, "runForever")
+        val SAME_PACKAGE_ADD = AppFunctionName(CURRENT_PKG, "add")
+        val SAME_PACKAGE_ADD_DISABLED_BY_DEFAULT =
+            AppFunctionName(CURRENT_PKG, "add_disabledByDefault")
+        val SAME_PACKAGE_NO_OP = AppFunctionName(CURRENT_PKG, "noOp")
+        val SAME_PACKAGE_KILL = AppFunctionName(CURRENT_PKG, "kill")
+        val SAME_PACKAGE_LONG_RUNNING_FUNCTION = AppFunctionName(CURRENT_PKG, "longRunningFunction")
+        val SAME_PACKAGE_NO_SCHEMA = AppFunctionName(CURRENT_PKG, "noSchema")
     }
 
     object PackageMetadata {

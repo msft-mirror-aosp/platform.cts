@@ -17,20 +17,21 @@
 package android.virtualdevice.cts.camera.util;
 
 import static android.companion.virtual.camera.VirtualCameraConfig.SENSOR_ORIENTATION_0;
-import static android.graphics.ImageFormat.YUV_420_888;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_BACK;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_FRONT;
 import static android.virtualdevice.cts.camera.util.VirtualCameraUtils.createVirtualCameraConfig;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assume.assumeNoException;
-import static org.mockito.ArgumentMatchers.nullable;
 
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.camera.VirtualCamera;
 import android.companion.virtual.camera.VirtualCameraCallback;
 import android.companion.virtual.camera.VirtualCameraConfig;
+import android.companion.virtual.camera.VirtualCameraSessionConfig;
+import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
 import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;
@@ -42,6 +43,7 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
@@ -50,16 +52,15 @@ import android.media.ImageReader;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.os.Trace;
+import android.util.ArrayMap;
+import android.util.Log;
 import android.view.Surface;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.google.common.truth.Truth;
-
 import org.junit.Assert;
 import org.mockito.ArgumentCaptor;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -67,7 +68,10 @@ import org.mockito.MockitoAnnotations;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -75,8 +79,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.ObjLongConsumer;
 
 /**
  * Helper class for testing capture scenarios with a virtual camera.
@@ -92,6 +98,7 @@ public class VirtualCameraCaptureHelper {
     // This needs to be bigger than kMaxWaitFirstFrame from VirtualCameraRenderThread.cc
     private static final long FAILURE_TIMEOUT = 20000L;
     private static final int IMAGE_READER_MAX_IMAGES = 2;
+    private static final String TAG = "VirtualCameraCaptureHelper";
 
     private final Handler mImageReaderHandler = VirtualCameraUtils.createHandler(
             "image-reader-callback");
@@ -102,14 +109,12 @@ public class VirtualCameraCaptureHelper {
     private CameraCaptureSession.StateCallback mSessionStateCallback;
 
     private TestCaptureCallback mCaptureCallback;
-    @Mock
-    private VirtualCameraCallback mVirtualCameraCallback;
+
+    private TestVirtualCameraCallback mVirtualCameraCallback;
     @Captor
     private ArgumentCaptor<CameraDevice> mCameraDeviceCaptor;
     @Captor
     private ArgumentCaptor<CameraCaptureSession> mCameraCaptureSessionCaptor;
-    @Captor
-    private ArgumentCaptor<Surface> mSurfaceCaptor;
 
     @Nullable
     private CameraManager mCameraManager = null;
@@ -117,12 +122,25 @@ public class VirtualCameraCaptureHelper {
     private VirtualCamera mVirtualCamera = null;
     @Nullable
     private CameraDevice mCameraDevice = null;
-    @Nullable
-    private ImageReader mOutputReader = null;
+
+    private final List<ImageReader> mOutputReaders = new ArrayList<>();
+    private final List<Image> mOutputImages = new ArrayList<>();
     @Nullable
     private CameraCaptureSession mCaptureSession = null;
     @Nullable
     private VirtualDeviceManager.VirtualDevice mVirtualDevice = null;
+
+    /**
+     * Returns an instance of {@link VirtualCameraConfig.Builder} with the mendatory parameters set.
+     */
+    @NonNull
+    public static VirtualCameraConfig.Builder createBuilderWithDefaults(
+            @NonNull String cameraName) {
+        return new VirtualCameraConfig.Builder(cameraName)
+                .addStreamConfig(CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_INPUT_FORMAT, CAMERA_MAX_FPS)
+                .setSensorOrientation(SENSOR_ORIENTATION_0)
+                .setLensFacing(LENS_FACING_BACK);
+    }
 
     /**
      * Initialize the helper to work with the provided virtualDevice onto which the virtual camera
@@ -132,6 +150,7 @@ public class VirtualCameraCaptureHelper {
             @NonNull Context context) {
         mCameraManager = Objects.requireNonNull(context).getSystemService(CameraManager.class);
         mVirtualDevice = Objects.requireNonNull(virtualDevice);
+        mVirtualCameraCallback = new TestVirtualCameraCallback();
         MockitoAnnotations.initMocks(this);
     }
 
@@ -139,7 +158,7 @@ public class VirtualCameraCaptureHelper {
      * Clean up resources after the test has been run
      */
     public void tearDown() {
-        Mockito.reset(mCameraStateCallback, mSessionStateCallback, mVirtualCameraCallback);
+        Mockito.reset(mCameraStateCallback, mSessionStateCallback);
         if (mCameraDevice != null) {
             mCameraDevice.close();
             mCameraDevice = null;
@@ -148,10 +167,7 @@ public class VirtualCameraCaptureHelper {
             mVirtualCamera.close();
             mVirtualCamera = null;
         }
-        if (mOutputReader != null) {
-            mOutputReader.close();
-            mOutputReader = null;
-        }
+        closeAndClearImageReaders();
     }
 
     /**
@@ -200,34 +216,50 @@ public class VirtualCameraCaptureHelper {
      */
     public void createVirtualCamera(int inputWidth, int inputHeight, int inputFormat,
             int fps, int lensFacing) {
-        Objects.requireNonNull(mVirtualDevice,
-                "mVirtualDevice must not be null when calling #createVirtualCamera()");
         VirtualCameraConfig config = createVirtualCameraConfig(inputWidth, inputHeight,
                 inputFormat, fps, SENSOR_ORIENTATION_0, lensFacing,
                 VirtualCameraCaptureHelper.CAMERA_NAME, mCameraExecutor,
                 mVirtualCameraCallback);
-        try {
-            mVirtualCamera = mVirtualDevice.createVirtualCamera(config);
-        } catch (UnsupportedOperationException e) {
-            assumeNoException("Virtual camera is not available on this device", e);
-        }
+        createVirtualCamera(config);
     }
 
-    /** Create a virtual camera with default values and per frame camera metadata enabled. */
-    public void createVirtualCameraWithPerFrameCameraMetadata() {
+    /**
+     * Create a new virtual camera based on the given config.
+     *
+     * <p>If a custom {@link VirtualCameraCallback} is needed for the constructed virtual camera,
+     * the variant of this method taking a {@link VirtualCameraCallback} must be called. Any
+     * previously set callback will be overridden.
+     */
+    public void createVirtualCamera(@NonNull VirtualCameraConfig.Builder builder) {
+        builder.setVirtualCameraCallback(mCameraExecutor, mVirtualCameraCallback);
+        createVirtualCamera(builder.build());
+    }
+
+    /**
+     * Create a virtual camera and allow caller to pass its own {@link VirtualCameraCallback}.
+     *
+     * <p>Do not use {@link VirtualCameraConfig.Builder#setVirtualCameraCallback(Executor,
+     * VirtualCameraCallback)} to set a callback as it will be overridden by test callback.
+     *
+     * @param builder The builder to configure the virtual camera
+     * @param callbackDelegate The callback instance to delegate the callbacks to.
+     */
+    public void createVirtualCamera(
+            @NonNull VirtualCameraConfig.Builder builder,
+            @NonNull VirtualCameraCallback callbackDelegate) {
+        Objects.requireNonNull(
+                callbackDelegate,
+                "callbackDelegate must not be null when calling #createVirtualCamera(builder, "
+                        + "callDelegate)");
+        mVirtualCameraCallback.mCallbackDelegate = callbackDelegate;
+        builder.setVirtualCameraCallback(mCameraExecutor, mVirtualCameraCallback);
+        createVirtualCamera(builder.build());
+    }
+
+    private void createVirtualCamera(VirtualCameraConfig config) {
         Objects.requireNonNull(
                 mVirtualDevice,
                 "mVirtualDevice must not be null when calling #createVirtualCamera()");
-
-        VirtualCameraConfig config =
-                new VirtualCameraConfig.Builder("FrameMetadataCamera")
-                        .addStreamConfig(
-                                CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_INPUT_FORMAT, CAMERA_MAX_FPS)
-                        .setVirtualCameraCallback(mCameraExecutor, mVirtualCameraCallback)
-                        .setSensorOrientation(SENSOR_ORIENTATION_0)
-                        .setLensFacing(LENS_FACING_BACK)
-                        .setPerFrameCameraMetadataEnabled(true)
-                        .build();
         try {
             mVirtualCamera = mVirtualDevice.createVirtualCamera(config);
         } catch (UnsupportedOperationException e) {
@@ -236,38 +268,59 @@ public class VirtualCameraCaptureHelper {
     }
 
     /**
-     * Capture images using the provided {@link CaptureConfiguration}
-     * <p>
-     * The camera device and session will be automatically created if needed.
+     * Capture a single image using the provided {@link CaptureConfiguration}.
      *
-     * @return The latest captured image.
+     * @param config The configuration for this capture.
+     * @return The captured image or null if an issue arised.
      */
-    public Image captureImages(CaptureConfiguration config) {
-        AtomicReference<Image> latestImageRef = new AtomicReference<>(null);
+    public Image captureImage(CaptureConfiguration config) {
+        List<Image> images = captureImages(config);
+        assertWithMessage(
+                        "To capture more than one output configuration, user captureImages()"
+                                + " instead of captureImage()")
+                .that(images)
+                .hasSize(1);
+        return images.get(0);
+    }
 
+    /**
+     * Capture images using the provided {@link CaptureConfiguration}
+     *
+     * <p>The camera device and session will be automatically created if needed.
+     *
+     * @return All the captured images. The values can be null if some capture failed.
+     */
+    public List<Image> captureImages(CaptureConfiguration config) {
         mCaptureCallback = new TestCaptureCallback();
         mCaptureCallback.mFailOnFailedCapture = config.mFailOnCaptureError;
 
         try {
-            ImageReader reader = getOrCreateOutputReader(config);
-            CameraCaptureSession cameraCaptureSession = getOrCreateCaptureSession(reader);
+            List<ImageReader> readers = createOutputReaders(config);
+            CameraCaptureSession cameraCaptureSession = createCaptureSession(readers);
             CameraDevice cameraDevice = cameraCaptureSession.getDevice();
             config.mInputSurfaceConsumer.accept(getInputSurface());
 
             CaptureRequest.Builder request = cameraDevice.createCaptureRequest(
                     CameraDevice.TEMPLATE_PREVIEW);
             config.mRequestBuilderModifier.accept(request);
-            request.addTarget(reader.getSurface());
-
-            CountDownLatch imageReaderLatch = new CountDownLatch(config.mImageCount);
-            reader.setOnImageAvailableListener(imageReader -> {
-                Image latestImage = latestImageRef.get();
-                if (latestImage != null) {
-                    latestImage.close();
-                }
-                latestImageRef.set(imageReader.acquireLatestImage());
-                imageReaderLatch.countDown();
-            }, mImageReaderHandler);
+            CountDownLatch imageReaderLatch = new CountDownLatch(
+                    config.mImageCount * readers.size());
+            for (int i = 0; i < readers.size(); i++) {
+                ImageReader reader = readers.get(i);
+                request.addTarget(reader.getSurface());
+                int readerIndex = i;
+                reader.setOnImageAvailableListener(
+                        imageReader -> {
+                            Image image = imageReader.acquireLatestImage();
+                            Image previousImage = mOutputImages.get(readerIndex);
+                            if (previousImage != null) {
+                                previousImage.close();
+                            }
+                            mOutputImages.set(readerIndex, image);
+                            imageReaderLatch.countDown();
+                        },
+                        mImageReaderHandler);
+            }
 
             Duration capturePeriod = config.mCapturePeriod;
             if (capturePeriod != null) {
@@ -287,7 +340,7 @@ public class VirtualCameraCaptureHelper {
                                     mRemainingCapture--;
                                     Trace.beginSection(
                                             "VirtualCameraCaptureHelper.captureSingleRequest (fixed"
-                                                + " rate) metadata enabled: "
+                                                    + " rate) metadata enabled: "
                                                     + config.mPerFrameCameraMetadataEnabled);
                                     cameraCaptureSession.captureSingleRequest(
                                             request.build(), mCameraExecutor, mCaptureCallback);
@@ -303,30 +356,23 @@ public class VirtualCameraCaptureHelper {
                 for (int i = 0; i < config.mImageCount; i++) {
                     Trace.beginSection(
                             "VirtualCameraCaptureHelper.captureSingleRequest (no rate) metadata"
-                                + " enabled: " + config.mPerFrameCameraMetadataEnabled);
+                                    + " enabled: "
+                                    + config.mPerFrameCameraMetadataEnabled);
                     cameraCaptureSession.captureSingleRequest(request.build(), mCameraExecutor,
                             mCaptureCallback);
                     Trace.endSection();
                 }
             }
 
-            if (!config.mVerifyCaptureComplete) {
-                return reader.acquireLatestImage();
+            if (config.mVerifyCaptureComplete) {
+                verifyCaptureComplete(config.mImageCount);
+                assertWithMessage("Timeout waiting for image readers result")
+                        .that(imageReaderLatch.await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS))
+                        .isTrue();
             }
-
-            verifyCaptureComplete(config.mImageCount, config.mPerFrameCameraMetadataEnabled);
-            Truth.assertWithMessage("Timeout waiting for image reader result").that(
-                    imageReaderLatch.await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)).isTrue();
-            Image image = latestImageRef.getAndSet(null);
-            ImageSubject.assertThat(image).isNotNull();
-            return image;
+            return mOutputImages;
         } catch (CameraAccessException | InterruptedException e) {
             throw new RuntimeException(e);
-        } finally {
-            Image image = latestImageRef.getAndSet(null);
-            if (image != null) {
-                image.close();
-            }
         }
     }
 
@@ -354,61 +400,76 @@ public class VirtualCameraCaptureHelper {
     }
 
     private Surface getInputSurface() {
-        Surface surface = mSurfaceCaptor.getValue();
-        assertThat(surface.isValid()).isTrue();
-        return surface;
+        mVirtualCameraCallback.waitForSessionConfigured();
+        return mVirtualCameraCallback.mConfiguredStreams.values().iterator().next();
     }
 
-    private CameraCaptureSession getOrCreateCaptureSession(ImageReader reader)
+    private CameraCaptureSession createCaptureSession(Collection<ImageReader> readers)
             throws CameraAccessException {
-        if (mCaptureSession != null) {
-            return mCaptureSession;
-        }
         CameraDevice cameraDevice = getOrOpenCameraDevice();
-        OutputConfiguration outputConfiguration = new OutputConfiguration(reader.getSurface());
+        ArrayList<OutputConfiguration> outputConfigurations = new ArrayList<>(readers.size());
+        for (ImageReader reader : readers) {
+            outputConfigurations.add(new OutputConfiguration(reader.getSurface()));
+        }
         cameraDevice.createCaptureSession(
-                new SessionConfiguration(SessionConfiguration.SESSION_REGULAR,
-                        List.of(outputConfiguration), mCameraExecutor, mSessionStateCallback));
+                new SessionConfiguration(
+                        SessionConfiguration.SESSION_REGULAR,
+                        outputConfigurations,
+                        mCameraExecutor,
+                        mSessionStateCallback));
+        mVirtualCameraCallback.waitForSessionConfigured();
         Mockito.verify(mSessionStateCallback, Mockito.timeout(TIMEOUT_MILLIS)).onConfigured(
                 mCameraCaptureSessionCaptor.capture());
-        Mockito.verify(mVirtualCameraCallback,
-                Mockito.timeout(TIMEOUT_MILLIS)).onStreamConfigured(ArgumentMatchers.anyInt(),
-                mSurfaceCaptor.capture(), ArgumentMatchers.anyInt(), ArgumentMatchers.anyInt(),
-                ArgumentMatchers.anyInt());
+        if (Flags.virtualCameraMetadata()) {
+            assertThat(mVirtualCameraCallback.mConfiguredSession).isNotNull();
+        }
         mCaptureSession = mCameraCaptureSessionCaptor.getValue();
         return mCaptureSession;
     }
 
-    private ImageReader getOrCreateOutputReader(CaptureConfiguration config) {
-        if (mOutputReader != null && (config.mOutputFormat != mOutputReader.getImageFormat()
-                || config.mHeight != mOutputReader.getHeight()
-                || mOutputReader.getWidth() != config.mWidth)) {
-            mOutputReader.close();
-            mOutputReader = null;
+    private List<ImageReader> createOutputReaders(CaptureConfiguration config) {
+        assertWithMessage(
+                        "At least one output configuration must be added with "
+                                + "CaptureConfiguration#addOutputFormat")
+                .that(config.mOutputConfigurations)
+                .isNotEmpty();
+
+        closeAndClearImageReaders();
+
+        List<CaptureFormat> outputConfigs = config.mOutputConfigurations;
+        for (CaptureFormat outputConfiguration : outputConfigs) {
+            mOutputReaders.add(
+                    ImageReader.newInstance(
+                            outputConfiguration.mWidth,
+                            outputConfiguration.mHeight,
+                            outputConfiguration.mFormat,
+                            IMAGE_READER_MAX_IMAGES));
+            mOutputImages.add(null);
         }
 
-        if (mOutputReader == null) {
-            mOutputReader = ImageReader.newInstance(config.mWidth, config.mHeight,
-                    config.mOutputFormat, IMAGE_READER_MAX_IMAGES);
-        }
-        return mOutputReader;
+        return mOutputReaders;
     }
 
-    private void verifyCaptureComplete(int imageCount, boolean perFrameCameraMetadataEnabled) {
-        if (perFrameCameraMetadataEnabled) {
-            Mockito.verify(
-                            mVirtualCameraCallback,
-                            Mockito.timeout(TIMEOUT_MILLIS).atLeast(imageCount))
-                    .onProcessCaptureRequest(
-                            ArgumentMatchers.anyInt(),
-                            ArgumentMatchers.anyLong(),
-                            nullable(CaptureRequest.class));
-        } else {
-            Mockito.verify(
-                            mVirtualCameraCallback,
-                            Mockito.timeout(TIMEOUT_MILLIS).atLeast(imageCount))
-                    .onProcessCaptureRequest(ArgumentMatchers.anyInt(), ArgumentMatchers.anyLong());
+    private void closeAndClearImageReaders() {
+        Iterator<ImageReader> iterator = mOutputReaders.iterator();
+        while (iterator.hasNext()) {
+            ImageReader reader = iterator.next();
+            reader.close();
+            iterator.remove();
         }
+
+        Iterator<Image> imageIterator = mOutputImages.iterator();
+        while (imageIterator.hasNext()) {
+            Image image = imageIterator.next();
+            if (image != null) {
+                image.close();
+            }
+            imageIterator.remove();
+        }
+    }
+
+    private void verifyCaptureComplete(int imageCount) {
+        mVirtualCameraCallback.waitForCapture(imageCount);
         mCaptureCallback.waitForCaptures(imageCount, TIMEOUT_MILLIS);
     }
 
@@ -436,17 +497,22 @@ public class VirtualCameraCaptureHelper {
         return mCaptureCallback;
     }
 
-    /**
-     * Returns a {@link Mock} of {@link VirtualCameraCallback}
-     */
-    public VirtualCameraCallback getVirtualCameraCallback() {
+    /** Returns a {@link Mock} of {@link VirtualCameraCallback} */
+    public TestVirtualCameraCallback getVirtualCameraCallback() {
         return mVirtualCameraCallback;
     }
 
+    /**
+     * Returns the list of all the capture result collected after the call to {@link
+     * #captureImages(CaptureConfiguration)}
+     */
+    @NonNull
     public List<TotalCaptureResult> getCaptureResults() {
         return mCaptureCallback.getCaptureResults();
     }
 
+    /** Returns the last capture result collected or null if no capture result was collected. */
+    @Nullable
     public TotalCaptureResult getLastResult() {
         if (mCaptureCallback.getCaptureResults().isEmpty()) {
             return null;
@@ -454,14 +520,27 @@ public class VirtualCameraCaptureHelper {
         return mCaptureCallback.getCaptureResults().getLast();
     }
 
+    /** Returns the list of capture timestamps. */
     public List<Long> getCaptureDeviceTimestampsNanos() {
         return mCaptureCallback.getCaptureDeviceTimestamp();
     }
 
+    private static final class CaptureFormat {
+        private final int mWidth;
+        private final int mHeight;
+        private final int mFormat;
+
+        private CaptureFormat(int width, int height, int format) {
+            mWidth = width;
+            mHeight = height;
+            mFormat = format;
+        }
+    }
+
     /**
-     * Holds the configuration used for {@link #captureImages(CaptureConfiguration)}.
-     * <p>
-     * The default configuration can be used as is, all setters are optional.
+     * Holds the configuration used for {@link #captureImage(CaptureConfiguration)}.
+     *
+     * <p>The default configuration can be used as is, all setters are optional.
      */
     public static final class CaptureConfiguration {
 
@@ -472,9 +551,7 @@ public class VirtualCameraCaptureHelper {
         };
         private Consumer<CaptureRequest.Builder> mRequestBuilderModifier = (request) -> {
         };
-        private int mWidth = CAMERA_WIDTH;
-        private int mHeight = CAMERA_HEIGHT;
-        private int mOutputFormat = YUV_420_888;
+        private final List<CaptureFormat> mOutputConfigurations = new ArrayList<>();
         private Duration mCapturePeriod = null;
         private boolean mPerFrameCameraMetadataEnabled = false;
 
@@ -494,9 +571,9 @@ public class VirtualCameraCaptureHelper {
         }
 
         /**
-         * Set the whether the successful completion of the capture should be checked
-         * <p>
-         * Default is true.
+         * Set whether the successful completion of the capture should be checked
+         *
+         * <p>Default is true.
          */
         public CaptureConfiguration setVerifyCaptureComplete(boolean verifyCaptureComplete) {
             mVerifyCaptureComplete = verifyCaptureComplete;
@@ -504,12 +581,12 @@ public class VirtualCameraCaptureHelper {
         }
 
         /**
-         * Set the whether we should fail as soon as we get a capture error.
-         * <p>
-         * Default is true.
+         * Set whether we should fail as soon as we get a capture error.
+         *
+         * <p>Default is true.
          *
          * @see CaptureCallback#onCaptureFailed(CameraCaptureSession, CaptureRequest,
-         * CaptureFailure)
+         *     CaptureFailure)
          */
         public CaptureConfiguration setFailOnCaptureError(boolean failOnCaptureError) {
             mFailOnCaptureError = failOnCaptureError;
@@ -540,33 +617,25 @@ public class VirtualCameraCaptureHelper {
         }
 
         /**
-         * Set the width of the capture surface and result
-         * <p>
-         * Default is {@link #CAMERA_WIDTH}.
+         * Add a format to be captured.
+         *
+         * @param width The width of the image to capture
+         * @param height The height of the image to capture
+         * @param format The format of the image to capture
+         * @return this builder.
          */
-        public CaptureConfiguration setWidth(int width) {
-            mWidth = width;
+        public CaptureConfiguration addOutputFormat(int width, int height, int format) {
+            mOutputConfigurations.add(new CaptureFormat(width, height, format));
             return this;
         }
 
         /**
-         * Set the height of the capture surface and result
-         * <p>
-         * Default is {@link #CAMERA_WIDTH}.
+         * Set the output format of the capture surface and result
+         *
+         * <p>Default is {@link ImageFormat#YUV_420_888}.
          */
-        public CaptureConfiguration setHeight(int height) {
-            mHeight = height;
-            return this;
-        }
-
-        /**
-         * Set the output format  of the capture surface and result
-         * <p>
-         * Default is {@link ImageFormat#YUV_420_888}.
-         */
-        public CaptureConfiguration setOutputFormat(int outputFormat) {
-            mOutputFormat = outputFormat;
-            return this;
+        public CaptureConfiguration addOutputFormat(int outputFormat) {
+            return addOutputFormat(CAMERA_WIDTH, CAMERA_HEIGHT, outputFormat);
         }
 
         /**
@@ -622,17 +691,21 @@ public class VirtualCameraCaptureHelper {
         public void onCaptureCompleted(@NonNull CameraCaptureSession session,
                 @NonNull CaptureRequest request,
                 @NonNull TotalCaptureResult result) {
-            mCaptureResults.add(result);
+            synchronized (mCaptureResults) {
+                mCaptureResults.add(result);
+            }
             mCaptureResultsDeviceTimestamps.add(SystemClock.uptimeNanos());
             mCaptureAndErrorLatch.countDown();
         }
 
+        @NonNull
         public List<TotalCaptureResult> getCaptureResults() {
             synchronized (mCaptureResults) {
                 return List.copyOf(mCaptureResults);
             }
         }
 
+        @NonNull
         public List<Long> getCaptureDeviceTimestamp() {
             synchronized (mCaptureResultsDeviceTimestamps) {
                 return List.copyOf(mCaptureResultsDeviceTimestamps);
@@ -643,7 +716,7 @@ public class VirtualCameraCaptureHelper {
             return mFailedCaptureCount;
         }
 
-        public void waitForCaptures(int expectedCaptureNumber, long timeoutMillis) {
+        private void waitForCaptures(int expectedCaptureNumber, long timeoutMillis) {
             int captureAndErrorCount;
             synchronized (mCaptureResults) {
                 captureAndErrorCount = mCaptureResults.size() + mFailedCaptureCount;
@@ -667,6 +740,166 @@ public class VirtualCameraCaptureHelper {
                 }
             } catch (InterruptedException e) {
                 throw new RuntimeException("Interrupted while waiting for capture", e);
+            }
+        }
+    }
+
+    public static final class TestVirtualCameraCallback implements VirtualCameraCallback {
+
+        private final ArrayList<CaptureRequest> mCaptureRequests = new ArrayList<>();
+        private final Map<Integer, Surface> mConfiguredStreams = new ArrayMap<>();
+        private final AtomicReference<CountDownLatch> mCaptureLatch = new AtomicReference<>();
+        private final CountDownLatch mSessionConfiguredLatch = new CountDownLatch(1);
+        public VirtualCameraCallback mCallbackDelegate = new DefaultVirtualCameraCallback();
+
+        private VirtualCameraSessionConfig mConfiguredSession = null;
+        private int mCaptureRequestCount = 0;
+
+        private TestVirtualCameraCallback() {
+            // No instantiation outside this helper
+        }
+
+        @Override
+        public void onConfigureSession(
+                @NonNull VirtualCameraSessionConfig virtualCameraSessionConfig,
+                @Nullable ObjLongConsumer<CaptureResult> captureResultConsumer) {
+            Log.d(
+                    TAG,
+                    "onConfigureSession() called with: virtualCameraSessionConfig = ["
+                            + virtualCameraSessionConfig
+                            + "], captureResultConsumer = ["
+                            + captureResultConsumer
+                            + "]");
+            mConfiguredSession = virtualCameraSessionConfig;
+            mCallbackDelegate.onConfigureSession(virtualCameraSessionConfig, captureResultConsumer);
+            if (Flags.virtualCameraMetadata()) {
+                mSessionConfiguredLatch.countDown();
+            }
+        }
+
+        @Override
+        public void onStreamConfigured(
+                int streamId, @NonNull Surface surface, int width, int height, int format) {
+            Log.d(
+                    TAG,
+                    "onStreamConfigured() called with: streamId = ["
+                            + streamId
+                            + "], surface = ["
+                            + surface
+                            + "], width = ["
+                            + width
+                            + "], height = ["
+                            + height
+                            + "], format = ["
+                            + format
+                            + "]");
+            mConfiguredStreams.put(streamId, surface);
+            mCallbackDelegate.onStreamConfigured(streamId, surface, width, height, format);
+            if (!Flags.virtualCameraMetadata()) {
+                mSessionConfiguredLatch.countDown();
+            }
+        }
+
+        @Override
+        public void onStreamClosed(int streamId) {
+            Log.d(TAG, "onStreamClosed() called with: streamId = [" + streamId + "]");
+            mConfiguredStreams.remove(streamId);
+            mCallbackDelegate.onStreamClosed(streamId);
+        }
+
+        @Override
+        public void onProcessCaptureRequest(int streamId, long frameId) {
+            Log.d(
+                    TAG,
+                    "onProcessCaptureRequest() called with: streamId = ["
+                            + streamId
+                            + "], frameId = ["
+                            + frameId
+                            + "]");
+            incrementCaptureCount();
+            mCallbackDelegate.onProcessCaptureRequest(streamId, frameId);
+        }
+
+        @Override
+        public void onProcessCaptureRequest(
+                int streamId, long frameId, @Nullable CaptureRequest captureRequest) {
+            Log.d(
+                    TAG,
+                    "onProcessCaptureRequest() called with: streamId = ["
+                            + streamId
+                            + "], frameId = ["
+                            + frameId
+                            + "], captureRequest = ["
+                            + captureRequest
+                            + "]");
+            if (captureRequest != null) {
+                synchronized (mCaptureRequests) {
+                    mCaptureRequests.add(captureRequest);
+                }
+            }
+            incrementCaptureCount();
+            mCallbackDelegate.onProcessCaptureRequest(streamId, frameId, captureRequest);
+        }
+
+        @Override
+        public void onOpenCamera() {
+            mCallbackDelegate.onOpenCamera();
+        }
+
+        private void incrementCaptureCount() {
+            mCaptureRequestCount++;
+            CountDownLatch latch = mCaptureLatch.get();
+            if (latch != null) {
+                latch.countDown();
+            }
+        }
+
+        /** Wait for {@code count} capture to be finished. */
+        public void waitForCapture(int count) {
+            if (count >= mCaptureRequestCount) {
+                return;
+            }
+            if (mCaptureLatch.get() != null) {
+                throw new IllegalStateException("Already waiting for capture complete");
+            }
+            CountDownLatch latch = new CountDownLatch(count - mCaptureRequestCount);
+            mCaptureLatch.set(latch);
+            try {
+                if (!latch.await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
+                    throw new TimeoutException("Timed out waiting for capture complete");
+                }
+            } catch (InterruptedException | TimeoutException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        /** Wait for the call to {@link TestVirtualCameraCallback#onConfigureSession} to return. */
+        public void waitForSessionConfigured() {
+            try {
+                if (!mSessionConfiguredLatch.await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
+                    throw new TimeoutException("Timed out waiting for capture complete");
+                }
+            } catch (InterruptedException | TimeoutException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        /** Returns the currently configured session. */
+        @Nullable
+        public VirtualCameraSessionConfig getConfiguredSession() {
+            return mConfiguredSession;
+        }
+
+        /** Returns the number of stream configured */
+        public int getConfiguredStreamCount() {
+            return mConfiguredStreams.size();
+        }
+
+        /** Returns the list of all collected capture requests. */
+        @NonNull
+        public List<CaptureRequest> getCaptureRequests() {
+            synchronized (mCaptureRequests) {
+                return List.copyOf(mCaptureRequests);
             }
         }
     }

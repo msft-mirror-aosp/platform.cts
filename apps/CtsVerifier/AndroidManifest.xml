@@ -6700,6 +6700,26 @@
                 android:resource="@xml/generated_previews_widget_info" />
         </receiver>
 
+        <activity android:name=".PermissionsRationaleActivity" android:exported="false">
+            <meta-data android:name="NonApiTest"
+                android:value="Helper class. Shows rationale for Health Connect permissions." />
+        </activity>
+
+        <!--
+          An activity that handles VIEW_PERMISSION_USAGE is required to grant health permissions
+          and prevent them from being revoked.
+        -->
+        <activity-alias
+            android:name=".ViewPermissionUsageActivity"
+            android:exported="true"
+            android:targetActivity=".PermissionsRationaleActivity"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity-alias>
+
         <activity android:name=".ManageSpaceActivity">
             <meta-data android:name="NonApiTest"
                 android:value="Helper class. Used to test location attack on camera intents." />

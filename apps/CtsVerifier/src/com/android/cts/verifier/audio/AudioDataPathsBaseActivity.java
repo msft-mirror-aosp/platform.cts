@@ -16,9 +16,6 @@
 
 package com.android.cts.verifier.audio;
 
-import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
-import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
-
 import android.content.Intent;
 import android.graphics.Color;
 import android.media.AudioDeviceCallback;
@@ -59,6 +56,10 @@ import org.hyphonate.megaaudio.player.AudioSourceProvider;
 import org.hyphonate.megaaudio.recorder.AudioSinkProvider;
 import org.hyphonate.megaaudio.recorder.sinks.AppCallback;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.File;
 import java.io.IOException;
 import java.text.DateFormat;
@@ -78,7 +79,8 @@ public abstract class AudioDataPathsBaseActivity
     private static final String TAG = "AudioDataPathsActivity";
 
     // ReportLog Schema
-    private static final String SECTION_AUDIO_DATAPATHS = "audio_datapaths";
+    private static final String KEY_DATAPATHS = "data_paths";
+
     public static final int TYPICAL_SAMPLE_RATE = 48000;
     public static final int TYPICAL_CHANNEL_COUNT = 2;
 
@@ -1061,94 +1063,53 @@ public abstract class AudioDataPathsBaseActivity
         // CTS VerifierReportLog stuff
         //
         // ReportLog Schema
-        private static final String KEY_TESTDESCRIPTION = "test_description";
-        // Output Specification
-        private static final String KEY_OUT_DEVICE_TYPE = "out_device_type";
+        private static final String KEY_TEST_API = "test_api";
+        private static final String KEY_TEST_STEP = "test_step";
+        private static final String KEY_TEST_DESCRIPTION = "test_description";
         private static final String KEY_OUT_DEVICE_NAME = "out_device_name";
+        private static final String KEY_OUT_DEVICE_TYPE = "out_device_type";
         private static final String KEY_OUT_DEVICE_RATE = "out_device_rate";
         private static final String KEY_OUT_DEVICE_CHANS = "out_device_chans";
-
-        // Input Specification
-        private static final String KEY_IN_DEVICE_TYPE = "in_device_type";
         private static final String KEY_IN_DEVICE_NAME = "in_device_name";
+        private static final String KEY_IN_DEVICE_TYPE = "in_device_type";
         private static final String KEY_IN_DEVICE_RATE = "in_device_rate";
         private static final String KEY_IN_DEVICE_CHANS = "in_device_chans";
         private static final String KEY_IN_PRESET = "in_preset";
+        private static final String KEY_MAGNITUDE = "magnitude";
+        private static final String KEY_MAX_MAGNITUDE = "max_magnitude";
+        private static final String KEY_PHASE = "phase";
+        private static final String KEY_PHASE_JITTER = "phase_jitter";
 
-        void generateReportLog(int api) {
-            if (!canRun() || mTestResults[api] == null) {
-                return;
+        //
+        // CTS VerifierReportLog stuff
+        public JSONObject toJson(int api) throws JSONException {
+            JSONObject moduleJson = new JSONObject();
+
+            moduleJson.put(KEY_TEST_API, api);
+            moduleJson.put(KEY_TEST_STEP, mModuleIndex);
+            moduleJson.put(KEY_TEST_DESCRIPTION, getDescription());
+
+            moduleJson.put(KEY_OUT_DEVICE_NAME, getOutDeviceName());
+            moduleJson.put(KEY_OUT_DEVICE_TYPE, mOutDeviceType);
+            moduleJson.put(KEY_OUT_DEVICE_RATE, mOutSampleRate);
+            moduleJson.put(KEY_OUT_DEVICE_CHANS, mOutChannelCount);
+
+            moduleJson.put(KEY_IN_DEVICE_NAME, getInDeviceName());
+            moduleJson.put(KEY_IN_DEVICE_TYPE, mInDeviceType);
+            moduleJson.put(KEY_IN_DEVICE_RATE, mInSampleRate);
+            moduleJson.put(KEY_IN_DEVICE_CHANS, mInChannelCount);
+
+            moduleJson.put(KEY_IN_PRESET, mInputPreset);
+
+            if (mTestResults[api] != null) {
+                TestResults results = mTestResults[api];
+                moduleJson.put(KEY_MAGNITUDE, results.mMagnitude);
+                moduleJson.put(KEY_MAX_MAGNITUDE, results.mMaxMagnitude);
+                moduleJson.put(KEY_PHASE, results.mPhase);
+                moduleJson.put(KEY_PHASE_JITTER, results.mPhaseJitter);
             }
 
-            CtsVerifierReportLog reportLog = newReportLog();
-
-            // Description
-            reportLog.addValue(
-                    KEY_TESTDESCRIPTION,
-                    getDescription(),
-                    ResultType.NEUTRAL,
-                    ResultUnit.NONE);
-
-            // Output Specification
-            reportLog.addValue(
-                    KEY_OUT_DEVICE_NAME,
-                    getOutDeviceName(),
-                    ResultType.NEUTRAL,
-                    ResultUnit.NONE);
-
-            reportLog.addValue(
-                    KEY_OUT_DEVICE_TYPE,
-                    mOutDeviceType,
-                    ResultType.NEUTRAL,
-                    ResultUnit.NONE);
-
-            reportLog.addValue(
-                    KEY_OUT_DEVICE_RATE,
-                    mOutSampleRate,
-                    ResultType.NEUTRAL,
-                    ResultUnit.NONE);
-
-            reportLog.addValue(
-                    KEY_OUT_DEVICE_CHANS,
-                    mOutChannelCount,
-                    ResultType.NEUTRAL,
-                    ResultUnit.NONE);
-
-            // Input Specifications
-            reportLog.addValue(
-                    KEY_IN_DEVICE_NAME,
-                    getInDeviceName(),
-                    ResultType.NEUTRAL,
-                    ResultUnit.NONE);
-
-            reportLog.addValue(
-                    KEY_IN_DEVICE_TYPE,
-                    mInDeviceType,
-                    ResultType.NEUTRAL,
-                    ResultUnit.NONE);
-
-            reportLog.addValue(
-                    KEY_IN_DEVICE_RATE,
-                    mInSampleRate,
-                    ResultType.NEUTRAL,
-                    ResultUnit.NONE);
-
-            reportLog.addValue(
-                    KEY_IN_DEVICE_CHANS,
-                    mInChannelCount,
-                    ResultType.NEUTRAL,
-                    ResultUnit.NONE);
-
-            reportLog.addValue(
-                    KEY_IN_PRESET,
-                    mInputPreset,
-                    ResultType.NEUTRAL,
-                    ResultUnit.NONE);
-
-            // Results
-            mTestResults[api].generateReportLog(reportLog);
-
-            reportLog.submit();
+            return moduleJson;
         }
     }
 
@@ -1169,31 +1130,6 @@ public abstract class AudioDataPathsBaseActivity
             mMaxMagnitude = maxMagnitude;
             mPhase = phase;
             mPhaseJitter = phaseJitter;
-        }
-
-        // ReportLog Schema
-        private static final String KEY_TESTAPI = "test_api";
-        private static final String KEY_MAXMAGNITUDE = "max_magnitude";
-        private static final String KEY_PHASEJITTER = "phase_jitter";
-
-        void generateReportLog(CtsVerifierReportLog reportLog) {
-            reportLog.addValue(
-                    KEY_TESTAPI,
-                    mApi,
-                    ResultType.NEUTRAL,
-                    ResultUnit.NONE);
-
-            reportLog.addValue(
-                    KEY_MAXMAGNITUDE,
-                    mMaxMagnitude,
-                    ResultType.NEUTRAL,
-                    ResultUnit.NONE);
-
-            reportLog.addValue(
-                    KEY_PHASEJITTER,
-                    mPhaseJitter,
-                    ResultType.NEUTRAL,
-                    ResultUnit.NONE);
         }
     }
 
@@ -1698,14 +1634,16 @@ public abstract class AudioDataPathsBaseActivity
 
         //
         // CTS VerifierReportLog stuff
-        //
-        void generateReportLog() {
-            int testIndex = 0;
+        public JSONArray toJsonArray() throws JSONException {
+            JSONArray tests = new JSONArray();
             for (TestModule module : mTestModules) {
                 for (int api = TEST_API_NATIVE; api < NUM_TEST_APIS; api++) {
-                    module.generateReportLog(api);
+                    if (module.hasRun(api)) {
+                        tests.put(module.toJson(api));
+                    }
                 }
             }
+            return tests;
         }
     }
 
@@ -1838,17 +1776,14 @@ public abstract class AudioDataPathsBaseActivity
     }
 
     @Override
-    public final String getReportSectionName() {
-        return setTestNameSuffix(sCurrentDisplayMode, SECTION_AUDIO_DATAPATHS);
-    }
-
-    @Override
     public void recordTestResults() {
-// TODO Remove all report logging from this file. This is a quick fix.
-// This code generates multiple records in the JSON file.
-// That duplication is invalid JSON and causes the database
-// ingestion to fail.
-//        mTestManager.generateReportLog();
+        CtsVerifierReportLog reportLog = getReportLog();
+        try {
+            reportLog.addValues(KEY_DATAPATHS, mTestManager.toJsonArray());
+        } catch (JSONException e) {
+            Log.e(TAG, "Failed to generate JSON report.", e);
+        }
+        reportLog.submit();
     }
 
     private static String getTimestampString() {

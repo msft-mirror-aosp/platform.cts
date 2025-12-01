@@ -898,6 +898,98 @@ public abstract class AppSearchSessionCtsTestBase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMAS_WIPEOUT_ACCOUNT_PROPERTY_PATHS)
+    public void testSetSchema_setAccountPropertyPaths() throws Exception {
+        assumeTrue(
+                mDb1.getFeatures()
+                        .isFeatureSupported(Features.SET_SCHEMA_REQUEST_SET_WIPEOUT_ACCOUNT));
+        AppSearchSchema accountSchema = new AppSearchSchema.Builder("builtin:Account").build();
+        AppSearchSchema schema1 =
+                new AppSearchSchema.Builder("type1")
+                        .addProperty(
+                                new AppSearchSchema.DocumentPropertyConfig.Builder(
+                                                "nested", "type2")
+                                        .setCardinality(
+                                                AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setShouldIndexNestedProperties(false)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.DocumentPropertyConfig.Builder(
+                                                "account1", "builtin:Account")
+                                        .setCardinality(
+                                                AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setShouldIndexNestedProperties(false)
+                                        .build())
+                        .build();
+        AppSearchSchema schema2 =
+                new AppSearchSchema.Builder("type2")
+                        .addProperty(
+                                new AppSearchSchema.DocumentPropertyConfig.Builder(
+                                                "account2", "builtin:Account")
+                                        .setCardinality(
+                                                AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setShouldIndexNestedProperties(false)
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(
+                        new SetSchemaRequest.Builder()
+                                .addSchemas(accountSchema, schema1, schema2)
+                                .setSchemaTypeWipeoutAccountPropertyPaths(
+                                        "type1",
+                                        ImmutableSet.of(new PropertyPath("account1")),
+                                        /* autoWipeout= */ true)
+                                .setSchemaTypeWipeoutAccountPropertyPaths(
+                                        "type1",
+                                        ImmutableSet.of(new PropertyPath("nested.account2")),
+                                        /* autoWipeout= */ true)
+                                .build())
+                .get();
+
+        GetSchemaResponse getSchemaResponse = mDb1.getSchemaAsync().get();
+        assertThat(getSchemaResponse.getSchemasWipeoutAccountPropertyPaths())
+                .containsExactly(
+                        "type1",
+                        ImmutableSet.of(
+                                new PropertyPath("account1"), new PropertyPath("nested.account2")));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMAS_WIPEOUT_ACCOUNT_PROPERTY_PATHS)
+    public void testSetSchema_setAccountPropertyPaths_notSupported() throws Exception {
+        assumeFalse(
+                mDb1.getFeatures()
+                        .isFeatureSupported(Features.SET_SCHEMA_REQUEST_SET_WIPEOUT_ACCOUNT));
+        AppSearchSchema accountSchema = new AppSearchSchema.Builder("builtin:Account").build();
+        AppSearchSchema schema1 =
+                new AppSearchSchema.Builder("type1")
+                        .addProperty(
+                                new AppSearchSchema.DocumentPropertyConfig.Builder(
+                                                "account1", "builtin:Account")
+                                        .setCardinality(
+                                                AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setShouldIndexNestedProperties(false)
+                                        .build())
+                        .build();
+
+        assertThrows(
+                UnsupportedOperationException.class,
+                () ->
+                        mDb1.setSchemaAsync(
+                                        new SetSchemaRequest.Builder()
+                                                .addSchemas(accountSchema, schema1)
+                                                .setSchemaTypeWipeoutAccountPropertyPaths(
+                                                        "type1",
+                                                        ImmutableSet.of(
+                                                                new PropertyPath("account1")),
+                                                        /* autoWipeout= */ true)
+                                                .build())
+                                .get());
+
+        GetSchemaResponse getSchemaResponse = mDb1.getSchemaAsync().get();
+        assertThat(getSchemaResponse.getSchemasWipeoutAccountPropertyPaths()).isEmpty();
+    }
+
+    @Test
     public void testGetSchema_allPropertyTypes() throws Exception {
         AppSearchSchema inSchema =
                 new AppSearchSchema.Builder("Test")
@@ -1532,8 +1624,8 @@ public abstract class AppSearchSessionCtsTestBase {
             assertThat(a)
                     .hasMessageThat()
                     .contains(
-                            "Qualified id joinable property 'qualifiedId' cannot have REPEATED"
-                                    + " cardinality");
+                            "Qualified id joinable property 'qualifiedId' cannot have REPEATED "
+                                    + "cardinality");
         } else {
             // Previous behavior in AppSearchSchema.StringPropertyConfig.Builder#build would throw
             // IllegalStateException if callers set JOINABLE_VALUE_TYPE_QUALIFIED_ID and
@@ -1553,8 +1645,11 @@ public abstract class AppSearchSessionCtsTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DELETE_PROPAGATION_RW)
     public void testGetSchema_deletePropagationTypePropagateFrom() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.JOIN_SPEC_AND_QUALIFIED_ID));
-        assumeTrue(mDb1.getFeatures().isFeatureSupported(
-                Features.SCHEMA_STRING_PROPERTY_CONFIG_DELETE_PROPAGATION_TYPE_PROPAGATE_FROM));
+        assumeTrue(
+                mDb1.getFeatures()
+                        .isFeatureSupported(
+                                Features
+                                        .SCHEMA_STRING_PROPERTY_CONFIG_DELETE_PROPAGATION_TYPE_PROPAGATE_FROM));
 
         AppSearchSchema inSchema =
                 new AppSearchSchema.Builder("Test")
@@ -1663,8 +1758,11 @@ public abstract class AppSearchSessionCtsTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DELETE_PROPAGATION_RW)
     public void testGetSchema_deletePropagationTypePropagateFrom_notSupported() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.JOIN_SPEC_AND_QUALIFIED_ID));
-        assumeFalse(mDb1.getFeatures().isFeatureSupported(
-                Features.SCHEMA_STRING_PROPERTY_CONFIG_DELETE_PROPAGATION_TYPE_PROPAGATE_FROM));
+        assumeFalse(
+                mDb1.getFeatures()
+                        .isFeatureSupported(
+                                Features
+                                        .SCHEMA_STRING_PROPERTY_CONFIG_DELETE_PROPAGATION_TYPE_PROPAGATE_FROM));
 
         AppSearchSchema inSchema =
                 new AppSearchSchema.Builder("Test")
@@ -6979,8 +7077,11 @@ public abstract class AppSearchSessionCtsTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DELETE_PROPAGATION_RW)
     public void testRemove_withDeletePropagationFromParentToChildren() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.JOIN_SPEC_AND_QUALIFIED_ID));
-        assumeTrue(mDb1.getFeatures().isFeatureSupported(
-                Features.SCHEMA_STRING_PROPERTY_CONFIG_DELETE_PROPAGATION_TYPE_PROPAGATE_FROM));
+        assumeTrue(
+                mDb1.getFeatures()
+                        .isFeatureSupported(
+                                Features
+                                        .SCHEMA_STRING_PROPERTY_CONFIG_DELETE_PROPAGATION_TYPE_PROPAGATE_FROM));
 
         // Person (parent) schema.
         AppSearchSchema personSchema =
@@ -7098,8 +7199,11 @@ public abstract class AppSearchSessionCtsTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DELETE_PROPAGATION_RW)
     public void testRemove_withDeletePropagationFromParentToGrandchildren() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.JOIN_SPEC_AND_QUALIFIED_ID));
-        assumeTrue(mDb1.getFeatures().isFeatureSupported(
-                Features.SCHEMA_STRING_PROPERTY_CONFIG_DELETE_PROPAGATION_TYPE_PROPAGATE_FROM));
+        assumeTrue(
+                mDb1.getFeatures()
+                        .isFeatureSupported(
+                                Features
+                                        .SCHEMA_STRING_PROPERTY_CONFIG_DELETE_PROPAGATION_TYPE_PROPAGATE_FROM));
 
         // Person (parent) schema.
         AppSearchSchema personSchema =
@@ -7305,8 +7409,11 @@ public abstract class AppSearchSessionCtsTestBase {
     public void testRemove_withDeletePropagationFromParentToChildren_fromMultipleProperties()
             throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.JOIN_SPEC_AND_QUALIFIED_ID));
-        assumeTrue(mDb1.getFeatures().isFeatureSupported(
-                Features.SCHEMA_STRING_PROPERTY_CONFIG_DELETE_PROPAGATION_TYPE_PROPAGATE_FROM));
+        assumeTrue(
+                mDb1.getFeatures()
+                        .isFeatureSupported(
+                                Features
+                                        .SCHEMA_STRING_PROPERTY_CONFIG_DELETE_PROPAGATION_TYPE_PROPAGATE_FROM));
 
         // Person (parent) schema.
         AppSearchSchema personSchema =

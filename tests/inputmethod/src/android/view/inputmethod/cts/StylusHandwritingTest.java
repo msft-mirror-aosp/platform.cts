@@ -2329,6 +2329,9 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
                 imeSession.callFinishConnectionlessStylusHandwriting("abc");
 
+                // Wait for the callback to be invoked.
+                callback.await(TIMEOUT, TimeUnit.MILLISECONDS);
+
                 verifyOnFinishStylusHandwriting(stream, null /* marker */);
                 assertThat(callback.mResultText).isEqualTo("abc");
                 assertThat(callback.mErrorCode).isEqualTo(-1);
@@ -2379,6 +2382,10 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 imeSession.callFinishConnectionlessStylusHandwriting("");
 
                 verifyOnFinishStylusHandwriting(stream, null /* marker */);
+
+                // Wait for the callback to be invoked.
+                callback.await(TIMEOUT, TimeUnit.MILLISECONDS);
+
                 assertThat(callback.mResultText).isNull();
                 assertThat(callback.mErrorCode)
                         .isEqualTo(CONNECTIONLESS_HANDWRITING_ERROR_NO_TEXT_RECOGNIZED);
@@ -2427,6 +2434,10 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                         eventMatcher("onStartConnectionlessStylusHandwriting"),
                         TIMEOUT);
                 verifyStylusHandwritingWindowIsNotShown(stream, imeSession);
+
+                // Wait for the callback to be invoked.
+                callback.await(TIMEOUT, TimeUnit.MILLISECONDS);
+
                 assertThat(callback.mResultText).isNull();
                 assertThat(callback.mErrorCode)
                         .isEqualTo(CONNECTIONLESS_HANDWRITING_ERROR_UNSUPPORTED);
@@ -3443,7 +3454,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
         final String prefix = "Launcher: ComponentInfo{";
         final String postfix = "}";
         for (String s :
-                SystemUtil.runShellCommand(
+                SystemUtil.runShellCommandOrThrow(
                                 "cmd shortcut get-default-launcher --user " + mContext.getUserId())
                         .split("\n")) {
             if (s.startsWith(prefix) && s.endsWith(postfix)) {
@@ -3454,7 +3465,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
     }
 
     private void setDefaultLauncher(String component) {
-        SystemUtil.runShellCommand(
+        SystemUtil.runShellCommandOrThrow(
                 "cmd package set-home-activity --user " + mContext.getUserId() + " " + component);
     }
 
@@ -3504,6 +3515,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
     }
 
     private static final class TestCallback implements ConnectionlessHandwritingCallback {
+        private final CountDownLatch mLatch = new CountDownLatch(1);
         private CharSequence mResultText;
         public int mErrorCode = -1;
 
@@ -3511,12 +3523,18 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
         public void onResult(@NonNull CharSequence text) {
             assertNoCallbackMethodsPreviouslyCalled();
             mResultText = text;
+            mLatch.countDown();
         }
 
         @Override
         public void onError(int errorCode) {
             assertNoCallbackMethodsPreviouslyCalled();
             mErrorCode = errorCode;
+            mLatch.countDown();
+        }
+
+        void await(long timeout, TimeUnit unit) throws InterruptedException {
+            mLatch.await(timeout, unit);
         }
 
         // Used to verify that the callback only receives a single result.

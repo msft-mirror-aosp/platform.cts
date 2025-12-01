@@ -69,6 +69,8 @@ import android.widget.TextView;
 
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.platform.test.flag.junit.CheckFlagsRule;
 import androidx.annotation.NonNull;
 import androidx.test.rule.ActivityTestRule;
 
@@ -78,6 +80,7 @@ import com.android.compatibility.common.util.DoubleVisitor;
 import java.util.List;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -102,6 +105,9 @@ public class LoginActivityTest
     protected ActivityTestRule<LoginActivity> getActivityTestRule() {
         return sActivityRule;
     }
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     @After
@@ -879,7 +885,7 @@ public class LoginActivityTest
                         .getCurrentServiceInstance()
                         .getOnlyFinishedSession();
         assertThat((session.context.getFlags()
-                & ContentCaptureContext.FLAG_DISABLED_BY_APP) == 0).isTrue();
+                & ContentCaptureContext.FLAG_DISABLED_BY_APP) != 0).isTrue();
         assertThat((session.context.getFlags()
                 & ContentCaptureContext.FLAG_DISABLED_BY_FLAG_SECURE) != 0).isTrue();
         final ContentCaptureSessionId sessionId = session.id;

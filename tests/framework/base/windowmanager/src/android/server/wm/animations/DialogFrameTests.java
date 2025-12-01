@@ -47,10 +47,9 @@ import android.server.wm.WaitForValidActivityState;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerState.WindowState;
 
-import androidx.test.rule.ActivityTestRule;
+import androidx.test.core.app.ActivityScenario;
 
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
@@ -69,21 +68,9 @@ public class DialogFrameTests extends ParentChildTestBase<DialogFrameTestActivit
             new ComponentName(getInstrumentation().getContext(), DialogFrameTestActivity.class);
     private Insets mContentInsets;
 
-    @Rule
-    public final ActivityTestRule<DialogFrameTestActivity> mDialogTestActivity =
-            new ActivityTestRule<>(
-                    DialogFrameTestActivity.class,
-                    false /* initialTOuchMode */,
-                    false /* launchActivity */);
-
     @Override
     ComponentName activityName() {
         return DIALOG_FRAME_TEST_ACTIVITY;
-    }
-
-    @Override
-    ActivityTestRule<DialogFrameTestActivity> activityRule() {
-        return mDialogTestActivity;
     }
 
     private WindowState getSingleWindow(final String windowName) {
@@ -93,7 +80,10 @@ public class DialogFrameTests extends ParentChildTestBase<DialogFrameTestActivit
     }
 
     @Override
-    void doSingleTest(ParentChildTest t) throws Exception {
+    void doSingleTest(
+            ParentChildTest<DialogFrameTestActivity> t,
+            ActivityScenario<DialogFrameTestActivity> scenario)
+            throws Exception {
         final String mainWindowName = getWindowName(activityName());
         mWmState.computeState(
                 WaitForValidActivityState.forWindow(DIALOG_WINDOW_NAME),
@@ -101,7 +91,7 @@ public class DialogFrameTests extends ParentChildTestBase<DialogFrameTestActivit
         final WindowState dialog = getSingleWindow(DIALOG_WINDOW_NAME);
         final WindowState parent = getSingleWindow(mainWindowName);
 
-        t.doTest(parent, dialog);
+        t.doTest(parent, dialog, scenario);
     }
 
     // With Width and Height as MATCH_PARENT we should fill
@@ -110,9 +100,9 @@ public class DialogFrameTests extends ParentChildTestBase<DialogFrameTestActivit
     public void testMatchParentDialog() throws Exception {
         doParentChildTest(
                 TEST_MATCH_PARENT,
-                (parent, dialog) -> {
+                (parent, dialog, scenario) -> {
                     ;
-                    assertEquals(getParentFrameWithInsets(parent), dialog.getFrame());
+                    assertEquals(getParentFrameWithInsets(parent, scenario), dialog.getFrame());
                 });
     }
 
@@ -123,8 +113,8 @@ public class DialogFrameTests extends ParentChildTestBase<DialogFrameTestActivit
     public void testExplicitSizeDefaultGravity() throws Exception {
         doParentChildTest(
                 TEST_EXPLICIT_SIZE,
-                (parent, dialog) -> {
-                    Rect parentFrame = getParentFrameWithInsets(parent);
+                (parent, dialog, scenario) -> {
+                    Rect parentFrame = getParentFrameWithInsets(parent, scenario);
                     Rect expectedFrame =
                             new Rect(
                                     parentFrame.left
@@ -143,8 +133,8 @@ public class DialogFrameTests extends ParentChildTestBase<DialogFrameTestActivit
     public void testExplicitSizeTopLeftGravity() throws Exception {
         doParentChildTest(
                 TEST_EXPLICIT_SIZE_TOP_LEFT_GRAVITY,
-                (parent, dialog) -> {
-                    Rect parentFrame = getParentFrameWithInsets(parent);
+                (parent, dialog, scenario) -> {
+                    Rect parentFrame = getParentFrameWithInsets(parent, scenario);
                     Rect expectedFrame =
                             new Rect(
                                     parentFrame.left,
@@ -159,8 +149,8 @@ public class DialogFrameTests extends ParentChildTestBase<DialogFrameTestActivit
     public void testExplicitSizeBottomRightGravity() throws Exception {
         doParentChildTest(
                 TEST_EXPLICIT_SIZE_BOTTOM_RIGHT_GRAVITY,
-                (parent, dialog) -> {
-                    Rect parentFrame = getParentFrameWithInsets(parent);
+                (parent, dialog, scenario) -> {
+                    Rect parentFrame = getParentFrameWithInsets(parent, scenario);
                     Rect expectedFrame =
                             new Rect(
                                     parentFrame.left + parentFrame.width() - explicitDimension,
@@ -178,10 +168,11 @@ public class DialogFrameTests extends ParentChildTestBase<DialogFrameTestActivit
     public void testOversizedDimensions() throws Exception {
         doParentChildTest(
                 TEST_OVER_SIZED_DIMENSIONS,
-                (parent, dialog) ->
+                (parent, dialog, scenario) ->
                         // With the default flags oversize should result in clipping to
                         // parent frame.
-                        assertEquals(getParentFrameWithInsets(parent), dialog.getFrame()));
+                        assertEquals(
+                                getParentFrameWithInsets(parent, scenario), dialog.getFrame()));
     }
 
     // TODO(b/63993863) : Disabled pending public API to fetch maximum surface size.
@@ -196,8 +187,8 @@ public class DialogFrameTests extends ParentChildTestBase<DialogFrameTestActivit
         // unclear status of NO_LIMITS for non-child surfaces in MW modes
         doFullscreenTest(
                 TEST_OVER_SIZED_DIMENSIONS_NO_LIMITS,
-                (parent, dialog) -> {
-                    Rect parentFrame = getParentFrameWithInsets(parent);
+                (parent, dialog, scenario) -> {
+                    Rect parentFrame = getParentFrameWithInsets(parent, scenario);
                     Rect expectedFrame =
                             new Rect(
                                     parentFrame.left,
@@ -215,8 +206,9 @@ public class DialogFrameTests extends ParentChildTestBase<DialogFrameTestActivit
     public void testExplicitPositionMatchParent() throws Exception {
         doParentChildTest(
                 TEST_EXPLICIT_POSITION_MATCH_PARENT,
-                (parent, dialog) ->
-                        assertEquals(getParentFrameWithInsets(parent), dialog.getFrame()));
+                (parent, dialog, scenario) ->
+                        assertEquals(
+                                getParentFrameWithInsets(parent, scenario), dialog.getFrame()));
     }
 
     // Unless we pass NO_LIMITS in which case our requested position should
@@ -226,8 +218,8 @@ public class DialogFrameTests extends ParentChildTestBase<DialogFrameTestActivit
         final int explicitPosition = 100;
         doParentChildTest(
                 TEST_EXPLICIT_POSITION_MATCH_PARENT_NO_LIMITS,
-                (parent, dialog) -> {
-                    Rect parentFrame = getParentFrameWithInsets(parent);
+                (parent, dialog, scenario) -> {
+                    Rect parentFrame = getParentFrameWithInsets(parent, scenario);
                     Rect expectedFrame = new Rect(parentFrame);
                     expectedFrame.offset(explicitPosition, explicitPosition);
                     assertEquals(expectedFrame, dialog.getFrame());
@@ -240,14 +232,16 @@ public class DialogFrameTests extends ParentChildTestBase<DialogFrameTestActivit
     public void testDialogReceivesFocus() throws Exception {
         doFullscreenTest(
                 TEST_MATCH_PARENT,
-                (parent, dialog) -> assertEquals(dialog.getName(), mWmState.getFocusedWindow()));
+                (parent, dialog, scenario) ->
+                        assertEquals(dialog.getName(), mWmState.getFocusedWindow()));
     }
 
     @Test
     public void testNoFocusDialog() throws Exception {
         doFullscreenTest(
                 TEST_NO_FOCUS,
-                (parent, dialog) -> assertEquals(parent.getName(), mWmState.getFocusedWindow()));
+                (parent, dialog, scenario) ->
+                        assertEquals(parent.getName(), mWmState.getFocusedWindow()));
     }
 
     @Test
@@ -256,8 +250,8 @@ public class DialogFrameTests extends ParentChildTestBase<DialogFrameTestActivit
         float verticalMargin = .15f;
         doParentChildTest(
                 TEST_WITH_MARGINS,
-                (parent, dialog) -> {
-                    Rect frame = getParentFrameWithInsets(parent);
+                (parent, dialog, scenario) -> {
+                    Rect frame = getParentFrameWithInsets(parent, scenario);
                     Rect expectedFrame =
                             new Rect(
                                     (int) (horizontalMargin * frame.width() + frame.left),
@@ -275,7 +269,7 @@ public class DialogFrameTests extends ParentChildTestBase<DialogFrameTestActivit
         final WindowManagerState wmState = mWmState;
         doParentChildTest(
                 TEST_MATCH_PARENT,
-                (parent, dialog) ->
+                (parent, dialog, scenario) ->
                         // Not only should the dialog be higher, but it should be leave multiple
                         // layers of
                         // space in between for DimLayers, etc...
@@ -283,31 +277,29 @@ public class DialogFrameTests extends ParentChildTestBase<DialogFrameTestActivit
                                 wmState.getZOrder(dialog), greaterThan(wmState.getZOrder(parent))));
     }
 
-    private Rect getParentFrameWithInsets(WindowState parent) {
+    private Rect getParentFrameWithInsets(
+            WindowState parent, ActivityScenario<DialogFrameTestActivity> scenario) {
         Rect parentFrame = parent.getFrame();
-        return inset(parentFrame, getActivitySystemInsets());
+        return inset(parentFrame, getActivitySystemInsets(scenario));
     }
 
-    private Insets getActivitySystemInsets() {
+    private Insets getActivitySystemInsets(ActivityScenario<DialogFrameTestActivity> scenario) {
         getInstrumentation().waitForIdleSync();
-        getInstrumentation()
-                .runOnMainSync(
-                        () -> {
-                            // Excluding caption bar from system bars to fix freeform windowing mode
-                            // test failures.
-                            // Non-freeform windowing modes will not be affected due to having zero
-                            // caption bar.
-                            final int types = (systemBars() | displayCutout()) & ~captionBar();
-                            final Insets insets =
-                                    mDialogTestActivity
-                                            .getActivity()
-                                            .getWindow()
-                                            .getDecorView()
-                                            .getRootWindowInsets()
-                                            .getInsets(types);
-                            mContentInsets =
-                                    Insets.of(insets.left, insets.top, insets.right, insets.bottom);
-                        });
+        scenario.onActivity(
+                activity -> {
+                    // Excluding caption bar from system bars to fix freeform windowing mode
+                    // test failures.
+                    // Non-freeform windowing modes will not be affected due to having zero
+                    // caption bar.
+                    final int types = (systemBars() | displayCutout()) & ~captionBar();
+                    final Insets insets =
+                            activity.getWindow()
+                                    .getDecorView()
+                                    .getRootWindowInsets()
+                                    .getInsets(types);
+                    mContentInsets =
+                            Insets.of(insets.left, insets.top, insets.right, insets.bottom);
+                });
         return mContentInsets;
     }
 

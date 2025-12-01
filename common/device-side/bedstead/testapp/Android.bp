@@ -137,6 +137,7 @@ java_genrule {
         ":MultipleActivitiesTestApp",
         ":HeadlessDOSingleUserTestApp",
         ":RemoteDeviceAdminTestApp",
+        ":SupervisionApp",
     ],
     out: [
         "testapps/index.txt",
@@ -159,6 +160,7 @@ java_genrule {
         "testapps/MultipleActivitiesTestApp.apk",
         "testapps/HeadlessDOSingleUserTestApp.apk",
         "testapps/RemoteDeviceAdminTestApp.apk",
+        "testapps/SupervisionApp.apk",
     ],
     tools: [
         "index_testapps",
@@ -184,6 +186,7 @@ java_genrule {
         " && cp $(location :MultipleActivitiesTestApp) $(genDir)/testapps" +
         " && cp $(location :HeadlessDOSingleUserTestApp) $(genDir)/testapps" +
         " && cp $(location :RemoteDeviceAdminTestApp) $(genDir)/testapps" +
+        " && cp $(location :SupervisionApp) $(genDir)/testapps" +
         " && $(location index_testapps) --directory $(genDir)/testapps --aapt2 $(location aapt2)",
 }
 
@@ -448,6 +451,16 @@ android_test_helper_app {
     ],
     resource_dirs: ["src/testapps/main/res/device_admin"],
     manifest: "manifests/deviceadmin/RemoteDeviceAdminManifest.xml",
+    additional_manifests: ["CommonManifest.xml"],
+    min_sdk_version: "29",
+}
+
+android_test_helper_app {
+    name: "SupervisionApp",
+    static_libs: [
+        "TestApp_TestApps",
+    ],
+    manifest: "manifests/SupervisionAppManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
     min_sdk_version: "29",
 }

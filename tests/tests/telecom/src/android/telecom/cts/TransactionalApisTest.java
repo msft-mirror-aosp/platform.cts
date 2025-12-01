@@ -95,6 +95,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
     private static final String DISCONNECT = "Disconnect";
     private static final String SET_MUTE_STATE = "RequestMuteState";
     private static final String REQUEST_VIDEO_STATE = "RequestVideoState";
+    private static final String SET_CONTACT_URI = "SetContactUri";
 
     // CallControlCallback
     private static final String ON_SET_ACTIVE = "OnSetActive";
@@ -520,6 +521,62 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             // disconnect
             callControlAction(DISCONNECT, mCall1);
             verifyCallWasDisconnectedOrInCallServiceUnbinds();
+        } finally {
+            cleanup();
+        }
+    }
+
+    @ApiTest(
+            apis = {
+                "android.telecom.CallControl#setGroupCallState",
+                "android.telecom.CallControl#setContactUri"
+            })
+    public void testSetGroupCallStateAndContactUri() {
+        if (!mShouldTestTelecom || !android.telecom.flags.Flags.integratedCallLogsStage2()) {
+            return;
+        }
+        try {
+            cleanup();
+            startCallWithAttributesAndVerify(mOutgoingCallAttributes, mCall1);
+            // set the call active
+            callControlAction(SET_ACTIVE, mCall1);
+            assertCallState(getLastAddedCall(), Call.STATE_ACTIVE);
+
+            // Update the group call state with valid contact uri
+            Uri uri = Uri.parse("content://com.android.contacts/contacts/lookup/2");
+            requestAndAssertGroupCallStateChange(mCall1, true);
+            requestAndAssertContactUriChange(mCall1, uri);
+
+            // Update the group call state once more
+            uri = Uri.parse("content://com.android.contacts/contacts/lookup/4");
+            requestAndAssertGroupCallStateChange(mCall1, false);
+            requestAndAssertContactUriChange(mCall1, uri);
+
+            // Update the group call state with an invalid uri to verify that an exception is
+            // thrown.
+            uri = Uri.parse("testInvalidContactUri");
+            try {
+                callControlAction(SET_CONTACT_URI, mCall1, uri);
+                fail(
+                        "Failed to throw exception on passing an invalid voip contact uri for"
+                                + " setting group call state");
+            } catch (IllegalArgumentException e) {
+                // expected
+            }
+            // Update the group call state with a uri from a different user to verify that an
+            // exception is thrown.
+            uri = Uri.parse("content://11@com.android.contacts/contacts/lookup/4");
+            try {
+                callControlAction(SET_CONTACT_URI, mCall1, uri);
+                fail(
+                        "Failed to throw exception on passing a null voip contact uri for setting "
+                                + "group call state");
+            } catch (IllegalArgumentException e) {
+                // expected
+            }
+            // disconnect
+            callControlAction(DISCONNECT, mCall1);
+            assertNumCalls(getInCallService(), 0);
         } finally {
             cleanup();
         }
@@ -1227,7 +1284,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
         assertNull(mIncomingCallAttributes.getContactUri());
         assertNull(mOutgoingCallAttributes.getContactUri());
 
-        Uri testUri = Uri.parse("testUri");
+        Uri testUri = Uri.parse("content://com.android.contacts/contacts/lookup/2");
         CallAttributes callAttributes =
                 new CallAttributes.Builder(
                                 DEFAULT_T_HANDLE, DIRECTION_OUTGOING, TEST_NAME_1, TEST_URI_1)
@@ -1417,6 +1474,13 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
                 }
                 call.mCallControl.requestVideoState(requestedVideoState, Runnable::run, outcome);
                 break;
+            case SET_CONTACT_URI:
+                Uri uri = null;
+                if (isArgumentAvailable(objects)) {
+                    uri = (Uri) objects[0];
+                }
+                call.mCallControl.setContactUri(uri, Runnable::run, outcome);
+                break;
             case DISCONNECT:
                 if (isArgumentAvailable(objects)) {
                     disconnectCause = new DisconnectCause((int) objects[0]);
@@ -1579,5 +1643,37 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
                 .setFullScreenIntent(pendingIntent, true)
                 .build();
         mNotificationManager.notify(NOTIFICATION_ID, callNot);
+    }
+
+    private void requestAndAssertGroupCallStateChange(
+            TelecomCtsVoipCall call, boolean isGroupCall) {
+        final CountDownLatch latch = new CountDownLatch(1);
+        final android.telecom.cts.TelecomCtsVoipCall.LatchedOutcomeReceiver outcome =
+                new android.telecom.cts.TelecomCtsVoipCall.LatchedOutcomeReceiver(latch);
+
+        CallControl callControl = call.mCallControl;
+        if (callControl == null) {
+            fail("callControl object is null");
+            return;
+        }
+
+        call.mCallControl.setGroupCallState(isGroupCall, Runnable::run, outcome);
+
+        assertOnResultWasReceived(latch);
+    }
+
+    private void requestAndAssertContactUriChange(TelecomCtsVoipCall call, Uri uri) {
+        final CountDownLatch latch = new CountDownLatch(1);
+        final android.telecom.cts.TelecomCtsVoipCall.LatchedOutcomeReceiver outcome =
+                new android.telecom.cts.TelecomCtsVoipCall.LatchedOutcomeReceiver(latch);
+
+        CallControl callControl = call.mCallControl;
+        if (callControl == null) {
+            fail("callControl object is null");
+            return;
+        }
+
+        call.mCallControl.setContactUri(uri, Runnable::run, outcome);
+        assertOnResultWasReceived(latch);
     }
 }

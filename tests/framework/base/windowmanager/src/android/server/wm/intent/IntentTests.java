@@ -34,6 +34,7 @@ import com.google.common.collect.Lists;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -111,9 +112,8 @@ public class IntentTests extends IntentTestBase {
     }
 
 
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUpIntentTests() throws Exception {
         mLaunchRunner = new LaunchRunner(this);
     }
 

@@ -55,6 +55,9 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <activity android:name=".WaitForResultActivity"
+                  android:label="Wait For Result Activity"
+                  android:exported="true"/>
         <!-- VoiceInteractionService -->
         <service android:name=".services.CtsBasicVoiceInteractionService"
                  android:label="CTS test Basic voice interaction service"
@@ -161,13 +164,12 @@
         </service>
 
         <!-- HotwordDetectionService -->
-        <private-compute>
-            <service
-                android:name="android.voiceinteraction.cts.services.PccHotwordDetectionService"
-                android:permission="android.permission.BIND_HOTWORD_DETECTION_SERVICE"
-                android:exported="true">
-            </service>
-        </private-compute>
+        <service
+            android:name="android.voiceinteraction.cts.services.PccHotwordDetectionService"
+            android:permission="android.permission.BIND_HOTWORD_DETECTION_SERVICE"
+            android:exported="true"
+            android:isPrivateComputeCoreProcess="true">
+        </service>
         <service
             android:name="android.voiceinteraction.cts.services.TestPermissionHotwordDetectionService"
             android:permission="android.permission.BIND_HOTWORD_DETECTION_SERVICE"
