@@ -22,4 +22,5 @@ interface ISharedMemoryService {
     void setup(in SharedMemory memory, int prot);
     byte read(int index);
     void write(int index, byte value);
+    boolean isRegionReadOnly();
 }
