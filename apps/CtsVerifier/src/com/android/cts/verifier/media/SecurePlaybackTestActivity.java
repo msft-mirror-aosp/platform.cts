@@ -20,6 +20,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.media.MediaDrm;
+import android.media.UnsupportedSchemeException;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -139,6 +141,12 @@ public class SecurePlaybackTestActivity extends PassFailButtons.Activity {
         setPassFailButtonClickListeners();
         passFailButtons = findViewById(R.id.pass_fail_buttons);
 
+        if (!isL1()) {
+            Log.d(TAG, "Device is not L1, skipping test");
+            setTestResultAndFinish(true);
+            return;
+        }
+
         this.getPassButton().setEnabled(true);
 
         instructions = findViewById(R.id.instructions);
@@ -245,6 +253,14 @@ public class SecurePlaybackTestActivity extends PassFailButtons.Activity {
             player = null;
         }
         setNonPlayerVisibility(true);
+    }
+
+    private boolean isL1() throws IllegalStateException {
+        try (MediaDrm mediaDrm = new MediaDrm(WIDEVINE_UUID)) {
+            return mediaDrm.getPropertyString("securityLevel").equals("L1");
+        } catch (UnsupportedSchemeException e) {
+            throw new IllegalStateException("Widevine MediaDrm instantiation fails", e);
+        }
     }
 
     @Override
