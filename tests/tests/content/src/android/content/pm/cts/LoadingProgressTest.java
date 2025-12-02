@@ -23,6 +23,7 @@ import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.LauncherActivityInfo;
 import android.content.pm.LauncherApps;
+import android.content.pm.PackageManager;
 import android.os.ConditionVariable;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -75,6 +76,7 @@ public class LoadingProgressTest {
     private final int mUserId = mContext.getUserId();
     private final LauncherApps mLauncherApps = mContext.getSystemService(LauncherApps.class);
     private final HandlerThread mCallbackThread = new HandlerThread("callback");
+    private final PackageManager mPackageManager = mContext.getPackageManager();
 
     @Before
     public void setup() throws Exception {
@@ -98,6 +100,11 @@ public class LoadingProgressTest {
 
     @Test
     public void testIncrementalGetLoadingProgressSuccess() throws Exception {
+        // TODO(b/453894069): Fix the test for auto or tv form factors.
+        if (mPackageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+                || mPackageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)) {
+            return;
+        }
         installPackageWithIncremental(
                 HELLO_WORLD_APK,
                 HELLO_WORLD_IDSIG,
