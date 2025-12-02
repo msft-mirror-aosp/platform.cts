@@ -20,7 +20,6 @@ import android.app.admin.DevicePolicyManager.POLICY_SCOPE_DEVICE
 import android.app.admin.DevicePolicyManager.POLICY_SCOPE_PARENT_USER
 import android.app.admin.DevicePolicyManager.POLICY_SCOPE_USER
 import com.android.bedstead.enterprise.Policy.includeRunOnAffiliatedProfileOwnerAdditionalUser
-import com.android.bedstead.enterprise.Policy.includeRunOnCloneProfileAlongsideOrganizationOwnedProfile
 import com.android.bedstead.enterprise.Policy.includeRunOnOrganizationOwnedProfileOwner
 import com.android.bedstead.enterprise.Policy.includeRunOnParentOfOrganizationOwnedProfileOwner
 import com.android.bedstead.enterprise.Policy.includeRunOnProfileOwnerPrimaryUser
@@ -33,6 +32,7 @@ import com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_S
 import com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_TO_OWN_USER
 import com.android.bedstead.enterprise.annotations.canSetPolicyTest
 import com.android.bedstead.enterprise.annotations.cannotSetPolicyTest
+import com.android.bedstead.enterprise.annotations.parameterized.includeRunOnCloneProfileAlongsideOrganizationOwnedProfile
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnFinancedDeviceOwnerUser
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance
 import com.android.bedstead.enterprise.annotations.parameterized.includeRunOnAffiliatedDeviceOwnerSecondaryUser

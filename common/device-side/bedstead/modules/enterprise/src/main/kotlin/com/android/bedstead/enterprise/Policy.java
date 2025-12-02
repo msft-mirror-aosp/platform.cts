@@ -45,6 +45,10 @@ import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.INHER
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.NO;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnAffiliatedDeviceOwnerSecondaryUserKt.includeRunOnAffiliatedDeviceOwnerSecondaryUser;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnBackgroundDeviceOwnerUserKt.includeRunOnBackgroundDeviceOwnerUser;
+import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideManagedProfileKt.includeRunOnCloneProfileAlongsideManagedProfile;
+import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideManagedProfileUsingParentInstanceKt.includeRunOnCloneProfileAlongsideManagedProfileUsingParentInstance;
+import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfileKt.includeRunOnCloneProfileAlongsideOrganizationOwnedProfile;
+import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfileUsingParentInstanceKt.includeRunOnCloneProfileAlongsideOrganizationOwnedProfileUsingParentInstance;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnDevicePolicyManagementRoleHolderProfileKt.includeRunOnDevicePolicyManagementRoleHolderProfile;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnDevicePolicyManagementRoleHolderSecondaryUserKt.includeRunOnDevicePolicyManagementRoleHolderSecondaryUser;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnDevicePolicyManagementRoleHolderUserKt.includeRunOnDevicePolicyManagementRoleHolderUser;
@@ -81,10 +85,6 @@ import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
 import com.android.bedstead.enterprise.annotations.EnterprisePolicy.AppOp;
 import com.android.bedstead.enterprise.annotations.EnterprisePolicy.Permission;
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnAffiliatedProfileOwnerAdditionalUser;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideManagedProfile;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideManagedProfileUsingParentInstance;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfile;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfileUsingParentInstance;
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnOrganizationOwnedProfileOwner;
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnParentOfOrganizationOwnedProfileOwner;
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance;
@@ -369,26 +369,6 @@ public final class Policy {
     @AutoAnnotation
     public static IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance includeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance() {
         return new AutoAnnotation_Policy_includeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance();
-    }
-
-    @AutoAnnotation
-    private static IncludeRunOnCloneProfileAlongsideManagedProfileUsingParentInstance includeRunOnCloneProfileAlongsideManagedProfileUsingParentInstance() {
-        return new AutoAnnotation_Policy_includeRunOnCloneProfileAlongsideManagedProfileUsingParentInstance();
-    }
-
-    @AutoAnnotation
-    private static IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfileUsingParentInstance includeRunOnCloneProfileAlongsideOrganizationOwnedProfileUsingParentInstance() {
-        return new AutoAnnotation_Policy_includeRunOnCloneProfileAlongsideOrganizationOwnedProfileUsingParentInstance();
-    }
-
-    @AutoAnnotation
-    private static IncludeRunOnCloneProfileAlongsideManagedProfile includeRunOnCloneProfileAlongsideManagedProfile() {
-        return new AutoAnnotation_Policy_includeRunOnCloneProfileAlongsideManagedProfile();
-    }
-
-    @AutoAnnotation
-    public static IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfile includeRunOnCloneProfileAlongsideOrganizationOwnedProfile() {
-        return new AutoAnnotation_Policy_includeRunOnCloneProfileAlongsideOrganizationOwnedProfile();
     }
 
 
