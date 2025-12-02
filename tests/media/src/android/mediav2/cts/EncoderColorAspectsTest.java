@@ -215,9 +215,10 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
 
             prepareArgsList(exhaustiveArgsList, mediaTypesHighBitDepth, ranges,
                     standardsHighBitDepth, transfersHighBitDepth, COLOR_FormatYUVP010, -1);
-            // TODO: Enable this once WriterSurfaceImage opens for PixelFormat.RGBA_1010102
-            /*prepareArgsList(exhaustiveArgsList, mediaTypesHighBitDepth, ranges,
-                    standardsHighBitDepth, transfersHighBitDepth, COLOR_FormatSurface, 10);*/
+            if (IS_AFTER_B) {
+                prepareArgsList(exhaustiveArgsList, mediaTypesHighBitDepth, ranges,
+                        standardsHighBitDepth, transfersHighBitDepth, COLOR_FormatSurface, 10);
+            }
         }
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, false);
     }
