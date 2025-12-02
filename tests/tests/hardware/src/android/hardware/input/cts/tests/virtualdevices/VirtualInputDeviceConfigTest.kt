@@ -24,6 +24,7 @@ import android.hardware.input.VirtualRotaryEncoderConfig
 import android.hardware.input.VirtualStylusConfig
 import android.hardware.input.VirtualTouchscreenConfig
 import android.os.Parcel
+import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -353,9 +354,10 @@ class VirtualInputDeviceConfigTest {
     }
 
     @Test
+    @RequiresFlagsDisabled(com.android.hardware.input.Flags.FLAG_CREATE_VIRTUAL_KEYBOARD_API)
     fun virtualDpadConfig_missingDisplayId_throwsException() {
         assertThrows(IllegalArgumentException::class.java) {
-            VirtualKeyboardConfig.Builder()
+            VirtualDpadConfig.Builder()
                 .setVendorId(VENDOR_ID)
                 .setProductId(PRODUCT_ID)
                 .setInputDeviceName(DEVICE_NAME)
@@ -395,6 +397,7 @@ class VirtualInputDeviceConfigTest {
     }
 
     @Test
+    @RequiresFlagsDisabled(com.android.hardware.input.Flags.FLAG_CREATE_VIRTUAL_KEYBOARD_API)
     fun virtualKeyboardConfig_missingDisplayId_throwsException() {
         assertThrows(IllegalArgumentException::class.java) {
             VirtualKeyboardConfig.Builder()
