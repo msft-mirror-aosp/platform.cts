@@ -69,7 +69,6 @@ public final class LauncherAppsSingleUserTest extends BaseLauncherAppsTest {
                 mCurrentUserId, Collections.singletonMap(PARAM_TEST_USER, mSerialNumber));
     }
 
-    //TODO(b/171574935): make sure to migrate this to the new test infra
     @Test
     public void testInstallAppMainUserIncremental() throws Exception {
         assumeTrue("true\n".equals(getDevice().executeShellCommand(
