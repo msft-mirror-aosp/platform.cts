@@ -107,6 +107,8 @@ public class MainlineFeaturesImpl implements Features {
             case Features.SEARCH_EMBEDDING_MATCH_INFO:
             // fall through
             case Features.SET_SCHEMA_REQUEST_SCHEMA_TYPE_DISPLAYED_BY_SYSTEM:
+            // fall through
+            case Features.SET_SCHEMA_REQUEST_SET_WIPEOUT_ACCOUNT:
                 return true;
 
             // Features which are supported on T+ devices only.
