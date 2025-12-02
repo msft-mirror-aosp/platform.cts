@@ -209,6 +209,9 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
 
       # Check that tablet is connected and turn it off to validate lighting
       self.turn_off_tablet()
+
+      # Turn off DUT to reduce reflections
+      lighting_control_utils.turn_off_device_screen(self.dut)
       time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
 
       # Validate lighting, then setup tablet
