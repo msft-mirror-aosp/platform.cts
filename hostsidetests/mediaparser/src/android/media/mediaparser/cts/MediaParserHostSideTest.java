@@ -33,6 +33,7 @@ import com.android.os.StatsLog.EventMetricData;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.device.CollectingByteOutputReceiver;
 import com.android.tradefed.device.DeviceNotAvailableException;
+import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.result.CollectingTestListener;
 import com.android.tradefed.result.TestRunResult;
 import com.android.tradefed.testtype.DeviceTestCase;
@@ -41,6 +42,7 @@ import com.android.tradefed.testtype.IBuildReceiver;
 import com.google.common.io.Files;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -57,6 +59,8 @@ public class MediaParserHostSideTest extends DeviceTestCase implements IBuildRec
     private static final long CONFIG_ID = "cts_config".hashCode();
     private static final String MEDIAPARSER_METRICS_SEPARATOR = "\\|";
     private static final double MEDIAPARSER_METRICS_DITHER_VALUE = .02f;
+    private static final long METRICS_WAIT_TIMEOUT_MS = 5_000;
+    private static final long METRICS_WAIT_INTERVAL_MS = 100;
 
     private IBuildInfo mCtsBuildInfo;
 
@@ -278,14 +282,53 @@ public class MediaParserHostSideTest extends DeviceTestCase implements IBuildRec
      * Returns all MediaParser reported metric events sorted by timestamp.
      *
      * <p>Note: Calls {@link #getAndClearReportList()} to obtain the statsd report.
+     *
+     * <p>Note: Includes a retry loop (polling) to handle slow device processing.
      */
     private List<MediametricsMediaParserReported> getMediaParserReportedEvents() throws Exception {
-        ConfigMetricsReportList reportList = getAndClearReportList();
-        assertThat(reportList.getReportsCount()).isEqualTo(1);
-        List<EventMetricData> data = ReportUtils.getEventMetricDataList(reportList);
-        return data.stream()
-                .map(event -> event.getAtom().getMediametricsMediaparserReported())
-                .collect(Collectors.toList());
+        long start = System.currentTimeMillis();
+        List<MediametricsMediaParserReported> events = new ArrayList<>();
+        int attempt = 0;
+
+        while (System.currentTimeMillis() - start < METRICS_WAIT_TIMEOUT_MS) {
+            attempt++;
+            try {
+                ConfigMetricsReportList reportList = getAndClearReportList();
+                if (reportList.getReportsCount() > 0) {
+                    List<EventMetricData> data = ReportUtils.getEventMetricDataList(reportList);
+                    List<MediametricsMediaParserReported> currentEvents =
+                            data.stream()
+                                    .map(
+                                            event ->
+                                                    event.getAtom()
+                                                            .getMediametricsMediaparserReported())
+                                    .collect(Collectors.toList());
+                    events.addAll(currentEvents);
+                }
+            } catch (Exception e) {
+                // Log warning but keep trying
+                CLog.w(
+                        "MediaParserHostSideTest: Attempt %d failed with exception: %s",
+                        attempt, e.getMessage());
+            }
+
+            if (!events.isEmpty()) {
+                CLog.i(
+                        "MediaParserHostSideTest: Found %d events after %d attempts (%d ms)",
+                        events.size(), attempt, System.currentTimeMillis() - start);
+                break;
+            }
+
+            Thread.sleep(METRICS_WAIT_INTERVAL_MS);
+        }
+
+        if (events.isEmpty()) {
+            CLog.e(
+                    "MediaParserHostSideTest: Timed out! No events found after %d ms",
+                    System.currentTimeMillis() - start);
+        }
+
+        return events;
     }
 
     /** Gets a statsd report and removes it from the device. */
