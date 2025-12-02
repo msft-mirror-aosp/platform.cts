@@ -88,7 +88,6 @@ public final class DefaultDialerApplicationTest {
         mRoleManager = sContext.getSystemService(RoleManager.class);
     }
 
-    // TODO(b/198588696): Add support is @RequireVoiceCapable and @RequireNotVoiceCapable
     @Postsubmit(reason = "new test")
     @CanSetPolicyTest(policy = DefaultDialerApplication.class)
     @RequireFeature(FEATURE_TELEPHONY)
@@ -105,7 +104,6 @@ public final class DefaultDialerApplicationTest {
         }
     }
 
-    // TODO(b/198588696): Add support is @RequireVoiceCapable and @RequireNotVoiceCapable
     @Postsubmit(reason = "new test")
     @PolicyDoesNotApplyTest(policy = DefaultDialerApplication.class)
     public void setDefaultDialerApplication_unchanged() {
@@ -123,7 +121,6 @@ public final class DefaultDialerApplicationTest {
         }
     }
 
-    // TODO(b/198588696): Add support is @RequireVoiceCapable and @RequireNotVoiceCapable
     @Postsubmit(reason = "new test")
     @CanSetPolicyTest(policy = DefaultDialerApplication.class)
     @Ignore("Low quality test not passing CTS bar") //TODO(b/366142977)
@@ -142,7 +139,6 @@ public final class DefaultDialerApplicationTest {
         }
     }
 
-    // TODO(b/198588696): Add support is @RequireVoiceCapable and @RequireNotVoiceCapable
     @Postsubmit(reason = "new test")
     @CanSetPolicyTest(policy = DefaultDialerApplication.class)
     @RequireFeature(PackageManager.FEATURE_TELEPHONY_CALLING)
