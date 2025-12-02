@@ -43,10 +43,10 @@ import static android.view.accessibility.AccessibilityEvent.TYPE_VIEW_ACCESSIBIL
 import static android.view.accessibility.AccessibilityEvent.TYPE_VIEW_CLICKED;
 import static android.view.accessibility.AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS;
 import static android.view.accessibility.AccessibilityNodeInfo.ACTION_ARGUMENT_SCROLL_AMOUNT_FLOAT;
-import static android.view.accessibility.AccessibilityNodeInfo.EXTRA_DATA_RENDERING_INFO_KEY;
 import static android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction.ACTION_HIDE_TOOLTIP;
 import static android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_IN_DIRECTION;
 import static android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction.ACTION_SHOW_TOOLTIP;
+import static android.view.accessibility.AccessibilityNodeInfo.EXTRA_DATA_RENDERING_INFO_KEY;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -112,8 +112,8 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.text.TextUtils;
-import android.util.TypedValue;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.InputDevice;
 import android.view.MotionEvent;
 import android.view.TouchDelegate;
@@ -166,6 +166,9 @@ import java.util.Arrays;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -3230,5 +3233,162 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
 
     private static int getCurrentUser() {
         return android.os.Process.myUserHandle().getIdentifier();
+    }
+
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityNodeInfo.SelectionPosition#getVirtualDescendantId"
+            })
+    @RequiresFlagsEnabled({
+        android.view.accessibility.Flags.FLAG_A11Y_SELECTION_API,
+        android.view.accessibility.Flags.FLAG_A11Y_SELECTION_POSITION_APP_GETTERS_API
+    })
+    public void testExtendedSelection_performActionOnServiceSide() throws Exception {
+        final int startVirtualId = 1;
+        final int endVirtualId = 2;
+        final int startOffset = 5;
+        final int endOffset = 10;
+        final String viewWithProviderContentDescription = "view with provider";
+        final BlockingQueue<AccessibilityNodeInfo.Selection> receivedSelections =
+                new LinkedBlockingQueue<>();
+        final AtomicReference<SelectionProviderView> viewRef = new AtomicReference<>();
+
+        sUiAutomation.executeAndWaitForEvent(
+                () ->
+                        sInstrumentation.runOnMainSync(
+                                () -> {
+                                    final SelectionProviderView viewWithProvider =
+                                            new SelectionProviderView(
+                                                    mActivity, receivedSelections);
+                                    viewWithProvider.setId(View.generateViewId());
+                                    viewWithProvider.setContentDescription(
+                                            viewWithProviderContentDescription);
+                                    ((LinearLayout) mActivity.findViewById(R.id.containerView))
+                                            .addView(viewWithProvider);
+                                    viewRef.set(viewWithProvider);
+                                }),
+                filterForEventType(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED),
+                DEFAULT_TIMEOUT_MS);
+        final SelectionProviderView viewWithProvider = viewRef.get();
+
+        // A11yService side: find the node, then perform action to send Selection
+        // to the app-side node provider.
+        final AccessibilityNodeInfo.SelectionPosition startPos =
+                new AccessibilityNodeInfo.SelectionPosition(
+                        viewWithProvider, startVirtualId, startOffset);
+        final AccessibilityNodeInfo.SelectionPosition endPos =
+                new AccessibilityNodeInfo.SelectionPosition(
+                        viewWithProvider, endVirtualId, endOffset);
+        final AccessibilityNodeInfo.Selection selection =
+                new AccessibilityNodeInfo.Selection(startPos, endPos);
+        final Bundle args = new Bundle();
+        args.putParcelable(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_PARCELABLE, selection);
+
+        final List<AccessibilityNodeInfo> nodes =
+                sUiAutomation
+                        .getRootInActiveWindow()
+                        .findAccessibilityNodeInfosByText(viewWithProviderContentDescription);
+        assertThat(nodes).hasSize(1);
+        final AccessibilityNodeInfo viewNodeInServiceProcess = nodes.get(0);
+
+        viewNodeInServiceProcess.performAction(
+                AccessibilityNodeInfo.AccessibilityAction.ACTION_SET_EXTENDED_SELECTION.getId(),
+                args);
+
+        // App side: node provider receives the perform action request and inspects
+        // the request contents.
+        final AccessibilityNodeInfo.Selection selectionInAppProcess =
+                receivedSelections.poll(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+
+        assertThat(selectionInAppProcess).isNotNull();
+        final AccessibilityNodeInfo.SelectionPosition receivedStart =
+                selectionInAppProcess.getStart();
+        final AccessibilityNodeInfo.SelectionPosition receivedEnd = selectionInAppProcess.getEnd();
+
+        assertThat(receivedStart.getOffset()).isEqualTo(startOffset);
+        assertThat(receivedEnd.getOffset()).isEqualTo(endOffset);
+        assertThat(receivedStart.getVirtualDescendantId()).isEqualTo(startVirtualId);
+        assertThat(receivedEnd.getVirtualDescendantId()).isEqualTo(endVirtualId);
+        assertThat(receivedStart.getView()).isEqualTo(viewWithProvider);
+        assertThat(receivedEnd.getView()).isEqualTo(viewWithProvider);
+        assertThrows(IllegalStateException.class, () -> receivedStart.getNode());
+        assertThrows(IllegalStateException.class, () -> receivedEnd.getNode());
+    }
+
+    private static class SelectionProviderView extends View {
+        private final SelectionNodeProvider mProvider;
+
+        SelectionProviderView(
+                Context context, BlockingQueue<AccessibilityNodeInfo.Selection> queue) {
+            super(context);
+            mProvider = new SelectionNodeProvider(this, queue);
+        }
+
+        @Override
+        public AccessibilityNodeProvider getAccessibilityNodeProvider() {
+            return mProvider;
+        }
+    }
+
+    private static class SelectionNodeProvider extends AccessibilityNodeProvider {
+        private final View mHostView;
+        private final BlockingQueue<AccessibilityNodeInfo.Selection> mQueue;
+        private static final int VIRTUAL_VIEW_ID_1 = 1;
+        private static final int VIRTUAL_VIEW_ID_2 = 2;
+
+        SelectionNodeProvider(View hostView, BlockingQueue<AccessibilityNodeInfo.Selection> queue) {
+            mHostView = hostView;
+            mQueue = queue;
+        }
+
+        @Override
+        public AccessibilityNodeInfo createAccessibilityNodeInfo(int virtualViewId) {
+            if (virtualViewId == HOST_VIEW_ID) {
+                final AccessibilityNodeInfo hostNode = AccessibilityNodeInfo.obtain(mHostView);
+                hostNode.setSource(mHostView);
+                hostNode.addAction(
+                        AccessibilityNodeInfo.AccessibilityAction.ACTION_SET_EXTENDED_SELECTION);
+                hostNode.addChild(mHostView, VIRTUAL_VIEW_ID_1);
+                hostNode.addChild(mHostView, VIRTUAL_VIEW_ID_2);
+                return hostNode;
+            } else if (virtualViewId == VIRTUAL_VIEW_ID_1 || virtualViewId == VIRTUAL_VIEW_ID_2) {
+                final AccessibilityNodeInfo node = AccessibilityNodeInfo.obtain();
+                node.setSource(mHostView, virtualViewId);
+                node.setParent(mHostView);
+                node.setText("Virtual view " + virtualViewId);
+                node.setBoundsInParent(new Rect(0, 0, 100, 100));
+                return node;
+            }
+            return null;
+        }
+
+        @Override
+        public boolean performAction(int virtualViewId, int action, Bundle arguments) {
+            if (virtualViewId == HOST_VIEW_ID
+                    && action
+                            == AccessibilityNodeInfo.AccessibilityAction
+                                    .ACTION_SET_EXTENDED_SELECTION
+                                    .getId()) {
+                mQueue.offer(
+                        arguments.getParcelable(
+                                AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_PARCELABLE,
+                                AccessibilityNodeInfo.Selection.class));
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public List<AccessibilityNodeInfo> findAccessibilityNodeInfosByText(
+                String text, int virtualViewId) {
+            if (virtualViewId == HOST_VIEW_ID
+                    && TextUtils.equals(text, mHostView.getContentDescription())) {
+                List<AccessibilityNodeInfo> result = new ArrayList<>();
+                result.add(createAccessibilityNodeInfo(HOST_VIEW_ID));
+                return result;
+            }
+            return null;
+        }
     }
 }
