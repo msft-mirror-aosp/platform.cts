@@ -195,7 +195,7 @@ public class PccServiceTest {
     }
 
     @Test
-    public void bind_sendWritableSharedMemory_doesNotThrow() throws Exception {
+    public void bind_sendWritableSharedMemory_throws() throws Exception {
         Intent intent = new Intent();
         intent.setComponent(PCC_SERVICE_COMPONENT);
         mContext.bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
@@ -207,6 +207,29 @@ public class PccServiceTest {
         addTriggerPfd(data);
         SharedMemory sm = SharedMemory.create("my_shared_mem", 5);
         sm.setProtect(OsConstants.PROT_WRITE);
+        data.putParcelable("shared_memory", sm);
+
+        assertThrows(
+                "sendData was expected to throw IllegalArgumentException",
+                IllegalArgumentException.class,
+                () -> {
+                    pccClient.sendData(data);
+                });
+    }
+
+    @Test
+    public void bind_sendReadOnlySharedMemory_doesNotThrow() throws Exception {
+        Intent intent = new Intent();
+        intent.setComponent(PCC_SERVICE_COMPONENT);
+        mContext.bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+
+        IBinder binder = mBinderQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        PccClient pccClient = PccClient.createInstance(mContext, binder);
+
+        Bundle data = new Bundle();
+        addTriggerPfd(data);
+        SharedMemory sm = SharedMemory.create("my_shared_mem", 5);
+        sm.setProtect(OsConstants.PROT_READ);
         data.putParcelable("shared_memory", sm);
 
         try {
