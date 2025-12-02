@@ -48,9 +48,8 @@ public class ScanSettingsTest {
 
     @Before
     public void setUp() {
-        Assume.assumeTrue(
-                TestUtils.isBleSupported(
-                        InstrumentationRegistry.getInstrumentation().getContext()));
+        var context = InstrumentationRegistry.getInstrumentation().getContext();
+        Assume.assumeTrue(TestUtils.isBleSupported(context));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -60,7 +59,7 @@ public class ScanSettingsTest {
         ScanSettings settings = new ScanSettings.Builder().build();
         assertThat(settings.getCallbackType()).isEqualTo(ScanSettings.CALLBACK_TYPE_ALL_MATCHES);
         assertThat(settings.getScanMode()).isEqualTo(ScanSettings.SCAN_MODE_LOW_POWER);
-        assertThat(settings.getScanResultType()).isEqualTo(0);
+        assertThat(settings.getScanResultType()).isEqualTo(ScanSettings.SCAN_RESULT_TYPE_FULL);
         assertThat(settings.getReportDelayMillis()).isEqualTo(0);
         assertThat(settings.getLegacy()).isTrue();
     }
