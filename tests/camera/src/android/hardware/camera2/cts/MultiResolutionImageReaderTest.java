@@ -228,6 +228,16 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
                                                 /*usage*/HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE);
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_MULTI_RESOLUTION_CONCURRENT_READERS)
+    @Test
+    public void testMultiResolutionImageReaderPrivateUsageWithBuilder() throws Exception {
+        testMultiResolutionImageReaderForFormat(
+                ImageFormat.PRIVATE, /*repeating*/
+                false,
+                /*usage*/ HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE,
+                /*useBuilder*/ true);
+    }
+
     @Test
     public void testMultiResolutionImageReaderRepeatingJpeg() throws Exception {
         testMultiResolutionImageReaderForFormat(ImageFormat.JPEG, /*repeating*/true,
@@ -410,12 +420,11 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
             openDevice(cameraId);
 
             mMultiResolutionImageReader =
-                    new MultiResolutionImageReader(
-                            multiResolutionStreams,
-                            format,
-                            MAX_NUM_IMAGES, /*usage*/
-                            0,
-                            /*concurrentReaders*/ true);
+                    new MultiResolutionImageReader.Builder(
+                            multiResolutionStreams, format, MAX_NUM_IMAGES)
+                        .setConcurrentOutputsEnabled(true)
+                        .build();
+
             mListener =
                     new SimpleMultiResolutionImageReaderListener(
                             mMultiResolutionImageReader, MAX_NUM_IMAGES, /*acquireLatest*/ false);
@@ -505,12 +514,10 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
         try {
             openDevice(cameraId);
             mMultiResolutionImageReader =
-                    new MultiResolutionImageReader(
-                            multiResolutionStreams,
-                            format,
-                            MAX_NUM_IMAGES,
-                            /*usage*/ 0,
-                            /*concurrentReaders*/ true);
+                    new MultiResolutionImageReader.Builder(
+                            multiResolutionStreams, format, MAX_NUM_IMAGES)
+                        .setConcurrentOutputsEnabled(true)
+                        .build();
 
             Collection<OutputConfiguration> outputConfigs =
                     OutputConfiguration.createInstancesForMultiResolutionOutput(
@@ -522,10 +529,10 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
             CameraCaptureSession.StateCallback sessionListener =
                     mock(CameraCaptureSession.StateCallback.class);
             CameraCaptureSession session =
-                    CameraTestUtils.configureCameraSessionWithConfig(mCamera, outputConfigsList,
-                            sessionListener, mHandler);
-            verify(sessionListener, timeout(CONFIGURE_TIMEOUT).atLeastOnce()).
-                    onConfigureFailed(any(CameraCaptureSession.class));
+                    CameraTestUtils.configureCameraSessionWithConfig(
+                            mCamera, outputConfigsList, sessionListener, mHandler);
+            verify(sessionListener, timeout(CONFIGURE_TIMEOUT).atLeastOnce())
+                    .onConfigureFailed(any(CameraCaptureSession.class));
         } finally {
             closeDevice(cameraId);
         }
@@ -546,10 +553,17 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
         List<Surface> outputSurfaces = new ArrayList<Surface>();
         StreamCombinationTargets targets = new StreamCombinationTargets();
 
-        CameraTestUtils.setupConfigurationTargets(combination.getStreamsInformation(),
-                targets, outputConfigs, outputSurfaces, MIN_RESULT_COUNT,
-                /*substituteY8*/false, /*substituteHeic*/false, /*physicalCameraId*/null,
-                multiResStreamConfig, mHandler);
+        CameraTestUtils.setupConfigurationTargets(
+                combination.getStreamsInformation(),
+                targets,
+                outputConfigs,
+                outputSurfaces,
+                MIN_RESULT_COUNT,
+                /*substituteY8*/ false, /*substituteHeic*/
+                false, /*physicalCameraId*/
+                null,
+                multiResStreamConfig,
+                mHandler);
 
         boolean haveSession = false;
         try {
@@ -563,11 +577,17 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
             CameraCaptureSession.CaptureCallback mockCaptureCallback =
                     mock(CameraCaptureSession.CaptureCallback.class);
 
-            checkSessionConfigurationSupported(mCamera, mHandler, outputConfigs,
-                    /*inputConfig*/ null, SessionConfiguration.SESSION_REGULAR,
-                    mCameraManager, true/*defaultSupport*/, String.format(
-                    "Session configuration query for multi-res combination: %s failed",
-                    combination.getDescription()));
+            checkSessionConfigurationSupported(
+                    mCamera,
+                    mHandler,
+                    outputConfigs,
+                    /*inputConfig*/ null,
+                    SessionConfiguration.SESSION_REGULAR,
+                    mCameraManager,
+                    true /*defaultSupport*/,
+                    String.format(
+                            "Session configuration query for multi-res combination: %s failed",
+                            combination.getDescription()));
 
             createSessionByConfigs(outputConfigs);
             haveSession = true;
@@ -599,8 +619,9 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
                 stopCapture(/*fast*/false);
             } catch (Throwable e) {
                 mCollector.addMessage(
-                    String.format("Closing down for multi-res combination: %s failed due to: %s",
-                            combination.getDescription(), e.getMessage()));
+                        String.format(
+                                "Closing down for multi-res combination: %s failed due to: %s",
+                                combination.getDescription(), e.getMessage()));
             }
         }
 
@@ -609,11 +630,22 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
 
     private void testMultiResolutionImageReaderForFormat(int format, boolean repeating, long usage)
             throws Exception {
+        testMultiResolutionImageReaderForFormat(format, repeating, usage, /*useBuilder*/ false);
+    }
+
+    private void testMultiResolutionImageReaderForFormat(
+            int format, boolean repeating, long usage, boolean useBuilder) throws Exception {
         for (String id : getCameraIdsUnderTest()) {
             try {
                 if (VERBOSE) {
-                    Log.v(TAG, "Testing multi-resolution capture for Camera " + id
-                            + " format " + format + " repeating " + repeating);
+                    Log.v(
+                            TAG,
+                            "Testing multi-resolution capture for Camera "
+                                    + id
+                                    + " format "
+                                    + format
+                                    + " repeating "
+                                    + repeating);
                 }
                 StaticMetadata staticInfo = mAllStaticInfo.get(id);
                 CameraCharacteristics c = staticInfo.getCharacteristics();
@@ -640,17 +672,22 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
                 List<Float> zoomRatios = CameraTestUtils.getCandidateZoomRatios(staticInfo);
 
                 openDevice(id);
-                multiResolutionImageReaderFormatTestByCamera(format,
-                        multiResolutionStreams, zoomRatios, repeating, usage);
+                multiResolutionImageReaderFormatTestByCamera(
+                        format, multiResolutionStreams, zoomRatios, repeating, usage, useBuilder);
             } finally {
                 closeDevice(id);
             }
         }
     }
 
-    private void multiResolutionImageReaderFormatTestByCamera(int format,
-            Collection<MultiResolutionStreamInfo> multiResolutionStreams, List<Float> zoomRatios,
-            boolean repeating, long usage) throws Exception {
+    private void multiResolutionImageReaderFormatTestByCamera(
+            int format,
+            Collection<MultiResolutionStreamInfo> multiResolutionStreams,
+            List<Float> zoomRatios,
+            boolean repeating,
+            long usage,
+            boolean useBuilder)
+            throws Exception {
         try {
             int numFrameVerified = repeating ? NUM_FRAME_VERIFIED : 1;
 
@@ -658,6 +695,12 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
             if (usage == 0) {
                 mMultiResolutionImageReader = new MultiResolutionImageReader(
                         multiResolutionStreams, format, MAX_NUM_IMAGES);
+            } else if (Flags.multiResolutionConcurrentReaders() && useBuilder) {
+                mMultiResolutionImageReader =
+                        new MultiResolutionImageReader.Builder(
+                                multiResolutionStreams, format, MAX_NUM_IMAGES)
+                            .setUsage(usage)
+                            .build();
             } else {
                 mMultiResolutionImageReader = new MultiResolutionImageReader(
                         multiResolutionStreams, format, MAX_NUM_IMAGES, usage);
