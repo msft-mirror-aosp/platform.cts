@@ -30,7 +30,6 @@ import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
  * <p>This is used by {@code DevicePolicyManager#setTime} and
  * {@code DevicePolicyManager#setTimeZone}.
  */
-//TODO(b/273496614) Restore PO on user once time APIs are unflagged.
 // TODO: should not be usable on parent
 @EnterprisePolicy(dpc = APPLIED_BY_DEVICE_OWNER
         | APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE
