@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.cts.pcc.apitests;
+package com.android.cts.pcc.featuretests;
 
 import static android.app.privatecompute.flags.Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT;
 
