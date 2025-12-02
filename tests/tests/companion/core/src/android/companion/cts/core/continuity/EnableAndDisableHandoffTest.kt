@@ -61,7 +61,9 @@ class EnableAndDisableHandoffTest : CoreTestBase() {
     @Test
     @RequireAdbRoot(reason = "b/322830652 Required for TestApis to set user restriction")
     fun testDisableHandoffByPolicy_setsHandoffDisabled() {
-        TestApis.devicePolicy().userRestrictions().set(UserManager.DISALLOW_HANDOFF, true)
+        TestApis.devicePolicy()
+            .userRestrictions()
+            .set(UserManager.DISALLOW_TASK_CONTINUITY_HANDOFF, true)
 
         withShellPermissionIdentity(
             Manifest.permission.READ_HANDOFF_SETTINGS,
@@ -83,7 +85,9 @@ class EnableAndDisableHandoffTest : CoreTestBase() {
             listener.clearRecordedInvocations()
         }
 
-        TestApis.devicePolicy().userRestrictions().set(UserManager.DISALLOW_HANDOFF, false)
+        TestApis.devicePolicy()
+            .userRestrictions()
+            .set(UserManager.DISALLOW_TASK_CONTINUITY_HANDOFF, false)
     }
 
     @Test
