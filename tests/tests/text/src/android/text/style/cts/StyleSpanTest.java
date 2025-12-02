@@ -211,6 +211,8 @@ public class StyleSpanTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_APPLY_FONT_WEIGHT_ADJUSTMENT_ON_CACHED_STRINGS)
+    @android.platform.test.annotations.DisabledOnRavenwood(
+            bug = 457840588, blockedBy = Settings.class)
     public void testRecreateWithUpdatedFontWeight() {
         Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         final int defaultConfigFontWeight =
