@@ -25,8 +25,7 @@ import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_P
 import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
 
 /** Policy for network reset test. */
-// TODO(b/189195534):  Update the profileOwner flag once support is added for the way this policy
-//  can be set by a Profile Owner
+// TODO: Can also be set by a profile owner on the main user, which is currently unsupported.
 @EnterprisePolicy(dpc =
         APPLIED_BY_DEVICE_OWNER | APPLIES_GLOBALLY | CANNOT_BE_APPLIED_BY_ROLE_HOLDER,
         permissions = @EnterprisePolicy.Permission(
