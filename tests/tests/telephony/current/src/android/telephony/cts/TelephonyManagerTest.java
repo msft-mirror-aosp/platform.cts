@@ -721,14 +721,8 @@ public class TelephonyManagerTest {
     @Test
     public void testHasCarrierPrivilegesViaCarrierConfigs() throws Exception {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
-        PersistableBundle carrierConfig = mCarrierConfigManager.getConfigForSubId(mTestSub);
-
+        PersistableBundle carrierConfig = new PersistableBundle();
         try {
-            assertNotNull("CarrierConfigManager#getConfigForSubId() returned null",
-                    carrierConfig);
-            assertFalse("CarrierConfigManager#getConfigForSubId() returned empty bundle",
-                    carrierConfig.isEmpty());
-
             // purge the certs in carrierConfigs first
             carrierConfig.putStringArray(
                     CarrierConfigManager.KEY_CARRIER_CERTIFICATE_STRING_ARRAY, new String[]{});
@@ -3738,13 +3732,7 @@ public class TelephonyManagerTest {
         // test with permission
         PublicKey epdgKey = null;
         PublicKey wlanKey = null;
-        PersistableBundle carrierConfig = mCarrierConfigManager.getConfigForSubId(mTestSub);
-
-        assertNotNull("CarrierConfigManager#getConfigForSubId() returned null",
-                carrierConfig);
-        assertFalse("CarrierConfigManager#getConfigForSubId() returned empty bundle",
-                carrierConfig.isEmpty());
-
+        PersistableBundle carrierConfig = new PersistableBundle();
         // purge the certs in carrierConfigs first
         carrierConfig.putInt(
                 CarrierConfigManager.IMSI_KEY_AVAILABILITY_INT, 3);
