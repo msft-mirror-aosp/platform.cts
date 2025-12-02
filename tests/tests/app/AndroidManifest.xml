@@ -43,9 +43,11 @@
             android:launchMode="singleInstance"/>
 
         <activity android:name=".ShareIdentityTest$ActivityResultGetCurrentCallerShareIdentityTestActivity"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|density"
             android:exported="true" />
 
         <activity android:name=".ShareIdentityTest$ActivityResultOverloadCallerShareIdentityTestActivity"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|density"
             android:exported="true" />
 
         <activity android:name=".ShareIdentityTest$ActivitySetResultSameUidShareIdentityTestActivity"
