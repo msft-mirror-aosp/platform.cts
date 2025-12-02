@@ -71,7 +71,6 @@ public final class HeadlessSystemUserTest extends BaseDeviceOwnerTest {
             final int userId = user.id;
 
             // Must try a couple times as PO is asynchronously set after user is created.
-            // TODO(b/178102911): use a callback instead
             eventually(() -> {
                 Context newUserContext = mContext.createContextAsUser(UserHandle.of(userId),
                         /* flags=*/ 0);
