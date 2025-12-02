@@ -19,6 +19,8 @@ package android.content.pm.cts;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import android.annotation.StringRes;
+import android.annotation.SuppressLint;
 import android.content.pm.UsesPermissionPurposeInfo;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeFull;
@@ -34,14 +36,24 @@ import java.util.Set;
 @RunWith(AndroidJUnit4.class)
 public class UsesPermissionPurposeInfoTest {
     private static final String MOCK_PERMISSION_NAME = "example.permission";
+
+    private static final Set<String> MOCK_PURPOSES = Set.of("purposeA", "purposeB");
+
     private static final Set<String> MOCK_GENERAL_PURPOSES = Set.of("purpose1", "purpose2");
+
+    @SuppressLint("ResourceType")
+    private static final @StringRes int MOCK_PURPOSE_STRING = 1234;
 
     @Test
     public void testPurposeInfo() {
         Parcel p = Parcel.obtain();
         // Test constructor
         UsesPermissionPurposeInfo usesPermissionPurposeInfo =
-                new UsesPermissionPurposeInfo(MOCK_PERMISSION_NAME, MOCK_GENERAL_PURPOSES, 1);
+                new UsesPermissionPurposeInfo(
+                        MOCK_PERMISSION_NAME,
+                        MOCK_PURPOSES,
+                        MOCK_GENERAL_PURPOSES,
+                        MOCK_PURPOSE_STRING);
 
         // Test toString, describeContents
         assertNotNull(usesPermissionPurposeInfo.toString());
