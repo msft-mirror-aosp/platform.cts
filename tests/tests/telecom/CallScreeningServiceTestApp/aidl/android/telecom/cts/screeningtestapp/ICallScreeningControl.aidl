@@ -33,17 +33,5 @@ interface ICallScreeningControl {
 
     int getCachedDisconnectCause();
 
-    // Sets whether the next OUTGOING call should be blocked.
-    void setShouldBlockOutgoingCall(boolean block);
-
-    // Waits for onScreenOutgoingCall to be invoked.
-    String waitForOutgoingCallScreened(long timeoutMs);
-
-    // Gets the handle of the last outgoing call screened.
-    String getLastOutgoingCallHandle();
-
-    // Sets whether the next OUTGOING call should have no response.
-    void setShouldNoResponseOutgoingCall(boolean noResponse);
-
     boolean isBound();
 }
