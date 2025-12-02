@@ -936,8 +936,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                                     getContext().getMainExecutor(), ntnStateListener));
 
             setUpHybridConnectAutoTestEnvironment(
-                    SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_FET, PHONE_NUMBER_0, false);
-            assertFalse(ntnStateListener.getNtnMode());
+                    SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_FET, PHONE_NUMBER_0, true);
 
             setUpImsCallingTestEnvironment(SLOT_ID_0);
             setUpSatelliteAccessAllowedAtDefaultTestLocation();
@@ -982,8 +981,6 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
             mServiceCallBack = new ServiceCallBack();
             InCallServiceStateValidator.setCallbacks(mServiceCallBack);
 
-            sMockModemManager.changeNetworkService(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_FET, true);
-            assertTrue(ntnStateListener.waitForModeChanged(1));
             assertTrue(ntnStateListener.getNtnMode());
             ntnStateListener.clearModeChanges();
 
@@ -1036,14 +1033,11 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
             }
             tearDownEmergencyCalling();
 
-            ntnStateListener.clearModeChanges();
-
             // start for out of service case
             // Go from auto connect to Out of service state
+            ServiceStateListenerTest serviceStateListener = registerServiceStateListener(subId);
             sMockModemManager.changeNetworkService(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_FET, false);
-
-            assertFalse(ntnStateListener.waitForModeChanged(1));
-            assertTrue(ntnStateListener.waitForModeChanged(1));
+            assertTrue(serviceStateListener.waitUntilOutOfService());
             assertFalse(ntnStateListener.getNtnMode());
 
             testCb.setTestEmergencyNumber(sTestEmergencyNumbers[1]);
@@ -1091,6 +1085,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
             isCallDisconnected(call, callSession);
             assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
             waitForUnboundService();
+            sTelephonyManager.unregisterTelephonyCallback(serviceStateListener);
 
         } finally {
             logd(LOG_TAG, "estE911ToT911Handover_AutoConnect_DS: clean up test environments");
