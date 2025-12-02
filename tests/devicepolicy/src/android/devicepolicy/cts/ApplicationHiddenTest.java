@@ -32,6 +32,7 @@ import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.test
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assume.assumeTrue;
 import static org.testng.Assert.assertThrows;
 
 import android.app.admin.PackagePolicyKey;
@@ -41,6 +42,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.devicepolicy.cts.utils.PolicyEngineUtils;
 import android.devicepolicy.cts.utils.PolicySetResultUtils;
+import android.os.Build;
 import android.os.Bundle;
 import android.stats.devicepolicy.EventId;
 import android.util.Log;
@@ -51,18 +53,18 @@ import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.enterprise.annotations.RequireHasPolicyExemptApps;
+import com.android.bedstead.enterprise.policies.ApplicationHidden;
+import com.android.bedstead.enterprise.policies.ApplicationHiddenSystemOnly;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.testapp.TestApp;
-import com.android.bedstead.enterprise.policies.ApplicationHidden;
-import com.android.bedstead.enterprise.policies.ApplicationHiddenSystemOnly;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
 import com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.packages.Package;
 import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
+import com.android.bedstead.testapp.TestApp;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Before;
@@ -604,6 +606,12 @@ public class ApplicationHiddenTest {
             "android.app.admin.DevicePolicyManager#isApplicationHidden"})
     @PolicyAppliesTest(policy = ApplicationHidden.class)
     public void setApplicationHidden_install_isImmediatelyHidden() throws Exception {
+        // The framework fix (which this test is verifying) landed in 26Q1 so only enable tests
+        // on 26Q2 (CINNAMON_BUN) or higher
+        // SDK version checks are not normally needed for CTS but this particular test class
+        // is also included in GtsRootDevicePolicyTestCases so we need to add the check here.
+        assumeTrue(Build.VERSION.SDK_INT > Build.VERSION_CODES.BAKLAVA);
+
         TestApp testApp = testApps(sDeviceState).any();
         try {
             // 1. Ensure app is not installed.
