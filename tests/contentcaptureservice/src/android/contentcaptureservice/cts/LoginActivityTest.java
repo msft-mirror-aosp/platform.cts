@@ -720,7 +720,7 @@ public class LoginActivityTest
     }
 
     @Test
-    @RequiresFlagsDisabled("android.view.contentcapture.deprecate_set_content_capture_enabled")
+    @RequiresFlagsDisabled("android.view.contentcapture.flags.deprecate_set_content_capture_enabled")
     public void testDisabledByApp() throws Exception {
         enableService();
         final ActivityWatcher watcher = startWatcher();
@@ -861,7 +861,7 @@ public class LoginActivityTest
     }
 
     @Test
-    @RequiresFlagsEnabled("android.view.contentcapture.deprecate_set_content_capture_enabled")
+    @RequiresFlagsEnabled("android.view.contentcapture.flags.deprecate_set_content_capture_enabled")
     public void testSetContentCaptureEnabledIsNoOp_withFlagSecure() throws Exception {
         enableService();
         final ActivityWatcher watcher = startWatcher();
