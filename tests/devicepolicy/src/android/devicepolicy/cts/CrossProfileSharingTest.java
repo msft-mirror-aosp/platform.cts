@@ -108,7 +108,6 @@ public final class CrossProfileSharingTest {
     // Known action that is handled in the opposite profile, used to query forwarder activity.
     private static final String CROSS_PROFILE_ACTION = "com.android.testapp.SOME_ACTION";
 
-    // TODO(b/191640667): use parametrization instead of looping once available.
     // These are the data sharing intents which can be forwarded to the primary profile.
     private static final Intent[] OPENING_INTENTS = {
             new Intent(Intent.ACTION_GET_CONTENT).setType("*/*").addCategory(
