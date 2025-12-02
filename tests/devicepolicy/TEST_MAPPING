@@ -3,10 +3,5 @@
         {
           "name": "CtsDevicePolicyTestCases"
         }
-    ],
-    "desktop-postsubmit": [
-        {
-          "name": "GtsRootDevicePolicyTestCases"
-        }
     ]
 }
