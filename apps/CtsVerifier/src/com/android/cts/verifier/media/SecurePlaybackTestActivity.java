@@ -49,7 +49,13 @@ import androidx.media3.ui.AspectRatioFrameLayout;
 import androidx.media3.ui.PlayerView;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Test for secure playback that requires a Playback Analysis Tool attached & aligned to the
@@ -79,9 +85,13 @@ public class SecurePlaybackTestActivity extends PassFailButtons.Activity {
     private final HostBroadcastReceiver mHostBroadcastReceiver = new HostBroadcastReceiver();
     private boolean mReceiverRegistered = false;
 
+    private final ExecutorService networkExecutor = Executors.newSingleThreadExecutor();
+    private static final int NETWORK_TIMEOUT_MS = 5000;
+
     private static final UUID WIDEVINE_UUID = new UUID(0xEDEF8BA979D64ACEL, 0xA3C827DCD51D21EDL);
 
     private static final String LICENSE_URL = "https://proxy.uat.widevine.com/proxy?provider=widevine_test";
+    private static final String WIDEVINE_WEBSITE = "widevine.com";
 
     private ExoPlayer player;
     private PlayerView playerView;
@@ -97,6 +107,11 @@ public class SecurePlaybackTestActivity extends PassFailButtons.Activity {
         public void onReceive(Context context, Intent intent) {
             if (ACTION_SECURE_PLAYBACK_START.equals(intent.getAction())) {
                 Log.d(TAG, "Received start action");
+                if (!canConnectToWidevine()) {
+                    Log.e(TAG, "Cannot connect to Widevine. Please check your network settings.");
+                    instructions.setText(R.string.secure_playback_test_info_no_connection);
+                    return;
+                }
                 String streamingUri = intent.getStringExtra(SECURE_PLAYBACK_STREAMING_URI);
                 if (streamingUri == null) {
                     Log.e(TAG, "No valid URI was passed");
@@ -151,6 +166,11 @@ public class SecurePlaybackTestActivity extends PassFailButtons.Activity {
 
         instructions = findViewById(R.id.instructions);
         instructions.setText(R.string.secure_playback_test_info);
+
+        if (!canConnectToWidevine()) {
+            Log.e(TAG, "Cannot connect to Widevine. Please check your network settings.");
+            instructions.setText(R.string.secure_playback_test_info_no_connection);
+        }
 
         playerView = findViewById(R.id.player_view);
         playerView.setUseController(false);
@@ -263,6 +283,24 @@ public class SecurePlaybackTestActivity extends PassFailButtons.Activity {
         }
     }
 
+    private boolean canConnectToWidevine() {
+        Future<Boolean> future = networkExecutor.submit(() -> {
+            try {
+                InetAddress.getAllByName(WIDEVINE_WEBSITE);
+                return true;
+            } catch (UnknownHostException e) {
+                return false;
+            }
+        });
+
+        try {
+            return future.get(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            Log.e(TAG, "Could not connect to Widevine", e);
+            return false;
+        }
+    }
+
     @Override
     public void onStart() {
         super.onStart();
@@ -302,5 +340,6 @@ public class SecurePlaybackTestActivity extends PassFailButtons.Activity {
             unregisterReceiver(mHostBroadcastReceiver);
         }
         releasePlayer();
+        networkExecutor.shutdown();
     }
 }
