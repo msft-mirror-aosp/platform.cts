@@ -16,6 +16,7 @@
 <configuration description="Run high ROI CTS sensor tests.">
     <include name="cts-automated"/>
     <!-- CtsSensorTestCases -->
+    <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SensorBatchingTests#testAccelerometer_fastest_batching"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SensorBatchingTests#testGameRotationVector_fastest_batching"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SensorBatchingTests#testGravity_50hz_batching"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SensorBatchingTests#testGyroscope_50hz_batching"/>
