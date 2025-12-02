@@ -545,7 +545,7 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
             assertConnectionState(connection, Connection.STATE_ACTIVE);
             // Make sure that the test app sees a ringing call.
             assertEquals(Call.STATE_RINGING,
-                    controlInterface.getCallState(call.getDetails().getTelecomCallId()));
+                    controlInterface.getCallState(call.getDetails().getId()));
 
             call.answer(VideoProfile.STATE_AUDIO_ONLY);
             assertCallState(call, Call.STATE_ACTIVE);
@@ -553,7 +553,7 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
             assertConnectionState(connection, Connection.STATE_ACTIVE);
             // Make sure that the test app sees an active call.
             assertEquals(Call.STATE_ACTIVE,
-                    controlInterface.getCallState(call.getDetails().getTelecomCallId()));
+                    controlInterface.getCallState(call.getDetails().getId()));
 
             tearDownControl();
         } finally {
