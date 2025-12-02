@@ -358,7 +358,6 @@ public class DevicePolicyManagerTest extends AndroidTestCase {
         boolean ok = message.contains("does not own the device")
                 || message.contains("can only be called by the device owner")
                 || message.contains("Calling identity is not authorized");
-        //TODO(b/205178429): work-around as test is always run on current user
         if (!ok && UserManager.isHeadlessSystemUserMode() && !mUser.isSystem()) {
             ok = message.contains("was called from non-system user");
         }
@@ -545,7 +544,6 @@ public class DevicePolicyManagerTest extends AndroidTestCase {
             return;
         }
         final ComponentName notAdmin = new ComponentName("com.test.foo", ".bar");
-        //TODO(b/205178429): work-around as test is always run on current user
         if (UserManager.isHeadlessSystemUserMode() && !mUser.isSystem()) {
             assertWithMessage("setStorageEncryption(%s, true) on user %s", notAdmin, mUser)
                     .that(mDevicePolicyManager.setStorageEncryption(notAdmin, true))
