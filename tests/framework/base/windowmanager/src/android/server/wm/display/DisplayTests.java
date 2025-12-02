@@ -139,7 +139,7 @@ public class DisplayTests extends MultiDisplayTestBase {
     @Test
     public void testMultiDisplayDisabled() throws Exception {
         // Only check devices with the feature disabled.
-        assumeFalse(supportsMultiDisplay());
+        assumeFalse(supportsActivitiesOnSecondaryDisplays());
 
         // Create new virtual display.
         final DisplayContent newDisplay = createManagedVirtualDisplaySession().createDisplay();
