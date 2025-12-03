@@ -37,7 +37,5 @@
         <option name="package" value="com.android.cts.pcc.processes" />
         <option name="runner" value="androidx.test.runner.AndroidJUnitRunner" />
         <option name="instrument-in-pcc" value="true" />
-        <!-- TODO(438428601) - Remove when package visibility rules are fixed. -->
-        <option name="use-test-storage" value="false" />
     </test>
 </configuration>
