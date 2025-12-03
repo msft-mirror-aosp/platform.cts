@@ -112,6 +112,7 @@ public class ScrollCaptureTargetTest {
         new ScrollCaptureTarget(mTargetView, new Rect(1, 2, 3, 4), new Point(5, 6), null);
     }
 
+    @UiThreadTest
     @Test
     public void testScrollBounds() {
         mTargetView.setLeftTopRightBottom(0, 0, 10, 10);
@@ -137,6 +138,7 @@ public class ScrollCaptureTargetTest {
         assertNull(target.getScrollBounds());
     }
 
+    @UiThreadTest
     @Test
     public void testContainingView() {
         mTargetView.setLeftTopRightBottom(1, 2, 3, 4);
@@ -146,6 +148,7 @@ public class ScrollCaptureTargetTest {
         assertEquals(mTargetView, target.getContainingView());
     }
 
+    @UiThreadTest
     @Test
     public void testLocalVisibleRect() {
         mTargetView.setLeftTopRightBottom(1, 2, 3, 4);
@@ -188,6 +191,7 @@ public class ScrollCaptureTargetTest {
         }
     }
 
+    @UiThreadTest
     @Test
     public void testCallback() {
         mTargetView.setLeftTopRightBottom(1, 2, 3, 4);
@@ -197,6 +201,7 @@ public class ScrollCaptureTargetTest {
         assertEquals(mCallback, target.getCallback());
     }
 
+    @UiThreadTest
     @Test
     public void testHint() {
         mTargetView.setScrollCaptureHint(View.SCROLL_CAPTURE_HINT_INCLUDE);
