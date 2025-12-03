@@ -380,7 +380,7 @@ public class AudioWorkloadTestActivity extends PassFailButtons.Activity {
     }
 
     private void updatePassButtonState() {
-        if (CLAIMS_MEDIA_PERFORMANCE && MEDIA_PERFORMANCE_CLASS < MPC_CINNAMON_BUN) {
+        if (!CLAIMS_MEDIA_PERFORMANCE || MEDIA_PERFORMANCE_CLASS < MPC_CINNAMON_BUN) {
             getPassButton().setEnabled(true);
             return;
         }

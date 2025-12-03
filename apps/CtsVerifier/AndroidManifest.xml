@@ -5684,8 +5684,7 @@
         <activity
             android:name=".audio.AudioWorkloadTestActivity"
             android:label="@string/audio_workload_title"
-            android:exported="true"
-            android:screenOrientation="portrait">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.cts.intent.category.MANUAL_TEST" />
