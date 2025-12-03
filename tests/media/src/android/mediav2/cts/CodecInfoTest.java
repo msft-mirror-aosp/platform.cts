@@ -31,6 +31,7 @@ import static android.media.codec.Flags.FLAG_DYNAMIC_COLOR_ASPECTS;
 import static android.media.codec.Flags.FLAG_IN_PROCESS_SW_AUDIO_CODEC;
 import static android.media.codec.Flags.hlgEditing;
 import static android.mediav2.common.cts.CodecTestBase.BOARD_FIRST_SDK_IS_AT_LEAST_202404;
+import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AFTER_202504;
 import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.FIRST_SDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.IS_AFTER_B;
@@ -157,6 +158,13 @@ public class CodecInfoTest {
     @ApiTest(apis = "android.media.MediaCodecInfo.CodecCapabilities#profileLevels")
     @Test
     public void testCodecProfileSupport() {
+        // AC4 profile mapping was done during Android B which makes some vendors unable to update
+        // the image. Therefore, these tests are gated under BOARD_SDK_IS_AFTER_202504 for ac4
+        // component. For details refer b/462484279
+        if (mMediaType.equalsIgnoreCase(MediaFormat.MIMETYPE_AUDIO_AC4)) {
+            Assume.assumeTrue("Test requires vendor partition to be > 202504 for ac4 component",
+                    BOARD_SDK_IS_AFTER_202504);
+        }
         if (mMediaType.equalsIgnoreCase(MediaFormat.MIMETYPE_AUDIO_IAMF)) {
             // TODO (b/440618955)
             // iamf incorrect profile mapping has been fixed in 25Q4 which is not part
