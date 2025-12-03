@@ -46,6 +46,7 @@ import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.ModuleSpecificTest;
+import com.android.media.mediadrm.flags.Flags;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -1174,24 +1175,41 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
             }
             Log.d(TAG, "Test getSecureStops.");
             secureStops = drm.getSecureStops();
-            assertEquals(NUMBER_OF_SECURE_STOPS, secureStops.size());
+            int expectedNumberOfSecureStops =
+                    Flags.deprecatePlatformMediadrmSecurestopApis() ? 0 : NUMBER_OF_SECURE_STOPS;
+            Log.d(TAG, "Test getSecureStops= " + expectedNumberOfSecureStops);
+            assertEquals(expectedNumberOfSecureStops, secureStops.size());
 
             Log.d(TAG, "Test getSecureStopIds.");
             secureStopIds = drm.getSecureStopIds();
-            assertEquals(NUMBER_OF_SECURE_STOPS, secureStopIds.size());
+            assertEquals(expectedNumberOfSecureStops, secureStopIds.size());
 
             Log.d(TAG, "Test getSecureStop using secure stop Ids.");
             for (int i = 0; i < secureStops.size(); ++i) {
                 byte[] secureStop = drm.getSecureStop(secureStopIds.get(i));
-                assertTrue(Arrays.equals(secureStops.get(i), secureStop));
+                if (Flags.deprecatePlatformMediadrmSecurestopApis()) {
+                    assertTrue(secureStop != null);
+                    assertEquals(0, secureStop.length);
+                } else {
+                    assertTrue(Arrays.equals(secureStops.get(i), secureStop));
+                }
             }
 
             Log.d(TAG, "Test removeSecureStop given a secure stop Id.");
-            drm.removeSecureStop(secureStopIds.get(NUMBER_OF_SECURE_STOPS - 1));
+            if (Flags.deprecatePlatformMediadrmSecurestopApis()) {
+                // Use a randomly generated secure stop ID
+                byte[] secureStopId = { 0x01, 0x02, 0x03, 0x04 };
+                drm.removeSecureStop(secureStopId);
+            } else {
+                drm.removeSecureStop(secureStopIds.get(NUMBER_OF_SECURE_STOPS - 1));
+            }
             secureStops = drm.getSecureStops();
             secureStopIds = drm.getSecureStopIds();
-            assertEquals(NUMBER_OF_SECURE_STOPS - 1, secureStops.size());
-            assertEquals(NUMBER_OF_SECURE_STOPS - 1, secureStopIds.size());
+            expectedNumberOfSecureStops = Flags.deprecatePlatformMediadrmSecurestopApis()
+                    ? 0
+                    : NUMBER_OF_SECURE_STOPS - 1;
+            assertEquals(expectedNumberOfSecureStops, secureStops.size());
+            assertEquals(expectedNumberOfSecureStops, secureStopIds.size());
 
             Log.d(TAG, "Test releaseSecureStops given a release message.");
             // Simulate server response message by removing
@@ -1228,8 +1246,11 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
             secureStopIds = drm.getSecureStopIds();
             // All odd numbered secure stops are removed in the test,
             // leaving 2nd, 4th, 6th and the 8th element.
-            assertEquals((NUMBER_OF_SECURE_STOPS - 1) / 2, secureStops.size());
-            assertEquals((NUMBER_OF_SECURE_STOPS - 1 ) / 2, secureStopIds.size());
+            expectedNumberOfSecureStops = Flags.deprecatePlatformMediadrmSecurestopApis()
+                    ? 0
+                    : (NUMBER_OF_SECURE_STOPS - 1) / 2;
+            assertEquals(expectedNumberOfSecureStops, secureStops.size());
+            assertEquals(expectedNumberOfSecureStops, secureStopIds.size());
 
             Log.d(TAG, "Test removeAllSecureStops.");
             drm.removeAllSecureStops();
