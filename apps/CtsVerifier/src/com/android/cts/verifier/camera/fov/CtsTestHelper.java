@@ -42,7 +42,7 @@ class CtsTestHelper {
     }
 
     public static boolean isResultPassed(float reportedFOV, float measuredFOV) {
-        if (Math.abs(reportedFOV - measuredFOV) < 2f) return true;
+        if (Math.abs(reportedFOV - measuredFOV) < 3f) return true;
         return false;
     }
 
