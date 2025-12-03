@@ -34,7 +34,6 @@ import com.android.tradefed.targetprep.BuildError;
 import com.android.tradefed.targetprep.TargetSetupError;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.FormatMethod;
 import com.google.errorprone.annotations.FormatString;
@@ -66,12 +65,10 @@ public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPre
             // Log what it will return...
             logAndDisplay(
                     "preview: getInitialCurrentUserId()=%s, getDeviceOwnerUserId()=%s, "
-                            + "getProfileParentUserIds()=%s, "
                             + "getProfileParentUserId()=%s, getPreExistingUserIds()=%s,"
                             + "isDeviceOwnerSupportedOnAnyFullUsers()=%s",
                     safeToString(DevicePolicyUsersPreparer::getInitialCurrentUserId),
                     safeToString(DevicePolicyUsersPreparer::getDeviceOwnerUserId),
-                    safeToString(DevicePolicyUsersPreparer::getProfileParentUserIds),
                     safeToString(DevicePolicyUsersPreparer::getProfileParentUserId),
                     safeToString(DevicePolicyUsersPreparer::getPreExistingUserIds),
                     safeToString(DevicePolicyUsersPreparer::isDeviceOwnerSupportedOnAnyFullUsers));
@@ -116,16 +113,6 @@ public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPre
     /** Gets whether device owner could be set on any full user. */
     public static boolean isDeviceOwnerSupportedOnAnyFullUsers() {
         return getOracle().isDeviceOwnerSupportedOnAnyFullUsers();
-    }
-
-    /**
-     * Gets the ids of any user that *could* be used as parent of profiles (created by the test).
-     *
-     * @deprecated use {@link #getProfileParentUserId()} instead.
-     */
-    @Deprecated
-    public static ImmutableList<Integer> getProfileParentUserIds() {
-        return getOracle().getProfileParentUserIds();
     }
 
     /**
@@ -246,37 +233,6 @@ public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPre
                     FLAG_PROFILES_FOR_ALL,
                     CONFIG_SUPPORT_PROFILES_ON_NON_MAIN_USER);
             return mInitialCurrentUserId;
-        }
-
-        /**
-         * @deprecated use {@link #getProfileParentUserId()} instead.
-         */
-        @Deprecated
-        private ImmutableList<Integer> getProfileParentUserIds() {
-            if (!mIsHsum) {
-                // TODO(b/374832167): in theory we don't need this check - the logic below should
-                // apply to non-HSUM devices as well as it checks for mSupportsProfilesForAll - but
-                // given that the whole point of this class is to support HSUM device, it would be
-                // safer (to avoid potential breakages) to simplify its logic for non-HSUM devices
-                return ImmutableList.of(USER_SYSTEM);
-            }
-            if (mMainUserId != null) {
-                return ImmutableList.of(mMainUserId);
-            }
-            if (mIsAutomotive) {
-                CLog.d(
-                        "getProfileParentUserIds(): returning current user (%d) on automotive"
-                                + " build",
-                        mInitialCurrentUserId);
-                return ImmutableList.of(mInitialCurrentUserId);
-            }
-            Preconditions.checkState(
-                    mSupportsProfilesForAll,
-                    "PO not supported on mainless-user device (either flag %s is disabled or "
-                            + "device doesn't define %s - check logs)",
-                    FLAG_PROFILES_FOR_ALL,
-                    CONFIG_SUPPORT_PROFILES_ON_NON_MAIN_USER);
-            return ImmutableList.of(mInitialCurrentUserId);
         }
     }
 }
