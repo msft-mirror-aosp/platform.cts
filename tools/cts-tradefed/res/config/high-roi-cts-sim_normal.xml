@@ -374,10 +374,10 @@
     <option name="compatibility:include-filter" value="CtsSimRestrictedApisTestCases android.telephony4.cts.SimRestrictedApisTest#testSetOperatorBrandOverride"/>
     <option name="compatibility:include-filter" value="CtsSimRestrictedApisTestCases android.telephony4.cts.SimRestrictedApisTest#testSetPreferredNetworkTypeToGlobal"/>
     <!-- CtsStatsdAtomHostTestCases -->
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appcompatstate.AppCompatStateStatsTests#testMinAspectRatioPortraitActivityDeviceStateClosedToOpened"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appcompatstate.AppCompatStateStatsTests#testNonResizablePortraitActivityDeviceStateClosedToOpened"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appcompatstate.AppCompatStateStatsTests#testNonResizablePortraitActivitySwitchedToOpenedThenMinAspectRatioActivity"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appcompatstate.ReachabilityStateStatsTests#testHorizontalReachability"/>
+    <option name="compatibility:include-filter" value="CtsAppcompatStateAtomHostTestCases android.cts.statsdatom.appcompatstate.AppCompatStateStatsTests#testMinAspectRatioPortraitActivityDeviceStateClosedToOpened"/>
+    <option name="compatibility:include-filter" value="CtsAppcompatStateAtomHostTestCases android.cts.statsdatom.appcompatstate.AppCompatStateStatsTests#testNonResizablePortraitActivityDeviceStateClosedToOpened"/>
+    <option name="compatibility:include-filter" value="CtsAppcompatStateAtomHostTestCases android.cts.statsdatom.appcompatstate.AppCompatStateStatsTests#testNonResizablePortraitActivitySwitchedToOpenedThenMinAspectRatioActivity"/>
+    <option name="compatibility:include-filter" value="CtsAppcompatStateAtomHostTestCases android.cts.statsdatom.appcompatstate.ReachabilityStateStatsTests#testHorizontalReachability"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appexit.AppExitHostTest#testLogStatsdOther"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_crossUser_fail"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_crossUser_success"/>

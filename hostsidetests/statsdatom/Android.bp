@@ -61,12 +61,24 @@ java_test_host {
 }
 
 java_test_host {
+    name: "CtsAppcompatStateAtomHostTestCases",
+    team: "trendy_team_android_telemetry_client_infra",
+    defaults: ["CtsStatsdAtomHostTest_defaults"],
+    srcs: [
+        "src/**/appcompatstate/*.java",
+    ],
+    device_common_data: [
+        ":CtsPropertyCompatAllowUserAspectRatioOverrideOptInApp",
+    ],
+    test_config: "configs/AndroidTestAppcompatState.xml",
+}
+
+java_test_host {
     name: "CtsStatsdAtomHostTestCases",
     team: "trendy_team_android_telemetry_client_infra",
     defaults: ["CtsStatsdAtomHostTest_defaults"],
     srcs: [
         "src/**/alarm/*.java",
-        "src/**/appcompatstate/*.java",
         "src/**/appfunctions/*.java",
         "src/**/apphibernation/*.java",
         "src/**/appops/*.java",
