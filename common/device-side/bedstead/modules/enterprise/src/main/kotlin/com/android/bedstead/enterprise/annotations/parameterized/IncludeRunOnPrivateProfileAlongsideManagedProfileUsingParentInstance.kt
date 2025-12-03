@@ -14,33 +14,28 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.enterprise.annotations.parameterized;
+package com.android.bedstead.enterprise.annotations.parameterized
 
-import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.EARLY;
-import static com.android.bedstead.harrier.annotations.ParameterizedAnnotationScope.ENTERPRISE;
-
-import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
-import com.android.bedstead.multiuser.annotations.RequireRunOnPrivateProfile;
-import com.android.bedstead.enterprise.annotations.EnsureHasNoDelegate;
-import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDelegate
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.EARLY
+import com.android.bedstead.harrier.annotations.ParameterizedAnnotationScope.ENTERPRISE
+import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation
+import com.android.bedstead.multiuser.annotations.RequireRunOnPrivateProfile
+import com.google.auto.value.AutoAnnotation
 
 /**
  * Parameterize a test so that it runs on the private profile of a user which also has a work profile
  * and .dpc() relates to the parent instance of the dpc in the profile.
  */
-@Target({ElementType.METHOD, ElementType.TYPE})
-@Retention(RetentionPolicy.RUNTIME)
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.RUNTIME)
 @ParameterizedAnnotation(scope = ENTERPRISE)
 @RequireRunOnPrivateProfile
 @EnsureHasWorkProfile(dpcIsPrimary = true, useParentInstanceOfDpc = true, dpcKey = "dpc")
 @EnsureHasNoDelegate
-public @interface IncludeRunOnPrivateProfileAlongsideManagedProfileUsingParentInstance {
+annotation class IncludeRunOnPrivateProfileAlongsideManagedProfileUsingParentInstance(
     /**
      * Priority sets the order that annotations will be resolved.
      *
@@ -52,5 +47,10 @@ public @interface IncludeRunOnPrivateProfileAlongsideManagedProfileUsingParentIn
      *
      * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any {@link int}.
      */
-    int priority() default EARLY;
+    val priority: Int = EARLY
+)
+
+@AutoAnnotation
+fun includeRunOnPrivateProfileAlongsideManagedProfileUsingParentInstance(): IncludeRunOnPrivateProfileAlongsideManagedProfileUsingParentInstance {
+    return AutoAnnotation_IncludeRunOnPrivateProfileAlongsideManagedProfileUsingParentInstanceKt_includeRunOnPrivateProfileAlongsideManagedProfileUsingParentInstance()
 }

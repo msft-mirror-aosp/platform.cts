@@ -14,36 +14,31 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.enterprise.annotations.parameterized;
+package com.android.bedstead.enterprise.annotations.parameterized
 
-import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.EARLY;
-import static com.android.bedstead.harrier.annotations.ParameterizedAnnotationScope.ENTERPRISE;
-
-import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
-import com.android.bedstead.multiuser.annotations.RequireRunOnCloneProfile;
-import com.android.bedstead.enterprise.annotations.EnsureHasNoDelegate;
-import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDelegate
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.EARLY
+import com.android.bedstead.harrier.annotations.ParameterizedAnnotationScope.ENTERPRISE
+import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation
+import com.android.bedstead.multiuser.annotations.RequireRunOnCloneProfile
+import com.google.auto.value.AutoAnnotation
 
 /**
  * Parameterize a test so that it runs on the clone profile of a user which also has
  * an organization-owned work profile.
  */
-@Target({ElementType.METHOD, ElementType.TYPE})
-@Retention(RetentionPolicy.RUNTIME)
-@ParameterizedAnnotation(shadows = IncludeRunOnCloneProfileAlongsideManagedProfile.class, scope = ENTERPRISE)
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.RUNTIME)
+@ParameterizedAnnotation(shadows = [IncludeRunOnCloneProfileAlongsideManagedProfile::class], scope = ENTERPRISE)
 @RequireRunOnCloneProfile
 @EnsureHasWorkProfile(dpcIsPrimary = true,
         isOrganizationOwned = true,
         dpcKey = "dpc")
 @EnsureHasNoDelegate
-public @interface IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfile {
-     /**
+annotation class IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfile(
+    /**
      * Priority sets the order that annotations will be resolved.
      *
      * <p>Annotations with a lower priority will be resolved before annotations with a higher
@@ -54,5 +49,10 @@ public @interface IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfile {
      *
      * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any {@link int}.
      */
-    int priority() default EARLY;
+    val priority: Int = EARLY
+)
+
+@AutoAnnotation
+fun includeRunOnCloneProfileAlongsideOrganizationOwnedProfile(): IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfile {
+    return AutoAnnotation_IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfileKt_includeRunOnCloneProfileAlongsideOrganizationOwnedProfile()
 }
