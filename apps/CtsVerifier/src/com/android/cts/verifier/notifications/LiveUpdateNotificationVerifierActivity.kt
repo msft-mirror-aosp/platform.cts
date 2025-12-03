@@ -100,6 +100,11 @@ open class LiveUpdateNotificationVerifierActivity : InteractiveVerifierActivity(
         )
         )
 
+        if (Flags.apiMetricStyle()) {
+            tests.add(verifyStatusBarChipTextFromMetric())
+            tests.add(verifyStatusBarChipChronometerFromMetric())
+        }
+
         return tests
     }
 
@@ -355,6 +360,57 @@ open class LiveUpdateNotificationVerifierActivity : InteractiveVerifierActivity(
                     .setContentIntent(getLaunchPendingIntent())
                     .build()
             mNm.notify(NOTIFICATION_ID, chronometer)
+        }
+    )
+
+    private fun verifyStatusBarChipTextFromMetric() = LiveUpdateUserVerificationBase(
+        // Same instructions as verifyLiveUpdateStatusBarChipStep. Chip displays the same text,
+        // even though the data comes from the Metric rather than shortCriticalText.
+        instructionsText = R.string.live_update_notification_status_bar_chip,
+        onBefore = {
+            val notification =
+                NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
+                    .setContentTitle("Status Bar Chip (text from metric)")
+                    .setStyle(
+                        Notification.MetricStyle()
+                            .addMetric(
+                                Notification.Metric(
+                                    Notification.Metric.FixedText("test"),
+                                    "Text"
+                                )
+                            )
+                    )
+                    .build()
+            mNm.notify(NOTIFICATION_ID, notification)
+        }
+    )
+
+    private fun verifyStatusBarChipChronometerFromMetric() = LiveUpdateUserVerificationBase(
+        // Same instructions as verifyLiveUpdateStatusBarChipTimerStep. Chip displays the same
+        // stopwatch-chronometer, even though the data comes from the Metric rather than "when".
+        instructionsText = R.string.live_update_notification_status_bar_chip_chronometer,
+        onBefore = {
+            val notification =
+                NotificationFactory.createLiveUpdateNotificationBuilder(mContext, CHANNEL_ID)
+                    .setContentTitle("Status Bar Chip (chronometer from metric)")
+                    .setStyle(
+                        Notification.MetricStyle()
+                            .addMetric(
+                                Notification.Metric(
+                                    Notification.Metric.TimeDifference.forStopwatch(
+                                        SystemClock.elapsedRealtime(),
+                                        Notification.Metric.TimeDifference.FORMAT_CHRONOMETER
+                                    ),
+                                    "Stopwatch"
+                                )
+                            )
+                    )
+                    // Set a different when (which, if used, would be counting DOWN rather than up)
+                    // to verify that the chip is showing the Metric data.
+                    .setShowWhen(true)
+                    .setWhen(Instant.now().plus(3, ChronoUnit.MINUTES).toEpochMilli())
+                    .build()
+            mNm.notify(NOTIFICATION_ID, notification)
         }
     )
 
