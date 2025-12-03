@@ -66,7 +66,6 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
 import android.service.ondeviceintelligence.OnDeviceSandboxedInferenceService.LifecycleListener;
-import android.service.ondeviceintelligence.OnDeviceSandboxedInferenceService.LifecycleListener.LifecycleEvent;
 import android.service.ondeviceintelligence.OnDeviceIntelligenceService;
 import android.text.TextUtils;
 import android.util.Log;
@@ -385,11 +384,15 @@ public class OnDeviceIntelligenceManagerTest {
         assertThrows(
                 "no access to registerInferenceServiceLifecycleListener from non system component",
                 SecurityException.class,
-                () -> mOnDeviceIntelligenceManager.registerInferenceServiceLifecycleListener(EXECUTOR,
-                        new LifecycleListener() {
-                            @Override
-                            public void onLifecycleEvent(@LifecycleEvent int event, @NonNull Feature feature) { }
-                        }));
+                () ->
+                        mOnDeviceIntelligenceManager.registerInferenceServiceLifecycleListener(
+                                EXECUTOR,
+                                new LifecycleListener() {
+                                    @Override
+                                    public void onLifecycleEvent(
+                                            /* LifecycleEvent */ int event,
+                                            @NonNull Feature feature) {}
+                                }));
     }
 
     @Test
@@ -1280,11 +1283,12 @@ public class OnDeviceIntelligenceManagerTest {
         }
     }
 
-    private LifecycleListener getLifecycleListenerForLoaded(CountDownLatch latch,
-            @Nullable Feature expectedFeature) {
+    private LifecycleListener getLifecycleListenerForLoaded(
+            CountDownLatch latch, @Nullable Feature expectedFeature) {
         return new LifecycleListener() {
             @Override
-            public void onLifecycleEvent(@LifecycleEvent int event, @NonNull Feature loadedFeature) {
+            public void onLifecycleEvent(
+                    /* LifecycleEvent */ int event, @NonNull Feature loadedFeature) {
                 if (event == LifecycleListener.LIFECYCLE_EVENT_MODEL_LOADED) {
                     Log.i(TAG, "Model loaded callback received.");
                     if (expectedFeature != null) {
