@@ -46,7 +46,6 @@ public class SharedSessionConfigurationTest {
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MULTI_CLIENT)
     public void testConstructorAndGetters_validInput() {
         int colorSpace = /* ColorSpace.Named.SRGB */ 0;
         long[] sharedOutputConfigs = {
@@ -85,7 +84,6 @@ public class SharedSessionConfigurationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MULTI_CLIENT)
     public void testConstructorAndGetters_multipleOutputs() {
         int colorSpace = /* ColorSpace.Named.ADOBE_RGB */ 10;
         long[] sharedOutputConfigs = {
@@ -149,7 +147,6 @@ public class SharedSessionConfigurationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MULTI_CLIENT)
     public void testEmptySharedOutputConfigurations() {
         int colorSpace = /* ColorSpace.Named.SRGB */ 0;
         long[] sharedOutputConfigs = {};
