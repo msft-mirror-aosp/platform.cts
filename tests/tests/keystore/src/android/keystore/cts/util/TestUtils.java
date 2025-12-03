@@ -98,6 +98,8 @@ public class TestUtils {
 
     public static final long DAY_IN_MILLIS = 1000 * 60 * 60 * 24;
 
+    private static final int GSI_RKP_PROP_REQUIRED_VENDOR_API_LEVEL = 202604;
+
     private TestUtils() {}
 
     private static Context getContext() {
@@ -115,6 +117,24 @@ public class TestUtils {
                 InstrumentationRegistry.getInstrumentation().getTargetContext().getPackageManager();
         assumeTrue("Can only test if we have StrongBox",
                 packageManager.hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE));
+    }
+
+    /**
+     * b/453737684#comment5 Skip tests performing attestation on GSI before vendor-api-level 202604.
+     * ag/37165459 enables the vendors to configure rkp-properties from api-level 202604 onward.
+     */
+    public static void assumeVendorMaySetRkpProperties() {
+        String reason =
+                String.format(
+                        "Skipping test on GSI: Vendor API Level is %d. Requires %d (26Q2) or"
+                                + " higher. Vendor code cannot set appropriate RKP properties "
+                                + "prior to %d",
+                        getVendorApiLevel(),
+                        GSI_RKP_PROP_REQUIRED_VENDOR_API_LEVEL,
+                        GSI_RKP_PROP_REQUIRED_VENDOR_API_LEVEL);
+        assumeTrue(
+                reason,
+                !(isGsiImage() && getVendorApiLevel() < GSI_RKP_PROP_REQUIRED_VENDOR_API_LEVEL));
     }
 
     static public enum KmType {
