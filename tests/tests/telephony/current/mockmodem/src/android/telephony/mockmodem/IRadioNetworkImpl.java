@@ -32,6 +32,7 @@ import android.hardware.radio.network.IRadioNetworkResponse;
 import android.hardware.radio.network.NetworkScanRequest;
 import android.hardware.radio.network.RadioAccessSpecifier;
 import android.hardware.radio.network.RegState;
+import android.hardware.radio.network.NetworkSecurityEvent;
 import android.hardware.radio.network.SecurityAlgorithmUpdate;
 import android.hardware.radio.network.SignalThresholdInfo;
 import android.hardware.radio.sim.CardStatus;
@@ -45,6 +46,9 @@ import android.util.Log;
 import android.util.SparseArray;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class IRadioNetworkImpl extends IRadioNetwork.Stub {
@@ -79,6 +83,7 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
     private String[] mAllSatellitePlmnArray = new String[0];
     private boolean mIsSatelliteEnabledForCarrier = false;
     private final AtomicBoolean mIsNonTerrestrialNetwork = new AtomicBoolean(false);
+    private int[] mAlertCategories = new int[0];
 
     public IRadioNetworkImpl(
             MockModemService service,
@@ -105,6 +110,23 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
 
         // Null security algorithms are allowed by default
         mNullCipherAndIntegrityEnabled = true;
+
+        mAlertCategories =
+                new int[] {
+                    android.telephony.NetworkSecurityEvent.ALERT_CATEGORY_UNSPECIFIED,
+                    android.telephony.NetworkSecurityEvent.ALERT_CATEGORY_DOWNGRADE,
+                    android.telephony.NetworkSecurityEvent.ALERT_CATEGORY_DOWNGRADE_2G,
+                    android.telephony.NetworkSecurityEvent.ALERT_CATEGORY_DOWNGRADE_3G,
+                    android.telephony.NetworkSecurityEvent.ALERT_CATEGORY_DOWNGRADE_4G,
+                    android.telephony.NetworkSecurityEvent.ALERT_CATEGORY_IMPRISONMENT,
+                    android.telephony.NetworkSecurityEvent.ALERT_CATEGORY_DOS_NETWORK,
+                    android.telephony.NetworkSecurityEvent.ALERT_CATEGORY_ATTRACTIVE_CELL,
+                    android.telephony.NetworkSecurityEvent.ALERT_CATEGORY_JAMMING,
+                    android.telephony.NetworkSecurityEvent.ALERT_CATEGORY_LOCATION_TRACKING,
+                    android.telephony.NetworkSecurityEvent.ALERT_CATEGORY_AUTH_PASSED,
+                    android.telephony.NetworkSecurityEvent.ALERT_CATEGORY_UNAUTH_SMS,
+                    android.telephony.NetworkSecurityEvent.ALERT_CATEGORY_UNAUTH_EMERGENCY_MSG
+                };
 
         mMockModemConfigInterface.registerForRadioStateChanged(
                 mLogicalSlotIndex, mHandler, EVENT_RADIO_STATE_CHANGED, null);
@@ -1150,6 +1172,16 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
     }
 
     @Override
+    public void getSupportedNetworkAlertCategories(int serial) {
+        RadioResponseInfo rsp = mService.makeSolRsp(serial, RadioError.NONE);
+        try {
+            mRadioNetworkResponse.getSupportedNetworkAlertCategoriesResponse(rsp, mAlertCategories);
+        } catch (RemoteException ex) {
+            Log.e(TAG, "Failed to getSupportedNetworkAlertCategories from AIDL. Exception " + ex);
+        }
+    }
+
+    @Override
     public String getInterfaceHash() {
         return IRadioNetwork.HASH;
     }
@@ -1249,6 +1281,28 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
                 return true;
             } catch (RemoteException ex) {
                 Log.e(mTag, "Failed to invoke barringInfoChanged change from AIDL. Exception" + ex);
+            }
+        } else {
+            Log.e(mTag, "null mRadioNetworkIndication");
+        }
+        return false;
+    }
+
+    public boolean unsolOnNetworkSecurityEvents(
+            java.util.Set<android.telephony.NetworkSecurityEvent> events) {
+        if (mRadioState != MockModemConfigInterface.RADIO_STATE_ON) {
+            Log.d(mTag, "unsolOnNetworkSecurityEvent radio is off");
+            return false;
+        }
+
+        if (mRadioNetworkIndication != null) {
+            NetworkSecurityEvent[] halEvents = convertNetworkSecurityEvent(events);
+            try {
+                mRadioNetworkIndication.onNetworkSecurityEvents(
+                        RadioIndicationType.UNSOLICITED, halEvents);
+                return true;
+            } catch (RemoteException ex) {
+                Log.e(mTag, "Failed to invoke onNetworkSecurityEvents from AIDL. Exception" + ex);
             }
         } else {
             Log.e(mTag, "null mRadioNetworkIndication");
@@ -1426,6 +1480,30 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
             }
         }
         return halBarringInfo.toArray(new BarringInfo[0]);
+    }
+
+    private NetworkSecurityEvent[] convertNetworkSecurityEvent(
+            java.util.Set<android.telephony.NetworkSecurityEvent> networkSecurityEvents) {
+        if (networkSecurityEvents == null) {
+            return new NetworkSecurityEvent[0];
+        }
+        Set<NetworkSecurityEvent> halEvents = new HashSet<>();
+        for (android.telephony.NetworkSecurityEvent event : networkSecurityEvents) {
+            if (event != null) {
+                NetworkSecurityEvent halEvent = new NetworkSecurityEvent();
+                halEvent.alertCategory = event.getAlertCategory();
+                halEvent.alertStatus = event.getAlertStatus();
+                halEvent.reasonCodes = event.getReasonCodes();
+                halEvent.cellId = event.getCellId();
+                halEvent.physicalCellId = event.getPhysicalCellId();
+                halEvent.arfcn = event.getArfcn();
+                halEvent.plmn = event.getPlmn();
+                halEvent.rat = event.getRat();
+                halEvent.isEmergency = event.isEmergency();
+                halEvents.add(halEvent);
+            }
+        }
+        return halEvents.toArray(new NetworkSecurityEvent[0]);
     }
 
     /**
