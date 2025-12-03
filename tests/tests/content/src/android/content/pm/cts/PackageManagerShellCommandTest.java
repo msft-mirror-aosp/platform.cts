@@ -41,6 +41,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+import static org.junit.Assume.assumeFalse;
 
 import android.app.UiAutomation;
 import android.content.BroadcastReceiver;
@@ -69,6 +70,7 @@ import android.os.ParcelFileDescriptor;
 import android.os.Process;
 import android.os.RemoteException;
 import android.os.UserHandle;
+import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
 import android.util.PackageUtils;
 
@@ -190,6 +192,7 @@ public class PackageManagerShellCommandTest {
     private boolean mStreaming = false;
     private boolean mIncremental = false;
     private String mInstall = "";
+    private UserManager mUserManager;
     private String mPackageVerifier = null;
     private String mUnusedStaticSharedLibsMinCachePeriod = null;
     private long mStreamingVerificationTimeoutMs = DEFAULT_STREAMING_VERIFICATION_TIMEOUT_MS;
@@ -294,6 +297,8 @@ public class PackageManagerShellCommandTest {
         uninstallPackageSilently(TEST_SDK2_PACKAGE);
         uninstallPackageSilently(TEST_SDK1_PACKAGE);
         uninstallPackageSilently(TEST_SDK1_MAJOR_VERSION2_PACKAGE);
+
+        mUserManager = (UserManager) getContext().getSystemService(Context.USER_SERVICE);
 
         mPackageVerifier = executeShellCommand("settings get global verifier_verify_adb_installs");
         // Disable the package verifier for non-incremental installations to avoid the dialog
@@ -1838,6 +1843,37 @@ public class PackageManagerShellCommandTest {
                 .getInstallSourceInfo(TEST_APP_PACKAGE);
         assertEquals(SHELL_PACKAGE_NAME, installSourceInfo.getInitiatingPackageName());
         assertEquals(CTS_PACKAGE_NAME, installSourceInfo.getInstallingPackageName());
+    }
+
+    @Test
+    public void testSessionCreationWithManagedUserOrProfileFlag_notFromManagedProfile()
+            throws Exception {
+        getUiAutomation().adoptShellPermissionIdentity();
+
+        Integer sessionId = null;
+        PackageInstaller installer = null;
+
+        try {
+            assumeFalse(mUserManager.isManagedProfile(getContext().getUserId()));
+
+            installer = getPackageInstaller();
+            final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
+            params.installFlags |= PackageManager.INSTALL_FROM_MANAGED_USER_OR_PROFILE;
+
+            sessionId = installer.createSession(params);
+            PackageInstaller.Session session = installer.openSession(sessionId);
+
+            // The flag should no longer be set.
+            assertEquals(
+                    0,
+                    (session.getInstallFlags()
+                            & PackageManager.INSTALL_FROM_MANAGED_USER_OR_PROFILE));
+        } finally {
+            if (sessionId != null) {
+                installer.abandonSession(sessionId);
+            }
+            getUiAutomation().dropShellPermissionIdentity();
+        }
     }
 
     static class FullyRemovedBroadcastReceiver extends BroadcastReceiver {
