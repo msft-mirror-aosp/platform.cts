@@ -32,3 +32,10 @@ android_test_helper_app {
     // V4 signature required by Incremental installs
     v4_signature: true,
 }
+
+filegroup {
+    name: "AnrWarningListenerService",
+    srcs: [
+        "src/com/android/cts/launcherapps/simpleapp/AnrWarningListenerService.java",
+    ],
+}

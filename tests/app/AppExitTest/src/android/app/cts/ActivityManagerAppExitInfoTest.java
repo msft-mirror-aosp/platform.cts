@@ -17,6 +17,13 @@
 package android.app.cts;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
+import static com.android.cts.launcherapps.simpleapp.AnrWarningListenerService.CMD_ANR_WARNING_LISTENER;
+import static com.android.cts.launcherapps.simpleapp.AnrWarningListenerService.KEY_ANR_DESCRIPTION;
+import static com.android.cts.launcherapps.simpleapp.AnrWarningListenerService.KEY_ANR_ID;
+import static com.android.cts.launcherapps.simpleapp.AnrWarningListenerService.KEY_ANR_TIMESTAMP;
+import static com.android.cts.launcherapps.simpleapp.AnrWarningListenerService.KEY_ANR_TYPE;
+import static com.android.cts.launcherapps.simpleapp.AnrWarningListenerService.KEY_ELAPSED_TIME_MS;
+import static com.android.cts.launcherapps.simpleapp.AnrWarningListenerService.KEY_TIMEOUT_MS;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -127,6 +134,8 @@ public final class ActivityManagerAppExitInfoTest {
             "com.android.cts.launcherapps.simpleapp.SimpleService5";
     private static final String STUB_SERVICE_ISOLATED_NAME =
             "com.android.cts.launcherapps.simpleapp.SimpleService6";
+    private static final String STUB_ANR_WARNING_SERVICE_NAME =
+            "com.android.cts.launcherapps.simpleapp.AnrWarningListenerService";
     private static final String STUB_RECEIVER_NAME =
             "com.android.cts.launcherapps.simpleapp.SimpleReceiver";
     private static final String STUB_PROCESS_NAME = STUB_PACKAGE_NAME;
@@ -206,6 +215,7 @@ public final class ActivityManagerAppExitInfoTest {
     private String mFreezerTimeout;
     private boolean mIsProfilingPss;
     private boolean mHeartbeatDead;
+    private Bundle mAnrWarningListenerBundle;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -257,6 +267,10 @@ public final class ActivityManagerAppExitInfoTest {
                 0);
         // Remove old records to avoid interference with the tests.
         clearHistoricalExitInfo();
+    }
+
+    private void handleMessageAnrWarning(Message msg) {
+        mAnrWarningListenerBundle = (Bundle) msg.obj;
     }
 
     private void handleMessagePid(Message msg) {
@@ -311,6 +325,9 @@ public final class ActivityManagerAppExitInfoTest {
             switch (msg.what) {
                 case CMD_PID:
                     handleMessagePid(msg);
+                    break;
+                case CMD_ANR_WARNING_LISTENER:
+                    handleMessageAnrWarning(msg);
                     break;
                 default:
                     break;
@@ -859,6 +876,115 @@ public final class ActivityManagerAppExitInfoTest {
         } finally {
             monitor.finish();
             mContext.unregisterReceiver(receiver);
+        }
+    }
+
+    /**
+     * Validates the ANR warning listener is correctly invoked when an ANR occurs.
+     *
+     * <p>This test verifies the callback flow by performing the following steps:
+     *
+     * <ol>
+     *   <li>It starts a service which in turn registers the ANR warning listener.
+     *   <li>It causes an ANR by sending an ordered broadcast to the unresponsive service process.
+     *   <li>It then confirms that the ANR warning listener callback was received with the correct
+     *       data.
+     * </ol>
+     */
+    @Test
+    @RequiresFlagsEnabled({
+        android.app.Flags.FLAG_ENABLE_ANR_WARNING_CALLBACK,
+        android.app.Flags.FLAG_INCLUDE_ANR_INFO
+    })
+    public void testRegisterAnrWarningListener() {
+        long anrTimeoutMs = getBroadcastAnrTimeout();
+        // Using 3 times the broadcast anr timeout as the test timeout.
+        long broadcastAnrTimeoutMs = anrTimeoutMs * 3;
+
+        long now = System.currentTimeMillis();
+
+        // Start a process and block its main thread
+        startService(ACTION_ANR, STUB_ANR_WARNING_SERVICE_NAME, false, false);
+
+        AmMonitor monitor =
+                new AmMonitor(mInstrumentation, new String[] {AmMonitor.WAIT_FOR_CRASHED});
+
+        try {
+            Intent intent =
+                    new Intent()
+                            .setClassName(STUB_PACKAGE_NAME, STUB_RECEIVER_NAME)
+                            .addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
+
+            // This will result an ANR
+            mContext.sendOrderedBroadcast(intent, null);
+
+            // Wait for the early ANR
+            monitor.waitFor(AmMonitor.WAIT_FOR_EARLY_ANR, broadcastAnrTimeoutMs);
+            // Continue, so we could collect ANR traces
+            monitor.sendCommand(AmMonitor.CMD_CONTINUE);
+            // Wait for the ANR
+            monitor.waitFor(AmMonitor.WAIT_FOR_ANR, broadcastAnrTimeoutMs);
+            // Kill it
+            monitor.sendCommand(AmMonitor.CMD_KILL);
+            // Wait the process gone
+            waitForGone(mWatcher);
+            long now2 = System.currentTimeMillis();
+
+            // verify ANR warning listener
+            verifyAnrListener(
+                    mAnrWarningListenerBundle,
+                    AnrTypes.ANR_TYPE_BROADCAST_OF_INTENT,
+                    anrTimeoutMs,
+                    "Broadcast",
+                    now2);
+
+            // Grab ApplicationExitInfo for this ANR to compare with the listener.
+            List<ApplicationExitInfo> list =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            STUB_PACKAGE_NAME,
+                            mStubPackagePid,
+                            1,
+                            mActivityManager::getHistoricalProcessExitReasons,
+                            android.Manifest.permission.DUMP);
+
+            assertWithMessage("ApplicationExitInfo list").that(list).isNotNull();
+            assertWithMessage("ApplicationExitInfo list").that(list).hasSize(1);
+
+            ApplicationExitInfo info = list.getFirst();
+            verify(
+                    info,
+                    mStubPackagePid,
+                    mStubPackageUid,
+                    STUB_PACKAGE_NAME,
+                    ApplicationExitInfo.REASON_ANR,
+                    null,
+                    null,
+                    now,
+                    now2);
+
+            expect.withMessage("Package Uid").that(info.getPackageUid()).isEqualTo(mStubPackageUid);
+            expect.withMessage("Defining Uid")
+                    .that(info.getDefiningUid())
+                    .isEqualTo(mStubPackageUid);
+
+            // Verify the subreason
+            expect.withMessage("ANR subreason")
+                    .that(info.getSubReason())
+                    .isEqualTo(ApplicationExitInfo.SUBREASON_ANR_TYPE_BROADCAST_OF_INTENT);
+
+            // Verify ANR Info
+            verify(
+                    info.getAnrInfo(),
+                    AnrTypes.ANR_TYPE_BROADCAST_OF_INTENT,
+                    /* isUserPerceptible= */ false,
+                    anrTimeoutMs);
+
+            // verify anrInfo.getAnrId() matches with ANR listener id
+            expect.withMessage("ANR Id")
+                    .that(info.getAnrInfo().getAnrId())
+                    .isEqualTo(mAnrWarningListenerBundle.getInt(KEY_ANR_ID));
+        } finally {
+            monitor.finish();
         }
     }
 
@@ -2117,6 +2243,28 @@ public final class ActivityManagerAppExitInfoTest {
                 .isEqualTo(isUserPerceptible);
         expect.withMessage("timeout").that(anrInfo.getTimeoutMillis())
                 .isWithin(500).of(anrTimeout);
+    }
+
+    private void verifyAnrListener(
+            Bundle actual, int anrType, long timeout, String description, long after) {
+        expect.that(actual).isNotNull();
+
+        expect.withMessage("ANR Type").that(actual.getInt(KEY_ANR_TYPE)).isEqualTo(anrType);
+
+        // Added 'isWithin' range as timeout can be off by couple of milliseconds.
+        expect.withMessage("Timeout").that(actual.getLong(KEY_TIMEOUT_MS)).isWithin(50).of(timeout);
+        expect.withMessage("Elapsed Time")
+                .that(actual.getLong(KEY_ELAPSED_TIME_MS))
+                .isGreaterThan(0);
+        expect.withMessage("Elapsed Time")
+                .that(actual.getLong(KEY_ELAPSED_TIME_MS))
+                .isLessThan(timeout);
+        expect.withMessage("Description")
+                .that(actual.getString(KEY_ANR_DESCRIPTION))
+                .contains(description);
+        expect.withMessage("ANR warning occurs before ANR")
+                .that(actual.getLong(KEY_ANR_TIMESTAMP))
+                .isLessThan(after);
     }
 
     private BroadcastReceiver getBroadcastReceiverWithLatch(
