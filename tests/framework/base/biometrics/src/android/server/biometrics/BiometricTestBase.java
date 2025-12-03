@@ -119,6 +119,7 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
 
     // Fallback Page buttons
     protected static final String FALLBACK_PAGE_CREDENTIAL_BUTTON = "fallback_credential_button";
+    protected static final String MANAGE_IDENTITY_CHECK_BUTTON = "manage_identity_check";
 
     // Credential screen buttons
     protected static final String CREDENTIAL_FALLBACK_BUTTON = "fallback_button";
