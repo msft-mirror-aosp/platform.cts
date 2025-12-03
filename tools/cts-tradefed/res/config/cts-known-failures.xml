@@ -445,4 +445,7 @@
 
     <!-- b/456618211-->
     <option name="compatibility:exclude-filter" value="CtsMediaPlayerTestCases android.media.player.cts.MediaPlayerTest#testSetNextMediaPlayer" />
+
+    <!-- b/459709696 -->
+    <option name="compatibility:exclude-filter" value="CtsNpuManagerMoblyTestCases"/>
 </configuration>
