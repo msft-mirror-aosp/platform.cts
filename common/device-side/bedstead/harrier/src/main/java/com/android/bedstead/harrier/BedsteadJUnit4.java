@@ -17,7 +17,6 @@
 package com.android.bedstead.harrier;
 
 import androidx.annotation.Nullable;
-import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestGenerator;
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestWithArgumentGenerator;
@@ -66,8 +65,6 @@ import org.junit.runners.model.TestClass;
 public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
     private static final Set<TestLifecycleListener> sLifecycleListeners = new HashSet<>();
-
-    private static final Map<Annotation, Integer> ANNOTATION_PRIORITY_CACHE = new HashMap<>();
     private static final String LOG_TAG = "BedsteadJUnit4";
     private boolean mHasManualHarrierRule = false;
     private static final BedsteadServiceLocator mLocator = new BedsteadServiceLocator();
@@ -105,43 +102,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     }
 
     /**
-     * Annotation sorter using the priority method added to an annotation,
-     * higher priority numbers are earlier in the list, if a priority is not provided
-     * {@link AnnotationPriorityRunPrecedence#PRECEDENCE_NOT_IMPORTANT} will be used
-     */
-    public static int annotationSorter(Annotation a, Annotation b) {
-        return getAnnotationPriority(a) - getAnnotationPriority(b);
-    }
-
-    private static int getAnnotationPriority(Annotation annotation) {
-        return ANNOTATION_PRIORITY_CACHE.computeIfAbsent(
-                annotation, BedsteadJUnit4::computeAnnotationPriority);
-    }
-
-    private static int computeAnnotationPriority(Annotation annotation) {
-        if (annotation instanceof DynamicParameterizedAnnotation) {
-            return ((DynamicParameterizedAnnotation) annotation).getPriority();
-        }
-
-        try {
-            return (int) annotation.annotationType().getMethod("priority").invoke(annotation);
-        } catch (NoSuchMethodException e) {
-            // Default to PRECEDENCE_NOT_IMPORTANT if no priority is found on the annotation.
-            return AnnotationPriorityRunPrecedence.PRECEDENCE_NOT_IMPORTANT;
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new NeneException(
-                    "Failed to invoke priority on this annotation: " + annotation, e);
-        }
-    }
-
-    static String getParameterName(Annotation annotation) {
-        if (annotation instanceof DynamicParameterizedAnnotation) {
-            return ((DynamicParameterizedAnnotation) annotation).name();
-        }
-        return annotation.annotationType().getSimpleName();
-    }
-
-    /**
      * Resolves annotations recursively.
      *
      * @param parameterizedAnnotations The class of the parameterized annotations to expand, if any
@@ -164,9 +124,8 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         while (index < annotations.size()) {
             Annotation annotation = annotations.get(index);
             annotations.remove(index);
-            List<Annotation> replacementAnnotations =
-                    getReplacementAnnotations(harrierRule, annotation, parameterizedAnnotations);
-            replacementAnnotations.sort(BedsteadJUnit4::annotationSorter);
+            List<Annotation> replacementAnnotations = AnnotationSorterKt.sortedByPriority(
+                    getReplacementAnnotations(harrierRule, annotation, parameterizedAnnotations));
             annotations.addAll(index, replacementAnnotations);
             index += replacementAnnotations.size();
         }
@@ -549,8 +508,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
                     mLocator.get(usesParameterizedTestGenerator.value());
             var replacementAnnotations =
                     generator.generateReplacementAnnotations(annotation, classAnnotations);
-            replacementAnnotations.sort(BedsteadJUnit4::annotationSorter);
-            return replacementAnnotations;
+            return AnnotationSorterKt.sortedByPriority(replacementAnnotations);
         }
         return null;
     }

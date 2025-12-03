@@ -369,7 +369,7 @@ public final class DeviceState extends HarrierRule {
         }
 
         annotations.addAll(description.getAnnotations());
-        annotations.sort(BedsteadJUnit4::annotationSorter);
+        annotations = AnnotationSorterKt.sortedByPriority(annotations);
 
         checkAnnotations(annotations);
 
