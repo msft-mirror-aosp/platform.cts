@@ -49,11 +49,15 @@ import android.companion.AssociationRequest;
 import android.companion.virtual.VirtualDevice;
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.VirtualDeviceParams;
+import android.companion.virtual.camera.VirtualCameraCallback;
+import android.companion.virtual.camera.VirtualCameraConfig;
 import android.companion.virtual.sensor.VirtualSensor;
 import android.companion.virtual.sensor.VirtualSensorCallback;
 import android.companion.virtual.sensor.VirtualSensorConfig;
 import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
+import android.graphics.ImageFormat;
+import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.display.VirtualDisplay;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsDisabled;
@@ -654,6 +658,30 @@ public class VirtualDeviceManagerBasicTest {
     public void removeActivityListener_nullArguments_shouldThrow() {
         assertThrows(NullPointerException.class,
                 () -> mVirtualDevice.removeActivityListener(null));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_SUPPORT_API)
+    public void isVirtualCameraSupported() {
+        try (VirtualDeviceManager.VirtualDevice virtualDevice =
+                mRule.createManagedVirtualDevice(
+                        new VirtualDeviceParams.Builder()
+                                .setDevicePolicy(POLICY_TYPE_CAMERA, DEVICE_POLICY_CUSTOM)
+                                .build())) {
+            try {
+                virtualDevice.createVirtualCamera(
+                        new VirtualCameraConfig.Builder("testCamera")
+                                .setVirtualCameraCallback(
+                                        mContext.getMainExecutor(),
+                                        mock(VirtualCameraCallback.class))
+                                .addStreamConfig(1, 1, ImageFormat.YUV_420_888, 30)
+                                .setLensFacing(CameraCharacteristics.LENS_FACING_BACK)
+                                .build());
+                assertThat(mVirtualDeviceManager.isVirtualCameraSupported()).isTrue();
+            } catch (UnsupportedOperationException ex) {
+                assertThat(mVirtualDeviceManager.isVirtualCameraSupported()).isFalse();
+            }
+        }
     }
 
     private void assertDeviceCreated(int deviceId) {
