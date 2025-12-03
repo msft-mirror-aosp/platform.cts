@@ -19,6 +19,7 @@ package android.media.audio.cts;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
@@ -41,6 +42,7 @@ import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
+import com.android.compatibility.common.util.MediaUtils;
 
 import org.junit.After;
 import org.junit.Before;
@@ -85,6 +87,9 @@ public class AudioOffloadNativeEffectsTest {
 
     @Before
     public void setup() throws Exception {
+        assumeFalse("Skipping test, no need to test on emulator", Build.IS_EMULATOR);
+        assumeFalse("Skipping test, no need to test on cuttlefish", MediaUtils.onCuttlefish());
+
         final Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
 
         assumeTrue("Skipping test, no audio output found", hasAudioOutput(context));
