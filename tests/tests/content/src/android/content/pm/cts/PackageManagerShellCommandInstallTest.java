@@ -3159,8 +3159,6 @@ public class PackageManagerShellCommandInstallTest {
                     0,
                     (session.getInstallFlags()
                             & PackageManager.INSTALL_FROM_MANAGED_USER_OR_PROFILE));
-
-            installer.abandonSession(sessionId);
         } finally {
             if (sessionId != null) {
                 installer.abandonSession(sessionId);
