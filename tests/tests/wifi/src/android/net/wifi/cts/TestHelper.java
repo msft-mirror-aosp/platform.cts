@@ -63,6 +63,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.wifi.flags.Flags;
 
 import java.util.ArrayList;
@@ -242,7 +243,8 @@ public class TestHelper {
             try {
                 wifiManager.registerScanResultsCallback(
                         Executors.newSingleThreadExecutor(), scanResultsCallback);
-                wifiManager.startScan(new WorkSource(myUid()));
+                ShellIdentityUtils.invokeWithShellPermissions(
+                        () -> wifiManager.startScan(new WorkSource(myUid())));
                 // now wait for callback
                 scanResultsCallback.await();
             } catch (InterruptedException e) {

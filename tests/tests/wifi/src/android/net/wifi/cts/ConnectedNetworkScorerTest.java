@@ -117,6 +117,7 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
     private static boolean sShouldRunTest = false;
     private static boolean sWasScanThrottleEnabled;
     private static FeatureFlags sFeatureFlags;
+    private static WifiConfiguration sTestNetwork;
 
     private final Executor mExecutor = Executors.newSingleThreadExecutor();
 
@@ -163,6 +164,11 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
         List<WifiConfiguration> savedNetworks = ShellIdentityUtils.invokeWithShellPermissions(
                 () -> sWifiManager.getConfiguredNetworks());
         assertWithMessage("Need at least one saved network").that(savedNetworks).isNotEmpty();
+        List<WifiConfiguration> networks = TestHelper.findMatchingSavedNetworksWithBssid(
+                sWifiManager, savedNetworks, 1);
+        if (!networks.isEmpty()) {
+            sTestNetwork = networks.get(0);
+        }
         sTelephonyManager = sContext.getSystemService(TelephonyManager.class);
     }
 
@@ -825,6 +831,7 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
 
     private void setWifiConnectedNetworkScorerAndInitiateConnectToSpecifierOrRestrictedSuggestion(
             @NonNull ConnectionInitiator connectionInitiator) throws Exception {
+        assertThat(sTestNetwork).isNotNull();
         CountDownLatch countDownLatchScorer = new CountDownLatch(1);
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         TestConnectedNetworkScorerWithSessionInfo connectedNetworkScorer =
@@ -842,9 +849,6 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
             Thread.sleep(500);
 
             savedNetworks = sWifiManager.getPrivilegedConfiguredNetworks();
-            WifiConfiguration testNetwork =
-                    TestHelper.findMatchingSavedNetworksWithBssid(sWifiManager, savedNetworks, 1)
-                            .get(0);
             // Disconnect & disable auto-join on the saved network to prevent auto-connect from
             // interfering with the test.
             sWifiManager.allowAutojoinGlobal(false);
@@ -857,14 +861,13 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
                     20000,
                     () -> sWifiManager.getConnectionInfo().getSupplicantState()
                     == SupplicantState.DISCONNECTED);
-            assertThat(testNetwork).isNotNull();
 
             // Register the external scorer.
             sWifiManager.setWifiConnectedNetworkScorer(mExecutor, connectedNetworkScorer);
 
             // Now connect using the provided connection initiator
             sWifiManager.allowAutojoinGlobal(true);
-            networkCallback = connectionInitiator.initiateConnection(testNetwork, executorService);
+            networkCallback = connectionInitiator.initiateConnection(sTestNetwork, executorService);
 
             // We should not receive the start
             assertThat(countDownLatchScorer.await(WAIT_DURATION, TimeUnit.MILLISECONDS)).isFalse();
