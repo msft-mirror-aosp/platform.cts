@@ -147,14 +147,23 @@ public class TelecomAvailabilityTest extends InstrumentationTestCase {
     }
 
     /**
-     * Ensures that all call capable devices declare the Telecom feature.
+     * Ensures that all call capable Android devices declare the Telecom feature. This is not
+     * limited to just handheld drives, but includes tablets with or without a built-in SIM,
+     * wearable devices such as watches, and automotive devices which provide in-car communication
+     * services.
      *
      * A call capable device is one which has audio input and output capabilities and has the
-     * ability to make calls through one of the following routes:
+     * ability to make calls through routes such as the following:
      * 1. A mobile network using the Telephony stack (ie.
      * {@link PackageManager#FEATURE_TELEPHONY_CALLING}).
-     * 2. Applications that provide calling functionality over the internet (i.e. VoIP apps).  This
-     * includes both pre-bundled and user-installed communication applications.
+     * 2. Applications that provide calling functionality, potentially over the internet (i.e.
+     * VoIP apps).  This includes both pre-bundled and user-installed communication applications.
+     * 3. A device which relies on the Telecom framework to route calls from a call source to a call
+     * UX.  For example, A device which relies on the Bluetooth HFP profile to route calls
+     * (ie. a wearable or automotive device) to a Dialer UX on that device.
+     * 4. A device which leverages any part of the {@link android.telecom.TelecomManager}.
+     * This is not a comprehensive list, but rather a general guideline for what is considered a
+     * call capable device.
      *
      * The Telecom framework is the use-case specific API for calling and communication apps.
      */
@@ -169,6 +178,8 @@ public class TelecomAvailabilityTest extends InstrumentationTestCase {
             return;
         }
 
+        // Broadly, a device which has audio input and output is a call capable device, regardless
+        // of how the audio is connected to a remote endpoint.
         boolean hasAudioInputAndOutput = mPackageManager.hasSystemFeature(
                 PackageManager.FEATURE_MICROPHONE) && mPackageManager.hasSystemFeature(
                 PackageManager.FEATURE_AUDIO_OUTPUT);
