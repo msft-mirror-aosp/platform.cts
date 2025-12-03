@@ -66,12 +66,13 @@ public class PersonalContextManagerTest {
         final List<ContextHint> hints = List.of(
                 new BundleHint.Builder().build(), new BundleHint.Builder().build());
 
-        final RenderToken renderToken =
-                new RenderToken.RenderTokenBuilder()
-                        .setRendererComponentId(UUID.randomUUID())
-                        .build();
+        final List<RenderToken> renderTokens =
+                List.of(
+                        new RenderToken.RenderTokenBuilder()
+                                .setRendererComponentId(UUID.randomUUID())
+                                .build());
 
-        mPersonalContextManager.publishTriggeringHint(hints, renderToken);
+        mPersonalContextManager.publishTriggeringHint(hints, renderTokens);
         // TODO: Check that hints are received by service.
     }
 
