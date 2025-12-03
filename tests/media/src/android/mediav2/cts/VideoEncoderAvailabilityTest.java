@@ -289,7 +289,10 @@ class CodecEncoderGLSurface extends CodecTestBase {
     }
 
     public void releaseInstance() {
-        mCodec.release();
+        if (mCodec != null) {
+            mCodec.release();
+            mCodec = null;
+        }
         tearDownCodecEncoderGLSurface();
     }
 }
