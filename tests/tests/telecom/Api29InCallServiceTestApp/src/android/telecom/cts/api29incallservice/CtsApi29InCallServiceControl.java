@@ -33,7 +33,7 @@ public class CtsApi29InCallServiceControl extends Service {
         @Override
         public int getCallState(String callId) {
             return CtsApi29InCallService.sCalls.stream()
-                    .filter(c -> c.getDetails().getTelecomCallId().equals(callId))
+                    .filter(c -> c.getDetails().getId().equals(callId))
                     .findFirst().map(Call::getState).orElse(-1);
         }
 
