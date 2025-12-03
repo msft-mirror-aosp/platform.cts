@@ -16,6 +16,8 @@
 
 package android.media.audio.cts;
 
+import static org.junit.Assume.assumeTrue;
+
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.RunUtil;
@@ -35,6 +37,7 @@ public class AudioServiceRebootHostTest extends BaseHostJUnit4Test {
     private static final String TEST_APK = "CtsAudioHostTestApp.apk";
     private static final String TEST_PKG = "android.media.audio.app";
     private static final String TEST_CLASS = TEST_PKG + ".AudioServiceRebootTest";
+    private static final String FEATURE_AUTOMOTIVE = "android.hardware.type.automotive";
 
     // Device rebooting over tradefed isn't "safe", since it uses a shell reboot.
     // As such, give a wide margin to allow handlers to flush/pending work to complete
@@ -54,6 +57,7 @@ public class AudioServiceRebootHostTest extends BaseHostJUnit4Test {
 
     @Test
     public void testVolumePersists_AfterReboot() throws Exception {
+        assumeTrue("Automotive not supported due to volume handling", !isAutomotiveDevice());
         runDeviceTests(TEST_PKG, TEST_CLASS, "testVolumePersistence_preReboot");
         waitForSettingsWrite();
         getDevice().reboot();
@@ -62,6 +66,7 @@ public class AudioServiceRebootHostTest extends BaseHostJUnit4Test {
 
     @Test
     public void testRingerModeImpliedMutePersistsAcrossReboot() throws Exception {
+        assumeTrue("Automotive not supported due to volume handling", !isAutomotiveDevice());
         runDeviceTests(TEST_PKG, TEST_CLASS, "testRingerModeImpliedMute_preReboot");
         waitForSettingsWrite();
         getDevice().reboot();
@@ -70,5 +75,9 @@ public class AudioServiceRebootHostTest extends BaseHostJUnit4Test {
 
     private void waitForSettingsWrite() {
         RunUtil.getDefault().sleep(SETTINGS_WRITE_TIMEOUT_MS);
+    }
+
+    private boolean isAutomotiveDevice() throws Exception {
+        return getDevice().hasFeature(FEATURE_AUTOMOTIVE);
     }
 }
