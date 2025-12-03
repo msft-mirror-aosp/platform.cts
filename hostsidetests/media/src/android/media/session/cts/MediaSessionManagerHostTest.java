@@ -22,6 +22,8 @@ import static android.media.cts.MediaSessionTestHelperConstants.FLAG_SET_MEDIA_S
 import static android.media.cts.MediaSessionTestHelperConstants.MEDIA_SESSION_TEST_HELPER_APK;
 import static android.media.cts.MediaSessionTestHelperConstants.MEDIA_SESSION_TEST_HELPER_PKG;
 
+import static com.android.tradefed.device.UserInfo.USER_NULL;
+
 import android.media.cts.BaseMultiUserTest;
 import android.media.cts.MediaSessionTestHelperConstants;
 import android.platform.test.annotations.AppModeFull;
@@ -186,6 +188,14 @@ public class MediaSessionManagerHostTest extends BaseMultiUserTest {
         // Remove the created user first not to exceed system's user number limit.
         // Restricted profile's parent must be the primary user (the system user).
         int parentUser = getParentUserIdForTesting();
+        if (parentUser == USER_NULL) {
+            // TODO(b/465724606): remove this check once getParentUserIdForTesting() throws
+            // AssumptionViolationException instead of returning USER_NULL
+            CLog.logAndDisplay(
+                    LogLevel.INFO,
+                    "Device doesn't support restricted users. Skipping multi-user test cases.");
+            return;
+        }
         int newUser = createAndStartRestrictedProfile(parentUser);
         installAppAsUser(DEVICE_SIDE_TEST_APK, DEVICE_SIDE_TEST_PKG, newUser, instant);
         setAllowGetActiveSessionForTest(true, newUser);
@@ -343,7 +353,9 @@ public class MediaSessionManagerHostTest extends BaseMultiUserTest {
     }
 
     private int getParentUserIdForTesting() throws DeviceNotAvailableException {
-        return DevicePolicyUsersPreparer.getProfileParentUserIds().get(0);
+        // TODO(b/465724606): ideally should throw an AssumptionViolationException if it's
+        // USER_NULL, but that would cause the test to fail.
+        return DevicePolicyUsersPreparer.getProfileParentUserId();
     }
 
     /**
