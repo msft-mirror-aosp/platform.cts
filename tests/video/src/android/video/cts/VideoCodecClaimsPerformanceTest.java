@@ -63,14 +63,15 @@ import java.util.List;
 @RunWith(Parameterized.class)
 public class VideoCodecClaimsPerformanceTest extends VideoCodecClaimsPerformanceTestBase {
     public VideoCodecClaimsPerformanceTest(String mediaType, int width, int height, int fps,
-            boolean isEncoder, ComponentClass componentClass, String allTestParams) {
-        super(mediaType, width, height, fps, isEncoder, componentClass, allTestParams);
+            boolean isEncoder, ComponentClass componentClass, boolean isSecure,
+            String allTestParams) {
+        super(mediaType, width, height, fps, isEncoder, componentClass, isSecure, allTestParams);
     }
 
     @Rule
     public TestName mTestName = new TestName();
 
-    @Parameterized.Parameters(name = "{index}_{0}_{1}_{2}_{3}_{4}")
+    @Parameterized.Parameters(name = "{index}_{0}_{1}_{2}_{3}_{4}_{6}")
     public static Collection<Object[]> input() {
         final boolean isTv = MediaUtils.isTv();
         final boolean isDispHtAtleastFHD = CodecTestBase.MAX_DISPLAY_HEIGHT_LAND >= 1080;
@@ -197,11 +198,15 @@ public class VideoCodecClaimsPerformanceTest extends VideoCodecClaimsPerformance
 
         int argLength = argsList.get(0).length;
         final List<Object[]> updatedArgsList = new ArrayList<>();
+        boolean[] boolStates = {true, false};
         for (Object[] arg : argsList) {
-            Object[] argUpdate = new Object[argLength + 1];
-            System.arraycopy(arg, 0, argUpdate, 0, argLength);
-            argUpdate[argLength] = CodecTestBase.paramToString(argUpdate);
-            updatedArgsList.add(argUpdate);
+            for (boolean isSecure : boolStates) {
+                Object[] argUpdate = new Object[argLength + 2];
+                System.arraycopy(arg, 0, argUpdate, 0, argLength);
+                argUpdate[argLength] = isSecure;
+                argUpdate[argLength + 1] = CodecTestBase.paramToString(argUpdate);
+                updatedArgsList.add(argUpdate);
+            }
         }
         return updatedArgsList;
     }
