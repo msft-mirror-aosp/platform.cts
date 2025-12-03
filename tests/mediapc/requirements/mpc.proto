@@ -27,6 +27,7 @@ option go_package = "cts/test/mediapc/requirements/mpc_go_proto";
 // (version 30). The special value of 0 designates that the device is not of a
 // media performance class.
 enum MediaPerformanceClass {
+
   MEDIA_PERFORMANCE_CLASS_UNSPECIFIED = 0
       ;
   MEDIA_PERFORMANCE_CLASS_INVALID = -1;
