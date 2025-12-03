@@ -2567,7 +2567,7 @@
          \n\u2022 <b>Exit the app</b>.
          \n\u2022 Confirm that <b>the chip</b> appears on <b>the status bar</b>.
          \n\u2022 Confirm that the icon of the chip is \“C\”.
-         \n\u2022 Confirm the text on the chip text should be \“2min\”.
+         \n\u2022 Confirm that the chip displays text indicating the event is happening in about 2-3 minutes, e.g. \“2m\” or \“2m 45s\”.
     </string>
 
     <string name="notification_style_test">Notification Styles Test</string>
