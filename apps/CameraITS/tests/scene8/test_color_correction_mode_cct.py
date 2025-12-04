@@ -130,29 +130,21 @@ def color_temperature_capture_request(
   return req
 
 
-def validate_r_b_ratios(blue_ratios, yellow_ratios):
+def validate_r_b_ratios(light_ratios):
   """Validates R/B ratios are decreasing/increasing as expected.
 
   Args:
-    blue_ratios: list R/B ratios for blue region at [2856K, 4678K, 6500K]
-    yellow_ratios: list R/B ratios for yellow region at [2856K, 4678K, 6500K]
+    light_ratios: list R/B ratios for blue region at [2856K, 4678K, 6500K]
 
   Returns:
     bool: True if the ratios are increasing or decreasing as expected
   """
-  # Validate blue region: R/B ratios should increase
-  for i in range(len(blue_ratios) - 1):
-    if blue_ratios[i] >= blue_ratios[i + 1]:
+  # Validate light region: R/B ratios should increase
+  for i in range(len(light_ratios) - 1):
+    if light_ratios[i] >= light_ratios[i + 1]:
       raise AssertionError(
-          f'R/B ratio for blue region did not increase as expected: '
-          f'{blue_ratios} ')
-
-  # Validate yellow region: R/B ratios should increase
-  for i in range(len(yellow_ratios) - 1):
-    if yellow_ratios[i] >= yellow_ratios[i + 1]:
-      raise AssertionError(
-          f'R/B ratio for yellow region did not increase as expected: '
-          f'{yellow_ratios} ')
+          f'R/B ratio for light region did not increase as expected: '
+          f'{light_ratios} ')
 
 
 class ColorCorrectionModeCct(its_base_test.ItsBaseTest):
@@ -210,8 +202,7 @@ class ColorCorrectionModeCct(its_base_test.ItsBaseTest):
 
       caps = cam.do_capture(capture_requests, largest_yuv, reuse_session=True)
 
-      blue_ratios = []  # Ratios from blue region
-      yellow_ratios = []  # Ratio from yellow region
+      light_ratios = []  # Ratios from light region
       # First three images were captures with varying color temperatures
       for i in range(len(_COLOR_TEMPERATURE_TEST_VALUES)):
         # Save image and convert to numpy array
@@ -221,16 +212,12 @@ class ColorCorrectionModeCct(its_base_test.ItsBaseTest):
         image_processing_utils.write_image(img, img_path)
         img = image_processing_utils.convert_image_to_uint8(img)
 
-        blue_ratio = _get_ratio(
-            img, regions['regionBlue'], match_ar[0], match_ar[1],
+        light_ratio = _get_ratio(
+            img, regions['regionLight'], match_ar[0], match_ar[1],
             _RED_CHANNEL, _BLUE_CHANNEL)
-        blue_ratios.append(blue_ratio)
-        yellow_ratio = _get_ratio(
-            img, regions['regionYellow'], match_ar[0], match_ar[1],
-            _RED_CHANNEL, _BLUE_CHANNEL)
-        yellow_ratios.append(yellow_ratio)
+        light_ratios.append(light_ratio)
 
-    validate_r_b_ratios(blue_ratios, yellow_ratios)
+    validate_r_b_ratios(light_ratios)
 
     b_g_ratios = []  # Ratios for light region towards magenta
     r_g_ratios = []  # Ratios for light region towards green
