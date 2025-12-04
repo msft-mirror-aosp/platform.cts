@@ -23,19 +23,18 @@ import com.android.bedstead.enterprise.annotations.EnsureHasUserRestriction
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest
 import com.android.bedstead.enterprise.dpc
+import com.android.bedstead.enterprise.policies.DisallowRemoveUser
+import com.android.bedstead.enterprise.policies.DisallowUserSwitch
+import com.android.bedstead.enterprise.policies.ReceiveUserCallbacks
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
-import com.android.bedstead.enterprise.policies.DisallowRemoveUser
-import com.android.bedstead.enterprise.policies.DisallowUserSwitch
-import com.android.bedstead.enterprise.policies.ReceiveUserCallbacks
 import com.android.bedstead.multiuser.additionalUser
 import com.android.bedstead.multiuser.annotations.EnsureCanAddSecondaryUser
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser
-import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.types.OptionalBoolean.ANY
 import com.android.bedstead.nene.types.OptionalBoolean.FALSE
@@ -119,7 +118,10 @@ class UserTest {
     @Postsubmit(reason = "new test")
     @ApiTest(apis = ["android.os.UserManager#DISALLOW_REMOVE_USER"])
     @EnsureHasPermission(CommonPermissions.CREATE_USERS)
-    @RequireRunOnSystemUser(switchedToUser = ANY)
+    // TODO(b/461900451): This, and all similar ADMIN_USER tests, should probably instead
+    //  specify @RequireRunOnAdminUser, once such an annotation exists. Otherwise what would happen
+    //  if the initial user weren't actually an Admin?!
+    @RequireRunOnInitialUser
     @EnsureDoesNotHaveUserRestriction(DISALLOW_REMOVE_USER, onUser = UserType.ANY)
     fun removeUser_disallowRemoveUserIsNotSet_isRemoved() {
         val additionalUser = deviceState.additionalUser()
@@ -139,7 +141,10 @@ class UserTest {
     @Postsubmit(reason = "new test")
     @ApiTest(apis = ["android.os.UserManager#DISALLOW_REMOVE_USER"])
     @EnsureHasPermission(CommonPermissions.CREATE_USERS)
-    @RequireRunOnSystemUser(switchedToUser = ANY)
+    // TODO(b/461900451): This, and all similar ADMIN_USER tests, should probably instead
+    //  specify @RequireRunOnAdminUser, once such an annotation exists. Otherwise what would happen
+    //  if the initial user weren't actually an Admin?!
+    @RequireRunOnInitialUser
     fun removeUser_disallowRemoveUserIsSetOnAdminUser_returnsFalse() {
         val additionalUser = deviceState.additionalUser()
 
@@ -217,6 +222,9 @@ class UserTest {
         }
     }
 
+    // TODO(b/461900451): This, and all similar ADMIN_USER tests, should probably instead
+    //  specify @RequireRunOnAdminUser, once such an annotation exists. Otherwise what would happen
+    //  if the initial user weren't actually an Admin?!
     @RequireRunOnInitialUser
     @EnsureHasPermission(CommonPermissions.INTERACT_ACROSS_USERS)
     @ApiTest(apis = ["android.os.UserManager#DISALLOW_USER_SWITCH"])
@@ -231,6 +239,9 @@ class UserTest {
             .isNotEqualTo(UserManager.SWITCHABILITY_STATUS_USER_SWITCH_DISALLOWED)
     }
 
+    // TODO(b/461900451): This, and all similar ADMIN_USER tests, should probably instead
+    //  specify @RequireRunOnAdminUser, once such an annotation exists. Otherwise what would happen
+    //  if the initial user weren't actually an Admin?!
     @RequireRunOnInitialUser
     @EnsureHasPermission(CommonPermissions.INTERACT_ACROSS_USERS)
     @ApiTest(apis = ["android.os.UserManager#DISALLOW_USER_SWITCH"])
