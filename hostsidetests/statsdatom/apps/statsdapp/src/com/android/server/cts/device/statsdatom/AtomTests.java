@@ -125,6 +125,7 @@ public class AtomTests {
         }
         sockets[0].getOutputStream().write(42);
         Assert.assertEquals(42, sockets[1].getInputStream().read());
+        sleep(2_000);
         sockets[0].close();
         sockets[1].close();
     }
