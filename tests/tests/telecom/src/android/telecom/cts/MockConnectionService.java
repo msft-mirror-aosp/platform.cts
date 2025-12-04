@@ -54,10 +54,19 @@ public class MockConnectionService extends ConnectionService {
     public static final int EVENT_CONNECTION_SERVICE_CREATE_CONNECTION_FAILED = 3;
     public static final int EVENT_CONNECTION_SERVICE_CREATE_CONNECTION_COMPLETE = 4;
     public static final int EVENT_CONNECTION_SERVICE_CREATE_CONFERENCE_COMPLETE = 5;
+    public static final int EVENT_CONNECTION_SERVICE_ON_CONNECTION_ADDED = 6;
+    public static final int EVENT_CONNECTION_SERVICE_ON_CONNECTION_REMOVED = 7;
+    public static final int EVENT_CONNECTION_SERVICE_ON_CONFERENCE_ADDED = 8;
+    public static final int EVENT_CONNECTION_SERVICE_ON_CONFERENCE_REMOVED = 9;
     // Update TOTAL_EVENT below with last event.
-    private static final int TOTAL_EVENT = EVENT_CONNECTION_SERVICE_CREATE_CONFERENCE_COMPLETE + 1;
+    private static final int TOTAL_EVENT = EVENT_CONNECTION_SERVICE_ON_CONFERENCE_REMOVED + 1;
 
     private static final int DEFAULT_EVENT_TIMEOUT_MS = 2000;
+
+    private Connection mLastConnectionAdded;
+    private Connection mLastConnectionRemoved;
+    private Conference mLastConferenceAdded;
+    private Conference mLastConferenceRemoved;
 
     private final Semaphore[] mEventLock = initializeSemaphore(TOTAL_EVENT);
 
@@ -244,6 +253,34 @@ public class MockConnectionService extends ConnectionService {
     }
 
     @Override
+    public void onConnectionAdded(Connection connection) {
+        super.onConnectionAdded(connection);
+        mLastConnectionAdded = connection;
+        mEventLock[EVENT_CONNECTION_SERVICE_ON_CONNECTION_ADDED].release();
+    }
+
+    @Override
+    public void onConnectionRemoved(Connection connection) {
+        super.onConnectionRemoved(connection);
+        mLastConnectionRemoved = connection;
+        mEventLock[EVENT_CONNECTION_SERVICE_ON_CONNECTION_REMOVED].release();
+    }
+
+    @Override
+    public void onConferenceAdded(Conference conference) {
+        super.onConferenceAdded(conference);
+        mLastConferenceAdded = conference;
+        mEventLock[EVENT_CONNECTION_SERVICE_ON_CONFERENCE_ADDED].release();
+    }
+
+    @Override
+    public void onConferenceRemoved(Conference conference) {
+        super.onConferenceRemoved(conference);
+        mLastConferenceRemoved = conference;
+        mEventLock[EVENT_CONNECTION_SERVICE_ON_CONFERENCE_REMOVED].release();
+    }
+
+    @Override
     public void onRemoteExistingConnectionAdded(RemoteConnection connection) {
         // Keep track of the remote connections added to the service
         remoteConnections.add(connection);
@@ -264,6 +301,22 @@ public class MockConnectionService extends ConnectionService {
     public void onConnectionServiceFocusLost() {
         mEventLock[EVENT_CONNECTION_SERVICE_FOCUS_LOST].release();
         connectionServiceFocusReleased();
+    }
+
+    public Connection getLastConnectionAdded() {
+        return mLastConnectionAdded;
+    }
+
+    public Connection getLastConnectionRemoved() {
+        return mLastConnectionRemoved;
+    }
+
+    public Conference getLastConferenceAdded() {
+        return mLastConferenceAdded;
+    }
+
+    public Conference getLastConferenceRemoved() {
+        return mLastConferenceRemoved;
     }
 
     public void setCreateVideoProvider(boolean createVideoProvider) {
