@@ -26,26 +26,26 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.personalcontext.Flags;
 import android.service.personalcontext.hint.ChatMessageData;
 import android.service.personalcontext.hint.ContextHint;
+import android.service.personalcontext.hint.ConversationData;
 import android.service.personalcontext.hint.ConversationEvent;
 import android.service.personalcontext.hint.ConversationEvent.ConversationEnterEvent;
 import android.service.personalcontext.hint.ConversationEvent.ConversationExitEvent;
 import android.service.personalcontext.hint.ConversationEvent.ConversationProcessingEvent;
 import android.service.personalcontext.hint.ConversationEvent.ConversationUpdateEvent;
 import android.service.personalcontext.hint.ConversationHint;
-import android.service.personalcontext.hint.ConversationData;
 import android.view.autofill.AutofillId;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
 
-import java.time.temporal.ChronoUnit;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /** Build/Install/Run: atest CtsPersonalContextTestCases:ConversationHintTest */
@@ -119,9 +119,12 @@ public class ConversationHintTest {
                 "android.service.personalcontext.hint.ConversationHint#equals",
                 "android.service.personalcontext.hint.ConversationHint#hashCode",
                 "android.service.personalcontext.hint.ConversationHint#toString",
-                "android.service.personalcontext.hint.ConversationEvent.ConversationEnterEvent#equals",
-                "android.service.personalcontext.hint.ConversationEvent.ConversationEnterEvent#hashCode",
-                "android.service.personalcontext.hint.ConversationEvent.ConversationEnterEvent#toString",
+                "android.service.personalcontext.hint.ConversationEvent"
+                        + ".ConversationEnterEvent#equals",
+                "android.service.personalcontext.hint.ConversationEvent"
+                        + ".ConversationEnterEvent#hashCode",
+                "android.service.personalcontext.hint.ConversationEvent"
+                        + ".ConversationEnterEvent#toString",
             })
     @Test
     public void testConversationHint_enterEvent_equalsHashCodeToString() {
@@ -180,9 +183,12 @@ public class ConversationHintTest {
                 "android.service.personalcontext.hint.ConversationHint#equals",
                 "android.service.personalcontext.hint.ConversationHint#hashCode",
                 "android.service.personalcontext.hint.ConversationHint#toString",
-                "android.service.personalcontext.hint.ConversationEvent.ConversationExitEvent#equals",
-                "android.service.personalcontext.hint.ConversationEvent.ConversationExitEvent#hashCode",
-                "android.service.personalcontext.hint.ConversationEvent.ConversationExitEvent#toString",
+                "android.service.personalcontext.hint.ConversationEvent"
+                        + ".ConversationExitEvent#equals",
+                "android.service.personalcontext.hint.ConversationEvent"
+                        + ".ConversationExitEvent#hashCode",
+                "android.service.personalcontext.hint.ConversationEvent"
+                        + ".ConversationExitEvent#toString",
             })
     @Test
     public void testConversationHint_exitEvent_equalsHashCodeToString() {
@@ -255,9 +261,12 @@ public class ConversationHintTest {
                 "android.service.personalcontext.hint.ConversationHint#equals",
                 "android.service.personalcontext.hint.ConversationHint#hashCode",
                 "android.service.personalcontext.hint.ConversationHint#toString",
-                "android.service.personalcontext.hint.ConversationEvent.ConversationProcessingEvent#equals",
-                "android.service.personalcontext.hint.ConversationEvent.ConversationProcessingEvent#hashCode",
-                "android.service.personalcontext.hint.ConversationEvent.ConversationProcessingEvent#toString",
+                "android.service.personalcontext.hint.ConversationEvent"
+                        + ".ConversationProcessingEvent#equals",
+                "android.service.personalcontext.hint.ConversationEvent"
+                        + ".ConversationProcessingEvent#hashCode",
+                "android.service.personalcontext.hint.ConversationEvent"
+                        + ".ConversationProcessingEvent#toString",
             })
     @Test
     public void testConversationHint_processingEvent_equalsHashCodeToString() {
@@ -301,6 +310,9 @@ public class ConversationHintTest {
                         + ".ConversationUpdateEvent#getConversationData",
                 "android.service.personalcontext.hint.ConversationEvent"
                         + ".ConversationUpdateEvent#getConversationSessionId",
+                "android.service.personalcontext.hint.ConversationData#hasNewMessage",
+                "android.service.personalcontext.hint.ConversationData"
+                        + ".Builder#setHasNewMessage",
             })
     @Test
     public void testConversationHint_updateEvent_bundleUnbundle() {
@@ -321,6 +333,7 @@ public class ConversationHintTest {
                         .setConversationTitle("title")
                         .setChatMessages(List.of(mChatMessageData))
                         .setActivityId(activityId)
+                        .setHasNewMessage(true)
                         .build();
         final Instant eventTimestamp = mReferenceTime;
         final ConversationUpdateEvent updateEvent =
@@ -340,6 +353,7 @@ public class ConversationHintTest {
         assertThat(outputUpdateEvent.getConversationData()).isEqualTo(conversationData);
         assertThat(outputUpdateEvent.getConversationSessionId()).isEqualTo(CONVERSATION_SESSION_ID);
         assertThat(outputUpdateEvent.getEventTimestamp()).isEqualTo(eventTimestamp);
+        assertThat(outputUpdateEvent.getConversationData().hasNewMessage()).isTrue();
     }
 
     @ApiTest(
@@ -347,9 +361,15 @@ public class ConversationHintTest {
                 "android.service.personalcontext.hint.ConversationHint#equals",
                 "android.service.personalcontext.hint.ConversationHint#hashCode",
                 "android.service.personalcontext.hint.ConversationHint#toString",
-                "android.service.personalcontext.hint.ConversationEvent.ConversationUpdateEvent#equals",
-                "android.service.personalcontext.hint.ConversationEvent.ConversationUpdateEvent#hashCode",
-                "android.service.personalcontext.hint.ConversationEvent.ConversationUpdateEvent#toString",
+                "android.service.personalcontext.hint.ConversationEvent"
+                        + ".ConversationUpdateEvent#equals",
+                "android.service.personalcontext.hint.ConversationEvent"
+                        + ".ConversationUpdateEvent#hashCode",
+                "android.service.personalcontext.hint.ConversationEvent"
+                        + ".ConversationUpdateEvent#toString",
+                "android.service.personalcontext.hint.ConversationData#hasNewMessage",
+                "android.service.personalcontext.hint.ConversationData"
+                        + ".Builder#setHasNewMessage",
             })
     @Test
     public void testConversationHint_updateEvent_equalsHashCodeToString() {
@@ -370,6 +390,7 @@ public class ConversationHintTest {
                         .setConversationTitle("title")
                         .setChatMessages(List.of(mChatMessageData))
                         .setActivityId(activityId)
+                        .setHasNewMessage(true)
                         .build();
         final Instant eventTimestamp = mReferenceTime;
         final ConversationUpdateEvent updateEvent =
@@ -406,7 +427,8 @@ public class ConversationHintTest {
                 "android.service.personalcontext.hint.ChatMessageData.Builder#build",
                 "android.service.personalcontext.hint.ChatMessageData.Builder#setAuthor",
                 "android.service.personalcontext.hint.ChatMessageData.Builder#setAutofillId",
-                "android.service.personalcontext.hint.ChatMessageData.Builder#setContentDescription",
+                "android.service.personalcontext.hint.ChatMessageData"
+                        + ".Builder#setContentDescription",
                 "android.service.personalcontext.hint.ChatMessageData.Builder#setDateText",
                 "android.service.personalcontext.hint.ChatMessageData.Builder#setReferenceTime",
                 "android.service.personalcontext.hint.ChatMessageData.Builder#setText",
@@ -416,10 +438,14 @@ public class ConversationHintTest {
                 "android.service.personalcontext.hint.ConversationData#getConversationTitle",
                 "android.service.personalcontext.hint.ConversationData#getInputBoxAutofillId",
                 "android.service.personalcontext.hint.ConversationData#getInputBoxText",
-                "android.service.personalcontext.hint.ConversationData#getProcessingEndTimestamp",
-                "android.service.personalcontext.hint.ConversationData#getProcessingStartTimestamp",
+                "android.service.personalcontext.hint"
+                        + ".ConversationData#getProcessingEndTimestamp",
+                "android.service.personalcontext.hint"
+                        + ".ConversationData#getProcessingStartTimestamp",
                 "android.service.personalcontext.hint.ConversationData#isKeyboardShown",
-                "android.service.personalcontext.hint.ConversationData#isLastMessageFromTheUser",
+                "android.service.personalcontext.hint"
+                        + ".ConversationData#isLastMessageFromTheUser",
+                "android.service.personalcontext.hint.ConversationData#hasNewMessage",
                 "android.service.personalcontext.hint.ConversationData#equals",
                 "android.service.personalcontext.hint.ConversationData#hashCode",
                 "android.service.personalcontext.hint.ConversationData#toString",
@@ -427,12 +453,19 @@ public class ConversationHintTest {
                 "android.service.personalcontext.hint.ConversationData.Builder#build",
                 "android.service.personalcontext.hint.ConversationData.Builder#setActivityId",
                 "android.service.personalcontext.hint.ConversationData.Builder#setChatMessages",
-                "android.service.personalcontext.hint.ConversationData.Builder#setComponentName",
-                "android.service.personalcontext.hint.ConversationData.Builder#setConversationTitle",
-                "android.service.personalcontext.hint.ConversationData.Builder#setInputBoxAutofillId",
+                "android.service.personalcontext.hint.ConversationData"
+                        + ".Builder#setComponentName",
+                "android.service.personalcontext.hint.ConversationData"
+                        + ".Builder#setConversationTitle",
+                "android.service.personalcontext.hint.ConversationData"
+                        + ".Builder#setInputBoxAutofillId",
                 "android.service.personalcontext.hint.ConversationData.Builder#setInputBoxText",
-                "android.service.personalcontext.hint.ConversationData.Builder#setProcessingEndTimestamp",
-                "android.service.personalcontext.hint.ConversationData.Builder#setProcessingStartTimestamp",
+                "android.service.personalcontext.hint.ConversationData"
+                        + ".Builder#setProcessingEndTimestamp",
+                "android.service.personalcontext.hint.ConversationData"
+                        + ".Builder#setProcessingStartTimestamp",
+                "android.service.personalcontext.hint.ConversationData"
+                        + ".Builder#setHasNewMessage",
             })
     @Test
     public void testConversationData_getters() {
@@ -492,6 +525,7 @@ public class ConversationHintTest {
                         .setInputBoxText("inputBoxText")
                         .setConversationTitle("title")
                         .setChatMessages(chatMessages)
+                        .setHasNewMessage(true)
                         .build();
 
         assertThat(conversationData.getProcessingStartTimestamp())
@@ -503,6 +537,7 @@ public class ConversationHintTest {
         assertThat(conversationData.getConversationTitle()).isEqualTo("title");
         assertThat(conversationData.isKeyboardShown()).isTrue();
         assertThat(conversationData.isLastMessageFromTheUser()).isFalse();
+        assertThat(conversationData.hasNewMessage()).isTrue();
         assertThat(conversationData.getChatMessages()).isEqualTo(chatMessages);
         assertThat(conversationData.toString()).isNotNull();
 
@@ -517,6 +552,7 @@ public class ConversationHintTest {
                         .setInputBoxText("inputBoxText")
                         .setConversationTitle("title")
                         .setChatMessages(chatMessages)
+                        .setHasNewMessage(true)
                         .build();
         assertThat(conversationData).isEqualTo(conversationData2);
         assertThat(conversationData.hashCode()).isEqualTo(conversationData2.hashCode());
