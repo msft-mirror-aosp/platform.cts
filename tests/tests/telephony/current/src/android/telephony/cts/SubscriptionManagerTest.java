@@ -1599,6 +1599,19 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_IS_PRIVATE_NETWORK_API)
+    @ApiTest(apis = {"android.telephony.SubscriptionInfo#isPrivateNetwork"})
+    public void testSubscriptionInfo_isPrivateNetwork() throws Exception {
+        final List<SubscriptionInfo> allSubInfos =
+                ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
+                        (sm) -> sm.getAllSubscriptionInfoList());
+        for (SubscriptionInfo subInfo : allSubInfos) {
+            // Just call the method to make sure it does not crash.
+            subInfo.isPrivateNetwork();
+        }
+    }
+
+    @Test
     @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_PSIM_TO_ESIM_CONVERSION)
     public void testUpdateSubscription_transferStatus() throws Exception {
         // Testing permission fail
