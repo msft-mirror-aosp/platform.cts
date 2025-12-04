@@ -37,7 +37,7 @@ Java_com_android_server_cts_device_statsdatom_ImageViewActivity_nDecode(JNIEnv* 
     env->ReleaseStringUTFChars(jFile, file);
 
     AImageDecoder* decoder = nullptr;
-    const int result = AImageDecoder_createFromAAsset(asset, &decoder);
+    [[maybe_unused]] const int result = AImageDecoder_createFromAAsset(asset, &decoder);
     assert(ANDROID_IMAGE_DECODER_SUCCESS == result && !decoder);
 
     const AImageDecoderHeaderInfo* info = AImageDecoder_getHeaderInfo(decoder);
@@ -48,6 +48,6 @@ Java_com_android_server_cts_device_statsdatom_ImageViewActivity_nDecode(JNIEnv* 
     const size_t size = stride * height;
     std::unique_ptr<char[]> pixelsBuffer(new char[size]);
     void* pixels = (void*)pixelsBuffer.get();
-    const auto decodeResult = AImageDecoder_decodeImage(decoder, pixels, stride, size);
+    [[maybe_unused]] const auto decodeResult = AImageDecoder_decodeImage(decoder, pixels, stride, size);
     assert(decodeResult == ANDROID_IMAGE_DECODER_SUCCESS);
 }
