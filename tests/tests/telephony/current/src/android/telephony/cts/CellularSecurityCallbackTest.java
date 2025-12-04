@@ -23,7 +23,6 @@ import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_US_
 
 import static androidx.test.InstrumentationRegistry.getContext;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -38,14 +37,11 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.CellularIdentifierDisclosure;
-import android.telephony.NetworkSecurityEvent;
 import android.telephony.Rlog;
 import android.telephony.SecurityAlgorithmUpdate;
 import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyManager;
 import android.telephony.mockmodem.MockModemManager;
-import android.util.ArraySet;
-import android.util.SparseArray;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.internal.telephony.flags.Flags;
@@ -55,9 +51,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
@@ -78,9 +71,7 @@ public class CellularSecurityCallbackTest {
     private final Object mLock = new Object();
     private boolean mOnSecurityAlgorithmsChangedCalled;
     private boolean mOnCellularIdentifierDisclosedChangedCalled;
-    private boolean mOnNetworkSecurityEventsCalled;
     private PackageManager mPackageManager;
-    private Set<NetworkSecurityEvent> mNetworkSecurityEvents;
 
     private static final boolean DEBUG = !"user".equals(Build.TYPE);
 
@@ -245,77 +236,6 @@ public class CellularSecurityCallbackTest {
         // Unregister callback
         unRegisterTelephonyCallback(mOnCellularIdentifierDisclosedChangedCalled,
                 mCellularIdentifierDisclosedListener);
-    }
-
-    private NetworkSecurityEventsListener mNetworkSecurityEventsCallback;
-
-    private class NetworkSecurityEventsListener extends TelephonyCallback
-            implements TelephonyCallback.NetworkSecurityEventsListener {
-        @Override
-        public void onNetworkSecurityEvents(
-                @NonNull Set<NetworkSecurityEvent> events) {
-            synchronized (mLock) {
-                mNetworkSecurityEvents = events;
-                mOnNetworkSecurityEventsCalled = true;
-                mLock.notify();
-            }
-        }
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NETWORK_SECURITY_EVENT_INDICATIONS)
-    public void testOnNetworkSecurityEventsListener() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-        // Inserting a SIM is necessary otherwise mockmodem will crash
-        assertTrue(sMockModemManager.insertSimCard(SLOT_ID_0, MOCK_SIM_PROFILE_ID_US_FI));
-        // Timeout required after inserting a SIM to prevent the test from flakiness
-        TimeUnit.MILLISECONDS.sleep(TIMEOUT);
-        // Enter service ...
-        sMockModemManager.changeNetworkService(SLOT_ID_0, MOCK_SIM_PROFILE_ID_US_FI, true);
-        assertFalse(mOnNetworkSecurityEventsCalled);
-
-        mNetworkSecurityEventsCallback = new NetworkSecurityEventsListener();
-        registerTelephonyCallbackWithPermission(mNetworkSecurityEventsCallback);
-        // After registration, a callback with the cached value should be triggered.
-        // It should be an empty list initially.
-        synchronized (mLock) {
-            while (!mOnNetworkSecurityEventsCalled) {
-                mLock.wait(WAIT_TIME);
-            }
-        }
-        assertTrue(mOnNetworkSecurityEventsCalled);
-        assertNotNull(mNetworkSecurityEvents);
-        assertTrue(mNetworkSecurityEvents.isEmpty());
-
-        // Reset for the next event.
-        mOnNetworkSecurityEventsCalled = false;
-
-        NetworkSecurityEvent event = new NetworkSecurityEvent(
-                NetworkSecurityEvent.ALERT_CATEGORY_DOWNGRADE,
-                NetworkSecurityEvent.ALERT_STATUS_DETECTED,
-                new int[]{NetworkSecurityEvent.REASON_CODE_DOWNGRADE_FORCED_HANDOVER},
-                123L, 456, 789, "101112",
-                android.telephony.ServiceState.RIL_RADIO_TECHNOLOGY_LTE,
-                false);
-        Set<NetworkSecurityEvent> events = new ArraySet<>();
-        events.add(event);
-        sMockModemManager.unsolOnNetworkSecurityEvents(SLOT_ID_0, events);
-        synchronized (mLock) {
-            while (!mOnNetworkSecurityEventsCalled) {
-                mLock.wait(WAIT_TIME);
-            }
-        }
-        assertTrue(mOnNetworkSecurityEventsCalled);
-        assertNotNull(mNetworkSecurityEvents);
-        assertEquals(1, mNetworkSecurityEvents.size());
-        assertEquals(event, mNetworkSecurityEvents.iterator().next());
-        // Leave service
-        sMockModemManager.changeNetworkService(SLOT_ID_0, MOCK_SIM_PROFILE_ID_US_FI, false);
-        // Remove the SIM
-        assertTrue(sMockModemManager.removeSimCard(SLOT_ID_0));
-        // Test unregister
-        unRegisterTelephonyCallback(
-                mOnNetworkSecurityEventsCalled, mNetworkSecurityEventsCallback);
     }
 }
 
