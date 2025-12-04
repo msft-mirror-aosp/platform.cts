@@ -493,8 +493,9 @@ class InstallConstraintsTest {
 
     private fun startActivity(packageName: String, className: String) =
         // The -W option waits for the activity launch to complete
+        // Launch activity in fullscreen mode using --windowingMode 1
         SystemUtil.runShellCommandOrThrow(
-            "am start-activity --user $testUserId -W -n $packageName/$className"
+            "am start-activity --user $testUserId -W --windowingMode 1 -n $packageName/$className"
         )
 
     private fun getPackageImportance(packageName: String) =
