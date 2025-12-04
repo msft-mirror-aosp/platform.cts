@@ -38,7 +38,7 @@ public final class MixedManagedProfileOwnerTestApi30 extends DeviceAndProfileOwn
         super.setUp();
 
         removeTestUsers();
-        mParentUserId = DevicePolicyUsersPreparer.getProfileParentUserIds().getFirst();
+        mParentUserId = DevicePolicyUsersPreparer.getProfileParentUserId();
         createManagedProfile();
     }
 

@@ -52,7 +52,7 @@ public final class LauncherAppsProfileTest extends BaseLauncherAppsTest {
 
         removeTestUsers();
         // Create a managed profile
-        mParentUserId = DevicePolicyUsersPreparer.getProfileParentUserIds().getFirst();
+        mParentUserId = DevicePolicyUsersPreparer.getProfileParentUserId();
         mProfileUserId = createManagedProfile(mParentUserId);
         installAppAsUser(MANAGED_PROFILE_APK, mProfileUserId);
         setProfileOwnerOrFail(MANAGED_PROFILE_PKG + "/" + ADMIN_RECEIVER_TEST_CLASS,
