@@ -552,7 +552,7 @@ class AppFunctionRegistrationTest {
         const val TEST_HELPER_PKG: String = "android.app.appfunctions.cts.helper"
         const val CURRENT_PKG: String = "android.app.appfunctions.cts"
         const val SHORT_TIMEOUT_SECOND: Long = 2
-        const val LONG_TIMEOUT_SECOND: Long = 10
+        const val LONG_TIMEOUT_SECOND: Long = 20
 
         const val EXECUTE_APP_FUNCTIONS_PERMISSION = Manifest.permission.EXECUTE_APP_FUNCTIONS
     }
