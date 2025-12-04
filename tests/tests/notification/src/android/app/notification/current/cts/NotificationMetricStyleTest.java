@@ -204,6 +204,53 @@ public class NotificationMetricStyleTest {
     }
 
     @Test
+    public void getCriticalMetric_default_isFirstMetric() {
+        MetricStyle style =
+                new MetricStyle()
+                        .addMetric(new Metric(new FixedInt(1), "First"))
+                        .addMetric(new Metric(new FixedInt(2), "Second"))
+                        .addMetric(new Metric(new FixedInt(3), "Third"));
+
+        assertThat(style.getCriticalMetric().getLabel().toString()).isEqualTo("First");
+    }
+
+    @Test
+    public void getCriticalMetric_afterSetIndex_hasValue() {
+        MetricStyle style =
+                new MetricStyle()
+                        .addMetric(new Metric(new FixedInt(1), "First"))
+                        .addMetric(new Metric(new FixedInt(2), "Second"))
+                        .addMetric(new Metric(new FixedInt(3), "Third"))
+                        .setCriticalMetric(1);
+
+        assertThat(style.getCriticalMetric().getLabel().toString()).isEqualTo("Second");
+    }
+
+    @Test
+    public void getCriticalMetric_afterSetIndexNone_isNull() {
+        MetricStyle style =
+                new MetricStyle()
+                        .addMetric(new Metric(new FixedInt(1), "First"))
+                        .addMetric(new Metric(new FixedInt(2), "Second"))
+                        .addMetric(new Metric(new FixedInt(3), "Third"))
+                        .setCriticalMetric(MetricStyle.METRIC_INDEX_NONE);
+
+        assertThat(style.getCriticalMetric()).isNull();
+    }
+
+    @Test
+    public void getCriticalMetric_afterSetIndexInvalid_isNull() {
+        MetricStyle style =
+                new MetricStyle()
+                        .addMetric(new Metric(new FixedInt(1), "First"))
+                        .addMetric(new Metric(new FixedInt(2), "Second"))
+                        .addMetric(new Metric(new FixedInt(3), "Third"))
+                        .setCriticalMetric(3);
+
+        assertThat(style.getCriticalMetric()).isNull();
+    }
+
+    @Test
     public void newMetric_constructs() {
         Metric metric = new Metric(new FixedText("str"), "Port");
 

@@ -320,6 +320,26 @@ public class NotificationCompactContentTest {
     }
 
     @Test
+    public void resolveCompactContent_default_choosesCriticalMetric() {
+        Notification n =
+                new Notification.Builder(mContext, "channel")
+                        .setStyle(
+                                new MetricStyle()
+                                        .addMetric(new Metric(new FixedText("1"), "L1"))
+                                        .addMetric(new Metric(new FixedText("2"), "L2"))
+                                        .setCriticalMetric(1))
+                        .setUsesChronometer(true)
+                        .setChronometerCountDown(true)
+                        .setWhen(12345L)
+                        .setShowWhen(true)
+                        .build();
+
+        FixedText resolvedText = resolveBasicCompactContentText(n, FixedText.class);
+
+        assertThat(resolvedText.getValue().toString()).isEqualTo("2");
+    }
+
+    @Test
     public void resolveCompactContent_default_choosesFirstMetric() {
         Notification n =
                 new Notification.Builder(mContext, "channel")
