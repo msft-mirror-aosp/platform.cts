@@ -134,7 +134,6 @@ import android.util.Log;
 import android.util.Pair;
 
 import androidx.test.InstrumentationRegistry;
-// import androidx.test.filters.RequiresDevice;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
@@ -3205,7 +3204,8 @@ public class TelephonyManagerTest {
             // IllegalArgumentException and IllegalStateException is okay, just not
             // SecurityException
         } catch (SecurityException e) {
-            throw new AssertionError("iccOpenLogicalChannelByPort: SecurityException not expected", e);
+            throw new AssertionError(
+                    "iccOpenLogicalChannelByPort: SecurityException not expected", e);
         }
     }
 
@@ -7340,5 +7340,87 @@ public class TelephonyManagerTest {
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
                 .dropShellPermissionIdentity();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_AUTO_SIM_PIN_MANAGEMENT)
+    public void testGetSimAutoPinManagementEnrollmentStatus() {
+        TelephonyManager tm = mTelephonyManager.createForSubscriptionId(mTestSub);
+        assertEquals(
+                TelephonyManager.SIM_PIN_ENROLLMENT_STATUS_MANUALLY_MANAGED,
+                tm.getSimAutoPinManagementEnrollmentStatus());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_AUTO_SIM_PIN_MANAGEMENT)
+    public void testEnrollSimInAutoPinManagement_noPermission() {
+        TelephonyManager tm = mTelephonyManager.createForSubscriptionId(mTestSub);
+
+        OutcomeReceiver<String, TelephonyManager.SimAutoPinManagementException> callback =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(String result) {
+                        fail("Should not get a positive result.");
+                    }
+
+                    @Override
+                    public void onError(TelephonyManager.SimAutoPinManagementException error) {
+                        fail("Should not get an error.");
+                    }
+                };
+
+        assertThrows(
+                SecurityException.class,
+                () ->
+                        tm.enrollSimInAutoPinManagement(
+                                "0000", getContext().getMainExecutor(), callback));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_AUTO_SIM_PIN_MANAGEMENT)
+    public void testUnenrollSimInAutoPinManagement_noPermission() {
+        TelephonyManager tm = mTelephonyManager.createForSubscriptionId(mTestSub);
+
+        OutcomeReceiver<Void, TelephonyManager.SimAutoPinManagementException> callback =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(Void result) {
+                        fail("Should not get a positive result.");
+                    }
+
+                    @Override
+                    public void onError(TelephonyManager.SimAutoPinManagementException error) {
+                        fail("Should not get an error.");
+                    }
+                };
+
+        assertThrows(
+                SecurityException.class,
+                () ->
+                        tm.unenrollSimFromAutoPinManagement(
+                                getContext().getMainExecutor(), callback));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_AUTO_SIM_PIN_MANAGEMENT)
+    public void testGetAutoManagedPinForSim_noPermission() {
+        TelephonyManager tm = mTelephonyManager.createForSubscriptionId(mTestSub);
+
+        OutcomeReceiver<String, TelephonyManager.SimAutoPinManagementException> callback =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(String result) {
+                        fail("Should not get a positive result.");
+                    }
+
+                    @Override
+                    public void onError(TelephonyManager.SimAutoPinManagementException error) {
+                        fail("Should not get an error.");
+                    }
+                };
+
+        assertThrows(
+                SecurityException.class,
+                () -> tm.getAutoManagedPinForSim(getContext().getMainExecutor(), callback));
     }
 }
