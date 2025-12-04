@@ -25,8 +25,11 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.withDescription;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertEquals;
+
 import android.Manifest;
 import android.app.Instrumentation;
+import android.content.ComponentName;
 import android.content.Context;
 import android.platform.test.annotations.AppModeFull;
 import android.text.TextUtils;
@@ -36,6 +39,7 @@ import android.view.inputmethod.InputMethodSubtype;
 import android.view.inputmethod.cts.util.EndToEndImeTestBase;
 import android.view.inputmethod.cts.util.SecureSettingsUtils;
 import android.view.inputmethod.cts.util.TestActivity;
+import android.view.inputmethod.cts.util.TestUtils;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 
@@ -45,11 +49,14 @@ import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.harrier.DeviceState;
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.mockime.ImeEvent;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeEventStreamTestUtils.DescribedPredicate;
 import com.android.cts.mockime.ImeSettings;
+import com.android.cts.mockime.MockIme;
+import com.android.cts.mockime.MockImePackageNames;
 import com.android.cts.mockime.MockImeSession;
 
 import org.jetbrains.annotations.NotNull;
@@ -57,6 +64,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -68,8 +76,16 @@ public final class InputMethodSubtypeEndToEndTest extends EndToEndImeTestBase {
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
     static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+    // TODO(b/453929129): Reconsider this long timeout.
+    private static final long REGISTRATION_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(2);
 
     private static final String TEST_IME_ID = "com.android.cts.testime/.TestIme";
+
+    private static final String MOCK_IME_WITH_MANY_SUBTYPES_APK_PATH =
+            "/data/local/tmp/cts/inputmethod/CtsMockInputMethodWithManySubtypes.apk";
+    private static final ComponentName MOCK_IME_WITH_MANY_SUBTYPES =
+            ComponentName.createRelative(
+                    MockImePackageNames.MockImeManySubtypes, MockIme.class.getName());
 
     private static final InputMethodSubtype IMPLICITLY_ENABLED_TEST_SUBTYPE =
             new InputMethodSubtype.InputMethodSubtypeBuilder()
@@ -357,6 +373,75 @@ public final class InputMethodSubtypeEndToEndTest extends EndToEndImeTestBase {
         }
     }
 
+    /**
+     * Verifies the behavior where the service already specifies many subtypes in manifest, and also
+     * adding many subtypes dynamically. As long as the data size is within the limit, the framework
+     * should be able to handle the large subtypes list.
+     */
+    @Test
+    public void testAddManySubtypes() throws Exception {
+        final var instrumentation = InstrumentationRegistry.getInstrumentation();
+        final var context = instrumentation.getTargetContext();
+        final var imm = context.getSystemService(InputMethodManager.class);
+
+        // This APK contains a large statically declared subtypes, thus not installed by default.
+        TestUtils.installApk(MOCK_IME_WITH_MANY_SUBTYPES_APK_PATH);
+        try {
+            // Wait until the IME is loaded.
+            PollingCheck.waitFor(
+                    REGISTRATION_TIMEOUT_MS,
+                    () ->
+                            imm.getInputMethodList().stream()
+                                    .map(InputMethodInfo::getComponent)
+                                    .toList()
+                                    .contains(MOCK_IME_WITH_MANY_SUBTYPES),
+                    "MockImeManySubtypes must be loaded");
+
+            try (var session =
+                    MockImeSession.create(
+                            instrumentation.getContext(),
+                            instrumentation.getUiAutomation(),
+                            new ImeSettings.Builder()
+                                    .setMockImePackageName(
+                                            MockImePackageNames.MockImeManySubtypes))) {
+                final var stream = session.openEventStream();
+                final String marker = getTestMarker();
+                launchTestActivity(marker);
+                expectEvent(stream, eventMatcher("onCreate"), TIMEOUT);
+                expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+
+                // The IME initially has 100 subtypes, defined in method_with_many_subtypes.xml.
+                waitForNumberOfSubtypes(MOCK_IME_WITH_MANY_SUBTYPES, 100);
+
+                // Request 50 additional subtypes. Total should be 100 + 50 = 150.
+                expectCommand(
+                        stream,
+                        session.callSetAdditionalInputMethodSubtypes(
+                                session.getImeId(), createFakeSubtypeArray(50)),
+                        TIMEOUT);
+                waitForNumberOfSubtypes(MOCK_IME_WITH_MANY_SUBTYPES, 150);
+
+                // Request 300 additional subtypes. Total should be 100 + 300 = 400.
+                expectCommand(
+                        stream,
+                        session.callSetAdditionalInputMethodSubtypes(
+                                session.getImeId(), createFakeSubtypeArray(300)),
+                        TIMEOUT);
+                waitForNumberOfSubtypes(MOCK_IME_WITH_MANY_SUBTYPES, 400);
+
+                // Request 0 additional subtypes again to reset. Total should be back to 100.
+                expectCommand(
+                        stream,
+                        session.callSetAdditionalInputMethodSubtypes(
+                                session.getImeId(), createFakeSubtypeArray(0)),
+                        TIMEOUT);
+                waitForNumberOfSubtypes(MOCK_IME_WITH_MANY_SUBTYPES, 100);
+            }
+        } finally {
+            TestUtils.uninstallPackage(MockImePackageNames.MockImeManySubtypes);
+        }
+    }
+
     @NotNull
     private static DescribedPredicate<ImeEvent> onCurrentIMSubtypeChangedMatcher(
             InputMethodSubtype subtype) {
@@ -369,5 +454,55 @@ public final class InputMethodSubtypeEndToEndTest extends EndToEndImeTestBase {
                             InputMethodSubtype.class);
                     return Objects.equals(actual, subtype);
                 });
+    }
+
+    /**
+     * Generates a specified number of InputMethodSubtype objects with intentionally large string
+     * values for various fields.
+     */
+    private InputMethodSubtype[] createFakeSubtypeArray(int numOfSubtypes) {
+        ArrayList<InputMethodSubtype> additionalSubtypes = new ArrayList<>(numOfSubtypes);
+        for (int i = 0; i < numOfSubtypes; i++) {
+            String longText = "a".repeat(128);
+
+            final var largeSubtype =
+                    new InputMethodSubtype.InputMethodSubtypeBuilder()
+                            .setSubtypeId(0x1234567 + i)
+                            .setOverridesImplicitlyEnabledSubtype(true)
+                            .setPhysicalKeyboardHint(null, longText)
+                            .setLanguageTag(longText)
+                            .setSubtypeLocale(longText)
+                            .setSubtypeMode("additional mode " + i)
+                            .setSubtypeExtraValue(longText)
+                            .build();
+            additionalSubtypes.add(largeSubtype);
+        }
+        return additionalSubtypes.toArray(new InputMethodSubtype[0]);
+    }
+
+    /** Wait for InputMethodManager returns the specified number of subtypes. */
+    private void waitForNumberOfSubtypes(@NonNull ComponentName componentName, int numOfSubtypes) {
+        final var imm =
+                InstrumentationRegistry.getInstrumentation()
+                        .getTargetContext()
+                        .getSystemService(InputMethodManager.class);
+        PollingCheck.waitFor(
+                TIMEOUT,
+                () ->
+                        imm.getInputMethodList().stream()
+                                .filter(im -> im.getComponent().equals(componentName))
+                                .anyMatch(im -> im.getSubtypeCount() == numOfSubtypes),
+                "MOCK_IME_WITH_MANY_SUBTYPES should have " + numOfSubtypes + " subtypes");
+
+        // getEnabledInputMethodSubtypeList (with allowsImplicitlyEnabledSubtypes = true) returns
+        // a list per mode. We intentionally set different mode string for all subtypes for testing
+        // in #createFakeSubtypeArray, thus the returned result should have the same number of
+        // subtypes.
+        assertEquals(
+                numOfSubtypes,
+                imm.getEnabledInputMethodSubtypeList(
+                                imm.getCurrentInputMethodInfo(),
+                                /* allowsImplicitlyEnabledSubtypes= */ true)
+                        .size());
     }
 }

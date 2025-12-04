@@ -74,21 +74,6 @@
             <meta-data android:name="android.view.im" android:resource="@xml/method_with_700_subtypes_of_small_attrs"/>
         </service>
 
-        <service android:enabled="false" android:name=".MethodWithManyAdditionalSubtypes"
-            android:permission="android.permission.BIND_INPUT_METHOD" android:exported="true">
-            <intent-filter>
-                <action android:name="android.view.InputMethod"/>
-            </intent-filter>
-            <meta-data android:name="android.view.im" android:resource="@xml/method_with_100_subtypes_of_small_attrs"/>
-        </service>
-        <receiver
-            android:name=".SubtypeControlReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="com.android.cts.mocklargeresourceime.ACTION_SET_ADDITIONAL_SUBTYPES" />
-            </intent-filter>
-        </receiver>
-
         <service android:name=".services.imeservice1"
                  android:permission="android.permission.BIND_INPUT_METHOD" android:exported="true">
             <intent-filter>
