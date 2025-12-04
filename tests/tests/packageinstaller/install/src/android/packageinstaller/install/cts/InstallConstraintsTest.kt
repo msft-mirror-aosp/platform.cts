@@ -58,14 +58,10 @@ class InstallConstraintsTest {
     companion object {
         private const val TAG = "InstallConstraintsTest"
         private const val MATCH_STATIC_SHARED_AND_SDK_LIBRARIES = 0x04000000
-        private val HelloWorldSdk1 = TestApp(
-            "HelloWorldSdk1", "com.test.sdk1_1",
-            1, false, "HelloWorldSdk1.apk"
-        )
-        private val HelloWorldUsingSdk1 = TestApp(
-            "HelloWorldUsingSdk1",
-            "com.test.sdk.user", 1, false, "HelloWorldUsingSdk1.apk"
-        )
+        private val HelloWorldSdk1 =
+            TestApp("HelloWorldSdk1", "com.test.sdk1_1", 1, false, "HelloWorldSdk1.apk")
+        private val HelloWorldUsingSdk1 =
+            TestApp("HelloWorldUsingSdk1", "com.test.sdk.user", 1, false, "HelloWorldUsingSdk1.apk")
     }
 
     private val instr: Instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -76,7 +72,8 @@ class InstallConstraintsTest {
         instr.uiAutomation.adoptShellPermissionIdentity(
             Manifest.permission.PACKAGE_USAGE_STATS,
             Manifest.permission.INSTALL_PACKAGES,
-            Manifest.permission.DELETE_PACKAGES)
+            Manifest.permission.DELETE_PACKAGES,
+        )
     }
 
     @After
@@ -126,11 +123,9 @@ class InstallConstraintsTest {
             val pi = InstallUtils.getPackageInstaller()
             val constraints = InstallConstraints.Builder().setAppNotInteractingRequired().build()
             val future = CompletableFuture<PackageInstaller.InstallConstraintsResult>()
-            pi.checkInstallConstraints(
-                    listOf(TestApp.A),
-                    constraints,
-                    { r -> r.run() }
-            ) { result -> future.complete(result) }
+            pi.checkInstallConstraints(listOf(TestApp.A), constraints, { r -> r.run() }) { result ->
+                future.complete(result)
+            }
             assertThat(future.join().areAllConstraintsSatisfied()).isFalse()
         } finally {
             AppOpsUtils.reset(TestApp.A)
@@ -145,8 +140,8 @@ class InstallConstraintsTest {
             pi.checkInstallConstraints(
                 listOf(TestApp.A),
                 InstallConstraints.GENTLE_UPDATE,
-                { r -> r.run() }
-            ) { }
+                { r -> r.run() },
+            ) {}
             Assert.fail()
         } catch (e: SecurityException) {
             assertThat(e.message).contains("has no access to package")
@@ -163,27 +158,26 @@ class InstallConstraintsTest {
         val pi = InstallUtils.getPackageInstaller()
         val f1 = CompletableFuture<PackageInstaller.InstallConstraintsResult>()
         val constraints = InstallConstraints.Builder().setAppNotTopVisibleRequired().build()
-        pi.checkInstallConstraints(
-            listOf(TestApp.A),
-            constraints,
-            { r -> r.run() }
-        ) { result -> f1.complete(result) }
+        pi.checkInstallConstraints(listOf(TestApp.A), constraints, { r -> r.run() }) { result ->
+            f1.complete(result)
+        }
         assertThat(f1.join().areAllConstraintsSatisfied()).isFalse()
 
         var importance = getPackageImportance(TestApp.A)
         Log.d(TAG, "Importance before pressBack: $importance")
         // Test app A is no longer top-visible
         UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
-        PollingCheck.waitFor ({
-            importance = getPackageImportance(TestApp.A)
-            importance > ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-        }, "Importance after pressBack should be greater than foreground, but was $importance")
+        PollingCheck.waitFor(
+            {
+                importance = getPackageImportance(TestApp.A)
+                importance > ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+            },
+            "Importance after pressBack should be greater than foreground, but was $importance",
+        )
         val f2 = CompletableFuture<PackageInstaller.InstallConstraintsResult>()
-        pi.checkInstallConstraints(
-            listOf(TestApp.A),
-            constraints,
-            { r -> r.run() }
-        ) { result -> f2.complete(result) }
+        pi.checkInstallConstraints(listOf(TestApp.A), constraints, { r -> r.run() }) { result ->
+            f2.complete(result)
+        }
         assertThat(f2.join().areAllConstraintsSatisfied()).isTrue()
     }
 
@@ -197,27 +191,26 @@ class InstallConstraintsTest {
         val pi = InstallUtils.getPackageInstaller()
         val f1 = CompletableFuture<PackageInstaller.InstallConstraintsResult>()
         val constraints = InstallConstraints.Builder().setAppNotForegroundRequired().build()
-        pi.checkInstallConstraints(
-            listOf(TestApp.A),
-            constraints,
-            { r -> r.run() }
-        ) { result -> f1.complete(result) }
+        pi.checkInstallConstraints(listOf(TestApp.A), constraints, { r -> r.run() }) { result ->
+            f1.complete(result)
+        }
         assertThat(f1.join().areAllConstraintsSatisfied()).isFalse()
 
         var importance = getPackageImportance(TestApp.A)
         Log.d(TAG, "Importance before pressBack: $importance")
         // Test app A is no longer foreground
         UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
-        PollingCheck.waitFor ({
-            importance = getPackageImportance(TestApp.A)
-            importance > ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-        }, "Importance after pressBack should be greater than foreground, but was $importance")
+        PollingCheck.waitFor(
+            {
+                importance = getPackageImportance(TestApp.A)
+                importance > ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+            },
+            "Importance after pressBack should be greater than foreground, but was $importance",
+        )
         val f2 = CompletableFuture<PackageInstaller.InstallConstraintsResult>()
-        pi.checkInstallConstraints(
-            listOf(TestApp.A),
-            constraints,
-            { r -> r.run() }
-        ) { result -> f2.complete(result) }
+        pi.checkInstallConstraints(listOf(TestApp.A), constraints, { r -> r.run() }) { result ->
+            f2.complete(result)
+        }
         assertThat(f2.join().areAllConstraintsSatisfied()).isTrue()
     }
 
@@ -233,21 +226,17 @@ class InstallConstraintsTest {
             val pi = InstallUtils.getPackageInstaller()
             val f1 = CompletableFuture<PackageInstaller.InstallConstraintsResult>()
             val constraints = InstallConstraints.Builder().setDeviceIdleRequired().build()
-            pi.checkInstallConstraints(
-                listOf(TestApp.A),
-                constraints,
-                { r -> r.run() }
-            ) { result -> f1.complete(result) }
+            pi.checkInstallConstraints(listOf(TestApp.A), constraints, { r -> r.run() }) { result ->
+                f1.complete(result)
+            }
             assertThat(f1.join().areAllConstraintsSatisfied()).isFalse()
 
             // Device is idle
             SystemUtil.runShellCommand(" setprop $propKey 1")
             val f2 = CompletableFuture<PackageInstaller.InstallConstraintsResult>()
-            pi.checkInstallConstraints(
-                listOf(TestApp.A),
-                constraints,
-                { r -> r.run() }
-            ) { result -> f2.complete(result) }
+            pi.checkInstallConstraints(listOf(TestApp.A), constraints, { r -> r.run() }) { result ->
+                f2.complete(result)
+            }
             assertThat(f2.join().areAllConstraintsSatisfied()).isTrue()
         } finally {
             SystemUtil.runShellCommand("setprop $propKey 0")
@@ -265,21 +254,17 @@ class InstallConstraintsTest {
             val pi = InstallUtils.getPackageInstaller()
             val f1 = CompletableFuture<PackageInstaller.InstallConstraintsResult>()
             val constraints = InstallConstraints.Builder().setNotInCallRequired().build()
-            pi.checkInstallConstraints(
-                listOf(TestApp.A),
-                constraints,
-                { r -> r.run() }
-            ) { result -> f1.complete(result) }
+            pi.checkInstallConstraints(listOf(TestApp.A), constraints, { r -> r.run() }) { result ->
+                f1.complete(result)
+            }
             assertThat(f1.join().areAllConstraintsSatisfied()).isFalse()
 
             // Device is not in call
             SystemUtil.runShellCommand("setprop $propKey 0")
             val f2 = CompletableFuture<PackageInstaller.InstallConstraintsResult>()
-            pi.checkInstallConstraints(
-                listOf(TestApp.A),
-                constraints,
-                { r -> r.run() }
-            ) { result -> f2.complete(result) }
+            pi.checkInstallConstraints(listOf(TestApp.A), constraints, { r -> r.run() }) { result ->
+                f2.complete(result)
+            }
             assertThat(f2.join().areAllConstraintsSatisfied()).isTrue()
         } finally {
             SystemUtil.runShellCommand("setprop $propKey 0")
@@ -299,27 +284,26 @@ class InstallConstraintsTest {
         val pi = InstallUtils.getPackageInstaller()
         val f1 = CompletableFuture<PackageInstaller.InstallConstraintsResult>()
         val constraints = InstallConstraints.Builder().setAppNotForegroundRequired().build()
-        pi.checkInstallConstraints(
-            listOf(TestApp.S),
-            constraints,
-            { r -> r.run() }
-        ) { result -> f1.complete(result) }
+        pi.checkInstallConstraints(listOf(TestApp.S), constraints, { r -> r.run() }) { result ->
+            f1.complete(result)
+        }
         assertThat(f1.join().areAllConstraintsSatisfied()).isFalse()
 
         var importance = getPackageImportance(TestApp.A)
         Log.d(TAG, "Importance before pressBack: $importance")
         // Test app A is no longer foreground. So is test app S.
         UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
-        PollingCheck.waitFor ({
-            importance = getPackageImportance(TestApp.A)
-            importance > ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-        }, "Importance after pressBack should be greater than foreground, but was $importance")
+        PollingCheck.waitFor(
+            {
+                importance = getPackageImportance(TestApp.A)
+                importance > ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+            },
+            "Importance after pressBack should be greater than foreground, but was $importance",
+        )
         val f2 = CompletableFuture<PackageInstaller.InstallConstraintsResult>()
-        pi.checkInstallConstraints(
-            listOf(TestApp.S),
-            constraints,
-            { r -> r.run() }
-        ) { result -> f2.complete(result) }
+        pi.checkInstallConstraints(listOf(TestApp.S), constraints, { r -> r.run() }) { result ->
+            f2.complete(result)
+        }
         assertThat(f2.join().areAllConstraintsSatisfied()).isTrue()
     }
 
@@ -332,37 +316,47 @@ class InstallConstraintsTest {
             Install.single(HelloWorldSdk1).commit()
             // Override the certificate digest so HelloWorldUsingSdk1 can be installed
             SystemUtil.runShellCommand(
-                "setprop $propKey ${getPackageCertDigest(HelloWorldSdk1.packageName)}")
+                "setprop $propKey ${getPackageCertDigest(HelloWorldSdk1.packageName)}"
+            )
             Install.single(HelloWorldUsingSdk1).commit()
 
             // HelloWorldSdk1 will be considered foreground as HelloWorldUsingSdk1 is foreground
-            startActivity(HelloWorldUsingSdk1.packageName,
-                "com.example.helloworld.MainActivityNoExit")
+            startActivity(
+                HelloWorldUsingSdk1.packageName,
+                "com.example.helloworld.MainActivityNoExit",
+            )
             val pi = InstallUtils.getPackageInstaller()
             val f1 = CompletableFuture<PackageInstaller.InstallConstraintsResult>()
             val constraints = InstallConstraints.Builder().setAppNotForegroundRequired().build()
             pi.checkInstallConstraints(
                 listOf(HelloWorldSdk1.packageName),
                 constraints,
-                { r -> r.run() }
-            ) { result -> f1.complete(result) }
+                { r -> r.run() },
+            ) { result ->
+                f1.complete(result)
+            }
             assertThat(f1.join().areAllConstraintsSatisfied()).isFalse()
 
             var importance = getPackageImportance(HelloWorldUsingSdk1.packageName)
             Log.d(TAG, "Importance before pressBack: $importance")
             // HelloWorldUsingSdk1 is no longer foreground. So is HelloWorldSdk1.
             UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
-            PollingCheck.waitFor ({
-                importance = getPackageImportance(HelloWorldUsingSdk1.packageName)
-                importance > ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-            }, "Importance after pressBack should be greater than foreground, but was $importance")
+            PollingCheck.waitFor(
+                {
+                    importance = getPackageImportance(HelloWorldUsingSdk1.packageName)
+                    importance > ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+                },
+                "Importance after pressBack should be greater than foreground, but was $importance",
+            )
 
             val f2 = CompletableFuture<PackageInstaller.InstallConstraintsResult>()
             pi.checkInstallConstraints(
                 listOf(HelloWorldSdk1.packageName),
                 constraints,
-                { r -> r.run() }
-            ) { result -> f2.complete(result) }
+                { r -> r.run() },
+            ) { result ->
+                f2.complete(result)
+            }
             assertThat(f2.join().areAllConstraintsSatisfied()).isTrue()
         } finally {
             SystemUtil.runShellCommand("setprop $propKey invalid")
@@ -380,18 +374,19 @@ class InstallConstraintsTest {
 
         // Timeout == 0, constraints not satisfied
         with(LocalIntentSender()) {
-            pi.waitForInstallConstraints(
-                listOf(TestApp.A), inputConstraints,
-                intentSender, 0
-            )
+            pi.waitForInstallConstraints(listOf(TestApp.A), inputConstraints, intentSender, 0)
             val intent = this.result
             val packageNames = intent.getStringArrayExtra(Intent.EXTRA_PACKAGES)
-            val receivedConstraints = intent.getParcelableExtra(
-                PackageInstaller.EXTRA_INSTALL_CONSTRAINTS, InstallConstraints::class.java)
-            val result = intent.getParcelableExtra(
-                PackageInstaller.EXTRA_INSTALL_CONSTRAINTS_RESULT,
-                PackageInstaller.InstallConstraintsResult::class.java
-            )
+            val receivedConstraints =
+                intent.getParcelableExtra(
+                    PackageInstaller.EXTRA_INSTALL_CONSTRAINTS,
+                    InstallConstraints::class.java,
+                )
+            val result =
+                intent.getParcelableExtra(
+                    PackageInstaller.EXTRA_INSTALL_CONSTRAINTS_RESULT,
+                    PackageInstaller.InstallConstraintsResult::class.java,
+                )
             assertThat(packageNames).asList().containsExactly(TestApp.A)
             assertThat(receivedConstraints).isEqualTo(inputConstraints)
             assertThat(result!!.areAllConstraintsSatisfied()).isFalse()
@@ -400,8 +395,10 @@ class InstallConstraintsTest {
         // Timeout == one day, constraints not satisfied
         with(LocalIntentSender()) {
             pi.waitForInstallConstraints(
-                listOf(TestApp.A), inputConstraints,
-                intentSender, TimeUnit.DAYS.toMillis(1)
+                listOf(TestApp.A),
+                inputConstraints,
+                intentSender,
+                TimeUnit.DAYS.toMillis(1),
             )
             // Wait for a while and check the callback is not invoked yet
             assertThat(pollResult(3, TimeUnit.SECONDS)).isNull()
@@ -410,12 +407,16 @@ class InstallConstraintsTest {
             UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
             val intent = this.result
             val packageNames = intent.getStringArrayExtra(Intent.EXTRA_PACKAGES)
-            val receivedConstraints = intent.getParcelableExtra(
-                PackageInstaller.EXTRA_INSTALL_CONSTRAINTS, InstallConstraints::class.java)
-            val result = intent.getParcelableExtra(
-                PackageInstaller.EXTRA_INSTALL_CONSTRAINTS_RESULT,
-                PackageInstaller.InstallConstraintsResult::class.java
-            )
+            val receivedConstraints =
+                intent.getParcelableExtra(
+                    PackageInstaller.EXTRA_INSTALL_CONSTRAINTS,
+                    InstallConstraints::class.java,
+                )
+            val result =
+                intent.getParcelableExtra(
+                    PackageInstaller.EXTRA_INSTALL_CONSTRAINTS_RESULT,
+                    PackageInstaller.InstallConstraintsResult::class.java,
+                )
             assertThat(packageNames).asList().containsExactly(TestApp.A)
             assertThat(receivedConstraints).isEqualTo(inputConstraints)
             assertThat(result!!.areAllConstraintsSatisfied()).isTrue()
@@ -432,8 +433,10 @@ class InstallConstraintsTest {
         val constraints = InstallConstraints.Builder().setAppNotForegroundRequired().build()
         val sender = LocalIntentSender()
         pi.commitSessionAfterInstallConstraintsAreMet(
-            sessionId, sender.intentSender,
-            constraints, TimeUnit.MINUTES.toMillis(1)
+            sessionId,
+            sender.intentSender,
+            constraints,
+            TimeUnit.MINUTES.toMillis(1),
         )
         InstallUtils.assertStatusSuccess(sender.result)
         assertThat(getInstalledVersion(TestApp.A)).isEqualTo(2)
@@ -452,8 +455,10 @@ class InstallConstraintsTest {
         val constraints = InstallConstraints.Builder().setAppNotForegroundRequired().build()
         val sender = LocalIntentSender()
         pi.commitSessionAfterInstallConstraintsAreMet(
-            sessionId, sender.intentSender,
-            constraints, TimeUnit.SECONDS.toMillis(3)
+            sessionId,
+            sender.intentSender,
+            constraints,
+            TimeUnit.SECONDS.toMillis(3),
         )
         InstallUtils.assertStatusFailure(sender.result)
         assertThat(getInstalledVersion(TestApp.A)).isEqualTo(1)
@@ -462,14 +467,19 @@ class InstallConstraintsTest {
         Log.d(TAG, "Importance before pressBack: $importance")
         // Test app A is no longer foreground
         UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
-        PollingCheck.waitFor ({
-            importance = getPackageImportance(TestApp.A)
-            importance > ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-        }, "Importance after pressBack should be greater than foreground, but was $importance")
+        PollingCheck.waitFor(
+            {
+                importance = getPackageImportance(TestApp.A)
+                importance > ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+            },
+            "Importance after pressBack should be greater than foreground, but was $importance",
+        )
         // Commit will succeed for constraints are satisfied
         pi.commitSessionAfterInstallConstraintsAreMet(
-            sessionId, sender.intentSender,
-            constraints, TimeUnit.MINUTES.toMillis(1)
+            sessionId,
+            sender.intentSender,
+            constraints,
+            TimeUnit.MINUTES.toMillis(1),
         )
         InstallUtils.assertStatusSuccess(sender.result)
         assertThat(getInstalledVersion(TestApp.A)).isEqualTo(2)
@@ -484,10 +494,12 @@ class InstallConstraintsTest {
     private fun startActivity(packageName: String, className: String) =
         // The -W option waits for the activity launch to complete
         SystemUtil.runShellCommandOrThrow(
-                "am start-activity --user $testUserId -W -n $packageName/$className")
+            "am start-activity --user $testUserId -W -n $packageName/$className"
+        )
 
     private fun getPackageImportance(packageName: String) =
-        instr.context.getSystemService(ActivityManager::class.java)!!
+        instr.context
+            .getSystemService(ActivityManager::class.java)!!
             .getPackageImportance(packageName)
 
     private fun computeSha256DigestBytes(data: ByteArray) =
@@ -511,10 +523,8 @@ class InstallConstraintsTest {
     private fun getPackageCertDigest(packageName: String): String? {
         val pm: PackageManager = instr.context.packageManager
         val flags = GET_SIGNING_CERTIFICATES or MATCH_STATIC_SHARED_AND_SDK_LIBRARIES
-        val packageInfo = pm.getPackageInfo(
-            packageName,
-            PackageManager.PackageInfoFlags.of(flags.toLong())
-        )
+        val packageInfo =
+            pm.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(flags.toLong()))
         val signatures = packageInfo.signingInfo!!.signingCertificateHistory
         val digest = computeSha256DigestBytes(signatures[0].toByteArray())
         return encodeHex(digest)
