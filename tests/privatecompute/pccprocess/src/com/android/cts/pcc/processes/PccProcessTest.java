@@ -33,8 +33,9 @@ import android.os.Process;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.widget.Toast;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
@@ -59,7 +60,7 @@ public class PccProcessTest {
 
     @Before
     public void setUp() {
-        mContext = InstrumentationRegistry.getTargetContext();
+        mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
     }
 
     @Test
@@ -305,5 +306,27 @@ public class PccProcessTest {
         assertTrue(
                 "PCC alias for non-PCC activity UID should be a PCC UID",
                 Process.isPrivateComputeCoreUid(receivedUid.get()));
+    }
+
+    @Test
+    public void testPccAddToast_dontThrowException() throws Exception {
+        Exception[] exceptions = new Exception[1];
+        InstrumentationRegistry.getInstrumentation()
+                .runOnMainSync(
+                        () -> {
+                            try {
+                                // This should be run on main thread
+                                Toast.makeText(mContext, getClass().getName(), Toast.LENGTH_SHORT)
+                                        .show();
+                            } catch (Exception e) {
+                                // Catching the exception here so that we throw it from test thread,
+                                // so that JUnit could fail the test properly if an exception
+                                // has been thrown
+                                exceptions[0] = e;
+                            }
+                        });
+        if (exceptions[0] != null) {
+            throw exceptions[0];
+        }
     }
 }
