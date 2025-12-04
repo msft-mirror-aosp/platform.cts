@@ -39,6 +39,7 @@ import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.biometrics.BiometricTestSession;
 import android.hardware.biometrics.FallbackOption;
 import android.hardware.biometrics.Flags;
+import android.hardware.biometrics.IdentityCheckStatus;
 import android.hardware.biometrics.SensorProperties;
 import android.os.CancellationSignal;
 import android.os.Handler;
@@ -284,6 +285,59 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
 
                 // Verify fallback listener
                 verify(listener).onClick(any(), anyInt());
+            }
+        }
+    }
+
+    @ApiTest(
+            apis = {
+                "android.hardware.biometrics.BiometricPrompt.Builder#setHideSystemFallbackOption"
+            })
+    @RequiresFlagsEnabled({Flags.FLAG_BP_FALLBACK_OPTIONS, Flags.FLAG_CLEAR_FALLBACK_OPTION})
+    @Test
+    public void testIdentityCheckFallbackHidden_whenIdentityCheckActive() throws Exception {
+        for (SensorProperties props : mSensorProperties) {
+            if (props.getSensorStrength() != SensorProperties.STRENGTH_STRONG) {
+                continue;
+            }
+
+            Log.d(
+                    TAG,
+                    "testManageIdentityCheckFallbackHidden_whenIdentityCheckActive, sensor: "
+                            + props.getSensorId());
+
+            try (BiometricTestSession session =
+                    mBiometricManager.createTestSession(props.getSensorId())) {
+                mBiometricManager.setIdentityCheckTestStatus(
+                        new IdentityCheckStatus.Builder()
+                                .setIdentityCheckValueForTestAvailable(true)
+                                .setIdentityCheckActive(true)
+                                .build());
+
+                enrollForSensor(session, props.getSensorId());
+
+                final Executor executor = mHandler::post;
+                final BiometricPrompt.Builder builder =
+                        new BiometricPrompt.Builder(mContext)
+                                .setTitle("Title")
+                                .setSubtitle("Subtitle")
+                                .setDescription("Description")
+                                .setConfirmationRequired(true)
+                                .setAllowBackgroundAuthentication(true)
+                                .setHideSystemFallbackOption(
+                                        BiometricPrompt.FALLBACK_TYPE_IDENTITY_CHECK);
+                createAndShowPrompt(
+                        DEVICE_CREDENTIAL | BIOMETRIC_WEAK, builder, mCallback, executor);
+
+                // Find fallback page button
+                final UiObject2 fallbackPageButton = findView(BUTTON_ID_FALLBACK);
+                assertThat(fallbackPageButton).isNotNull();
+                fallbackPageButton.click();
+                mDevice.waitForIdle();
+
+                // Find fallback button
+                final UiObject2 manageIdentityCheckButton = findView(MANAGE_IDENTITY_CHECK_BUTTON);
+                assertThat(manageIdentityCheckButton).isNull();
             }
         }
     }
