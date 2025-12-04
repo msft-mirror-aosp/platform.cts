@@ -104,31 +104,11 @@ public class AudioDataPathsSpeakerMicActivity extends AudioDataPathsBaseActivity
         }
 
         if (doInputPresets) {
-            // These three ALWAYS fail on Pixel. They require special system permissions.
-            // INPUT_PRESET_VOICE_UPLINK, INPUT_PRESET_VOICE_DOWNLINK, INPUT_PRESET_VOICE_CALL
-            // INPUT_PRESET_REMOTE_SUBMIX requires special system setup
-            // INPUT_PRESET_VOICECOMMUNICATION - the aggressive AEC always causes it to fail
-
+            // Test using presets unaffected by effects.
             testModule = new TestModule(
                     AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 48000, 1,
                     AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
             testModule.setSectionTitle("Input Presets");
-            testModule.setSources(sinSourceProvider, micSinkProvider);
-            testModule.setInputPreset(Recorder.INPUT_PRESET_DEFAULT);
-            testModule.setDescription("Spkr:1 Mic:1:PRESET_DEFAULT");
-            testManager.addTestModule(testModule);
-
-            testModule = new TestModule(
-                    AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 48000, 1,
-                    AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
-            testModule.setSources(sinSourceProvider, micSinkProvider);
-            testModule.setInputPreset(Recorder.INPUT_PRESET_GENERIC);
-            testModule.setDescription("Spkr:1 Mic:1:PRESET_GENERIC");
-            testManager.addTestModule(testModule);
-
-            testModule = new TestModule(
-                    AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 48000, 1,
-                    AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
             testModule.setSources(sinSourceProvider, micSinkProvider);
             testModule.setInputPreset(Recorder.INPUT_PRESET_UNPROCESSED);
             testModule.setDescription("Spkr:1 Mic:1:PRESET_UNPROCESSED");
@@ -138,24 +118,8 @@ public class AudioDataPathsSpeakerMicActivity extends AudioDataPathsBaseActivity
                     AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 48000, 1,
                     AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
             testModule.setSources(sinSourceProvider, micSinkProvider);
-            testModule.setInputPreset(Recorder.INPUT_PRESET_CAMCORDER);
-            testModule.setDescription("Spkr:1 Mic:1:PRESET_CAMCORDER");
-            testManager.addTestModule(testModule);
-
-            testModule = new TestModule(
-                    AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 48000, 1,
-                    AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
-            testModule.setSources(sinSourceProvider, micSinkProvider);
             testModule.setInputPreset(Recorder.INPUT_PRESET_VOICERECOGNITION);
             testModule.setDescription("Spkr:1 Mic:1:PRESET_VOICERECOGNITION");
-            testManager.addTestModule(testModule);
-
-            testModule = new TestModule(
-                    AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 48000, 1,
-                    AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
-            testModule.setSources(sinSourceProvider, micSinkProvider);
-            testModule.setInputPreset(Recorder.INPUT_PRESET_VOICEPERFORMANCE);
-            testModule.setDescription("Spkr:1 Mic:1:PRESET_VOICEPERFORMANCE");
             testManager.addTestModule(testModule);
         }
 
