@@ -77,5 +77,6 @@ java_test_host {
     static_libs: [
         "com.android.window.flags.window-aconfig-java-host",
         "flag-junit-host",
+        "cts-statsd-atom-host-test-utils",
     ],
 }
