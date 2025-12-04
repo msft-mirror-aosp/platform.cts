@@ -25,6 +25,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.Intent;
 import android.hardware.display.DisplayTopology;
@@ -41,6 +42,7 @@ import androidx.annotation.NonNull;
 import org.junit.Rule;
 import org.junit.Test;
 
+import platform.test.desktop.DesktopModeTestUtil;
 import platform.test.desktop.DisplayDevice;
 import platform.test.desktop.DisplayPeripheral;
 import platform.test.desktop.DisplaySize;
@@ -166,6 +168,8 @@ public class TopologyUpdateDeliveryTest extends EventDeliveryTestBase {
 
     private void testTopologyUpdateInternal(boolean cached) {
         Log.d(TAG, "Start test testTopologyUpdate " + cached);
+        assumeDesktopModeSupported();
+
         // Launch activity and start listening to topology updates
         int pid = launchTestActivity();
 
@@ -214,6 +218,12 @@ public class TopologyUpdateDeliveryTest extends EventDeliveryTestBase {
             // updates
             waitTopologyUpdate(predicate);
         }
+    }
+
+    private void assumeDesktopModeSupported() {
+        boolean isDesktopModeSupported =
+                new DesktopModeTestUtil(mContext.getResources()).canEnterDesktopMode();
+        assumeTrue("Device does not support desktop mode", isDesktopModeSupported);
     }
 
     @Test
