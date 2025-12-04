@@ -515,6 +515,38 @@ fun withAxisValue(axis: Int, value: Float, epsilon: Float = EPSILON): Matcher<Mo
         }
     }
 
+fun withPositiveAxisValue(axis: Int): Matcher<MotionEvent> =
+    object : TypeSafeMatcher<MotionEvent>() {
+        override fun describeTo(description: Description) {
+            description.appendText("With positive value for axis ${MotionEvent.axisToString(axis)}")
+        }
+
+        override fun matchesSafely(event: MotionEvent): Boolean {
+            return event.getAxisValue(axis) > 0
+        }
+        override fun describeMismatchSafely(event: MotionEvent, mismatchDescription: Description) {
+            mismatchDescription.appendText(
+                "Got axis ${MotionEvent.axisToString(axis)} = ${event.getAxisValue(axis)}"
+            )
+        }
+    }
+
+fun withNegativeAxisValue(axis: Int): Matcher<MotionEvent> =
+    object : TypeSafeMatcher<MotionEvent>() {
+        override fun describeTo(description: Description) {
+            description.appendText("With negative value for axis ${MotionEvent.axisToString(axis)}")
+        }
+
+        override fun matchesSafely(event: MotionEvent): Boolean {
+            return event.getAxisValue(axis) < 0
+        }
+        override fun describeMismatchSafely(event: MotionEvent, mismatchDescription: Description) {
+            mismatchDescription.appendText(
+                "Got axis ${MotionEvent.axisToString(axis)} = ${event.getAxisValue(axis)}"
+            )
+        }
+    }
+
 fun withClassification(classification: Int): Matcher<MotionEvent> =
     object : TypeSafeMatcher<MotionEvent>() {
         override fun describeTo(description: Description?) {
