@@ -27,7 +27,7 @@ test_configs: {
 measurements: {
   key: "physical_memory_mb"
   value: {
-    description: "Physical memory in MiB as reported by ActivityManager.MemeryInfo.totalMemory."
+    description: "Physical memory in MiB as reported by ActivityManager.MemoryInfo.totalMemory."
     comparison: COMPARISON_GREATER_THAN_OR_EQUAL
     measurement_type: MEASUREMENT_TYPE_LONG
     proto_field_number: 3
