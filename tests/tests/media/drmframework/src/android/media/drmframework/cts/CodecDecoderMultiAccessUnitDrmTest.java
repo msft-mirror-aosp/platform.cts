@@ -37,6 +37,7 @@ import android.mediav2.common.cts.CodecDecoderDrmTestBase;
 import android.mediav2.common.cts.CodecDecoderMultiAccessUnitDrmTestBase;
 import android.mediav2.common.cts.OutputManager;
 import android.os.Build;
+import android.os.Process;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 
@@ -132,6 +133,9 @@ public class CodecDecoderMultiAccessUnitDrmTest extends CodecDecoderMultiAccessU
     public void testSimpleDecode() throws IOException, InterruptedException,
             UnsupportedSchemeException, NotProvisionedException, ResourceBusyException,
             MediaCryptoException {
+        // aosp/3260734 is merged in 25q4 and cannot be back ported.
+        assumeTrue("skipping test on 32 bit archs", Process.is64Bit());
+
         assumeTrue(mCodecName + " does not support FEATURE_MultipleFrames",
                 isFeatureSupported(mCodecName, mMediaType, FEATURE_MultipleFrames));
 
