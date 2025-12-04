@@ -19,6 +19,7 @@
      package="android.assist.service">
 
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_ASSIST_STRUCTURE_SCREEN_CONTENT" />
 
     <application>
       <uses-library android:name="android.test.runner"/>
