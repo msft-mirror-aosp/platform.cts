@@ -37,6 +37,7 @@ import static org.junit.Assert.assertThrows;
 
 import android.app.admin.DevicePolicyManager;
 import android.app.admin.ManagedProfileProvisioningParams;
+import android.app.admin.MultiUserDeviceProvisioningParams;
 import android.app.admin.ProvisioningException;
 import android.app.role.RoleManager;
 import android.content.ComponentName;
@@ -59,6 +60,9 @@ import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.multiuser.annotations.EnsureCanAddSecondaryUser;
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
+import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser;
+import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode;
+import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.bedstead.nene.exceptions.NeneException;
@@ -67,6 +71,7 @@ import com.android.bedstead.nene.roles.RoleContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.users.UserType;
 import com.android.bedstead.nene.utils.Poll;
+import com.android.bedstead.permissions.CommonPermissions;
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.testapp.TestApp;
@@ -81,6 +86,9 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 
+import java.util.HashMap;
+import java.util.Map;
+
 // TODO(b/228016400): replace usages of createAndProvisionManagedProfile with a nene API
 @RunWith(BedsteadJUnit4.class)
 public class DevicePolicyManagementRoleHolderTest {
@@ -90,7 +98,7 @@ public class DevicePolicyManagementRoleHolderTest {
 
     private static final Context sContext = TestApis.context().instrumentedContext();
 
-    private static final TestAppProvider sTestAppProvider = new TestAppProvider();
+    private final TestAppProvider mTestAppProvider = new TestAppProvider();
 
     private static final ComponentName DEVICE_ADMIN_COMPONENT_NAME =
             DeviceAdminApp.deviceAdminComponentName(sContext);
@@ -384,7 +392,7 @@ public class DevicePolicyManagementRoleHolderTest {
     @EnsureHasPermission(android.Manifest.permission.MANAGE_ROLE_HOLDERS)
     public void verifyManuallySettingTestAppAsDmrh() {
         TestApp dpc =
-                sTestAppProvider
+                mTestAppProvider
                         .query()
                         .wherePackageName()
                         .isEqualTo("com.android.DevicePolicyManagerRoleHolder")
@@ -484,6 +492,126 @@ public class DevicePolicyManagementRoleHolderTest {
         }
     }
 
+    /**
+     * Verifies that the checks for adding a DMRH can be bypassed when a test-only DMRH (and no
+     * non-test-only DMRH) exists on a multi-user managed device.
+     *
+     * <p>We need to set the test-only DMRH on both the headless system user and the initial user
+     * (user 10) so the default DMRH (clouddpc) is not set on any user.
+     */
+    @Test
+    @EnsureHasNoDpc
+    @EnsureHasNoAccounts
+    @EnsureHasNoAdditionalUser
+    @EnsureHasDevicePolicyManagerRoleHolder(onUser = SYSTEM_USER)
+    @EnsureHasPermission({
+        CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS,
+        CommonPermissions.MANAGE_ROLE_HOLDERS
+    })
+    @RequireRunOnSystemUser()
+    @RequireHeadlessSystemUserMode(
+            reason =
+                    "This test provisions a multi-user device, which is "
+                            + " only supported on headless system user mode devices")
+    @RequiresFlagsEnabled({
+        android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING,
+        android.app.admin.flags.Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING
+    })
+    public void testOnlyDevicePolicyManagementRoleHolder_shouldAllowBypassing_true() {
+        ComponentName dmrhComponent =
+                getDeviceAdminComponentName(dpmRoleHolder(sDeviceState).testApp());
+
+        try (var ignored =
+                TestApis.devicePolicy()
+                        .setDevicePolicyManagementRoleHolder(
+                                dpmRoleHolder(sDeviceState).pkg(), TestApis.users().initial())) {
+            provisionMultiUserDevice(dmrhComponent);
+
+            assertAllowsBypassingRoleQualification(/* expected */ true);
+        } finally {
+            TestApis.devicePolicy().clearMultiUserDeviceManagement(dmrhComponent);
+        }
+    }
+
+    /**
+     * Verifies that the checks for adding a DMRH cannot be bypassed when a non test-only DMRH
+     * exists on a multi-user managed device.
+     *
+     * <p>We cannot use the default DMRH (clouddpc) for provisioning the multi-user device, as
+     *
+     * <p>{@code clearMultiUserDeviceManagement} will fail. To avoid this, we set a test-only DMRH
+     * on the headless system user. This way, clouddpc is set as DMRH on user 10, and the test-only
+     * DMRH is set on user 0.
+     */
+    @Test
+    @EnsureHasNoDpc
+    @EnsureHasNoAccounts
+    @EnsureHasNoAdditionalUser
+    @EnsureHasDevicePolicyManagerRoleHolder(onUser = SYSTEM_USER)
+    @EnsureHasPermission({
+        CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS,
+        CommonPermissions.MANAGE_ROLE_HOLDERS
+    })
+    @RequireHeadlessSystemUserMode(
+            reason =
+                    "This test provisions a multi-user device, which is "
+                            + " only supported on headless system user mode devices")
+    @RequireRunOnSystemUser()
+    @RequiresFlagsEnabled({
+        android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING,
+        android.app.admin.flags.Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING
+    })
+    public void nonTestOnlyDevicePolicyManagementRoleHolder_shouldAllowBypassing_false() {
+        ComponentName dmrhComponent =
+                getDeviceAdminComponentName(dpmRoleHolder(sDeviceState).testApp());
+
+        try {
+            provisionMultiUserDevice(dmrhComponent);
+            assertAllowsBypassingRoleQualification(/* expected */ false);
+        } finally {
+            TestApis.devicePolicy().clearMultiUserDeviceManagement(dmrhComponent);
+        }
+    }
+
+    private static void provisionMultiUserDevice(ComponentName dmrhComponent) {
+        withIncompleteSetupOnAllUsers(
+                () -> {
+                    MultiUserDeviceProvisioningParams params =
+                            new MultiUserDeviceProvisioningParams.Builder(dmrhComponent)
+                                    .setLeaveAllSystemAppsEnabled(true)
+                                    .build();
+
+                    try {
+                        sDevicePolicyManager.provisionMultiUserDevice(params);
+                    } catch (ProvisioningException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+        assertThat(sDevicePolicyManager.isDeviceManaged()).isTrue();
+    }
+
+    /**
+     * Makes sure the all the users on the devices have not finished setup. Resets to initial state
+     * after the {@code block} finishes.
+     */
+    private static void withIncompleteSetupOnAllUsers(Runnable block) {
+        var allUsers = TestApis.users().all();
+
+        Map<UserReference, Boolean> originalSetupCompleteMap = new HashMap<>();
+        for (UserReference user : allUsers) {
+            originalSetupCompleteMap.put(user, user.getSetupComplete());
+        }
+
+        try {
+            for (UserReference user : allUsers) {
+                user.setSetupComplete(false);
+            }
+            block.run();
+        } finally {
+            originalSetupCompleteMap.forEach(UserReference::setSetupComplete);
+        }
+    }
+
     private static UserReference createAndStartProfile() {
         return TestApis.users()
                 .createUser()
@@ -492,8 +620,8 @@ public class DevicePolicyManagementRoleHolderTest {
                 .createAndStart();
     }
 
-    private static TestApp getDeviceAdminTestApp(boolean isTestOnly) {
-        return sTestAppProvider
+    private TestApp getDeviceAdminTestApp(boolean isTestOnly) {
+        return mTestAppProvider
                 .query()
                 .whereIsDeviceAdmin()
                 .isTrue()
@@ -513,6 +641,4 @@ public class DevicePolicyManagementRoleHolderTest {
                 sDevicePolicyManager.shouldAllowBypassingDevicePolicyManagementRoleQualification();
         assertThat(bypassed).isEqualTo(expected);
     }
-
-
 }
