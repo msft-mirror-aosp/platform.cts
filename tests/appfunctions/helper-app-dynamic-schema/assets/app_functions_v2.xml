@@ -25,7 +25,7 @@
         <nestedDocumentProperty>
             <id>appFunctionEnabledByDefault/nestedDocumentProperty</id>
             <nestedRepeatedString>value 1</nestedRepeatedString>
-            <nestedRepeatedString>value 2</nestedRepeatedString>Z
+            <nestedRepeatedString>value 2</nestedRepeatedString>
         </nestedDocumentProperty>
     </appfunction>
     <appfunction>

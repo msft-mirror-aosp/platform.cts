@@ -28,6 +28,7 @@ import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.Companion.TEST
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.Companion.TEST_HELPER_PKG
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.FunctionMetadata
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.FunctionName
+import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.FunctionName.HELPER_PACKAGE_FUNCTIONS
 import android.app.appfunctions.cts.AppFunctionUtils.getAllRuntimeMetadataPackages
 import android.app.appfunctions.cts.AppFunctionUtils.getAllStaticMetadataPackages
 import android.app.appfunctions.cts.AppFunctionUtils.installExistingPackageAsUser
@@ -112,7 +113,8 @@ class SearchAppFunctionsTest {
         Manifest.permission.EXECUTE_APP_FUNCTIONS,
     )
     @RequireRootInstrumentation(
-        "Require to remove QUERY_ALL_PACKAGES permission that is granted by default when using Bedstead"
+        "Require to remove QUERY_ALL_PACKAGES permission that is granted by default when" +
+                "using Bedstead"
     )
     fun searchAppFunctions_withoutAnyPermission_shouldOnlySeeSelfFunctions() = doBlocking {
         installPackage(TEST_APP_A_PATH)
@@ -127,10 +129,10 @@ class SearchAppFunctionsTest {
                     FunctionName.SAME_PACKAGE_THROW_EXCEPTION,
                     FunctionName.SAME_PACKAGE_UNCAUGHT_CLIENT_EXCEPTION,
                     FunctionName.SAME_PACKAGE_ADD_INVOKE_CALLBACK_TWICE,
-                    FunctionName.SAME_PACKAGE_CONTEXT_LONG_RUNNING,
+                    FunctionName.SAME_PACKAGE_DYNAMIC_CONCAT_STRINGS,
+                    FunctionName.SAME_PACKAGE_DYNAMIC_LONG_RUNNING,
                     FunctionName.SAME_PACKAGE_ADD_ASYNC,
                     FunctionName.SAME_PACKAGE_NOT_INVOKE_CALLBACK,
-                    FunctionName.SAME_PACKAGE_CONTEXT_CONCAT_STRINGS,
                     FunctionName.SAME_PACKAGE_RUN_FOREVER,
                     FunctionName.SAME_PACKAGE_ADD,
                     FunctionName.SAME_PACKAGE_ADD_DISABLED_BY_DEFAULT,
@@ -152,7 +154,8 @@ class SearchAppFunctionsTest {
     @EnsureDoesNotHavePermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasPermission(Manifest.permission.QUERY_ALL_PACKAGES)
     @RequireRootInstrumentation(
-        "Require to remove QUERY_ALL_PACKAGES permission that is granted by default when using Bedstead"
+        "Require to remove QUERY_ALL_PACKAGES permission that is granted by default " +
+                "when using Bedstead"
     )
     fun searchAppFunctions_withoutExecuteAppFunctionPermission_shouldOnlySeeSelfFunctions() =
         doBlocking {
@@ -168,10 +171,10 @@ class SearchAppFunctionsTest {
                         FunctionName.SAME_PACKAGE_THROW_EXCEPTION,
                         FunctionName.SAME_PACKAGE_UNCAUGHT_CLIENT_EXCEPTION,
                         FunctionName.SAME_PACKAGE_ADD_INVOKE_CALLBACK_TWICE,
-                        FunctionName.SAME_PACKAGE_CONTEXT_LONG_RUNNING,
+                        FunctionName.SAME_PACKAGE_DYNAMIC_LONG_RUNNING,
                         FunctionName.SAME_PACKAGE_ADD_ASYNC,
                         FunctionName.SAME_PACKAGE_NOT_INVOKE_CALLBACK,
-                        FunctionName.SAME_PACKAGE_CONTEXT_CONCAT_STRINGS,
+                        FunctionName.SAME_PACKAGE_DYNAMIC_CONCAT_STRINGS,
                         FunctionName.SAME_PACKAGE_RUN_FOREVER,
                         FunctionName.SAME_PACKAGE_ADD,
                         FunctionName.SAME_PACKAGE_ADD_DISABLED_BY_DEFAULT,
@@ -195,9 +198,10 @@ class SearchAppFunctionsTest {
         Manifest.permission.EXECUTE_APP_FUNCTIONS,
     )
     @RequireRootInstrumentation(
-        "Require to remove QUERY_ALL_PACKAGES permission that is granted by default when using Bedstead"
+        "Require to remove QUERY_ALL_PACKAGES permission that is granted by default " +
+                "when using Bedstead"
     )
-    fun searchAppFunctionsWithoutAnyPermission_shouldReturnEmpty_whenTargetOtherPackages() =
+    fun searchAppFunctions_noPermissions_shouldReturnEmpty_whenTargetOtherPackages() =
         doBlocking {
             installPackage(TEST_APP_A_PATH)
             try {
@@ -224,9 +228,10 @@ class SearchAppFunctionsTest {
         Manifest.permission.EXECUTE_APP_FUNCTIONS,
     )
     @RequireRootInstrumentation(
-        "Require to remove QUERY_ALL_PACKAGES permission that is granted by default when using Bedstead"
+        "Require to remove QUERY_ALL_PACKAGES permission that is granted by default " +
+                "when using Bedstead"
     )
-    fun searchAppFunctionsWithoutAnyPermission_shouldReturnEmpty_whenTargetOtherPackagesFunctions() =
+    fun searchAppFunctions_noPermissions_shouldReturnEmpty_whenTargetOtherPackagesFunctions() =
         doBlocking {
             installPackage(TEST_APP_A_PATH)
             try {
@@ -251,7 +256,8 @@ class SearchAppFunctionsTest {
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureDoesNotHavePermission(Manifest.permission.QUERY_ALL_PACKAGES)
     @RequireRootInstrumentation(
-        "Require to remove QUERY_ALL_PACKAGES permission that is granted by default when using Bedstead"
+        "Require to remove QUERY_ALL_PACKAGES permission that is granted by default " +
+                "when using Bedstead"
     )
     fun searchAppFunctions_searchAllWithExecuteAppFunctionPermission_shouldSeeAllVisiblePackages() =
         doBlocking {
@@ -474,10 +480,8 @@ class SearchAppFunctionsTest {
             searchAppFunctions(searchSpec).associateBy { it.name }
 
         assertThat(resultAppFunctionsByName.keys)
-            .containsExactly(
-                FunctionName.ENABLED_BY_DEFAULT,
-                FunctionName.DISABLED_BY_DEFAULT,
-                FunctionName.HIGH_SCHEMA_VERSION,
+            .containsExactlyElementsIn(
+                HELPER_PACKAGE_FUNCTIONS
             )
         assertAppFunctionMetadataEquals(
             resultAppFunctionsByName[FunctionName.DISABLED_BY_DEFAULT]!!,
@@ -694,10 +698,8 @@ class SearchAppFunctionsTest {
                 .associateBy { it.name }
 
         assertThat(result.keys)
-            .containsExactly(
-                FunctionName.ENABLED_BY_DEFAULT,
-                FunctionName.DISABLED_BY_DEFAULT,
-                FunctionName.HIGH_SCHEMA_VERSION,
+            .containsExactlyElementsIn(
+                HELPER_PACKAGE_FUNCTIONS
             )
         assertAppFunctionMetadataEquals(
             result[FunctionName.ENABLED_BY_DEFAULT]!!,

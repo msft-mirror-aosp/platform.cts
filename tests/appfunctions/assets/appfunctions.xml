@@ -17,6 +17,7 @@
 <appfunctions>
     <appfunction>
         <function_id>add</function_id>
+        <id>add</id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
         <schema_version>1</schema_version>
         <schema_category>utils</schema_category>
@@ -25,9 +26,9 @@
         <restrict_callers_with_execute_app_functions>true
         </restrict_callers_with_execute_app_functions>
     </appfunction>
-
     <appfunction>
         <function_id>add_disabledByDefault</function_id>
+        <id>add_disabledByDefault</id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
         <schema_version>1</schema_version>
         <schema_category>utils</schema_category>
@@ -38,6 +39,7 @@
     </appfunction>
     <appfunction>
         <function_id>add_invokeCallbackTwice</function_id>
+        <id>add_invokeCallbackTwice</id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
         <schema_version>1</schema_version>
         <schema_category>utils</schema_category>
@@ -48,6 +50,7 @@
     </appfunction>
     <appfunction>
         <function_id>addAsync</function_id>
+        <id>addAsync</id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
         <schema_version>1</schema_version>
         <schema_category>utils</schema_category>
@@ -58,6 +61,7 @@
     </appfunction>
     <appfunction>
         <function_id>kill</function_id>
+        <id>kill</id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
         <schema_version>1</schema_version>
         <schema_category>utils</schema_category>
@@ -68,6 +72,7 @@
     </appfunction>
     <appfunction>
         <function_id>noOp</function_id>
+        <id>noOp</id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
         <schema_version>1</schema_version>
         <schema_category>utils</schema_category>
@@ -78,6 +83,7 @@
     </appfunction>
     <appfunction>
         <function_id>uncaughtClientException</function_id>
+        <id>uncaughtClientException</id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
         <schema_version>1</schema_version>
         <schema_category>utils</schema_category>
@@ -88,6 +94,7 @@
     </appfunction>
     <appfunction>
         <function_id>notInvokeCallback</function_id>
+        <id>notInvokeCallback</id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
         <schema_version>1</schema_version>
         <schema_category>utils</schema_category>
@@ -98,6 +105,7 @@
     </appfunction>
     <appfunction>
         <function_id>throwException</function_id>
+        <id>throwException</id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
         <schema_version>1</schema_version>
         <schema_category>utils</schema_category>
@@ -108,24 +116,17 @@
     </appfunction>
     <appfunction>
         <function_id>longRunningFunction</function_id>
+        <id>longRunningFunction</id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts.helper</schema_name>
     </appfunction>
     <appfunction>
         <function_id>runForever</function_id>
+        <id>runForever</id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts.helper</schema_name>
     </appfunction>
     <appfunction>
-        <function_id>contextConcatStrings</function_id>
-        <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
-        <enabled_by_default>false</enabled_by_default>
-    </appfunction>
-    <appfunction>
-        <function_id>contextLongRunning</function_id>
-        <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
-        <enabled_by_default>false</enabled_by_default>
-    </appfunction>
-    <appfunction>
         <function_id>noSchema</function_id>
+        <id>noSchema</id>
         <enabled_by_default>true</enabled_by_default>
     </appfunction>
 </appfunctions>
