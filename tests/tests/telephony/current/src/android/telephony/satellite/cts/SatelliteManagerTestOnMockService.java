@@ -59,6 +59,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.hardware.radio.RadioError;
 import android.net.ConnectivityManager;
 import android.net.wifi.WifiManager;
@@ -98,7 +99,7 @@ import android.telephony.satellite.SystemSelectionSpecifier;
 import android.telephony.satellite.stub.NTRadioTechnology;
 import android.telephony.satellite.stub.SatelliteModemState;
 import android.telephony.satellite.stub.SatelliteResult;
-import android.util.Log;
+import android.text.TextUtils;
 import android.util.Pair;
 import android.uwb.UwbManager;
 
@@ -121,6 +122,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -4237,6 +4239,7 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
                         + " installed");
         assumeTrue(isAppInstalled(PACKAGE_CONFIGUPDATER));
 
+        assumeGeofenceFileExistsAndFailIfMisconfigured();
         resetSatelliteAccessControlOverlayConfigs();
         grantSatellitePermission();
 
@@ -4711,6 +4714,7 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
 
         // Get rid of the overridden test satellite configs, as we are going
         // to use actual on-device and ota'd satellite configs in this test
+        assumeGeofenceFileExistsAndFailIfMisconfigured();
         resetSatelliteAccessControlOverlayConfigs();
 
         grantSatellitePermission();
@@ -5133,6 +5137,7 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
         logd("testSatelliteAccessControllerCheckDeviceConfiguration");
         // Get rid of the overridden test satellite configs, as we are going
         // to use actual on-device and ota'd satellite configs in this test.
+        assumeGeofenceFileExistsAndFailIfMisconfigured();
         resetSatelliteAccessControlOverlayConfigs();
         grantSatellitePermission();
 
@@ -5996,7 +6001,9 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
         logd(
                 "testSatelliteLocationSettingsEnabledDisabled: "
                         + "resetSatelliteAccessControlOverlayConfigs");
+        assumeGeofenceFileExistsAndFailIfMisconfigured();
         resetSatelliteAccessControlOverlayConfigs();
+
         assertTrue(
                 sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(
                         true, TIMEOUT_TYPE_LAST_EMERGENCY_CALL_TIME, 0));
@@ -7618,6 +7625,45 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
         assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
                 TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 0));
         revokeSatellitePermission();
+    }
+
+    @Nullable
+    private static String getSatelliteS2CellFileFromOverlayConfig(@NonNull Context context) {
+        String s2CellFile = null;
+        try {
+            s2CellFile =
+                    context.getResources()
+                            .getString(
+                                    com.android.internal.R.string
+                                            .config_oem_enabled_satellite_s2cell_file);
+        } catch (Resources.NotFoundException ex) {
+            loge("getSatelliteS2CellFileFromOverlayConfig: got ex=" + ex);
+        }
+        return s2CellFile;
+    }
+
+    /**
+     * Verifies the state of the geofence data file and controls the test flow accordingly. - Skip
+     * the test if the geofence file path is not configured. - Fail the test if the path is
+     * configured but the file does not exist. - Continue the test if the path is configured and the
+     * file exists.
+     */
+    private static void assumeGeofenceFileExistsAndFailIfMisconfigured() {
+        String geofenceFilePath = getSatelliteS2CellFileFromOverlayConfig(getContext());
+        if (TextUtils.isEmpty(geofenceFilePath)) {
+            assumeTrue("Skipping test: Geofence file path is not configured.", false);
+        } else {
+            logd(
+                    "assumeGeofenceFileExistsAndFailIfMisconfigured: "
+                            + "the geofence file path="
+                            + geofenceFilePath);
+            File sats2File = new File(geofenceFilePath);
+            assertTrue(
+                    "The geofence file path is defined ('"
+                            + geofenceFilePath
+                            + "') but the file does not exist.",
+                    sats2File.exists());
+        }
     }
 
     private void deprovisionSatelliteForSubscriberId(
