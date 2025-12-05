@@ -29,14 +29,13 @@ import android.media.metrics.MediaMetricsManager;
 import android.media.metrics.PlaybackSession;
 import android.os.Build;
 
+import androidx.media3.common.util.Util;
+import androidx.media3.test.utils.FakeExtractorInput;
+import androidx.media3.test.utils.TestUtil;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ModuleSpecificTest;
-
-import com.google.android.exoplayer2.testutil.FakeExtractorInput;
-import com.google.android.exoplayer2.testutil.TestUtil;
-import com.google.android.exoplayer2.util.Util;
 
 import org.junit.Before;
 import org.junit.Ignore;

@@ -60,10 +60,11 @@ java_defaults {
     srcs: ["src/**/*.java"],
     static_libs: [
         "ctstestrunner-axt",
+        "androidx.media3.media3-extractor",
+        "androidx.media3.media3-test-utils",
         "androidx.test.ext.junit",
         "cts-media-common",
         "exoplayer-cts_media-test_assets",
-        "exoplayer-cts_media-test_utils",
     ],
     libs: [
         "android.test.base.stubs.test",
