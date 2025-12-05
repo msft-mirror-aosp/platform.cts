@@ -655,8 +655,10 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
             final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
-            editText.setText("a");
-            editText.setSelection(1);
+            editText.post(() -> {
+                editText.setText("a");
+                editText.setSelection(1);
+            });
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
             notExpectEvent(stream, editorMatcher("onStartInputView", marker), NOT_EXPECT_TIMEOUT);
