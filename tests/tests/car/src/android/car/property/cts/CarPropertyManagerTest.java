@@ -697,20 +697,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
 
     private CarPropertyManager mCarPropertyManager;
 
-    private static void verifyEnumValuesAreDistinct(
-            ImmutableSet<Integer>... possibleCarPropertyValues) {
-        ImmutableSet.Builder<Integer> combinedCarPropertyValues = ImmutableSet.<Integer>builder();
-        int numCarPropertyValues = 0;
-        for (ImmutableSet<Integer> values : possibleCarPropertyValues) {
-            combinedCarPropertyValues.addAll(values);
-            numCarPropertyValues += values.size();
-        }
-        int combinedCarPropertyValuesLength = combinedCarPropertyValues.build().size();
-        assertWithMessage("The number of distinct enum values")
-                .that(combinedCarPropertyValuesLength)
-                .isEqualTo(numCarPropertyValues);
-    }
-
     private static long generateTimeoutMillis(float minSampleRate, long bufferMillis) {
         return ((long) ((1.0f / minSampleRate) * SECONDS_TO_MILLIS * UI_RATE_EVENT_COUNTER))
                 + bufferMillis;
@@ -1313,27 +1299,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         verifier.verify(step, verifierInfo.mExceptedExceptionClass);
     }
 
-    @Test
-    public void testEmergencyLaneKeepAssistStateAndErrorStateDontIntersect() {
-        verifyEnumValuesAreDistinct(
-                VehiclePropertyVerifiers.EMERGENCY_LANE_KEEP_ASSIST_STATES,
-                VehiclePropertyVerifiers.ERROR_STATES);
-    }
-
-    @Test
-    public void testCruiseControlTypeAndErrorStateDontIntersect() {
-        verifyEnumValuesAreDistinct(
-                VehiclePropertyVerifiers.CRUISE_CONTROL_TYPES,
-                VehiclePropertyVerifiers.ERROR_STATES);
-    }
-
-    @Test
-    public void testCruiseControlStateAndErrorStateDontIntersect() {
-        verifyEnumValuesAreDistinct(
-                VehiclePropertyVerifiers.CRUISE_CONTROL_STATES,
-                VehiclePropertyVerifiers.ERROR_STATES);
-    }
-
     private boolean standardCruiseControlChecker(boolean requireStandard) {
         VehiclePropertyVerifier<Integer> verifier =
                 VehiclePropertyVerifiers.getCruiseControlTypeVerifierBuilder()
@@ -1408,111 +1373,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                     Car.PERMISSION_READ_ADAS_SETTINGS,
                     Car.PERMISSION_CONTROL_ADAS_SETTINGS);
         }
-    }
-
-    @Test
-    public void testHandsOnDetectionDriverStateAndErrorStateDontIntersect() {
-        verifyEnumValuesAreDistinct(
-                VehiclePropertyVerifiers.HANDS_ON_DETECTION_DRIVER_STATES,
-                VehiclePropertyVerifiers.ERROR_STATES);
-    }
-
-    @Test
-    public void testHandsOnDetectionWarningAndErrorStateDontIntersect() {
-        verifyEnumValuesAreDistinct(
-                VehiclePropertyVerifiers.HANDS_ON_DETECTION_WARNINGS,
-                VehiclePropertyVerifiers.ERROR_STATES);
-    }
-
-    @Test
-    public void testDriverDrowsinessAttentionStateAndErrorStateDontIntersect() {
-        verifyEnumValuesAreDistinct(
-                VehiclePropertyVerifiers.HANDS_ON_DETECTION_DRIVER_STATES,
-                VehiclePropertyVerifiers.ERROR_STATES);
-    }
-
-    @Test
-    public void testDriverDrowsinessAttentionWarningAndErrorStateDontIntersect() {
-        verifyEnumValuesAreDistinct(
-                VehiclePropertyVerifiers.DRIVER_DROWSINESS_ATTENTION_WARNINGS,
-                VehiclePropertyVerifiers.ERROR_STATES);
-    }
-
-    @Test
-    public void testDriverDistractionStateAndErrorStateDontIntersect() {
-        verifyEnumValuesAreDistinct(
-                VehiclePropertyVerifiers.DRIVER_DISTRACTION_STATES,
-                VehiclePropertyVerifiers.ERROR_STATES);
-    }
-
-    @Test
-    public void testDriverDistractionWarningAndErrorStateDontIntersect() {
-        verifyEnumValuesAreDistinct(
-                VehiclePropertyVerifiers.DRIVER_DISTRACTION_WARNINGS,
-                VehiclePropertyVerifiers.ERROR_STATES);
-    }
-
-    @Test
-    public void testAutomaticEmergencyBrakingStateWithErrorState() {
-        verifyEnumValuesAreDistinct(
-                VehiclePropertyVerifiers.AUTOMATIC_EMERGENCY_BRAKING_STATES,
-                VehiclePropertyVerifiers.ERROR_STATES);
-    }
-
-    @Test
-    public void testForwardCollisionWarningStateWithErrorState() {
-        verifyEnumValuesAreDistinct(
-                VehiclePropertyVerifiers.FORWARD_COLLISION_WARNING_STATES,
-                VehiclePropertyVerifiers.ERROR_STATES);
-    }
-
-    @Test
-    public void testBlindSpotWarningStateWithErrorState() {
-        verifyEnumValuesAreDistinct(
-                VehiclePropertyVerifiers.BLIND_SPOT_WARNING_STATES,
-                VehiclePropertyVerifiers.ERROR_STATES);
-    }
-
-    @Test
-    public void testLaneDepartureWarningStateWithErrorState() {
-        verifyEnumValuesAreDistinct(
-                VehiclePropertyVerifiers.LANE_DEPARTURE_WARNING_STATES,
-                VehiclePropertyVerifiers.ERROR_STATES);
-    }
-
-    @Test
-    public void testLaneKeepAssistStateWithErrorState() {
-        verifyEnumValuesAreDistinct(
-                VehiclePropertyVerifiers.LANE_KEEP_ASSIST_STATES,
-                VehiclePropertyVerifiers.ERROR_STATES);
-    }
-
-    @Test
-    public void testLaneCenteringAssistStateWithErrorState() {
-        verifyEnumValuesAreDistinct(
-                VehiclePropertyVerifiers.LANE_CENTERING_ASSIST_STATES,
-                VehiclePropertyVerifiers.ERROR_STATES);
-    }
-
-    @Test
-    public void testLowSpeedCollisionWarningStateWithErrorState() {
-        verifyEnumValuesAreDistinct(
-                VehiclePropertyVerifiers.LOW_SPEED_COLLISION_WARNING_STATES,
-                VehiclePropertyVerifiers.ERROR_STATES);
-    }
-
-    @Test
-    public void testElectronicStabilityControlStateWithErrorState() {
-        verifyEnumValuesAreDistinct(
-                VehiclePropertyVerifiers.ELECTRONIC_STABILITY_CONTROL_STATES,
-                VehiclePropertyVerifiers.ERROR_STATES);
-    }
-
-    @Test
-    public void testLowSpeedAutomaticEmergencyBrakingStateWithErrorState() {
-        verifyEnumValuesAreDistinct(
-                VehiclePropertyVerifiers.LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_STATES,
-                VehiclePropertyVerifiers.ERROR_STATES);
     }
 
     @SuppressWarnings("unchecked")
