@@ -823,11 +823,32 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    public void testInvalidMustNotBeImplemented() {
+    public void testPropertiesNotExposedThroughCpm() {
         runWithShellPermissionIdentity(
                 () -> {
-                    assertThat(mCarPropertyManager.getCarPropertyConfig(VehiclePropertyIds.INVALID))
-                            .isNull();
+                    List<CarPropertyConfig> allConfigs = mCarPropertyManager.getPropertyList();
+                    Set<Integer> allPropertyIds =
+                            allConfigs.stream()
+                                    .map(CarPropertyConfig::getPropertyId)
+                                    .collect(Collectors.toSet());
+
+                    for (Integer propertyId : PROPERTIES_NOT_EXPOSED_THROUGH_CPM) {
+                        String propertyName = VehiclePropertyIds.toString(propertyId);
+                        assertWithMessage(
+                                        "Property "
+                                                + propertyName
+                                                + " must be not be accessible via"
+                                                + " CarPropertyManager#getCarPropertyConfig(int)")
+                                .that(mCarPropertyManager.getCarPropertyConfig(propertyId))
+                                .isNull();
+                        assertWithMessage(
+                                        "Property "
+                                                + propertyName
+                                                + " must be not be accessible via"
+                                                + " CarPropertyManager#getPropertyList()")
+                                .that(allPropertyIds)
+                                .doesNotContain(propertyId);
+                    }
                 });
     }
 
@@ -1292,8 +1313,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         verifier.verify(step, verifierInfo.mExceptedExceptionClass);
     }
 
-
-
     @Test
     public void testEmergencyLaneKeepAssistStateAndErrorStateDontIntersect() {
         verifyEnumValuesAreDistinct(
@@ -1431,21 +1450,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         verifyEnumValuesAreDistinct(
                 VehiclePropertyVerifiers.DRIVER_DISTRACTION_WARNINGS,
                 VehiclePropertyVerifiers.ERROR_STATES);
-    }
-
-    @Test
-    public void testSeatHeadrestHeightPosMustNotBeImplemented() {
-        runWithShellPermissionIdentity(
-                () -> {
-                    assertWithMessage(
-                                    "SEAT_HEADREST_HEIGHT_POS has been deprecated and should not be"
-                                        + " implemented. Use SEAT_HEADREST_HEIGHT_POS_V2 instead.")
-                            .that(
-                                    mCarPropertyManager.getCarPropertyConfig(
-                                            VehiclePropertyIds.SEAT_HEADREST_HEIGHT_POS))
-                            .isNull();
-                },
-                Car.PERMISSION_CONTROL_CAR_SEATS);
     }
 
     @Test
