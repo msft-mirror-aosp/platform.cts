@@ -19,6 +19,7 @@ package android.secure_element.cts;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.pm.PackageManager;
@@ -34,6 +35,8 @@ import android.se.omapi.SeServiceManager.ServiceRegisterer;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.PropertyUtil;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -56,10 +59,15 @@ public class SeServiceManagerTest {
         }
     }
 
+    private static boolean isEmulator() {
+        return PropertyUtil.propertyEquals("ro.hardware", "cutf_cvm");
+    }
+
     @Before
     public void setUp() throws NoSuchFieldException, RemoteException {
         MockitoAnnotations.initMocks(this);
         final PackageManager pm = InstrumentationRegistry.getContext().getPackageManager();
+        assumeFalse(isEmulator());
         assumeTrue(hasSecureElementPackage(pm));
     }
 
