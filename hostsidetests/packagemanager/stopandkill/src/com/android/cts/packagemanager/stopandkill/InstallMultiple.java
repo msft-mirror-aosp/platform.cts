@@ -32,6 +32,7 @@ public class InstallMultiple {
     private final BaseHostJUnit4Test mTest;
     private final List<String> mArgs = new ArrayList<>();
     private final List<String> mApkFileNames = new ArrayList<>();
+    private int mUserId = -1;
 
     public InstallMultiple(BaseHostJUnit4Test test) {
         mTest = test;
@@ -52,6 +53,12 @@ public class InstallMultiple {
      */
     public InstallMultiple addApk(String apkFileName) {
         mApkFileNames.add(apkFileName);
+        return this;
+    }
+
+    /** Sets the user for this installation. */
+    public InstallMultiple forUser(int userId) {
+        mUserId = userId;
         return this;
     }
 
@@ -95,6 +102,9 @@ public class InstallMultiple {
 
     private int createSession(boolean isMultiPackage) throws DeviceNotAvailableException {
         final StringBuilder cmd = new StringBuilder("pm install-create");
+        if (mUserId != -1) {
+            cmd.append(" --user ").append(mUserId);
+        }
         if (isMultiPackage) {
             cmd.append(" --multi-package");
         }

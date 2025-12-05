@@ -69,6 +69,7 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
 
     private static final boolean DEBUG = true;
 
+    private int mUserId;
     private TestApp mApp1 =
             new TestApp("com.android.cts.stopandkillapp1", "CtsStopAndKillTestApp1.apk");
     private TestApp mApp2 =
@@ -82,6 +83,7 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
 
     @Before
     public void setUp() throws Exception {
+        mUserId = getDevice().getCurrentUser();
         cleanUp();
     }
 
@@ -206,7 +208,7 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
             installer.addArg("-r");
             installer.addApk(mApp1.apk);
             installer.addApk(mApp2.apk);
-            installer.run();
+            installer.forUser(mUserId).run();
 
             // Assert that both apps were stopped to save state.
             mApp1.assertStateFileCreatedOnStop(/* shouldExist= */ true);
@@ -246,7 +248,7 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
             installer.addApk(mApp1.apk);
             installer.addApk(mApp2.apk);
             installer.addApk(mApp3.apk);
-            long installTime = installer.run();
+            long installTime = installer.forUser(mUserId).run();
 
             // Assert that both apps were killed before they were able to write file
             mApp1.assertStateFileCreatedOnStop(/* shouldExist= */ false);
@@ -343,7 +345,12 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
     private void launchActivityAndAssertResumed(String componentName) throws Exception {
         getDevice()
                 .executeShellCommand(
-                        "am start -W -n " + componentName + " -f " + FLAG_ACTIVITY_NEW_TASK);
+                        "am start --user "
+                                + mUserId
+                                + " -W -n "
+                                + componentName
+                                + " -f "
+                                + FLAG_ACTIVITY_NEW_TASK);
 
         // Verify that the activity is in the resumed state.
         String result =
@@ -371,7 +378,9 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
 
         for (String component : componentNames) {
             String command =
-                    "am start -W -n "
+                    "am start --user "
+                            + mUserId
+                            + " -W -n "
                             + component
                             + " -f "
                             + flags
@@ -382,12 +391,11 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
     }
 
     private int getAppUid(String pkgName) throws Exception {
-        int currentUser = getDevice().getCurrentUser();
         String uidLine =
                 getDevice()
                         .executeShellCommand(
                                 "cmd package list packages --match-libraries -U --user "
-                                        + currentUser
+                                        + mUserId
                                         + " "
                                         + pkgName);
         Pattern pattern = Pattern.compile("package:" + pkgName + " uid:(\\d+)");
@@ -396,7 +404,7 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
             return Integer.parseInt(matcher.group(1));
         }
         throw new IllegalStateException(
-                "Package " + pkgName + " is not installed for user " + currentUser);
+                "Package " + pkgName + " is not installed for user " + mUserId);
     }
 
     /**
@@ -408,7 +416,6 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
     public final class TestApp {
         public final String pkg;
         public final String apk;
-        public final String stateFilePath;
         public final String persistableActivity;
         public final String nonPersistableActivity;
         public final String persistableTimeoutActivity;
@@ -416,10 +423,13 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
         TestApp(String pkg, String apk) {
             this.pkg = pkg;
             this.apk = apk;
-            this.stateFilePath = "/sdcard/Android/data/" + pkg + "/files/state.txt";
             this.persistableActivity = getComponentName(pkg, PERSISTABLE_ACTIVITY);
             this.nonPersistableActivity = getComponentName(pkg, NON_PERSISTABLE_ACTIVITY);
             this.persistableTimeoutActivity = getComponentName(pkg, PERSISTABLE_TIMEOUT_ACTIVITY);
+        }
+
+        private String getStoragePath() {
+            return String.format("/storage/emulated/%d/Documents/%s-state.txt", mUserId, pkg);
         }
 
         private String getComponentName(String pkgName, String activityName) {
@@ -429,15 +439,20 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
         }
 
         void installPackage(String... options) throws Exception {
-            CtsStopAndKillHostTest.this.installPackage(apk, options);
+            final String[] userOptions = new String[options.length + 3];
+            userOptions[0] = "--user";
+            userOptions[1] = String.valueOf(mUserId);
+            userOptions[2] = "-g";
+            System.arraycopy(options, 0, userOptions, 3, options.length);
+            CtsStopAndKillHostTest.this.installPackage(apk, userOptions);
         }
 
         void uninstall() throws Exception {
-            getDevice().executeShellCommand("pm uninstall " + pkg);
+            getDevice().executeShellCommand("pm uninstall --user " + mUserId + " " + pkg);
         }
 
         void deleteStateFile() throws Exception {
-            getDevice().executeShellCommand("rm -f " + stateFilePath);
+            getDevice().deleteFile(getStoragePath(), mUserId);
         }
 
         /**
@@ -447,12 +462,14 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
          * <p>The app is programmed to create these files when onSaveInstanceState method is called.
          */
         void assertStateFileCreatedOnStop(boolean shouldExist) throws Exception {
+            boolean fileExists = getDevice().doesFileExist(getStoragePath(), mUserId);
+
             assertWithMessage(
-                            "Expected file "
-                                    + stateFilePath
+                            "Expected state file "
+                                    + getStoragePath()
                                     + " to "
                                     + (shouldExist ? "exist" : "not exist"))
-                    .that(getDevice().doesFileExist(stateFilePath))
+                    .that(fileExists)
                     .isEqualTo(shouldExist);
         }
     }
