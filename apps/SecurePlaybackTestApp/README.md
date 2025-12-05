@@ -1,10 +1,11 @@
 # Secure Playback Test
 
-This test verifies secure video playback on an Android device using a host-side script and a Playback Analysis Tool.
+This test verifies secure video playback on an Android device using a host-side script and a Playback Analysis Tool (PAT).
 
 ## Prerequisites
 
-1.  **patctl and dependencies** Set up patctl according to the README at https://github.com/leaflabs/spectrascope/. After creating the venv, please install [mobly](https://github.com/google/mobly) using pip.
+1.  **patctl and dependencies** Set up patctl according to the README. TODO: b/462781250 - add PAT README here.
+After creating the venv, please install [mobly](https://github.com/google/mobly) using pip.
     ```bash
     pip install mobly
     ```
