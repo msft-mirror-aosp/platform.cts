@@ -18,8 +18,9 @@ package android.os.cts;
 
 import static android.os.SecurityStateManager.KEY_KERNEL_VERSION;
 import static android.os.SecurityStateManager.KEY_SYSTEM_SPL;
+import static android.os.SecurityStateManager.KEY_SYSTEM_SUPPLEMENTAL_PATCHES;
 import static android.os.SecurityStateManager.KEY_VENDOR_SPL;
-import static android.os.SecurityStateManager.KEY_SUPPLEMENTAL_PATCHES;
+import static android.os.SecurityStateManager.KEY_VENDOR_SUPPLEMENTAL_PATCHES;
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
@@ -78,8 +79,10 @@ import java.util.stream.Collectors;
 public class SecurityStateManagerTest {
 
     private static final String TAG = "SecurityStateManagerTest";
-    private static final String SUPPLEMENTAL_PATCH_CONFIG_FILE =
+    private static final String SYSTEM_SUPPLEMENTAL_PATCH_CONFIG_FILE =
             "/system/etc/security/supplemental_security_patches.xml";
+    private static final String VENDOR_SUPPLEMENTAL_PATCH_CONFIG_FILE =
+            "/vendor/etc/security/supplemental_security_patches.xml";
 
     private Context mContext;
     private Resources mResources;
@@ -140,19 +143,25 @@ public class SecurityStateManagerTest {
     @RequiresFlagsEnabled(Flags.FLAG_SUPPLEMENTAL_SECURITY_PATCHES)
     @AppModeFull(reason = "Instant apps cannot restore binder identity")
     public void testGetGlobalSecurityState_checkCveIdsFormat() throws Exception {
-        String [] expectedCveIds = getExpectedCveIds();
+        String [] expectedSystemCveIds = getExpectedCveIds(SYSTEM_SUPPLEMENTAL_PATCH_CONFIG_FILE);
+        String [] expectedVendorCveIds = getExpectedCveIds(VENDOR_SUPPLEMENTAL_PATCH_CONFIG_FILE);
 
         Bundle bundle = mSecurityStateManager.getGlobalSecurityState();
-        String[] actualCveIds = bundle.getStringArray(KEY_SUPPLEMENTAL_PATCHES);
 
-        Arrays.sort(expectedCveIds);
-        Arrays.sort(actualCveIds);
+        String[] actualSystemCveIds = bundle.getStringArray(KEY_SYSTEM_SUPPLEMENTAL_PATCHES);
+        Arrays.sort(expectedSystemCveIds);
+        Arrays.sort(actualSystemCveIds);
 
-        assertArrayEquals(expectedCveIds, actualCveIds);
+        String[] actualVendorCveIds = bundle.getStringArray(KEY_VENDOR_SUPPLEMENTAL_PATCHES);
+        Arrays.sort(expectedVendorCveIds);
+        Arrays.sort(actualVendorCveIds);
+
+        assertArrayEquals(expectedSystemCveIds, actualSystemCveIds);
+        assertArrayEquals(expectedVendorCveIds, actualVendorCveIds);
     }
 
-    private String[] getExpectedCveIds() {
-        File file = new File(SUPPLEMENTAL_PATCH_CONFIG_FILE);
+    private String[] getExpectedCveIds(String configFilePath) {
+        File file = new File(configFilePath);
         // skip the test if supplemental_security_patches.xml is not present.
         assumeTrue(file.exists());
 
