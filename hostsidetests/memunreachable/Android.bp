@@ -18,7 +18,6 @@ package {
 
 java_test_host {
     name: "CtsMemunreachableTestCases",
-    team: "trendy_team_native_tools_libraries",
     defaults: ["cts_defaults"],
     srcs: ["src/**/*.kt"],
     libs: [
