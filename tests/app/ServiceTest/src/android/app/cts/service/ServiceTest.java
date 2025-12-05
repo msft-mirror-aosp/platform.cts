@@ -56,6 +56,7 @@ import android.content.ServiceConnection;
 import android.content.flags.Flags;
 import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
+import android.net.Uri;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
@@ -101,7 +102,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -122,6 +125,7 @@ public final class ServiceTest {
     private static final int STATE_UNBIND_ONLY = 6;
     private static final int STATE_STOP_SELF_SUCCESS_UNBIND = 6;
     private static final int DELAY = 5000;
+    private static final int BIND_ISOLATED_SERVICE_TIMEOUT_MINUTES = 1;
     private static final String EXIST_CONN_TO_RECEIVE_SERVICE =
             "existing connection to receive service";
     private static final String EXIST_CONN_TO_LOSE_SERVICE = "existing connection to lose service";
@@ -1722,6 +1726,61 @@ public final class ServiceTest {
             }
             if (conn1a != null) {
                 mContext.unbindService(conn1a);
+            }
+        }
+    }
+
+    /** Verify that many isolated services can be bound concurrently. */
+    @MediumTest
+    @Test
+    @RequiresFlagsEnabled(com.android.server.am.Flags.FLAG_USE_SAFESETID_UID_POLICY)
+    public void testBindIsolatedServiceLimit() throws Exception {
+        final int maxServiceCount = 200;
+        final CountDownLatch latch = new CountDownLatch(maxServiceCount);
+        final List<ServiceConnection> connections = new ArrayList<>();
+        final Set<IBinder> binders = new HashSet<>();
+        final Object lock = new Object();
+
+        try {
+            for (int i = 0; i < maxServiceCount; i++) {
+                Intent intent = new Intent(mContext, IsolatedService.class);
+                // Use different data to ensure each binding is unique.
+                intent.setData(Uri.parse("test://" + i));
+
+                ServiceConnection connection =
+                        new ServiceConnection() {
+                            @Override
+                            public void onServiceConnected(ComponentName name, IBinder service) {
+                                synchronized (lock) {
+                                    binders.add(service);
+                                }
+                                latch.countDown();
+                            }
+
+                            @Override
+                            public void onServiceDisconnected(ComponentName name) {}
+                        };
+                if (!mContext.bindIsolatedService(
+                        intent,
+                        Context.BIND_AUTO_CREATE,
+                        "test_instance" + i,
+                        mContextMainExecutor,
+                        connection)) {
+                    assertWithMessage("Failed to bind to service #" + i).fail();
+                }
+                connections.add(connection);
+            }
+
+            if (!latch.await(BIND_ISOLATED_SERVICE_TIMEOUT_MINUTES, TimeUnit.MINUTES)) {
+                assertWithMessage("Timeout waiting for services to connect").fail();
+            }
+
+            assertWithMessage("Expected to be connected to " + maxServiceCount + " unique services")
+                    .that(maxServiceCount)
+                    .isEqualTo(binders.size());
+        } finally {
+            for (ServiceConnection connection : connections) {
+                mContext.unbindService(connection);
             }
         }
     }
