@@ -16,6 +16,10 @@
 
 package android.security.identity.cts;
 
+import static com.android.compatibility.common.util.PropertyUtil.getVsrApiLevel;
+
+import static org.junit.Assume.assumeTrue;
+
 import android.security.identity.ResultData;
 import android.security.identity.IdentityCredentialStore;
 
@@ -32,6 +36,7 @@ import androidx.test.InstrumentationRegistry;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
@@ -73,6 +78,8 @@ import java.security.spec.ECPoint;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1OctetString;
 
+import org.junit.Before;
+
 import co.nstant.in.cbor.CborBuilder;
 import co.nstant.in.cbor.CborDecoder;
 import co.nstant.in.cbor.CborEncoder;
@@ -94,6 +101,8 @@ import co.nstant.in.cbor.model.UnsignedInteger;
 
 class TestUtil {
     private static final String TAG = "Util";
+
+    private static final int GSI_RKP_PROP_REQUIRED_VENDOR_API_LEVEL = 202604;
 
     // Returns 0 if not implemented. Otherwise returns the feature version.
     //
@@ -156,5 +165,33 @@ class TestUtil {
         Context appContext = InstrumentationRegistry.getTargetContext();
         PackageManager pm = appContext.getPackageManager();
         return pm.hasSystemFeature(PackageManager.FEATURE_SECURE_LOCK_SCREEN);
+    }
+
+    /**
+     * Determines whether running build is GSI or not.
+     *
+     * @return true if running build is GSI, false otherwise.
+     */
+    public static boolean isGsiImage() {
+        final File initGsiRc = new File("/system/system_ext/etc/init/init.gsi.rc");
+        return initGsiRc.exists();
+    }
+
+    /**
+     * b/453737684#comment5 Skip tests performing attestation on GSI before vendor-api-level 202604.
+     * ag/37165459 enables the vendors to configure rkp-properties from api-level 202604 onward.
+     */
+    public static void assumeVendorMaySetRkpProperties() {
+        String reason =
+                String.format(
+                        "Skipping test on GSI: Vendor API Level is %d. Requires %d (26Q2) or"
+                                + " higher. Vendor code cannot set appropriate RKP properties "
+                                + "prior to %d",
+                        getVsrApiLevel(),
+                        GSI_RKP_PROP_REQUIRED_VENDOR_API_LEVEL,
+                        GSI_RKP_PROP_REQUIRED_VENDOR_API_LEVEL);
+        assumeTrue(
+                reason,
+                !(isGsiImage() && getVsrApiLevel() < GSI_RKP_PROP_REQUIRED_VENDOR_API_LEVEL));
     }
 }

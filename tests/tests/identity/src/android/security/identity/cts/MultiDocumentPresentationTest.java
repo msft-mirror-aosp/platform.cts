@@ -41,6 +41,7 @@ import android.security.identity.CredentialDataResult;
 import com.android.security.identity.internal.Util;
 import androidx.test.InstrumentationRegistry;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -66,6 +67,11 @@ import javax.crypto.SecretKey;
 
 public class MultiDocumentPresentationTest {
     private static final String TAG = "MultiDocumentPresentationTest";
+
+    @Before
+    public void setUp() throws Exception {
+        TestUtil.assumeVendorMaySetRkpProperties();
+    }
 
     int[] getAuthKeyUsageCount(IdentityCredentialStore store, String credentialName)
         throws Exception {

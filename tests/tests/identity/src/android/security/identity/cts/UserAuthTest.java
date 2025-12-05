@@ -45,6 +45,7 @@ import androidx.test.InstrumentationRegistry;
 import android.app.KeyguardManager;
 import android.server.wm.ActivityManagerTestBase;
 
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -67,6 +68,11 @@ public class UserAuthTest {
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
+
+    @Before
+    public void setUp() throws Exception {
+        TestUtil.assumeVendorMaySetRkpProperties();
+    }
 
     private class DeviceLockSession extends ActivityManagerTestBase implements AutoCloseable {
 
