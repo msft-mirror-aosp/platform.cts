@@ -18,7 +18,7 @@ package android.media.mediaparser.cts;
 
 import android.media.MediaParser;
 
-import com.google.android.exoplayer2.testutil.FakeExtractorInput;
+import androidx.media3.test.utils.FakeExtractorInput;
 
 import java.io.IOException;
 
