@@ -91,6 +91,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.regex.Pattern;
 
 /**
  * Base class containing useful functionality. Actual tests should be done in subclasses.
@@ -237,8 +238,7 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
     @Nullable
     protected UiObject2 waitForView(String id) {
         Log.d(TAG, "Waiting for view " + id);
-        return mDevice.wait(Until.findObject(By.res(mBiometricManager.getUiPackage(), id)),
-                VIEW_WAIT_TIME_MS);
+        return mDevice.wait(Until.findObject(By.res(getResourcePattern(id))), VIEW_WAIT_TIME_MS);
     }
 
     protected void waitAndPressButton(String id) {
@@ -727,7 +727,16 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
 
     private UiObject2 findViewByIdInternal(String id) {
         Log.d(TAG, "Finding view by id internally: " + id);
-        return mDevice.findObject(By.res(mBiometricManager.getUiPackage(), id));
+        return mDevice.findObject(By.res(getResourcePattern(id)));
+    }
+
+    // Helper method to generate a pattern that matches:
+    // 1. "<uiPackage>:id/my_button" (Standard XML)
+    // 2. "my_button" (Compose/No Package)
+    private Pattern getResourcePattern(String id) {
+        final String uiPackage = mBiometricManager.getUiPackage();
+        return Pattern.compile(
+                "(?:" + Pattern.quote(uiPackage) + ":id/)?" + Pattern.quote(id) + "$");
     }
 
     private UiObject2 findViewByTextInternal(String text) {
