@@ -722,6 +722,10 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
     @Test
     public void testTurnScreenOnShowOnLockAttr() {
+        assumeFalse("Skip test on devices with visible background users enabled "
+                + "(primarily Automotive Multi User Multi Display) because there "
+                + "is no support for turning off displays in all power groups.",
+                isVisibleBackgroundUserSupported());
         assumeTrue(supportsLockScreen());
         assumeRunNotOnVisibleBackgroundNonProfileUser(
                 "Keyguard not supported for visible background users");
@@ -760,6 +764,10 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
     @Test
     public void testTurnScreenOnAttrRemove() {
+        assumeFalse("Skip test on devices with visible background users enabled "
+                + "(primarily Automotive Multi User Multi Display) because there "
+                + "is no support for turning off displays in all power groups.",
+                isVisibleBackgroundUserSupported());
         assumeTrue(supportsLockScreen());
         assumeRunNotOnVisibleBackgroundNonProfileUser(
                 "Keyguard not supported for visible background users");
