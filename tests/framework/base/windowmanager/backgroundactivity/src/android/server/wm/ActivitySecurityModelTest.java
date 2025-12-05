@@ -407,7 +407,8 @@ public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
     @RequireNotTv(reason = "MANAGE_UNKNOWN_APP_SOURCES is not supported by TV Settings")
     public void testActivitySandwichWithSystem_launchAllowed() {
         BackgroundActivityLaunchTest.assumeSdkNewerThanUpsideDownCake();
-        recordTaskStateDump("testActivitySandwichWithSystem_launchAllowed");
+        // Record extra state dumps to debug flakiness issue, that cannot be reproduced locally.
+        recordTaskStateDump("beforeTest");
 
         ComponentName capturedSettingsActivity =
                 new ActivityStartVerifier()
@@ -416,6 +417,12 @@ public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
                         .action(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
                         .executeAndWaitForFocusLoss(APP_A_FOREGROUND_ACTIVITY)
                         .thenAssertTaskHasLostFocus(APP_A_FOREGROUND_ACTIVITY);
+
+        // Hypothesis for flakes:
+        // There is already more than a single settings activity started here, so when asserting
+        // later the task stack does not match. (alternative: another settings activity is started
+        // later?)
+        recordTaskStateDump("capturedSettingsActivity");
 
         // Current State: A B
         // Test - A launches A - fails

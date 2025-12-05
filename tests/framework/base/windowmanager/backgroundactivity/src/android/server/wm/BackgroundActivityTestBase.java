@@ -172,8 +172,10 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
         List<String> expectedNames = Arrays.stream(expectedComponents)
                 .map((c) -> c.flattenToShortString()).collect(Collectors.toList());
 
-        assertWithMessage("task activities").that(actualNames)
-                .containsExactlyElementsIn(expectedNames).inOrder();
+        assertWithMessage("task activities" + allTaskStateDumps())
+                .that(actualNames)
+                .containsExactlyElementsIn(expectedNames)
+                .inOrder();
     }
 
     void assertTaskDoesNotHaveVisibleComponents(ComponentName sourceComponent,
