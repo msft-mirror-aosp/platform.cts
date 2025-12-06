@@ -91,12 +91,7 @@ class SupervisionPolicyTest : BaseSupervisionTest() {
 
     private fun verifySetPackageUsagePolicy(type: Int) {
         withSupervisionRoleHeld {
-            val policy =
-                PackageUsagePolicy.Builder()
-                    .setVersion(0)
-                    .setPackageName(EMPTY_TEST_APP_PACKAGE_NAME)
-                    .setType(type)
-                    .build()
+            val policy = PackageUsagePolicy.Builder(EMPTY_TEST_APP_PACKAGE_NAME, type).build()
 
             supervisionManager.setPolicy(policy)
 
