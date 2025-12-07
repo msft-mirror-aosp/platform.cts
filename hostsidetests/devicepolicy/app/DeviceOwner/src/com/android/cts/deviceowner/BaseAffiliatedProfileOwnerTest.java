@@ -21,10 +21,6 @@ import android.test.AndroidTestCase;
 
 import com.android.bedstead.dpmwrapper.TestAppSystemServiceFactory;
 
-// TODO (b/174859111): evaluate and refactor dependency on this class to have only
-// affiliated profile-owner based tests depends on this class. Tests for Device Owner only,
-// e.g. PackageInstallTest should not depend on this class. Otherwise, tests can easily break
-// in multi-user setup.
 /**
  * Base class for affiliated profile-owner based tests.
  *
