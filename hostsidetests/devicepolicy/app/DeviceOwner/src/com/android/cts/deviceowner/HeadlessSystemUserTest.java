@@ -29,7 +29,6 @@ import android.os.UserHandle;
 import android.os.UserManager;
 import android.util.Log;
 
-//TODO(b/174859111): move to automotive specific module
 /**
  * Device owner tests specific for devices that use
  * {@link android.os.UserManager#isHeadlessSystemUserMode()}.
