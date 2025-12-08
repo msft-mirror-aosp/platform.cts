@@ -787,6 +787,10 @@ public class AudioManagerTest {
 
     @Test
     public void testAccessRingMode() throws Exception {
+        if (mSkipRingerTests) {
+            // setRingerMode is a no-op
+            return;
+        }
         Utils.toggleNotificationPolicyAccess(
                 mContext.getPackageName(), getInstrumentation(), true);
         mAudioManager.setRingerMode(RINGER_MODE_NORMAL);
@@ -2318,7 +2322,7 @@ public class AudioManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(value = Flags.FLAG_SUPPORTED_DEVICE_TYPES_API)
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORTED_DEVICE_TYPES_API)
     public void testGetSupportedDeviceTypes() {
         Set<Integer> deviceTypesOutputs =
                 mAudioManager.getSupportedDeviceTypes(AudioManager.GET_DEVICES_OUTPUTS);
