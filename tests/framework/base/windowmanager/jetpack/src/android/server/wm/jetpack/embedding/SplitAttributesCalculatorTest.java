@@ -342,8 +342,6 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
         activityA.enterPictureInPictureMode(new PictureInPictureParams.Builder().build());
 
         waitFor(activityA::isInPictureInPictureMode);
-        // TODO(b/275526710): find a way to verify calculator is not called without waiting for
-        //  2 secs.
         verifier.assertFunctionNotApplied("The calculator function must not be called because"
                 + " activity A enter PIP.");
 
