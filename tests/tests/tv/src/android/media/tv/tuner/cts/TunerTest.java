@@ -2708,10 +2708,20 @@ public class TunerTest {
         List<Integer> ids = mTuner.getFrontendIds();
         assumeNotNull(ids);
         assertFalse(ids.isEmpty());
+        List<FrontendInfo> infos = mTuner.getAvailableFrontendInfos();
+        assumeNotNull(infos);
+        assertFalse(infos.isEmpty());
+        int availableMax = 0;
         for (int i = 0; i < ids.size(); i++) {
             int type = mTuner.getFrontendInfoById(ids.get(i)).getType();
             if (TunerVersionChecker.isHigherOrEqualVersionTo(
                         TunerVersionChecker.TUNER_VERSION_2_0)) {
+                availableMax = 0;
+                for (int j = 0; j < infos.size(); j++) {
+                    if (infos.get(j).getType() == type) {
+                        availableMax++;
+                    }
+                }
                 int defaultMax = mTuner.getMaxNumberOfFrontends(type);
                 int status;
                 // Use try block to ensure restoring the max Tuner
@@ -2721,8 +2731,8 @@ public class TunerTest {
                     // Set to -1
                     status = mTuner.setMaxNumberOfFrontends(type, -1);
                     assertEquals(Tuner.RESULT_INVALID_ARGUMENT, status);
-                    // Set to defaultMax + 1
-                    status = mTuner.setMaxNumberOfFrontends(type, defaultMax + 1);
+                    // Set to availableMax + 1
+                    status = mTuner.setMaxNumberOfFrontends(type, availableMax + 1);
                     assertEquals(Tuner.RESULT_INVALID_ARGUMENT, status);
                     // Set to 0
                     status = mTuner.setMaxNumberOfFrontends(type, 0);
