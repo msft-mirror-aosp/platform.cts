@@ -35,6 +35,7 @@ android_test {
         "android.service.chooser.flags-aconfig-java",
         "androidx.test.uiautomator_uiautomator",
         "androidx.test.espresso.core",
+        "bedstead",
     ],
 
     libs: [
@@ -53,6 +54,7 @@ android_test {
         ":CtsSharesheetActivityLabelTester",
         ":CtsSharesheetIntentFilterLabelTester",
         ":CtsSharesheetAlternateType",
+        ":CtsSharesheetOutOfProcessTapToShareService",
     ],
     per_testcase_directory: true,
 }
