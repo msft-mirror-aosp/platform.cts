@@ -615,4 +615,7 @@
 
     <!-- b/442290425 -->
     <option name="compatibility:exclude-filter" value="CtsSandboxedTopicsManagerTests" />
+
+    <!-- b/451476981 -->
+    <option name="compatibility:exclude-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowReportingTest#showNotTouchableWindow_activityWindowIsNotVisible" />
 </configuration>
