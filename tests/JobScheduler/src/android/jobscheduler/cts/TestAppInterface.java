@@ -58,9 +58,13 @@ import android.server.wm.WindowManagerStateHelper;
 import android.util.Log;
 import android.util.SparseArray;
 
+import androidx.test.InstrumentationRegistry;
+import androidx.test.uiautomator.UiDevice;
+
 import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.AppStandbyUtils;
 import com.android.compatibility.common.util.CallbackAsserter;
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
 
 import java.util.Collections;
@@ -314,6 +318,17 @@ class TestAppInterface implements AutoCloseable {
     }
 
     void closeActivity(boolean waitForClose) {
+        /**
+         * On desktop form fator devices, finishing a foreground activity kills the app process.
+         * Presses the home button sends the activity to background, which prevents the app process
+         * been killed. This ensures consistent behavior across form factors.
+         */
+        if (FeatureUtil.isDesktop()) {
+            final UiDevice uiDevice =
+                    UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+            uiDevice.pressHome();
+            uiDevice.waitForIdle();
+        }
         mContext.sendBroadcast(new Intent(TestActivity.ACTION_FINISH_ACTIVITY));
         if (waitForClose) {
             ComponentName testComponentName =

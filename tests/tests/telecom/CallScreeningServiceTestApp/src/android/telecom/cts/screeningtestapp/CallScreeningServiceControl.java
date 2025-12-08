@@ -19,7 +19,6 @@ package android.telecom.cts.screeningtestapp;
 import android.app.Service;
 import android.content.ComponentName;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.IBinder;
 import android.telecom.CallScreeningService;
 import android.util.Log;
@@ -40,11 +39,6 @@ public class CallScreeningServiceControl extends Service {
 
     private static CallScreeningServiceControl sCallScreeningServiceControl = null;
     private static CountDownLatch sBindingLatch = new CountDownLatch(1);
-    // For onScreenOutgoingCall
-    private static volatile CountDownLatch sOutgoingScreeningLatch;
-    private static volatile boolean sShouldBlockOutgoing = false;
-    private static volatile boolean sShouldNoResponseOutgoing = false;
-    private static AtomicReference<Uri> sLastOutgoingHandle = new AtomicReference<>();
 
     /** mIsBound represents the binding status from the test class to the test app */
     public static boolean mIsBound = false;
@@ -62,10 +56,6 @@ public class CallScreeningServiceControl extends Service {
                                     .setSkipNotification(false)
                                     .build());
                     sBindingLatch = new CountDownLatch(1);
-                    sOutgoingScreeningLatch = new CountDownLatch(1);
-                    sShouldBlockOutgoing = false;
-                    sShouldNoResponseOutgoing = false;
-                    sLastOutgoingHandle.set(null);
                     CtsPostCallActivity.resetPostCallActivity();
                 }
 
@@ -129,73 +119,7 @@ public class CallScreeningServiceControl extends Service {
                 public boolean isBound() {
                     return mIsBound;
                 }
-
-                @Override
-                public void setShouldBlockOutgoingCall(boolean block) {
-                    sShouldBlockOutgoing = block;
-                    Log.i(TAG, "setShouldBlockOutgoingCall: " + block);
-                }
-
-                @Override
-                public String waitForOutgoingCallScreened(long timeoutMs) {
-                    try {
-                        if (sOutgoingScreeningLatch == null
-                                || !sOutgoingScreeningLatch.await(
-                                        timeoutMs, TimeUnit.MILLISECONDS)) {
-                            return null;
-                        }
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        Log.w(TAG, "waitForScreeningAndGetHandle was interrupted");
-                        return null;
-                    }
-                    Uri handle = sLastOutgoingHandle.get();
-                    return handle != null ? handle.toString() : null;
-                }
-
-                @Override
-                public String getLastOutgoingCallHandle() {
-                    Uri handle = sLastOutgoingHandle.get();
-                    return handle != null ? handle.toString() : null;
-                }
-
-                @Override
-                public void setShouldNoResponseOutgoingCall(boolean noResponse) {
-                    sShouldNoResponseOutgoing = noResponse;
-                    Log.i(TAG, "setShouldNoResponseOutgoingCall: " + noResponse);
-                }
             };
-
-    /**
-     * Returns whether the {@link CtsCallScreeningService} should block the next outgoing call.
-     *
-     * <p>This value is controlled by the test via the {@link
-     * ICallScreeningControl#setShouldBlockOutgoingCall(boolean)} AIDL method.
-     *
-     * @return {@code true} if the next outgoing call should be blocked.
-     */
-    public boolean getShouldBlockOutgoingCall() {
-        return sShouldBlockOutgoing;
-    }
-
-    public boolean getShouldNoResponseOutgoingCall() {
-        return sShouldNoResponseOutgoing;
-    }
-
-    /**
-     * Notifies this control service that an outgoing call has been screened.
-     *
-     * <p>This is called by the {@link CtsCallScreeningService} to report which call handle it has
-     * processed. It also signals a latch to notify the waiting test.
-     *
-     * @param handle The {@link Uri} handle of the call that was screened.
-     */
-    public void onOutgoingCallScreened(Uri handle) {
-        sLastOutgoingHandle.set(handle);
-        if (sOutgoingScreeningLatch != null) {
-            sOutgoingScreeningLatch.countDown();
-        }
-    }
 
     private AtomicReference<CallScreeningService.CallResponse> mCallResponse =
             new AtomicReference<>(

@@ -79,3 +79,13 @@ android_test_helper_app {
         "AndroidManifest_template.xml",
     ],
 }
+
+android_test_helper_app {
+    name: "CtsMockInputMethodWithManySubtypes",
+    defaults: ["CtsMockInputMethodBase"],
+    manifest: "AndroidManifest_mockime_with_many_subtypes.xml",
+    additional_manifests: [
+        "AndroidManifest_template_many_subtypes.xml",
+        "AndroidManifest_template.xml",
+    ],
+}

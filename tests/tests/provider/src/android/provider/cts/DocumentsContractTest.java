@@ -617,6 +617,37 @@ public class DocumentsContractTest {
         assertTrue(cursor.isNull(index));
     }
 
+    @Test
+    @SdkSuppress(minSdkVersion = 37)
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SYNC_STATE)
+    @ApiTest(
+            apis = {
+                "android.provider.DocumentsContract.Root#FLAG_LIMITED_FUNCTIONALITY_WHEN_OFFLINE",
+            })
+    public void testQueryRoots_limitedFunctionalityWhenOffline() throws Exception {
+        MatrixCursor res = new MatrixCursor(new String[] {DocumentsContract.Root.COLUMN_FLAGS});
+        res.newRow()
+                .add(
+                        DocumentsContract.Root.COLUMN_FLAGS,
+                        DocumentsContract.Root.FLAG_LIMITED_FUNCTIONALITY_WHEN_OFFLINE);
+
+        // Mock queryDocument to return the res when this projection is used.
+        doReturn(res).when(mProvider).queryRoots(null);
+
+        // Query for the roots.
+        Cursor cursor = mResolver.query(buildRootsUri(AUTHORITY), null, null, null);
+        assertNotNull(cursor);
+
+        assertTrue(cursor.moveToNext());
+
+        // Check the correct value is returned.
+        int index = cursor.getColumnIndex(DocumentsContract.Root.COLUMN_FLAGS);
+        assertTrue(index >= 0);
+        assertEquals(
+                DocumentsContract.Root.FLAG_LIMITED_FUNCTIONALITY_WHEN_OFFLINE,
+                cursor.getInt(index));
+    }
+
     private static void writeImage(int width, int height, int color, OutputStream out) {
         final Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         final Canvas canvas = new Canvas(bitmap);

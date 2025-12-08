@@ -40,6 +40,9 @@ import android.telephony.satellite.SatelliteManager;
 import android.telephony.satellite.stub.SatelliteModemState;
 import android.telephony.satellite.stub.SatelliteResult;
 
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.annotations.AfterClass;
+import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.bedstead.harrier.annotations.NotificationsTest;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.notifications.NotificationListener;
@@ -48,15 +51,15 @@ import com.android.internal.R;
 import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.concurrent.TimeUnit;
 
+@RunWith(BedsteadJUnit4.class)
 public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatelliteTestBase {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();

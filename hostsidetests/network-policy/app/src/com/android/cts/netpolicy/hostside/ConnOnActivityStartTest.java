@@ -32,6 +32,7 @@ import static com.android.cts.netpolicy.hostside.Property.NON_METERED_NETWORK;
 import android.os.SystemClock;
 import android.util.Log;
 
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.ThrowingRunnable;
 
 import org.junit.After;
@@ -119,6 +120,15 @@ public class ConnOnActivityStartTest extends AbstractRestrictBackgroundNetworkTe
             Log.i(TAG, testName + " start #" + i);
             launchComponentAndAssertNetworkAccess(TYPE_COMPONENT_ACTIVTIY);
             getUiDevice().pressHome();
+            /*
+             * On desktop form factor devices, pressing home button sends app to
+             * PROCESS_STATE_IMPORTANT_BACKGROUND, and the app retains network access. Finish the
+             * activity to set the app in a background state without network access.
+             */
+            if (FeatureUtil.isDesktop()) {
+                getUiDevice().waitForIdle();
+                finishActivity();
+            }
             assertProcessStateBelow(PROCESS_STATE_BOUND_FOREGROUND_SERVICE);
             Log.i(TAG, testName + " end #" + i);
         }

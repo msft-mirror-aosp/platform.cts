@@ -15,9 +15,11 @@
  */
 package android.devicepolicy.cts
 
+import android.Manifest
 import android.app.ActivityManager
 import android.app.ActivityManager.LOCK_TASK_MODE_LOCKED
 import android.app.ActivityOptions
+import android.app.StatusBarManager
 import android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN
 import android.app.admin.DevicePolicyIdentifiers.LOCK_TASK_POLICY
 import android.app.admin.DevicePolicyManager
@@ -42,6 +44,7 @@ import android.content.pm.PackageManager.FEATURE_TELEPHONY_CALLING
 import android.devicepolicy.cts.utils.PolicyEngineUtils
 import android.devicepolicy.cts.utils.PolicySetResultUtils
 import android.os.Bundle
+import android.os.OutcomeReceiver
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -72,17 +75,17 @@ import com.android.compatibility.common.util.ApiTest
 import com.android.eventlib.truth.EventLogsSubject.assertThat
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
+import java.util.concurrent.atomic.AtomicInteger
+import org.junit.Assert.fail
 import org.junit.Assume.assumeFalse
 import org.junit.Assume.assumeTrue
 import org.junit.ClassRule
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.testng.Assert.assertThrows
 
 @RunWith(BedsteadJUnit4::class)
-@Ignore("b/460509405 test suite is flaky need to stabilize and re-enable")
 class LockTaskTest {
     @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
@@ -793,6 +796,69 @@ class LockTaskTest {
                     deviceState.dpc().devicePolicyManager()
                             .setLockTaskPackages(deviceState.dpc().componentName(), arrayOf())
                 }
+            }
+        }
+    }
+
+    @PolicyAppliesTest(policy = [LockTask::class])
+    @ApiTest(
+        apis = [
+            "android.app.StatusBarManager#showPowerMenu",
+            "android.app.StatusBarManager#SHOW_POWER_MENU_RESULT_DISABLED"
+        ]
+    )
+    @Postsubmit(reason = "new test")
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_STATUSBAR_API_SHOW_POWER_MENU)
+    fun startActivity_lockGlobalActions_cannotShowPowerMenuWithApi() {
+        assumeTrue(
+            "Test requires showing activities",
+            TestApis.users().instrumented().canShowActivities()
+        )
+
+        testApp.install().use { testApp ->
+            try {
+                deviceState.dpc().devicePolicyManager()
+                    .setLockTaskPackages(
+                        deviceState.dpc().componentName(),
+                        arrayOf(testApp.packageName())
+                    )
+                deviceState.dpc().devicePolicyManager()
+                    .setLockTaskFeatures(
+                        deviceState.dpc().componentName(),
+                        LOCK_TASK_FEATURE_NONE, // This means that GLOBAL_ACTIONS is not enabled
+                    )
+                val firstActivity: Activity<TestAppActivity> =
+                    testApp.activities().any().start()
+                firstActivity.startLockTask()
+                val statusBarManager = TestApis.context().instrumentedContext()
+                    .getSystemService(StatusBarManager::class.java)
+                // Start with a value that cannot be returned
+                val showPowerMenuResult = AtomicInteger(-1000)
+                val outcomeReceiver = object : OutcomeReceiver<Int, Throwable> {
+                    override fun onResult(result: Int) {
+                        showPowerMenuResult.set(result)
+                    }
+
+                    override fun onError(error: Throwable) {
+                        fail("StatusBarManager#showPowerMenu returned onError")
+                    }
+                }
+                TestApis.permissions()
+                    .withPermission(Manifest.permission.SHOW_POWER_MENU_PRIVILEGED)
+                    .use {
+                        statusBarManager.showPowerMenu(Runnable::run, outcomeReceiver)
+                    }
+                Poll.forValue("Show power menu result") { showPowerMenuResult.get() }
+                    .toBeEqualTo(StatusBarManager.SHOW_POWER_MENU_RESULT_DISABLED)
+                    .errorOnFail()
+                    .await()
+            } finally {
+                deviceState.dpc().devicePolicyManager().setLockTaskFeatures(
+                    deviceState.dpc().componentName(),
+                    LOCK_TASK_FEATURE_NONE
+                )
+                deviceState.dpc().devicePolicyManager()
+                    .setLockTaskPackages(deviceState.dpc().componentName(), arrayOf())
             }
         }
     }

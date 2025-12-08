@@ -75,7 +75,7 @@ public final class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase
                 sDevice.hasFeature(FEATURE_MANAGED_USERS));
         sFeaturesSupported = true;
 
-        sParentUserId = DevicePolicyUsersPreparer.getProfileParentUserIds().getFirst();
+        sParentUserId = DevicePolicyUsersPreparer.getProfileParentUserId();
 
         sSecondaryUserId = createSecondaryUser(sDevice);
         CLog.d(

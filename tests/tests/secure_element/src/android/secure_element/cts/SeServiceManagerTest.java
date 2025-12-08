@@ -17,13 +17,13 @@
 package android.secure_element.cts;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.pm.PackageManager;
 import android.nfc.Flags;
-import android.os.IBinder;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -35,6 +35,8 @@ import android.se.omapi.SeServiceManager.ServiceRegisterer;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.PropertyUtil;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -57,10 +59,15 @@ public class SeServiceManagerTest {
         }
     }
 
+    private static boolean isEmulator() {
+        return PropertyUtil.propertyEquals("ro.hardware", "cutf_cvm");
+    }
+
     @Before
     public void setUp() throws NoSuchFieldException, RemoteException {
         MockitoAnnotations.initMocks(this);
         final PackageManager pm = InstrumentationRegistry.getContext().getPackageManager();
+        assumeFalse(isEmulator());
         assumeTrue(hasSecureElementPackage(pm));
     }
 
@@ -70,13 +77,11 @@ public class SeServiceManagerTest {
         ServiceRegisterer serviceRegisterer =
                 serviceManager.getSeManagerServiceRegisterer();
 
-        // service not accessible to cts, so this is not very meaningful.
-        assertThrows(NullPointerException.class, () ->
-                serviceRegisterer.register(serviceRegisterer.get()));
-        assertNull(serviceRegisterer.get());
-        assertNull(serviceRegisterer.tryGet());
-        assertThrows(ServiceNotFoundException.class, () ->
-                serviceRegisterer.getOrThrow());
+        assertThrows(
+                SecurityException.class, () -> serviceRegisterer.register(serviceRegisterer.get()));
+        assertNotNull(serviceRegisterer.get());
+        assertNotNull(serviceRegisterer.tryGet());
+        assertNotNull(serviceRegisterer.getOrThrow());
     }
 
     @Test

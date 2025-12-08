@@ -31,6 +31,8 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.Intent;
+import android.hardware.devicestate.DeviceState;
+import android.hardware.devicestate.DeviceStateManager;
 import android.hardware.display.DisplayManager;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
@@ -45,7 +47,10 @@ import android.widget.LinearLayout;
 
 import androidx.test.filters.MediumTest;
 
+import com.android.compatibility.common.util.PollingCheck;
+
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -59,12 +64,20 @@ public final class InputMethodPickerTest extends MultiDisplayTestBase {
 
     private InputMethodManager mImManager;
 
+    private DeviceStateManager mDeviceStateManager;
+    private DeviceState mCurrentDeviceState;
+
     @Before
     public void setUp() throws Exception {
         assumeTrue(canRunTest());
         super.setUp();
         mImManager = mContext.getSystemService(InputMethodManager.class);
         closeSystemDialogsAndWait();
+
+        mDeviceStateManager = mContext.getSystemService(DeviceStateManager.class);
+        Assert.assertNotNull(mDeviceStateManager);
+        mDeviceStateManager.registerCallback(Runnable::run, state -> mCurrentDeviceState = state);
+        PollingCheck.waitFor(TIMEOUT, () -> mCurrentDeviceState != null);
     }
 
     @After
@@ -128,6 +141,7 @@ public final class InputMethodPickerTest extends MultiDisplayTestBase {
     @Test
     public void testShowImePickerOnExternalDisplay() throws Exception {
         assumeTrue(supportsMultiDisplay());
+        assumeTrue(deviceStateCanSupportSimulatedDisplays());
 
         try (VirtualDisplaySession session = new VirtualDisplaySession()) {
             // Setup a simulated display.
@@ -164,5 +178,16 @@ public final class InputMethodPickerTest extends MultiDisplayTestBase {
                 new Intent(ACTION_CLOSE_SYSTEM_DIALOGS).setFlags(FLAG_RECEIVER_FOREGROUND));
         waitOnMainUntil(() -> !isInputMethodPickerShown(mImManager), TIMEOUT,
                 "Test assertion failed: InputMethod picker should be closed but isn't");
+    }
+
+    /**
+     * Returns if the current state of the device can support simulated displays being created.
+     * TODO(b/449222961): Update when a more correct property is added to the states.
+     */
+    private boolean deviceStateCanSupportSimulatedDisplays() {
+        return !(mCurrentDeviceState.hasProperty(
+                        DeviceState.PROPERTY_FEATURE_DUAL_DISPLAY_INTERNAL_DEFAULT)
+                || mCurrentDeviceState.hasProperty(
+                        DeviceState.PROPERTY_FEATURE_REAR_DISPLAY_OUTER_DEFAULT));
     }
 }

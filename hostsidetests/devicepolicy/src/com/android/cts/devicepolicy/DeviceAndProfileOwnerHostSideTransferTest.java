@@ -38,7 +38,7 @@ public abstract class DeviceAndProfileOwnerHostSideTransferTest extends BaseDevi
     public void setUp() throws Exception {
         super.setUp();
 
-        mParentUserId = DevicePolicyUsersPreparer.getProfileParentUserIds().getFirst();
+        mParentUserId = DevicePolicyUsersPreparer.getProfileParentUserId();
     }
 
     @Test

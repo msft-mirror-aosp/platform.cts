@@ -170,9 +170,6 @@ class ItsBaseTest(base_test.BaseTestClass):
     cv2_version = cv2.__version__
     logging.debug('cv2_version: %s', cv2_version)
 
-    # Turn off DUT screen to reduce reflection
-    lighting_control_utils.turn_off_device_screen(self.dut)
-
   def _setup_devices(self, num):
     """Sets up each device in parallel if more than one device."""
     if num not in VALID_NUM_DEVICES:
@@ -306,8 +303,6 @@ class ItsBaseTest(base_test.BaseTestClass):
     # Note: Do not replace print with logging.debug here.
     print('root_output_path:',
           f'{self.root_output_path}_{self.__class__.__name__}')
-    # Restore the DUT screen status
-    lighting_control_utils.turn_on_device_screen(self.dut)
 
 
 class UiAutomatorItsBaseTest(ItsBaseTest):

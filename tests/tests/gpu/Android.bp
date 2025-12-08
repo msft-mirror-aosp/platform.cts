@@ -42,6 +42,7 @@ android_test {
         "SurfaceFlingerProperties",
         "androidx.core_core",
         "framework_graphics_flags_java_lib",
+        "libvulkan_flags_java_lib",
         "ravenwood-junit",
     ],
     jni_libs: ["libctsgpu_jni"],

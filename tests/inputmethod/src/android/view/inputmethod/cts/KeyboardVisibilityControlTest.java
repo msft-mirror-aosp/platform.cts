@@ -367,14 +367,15 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                                 .setInputViewHeight(calculateNewKeyboardHeight(testActivity)))) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            if (appRequestsBackCallback) {
-                testActivity.getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
-                        OnBackInvokedDispatcher.PRIORITY_DEFAULT, () -> {
-                            backCallbackInvocationCount.getAndIncrement();
-                        });
-            } else {
-                testActivity.setIgnoreBackKey(true);
-            }
+            runOnMainSync(() -> {
+                if (appRequestsBackCallback) {
+                    testActivity.getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                            OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                            backCallbackInvocationCount::getAndIncrement);
+                } else {
+                    testActivity.setIgnoreBackKey(true);
+                }
+            });
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
             notExpectEvent(stream, editorMatcher("onStartInputView", marker),
@@ -597,15 +598,17 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             context.getApplicationInfo().setEnableOnBackInvokedCallback(appRequestsBackCallback);
             final EditText editText = launchTestActivity(marker);
             final TestActivity testActivity = (TestActivity) editText.getContext();
-            if (appRequestsBackCallback) {
-                testActivity
-                        .getOnBackInvokedDispatcher()
-                        .registerOnBackInvokedCallback(
-                                OnBackInvokedDispatcher.PRIORITY_DEFAULT,
-                                appBackCallbackInvocationCount::getAndIncrement);
-            } else {
-                testActivity.setIgnoreBackKey(true);
-            }
+            runOnMainSync(() -> {
+                if (appRequestsBackCallback) {
+                    testActivity
+                            .getOnBackInvokedDispatcher()
+                            .registerOnBackInvokedCallback(
+                                    OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                                    appBackCallbackInvocationCount::getAndIncrement);
+                } else {
+                    testActivity.setIgnoreBackKey(true);
+                }
+            });
 
             // register custom back callback while IME is invisible
             imeSession.registerCustomImeBackCallback();
@@ -629,7 +632,8 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             assertTrue(
                     "hasActiveInputConnection() must return true if the View has IME focus",
                     getOnMainSync(() -> imm.hasActiveInputConnection(editText)));
-            testActivity.getWindow().getDecorView().getWindowInsetsController().show(ime());
+            runOnMainSync(
+                    () -> testActivity.getWindow().getDecorView().getWindowInsetsController().show(ime()));
             expectEvent(stream, showSoftInputMatcher(0), TIMEOUT);
             expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
             expectEventWithKeyValue(
@@ -1430,11 +1434,11 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             final var editText = launchTestActivity(marker);
             final var backCallbackInvocationCount = new AtomicInteger();
             final var testActivity = (TestActivity) editText.getContext();
-            testActivity
+            runOnMainSync(() -> testActivity
                     .getOnBackInvokedDispatcher()
                     .registerOnBackInvokedCallback(
                             OnBackInvokedDispatcher.PRIORITY_DEFAULT,
-                            backCallbackInvocationCount::getAndIncrement);
+                            backCallbackInvocationCount::getAndIncrement));
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
             notExpectEvent(stream, editorMatcher("onStartInputView", marker), NOT_EXPECT_TIMEOUT);

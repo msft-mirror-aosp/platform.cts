@@ -627,4 +627,58 @@ public class ConnectionServiceTest extends BaseTelecomTestWithMockServices {
                     .dropShellPermissionIdentity();
         }
     }
+
+    public void testOnConnectionAddedAndRemoved() {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+
+        placeAndVerifyCall();
+        final MockConnection connection = verifyConnectionForOutgoingCall();
+        final Call call = mInCallCallbacks.getService().getLastCall();
+
+        assertTrue(connectionService.waitForEvent(
+                    MockConnectionService.EVENT_CONNECTION_SERVICE_ON_CONNECTION_ADDED));
+        assertEquals(connection, connectionService.getLastConnectionAdded());
+
+        call.disconnect();
+
+        assertTrue(connectionService.waitForEvent(
+                    MockConnectionService.EVENT_CONNECTION_SERVICE_ON_CONNECTION_REMOVED));
+        assertEquals(connection, connectionService.getLastConnectionRemoved());
+    }
+
+    public void testOnConferenceAddedAndRemoved() {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+
+        // Add first connection (outgoing call)
+        placeAndVerifyCall();
+        final Connection connection1 = verifyConnectionForOutgoingCall();
+        connection1.setActive();
+        final Call call1 = mInCallCallbacks.getService().getLastCall();
+
+        // Add second connection (outgoing call)
+        placeAndVerifyCall();
+        final Connection connection2 = verifyConnectionForOutgoingCall();
+        connection2.setActive();
+        final Call call2 = mInCallCallbacks.getService().getLastCall();
+
+        // Conference the two calls
+        call1.conference(call2);
+
+        assertTrue(connectionService.waitForEvent(
+                    MockConnectionService.EVENT_CONNECTION_SERVICE_ON_CONFERENCE_ADDED));
+        final MockConference conference =
+            (MockConference) connectionService.getLastConferenceAdded();
+        assertNotNull(conference);
+
+        conference.destroy();
+
+        assertTrue(connectionService.waitForEvent(
+                    MockConnectionService.EVENT_CONNECTION_SERVICE_ON_CONFERENCE_REMOVED));
+        assertEquals(conference, connectionService.getLastConferenceRemoved());
+    }
+
 }

@@ -50,10 +50,11 @@ import androidx.annotation.Nullable;
 import com.android.cts.mockime.ImeEvent;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeEventStreamTestUtils;
-import com.android.server.wm.DesktopModeHelper;
 
 import org.junit.Before;
 import org.junit.ClassRule;
+
+import platform.test.desktop.DesktopModeTestUtil;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -172,8 +173,11 @@ public class MultiDisplayTestBase extends ActivityManagerTestBase {
 
     /** Checks if the device supports multi-display. */
     protected boolean supportsMultiDisplay() {
-        return supportsActivitiesOnSecondaryDisplays()
-                && DesktopModeHelper.canEnterDesktopMode(mContext);
+        return supportsActivitiesOnSecondaryDisplays() && canEnterDesktop();
+    }
+
+    private boolean canEnterDesktop() {
+        return new DesktopModeTestUtil(mContext.getResources()).canEnterDesktopMode();
     }
 
     /** Checks if the device supports activities on secondary displays. */

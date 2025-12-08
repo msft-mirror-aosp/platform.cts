@@ -48,14 +48,14 @@ public class ScanCallbackTest {
 
     @Rule public final MockitoRule mockito = MockitoJUnit.rule();
 
-    private MockScanner mMockScanner = new MockScanner();
     @Mock private ScanCallback mScanCallback;
+
+    private final MockScanner mMockScanner = new MockScanner();
 
     @Before
     public void setUp() {
-        Assume.assumeTrue(
-                TestUtils.isBleSupported(
-                        InstrumentationRegistry.getInstrumentation().getContext()));
+        var context = InstrumentationRegistry.getInstrumentation().getContext();
+        Assume.assumeTrue(TestUtils.isBleSupported(context));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -95,7 +95,7 @@ public class ScanCallbackTest {
 
     // A mock scanner for mocking BLE scanner functionalities.
     private static class MockScanner {
-        private Set<ScanCallback> mCallbacks = new HashSet<>();
+        private final Set<ScanCallback> mCallbacks = new HashSet<>();
 
         void startScan(ScanSettings settings, ScanCallback callback) {
             synchronized (mCallbacks) {

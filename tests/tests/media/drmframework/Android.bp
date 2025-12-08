@@ -31,6 +31,7 @@ java_defaults {
         "ctstestrunner-axt",
         "hamcrest-library",
         "testng",
+        "com.android.media.mediadrm.flags-aconfig-java",
     ],
     aaptflags: [
         "--auto-add-overlay",

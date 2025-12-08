@@ -711,6 +711,19 @@ def pull_img_files(device_id, input_path, output_path):
   its_device_utils.run(pull_cmd)
 
 
+def _click_if_exists(dut, button_text, timeout=WAIT_INTERVAL_FIVE_SECONDS):
+  """Clicks a UI element if it exists within the given timeout.
+
+  Args:
+    dut: An Android controller device object.
+    button_text: str; The text of the button to click.
+    timeout: datetime.timedelta; How long to wait for the element to appear.
+  """
+  if dut.ui(text=button_text).wait.exists(timeout=timeout):
+    logging.debug('Clicking button: %s', button_text)
+    dut.ui(text=button_text).click.wait()
+
+
 def launch_and_take_capture(dut, pkg_name, camera_facing, log_path,
                             dumpsys_path=DEFAULT_CAMERA_APP_DUMPSYS_PATH,
                             flip_camera=True):
@@ -741,28 +754,13 @@ def launch_and_take_capture(dut, pkg_name, camera_facing, log_path,
     its_device_utils.run_adb_shell_command(device_id, launch_cmd)
 
     # Click OK/Done button on initial pop up windows
-    if dut.ui(text=AGREE_BUTTON).wait.exists(
-        timeout=WAIT_INTERVAL_FIVE_SECONDS):
-      dut.ui(text=AGREE_BUTTON).click.wait()
-    if dut.ui(text=AGREE_AND_CONTINUE_BUTTON).wait.exists(
-        timeout=WAIT_INTERVAL_FIVE_SECONDS):
-      dut.ui(text=AGREE_AND_CONTINUE_BUTTON).click.wait()
-    if dut.ui(text=OK_BUTTON_TXT).wait.exists(
-        timeout=WAIT_INTERVAL_FIVE_SECONDS):
-      dut.ui(text=OK_BUTTON_TXT).click.wait()
-    if dut.ui(text=MORE_BUTTON_TXT).wait.exists(
-        timeout=WAIT_INTERVAL_FIVE_SECONDS):
-      dut.ui(text=MORE_BUTTON_TXT).click.wait()
-    if dut.ui(text=DONE_BUTTON_TXT).wait.exists(
-        timeout=WAIT_INTERVAL_FIVE_SECONDS):
-      dut.ui(text=DONE_BUTTON_TXT).click.wait()
-    if dut.ui(text=CANCEL_BUTTON_TXT).wait.exists(
-        timeout=WAIT_INTERVAL_FIVE_SECONDS):
-      dut.ui(text=CANCEL_BUTTON_TXT).click.wait()
-    if dut.ui(text=LOCATION_ON_TXT).wait.exists(
-        timeout=WAIT_INTERVAL_FIVE_SECONDS
-    ):
-      dut.ui(text=LOCATION_ON_TXT).click.wait()
+    _click_if_exists(dut, AGREE_BUTTON)
+    _click_if_exists(dut, AGREE_AND_CONTINUE_BUTTON)
+    _click_if_exists(dut, OK_BUTTON_TXT)
+    _click_if_exists(dut, MORE_BUTTON_TXT)
+    _click_if_exists(dut, DONE_BUTTON_TXT)
+    _click_if_exists(dut, CANCEL_BUTTON_TXT)
+    _click_if_exists(dut, LOCATION_ON_TXT)
     if flip_camera:
       switch_default_camera(dut, camera_facing, log_path)
 

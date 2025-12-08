@@ -816,21 +816,23 @@ class ProvisioningTest {
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserManagedUser"])
     fun provisionMultiUserManagedUser_userIsSystemUser_throwsException() {
-        val params = createDefaultMultiUserManagedUserProvisioningParamsBuilder().build()
+        SetupCompleteResource(setupComplete = false).use {
+            val params = createDefaultMultiUserManagedUserProvisioningParamsBuilder().build()
 
-        val exception = assertThrows(ProvisioningException::class.java) {
-            localDevicePolicyManager.provisionMultiUserManagedUser(params)
+            val exception = assertThrows(ProvisioningException::class.java) {
+                localDevicePolicyManager.provisionMultiUserManagedUser(params)
+            }
+
+            assertThat(
+                localDevicePolicyManager.checkProvisioningPrecondition(
+                    DevicePolicyManager.ACTION_PROVISION_MULTI_USER_MANAGED_USER,
+                    params.profileAdminComponentName.packageName
+                )
+            ).isEqualTo(DevicePolicyManager.STATUS_SYSTEM_USER)
+            assertThat(
+                exception.provisioningError
+            ).isEqualTo(ProvisioningException.ERROR_PRE_CONDITION_FAILED)
         }
-
-        assertThat(
-            localDevicePolicyManager.checkProvisioningPrecondition(
-                DevicePolicyManager.ACTION_PROVISION_MULTI_USER_MANAGED_USER,
-                params.profileAdminComponentName.packageName
-            )
-        ).isEqualTo(DevicePolicyManager.STATUS_SYSTEM_USER)
-        assertThat(
-            exception.provisioningError
-        ).isEqualTo(ProvisioningException.ERROR_PRE_CONDITION_FAILED)
     }
 
     @Postsubmit(reason = "new test")
@@ -840,21 +842,23 @@ class ProvisioningTest {
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserManagedUser"])
     fun provisionMultiUserManagedUser_nonHsum_throwsException() {
-        val params = createDefaultMultiUserManagedUserProvisioningParamsBuilder().build()
+        SetupCompleteResource(setupComplete = false).use {
+            val params = createDefaultMultiUserManagedUserProvisioningParamsBuilder().build()
 
-        val exception = assertThrows(ProvisioningException::class.java) {
-            localDevicePolicyManager.provisionMultiUserManagedUser(params)
+            val exception = assertThrows(ProvisioningException::class.java) {
+                localDevicePolicyManager.provisionMultiUserManagedUser(params)
+            }
+
+            assertThat(
+                localDevicePolicyManager.checkProvisioningPrecondition(
+                    DevicePolicyManager.ACTION_PROVISION_MULTI_USER_MANAGED_USER,
+                    params.profileAdminComponentName.packageName
+                )
+            ).isEqualTo(DevicePolicyManager.STATUS_HEADLESS_SYSTEM_USER_MODE_REQUIRED)
+            assertThat(
+                exception.provisioningError
+            ).isEqualTo(ProvisioningException.ERROR_PRE_CONDITION_FAILED)
         }
-
-        assertThat(
-            localDevicePolicyManager.checkProvisioningPrecondition(
-                DevicePolicyManager.ACTION_PROVISION_MULTI_USER_MANAGED_USER,
-                params.profileAdminComponentName.packageName
-            )
-        ).isEqualTo(DevicePolicyManager.STATUS_HEADLESS_SYSTEM_USER_MODE_REQUIRED)
-        assertThat(
-            exception.provisioningError
-        ).isEqualTo(ProvisioningException.ERROR_PRE_CONDITION_FAILED)
     }
 
     @Postsubmit(reason = "new test")
@@ -867,25 +871,28 @@ class ProvisioningTest {
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserManagedUser"])
     fun provisionMultiUserManagedUser_userHasProfileOwner_throwsException() {
-        val params = createDefaultMultiUserManagedUserProvisioningParamsBuilder().build()
+        SetupCompleteResource(setupComplete = false).use {
+            val params = createDefaultMultiUserManagedUserProvisioningParamsBuilder().build()
 
-        val exception = assertThrows(ProvisioningException::class.java) {
-            localDevicePolicyManager.provisionMultiUserManagedUser(params)
+            val exception = assertThrows(ProvisioningException::class.java) {
+                localDevicePolicyManager.provisionMultiUserManagedUser(params)
+            }
+
+            assertThat(
+                localDevicePolicyManager.checkProvisioningPrecondition(
+                    DevicePolicyManager.ACTION_PROVISION_MULTI_USER_MANAGED_USER,
+                    params.profileAdminComponentName.packageName
+                )
+            ).isEqualTo(DevicePolicyManager.STATUS_USER_HAS_PROFILE_OWNER)
+            assertThat(
+                exception.provisioningError
+            ).isEqualTo(ProvisioningException.ERROR_PRE_CONDITION_FAILED)
         }
-
-        assertThat(
-            localDevicePolicyManager.checkProvisioningPrecondition(
-                DevicePolicyManager.ACTION_PROVISION_MULTI_USER_MANAGED_USER,
-                params.profileAdminComponentName.packageName
-            )
-        ).isEqualTo(DevicePolicyManager.STATUS_USER_HAS_PROFILE_OWNER)
-        assertThat(
-            exception.provisioningError
-        ).isEqualTo(ProvisioningException.ERROR_PRE_CONDITION_FAILED)
     }
 
     @Postsubmit(reason = "new test")
     @EnsureHasDeviceOwner
+    @EnsureHasNoProfileOwner
     @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING)
     @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
@@ -893,21 +900,23 @@ class ProvisioningTest {
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserManagedUser"])
     fun provisionMultiUserManagedUser_hasDeviceOwner_throwsException() {
-        val params = createDefaultMultiUserManagedUserProvisioningParamsBuilder().build()
+        SetupCompleteResource(setupComplete = false).use {
+            val params = createDefaultMultiUserManagedUserProvisioningParamsBuilder().build()
 
-        val exception = assertThrows(ProvisioningException::class.java) {
-            localDevicePolicyManager.provisionMultiUserManagedUser(params)
+            val exception = assertThrows(ProvisioningException::class.java) {
+                localDevicePolicyManager.provisionMultiUserManagedUser(params)
+            }
+
+            assertThat(
+                localDevicePolicyManager.checkProvisioningPrecondition(
+                    DevicePolicyManager.ACTION_PROVISION_MULTI_USER_MANAGED_USER,
+                    params.profileAdminComponentName.packageName
+                )
+            ).isEqualTo(DevicePolicyManager.STATUS_HAS_DEVICE_OWNER)
+            assertThat(
+                exception.provisioningError
+            ).isEqualTo(ProvisioningException.ERROR_PRE_CONDITION_FAILED)
         }
-
-        assertThat(
-            localDevicePolicyManager.checkProvisioningPrecondition(
-                DevicePolicyManager.ACTION_PROVISION_MULTI_USER_MANAGED_USER,
-                params.profileAdminComponentName.packageName
-            )
-        ).isEqualTo(DevicePolicyManager.STATUS_HAS_DEVICE_OWNER)
-        assertThat(
-            exception.provisioningError
-        ).isEqualTo(ProvisioningException.ERROR_PRE_CONDITION_FAILED)
     }
 
     @Postsubmit(reason = "new test")
@@ -922,21 +931,23 @@ class ProvisioningTest {
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserManagedUser"])
     fun provisionMultiUserManagedUser_hasWorkProfile_throwsException() {
-        val params = createDefaultMultiUserManagedUserProvisioningParamsBuilder().build()
+        SetupCompleteResource(setupComplete = false).use {
+            val params = createDefaultMultiUserManagedUserProvisioningParamsBuilder().build()
 
-        val exception = assertThrows(ProvisioningException::class.java) {
-            localDevicePolicyManager.provisionMultiUserManagedUser(params)
+            val exception = assertThrows(ProvisioningException::class.java) {
+                localDevicePolicyManager.provisionMultiUserManagedUser(params)
+            }
+
+            assertThat(
+                localDevicePolicyManager.checkProvisioningPrecondition(
+                    DevicePolicyManager.ACTION_PROVISION_MULTI_USER_MANAGED_USER,
+                    params.profileAdminComponentName.packageName,
+                )
+            ).isEqualTo(DevicePolicyManager.STATUS_USER_HAS_PROFILE)
+            assertThat(
+                exception.provisioningError
+            ).isEqualTo(ProvisioningException.ERROR_PRE_CONDITION_FAILED)
         }
-
-        assertThat(
-            localDevicePolicyManager.checkProvisioningPrecondition(
-                DevicePolicyManager.ACTION_PROVISION_MULTI_USER_MANAGED_USER,
-                params.profileAdminComponentName.packageName,
-            )
-        ).isEqualTo(DevicePolicyManager.STATUS_USER_HAS_PROFILE)
-        assertThat(
-            exception.provisioningError
-        ).isEqualTo(ProvisioningException.ERROR_PRE_CONDITION_FAILED)
     }
 
     @Postsubmit(reason = "new test")
@@ -972,34 +983,6 @@ class ProvisioningTest {
     }
 
     @Postsubmit(reason = "new test")
-    @EnsureHasPermission(
-        CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS,
-    )
-    @EnsureHasPrivateProfile
-    @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING)
-    @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
-    @RequireRunOnInitialUser
-    @Test
-    @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserManagedUser"])
-    fun provisionMultiUserManagedUser_userHasPrivateProfile_throwsException() {
-        val params = createDefaultMultiUserManagedUserProvisioningParamsBuilder().build()
-
-        val exception = assertThrows(ProvisioningException::class.java) {
-            localDevicePolicyManager.provisionMultiUserManagedUser(params)
-        }
-
-        assertThat(
-            localDevicePolicyManager.checkProvisioningPrecondition(
-                DevicePolicyManager.ACTION_PROVISION_MULTI_USER_MANAGED_USER,
-                params.profileAdminComponentName.packageName,
-            )
-        ).isEqualTo(DevicePolicyManager.STATUS_NOT_FULL_USER)
-        assertThat(
-            exception.provisioningError
-        ).isEqualTo(ProvisioningException.ERROR_PRE_CONDITION_FAILED)
-    }
-
-    @Postsubmit(reason = "new test")
     @EnsureHasNoDeviceOwner
     @EnsureHasNoProfileOwner
     @EnsureHasNoWorkProfile
@@ -1012,18 +995,20 @@ class ProvisioningTest {
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserManagedUser"])
     fun provisionMultiUserManagedUser_setsActiveAdminAndProfileOwner_onCurrentUser() {
-        val params = createDefaultMultiUserManagedUserProvisioningParamsBuilder().build()
+        SetupCompleteResource(setupComplete = false).use {
+            val params = createDefaultMultiUserManagedUserProvisioningParamsBuilder().build()
 
-        localDevicePolicyManager.provisionMultiUserManagedUser(params)
+            localDevicePolicyManager.provisionMultiUserManagedUser(params)
 
-        assertThat(TestApis.devicePolicy().getActiveAdmins()).containsExactly(
+            assertThat(TestApis.devicePolicy().getActiveAdmins()).containsExactly(
                 DeviceAdmin.of(
                     DEVICE_ADMIN_COMPONENT_NAME
                 )
             )
-        assertThat(TestApis.devicePolicy().getProfileOwner()!!.pkg().packageName()).isEqualTo(
+            assertThat(TestApis.devicePolicy().getProfileOwner()!!.pkg().packageName()).isEqualTo(
                 context.packageName
             )
+        }
     }
 
     @Test

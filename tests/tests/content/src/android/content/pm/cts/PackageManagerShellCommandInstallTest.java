@@ -83,6 +83,7 @@ import android.os.ParcelFileDescriptor;
 import android.os.Process;
 import android.os.RemoteException;
 import android.os.UserHandle;
+import android.os.UserManager;
 import android.os.storage.StorageManager;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsDisabled;
@@ -245,6 +246,7 @@ public class PackageManagerShellCommandInstallTest {
     private RoleManager mRoleManager;
     private String mPreviousDependencyInstallerRoleHolder;
     private UserHelper mUserHelper;
+    private UserManager mUserManager;
 
     private static long sStreamingVerificationTimeoutMs = DEFAULT_STREAMING_VERIFICATION_TIMEOUT_MS;
 
@@ -357,6 +359,7 @@ public class PackageManagerShellCommandInstallTest {
         uninstallPackageSilently(TEST_APP_PACKAGE);
 
         mRoleManager = (RoleManager) getContext().getSystemService(Context.ROLE_SERVICE);
+        mUserManager = (UserManager) getContext().getSystemService(Context.USER_SERVICE);
 
         executeShellCommand("settings put global verifier_verify_adb_installs 0");
     }
@@ -3129,6 +3132,37 @@ public class PackageManagerShellCommandInstallTest {
                     PackageInstaller.STATUS_PENDING_USER_ACTION,
                     /*expectedMsg=*/null);
         } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    public void testSessionCreationWithManagedUserOrProfileFlag_notFromManagedProfile()
+            throws Exception {
+        getUiAutomation().adoptShellPermissionIdentity();
+
+        Integer sessionId = null;
+        PackageInstaller installer = null;
+
+        try {
+            assumeFalse(mUserManager.isManagedProfile(mUserHelper.getUserId()));
+
+            installer = getPackageInstaller();
+            final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
+            params.installFlags |= PackageManager.INSTALL_FROM_MANAGED_USER_OR_PROFILE;
+
+            sessionId = installer.createSession(params);
+            PackageInstaller.Session session = installer.openSession(sessionId);
+
+            // The flag should no longer be set.
+            assertEquals(
+                    0,
+                    (session.getInstallFlags()
+                            & PackageManager.INSTALL_FROM_MANAGED_USER_OR_PROFILE));
+        } finally {
+            if (sessionId != null) {
+                installer.abandonSession(sessionId);
+            }
             getUiAutomation().dropShellPermissionIdentity();
         }
     }

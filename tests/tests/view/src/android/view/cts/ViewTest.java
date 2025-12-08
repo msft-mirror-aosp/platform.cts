@@ -5674,6 +5674,7 @@ public class ViewTest {
         assertFalse(view.isShowingLayoutBounds());
     }
 
+    @UiThreadTest
     @Test
     public void testClipToOutline() {
         View clipToOutlineUnsetView = mActivity.findViewById(R.id.clip_to_outline_unset);

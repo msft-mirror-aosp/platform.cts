@@ -19,7 +19,6 @@
     <uses-permission android:name="android.permission.READ_CONTACTS"/>
     <uses-permission android:name="android.permission.REVOKE_RUNTIME_PERMISSIONS"/>
     <uses-permission android:name="android.permission.GRANT_RUNTIME_PERMISSIONS"/>
-    <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE" />
     <application android:label="CTSCSTest">
         <service android:name=".CtsCallScreeningService"
              android:permission="android.permission.BIND_SCREENING_SERVICE"
@@ -27,8 +26,6 @@
             <intent-filter>
                 <action android:name="android.telecom.CallScreeningService"/>
             </intent-filter>
-            <meta-data android:name="android.telecom.METADATA_SCREEN_OUTGOING_CALLS"
-                       android:value="true" />
         </service>
         <service android:name=".CallScreeningServiceControl"
              android:exported="true">

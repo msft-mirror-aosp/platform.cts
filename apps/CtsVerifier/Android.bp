@@ -269,6 +269,7 @@ genrule {
         ":cts_apps_to_include",
         ":camera-its",
         ":camera-webcam-test",
+        ":secure-playback-test-app",
     ],
     device_common_srcs: [
         ":android-cts-verifier-notice",
@@ -281,7 +282,8 @@ genrule {
     out: ["android-cts-verifier.zip"],
     cmd: "echo $(locations :cts_apps_to_include) $(location :CtsVerifier) $(location :android-cts-verifier-notice) > $(genDir)/list &&" +
         " $(location soong_zip) -o $(genDir)/cts-verifier.zip -j -P android-cts-verifier -l $(genDir)/list &&" +
-        " $(location merge_zips) $(out) $(genDir)/cts-verifier.zip $(location :camera-its) $(location :camera-webcam-test)",
+        " $(location merge_zips) $(out) $(genDir)/cts-verifier.zip $(location :camera-its) $(location :camera-webcam-test)" +
+        " $(location :secure-playback-test-app)",
 }
 
 // The "cts-verifier" contains: "android-cts-verifier" and "cts-v-host".

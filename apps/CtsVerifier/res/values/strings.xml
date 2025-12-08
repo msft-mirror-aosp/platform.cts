@@ -1882,6 +1882,10 @@
         (cts/apps/SecurePlaybackTestApp; source build/envsetup.sh; python3 secure_playback_test.py -c config.yml).
         \n\n6. After the test is complete, the host-side script will print out the results and automatically complete the test if the results are a PASS.
      </string>
+     <string name="secure_playback_test_info_no_connection">
+        This test requires a working internet connection. Please make sure your device is connected to a Wi-Fi network and try again.
+        \n\nRestart CTS Verifier to see the instructions again.
+     </string>
 
     <!-- Strings for StreamingVideoActivity -->
     <string name="streaming_video">Streaming Video Quality Verifier</string>
@@ -2567,7 +2571,7 @@
          \n\u2022 <b>Exit the app</b>.
          \n\u2022 Confirm that <b>the chip</b> appears on <b>the status bar</b>.
          \n\u2022 Confirm that the icon of the chip is \“C\”.
-         \n\u2022 Confirm the text on the chip text should be \“2min\”.
+         \n\u2022 Confirm that the chip displays text indicating the event is happening in about 2-3 minutes, e.g. \“2m\” or \“2m 45s\”.
     </string>
 
     <string name="notification_style_test">Notification Styles Test</string>

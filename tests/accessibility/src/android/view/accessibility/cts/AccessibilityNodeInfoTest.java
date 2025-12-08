@@ -60,6 +60,7 @@ import android.view.accessibility.AccessibilityNodeInfo.CollectionItemInfo;
 import android.view.accessibility.AccessibilityNodeInfo.ExtraRenderingInfo;
 import android.view.accessibility.AccessibilityNodeInfo.RangeInfo;
 import android.view.accessibility.AccessibilityNodeInfo.TouchDelegateInfo;
+import android.view.accessibility.AccessibilityNodeProvider;
 import android.view.accessibility.Flags;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -605,6 +606,44 @@ public class AccessibilityNodeInfoTest {
         AccessibilityNodeInfo.MathInfo unparceledMathInfo =
                 (AccessibilityNodeInfo.MathInfo) unparceledNode.getStructuredDataInfo();
         assertThat(unparceledMathInfo).isEqualTo(mathInfo);
+    }
+
+    @SmallTest
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityNodeInfo.SelectionPosition#getView",
+                "android.view.accessibility.AccessibilityNodeInfo.SelectionPosition#getVirtualDescendantId",
+                "android.view.accessibility.AccessibilityNodeInfo.SelectionPosition#getNode"
+            })
+    @RequiresFlagsEnabled(
+            android.view.accessibility.Flags.FLAG_A11Y_SELECTION_POSITION_APP_GETTERS_API)
+    public void testSelectionPositionGetters_unsealedNode() {
+        final View view = new View(getContext());
+        final AccessibilityNodeInfo unsealedNode = new AccessibilityNodeInfo(view);
+        unsealedNode.setText("text");
+        unsealedNode.setSelection(
+                new AccessibilityNodeInfo.Selection(
+                        new AccessibilityNodeInfo.SelectionPosition(unsealedNode, 0),
+                        new AccessibilityNodeInfo.SelectionPosition(unsealedNode, 1)));
+        final AccessibilityNodeInfo.SelectionPosition unsealedPosition =
+                unsealedNode.getSelection().getStart();
+
+        final AccessibilityNodeInfo.SelectionPosition unattachedPosition =
+                new AccessibilityNodeInfo.SelectionPosition(view, 0);
+
+        assertThat(unsealedPosition.getView()).isNull();
+        assertThat(unsealedPosition.getVirtualDescendantId())
+                .isEqualTo(AccessibilityNodeProvider.HOST_VIEW_ID);
+        assertThrows(IllegalStateException.class, () -> unsealedPosition.getNode());
+
+        assertThat(unattachedPosition.getView()).isNull();
+        assertThat(unattachedPosition.getVirtualDescendantId())
+                .isEqualTo(AccessibilityNodeProvider.HOST_VIEW_ID);
+        assertThrows(IllegalStateException.class, () -> unattachedPosition.getNode());
+
+        // Sealed nodes and their selection positions, as well as unattached selection positions are
+        // tested in end to end tests.
     }
 
     /**

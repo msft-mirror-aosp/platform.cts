@@ -36,6 +36,7 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.SystemClock;
@@ -51,7 +52,6 @@ import android.server.wm.WindowManagerState.Task;
 import android.util.Log;
 import android.view.Display;
 
-import com.android.server.wm.DesktopModeHelper;
 import com.android.window.flags.Flags;
 
 import com.google.common.collect.ImmutableSet;
@@ -64,6 +64,7 @@ import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import platform.test.desktop.DesktopModeTestUtil;
 import platform.test.desktop.DesktopMouseTestRule;
 import platform.test.desktop.LogicalDisplayPointPx;
 import platform.test.desktop.SimulatedConnectedDisplayTestRule;
@@ -192,13 +193,20 @@ public class CrossAppDragAndDropTests extends ActivityManagerTestBase {
 
                 @Override
                 void assumeDeviceSupportsLaunchMode() {
-                    assumeTrue(DesktopModeHelper.canEnterDesktopMode(mTestCase.mContext));
+                    assumeDesktopModeSupported();
                     assumeTrue(Flags.enableConnectedDisplaysDnd());
                     assumeFalse(
                             mTestCase
                                     .mContext
                                     .getPackageManager()
                                     .hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+                }
+
+                private void assumeDesktopModeSupported() {
+                    Resources resources = mTestCase.mContext.getResources();
+                    boolean isDesktopModeSupported =
+                            new DesktopModeTestUtil(resources).canEnterDesktopMode();
+                    assumeTrue("Device does not support desktop mode", isDesktopModeSupported);
                 }
 
                 @Override

@@ -19,6 +19,7 @@ import static android.app.admin.flags.Flags.FLAG_DEVICE_OWNER_FOR_ALL;
 import static android.multiuser.Flags.FLAG_PROFILES_FOR_ALL;
 
 import static com.android.compatibility.common.util.UserUtil.CONFIG_SUPPORT_PROFILES_ON_NON_MAIN_USER;
+import static com.android.tradefed.device.UserInfo.USER_NULL;
 import static com.android.tradefed.device.UserInfo.USER_SYSTEM;
 
 import com.android.compatibility.common.util.BaseSwitchFullUserTargetPreparer;
@@ -65,11 +66,13 @@ public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPre
             // Log what it will return...
             logAndDisplay(
                     "preview: getInitialCurrentUserId()=%s, getDeviceOwnerUserId()=%s, "
-                            + "getProfileParentUserIds()=%s, getPreExistingUserIds()=%s,"
+                            + "getProfileParentUserIds()=%s, "
+                            + "getProfileParentUserId()=%s, getPreExistingUserIds()=%s,"
                             + "isDeviceOwnerSupportedOnAnyFullUsers()=%s",
                     safeToString(DevicePolicyUsersPreparer::getInitialCurrentUserId),
                     safeToString(DevicePolicyUsersPreparer::getDeviceOwnerUserId),
                     safeToString(DevicePolicyUsersPreparer::getProfileParentUserIds),
+                    safeToString(DevicePolicyUsersPreparer::getProfileParentUserId),
                     safeToString(DevicePolicyUsersPreparer::getPreExistingUserIds),
                     safeToString(DevicePolicyUsersPreparer::isDeviceOwnerSupportedOnAnyFullUsers));
         } catch (Exception e) {
@@ -117,12 +120,20 @@ public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPre
 
     /**
      * Gets the ids of any user that *could* be used as parent of profiles (created by the test).
+     *
+     * @deprecated use {@link #getProfileParentUserId()} instead.
      */
+    @Deprecated
     public static ImmutableList<Integer> getProfileParentUserIds() {
-        // TODO(b/374832167): we could add all full users, but given that no test is currently
-        // setting profiles in more than one user (and mostly likely tests that do so would be
-        // added on CtsDevicePolicyTestCases), we're just returning one.
-        return ImmutableList.of(getOracle().getProfileParentUserId());
+        return getOracle().getProfileParentUserIds();
+    }
+
+    /**
+     * Gets the id of the user that *could* be used as parent of profiles (created by the test), or
+     * {@link USER_NULL} if none could be used.
+     */
+    public static int getProfileParentUserId() {
+        return getOracle().getProfileParentUserId();
     }
 
     @FormatMethod
@@ -225,10 +236,8 @@ public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPre
                 return mMainUserId;
             }
             if (mIsAutomotive) {
-                CLog.d(
-                        "mainOrCurrentUserId(): returning current user (%d) on automotive build",
-                        mInitialCurrentUserId);
-                return mInitialCurrentUserId;
+                CLog.d("getProfileParentUserId(): returning USER_NULL on automotive build");
+                return USER_NULL;
             }
             Preconditions.checkState(
                     mSupportsProfilesForAll,
@@ -237,6 +246,37 @@ public final class DevicePolicyUsersPreparer extends BaseSwitchFullUserTargetPre
                     FLAG_PROFILES_FOR_ALL,
                     CONFIG_SUPPORT_PROFILES_ON_NON_MAIN_USER);
             return mInitialCurrentUserId;
+        }
+
+        /**
+         * @deprecated use {@link #getProfileParentUserId()} instead.
+         */
+        @Deprecated
+        private ImmutableList<Integer> getProfileParentUserIds() {
+            if (!mIsHsum) {
+                // TODO(b/374832167): in theory we don't need this check - the logic below should
+                // apply to non-HSUM devices as well as it checks for mSupportsProfilesForAll - but
+                // given that the whole point of this class is to support HSUM device, it would be
+                // safer (to avoid potential breakages) to simplify its logic for non-HSUM devices
+                return ImmutableList.of(USER_SYSTEM);
+            }
+            if (mMainUserId != null) {
+                return ImmutableList.of(mMainUserId);
+            }
+            if (mIsAutomotive) {
+                CLog.d(
+                        "getProfileParentUserIds(): returning current user (%d) on automotive"
+                                + " build",
+                        mInitialCurrentUserId);
+                return ImmutableList.of(mInitialCurrentUserId);
+            }
+            Preconditions.checkState(
+                    mSupportsProfilesForAll,
+                    "PO not supported on mainless-user device (either flag %s is disabled or "
+                            + "device doesn't define %s - check logs)",
+                    FLAG_PROFILES_FOR_ALL,
+                    CONFIG_SUPPORT_PROFILES_ON_NON_MAIN_USER);
+            return ImmutableList.of(mInitialCurrentUserId);
         }
     }
 }

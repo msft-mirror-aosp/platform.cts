@@ -17,12 +17,12 @@ package com.android.compatibility.common.util;
 
 import android.os.Process;
 
-public class AmUtils {
+/** A helper class for calling {@code am} commands. */
+public final class AmUtils {
     private static final String TAG = "CtsAmUtils";
 
-    private static final String DUMPSYS_ACTIVITY_PROCESSES = "dumpsys activity --proto processes";
-
-    public static int STANDBY_BUCKET_DOES_NOT_EXIST = -1;
+    /** An invalid standby bucket value. */
+    public static final int STANDBY_BUCKET_DOES_NOT_EXIST = -1;
 
     private AmUtils() {
     }
@@ -32,11 +32,25 @@ public class AmUtils {
         SystemUtil.runShellCommandForNoOutput("am make-uid-idle " + packageName);
     }
 
-    /** Run "adb shell am kill PACKAGE" */
+    /**
+     * Run "adb shell am kill PACKAGE"
+     *
+     * @param packageName The package to kill.
+     */
     public static void runKill(String packageName) throws Exception {
         runKill(packageName, false /* wait */);
     }
 
+    /**
+     * Run "adb shell am kill" on a package for the current user.
+     *
+     * <p><b>NOTE:</b> This only kills processes that are safe to kill and that won't disrupt the
+     * user experience.
+     *
+     * @param packageName The package to kill.
+     * @param wait whether to wait until the package's processes have been killed.
+     * @throws Exception if the process is not killed in time.
+     */
     public static void runKill(String packageName, boolean wait) throws Exception {
         SystemUtil.runShellCommandForNoOutput(
                 "am kill --user " + Process.myUserHandle().getIdentifier() + " " + packageName);
@@ -49,10 +63,25 @@ public class AmUtils {
                 () -> !isProcessRunning(packageName));
     }
 
-    private static boolean isProcessRunning(String packageName) {
+    /**
+     * Runs "adb shell am stop-app PACKAGE".
+     *
+     * @param packageName The package to stop.
+     */
+    public static void runStopApp(String packageName) {
+        SystemUtil.runShellCommandForNoOutput("am stop-app " + packageName);
+    }
+
+    /**
+     * Checks if a process is running for the given package.
+     *
+     * @param packageName The package to check.
+     * @return {@code true} if a process is running for the package, {@code false} otherwise.
+     */
+    public static boolean isProcessRunning(String packageName) {
         final String output = SystemUtil.runShellCommand("ps -A -o NAME");
         String[] packages = output.split("\\n");
-        for (int i = packages.length -1; i >=0; --i) {
+        for (int i = packages.length - 1; i >= 0; --i) {
             if (packages[i].equals(packageName)) {
                 return true;
             }
@@ -60,22 +89,36 @@ public class AmUtils {
         return false;
     }
 
-    /** Run "adb shell am set-standby-bucket" */
+    /**
+     * Runs "adb shell am set-standby-bucket".
+     *
+     * @param packageName The package to set the standby bucket for.
+     * @param value The standby bucket value.
+     */
     public static void setStandbyBucket(String packageName, int value) {
         SystemUtil.runShellCommandForNoOutput("am set-standby-bucket " + packageName
                 + " " + value);
     }
 
-    /** Run "adb shell am set-standby-bucket --user" */
+    /**
+     * Runs "adb shell am set-standby-bucket --user".
+     *
+     * @param packageName The package to set the standby bucket for.
+     * @param value The standby bucket value.
+     * @param userId The user to set the standby bucket for.
+     */
     public static void setStandbyBucketAsUser(String packageName, int value, int userId) {
         SystemUtil.runShellCommandForNoOutput(
                 "am set-standby-bucket --user " + userId + " " + packageName + " " + value);
     }
 
     /**
-     * Run "adb shell am get-standby-bucket",
-     * return #STANDBY_BUCKET_DOES_NOT_EXIST for invalid packages
-     * */
+     * Runs "adb shell am get-standby-bucket".
+     *
+     * @param packageName The package to get the standby bucket for.
+     * @return The standby bucket value, or {@link #STANDBY_BUCKET_DOES_NOT_EXIST} for invalid
+     *     packages.
+     */
     public static int getStandbyBucket(String packageName) {
         final String value = SystemUtil.runShellCommand("am get-standby-bucket " + packageName);
         try {
@@ -86,8 +129,12 @@ public class AmUtils {
     }
 
     /**
-     * Run "adb shell am get-standby-bucket --user",
-     * return #STANDBY_BUCKET_DOES_NOT_EXIST for invalid packages
+     * Runs "adb shell am get-standby-bucket --user".
+     *
+     * @param packageName The package to get the standby bucket for.
+     * @param userId The user to get the standby bucket for.
+     * @return The standby bucket value, or {@link #STANDBY_BUCKET_DOES_NOT_EXIST} for invalid
+     *     packages.
      */
     public static int getStandbyBucketAsUser(String packageName, int userId) {
         final String value = SystemUtil.runShellCommand(

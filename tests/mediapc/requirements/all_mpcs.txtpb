@@ -12,6 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# proto-file: third_party/android/mediapc_requirements/requirements.proto
+# proto-file: cts/tests/mediapc/requirements/requirements.proto
 # proto-message: RequirementList
-all_mpcs: [30, 31, 33, 34, 35, 37]
+all_mpcs: [
+  30,
+  31,
+  33,
+  34,
+  35,
+  37
+]

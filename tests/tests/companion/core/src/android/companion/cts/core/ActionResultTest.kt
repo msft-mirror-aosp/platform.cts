@@ -67,6 +67,10 @@ class ActionResultTest : CoreTestBase() {
 
     override fun setUp() {
         super.setUp()
+
+        withShellPermissionIdentity(USE_COMPANION_TRANSPORTS) {
+            cdm.setRequestActionAllowList(listOf(SERVICE_NAME_A, SERVICE_NAME_B))
+        }
         associationIdA = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A)
         associationIdB = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_B)
 
@@ -78,7 +82,9 @@ class ActionResultTest : CoreTestBase() {
         withShellPermissionIdentity(USE_COMPANION_TRANSPORTS) {
             cdm.removeOnActionResultListener(SERVICE_NAME_A)
             cdm.removeOnActionResultListener(SERVICE_NAME_B)
+            cdm.setRequestActionAllowList(null)
         }
+
         super.tearDown()
     }
 

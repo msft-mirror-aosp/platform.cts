@@ -16,8 +16,8 @@
 
 package android.telecom.cts;
 
-import static android.telecom.cts.TestUtils.shouldTestTelecom;
 import static android.telecom.cts.TestUtils.hasTelephonyFeature;
+import static android.telecom.cts.TestUtils.shouldTestTelecom;
 
 import android.content.Context;
 import android.content.Intent;
@@ -45,6 +45,7 @@ import java.util.List;
 public class TelecomAvailabilityTest extends InstrumentationTestCase {
     private static final String TAG = TelecomAvailabilityTest.class.getSimpleName();
     private static final String TELECOM_PACKAGE_NAME = "com.android.server.telecom";
+    private static final String TELECOM_UI_PACKAGE_NAME = "com.android.server.telecomui";
     private static final String TELEPHONY_PACKAGE_NAME = "com.android.phone";
 
     private PackageManager mPackageManager;
@@ -85,22 +86,32 @@ public class TelecomAvailabilityTest extends InstrumentationTestCase {
         final List<ResolveInfo> activities =
                 mPackageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
 
-        boolean telecomMatches = false;
-        boolean telephonyMatches = false;
-        for (ResolveInfo resolveInfo : activities) {
-            if (resolveInfo.activityInfo == null) {
-                continue;
-            }
-            if (!telecomMatches
-                    && TELECOM_PACKAGE_NAME.equals(resolveInfo.activityInfo.packageName)) {
-                telecomMatches = true;
-            } else if (!telephonyMatches
-                    && TELEPHONY_PACKAGE_NAME.equals(resolveInfo.activityInfo.packageName)) {
-                telephonyMatches = true;
-            }
-        }
+        boolean handlerFound =
+                activities.stream()
+                        .anyMatch(
+                                resolveInfo -> {
+                                    if (resolveInfo.activityInfo == null) {
+                                        return false;
+                                    }
+                                    String packageName = resolveInfo.activityInfo.packageName;
+                                    return TELECOM_PACKAGE_NAME.equals(packageName)
+                                            || TELECOM_UI_PACKAGE_NAME.equals(packageName);
+                                });
 
-        assertTrue("Telecom APK must be registered to handle CALL intents", telecomMatches);
+        assertTrue(
+                "A Telecom or TelecomUI APK must be registered to handle CALL intents",
+                handlerFound);
+
+        boolean telephonyMatches =
+                activities.stream()
+                        .anyMatch(
+                                resolveInfo -> {
+                                    if (resolveInfo.activityInfo == null) {
+                                        return false;
+                                    }
+                                    return TELEPHONY_PACKAGE_NAME.equals(
+                                            resolveInfo.activityInfo.packageName);
+                                });
         assertFalse("Telephony APK must NOT be registered to handle CALL intents",
                 telephonyMatches);
     }
@@ -116,11 +127,24 @@ public class TelecomAvailabilityTest extends InstrumentationTestCase {
 
         final List<ResolveInfo> activities =
                 mPackageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
-        assertEquals(1, activities.size());
-        for (ResolveInfo resolveInfo : activities) {
-            assertNotNull(resolveInfo.activityInfo);
-            assertEquals(TELECOM_PACKAGE_NAME, resolveInfo.activityInfo.packageName);
-        }
+        assertEquals(
+                "There must be exactly one handler for MANAGE_BLOCKED_NUMBERS",
+                1,
+                activities.size());
+
+        String packageName = activities.get(0).activityInfo.packageName;
+        boolean isAllowedPackage =
+                TELECOM_PACKAGE_NAME.equals(packageName)
+                        || TELECOM_UI_PACKAGE_NAME.equals(packageName);
+
+        assertTrue(
+                "Handler for MANAGE_BLOCKED_NUMBERS must be in an allowed package ("
+                        + TELECOM_PACKAGE_NAME
+                        + " or "
+                        + TELECOM_UI_PACKAGE_NAME
+                        + "), but was "
+                        + packageName,
+                isAllowedPackage);
     }
 
     /**
@@ -147,14 +171,23 @@ public class TelecomAvailabilityTest extends InstrumentationTestCase {
     }
 
     /**
-     * Ensures that all call capable devices declare the Telecom feature.
+     * Ensures that all call capable Android devices declare the Telecom feature. This is not
+     * limited to just handheld drives, but includes tablets with or without a built-in SIM,
+     * wearable devices such as watches, and automotive devices which provide in-car communication
+     * services.
      *
      * A call capable device is one which has audio input and output capabilities and has the
-     * ability to make calls through one of the following routes:
+     * ability to make calls through routes such as the following:
      * 1. A mobile network using the Telephony stack (ie.
      * {@link PackageManager#FEATURE_TELEPHONY_CALLING}).
-     * 2. Applications that provide calling functionality over the internet (i.e. VoIP apps).  This
-     * includes both pre-bundled and user-installed communication applications.
+     * 2. Applications that provide calling functionality, potentially over the internet (i.e.
+     * VoIP apps).  This includes both pre-bundled and user-installed communication applications.
+     * 3. A device which relies on the Telecom framework to route calls from a call source to a call
+     * UX.  For example, A device which relies on the Bluetooth HFP profile to route calls
+     * (ie. a wearable or automotive device) to a Dialer UX on that device.
+     * 4. A device which leverages any part of the {@link android.telecom.TelecomManager}.
+     * This is not a comprehensive list, but rather a general guideline for what is considered a
+     * call capable device.
      *
      * The Telecom framework is the use-case specific API for calling and communication apps.
      */
@@ -169,6 +202,8 @@ public class TelecomAvailabilityTest extends InstrumentationTestCase {
             return;
         }
 
+        // Broadly, a device which has audio input and output is a call capable device, regardless
+        // of how the audio is connected to a remote endpoint.
         boolean hasAudioInputAndOutput = mPackageManager.hasSystemFeature(
                 PackageManager.FEATURE_MICROPHONE) && mPackageManager.hasSystemFeature(
                 PackageManager.FEATURE_AUDIO_OUTPUT);

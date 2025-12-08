@@ -604,6 +604,22 @@ public abstract class BaseDefaultPermissionGrantPolicyTest extends BusinessLogic
             // make a modifiable list
             List<String> requestedPermissions = new ArrayList<>(
                     Arrays.asList(packageInfo.requestedPermissions));
+            for (int i = 0; i < packageInfo.requestedPermissions.length; i++) {
+                // ACCESS_LOCAL_NETWORK is automatically granted if INTERNET is requested due to
+                // split permission, so we temporarily ignore it if it is an implicit permission.
+                // STOPSHIP(b/462554320): Remove this before the final platform release.
+                String permission = packageInfo.requestedPermissions[i];
+                if (Objects.equals(permission, Manifest.permission.ACCESS_LOCAL_NETWORK)
+                      && (packageInfo.requestedPermissionsFlags[i]
+                          & PackageInfo.REQUESTED_PERMISSION_IMPLICIT) != 0) {
+                    // Now a small trick - pretend the package does not request this permission
+                    // as we will later treat each granted runtime permissions as a violation.
+                    requestedPermissions.remove(permission);
+                    packageInfo.requestedPermissions = requestedPermissions.toArray(
+                            new String[requestedPermissions.size()]);
+                    break;
+                }
+            }
             for (int i = 0; i < grantCount; i++) {
                 String permission = uidState.grantedPermissions.keyAt(i);
 

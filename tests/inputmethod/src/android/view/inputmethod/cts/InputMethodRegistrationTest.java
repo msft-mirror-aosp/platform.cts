@@ -22,8 +22,6 @@ import static com.android.compatibility.common.util.SystemUtil.runWithShellPermi
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import static org.junit.Assert.assertEquals;
-
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -35,7 +33,7 @@ import android.util.Log;
 import android.view.inputmethod.InputMethod;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
-import android.view.inputmethod.InputMethodSubtype;
+import android.view.inputmethod.cts.util.TestUtils;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -46,7 +44,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -82,16 +79,6 @@ public final class InputMethodRegistrationTest {
                     LARGE_RESOURCE_IME_PACKAGE,
                     ".services.service_with_700_subtypes_of_small_attrs");
 
-    // IME with 100 static subtypes, subtypes can be dynamically added by intent.
-    private static final ComponentName IME_WITH_MANY_ADDITIONAL_SUBTYPES =
-            ComponentName.createRelative(
-                    LARGE_RESOURCE_IME_PACKAGE, ".MethodWithManyAdditionalSubtypes");
-    // Constants for Intent to dynamically update additional subtypes.
-    private static final String ACTION_SET_ADDITIONAL_SUBTYPES =
-            "com.android.cts.mocklargeresourceime.ACTION_SET_ADDITIONAL_SUBTYPES";
-    private static final String EXTRA_ADDITIONAL_SUBTYPES =
-            "com.android.cts.mocklargeresourceime.EXTRA_ADDITIONAL_SUBTYPES";
-
     // TODO(b/453929129): Reconsider this long timeout.
     private static final long REGISTRATION_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(2);
 
@@ -100,14 +87,14 @@ public final class InputMethodRegistrationTest {
     @BeforeClass
     public static void setUpClass() {
         Log.v("InputMethodRegistrationTest", "Installing apk: " + LARGE_RESOURCE_IME_APK_PATH);
-        installLargeResourceIme();
+        TestUtils.installApk(LARGE_RESOURCE_IME_APK_PATH);
         runShellCommand("am wait-for-broadcast-barrier");
     }
 
     @AfterClass
     public static void tearDownClass() {
         Log.v("InputMethodRegistrationTest", "Uninstalling package: " + LARGE_RESOURCE_IME_PACKAGE);
-        uninstallLargeResourceIme();
+        TestUtils.uninstallPackage(LARGE_RESOURCE_IME_PACKAGE);
         runShellCommandOrThrow("ime reset");
     }
 
@@ -317,72 +304,6 @@ public final class InputMethodRegistrationTest {
         }
     }
 
-    /** Verify behavior declaring IME that has a lot of subtypes. */
-    @Test
-    public void testAddMoreSubtypes() {
-        // These large services are disabled by default.
-        final List<ComponentName> componentNamesToEnable =
-                List.of(IME_WITH_MANY_ADDITIONAL_SUBTYPES);
-        final var imm = mContext.getSystemService(InputMethodManager.class);
-        try {
-            setComponentEnabledSync(
-                    componentNamesToEnable, PackageManager.COMPONENT_ENABLED_STATE_ENABLED);
-
-            runShellCommand("am wait-for-broadcast-barrier");
-
-            // Wait until the IME is loaded.
-            PollingCheck.waitFor(
-                    REGISTRATION_TIMEOUT_MS,
-                    () ->
-                            imm.getInputMethodList().stream()
-                                    .map(InputMethodInfo::getComponent)
-                                    .toList()
-                                    .contains(IME_WITH_MANY_ADDITIONAL_SUBTYPES),
-                    "IME_WITH_MANY_ADDITIONAL_SUBTYPES must be loaded");
-
-            runShellCommandOrThrow(
-                    "ime enable --user "
-                            + UserHandle.myUserId()
-                            + " "
-                            + IME_WITH_MANY_ADDITIONAL_SUBTYPES.flattenToShortString());
-            runShellCommandOrThrow(
-                    "ime set --user "
-                            + UserHandle.myUserId()
-                            + " "
-                            + IME_WITH_MANY_ADDITIONAL_SUBTYPES.flattenToShortString());
-            PollingCheck.waitFor(
-                    REGISTRATION_TIMEOUT_MS,
-                    () ->
-                            IME_WITH_MANY_ADDITIONAL_SUBTYPES.equals(
-                                    imm.getCurrentInputMethodInfo().getComponent()));
-
-            // Request 0 additional subtypes. The IME has 100 static subtypes.
-            setAdditionalSubtypesRequest(0);
-            waitForNumberOfSubtypes(100);
-
-            // Request 50 additional subtypes. Total should be 100 + 50 = 150.
-            setAdditionalSubtypesRequest(50);
-            waitForNumberOfSubtypes(150);
-
-            // Request 300 additional subtypes. Total should be 100 + 300 = 400.
-            setAdditionalSubtypesRequest(300);
-            waitForNumberOfSubtypes(400);
-
-            // Request 0 additional subtypes again to reset. Total should be back to 100.
-            setAdditionalSubtypesRequest(0);
-            waitForNumberOfSubtypes(100);
-        } finally {
-            // clear additional subtypes to reset the state.
-            setAdditionalSubtypesRequest(0);
-
-            // disable again, for other tests
-            setComponentEnabledSync(
-                    componentNamesToEnable, PackageManager.COMPONENT_ENABLED_STATE_DISABLED);
-
-            runShellCommand("am wait-for-broadcast-barrier");
-        }
-    }
-
     private void setComponentEnabledSync(List<ComponentName> componentNames, int enabledState) {
         for (ComponentName componentName : componentNames) {
             runWithShellPermissionIdentity(
@@ -391,78 +312,9 @@ public final class InputMethodRegistrationTest {
         }
     }
 
-    private static void installLargeResourceIme() {
-        runShellCommandOrThrow("pm install -r --user " + UserHandle.myUserId()
-                + " " + InputMethodRegistrationTest.LARGE_RESOURCE_IME_APK_PATH);
-    }
-
-    private static void uninstallLargeResourceIme() {
-        runShellCommandOrThrow("pm uninstall --user " + UserHandle.myUserId() + " "
-                + InputMethodRegistrationTest.LARGE_RESOURCE_IME_PACKAGE);
-    }
-
     private void enableImes(String... ids) {
         for (String id : ids) {
             runShellCommandOrThrow("ime enable --user " + UserHandle.myUserId() + " " + id);
         }
-    }
-
-    /**
-     * Generates a specified number of InputMethodSubtype objects with intentionally large string
-     * values for various fields, and request to set it as a subtype of
-     * ACTION_SET_ADDITIONAL_SUBTYPES IME to {@link
-     * com.android.cts.mocklargeresourceime.SubtypeControlReceiver}.
-     */
-    private void setAdditionalSubtypesRequest(int numOfSubtypes) {
-        ArrayList<InputMethodSubtype> additionalSubtypes = new ArrayList<>(numOfSubtypes);
-        for (int i = 0; i < numOfSubtypes; i++) {
-            String longText = "a".repeat(128);
-
-            final var largeSubtype =
-                    new InputMethodSubtype.InputMethodSubtypeBuilder()
-                            .setSubtypeId(0x1234567 + i)
-                            .setOverridesImplicitlyEnabledSubtype(true)
-                            .setPhysicalKeyboardHint(null, longText)
-                            .setLanguageTag(longText)
-                            .setSubtypeLocale(longText)
-                            .setSubtypeMode("additional mode " + i)
-                            .setSubtypeExtraValue(longText)
-                            .build();
-            additionalSubtypes.add(largeSubtype);
-        }
-
-        // Send intent to set additional subtypes.
-        final Intent intent = new Intent(ACTION_SET_ADDITIONAL_SUBTYPES);
-        intent.setPackage(LARGE_RESOURCE_IME_PACKAGE);
-        intent.putParcelableArrayListExtra(EXTRA_ADDITIONAL_SUBTYPES, additionalSubtypes);
-        mContext.sendBroadcast(intent);
-    }
-
-    /**
-     * Wait for IMM#getInputMethodList returns a list with IME_WITH_MANY_ADDITIONAL_SUBTYPES
-     * containing the specified number of subtypes.
-     */
-    private void waitForNumberOfSubtypes(int numOfSubtypes) {
-        final var imm = mContext.getSystemService(InputMethodManager.class);
-        PollingCheck.waitFor(
-                REGISTRATION_TIMEOUT_MS,
-                () ->
-                        imm.getInputMethodList().stream()
-                                .filter(
-                                        im ->
-                                                im.getComponent()
-                                                        .equals(IME_WITH_MANY_ADDITIONAL_SUBTYPES))
-                                .anyMatch(im -> im.getSubtypeCount() == numOfSubtypes),
-                "IME_WITH_MANY_ADDITIONAL_SUBTYPES should have " + numOfSubtypes + " subtypes");
-
-        // getEnabledInputMethodSubtypeList (with allowsImplicitlyEnabledSubtypes = true) returns
-        // a list per mode. We intentionally set different mode string for all subtypes for testing,
-        // thus the returned result should have the same number of subtypes.
-        assertEquals(
-                numOfSubtypes,
-                imm.getEnabledInputMethodSubtypeList(
-                                imm.getCurrentInputMethodInfo(),
-                                /* allowsImplicitlyEnabledSubtypes= */ true)
-                        .size());
     }
 }

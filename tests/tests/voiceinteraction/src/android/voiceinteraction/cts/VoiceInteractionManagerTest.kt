@@ -37,6 +37,7 @@ import com.android.compatibility.common.util.SystemUtil.eventually
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
+import kotlin.properties.Delegates
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -52,22 +53,26 @@ class VoiceInteractionManagerTest {
     @get:Rule val assistScreenshotSetting = SecureSettingRule<Boolean>(ASSIST_SCREENSHOT_ENABLED)
     @get:Rule val activityRule = ActivityTestRule(WaitForResultActivity::class.java)
 
-    private val context = ApplicationProvider.getApplicationContext<Context>()
-    private val appOpsManager = context.getSystemService(AppOpsManager::class.java)!!
-    private val roleManager = context.getSystemService(RoleManager::class.java)!!
+    private lateinit var context: Context
+    private lateinit var appOpsManager: AppOpsManager
+    private lateinit var roleManager: RoleManager
 
     // VoiceInteractionManager will be null if flag disabled, move init to setup method so it only
     // gets invoked when flag enabled
     private lateinit var voiceInteractionManager: VoiceInteractionManager
 
-    private val assistantRoleHolderPackageUid =
-        context.packageManager.getPackageUid(ASSISTANT_ROLE_HOLDER_PACKAGE, 0)
+    private var assistantRoleHolderPackageUid by Delegates.notNull<Int>()
     private var originalRoleHolder: String? = null
 
     @Before
     fun setup() {
+        context = ApplicationProvider.getApplicationContext()
+        appOpsManager = context.getSystemService(AppOpsManager::class.java)!!
+        roleManager = context.getSystemService(RoleManager::class.java)!!
         voiceInteractionManager =
             context.getSystemService(VoiceInteractionManager::class.java)!!
+        assistantRoleHolderPackageUid =
+                context.packageManager.getPackageUid(ASSISTANT_ROLE_HOLDER_PACKAGE, 0)
 
         // assistant is singleton role
         originalRoleHolder = Helper.getAssistRoleHolders(roleManager).getOrNull(0)

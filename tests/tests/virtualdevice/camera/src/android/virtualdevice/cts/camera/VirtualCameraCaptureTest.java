@@ -45,7 +45,9 @@ import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.Rect;
 import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
@@ -57,6 +59,7 @@ import android.os.Trace;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.util.Size;
 import android.view.Surface;
 import android.virtualdevice.cts.camera.util.DefaultVirtualCameraCallback;
 import android.virtualdevice.cts.camera.util.ImageSubject;
@@ -71,6 +74,10 @@ import androidx.test.core.app.ApplicationProvider;
 
 import com.google.common.collect.Range;
 
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
+import junitparams.naming.TestCaseName;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -84,10 +91,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.ObjLongConsumer;
-
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
-import junitparams.naming.TestCaseName;
 
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
 @RunWith(JUnitParamsRunner.class)
@@ -670,7 +673,56 @@ public class VirtualCameraCaptureTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
+    public void captureImageCharacteristicsFrameMetadata_withRequestAndResultMetadata_succeeds() {
+        final int sensorWidth = 4032;
+        final int sensorHeight = 3024;
+        final int cropLeft = 1000;
+        final int cropTop = 1000;
+        final int cropRight = 2024;
+        final int cropBottom = 1768;
+
+        final CameraCharacteristics characteristics =
+                new CameraCharacteristics.Builder(
+                                VirtualCameraConfig.DEFAULT_VIRTUAL_CAMERA_CHARACTERISTICS)
+                        .set(
+                                CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE,
+                                new Rect(0, 0, sensorWidth, sensorHeight))
+                        .set(
+                                CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE,
+                                new Size(sensorWidth, sensorHeight))
+                        // disable zoom ratio for the virtual camera so the crop region metadata
+                        // is not adjusted
+                        .set(CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE, null)
+                        .build();
+
+        VirtualCameraConfig.Builder configBuilder =
+                createBuilderWithDefaults("CharacteristicsFrameMetadataCamera")
+                        .setCameraCharacteristics(characteristics)
+                        .setLensFacing(LENS_FACING_FRONT)
+                        .setPerFrameCameraMetadataEnabled(true);
+
+        verifyCaptureImageWithRequestAndResultMetadata(
+                configBuilder, new Rect(cropLeft, cropTop, cropRight, cropBottom));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void captureImageWithFrameMetadata_withRequestAndResultMetadata_succeeds() {
+        final int cropLeft = 100;
+        final int cropTop = 200;
+        final int cropRight = 300;
+        final int cropBottom = 400;
+
+        VirtualCameraConfig.Builder configBuilder =
+                createBuilderWithDefaults("FrameMetadataCamera")
+                        .setPerFrameCameraMetadataEnabled(true);
+
+        verifyCaptureImageWithRequestAndResultMetadata(
+                configBuilder, new Rect(cropLeft, cropTop, cropRight, cropBottom));
+    }
+
+    private void verifyCaptureImageWithRequestAndResultMetadata(
+            VirtualCameraConfig.Builder configBuilder, Rect cropRect) {
         final int imageCount = 2;
         final int requestAeMode = CaptureRequest.CONTROL_AE_MODE_OFF;
         final long[] fakeTimestamp = {1234567890L, 1234567900L};
@@ -727,10 +779,6 @@ public class VirtualCameraCaptureTest {
                 };
 
         Trace.beginSection("VirtualCameraMetadata.createVirtualCameraWithPerFrameCameraMetadata");
-        VirtualCameraConfig.Builder configBuilder =
-                createBuilderWithDefaults("FrameMetadataCamera")
-                        .setPerFrameCameraMetadataEnabled(true);
-
         mCaptureHelper.createVirtualCamera(configBuilder, callback);
         Trace.endSection();
         VirtualCameraCaptureHelper.TestVirtualCameraCallback testCallback =
@@ -746,8 +794,10 @@ public class VirtualCameraCaptureTest {
                                                 / VirtualCameraCaptureHelper.CAMERA_MAX_FPS))
                         .addOutputFormat(YUV_420_888)
                         .setRequestBuilderModifier(
-                                builder ->
-                                        builder.set(CaptureRequest.CONTROL_AE_MODE, requestAeMode));
+                                builder -> {
+                                    builder.set(CaptureRequest.CONTROL_AE_MODE, requestAeMode);
+                                    builder.set(CaptureRequest.SCALER_CROP_REGION, cropRect);
+                                });
 
         Image image = mCaptureHelper.captureImage(config);
         testCallback.waitForCapture(2);
@@ -763,6 +813,9 @@ public class VirtualCameraCaptureTest {
 
         final Integer aeMode = captureRequest.get(CaptureRequest.CONTROL_AE_MODE);
         assertThat(aeMode).isEqualTo(requestAeMode);
+
+        final Rect cropRectFromRequest = captureRequest.get(CaptureRequest.SCALER_CROP_REGION);
+        assertThat(cropRectFromRequest).isEqualTo(cropRect);
 
         List<TotalCaptureResult> captureResults = mCaptureHelper.getCaptureResults();
         assertThat(captureResults).isNotNull();

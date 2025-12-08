@@ -22,17 +22,16 @@ import android.media.MediaParser;
 import android.util.Pair;
 
 import androidx.annotation.Nullable;
-
-import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.Format;
-import com.google.android.exoplayer2.drm.DrmInitData;
-import com.google.android.exoplayer2.extractor.SeekMap;
-import com.google.android.exoplayer2.extractor.SeekPoint;
-import com.google.android.exoplayer2.extractor.TrackOutput;
-import com.google.android.exoplayer2.testutil.FakeExtractorOutput;
-import com.google.android.exoplayer2.testutil.FakeTrackOutput;
-import com.google.android.exoplayer2.upstream.DataReader;
-import com.google.android.exoplayer2.video.ColorInfo;
+import androidx.media3.common.C;
+import androidx.media3.common.ColorInfo;
+import androidx.media3.common.DataReader;
+import androidx.media3.common.DrmInitData;
+import androidx.media3.common.Format;
+import androidx.media3.extractor.SeekMap;
+import androidx.media3.extractor.SeekPoint;
+import androidx.media3.extractor.TrackOutput;
+import androidx.media3.test.utils.FakeExtractorOutput;
+import androidx.media3.test.utils.FakeTrackOutput;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -95,7 +94,7 @@ public class MockMediaParserOutputConsumer implements MediaParser.OutputConsumer
 
                     @Override
                     public SeekPoints getSeekPoints(long timeUs) {
-                        return toExoPlayerSeekPoints(seekMap.getSeekPoints(timeUs));
+                        return toMedia3SeekPoints(seekMap.getSeekPoints(timeUs));
                     }
                 });
     }
@@ -110,7 +109,7 @@ public class MockMediaParserOutputConsumer implements MediaParser.OutputConsumer
         while (mTrackOutputs.size() <= trackIndex) {
             mTrackOutputs.add(mFakeExtractorOutput.track(trackIndex, C.TRACK_TYPE_UNKNOWN));
         }
-        mTrackOutputs.get(trackIndex).format(toExoPlayerFormat(trackData));
+        mTrackOutputs.get(trackIndex).format(toMedia3Format(trackData));
     }
 
     @Override
@@ -138,17 +137,17 @@ public class MockMediaParserOutputConsumer implements MediaParser.OutputConsumer
 
     // Internal methods.
 
-    private static SeekMap.SeekPoints toExoPlayerSeekPoints(
+    private static SeekMap.SeekPoints toMedia3SeekPoints(
             Pair<MediaParser.SeekPoint, MediaParser.SeekPoint> seekPoints) {
         return new SeekMap.SeekPoints(
-                toExoPlayerSeekPoint(seekPoints.first), toExoPlayerSeekPoint(seekPoints.second));
+                toMedia3SeekPoint(seekPoints.first), toMedia3SeekPoint(seekPoints.second));
     }
 
-    private static SeekPoint toExoPlayerSeekPoint(MediaParser.SeekPoint seekPoint) {
+    private static SeekPoint toMedia3SeekPoint(MediaParser.SeekPoint seekPoint) {
         return new SeekPoint(seekPoint.timeMicros, seekPoint.position);
     }
 
-    private static Format toExoPlayerFormat(MediaParser.TrackData trackData) {
+    private static Format toMedia3Format(MediaParser.TrackData trackData) {
         MediaFormat mediaFormat = trackData.mediaFormat;
         String sampleMimeType =
                 mediaFormat.getString(MediaFormat.KEY_MIME, /* defaultValue= */ null);
@@ -194,9 +193,9 @@ public class MockMediaParserOutputConsumer implements MediaParser.OutputConsumer
                 pixelAspectHeight == 0 || pixelAspectWidth == 0
                         ? Format.NO_VALUE
                         : pixelAspectWidth / pixelAspectHeight;
-        ColorInfo colorInfo = getExoPlayerColorInfo(mediaFormat);
+        ColorInfo colorInfo = getMedia3ColorInfo(mediaFormat);
         DrmInitData drmInitData =
-                getExoPlayerDrmInitData(
+                getMedia3DrmInitData(
                         mediaFormat.getString("crypto-mode-fourcc"), trackData.drmInitData);
 
         int selectionFlags =
@@ -248,7 +247,7 @@ public class MockMediaParserOutputConsumer implements MediaParser.OutputConsumer
     }
 
     @Nullable
-    private static DrmInitData getExoPlayerDrmInitData(
+    private static DrmInitData getMedia3DrmInitData(
             @Nullable String encryptionScheme, @Nullable android.media.DrmInitData drmInitData) {
         if (drmInitData == null) {
             return null;
@@ -265,7 +264,7 @@ public class MockMediaParserOutputConsumer implements MediaParser.OutputConsumer
         return new DrmInitData(encryptionScheme, schemeDatas);
     }
 
-    private static ColorInfo getExoPlayerColorInfo(MediaFormat mediaFormat) {
+    private static ColorInfo getMedia3ColorInfo(MediaFormat mediaFormat) {
         int colorSpace = Format.NO_VALUE;
         if (mediaFormat.containsKey(MediaFormat.KEY_COLOR_FORMAT)) {
             switch (mediaFormat.getInteger(MediaFormat.KEY_COLOR_FORMAT)) {
@@ -311,7 +310,7 @@ public class MockMediaParserOutputConsumer implements MediaParser.OutputConsumer
                     colorTransfer = C.COLOR_TRANSFER_ST2084;
                     break;
                 case MediaFormat.COLOR_TRANSFER_LINEAR:
-                    // Fall through, there's no mapping.
+                // Fall through, there's no mapping.
                 default:
                     colorTransfer = Format.NO_VALUE;
             }
@@ -323,13 +322,16 @@ public class MockMediaParserOutputConsumer implements MediaParser.OutputConsumer
                 && !hasHdrInfo) {
             return null;
         } else {
-            return new ColorInfo(
-                    colorSpace,
-                    colorRange,
-                    colorTransfer,
-                    hasHdrInfo
-                            ? mediaFormat.getByteBuffer(MediaFormat.KEY_HDR_STATIC_INFO).array()
-                            : null);
+            ColorInfo.Builder colorInfoBuilder =
+                    new ColorInfo.Builder()
+                            .setColorSpace(colorSpace)
+                            .setColorRange(colorRange)
+                            .setColorTransfer(colorTransfer);
+            if (hasHdrInfo) {
+                colorInfoBuilder.setHdrStaticInfo(
+                        mediaFormat.getByteBuffer(MediaFormat.KEY_HDR_STATIC_INFO).array());
+            }
+            return colorInfoBuilder.build();
         }
     }
 

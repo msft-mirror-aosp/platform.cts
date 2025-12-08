@@ -120,13 +120,9 @@ public class CallTest extends AndroidTestCase {
         if (!TestUtils.HAS_BLUETOOTH) return;
         CallAudioState cas = new CallAudioState(false, CallAudioState.ROUTE_BLUETOOTH,
                 CallAudioState.ROUTE_BLUETOOTH + CallAudioState.ROUTE_SPEAKER
-                        + CallAudioState.ROUTE_EARPIECE,
-                TestUtils.BLUETOOTH_DEVICE1,
-                Arrays.asList(TestUtils.BLUETOOTH_DEVICE1, TestUtils.BLUETOOTH_DEVICE2));
-        assertEquals(TestUtils.BLUETOOTH_DEVICE1, cas.getActiveBluetoothDevice());
-        assertEquals(2, cas.getSupportedBluetoothDevices().size());
-        assertTrue(cas.getSupportedBluetoothDevices().contains(TestUtils.BLUETOOTH_DEVICE1));
-        assertTrue(cas.getSupportedBluetoothDevices().contains(TestUtils.BLUETOOTH_DEVICE2));
+                        + CallAudioState.ROUTE_EARPIECE);
+        assertNull(cas.getActiveBluetoothDevice());
+        assertEquals(0, cas.getSupportedBluetoothDevices().size());
     }
 
     public void testCallEndpoint() {

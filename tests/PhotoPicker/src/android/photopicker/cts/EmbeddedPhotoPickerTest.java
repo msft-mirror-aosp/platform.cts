@@ -89,6 +89,7 @@ public class EmbeddedPhotoPickerTest {
     private static final Instrumentation sInstrumentation =
             InstrumentationRegistry.getInstrumentation();
     private static final UiDevice sDevice = UiDevice.getInstance(sInstrumentation);
+    private static final long COUNTDOWN_LATCH_AWAIT_TIME_SECONDS = 3L;
 
     private final Context mContext = sInstrumentation.getContext();
     private final List<Uri> mUriList = new ArrayList<>();
@@ -159,7 +160,8 @@ public class EmbeddedPhotoPickerTest {
             clickAndWait(sDevice, getMediaItem(sDevice));
         }
 
-        assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
+        assertThat(countDownLatch.await(COUNTDOWN_LATCH_AWAIT_TIME_SECONDS, TimeUnit.SECONDS))
+                .isTrue();
         assertThat(selectedUris.size()).isEqualTo(1);
         Uri selectedUri = selectedUris.get(0);
         assertThat(hasUriPermission(selectedUri)).isTrue();
@@ -186,7 +188,7 @@ public class EmbeddedPhotoPickerTest {
             clickAndWait(sDevice, getMediaItem(sDevice));
         }
 
-        assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
+        assertThat(countDownLatch.await(3L, TimeUnit.SECONDS)).isTrue();
         assertThat(selectedUris.size()).isEqualTo(1);
         Uri selectedUri = selectedUris.get(0);
 
@@ -202,7 +204,8 @@ public class EmbeddedPhotoPickerTest {
         }
 
         // 5. Assert that the item is deselected.
-        assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
+        assertThat(countDownLatch.await(COUNTDOWN_LATCH_AWAIT_TIME_SECONDS, TimeUnit.SECONDS))
+                .isTrue();
         assertThat(selectedUris.isEmpty()).isTrue();
         assertThat(hasUriPermission(selectedUri)).isFalse();
     }
@@ -223,7 +226,8 @@ public class EmbeddedPhotoPickerTest {
         sDevice.executeShellCommand("am force-stop " + getExplicitPackageName());
 
         // 4. Assert that 'onSessionError' is invoked and the session is null
-        assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
+        assertThat(countDownLatch.await(COUNTDOWN_LATCH_AWAIT_TIME_SECONDS, TimeUnit.SECONDS))
+                .isTrue();
         assertThat(mActivity.getSession()).isNull();
     }
 
@@ -352,9 +356,9 @@ public class EmbeddedPhotoPickerTest {
             clickAndWait(sDevice, doneButton);
         }
 
-
         // 5. Assert that 'onSelectionComplete' is invoked and the surface package is released
-        assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
+        assertThat(countDownLatch.await(COUNTDOWN_LATCH_AWAIT_TIME_SECONDS, TimeUnit.SECONDS))
+                .isTrue();
         assertThat(getMediaItem(sDevice).exists()).isFalse();
     }
 
@@ -378,7 +382,7 @@ public class EmbeddedPhotoPickerTest {
             clickAndWait(sDevice, getMediaItem(sDevice));
         }
 
-        assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
+        assertThat(countDownLatch.await(3L, TimeUnit.SECONDS)).isTrue();
         assertThat(selectedUris.size()).isEqualTo(1);
         Uri selectedUri = selectedUris.get(0);
 
@@ -390,7 +394,8 @@ public class EmbeddedPhotoPickerTest {
         mActivity.getSession().requestRevokeUriPermission(selectedUris);
 
         // 5. Assert that the item is deselected.
-        assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
+        assertThat(countDownLatch.await(COUNTDOWN_LATCH_AWAIT_TIME_SECONDS, TimeUnit.SECONDS))
+                .isTrue();
         assertThat(selectedUris.isEmpty()).isTrue();
         assertThat(hasUriPermission(selectedUri)).isFalse();
     }

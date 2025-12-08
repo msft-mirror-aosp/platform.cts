@@ -18,11 +18,13 @@ package android.app.cts;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
@@ -31,7 +33,9 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningAppProcessInfo;
+import android.app.AnrTypes;
 import android.app.ApplicationExitInfo;
+import android.app.ApplicationExitInfo.AnrInfo;
 import android.app.Instrumentation;
 import android.app.stubs.shared.IHeartbeat;
 import android.app.tools.WatchUidRunner;
@@ -88,6 +92,7 @@ import com.android.internal.util.MemInfoReader;
 import com.android.server.os.TombstoneProtos.Tombstone;
 
 import com.google.common.io.ByteStreams;
+import com.google.common.truth.Expect;
 
 import org.junit.After;
 import org.junit.Before;
@@ -202,6 +207,9 @@ public final class ActivityManagerAppExitInfoTest {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Rule
+    public final Expect expect = Expect.create();
 
     @Before
     public void setUp() throws Exception {
@@ -846,6 +854,253 @@ public final class ActivityManagerAppExitInfoTest {
             assertTrue(trace.contains("Cmd line: " + STUB_PACKAGE_NAME));
             assertTrue(dboxTrace.contains(trace));
 
+        } finally {
+            monitor.finish();
+            mContext.unregisterReceiver(receiver);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_INCLUDE_ANR_INFO)
+    public void testAnrInfo() {
+        final DropBoxManager dbox = mContext.getSystemService(DropBoxManager.class);
+        final CountDownLatch dboxLatch = new CountDownLatch(1);
+
+        /*
+         * Create a BroadcastReceiver that will listen for Dropbox broadcasts. The dropbox entry
+         * that is added during an ANR will be used to verify the service that was started has
+         * blocked main thread and ANR'd when processing the broadcast then the remainder of the
+         * test can proceed.
+         */
+        final BroadcastReceiver receiver = getBroadcastReceiverWithLatch(dbox, dboxLatch);
+        mContext.registerReceiver(
+                receiver, new IntentFilter(DropBoxManager.ACTION_DROPBOX_ENTRY_ADDED));
+
+        long anrTimeout = getBroadcastAnrTimeout();
+        // Using 3 times the broadcast anr timeout as the test timeout.
+        long broadcastAnrTimeout = getBroadcastAnrTimeout() * 3;
+
+        long now = System.currentTimeMillis();
+
+        // Start a process and block its main thread
+        startService(ACTION_ANR, STUB_SERVICE_NAME, false, false);
+
+        // Sleep for a while to make sure it's already blocking its main thread.
+        sleep(WAITFOR_MSEC);
+
+        AmMonitor monitor =
+                new AmMonitor(mInstrumentation, new String[]{AmMonitor.WAIT_FOR_CRASHED});
+
+        try {
+            Intent intent = new Intent();
+
+            intent.setComponent(new ComponentName(STUB_PACKAGE_NAME, STUB_RECEIVER_NAME));
+            intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
+            // This will result an ANR
+            mContext.sendOrderedBroadcast(intent, null);
+
+            // Wait for the early ANR
+            monitor.waitFor(AmMonitor.WAIT_FOR_EARLY_ANR, broadcastAnrTimeout);
+            // Continue, so we could collect ANR traces
+            monitor.sendCommand(AmMonitor.CMD_CONTINUE);
+            // Wait for the ANR
+            monitor.waitFor(AmMonitor.WAIT_FOR_ANR, broadcastAnrTimeout);
+            // Kill it
+            monitor.sendCommand(AmMonitor.CMD_KILL);
+            // Wait the process gone
+            waitForGone(mWatcher);
+            long now2 = System.currentTimeMillis();
+
+            awaitForLatch(
+                    dboxLatch,
+                    "broadcast for %s be received",
+                    DropBoxManager.ACTION_DROPBOX_ENTRY_ADDED);
+            assertNotNull(mAnrEntry);
+
+            List<ApplicationExitInfo> list =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            STUB_PACKAGE_NAME,
+                            mStubPackagePid,
+                            1,
+                            mActivityManager::getHistoricalProcessExitReasons,
+                            android.Manifest.permission.DUMP);
+
+            assertNotNull(list);
+            assertEquals(1, list.size());
+
+            ApplicationExitInfo info = list.getFirst();
+            verify(
+                    info,
+                    mStubPackagePid,
+                    mStubPackageUid,
+                    STUB_PACKAGE_NAME,
+                    ApplicationExitInfo.REASON_ANR,
+                    null,
+                    null,
+                    now,
+                    now2);
+            assertEquals(mStubPackageUid, info.getPackageUid());
+            assertEquals(mStubPackageUid, info.getDefiningUid());
+
+            // Verify the subreason
+            assertEquals(
+                    ApplicationExitInfo.SUBREASON_ANR_TYPE_BROADCAST_OF_INTENT,
+                    info.getSubReason());
+
+            // Verify ANR Info
+            verify(
+                    info.getAnrInfo(),
+                    AnrTypes.ANR_TYPE_BROADCAST_OF_INTENT,
+                    /* isUserPerceptible= */ false,
+                    anrTimeout);
+
+            // Verify the traces
+
+            // Read from dropbox
+            final String dboxTrace = mAnrEntry.getText(0x100000 /* 1M */);
+            assertFalse(TextUtils.isEmpty(dboxTrace));
+
+            // Read the input stream from the ApplicationExitInfo
+
+            String trace =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            info,
+                            (i) -> {
+                                try {
+                                    return new String(
+                                            ByteStreams.toByteArray(
+                                                    Objects.requireNonNull(
+                                                            i.getTraceInputStream())));
+                                } catch (IOException e) {
+                                    return null;
+                                }
+                            },
+                            android.Manifest.permission.DUMP);
+
+            assertFalse(TextUtils.isEmpty(trace));
+            assertTrue(trace.contains(Integer.toString(info.getPid())));
+            assertTrue(trace.contains("Cmd line: " + STUB_PACKAGE_NAME));
+            assertTrue(dboxTrace.contains(trace));
+        } finally {
+            monitor.finish();
+            mContext.unregisterReceiver(receiver);
+        }
+    }
+
+    @Test
+    @RequiresFlagsDisabled(android.app.Flags.FLAG_INCLUDE_ANR_INFO)
+    public void testAnrInfo_flagDisabled() {
+        final DropBoxManager dbox = mContext.getSystemService(DropBoxManager.class);
+        final CountDownLatch dboxLatch = new CountDownLatch(1);
+
+        /*
+         * Create a BroadcastReceiver that will listen for Dropbox broadcasts. The dropbox entry
+         * that is added during an ANR will be used to verify the service that was started has
+         * blocked main thread and ANR'd when processing the broadcast then the remainder of the
+         * test can proceed.
+         */
+        final BroadcastReceiver receiver = getBroadcastReceiverWithLatch(dbox, dboxLatch);
+        mContext.registerReceiver(
+                receiver, new IntentFilter(DropBoxManager.ACTION_DROPBOX_ENTRY_ADDED));
+
+        // Using 3 times the broadcast anr timeout as the test timeout.
+        long broadcastAnrTimeout = getBroadcastAnrTimeout() * 3;
+
+        long now = System.currentTimeMillis();
+
+        // Start a process and block its main thread
+        startService(ACTION_ANR, STUB_SERVICE_NAME, false, false);
+
+        // Sleep for a while to make sure it's already blocking its main thread.
+        sleep(WAITFOR_MSEC);
+
+        AmMonitor monitor =
+                new AmMonitor(mInstrumentation, new String[]{AmMonitor.WAIT_FOR_CRASHED});
+
+        try {
+            Intent intent = new Intent();
+
+            intent.setComponent(new ComponentName(STUB_PACKAGE_NAME, STUB_RECEIVER_NAME));
+            intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
+            // This will result an ANR
+            mContext.sendOrderedBroadcast(intent, null);
+
+            // Wait for the early ANR
+            monitor.waitFor(AmMonitor.WAIT_FOR_EARLY_ANR, broadcastAnrTimeout);
+            // Continue, so we could collect ANR traces
+            monitor.sendCommand(AmMonitor.CMD_CONTINUE);
+            // Wait for the ANR
+            monitor.waitFor(AmMonitor.WAIT_FOR_ANR, broadcastAnrTimeout);
+            // Kill it
+            monitor.sendCommand(AmMonitor.CMD_KILL);
+            // Wait the process gone
+            waitForGone(mWatcher);
+            long now2 = System.currentTimeMillis();
+
+            awaitForLatch(
+                    dboxLatch,
+                    "broadcast for %s be received",
+                    DropBoxManager.ACTION_DROPBOX_ENTRY_ADDED);
+            assertNotNull(mAnrEntry);
+
+            List<ApplicationExitInfo> list =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            STUB_PACKAGE_NAME,
+                            mStubPackagePid,
+                            1,
+                            mActivityManager::getHistoricalProcessExitReasons,
+                            android.Manifest.permission.DUMP);
+
+            assertNotNull(list);
+            assertEquals(1, list.size());
+
+            ApplicationExitInfo info = list.getFirst();
+            verify(
+                    info,
+                    mStubPackagePid,
+                    mStubPackageUid,
+                    STUB_PACKAGE_NAME,
+                    ApplicationExitInfo.REASON_ANR,
+                    null,
+                    null,
+                    now,
+                    now2);
+            assertEquals(mStubPackageUid, info.getPackageUid());
+            assertEquals(mStubPackageUid, info.getDefiningUid());
+
+            // Verify the subreason
+            assertEquals(
+                    ApplicationExitInfo.SUBREASON_ANR_TYPE_BROADCAST_OF_INTENT,
+                    info.getSubReason());
+
+            // Verify ANR Info
+            assertNull(null, info.getAnrInfo());
+
+            // Verify the traces
+            // Read from dropbox
+            final String dboxTrace = mAnrEntry.getText(0x100000 /* 1M */);
+            assertFalse(TextUtils.isEmpty(dboxTrace));
+
+            // Read the input stream from the ApplicationExitInfo
+            String trace =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            info,
+                            (i) -> {
+                                try {
+                                    return new String(
+                                            ByteStreams.toByteArray(
+                                                    Objects.requireNonNull(
+                                                            i.getTraceInputStream())));
+                                } catch (IOException e) {
+                                    return null;
+                                }
+                            },
+                            android.Manifest.permission.DUMP);
+
+            assertFalse(TextUtils.isEmpty(trace));
+            assertTrue(trace.contains(Integer.toString(info.getPid())));
+            assertTrue(trace.contains("Cmd line: " + STUB_PACKAGE_NAME));
+            assertTrue(dboxTrace.contains(trace));
         } finally {
             monitor.finish();
             mContext.unregisterReceiver(receiver);
@@ -1667,6 +1922,17 @@ public final class ActivityManagerAppExitInfoTest {
         assertTrue(after >= info.getTimestamp());
         assertTrue(ArrayUtils.equals(info.getProcessStateSummary(), cookie,
                 cookie == null ? 0 : cookie.length));
+    }
+
+    private void verify(AnrInfo anrInfo, int anrType, boolean isUserPerceptible, long anrTimeout) {
+        assertThat(anrInfo).isNotNull();
+        expect.withMessage("The anr type").that(anrInfo.getAnrType())
+                .isEqualTo(anrType);
+        expect.withMessage("User perceptible")
+                .that(anrInfo.isUserPerceptible())
+                .isEqualTo(isUserPerceptible);
+        expect.withMessage("timeout").that(anrInfo.getTimeoutMillis())
+                .isWithin(500).of(anrTimeout);
     }
 
     private BroadcastReceiver getBroadcastReceiverWithLatch(

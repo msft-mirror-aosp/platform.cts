@@ -54,6 +54,18 @@ class RequestActionTest : CoreTestBase() {
     @get:Rule
     val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
+    override fun setUp() {
+        withShellPermissionIdentity(USE_COMPANION_TRANSPORTS) {
+            cdm.setRequestActionAllowList(listOf(SERVICE_NAME_A, SERVICE_NAME_B))
+        }
+    }
+
+    override fun tearDown() {
+        withShellPermissionIdentity(USE_COMPANION_TRANSPORTS) {
+            cdm.setRequestActionAllowList(null)
+        }
+    }
+
     @Test
     fun testRequestAction_deliversAllActions() {
         var associationIdA = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A)

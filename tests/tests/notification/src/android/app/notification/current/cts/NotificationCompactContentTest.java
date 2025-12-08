@@ -110,7 +110,7 @@ public class NotificationCompactContentTest {
     }
 
     @Test
-    public void resolveCompactContent_basic_shortCriticalTextMissing() {
+    public void resolveCompactContent_basic_shortCriticalTextNull() {
         Notification n =
                 getBuilderWithEverything()
                         .setShortCriticalText(null)
@@ -121,6 +121,20 @@ public class NotificationCompactContentTest {
         ResolvedBasicCompactContent resolved = resolveBasicCompactContent(n);
 
         assertThat(resolved.getText()).isNull();
+    }
+
+    @Test
+    public void resolveCompactContent_basic_shortCriticalTextEmpty() {
+        Notification n =
+                getBuilderWithEverything()
+                        .setShortCriticalText("")
+                        .setCompactContent(
+                                new BasicCompactContent(CompactText.useShortCriticalText()))
+                        .build();
+
+        FixedText resolvedText = resolveBasicCompactContentText(n, FixedText.class);
+
+        assertThat(resolvedText.getValue().toString()).isEmpty();
     }
 
     @Test
@@ -283,6 +297,46 @@ public class NotificationCompactContentTest {
         FixedText resolvedText = resolveBasicCompactContentText(n, FixedText.class);
 
         assertThat(resolvedText.getValue().toString()).isEqualTo("Short");
+    }
+
+    @Test
+    public void resolveCompactContent_default_choosesShortCriticalTextEvenIfEmpty() {
+        Notification n =
+                new Notification.Builder(mContext, "channel")
+                        .setShortCriticalText("")
+                        .setStyle(
+                                new MetricStyle()
+                                        .addMetric(new Metric(new FixedText("1"), "L1"))
+                                        .addMetric(new Metric(new FixedText("2"), "L2")))
+                        .setUsesChronometer(true)
+                        .setChronometerCountDown(true)
+                        .setWhen(12345L)
+                        .setShowWhen(true)
+                        .build();
+
+        FixedText resolvedText = resolveBasicCompactContentText(n, FixedText.class);
+
+        assertThat(resolvedText.getValue().toString()).isEmpty();
+    }
+
+    @Test
+    public void resolveCompactContent_default_choosesCriticalMetric() {
+        Notification n =
+                new Notification.Builder(mContext, "channel")
+                        .setStyle(
+                                new MetricStyle()
+                                        .addMetric(new Metric(new FixedText("1"), "L1"))
+                                        .addMetric(new Metric(new FixedText("2"), "L2"))
+                                        .setCriticalMetric(1))
+                        .setUsesChronometer(true)
+                        .setChronometerCountDown(true)
+                        .setWhen(12345L)
+                        .setShowWhen(true)
+                        .build();
+
+        FixedText resolvedText = resolveBasicCompactContentText(n, FixedText.class);
+
+        assertThat(resolvedText.getValue().toString()).isEqualTo("2");
     }
 
     @Test

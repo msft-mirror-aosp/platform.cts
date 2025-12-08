@@ -390,18 +390,36 @@ public class InstallDexMetadataHostTest extends BaseHostJUnit4Test {
         assertTrue(runDeviceTests(TEST_PACKAGE, TEST_CLASS, "testDmForBaseAndSplit"));
     }
 
-    /** Verify .dm installation for split-only install. */
+    /** Test installing a split with .dm inheriting the wrong package. */
     @Test
-    public void testInstallDmForSplitOnlyInstall() throws Exception {
+    public void testInstallDmForSplitWrongInheritInstall() throws Exception {
         new InstallMultiple().addApk(mApkBaseFile).addDm(mDmBaseFile).run();
         assertNotNull(getDevice().getAppPackageInfo(INSTALL_PACKAGE));
 
         new InstallMultiple()
-                .inheritFrom(TEST_PACKAGE)
+                .inheritFrom(TEST_PACKAGE) // This split is for INSTALL_PACKAGE, not TEST_PACKAGE.
                 .addApk(mApkFeatureAFile)
                 .addDm(mDmFeatureAFile)
                 .runExpectingFailure();
         assertNotNull(getDevice().getAppPackageInfo(INSTALL_PACKAGE));
+
+        assertTrue(runDeviceTests(TEST_PACKAGE, TEST_CLASS, "testDmForBase"));
+    }
+
+    /** Test installing a split with .dm inheriting the right package. */
+    @Test
+    public void testInstallDmForSplitInheritInstall() throws Exception {
+        new InstallMultiple().addApk(mApkBaseFile).addDm(mDmBaseFile).run();
+        assertNotNull(getDevice().getAppPackageInfo(INSTALL_PACKAGE));
+
+        new InstallMultiple()
+                .inheritFrom(INSTALL_PACKAGE)
+                .addApk(mApkFeatureAFile)
+                .addDm(mDmFeatureAFile)
+                .run();
+        assertNotNull(getDevice().getAppPackageInfo(INSTALL_PACKAGE));
+
+        assertTrue(runDeviceTests(TEST_PACKAGE, TEST_CLASS, "testDmForBaseAndSplit"));
     }
 
     /** Extracts the profile bytes for the snapshot captured with 'cmd package snapshot-profile' */

@@ -406,7 +406,7 @@ public class MockInCallService extends InCallService {
 
     public Call getCallWithId(String id) {
         for (Call call : sCalls) {
-            if (call.getDetails().getTelecomCallId().equals(id)) {
+            if (call.getDetails().getId().equals(id)) {
                 return call;
             }
         }

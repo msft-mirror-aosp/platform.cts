@@ -37,7 +37,7 @@ _CONTROL_AE_ANTIBANDING_MODE_OFF = 0
 _MAX_VAR_FRAME_DELTA = 0.001  # variance of frame deltas, units: seconds^2
 _FPS_ATOL = 1
 _DARKNESS_ATOL = 0.1 * 255  # openCV uses [0:255] images
-_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC = 5  # Seconds
+
 
 class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
   """Tests preview frame rate under dark lighting conditions.
@@ -81,7 +81,9 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
       lighting_control_utils.set_lighting_state(
           self.lighting_control_port, self.lighting_ch,
           lighting_control_utils.LIGHT_OFF, self.use_gen2)
-      time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
+
+      # turn OFF DUT to reduce reflections
+      lighting_control_utils.turn_off_device_screen(self.dut)
 
       # Validate lighting
       cam.do_3a(do_af=False)

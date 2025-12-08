@@ -76,6 +76,7 @@ android_test {
         ":CtsMockA11yInputMethod",
         ":CtsMockInputMethod",
         ":CtsMockInputMethod2",
+        ":CtsMockInputMethodWithManySubtypes",
         ":CtsSpellCheckingIme",
         ":CtsInputMethodStandaloneTestApp",
         ":CtsMockLargeResourceInputMethod",

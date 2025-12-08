@@ -38,9 +38,9 @@ import android.graphics.PixelFormat;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCaptureSession.CaptureCallback;
+import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
-import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
@@ -131,7 +131,7 @@ public class VirtualCameraCaptureHelper {
     private VirtualDeviceManager.VirtualDevice mVirtualDevice = null;
 
     /**
-     * Returns an instance of {@link VirtualCameraConfig.Builder} with the mendatory parameters set.
+     * Returns an instance of {@link VirtualCameraConfig.Builder} with the mandatory parameters set.
      */
     @NonNull
     public static VirtualCameraConfig.Builder createBuilderWithDefaults(
@@ -483,9 +483,16 @@ public class VirtualCameraCaptureHelper {
     }
 
     private static String getVirtualCameraId(VirtualCamera virtualCamera) {
-        return switch (virtualCamera.getConfig().getLensFacing()) {
+        // if set, the lens facing from the CameraCharacteristics have priority
+        CameraCharacteristics characteristics =
+                virtualCamera.getConfig().getCameraCharacteristics();
+        int lensFacing =
+                characteristics != null
+                        ? characteristics.get(CameraCharacteristics.LENS_FACING)
+                        : virtualCamera.getConfig().getLensFacing();
+        return switch (lensFacing) {
             case LENS_FACING_FRONT -> VirtualCameraUtils.FRONT_CAMERA_ID;
-            case CameraMetadata.LENS_FACING_BACK -> VirtualCameraUtils.BACK_CAMERA_ID;
+            case LENS_FACING_BACK -> VirtualCameraUtils.BACK_CAMERA_ID;
             default -> virtualCamera.getId();
         };
     }

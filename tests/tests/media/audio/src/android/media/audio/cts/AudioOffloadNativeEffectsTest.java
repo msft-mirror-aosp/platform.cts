@@ -19,6 +19,7 @@ package android.media.audio.cts;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
@@ -41,6 +42,7 @@ import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
+import com.android.compatibility.common.util.MediaUtils;
 
 import org.junit.After;
 import org.junit.Before;
@@ -54,12 +56,14 @@ public class AudioOffloadNativeEffectsTest {
     private static final String TAG = "AudioOffloadNativeEffectsTest";
 
     private static final int STATUS_OK = 0;
-    private static final float AUDIOTRACK_DEFAULT_FREQUENCY_HZ = 910;
+    private static final float AUDIOTRACK_DEFAULT_FREQUENCY_HZ = 910.0f;
+    private static final float AUDIOTRACK_TEST_FREQUENCY_HZ = 100.0f;
     private static final int AUDIOTRACK_DEFAULT_SAMPLE_RATE = 48000;
     private static final int PER_TEST_TIMEOUT_LARGE_TEST_MS = 300000;
     private static final int PER_TEST_TIMEOUT_SMALL_TEST_MS = 60000;
     private static final int PLAYBACK_COMPLETION_DELAY_MS = 10000;
     private static final int VISUALIZER_SILENCE_MB = -9600; // RMS value for silence in millibels
+    private static final float[] DP_TEST_GAINS_DB = {-24.0f, -12.0f, -6.0f, 0f, 6.0f, 12.0f, 24.0f};
 
     private final int mStreamType = AudioManager.STREAM_MUSIC;
     private AudioManager mAudioManager = null;
@@ -83,24 +87,17 @@ public class AudioOffloadNativeEffectsTest {
 
     @Before
     public void setup() throws Exception {
+        assumeFalse("Skipping test, no need to test on emulator", Build.IS_EMULATOR);
+        assumeFalse("Skipping test, no need to test on cuttlefish", MediaUtils.onCuttlefish());
+
         final Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
 
         assumeTrue("Skipping test, no audio output found", hasAudioOutput(context));
 
-        // TODO (b/452270871): try all pcm formats and open the stream with first one
-        // supported
-        // The encoding, sample rate and the channel mask should be the same as the
-        // one in native for creating stream.
-        final boolean offloadSupported =
-                AudioManager.isOffloadedPlaybackSupported(
-                        new AudioFormat.Builder()
-                                .setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
-                                .setSampleRate(AUDIOTRACK_DEFAULT_SAMPLE_RATE)
-                                .setChannelMask(AudioFormat.CHANNEL_OUT_STEREO)
-                                .build(),
-                        new AudioAttributes.Builder().build());
-
-        assumeTrue("Skipping test, offload support not found", offloadSupported);
+        final int supportedOffloadFormat = findSupportedPcmOffloadFormat();
+        assumeTrue(
+                "Skipping test, no PCM offload support found on this device",
+                supportedOffloadFormat != AudioFormat.ENCODING_INVALID);
 
         mAudioManager = context.getSystemService(AudioManager.class);
         mOriginalVolume = mAudioManager.getStreamVolume(mStreamType);
@@ -112,7 +109,7 @@ public class AudioOffloadNativeEffectsTest {
                 mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC) / 2,
                 /* flag= */ 0);
 
-        mStreamHandle = nativeOpenStream();
+        mStreamHandle = nativeOpenStream(supportedOffloadFormat);
         assertTrue("Failed to open native stream", mStreamHandle != 0);
 
         mSessionId = nativeGetSessionId(mStreamHandle);
@@ -146,6 +143,35 @@ public class AudioOffloadNativeEffectsTest {
 
     private boolean hasAudioOutput(Context context) {
         return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUDIO_OUTPUT);
+    }
+
+    private int findSupportedPcmOffloadFormat() {
+        // Define formats in order of preference.
+        final int[] formatsToCheck = {
+            AudioFormat.ENCODING_PCM_FLOAT,
+            AudioFormat.ENCODING_PCM_16BIT,
+            AudioFormat.ENCODING_PCM_32BIT,
+            AudioFormat.ENCODING_PCM_24BIT_PACKED
+        };
+
+        final AudioAttributes attributes = new AudioAttributes.Builder().build();
+
+        for (int format : formatsToCheck) {
+            // The encoding, sample rate and the channel mask should be the same as the
+            // one in native for creating stream.
+            final AudioFormat audioFormat =
+                    new AudioFormat.Builder()
+                            .setEncoding(format)
+                            .setSampleRate(AUDIOTRACK_DEFAULT_SAMPLE_RATE)
+                            .setChannelMask(AudioFormat.CHANNEL_OUT_STEREO)
+                            .build();
+
+            if (AudioManager.isOffloadedPlaybackSupported(audioFormat, attributes)) {
+                Log.i(TAG, "Device supports offload for format: " + format);
+                return format;
+            }
+        }
+        return AudioFormat.ENCODING_INVALID;
     }
 
     private void setupVisualizer() {
@@ -205,6 +231,79 @@ public class AudioOffloadNativeEffectsTest {
                             + prevRmsMb
                             + " )",
                     currRmsMb > prevRmsMb);
+            prevRmsMb = currRmsMb;
+        }
+    }
+
+    /**
+     * Helper to test the EQ stages (PreEQ or PostEQ) of DynamicsProcessing.
+     *
+     * @param isPreEq true to test PreEQ, false to test PostEQ.
+     */
+    private void runDynamicsProcessingEqStageTest(boolean isPreEq) throws InterruptedException {
+        final int channelCount = 2;
+        final int bandCount = 4; // Divide spectrum into 4 bands
+        final int testBandIndex = 0; // Ensure test frequency falls within this band
+
+        DynamicsProcessing.Config.Builder configBuilder =
+                new DynamicsProcessing.Config.Builder(
+                        DynamicsProcessing.VARIANT_FAVOR_FREQUENCY_RESOLUTION,
+                        channelCount,
+                        isPreEq /* preEqInUse */,
+                        (isPreEq ? bandCount : 0),
+                        false /* mbcInUse */,
+                        0,
+                        !isPreEq /* postEqInUse */,
+                        (!isPreEq ? bandCount : 0),
+                        false /* limiterInUse */);
+
+        mDynamicsProcessing = new DynamicsProcessing(0, mSessionId, configBuilder.build());
+        assertNotNull("Failed to create DynamicsProcessing", mDynamicsProcessing);
+        mDynamicsProcessing.setEnabled(true);
+
+        DynamicsProcessing.EqBand bassBand;
+        if (isPreEq) {
+            bassBand = mDynamicsProcessing.getPreEqBandByChannelIndex(0, 0); // Ch 0, Band 0
+        } else {
+            bassBand = mDynamicsProcessing.getPostEqBandByChannelIndex(0, 0);
+        }
+
+        // Set cutoff to 200Hz to ensure Band 0 includes AUDIOTRACK_TEST_FREQUENCY_HZ.
+        bassBand.setCutoffFrequency(AUDIOTRACK_TEST_FREQUENCY_HZ * 2);
+
+        if (isPreEq) {
+            mDynamicsProcessing.setPreEqBandAllChannelsTo(0, bassBand);
+        } else {
+            mDynamicsProcessing.setPostEqBandAllChannelsTo(0, bassBand);
+        }
+
+        // Initialize the Visualizer to capture and measure the rms of audio output.
+        setupVisualizer();
+
+        int prevRmsMb = Integer.MIN_VALUE;
+        for (final float gainDb : DP_TEST_GAINS_DB) {
+            DynamicsProcessing.EqBand bandConfig;
+            if (isPreEq) {
+                bandConfig = mDynamicsProcessing.getPreEqBandByChannelIndex(0, testBandIndex);
+                bandConfig.setGain(gainDb);
+                mDynamicsProcessing.setPreEqBandAllChannelsTo(testBandIndex, bandConfig);
+            } else {
+                bandConfig = mDynamicsProcessing.getPostEqBandByChannelIndex(0, testBandIndex);
+                bandConfig.setGain(gainDb);
+                mDynamicsProcessing.setPostEqBandAllChannelsTo(testBandIndex, bandConfig);
+            }
+
+            final int currRmsMb = playAndGetRms(AUDIOTRACK_TEST_FREQUENCY_HZ);
+            assumeTrue(
+                    "Curr Rms ( "
+                            + currRmsMb
+                            + " ) at gain "
+                            + gainDb
+                            + " should be more than Prev Rms ( "
+                            + prevRmsMb
+                            + " )",
+                    currRmsMb > prevRmsMb);
+
             prevRmsMb = currRmsMb;
         }
     }
@@ -273,7 +372,7 @@ public class AudioOffloadNativeEffectsTest {
     }
 
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    public void testMmapPcmOffloadWithDynamicsProcessingEffect() throws InterruptedException {
+    public void testMmapPcmOffloadWithDynamicsProcessingInputGain() throws InterruptedException {
         // Create a "pass-through" config with all internal stages disabled.
         DynamicsProcessing.Config.Builder configBuilder =
                 new DynamicsProcessing.Config.Builder(
@@ -293,19 +392,16 @@ public class AudioOffloadNativeEffectsTest {
         // Initialize the Visualizer to capture and measure the rms of audio output.
         setupVisualizer();
 
-        final float testFrequencyHz = 100.0f;
-        final float[] testIncreasingInputGain = {-24.0f, -12.0f, -6.0f, 0f, 6.0f, 12.0f, 24.0f};
         int prevRmsMb = Integer.MIN_VALUE;
+        for (float gainDb : DP_TEST_GAINS_DB) {
+            mDynamicsProcessing.setInputGainAllChannelsTo(gainDb);
 
-        for (float gain : testIncreasingInputGain) {
-            mDynamicsProcessing.setInputGainAllChannelsTo(gain);
-
-            final int currRmsMb = playAndGetRms(testFrequencyHz);
+            final int currRmsMb = playAndGetRms(AUDIOTRACK_TEST_FREQUENCY_HZ);
             assumeTrue(
                     "Curr Rms ( "
                             + currRmsMb
                             + " ) at gain "
-                            + gain
+                            + gainDb
                             + " should be more than Prev Rms ( "
                             + prevRmsMb
                             + " )",
@@ -314,7 +410,19 @@ public class AudioOffloadNativeEffectsTest {
         }
     }
 
-    private static native long nativeOpenStream();
+    @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
+    public void testMmapPcmOffloadWithDynamicsProcessingPreEq() throws InterruptedException {
+        // Run the test for the Pre-Equalizer stage
+        runDynamicsProcessingEqStageTest(true);
+    }
+
+    @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
+    public void testMmapPcmOffloadWithDynamicsProcessingPostEq() throws InterruptedException {
+        // Run the test for the Post-Equalizer stage
+        runDynamicsProcessingEqStageTest(false);
+    }
+
+    private static native long nativeOpenStream(int supportedOffloadFormat);
 
     private static native int nativeGetSessionId(long streamHandle);
 

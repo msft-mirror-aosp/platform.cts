@@ -19,10 +19,12 @@ package com.android.cts.mockime;
 import androidx.annotation.StringDef;
 
 @StringDef({
-        MockImePackageNames.MockIme1,
-        MockImePackageNames.MockIme2,
+    MockImePackageNames.MockIme1,
+    MockImePackageNames.MockIme2,
+    MockImePackageNames.MockImeManySubtypes,
 })
 public @interface MockImePackageNames {
     String MockIme1 = "com.android.cts.mockime";
     String MockIme2 = "com.android.cts.mockime2";
+    String MockImeManySubtypes = "com.android.cts.mockimemanysubtypes";
 }

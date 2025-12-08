@@ -64,6 +64,8 @@ import android.printservice.PrintService;
 import androidx.annotation.NonNull;
 import androidx.test.runner.AndroidJUnit4;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -76,6 +78,18 @@ import java.util.List;
 @Presubmit
 @RunWith(AndroidJUnit4.class)
 public class PrintServicesTest extends BasePrintTest {
+    private static String sPreviousEnabledServices;
+
+    @BeforeClass
+    public static void disableUnusedPrintServices() throws Exception {
+        sPreviousEnabledServices = disablePrintServices(PRINT_SERVICE_PACKAGE);
+    }
+
+    @AfterClass
+    public static void reenablePrintServices() throws Exception {
+        enablePrintServices(sPreviousEnabledServices);
+    }
+
     private static final String PRINTER_NAME = "Test printer";
 
     /** The print job processed in the test */

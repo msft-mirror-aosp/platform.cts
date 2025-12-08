@@ -2,16 +2,21 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.android.cts.stopandkillapp">
 
-    <application android:theme="@android:style/Theme.DeviceDefault">
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
 
-        <activity android:name="com.android.cts.stopandkillapp.PersistableActivity" android:exported="true"
-            android:persistableMode="persistAcrossReboots">
-        </activity>
-        <activity android:name="com.android.cts.stopandkillapp.PersistableTimeoutActivity" android:exported="true"
-            android:persistableMode="persistAcrossReboots" />
+    <queries>
+        <provider android:authorities="android.tradefed.contentprovider" />
+    </queries>
 
-        <activity android:name="com.android.cts.stopandkillapp.NonPersistableActivity" android:exported="true"
-            android:persistableMode="persistNever" />
+    <application>
+        <activity android:name="com.android.cts.stopandkillapp.PersistableActivity"
+            android:exported="true" android:persistableMode="persistAcrossReboots"/>
+
+        <activity android:name="com.android.cts.stopandkillapp.PersistableTimeoutActivity"
+            android:exported="true" android:persistableMode="persistAcrossReboots"/>
+
+        <activity android:name="com.android.cts.stopandkillapp.NonPersistableActivity"
+            android:exported="true" android:persistableMode="persistNever" />
     </application>
 
 </manifest>

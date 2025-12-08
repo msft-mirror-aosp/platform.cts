@@ -42,6 +42,7 @@ import androidx.annotation.NonNull;
 import org.junit.Rule;
 import org.junit.Test;
 
+import platform.test.desktop.DesktopModeTestUtil;
 import platform.test.desktop.DisplayDevice;
 import platform.test.desktop.DisplayPeripheral;
 import platform.test.desktop.DisplaySize;
@@ -220,10 +221,8 @@ public class TopologyUpdateDeliveryTest extends EventDeliveryTestBase {
     }
 
     private void assumeDesktopModeSupported() {
-        int resId =
-                mContext.getResources()
-                        .getIdentifier("config_isDesktopModeSupported", "bool", "android");
-        boolean isDesktopModeSupported = mContext.getResources().getBoolean(resId);
+        boolean isDesktopModeSupported =
+                new DesktopModeTestUtil(mContext.getResources()).canEnterDesktopMode();
         assumeTrue("Device does not support desktop mode", isDesktopModeSupported);
     }
 

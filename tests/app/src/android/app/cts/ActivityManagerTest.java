@@ -38,6 +38,7 @@ import static android.content.pm.PackageManager.DONT_KILL_APP;
 import static android.content.pm.PackageManager.FLAG_PERMISSION_GRANTED_BY_ROLE;
 import static android.content.pm.PackageManager.FLAG_PERMISSION_USER_SET;
 import static android.content.pm.PackageManager.MATCH_DEFAULT_ONLY;
+import static android.provider.DeviceConfig.NAMESPACE_ACTIVITY_MANAGER_NATIVE_BOOT;
 
 import static com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity;
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
@@ -197,6 +198,8 @@ public final class ActivityManagerTest {
 
     private static final String SELF_CLEARING_PACKAGE_NAME = "com.android.clearsself";
     private static final String CLEAR_SELF_ACTIVITY = ".ClearSelfDataActivity";
+
+    private static final String KEY_FREEZE_DEBOUNCE_TIMEOUT = "freeze_debounce_timeout";
 
     private static final String[] HELPER_PACKAGES = {
             PACKAGE_NAME_APP1,
@@ -1422,6 +1425,15 @@ public final class ActivityManagerTest {
             // Shorten the power check intervals
             amSettings.set("power_check_interval=" + powerCheckInterval);
 
+            runWithShellPermissionIdentity(
+                    () -> {
+                        DeviceConfig.setProperty(
+                                NAMESPACE_ACTIVITY_MANAGER_NATIVE_BOOT,
+                                KEY_FREEZE_DEBOUNCE_TIMEOUT,
+                                Long.toString(processGoneTimeout),
+                                /* makeDefault= */ false);
+                    });
+
             // Keep the device awake
             toggleScreenOn(true);
 
@@ -1488,10 +1500,16 @@ public final class ActivityManagerTest {
         } finally {
             amSettings.close();
 
-            runWithShellPermissionIdentity(() -> {
-                // force stop test package, where the whole test process group will be killed.
-                mActivityManager.forceStopPackage(PACKAGE_NAME_APP1);
-            });
+            runWithShellPermissionIdentity(
+                    () -> {
+                        DeviceConfig.deleteProperty(
+                                NAMESPACE_ACTIVITY_MANAGER_NATIVE_BOOT,
+                                KEY_FREEZE_DEBOUNCE_TIMEOUT);
+
+                        // force stop test package, where the whole test process group will be
+                        // killed.
+                        mActivityManager.forceStopPackage(PACKAGE_NAME_APP1);
+                    });
 
             watcher.finish();
         }

@@ -15,6 +15,7 @@
  */
 package android.os.cts.batterysaving;
 
+import static com.android.compatibility.common.util.AmUtils.isProcessRunning;
 import static com.android.compatibility.common.util.BatteryUtils.resetBatterySaver;
 import static com.android.compatibility.common.util.BatteryUtils.runDumpsysBatteryReset;
 import static com.android.compatibility.common.util.BatteryUtils.turnOnScreen;
@@ -29,7 +30,7 @@ import android.os.BatteryManager;
 import android.os.PowerManager;
 import android.util.Log;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.BatteryUtils;
 import com.android.compatibility.common.util.BeforeAfterRule;
@@ -45,9 +46,11 @@ import org.junit.rules.RuleChain;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+/** Base class for battery saving CTS tests. */
 public class BatterySavingTestBase {
     private static final String TAG = "BatterySavingTestBase";
 
+    /** Default timeout in seconds for {@link #waitUntil} calls. */
     public static final int DEFAULT_TIMEOUT_SECONDS = 30;
 
     public static final boolean DEBUG = false;
@@ -56,32 +59,42 @@ public class BatterySavingTestBase {
 
     protected final BroadcastRpc mRpc = new BroadcastRpc();
 
-    private final OnFailureRule mDumpOnFailureRule = new OnFailureRule(TAG) {
-        @Override
-        protected void onTestFailure(Statement base, Description description, Throwable t) {
-            runCommandAndPrintOnLogcat(TAG, "dumpsys power");
-            runCommandAndPrintOnLogcat(TAG, "dumpsys alarm");
-            runCommandAndPrintOnLogcat(TAG, "dumpsys jobscheduler");
-            runCommandAndPrintOnLogcat(TAG, "dumpsys content");
-            runCommandAndPrintOnLogcat(TAG, "dumpsys battery");
-        }
-    };
+    /**
+     * A rule to dump information about various system services on test failure, which can help with
+     * debugging.
+     */
+    private final OnFailureRule mDumpOnFailureRule =
+            new OnFailureRule(TAG) {
+                @Override
+                protected void onTestFailure(Statement base, Description description, Throwable t) {
+                    runCommandAndPrintOnLogcat(TAG, "dumpsys power");
+                    runCommandAndPrintOnLogcat(TAG, "dumpsys alarm");
+                    runCommandAndPrintOnLogcat(TAG, "dumpsys jobscheduler");
+                    runCommandAndPrintOnLogcat(TAG, "dumpsys content");
+                    runCommandAndPrintOnLogcat(TAG, "dumpsys battery");
+                }
+            };
 
-    private final BeforeAfterRule mInitializeAndCleanupRule = new BeforeAfterRule() {
-        @Override
-        protected void onBefore(Statement base, Description description) throws Throwable {
-            BatteryUtils.assumeBatterySaverFeature();
+    /**
+     * A rule to initialize the device state before a test (e.g. turn on the screen) and clean up
+     * after (e.g. reset battery saver).
+     */
+    private final BeforeAfterRule mInitializeAndCleanupRule =
+            new BeforeAfterRule() {
+                @Override
+                protected void onBefore(Statement base, Description description) throws Throwable {
+                    BatteryUtils.assumeBatterySaverFeature();
 
-            turnOnScreen(true);
-        }
+                    turnOnScreen(true);
+                }
 
-        @Override
-        protected void onAfter(Statement base, Description description) throws Throwable {
-            runDumpsysBatteryReset();
-            turnOnScreen(true);
-            resetBatterySaver();
-        }
-    };
+                @Override
+                protected void onAfter(Statement base, Description description) throws Throwable {
+                    runDumpsysBatteryReset();
+                    turnOnScreen(true);
+                    resetBatterySaver();
+                }
+            };
 
     @Rule
     public RuleChain Rules = RuleChain.outerRule(mInitializeAndCleanupRule)
@@ -98,11 +111,15 @@ public class BatterySavingTestBase {
         }
     }
 
+    /** Wait until {@code dumpsys alarm} shows the expected "Force all apps standby" state. */
     public void waitUntilAlarmForceAppStandby(boolean expected) throws Exception {
         waitUntil("Force all apps standby still " + !expected + " (alarm)", () ->
                 runShellCommand("dumpsys alarm").contains("Force all apps standby: " + expected));
     }
 
+    /**
+     * Wait until {@code dumpsys jobscheduler} shows the expected "Force all apps standby" state.
+     */
     public void waitUntilJobForceAppStandby(boolean expected) throws Exception {
         waitUntil("Force all apps standby still " + !expected + " (job)", () -> {
             JobSchedulerServiceDumpProto proto = ProtoUtils.getProto(
@@ -119,13 +136,22 @@ public class BatterySavingTestBase {
         });
     }
 
+    /** Wait until {@code dumpsys activity} shows the expected "mForceBackgroundCheck" state. */
     public void waitUntilForceBackgroundCheck(boolean expected) throws Exception {
         waitUntil("Force background check still " + !expected + " (job)", () ->
                 runShellCommand("dumpsys activity").contains("mForceBackgroundCheck=" + expected));
     }
 
+    /** Wait until a given package's process is no longer running. */
+    public void waitUntilProcessGone(String packageName) throws Exception {
+        waitUntil(
+                packageName + " process still running",
+                DEFAULT_TIMEOUT_SECONDS,
+                () -> !isProcessRunning(packageName));
+    }
+
     public static Context getContext() {
-        return InstrumentationRegistry.getContext();
+        return InstrumentationRegistry.getInstrumentation().getTargetContext();
     }
 
     public PackageManager getPackageManager() {

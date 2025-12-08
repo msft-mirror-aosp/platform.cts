@@ -25,6 +25,9 @@ import static org.junit.Assume.assumeTrue;
 import android.content.pm.FeatureInfo;
 import android.content.pm.PackageManager;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.ArrayMap;
 import android.util.Log;
 
@@ -34,11 +37,13 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.PropertyUtil;
+import com.android.graphics.libvulkan.flags.Flags;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -55,6 +60,10 @@ import java.util.Set;
 @AppModeFull
 @RunWith(AndroidJUnit4.class)
 public class VulkanFeaturesTest {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     static {
         System.loadLibrary("ctsgpu_jni");
@@ -83,6 +92,9 @@ public class VulkanFeaturesTest {
 
     private static final String VK_KHR_SWAPCHAIN = "VK_KHR_swapchain";
     private static final int VK_KHR_SWAPCHAIN_SPEC_VERSION = 68;
+
+    private static final String VK_KHR_PRESENT_ID2 = "VK_KHR_present_id2";
+    private static final int VK_KHR_PRESENT_ID2_SPEC_VERSION = 1;
 
     private static final String VK_KHR_MAINTENANCE1 = "VK_KHR_maintenance1";
     private static final int VK_KHR_MAINTENANCE1_SPEC_VERSION = 1;
@@ -255,6 +267,7 @@ public class VulkanFeaturesTest {
                     "VK_KHR_external_memory_capabilities",
                     "VK_KHR_external_semaphore_capabilities",
                     "VK_KHR_external_fence_capabilities",
+                    "VK_KHR_present_id2",
                     "VK_ANDROID_external_memory_android_hardware_buffer",
                     "VK_GOOGLE_display_timing"});
     }
@@ -455,6 +468,9 @@ public class VulkanFeaturesTest {
         assertVulkanDeviceExtension(VK_KHR_INCREMENTAL_PRESENT,
                 VK_KHR_INCREMENTAL_PRESENT_SPEC_VERSION);
         assertVulkanDeviceExtension(VK_KHR_MAINTENANCE1, VK_KHR_MAINTENANCE1_SPEC_VERSION);
+        if (Flags.presentId2Khr()) {
+            assertVulkanDeviceExtension(VK_KHR_PRESENT_ID2, VK_KHR_PRESENT_ID2_SPEC_VERSION);
+        }
     }
 
     @CddTest(requirements = {"7.9.2/C-1-5"})

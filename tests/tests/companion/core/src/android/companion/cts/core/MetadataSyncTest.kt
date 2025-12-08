@@ -18,7 +18,6 @@ package android.companion.cts.core
 
 import android.Manifest.permission.MANAGE_COMPANION_DEVICES
 import android.annotation.CallSuper
-import android.companion.CompanionDeviceManager.FEATURE_CROSS_DEVICE_SYNC
 import android.companion.CompanionDeviceManager.MESSAGE_REQUEST_METADATA_UPDATE
 import android.companion.Flags
 import android.companion.cts.common.CdmMessage
@@ -27,6 +26,7 @@ import android.companion.cts.common.MessageDemuxer
 import android.companion.cts.common.MessageFeeder
 import android.companion.cts.common.sleepFor
 import android.os.PersistableBundle
+import android.os.UserHandle
 import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
@@ -38,6 +38,7 @@ import kotlin.time.Duration.Companion.seconds
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Rule
@@ -54,8 +55,9 @@ class MetadataSyncTest : CoreTestBase()  {
     @CallSuper
     override fun setUp() {
         super.setUp()
-        targetApp.clearLocalMetadata()
         withShellPermissionIdentity(MANAGE_COMPANION_DEVICES) {
+            cdm.setLocalMetadata(userId, FEATURE_TEST, null)
+            cdm.setLocalMetadata(UserHandle.USER_ALL, FEATURE_TEST, null)
             cdm.overrideTransportType(1) // Force raw transport
         }
     }
@@ -64,8 +66,9 @@ class MetadataSyncTest : CoreTestBase()  {
     override fun tearDown() {
         withShellPermissionIdentity(MANAGE_COMPANION_DEVICES) {
             cdm.overrideTransportType(0) // Reset transport type
+            cdm.setLocalMetadata(UserHandle.USER_ALL, FEATURE_TEST, null)
+            cdm.setLocalMetadata(userId, FEATURE_TEST, null)
         }
-        targetApp.clearLocalMetadata()
         super.tearDown()
     }
 
@@ -74,7 +77,7 @@ class MetadataSyncTest : CoreTestBase()  {
         // Create association and set local metadata without live connections
         targetApp.associate(MAC_ADDRESS_A)
         val associationId = cdm.myAssociations[0].id
-        targetApp.setLocalMetadata(FEATURE_CROSS_DEVICE_SYNC, "version", "1")
+        targetApp.setLocalMetadata(FEATURE_TEST, "version", "1")
 
         // Attach transport and assert current metadata is sent
         val input = MessageFeeder()
@@ -84,7 +87,7 @@ class MetadataSyncTest : CoreTestBase()  {
             val metadata = PersistableBundle.readFromStream(ByteArrayInputStream(it.payload))
             assertNotNull("Metadata must not be null", metadata)
 
-            val featureMetadata = metadata?.getPersistableBundle(FEATURE_CROSS_DEVICE_SYNC)
+            val featureMetadata = metadata?.getPersistableBundle(FEATURE_TEST)
             assertNotNull("Feature-specific metadata not found", featureMetadata)
 
             val modeSyncVersion = featureMetadata?.getInt("version")
@@ -107,12 +110,12 @@ class MetadataSyncTest : CoreTestBase()  {
         output.getNextMessage(MESSAGE_REQUEST_METADATA_UPDATE)
 
         // Set local metadata and assert populated metadata is sent
-        targetApp.setLocalMetadata(FEATURE_CROSS_DEVICE_SYNC, "version", "1")
+        targetApp.setLocalMetadata(FEATURE_TEST, "version", "1")
         output.getNextMessage(MESSAGE_REQUEST_METADATA_UPDATE)?.also {
             val metadata = PersistableBundle.readFromStream(ByteArrayInputStream(it.payload))
             assertNotNull("Metadata must not be null", metadata)
 
-            val featureMetadata = metadata?.getPersistableBundle(FEATURE_CROSS_DEVICE_SYNC)
+            val featureMetadata = metadata?.getPersistableBundle(FEATURE_TEST)
             assertNotNull("Feature-specific metadata not found", featureMetadata)
 
             val modeSyncVersion = featureMetadata?.getInt("version")
@@ -134,7 +137,7 @@ class MetadataSyncTest : CoreTestBase()  {
         // Simulate metadata update reception message from the remote device
         // and wait for ACK
         val metadata = PersistableBundle().apply {
-            putPersistableBundle(FEATURE_CROSS_DEVICE_SYNC, PersistableBundle().apply {
+            putPersistableBundle(FEATURE_TEST, PersistableBundle().apply {
                 putString("lorem", "ipsum")
             })
         }
@@ -144,7 +147,7 @@ class MetadataSyncTest : CoreTestBase()  {
         }
 
         // Assert remote metadata is updated
-        cdm.myAssociations[0].getMetadata(FEATURE_CROSS_DEVICE_SYNC)?.also {
+        cdm.myAssociations[0].getMetadata(FEATURE_TEST)?.also {
             assertEquals("ipsum", it.getString("lorem"))
         } ?: {
             fail("Remote metadata was not updated")
@@ -156,7 +159,7 @@ class MetadataSyncTest : CoreTestBase()  {
         // Create association and set local metadata without live connections
         targetApp.associate(MAC_ADDRESS_A)
         val associationId = cdm.myAssociations[0].id
-        targetApp.setLocalMetadata(FEATURE_CROSS_DEVICE_SYNC, "version", "1")
+        targetApp.setLocalMetadata(FEATURE_TEST, "version", "1")
 
         // Attach transport and simulate ACK response
         val input = MessageFeeder()
@@ -183,7 +186,7 @@ class MetadataSyncTest : CoreTestBase()  {
 
         // Simulate metadata update reception message from the remote device
         val metadata = PersistableBundle().apply {
-            putPersistableBundle(FEATURE_CROSS_DEVICE_SYNC, PersistableBundle())
+            putPersistableBundle(FEATURE_TEST, PersistableBundle())
         }
         input.feedMessage(CdmMessage.forMetadataUpdate(metadata))
         output.getNextMessage(MESSAGE_RESPONSE_SUCCESS)
@@ -193,7 +196,68 @@ class MetadataSyncTest : CoreTestBase()  {
                 0L, cdm.myAssociations[0].metadataTimestamp)
     }
 
+    @Test
+    fun test_setLocalMetadata_broadcastsOnGlobalUpdate() {
+        // Create association and attach transport
+        targetApp.associate(MAC_ADDRESS_A)
+        val associationId = cdm.myAssociations[0].id
+        val input = MessageFeeder()
+        val output = MessageDemuxer {}
+        cdm.attachSystemDataTransport(associationId, input, output)
+        output.getNextMessage(MESSAGE_REQUEST_METADATA_UPDATE) // Passthrough the initial broadcast
+
+        withShellPermissionIdentity(MANAGE_COMPANION_DEVICES) {
+            // Set global local metadata
+            val globalMetadata = PersistableBundle().apply {
+                putBoolean("mode_sync_enabled", true)
+            }
+            cdm.setLocalMetadata(UserHandle.USER_ALL, FEATURE_TEST, globalMetadata)
+        }
+
+        // Assert populated metadata is sent
+        output.getNextMessage(MESSAGE_REQUEST_METADATA_UPDATE)?.also {
+            val metadata = PersistableBundle.readFromStream(ByteArrayInputStream(it.payload))
+            assertNotNull("Metadata must not be null", metadata)
+
+            val featureMetadata = metadata?.getPersistableBundle(FEATURE_TEST)
+            assertNotNull("Feature-specific metadata not found", featureMetadata)
+
+            val modeSyncEnabled = featureMetadata?.getBoolean("mode_sync_enabled")
+            assertEquals("Unexpected metadata entry", true, modeSyncEnabled)
+        } ?: {
+            fail("Local metadata was not broadcasted after update")
+        }
+    }
+
+    @Test
+    fun test_getLocalMetadata_mergesWithGlobal() = withShellPermissionIdentity(MANAGE_COMPANION_DEVICES) {
+        // Set global local metadata
+        cdm.setLocalMetadata(UserHandle.USER_ALL, FEATURE_TEST, PersistableBundle().apply {
+            putBoolean("enabled", true)
+            putInt("version", 1)
+        })
+
+        // Set user local metadata
+        cdm.setLocalMetadata(userId, FEATURE_TEST, PersistableBundle().apply {
+            putInt("version", 2)
+            putString("tag", "override")
+        })
+
+        // Assert merged metadata is returned
+        val metadata = cdm.getLocalMetadata(userId).getPersistableBundle(FEATURE_TEST)
+        assertEquals(true, metadata?.getBoolean("enabled"))
+        assertEquals(2, metadata?.getInt("version"))
+        assertEquals("override", metadata?.getString("tag"))
+
+        // Assert global metadata is not modified
+        val globalMetadata = cdm.getLocalMetadata(UserHandle.USER_ALL).getPersistableBundle(FEATURE_TEST)
+        assertEquals(true, globalMetadata?.getBoolean("enabled"))
+        assertEquals(1, globalMetadata?.getInt("version"))
+        assertNull(globalMetadata?.getString("tag"))
+    }
+
     companion object {
         const val MESSAGE_RESPONSE_SUCCESS = 0x33838567 // CDM ACK response
+        const val FEATURE_TEST = "test_feature"
     }
 }

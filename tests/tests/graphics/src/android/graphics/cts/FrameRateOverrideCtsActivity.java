@@ -44,6 +44,7 @@ import java.util.ArrayList;
 public class FrameRateOverrideCtsActivity extends Activity {
     private static final String TAG = "FrameRateOverrideCtsActivity";
     private static final long FRAME_RATE_SWITCH_GRACE_PERIOD_NANOSECONDS = 2 * 1_000_000_000L;
+    private static final long MODESET_GRACE_PERIOD_NANOSECONDS = 3 * 1_000_000_000L;
     private static final long STABLE_FRAME_RATE_WAIT_NANOSECONDS = 1 * 1_000_000_000L;
     private static final long POST_BUFFER_INTERVAL_NANOSECONDS = 500_000_000L;
     private static final int PRECONDITION_WAIT_MAX_ATTEMPTS = 5;
@@ -275,11 +276,14 @@ public class FrameRateOverrideCtsActivity extends Activity {
         return true;
     }
 
-    private void waitForRefreshRateChange(float expectedRefreshRate) throws InterruptedException {
+    private void waitForRefreshRateChange(float expectedRefreshRate, boolean maybeModeset)
+            throws InterruptedException {
         Log.i(TAG, "Waiting for the refresh rate to change");
         long nowNanos = System.nanoTime();
-        long gracePeriodEndTimeNanos =
-                nowNanos + FRAME_RATE_SWITCH_GRACE_PERIOD_NANOSECONDS;
+        // Modeset are slow on some platforms, if we know we might have just modeset, wait longer.
+        final long modesetGracePeriod = maybeModeset ? MODESET_GRACE_PERIOD_NANOSECONDS : 0;
+        final long gracePeriodEndTimeNanos =
+                nowNanos + FRAME_RATE_SWITCH_GRACE_PERIOD_NANOSECONDS + modesetGracePeriod;
         while (true) {
             // Wait until we switch to the expected refresh rate
             while (!frameRatesEqual(mReportedDisplayRefreshRate, expectedRefreshRate)
@@ -294,7 +298,7 @@ public class FrameRateOverrideCtsActivity extends Activity {
 
             // We've switched to a compatible frame rate. Now wait for a while to see if we stay at
             // that frame rate.
-            long endTimeNanos = nowNanos + STABLE_FRAME_RATE_WAIT_NANOSECONDS;
+            long endTimeNanos = nowNanos + STABLE_FRAME_RATE_WAIT_NANOSECONDS + modesetGracePeriod;
             while (endTimeNanos > nowNanos) {
                 if (waitForEvents(endTimeNanos)) {
                     Log.i(TAG, String.format("Stable frame rate %.2f verified",
@@ -307,6 +311,10 @@ public class FrameRateOverrideCtsActivity extends Activity {
                 }
             }
         }
+    }
+
+    private void waitForRefreshRateChange(float expectedRefreshRate) throws InterruptedException {
+        waitForRefreshRateChange(expectedRefreshRate, /* maybeModeset= */ false);
     }
 
     interface FrameRateObserver {
@@ -365,8 +373,8 @@ public class FrameRateOverrideCtsActivity extends Activity {
             public void run() {
                 Looper.prepare();
                 mChoreographer = Choreographer.getInstance();
-                mHandler = new Handler();
                 mLooper = Looper.myLooper();
+                mHandler = new Handler(mLooper);
                 mStartTime = System.nanoTime();
                 mChoreographer.postFrameCallback(this);
                 Looper.loop();
@@ -463,7 +471,7 @@ public class FrameRateOverrideCtsActivity extends Activity {
             Log.i(TAG, "Starting testFrameRateOverride");
             float halfFrameRate = initialRefreshRate / 2;
 
-            waitForRefreshRateChange(initialRefreshRate);
+            waitForRefreshRateChange(initialRefreshRate, /* maybeModeset= */ true);
             frameRateObserver.observe(initialRefreshRate, initialRefreshRate, "Initial");
 
             Log.i(TAG, String.format("Setting Frame Rate to %.2f with default compatibility",
@@ -520,7 +528,7 @@ public class FrameRateOverrideCtsActivity extends Activity {
             Log.i(TAG, "Starting testFrameRateOverride");
             float halfFrameRate = initialRefreshRate / 2;
 
-            waitForRefreshRateChange(initialRefreshRate);
+            waitForRefreshRateChange(initialRefreshRate, /* maybeModeset= */ true);
             frameRateObserver.observe(initialRefreshRate, initialRefreshRate, "Initial");
 
             Log.i(TAG, String.format("Setting preferredRefreshRateFrame to %.2f", halfFrameRate));

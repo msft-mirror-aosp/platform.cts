@@ -7511,8 +7511,11 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 "android.net.wifi.WifiInfo#getMaxSupportedRxLinkSpeedMbps"
             })
     @RequiresFlagsEnabled(Flags.FLAG_MLO_LINK_SPEED_API)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
     @Test
     public void testMloLinkSpeedApi() throws Exception {
+        assumeTrue(PropertyUtil.isVndkApiLevelNewerThan(Build.VERSION_CODES.VANILLA_ICE_CREAM));
         setWifiEnabled(true);
         WifiConfiguration wifi7Network = null;
         TestActionListener actionListener = new TestActionListener(mLock);

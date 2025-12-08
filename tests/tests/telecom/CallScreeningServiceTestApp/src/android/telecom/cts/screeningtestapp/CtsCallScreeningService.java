@@ -17,7 +17,6 @@
 package android.telecom.cts.screeningtestapp;
 
 import android.content.Intent;
-import android.net.Uri;
 import android.os.IBinder;
 import android.telecom.Call;
 import android.telecom.CallScreeningService;
@@ -72,29 +71,5 @@ public class CtsCallScreeningService extends CallScreeningService {
         } else {
             Log.w(TAG, "No control interface.");
         }
-    }
-
-    @Override
-    public void onScreenOutgoingCall(Call.Details callDetails) {
-        Uri handle = callDetails.getHandle();
-        Log.i(TAG, "onScreenOutgoingCall: " + handle);
-        CallScreeningServiceControl control = CallScreeningServiceControl.getInstance();
-        if (control != null) {
-            if (control.getShouldNoResponseOutgoingCall()) {
-                Log.i(TAG, "onScreenOutgoingCall: not responding to simulate timeout");
-                control.onOutgoingCallScreened(handle);
-                return;
-            }
-            boolean shouldBlock = control.getShouldBlockOutgoingCall();
-            Log.i(TAG, "onScreenOutgoingCall: shouldBlock=" + shouldBlock);
-            CallResponse.Builder responseBuilder = new CallResponse.Builder();
-            responseBuilder.setDisallowCall(shouldBlock);
-            respondToCall(callDetails, responseBuilder.build());
-            control.onOutgoingCallScreened(handle);
-        } else {
-            Log.w(TAG, "onScreenOutgoingCall: No control interface, allowing.");
-            respondToCall(callDetails, new CallResponse.Builder().build());
-        }
-        super.onScreenOutgoingCall(callDetails);
     }
 }

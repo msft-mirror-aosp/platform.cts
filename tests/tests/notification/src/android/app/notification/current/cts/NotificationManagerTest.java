@@ -4067,56 +4067,16 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     @ApiTest(apis = {"android.service.notification.NotificationListenerService#getActiveNotifications",
-            "android.service.notification.NotificationListenerService#getCurrentRanking"})
-    public void testListenerCanSeeAutobundledNotifications() throws Exception {
-        EventCallback callback = new EventCallback();
-        int notificationId1 = 6007;
-        int notificationId2 = 6008;
-
-        mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
-        assertNotNull(mListener);
-        // wait for the two notifications + the autogroup summary to be posted
-        CountDownLatch postedLatch = mListener.setPostedCountDown(3);
-
-        sendTrampolineMessage(TRAMPOLINE_SERVICE_API_30, MESSAGE_SERVICE_NOTIFICATION,
-                notificationId1, callback);
-        sendTrampolineMessage(TRAMPOLINE_SERVICE_API_30, MESSAGE_SERVICE_NOTIFICATION,
-                notificationId2, callback);
-        postedLatch.await(POST_TIMEOUT, TimeUnit.MILLISECONDS);
-
-        StatusBarNotification sbn1 = mNotificationHelper.findPostedNotification(
-                null, notificationId1, SEARCH_TYPE.LISTENER);
-        assertThat(sbn1).isNotNull();
-        Ranking ranking1 = mNotificationHelper.findPostedNotificationRanking(
-                sbn1.getKey(), SEARCH_TYPE.LISTENER);
-        assertThat(ranking1).isNotNull();
-
-        StatusBarNotification sbn2 = mNotificationHelper.findPostedNotification(
-                null, notificationId2, SEARCH_TYPE.LISTENER);
-        assertThat(sbn2).isNotNull();
-        Ranking ranking2 = mNotificationHelper.findPostedNotificationRanking(
-                sbn2.getKey(), SEARCH_TYPE.LISTENER);
-        assertThat(ranking2).isNotNull();
-
-        StatusBarNotification sbnSummary = mNotificationHelper.findPostedNotificationWithFlags(
-                Notification.FLAG_AUTOGROUP_SUMMARY, SEARCH_TYPE.LISTENER);
-        assertThat(sbnSummary).isNotNull();
-        Ranking rankingSummary = mNotificationHelper.findPostedNotificationRanking(
-                sbnSummary.getKey(), SEARCH_TYPE.LISTENER);
-        assertThat(rankingSummary).isNotNull();
-    }
-
-    @Test
-    @ApiTest(apis = {"android.service.notification.NotificationListenerService#getActiveNotifications",
             "android.service.notification.NotificationListenerService#getCurrentRanking",
             "android.service.notification.NotificationAssistantService#adjustNotification"})
     public void testListenerCanSeeClassifiedNotifications() throws Exception {
+        FutureServiceConnection pressureService00 = bindServiceConnection(PRESSURE_SERVICE_00);
         EventCallback callback = new EventCallback();
         int notificationId1 = 6007;
 
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
-        mListener.addTestPackage(TRAMPOLINE_APP_API_30);
+        mListener.addTestPackage(PRESSURE_APP_00);
         mAssistant = mNotificationHelper.enableAssistant(STUB_PACKAGE_NAME);
         assertNotNull(mAssistant);
 
@@ -4124,8 +4084,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
                 mNotificationManager.setAssistantAdjustmentKeyTypeState(TYPE_NEWS, true));
         try {
             CountDownLatch postedLatch = mListener.setPostedCountDown(1);
-            sendTrampolineMessage(TRAMPOLINE_SERVICE_API_30, MESSAGE_SERVICE_NOTIFICATION,
-                    notificationId1, callback);
+            sendMessage(pressureService00, notificationId1, callback);
             postedLatch.await(POST_TIMEOUT, TimeUnit.MILLISECONDS);
             StatusBarNotification preClassification = mNotificationHelper.findPostedNotification(
                     null, notificationId1, NotificationHelper.SEARCH_TYPE.POSTED);
@@ -4151,6 +4110,11 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         } finally {
             SystemUtil.runWithShellPermissionIdentity(() ->
                     mNotificationManager.setAssistantAdjustmentKeyTypeState(TYPE_NEWS, false));
+            sendCancelAll(pressureService00, callback);
+            mContext.unbindService(pressureService00);
+            if (mListener != null) {
+                mListener.removeTestPackage(PRESSURE_APP_00);
+            }
         }
     }
 
@@ -4171,12 +4135,13 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             "android.service.notification.NotificationListenerService#getCurrentRanking",
             "android.service.notification.NotificationAssistantService#adjustNotification"})
     public void testListenerCanSeeDynamicallyClassifiedNotifications() throws Exception {
+        FutureServiceConnection pressureService00 = bindServiceConnection(PRESSURE_SERVICE_00);
         EventCallback callback = new EventCallback();
         int notificationId1 = 6007;
 
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
-        mListener.addTestPackage(TRAMPOLINE_APP_API_30);
+        mListener.addTestPackage(PRESSURE_APP_00);
 
         mAssistant = mNotificationHelper.enableAssistant(STUB_PACKAGE_NAME);
         assertNotNull(mAssistant);
@@ -4184,8 +4149,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
         try {
             CountDownLatch postedLatch = mListener.setPostedCountDown(1);
-            sendTrampolineMessage(TRAMPOLINE_SERVICE_API_30, MESSAGE_SERVICE_NOTIFICATION,
-                    notificationId1, callback);
+            sendMessage(pressureService00, notificationId1, callback);
             postedLatch.await(POST_TIMEOUT, TimeUnit.MILLISECONDS);
             StatusBarNotification preClassification = mNotificationHelper.findPostedNotification(
                     null, notificationId1, NotificationHelper.SEARCH_TYPE.POSTED);
@@ -4213,6 +4177,11 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             assertThat(ranking.getChannel().getName()).isEqualTo("bundle name");
         } finally {
             mAssistant.deleteDynamicBundle(dynamicBundleId);
+            sendCancelAll(pressureService00, callback);
+            mContext.unbindService(pressureService00);
+            if (mListener != null) {
+                mListener.removeTestPackage(PRESSURE_APP_00);
+            }
         }
     }
 

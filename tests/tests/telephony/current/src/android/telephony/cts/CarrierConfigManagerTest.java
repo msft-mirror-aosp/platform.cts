@@ -31,6 +31,7 @@ import static android.telephony.CarrierConfigManager.KEY_CELLULAR_SERVICE_CAPABI
 import static android.telephony.CarrierConfigManager.KEY_EMERGENCY_CALL_TO_SATELLITE_T911_HANDOVER_TIMEOUT_MILLIS_INT;
 import static android.telephony.CarrierConfigManager.KEY_EMERGENCY_MESSAGING_SUPPORTED_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_FORCE_HOME_NETWORK_BOOL;
+import static android.telephony.CarrierConfigManager.KEY_IS_PRIVATE_NETWORK_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_LOG_CALLS_ANSWERED_ELSEWHERE_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_LOW_BATTERY_ALERT_THRESHOLD_INT;
 import static android.telephony.CarrierConfigManager.KEY_OVERRIDE_WFC_ROAMING_MODE_WHILE_USING_NTN_BOOL;
@@ -73,6 +74,7 @@ import android.net.NetworkCapabilities;
 import android.os.Looper;
 import android.os.PersistableBundle;
 import android.platform.test.annotations.AsbSecurityTest;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.CarrierConfigManager;
@@ -949,6 +951,64 @@ public class CarrierConfigManagerTest {
     private void overrideCellularServiceCapabilities(int subId, int[] newCapabilities) {
         PersistableBundle overrideBundle = new PersistableBundle(1);
         overrideBundle.putIntArray(KEY_CELLULAR_SERVICE_CAPABILITIES_INT_ARRAY, newCapabilities);
+        mConfigManager.overrideConfig(subId, overrideBundle);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_IS_PRIVATE_NETWORK_API)
+    @ApiTest(
+            apis = {
+                "android.telephony"
+                        + ".CarrierConfigManager#KEY_IS_PRIVATE_NETWORK_BOOL",
+                "android.telephony.SubscriptionInfo#isPrivateNetwork"
+            })
+    public void testIsPrivateNetworkOverride() throws Exception {
+        if (!isSimCardPresent()
+                || mTelephonyManager.getServiceState().getState() != STATE_IN_SERVICE) {
+            return;
+        }
+
+        final int subId = SubscriptionManager.getDefaultSubscriptionId();
+        final boolean wasPrivateNetwork = isPrivateNetwork(subId);
+        final OnSubscriptionsChangedListener listener =
+                new OnSubscriptionsChangedListener() {
+                    @Override
+                    public void onSubscriptionsChanged() {
+                        boolean isPrivateNetwork = isPrivateNetwork(subId);
+                        if (wasPrivateNetwork != isPrivateNetwork) {
+                            COUNT_DOWN_LATCH.countDown();
+                        }
+                    }
+                };
+
+        try {
+            // Adopt shell permission to require android.permission.MODIFY_PHONE_STATE
+            mUiAutomation.adoptShellPermissionIdentity();
+            mSubscriptionManager.addOnSubscriptionsChangedListener(Runnable::run, listener);
+
+            boolean newPrivateNetworkConfig = !wasPrivateNetwork;
+            overrideIsPrivateNetwork(subId, newPrivateNetworkConfig);
+
+            boolean awaitResult =
+                    COUNT_DOWN_LATCH.await(BROADCAST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+            if (!awaitResult) {
+                fail("Private network field was not updated in " + BROADCAST_TIMEOUT_MILLIS + " ms");
+            }
+        } finally {
+            mConfigManager.overrideConfig(subId, null);
+            mSubscriptionManager.removeOnSubscriptionsChangedListener(listener);
+            mUiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    private boolean isPrivateNetwork(int subId) {
+        final SubscriptionInfo subInfo = mSubscriptionManager.getActiveSubscriptionInfo(subId);
+        return subInfo.isPrivateNetwork();
+    }
+
+    private void overrideIsPrivateNetwork(int subId, boolean isPrivateNetwork) {
+        PersistableBundle overrideBundle = new PersistableBundle(1);
+        overrideBundle.putBoolean(KEY_IS_PRIVATE_NETWORK_BOOL, isPrivateNetwork);
         mConfigManager.overrideConfig(subId, overrideBundle);
     }
 

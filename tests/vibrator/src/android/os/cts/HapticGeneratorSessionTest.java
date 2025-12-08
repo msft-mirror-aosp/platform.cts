@@ -247,21 +247,22 @@ public class HapticGeneratorSessionTest {
                 "android.os.Vibrator#isHapticGeneratorSupported",
                 "android.os.Vibrator#startHapticGeneratorSession",
             })
-    public void testStartHapticGeneratorSession_notSupported_fails() throws Exception {
+    public void testStartHapticGeneratorSession_notSupported_failsWithUnsupportedException()
+            throws Exception {
         assumeTrue(mVibrator.hasVibrator());
         assumeFalse(mVibrator.isHapticGeneratorSupported());
 
         HapticGeneratorSession.Config config = createValidConfig();
         HapticGeneratorOutcomeReceiver receiver = new HapticGeneratorOutcomeReceiver();
 
+        mVibrator.startHapticGeneratorSession(config, mExecutor, receiver);
         assertThrows(
-                UnsupportedOperationException.class,
-                () -> mVibrator.startHapticGeneratorSession(config, mExecutor, receiver));
+                UnsupportedOperationException.class, () -> receiver.getSession(TEST_TIMEOUT_MS));
     }
 
     @Test
     @ApiTest(apis = "android.os.Vibrator#startHapticGeneratorSession")
-    public void testStartHapticGeneratorSession_noVibrator_throwIllegalStateException()
+    public void testStartHapticGeneratorSession_noVibrator_failsWithIllegalStateException()
             throws Exception {
         assumeFalse(mVibrator.hasVibrator());
 

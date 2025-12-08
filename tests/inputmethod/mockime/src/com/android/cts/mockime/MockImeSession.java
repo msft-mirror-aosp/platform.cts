@@ -29,6 +29,8 @@ import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.pm.ServiceInfo;
+import android.content.res.XmlResourceParser;
 import android.graphics.RectF;
 import android.graphics.Region;
 import android.inputmethodservice.InputMethodService;
@@ -51,6 +53,7 @@ import android.view.inputmethod.ExtractedTextRequest;
 import android.view.inputmethod.HandwritingGesture;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputContentInfo;
+import android.view.inputmethod.InputMethod;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
@@ -70,9 +73,12 @@ import androidx.annotation.VisibleForTesting;
 import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.AssumptionViolatedException;
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -95,6 +101,11 @@ public class MockImeSession implements AutoCloseable {
             "com.android.cts.mockime.action.IME_EVENT." + SystemClock.elapsedRealtimeNanos();
 
     private static final long TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(10);
+
+    // Cache to store the static subtype count per package name.
+    // Maps from a package name -> subtype count.
+    private static final ConcurrentHashMap<String, Integer> sStaticSubtypeCountCache =
+            new ConcurrentHashMap<>();
 
     @NonNull
     private final Context mContext;
@@ -312,7 +323,7 @@ public class MockImeSession implements AutoCloseable {
         return null;
     }
 
-    private void initialize(@Nullable ImeSettings.Builder imeSettings) throws Exception {
+    private void initialize(@NonNull ImeSettings.Builder imeSettings) throws Exception {
         PollingCheck.check("MockIME was not in getInputMethodList() after timeout.", TIMEOUT_MILLIS,
                 () -> getInputMethodInfo() != null);
 
@@ -330,6 +341,7 @@ public class MockImeSession implements AutoCloseable {
         }
 
         // Make sure to set up additional subtypes before launching MockIme.
+        final int staticSubtypeCount = getStaticSubtypeCount();
         InputMethodSubtype[] additionalSubtypes = imeSettings.mAdditionalSubtypes;
         if (additionalSubtypes == null) {
             additionalSubtypes = new InputMethodSubtype[0];
@@ -341,7 +353,7 @@ public class MockImeSession implements AutoCloseable {
             if (imi == null) {
                 throw new IllegalStateException("MockIME was not in getInputMethodList().");
             }
-            if (imi.getSubtypeCount() != 0) {
+            if (imi.getSubtypeCount() != staticSubtypeCount) {
                 // Somehow the previous run failed to remove additional subtypes. Clean them up.
                 setAdditionalSubtypes(null);
             }
@@ -351,7 +363,7 @@ public class MockImeSession implements AutoCloseable {
             if (imi == null) {
                 throw new IllegalStateException("MockIME not found while checking subtypes.");
             }
-            if (imi.getSubtypeCount() != additionalSubtypes.length) {
+            if (imi.getSubtypeCount() != staticSubtypeCount + additionalSubtypes.length) {
                 throw new IllegalStateException("MockIME subtypes were not correctly set.");
             }
         }
@@ -408,7 +420,7 @@ public class MockImeSession implements AutoCloseable {
     public static MockImeSession create(
             @NonNull Context context,
             @NonNull UiAutomation uiAutomation,
-            @Nullable ImeSettings.Builder imeSettings) throws Exception {
+            @NonNull ImeSettings.Builder imeSettings) throws Exception {
         final String unavailabilityReason = getUnavailabilityReason(context);
         if (unavailabilityReason != null) {
             throw new AssumptionViolatedException(unavailabilityReason);
@@ -440,7 +452,7 @@ public class MockImeSession implements AutoCloseable {
      */
     public boolean isFinishInputNoFallbackConnectionEnabled() {
         AtomicBoolean result = new AtomicBoolean();
-        runWithShellPermissionIdentity(() ->
+        runWithShellPermissionIdentity(mUiAutomation, () ->
                 result.set(CompatChanges.isChangeEnabled(FINISH_INPUT_NO_FALLBACK_CONNECTION,
                         mMockImePackageName, mTargetUser)));
         return result.get();
@@ -451,13 +463,12 @@ public class MockImeSession implements AutoCloseable {
      * will throw a {@link java.util.concurrent.TimeoutException} if the wait times out.
      *
      * @param timeoutMs the timeout in milliseconds.
-     *
      * @see InputMethodManager#waitUntilNoPendingRequests
-     *
      */
     public void waitUntilNoPendingRequests(long timeoutMs) {
         final var imm = mContext.getSystemService(InputMethodManager.class);
-        runWithShellPermissionIdentity(() -> imm.waitUntilNoPendingRequests(timeoutMs));
+        runWithShellPermissionIdentity(mUiAutomation,
+                () -> imm.waitUntilNoPendingRequests(timeoutMs));
     }
 
     /**
@@ -563,7 +574,42 @@ public class MockImeSession implements AutoCloseable {
     /** Checks whether the IME Switcher button should be shown when the IME is shown. */
     public boolean shouldShowImeSwitcherButtonForTest() {
         final var imm = mContext.getSystemService(InputMethodManager.class);
-        return runWithShellPermissionIdentity(imm::shouldShowImeSwitcherButtonForTest);
+        return runWithShellPermissionIdentity(mUiAutomation,
+                imm::shouldShowImeSwitcherButtonForTest);
+    }
+
+    /** Returns the number of InputMethodSubtype declared in the manifest of the current package. */
+    private int getStaticSubtypeCount() {
+        return sStaticSubtypeCountCache.computeIfAbsent(
+                mMockImePackageName,
+                (key) ->
+                        runWithShellPermissionIdentity(
+                                mUiAutomation, this::readStaticSubtypeCountFromManifest));
+    }
+
+    private int readStaticSubtypeCountFromManifest() throws XmlPullParserException, IOException {
+        final InputMethodInfo imi = getInputMethodInfo();
+        final ServiceInfo si = imi != null ? imi.getServiceInfo() : null;
+        if (si == null) {
+            throw new IllegalStateException(
+                    "MockIME ServiceInfo is null. Check manifest and package installation.");
+        }
+        final PackageManager pm = mContext.getPackageManager();
+        try (XmlResourceParser parser = si.loadXmlMetaData(pm, InputMethod.SERVICE_META_DATA)) {
+            if (parser == null) {
+                throw new IllegalStateException(
+                        "MockIME XML metadata parser is null."
+                                + " Check InputMethod.SERVICE_META_DATA in manifest.");
+            }
+            int count = 0;
+            int type;
+            while ((type = parser.next()) != XmlPullParser.END_DOCUMENT) {
+                if (type == XmlPullParser.START_TAG && "subtype".equals(parser.getName())) {
+                    count++;
+                }
+            }
+            return count;
+        }
     }
 
     /**
@@ -1766,7 +1812,7 @@ public class MockImeSession implements AutoCloseable {
      */
     public void hideSoftInputFromServerForTest() {
         final var imm = mContext.getSystemService(InputMethodManager.class);
-        runWithShellPermissionIdentity(imm::hideSoftInputFromServerForTest);
+        runWithShellPermissionIdentity(mUiAutomation, imm::hideSoftInputFromServerForTest);
     }
 
     /**

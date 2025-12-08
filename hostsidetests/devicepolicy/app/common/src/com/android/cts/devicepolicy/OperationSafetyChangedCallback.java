@@ -30,7 +30,6 @@ import junit.framework.AssertionFailedError;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-//TODO(b/174859111): move to automotive-only section
 /**
  * Helper class used by test apps to get the safety event received by the device owner's
  * {@link android.app.admin.DeviceAdminReceiver}.

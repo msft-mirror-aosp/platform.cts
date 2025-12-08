@@ -374,10 +374,10 @@
     <option name="compatibility:include-filter" value="CtsSimRestrictedApisTestCases android.telephony4.cts.SimRestrictedApisTest#testSetOperatorBrandOverride"/>
     <option name="compatibility:include-filter" value="CtsSimRestrictedApisTestCases android.telephony4.cts.SimRestrictedApisTest#testSetPreferredNetworkTypeToGlobal"/>
     <!-- CtsStatsdAtomHostTestCases -->
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appcompatstate.AppCompatStateStatsTests#testMinAspectRatioPortraitActivityDeviceStateClosedToOpened"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appcompatstate.AppCompatStateStatsTests#testNonResizablePortraitActivityDeviceStateClosedToOpened"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appcompatstate.AppCompatStateStatsTests#testNonResizablePortraitActivitySwitchedToOpenedThenMinAspectRatioActivity"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appcompatstate.ReachabilityStateStatsTests#testHorizontalReachability"/>
+    <option name="compatibility:include-filter" value="CtsAppcompatStateAtomHostTestCases android.cts.statsdatom.appcompatstate.AppCompatStateStatsTests#testMinAspectRatioPortraitActivityDeviceStateClosedToOpened"/>
+    <option name="compatibility:include-filter" value="CtsAppcompatStateAtomHostTestCases android.cts.statsdatom.appcompatstate.AppCompatStateStatsTests#testNonResizablePortraitActivityDeviceStateClosedToOpened"/>
+    <option name="compatibility:include-filter" value="CtsAppcompatStateAtomHostTestCases android.cts.statsdatom.appcompatstate.AppCompatStateStatsTests#testNonResizablePortraitActivitySwitchedToOpenedThenMinAspectRatioActivity"/>
+    <option name="compatibility:include-filter" value="CtsAppcompatStateAtomHostTestCases android.cts.statsdatom.appcompatstate.ReachabilityStateStatsTests#testHorizontalReachability"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appexit.AppExitHostTest#testLogStatsdOther"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_crossUser_fail"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_crossUser_success"/>
@@ -487,9 +487,6 @@
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.MissedCallTest#testMissedCall_NotifyDialer"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.NonUiInCallServiceWoExportTest#testTelecomCanBindToNonUiInCallServiceThatIsNotExported"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.NullBindingCallScreeningServiceTest#testNullBindingOnIncomingCall"/>
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.OutgoingCallScreeningServiceTest#testOutgoingScreeningAllowed"/>
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.OutgoingCallScreeningServiceTest#testOutgoingScreeningBlocked"/>
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.OutgoingCallScreeningServiceTest#testOutgoingScreeningNoResponse_callGoesThrough"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.OutgoingCallTest#testAccountSelectionAvailable"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.OutgoingCallTest#testExtraPhoneAccountHandleAvailable"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.PhoneAccountSuggestionServiceTest#testEmptySuggestions"/>

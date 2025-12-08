@@ -23,6 +23,7 @@ _AUTO_BRIGHTNESS_OFF = 0
 _MAX_BRIGHTNESS = 255
 _SCREEN_OFF_TIMEOUT_MS = 3600000  # 1 hour
 _STAY_ON_WHILE_PLUGGED_IN = 3
+_WIDEVINE_WEBSITE = 'widevine.com'
 
 
 class SecurePlaybackBaseTest(base_test.BaseTestClass):
@@ -69,6 +70,14 @@ class SecurePlaybackBaseTest(base_test.BaseTestClass):
     except ValueError:
       logging.error('Failed to parse video_scaling from user params')
       self.video_scaling = 1.0
+
+    try:
+      self.dut.adb.shell(f'ping -c1 {_WIDEVINE_WEBSITE}')
+    except adb.AdbError:
+      raise ValueError(
+          'Cannot connect to Widevine. Please make sure that the device is '
+          'connected to a Wi-Fi network that can reach the internet.'
+      )
 
   def teardown_class(self):
     self.dut.adb.shell('am force-stop com.android.cts.verifier')

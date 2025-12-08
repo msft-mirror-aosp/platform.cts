@@ -80,7 +80,7 @@ public final class AccountManagerXUserTest extends BaseMultiUserTest implements 
                 device.executeShellCommand("settings get global package_verifier_enable");
         device.executeShellCommand("settings put global package_verifier_enable 0");
 
-        mParentUserId = DevicePolicyUsersPreparer.getProfileParentUserIds().getFirst();
+        mParentUserId = DevicePolicyUsersPreparer.getProfileParentUserId();
 
         CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(mCtsBuild);
         File apkFile = buildHelper.getTestFile(TEST_WITH_PERMISSION_APK);

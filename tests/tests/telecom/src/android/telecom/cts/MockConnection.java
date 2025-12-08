@@ -50,6 +50,7 @@ public class MockConnection extends Connection {
     public static final int ON_CALL_FILTERING_COMPLETED = 11;
     public static final int ON_ANSWER_CALLED = 12;
     public static final int ON_ANSWER_VIDEO_CALLED = 13;
+    public static final int ON_TRANSFER = 14;
 
     private CallAudioState mCallAudioState =
             new CallAudioState(false, CallAudioState.ROUTE_EARPIECE, ROUTE_EARPIECE | ROUTE_SPEAKER);
@@ -67,7 +68,7 @@ public class MockConnection extends Connection {
             new TestUtils.InvokeCounter("mOnCallAudioStateChanged");
     private boolean mAutoDestroy = true;
 
-    private SparseArray<InvokeCounter> mInvokeCounterMap = new SparseArray<>(13);
+    private SparseArray<InvokeCounter> mInvokeCounterMap = new SparseArray<>(14);
 
     @Override
     public void onAnswer() {
@@ -116,6 +117,18 @@ public class MockConnection extends Connection {
             mRemoteConnection.reject();
         }
         if (mAutoDestroy) destroy();
+    }
+
+    @Override
+    public void onTransfer(Uri number, boolean isConfirmationRequired) {
+        super.onTransfer(number, isConfirmationRequired);
+        getInvokeCounter(ON_TRANSFER).invoke(number, isConfirmationRequired);
+    }
+
+    @Override
+    public void onTransfer(Connection otherConnection) {
+        super.onTransfer(otherConnection);
+        getInvokeCounter(ON_TRANSFER).invoke(otherConnection);
     }
 
     @Override
@@ -431,6 +444,8 @@ public class MockConnection extends Connection {
                 return "onDeflect";
             case ON_SILENCE:
                 return "onSilence";
+            case ON_TRANSFER:
+                return "onTransfer";
             case ON_ADD_CONFERENCE_PARTICIPANTS:
                 return "onAddConferenceParticipants";
             default:

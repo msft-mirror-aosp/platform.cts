@@ -26,11 +26,9 @@ import org.junit.runners.model.Statement
  *
  * Tests, including setup and teardown, are only executed if the precondition is met.
  *
- * If preconditions are met a [PerformanceClassEvaluator] is created with the results checked and
- * submitted.
- *
- * If a Media Performance Class is not declared then any failure or thrown exception is changed to
- * an [AssumptionViolatedException].
+ * If preconditions are met a [PerformanceClassEvaluator] is created.
+ * After each test is run the results checked and
+ * submitted by [PerformanceClassEvaluator.submitAndCheck].
  */
 class PerformanceClassTestRule private constructor(
     private val precondition: Precondition,
@@ -75,17 +73,8 @@ class PerformanceClassTestRule private constructor(
         try {
             base.evaluate()
             performanceClassEvaluator.submitAndCheck()
-        } catch (e: Exception) {
-            if (hasDeclaredPC) {
-                throw e
-            } else if (e is AssumptionViolatedException) {
-                throw e
-            } else {
-                throw AssumptionViolatedException(
-                    "Ignoring failure because Media Performance Class is not declared",
-                    e
-                )
-            }
+            // Don't explicitly catch non AssumptionViolatedException so that we detect and fix
+            // both test errors and API failures.
         } finally {
             if (hasDeclaredPC) {
                 // if there is a requirement left something went wrong before submitting

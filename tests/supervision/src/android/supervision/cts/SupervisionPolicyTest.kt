@@ -26,6 +26,7 @@ import android.app.supervision.PackageUsagePolicy
 import android.app.supervision.flags.Flags
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
+import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.compatibility.common.util.ApiTest
@@ -37,6 +38,9 @@ import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
 @RequireFlagsEnabled(Flags.FLAG_ENABLE_SUPERVISION_MANAGER_POLICY_APIS)
+@RequireNotHeadlessSystemUserMode(
+    reason = "b/434645293 - SYSTEM_SUPERVISION role qualification bypass does not support HSUM"
+)
 class SupervisionPolicyTest : BaseSupervisionTest() {
 
     @Test
