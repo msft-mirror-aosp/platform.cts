@@ -56,3 +56,21 @@ android_test_helper_app {
     ],
     sdk_version: "test_current",
 }
+
+// A test service that doesn't define READ_ASSIST_STRUCTURE_SCREEN_CONTENT permission
+android_test_helper_app {
+    name: "CtsNoPermissionVoiceInteractionService",
+    defaults: ["cts_support_defaults"],
+    static_libs: [
+        "CtsVoiceInteractionCommon",
+    ],
+    srcs: ["noPermissionVoiceInteractionService/**/*.java"],
+    resource_dirs: ["noPermissionVoiceInteractionService/res"],
+    manifest: "noPermissionVoiceInteractionService/AndroidManifest.xml",
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+    sdk_version: "test_current",
+}
