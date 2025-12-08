@@ -33,6 +33,7 @@ import android.os.SystemProperties;
 import android.telephony.Annotation;
 import android.telephony.BarringInfo;
 import android.telephony.CellularIdentifierDisclosure;
+import android.telephony.NetworkSecurityEvent;
 import android.telephony.SecurityAlgorithmUpdate;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
@@ -781,6 +782,19 @@ public class MockModemManager {
         Log.d(TAG, "unsolCellularIdentifierDisclosed[" + slotId + "]");
         return mMockModemService.getIRadioNetwork((byte) slotId)
                 .unsolCellularIdentifierDisclosed(disclosure);
+    }
+
+    /**
+     * Notifies of the NetworkSecurityEvent change.
+     *
+     * @param slotId the Id of logical sim slot.
+     * @param events the network security events information.
+     */
+    public boolean unsolOnNetworkSecurityEvents(
+            int slotId, Set<NetworkSecurityEvent> events) {
+        Log.d(TAG, "unsolOnNetworkSecurityEvents[" + slotId + "]");
+        return mMockModemService.getIRadioNetwork((byte) slotId)
+                .unsolOnNetworkSecurityEvents(events);
     }
 
     /**
