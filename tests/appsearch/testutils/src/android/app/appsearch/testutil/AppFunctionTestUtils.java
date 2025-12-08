@@ -49,6 +49,8 @@ public final class AppFunctionTestUtils {
             TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppBV1.apk";
     public static final String TEST_APP_A_DYNAMIC_SCHEMA_PATH =
             TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppADynamicSchema.apk";
+    public static final String TEST_APP_A_DYNAMIC_SCHEMA_PATH_APP_LEVEL =
+            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppADynamicSchemaAppLevel.apk";
     public static final String TEST_APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PATH =
             TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppADynamicSchemaFewerTypes.apk";
     public static final String TEST_APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_PATH =

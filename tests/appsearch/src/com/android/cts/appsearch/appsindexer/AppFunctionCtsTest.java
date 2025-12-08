@@ -35,6 +35,7 @@ import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_A_APP
 import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PATH;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_PATH;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_A_DYNAMIC_SCHEMA_PATH;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_A_DYNAMIC_SCHEMA_PATH_APP_LEVEL;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_A_V3_PATH;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_B_DYNAMIC_SCHEMA_PATH;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.TEST_APP_B_PKG;
@@ -346,6 +347,29 @@ public class AppFunctionCtsTest {
     @Test
     public void indexAppWithDynamicSchema() throws Throwable {
         installPackage(mContext, TEST_APP_A_DYNAMIC_SCHEMA_PATH);
+
+        // Retry till the indexer has completed a run.
+        retryAssert(
+                () -> {
+                    // A MobileApplication for it should be inserted.
+                    GenericDocument mobileApplication =
+                            searchMobileApplicationWithId(TEST_APP_A_PKG);
+                    assertThat(mobileApplication).isNotNull();
+                });
+        // Its app functions should be indexed.
+        Map<String, GenericDocument> appFnMap = searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
+        assertThat(appFnMap).hasSize(1);
+        assertThat(
+                        clearTimestampsAndParentTypesInDocument(
+                                appFnMap.get(TEST_APP_A_PKG + "/com.example.utils#print1")))
+                .isEqualTo(APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
+    }
+
+    @RequiresFlagsEnabled(android.app.appfunctions.flags.Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
+    @Test
+    public void indexAppWithDynamicSchema_appLevelDefinition() throws Throwable {
+        installPackage(mContext, TEST_APP_A_DYNAMIC_SCHEMA_PATH_APP_LEVEL);
 
         // Retry till the indexer has completed a run.
         retryAssert(
