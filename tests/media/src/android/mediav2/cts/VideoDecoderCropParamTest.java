@@ -95,8 +95,8 @@ public class VideoDecoderCropParamTest extends CodecDecoderTestBase {
 
     @Before
     public void setUp() throws IOException, InterruptedException {
-        Assume.assumeTrue("Skip crop tests on versions 2024 and below",
-                !isCtsMode() || BOARD_SDK_IS_AT_LEAST_202504);
+        Assume.assumeTrue("Skip crop tests on devices with vendor partitions 202504 and below",
+                !isCtsMode() || BOARD_SDK_IS_AFTER_202504);
         mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
         setUpSurface(mActivity);
         mSurfaceView = mActivity.getSurfaceView();
@@ -150,7 +150,7 @@ public class VideoDecoderCropParamTest extends CodecDecoderTestBase {
                         "bbb_600x360_60fps_1mbps_allpad_hevc.mp4"}},
         }));
         // No need to inject all params if the test is going to be skipped
-        if (isCtsMode() && !BOARD_SDK_IS_AT_LEAST_202504) {
+        if (isCtsMode() && !BOARD_SDK_IS_AFTER_202504) {
             exhaustiveArgsList.subList(1, exhaustiveArgsList.size()).clear();
         }
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, false);
