@@ -7912,6 +7912,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <!-- Register host-side modules. -->
     <!-- Also add test categories for these modules in .HostTestsActivity -->
     <string-array name="host_modules">
+        <!-- Multi-device modules -->
         <item>CtsCompanionDeviceManagerMultiDeviceTestCases</item>
         <item>CtsNfcHceMultiDeviceTestCases</item>
         <item>CtsUwbMultiDeviceFiraRangingTests</item>
@@ -7920,6 +7921,7 @@ You should be prompted to select credentials; choose the ones you just installed
         <item>CtsWifiAwareTests</item>
         <item>CtsWifiSoftApTestCases</item>
         <item>CtsWifiDirectTests</item>
+        <!-- Interactive modules -->
         <item>CtsNotificationSizeVerifierHostTest</item>
     </string-array>
 
