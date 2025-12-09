@@ -22,6 +22,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.voiceinteraction.common.Utils;
+import android.widget.TextView;
 
 public class VoiceInteractionMain extends Activity {
     static final String TAG = "VoiceInteractionMain";
@@ -29,8 +30,21 @@ public class VoiceInteractionMain extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        TextView tv = new TextView(this);
+        tv.setText("VoiceInteractionMain");
+        setContentView(tv);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
         Intent intent = new Intent();
-        intent.setComponent(new ComponentName(this, MainInteractionService.class));
+        String targetService = getIntent().getStringExtra("target_service");
+        if (targetService != null) {
+            intent.setClassName(this, targetService);
+        } else {
+            intent.setComponent(new ComponentName(this, MainInteractionService.class));
+        }
         intent.putExtra(Utils.KEY_TEST_EVENT, Utils.VIS_NORMAL_TEST);
         final Bundle intentExtras = getIntent().getExtras();
         if (intentExtras != null) {
@@ -38,6 +52,5 @@ public class VoiceInteractionMain extends Activity {
         }
         ComponentName serviceName = startService(intent);
         Log.i(TAG, "Started service: " + serviceName);
-        finish();
     }
 }

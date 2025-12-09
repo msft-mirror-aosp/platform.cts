@@ -31,7 +31,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.FrameLayout;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.annotation.UiThreadTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
@@ -66,8 +66,7 @@ public class FocusFinderTest {
 
     @Before
     public void setup() {
-        FocusFinderCtsActivity activity = mActivityRule.getActivity();
-
+        final FocusFinderCtsActivity activity = mActivityRule.getActivity();
         mFocusFinder = FocusFinder.getInstance();
         mLayout = activity.layout;
         mTopLeft = activity.topLeftButton;
@@ -81,12 +80,14 @@ public class FocusFinderTest {
     }
 
     @Test
+    @UiThreadTest
     public void testGetInstance() {
         assertNotNull(mFocusFinder);
     }
 
     @Test
-    public void testFindNextFocus() throws Throwable {
+    @UiThreadTest
+    public void testFindNextFocus() {
         /*
          * Go clockwise around the buttons from the top left searching for focus.
          *
@@ -111,10 +112,8 @@ public class FocusFinderTest {
         verifyNextFocus(mBottomLeft, View.FOCUS_RIGHT, mBottomRight);
 
         // Edge-case where root has focus
-        mActivityRule.runOnUiThread(() -> {
-            mLayout.setFocusableInTouchMode(true);
-            verifyNextFocus(mLayout, View.FOCUS_FORWARD, mTopLeft);
-        });
+        mLayout.setFocusableInTouchMode(true);
+        verifyNextFocus(mLayout, View.FOCUS_FORWARD, mTopLeft);
     }
 
     private void verifyNextFocus(View currentFocus, int direction, View expectedNextFocus) {
@@ -123,6 +122,7 @@ public class FocusFinderTest {
     }
 
     @Test
+    @UiThreadTest
     public void testFindNextFocusFromRect() {
         /*
          * Create a small rectangle on the border between the top left and top right buttons.
@@ -153,9 +153,9 @@ public class FocusFinderTest {
          */
         int buttonHalfHeight = mTopLeft.getHeight() / 2;
         Rect leftRect = new Rect(mTopLeft.getLeft(),
-                 mTopLeft.getTop() + buttonHalfHeight,
-                 mTopLeft.getRight(),
-                 mTopLeft.getBottom() + buttonHalfHeight);
+                mTopLeft.getTop() + buttonHalfHeight,
+                mTopLeft.getRight(),
+                mTopLeft.getBottom() + buttonHalfHeight);
 
         verifytNextFocusFromRect(leftRect, View.FOCUS_UP, mTopLeft);
         verifytNextFocusFromRect(leftRect, View.FOCUS_DOWN, mBottomLeft);
@@ -167,6 +167,7 @@ public class FocusFinderTest {
     }
 
     @Test
+    @UiThreadTest
     public void testFindNearestTouchable() {
         /*
          * Table layout with two rows and coordinates are relative to those parent rows.
@@ -218,6 +219,7 @@ public class FocusFinderTest {
     }
 
     @Test
+    @UiThreadTest
     public void testFindNextAndPrevFocusAvoidingChain() {
         mBottomRight.setNextFocusForwardId(mBottomLeft.getId());
         mBottomLeft.setNextFocusForwardId(mTopRight.getId());
@@ -265,6 +267,7 @@ public class FocusFinderTest {
     }
 
     @Test(timeout = 500)
+    @UiThreadTest
     public void testChainVisibility() {
         mBottomRight.setNextFocusForwardId(mBottomLeft.getId());
         mBottomLeft.setNextFocusForwardId(mTopRight.getId());
@@ -281,13 +284,10 @@ public class FocusFinderTest {
         mTopLeft.setNextFocusForwardId(mTopRight.getId());
         mTopRight.setNextFocusForwardId(mBottomLeft.getId());
         mBottomLeft.setNextFocusForwardId(mTopLeft.getId());
-        mActivityRule.getActivity().runOnUiThread(() -> {
-            mTopLeft.setVisibility(View.INVISIBLE);
-            mTopRight.setVisibility(View.INVISIBLE);
-            mBottomLeft.setVisibility(View.INVISIBLE);
-            mBottomRight.setVisibility(View.INVISIBLE);
-        });
-        InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+        mTopLeft.setVisibility(View.INVISIBLE);
+        mTopRight.setVisibility(View.INVISIBLE);
+        mBottomLeft.setVisibility(View.INVISIBLE);
+        mBottomRight.setVisibility(View.INVISIBLE);
         mFocusFinder.findNextFocus(mLayout, mBottomRight, View.FOCUS_FORWARD);
     }
 
@@ -308,6 +308,7 @@ public class FocusFinderTest {
     }
 
     @Test
+    @UiThreadTest
     public void testNoClusters() {
         // No views are marked as clusters, so next cluster is always null.
         verifyNextCluster(mTopRight, View.FOCUS_FORWARD, null);
@@ -315,6 +316,7 @@ public class FocusFinderTest {
     }
 
     @Test
+    @UiThreadTest
     public void testFindNextCluster() {
         // Cluster navigation from all possible starting points in all directions.
         mTopLeft.setKeyboardNavigationCluster(true);
@@ -335,6 +337,7 @@ public class FocusFinderTest {
     }
 
     @Test
+    @UiThreadTest
     public void testFindNextAndPrevClusterAvoidingChain() {
         // Basically a duplicate of normal focus test above. The same logic should be used for both.
         mTopLeft.setKeyboardNavigationCluster(true);
@@ -392,20 +395,18 @@ public class FocusFinderTest {
     }
 
     @Test
-    public void testDuplicateId() throws Throwable {
-        LayoutInflater inflater = mActivityRule.getActivity().getLayoutInflater();
-        mLayout = (ViewGroup) mActivityRule.getActivity().findViewById(R.id.inflate_layout);
+    @UiThreadTest
+    public void testDuplicateId() {
         View[] buttons = new View[3];
         View[] boxes = new View[3];
-        mActivityRule.runOnUiThread(() -> {
-            for (int i = 0; i < 3; ++i) {
-                View item = inflater.inflate(R.layout.focus_finder_sublayout, mLayout, false);
-                buttons[i] = item.findViewById(R.id.itembutton);
-                boxes[i] = item.findViewById(R.id.itembox);
-                mLayout.addView(item);
-            }
-        });
-        InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+        LayoutInflater inflater = mActivityRule.getActivity().getLayoutInflater();
+        mLayout = (ViewGroup) mActivityRule.getActivity().findViewById(R.id.inflate_layout);
+        for (int i = 0; i < 3; ++i) {
+            View item = inflater.inflate(R.layout.focus_finder_sublayout, mLayout, false);
+            buttons[i] = item.findViewById(R.id.itembutton);
+            boxes[i] = item.findViewById(R.id.itembox);
+            mLayout.addView(item);
+        }
 
         verifyNextFocus(buttons[0], View.FOCUS_FORWARD, boxes[0]);
         verifyNextFocus(boxes[0], View.FOCUS_FORWARD, buttons[1]);
@@ -414,6 +415,7 @@ public class FocusFinderTest {
     }
 
     @Test
+    @UiThreadTest
     public void testBasicFocusOrder() {
         // Initial check to make sure sorter is behaving
         FrameLayout layout = new FrameLayout(mLayout.getContext());
@@ -453,12 +455,10 @@ public class FocusFinderTest {
         verifyNextFocus(mBottomLeft, View.FOCUS_FORWARD, mBottomRight);
 
         // RTL layout should work right-to-left
-        mActivityRule.getActivity().runOnUiThread(
-                () -> mLayout.setLayoutDirection(View.LAYOUT_DIRECTION_RTL));
-        InstrumentationRegistry.getInstrumentation().waitForIdleSync();
-        verifyNextFocus(mTopLeft, View.FOCUS_FORWARD, mTopRight);
-        verifyNextFocus(mTopRight, View.FOCUS_FORWARD, mBottomLeft);
-        verifyNextFocus(mBottomLeft, View.FOCUS_FORWARD, mBottomRight);
+        mLayout.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        verifyNextFocus(mTopRight, View.FOCUS_FORWARD, mTopLeft);
+        verifyNextFocus(mTopLeft, View.FOCUS_FORWARD, mBottomRight);
+        verifyNextFocus(mBottomRight, View.FOCUS_FORWARD, mBottomLeft);
     }
 
     private void setViewBox(View view, int left, int top, int right, int bottom) {

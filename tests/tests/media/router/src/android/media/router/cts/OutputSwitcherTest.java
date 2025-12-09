@@ -108,11 +108,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -768,28 +766,18 @@ public class OutputSwitcherTest {
     /** Get a route unique ID, which includes the provider ID. */
     private String getRouteUniqueId(String id) {
         CompletableFuture<String> idFuture = new CompletableFuture<>();
-        MediaRouter2.RouteCallback cb =
-                new MediaRouter2.RouteCallback() {
-                    @Override
-                    public void onRoutesUpdated(List<MediaRoute2Info> routes) {
-                        for (MediaRoute2Info route : routes) {
-                            if (route.getOriginalId().equals(id)) {
-                                idFuture.complete(route.getId());
-                            }
+        PollingCheck.waitFor(
+                TIMEOUT_MS,
+                () -> {
+                    for (MediaRoute2Info route : mRouter2.getRoutes()) {
+                        if (route.getOriginalId().equals(id)) {
+                            idFuture.complete(route.getId());
+                            return true;
                         }
                     }
-                };
-        mRouter2.registerRouteCallback(
-                mExecutor,
-                cb,
-                new RouteDiscoveryPreference.Builder(List.of(FEATURE_SAMPLE), true).build());
-        try {
-            return idFuture.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        } catch (ExecutionException | InterruptedException | TimeoutException e) {
-            throw new AssertionError("Could not find route with ID " + id, e);
-        } finally {
-            mRouter2.unregisterRouteCallback(cb);
-        }
+                    return false;
+                });
+        return idFuture.resultNow();
     }
 
     private void registerRouteCallback(List<String> features) {

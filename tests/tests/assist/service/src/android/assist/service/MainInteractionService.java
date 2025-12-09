@@ -18,6 +18,7 @@ package android.assist.service;
 
 import static android.assist.common.Utils.SHOW_SESSION_FLAGS_TO_SET;
 import static android.service.voice.VoiceInteractionSession.SHOW_WITH_ASSIST;
+import static android.service.voice.VoiceInteractionSession.SHOW_WITH_ASSIST_STRUCTURE_SCREEN_CONTENT;
 import static android.service.voice.VoiceInteractionSession.SHOW_WITH_SCREENSHOT;
 
 import android.assist.common.AutoResetLatch;
@@ -99,8 +100,12 @@ public class MainInteractionService extends VoiceInteractionService {
                             mIntent.getStringExtra(Utils.TESTCASE_TYPE));
                     bundle.putParcelable(Utils.EXTRA_REMOTE_CALLBACK,
                             mIntent.getParcelableExtra(Utils.EXTRA_REMOTE_CALLBACK));
-                    showSession(bundle, VoiceInteractionSession.SHOW_WITH_ASSIST |
-                            VoiceInteractionSession.SHOW_WITH_SCREENSHOT);
+                    showSession(
+                            bundle,
+                            VoiceInteractionSession.SHOW_WITH_ASSIST
+                                    | VoiceInteractionSession.SHOW_WITH_SCREENSHOT
+                                    | VoiceInteractionSession
+                                            .SHOW_WITH_ASSIST_STRUCTURE_SCREEN_CONTENT);
                 }
             } else {
                 Log.wtf(TAG, "**** Not starting MainInteractionService because" +
@@ -120,8 +125,12 @@ public class MainInteractionService extends VoiceInteractionService {
                 if (extras == null) {
                     extras = new Bundle();
                 }
-                int showSessionFlags = extras.getInt(SHOW_SESSION_FLAGS_TO_SET,
-                        SHOW_WITH_ASSIST | SHOW_WITH_SCREENSHOT);
+                int showSessionFlags =
+                        extras.getInt(
+                                SHOW_SESSION_FLAGS_TO_SET,
+                                SHOW_WITH_ASSIST
+                                        | SHOW_WITH_SCREENSHOT
+                                        | SHOW_WITH_ASSIST_STRUCTURE_SCREEN_CONTENT);
                 extras.putString(Utils.TESTCASE_TYPE, mIntent.getStringExtra(Utils.TESTCASE_TYPE));
                 extras.putParcelable(Utils.EXTRA_REMOTE_CALLBACK, mRemoteCallback);
                 MainInteractionService.this.showSession(

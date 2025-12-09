@@ -18,6 +18,11 @@ package android.app.appsearch.testutil;
 
 import static android.app.appsearch.testutil.AppsIndexerTestUtils.TEST_APP_A_PKG;
 import static android.app.appsearch.testutil.AppsIndexerTestUtils.collectAllResults;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.installPackage;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.retryAssert;
+import static android.app.appsearch.testutil.AppsIndexerTestUtils.searchMobileApplicationWithId;
+
+import static com.google.common.truth.Truth.assertThat;
 
 import android.Manifest;
 import android.app.appsearch.GenericDocument;
@@ -49,6 +54,12 @@ public final class AppFunctionTestUtils {
             TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppBV1.apk";
     public static final String TEST_APP_A_DYNAMIC_SCHEMA_PATH =
             TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppADynamicSchema.apk";
+    public static final String TEST_APP_A_DYNAMIC_SCHEMA_PATH_APP_LEVEL =
+            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppADynamicSchemaAppLevel.apk";
+    public static final String TEST_APP_A_DYNAMIC_SCHEMA_PATH_APP_LEVEL_FUNCTIONS_ONLY =
+            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppAAppLevelFunctionsOnly.apk";
+    public static final String TEST_APP_A_BOTH_APP_AND_SERVICE_FUNCTIONS =
+            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppAServiceAndAppLevelFunctions.apk";
     public static final String TEST_APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PATH =
             TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppADynamicSchemaFewerTypes.apk";
     public static final String TEST_APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_PATH =
@@ -114,7 +125,14 @@ public final class AppFunctionTestUtils {
      * test app A.
      */
     public static final GenericDocument APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION =
-            buildPrintAppFunctionDocument(TEST_APP_A_PKG);
+            buildAppFunctionDocument(TEST_APP_A_PKG, "print1");
+
+    /**
+     * Print app function generic document as defined in the app_appfunctions_v2.xml of dynamic
+     * schema test app A.
+     */
+    public static final GenericDocument APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION =
+            buildAppFunctionDocument(TEST_APP_A_PKG, "appPrint1");
 
     /**
      * Print app function generic document as defined in the appfunctions_v2.xml of dynamic schema
@@ -165,7 +183,7 @@ public final class AppFunctionTestUtils {
      * test app B.
      */
     public static final GenericDocument APP_B_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION =
-            buildPrintAppFunctionDocument(TEST_APP_B_PKG);
+            buildAppFunctionDocument(TEST_APP_B_PKG, "print1");
 
     /** Updates the enabled state of the AppFunctionService for a given package. */
     public static void updateAppFunctionServiceEnabledState(
@@ -238,6 +256,31 @@ public final class AppFunctionTestUtils {
         }
 
         return appFns;
+    }
+
+    /** Installs an app and returns indexed App Functions */
+    public static Map<String, GenericDocument> installAppAndGetAppFunctions(
+            Context context, String appPath, String packageName) throws Throwable {
+        installPackage(context, appPath);
+
+        // Retry till the indexer has completed a run.
+        retryAssert(
+                () -> {
+                    // A MobileApplication for it should be inserted.
+                    GenericDocument mobileApplication =
+                            searchMobileApplicationWithId(TEST_APP_A_PKG);
+                    assertThat(mobileApplication).isNotNull();
+                });
+        return searchAppFunctionDocumentsIntoMap(packageName);
+    }
+
+    /** Asserts that mappings contains expected document, Strips timestamps and parent types. */
+    public static void assertContainsAppFunctionDocument(
+            Map<String, GenericDocument> appFnMap,
+            String documentName,
+            GenericDocument expectedDocument) {
+        assertThat(clearTimestampsAndParentTypesInDocument(appFnMap.get(documentName)))
+                .isEqualTo(expectedDocument);
     }
 
     /**
@@ -322,17 +365,18 @@ public final class AppFunctionTestUtils {
      *   <li>schema (Document)
      * </ul>
      */
-    private static GenericDocument buildPrintAppFunctionDocument(String packageName) {
+    private static GenericDocument buildAppFunctionDocument(
+            String packageName, String functionSuffix) {
         GenericDocument.Builder builder =
                 new GenericDocument.Builder<>(
                                 NAMESPACE_APP_FUNCTIONS,
-                                packageName + "/com.example.utils#print1",
+                                packageName + "/com.example.utils#" + functionSuffix,
                                 "AppFunctionStaticMetadata-" + packageName)
                         .setCreationTimestampMillis(0);
 
         // Add properties from AppFunctionMetadata
         builder.setPropertyBoolean("enabledByDefault", true)
-                .setPropertyString("functionId", "com.example.utils#print1")
+                .setPropertyString("functionId", "com.example.utils#" + functionSuffix)
                 .setPropertyString("packageName", packageName)
                 .setPropertyString("schemaName", "print")
                 .setPropertyString("schemaCategory", "utils")

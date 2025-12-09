@@ -50,7 +50,6 @@ public class PrivacyDeviceOwnerTest extends DeviceTestCase implements IBuildRece
     private static final String ADMIN_RECEIVER_TEST_CLASS = ".DeviceOwnerTest$BasicAdminReceiver";
     private static final String CLEAR_DEVICE_OWNER_TEST_CLASS = ".ClearDeviceOwnerTest";
 
-    // TODO (b/174775905) move to ITestDevice.
     private static final int USER_SYSTEM = 0;
 
     /**

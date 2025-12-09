@@ -784,8 +784,8 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
         // clips with crop parameters
         // getOutputImage() is updated to handle format keys MediaFormat.KEY_CROP_* in 202504.
         // output of mainline codecs always do not contain crop attributes. So enable these params
-        // always. In CTS mode, enable these params for versions at least 202504.
-        if (!TestUtils.isCtsMode() || BOARD_SDK_IS_AT_LEAST_202504) {
+        // always. In CTS mode, enable these params on devices with vendor partitions after 202504.
+        if (!TestUtils.isCtsMode() || BOARD_SDK_IS_AFTER_202504) {
             exhaustiveArgsList.addAll(Arrays.asList(new Object[][] {
                     {MEDIA_TYPE_HEVC, new String[] {"bbb_560x280_1mbps_30fps_hevc.mkv"}, null,
                             -1.0f, 26298353L, -1, -1, 560, 280, CODEC_ALL},

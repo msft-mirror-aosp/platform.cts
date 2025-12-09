@@ -31,11 +31,13 @@ public class MainInteractionService extends VoiceInteractionService {
     static final String TAG = "MainInteractionService";
     private Intent mIntent;
     private boolean mReady = false;
+    public static final String ACTION_READY = "android.voiceinteraction.service.ACTION_READY";
 
     @Override
     public void onReady() {
         super.onReady();
         mReady = true;
+        sendBroadcast(new Intent(ACTION_READY).setPackage("android.voiceinteraction.cts"));
     }
 
     @Override
@@ -74,13 +76,15 @@ public class MainInteractionService extends VoiceInteractionService {
                                 + "/TestApp"));
                 args.putParcelable("intent", intent);
                 Log.v(TAG, "showSession(): " + args);
-                showSession(args, 0);
+                int showFlags = mIntent.getIntExtra("showFlags", 0);
+                showSession(args, showFlags);
             } else {
                 Log.wtf(TAG, "**** Not starting MainInteractionService because" +
                         " it is not set as the current voice interaction service");
             }
         } else {
-            showSession(args, 0);
+            int showFlags = args.getInt("showFlags", 0);
+            showSession(args, showFlags);
         }
     }
 

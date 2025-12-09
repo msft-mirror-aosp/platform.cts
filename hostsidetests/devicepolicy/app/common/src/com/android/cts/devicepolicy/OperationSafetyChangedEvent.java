@@ -17,7 +17,6 @@ package com.android.cts.devicepolicy;
 
 import android.app.admin.DevicePolicyManager;
 
-//TODO(b/174859111): move to automotive-only section
 /**
  * Represents an operation safety event received by a
  * {@link android.app.admin.DeviceAdminReceiver#onOperationSafetyStateChanged(

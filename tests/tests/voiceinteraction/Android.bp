@@ -73,6 +73,7 @@ android_test {
     // platform APIs required for CoreCompatChangeRule
     platform_apis: true,
     data: [
+        ":CtsNoPermissionVoiceInteractionService",
         ":CtsNoRecognitionVoiceInteractionService",
         ":CtsVoiceInteractionApp",
         ":CtsVoiceInteractionTestAssistantApp",

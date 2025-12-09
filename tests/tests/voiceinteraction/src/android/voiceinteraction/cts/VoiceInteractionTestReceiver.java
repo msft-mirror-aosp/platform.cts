@@ -69,15 +69,22 @@ public class VoiceInteractionTestReceiver extends BroadcastReceiver {
     /** Waits for onHandleAssist being called. */
     public static boolean waitAssistDataReceived(long timeout, TimeUnit unit)
             throws InterruptedException {
-        Intent intent = sAssistDataReceivedQueue.poll(timeout, unit);
-        if (intent == null) {
-            // Timeout. Assume this means no assist data is sent to VoiceInteractionService.
+        Bundle extras = waitAssistDataReceivedBundle(timeout, unit);
+        if (extras == null) {
             return false;
         }
-        if (!intent.hasExtra(MainInteractionSession.EXTRA_RECEIVED)) {
-            throw new IllegalStateException("Expect EXTRA_RECEIVED");
+        return extras.getBoolean(MainInteractionSession.EXTRA_RECEIVED, false);
+    }
+
+    /** Waits for onHandleAssist being called and returns the extras. */
+    @Nullable
+    public static Bundle waitAssistDataReceivedBundle(long timeout, TimeUnit unit)
+            throws InterruptedException {
+        Intent intent = sAssistDataReceivedQueue.poll(timeout, unit);
+        if (intent == null) {
+            return null;
         }
-        return intent.getBooleanExtra(MainInteractionSession.EXTRA_RECEIVED, false);
+        return intent.getExtras();
     }
 
     /** Waits for onShow being called. */

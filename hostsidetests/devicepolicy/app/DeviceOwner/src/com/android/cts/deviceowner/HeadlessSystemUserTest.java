@@ -29,7 +29,6 @@ import android.os.UserHandle;
 import android.os.UserManager;
 import android.util.Log;
 
-//TODO(b/174859111): move to automotive specific module
 /**
  * Device owner tests specific for devices that use
  * {@link android.os.UserManager#isHeadlessSystemUserMode()}.
@@ -71,7 +70,6 @@ public final class HeadlessSystemUserTest extends BaseDeviceOwnerTest {
             final int userId = user.id;
 
             // Must try a couple times as PO is asynchronously set after user is created.
-            // TODO(b/178102911): use a callback instead
             eventually(() -> {
                 Context newUserContext = mContext.createContextAsUser(UserHandle.of(userId),
                         /* flags=*/ 0);
