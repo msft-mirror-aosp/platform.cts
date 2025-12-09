@@ -38,7 +38,7 @@
         <receiver android:name=".TrampolineReceiver"
              android:exported="true">
             <intent-filter>
-                <action android:name="android.media.audio.cts.CtsPlaybackService.ACTION_BOUNCE_FOREGROUND"/>
+                <action android:name="android.media.audio.cts.CtsPlaybackService.ACTION_BOUNCE_SERVICE"/>
             </intent-filter>
         </receiver>
     </application>

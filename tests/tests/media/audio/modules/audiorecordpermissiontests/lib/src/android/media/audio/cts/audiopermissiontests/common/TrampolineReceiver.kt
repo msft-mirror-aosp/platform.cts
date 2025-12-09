@@ -30,7 +30,6 @@ import android.util.Log
 open class TrampolineReceiver : BroadcastReceiver() {
     val TAG = getAppName() + "T"
     val PREFIX = "android.media.audio.cts."+ getAppName()
-    val SERVICE_NAME = ".RecordService";
 
     open fun getAppName() : String {
         return "Base"
@@ -39,15 +38,17 @@ open class TrampolineReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
         Log.i(TAG, "Received ${intent}")
         when (intent?.action) {
-            PREFIX + ACTION_BOUNCE_FOREGROUND -> {
-                Log.i(TAG, "Bouncing FGS")
+            PREFIX + ACTION_BOUNCE_SERVICE -> {
                 val packageName = context!!.getPackageName()
                 Intent()
-                    .setClassName(packageName, packageName + SERVICE_NAME)
-                    .setAction(packageName + ACTION_START_FOREGROUND)
+                    .setClassName(packageName, packageName + intent.getStringExtra(EXTRA_SERVICE_NAME))
+                    .setAction(packageName +
+                        if (intent.getBooleanExtra(EXTRA_SHOULD_FOREGROUND, false))
+                            ACTION_START_FOREGROUND else ACTION_START_BACKGROUND)
                     // no mic caps
                     .putExtra(EXTRA_CAP_OVERRIDE, FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
                 .let {
+                    Log.i(TAG, "Bouncing FGS $it")
                     context.getApplicationContext()
                         .startForegroundService(it);
                 }

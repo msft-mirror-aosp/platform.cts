@@ -130,6 +130,7 @@ open class RecordService : Service() {
                         Log.i(TAG, "Going foreground with capabilities $it")
                         startForeground(1, buildNotification(), it)
                     }
+                PREFIX + ACTION_START_BACKGROUND -> {} // nothing to do
                 PREFIX + ACTION_STOP_FOREGROUND -> stopForeground(STOP_FOREGROUND_REMOVE)
                 PREFIX + ACTION_TEARDOWN -> {
                     // Finish ongoing records
