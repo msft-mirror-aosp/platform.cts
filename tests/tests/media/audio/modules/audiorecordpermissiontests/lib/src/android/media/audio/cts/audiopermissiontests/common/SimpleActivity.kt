@@ -29,7 +29,7 @@ import android.util.Log
  * receiver to trigger finishing the activity.
  */
 open class SimpleActivity : Activity() {
-    val TAG = getAppName() + "SimpleActivity"
+    val TAG = getAppName() + "T"
     val PREFIX = "android.media.audio.cts."+ getAppName()
 
     lateinit var recv: BroadcastReceiver

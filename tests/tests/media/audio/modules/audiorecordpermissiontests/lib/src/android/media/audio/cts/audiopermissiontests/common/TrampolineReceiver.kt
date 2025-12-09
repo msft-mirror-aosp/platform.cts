@@ -28,7 +28,7 @@ import android.util.Log
  * Recv which starts a FGS.
  */
 open class TrampolineReceiver : BroadcastReceiver() {
-    val TAG = getAppName() + "TrampolineReceiver"
+    val TAG = getAppName() + "T"
     val PREFIX = "android.media.audio.cts."+ getAppName()
     val SERVICE_NAME = ".RecordService";
 

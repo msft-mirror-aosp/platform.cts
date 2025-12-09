@@ -52,7 +52,7 @@ import kotlinx.coroutines.launch
  * unsilenced state.
  */
 open class RecordService : Service() {
-    val TAG = getAppName() + "RecordService"
+    val TAG = getAppName() + "T"
     val PREFIX = "android.media.audio.cts." + getAppName()
 
     private val mJob =
