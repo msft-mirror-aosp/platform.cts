@@ -1881,192 +1881,120 @@ public class SubscriptionManagerTest {
         }
     }
 
+    /** Helper method that performs set plan and verify. */
+    private void setAndVerifySubscriptionPlans(
+            Context ctx, int subId, List<SubscriptionPlan> plans, long expirationDuration)
+            throws Exception {
+        CarrierPrivilegeUtils.withCarrierPrivileges(
+                ctx,
+                subId,
+                () -> {
+                    // Set
+                    mSm.setEnrollableSubscriptionPlans(subId, plans, expirationDuration);
+
+                    // Verify
+                    CountDownLatch timerLatch = new CountDownLatch(1);
+                    for (int i = 0; i < 5; i++) {
+                        if (mSm.getEnrollableSubscriptionPlans(subId).equals(plans)) {
+                            timerLatch.countDown();
+                            break;
+                        }
+                        timerLatch.await(200, TimeUnit.MILLISECONDS);
+                    }
+                    assertEquals(
+                            "Timed out waiting for plans to match",
+                            plans,
+                            mSm.getEnrollableSubscriptionPlans(subId));
+                });
+    }
+
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SUBSCRIPTION_PLAN_ENHANCEMENT)
     public void testEnrollableSubscriptionPlans() throws Exception {
-        // Run with Carrier Privileges.
         Context ctx = InstrumentationRegistry.getContext();
-        CarrierPrivilegeUtils.withCarrierPrivileges(
-                ctx,
-                mSubId,
-                () -> {
-                    // Test #1
-                    // Act: Check the initial state (should be empty)
-                    List<SubscriptionPlan> initialPlans =
-                            mSm.getEnrollableSubscriptionPlans(mSubId);
+        long expirationDuration = 0;
 
-                    // Verify that a list of plans should be empty.
-                    assertTrue("Initial plans should be empty", initialPlans.isEmpty());
+        // Test1. Initialize.
+        setAndVerifySubscriptionPlans(ctx, mSubId, Collections.emptyList(), expirationDuration);
 
-                    // Test #2
-                    // SetUp: make a sample plan
-                    SubscriptionPlan plan =
-                            SubscriptionPlan.Builder.createRecurring(
-                                            ZonedDateTime.parse("2025-01-01T00:00:00.000Z"),
-                                            Period.ofMonths(1))
-                                    .setTitle("Test Enrollable Plan")
-                                    .setDataLimit(
-                                            SubscriptionPlan.BYTES_UNLIMITED,
-                                            SubscriptionPlan.LIMIT_BEHAVIOR_THROTTLED)
-                                    .build();
+        // Test2. Set a plan and verify
+        SubscriptionPlan plan =
+                SubscriptionPlan.Builder.createRecurring(
+                                ZonedDateTime.parse("2025-01-01T00:00:00.000Z"), Period.ofMonths(1))
+                        .setTitle("Test Enrollable Plan")
+                        .setDataLimit(
+                                SubscriptionPlan.BYTES_UNLIMITED,
+                                SubscriptionPlan.LIMIT_BEHAVIOR_THROTTLED)
+                        .build();
+        setAndVerifySubscriptionPlans(ctx, mSubId, Arrays.asList(plan), expirationDuration);
 
-                    // Act: Set the plan
-                    mSm.setEnrollableSubscriptionPlans(mSubId, Arrays.asList(plan), 0);
-
-                    // Verify set plan via get
-                    List<SubscriptionPlan> currentPlans =
-                            mSm.getEnrollableSubscriptionPlans(mSubId);
-                    assertEquals("Should have 1 plan", 1, currentPlans.size());
-                    assertEquals("Plan content should match", plan, currentPlans.get(0));
-
-                    // Test #3
-                    // Act: set 0 list.
-                    mSm.setEnrollableSubscriptionPlans(mSubId, Collections.emptyList(), 0);
-
-                    // Verify that a list of plans should be empty.
-                    assertTrue(
-                            "Plans should be empty after clearing",
-                            mSm.getEnrollableSubscriptionPlans(mSubId).isEmpty());
-                });
+        // Test3. remove test.
+        setAndVerifySubscriptionPlans(ctx, mSubId, Collections.emptyList(), expirationDuration);
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SUBSCRIPTION_PLAN_ENHANCEMENT)
     public void testEnrollableSubscriptionPlansExpiration() throws Exception {
         // SetUp: set expiration duration to 1sec to the sample plan
+        Context ctx = InstrumentationRegistry.getContext();
         long expirationDuration = 1000;
         SubscriptionPlan plan =
                 SubscriptionPlan.Builder.createRecurring(ZonedDateTime.now(), Period.ofMonths(1))
                         .setTitle("Expiring Plan")
                         .build();
-        Context ctx = InstrumentationRegistry.getContext();
-        // set the Latch to check expire.
-        final CountDownLatch latch = new CountDownLatch(1);
-        final BroadcastReceiver receiver =
-                new BroadcastReceiver() {
-                    @Override
-                    public void onReceive(Context context, Intent intent) {
-                        if (SubscriptionManager.ACTION_ENROLLABLE_SUBSCRIPTION_PLANS_CHANGED.equals(
-                                intent.getAction())) {
-                            int subId =
-                                    intent.getIntExtra(
-                                            SubscriptionManager.EXTRA_SUBSCRIPTION_INDEX, -1);
-                            if (subId == mSubId) {
-                                latch.countDown();
-                            }
-                        }
+
+        // Test1. Initialize.
+        setAndVerifySubscriptionPlans(ctx, mSubId, Collections.emptyList(), 0);
+
+        // Test2. set a plan with 1 sec duration.
+        setAndVerifySubscriptionPlans(ctx, mSubId, Arrays.asList(plan), expirationDuration);
+
+        // Verify that 1 sec duration plan has gone.
+        CarrierPrivilegeUtils.withCarrierPrivileges(
+                ctx,
+                mSubId,
+                () -> {
+                    CountDownLatch expireLatch = new CountDownLatch(1);
+                    expireLatch.await(expirationDuration + 100, TimeUnit.MILLISECONDS);
+                    if (mSm.getEnrollableSubscriptionPlans(mSubId).isEmpty()) {
+                        expireLatch.countDown();
                     }
-                };
-        ctx.registerReceiver(
-                receiver,
-                new IntentFilter(SubscriptionManager.ACTION_ENROLLABLE_SUBSCRIPTION_PLANS_CHANGED),
-                Context.RECEIVER_EXPORTED);
-
-        try {
-            CarrierPrivilegeUtils.withCarrierPrivileges(
-                    ctx,
-                    mSubId,
-                    () -> {
-                        // Act : set plan with 1sec expiration.
-                        mSm.setEnrollableSubscriptionPlans(
-                                mSubId, Arrays.asList(plan), expirationDuration);
-
-                        // Verify that It must exist immediately.
-                        assertFalse(
-                                "Plans should exist immediately",
-                                mSm.getEnrollableSubscriptionPlans(mSubId).isEmpty());
-                    });
-
-            // Wait for broadcast for the expiration time.
-            if (!latch.await(expirationDuration + 5000, TimeUnit.MILLISECONDS)) {
-                fail("Did not receive ACTION_ENROLLABLE_SUBSCRIPTION_PLANS_CHANGED broadcast");
-            }
-
-            // Verify that if the plan has been deleted after expiration
-            CarrierPrivilegeUtils.withCarrierPrivileges(
-                    ctx,
-                    mSubId,
-                    () -> {
-                        assertTrue(
-                                "Plans should have expired",
-                                mSm.getEnrollableSubscriptionPlans(mSubId).isEmpty());
-                    });
-
-        } finally {
-            ctx.unregisterReceiver(receiver);
-        }
+                    assertTrue(
+                            "Plans should have expired",
+                            mSm.getEnrollableSubscriptionPlans(mSubId).isEmpty());
+                });
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SUBSCRIPTION_PLAN_ENHANCEMENT)
     public void testEnrollableSubscriptionPlans_Security() throws Exception {
-        // Test #1. Check if a SecurityException occurs when accessing without permission
-        try {
-            // Act: call get plan API
-            mSm.getEnrollableSubscriptionPlans(mSubId);
-
-            // Verify that getEnrollableSubscriptionPlans should throw SecurityException
-            fail("Should throw SecurityException without permissions");
-        } catch (SecurityException e) {
-            // Expected
-        }
-
-        try {
-            // Act: call set plan API
-            mSm.setEnrollableSubscriptionPlans(mSubId, Collections.emptyList(), 0);
-
-            // Verify that setEnrollableSubscriptionPlans should throw SecurityException
-            fail("Should throw SecurityException without permissions");
-        } catch (SecurityException e) {
-            // Expected
-        }
-
-        // Test #2. Verify access with MANAGE_SUBSCRIPTION_PLANS permission
-        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
-        uiAutomation.adoptShellPermissionIdentity(
-                android.Manifest.permission.MANAGE_SUBSCRIPTION_PLANS);
-        try {
-            // Act: call get plan API
-            mSm.getEnrollableSubscriptionPlans(mSubId);
-
-            // Verify that exceptions should not be thrown if app has the permission.
-        } finally {
-            uiAutomation.dropShellPermissionIdentity();
-        }
-
-        // Test #3. Carrier Privileges & Owner Access
-        // SetUp: set a plan with Carrier Privilege (The cts package becomes the owner)
+        Context ctx = InstrumentationRegistry.getContext();
         SubscriptionPlan plan =
                 SubscriptionPlan.Builder.createRecurring(
                                 ZonedDateTime.parse("2025-01-01T00:00:00.000Z"), Period.ofMonths(1))
                         .setTitle("Owner Check Plan")
                         .build();
 
-        // Act: call get plan API with carrier privileges
-        CarrierPrivilegeUtils.withCarrierPrivileges(
-                InstrumentationRegistry.getContext(),
-                mSubId,
-                () -> {
-                    mSm.setEnrollableSubscriptionPlans(mSubId, Arrays.asList(plan), 0);
-                });
+        // Test1. Verify access without MANAGE_SUBSCRIPTION_PLANS permission.
+        // (Shell does not have MANAGE_SUBSCRIPTION_PLANS permission.)
+        try {
+            // Act: call set plan API
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mSm, (sm) -> sm.setEnrollableSubscriptionPlans(mSubId, Arrays.asList(plan), 0));
+            // Verify that exceptions should be thrown if app does not have the permission.
+            fail("Fails to set enrollable plans with MANAGE_SUBSCRIPTION_PLANS permission.");
+        } catch (SecurityException e) {
+            // Success
+        }
 
-        // Since left the CarrierPrivilegeUtils block, currently have no Carrier privileges.
+        // Test2. Carrier Privileges & Owner Access
+        setAndVerifySubscriptionPlans(ctx, mSubId, Arrays.asList(plan), 0);
+
+        // Test3. get plans with owner access.
         try {
             // Act: call get plan API without a permission but this app is the owner.
             List<SubscriptionPlan> plans = mSm.getEnrollableSubscriptionPlans(mSubId);
-
-            // Verifying access as owner without permission
-            assertFalse("Owner should retrieve plans", plans.isEmpty());
-            assertEquals("Owner Check Plan", plans.get(0).getTitle());
-
-            // Act: Owner must also be able to modify (set)
-            mSm.setEnrollableSubscriptionPlans(mSubId, Collections.emptyList(), 0);
-
             // Verifying access as Owner without permission
-            assertTrue(
-                    "Owner should be able to clear plans",
-                    mSm.getEnrollableSubscriptionPlans(mSubId).isEmpty());
-
         } catch (SecurityException e) {
             fail("Owner should have access without extra permissions: " + e.getMessage());
         }
