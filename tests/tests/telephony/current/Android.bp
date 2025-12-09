@@ -52,6 +52,7 @@ android_test {
     // uncomment when EuiccService tests do not use hidden APIs (Binder instances)
     //sdk_version: "test_current",
     static_libs: [
+        "libnanohttpd",
         "androidx.test.ext.junit",
         "ctstestrunner-axt",
         "hamcrest-library",

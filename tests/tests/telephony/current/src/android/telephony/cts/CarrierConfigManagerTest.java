@@ -85,10 +85,14 @@ import android.telephony.TelephonyManager;
 import android.telephony.TelephonyRegistryManager;
 import android.telephony.satellite.SatelliteManager;
 
+import com.android.bedstead.nene.utils.UndoableContext;
+import com.android.bedstead.permissions.Permissions;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.compatibility.common.util.TestThread;
 import com.android.internal.telephony.flags.Flags;
+
+import fi.iki.elonen.NanoHTTPD;
 
 import org.junit.After;
 import org.junit.Before;
@@ -108,6 +112,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 // TODO(b/221323753): replace remain junit asserts with Truth assert
@@ -952,6 +957,67 @@ public class CarrierConfigManagerTest {
         PersistableBundle overrideBundle = new PersistableBundle(1);
         overrideBundle.putIntArray(KEY_CELLULAR_SERVICE_CAPABILITIES_INT_ARRAY, newCapabilities);
         mConfigManager.overrideConfig(subId, overrideBundle);
+    }
+
+    @Test
+    public void testCarrierKeyDownloadTriggered() throws Exception {
+        if (!getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+            return;
+        }
+
+        final int subId = SubscriptionManager.getDefaultDataSubscriptionId();
+        if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+            return;
+        }
+
+        final int phoneId = SubscriptionManager.getSlotIndex(subId);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        final AtomicReference<String> requestPath = new AtomicReference<>();
+
+        NanoHTTPD server =
+                new NanoHTTPD(0) {
+                    @Override
+                    public Response serve(IHTTPSession session) {
+                        requestPath.set(session.getUri());
+                        latch.countDown();
+                        return newFixedLengthResponse(Response.Status.OK, "text/plain", "{}");
+                    }
+                };
+        server.start();
+
+        String url = "http://localhost:" + server.getListeningPort() + "/some_path";
+
+        PersistableBundle config = new PersistableBundle();
+        // Enable WLAN key type
+        config.putInt(
+                CarrierConfigManager.IMSI_KEY_AVAILABILITY_INT,
+                1 << (TelephonyManager.KEY_TYPE_WLAN - 1));
+        config.putString(CarrierConfigManager.IMSI_KEY_DOWNLOAD_URL_STRING, url);
+        // Allow download over metered network to not depend on WiFi being present.
+        config.putBoolean(
+                CarrierConfigManager.KEY_ALLOW_METERED_NETWORK_FOR_CERT_DOWNLOAD_BOOL, true);
+
+        try (UndoableContext p = Permissions.ignoringPermissions()) {
+            mConfigManager.overrideConfig(subId, config);
+
+            try {
+                Intent intent = new Intent("android.telephony.action.CARRIER_CERTIFICATE_DOWNLOAD");
+                intent.putExtra("phone", phoneId);
+                getContext().sendBroadcast(intent);
+
+                // Wait for the server to receive the request.
+                assertTrue(
+                        "Request not received by local server within 10 seconds",
+                        latch.await(10, TimeUnit.SECONDS));
+                assertEquals("/some_path", requestPath.get());
+
+            } finally {
+                server.stop();
+                // Restore config (must be done while permissions are still ignored)
+                mConfigManager.overrideConfig(subId, null);
+            }
+        }
     }
 
     @Test
