@@ -101,6 +101,7 @@ android_test {
         ":UpdatedDynamicPermissionTestAttackerApp",
         ":CtsMultiuserContentProviderInitial",
         ":CtsMultiuserContentProviderOther",
+        ":LargeInputMethodTestApp",
     ],
 }
 
