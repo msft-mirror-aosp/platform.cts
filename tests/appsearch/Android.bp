@@ -29,6 +29,7 @@ android_test {
         "flag-junit",
         "bedstead-enterprise",
         "testng",
+        "android.app.appfunctions.exported-flags-aconfig-java",
     ],
     srcs: [
         "src/**/*.java",
