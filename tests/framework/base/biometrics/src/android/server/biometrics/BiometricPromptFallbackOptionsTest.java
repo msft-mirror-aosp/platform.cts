@@ -83,7 +83,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
                 "android.hardware.biometrics.BiometricPrompt.Builder#setAllowedAuthenticators",
                 "android.hardware.biometrics.BiometricPrompt#authenticate",
             })
-    @RequiresFlagsEnabled({Flags.FLAG_BP_FALLBACK_OPTIONS, Flags.FLAG_ADD_FALLBACK})
+    @RequiresFlagsEnabled({Flags.FLAG_ADD_FALLBACK})
     @Test
     public void testFallbackOptions_testDefaultCancel() throws Exception {
         for (SensorProperties props : mSensorProperties) {
@@ -126,7 +126,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
     }
 
     @ApiTest(apis = {"android.hardware.biometrics.BiometricPrompt.Builder#addFallbackOption"})
-    @RequiresFlagsEnabled({Flags.FLAG_BP_FALLBACK_OPTIONS, Flags.FLAG_ADD_FALLBACK})
+    @RequiresFlagsEnabled({Flags.FLAG_ADD_FALLBACK})
     @Test
     public void testFallbackOptions_testFallbackOptionPageWithCredential() throws Exception {
         for (SensorProperties props : mSensorProperties) {
@@ -179,7 +179,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
     }
 
     @ApiTest(apis = {"android.hardware.biometrics.BiometricPrompt.Builder#addFallbackOption"})
-    @RequiresFlagsEnabled({Flags.FLAG_BP_FALLBACK_OPTIONS, Flags.FLAG_ADD_FALLBACK})
+    @RequiresFlagsEnabled({Flags.FLAG_ADD_FALLBACK})
     @Test
     public void testFallbackOptions_singleFallbackAsNegativeButton() throws Exception {
         for (SensorProperties props : mSensorProperties) {
@@ -229,7 +229,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
     }
 
     @ApiTest(apis = {"android.hardware.biometrics.BiometricPrompt.Builder#addFallbackOption"})
-    @RequiresFlagsEnabled({Flags.FLAG_BP_FALLBACK_OPTIONS, Flags.FLAG_ADD_FALLBACK})
+    @RequiresFlagsEnabled({Flags.FLAG_ADD_FALLBACK})
     @Test
     public void testFallbackOptions_testFallbackOptionPressed() throws Exception {
         for (SensorProperties props : mSensorProperties) {
@@ -293,7 +293,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
             apis = {
                 "android.hardware.biometrics.BiometricPrompt.Builder#setHideSystemFallbackOption"
             })
-    @RequiresFlagsEnabled({Flags.FLAG_BP_FALLBACK_OPTIONS, Flags.FLAG_CLEAR_FALLBACK_OPTION})
+    @RequiresFlagsEnabled({Flags.FLAG_CLEAR_FALLBACK_OPTION})
     @Test
     public void testIdentityCheckFallbackHidden_whenIdentityCheckActive() throws Exception {
         for (SensorProperties props : mSensorProperties) {
@@ -343,7 +343,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
     }
 
     @ApiTest(apis = {"android.hardware.biometrics.BiometricPrompt.Builder#addFallbackOption"})
-    @RequiresFlagsEnabled({Flags.FLAG_BP_FALLBACK_OPTIONS, Flags.FLAG_ADD_FALLBACK})
+    @RequiresFlagsEnabled({Flags.FLAG_ADD_FALLBACK})
     @Test
     public void testFallbackOptions_fourFallbacks() throws Exception {
         for (SensorProperties props : mSensorProperties) {
@@ -405,7 +405,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
     }
 
     @ApiTest(apis = {"android.hardware.biometrics.BiometricPrompt.Builder#addFallbackOption"})
-    @RequiresFlagsEnabled({Flags.FLAG_BP_FALLBACK_OPTIONS, Flags.FLAG_ADD_FALLBACK})
+    @RequiresFlagsEnabled({Flags.FLAG_ADD_FALLBACK})
     @Test
     public void testFallbackOptions_customNegativeWithFallback() throws Exception {
         for (SensorProperties props : mSensorProperties) {
@@ -457,7 +457,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
     }
 
     @ApiTest(apis = {"android.hardware.biometrics.BiometricPrompt.Builder#addFallbackOption"})
-    @RequiresFlagsEnabled({Flags.FLAG_BP_FALLBACK_OPTIONS, Flags.FLAG_ADD_FALLBACK})
+    @RequiresFlagsEnabled({Flags.FLAG_ADD_FALLBACK})
     @Test
     public void testCredentialOnly_singleFallback() throws Exception {
         try (CredentialSession credentialSession = new CredentialSession()) {
@@ -497,7 +497,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
     }
 
     @ApiTest(apis = {"android.hardware.biometrics.BiometricPrompt.Builder#addFallbackOption"})
-    @RequiresFlagsEnabled({Flags.FLAG_BP_FALLBACK_OPTIONS, Flags.FLAG_ADD_FALLBACK})
+    @RequiresFlagsEnabled({Flags.FLAG_ADD_FALLBACK})
     @Test
     public void testCredentialOnly_multipleFallbacks() throws Exception {
         try (CredentialSession credentialSession = new CredentialSession()) {
@@ -548,7 +548,6 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
                 "android.hardware.biometrics.FallbackOption#getIconType"
             })
     @RequiresFlagsEnabled({
-        Flags.FLAG_BP_FALLBACK_OPTIONS,
         Flags.FLAG_ADD_FALLBACK,
         Flags.FLAG_ADD_FALLBACK_ICONS
     })
@@ -585,7 +584,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
                 "android.hardware.biometrics.BiometricPrompt.Builder#addFallbackOption",
                 "android.hardware.biometrics.BiometricPrompt#getMaxFallbackOptions"
             })
-    @RequiresFlagsEnabled({Flags.FLAG_BP_FALLBACK_OPTIONS, Flags.FLAG_ADD_FALLBACK})
+    @RequiresFlagsEnabled({Flags.FLAG_ADD_FALLBACK})
     @Test
     public void testFallbackOptions_exceedsMaxOptions() throws Exception {
         for (SensorProperties props : mSensorProperties) {
@@ -623,7 +622,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
     }
 
     @ApiTest(apis = {"android.hardware.biometrics.BiometricPrompt#getMaxFallbackOptions"})
-    @RequiresFlagsEnabled({Flags.FLAG_BP_FALLBACK_OPTIONS, Flags.FLAG_ADD_FALLBACK})
+    @RequiresFlagsEnabled({Flags.FLAG_ADD_FALLBACK})
     @Test
     public void testGetMaxFallbackOptions() {
         assertThat(BiometricPrompt.getMaxFallbackOptions()).isEqualTo(MAX_FALLBACK_OPTIONS);
@@ -634,7 +633,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
                 "android.hardware.biometrics.BiometricPrompt.Builder#addFallbackOption",
                 "android.hardware.biometrics.BiometricPrompt#getFallbackOptions"
             })
-    @RequiresFlagsEnabled({Flags.FLAG_BP_FALLBACK_OPTIONS, Flags.FLAG_ADD_FALLBACK})
+    @RequiresFlagsEnabled({Flags.FLAG_ADD_FALLBACK})
     @Test
     public void testGetFallbackOptions() {
         final String fallback1 = "fallback1";
@@ -658,7 +657,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
                 "android.hardware.biometrics.FallbackOption#getIconType",
                 "android.hardware.biometrics.FallbackOption#FallbackOption",
             })
-    @RequiresFlagsEnabled({Flags.FLAG_BP_FALLBACK_OPTIONS, Flags.FLAG_ADD_FALLBACK})
+    @RequiresFlagsEnabled({Flags.FLAG_ADD_FALLBACK})
     @Test
     public void testFallbackOptionClass() {
         final String text = "Test Fallback";
