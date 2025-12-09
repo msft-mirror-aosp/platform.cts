@@ -1936,7 +1936,6 @@ class ProvisioningTest {
             // TODO(b/456080404): Don't remove system apps during provisioning until the testing
             // infrastructure supports restoring uninstalled apps.
             .setLeaveAllSystemAppsEnabled(true)
-            .setAdminExtras(ADMIN_EXTRAS_BUNDLE)
     }
 
     companion object {
