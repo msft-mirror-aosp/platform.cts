@@ -30,4 +30,11 @@ data class ChangedPreferenceState(
     val metadata: SettingsPreferenceMetadata,
     val originalPreferenceValue: SettingsPreferenceValue,
     val currentPreferenceValue: SettingsPreferenceValue
-)
+) {
+
+    override fun toString(): String {
+        return "ChangedPreferenceState(metadata=$metadata, " +
+                "originalPreferenceValue=${originalPreferenceValue.printValue()}, " +
+                "currentPreferenceValue=${currentPreferenceValue.printValue()})"
+    }
+}

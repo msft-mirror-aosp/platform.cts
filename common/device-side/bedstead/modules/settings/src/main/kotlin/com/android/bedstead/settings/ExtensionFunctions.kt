@@ -66,4 +66,18 @@ fun SettingsPreferenceValue.isEqualTo(second: SettingsPreferenceValue?): Boolean
     }
 }
 
+/**
+ * Prints the content of the value.
+ */
+fun SettingsPreferenceValue.printValue(): String? {
+    return when (type) {
+        TYPE_BOOLEAN -> booleanValue.toString()
+        TYPE_DOUBLE -> doubleValue.toString()
+        TYPE_INT -> intValue.toString()
+        TYPE_LONG -> longValue.toString()
+        TYPE_STRING -> stringValue
+        else -> throw IllegalStateException("unsupported type: $type")
+    }
+}
+
 private const val RANDOM_STRING = "randomString"

@@ -62,7 +62,7 @@ public final class Poll<E> {
     private static final String LOG_TAG = Poll.class.getName();
 
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(120);
-    private static final long SLEEP_MILLIS = 200; // TODO(b/223768343): Allow configuring
+    private static final long DEFAULT_INTERVAL_MILLIS = 200;
     private final String mValueName;
     private final ValueSupplier<E> mSupplier;
     private ValueChecker<E> mChecker = (v) -> true;
@@ -72,6 +72,7 @@ public final class Poll<E> {
             (valueName, value) -> "Expected "
                     + valueName + " to meet checker function. Was " + value;
     private Duration mTimeout = DEFAULT_TIMEOUT;
+    private long mInterval = DEFAULT_INTERVAL_MILLIS;
     private boolean mErrorOnFail = false;
 
     private Poll(String valueName, ValueSupplier<E> supplier) {
@@ -188,7 +189,24 @@ public final class Poll<E> {
     /** Change the default timeout before the check is considered failed (default 30 seconds). */
     @CanIgnoreReturnValue
     public Poll<E> timeout(Duration timeout) {
+        if (timeout.toMillis() < mInterval) {
+            throw new IllegalArgumentException("timeout can't lower than the interval");
+        }
         mTimeout = timeout;
+        return this;
+    }
+
+    /**
+     * Change the sleep interval (default 200 milliseconds).
+     * @param interval Interval duration in milliseconds.
+     */
+    @CanIgnoreReturnValue
+    public Poll<E> interval(long interval) {
+        if (interval < 0 || interval > mTimeout.toMillis()) {
+            throw new IllegalArgumentException(
+                    "interval can't be lower than 0 or higher than the timeout");
+        }
+        mInterval = interval;
         return this;
     }
 
@@ -228,7 +246,7 @@ public final class Poll<E> {
             }
 
             try {
-                Thread.sleep(SLEEP_MILLIS);
+                Thread.sleep(mInterval);
             } catch (InterruptedException e) {
                 throw new PollValueFailedException("Interrupted while awaiting", e);
             }

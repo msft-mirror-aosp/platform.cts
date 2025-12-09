@@ -507,6 +507,56 @@ public class PollTest {
                         .await());
     }
 
+    @Test
+    public void await_timeoutEqualsInterval_returnsFirstValue() {
+        ValueTester<String> valueTester = new ValueTester<>(VALUE_1);
+
+        var result = Poll.forValue("tester value", valueTester::get)
+                .timeout(Duration.ofMillis(200))
+                .await();
+        assertThat(result).isEqualTo(VALUE_1);
+    }
+
+    @Test
+    public void await_toBeEqualToWithCustomInterval_becomesEqual_returns() {
+        ValueTester<String> valueTester = new ValueTester<>(VALUE_2, VALUE_1, 5);
+
+        assertThat(Poll.forValue("tester value", valueTester::get)
+                .toBeEqualTo(VALUE_1)
+                .interval(30L)
+                .await()).isEqualTo(VALUE_1);
+    }
+
+    @Test
+    public void await_intervalNegative_throwsException() {
+        ValueTester<String> valueTester = new ValueTester<>(VALUE_1);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> Poll.forValue("tester value", valueTester::get)
+                        .interval(-1)
+                        .await());
+    }
+
+    @Test
+    public void await_intervalHigherThanTimeout_throwsException() {
+        ValueTester<String> valueTester = new ValueTester<>(VALUE_1);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> Poll.forValue("tester value", valueTester::get)
+                        .interval(120 * 1000 + 1)
+                        .await());
+    }
+
+    @Test
+    public void await_timeoutLowerThenInterval_throwsException() {
+        ValueTester<String> valueTester = new ValueTester<>(VALUE_1);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> Poll.forValue("tester value", valueTester::get)
+                        .timeout(Duration.ofMillis(199))
+                        .await());
+    }
+
     private static final class ValueTester<E> {
         private final Throwable mOriginalThrowable;
         private final E mOriginalValue;
