@@ -168,7 +168,7 @@
             android:name="android.voiceinteraction.cts.services.PccHotwordDetectionService"
             android:permission="android.permission.BIND_HOTWORD_DETECTION_SERVICE"
             android:exported="true"
-            android:isPrivateComputeCoreProcess="true">
+            android:privateComputeCore="true">
         </service>
         <service
             android:name="android.voiceinteraction.cts.services.TestPermissionHotwordDetectionService"
