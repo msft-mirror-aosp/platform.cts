@@ -96,7 +96,7 @@ class TestFileGeneratorTest {
                 "MY_POLICY_NAME",
                 allowedScopes =
                     listOf(PolicyScope.POLICY_SCOPE_DEVICE, PolicyScope.POLICY_SCOPE_PARENT_USER),
-                allowedDpcTypes = listOf(DpcType.DPC_TYPE_DEFAULT_DEVICE_OWNER),
+                allowedDpcTypes = listOf(DpcType.DPC_TYPE_DEVICE_OWNER),
                 permission = "thePermission",
                 crossUserPermission = anyCrossUserPermission,
             )
@@ -123,7 +123,7 @@ class TestFileGeneratorTest {
                 "MY_POLICY_NAME",
                 allowedScopes =
                     listOf(PolicyScope.POLICY_SCOPE_DEVICE, PolicyScope.POLICY_SCOPE_USER),
-                allowedDpcTypes = listOf(DpcType.DPC_TYPE_DEFAULT_DEVICE_OWNER),
+                allowedDpcTypes = listOf(DpcType.DPC_TYPE_DEVICE_OWNER),
                 permission = "thePermission",
                 crossUserPermission = anyCrossUserPermission,
             )
@@ -150,7 +150,7 @@ class TestFileGeneratorTest {
                 "MY_POLICY_NAME",
                 allowedScopes =
                     listOf(PolicyScope.POLICY_SCOPE_USER, PolicyScope.POLICY_SCOPE_PARENT_USER),
-                allowedDpcTypes = listOf(DpcType.DPC_TYPE_DEFAULT_DEVICE_OWNER),
+                allowedDpcTypes = listOf(DpcType.DPC_TYPE_DEVICE_OWNER),
                 permission = "thePermission",
                 crossUserPermission = anyCrossUserPermission,
             )
@@ -172,13 +172,13 @@ class TestFileGeneratorTest {
 
     @Test
     @Parameters(
-        "DPC_TYPE_DEFAULT_DEVICE_OWNER, APPLIED_BY_DEVICE_OWNER",
+        "DPC_TYPE_DEVICE_OWNER, APPLIED_BY_DEVICE_OWNER",
         "DPC_TYPE_FINANCED_DEVICE_OWNER, APPLIED_BY_FINANCED_DEVICE_OWNER",
-        "DPC_TYPE_PROFILE_OWNER_OF_ORGANIZATION_OWNED_DEVICE, APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE",
+        "DPC_TYPE_MANAGED_PROFILE_OWNER_OF_ORGANIZATION_OWNED_DEVICE, APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE",
         "DPC_TYPE_PROFILE_OWNER_ON_USER0, APPLIED_BY_PROFILE_OWNER_USER_WITH_NO_DO",
-        "DPC_TYPE_PROFILE_OWNER, APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_PROFILE",
-        "DPC_TYPE_PROFILE_OWNER_ON_USER, APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_USER",
-        "DPC_TYPE_AFFILIATED_PROFILE_OWNER_ON_USER, APPLIED_BY_AFFILIATED_PROFILE_OWNER_USER",
+        "DPC_TYPE_MANAGED_PROFILE_OWNER_OF_PERSONAL_OWNED_DEVICE, APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_PROFILE",
+        "DPC_TYPE_UNAFFILIATED_FULL_USER_PROFILE_OWNER, APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_USER",
+        "DPC_TYPE_AFFILIATED_FULL_USER_PROFILE_OWNER, APPLIED_BY_AFFILIATED_PROFILE_OWNER_USER",
     )
     fun scopeUser_allowedDpcTypes_generatesCorrespondingAppliedByStatement(
         dpcType: DpcType,
