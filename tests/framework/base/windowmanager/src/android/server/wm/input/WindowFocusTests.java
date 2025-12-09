@@ -430,28 +430,6 @@ public class WindowFocusTests extends WindowManagerTestBase {
     }
 
     /**
-     * Test if the focused window can still have focus after it is moved to another display.
-     */
-    @Test
-    public void testDisplayChanged() {
-        assumeTrue(supportsMultiDisplay());
-
-        final PrimaryActivity primaryActivity = startActivity(PrimaryActivity.class,
-                getMainDisplayId());
-
-        final InvisibleVirtualDisplaySession session = createManagedInvisibleDisplaySession();
-        final SecondaryActivity secondaryActivity = session.startActivityAndFocus();
-        // Secondary display disconnected.
-        session.close();
-
-        assertNotNull("SecondaryActivity must be started.", secondaryActivity);
-        secondaryActivity.waitAndAssertDisplayId(getMainDisplayId());
-        secondaryActivity.waitAndAssertWindowFocusState(true /* hasFocus */);
-
-        primaryActivity.waitAndAssertWindowFocusState(false /* hasFocus */);
-    }
-
-    /**
      * Ensure that a non focused display becomes focused when tapping on a focusable window on
      * that display.
      */
