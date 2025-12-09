@@ -157,6 +157,7 @@ import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.ThrowingRunnable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -203,6 +204,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     private static final int VEHICLE_PROPERTY_GROUP_SYSTEM = 0x10000000;
     private static final int VEHICLE_PROPERTY_GROUP_VENDOR = 0x20000000;
 
+    private static final int VENDOR_ERROR_CODE_MINIMUM_VALUE = 0x0;
+    private static final int VENDOR_ERROR_CODE_MAXIMUM_VALUE = 0xffff;
     private static final long WAIT_CALLBACK = 1500L;
     private static final int NO_EVENTS = 0;
     private static final int ONCHANGE_RATE_EVENT_COUNTER = 1;
@@ -4196,6 +4199,10 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         private final Object mLock = new Object();
 
         @GuardedBy("mLock")
+        private final List<CarPropertyManager.PropertyAsyncError> mAsyncErrorList =
+                new ArrayList<>();
+
+        @GuardedBy("mLock")
         private final List<String> mErrorList = new ArrayList<>();
 
         @GuardedBy("mLock")
@@ -4295,6 +4302,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                     mPendingRequests.remove(requestId);
                     mReceivedPropIdAreaIds.add(new PropIdAreaId(propId, areaId));
                 }
+                mAsyncErrorList.add(error);
             }
             mCountDownLatch.countDown();
         }
@@ -4314,6 +4322,14 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                     + gotRequestsCount);
                 }
             }
+        }
+
+        List<CarPropertyManager.PropertyAsyncError> getAsyncErrorList() {
+            List<CarPropertyManager.PropertyAsyncError> asyncErrorList;
+            synchronized (mLock) {
+                asyncErrorList = new ArrayList<>(mAsyncErrorList);
+            }
+            return asyncErrorList;
         }
 
         public List<String> getErrorList() {
@@ -5486,6 +5502,235 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         }
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_VENDOR_ERROR_CODE_PERMISSION)
+    @ApiTest(
+            apis = {
+                "android.car.hardware.property.CarInternalErrorException#getVendorErrorCode",
+                "android.car.hardware.property.PropertyNotAvailableException#getVendorErrorCode",
+            })
+    @Test
+    public void testGetVendorErrorCode_withPermission() throws Exception {
+        runWithShellPermissionIdentity(
+                () -> {
+                    for (int propertyId : mPropertyIds) {
+                        try {
+                            mCarPropertyManager.getProperty(propertyId, 0);
+                        } catch (CarInternalErrorException | PropertyNotAvailableException e) {
+                            int errorCode =
+                                    (e instanceof CarInternalErrorException)
+                                            ? ((CarInternalErrorException) e).getVendorErrorCode()
+                                            : ((PropertyNotAvailableException) e)
+                                                    .getVendorErrorCode();
+
+                            expectWithMessage(
+                                            "Vendor StatusCode %s is out of expected range [%s,"
+                                                    + " %s]",
+                                            errorCode,
+                                            VENDOR_ERROR_CODE_MINIMUM_VALUE,
+                                            VENDOR_ERROR_CODE_MAXIMUM_VALUE)
+                                    .that(errorCode)
+                                    .isIn(
+                                            Range.closed(
+                                                    VENDOR_ERROR_CODE_MINIMUM_VALUE,
+                                                    VENDOR_ERROR_CODE_MAXIMUM_VALUE));
+                        }
+                    }
+                },
+                ShellPermissionUtils.CHECK_MODE_ASSERT,
+                Car.PERMISSION_READ_PROPERTY_VENDOR_ERROR_CODE,
+                Car.PERMISSION_EXTERIOR_ENVIRONMENT,
+                Car.PERMISSION_POWERTRAIN,
+                Car.PERMISSION_SPEED);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_VENDOR_ERROR_CODE_PERMISSION)
+    @ApiTest(
+            apis = {
+                "android.car.hardware.property.CarPropertyManager.PropertyAsyncError#"
+                        + "getVendorErrorCode"
+            })
+    @Test
+    public void testGetVendorErrorCodeAsync_withPermission() throws Exception {
+        runWithShellPermissionIdentity(
+                () -> {
+                    List<CarPropertyManager.PropertyAsyncError> propertyAsyncErrors =
+                            getPropertyAsyncErrors(mPropertyIds);
+                    for (CarPropertyManager.PropertyAsyncError asyncError : propertyAsyncErrors) {
+                        int errorCode = asyncError.getVendorErrorCode();
+
+                        expectWithMessage(
+                                        "Vendor StatusCode %s is out of expected range [%s, %s]",
+                                        errorCode,
+                                        VENDOR_ERROR_CODE_MINIMUM_VALUE,
+                                        VENDOR_ERROR_CODE_MAXIMUM_VALUE)
+                                .that(errorCode)
+                                .isIn(
+                                        Range.closed(
+                                                VENDOR_ERROR_CODE_MINIMUM_VALUE,
+                                                VENDOR_ERROR_CODE_MAXIMUM_VALUE));
+                    }
+                },
+                ShellPermissionUtils.CHECK_MODE_ASSERT,
+                Car.PERMISSION_READ_PROPERTY_VENDOR_ERROR_CODE,
+                Car.PERMISSION_EXTERIOR_ENVIRONMENT,
+                Car.PERMISSION_POWERTRAIN,
+                Car.PERMISSION_SPEED);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_VENDOR_ERROR_CODE_PERMISSION)
+    @ApiTest(
+            apis = {
+                "android.car.hardware.property.CarInternalErrorException#getVendorErrorCode",
+                "android.car.hardware.property.PropertyNotAvailableException#getVendorErrorCode",
+            })
+    @Test
+    public void testGetVendorErrorCode_withoutPermission_throwsException() throws Exception {
+        runWithShellPermissionIdentity(
+                () -> {
+                    for (int propertyId : mPropertyIds) {
+                        try {
+                            mCarPropertyManager.getProperty(propertyId, 0);
+                        } catch (CarInternalErrorException e) {
+                            assertThrows(SecurityException.class, e::getVendorErrorCode);
+                        } catch (PropertyNotAvailableException e) {
+                            assertThrows(SecurityException.class, e::getVendorErrorCode);
+                        }
+                    }
+                },
+                ShellPermissionUtils.CHECK_MODE_ASSERT,
+                // No PERMISSION_READ_PROPERTY_VENDOR_ERROR_CODE
+                Car.PERMISSION_EXTERIOR_ENVIRONMENT,
+                Car.PERMISSION_POWERTRAIN,
+                Car.PERMISSION_SPEED);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_VENDOR_ERROR_CODE_PERMISSION)
+    @ApiTest(
+            apis = {
+                "android.car.hardware.property.CarPropertyManager.PropertyAsyncError#"
+                        + "getVendorErrorCode"
+            })
+    @Test
+    public void testGetVendorErrorCodeAsync_withoutPermission_throwsException() throws Exception {
+        runWithShellPermissionIdentity(
+                () -> {
+                    List<CarPropertyManager.PropertyAsyncError> propertyAsyncErrors =
+                            getPropertyAsyncErrors(mPropertyIds);
+                    for (CarPropertyManager.PropertyAsyncError asyncError : propertyAsyncErrors) {
+                        assertThrows(SecurityException.class, asyncError::getVendorErrorCode);
+                    }
+                },
+                ShellPermissionUtils.CHECK_MODE_ASSERT,
+                // No PERMISSION_READ_PROPERTY_VENDOR_ERROR_CODE
+                Car.PERMISSION_EXTERIOR_ENVIRONMENT,
+                Car.PERMISSION_POWERTRAIN,
+                Car.PERMISSION_SPEED);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_VENDOR_ERROR_CODE_PERMISSION)
+    @ApiTest(
+            apis = {
+                "android.car.hardware.property.CarInternalErrorException#getVendorErrorCode",
+                "android.car.hardware.property.PropertyNotAvailableException#getVendorErrorCode",
+            })
+    @Test
+    public void testGetVendorErrorCode_withoutPermission_errorCodeFiltered() throws Exception {
+        runWithShellPermissionIdentity(
+                () -> {
+                    // On targetSdkVersion < CINNAMON_BUN, getVendorErrorCode will not throw a
+                    // SecurityException and will return the filtered error code.
+                    runWithTargetSdkVersion(
+                            Build.VERSION_CODES.BAKLAVA,
+                            () -> {
+                                for (int propertyId : mPropertyIds) {
+                                    try {
+                                        mCarPropertyManager.getProperty(propertyId, 0);
+                                    } catch (CarInternalErrorException
+                                            | PropertyNotAvailableException e) {
+                                        int errorCode =
+                                                (e instanceof CarInternalErrorException)
+                                                        ? ((CarInternalErrorException) e)
+                                                                .getVendorErrorCode()
+                                                        : ((PropertyNotAvailableException) e)
+                                                                .getVendorErrorCode();
+
+                                        expectWithMessage(
+                                                        "Vendor StatusCode %s must be %s",
+                                                        errorCode, VENDOR_ERROR_CODE_MINIMUM_VALUE)
+                                                .that(errorCode)
+                                                .isEqualTo(VENDOR_ERROR_CODE_MINIMUM_VALUE);
+                                    }
+                                }
+                            });
+                },
+                ShellPermissionUtils.CHECK_MODE_ASSERT,
+                // No PERMISSION_READ_PROPERTY_VENDOR_ERROR_CODE
+                Car.PERMISSION_EXTERIOR_ENVIRONMENT,
+                Car.PERMISSION_POWERTRAIN,
+                Car.PERMISSION_SPEED);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_VENDOR_ERROR_CODE_PERMISSION)
+    @ApiTest(
+            apis = {
+                "android.car.hardware.property.CarPropertyManager.PropertyAsyncError#"
+                        + "getVendorErrorCode"
+            })
+    @Test
+    public void testGetVendorErrorCodeAsync_withoutPermission_errorCodeFiltered() throws Exception {
+        runWithShellPermissionIdentity(
+                () -> {
+                    // On targetSdkVersion < CINNAMON_BUN, getVendorErrorCode will not throw a
+                    // SecurityException and will return the filtered error code.
+                    runWithTargetSdkVersion(
+                            Build.VERSION_CODES.BAKLAVA,
+                            () -> {
+                                List<CarPropertyManager.PropertyAsyncError> propertyAsyncErrors =
+                                        getPropertyAsyncErrors(mPropertyIds);
+                                for (CarPropertyManager.PropertyAsyncError asyncError :
+                                        propertyAsyncErrors) {
+                                    int errorCode = asyncError.getVendorErrorCode();
+
+                                    expectWithMessage(
+                                                    "Vendor StatusCode %s must be %s",
+                                                    errorCode, VENDOR_ERROR_CODE_MINIMUM_VALUE)
+                                            .that(errorCode)
+                                            .isEqualTo(VENDOR_ERROR_CODE_MINIMUM_VALUE);
+                                }
+                            });
+                },
+                ShellPermissionUtils.CHECK_MODE_ASSERT,
+                // No PERMISSION_READ_PROPERTY_VENDOR_ERROR_CODE
+                Car.PERMISSION_EXTERIOR_ENVIRONMENT,
+                Car.PERMISSION_POWERTRAIN,
+                Car.PERMISSION_SPEED);
+    }
+
+    private List<CarPropertyManager.PropertyAsyncError> getPropertyAsyncErrors(
+            Set<Integer> propertyIds) throws Exception {
+        Set<Integer> pendingRequests = new ArraySet<>();
+        List<CarPropertyManager.GetPropertyRequest> getPropertyRequests = new ArrayList<>();
+        for (int propertyId : propertyIds) {
+            CarPropertyManager.GetPropertyRequest gpr =
+                    mCarPropertyManager.generateGetPropertyRequest(propertyId, 0);
+            getPropertyRequests.add(gpr);
+            pendingRequests.add(gpr.getRequestId());
+        }
+
+        TestPropertyAsyncCallback testGetPropertyAsyncCallback =
+                new TestPropertyAsyncCallback(pendingRequests);
+        try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
+            mCarPropertyManager.getPropertiesAsync(
+                    getPropertyRequests,
+                    /* cancellationSignal= */ null,
+                    executor,
+                    testGetPropertyAsyncCallback);
+            testGetPropertyAsyncCallback.waitAndFinish();
+        }
+
+        return testGetPropertyAsyncCallback.getAsyncErrorList();
+    }
+
     @ApiTest(
             apis = {
                 "android.car.hardware.property.CarPropertyManager#subscribePropertyEvents",
@@ -6652,5 +6897,22 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
 
     private static boolean isSystemProperty(int propertyId) {
         return (propertyId & VEHICLE_PROPERTY_GROUP_MASK) == VEHICLE_PROPERTY_GROUP_SYSTEM;
+    }
+
+    private void runWithTargetSdkVersion(int targetSdkVersion, ThrowingRunnable runnable) {
+        int currTargetSdkVersion = mContext.getApplicationInfo().targetSdkVersion;
+        mContext.getApplicationInfo().targetSdkVersion = targetSdkVersion;
+        // The targetSdkVersion is passed in the constructor, so we must get a new
+        // CarPropertyManager here.
+        Car car = Car.createCar(mContext);
+        mCarPropertyManager = car.getCarManager(CarPropertyManager.class);
+        try {
+            runnable.run();
+        } catch (Exception e) {
+            throw new RuntimeException("Caught exception", e);
+        } finally {
+            car.disconnect();
+            mContext.getApplicationInfo().targetSdkVersion = currTargetSdkVersion;
+        }
     }
 }
