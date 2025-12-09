@@ -60,6 +60,7 @@ public class SubscriptionPlanTest {
     private static final int SUBSCRIPTION_STATUS = SubscriptionPlan.SUBSCRIPTION_STATUS_ACTIVE;
     private static final int[] PLAN_TYPES =
             new int[] {SubscriptionPlan.PLAN_TYPE_CELLULAR, SubscriptionPlan.PLAN_TYPE_POSTPAID};
+    private static final int ID = 123;
 
     private Clock mOriginalClock;
 
@@ -85,6 +86,7 @@ public class SubscriptionPlanTest {
                         .setNetworkTypes(NETWORK_TYPES)
                         .setSubscriptionStatus(SUBSCRIPTION_STATUS)
                         .setTypes(PLAN_TYPES)
+                        .setId(ID)
                         .build();
 
         assertThat(plan).isNotNull();
@@ -100,6 +102,7 @@ public class SubscriptionPlanTest {
         assertThat(plan.getPlanEndDate()).isNull();
         assertThat(plan.getTypes()).containsExactlyElementsIn(Arrays.stream(PLAN_TYPES)
                 .boxed().collect(Collectors.toList()));
+        assertThat(plan.getId()).isEqualTo(ID);
     }
 
     @Test
@@ -137,6 +140,7 @@ public class SubscriptionPlanTest {
                         .setSubscriptionStatus(SUBSCRIPTION_STATUS)
                         .setTypes(PLAN_TYPES)
                         .setDataUsageResetTime(DATA_USAGE_RESET_TIME)
+                        .setId(ID)
                         .build();
 
         Parcel parcel = Parcel.obtain();
@@ -172,6 +176,7 @@ public class SubscriptionPlanTest {
                 .boxed().collect(Collectors.toList()));
 
         parcel.recycle();
+        assertThat(fromParcel.getId()).isEqualTo(ID);
     }
 
     @Test
