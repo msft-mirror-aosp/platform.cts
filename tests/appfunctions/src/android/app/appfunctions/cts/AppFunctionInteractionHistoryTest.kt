@@ -131,7 +131,6 @@ class AppFunctionInteractionHistoryTest {
                             customInteractionType = null,
                             interactionUri = null,
                             accessTime = 0,
-                            duration = 0,
                         ),
                         InteractionHistory(
                             agentPackageName = CURRENT_PKG,
@@ -141,7 +140,6 @@ class AppFunctionInteractionHistoryTest {
                             customInteractionType = null,
                             interactionUri = null,
                             accessTime = 0,
-                            duration = 0,
                         ),
                         InteractionHistory(
                             agentPackageName = CURRENT_PKG,
@@ -150,7 +148,6 @@ class AppFunctionInteractionHistoryTest {
                             customInteractionType = "CUSTOM_TYPE",
                             interactionUri = "content://test.uri",
                             accessTime = 0,
-                            duration = 0,
                         ),
                     ),
             )
@@ -205,7 +202,6 @@ class AppFunctionInteractionHistoryTest {
                                 customInteractionType = "CUSTOM_TYPE",
                                 interactionUri = "content://test.uri",
                                 accessTime = 0,
-                                duration = 0,
                             )
                         ),
                 )
@@ -233,7 +229,7 @@ class AppFunctionInteractionHistoryTest {
             }
     }
 
-    /** The test interaction history that ignores [accessTime] and [duration] when comparing. */
+    /** The test interaction history that ignores [accessTime] when comparing. */
     internal class InteractionHistory(
         val agentPackageName: String,
         val targetPackageName: String,
@@ -241,7 +237,6 @@ class AppFunctionInteractionHistoryTest {
         val customInteractionType: String?,
         val interactionUri: String?,
         val accessTime: Long,
-        val duration: Long,
     ) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -275,8 +270,7 @@ class AppFunctionInteractionHistoryTest {
                 "interactionType=$interactionType, " +
                 "customInteractionType=$customInteractionType, " +
                 "interactionUri=$interactionUri, " +
-                "accessTime=$accessTime, " +
-                "duration=$duration)"
+                "accessTime=$accessTime)"
         }
 
         companion object {
@@ -315,10 +309,6 @@ class AppFunctionInteractionHistoryTest {
                     accessTime =
                         cursor.getLong(
                             cursor.getColumnIndexOrThrow(AppInteractionContract.COLUMN_ACCESS_TIME)
-                        ),
-                    duration =
-                        cursor.getLong(
-                            cursor.getColumnIndexOrThrow(AppInteractionContract.COLUMN_DURATION)
                         ),
                 )
             }
