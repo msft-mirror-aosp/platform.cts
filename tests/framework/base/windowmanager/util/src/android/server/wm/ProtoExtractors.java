@@ -18,9 +18,11 @@ package android.server.wm;
 
 import android.app.WindowConfiguration;
 import android.content.res.Configuration;
+import android.graphics.Insets;
 import android.graphics.Rect;
 
 import perfetto.protos.Configuration.ConfigurationProto;
+import perfetto.protos.Insets.InsetsProto;
 import perfetto.protos.Rect.RectProto;
 import perfetto.protos.WindowConfiguration.WindowConfigurationProto;
 
@@ -75,6 +77,14 @@ public class ProtoExtractors {
             return null;
         }
         return new Rect(proto.getLeft(), proto.getTop(), proto.getRight(), proto.getBottom());
+    }
+
+    /** Extracts a {link Insets} from a corresponding proto. */
+    public static Insets extract(InsetsProto proto) {
+        if (proto == null) {
+            return null;
+        }
+        return Insets.of(proto.getLeft(), proto.getTop(), proto.getRight(), proto.getBottom());
     }
 
     /**
