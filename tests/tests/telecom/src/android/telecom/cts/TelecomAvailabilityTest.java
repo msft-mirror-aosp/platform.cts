@@ -16,8 +16,8 @@
 
 package android.telecom.cts;
 
-import static android.telecom.cts.TestUtils.hasTelephonyFeature;
 import static android.telecom.cts.TestUtils.shouldTestTelecom;
+import static android.telecom.cts.TestUtils.hasTelephonyFeature;
 
 import android.content.Context;
 import android.content.Intent;
@@ -45,7 +45,6 @@ import java.util.List;
 public class TelecomAvailabilityTest extends InstrumentationTestCase {
     private static final String TAG = TelecomAvailabilityTest.class.getSimpleName();
     private static final String TELECOM_PACKAGE_NAME = "com.android.server.telecom";
-    private static final String TELECOM_UI_PACKAGE_NAME = "com.android.server.telecomui";
     private static final String TELEPHONY_PACKAGE_NAME = "com.android.phone";
 
     private PackageManager mPackageManager;
@@ -86,32 +85,22 @@ public class TelecomAvailabilityTest extends InstrumentationTestCase {
         final List<ResolveInfo> activities =
                 mPackageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
 
-        boolean handlerFound =
-                activities.stream()
-                        .anyMatch(
-                                resolveInfo -> {
-                                    if (resolveInfo.activityInfo == null) {
-                                        return false;
-                                    }
-                                    String packageName = resolveInfo.activityInfo.packageName;
-                                    return TELECOM_PACKAGE_NAME.equals(packageName)
-                                            || TELECOM_UI_PACKAGE_NAME.equals(packageName);
-                                });
+        boolean telecomMatches = false;
+        boolean telephonyMatches = false;
+        for (ResolveInfo resolveInfo : activities) {
+            if (resolveInfo.activityInfo == null) {
+                continue;
+            }
+            if (!telecomMatches
+                    && TELECOM_PACKAGE_NAME.equals(resolveInfo.activityInfo.packageName)) {
+                telecomMatches = true;
+            } else if (!telephonyMatches
+                    && TELEPHONY_PACKAGE_NAME.equals(resolveInfo.activityInfo.packageName)) {
+                telephonyMatches = true;
+            }
+        }
 
-        assertTrue(
-                "A Telecom or TelecomUI APK must be registered to handle CALL intents",
-                handlerFound);
-
-        boolean telephonyMatches =
-                activities.stream()
-                        .anyMatch(
-                                resolveInfo -> {
-                                    if (resolveInfo.activityInfo == null) {
-                                        return false;
-                                    }
-                                    return TELEPHONY_PACKAGE_NAME.equals(
-                                            resolveInfo.activityInfo.packageName);
-                                });
+        assertTrue("Telecom APK must be registered to handle CALL intents", telecomMatches);
         assertFalse("Telephony APK must NOT be registered to handle CALL intents",
                 telephonyMatches);
     }
@@ -127,24 +116,11 @@ public class TelecomAvailabilityTest extends InstrumentationTestCase {
 
         final List<ResolveInfo> activities =
                 mPackageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
-        assertEquals(
-                "There must be exactly one handler for MANAGE_BLOCKED_NUMBERS",
-                1,
-                activities.size());
-
-        String packageName = activities.get(0).activityInfo.packageName;
-        boolean isAllowedPackage =
-                TELECOM_PACKAGE_NAME.equals(packageName)
-                        || TELECOM_UI_PACKAGE_NAME.equals(packageName);
-
-        assertTrue(
-                "Handler for MANAGE_BLOCKED_NUMBERS must be in an allowed package ("
-                        + TELECOM_PACKAGE_NAME
-                        + " or "
-                        + TELECOM_UI_PACKAGE_NAME
-                        + "), but was "
-                        + packageName,
-                isAllowedPackage);
+        assertEquals(1, activities.size());
+        for (ResolveInfo resolveInfo : activities) {
+            assertNotNull(resolveInfo.activityInfo);
+            assertEquals(TELECOM_PACKAGE_NAME, resolveInfo.activityInfo.packageName);
+        }
     }
 
     /**
