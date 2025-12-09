@@ -59,11 +59,13 @@ public class ConversationHintTest {
     private static final AutofillId AUTOFILL_ID = new AutofillId(1);
     private static final String CONTENT_DESCRIPTION = "content description";
     private Instant mReferenceTime;
+    private Instant mClientEventTimestamp;
     private ChatMessageData mChatMessageData;
 
     @Before
     public void setUp() {
         mReferenceTime = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+        mClientEventTimestamp = mReferenceTime.minusSeconds(1);
         mChatMessageData =
                 new ChatMessageData.Builder()
                         .setOutgoingMessage(true)
@@ -87,7 +89,7 @@ public class ConversationHintTest {
                 "android.service.personalcontext.hint.ContextHint#getHintId",
                 "android.service.personalcontext.hint.ConversationHint#toBundle",
                 "android.service.personalcontext.hint.ConversationHint#getConversationEvent",
-                "android.service.personalcontext.hint.ConversationEvent#getEventTimestamp",
+                "android.service.personalcontext.hint.ConversationEvent#getClientEventTimestamp",
                 "android.service.personalcontext.hint.ConversationEvent"
                         + ".ConversationEnterEvent#getConversationSessionId",
                 "android.service.personalcontext.hint.ConversationEvent"
@@ -96,8 +98,9 @@ public class ConversationHintTest {
     @Test
     public void testConversationHint_enterEvent_bundleUnbundle() {
         final Instant enterTimestamp = mReferenceTime;
+        final Instant clientEventTimestamp = mClientEventTimestamp;
         final ConversationEnterEvent enterEvent =
-                new ConversationEnterEvent(CONVERSATION_SESSION_ID, enterTimestamp, enterTimestamp);
+                new ConversationEnterEvent(CONVERSATION_SESSION_ID, clientEventTimestamp, enterTimestamp);
         final ConversationHint hint = new ConversationHint.Builder(enterEvent).build();
         assertThat(hint.getHintId()).isNotNull();
 
@@ -111,7 +114,7 @@ public class ConversationHintTest {
         final ConversationEnterEvent outputEnterEvent = (ConversationEnterEvent) outputEvent;
         assertThat(outputEnterEvent.getConversationSessionId()).isEqualTo(CONVERSATION_SESSION_ID);
         assertThat(outputEnterEvent.getConversationEnterTimestamp()).isEqualTo(enterTimestamp);
-        assertThat(outputEnterEvent.getEventTimestamp()).isEqualTo(enterTimestamp);
+        assertThat(outputEnterEvent.getClientEventTimestamp()).isEqualTo(clientEventTimestamp);
     }
 
     @ApiTest(
@@ -129,10 +132,11 @@ public class ConversationHintTest {
     @Test
     public void testConversationHint_enterEvent_equalsHashCodeToString() {
         final Instant enterTimestamp = mReferenceTime;
+        final Instant clientEventTimestamp = mClientEventTimestamp;
         final ConversationEnterEvent enterEvent =
-                new ConversationEnterEvent(CONVERSATION_SESSION_ID, enterTimestamp, enterTimestamp);
+                new ConversationEnterEvent(CONVERSATION_SESSION_ID, clientEventTimestamp, enterTimestamp);
         final ConversationEnterEvent enterEvent2 =
-                new ConversationEnterEvent(CONVERSATION_SESSION_ID, enterTimestamp, enterTimestamp);
+                new ConversationEnterEvent(CONVERSATION_SESSION_ID, clientEventTimestamp, enterTimestamp);
         assertThat(enterEvent).isEqualTo(enterEvent2);
         assertThat(enterEvent.hashCode()).isEqualTo(enterEvent2.hashCode());
         assertThat(enterEvent.toString()).isNotNull();
@@ -154,15 +158,16 @@ public class ConversationHintTest {
                 "android.service.personalcontext.hint.ContextHint#getHintId",
                 "android.service.personalcontext.hint.ConversationHint#toBundle",
                 "android.service.personalcontext.hint.ConversationHint#getConversationEvent",
-                "android.service.personalcontext.hint.ConversationEvent#getEventTimestamp",
+                "android.service.personalcontext.hint.ConversationEvent#getClientEventTimestamp",
                 "android.service.personalcontext.hint.ConversationEvent"
                         + ".ConversationExitEvent#getConversationSessionId"
             })
     @Test
     public void testConversationHint_exitEvent_bundleUnbundle() {
         final Instant eventTimestamp = mReferenceTime;
+        final Instant clientEventTimestamp = mClientEventTimestamp;
         final ConversationExitEvent exitEvent =
-                new ConversationExitEvent(CONVERSATION_SESSION_ID, eventTimestamp);
+                new ConversationExitEvent(CONVERSATION_SESSION_ID, clientEventTimestamp, eventTimestamp);
         final ConversationHint hint = new ConversationHint.Builder(exitEvent).build();
         assertThat(hint.getHintId()).isNotNull();
 
@@ -175,7 +180,7 @@ public class ConversationHintTest {
 
         final ConversationExitEvent outputExitEvent = (ConversationExitEvent) outputEvent;
         assertThat(outputExitEvent.getConversationSessionId()).isEqualTo(CONVERSATION_SESSION_ID);
-        assertThat(outputExitEvent.getEventTimestamp()).isEqualTo(eventTimestamp);
+        assertThat(outputExitEvent.getClientEventTimestamp()).isEqualTo(clientEventTimestamp);
     }
 
     @ApiTest(
@@ -193,10 +198,11 @@ public class ConversationHintTest {
     @Test
     public void testConversationHint_exitEvent_equalsHashCodeToString() {
         final Instant eventTimestamp = mReferenceTime;
+        final Instant clientEventTimestamp = mClientEventTimestamp;
         final ConversationExitEvent exitEvent =
-                new ConversationExitEvent(CONVERSATION_SESSION_ID, eventTimestamp);
+                new ConversationExitEvent(CONVERSATION_SESSION_ID, clientEventTimestamp, eventTimestamp);
         final ConversationExitEvent exitEvent2 =
-                new ConversationExitEvent(CONVERSATION_SESSION_ID, eventTimestamp);
+                new ConversationExitEvent(CONVERSATION_SESSION_ID, clientEventTimestamp, eventTimestamp);
         assertThat(exitEvent).isEqualTo(exitEvent2);
         assertThat(exitEvent.hashCode()).isEqualTo(exitEvent2.hashCode());
         assertThat(exitEvent.toString()).isNotNull();
@@ -218,7 +224,7 @@ public class ConversationHintTest {
                 "android.service.personalcontext.hint.ContextHint#getHintId",
                 "android.service.personalcontext.hint.ConversationHint#toBundle",
                 "android.service.personalcontext.hint.ConversationHint#getConversationEvent",
-                "android.service.personalcontext.hint.ConversationEvent#getEventTimestamp",
+                "android.service.personalcontext.hint.ConversationEvent#getClientEventTimestamp",
                 "android.service.personalcontext.hint.ConversationEvent"
                         + ".ConversationProcessingEvent#getStartProcessingTimestamp",
                 "android.service.personalcontext.hint.ConversationEvent"
@@ -229,11 +235,12 @@ public class ConversationHintTest {
     @Test
     public void testConversationHint_processingEvent_bundleUnbundle() {
         final Instant processingTimestamp = mReferenceTime;
+        final Instant clientEventTimestamp = mClientEventTimestamp;
         final AutofillId messageAutofillId = new AutofillId(2);
         final ConversationProcessingEvent processingEvent =
                 new ConversationProcessingEvent(
                         CONVERSATION_SESSION_ID,
-                        processingTimestamp,
+                        clientEventTimestamp,
                         processingTimestamp,
                         messageAutofillId);
         final ConversationHint hint = new ConversationHint.Builder(processingEvent).build();
@@ -253,7 +260,7 @@ public class ConversationHintTest {
         assertThat(outputProcessingEvent.getMessageAutofillId()).isEqualTo(messageAutofillId);
         assertThat(outputProcessingEvent.getConversationSessionId())
                 .isEqualTo(CONVERSATION_SESSION_ID);
-        assertThat(outputProcessingEvent.getEventTimestamp()).isEqualTo(processingTimestamp);
+        assertThat(outputProcessingEvent.getClientEventTimestamp()).isEqualTo(clientEventTimestamp);
     }
 
     @ApiTest(
@@ -271,17 +278,18 @@ public class ConversationHintTest {
     @Test
     public void testConversationHint_processingEvent_equalsHashCodeToString() {
         final Instant processingTimestamp = mReferenceTime;
+        final Instant clientEventTimestamp = mClientEventTimestamp;
         final AutofillId messageAutofillId = new AutofillId(2);
         final ConversationProcessingEvent processingEvent =
                 new ConversationProcessingEvent(
                         CONVERSATION_SESSION_ID,
-                        processingTimestamp,
+                        clientEventTimestamp,
                         processingTimestamp,
                         messageAutofillId);
         final ConversationProcessingEvent processingEvent2 =
                 new ConversationProcessingEvent(
                         CONVERSATION_SESSION_ID,
-                        processingTimestamp,
+                        clientEventTimestamp,
                         processingTimestamp,
                         messageAutofillId);
         assertThat(processingEvent).isEqualTo(processingEvent2);
@@ -305,7 +313,7 @@ public class ConversationHintTest {
                 "android.service.personalcontext.hint.ContextHint#getHintId",
                 "android.service.personalcontext.hint.ConversationHint#toBundle",
                 "android.service.personalcontext.hint.ConversationHint#getConversationEvent",
-                "android.service.personalcontext.hint.ConversationEvent#getEventTimestamp",
+                "android.service.personalcontext.hint.ConversationEvent#getClientEventTimestamp",
                 "android.service.personalcontext.hint.ConversationEvent"
                         + ".ConversationUpdateEvent#getConversationData",
                 "android.service.personalcontext.hint.ConversationEvent"
@@ -319,6 +327,7 @@ public class ConversationHintTest {
         final ActivityId activityId = new ActivityId(1, null);
         final Instant processingStartTimestamp = mReferenceTime;
         final Instant processingEndTimestamp = mReferenceTime;
+        final Instant clientEventTimestamp = mClientEventTimestamp;
         final ComponentName componentName = new ComponentName("pkg", "cls");
         final AutofillId inputBoxAutofillId = new AutofillId(1);
         final ConversationData conversationData =
@@ -335,10 +344,10 @@ public class ConversationHintTest {
                         .setActivityId(activityId)
                         .setHasNewMessage(true)
                         .build();
-        final Instant eventTimestamp = mReferenceTime;
+        final Instant updateTimestamp = mReferenceTime;
         final ConversationUpdateEvent updateEvent =
                 new ConversationUpdateEvent(
-                        CONVERSATION_SESSION_ID, eventTimestamp, conversationData);
+                        CONVERSATION_SESSION_ID, clientEventTimestamp, updateTimestamp, conversationData);
         final ConversationHint hint = new ConversationHint.Builder(updateEvent).build();
         assertThat(hint.getHintId()).isNotNull();
 
@@ -352,7 +361,7 @@ public class ConversationHintTest {
         final ConversationUpdateEvent outputUpdateEvent = (ConversationUpdateEvent) outputEvent;
         assertThat(outputUpdateEvent.getConversationData()).isEqualTo(conversationData);
         assertThat(outputUpdateEvent.getConversationSessionId()).isEqualTo(CONVERSATION_SESSION_ID);
-        assertThat(outputUpdateEvent.getEventTimestamp()).isEqualTo(eventTimestamp);
+        assertThat(outputUpdateEvent.getClientEventTimestamp()).isEqualTo(clientEventTimestamp);
         assertThat(outputUpdateEvent.getConversationData().hasNewMessage()).isTrue();
     }
 
@@ -376,6 +385,7 @@ public class ConversationHintTest {
         final ActivityId activityId = new ActivityId(1, null);
         final Instant processingStartTimestamp = mReferenceTime;
         final Instant processingEndTimestamp = mReferenceTime;
+        final Instant clientEventTimestamp = mClientEventTimestamp;
         final ComponentName componentName = new ComponentName("pkg", "cls");
         final AutofillId inputBoxAutofillId = new AutofillId(1);
         final ConversationData conversationData =
@@ -392,13 +402,13 @@ public class ConversationHintTest {
                         .setActivityId(activityId)
                         .setHasNewMessage(true)
                         .build();
-        final Instant eventTimestamp = mReferenceTime;
+        final Instant updateTimestamp = mReferenceTime;
         final ConversationUpdateEvent updateEvent =
                 new ConversationUpdateEvent(
-                        CONVERSATION_SESSION_ID, eventTimestamp, conversationData);
+                        CONVERSATION_SESSION_ID, clientEventTimestamp, updateTimestamp, conversationData);
         final ConversationUpdateEvent updateEvent2 =
                 new ConversationUpdateEvent(
-                        CONVERSATION_SESSION_ID, eventTimestamp, conversationData);
+                        CONVERSATION_SESSION_ID, clientEventTimestamp, updateTimestamp, conversationData);
         assertThat(updateEvent).isEqualTo(updateEvent2);
         assertThat(updateEvent.hashCode()).isEqualTo(updateEvent2.hashCode());
         assertThat(updateEvent.toString()).isNotNull();
