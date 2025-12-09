@@ -895,8 +895,6 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
                 // App does not have AML; shouldn't have access to the same metadata.
                 assertExifMetadataMismatch(exifFromTestApp, originalExif);
 
-                // TODO(b/146346138): Test that if we give APP_A write URI permission,
-                //  it would be able to access the metadata.
             } // Intentionally keep the original streams open during the test so bytes are more
             // likely to be in the VFS cache from both file opens
         } finally {
@@ -1820,8 +1818,6 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
             // Give time to kernel to update dentry cache
             Thread.sleep(100);
 
-            // TODO(b/146346138): Test that app with right URI permission should be able to rename
-            // the corresponding file
         } finally {
             deleteFileAsNoThrow(APP_B_NO_PERMS, videoFile1.getAbsolutePath());
             videoFile2.delete();
