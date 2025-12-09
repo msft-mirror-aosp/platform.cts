@@ -30,10 +30,10 @@ android_test {
     static_libs: [
         "android.hardware.serial.flags-aconfig-java",
         "androidx.test.rules",
-        "bedstead-enterprise",
-        "bedstead-root",
+        "compatibility-device-util-axt",
         "mockito-kotlin-nodeps",
         "mockito-target-minus-junit4",
+        "truth",
     ],
     libs: [
         "android.test.runner.stubs.test",
