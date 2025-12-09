@@ -5016,6 +5016,137 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @ApiTest(
             apis = {
                 "android.car.hardware.property.CarPropertyManager#subscribePropertyEvents",
+                "android.car.hardware.CarPropertyValue#getPropertyStatus"
+            })
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_STATUS_DETAILED_NOT_AVAILABLE)
+    public void testSubscribePropertyEvents_mapStatusCodeToDetailedPropertyStatusForInitialEvent()
+            throws Exception {
+        // The initial property event is retrieved via getProperty. This test verifies that if
+        // getProperty returns a detailed not available StatusCode that it is then correctly mapped
+        // to a detailed not available property status.
+        runWithShellPermissionIdentity(
+                () -> {
+                    VehiclePropertyVerifier<Boolean> verifier =
+                            VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
+                                            VehiclePropertyIds.CRUISE_CONTROL_ENABLED)
+                                    .setCarPropertyManager(mCarPropertyManager)
+                                    .build();
+                    CarPropertyConfig<?> carPropertyConfig =
+                            mCarPropertyManager.getCarPropertyConfig(
+                                    VehiclePropertyIds.CRUISE_CONTROL_ENABLED);
+
+                    assumeTrue(
+                            "CRUISE_CONTROL_ENABLED property is not supported",
+                            carPropertyConfig != null);
+
+                    // These properties must return StatusCode.NOT_AVAILABLE_DISABLED when
+                    // cruise control is disabled.
+                    CarPropertyConfig<?> dependentConfig =
+                            mCarPropertyManager.getCarPropertyConfig(
+                                    VehiclePropertyIds.CRUISE_CONTROL_TARGET_SPEED);
+                    if (dependentConfig == null) {
+                        dependentConfig =
+                                mCarPropertyManager.getCarPropertyConfig(
+                                        VehiclePropertyIds.ADAPTIVE_CRUISE_CONTROL_TARGET_TIME_GAP);
+                    }
+                    if (dependentConfig == null) {
+                        dependentConfig =
+                                mCarPropertyManager.getCarPropertyConfig(
+                                        VehiclePropertyIds
+                                                .ADAPTIVE_CRUISE_CONTROL_LEAD_VEHICLE_MEASURED_DISTANCE);
+                    }
+
+                    assumeTrue(
+                            "CRUISE_CONTROL_TARGET_SPEED, ADAPTIVE_CRUISE_CONTROL_TARGET_TIME_GAP,"
+                                    + " ADAPTIVE_CRUISE_CONTROL_LEAD_VEHICLE_MEASURED_DISTANCE"
+                                    + " properties are not supported",
+                            dependentConfig != null);
+
+                    CarPropertyValue<Boolean> cruiseControlEnabled = null;
+                    try {
+                        cruiseControlEnabled =
+                                mCarPropertyManager.getProperty(
+                                        VehiclePropertyIds.CRUISE_CONTROL_ENABLED, 0);
+                    } catch (Exception e) {
+                        assumeTrue(
+                                "CRUISE_CONTROL_ENABLED property could not be read, error: " + e,
+                                cruiseControlEnabled != null);
+                    }
+
+                    // Disable cruise control if enabled
+                    if (cruiseControlEnabled.getValue()) {
+                        assumeTrue(
+                                "CRUISE_CONTROL_ENABLED property is true and not writable",
+                                carPropertyConfig.getAreaIdConfigs().get(0).getAccess()
+                                        == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE);
+
+                        verifier.storeCurrentValues();
+                        CarPropertyManager.SetPropertyRequest<?> spr =
+                                mCarPropertyManager.generateSetPropertyRequest(
+                                        VehiclePropertyIds.CRUISE_CONTROL_ENABLED,
+                                        /* areaId= */ 0,
+                                        /* value= */ false);
+                        ArraySet<Integer> requests = new ArraySet<>();
+                        requests.add(spr.getRequestId());
+                        TestPropertyAsyncCallback callback =
+                                new TestPropertyAsyncCallback(requests);
+                        try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
+                            mCarPropertyManager.setPropertiesAsync(
+                                    List.of(spr),
+                                    ASYNC_WAIT_TIMEOUT_IN_SEC * 1000,
+                                    /* cancellationSignal= */ null,
+                                    executor,
+                                    callback);
+                            callback.waitAndFinish();
+                        }
+
+                        assumeTrue(
+                                "Unable to set CRUISE_CONTROL_ENABLED to false, errors: "
+                                        + callback.getErrorList(),
+                                callback.getResultList().size() == 1);
+                    }
+
+                    int dependentPropertyId = dependentConfig.getPropertyId();
+                    String dependentPropertyName = VehiclePropertyIds.toString(dependentPropertyId);
+                    CarPropertyEventCounter listener = new CarPropertyEventCounter();
+                    listener.resetCountDownLatch(ONCHANGE_RATE_EVENT_COUNTER);
+
+                    try {
+                        assertWithMessage(
+                                        "Failed to subscribe to property " + dependentPropertyName)
+                                .that(
+                                        mCarPropertyManager.subscribePropertyEvents(
+                                                dependentConfig.getPropertyId(), listener))
+                                .isTrue();
+                        try {
+                            listener.assertOnChangeEventCalled();
+                        } finally {
+                            mCarPropertyManager.unsubscribePropertyEvents(listener);
+                        }
+
+                        for (CarPropertyValue<?> carPropertyValue :
+                                listener.getReceivedCarPropertyValues()) {
+                            assertThat(carPropertyValue.getPropertyId())
+                                    .isEqualTo(dependentPropertyId);
+                            assertThat(carPropertyValue.getAreaId()).isEqualTo(0);
+                            assertWithMessage(
+                                            "When CRUISE_CONTROL_ENABLED is false, "
+                                                    + dependentPropertyName
+                                                    + " must return"
+                                                    + " StatusCode.NOT_AVAILABLE_DISABLED")
+                                    .that(carPropertyValue.getPropertyStatus())
+                                    .isEqualTo(CarPropertyValue.STATUS_NOT_AVAILABLE_DISABLED);
+                        }
+                    } finally {
+                        verifier.restoreInitialValues();
+                    }
+                });
+    }
+
+    @Test
+    @ApiTest(
+            apis = {
+                "android.car.hardware.property.CarPropertyManager#subscribePropertyEvents",
                 "android.car.hardware.property.CarPropertyManager#unregisterCallback"
             })
     @RequiresFlagsEnabled({Flags.FLAG_BATCHED_SUBSCRIPTIONS, Flags.FLAG_VARIABLE_UPDATE_RATE})
