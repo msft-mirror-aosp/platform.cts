@@ -24,7 +24,7 @@ import static android.view.Display.FRAME_RATE_CATEGORY_NORMAL;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
-import static com.android.graphics.surfaceflinger.flags.Flags.FLAG_PARSE_EDID_VERSION_AND_INPUT_TYPE;
+import static com.android.graphics.surfaceflinger.flags.Flags.FLAG_PARSE_EDID_VERSION_AND_INPUT_TYPE_V2;
 import static com.android.server.display.feature.flags.Flags.FLAG_DISPLAY_TOPOLOGY_API;
 import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_GET_SUGGESTED_FRAME_RATE;
 import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_GET_SUPPORTED_REFRESH_RATES;
@@ -1171,7 +1171,7 @@ public class DisplayTest extends TestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_PARSE_EDID_VERSION_AND_INPUT_TYPE)
+    @RequiresFlagsEnabled(FLAG_PARSE_EDID_VERSION_AND_INPUT_TYPE_V2)
     public void testGetDeviceProductInfoWithEdidVersionAndInputType() {
         DeviceProductInfo deviceProductInfo = mDefaultDisplay.getDeviceProductInfo();
         assumeNotNull(deviceProductInfo);
@@ -1236,7 +1236,7 @@ public class DisplayTest extends TestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_PARSE_EDID_VERSION_AND_INPUT_TYPE)
+    @RequiresFlagsEnabled(FLAG_PARSE_EDID_VERSION_AND_INPUT_TYPE_V2)
     public void testDeviceProductInfoWithBuilderAndEdidVersionAndInputType() {
         DeviceProductInfo deviceProductInfo =
                 new DeviceProductInfo.Builder(
