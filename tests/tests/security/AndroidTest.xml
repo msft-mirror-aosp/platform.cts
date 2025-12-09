@@ -69,6 +69,7 @@
         <option name="push" value="UpdatedDynamicPermissionTestAttackerApp.apk->/data/local/tmp/cts/security/UpdatedDynamicPermissionTestAttackerApp.apk" />
         <option name="push" value="CtsMultiuserContentProviderInitial.apk->/data/local/tmp/cts/security/CtsMultiuserContentProviderInitial.apk" />
         <option name="push" value="CtsMultiuserContentProviderOther.apk->/data/local/tmp/cts/security/CtsMultiuserContentProviderOther.apk" />
+        <option name="push" value="LargeInputMethodTestApp.apk->/data/local/tmp/cts/security/LargeInputMethodTestApp.apk" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
