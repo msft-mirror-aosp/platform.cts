@@ -46,6 +46,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -60,6 +61,7 @@ import java.util.List;
 @LargeTest
 @RunWith(AndroidJUnit4.class)
 @ApiTest(apis = {"Manifest.permission#ACCESS_FINE_LOCATION"})
+@Ignore("b/456079559") // TODO(qiangjiang): remove this test once mobly test is ready.
 public class WifiLocationInfoForegroundTest extends WifiJUnit4TestBase {
     private static final String TAG = "WifiLocationInfoTest";
 
