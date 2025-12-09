@@ -16,6 +16,7 @@
 
 package android.companion.cts.core
 
+import android.Manifest.permission.ACCESS_COMPANION_MESSAGE_PCC
 import android.Manifest.permission.REQUEST_COMPANION_SELF_MANAGED
 import android.Manifest.permission.USE_COMPANION_TRANSPORTS
 import android.companion.ActionRequest
@@ -43,6 +44,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import java.util.function.BiConsumer
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import org.junit.Rule
@@ -82,8 +84,8 @@ class ActionResultTest : CoreTestBase() {
     override fun tearDown() {
         // Clean up listeners to avoid interfering with other tests
         withShellPermissionIdentity(USE_COMPANION_TRANSPORTS) {
-            cdm.removeOnActionResultListener(SERVICE_NAME_A)
-            cdm.removeOnActionResultListener(SERVICE_NAME_B)
+            cdm.clearOnActionResultListener(SERVICE_NAME_A)
+            cdm.clearOnActionResultListener(SERVICE_NAME_B)
             cdm.setRequestActionAllowList(null)
         }
 
@@ -147,7 +149,7 @@ class ActionResultTest : CoreTestBase() {
 
         // 4. Remove the listener.
         withShellPermissionIdentity(USE_COMPANION_TRANSPORTS) {
-            cdm.removeOnActionResultListener(SERVICE_NAME_A)
+            cdm.clearOnActionResultListener(SERVICE_NAME_A)
         }
 
         // 5. Notify another result and verify it is NOT received.
@@ -465,6 +467,25 @@ class ActionResultTest : CoreTestBase() {
 
         assertEquals(expected = REQUEST_NEARBY_SCANNING, actual = resultC.action)
         assertEquals(expected = RESULT_DEACTIVATED, actual = resultC.resultCode)
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_TRUSTED_DEVICES)
+    fun testActionResultListener_with_pcc_permission() {
+        val listenerA = BiConsumer<Int, ActionResult> { id, result ->
+            receivedResults.offer(id to result)
+        }
+
+        withShellPermissionIdentity(ACCESS_COMPANION_MESSAGE_PCC) {
+            // The device must be trusted even hold ACCESS_COMPANION_MESSAGE_PCC permission.
+            assertFailsWith(SecurityException::class) {
+                cdm.setOnActionResultListener(
+                    intArrayOf(associationIdA),
+                    SERVICE_NAME_A,
+                    executor,
+                    listenerA
+                )
+            }
+        }
     }
 
     private fun assertResultReceived(
