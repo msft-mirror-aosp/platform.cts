@@ -45,7 +45,7 @@ class BlockingQueueEventVerifier(val queue: BlockingQueue<InputEvent>) {
     @JvmOverloads
     fun assertReceivedMotion(matcher: Matcher<MotionEvent>, msg: String? = null): MotionEvent {
         val event = getEventOfType(MotionEvent::class.java, msg)
-        assertThat(msg ?: "MotionEvent checks", event, matcher)
+        assertThat(msg ?: "MotionEvent did not match", event, matcher)
         return event
     }
 
