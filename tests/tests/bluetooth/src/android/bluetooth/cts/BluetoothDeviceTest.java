@@ -937,7 +937,6 @@ public class BluetoothDeviceTest {
                 .onReceive(any(), MockitoHamcrest.argThat(AllOf.allOf(matchers)));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_LINK_STATUS_API)
     @Test
     public void isConnected_getEncryptionStatus() {
         // Skip the test if bluetooth or companion device are not present.
