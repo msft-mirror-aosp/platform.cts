@@ -18,6 +18,7 @@ import math
 import os
 import pathlib
 import threading
+import time
 import types
 
 import camera_properties_utils
@@ -49,6 +50,7 @@ _BRIGHTNESS_DIFF_THRESHOLD = 10
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _COMMON_IMG_ARS_ATOL = 0.01
 _COLOR_DIFF_THRESHOLD = 6
+_CLOSE_CAMERA_WAIT_TIME_SECONDS = 5
 
 
 def get_jca_ar(default_capture_path):
@@ -214,6 +216,7 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
         gen2_rig_controller_utils.rotate_to_orthogonal_position(
             cam, self.log_path, self.motor_port, self.motor_channel)
       cam.close_camera()
+      time.sleep(_CLOSE_CAMERA_WAIT_TIME_SECONDS)
 
       # Take capture with default camera app
       device_img_path = ui_interaction_utils.launch_and_take_capture(

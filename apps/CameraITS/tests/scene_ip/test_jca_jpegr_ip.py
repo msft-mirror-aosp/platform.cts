@@ -17,6 +17,7 @@ import logging
 import os
 import pathlib
 import threading
+import time
 
 import camera_properties_utils
 import gen2_rig_controller_utils
@@ -37,6 +38,7 @@ _JETPACK_CAMERA_APP_PACKAGE_NAME = 'com.google.jetpackcamera'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _SCREEN_RECORDING_PATH = f'/sdcard/{_NAME}_screen_recording.mp4'
 _AWB_DIFF_THRESHOLD = 4  # Determined empirically
+_CLOSE_CAMERA_WAIT_TIME_SECONDS = 5
 # Known Issue b/398591036 - [Instagram] Bad color optimization in the
 # Instagram camera
 # its_session_utils.get_backported_issue_is_fixed will check if the issue is
@@ -131,6 +133,7 @@ class JcaJpegRImageParityClassTest(its_base_test.ItsBaseTest):
 
       # close camera after props have been retrieved
       cam.close_camera()
+      time.sleep(_CLOSE_CAMERA_WAIT_TIME_SECONDS)
       device_id = self.dut.serial
 
       # Set up gen2 rig controllers
