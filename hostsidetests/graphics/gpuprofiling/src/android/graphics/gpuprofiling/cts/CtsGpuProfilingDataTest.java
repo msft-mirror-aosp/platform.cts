@@ -112,7 +112,6 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
     private static final String FEATURE_WATCH = "android.hardware.type.watch";
     private static final String FEATURE_TELEVISION = "android.hardware.type.television";
     private static final String SUCCESS = "SUCCESS";
-    private static final String RAYTRACING_SUPPORT_EVENT = "CtsTestDeviceRayTracingSupport";
 
     private String initialDebugPropertyValue = null;
     private boolean mHasGpuCountersCapability = false;
@@ -121,7 +120,7 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
 
     private class ShellThread extends Thread {
 
-        private String mCmd;
+        private final String mCmd;
 
         public ShellThread(String cmd) throws Exception {
             super("ShellThread");
@@ -252,9 +251,7 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                 }
 
                 List<Integer> counterIdsList =
-                        gpuCounterSpecsList.stream()
-                                .map(spec -> spec.getCounterId())
-                                .collect(Collectors.toList());
+                        gpuCounterSpecsList.stream().map(GpuCounterSpec::getCounterId).toList();
                 counterIds = new HashSet<>(counterIdsList);
                 errorCollector.checkThat(
                         "Counter IDs in DataSourceDescriptor must be unique.",
@@ -263,8 +260,8 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
 
                 defaultCounterIds =
                         gpuCounterSpecsList.stream()
-                                .filter(spec -> spec.getSelectByDefault())
-                                .map(spec -> spec.getCounterId())
+                                .filter(GpuCounterSpec::getSelectByDefault)
+                                .map(GpuCounterSpec::getCounterId)
                                 .collect(Collectors.toSet());
                 errorCollector.checkThat(
                         "No default counters set.", defaultCounterIds, not(empty()));
@@ -293,12 +290,6 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
             buildConfig(counterIds).writeTo(out);
         }
 
-        String foundValidGpuCounterDescriptions = "no valid trace";
-        boolean foundValidGpuCounterEvent = false;
-        boolean foundAllDefaultCounters = false;
-        boolean foundGpuFrequencyEvent = false;
-        boolean foundValidGpuRenderStageEvent = false;
-
         captureTrace(configFile);
 
         File traceResult = getDevice().pullFile(TRACE_FILE_PATH);
@@ -307,12 +298,16 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
             trace = Trace.parseFrom(CodedInputStream.newInstance(in));
         }
 
-        List<TracePacket> packetList = trace.getPacketList();
+        List<GpuCounter> gpuCountersFromTrace = ProfilingDataUtilsKt.getCounters(trace);
 
-        foundValidGpuCounterEvent = containsValidGpuCounterEvent(packetList);
-        foundAllDefaultCounters = containsAllCountersFromSet(packetList, defaultCounterIds);
-        foundGpuFrequencyEvent = containsGpuFrequencyEvent(packetList);
-        foundValidGpuRenderStageEvent = containsValidRenderStageEvent(packetList);
+        boolean foundValidGpuCounterEvent = containsValidGpuCounterEvent(gpuCountersFromTrace);
+        boolean foundAllDefaultCounters =
+                gpuCountersFromTrace.stream()
+                        .map(GpuCounter::getCounterId)
+                        .collect(Collectors.toSet())
+                        .equals(defaultCounterIds);
+        boolean foundGpuFrequencyEvent = containsGpuFrequencyEvent(trace);
+        boolean foundValidGpuRenderStageEvent = containsValidRenderStageEvent(trace);
 
         traceResult.delete();
         CommandResult deleteTraceStatus =
@@ -321,18 +316,15 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
 
         if (mHasGpuCountersCapability) {
             // Additionally try enabling *all* counters, and make sure descriptions are present.
-            foundValidGpuCounterDescriptions = "no valid trace";
-
             captureTrace(allCountersConfigFile);
 
             traceResult = getDevice().pullFile(TRACE_FILE_PATH);
-            trace = null;
             try (InputStream in = new FileInputStream(traceResult)) {
                 trace = Trace.parseFrom(CodedInputStream.newInstance(in));
             }
 
-            foundValidGpuCounterDescriptions =
-                    containsValidGpuCounterDescriptions(trace.getPacketList(), counterIds);
+            String foundValidGpuCounterDescriptions =
+                    getSummaryDescriptionOfIdsInTrace(trace, counterIds);
 
             traceResult.delete();
             deleteTraceStatus = getDevice().executeShellV2Command("rm -f " + TRACE_FILE_PATH);
@@ -351,8 +343,7 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                     foundAllDefaultCounters,
                     is(true));
             if (getProperty(GPU_COUNTERS_GROUPS_PROPERTY)) {
-                checkRequiredGroupsPresent(
-                        errorCollector, gpuCounterSpecsList, trace.getPacketList());
+                checkRequiredGroupsPresent(errorCollector, gpuCounterSpecsList, trace);
             }
         }
 
@@ -371,9 +362,8 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
         allCountersConfigFile.delete();
     }
 
-    private static String containsValidGpuCounterDescriptions(
-            List<TracePacket> packetList, Set<Integer> enabledIds) {
-        for (TracePacket packet : packetList) {
+    private static String getSummaryDescriptionOfIdsInTrace(Trace trace, Set<Integer> enabledIds) {
+        for (TracePacket packet : trace.getPacketList()) {
             if (!packet.hasGpuCounterEvent()) continue;
             if (packet.hasTimestamp() && packet.getTimestamp() != 0) {
                 return "first counter event packet has a non-zero timestamp";
@@ -406,44 +396,13 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
         return "no counter descriptor events found";
     }
 
-    private static boolean containsValidGpuCounterEvent(List<TracePacket> packetList) {
-        for (TracePacket packet : packetList) {
-            if (!packet.hasGpuCounterEvent()) continue;
-
-            GpuCounterEvent gpuCounterEvent = packet.getGpuCounterEvent();
-            if (gpuCounterEvent.getCountersCount() == 0) continue;
-
-            for (GpuCounterEvent.GpuCounter counter : gpuCounterEvent.getCountersList()) {
-                // Currently, "valid counters" are defined by having at least one, non-zero value.
-                if ((counter.hasIntValue() && counter.getIntValue() > 0)
-                        || (counter.hasDoubleValue() && counter.getDoubleValue() > 0.0)) {
-                    return true;
-                }
-            }
-        }
-        return false;
+    private static boolean containsValidGpuCounterEvent(List<GpuCounter> gpuCountersFromTrace) {
+        // Currently, "valid counters" are defined by having at least one, non-zero value.
+        return gpuCountersFromTrace.stream().anyMatch(counter -> counter.getValue() > 0.0);
     }
 
-    private static boolean containsAllCountersFromSet(
-            List<TracePacket> packetList, Set<Integer> counterIds) {
-        Set<Integer> foundIds = new HashSet<>();
-        for (TracePacket packet : packetList) {
-            if (!packet.hasGpuCounterEvent()) continue;
-
-            GpuCounterEvent gpuCounterEvent = packet.getGpuCounterEvent();
-            if (gpuCounterEvent.getCountersCount() == 0) continue;
-
-            for (GpuCounterEvent.GpuCounter counter : gpuCounterEvent.getCountersList()) {
-                if ((counter.hasIntValue() || counter.hasDoubleValue())) {
-                    foundIds.add(counter.getCounterId());
-                }
-            }
-        }
-        return foundIds.equals(counterIds);
-    }
-
-    private static boolean containsGpuFrequencyEvent(List<TracePacket> packetList) {
-        for (TracePacket packet : packetList) {
+    private static boolean containsGpuFrequencyEvent(Trace trace) {
+        for (TracePacket packet : trace.getPacketList()) {
             if (!packet.hasFtraceEvents()) continue;
 
             FtraceEventBundle eventBundle = packet.getFtraceEvents();
@@ -460,8 +419,8 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
         return false;
     }
 
-    private static boolean containsValidRenderStageEvent(List<TracePacket> packetList) {
-        for (TracePacket packet : packetList) {
+    private static boolean containsValidRenderStageEvent(Trace trace) {
+        for (TracePacket packet : trace.getPacketList()) {
             if (!packet.hasGpuRenderStageEvent()) continue;
 
             GpuRenderStageEvent gpuRenderStageEvent = packet.getGpuRenderStageEvent();
@@ -477,9 +436,7 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
     }
 
     private void checkRequiredGroupsPresent(
-            ErrorCollector errorCollector,
-            List<GpuCounterSpec> gpuCounterSpecsList,
-            List<TracePacket> packetList) {
+            ErrorCollector errorCollector, List<GpuCounterSpec> gpuCounterSpecsList, Trace trace) {
         Set<GpuCounterGroup> requiredGroups =
                 new HashSet<>(
                         Arrays.asList(
@@ -488,7 +445,7 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                                 GpuCounterGroup.MEMORY,
                                 GpuCounterGroup.PRIMITIVES,
                                 GpuCounterGroup.VERTICES));
-        if (deviceSupportsRayTracing(packetList)) {
+        if (deviceSupportsRayTracing(trace)) {
             requiredGroups.add(GpuCounterGroup.RAY_TRACING);
         }
         Set<GpuCounterGroup> foundGroups = new HashSet<>();
@@ -504,22 +461,12 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                 is(true));
     }
 
-    private static boolean deviceSupportsRayTracing(List<TracePacket> packetList) {
-        for (TracePacket packet : packetList) {
-            if (!packet.hasFtraceEvents()) continue;
-
-            FtraceEventBundle eventBundle = packet.getFtraceEvents();
-            for (FtraceEvent event : eventBundle.getEventList()) {
-                if (!event.hasPrint()) continue;
-
-                String ftraceBuf = event.getPrint().getBuf();
-                if (ftraceBuf.contains(RAYTRACING_SUPPORT_EVENT)) {
-                    return ftraceBuf.endsWith("1");
-                }
-            }
-        }
-        Assert.fail("No raytracing status in trace! This is a native integration issue; aborting.");
-        return false;
+    private static boolean deviceSupportsRayTracing(Trace trace) {
+        Boolean rayTracingSupportFromTrace = ProfilingDataUtilsKt.deviceSupportsRayTracing(trace);
+        Assert.assertNotNull(
+                "No raytracing status in trace! This is a native integration issue; aborting.",
+                rayTracingSupportFromTrace);
+        return rayTracingSupportFromTrace;
     }
 
     private void captureTrace(File configFile) throws Exception {

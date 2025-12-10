@@ -26,5 +26,6 @@
         <!-- NOTE: ideally we should pass the whole package, but apparently
              that's not supported. -->
         <option name="class" value="android.graphics.gpuprofiling.cts.ClockUtilsTest" />
+        <option name="class" value="android.graphics.gpuprofiling.cts.ProfilingDataUtilsTest" />
     </test>
 </configuration>
