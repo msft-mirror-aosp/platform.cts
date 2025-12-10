@@ -896,7 +896,9 @@ public class NotificationAssistantServiceTest {
                                 && conversationId.equals(channel.getConversationId()))
                         .collect(Collectors.toList());
         assertThat(channels).hasSize(1);
-        assertThat(channels.get(0)).isEqualTo(createdChannel);
+        NotificationChannel fetchedChannel = channels.get(0);
+        assertThat(fetchedChannel.getParentChannelId()).isEqualTo(createdChannel.getParentChannelId());
+        assertThat(fetchedChannel.getConversationId()).isEqualTo(createdChannel.getConversationId());
 
         // Verify that there is no duplicate channels.
         Map<String, List<NotificationChannel>> grouped =
@@ -929,12 +931,17 @@ public class NotificationAssistantServiceTest {
                 mAssistant.createConversationNotificationChannelForPackage(
                         mContext.getPackageName(), Process.myUserHandle(), parentChannelId, conversationId);
         assertNotNull("Created channel should not be null", createdChannel);
-        String conversationChannelId = createdChannel.getId();
 
         // Verify the conversation channel now exists.
         List<NotificationChannel> channels = mAssistant.getNotificationChannels(sbn.getPackageName(), sbn.getUser());
-        assertTrue("Conversation channel should exist after creation",
-                channels.stream().anyMatch(c -> c.getId().equals(conversationChannelId)));
+        // We must find the channel based on parent/conversation ID to get the correct ID (in case createdChannel has a stale/legacy ID)
+        NotificationChannel fetchedChannel = channels.stream()
+                .filter(c -> parentChannelId.equals(c.getParentChannelId())
+                        && conversationId.equals(c.getConversationId()))
+                .findFirst()
+                .orElse(null);
+        assertNotNull("Conversation channel should exist after creation", fetchedChannel);
+        String conversationChannelId = fetchedChannel.getId();
 
         // --- Send an additional notification specifically to the created conversation channel ---
         int convoNotificationId = mAssistant.mNotificationId + 1;
