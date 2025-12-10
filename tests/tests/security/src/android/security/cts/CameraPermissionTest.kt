@@ -747,17 +747,28 @@ class CameraPermissionTest {
               spm.getSensorPrivacyState(
                   SensorPrivacyManager.TOGGLE_TYPE_SOFTWARE, TOGGLE_SENSOR_CAMERA)
 
-          spm.setSensorPrivacyState(TOGGLE_SENSOR_CAMERA, newState)
+          applySensorPrivacyAndDismiss(spm, newState)
           Log.v(TAG, "${stateStr} sensor privacy")
           restoreSensorPrivacy = {
             TestApis.permissions()
                 .withPermission(
                     Manifest.permission.OBSERVE_SENSOR_PRIVACY,
                     Manifest.permission.MANAGE_SENSOR_PRIVACY)
-                .use { spm.setSensorPrivacyState(TOGGLE_SENSOR_CAMERA, oldState) }
+                .use { applySensorPrivacyAndDismiss(spm, oldState) }
             restoreSensorPrivacy = null
           }
         }
+  }
+
+  private fun applySensorPrivacyAndDismiss(spm: SensorPrivacyManager, state: Int) {
+    spm.setSensorPrivacyState(TOGGLE_SENSOR_CAMERA, state)
+
+    // Wait for the sensor privacy system dialog to appear before attempting to dismiss it
+    Thread.sleep(1000)
+
+    InstrumentationRegistry.getInstrumentation()
+        .uiAutomation
+        .executeShellCommand("am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS")
   }
 
   private fun supportsSoftwarePrivacyToggle(spm: SensorPrivacyManager): Boolean =
