@@ -16,7 +16,6 @@
 
 package android.display.cts;
 
-import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHED;
 import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY;
 import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC;
 import static android.util.DisplayMetrics.DENSITY_HIGH;
@@ -27,34 +26,22 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
-import android.app.ActivityManager;
-import android.app.Instrumentation;
-import android.content.Context;
-import android.content.Intent;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.os.Handler;
-import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
-import android.os.Messenger;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.util.SparseArray;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.bedstead.nene.TestApis;
-import com.android.compatibility.common.util.SystemUtil;
 import com.android.server.display.feature.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -62,51 +49,32 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 import java.util.Arrays;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 /** Tests that applications can receive display events correctly. */
 @RunWith(Parameterized.class)
-public class DisplayEventDeliveryTest {
+public class DisplayEventDeliveryTest extends EventDeliveryTestBase {
     private static final String TAG = "DisplayEventDeliveryTest";
 
     private static final String NAME = TAG;
     private static final int WIDTH = 720;
     private static final int HEIGHT = 480;
 
-    private static final int MESSAGE_LAUNCHED = 1;
-    private static final int MESSAGE_CALLBACK = 2;
-
     private static final int DISPLAY_ADDED = 1;
     private static final int DISPLAY_CHANGED = 2;
     private static final int DISPLAY_REMOVED = 3;
     private static final int DISPLAY_SNAPSHOT = 4;
 
-    private static final long DISPLAY_EVENT_TIMEOUT_MSEC = 100;
-    private static final long TEST_FAILURE_TIMEOUT_MSEC = 10000;
-
     private static final String TEST_PACKAGE =
             "com.android.servicestests.apps.displaymanagertestapp";
     private static final String TEST_ACTIVITY = TEST_PACKAGE + ".DisplayEventActivity";
     private static final String TEST_DISPLAYS = "DISPLAYS";
-    private static final String TEST_MESSENGER = "MESSENGER";
     private static final String TEST_EVENT_MASK = "EVENT_MASK";
 
     private final Object mLock = new Object();
 
-    private Instrumentation mInstrumentation;
-    private Context mContext;
     private DisplayManager mDisplayManager;
-    private ActivityManager mActivityManager;
-    private ActivityManager.OnUidImportanceListener mUidImportanceListener;
-    private CountDownLatch mLatchActivityLaunch;
-    private CountDownLatch mLatchActivityCached;
-    private HandlerThread mHandlerThread;
-    private Handler mHandler;
-    private Messenger mMessenger;
-    private int mPid;
-    private int mUid;
 
     /**
      * Array of DisplayBundle. The test handler uses it to check if certain display events have been
@@ -117,9 +85,6 @@ public class DisplayEventDeliveryTest {
      * necessary to lock mDisplayBundles when accessing it from the test function.
      */
     private SparseArray<DisplayBundle> mDisplayBundles;
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private DisplayBundle mSnapshotBundle;
 
@@ -160,7 +125,7 @@ public class DisplayEventDeliveryTest {
         /** Assert that there isn't any unexpected display event from the test activity */
         public void assertNoDisplayEvents() {
             try {
-                assertNull(mExpectations.poll(DISPLAY_EVENT_TIMEOUT_MSEC, TimeUnit.MILLISECONDS));
+                assertNull(mExpectations.poll(EVENT_TIMEOUT_MSEC, TimeUnit.MILLISECONDS));
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -242,37 +207,16 @@ public class DisplayEventDeliveryTest {
     }
 
     @Before
-    public void setUp() throws Exception {
-        mInstrumentation = InstrumentationRegistry.getInstrumentation();
-        mContext = mInstrumentation.getContext();
+    public void setUp() {
+        super.setUp();
         mDisplayManager = mContext.getSystemService(DisplayManager.class);
-        mLatchActivityLaunch = new CountDownLatch(1);
-        mLatchActivityCached = new CountDownLatch(1);
-        mActivityManager = mContext.getSystemService(ActivityManager.class);
-        mUidImportanceListener =
-                (uid, importance) -> {
-                    if (uid == mUid && importance == IMPORTANCE_CACHED) {
-                        Log.d(TAG, "Listener " + uid + " becomes " + importance);
-                        mLatchActivityCached.countDown();
-                    }
-                };
-        SystemUtil.runWithShellPermissionIdentity(
-                () ->
-                        mActivityManager.addOnUidImportanceListener(
-                                mUidImportanceListener, IMPORTANCE_CACHED));
         mDisplayBundles = new SparseArray<>();
-        mHandlerThread = new HandlerThread("handler");
-        mHandlerThread.start();
-        mHandler = new TestHandler(mHandlerThread.getLooper());
-        mMessenger = new Messenger(mHandler);
-        mPid = 0;
         mSnapshotBundle = new DisplayBundle(null);
     }
 
     @After
     public void tearDown() throws Exception {
-        mActivityManager.removeOnUidImportanceListener(mUidImportanceListener);
-        mHandlerThread.quitSafely();
+        super.tearDown();
         synchronized (mLock) {
             for (int i = 0; i < mDisplayBundles.size(); i++) {
                 DisplayBundle bundle = mDisplayBundles.valueAt(i);
@@ -281,7 +225,26 @@ public class DisplayEventDeliveryTest {
             }
             mDisplayBundles.clear();
         }
-        SystemUtil.runShellCommand(mInstrumentation, "am force-stop " + TEST_PACKAGE);
+    }
+
+    @Override
+    protected String getTag() {
+        return TAG;
+    }
+
+    @Override
+    protected Handler getHandler(Looper looper) {
+        return new TestHandler(looper);
+    }
+
+    @Override
+    protected String getTestPackage() {
+        return TEST_PACKAGE;
+    }
+
+    @Override
+    protected String getTestActivity() {
+        return TEST_ACTIVITY;
     }
 
     /**
@@ -304,10 +267,17 @@ public class DisplayEventDeliveryTest {
         Log.d(TAG, "Start test testDisplayEvents " + mDisplayCount + " " + mCached);
         // Launch DisplayEventActivity and start listening to display events
         launchTestActivity(
-                /* eventMask= */ DisplayManager.EVENT_TYPE_DISPLAY_ADDED
-                        | DisplayManager.EVENT_TYPE_DISPLAY_CHANGED
-                        | DisplayManager.EVENT_TYPE_DISPLAY_REMOVED
-                        | ((isSnapshotEnabled) ? DisplayManager.EVENT_TYPE_DISPLAY_SNAPSHOT : 0));
+                intent -> {
+                    intent.putExtra(TEST_DISPLAYS, mDisplayCount);
+                    intent.putExtra(
+                            TEST_EVENT_MASK,
+                            DisplayManager.EVENT_TYPE_DISPLAY_ADDED
+                                    | DisplayManager.EVENT_TYPE_DISPLAY_CHANGED
+                                    | DisplayManager.EVENT_TYPE_DISPLAY_REMOVED
+                                    | ((isSnapshotEnabled)
+                                            ? DisplayManager.EVENT_TYPE_DISPLAY_SNAPSHOT
+                                            : 0));
+                });
 
         if (isSnapshotEnabled) {
             mSnapshotBundle.waitDisplayEvent(DISPLAY_SNAPSHOT);
@@ -378,53 +348,6 @@ public class DisplayEventDeliveryTest {
         }
     }
 
-    /** Launch the test activity that would listen to display events */
-    private void launchTestActivity(long eventMask) {
-        Intent intent = new Intent(Intent.ACTION_MAIN);
-        intent.setClassName(TEST_PACKAGE, TEST_ACTIVITY);
-        intent.putExtra(TEST_MESSENGER, mMessenger);
-        if (eventMask != 0) {
-            intent.putExtra(TEST_EVENT_MASK, eventMask);
-        }
-        intent.putExtra(TEST_DISPLAYS, mDisplayCount);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> {
-                    TestApis.activities().startActivity(intent);
-                });
-        waitLatch(mLatchActivityLaunch);
-    }
-
-    /** Bring the test activity back to top */
-    private void bringTestActivityTop() {
-        Intent intent = new Intent(Intent.ACTION_MAIN);
-        intent.setClassName(TEST_PACKAGE, TEST_ACTIVITY);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> {
-                    TestApis.activities().startActivity(intent);
-                });
-    }
-
-    /** Bring the test activity into cached mode by launching another 2 apps */
-    private void makeTestActivityCached() {
-        // Launch another activity to bring the test activity into background
-        Intent intent = new Intent(Intent.ACTION_MAIN);
-        intent.setClass(mContext, SimpleActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-
-        // Launch another activity to bring the test activity into cached mode
-        Intent intent2 = new Intent(Intent.ACTION_MAIN);
-        intent2.setClass(mContext, SimpleActivity2.class);
-        intent2.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> {
-                    mInstrumentation.startActivitySync(intent);
-                    mInstrumentation.startActivitySync(intent2);
-                });
-        waitLatch(mLatchActivityCached);
-    }
-
     /**
      * Create a virtual display
      *
@@ -439,14 +362,5 @@ public class DisplayEventDeliveryTest {
                 DENSITY_MEDIUM,
                 null /* surface: as we don't actually draw anything, null is enough */,
                 VIRTUAL_DISPLAY_FLAG_PUBLIC | VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
-    }
-
-    /** Wait for CountDownLatch with timeout */
-    private void waitLatch(CountDownLatch latch) {
-        try {
-            latch.await(TEST_FAILURE_TIMEOUT_MSEC, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
     }
 }
