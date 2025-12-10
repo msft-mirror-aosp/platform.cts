@@ -37,7 +37,7 @@ public class ShortcutManagerMultiuserTest extends BaseShortcutManagerHostTest {
     @Ignore("b/288276271")
     @Test
     public void testManagedUser() throws Exception {
-        if (!mIsMultiuserSupported || !mIsManagedUserSupported) {
+        if (!mIsManagedUserSupported) {
             return;
         }
         // First, create users

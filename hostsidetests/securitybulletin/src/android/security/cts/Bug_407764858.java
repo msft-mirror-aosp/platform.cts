@@ -52,7 +52,8 @@ public class Bug_407764858 extends NonRootSecurityTestCase {
         try {
             device = getDevice();
             assumeTrue("could not disable root", device.disableAdbRoot());
-            assumeTrue("Test requires multiple users", device.isMultiUserSupported());
+            assumeTrue("Test requires managed profiles",
+                    device.getMaxNumberOfUsersSupported("android.os.usertype.profile.MANAGED") > 0);
             newUser = createWorkUser(device, "TestWork");
             assumeTrue("Unable to create test user", device.startUser(newUser, /* wait */ true));
             installPackage(TEST_APP, "--user " + newUser);
