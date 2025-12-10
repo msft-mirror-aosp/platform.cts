@@ -25,15 +25,6 @@
     <application>
         <uses-library android:name="android.test.runner" />
         <activity android:name="android.supervision.cts.MainActivity" />
-        <activity
-            android:name="android.supervision.cts.SupervisionAppDetailsActivity"
-            android:exported="true"
-            android:label="Test Package">
-            <intent-filter>
-                <action android:name="android.settings.MANAGE_SUPERVISION_APP_SETTINGS" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </activity>
     </application>
 
     <instrumentation
