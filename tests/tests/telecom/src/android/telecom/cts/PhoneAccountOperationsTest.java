@@ -275,8 +275,7 @@ public class PhoneAccountOperationsTest extends InstrumentationTestCase {
      * @throws Exception
      */
     public void testRegisterPhoneAccountBadCapabilitiesCombo() throws Exception {
-        if (!shouldTestTelecom(mContext) ||
-                !com.android.server.telecom.flags.Flags.enforceTransactionalExclusivity()) {
+        if (!shouldTestTelecom(mContext)) {
             return;
         }
 
