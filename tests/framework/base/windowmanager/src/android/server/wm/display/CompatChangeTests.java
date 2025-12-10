@@ -1178,10 +1178,7 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
 
     /** Test that a DCM app does not relaunch with display move. */
     @Test
-    @RequiresFlagsEnabled({
-            Flags.FLAG_ENABLE_DISPLAY_COMPAT_MODE,
-            Flags.FLAG_ENABLE_RESTART_MENU_FOR_CONNECTED_DISPLAYS
-    })
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DISPLAY_COMPAT_MODE)
     public void testDisplayCompatGameDoesNotRestartWithDisplayMove() {
         runDisplayCompatTest(NO_DISPLAY_CONFIG_CHANGE_SUPPORT_GAME_ACTIVITY);
     }
