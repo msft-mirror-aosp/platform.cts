@@ -19,7 +19,6 @@ package android.hardware.camera2.cts;
 import static android.hardware.camera2.cts.CameraTestUtils.*;
 
 import android.graphics.ImageFormat;
-import android.graphics.Rect;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CaptureRequest;
@@ -35,11 +34,15 @@ import android.util.Log;
 import android.util.Range;
 import android.util.Size;
 
-import java.util.ArrayList;
+import com.android.internal.camera.flags.Flags;
 
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Basic tests for burst capture in RAW formats.
@@ -47,10 +50,11 @@ import org.junit.Test;
 @RunWith(Parameterized.class)
 public class BurstCaptureRawTest extends Camera2SurfaceViewTestCase {
     private static final String TAG = "BurstCaptureRawTest";
-    private static final int RAW_FORMATS[] = {
-            ImageFormat.RAW10, ImageFormat.RAW12, ImageFormat.RAW_SENSOR };
-    private static final int NONSTALL_RAW_FORMATS[] = {
-        ImageFormat.RAW10, ImageFormat.RAW12 };
+    private static ArrayList<Integer> RAW_FORMATS = new ArrayList<>(Arrays.asList(
+        ImageFormat.RAW10, ImageFormat.RAW12, ImageFormat.RAW_SENSOR
+    ));
+    private static ArrayList<Integer> NONSTALL_RAW_FORMATS = new ArrayList<>(Arrays.asList(
+        ImageFormat.RAW10, ImageFormat.RAW12));
     private static final long EXPOSURE_MULTIPLIERS[] = {
             1, 3, 5 };
     private static final int SENSITIVITY_MLTIPLIERS[] = {
@@ -61,11 +65,19 @@ public class BurstCaptureRawTest extends Camera2SurfaceViewTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
+        if (Flags.cameraRaw14Format()) {
+            RAW_FORMATS.add(ImageFormat.RAW14);
+            NONSTALL_RAW_FORMATS.add(ImageFormat.RAW14);
+        }
     }
 
     @Override
     public void tearDown() throws Exception {
         super.tearDown();
+        if (Flags.cameraRaw14Format()) {
+            RAW_FORMATS.remove(Integer.valueOf(ImageFormat.RAW14));
+            NONSTALL_RAW_FORMATS.remove(Integer.valueOf(ImageFormat.RAW14));
+        }
     }
 
     /**
@@ -76,7 +88,7 @@ public class BurstCaptureRawTest extends Camera2SurfaceViewTestCase {
         Log.i(TAG, "Begin testRawSensorSize");
         for (String id : getCameraIdsUnderTest()) {
             try {
-                ArrayList<Integer> supportedRawList = new ArrayList<Integer>(RAW_FORMATS.length);
+                ArrayList<Integer> supportedRawList = new ArrayList<Integer>(RAW_FORMATS.size());
                 if (!checkCapability(id, supportedRawList, RAW_FORMATS)) {
                     Log.i(TAG, "Capability is not supported on camera " + id
                             + ". Skip the test.");
@@ -445,7 +457,7 @@ public class BurstCaptureRawTest extends Camera2SurfaceViewTestCase {
      * @return true if the it is has the capability to execute the test.
      */
     private boolean checkCapability(String id, ArrayList<Integer> supportedRawList,
-            int[] testedFormats) {
+            List<Integer> testedFormats) {
         StaticMetadata staticInfo = mAllStaticInfo.get(id);
         // make sure the sensor has manual support
         if (!staticInfo.isHardwareLevelAtLeastFull()) {
@@ -489,6 +501,8 @@ public class BurstCaptureRawTest extends Camera2SurfaceViewTestCase {
                 return "RAW12";
             case ImageFormat.RAW_SENSOR:
                 return "RAW_SENSOR";
+            case ImageFormat.RAW14:
+                return "RAW14";
         }
 
         return "Unknown";
@@ -675,12 +689,12 @@ public class BurstCaptureRawTest extends Camera2SurfaceViewTestCase {
         stopPreview();
     }
 
-    private void performTestRoutine(TestRoutine routine, int[] testedFormats) throws Exception
-    {
+    private void performTestRoutine(TestRoutine routine, List<Integer> testedFormats)
+            throws Exception {
         final int PREPARE_TIMEOUT_MS = 10000;
         for (String id : getCameraIdsUnderTest()) {
             try {
-                ArrayList<Integer> supportedRawList = new ArrayList<Integer>(RAW_FORMATS.length);
+                ArrayList<Integer> supportedRawList = new ArrayList<Integer>(testedFormats.size());
                 if (!checkCapability(id, supportedRawList, testedFormats)) {
                     Log.i(TAG, "Capability is not supported on camera " + id
                             + ". Skip the test.");
