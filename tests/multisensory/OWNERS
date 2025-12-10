@@ -1,0 +1,2 @@
+# Bug component: 181551
+include platform/frameworks/base:/services/core/java/com/android/server/multisensory/OWNERS
