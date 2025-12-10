@@ -482,7 +482,6 @@ public class VirtualDisplayTest {
     /**
      * Ensures that an application can create a virtual display with a cutout.
      */
-    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_VIRTUAL_DISPLAY_INSETS)
     @Test
     public void testVirtualDisplayWithCutout() {
         DisplayCutout cutout = new DisplayCutout(
