@@ -1044,6 +1044,9 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
      */
     @Test
     public void testLaunchNoHistoryActivityOnNewDisplay() {
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
+                "Skip the test for visible background users. "
+                + ", until per-display power management is fully supported.");
         launchActivity(NO_HISTORY_ACTIVITY);
         waitAndAssertTopResumedActivity(NO_HISTORY_ACTIVITY, getMainDisplayId(),
                 "Activity launched on main display assigned to the user and on top");
