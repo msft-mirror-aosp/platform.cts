@@ -523,6 +523,88 @@ public class CameraUpdateOutputConfigurations extends Camera2MultiViewTestCase
     }
 
     @Test
+    public void testSharedSurfaceSwapAndUpdate() throws Exception {
+        final int SURFACE_AVAILABLE_TIMEOUT_MS = 5000;
+        final int PREVIEW_DURATION_MS = 1000;
+        final int CAPTURE_WAIT_TIMEOUT_MS = 1000;
+        for (String id : getCameraIdsUnderTest()) {
+            StaticMetadata staticMeta =
+                    new StaticMetadata(mCameraManager.getCameraCharacteristics(id));
+            if (!staticMeta.isColorOutputSupported()) {
+                continue;
+            }
+
+            try {
+                openCamera(id);
+
+                // Initialize preview surfaces
+                Size previewSize = getOrderedPreviewSizes(id).getFirst();
+                Surface[] previewSurfaces = new Surface[4];
+                for (int i = 0; i < 4; i++) {
+                    SurfaceTexture previewTexture = getAvailableSurfaceTexture(
+                            SURFACE_AVAILABLE_TIMEOUT_MS, mTextureView[i]);
+                    assertNotNull("Unable to get preview surface texture",
+                            previewTexture);
+                    previewTexture.setDefaultBufferSize(previewSize.getWidth(),
+                            previewSize.getHeight());
+                    previewSurfaces[i] = new Surface(previewTexture);
+                }
+
+                // Configure shared deferred stream.
+                List<OutputConfiguration> outputSurfaces = new ArrayList<>();
+                OutputConfiguration previewConfig = new OutputConfiguration(previewSize,
+                        SurfaceTexture.class);
+                previewConfig.enableSurfaceSharing();
+                outputSurfaces.add(previewConfig);
+
+                createSessionWithConfigs(id, outputSurfaces);
+
+                previewConfig.addSurface(previewSurfaces[0]);
+                previewConfig.addSurface(previewSurfaces[1]);
+                updateOutputConfigurations(id, outputSurfaces);
+
+                // Start repeating capture
+                CameraTestUtils.SimpleCaptureCallback
+                        captureListener = new CameraTestUtils.SimpleCaptureCallback();
+                int seqId = updateRepeatingRequest(id, outputSurfaces, captureListener);
+
+                SystemClock.sleep(PREVIEW_DURATION_MS);
+
+                // Swap to an entirely new set of outputs
+                previewConfig.makeDeferredAndRemoveSurfaces();
+                previewConfig.addSurface(previewSurfaces[2]);
+                previewConfig.addSurface(previewSurfaces[3]);
+                updateOutputConfigurations(id, outputSurfaces);
+
+                captureListener.getCaptureSequenceLastFrameNumber(seqId, CAPTURE_WAIT_TIMEOUT_MS);
+
+                // Start repeating capture
+                seqId = updateRepeatingRequest(id, outputSurfaces, captureListener);
+
+                SystemClock.sleep(PREVIEW_DURATION_MS);
+
+                // Switch to a deferred shared configuration again
+                previewConfig.makeDeferredAndRemoveSurfaces();
+                updateOutputConfigurations(id, outputSurfaces);
+                captureListener.getCaptureSequenceLastFrameNumber(seqId, CAPTURE_WAIT_TIMEOUT_MS);
+
+                // Update again to the original configuration
+                previewConfig.addSurface(previewSurfaces[0]);
+                previewConfig.addSurface(previewSurfaces[1]);
+                updateOutputConfigurations(id, outputSurfaces);
+
+                updateRepeatingRequest(id, outputSurfaces, captureListener);
+
+                SystemClock.sleep(PREVIEW_DURATION_MS);
+
+                stopRepeating(id);
+            } finally {
+                closeCamera(id);
+            }
+        }
+    }
+
+    @Test
     public void testDeferredJpegRImageReader() throws Exception {
         for (String id : getCameraIdsUnderTest()) {
             try {
