@@ -463,8 +463,8 @@ def derive_hal_zoom_ratio(props, scaler_crop_region):
     array_height = active_array_size['bottom'] - active_array_size['top']
   else:
     active_array_size = props.get('android.sensor.info.activeArraySize')
-    array_width = active_array_size['width']
-    array_height = active_array_size['height']
+    array_width = active_array_size['right'] - active_array_size['left']
+    array_height = active_array_size['bottom'] - active_array_size['top']
 
   logging.debug('active_array_size: %s', active_array_size)
 
