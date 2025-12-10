@@ -77,6 +77,8 @@ public class ExifInterfaceTest {
     // Link: https://source.android.com/compatibility/cts/downloads.html#cts-media-files
     private static final String JPEG_WITH_EXIF_BYTE_ORDER_II = "image_exif_byte_order_ii.jpg";
     private static final String JPEG_WITH_EXIF_BYTE_ORDER_MM = "image_exif_byte_order_mm.jpg";
+    private static final String EXIF_WITH_FILL_1BYTE_JPEG = "image_exif_with_fill_1byte.jpg";
+    private static final String EXIF_WITH_FILL_2BYTES_JPEG = "image_exif_with_fill_2bytes.jpg";
     private static final String DNG_WITH_EXIF_WITH_XMP = "lg_g4_iso_800.dng";
     private static final String JPEG_WITH_EXIF_WITH_XMP = "lg_g4_iso_800.jpg";
     private static final String ARW_SONY_RX_100 = "sony_rx_100.arw";
@@ -665,6 +667,18 @@ public class ExifInterfaceTest {
     public void testReadExifDataFromExifByteOrderMMJpeg() throws Throwable {
         readFromFilesWithExif(JPEG_WITH_EXIF_BYTE_ORDER_MM, R.array.jpeg_with_exif_byte_order_mm);
         writeToFilesWithExif(JPEG_WITH_EXIF_BYTE_ORDER_MM, R.array.jpeg_with_exif_byte_order_mm);
+    }
+
+    @Test
+    public void testReadExifDataFromExifWithFill1Byte() throws Throwable {
+        readFromFilesWithExif(EXIF_WITH_FILL_1BYTE_JPEG, R.array.jpeg_exif_with_fill_1byte);
+        writeToFilesWithExif(EXIF_WITH_FILL_1BYTE_JPEG, R.array.jpeg_exif_with_fill_1byte);
+    }
+
+    @Test
+    public void testReadExifDataFromExifWithFill2Bytes() throws Throwable {
+        readFromFilesWithExif(EXIF_WITH_FILL_2BYTES_JPEG, R.array.jpeg_exif_with_fill_2bytes);
+        writeToFilesWithExif(EXIF_WITH_FILL_2BYTES_JPEG, R.array.jpeg_exif_with_fill_2bytes);
     }
 
     @Test
