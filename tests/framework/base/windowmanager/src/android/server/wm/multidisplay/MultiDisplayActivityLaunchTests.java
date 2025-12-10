@@ -79,7 +79,6 @@ import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -434,38 +433,9 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
     /**
      * Tests launching an activity on a virtual display and then launching another activity in a new
      * process via shell command and without specifying the display id - the second activity must
-     * appear on the primary display.
-     */
-    @Test
-    @RequiresFlagsDisabled(com.android.window.flags.Flags.FLAG_FALLBACK_TO_FOCUSED_DISPLAY)
-    public void testConsequentLaunchActivityInNewProcess() {
-        // Create new virtual display.
-        final DisplayContent newDisplay = createManagedVirtualDisplaySession()
-                .setSimulateDisplay(true).createDisplay();
-
-        // Launch activity on new secondary display.
-        launchActivityOnDisplay(TEST_ACTIVITY, newDisplay.mId);
-
-        waitAndAssertResumedAndFocusedActivityOnDisplay(TEST_ACTIVITY, newDisplay.mId,
-                "Activity launched on secondary display must be on top");
-
-        // Launch second activity without specifying display.
-        launchActivity(SECOND_ACTIVITY);
-
-        // Check that activity is launched in focused task on primary display.
-        waitAndAssertResumedAndFocusedActivityOnDisplay(SECOND_ACTIVITY, getMainDisplayId(),
-                "Launched activity must be focused");
-        assertBothDisplaysHaveResumedActivities(pair(newDisplay.mId, TEST_ACTIVITY),
-                pair(getMainDisplayId(), SECOND_ACTIVITY));
-    }
-
-    /**
-     * Tests launching an activity on a virtual display and then launching another activity in a new
-     * process via shell command and without specifying the display id - the second activity must
      * appear on the focused display (i.e. the virtual display).
      */
     @Test
-    @RequiresFlagsEnabled(com.android.window.flags.Flags.FLAG_FALLBACK_TO_FOCUSED_DISPLAY)
     public void testConsequentLaunchActivityInNewProcess_onFocusedDisplay() {
         // Create new virtual display.
         final DisplayContent newDisplay =
