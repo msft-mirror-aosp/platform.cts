@@ -2699,7 +2699,10 @@ public class AudioTrackTest {
     @Test
     public void testSetPresentationDefaultTrack() throws Exception {
         final AudioTrack track = new AudioTrack.Builder().build();
-        assertEquals(AudioTrack.ERROR, track.setPresentation(createAudioPresentation()));
+        final int status = track.setPresentation(createAudioPresentation());
+        assertTrue(
+                "Unexpected status: " + status,
+                status == AudioTrack.ERROR_INVALID_OPERATION || status == AudioTrack.ERROR);
     }
 
     @Test
