@@ -1060,7 +1060,8 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
         validateCommonParams(suggestion, true);
         assertNull(suggestion.getPassphrase());
         assertNull(suggestion.getEnterpriseConfig());
-        assertEquals(passpointConfig.getUniqueId(), suggestion.getPasspointConfig().getUniqueId());
+        assertEquals(passpointConfig.getHomeSp().getFqdn(),
+                suggestion.getPasspointConfig().getHomeSp().getFqdn());
     }
 
     /**
