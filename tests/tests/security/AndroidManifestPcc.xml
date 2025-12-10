@@ -21,7 +21,7 @@
     <application>
         <uses-library android:name="android.test.runner"/>
         <service android:name="android.security.cts.pcc.PccService"
-          android:exported="true"
+          android:exported="false"
           android:isPrivateComputeCoreProcess="true">
             <intent-filter>
             <action android:name="android.security.cts.pcc.PccProcessSecurityTest" />
