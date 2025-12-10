@@ -3078,19 +3078,24 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             mInstrumentation.getTargetContext().getApplicationInfo().setEnableOnBackInvokedCallback(
                     onBackInvokedCallbackEnabled);
 
-            // Launch an editor activity to be on the split primary task.
+            // Launch an editor activity in fullscreen.
             final AtomicReference<EditText> editTextRef = new AtomicReference<>();
-            final TestActivity testActivity = TestActivity.startSync(activity -> {
-                final LinearLayout layout = new LinearLayout(activity);
-                layout.setOrientation(LinearLayout.VERTICAL);
-                final EditText editText = new EditText(activity);
-                editTextRef.set(editText);
-                layout.addView(editText);
-                editText.setHint("focused editText");
-                editText.setPrivateImeOptions(marker);
-                editText.requestFocus();
-                return layout;
-            });
+            final TestActivity testActivity =
+                    new TestActivity.Starter()
+                            .withWindowingMode(WINDOWING_MODE_FULLSCREEN)
+                            .startSync(
+                                    activity -> {
+                                        final LinearLayout layout = new LinearLayout(activity);
+                                        layout.setOrientation(LinearLayout.VERTICAL);
+                                        final EditText editText = new EditText(activity);
+                                        editTextRef.set(editText);
+                                        layout.addView(editText);
+                                        editText.setHint("focused editText");
+                                        editText.setPrivateImeOptions(marker);
+                                        editText.requestFocus();
+                                        return layout;
+                                    },
+                                    TestActivity.class);
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
 
             // Show IME and make sure it has window focus
