@@ -16,6 +16,7 @@
 
 package android.server.wm.animations;
 
+import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.server.wm.animations.ActivityTransitionTests.CustomBackgroundTransitionActivity.BACKGROUND_COLOR_KEY;
 import static android.server.wm.animations.ActivityTransitionTests.CustomBackgroundTransitionActivity.ENTER_ANIM_KEY;
@@ -167,7 +168,9 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         final Intent intent = new Intent(mContext, LauncherActivity.class)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
-        return (LauncherActivity) instrumentation.startActivitySync(intent);
+        final ActivityOptions options = ActivityOptions.makeBasic();
+        options.setLaunchWindowingMode(WINDOWING_MODE_FULLSCREEN);
+        return (LauncherActivity) instrumentation.startActivitySync(intent, options.toBundle());
     }
 
     private void extendingAnimationScaleIfNeeded() {

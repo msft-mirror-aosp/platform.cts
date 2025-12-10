@@ -278,10 +278,9 @@ public class TelecomManagerTest extends BaseTelecomTestWithMockServices {
             return;
         }
         // Verify that there's an app that can handle the intent.
-        // Todo: Uncomment below lines once action is handled by phone settings activity
-        // Intent intent = new Intent(TelecomManager.ACTION_CONFIGURE_CALL_LOG_INTEGRATION);
-        // PackageManager pm = mContext.getPackageManager();
-        // assertNotNull(intent.resolveActivity(pm));
+        Intent intent = new Intent(TelecomManager.ACTION_CONFIGURE_CALL_LOG_INTEGRATION);
+        PackageManager pm = mContext.getPackageManager();
+        assertNotNull(pm.resolveActivity(intent, PackageManager.MATCH_ALL));
     }
 
     private boolean isWiredHeadsetPluggedIn() {

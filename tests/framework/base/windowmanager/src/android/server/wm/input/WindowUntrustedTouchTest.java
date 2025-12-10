@@ -848,7 +848,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
                 "Toast does not overlap with the activity, skipping test.",
                 intersection.setIntersect(toast, containerRect));
 
-        mTouchHelper.tapOnCenter(intersection, mActivity.getDisplayId());
+        mTouchHelper.tapOnCenter(intersection, mActivityDisplayId);
 
         assertTouchReceived();
     }
@@ -887,7 +887,7 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
                 "Toast does not overlap with the activity, skipping test.",
                 intersection.setIntersect(toast, containerRect));
 
-        mTouchHelper.tapOnCenter(intersection, mActivity.getDisplayId());
+        mTouchHelper.tapOnCenter(intersection, mActivityDisplayId);
 
         assertTouchReceived();
     }

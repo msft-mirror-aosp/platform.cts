@@ -92,6 +92,16 @@ fun withCoordsForHistoryPos(historyPos: Int, pt: PointF, epsilon: Float = EPSILO
     }
 }
 
+fun withDisplayId(displayId: Int): Matcher<InputEvent> = object : TypeSafeMatcher<InputEvent>() {
+    override fun describeTo(description: Description) {
+        description.appendText("With displayId = $displayId")
+    }
+
+    override fun matchesSafely(event: InputEvent): Boolean {
+        return event.displayId == displayId
+    }
+}
+
 fun withRawCoords(pt: PointF, epsilon: Float = EPSILON):
         Matcher<MotionEvent> = object : TypeSafeMatcher<MotionEvent>() {
     override fun describeTo(description: Description) {
@@ -507,6 +517,38 @@ fun withAxisValue(axis: Int, value: Float, epsilon: Float = EPSILON): Matcher<Mo
 
         override fun matchesSafely(event: MotionEvent): Boolean {
             return abs(event.getAxisValue(axis) - value) < epsilon
+        }
+        override fun describeMismatchSafely(event: MotionEvent, mismatchDescription: Description) {
+            mismatchDescription.appendText(
+                "Got axis ${MotionEvent.axisToString(axis)} = ${event.getAxisValue(axis)}"
+            )
+        }
+    }
+
+fun withPositiveAxisValue(axis: Int): Matcher<MotionEvent> =
+    object : TypeSafeMatcher<MotionEvent>() {
+        override fun describeTo(description: Description) {
+            description.appendText("With positive value for axis ${MotionEvent.axisToString(axis)}")
+        }
+
+        override fun matchesSafely(event: MotionEvent): Boolean {
+            return event.getAxisValue(axis) > 0
+        }
+        override fun describeMismatchSafely(event: MotionEvent, mismatchDescription: Description) {
+            mismatchDescription.appendText(
+                "Got axis ${MotionEvent.axisToString(axis)} = ${event.getAxisValue(axis)}"
+            )
+        }
+    }
+
+fun withNegativeAxisValue(axis: Int): Matcher<MotionEvent> =
+    object : TypeSafeMatcher<MotionEvent>() {
+        override fun describeTo(description: Description) {
+            description.appendText("With negative value for axis ${MotionEvent.axisToString(axis)}")
+        }
+
+        override fun matchesSafely(event: MotionEvent): Boolean {
+            return event.getAxisValue(axis) < 0
         }
         override fun describeMismatchSafely(event: MotionEvent, mismatchDescription: Description) {
             mismatchDescription.appendText(

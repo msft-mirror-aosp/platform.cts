@@ -72,24 +72,24 @@ object AppliedByGenerator {
             "" -> DpcType.values().toList()
             "android.permission.MANAGE_DEVICE_POLICY_ACROSS_USERS" ->
                 listOf(
-                    DpcType.DPC_TYPE_DEFAULT_DEVICE_OWNER,
+                    DpcType.DPC_TYPE_DEVICE_OWNER,
                     DpcType.DPC_TYPE_FINANCED_DEVICE_OWNER,
-                    DpcType.DPC_TYPE_PROFILE_OWNER_OF_ORGANIZATION_OWNED_DEVICE,
+                    DpcType.DPC_TYPE_MANAGED_PROFILE_OWNER_OF_ORGANIZATION_OWNED_DEVICE,
                 )
             "android.permission.MANAGE_DEVICE_POLICY_ACROSS_USERS_FULL" ->
                 listOf(
-                    DpcType.DPC_TYPE_DEFAULT_DEVICE_OWNER,
+                    DpcType.DPC_TYPE_DEVICE_OWNER,
                     DpcType.DPC_TYPE_FINANCED_DEVICE_OWNER,
                 )
             "android.permission.MANAGE_DEVICE_POLICY_ACROSS_USERS_SECURITY_CRITICAL" ->
                 listOf(
-                    DpcType.DPC_TYPE_DEFAULT_DEVICE_OWNER,
+                    DpcType.DPC_TYPE_DEVICE_OWNER,
                     DpcType.DPC_TYPE_FINANCED_DEVICE_OWNER,
-                    DpcType.DPC_TYPE_PROFILE_OWNER_OF_ORGANIZATION_OWNED_DEVICE,
+                    DpcType.DPC_TYPE_MANAGED_PROFILE_OWNER_OF_ORGANIZATION_OWNED_DEVICE,
                     DpcType.DPC_TYPE_PROFILE_OWNER_ON_USER0,
-                    DpcType.DPC_TYPE_PROFILE_OWNER,
-                    DpcType.DPC_TYPE_PROFILE_OWNER_ON_USER,
-                    DpcType.DPC_TYPE_AFFILIATED_PROFILE_OWNER_ON_USER,
+                    DpcType.DPC_TYPE_MANAGED_PROFILE_OWNER_OF_PERSONAL_OWNED_DEVICE,
+                    DpcType.DPC_TYPE_UNAFFILIATED_FULL_USER_PROFILE_OWNER,
+                    DpcType.DPC_TYPE_AFFILIATED_FULL_USER_PROFILE_OWNER,
                 )
             else ->
                 throw IllegalArgumentException(
@@ -99,17 +99,17 @@ object AppliedByGenerator {
 
     private fun getAppliedByStringsForDpcType(dpcType: DpcType) =
         when (dpcType) {
-            DpcType.DPC_TYPE_DEFAULT_DEVICE_OWNER -> listOf("APPLIED_BY_DEVICE_OWNER")
+            DpcType.DPC_TYPE_DEVICE_OWNER -> listOf("APPLIED_BY_DEVICE_OWNER")
             DpcType.DPC_TYPE_FINANCED_DEVICE_OWNER -> listOf("APPLIED_BY_FINANCED_DEVICE_OWNER")
-            DpcType.DPC_TYPE_PROFILE_OWNER_OF_ORGANIZATION_OWNED_DEVICE ->
+            DpcType.DPC_TYPE_MANAGED_PROFILE_OWNER_OF_ORGANIZATION_OWNED_DEVICE ->
                 listOf("APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE")
             DpcType.DPC_TYPE_PROFILE_OWNER_ON_USER0 ->
                 listOf("APPLIED_BY_PROFILE_OWNER_USER_WITH_NO_DO")
-            DpcType.DPC_TYPE_PROFILE_OWNER ->
+            DpcType.DPC_TYPE_MANAGED_PROFILE_OWNER_OF_PERSONAL_OWNED_DEVICE ->
                 listOf("APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_PROFILE")
-            DpcType.DPC_TYPE_PROFILE_OWNER_ON_USER ->
+            DpcType.DPC_TYPE_UNAFFILIATED_FULL_USER_PROFILE_OWNER ->
                 listOf("APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_USER")
-            DpcType.DPC_TYPE_AFFILIATED_PROFILE_OWNER_ON_USER ->
+            DpcType.DPC_TYPE_AFFILIATED_FULL_USER_PROFILE_OWNER ->
                 listOf("APPLIED_BY_AFFILIATED_PROFILE_OWNER_USER")
             else -> throw IllegalArgumentException("Unknown DpcType: $dpcType")
         }

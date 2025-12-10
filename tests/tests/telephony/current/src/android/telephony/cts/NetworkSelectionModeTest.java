@@ -16,6 +16,8 @@
 
 package android.telephony.cts;
 
+import static android.os.Build.VERSION_CODES.BAKLAVA;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -23,8 +25,6 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.os.Build;
-import android.os.SystemProperties;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 
@@ -63,13 +63,6 @@ public class NetworkSelectionModeTest {
     private boolean hasFeature(String feature) {
         return mPackageManager.hasSystemFeature(feature);
     }
-
-    // Version codes prior to 35 use a 1-per-year scheme; however, starting with 36 the scheme
-    // was changed "in place" so that the vendor API level no longer is an API level, but rather
-    // an interface freeze date. It increments by 100 (1 year) for each major SDK beyond SDK 35.
-    // By convention the "year" starts in April.
-    private static final int VENDOR_API_LEVEL_BAKLAVA =
-            100 * (Build.VERSION_CODES.BAKLAVA - 35) + 202404;
 
     @Before
     public void setUp() throws Exception {
@@ -168,7 +161,7 @@ public class NetworkSelectionModeTest {
                                     tm.setNetworkSelectionModeManual(
                                             TESTING_PLMN /* operatorNumeric */,
                                             false /* persistSelection */));
-            if (getVendorApiLevel() > VENDOR_API_LEVEL_BAKLAVA) {
+            if (ApiLevelUtil.isVendorApiLevelGreaterThan(BAKLAVA)) {
                 assertTrue("Failed to setNetworkSelectionModeManual", result);
             }
             String plmn =
@@ -184,7 +177,7 @@ public class NetworkSelectionModeTest {
                                             TESTING_PLMN_2 /* operatorNumeric */,
                                             false /* persistSelection */));
 
-            if (getVendorApiLevel() > VENDOR_API_LEVEL_BAKLAVA) {
+            if (ApiLevelUtil.isVendorApiLevelGreaterThan(BAKLAVA)) {
                 assertTrue("Failed to setNetworkSelectionModeManual again", result);
             }
             plmn =
@@ -211,7 +204,7 @@ public class NetworkSelectionModeTest {
                                     tm.setNetworkSelectionModeManual(
                                             TESTING_PLMN /* operatorNumeric */,
                                             true /* persistSelection */));
-            if (getVendorApiLevel() > VENDOR_API_LEVEL_BAKLAVA) {
+            if (ApiLevelUtil.isVendorApiLevelGreaterThan(BAKLAVA)) {
                 assertTrue("Failed to setNetworkSelectionModeManual again", result);
             }
             String plmn =
@@ -222,9 +215,5 @@ public class NetworkSelectionModeTest {
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
                     mTelephonyManager, (tm) -> tm.setNetworkSelectionModeAutomatic());
         }
-    }
-
-    private int getVendorApiLevel() {
-        return SystemProperties.getInt("ro.vendor.api_level", Build.VERSION.DEVICE_INITIAL_SDK_INT);
     }
 }

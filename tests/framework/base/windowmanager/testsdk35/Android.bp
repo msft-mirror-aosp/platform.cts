@@ -33,6 +33,7 @@ android_test {
         "androidx.test.ext.junit",
         "androidx.test.rules",
         "com.android.window.flags.window-aconfig-java",
+        "cts-input-lib",
         "cts-wm-overlayapp-base",
         "cts-wm-shared",
         "cts-wm-util",

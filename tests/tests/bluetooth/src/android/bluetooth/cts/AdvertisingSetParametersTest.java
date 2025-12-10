@@ -24,7 +24,6 @@ import static android.bluetooth.le.AdvertisingSetParameters.INTERVAL_LOW;
 import static android.bluetooth.le.AdvertisingSetParameters.INTERVAL_MAX;
 import static android.bluetooth.le.AdvertisingSetParameters.INTERVAL_MEDIUM;
 import static android.bluetooth.le.AdvertisingSetParameters.INTERVAL_MIN;
-import static android.bluetooth.le.AdvertisingSetParameters.TX_POWER_MAX;
 import static android.bluetooth.le.AdvertisingSetParameters.TX_POWER_MEDIUM;
 import static android.bluetooth.le.AdvertisingSetParameters.TX_POWER_MIN;
 
@@ -291,7 +290,7 @@ public class AdvertisingSetParametersTest {
                 () -> new AdvertisingSetParameters.Builder().setTxPowerLevel(TX_POWER_MIN - 1));
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new AdvertisingSetParameters.Builder().setTxPowerLevel(TX_POWER_MAX + 1));
+                () -> new AdvertisingSetParameters.Builder().setTxPowerLevel(21));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})

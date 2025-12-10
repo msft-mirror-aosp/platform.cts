@@ -19,7 +19,10 @@ package {
 
 java_test_host {
     name: "CtsGpuProfilingDataTestCases",
-    srcs: ["src/**/*.java"],
+    srcs: [
+        "src/**/CtsFrameTracerDataSourceTest.java",
+        "src/**/CtsGpuProfilingDataTest.java",
+    ],
     // tag this module as a cts test artifact
     test_suites: [
         "cts",
@@ -41,4 +44,24 @@ java_test_host {
         ":CtsGraphicsProfilingDataApp",
     ],
     per_testcase_directory: true,
+    test_config: "CtsGpuProfilingDataTestCases.xml",
+}
+
+// Unit tests for utilities used by the CTS tests - not CTS itself
+java_test_host {
+    name: "GpuProfilingUtilsTestCases",
+    srcs: [
+        "src/**/ClockUtils.kt",
+        "src/**/ClockUtilsTest.kt",
+    ],
+    static_libs: [
+        "mockito-hostside-prebuilt",
+        "perfetto_config-full",
+        "perfetto_trace-full",
+        "tradefed",
+    ],
+    test_suites: [
+        "general-tests",
+    ],
+    test_config: "GpuProfilingUtilsTestCases.xml",
 }

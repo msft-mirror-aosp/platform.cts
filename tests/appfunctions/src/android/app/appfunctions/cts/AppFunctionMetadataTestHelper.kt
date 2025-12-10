@@ -96,13 +96,15 @@ class AppFunctionMetadataTestHelper {
                         "nestedDocumentProperty",
                         GenericDocument.Builder<GenericDocument.Builder<*>>(
                                 "app_functions",
-                                "android.app.appfunctions.cts.dynamic.schema/appFunctionEnabledByDefault/" +
-                                    "nestedDocumentProperty",
+                                "android.app.appfunctions.cts.dynamic.schema/" +
+                                        "appFunctionEnabledByDefault/" +
+                                        "nestedDocumentProperty",
                                 "NestedDocument-android.app.appfunctions.cts.dynamic.schema",
                             )
                             .setPropertyString("nestedRepeatedString", "value 1", "value 2")
                             .build(),
                     )
+                    .setPropertyString("serviceName", TEST_SERVICE_NAME)
                     .build(),
                 RUNTIME_METADATA,
                 PackageMetadata.DYNAMIC_SCHEMA_PACKAGE_METADATA,
@@ -122,6 +124,7 @@ class AppFunctionMetadataTestHelper {
                     )
                     .setPropertyString("functionId", "appFunctionDisabledByDefault_noSchema")
                     .setPropertyString("packageName", "android.app.appfunctions.cts.dynamic.schema")
+                    .setPropertyString("serviceName", TEST_SERVICE_NAME)
                     .build(),
                 RUNTIME_METADATA,
                 PackageMetadata.DYNAMIC_SCHEMA_PACKAGE_METADATA,
@@ -143,6 +146,7 @@ class AppFunctionMetadataTestHelper {
                     .setPropertyString(PROPERTY_SCHEMA_CATEGORY, "myUtils")
                     .setPropertyString(PROPERTY_SCHEMA_NAME, "testSchema")
                     .setPropertyLong(PROPERTY_SCHEMA_VERSION, 7L)
+                    .setPropertyString("serviceName", TEST_SERVICE_NAME)
                     .build(),
                 RUNTIME_METADATA,
                 PackageMetadata.DYNAMIC_SCHEMA_PACKAGE_METADATA,
@@ -169,6 +173,7 @@ class AppFunctionMetadataTestHelper {
                     .setPropertyLong(PROPERTY_SCHEMA_VERSION, 1L)
                     .setPropertyLong("displayNameStringRes", 10)
                     .setPropertyBoolean("restrictCallersWithExecuteAppFunctions", true)
+                    .setPropertyString("serviceName", TEST_SERVICE_NAME)
                     .build(),
                 GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
                     .setPropertyString(PROPERTY_PACKAGE_NAME, CURRENT_PKG)
@@ -179,6 +184,9 @@ class AppFunctionMetadataTestHelper {
                     .build(),
                 PackageMetadata.CURRENT_PACKAGE_METADATA,
             )
+
+        private const val TEST_SERVICE_NAME =
+            "android.app.appfunctions.testutils.TestAppFunctionService"
     }
 
     object Components {

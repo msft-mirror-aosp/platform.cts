@@ -46,9 +46,6 @@ import android.location.LocationManager;
 import android.os.Process;
 import android.os.UserHandle;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telecom.TelecomManager;
 import android.util.ArrayMap;
 
@@ -64,7 +61,6 @@ import com.android.internal.util.ArrayUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -111,9 +107,6 @@ public final class ActivityManagerForegroundServiceTypeTest {
     private Instrumentation mInstrumentation;
     private ActivityManager mActivityManager;
     private PackageManager mPackageManager;
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() {
@@ -204,7 +197,6 @@ public final class ActivityManagerForegroundServiceTypeTest {
      */
     @ApiTest(apis = {"android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_PHONE_CALL"})
     @Test
-    @RequiresFlagsEnabled(android.app.Flags.FLAG_SYSTEM_DIALER_PHONE_CALL_FGS_GRANT)
     public void testForegroundServiceTypePhoneCallSystemDialer() throws Exception {
         try {
             // This test does not apply to devices with no dialer role as there will be no system
