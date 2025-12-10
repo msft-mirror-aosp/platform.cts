@@ -36,7 +36,6 @@
     <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testAddSubscriptionToExistingGroupForEsim"/>
     <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testAddSubscriptionToExistingGroupForMultipleSims"/>
     <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testApduFileRead"/>
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testApduFileReadTwoChannels"/>
     <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testCarrierConfigIsAccessible"/>
     <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testCreateAndRemoveSubscriptionGroup"/>
     <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testDataEnableRequest"/>
@@ -52,7 +51,6 @@
     <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccOpenLogicalChannel"/>
     <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccOpenLogicalChannelWithInvalidP2"/>
     <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccOpenLogicalChannelWithValidP2"/>
-    <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccOpenTooManyLogicalChannels"/>
     <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccTransmitApduBasicChannel"/>
     <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccTransmitApduLogicalChannel"/>
     <option name="compatibility:include-filter" value="CtsCarrierApiTestCases android.carrierapi.cts.CarrierApiTest#testIccTransmitApduLogicalChannelWithInvalidChannel"/>
