@@ -1170,7 +1170,6 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     /** Test that an SCM app does not relaunch with display move. */
     @Test
     @DisableCompatChanges({ActivityInfo.UNIVERSAL_RESIZABLE_BY_DEFAULT})
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SIZE_COMPAT_MODE_IMPROVEMENTS_FOR_CONNECTED_DISPLAYS)
     @FlakyTest(bugId = 415631133)
     public void testSizeCompatDoesNotRestartWithDisplayMove() {
         runDisplayCompatTest(NON_RESIZEABLE_PORTRAIT_ACTIVITY);
@@ -1178,10 +1177,6 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
 
     /** Test that a DCM app does not relaunch with display move. */
     @Test
-    @RequiresFlagsEnabled({
-            Flags.FLAG_ENABLE_DISPLAY_COMPAT_MODE,
-            Flags.FLAG_ENABLE_RESTART_MENU_FOR_CONNECTED_DISPLAYS
-    })
     public void testDisplayCompatGameDoesNotRestartWithDisplayMove() {
         runDisplayCompatTest(NO_DISPLAY_CONFIG_CHANGE_SUPPORT_GAME_ACTIVITY);
     }
