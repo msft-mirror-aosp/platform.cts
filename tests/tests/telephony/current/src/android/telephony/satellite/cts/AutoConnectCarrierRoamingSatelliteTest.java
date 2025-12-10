@@ -29,11 +29,13 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.CarrierConfigManager;
-import android.telephony.NetworkRegistrationInfo;
-import android.telephony.SignalThresholdInfo;
-import android.telephony.SubscriptionManager;
 import android.telephony.ims.ImsManager;
 import android.telephony.ims.ImsMmTelManager;
+import android.telephony.NetworkRegistrationInfo;
+import android.telephony.ServiceState;
+import android.telephony.SignalThresholdInfo;
+import android.telephony.SubscriptionManager;
+import android.telephony.TelephonyCallback;
 import android.telephony.mockmodem.MockModemConfigBase;
 import android.telephony.satellite.PlmnSatelliteConfig;
 import android.telephony.satellite.SatelliteManager;
@@ -56,6 +58,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -600,6 +603,107 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             // Final restoration to ensure defaults are set
             overrideCarrierConfig(subId, null);
             logd(TAG, "Test finished, restored default carrier config.");
+        }
+    }
+
+    /**
+     * Test that NetworkRegistrationInfo.isNonTerrestrialNetwork() reflects the state set in the
+     * MockModemService.
+     */
+    @Test
+    public void testIsNonTerrestrialNetworkState() throws Exception {
+        if (!shouldTestSatelliteWithMockService()) {
+            logd(TAG, "Skipping testIsNonTerrestrialNetworkState: Mock service not available.");
+            return;
+        }
+
+        logd(TAG,
+             "testIsNonTerrestrialNetworkState: satellite plmn registered, set network"
+                 + " ntn=false");
+        sMockModemManager.setNetworkIsNtn(SLOT_ID_0, false);
+        ServiceState serviceState = sTelephonyManager.getServiceStateForSlot(SLOT_ID_0);
+        if (serviceState != null) {
+            NetworkRegistrationInfo nri =
+                    serviceState.getNetworkRegistrationInfo(
+                            NetworkRegistrationInfo.DOMAIN_PS,
+                            AccessNetworkConstants.TRANSPORT_TYPE_WWAN);
+
+            if (nri != null) {
+                logd("testIsNonTerrestrialNetworkState: nri.isNonTerrestrialNetwork()");
+                assertTrue(nri.isNonTerrestrialNetwork());
+            }
+        }
+
+        logd(TAG, "testIsNonTerrestrialNetworkState: remove registered satellite plmn");
+        disableSatellitePlmns(SLOT_ID_0);
+
+        logd(TAG, "testIsNonTerrestrialNetworkState: set network ntn=false");
+        NtnStateCallback ntnCallbackFalse = new NtnStateCallback(false);
+        sTelephonyManager.registerTelephonyCallback(
+                getContext().getMainExecutor(), ntnCallbackFalse);
+        try {
+            sMockModemManager.setNetworkIsNtn(SLOT_ID_0, false);
+            assertTrue(
+                    "Failed to receive ntn=false state change",
+                    ntnCallbackFalse.awaitStateChange(TIMEOUT));
+        } finally {
+            sTelephonyManager.unregisterTelephonyCallback(ntnCallbackFalse);
+        }
+
+        logd(TAG, "testIsNonTerrestrialNetworkState: set network ntn=true");
+        NtnStateCallback ntnCallbackTrue = new NtnStateCallback(true);
+        sTelephonyManager.registerTelephonyCallback(
+                getContext().getMainExecutor(), ntnCallbackTrue);
+        try {
+            sMockModemManager.setNetworkIsNtn(SLOT_ID_0, true);
+            assertTrue(
+                    "Failed to receive ntn=true state change",
+                    ntnCallbackTrue.awaitStateChange(TIMEOUT));
+        } finally {
+            sTelephonyManager.unregisterTelephonyCallback(ntnCallbackTrue);
+        }
+    }
+
+    protected static class NtnStateCallback extends TelephonyCallback
+            implements TelephonyCallback.ServiceStateListener {
+        private final boolean mExpectedState;
+        private final CountDownLatch mLatch = new CountDownLatch(1);
+
+        NtnStateCallback(boolean expectedState) {
+            super();
+            mExpectedState = expectedState;
+        }
+
+        @Override
+        public void onServiceStateChanged(ServiceState serviceState) {
+            if (serviceState == null) return;
+            logd("NtnStateCallback:onServiceStateChanged: " + serviceState);
+
+            NetworkRegistrationInfo nri =
+                    serviceState.getNetworkRegistrationInfo(
+                            NetworkRegistrationInfo.DOMAIN_PS,
+                            AccessNetworkConstants.TRANSPORT_TYPE_WWAN);
+
+            if (nri != null) {
+                logd(
+                        "NtnStateCallback: isNonTerrestrialNetwork: "
+                                + nri.isNonTerrestrialNetwork()
+                                + ", Expected: "
+                                + mExpectedState);
+                if (nri.isNonTerrestrialNetwork() == mExpectedState) {
+                    if (mLatch.getCount() > 0) {
+                        mLatch.countDown();
+                    }
+                }
+            } else {
+                logd("NtnStateCallback: NetworkRegistrationInfo is null");
+            }
+        }
+
+        public boolean awaitStateChange(long timeoutMillis) throws InterruptedException {
+            boolean result = mLatch.await(timeoutMillis, TimeUnit.MILLISECONDS);
+            logd("NtnStateCallback: awaitStateChange: result is " + result);
+            return result;
         }
     }
 
