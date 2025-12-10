@@ -25,14 +25,16 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.permission.flags.Flags.FLAG_ASSIST_SETTINGS_PRIVACY_IMPROVEMENTS_ENABLED
+import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
-import android.platform.test.rule.SecureSettingRule
 import android.voiceinteraction.cts.testcore.Helper
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.ActivityTestRule
 import com.android.compatibility.common.util.ApiTest
+import com.android.compatibility.common.util.SettingsStateKeeperRule
+import com.android.compatibility.common.util.SettingsStateManager
 import com.android.compatibility.common.util.SystemUtil.eventually
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.google.common.truth.Truth.assertThat
@@ -46,14 +48,23 @@ import org.junit.runner.RunWith
 
 /** Tests for {@link android.app.voiceinteraction.VoiceInteractionManager} APIs. */
 @RunWith(AndroidJUnit4::class)
+@AppModeFull(reason = "No real use case for instant mode")
 @RequiresFlagsEnabled(FLAG_ASSIST_SETTINGS_PRIVACY_IMPROVEMENTS_ENABLED)
 class VoiceInteractionManagerTest {
+    private val context: Context = ApplicationProvider.getApplicationContext()
+
     @get:Rule val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
-    @get:Rule val assistStructureSetting = SecureSettingRule<Boolean>(ASSIST_STRUCTURE_ENABLED)
-    @get:Rule val assistScreenshotSetting = SecureSettingRule<Boolean>(ASSIST_SCREENSHOT_ENABLED)
+    @get:Rule val assistStructureEnabledManagersKeeper =
+        SettingsStateKeeperRule(context, ASSIST_STRUCTURE_ENABLED)
+    @get:Rule val assistScreenshotEnabledManagersKeeper =
+        SettingsStateKeeperRule(context, ASSIST_SCREENSHOT_ENABLED)
     @get:Rule val activityRule = ActivityTestRule(WaitForResultActivity::class.java)
 
-    private lateinit var context: Context
+    private val assistStructureEnabledManager =
+        SettingsStateManager(context, ASSIST_STRUCTURE_ENABLED)
+    private val assistScreenshotEnabledManager =
+        SettingsStateManager(context, ASSIST_SCREENSHOT_ENABLED)
+
     private lateinit var appOpsManager: AppOpsManager
     private lateinit var roleManager: RoleManager
 
@@ -66,7 +77,6 @@ class VoiceInteractionManagerTest {
 
     @Before
     fun setup() {
-        context = ApplicationProvider.getApplicationContext()
         appOpsManager = context.getSystemService(AppOpsManager::class.java)!!
         roleManager = context.getSystemService(RoleManager::class.java)!!
         voiceInteractionManager =
@@ -123,32 +133,32 @@ class VoiceInteractionManagerTest {
         setAppOpMode(AppOpsManager.MODE_ALLOWED)
         assertCanReadAssistStructure(true)
         eventually {
-            assertThat(assistStructureSetting.getSettingValue<Boolean>()).isTrue()
-            assertThat(assistScreenshotSetting.getSettingValue<Boolean>()).isTrue()
+            assertThat(assistStructureEnabledManager.get()).isEqualTo("1")
+            assertThat(assistScreenshotEnabledManager.get()).isEqualTo("1")
         }
 
         // Mode ignored
         setAppOpMode(AppOpsManager.MODE_IGNORED)
         assertCanReadAssistStructure(false)
         eventually {
-            assertThat(assistStructureSetting.getSettingValue<Boolean>()).isFalse()
-            assertThat(assistScreenshotSetting.getSettingValue<Boolean>()).isFalse()
+            assertThat(assistStructureEnabledManager.get()).isEqualTo("0")
+            assertThat(assistScreenshotEnabledManager.get()).isEqualTo("0")
         }
 
         // Mode default
         setAppOpMode(AppOpsManager.MODE_DEFAULT)
         assertCanReadAssistStructure(true)
         eventually {
-            assertThat(assistStructureSetting.getSettingValue<Boolean>()).isTrue()
-            assertThat(assistScreenshotSetting.getSettingValue<Boolean>()).isTrue()
+            assertThat(assistStructureEnabledManager.get()).isEqualTo("1")
+            assertThat(assistScreenshotEnabledManager.get()).isEqualTo("1")
         }
 
         // Mode errored
         setAppOpMode(AppOpsManager.MODE_ERRORED)
         assertCanReadAssistStructure(false)
         eventually {
-            assertThat(assistStructureSetting.getSettingValue<Boolean>()).isFalse()
-            assertThat(assistScreenshotSetting.getSettingValue<Boolean>()).isFalse()
+            assertThat(assistStructureEnabledManager.get()).isEqualTo("0")
+            assertThat(assistScreenshotEnabledManager.get()).isEqualTo("0")
         }
     }
 
@@ -159,41 +169,42 @@ class VoiceInteractionManagerTest {
     fun testCanReadAssistStructure_nonRoleHolder() {
         Helper.removeAssistRoleHolder(ASSISTANT_ROLE_HOLDER_PACKAGE, context, roleManager)
 
-        val initialAssistSecureSettings =
-            (assistStructureSetting.getSettingValue<Boolean>() ?: false) &&
-                (assistScreenshotSetting.getSettingValue<Boolean>() ?: false)
+        val initialAssistStructureSecureSettings =
+            assistStructureEnabledManager.get() ?: "0"
+        val initialAssistScreenshotSecureSettings =
+            assistScreenshotEnabledManager.get() ?: "0"
 
         // Mode Allowed
         setAppOpMode(AppOpsManager.MODE_ALLOWED)
         assertCanReadAssistStructure(false)
-        assertThat(assistStructureSetting.getSettingValue<Boolean>())
-            .isEqualTo(initialAssistSecureSettings)
-        assertThat(assistScreenshotSetting.getSettingValue<Boolean>())
-            .isEqualTo(initialAssistSecureSettings)
+        assertThat(assistStructureEnabledManager.get())
+            .isEqualTo(initialAssistStructureSecureSettings)
+        assertThat(assistScreenshotEnabledManager.get())
+            .isEqualTo(initialAssistScreenshotSecureSettings)
 
         // Mode ignored
         setAppOpMode(AppOpsManager.MODE_IGNORED)
         assertCanReadAssistStructure(false)
-        assertThat(assistStructureSetting.getSettingValue<Boolean>())
-            .isEqualTo(initialAssistSecureSettings)
-        assertThat(assistScreenshotSetting.getSettingValue<Boolean>())
-            .isEqualTo(initialAssistSecureSettings)
+        assertThat(assistStructureEnabledManager.get())
+            .isEqualTo(initialAssistStructureSecureSettings)
+        assertThat(assistScreenshotEnabledManager.get())
+            .isEqualTo(initialAssistScreenshotSecureSettings)
 
         // Mode default
         setAppOpMode(AppOpsManager.MODE_DEFAULT)
         assertCanReadAssistStructure(false)
-        assertThat(assistStructureSetting.getSettingValue<Boolean>())
-            .isEqualTo(initialAssistSecureSettings)
-        assertThat(assistScreenshotSetting.getSettingValue<Boolean>())
-            .isEqualTo(initialAssistSecureSettings)
+        assertThat(assistStructureEnabledManager.get())
+            .isEqualTo(initialAssistStructureSecureSettings)
+        assertThat(assistScreenshotEnabledManager.get())
+            .isEqualTo(initialAssistScreenshotSecureSettings)
 
         // Mode errored
         setAppOpMode(AppOpsManager.MODE_ERRORED)
         assertCanReadAssistStructure(false)
-        assertThat(assistStructureSetting.getSettingValue<Boolean>())
-            .isEqualTo(initialAssistSecureSettings)
-        assertThat(assistScreenshotSetting.getSettingValue<Boolean>())
-            .isEqualTo(initialAssistSecureSettings)
+        assertThat(assistStructureEnabledManager.get())
+            .isEqualTo(initialAssistStructureSecureSettings)
+        assertThat(assistScreenshotEnabledManager.get())
+            .isEqualTo(initialAssistScreenshotSecureSettings)
     }
 
     private fun getAppOpMode(): Int =
