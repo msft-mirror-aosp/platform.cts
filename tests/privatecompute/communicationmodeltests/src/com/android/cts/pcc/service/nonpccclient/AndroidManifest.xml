@@ -22,11 +22,11 @@
         <service
             android:name="com.android.cts.pcc.service.common.TestPccService"
             android:exported="false"
-            android:isPrivateComputeCoreProcess="true" />
+            android:privateComputeCore="true" />
         <service
             android:name="com.android.cts.pcc.service.common.TestPccRegularService"
             android:exported="false"
-            android:isPrivateComputeCoreProcess="true" />
+            android:privateComputeCore="true" />
         <uses-library android:name="android.test.runner" />
     </application>
 
