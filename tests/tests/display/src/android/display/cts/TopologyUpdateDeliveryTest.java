@@ -27,18 +27,17 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
-import android.content.Intent;
 import android.hardware.display.DisplayTopology;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -58,9 +57,6 @@ import java.util.function.Predicate;
 /** Tests that applications can receive topology updates correctly. */
 public class TopologyUpdateDeliveryTest extends EventDeliveryTestBase {
     private static final String TAG = TopologyUpdateDeliveryTest.class.getSimpleName();
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Rule
     public final PeripheralDeviceTestRule mPeripheralDeviceRule = new PeripheralDeviceTestRule();
@@ -143,6 +139,16 @@ public class TopologyUpdateDeliveryTest extends EventDeliveryTestBase {
         }
     }
 
+    @Before
+    public void setUp() {
+        super.setUp();
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        super.tearDown();
+    }
+
     @Override
     protected String getTag() {
         return TAG;
@@ -163,15 +169,12 @@ public class TopologyUpdateDeliveryTest extends EventDeliveryTestBase {
         return TEST_ACTIVITY;
     }
 
-    @Override
-    protected void putExtra(Intent intent) {}
-
     private void testTopologyUpdateInternal(boolean cached) {
         Log.d(TAG, "Start test testTopologyUpdate " + cached);
         assumeDesktopModeSupported();
 
         // Launch activity and start listening to topology updates
-        int pid = launchTestActivity();
+        int pid = launchTestActivity(intent -> {});
 
         // The test activity in cached or frozen mode won't receive the pending topology updates.
         if (cached) {
