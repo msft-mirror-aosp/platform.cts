@@ -25,6 +25,7 @@ import android.app.Instrumentation;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.cts.photopicker.lib.PhotoPickerTestRule;
 import android.net.Uri;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -70,14 +71,7 @@ public class EmbeddedPhotoPickerFeatureInfoTest {
         mInstrumentation = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation();
         mContext = mInstrumentation.getTargetContext();
         mPackageManager = mContext.getPackageManager();
-    }
-
-    boolean isHardwareSupported() {
-        // These UI tests are not optimised for Watches, TVs, Auto;
-        // IoT devices do not have a UI to run these UI tests
-        return !mPackageManager.hasSystemFeature(mPackageManager.FEATURE_EMBEDDED)
-                && !mPackageManager.hasSystemFeature(mPackageManager.FEATURE_WATCH)
-                && !mPackageManager.hasSystemFeature(mPackageManager.FEATURE_LEANBACK);
+        Assume.assumeTrue(PhotoPickerTestRule.Companion.isHardwareSupported());
     }
 
     @Test
@@ -212,8 +206,6 @@ public class EmbeddedPhotoPickerFeatureInfoTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PICKER_HIGHLIGHT_SEARCH_RESULTS_APIS)
     public void testSetHighlightSearchMediaQueryForValidQuery() {
-        // Suppress HSR tests for wearables since the APIs aren't supported in wear devices
-        Assume.assumeTrue(isHardwareSupported());
         final String highlightQuery = "android";
         final EmbeddedPhotoPickerFeatureInfo info =
                 new EmbeddedPhotoPickerFeatureInfo.Builder()
@@ -228,8 +220,6 @@ public class EmbeddedPhotoPickerFeatureInfoTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PICKER_HIGHLIGHT_SEARCH_RESULTS_APIS)
     public void testSetHighlightAlbumId() {
-        // Suppress HSR tests for wearables since the APIs aren't supported in wear devices
-        Assume.assumeTrue(isHardwareSupported());
         final EmbeddedPhotoPickerFeatureInfo info =
                 new EmbeddedPhotoPickerFeatureInfo.Builder()
                         .setHighlightAlbumId(MediaStore.PICK_IMAGES_HIGHLIGHT_ALBUM_FAVORITES)
@@ -243,8 +233,6 @@ public class EmbeddedPhotoPickerFeatureInfoTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EMBEDDED_PICKER_EXPANDED_HIGHLIGHT_TYPE_API)
     public void testSetHighlightType() {
-        // Suppress HSR tests for wearables since the APIs aren't supported in wear devices
-        Assume.assumeTrue(isHardwareSupported());
         final EmbeddedPhotoPickerFeatureInfo info =
                 new EmbeddedPhotoPickerFeatureInfo.Builder()
                         .setHighlightType(MediaStore.PICK_IMAGES_HIGHLIGHT_TYPE_EXPANDED)
@@ -258,8 +246,6 @@ public class EmbeddedPhotoPickerFeatureInfoTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EMBEDDED_PICKER_EXPANDED_HIGHLIGHT_TYPE_API)
     public void testIsLaunchedPickerInExpandedState() {
-        // Suppress HSR tests for wearables since the APIs aren't supported in wear devices
-        Assume.assumeTrue(isHardwareSupported());
         final EmbeddedPhotoPickerFeatureInfo info =
                 new EmbeddedPhotoPickerFeatureInfo.Builder()
                         .setPickerLaunchedInExpandedState(true)
@@ -273,8 +259,6 @@ public class EmbeddedPhotoPickerFeatureInfoTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PICKER_HIGHLIGHT_SEARCH_RESULTS_APIS)
     public void testSetHighlightSearchMediaTextQueryForNullQuery() {
-        // Suppress HSR tests for wearables since the APIs aren't supported in wear devices
-        Assume.assumeTrue(isHardwareSupported());
         Assert.assertThrows(
                 IllegalArgumentException.class,
                 () -> {
@@ -287,8 +271,6 @@ public class EmbeddedPhotoPickerFeatureInfoTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PICKER_HIGHLIGHT_SEARCH_RESULTS_APIS)
     public void testSetHighlightAlbumIdForNullQuery() {
-        // Suppress HSR tests for wearables since the APIs aren't supported in wear devices
-        Assume.assumeTrue(isHardwareSupported());
         Assert.assertThrows(
                 IllegalArgumentException.class,
                 () -> {
@@ -299,8 +281,6 @@ public class EmbeddedPhotoPickerFeatureInfoTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EMBEDDED_PICKER_EXPANDED_HIGHLIGHT_TYPE_API)
     public void testSetHighlightTypeForInvalidType() {
-        // Suppress HSR tests for wearables since the APIs aren't supported in wear devices
-        Assume.assumeTrue(isHardwareSupported());
         Assert.assertThrows(
                 IllegalArgumentException.class,
                 () -> {
@@ -311,9 +291,6 @@ public class EmbeddedPhotoPickerFeatureInfoTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PICKER_LOCATION_METADATA_API)
     public void testSetRequestLocationMetadata() {
-        // Suppress location metadata tests for wearables since the APIs aren't supported on
-        // wear devices
-        Assume.assumeTrue(isHardwareSupported());
         final EmbeddedPhotoPickerFeatureInfo info =
                 new EmbeddedPhotoPickerFeatureInfo.Builder()
                         .setRequestLocationMetadata(true)

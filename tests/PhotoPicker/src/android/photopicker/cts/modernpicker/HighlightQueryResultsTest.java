@@ -24,6 +24,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.cts.photopicker.lib.PhotoPickerTestRule;
 import android.os.Bundle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -66,7 +67,7 @@ public class HighlightQueryResultsTest {
         UiDevice mDevice = UiDevice.getInstance(mInstrumentation);
         mContext = mInstrumentation.getTargetContext();
         mPackageManager = mContext.getPackageManager();
-        Assume.assumeTrue(isHardwareSupported());
+        Assume.assumeTrue(PhotoPickerTestRule.Companion.isHardwareSupported());
         Assume.assumeTrue(isModernPickerEnabled());
 
         // Wake up the device and dismiss the keyguard before the test starts
@@ -80,14 +81,6 @@ public class HighlightQueryResultsTest {
     public void tearDown() {
         Intents.release();
         TestApis.activities().clearAllActivities();
-    }
-
-    boolean isHardwareSupported() {
-        // These UI tests are not optimised for Watches, TVs, Auto;
-        // IoT devices do not have a UI to run these UI tests
-        return !mPackageManager.hasSystemFeature(mPackageManager.FEATURE_EMBEDDED)
-                && !mPackageManager.hasSystemFeature(mPackageManager.FEATURE_WATCH)
-                && !mPackageManager.hasSystemFeature(mPackageManager.FEATURE_LEANBACK);
     }
 
     boolean isModernPickerEnabled() {
