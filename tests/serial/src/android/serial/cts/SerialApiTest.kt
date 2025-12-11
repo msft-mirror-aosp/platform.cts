@@ -65,6 +65,11 @@ class SerialApiTest {
     fun setUp() {
         mContext = ApplicationProvider.getApplicationContext()
         mSerialManager = mContext!!.getSystemService(SerialManager::class.java)
+
+        // Clear any dialogs, e.g. "Allow SerialApiTest to access USB serial port?"
+        val uiDevice = UiAutomatorUtils2.getUiDevice()
+        uiDevice.pressHome()
+        uiDevice.pressBack()
     }
 
     @After
