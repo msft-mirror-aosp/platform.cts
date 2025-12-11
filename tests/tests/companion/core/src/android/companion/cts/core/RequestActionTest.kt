@@ -37,6 +37,7 @@ import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import org.junit.Rule
 import org.junit.Test
@@ -142,6 +143,13 @@ class RequestActionTest : CoreTestBase() {
                 )
             )
         }
+    }
+
+    @Test
+    fun testActionRequest_builder() {
+        val requestA = ActionRequest.Builder(REQUEST_TRANSPORT, OP_ACTIVATE).build()
+        assertEquals(actual = REQUEST_TRANSPORT, expected = requestA.action)
+        assertEquals(actual = OP_ACTIVATE, expected = requestA.operation)
     }
 
     @Test
