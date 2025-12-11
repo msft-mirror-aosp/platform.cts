@@ -181,9 +181,7 @@ public class NotificationTest {
                 .setBubbleMetadata(bubble)
                 .setAllowSystemGeneratedContextualActions(ALLOW_SYS_GEN_CONTEXTUAL_ACTIONS);
         builder.setShortCriticalText(SHORT_CRITICAL_TEXT);
-        if (Flags.nmSummarization()) {
-            builder.setHasSummarizedContent(true);
-        }
+        builder.setHasSummarizedContent(true);
         if (Flags.nmSummarizationAll()) {
             builder.setSummarizedContent("hello!");
         }
@@ -248,9 +246,7 @@ public class NotificationTest {
         assertNotNull(result.getBubbleMetadata());
         assertEquals(mNotification.getAllowSystemGeneratedContextualActions(),
                 result.getAllowSystemGeneratedContextualActions());
-        if (Flags.nmSummarization()) {
-            assertTrue(mNotification.hasSummarizedContent());
-        }
+        assertTrue(mNotification.hasSummarizedContent());
         if (Flags.nmSummarizationAll()) {
             assertEquals("hello!", mNotification.getSummarizedContent().toString());
         }
