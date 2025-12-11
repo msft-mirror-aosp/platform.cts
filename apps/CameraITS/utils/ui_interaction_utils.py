@@ -160,7 +160,7 @@ DEFAULT_CAMERA_CONTENT_DESC_SEPARATOR = ','
 DEFAULT_CAMERA_WATCH_DUMP_FILE = 'default_camera_watch_dump.txt'
 DEFAULT_JCA_UI_DUMPSYS_PATH = '/sdcard/jca-ui-dumpsys.txt'
 DONE_BUTTON_TXT = 'Done'
-EMULATED_STORAGE_PATH = '/storage/emulated/0/Pictures'
+JCA_STORAGE_PATH = '/sdcard/DCIM/Camera'
 IMG_CAPTURE_CMD = 'am start -a android.media.action.IMAGE_CAPTURE'
 JPG_FORMAT_STR = '.jpg'
 LOCATION_ON_TXT = 'Turn on'
@@ -931,7 +931,7 @@ def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
   """
   device_id = dut.serial
   jca_screenshot = None
-  remove_command = f'rm -rf {EMULATED_STORAGE_PATH}/*'
+  remove_command = f'rm -rf {JCA_STORAGE_PATH}/*'
   its_device_utils.run_adb_shell_command(device_id, remove_command)
   watch_dump_path = os.path.join(log_path, JCA_WATCH_DUMP_FILE)
   watch_process = start_cameraservice_watch(device_id, watch_dump_path,
@@ -975,7 +975,7 @@ def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
     img_path_on_dut = (
         dut.adb.shell(
             "find {} ! -empty -a ! -name '.pending*' -a -type f".format(
-                EMULATED_STORAGE_PATH
+                JCA_STORAGE_PATH
             )
         )
         .decode('utf-8')
