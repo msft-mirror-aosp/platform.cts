@@ -27,6 +27,8 @@ android_library {
     platform_apis: true,
     static_libs: [
         "androidx.test.ext.junit",
+        "bedstead-root",
+        "bedstead-root-annotations",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "junit",
