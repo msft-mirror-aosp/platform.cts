@@ -64,33 +64,46 @@ public class FixedRateImageWriter implements Consumer<Surface>, AutoCloseable {
     @Override
     public void accept(Surface surface) {
         mImageWriter.set(ImageWriter.newInstance(surface, 1, YUV_420_888));
-        TimerTask task = new TimerTask() {
+        TimerTask task =
+                new TimerTask() {
 
-            long renderedTimestampNanos = mInitialRenderedTimestampNanos;
+                    long renderedTimestampNanos = mInitialRenderedTimestampNanos;
 
-            @Override
-            public void run() {
-                ImageWriter imageWriter = mImageWriter.get();
-                if (!surface.isValid() || imageWriter == null) {
-                    cancel();
-                    return;
-                }
+                    @Override
+                    public void run() {
+                        ImageWriter imageWriter = mImageWriter.get();
+                        if (!surface.isValid() || imageWriter == null) {
+                            if (DEBUG) {
+                                Log.e(
+                                        TAG,
+                                        "Cancelling task surface.isValid="
+                                                + surface.isValid()
+                                                + " imageWriter:"
+                                                + imageWriter);
+                            }
+                            cancel();
+                            return;
+                        }
 
-                try {
-                    Image image = imageWriter.dequeueInputImage();
-                    image.setTimestamp(renderedTimestampNanos);
-                    if (DEBUG) {
-                        Log.d(TAG, "queueInputImage with timestamp: " + renderedTimestampNanos);
+                        try (Image image = imageWriter.dequeueInputImage()) {
+                            image.setTimestamp(renderedTimestampNanos);
+                            if (DEBUG) {
+                                Log.d(
+                                        TAG,
+                                        "queueInputImage with timestamp: "
+                                                + renderedTimestampNanos);
+                            }
+                            imageWriter.queueInputImage(image);
+                            mWrittenTimestamps.add(renderedTimestampNanos);
+                            renderedTimestampNanos += mRenderingPeriodMillis * MILLIS_TO_NANOS;
+                        } catch (IllegalStateException ex) {
+                            // Surface might have been disconnected because of a test
+                            // timeout.
+                            cancel();
+                            Log.e(TAG, "Exception caught", ex);
+                        }
                     }
-                    imageWriter.queueInputImage(image);
-                    mWrittenTimestamps.add(renderedTimestampNanos);
-                    renderedTimestampNanos += mRenderingPeriodMillis * MILLIS_TO_NANOS;
-                } catch (IllegalStateException ex) {
-                    // Surface might have been disconnected because of a test
-                    // timeout.
-                }
-            }
-        };
+                };
         mTimer.scheduleAtFixedRate(task, 0, mRenderingPeriodMillis);
     }
 

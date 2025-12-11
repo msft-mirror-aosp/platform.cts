@@ -779,9 +779,6 @@ public class VirtualCameraCaptureHelper {
                             + "]");
             mConfiguredSession = virtualCameraSessionConfig;
             mCallbackDelegate.onConfigureSession(virtualCameraSessionConfig, captureResultConsumer);
-            if (Flags.virtualCameraMetadata()) {
-                mSessionConfiguredLatch.countDown();
-            }
         }
 
         @Override
@@ -802,9 +799,7 @@ public class VirtualCameraCaptureHelper {
                             + "]");
             mConfiguredStreams.put(streamId, surface);
             mCallbackDelegate.onStreamConfigured(streamId, surface, width, height, format);
-            if (!Flags.virtualCameraMetadata()) {
-                mSessionConfiguredLatch.countDown();
-            }
+            mSessionConfiguredLatch.countDown();
         }
 
         @Override
