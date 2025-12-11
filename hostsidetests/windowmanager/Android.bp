@@ -14,10 +14,12 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_interactions_frameworks",
 }
 
 java_test_host {
     name: "CtsWindowManagerHostTestCases",
+    team: "trendy_team_window_manager_other",
     defaults: ["cts_defaults"],
     srcs: ["src/**/*.kt"],
     // tag this module as a cts test artifact
