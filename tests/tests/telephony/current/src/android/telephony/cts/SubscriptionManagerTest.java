@@ -129,6 +129,9 @@ public class SubscriptionManagerTest {
     private static final int SUBSCRIPTION_PLAN_EXPIRY_MS = 50;
     private static final int SUBSCRIPTION_PLAN_CLEAR_WAIT_MS = 5000;
 
+    private static final int DOWNLINK_KBPS = 2000;
+    private static final int UPLINK_KBPS = 1000;
+
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
@@ -387,6 +390,14 @@ public class SubscriptionManagerTest {
             assertEquals(
                     SubscriptionPlan.SUBSCRIPTION_STATUS_ACTIVE,
                     returnedPlan.getSubscriptionStatus());
+        }
+
+        if (Flags.subscriptionPlanEnhancement()) {
+            assertEquals(DOWNLINK_KBPS, returnedPlan.getStreamingAppMaxDownlinkKbps());
+            assertEquals(UPLINK_KBPS, returnedPlan.getStreamingAppMaxUplinkKbps());
+            SubscriptionInfo subInfo = mSm.getActiveSubscriptionInfo(mSubId);
+            assertEquals(DOWNLINK_KBPS, subInfo.getStreamingAppMaxDownlinkKbps());
+            assertEquals(UPLINK_KBPS, subInfo.getStreamingAppMaxUplinkKbps());
         }
 
         // Push plan with expiration time and verify that it expired
@@ -1788,6 +1799,11 @@ public class SubscriptionManagerTest {
 
         if (Flags.subscriptionPlanAllowStatusAndEndDate()) {
             builder.setSubscriptionStatus(SubscriptionPlan.SUBSCRIPTION_STATUS_ACTIVE);
+        }
+
+        if (Flags.subscriptionPlanEnhancement()) {
+            builder.setStreamingAppMaxDownlinkKbps(DOWNLINK_KBPS);
+            builder.setStreamingAppMaxUplinkKbps(UPLINK_KBPS);
         }
 
         return builder.build();

@@ -70,6 +70,7 @@ public class SubscriptionPlanTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUBSCRIPTION_PLAN_ENHANCEMENT)
     public void testRecurringPlan() {
         SubscriptionPlan plan =
                 SubscriptionPlan.Builder.createRecurring(START, PERIOD)
@@ -120,6 +121,7 @@ public class SubscriptionPlanTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUBSCRIPTION_PLAN_ENHANCEMENT)
     public void testParcelable() {
         SubscriptionPlan plan =
                 SubscriptionPlan.Builder.createRecurring(START, PERIOD)
@@ -195,8 +197,8 @@ public class SubscriptionPlanTest {
         assertThat(iterator.hasNext()).isFalse();
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SUBSCRIPTION_PLAN_ENHANCEMENT)
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUBSCRIPTION_PLAN_ENHANCEMENT)
     public void testGetTypes() {
         SubscriptionPlan plan =
                 SubscriptionPlan.Builder.createRecurring(START, PERIOD)
