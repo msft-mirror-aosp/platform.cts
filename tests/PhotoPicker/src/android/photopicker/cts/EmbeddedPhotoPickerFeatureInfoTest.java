@@ -35,6 +35,7 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.MediaStore;
 import android.widget.photopicker.EmbeddedPhotoPickerFeatureInfo;
 import android.widget.photopicker.PhotoPickerSelectionParams;
+import android.widget.photopicker.PhotoPickerUiCustomizationParams;
 
 import androidx.annotation.ColorLong;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -531,6 +532,81 @@ public class EmbeddedPhotoPickerFeatureInfoTest {
         assertWithMessage("Expected selection params to be preserved after parceling")
                 .that(created.getSelectionParams().getMinVideoDurationInSeconds())
                 .isEqualTo(original.getSelectionParams().getMinVideoDurationInSeconds());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PHOTOPICKER_UI_CUSTOMIZATION_PARAMS_API)
+    public void testSetUiCustomizationParams_default_returnsNull() {
+        final EmbeddedPhotoPickerFeatureInfo info =
+                new EmbeddedPhotoPickerFeatureInfo.Builder().build();
+
+        assertWithMessage("Expected default ui customization params to be null")
+                .that(info.getUiCustomizationParams())
+                .isNull();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PHOTOPICKER_UI_CUSTOMIZATION_PARAMS_API)
+    public void testSetUiCustomizationParams_withValidParams_returnsSetParams() {
+        PhotoPickerUiCustomizationParams params =
+                new PhotoPickerUiCustomizationParams.Builder()
+                        .setAspectRatio(PhotoPickerUiCustomizationParams.ASPECT_RATIO_PORTRAIT_9_16)
+                        .build();
+        final EmbeddedPhotoPickerFeatureInfo info =
+                new EmbeddedPhotoPickerFeatureInfo.Builder()
+                        .setUiCustomizationParams(params)
+                        .build();
+        Assert.assertNotNull(info.getUiCustomizationParams());
+
+        assertWithMessage("Expected ui customization params to be set")
+                .that(info.getUiCustomizationParams())
+                .isEqualTo(params);
+        assertWithMessage("Expected aspect ratio to be preserved")
+                .that(info.getUiCustomizationParams().getAspectRatio())
+                .isEqualTo(PhotoPickerUiCustomizationParams.ASPECT_RATIO_PORTRAIT_9_16);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PHOTOPICKER_UI_CUSTOMIZATION_PARAMS_API)
+    public void testSetUiCustomizationParams_unsetWithNull_returnsNull() {
+        PhotoPickerUiCustomizationParams params =
+                new PhotoPickerUiCustomizationParams.Builder().build();
+        final EmbeddedPhotoPickerFeatureInfo info =
+                new EmbeddedPhotoPickerFeatureInfo.Builder()
+                        .setUiCustomizationParams(params) // Set initially
+                        .setUiCustomizationParams(null) // Then clear
+                        .build();
+
+        assertWithMessage("Expected ui customization params to be null after clearing")
+                .that(info.getUiCustomizationParams())
+                .isNull();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PHOTOPICKER_UI_CUSTOMIZATION_PARAMS_API)
+    public void testFeatureInfoParceling_withUiCustomizationParams() {
+        PhotoPickerUiCustomizationParams params =
+                new PhotoPickerUiCustomizationParams.Builder()
+                        .setAspectRatio(PhotoPickerUiCustomizationParams.ASPECT_RATIO_PORTRAIT_9_16)
+                        .build();
+        EmbeddedPhotoPickerFeatureInfo original =
+                new EmbeddedPhotoPickerFeatureInfo.Builder()
+                        .setUiCustomizationParams(params)
+                        .build();
+        Assert.assertNotNull(original.getUiCustomizationParams());
+
+        Parcel parcel = Parcel.obtain();
+        original.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+
+        EmbeddedPhotoPickerFeatureInfo created =
+                EmbeddedPhotoPickerFeatureInfo.CREATOR.createFromParcel(parcel);
+        parcel.recycle();
+        Assert.assertNotNull(created.getUiCustomizationParams());
+
+        assertWithMessage("Expected ui customization params to be preserved after parceling")
+                .that(created.getUiCustomizationParams().getAspectRatio())
+                .isEqualTo(original.getUiCustomizationParams().getAspectRatio());
     }
 
     private static <T extends Throwable> void assertThrows(
