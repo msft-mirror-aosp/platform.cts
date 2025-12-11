@@ -416,7 +416,6 @@
   <option name="compatibility:include-filter" value="CtsContentProviderTestsWithoutVisibility"/>
   <option name="compatibility:include-filter" value="CtsNetSecPolicyUsesCleartextTrafficUnspecifiedTestCases"/>
   <option name="compatibility:include-filter" value="CtsRebootReadinessTestCases"/>
-  <option name="compatibility:include-filter" value="CtsHealthConnectHostSideDeviceTestCases"/>
   <option name="compatibility:include-filter" value="CtsGrammaticalInflectionTestCases"/>
   <option name="compatibility:include-filter" value="CtsAppFgsTestCases"/>
   <option name="compatibility:include-filter" value="CtsContentProviderTestsWithVisibility"/>
