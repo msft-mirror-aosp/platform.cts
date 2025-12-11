@@ -89,6 +89,7 @@ struct ConfigCreator {
     std::vector<ASurfaceControl*> surfaceControls{};
     bool autoCpu = false;
     bool autoGpu = false;
+    bool audioPerformance = false;
 };
 
 struct SupportHelper {
@@ -98,6 +99,7 @@ struct SupportHelper {
     bool graphicsPipeline : 1;
     bool autoCpu : 1;
     bool autoGpu : 1;
+    bool audioPerformance : 1;
 };
 
 SupportHelper getSupportHelper() {
@@ -108,6 +110,7 @@ SupportHelper getSupportHelper() {
             .graphicsPipeline = APerformanceHint_isFeatureSupported(APERF_HINT_GRAPHICS_PIPELINE),
             .autoCpu = APerformanceHint_isFeatureSupported(APERF_HINT_AUTO_CPU),
             .autoGpu = APerformanceHint_isFeatureSupported(APERF_HINT_AUTO_GPU),
+            .audioPerformance = APerformanceHint_isFeatureSupported(APERF_HINT_AUDIO_PERFORMANCE),
     };
 }
 
@@ -128,6 +131,7 @@ std::shared_ptr<ASessionCreationConfig> configFromCreator(ConfigCreator&& creato
                                                      : nullptr,
                                              creator.surfaceControls.size());
     ASessionCreationConfig_setUseAutoTiming(config.get(), creator.autoCpu, creator.autoGpu);
+    ASessionCreationConfig_setAudioPerformance(config.get(), creator.audioPerformance);
     return config;
 }
 
@@ -522,6 +526,47 @@ static jstring nativeTestCreateGraphicsPipelineSession(JNIEnv* env, jobject) {
     return nullptr;
 }
 
+static jstring nativeTestCreateAudioPerformanceSession(JNIEnv* env, jobject) {
+    auto supportInfo = getSupportHelper();
+    if (!supportInfo.audioPerformance) {
+        return nullptr;
+    }
+
+    APerformanceHintManager* manager = APerformanceHint_getManager();
+    if (!manager) return toJString(env, "null manager");
+
+    int errCode = 0;
+    auto config = configFromCreator({.audioPerformance = true});
+    auto session = createSessionWithConfig(manager, config, &errCode);
+    CHECK_SESSION_RETURN(errCode, session, "Audio performance session creation");
+
+    return nullptr;
+}
+
+static jstring nativeTestCreateAudioPerformanceAndGraphicsPipelineSession(JNIEnv* env, jobject) {
+    auto supportInfo = getSupportHelper();
+    if (!supportInfo.audioPerformance || !supportInfo.graphicsPipeline) {
+        return nullptr;
+    }
+
+    APerformanceHintManager* manager = APerformanceHint_getManager();
+    if (!manager) return toJString(env, "null manager");
+
+    int errCode = 0;
+    // Test native window session creation
+    auto config = configFromCreator({
+            .graphicsPipeline = true,
+            .audioPerformance = true,
+    });
+    auto session = createSessionWithConfig(manager, config, &errCode);
+
+    if (errCode == 0) {
+        toJString(env, "both audio performance and graphics pipeline are set");
+    }
+
+    return nullptr;
+}
+
 static jstring nativeTestSetNativeSurfaces(JNIEnv* env, jobject, jobject surfaceControlFromJava,
                                            jobject surfaceFromJava) {
     auto supportInfo = getSupportHelper();
@@ -691,12 +736,14 @@ static jstring nativeTestSupportChecking(JNIEnv* env, jobject) {
 }
 
 static JNINativeMethod gMethods[] = {
-        {"nativeGetSessionsAreSupported", "()Z",
-         (void*)nativeGetSessionsAreSupported},
-        {"nativeTestCreateHintSession", "()Ljava/lang/String;",
-         (void*)nativeTestCreateHintSession},
+        {"nativeGetSessionsAreSupported", "()Z", (void*)nativeGetSessionsAreSupported},
+        {"nativeTestCreateHintSession", "()Ljava/lang/String;", (void*)nativeTestCreateHintSession},
         {"nativeTestCreateGraphicsPipelineSession", "()Ljava/lang/String;",
          (void*)nativeTestCreateGraphicsPipelineSession},
+        {"nativeTestCreateAudioPerformanceSession", "()Ljava/lang/String;",
+         (void*)nativeTestCreateAudioPerformanceSession},
+        {"nativeTestCreateAudioPerformanceAndGraphicsPipelineSession", "()Ljava/lang/String;",
+         (void*)nativeTestCreateAudioPerformanceAndGraphicsPipelineSession},
         {"nativeTestCreateHintSessionUsingConfig", "()Ljava/lang/String;",
          (void*)nativeTestCreateHintSessionUsingConfig},
         {"nativeTestGetPreferredUpdateRateNanos", "()Ljava/lang/String;",
