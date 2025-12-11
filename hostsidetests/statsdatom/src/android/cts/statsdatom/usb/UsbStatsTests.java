@@ -45,8 +45,10 @@ import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.IBuildReceiver;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.RunUtil;
+import com.android.tradefed.device.DeviceNotAvailableException;
 
 
+import org.junit.Assume;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -66,11 +68,18 @@ public class UsbStatsTests extends BaseHostJUnit4Test implements IBuildReceiver 
     @Before
     public void setUp() throws Exception {
         assertThat(mCtsBuild).isNotNull();
+        checkSupportedHardware();
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
         DeviceUtils.installStatsdTestApp(getDevice(), mCtsBuild);
         resetSimulatedUsbPorts();
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+    }
+
+    private void checkSupportedHardware() throws DeviceNotAvailableException, Exception {
+        Assume.assumeTrue("Device does not support USB host or accessory mode, test cannot proceed without prerequisite features.",
+                DeviceUtils.hasFeature(getDevice(), "android.hardware.usb.host")
+                && DeviceUtils.hasFeature(getDevice(), "android.hardware.usb.accessory"));
     }
 
     @After
