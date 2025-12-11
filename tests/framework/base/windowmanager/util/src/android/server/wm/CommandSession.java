@@ -18,6 +18,7 @@ package android.server.wm;
 
 import android.app.Activity;
 import android.app.Application;
+import android.app.PictureInPictureUiState;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -1033,6 +1034,12 @@ public final class CommandSession {
         }
 
         @Override
+        public void onPictureInPictureUiStateChanged(PictureInPictureUiState pipState) {
+            super.onPictureInPictureUiStateChanged(pipState);
+            onCallback(ActivityCallback.ON_PICTURE_IN_PICTURE_UI_STATE_CHANGED);
+        }
+
+        @Override
         public void onMovedToDisplay(int displayId, Configuration config) {
             super.onMovedToDisplay(displayId, config);
             onCallback(ActivityCallback.ON_MOVED_TO_DISPLAY);
@@ -1093,6 +1100,7 @@ public final class CommandSession {
         ON_MULTI_WINDOW_MODE_CHANGED,
         ON_PICTURE_IN_PICTURE_MODE_CHANGED,
         ON_MOVED_TO_DISPLAY,
+        ON_PICTURE_IN_PICTURE_UI_STATE_CHANGED,
         ON_PICTURE_IN_PICTURE_REQUESTED;
 
         private static final ActivityCallback[] sValues = ActivityCallback.values();

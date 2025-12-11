@@ -401,11 +401,6 @@ object Components : ComponentsProvider() {
         // with the value.
         const val ACTION_UPDATE_PIP_STATE = "android.server.wm.app.PipActivity.update_pip_state"
 
-        // Intent action that this activity dynamically registers to enter picture-in-picture
-        // then wait for the onPictureInPictureUiStateChanged callback.
-        const val ACTION_ENTER_PIP_AND_WAIT_FOR_UI_STATE =
-            "android.server.wm.app.PipActivity.enter_pip_and_wait_for_ui_state"
-
         // Intent action that this activity dynamically registers to set requested orientation.
         // Will apply the orientation to the value set in the EXTRA_FIXED_ORIENTATION extra.
         const val ACTION_SET_REQUESTED_ORIENTATION =
@@ -535,9 +530,6 @@ object Components : ComponentsProvider() {
 
         // Result key for obtaining the PictureInPictureUiState#isStashed result
         const val UI_STATE_STASHED_RESULT = "ui_state_stashed_result"
-
-        // Result key for obtaining the PictureInPictureUiState#isEnteringPip result
-        const val UI_STATE_ENTERING_PIP_RESULT = "ui_state_entering_result"
 
         // Result key for obtaining the Activity#isInPictureInPictureMode result
         const val IS_IN_PIP_MODE_RESULT = "is_in_pip_mode_result"

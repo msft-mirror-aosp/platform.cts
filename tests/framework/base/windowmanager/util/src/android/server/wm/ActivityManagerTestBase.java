@@ -77,7 +77,6 @@ import static android.server.wm.app.Components.BroadcastReceiverActivity.EXTRA_F
 import static android.server.wm.app.Components.BroadcastReceiverActivity.EXTRA_MOVE_BROADCAST_TO_BACK;
 import static android.server.wm.app.Components.PipActivity.ACTION_CHANGE_ASPECT_RATIO;
 import static android.server.wm.app.Components.PipActivity.ACTION_ENTER_PIP;
-import static android.server.wm.app.Components.PipActivity.ACTION_ENTER_PIP_AND_WAIT_FOR_UI_STATE;
 import static android.server.wm.app.Components.PipActivity.ACTION_EXPAND_PIP;
 import static android.server.wm.app.Components.PipActivity.ACTION_SET_REQUESTED_ORIENTATION;
 import static android.server.wm.app.Components.PipActivity.ACTION_UPDATE_PIP_STATE;
@@ -186,8 +185,6 @@ import com.android.compatibility.common.util.GestureNavSwitchHelper;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ErrorCollector;
 import org.junit.rules.ExternalResource;
@@ -516,11 +513,6 @@ public abstract class ActivityManagerTestBase {
             mContext.sendBroadcast(createIntentWithAction(ACTION_UPDATE_PIP_STATE)
                     .putExtra(EXTRA_SET_PIP_CALLBACK, callback)
                     .putExtra(EXTRA_SET_PIP_STASHED, stashed));
-        }
-
-        public void enterPipAndWaitForPipUiStateChange(RemoteCallback callback) {
-            mContext.sendBroadcast(createIntentWithAction(ACTION_ENTER_PIP_AND_WAIT_FOR_UI_STATE)
-                    .putExtra(EXTRA_SET_PIP_CALLBACK, callback));
         }
 
         public void requestOrientationForPip(int orientation) {

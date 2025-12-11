@@ -84,7 +84,6 @@ import static android.server.wm.app.Components.PipActivity.EXTRA_SUBTITLE;
 import static android.server.wm.app.Components.PipActivity.EXTRA_TAP_TO_FINISH;
 import static android.server.wm.app.Components.PipActivity.EXTRA_TITLE;
 import static android.server.wm.app.Components.PipActivity.IS_IN_PIP_MODE_RESULT;
-import static android.server.wm.app.Components.PipActivity.UI_STATE_ENTERING_PIP_RESULT;
 import static android.server.wm.app.Components.PipActivity.UI_STATE_STASHED_RESULT;
 import static android.server.wm.app.Components.RESUME_WHILE_PAUSING_ACTIVITY;
 import static android.server.wm.app.Components.TEST_ACTIVITY;
@@ -1423,7 +1422,6 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     public void testStopBeforeMultiWindowCallbacksOnDismiss() {
         // Launch a PiP activity
         launchActivity(PIP_ACTIVITY);
-        int windowingMode = mWmState.getTaskByActivity(PIP_ACTIVITY).getWindowingMode();
 
         mBroadcastActionTrigger.doAction(ACTION_ENTER_PIP);
         // Wait for animation complete so that system has reported pip mode change event to
@@ -1895,17 +1893,30 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     @Test
     @RequiresFlagsEnabled(FLAG_ENABLE_PIP_UI_STATE_CALLBACK_ON_ENTERING)
     public void testEnteringPipUiStateChangeCallback() throws Exception {
+        separateTestJournal();
         launchActivity(PIP_ACTIVITY);
-        final CompletableFuture<Boolean> callbackReturn = new CompletableFuture<>();
-        RemoteCallback cb =
-                new RemoteCallback(
-                        (Bundle result) ->
-                                callbackReturn.complete(
-                                        result.getBoolean(UI_STATE_ENTERING_PIP_RESULT)));
-        mBroadcastActionTrigger.enterPipAndWaitForPipUiStateChange(cb);
-        waitForEnterPipAnimationComplete(PIP_ACTIVITY);
+        enterPipAndAssertPinnedTaskExists(PIP_ACTIVITY);
+        waitForValidPictureInPictureCallbacks(PIP_ACTIVITY);
 
-        Truth.assertThat(callbackReturn.get(5000, TimeUnit.MILLISECONDS)).isEqualTo(true);
+        // Confirm that we get 2 onPictureInPictureUiStateChanged calls (1 for animation start,
+        // and 1 one for animation end), before we receive the onPictureInPictureModeChanged.
+        final ActivityLifecycleCounts lifecycles = new ActivityLifecycleCounts(PIP_ACTIVITY);
+        assertEquals(
+                "onPictureInPictureUiStateChanged",
+                2,
+                lifecycles.getCount(ActivityCallback.ON_PICTURE_IN_PICTURE_UI_STATE_CHANGED));
+        assertEquals(
+                "onPictureInPictureModeChanged",
+                1,
+                lifecycles.getCount(ActivityCallback.ON_PICTURE_IN_PICTURE_MODE_CHANGED));
+        final int lastUiStateChangedIndex =
+                lifecycles.getLastIndex(ActivityCallback.ON_PICTURE_IN_PICTURE_UI_STATE_CHANGED);
+        final int lastPipModeChangedIndex =
+                lifecycles.getLastIndex(ActivityCallback.ON_PICTURE_IN_PICTURE_MODE_CHANGED);
+        assertThat(
+                "onPictureInPictureUiStateChanged should be before onPictureInPictureModeChanged",
+                lastUiStateChangedIndex,
+                lessThan(lastPipModeChangedIndex));
     }
 
     private void assertIsSeamlessResizeEnabled(ComponentName componentName, boolean expected) {

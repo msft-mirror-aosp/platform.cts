@@ -18,6 +18,7 @@ package android.server.wm.app;
 
 import static android.server.wm.app.Components.TestActivity.EXTRA_CONFIGURATION;
 
+import android.app.PictureInPictureUiState;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.server.wm.CommandSession.BasicTestActivity;
@@ -67,6 +68,12 @@ public abstract class AbstractLifecycleLogActivity extends BasicTestActivity {
             Configuration newConfig) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig);
         Log.i(getTag(), "onPictureInPictureModeChanged");
+    }
+
+    @Override
+    public void onPictureInPictureUiStateChanged(PictureInPictureUiState state) {
+        super.onPictureInPictureUiStateChanged(state);
+        Log.i(getTag(), "onPictureInPictureUiStateChanged");
     }
 
     @Override

@@ -18,7 +18,6 @@ package android.server.wm.app;
 
 import static android.server.wm.app.Components.PipActivity.ACTION_CHANGE_ASPECT_RATIO;
 import static android.server.wm.app.Components.PipActivity.ACTION_ENTER_PIP;
-import static android.server.wm.app.Components.PipActivity.ACTION_ENTER_PIP_AND_WAIT_FOR_UI_STATE;
 import static android.server.wm.app.Components.PipActivity.ACTION_EXPAND_PIP;
 import static android.server.wm.app.Components.PipActivity.ACTION_FINISH;
 import static android.server.wm.app.Components.PipActivity.ACTION_LAUNCH_TRANSLUCENT_ACTIVITY;
@@ -58,7 +57,6 @@ import static android.server.wm.app.Components.PipActivity.EXTRA_SUBTITLE;
 import static android.server.wm.app.Components.PipActivity.EXTRA_TAP_TO_FINISH;
 import static android.server.wm.app.Components.PipActivity.EXTRA_TITLE;
 import static android.server.wm.app.Components.PipActivity.IS_IN_PIP_MODE_RESULT;
-import static android.server.wm.app.Components.PipActivity.UI_STATE_ENTERING_PIP_RESULT;
 import static android.server.wm.app.Components.PipActivity.UI_STATE_STASHED_RESULT;
 import static android.view.WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD;
 
@@ -109,11 +107,6 @@ public class PipActivity extends AbstractLifecycleLogActivity {
                                 mCb.sendResult(new Bundle());
                             }
                         }
-                        break;
-                    case ACTION_ENTER_PIP_AND_WAIT_FOR_UI_STATE:
-                        // mCb will be callback-ed in onPictureInPictureUiStateChanged.
-                        mCb = (RemoteCallback) intent.getExtras().get(EXTRA_SET_PIP_CALLBACK);
-                        enterPictureInPictureMode(new PictureInPictureParams.Builder().build());
                         break;
                     case ACTION_MOVE_TO_BACK:
                         moveTaskToBack(false /* nonRoot */);
@@ -306,7 +299,6 @@ public class PipActivity extends AbstractLifecycleLogActivity {
         filter.addAction(ACTION_MOVE_TO_BACK);
         filter.addAction(ACTION_EXPAND_PIP);
         filter.addAction(ACTION_UPDATE_PIP_STATE);
-        filter.addAction(ACTION_ENTER_PIP_AND_WAIT_FOR_UI_STATE);
         filter.addAction(ACTION_SET_REQUESTED_ORIENTATION);
         filter.addAction(ACTION_FINISH);
         filter.addAction(ACTION_ON_PIP_REQUESTED);
@@ -416,9 +408,9 @@ public class PipActivity extends AbstractLifecycleLogActivity {
 
     @Override
     public void onPictureInPictureUiStateChanged(PictureInPictureUiState pipState) {
+        super.onPictureInPictureUiStateChanged(pipState);
         Bundle res = new Bundle();
         res.putBoolean(UI_STATE_STASHED_RESULT, pipState.isStashed());
-        res.putBoolean(UI_STATE_ENTERING_PIP_RESULT, pipState.isTransitioningToPip());
         if (mCb != null) {
             mCb.sendResult(res);
         }
