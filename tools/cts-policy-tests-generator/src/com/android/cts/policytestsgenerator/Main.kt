@@ -103,7 +103,12 @@ fun main(args: Array<String>) {
 }
 
 private fun readTextProto(outDir: String): String? {
-    return findPoliciesTextProtoFile(outDir)?.readText()
+    val path = findPoliciesTextProtoFile(outDir)
+    if (path == null) {
+        return null
+    }
+    System.out.println("Found policies text proto file: ${path}")
+    return path.toFile().readText()
 }
 
 private fun parsePolicies(textproto: String): Map<String, PolicyMetadata> {
