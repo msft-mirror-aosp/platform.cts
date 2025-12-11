@@ -82,7 +82,6 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.WindowInsets;
 import android.view.WindowManager;
-import android.view.inputmethod.Flags;
 import android.view.inputmethod.InputMethod;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.cts.util.AutoCloseableWrapper;
@@ -923,9 +922,6 @@ public final class FocusHandlingTest extends EndToEndImeTestBase {
                 TestUtils.waitOnMainUntil(() -> editTextHasWindowFocus.get()
                         && !popupTextHasWindowFocus.get(), TIMEOUT);
                 expectEvent(stream, editorMatcher("onStartInput", marker1), TIMEOUT);
-                if (!Flags.reportAnimatingInsetsTypes()) {
-                    expectEvent(stream, showSoftInputMatcher(0), TIMEOUT);
-                }
 
                 // Remove the popTextView window and back to test activity, and then verify if
                 // commitText is still workable.
