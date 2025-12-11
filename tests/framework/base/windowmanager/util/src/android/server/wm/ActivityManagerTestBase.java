@@ -1599,6 +1599,13 @@ public abstract class ActivityManagerTestBase {
         return mObjectTracker.manage(new VirtualDisplaySession());
     }
 
+    /**
+     * @see ObjectTracker#manage(AutoCloseable)
+     */
+    protected NightModeSession createManagedNightModeSession() {
+        return mObjectTracker.manage(new NightModeSession());
+    }
+
     /** Allows requesting orientation in case ignore_orientation_request is set to true. */
     protected void disableIgnoreOrientationRequest() {
         mObjectTracker.manage(new IgnoreOrientationRequestSession(false /* enable */));
@@ -1895,6 +1902,28 @@ public abstract class ActivityManagerTestBase {
             pressUnlockButton();
         }
     }
+
+    protected class NightModeSession implements AutoCloseable {
+        private final UiModeManager mUiModeManager;
+        private final int mInitialNightMode;
+
+        NightModeSession() {
+            mUiModeManager = mContext.getSystemService(UiModeManager.class);
+            mInitialNightMode = mUiModeManager.getNightMode();
+        }
+
+        public void setNightMode(int mode) {
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> mUiModeManager.setNightMode(mode),
+                    Manifest.permission.MODIFY_DAY_NIGHT_MODE);
+        }
+
+        @Override
+        public void close() {
+            setNightMode(mInitialNightMode);
+        }
+    }
+
     /**
      * Returns whether the test device respects settings of locked user rotation mode.
      *
