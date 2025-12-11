@@ -32,12 +32,14 @@ import android.content.Context;
 import android.os.Build;
 import android.os.Parcel;
 import android.os.SystemClock;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.CddTest;
 
@@ -198,6 +200,28 @@ public class DistanceMeasurementResultTest {
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_INCLUDE_POWER_AND_RSSI_IN_DISTANCE_MEASUREMENT_RESULT)
+    public void setGetRemoteTxPower() {
+        int remoteTxPowerDbm = -10;
+        DistanceMeasurementResult result =
+                new DistanceMeasurementResult.Builder(121.0, 120.0)
+                        .setRemoteTxPowerDbm(remoteTxPowerDbm)
+                        .build();
+        assertThat(result.getRemoteTxPowerDbm()).isEqualTo(remoteTxPowerDbm);
+    }
+
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_INCLUDE_POWER_AND_RSSI_IN_DISTANCE_MEASUREMENT_RESULT)
+    public void setGetRssiDbm() {
+        int rssiDbm = -20;
+        DistanceMeasurementResult result =
+                new DistanceMeasurementResult.Builder(121.0, 120.0).setRssiDbm(rssiDbm).build();
+        assertThat(result.getRssiDbm()).isEqualTo(rssiDbm);
+    }
+
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
     public void readWriteParcelForCs() {
         Parcel parcel = Parcel.obtain();
         DistanceMeasurementResult result =
@@ -235,6 +259,26 @@ public class DistanceMeasurementResultTest {
                 DistanceMeasurementResult.CREATOR.createFromParcel(parcel);
         assertThat(resultFromParcel.getMeasurementTimestampNanos())
                 .isEqualTo(result.getMeasurementTimestampNanos());
+    }
+
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_INCLUDE_POWER_AND_RSSI_IN_DISTANCE_MEASUREMENT_RESULT)
+    public void readWriteParcelForCsMeasurementTxPowerDbmAndReflectorRssiDbm() {
+        int remoteTxPowerDbm = -10;
+        int reflectorRssiDbm = -20;
+        Parcel parcel = Parcel.obtain();
+        DistanceMeasurementResult result =
+                new DistanceMeasurementResult.Builder(10.0, 5.0)
+                        .setRemoteTxPowerDbm(remoteTxPowerDbm)
+                        .setRssiDbm(reflectorRssiDbm)
+                        .build();
+        result.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        DistanceMeasurementResult resultFromParcel =
+                DistanceMeasurementResult.CREATOR.createFromParcel(parcel);
+        assertThat(resultFromParcel.getRemoteTxPowerDbm()).isEqualTo(result.getRemoteTxPowerDbm());
+        assertThat(resultFromParcel.getRssiDbm()).isEqualTo(result.getRssiDbm());
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})

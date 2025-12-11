@@ -44,8 +44,6 @@
     <option name="compatibility:include-filter" value="CtsHostsideNetworkTests com.android.cts.net.HostsideVpnTests#testVpnMeterednessWithNoUnderlyingNetwork"/>
     <option name="compatibility:include-filter" value="CtsHostsideNetworkTests com.android.cts.net.HostsideVpnTests#testVpnMeterednessWithNonNullUnderlyingNetwork"/>
     <option name="compatibility:include-filter" value="CtsHostsideNetworkTests com.android.cts.net.HostsideVpnTests#testVpnMeterednessWithNullUnderlyingNetwork"/>
-    <!-- CtsHostsideNetworkTests[instant] -->
-    <option name="compatibility:include-filter" value="CtsHostsideNetworkTests[instant] com.android.cts.net.HostsideVpnTests#testDefault"/>
     <!-- CtsJobSchedulerTestCases -->
     <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.ConnectivityConstraintTest#testJobUidState"/>
     <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.DataTransferTest#testUpdateEstimatedNetworkBytes"/>
@@ -62,7 +60,6 @@
     <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.JobSchedulingTest#testPendingJobReason_connectivity"/>
     <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.JobSchedulingTest#testPendingJobReasonsHistory_updatesCorrectly"/>
     <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.JobSchedulingTest#testPendingJobReasons_connectivity"/>
-    <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.JobThrottlingTest#testExpeditedJobDeferredAfterTimeoutInBatterySaver"/>
     <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.JobThrottlingTest#testRestrictedJobAllowedInPowerAllowlist"/>
     <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.JobThrottlingTest#testRestrictingStopReason_RestrictedBucket_batteryNotLow"/>
     <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.JobWorkItemTest#testAllInfoGivenToJob"/>
@@ -96,9 +93,6 @@
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.ApfIntegrationTest#testFilterAgeIncreasesBetweenPackets"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.ApfIntegrationTest#testPrefilledMemorySlotsV4"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.BatteryStatsManagerTest#testReportNetworkInterfaceForTransports"/>
-    <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.ConnectivityManagerTest#testBlockedReasons_replaceFirewallChain"/>
-    <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.ConnectivityManagerTest#testBlockedReasons_setFirewallChainEnabled"/>
-    <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.ConnectivityManagerTest#testBlockedReasons_setUidFirewallRule"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.ConnectivityManagerTest#testFactoryReset"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.ConnectivityManagerTest#testFirewallCloseSocketAllowlistChainOtherUid"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.ConnectivityManagerTest#testFirewallCloseSocketDenylistChainAllow"/>
@@ -109,7 +103,8 @@
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.ConnectivityManagerTest#testRegisterQuicConnectionClosePayload_blockNetwork"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.ConnectivityManagerTest#testRegisterQuicConnectionClosePayload_closeSocket"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.ConnectivityManagerTest#testRegisterQuicConnectionClosePayload_closeSocketAfterUnregister"/>
-    <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.ConnectivityManagerTest#testSetAvoidUnvalidated"/>
+    <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.ConnectivityManagerTest#testSetAvoidUnvalidatedCarrierConfig"/>
+    <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.ConnectivityManagerTest#testSetAvoidUnvalidatedSystemSetting"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.ConnectivityManagerTest#testSsidInNetworkCapabilities"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.DiscoveryRequestTest#testBuilder_success"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.DiscoveryRequestTest#testEquality"/>
@@ -160,8 +155,6 @@
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.EthernetManagerTest#testUpdateConfiguration_forOnlyIpConfig"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.EthernetManagerTest#testUpdateConfiguration_onUntrackedInterface"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.EthernetManagerTest#testUpdateConfiguration_withLinkDown"/>
-    <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.EthernetNetworkSpecifierTest#testConstructorWithNullValue"/>
-    <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.EthernetNetworkSpecifierTest#testEquals"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.IpSecManagerTest#testAesCbcAesCmacTcp4"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.IpSecManagerTest#testAesCbcAesCmacTcp4UdpEncap"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.IpSecManagerTest#testAesCbcAesCmacTcp6"/>
@@ -305,8 +298,10 @@
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.NsdManagerDownstreamTetheringTest#testMdnsDiscoveryCanSendPacketOnLocalOnlyDownstreamTetheringInterface"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.NsdManagerDownstreamTetheringTest#testMdnsDiscoveryWorkOnTetheringInterface"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.NsdManagerTest#testAdvertiseServiceWithNoAttributes_TxtRecordIstNotEmpty"/>
+    <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.NsdManagerTest#testNsdManager_registerOffloadEngine_discoveryAndResolution_SocketDestroyed"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.NsdManagerTest#testRemoveCachedServices_ShortRetentionTime"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.NsdManagerTest#testSkipProbing"/>
+    <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.NsdManagerTest#testSubtypeDiscovery_typeMatchButSubtypeNotMatch_notDiscovered"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.TrafficStatsTest#testTrafficStatsForLocalhost"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.TrafficStatsTest#testValidIfaceStats"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.TrafficStatsTest#testValidTotalStats"/>
@@ -322,9 +317,6 @@
     <!-- CtsNetTestCasesMaxTargetSdk33 -->
     <option name="compatibility:include-filter" value="CtsNetTestCasesMaxTargetSdk33 android.net.cts.NsdManagerTest#testCanConnectSocketToMdnsd"/>
     <!-- CtsNetTestCases[instant] -->
-    <option name="compatibility:include-filter" value="CtsNetTestCases[instant] android.net.NetworkCapabilitiesTest#testHasCapability_PrioritizeUnifiedCommunications"/>
-    <option name="compatibility:include-filter" value="CtsNetTestCases[instant] android.net.NetworkCapabilitiesTest#testMarkCapabilitiesRestricted_PrioritizeUnifiedCommunications"/>
-    <option name="compatibility:include-filter" value="CtsNetTestCases[instant] android.net.NetworkCapabilitiesTest#testToString_PrioritizeUnifiedCommunications"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases[instant] android.net.cts.ConnectivityManagerTest#testFirewallCloseSocketAllowlistChainOtherUid"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases[instant] android.net.cts.ConnectivityManagerTest#testFirewallCloseSocketDenylistChainOtherUid"/>
     <option name="compatibility:include-filter" value="CtsNetTestCases[instant] android.net.cts.DiscoveryRequestTest#testBuilder_success"/>
@@ -353,6 +345,10 @@
     <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.NotificationListenerCheckTest#notificationOnClick_opensSafetyCenter"/>
     <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.PermissionControllerTest#revokePermissionsSinglePermission"/>
     <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.PermissionUpdateListenerTest#testDefaultDeviceGrantPermissionNotifyListener"/>
+    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.PermissionUpdateListenerTest#testVirtualDeviceGrantPermissionNotifyListener"/>
+    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.PermissionUpdateListenerTest#testVirtualDeviceRevokePermissionNotifyListener"/>
+    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.PermissionUpdateListenerTest#testVirtualDeviceUpdatePermissionFlagsNotifyListener"/>
+    <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.ProviderPermissionTest#testManageDocuments"/>
     <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.ProviderPermissionTest#testReadSms"/>
     <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.ProviderPermissionTest#testWriteCallLog"/>
     <option name="compatibility:include-filter" value="CtsPermissionTestCases android.permission.cts.RevokeSelfPermissionTest#testNoRepromptWhenUserFixed"/>
@@ -395,6 +391,8 @@
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.coregraphics.GraphicsAtomTests#surfaceControlLutsEvents"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.display.DisplayEventOccurredStatsTests#testDisplayEventStateReported"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.display.DisplayEventOccurredStatsTests#testDisplayRefreshRateReported"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.jobscheduler.JobSchedulerStatsTests#testScheduledJobState"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.jobscheduler.JobSchedulerStatsTests#testScheduledJobStatePriority"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.media.projection.MediaProjectionAtomsTests#testMediaProjectionStateChanged_appSelectorShown"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.media.projection.MediaProjectionAtomsTests#testMediaProjectionStateChanged_setupCancelled"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.media.projection.MediaProjectionAtomsTests#testMediaProjectionStateChanged_stoppedCapture"/>
@@ -410,26 +408,74 @@
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.powermanager.ThermalPowerManagerStatsTests#testThermalHeadroomCalledIsPushed"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.sizecompatrestartbutton.SizeCompatRestartButtonStatsTests#testSizeCompatRestartButtonAppearedAndClicked"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.statsd.HostAtomTests#testBatteryLevel"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.statsd.ProcStateAtomTests#testForegroundService"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.statsd.ProcStateAtomTests#testTopSleeping"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.statsd.UidAtomTests#testAppCrashOccurred"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.statsd.UidAtomTests#testAppCrashOccurredNative"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.statsd.UidAtomTests#testScreenBrightness"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.statsd.UidAtomTests#testForegroundServiceAccessAppOp"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.statsd.UidAtomTests#testForegroundServiceState"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.statsd.UidAtomTests#testGpsScan"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.statsd.UidAtomTests#testSyncState"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.statsd.UidAtomTests#testWakelockState"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.wifi.WifiStatsTests#testWifiReconnect"/>
+    <!-- CtsStatsdAtomHostTestCases[foldable:1:HALF_OPENED] -->
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:1:HALF_OPENED] android.cts.statsdatom.jobscheduler.JobSchedulerStatsTests#testScheduledJobState"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:1:HALF_OPENED] android.cts.statsdatom.jobscheduler.JobSchedulerStatsTests#testScheduledJobStatePriority"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:1:HALF_OPENED] android.cts.statsdatom.statsd.UidAtomTests#testForegroundServiceAccessAppOp"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:1:HALF_OPENED] android.cts.statsdatom.statsd.UidAtomTests#testForegroundServiceState"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:1:HALF_OPENED] android.cts.statsdatom.statsd.UidAtomTests#testGpsScan"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:1:HALF_OPENED] android.cts.statsdatom.statsd.UidAtomTests#testScreenBrightness"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:1:HALF_OPENED] android.cts.statsdatom.statsd.UidAtomTests#testSyncState"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:1:HALF_OPENED] android.cts.statsdatom.statsd.UidAtomTests#testWakelockState"/>
+    <!-- CtsStatsdAtomHostTestCases[foldable:2:OPENED] -->
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:2:OPENED] android.cts.statsdatom.jobscheduler.JobSchedulerStatsTests#testScheduledJobState"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:2:OPENED] android.cts.statsdatom.jobscheduler.JobSchedulerStatsTests#testScheduledJobStatePriority"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:2:OPENED] android.cts.statsdatom.net.BytesTransferredTest#testDataUsageBytesTransfer"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:2:OPENED] android.cts.statsdatom.statsd.UidAtomTests#testForegroundServiceAccessAppOp"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:2:OPENED] android.cts.statsdatom.statsd.UidAtomTests#testForegroundServiceState"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:2:OPENED] android.cts.statsdatom.statsd.UidAtomTests#testGpsScan"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:2:OPENED] android.cts.statsdatom.statsd.UidAtomTests#testScreenBrightness"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:2:OPENED] android.cts.statsdatom.statsd.UidAtomTests#testSyncState"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:2:OPENED] android.cts.statsdatom.statsd.UidAtomTests#testWakelockState"/>
+    <!-- CtsStatsdAtomHostTestCases[foldable:3:REAR_DISPLAY_STATE] -->
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:3:REAR_DISPLAY_STATE] android.cts.statsdatom.display.DisplayInfoChangedStatsTests#testDisplayEventRotationReported"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:3:REAR_DISPLAY_STATE] android.cts.statsdatom.jobscheduler.JobSchedulerStatsTests#testScheduledJobState"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:3:REAR_DISPLAY_STATE] android.cts.statsdatom.jobscheduler.JobSchedulerStatsTests#testScheduledJobStatePriority"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:3:REAR_DISPLAY_STATE] android.cts.statsdatom.statsd.UidAtomTests#testForegroundServiceAccessAppOp"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:3:REAR_DISPLAY_STATE] android.cts.statsdatom.statsd.UidAtomTests#testForegroundServiceState"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:3:REAR_DISPLAY_STATE] android.cts.statsdatom.statsd.UidAtomTests#testGpsScan"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:3:REAR_DISPLAY_STATE] android.cts.statsdatom.statsd.UidAtomTests#testScreenBrightness"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:3:REAR_DISPLAY_STATE] android.cts.statsdatom.statsd.UidAtomTests#testSyncState"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:3:REAR_DISPLAY_STATE] android.cts.statsdatom.statsd.UidAtomTests#testWakelockState"/>
+    <!-- CtsStatsdAtomHostTestCases[foldable:5:REAR_DISPLAY_OUTER_DEFAULT] -->
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:5:REAR_DISPLAY_OUTER_DEFAULT] android.cts.statsdatom.jobscheduler.JobSchedulerStatsTests#testScheduledJobState"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:5:REAR_DISPLAY_OUTER_DEFAULT] android.cts.statsdatom.jobscheduler.JobSchedulerStatsTests#testScheduledJobStatePriority"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:5:REAR_DISPLAY_OUTER_DEFAULT] android.cts.statsdatom.statsd.UidAtomTests#testForegroundServiceAccessAppOp"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:5:REAR_DISPLAY_OUTER_DEFAULT] android.cts.statsdatom.statsd.UidAtomTests#testForegroundServiceState"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:5:REAR_DISPLAY_OUTER_DEFAULT] android.cts.statsdatom.statsd.UidAtomTests#testGpsScan"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:5:REAR_DISPLAY_OUTER_DEFAULT] android.cts.statsdatom.statsd.UidAtomTests#testScreenBrightness"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:5:REAR_DISPLAY_OUTER_DEFAULT] android.cts.statsdatom.statsd.UidAtomTests#testSyncState"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[foldable:5:REAR_DISPLAY_OUTER_DEFAULT] android.cts.statsdatom.statsd.UidAtomTests#testWakelockState"/>
     <!-- CtsStatsdAtomHostTestCases[instant] -->
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_crossUser_fail"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_crossUser_success"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_failed_uncaughtClientException_accessEnabled"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_platformManager_platformAppFunctionService_success_accessEnabled"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_throwsException_accessEnabled"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.coregraphics.GraphicsAtomTests#surfaceControlLutsEvents"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.display.DisplayEventOccurredStatsTests#testDisplayEventStateReported"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.display.DisplayEventOccurredStatsTests#testDisplayRefreshRateReported"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.jobscheduler.JobSchedulerStatsTests#testScheduledJobState"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.jobscheduler.JobSchedulerStatsTests#testScheduledJobStatePriority"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.net.BytesTransferredTest#testBytesTransferByTagAndMetered"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.net.BytesTransferredTest#testDataUsageBytesTransfer"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.net.BytesTransferredTest#testMobileBytesTransfer"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.net.BytesTransferredTest#testMobileBytesTransferByFgBg"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.statsd.ProcStateAtomTests#testForegroundService"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.statsd.UidAtomTests#testForegroundServiceAccessAppOp"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.statsd.UidAtomTests#testForegroundServiceState"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.statsd.UidAtomTests#testGpsScan"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.statsd.UidAtomTests#testScreenBrightness"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.statsd.UidAtomTests#testSyncState"/>
+    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.statsd.UidAtomTests#testWakelockState"/>
     <!-- CtsTelecomTestCases -->
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.AccessibilitySystemActionTest#testInCall_headsetHookAction_hangupCall"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.AccessibilitySystemActionTest#testIncomingCall_headsetHookAction_acceptsCall"/>
@@ -443,7 +489,6 @@
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.BackgroundCallAudioTest#testAudioProcessingFromIncomingActivePlaceEmergencyCall"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.BackgroundCallAudioTest#testManualAudioCallScreenAccept"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.BackgroundCallAudioTest#testManualAudioCallScreenReject"/>
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.BasicInCallServiceTest#testTelephonyCall_bindsToInCallServiceAndAddsCall"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.CallConnectedIndicatorTest#testCallConnectedIndicatorPreference"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.CallConnectedIndicatorTest#testVibratingForMoCallConnected"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.CallDetailsTest#testAccountHandle"/>
@@ -453,6 +498,8 @@
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.CallDetailsTest#testCallLocalVideoCapability"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.CallDetailsTest#testCallProperties"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.CallDetailsTest#testConnectionEvent"/>
+    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.CallDetailsTest#testFeaturesVoNr"/>
+    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.CallDetailsTest#testGetPhoneAndOtherAbandonedThings"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.CallDetailsTest#testRegisterCallbackWithHandler"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.CallDetailsTest#testUnusedCallback"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.CallDiagnosticServiceTest#testAddMultipleCalls"/>
@@ -463,15 +510,17 @@
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.CallDiagnosticServiceTest#testReceiveCallQualityReport"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.CallDiagnosticServiceTest#testSetNullDisconnectMessage"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.CallRedirectionServiceTest#testCancelCall"/>
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.CallRedirectionServiceTest#testPlaceCallToAlternateNumber"/>
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.CallRedirectionServiceTest#testPlaceCallToAlternateNumberWithPostDialDigits"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.CallRedirectionServiceTest#testRedirectedCallWithPostDialDigits"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.CallStreamingTest#testStreamingCallApi_RequestStateChanges"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.CarModeInCallServiceTest#testSwitchToAutomotiveProjectionAndBack"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.CarModeInCallServiceTest#testSwitchToAutomotiveProjectionMultiple"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.CarModeInCallServiceTest#testSwitchToCarModeAndBack"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.CarModeInCallServiceTest#testSwitchToCarModeMultiple"/>
+    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.ConferenceTest#testAddExistingConnectionToConference"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.ConferenceTest#testConferenceEvent"/>
+    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.ConferenceTest#testMergeConnectionToConference"/>
+    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.ConferenceTest#testOnMuteStateChanged"/>
+    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.ConferenceTest#testSetConferenceables"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.ConnectionServiceTest#testConnectionServiceFocusGainedWithDifferentConnectionService"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.DefaultPhoneAccountTest#testSelfManagedCallWithMultipleSimBasedAccountsActiveAndAsDefault"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.DefaultPhoneAccountTest#testSelfManagedCallWithNoCallPreferenceAsDefault"/>
@@ -482,21 +531,29 @@
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.ExternalCallTest#testPullCallCapabilityRemovedInEmergencyCall"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.ExternalCallTest#testTryToPullCallWhileInEmergencyCall"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.IncomingCallTest#testAddNewIncomingCall_CorrectPhoneAccountHandle"/>
+    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.IncomingCallTest#testDoNotLogCall"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.IncomingCallTest#testIncomingCallWithCrsInCallAudioMode"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.IncomingCallTest#testIncomingCallWithCrsInRingToneAudioMode"/>
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.MissedCallTest#testMissedCall_NotifyDialer"/>
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.NonUiInCallServiceWoExportTest#testTelecomCanBindToNonUiInCallServiceThatIsNotExported"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.NullBindingCallScreeningServiceTest#testNullBindingOnIncomingCall"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.OutgoingCallTest#testAccountSelectionAvailable"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.OutgoingCallTest#testExtraPhoneAccountHandleAvailable"/>
+    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.PhoneAccountRegistrarTest#testPhoneAccountGroup"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.PhoneAccountSuggestionServiceTest#testEmptySuggestions"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.PhoneAccountSuggestionServiceTest#testPartialSuggestions"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.PhoneAccountSuggestionServiceTest#testSuggestionFlow"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.PhoneAccountSuggestionServiceTest#testSuggestionTimeout"/>
+    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConferenceTest#testRemoteConferenceCallbacks_CallAudioState"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConferenceTest#testRemoteConferenceCallbacks_ConferenceableConnections"/>
+    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConferenceTest#testRemoteConferenceCallbacks_ConnectionAdd"/>
+    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConferenceTest#testRemoteConferenceCallbacks_ConnectionCapabilities"/>
+    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConferenceTest#testRemoteConferenceCallbacks_ConnectionProperties"/>
+    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConferenceTest#testRemoteConferenceCallbacks_ConnectionRemove"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConnectionTest#testRemoteConnectionIncomingCallAccept"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConnectionTest#testRemoteConnectionOutgoingCall"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConnectionTest#testRemoteConnectionOutgoingEmergencyCall"/>
+    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConnectionTest#testRemoteConnectionRingbackRequested"/>
+    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConnectionTest#testRemoteConnectionSetAudioState"/>
+    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConnectionTest#testRemoteConnectionVoipMode"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConnectionTest#testRemoteIncomingConference"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConnectionTest#testRemoteOutgoingConference"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.ScreeningServiceWithContactsPermissionTest#testAllowCall"/>
@@ -509,34 +566,20 @@
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.SelfManagedConnectionServiceTest#testAddSelfManagedOutgoingConnection"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.SelfManagedConnectionServiceTest#testManagedCallWhileNoHoldCapabilitySelfMaganedCallActive"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.SelfManagedConnectionServiceTest#testSelfManagedCallNotLogged"/>
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.TelecomAnalyticsTest#testSessionTiming"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.TelecomAnalyticsTest#testTelecomAnalytics"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.TelecomAvailabilityTest#testCreateLaunchEmergencyDialerIntent"/>
+    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.TelecomManagerTest#testEnforceConfigureCallLogPreferenceSettings"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.ThirdPartyInCallServiceAppOpsPermissionTest#testSetAudioRouteOnCallEndpointRequestedPropagation"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.ThirdPartyInCallServiceAppOpsPermissionTest#testSwitchCallEndpointOnCallEndpointRequestedPropagation"/>
-    <!-- CtsTelephony2TestCases[instant] -->
-    <option name="compatibility:include-filter" value="CtsTelephony2TestCases[instant] android.telephony2.cts.CallStateListenerPermissionTest#testRegisterWithNoCallLogPermission"/>
+    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.TransactionalApisTest#testCallAttributesSetContactUri"/>
+    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.TransactionalApisTest#testCallAttributesSetIsGroupCall"/>
+    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.TransactionalApisTest#testSetGroupCallStateAndContactUri"/>
     <!-- CtsTelephony3TestCases -->
     <option name="compatibility:include-filter" value="CtsTelephony3TestCases android.telephony3.cts.CellInfoTest#testCellInfoSdk28"/>
     <!-- CtsTelephonyTestCases -->
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.AnomalyReporterTest#testInitialize_multipleReceivers"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.AnomalyReporterTest#testInitialize_noModifyPhoneStatePermission"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.AnomalyReporterTest#testInitialize_noReceivers"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.AnomalyReporterTest#testInitialize_nullContext"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.AnomalyReporterTest#testInitialize_nullPackageManager"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.AnomalyReporterTest#testInitialize_oneReceiver_allPermissions"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.AnomalyReporterTest#testInitialize_oneReceiver_noReadPrivilegedPhoneStatePermission"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.AnomalyReporterTest#testInitialize_oneReceiver_nullActivityInfo"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.AnomalyReporterTest#testReportAnomaly"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.AnomalyReporterTest#testReportAnomaly_NullPackage"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.AnomalyReporterTest#testReportAnomaly_duplicateEvent"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.AnomalyReporterTest#testReportAnomaly_notInitialized"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.AnomalyReporterTest#testReportAnomaly_nullEventId"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.ApnCarrierIdTest#validateDataConnectionWithCarrierIdApn"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.CarrierServiceTest#testNotifyCarrierNetworkChangeWithSubId_false"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.CarrierServiceTest#testNotifyCarrierNetworkChangeWithSubId_true"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.CellInfoTest#testCellInfo"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.CellInfoTestOnMockModem#testCellInfo"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.CellLocationTest#testCellLocation"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.CellularSecurityCallbackTest#testOnCellularIdentifierDisclosedChangedListener"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.CellularSecurityCallbackTest#testOnSecurityAlgorithmsChangedListener"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.DataCallResponseTest#testConstructorAndGetters"/>
@@ -545,9 +588,9 @@
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.DataCallResponseTest#testParcel"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.DomainSelectionServiceTestOnMockModem#testDomainSelectionServiceEmergencyCall"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.DomainSelectionServiceTestOnMockModem#testDomainSelectionServiceEmergencyCallReselectDomain"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.DomainSelectionServiceTestOnMockModem#testDomainSelectionServiceEmergencyCallTerminateSelection"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.MmsTest#testSendMmsMessage"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.MmsTest#testSendMmsMessageWithMessageId"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.MmsTest#testSendMmsMessageWithMmsDisabled"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.NetworkSelectionModeTest#testGetManualNetworkSelectionPlmnNonPersisted"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.NetworkSelectionModeTest#testGetManualNetworkSelectionPlmnPersisted"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.NetworkSelectionModeTest#testGetNetworkSelectionMode"/>
@@ -561,11 +604,29 @@
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.OpportunisticNetworkServiceTestOnMockModem#testSetPreferredOpptSub_asSystemApp_toInServiceOpptSub_withValidation"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.OpportunisticNetworkServiceTestOnMockModem#testSetPreferredOpptSub_asSystemApp_toInServiceOpptSub_withoutValidation"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.OpportunisticNetworkServiceTestOnMockModem#testSetPreferredOpptSub_asSystemApp_toOutOfServiceOpptSub_withoutValidation"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.PhoneStateListenerTest#testOnActiveDataSubscriptionIdChanged"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.PhoneStateListenerTest#testOnCallDisconnectCauseChanged"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.PhoneStateListenerTest#testOnCallForwardingIndicatorChanged"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.PhoneStateListenerTest#testOnCallStateChanged"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.PhoneStateListenerTest#testOnCellInfoChanged"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.PhoneStateListenerTest#testOnCellLocationChanged"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.PhoneStateListenerTest#testOnDataActivity"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.PhoneStateListenerTest#testOnDataConnectionStateChanged"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.PhoneStateListenerTest#testOnImsCallDisconnectCauseChanged"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.PhoneStateListenerTest#testOnMessageWaitingIndicatorChanged"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.PhoneStateListenerTest#testOnOutgoingSmsEmergencyNumberChanged"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.PhoneStateListenerTest#testOnPhoneStateListenerExecutorWithSrvccChanged"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.PhoneStateListenerTest#testOnPreciseCallStateChanged"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.PhoneStateListenerTest#testOnRadioPowerStateChanged"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.PhoneStateListenerTest#testOnServiceStateChanged"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.PhoneStateListenerTest#testOnSignalStrengthChanged"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.PhoneStateListenerTest#testOnSignalStrengthsChanged"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.PhoneStateListenerTest#testOnUnRegisterFollowedByRegister"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.PhoneStateListenerTest#testOnUserMobileDataStateChanged"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.SimultaneousCallingRestrictionsTest#testCellularDSDANotSupported_IMSNotRegistered"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.SmsManagerTest#testContentProviderAccessRestriction"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.SmsManagerTest#testGetSetSmscAddress"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.SmsManagerTest#testGetSmsOtpTrustedAppIds_carrierPrivilegedAppTrusted"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.SmsManagerTest#testGetSmscIdentity"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.SmsManagerTest#testIsAppTrustedForSmsOtp_carrierPrivilegedAppTrusted"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.SmsManagerTest#testOtpSmsBroadcastReceivedByCdmApps"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.SmsManagerTest#testOtpSmsBroadcastReceivedByDefaultSmsApp"/>
@@ -580,43 +641,61 @@
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.SubscriptionManagerTest#testCellularUsageSetting"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.SubscriptionManagerTest#testCorrectness"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.SubscriptionManagerTest#testCountryIso"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.SubscriptionManagerTest#testSetTs43PhoneNumber"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyCallbackTest#testOnActiveDataSubscriptionIdChangedByRegisterTelephonyCallback"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyCallbackTest#testOnAllowedNetworkTypesChangedByRegisterPhoneStateListener"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyCallbackTest#testOnBarringInfoChangedByRegisterTelephonyCallback"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyCallbackTest#testOnCallDisconnectCauseChangedByRegisterTelephonyCallback"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyCallbackTest#testOnCallForwardingIndicatorChangedByRegisterTelephonyCallback"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyCallbackTest#testOnCallStateChangedByRegisterTelephonyCallback"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyCallbackTest#testOnCallStatesChangedByRegisterTelephonyCallback"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyCallbackTest#testOnCellInfoChangedByRegisterTelephonyCallback"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyCallbackTest#testOnCellLocationChangedByRegisterTelephonyCallback"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyCallbackTest#testOnDataActivityByRegisterTelephonyCallback"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyCallbackTest#testOnDataConnectionStateChangedByRegisterTelephonyCallback"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyCallbackTest#testOnDomainSelectionEmergencyModeExited"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyCallbackTest#testOnImsCallDisconnectCauseChangedByRegisterTelephonyCallback"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyCallbackTest#testOnMessageWaitingIndicatorChangedByRegisterTelephonyCallback"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyCallbackTest#testOnOutgoingSmsEmergencyNumberChangedByRegisterTelephonyCallback"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyCallbackTest#testOnPreciseCallStateChangedByRegisterTelephonyCallback"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyCallbackTest#testOnPreciseDataConnectionStateChangedByRegisterTelephonyCallback"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyCallbackTest#testOnRadioPowerStateChangedByRegisterTelephonyCallback"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyCallbackTest#testOnServiceStateChangedByRegisterTelephonyCallback"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyCallbackTest#testOnServiceStateChangedByRegisterTelephonyCallbackWithCoarseRenounce"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyCallbackTest#testOnServiceStateChangedByRegisterTelephonyCallbackWithFineOnlyRenounce"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyCallbackTest#testOnServiceStateChangedByRegisterTelephonyCallbackWithLocationRenounce"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyCallbackTest#testOnSignalStrengthsChangedByRegisterTelephonyCallback"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyCallbackTest#testOnSrvccStateChangedByRegisterTelephonyCallback"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyCallbackTest#testOnUnRegisterFollowedByRegisterTelephonyCallback"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyCallbackTest#testOnUserMobileDataStateChangedByRegisterTelephonyCallback"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyLocationTests#testServiceStateListeningWithRenouncedPermission"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyLocationTests#testServiceStateListeningWithoutPermissions"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyLocationTests#testServiceStateLocationSanitization"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyLocationTests#testServiceStateLocationSanitizationWithRenouncedPermission"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testEmergencyCallDiagnosticData"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testGetAllCellInfo"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testGetCarrierInfoForImsiEncryption"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testGetDeviceId"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testGetDeviceIdForSlot"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testGetEmergencyAssistancePackageName"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testGetImei"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testGetImeiForSlot"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testGetLastKnownCellIdentity"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testGetPackagesWithCarrierPrivilegesEnforcesReadPrivilege"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testGetPackagesWithCarrierPrivilegesThrowsExceptionWithoutReadPrivilege"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testGetServiceState"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testIccCloseLogicalChannelBySlotAndPort"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testIccTransmitApduBasicChannelBySlotAndPort"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testHasCarrierPrivilegesViaCarrierConfigs"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testIccTransmitApduLogicalChannelBySlotAndPort"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testIsDeviceSmsCapable_isIdenticalToIsSmsCapable"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testMmsUAProfUrlWithoutReplacePattern"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testPersistEmergencyCallDiagnosticData"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testRegisterTelephonyCallback"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testSetAllowedNetworkTypes"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testSetVoiceServiceStateOverride"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testThermalDataEnable"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTest#testUserDataEnable"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTestOnMockModem#getCarrierRestrictionRules"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTestOnMockModem#getCarrierRestrictionStatus_ReadPhoneState_RestrictedToCaller_MNO"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTestOnMockModem#getCarrierRestrictionStatus_ReadPhoneState_RestrictedToCaller_MVNO"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTestOnMockModem#testRegistrationFailed"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTestOnMockModem#testServiceStateChange"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyRegistryManagerTest#testNotifyDataActivityChangedWithSlot"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyRegistryManagerTest#testNotifyDomainSelectionEmergencyModeEntered"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyRegistryManagerTest#testNotifyDomainSelectionEmergencyModeExited"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyRegistryManagerTest#testSimultaneousCellularCallingNotifications"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyServiceManagerTest#testGetPhoneNumberServiceRegisterer"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.VisualVoicemailServiceTest#testFilter_data"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.VisualVoicemailServiceTest#testFilter_originatingNumber_match_filtered"/>
@@ -625,12 +704,19 @@
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.VisualVoicemailServiceTest#testFilter_port_mismatch"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.VisualVoicemailServiceTest#testGetVisualVoicemailPackageName_isSelf"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.VisualVoicemailServiceTest#testPermissionlessService_ignored"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.gba.cts.GbaServiceTest#testServiceReleaseDefault"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.EmergencyCallDomainSelectionTestOnMockModem#testDefaultCombinedImsNotRegisteredBarredSelectCs"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.EmergencyCallDomainSelectionTestOnMockModem#testDefaultCombinedImsNotRegisteredEmsOffBarredSelectCs"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.EmergencyCallDomainSelectionTestOnMockModem#testDefaultCombinedImsNotRegisteredSelectCs"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.EmergencyCallDomainSelectionTestOnMockModem#testDefaultCombinedImsNotRegisteredVopsOffBarredSelectCs"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.EmergencyCallDomainSelectionTestOnMockModem#testDefaultCombinedImsNotRegisteredVopsOffEmsOffBarredSelectCs"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.EmergencyCallDomainSelectionTestOnMockModem#testDefaultCombinedImsNotRegisteredVopsOffEmsOffSelectCs"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.EmergencyCallDomainSelectionTestOnMockModem#testDefaultCombinedImsNotRegisteredVopsOffSelectCs"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.EmergencyCallDomainSelectionTestOnMockModem#testDefaultCombinedImsRegisteredBarredSelectCs"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.EmergencyCallDomainSelectionTestOnMockModem#testDefaultCombinedImsRegisteredEmsOffSelectCs"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.EmergencyCallDomainSelectionTestOnMockModem#testDefaultCombinedImsRegisteredVopsOffEmsOffBarredSelectCs"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.EmergencyCallDomainSelectionTestOnMockModem#testDefaultCombinedImsRegisteredVopsOffSelectCs"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.EmergencyCallDomainSelectionTestOnMockModem#testDefaultCsSelectCs"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.EmergencyCallDomainSelectionTestOnMockModem#testDefaultCsSelectCsFailedRescanPsPreferred"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.EmergencyCallDomainSelectionTestOnMockModem#testDefaultWifiImsRegisteredCellularTimeoutSelectWifiImsPdn"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.EmergencyCallDomainSelectionTestOnMockModem#testVoLteOnEpsImsNotRegisteredSelectPs"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsCallingTest#testAssuredTransfer"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsCallingTest#testAssuredTransferFailed"/>
@@ -656,14 +742,18 @@
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsCallingTest#testSrvccActiveCall"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsCallingTest#testSrvccHoldingCall"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsMmTelManagerTest#testVoWiFiRoamingModeSetting"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsMmTelManagerTest#testVoWiFiRoamingModeSettingUsingNonTerrestrialNetwork"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsServiceTest#testCallComposerCapabilityStatusCallback"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsServiceTest#testCapabilityStatusCallback"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsServiceTest#testClearImsPhoneNumberWithImsAssociatedUri"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsServiceTest#testGetFeatureState"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsServiceTest#testImsPhoneNumberWithImsAssociatedUriForNonGlobalNumberFormat"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsServiceTest#testInitialNotificationForMmTelWhenCallbackRegistered"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsServiceTest#testInitialNotificationForMmTelWhenImsServiceConnected"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsServiceTest#testInitialNotificationForRcsWhenCallbackRegistered"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsServiceTest#testInitialNotificationForRcsWhenImsServiceConnected"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsServiceTest#testMmTelManagerEmergencyRegistrationCallback"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsServiceTest#testMmTelManagerRegistrationCallbackS"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsServiceTest#testMmTelManagerRegistrationStateR"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsServiceTest#testMmTelSendMemoryAvailabilityNotification"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsServiceTest#testMmTelSendSms"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsServiceTest#testMmTelSendSmsDeliveryReportQCompat"/>
@@ -671,19 +761,33 @@
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsServiceTest#testMmTelSendSmsNetworkError"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsServiceTest#testMmTelSendSmsRSuccess"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsServiceTest#testProvisioningManagerWhenMmtelProvisionIsRequired"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsServiceTest#testProvisioningManagerWhenRcsProvisionIsRequired"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsServiceTest#testRcsAttributesPublish"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsServiceTest#testRcsCapabilitiesPublishNetworkResponseWithReasonHeader"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsServiceTest#testRcsDeviceCapabilitiesPublish"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.ImsServiceTest#testRcsPublishThrottle"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.RcsUceAdapterTest#testCapabilitiesRequestRetry"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.RcsUceAdapterTest#testCapabilitiesRequestWithCmdError"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.RcsUceAdapterTest#testCapabilitiesRequestWithResponseError"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.RcsUceAdapterTest#testRequestCapabilitiesWithOptionsMechanism"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.RcsUceAdapterTest#testRequestResultInconclusive"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.RcsUceAdapterTest#testRequestTimeoutWithPresenceMechanism"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.ims.cts.RcsUceAdapterTest#testTimeoutToRequestCapabilitiesWithOptionsMechanism"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.AutoConnectCarrierRoamingSatelliteTest#testCarrierRoamingNtnModeListener"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.AutoConnectCarrierRoamingSatelliteTest#testGetPlmnSatelliteConfig"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.AutoConnectCarrierRoamingSatelliteTest#testIsNonTerrestrialNetworkState"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.AutoConnectCarrierRoamingSatelliteTest#testNoSatelliteConstrainedNetworkConnection_WithBandwidthNotConstrainedCapability"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.AutoConnectCarrierRoamingSatelliteTest#testQuerySatelliteEntitlementService_success"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.AutoConnectCarrierRoamingSatelliteTest#testNtn5gNrSsrsrpThresholdsValidCheck"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.AutoConnectCarrierRoamingSatelliteTest#testNtn5gNrSsrsrqThresholdsValidCheck"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.AutoConnectCarrierRoamingSatelliteTest#testNtn5gNrSssinrThresholdsValidCheck"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.AutoConnectCarrierRoamingSatelliteTest#testVoWiFiRoamingModeSettingUsingNonTerrestrialNetwork"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.EmergencyCallHandoverToSatelliteMessagingTest#testE911ToT911Handover_Hybrid_AutoConnectToOutOfService_DS"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.HybridConnectCarrierRoamingSatelliteTest#testNotificationContent_AutoConnect"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.EmergencyCallHandoverToSatelliteMessagingTest#testE911ToT911Handover_Hybrid_AutoConnect_DS"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.HybridConnectCarrierRoamingSatelliteTest#testNotificationDismissed_AutoConnect"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.ManualConnectCarrierRoamingSatelliteTest#testCarrierRoamingNtnEligible"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.ManualConnectCarrierRoamingSatelliteTest#testQuerySatelliteEntitlementService_success"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.PlmnSatelliteConfigTest#testEquals"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.PlmnSatelliteConfigTest#testForConstructorsAndGetters"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.PlmnSatelliteConfigTest#testNotEquals"/>
+    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.PlmnSatelliteConfigTest#testParcel"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.SatelliteManagerTest#testGetAggregateSatellitePlmnListForCarrier"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.SatelliteManagerTest#testProvisionSatellite"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.SatelliteManagerTest#testRegisterForCommunicationAccessStateChanged"/>
@@ -699,7 +803,6 @@
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.SatelliteManagerTest#testUnregisterForSatelliteDisallowedReasonsChanged"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.SatelliteManagerTestOnMockService#testDemoSimulator"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.SatelliteManagerTestOnMockService#testDeprovisionSatellite"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.SatelliteManagerTestOnMockService#testGetSatelliteDataSupportMode"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.SatelliteManagerTestOnMockService#testNtnSignalStrength"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.SatelliteManagerTestOnMockService#testPointingUICrashHandling"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.SatelliteManagerTestOnMockService#testProvisionSatelliteService"/>
@@ -799,9 +902,6 @@
     <option name="compatibility:include-filter" value="CtsVcnTestCases android.net.vcn.cts.VcnManagerTest#testApplyVcnNetworkPolicy_activeMode_onRestrictedNetwork"/>
     <option name="compatibility:include-filter" value="CtsVcnTestCases android.net.vcn.cts.VcnManagerTest#testApplyVcnNetworkPolicy_activeMode_onUnrestrictedNetwork"/>
     <option name="compatibility:include-filter" value="CtsVcnTestCases android.net.vcn.cts.VcnManagerTest#testApplyVcnNetworkPolicy_safeMode_onRestrictedNetwork"/>
-    <option name="compatibility:include-filter" value="CtsVcnTestCases android.net.vcn.cts.VcnManagerTest#testClearVcnConfig_withCarrierPrivileges"/>
     <option name="compatibility:include-filter" value="CtsVcnTestCases android.net.vcn.cts.VcnManagerTest#testEnterSafeModeImmediately_safeModeDisabled"/>
     <option name="compatibility:include-filter" value="CtsVcnTestCases android.net.vcn.cts.VcnManagerTest#testEnterSafeModeImmediately_safeModeEnabled"/>
-    <option name="compatibility:include-filter" value="CtsVcnTestCases android.net.vcn.cts.VcnManagerTest#testRegisterVcnStatusCallback_duplicateRegister"/>
-    <option name="compatibility:include-filter" value="CtsVcnTestCases android.net.vcn.cts.VcnManagerTest#testVcnSafeModeOnTestNetwork_overrideTimeout"/>
 </configuration>

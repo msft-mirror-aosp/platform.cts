@@ -575,7 +575,8 @@ public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
 
         //Disable Ims to make sure the call would go thorugh with a CS call
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                sTelephonyManager,  (tm) -> tm.disableIms(slotId));
+                sTelephonyManager,  (tm) -> tm.disableIms(slotId),
+                                     Manifest.permission.MODIFY_PHONE_STATE);
         // Sleep 3s to make sure ims is disabled
         TimeUnit.SECONDS.sleep(3);
 

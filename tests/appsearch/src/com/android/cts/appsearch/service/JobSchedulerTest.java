@@ -24,6 +24,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import com.android.appsearch.flags.Flags;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -45,7 +46,18 @@ public class JobSchedulerTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEDULE_MAINTENANCE_JOB)
+    @Ignore("Temporarily disable this test due to AppSearch maintenance service SDK issue")
     public void testMaintenanceServiceJob() {
+        // This test is disabled temporarily due to:
+        // - FLAG_ENABLE_SCHEDULE_MAINTENANCE_JOB is released in AppSearch mainline (M-2026-02).
+        // - But the registry of AppSearch maintenance service is not released together with
+        //   AppSearch mainline.
+        // - This CTS test only checks the maintenance service via dumpsys, so it fails if running
+        //   on a device with M-2026-02 AppSearch mainline but without AppSearch maintenance service
+        //   registry.
+        //
+        // TODO(b/408269409): add SDK check to this cts test and enable it once figuring out the SDK
+        //   version for AppSearch maintenance service registry.
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
                     String commandOutput =

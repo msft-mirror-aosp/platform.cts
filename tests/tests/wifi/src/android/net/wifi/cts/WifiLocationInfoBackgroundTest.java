@@ -53,6 +53,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -64,6 +65,7 @@ import java.util.List;
 @RunWith(AndroidJUnit4.class)
 @ApiTest(apis = {"Manifest.permission#ACCESS_BACKGROUND_LOCATION"})
 @RequiresDevice
+@Ignore("b/456079559") // TODO(qiangjiang): remove this test once mobly test is ready.
 public class WifiLocationInfoBackgroundTest extends WifiJUnit4TestBase{
     private static final String TAG = "WifiLocationInfoTest";
 

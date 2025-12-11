@@ -3316,6 +3316,106 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         assertThrows(IllegalStateException.class, () -> receivedEnd.getNode());
     }
 
+    @Test
+    @RequiresFlagsEnabled(
+            com.android.server.accessibility.Flags.FLAG_TYPE_SPEECH_STATE_CHANGE_ALLOWED)
+    public void testSpeechStateChangeEvent_serviceInterestedAllEvent_eventReceived()
+            throws Exception {
+        AccessibilityServiceInfo info = sUiAutomation.getServiceInfo();
+        info.eventTypes = AccessibilityEvent.TYPES_ALL_MASK;
+        sUiAutomation.setServiceInfo(info);
+
+        final String expectedText = "EndToEnd Test";
+        final int expectedChangeType = AccessibilityEvent.SPEECH_STATE_SPEAKING_START;
+        final AccessibilityEvent event =
+                AccessibilityEvent.obtain(AccessibilityEvent.TYPE_SPEECH_STATE_CHANGE);
+        event.setSpeechStateChangeTypes(expectedChangeType);
+        event.getText().add(expectedText);
+
+        AccessibilityManager manager =
+                sInstrumentation.getContext().getSystemService(AccessibilityManager.class);
+
+        AccessibilityEvent receivedEvent =
+                sUiAutomation.executeAndWaitForEvent(
+                        () -> manager.sendAccessibilityEvent(event),
+                        (e) -> e.getEventType() == AccessibilityEvent.TYPE_SPEECH_STATE_CHANGE,
+                        5000);
+
+        assertThat(receivedEvent.getSpeechStateChangeTypes()).isEqualTo(expectedChangeType);
+        assertThat(receivedEvent.getText()).contains(expectedText);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            com.android.server.accessibility.Flags.FLAG_TYPE_SPEECH_STATE_CHANGE_ALLOWED)
+    public void testSpeechStateChangeEvent_serviceNotInterested_eventBlocked() {
+        AccessibilityManager manager =
+                sInstrumentation.getContext().getSystemService(AccessibilityManager.class);
+        AccessibilityServiceInfo originalInfo = sUiAutomation.getServiceInfo();
+
+        try {
+            // Configure the service to listen to a DIFFERENT event type only.
+            AccessibilityServiceInfo filteredInfo = sUiAutomation.getServiceInfo();
+            filteredInfo.eventTypes = AccessibilityEvent.TYPE_VIEW_CLICKED;
+            sUiAutomation.setServiceInfo(filteredInfo);
+
+            final AccessibilityEvent event =
+                    AccessibilityEvent.obtain(AccessibilityEvent.TYPE_SPEECH_STATE_CHANGE);
+            event.setSpeechStateChangeTypes(AccessibilityEvent.SPEECH_STATE_SPEAKING_START);
+
+            // Verify that waiting for the event results in a TimeoutException.
+            // This implies the event was correctly filtered out.
+            assertThrows(
+                    "TYPE_SPEECH_STATE_CHANGE should be blocked when service does not request it.",
+                    TimeoutException.class,
+                    () ->
+                            sUiAutomation.executeAndWaitForEvent(
+                                    () -> manager.sendAccessibilityEvent(event),
+                                    (e) ->
+                                            e.getEventType()
+                                                    == AccessibilityEvent.TYPE_SPEECH_STATE_CHANGE,
+                                    1000));
+        } finally {
+            sUiAutomation.setServiceInfo(originalInfo);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            com.android.server.accessibility.Flags.FLAG_TYPE_SPEECH_STATE_CHANGE_ALLOWED)
+    public void testSpeechStateChangeEvent_serviceInterested_eventReceived() throws Exception {
+        AccessibilityManager manager =
+                sInstrumentation.getContext().getSystemService(AccessibilityManager.class);
+        AccessibilityServiceInfo originalInfo = sUiAutomation.getServiceInfo();
+
+        try {
+            // Configure the service to explicitly request TYPE_SPEECH_STATE_CHANGE
+            AccessibilityServiceInfo interestedInfo = sUiAutomation.getServiceInfo();
+            interestedInfo.eventTypes = AccessibilityEvent.TYPE_SPEECH_STATE_CHANGE;
+            sUiAutomation.setServiceInfo(interestedInfo);
+
+            final String expectedText = "Interested Service Test";
+            final int expectedChangeType = AccessibilityEvent.SPEECH_STATE_SPEAKING_START;
+
+            final AccessibilityEvent event =
+                    AccessibilityEvent.obtain(AccessibilityEvent.TYPE_SPEECH_STATE_CHANGE);
+            event.setSpeechStateChangeTypes(expectedChangeType);
+            event.getText().add(expectedText);
+
+            AccessibilityEvent receivedEvent =
+                    sUiAutomation.executeAndWaitForEvent(
+                            () -> manager.sendAccessibilityEvent(event),
+                            (e) -> e.getEventType() == AccessibilityEvent.TYPE_SPEECH_STATE_CHANGE,
+                            5000);
+
+            assertThat(receivedEvent.getSpeechStateChangeTypes()).isEqualTo(expectedChangeType);
+            assertThat(receivedEvent.getText()).contains(expectedText);
+
+        } finally {
+            sUiAutomation.setServiceInfo(originalInfo);
+        }
+    }
+
     private static class SelectionProviderView extends View {
         private final SelectionNodeProvider mProvider;
 

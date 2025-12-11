@@ -34,6 +34,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import android.Manifest;
 import android.app.Activity;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
@@ -59,7 +60,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.PollingCheck;
-import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
@@ -85,7 +85,12 @@ public class VirtualDeviceImeTest {
     private static final long NO_IME_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(5);
 
     @Rule
-    public VirtualDeviceRule mRule = VirtualDeviceRule.createDefault();
+    public VirtualDeviceRule mRule =
+            VirtualDeviceRule.withAdditionalPermissions(
+                    // Required for IME shell test APIs
+                    Manifest.permission.INTERACT_ACROSS_USERS_FULL,
+                    Manifest.permission.TEST_INPUT_METHOD,
+                    Manifest.permission.WRITE_SECURE_SETTINGS);
 
     @Rule
     public MockitoRule mMockitoRule = MockitoJUnit.rule();
@@ -128,7 +133,7 @@ public class VirtualDeviceImeTest {
     public void tearDown() throws Exception {
         DefaultDeviceTestIme.sImeListener = null;
         VirtualDeviceTestIme.sImeListener = null;
-        SystemUtil.runShellCommandOrThrow("ime reset --user " + mUserId);
+        mInputMethodManager.resetInputMethodsForTesting(mUserId);
     }
 
     /** The virtualDeviceOnly attribute is propagated to InputMethodInfo. */
@@ -242,8 +247,7 @@ public class VirtualDeviceImeTest {
     public void customImeComponent_changeDefaultDeviceIme() {
         createVirtualDeviceAndDisplay(/* imeComponent= */ Optional.of(
                 new ComponentName(mContext, VirtualDeviceTestIme.class.getName())));
-        SystemUtil.runShellCommandOrThrow("ime disable --user " + mUserId + " "
-                + mDefaultDeviceDefaultImeId);
+        mInputMethodManager.disableInputMethodForTesting(mDefaultDeviceDefaultImeId, mUserId);
         assertThat(Condition.waitFor("Disable default device IME",
                 () -> !mDefaultDeviceDefaultImeId.equals(
                         mInputMethodManager.getCurrentInputMethodInfo().getId())))
@@ -253,10 +257,8 @@ public class VirtualDeviceImeTest {
         verify(mVirtualDeviceImeListener, timeout(TIMEOUT_MILLIS).atLeastOnce())
                 .onShow(mVirtualDisplayId);
 
-        SystemUtil.runShellCommandOrThrow("ime enable --user " + mUserId + " "
-                + mDefaultDeviceDefaultImeId);
-        SystemUtil.runShellCommandOrThrow("ime set --user " + mUserId + " "
-                + mDefaultDeviceDefaultImeId);
+        mInputMethodManager.enableInputMethodForTesting(mDefaultDeviceDefaultImeId, mUserId);
+        mInputMethodManager.setInputMethodForTesting(mDefaultDeviceDefaultImeId, mUserId);
         assertThat(mInputMethodManager.getCurrentInputMethodInfo().getId())
                 .isEqualTo(mVirtualDeviceImeId);
 
@@ -280,8 +282,7 @@ public class VirtualDeviceImeTest {
         verify(mVirtualDeviceImeListener, timeout(TIMEOUT_MILLIS).atLeastOnce())
                 .onShow(mVirtualDisplayId);
 
-        SystemUtil.runShellCommandOrThrow("ime disable --user " + mUserId + " "
-                + mDefaultDeviceDefaultImeId);
+        mInputMethodManager.disableInputMethodForTesting(mDefaultDeviceDefaultImeId, mUserId);
         assertThat(mInputMethodManager.getCurrentInputMethodInfo().getId())
                 .isEqualTo(mVirtualDeviceImeId);
 
@@ -504,9 +505,9 @@ public class VirtualDeviceImeTest {
             Class<T> imeClass, boolean makeDefault) {
         final String imeId =
                 new ComponentName(mContext, imeClass.getName()).flattenToShortString();
-        SystemUtil.runShellCommandOrThrow("ime enable --user " + mUserId + " " + imeId);
+        mInputMethodManager.enableInputMethodForTesting(imeId, mUserId);
         if (makeDefault) {
-            SystemUtil.runShellCommandOrThrow("ime set --user " + mUserId + " " + imeId);
+            mInputMethodManager.setInputMethodForTesting(imeId, mUserId);
             PollingCheck.waitFor(
                     TIMEOUT_MILLIS,
                     () -> mInputMethodManager.getCurrentInputMethodInfo().getId().equals(imeId),

@@ -292,7 +292,9 @@ class AppOpsDeviceAwareTest {
         val endTimeMillis = System.currentTimeMillis()
         assertThat(AppOpsManager.MODE_ALLOWED).isEqualTo(mode)
 
-        val groupUsage = appOpsManager.getPermissionGroupUsageForPrivacyIndicator(false)
+        val groupUsage =
+            appOpsManager.getPermissionGroupUsageForPrivacyIndicator(false)
+                .filter { it.packageName == context.opPackageName }
         assertThat(groupUsage.size).isEqualTo(1)
 
         val permGroupUsage = groupUsage[0]

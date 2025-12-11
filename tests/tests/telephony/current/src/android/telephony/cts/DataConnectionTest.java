@@ -81,6 +81,9 @@ public class DataConnectionTest {
         mSubId = SubscriptionManager.getDefaultDataSubscriptionId();
 
         assumeTrue(mPm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        assumeTrue(
+                ApiLevelUtil.isVendorApiLevelAtLeast(
+                        android.os.Build.VERSION_CODES_FULL.CINNAMON_BUN));
     }
 
     @After
