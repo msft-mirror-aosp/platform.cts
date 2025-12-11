@@ -367,7 +367,8 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
         // Get insets before hiding them.
         final Insets insets = rootView.getRootWindowInsets().getInsets(types);
 
-        rootView.getWindowInsetsController().setSystemBarsBehavior(BEHAVIOR_DEFAULT);
+        getInstrumentation().runOnMainSync(() -> rootView.getWindowInsetsController()
+                .setSystemBarsBehavior(BEHAVIOR_DEFAULT));
 
         hideInsets(rootView, types);
 
@@ -395,8 +396,8 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
         final int types = statusBars();
         assumeTrue(rootView.getRootWindowInsets().isVisible(types));
 
-        rootView.getWindowInsetsController().setSystemBarsBehavior(
-                BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+        getInstrumentation().runOnMainSync(() -> rootView.getWindowInsetsController()
+                .setSystemBarsBehavior(BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE));
 
         hideInsets(rootView, types);
 
@@ -426,7 +427,8 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
         assumeTrue(rootView.getRootWindowInsets().getInsets(systemGestures()).left > 0);
         assumeTrue(canTriggerBackGesture(rootView));
 
-        rootView.getWindowInsetsController().setSystemBarsBehavior(BEHAVIOR_DEFAULT);
+        getInstrumentation().runOnMainSync(() -> rootView.getWindowInsetsController()
+                .setSystemBarsBehavior(BEHAVIOR_DEFAULT));
         hideInsets(rootView, systemBars());
 
         // Test if the back gesture can be triggered while system bars are hidden with the behavior.
@@ -443,8 +445,8 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
         assumeTrue(rootView.getRootWindowInsets().getInsets(systemGestures()).left > 0);
         assumeTrue(canTriggerBackGesture(rootView));
 
-        rootView.getWindowInsetsController().setSystemBarsBehavior(
-                BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+        getInstrumentation().runOnMainSync(() -> rootView.getWindowInsetsController()
+                .setSystemBarsBehavior(BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE));
         hideInsets(rootView, systemBars());
 
         // Test if the back gesture can be triggered while system bars are hidden with the behavior.
