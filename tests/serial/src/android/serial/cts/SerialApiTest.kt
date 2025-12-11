@@ -72,21 +72,21 @@ class SerialApiTest {
         setExposePty(false)
     }
 
-    @ApiTest(apis = ["android.hardware.serial.SerialManager#getSerialPorts"])
+    @ApiTest(apis = ["android.hardware.serial.SerialManager#getPorts"])
     @Test
     @RequiresFlagsEnabled(android.hardware.serial.flags.Flags.FLAG_ENABLE_WIRED_SERIAL_API)
-    fun test_getSerialPorts_isEmpty() {
-        val ports = mSerialManager!!.getSerialPorts()
+    fun test_getPorts_isEmpty() {
+        val ports = mSerialManager!!.getPorts()
 
         assertThat(ports).isEmpty()
     }
 
-    @ApiTest(apis = ["android.hardware.serial.SerialManager#getSerialPorts"])
+    @ApiTest(apis = ["android.hardware.serial.SerialManager#getPorts"])
     @Test
     @RequiresFlagsEnabled(android.hardware.serial.flags.Flags.FLAG_ENABLE_WIRED_SERIAL_API)
-    fun test_getSerialPorts_hasPtyPorts() {
+    fun test_getPorts_hasPtyPorts() {
         setExposePty(true)
-        val ports = mSerialManager!!.getSerialPorts()
+        val ports = mSerialManager!!.getPorts()
 
         for (port in ports) {
             assertThat(port.name == "ptmx" || port.name.startsWith("pts/")).isTrue()
@@ -95,7 +95,7 @@ class SerialApiTest {
 
     @ApiTest(
         apis = [
-            "android.hardware.serial.SerialManager#getSerialPorts",
+            "android.hardware.serial.SerialManager#getPorts",
             "android.hardware.serial.SerialManager#registerSerialPortListener",
             "android.hardware.serial.SerialPort#requestOpen",
         ]
@@ -104,7 +104,7 @@ class SerialApiTest {
     @RequiresFlagsEnabled(android.hardware.serial.flags.Flags.FLAG_ENABLE_WIRED_SERIAL_API)
     fun test_registerSerialPortListener() {
         setExposePty(true)
-        val ports = mSerialManager!!.getSerialPorts()
+        val ports = mSerialManager!!.getPorts()
         val ptyPort = ports.find { it.name == "ptmx" } ?: return
         val flags = SerialPort.OPEN_FLAG_READ_WRITE
         val exclusive = true
@@ -143,7 +143,7 @@ class SerialApiTest {
 
     @ApiTest(
         apis = [
-            "android.hardware.serial.SerialManager#getSerialPorts",
+            "android.hardware.serial.SerialManager#getPorts",
             "android.hardware.serial.SerialManager#registerSerialPortListener",
             "android.hardware.serial.SerialManager#unregisterSerialPortListener",
             "android.hardware.serial.SerialPort#requestOpen",
@@ -153,7 +153,7 @@ class SerialApiTest {
     @RequiresFlagsEnabled(android.hardware.serial.flags.Flags.FLAG_ENABLE_WIRED_SERIAL_API)
     fun test_unregisterSerialPortListener() {
         setExposePty(true)
-        val ports = mSerialManager!!.getSerialPorts()
+        val ports = mSerialManager!!.getPorts()
         val ptyPort = ports.find { it.name == "ptmx" } ?: return
         val flags = SerialPort.OPEN_FLAG_READ_WRITE
         val exclusive = true
@@ -185,7 +185,7 @@ class SerialApiTest {
 
     @ApiTest(
         apis = [
-            "android.hardware.serial.SerialManager#getSerialPorts",
+            "android.hardware.serial.SerialManager#getPorts",
             "android.hardware.serial.SerialPort#requestOpen",
         ]
     )
@@ -193,7 +193,7 @@ class SerialApiTest {
     @RequiresFlagsEnabled(android.hardware.serial.flags.Flags.FLAG_ENABLE_WIRED_SERIAL_API)
     fun test_requestOpen_accessGranted() {
         setExposePty(true)
-        val ports = mSerialManager!!.getSerialPorts()
+        val ports = mSerialManager!!.getPorts()
         val ptyPort = ports.find { it.name == "ptmx" } ?: return
         val flags = SerialPort.OPEN_FLAG_READ_WRITE
         val exclusive = true
@@ -225,7 +225,7 @@ class SerialApiTest {
 
     @ApiTest(
         apis = [
-            "android.hardware.serial.SerialManager#getSerialPorts",
+            "android.hardware.serial.SerialManager#getPorts",
             "android.hardware.serial.SerialPort#requestOpen",
         ]
     )
@@ -233,7 +233,7 @@ class SerialApiTest {
     @RequiresFlagsEnabled(android.hardware.serial.flags.Flags.FLAG_ENABLE_WIRED_SERIAL_API)
     fun test_requestOpen_accessDenied() {
         setExposePty(true)
-        val ports = mSerialManager!!.getSerialPorts()
+        val ports = mSerialManager!!.getPorts()
         val ptyPort = ports.find { it.name == "ptmx" } ?: return
         val flags = SerialPort.OPEN_FLAG_READ_WRITE
         val exclusive = true
