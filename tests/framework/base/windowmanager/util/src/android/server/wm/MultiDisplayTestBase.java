@@ -54,8 +54,6 @@ import com.android.cts.mockime.ImeEventStreamTestUtils;
 import org.junit.Before;
 import org.junit.ClassRule;
 
-import platform.test.desktop.DesktopModeTestUtil;
-
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
