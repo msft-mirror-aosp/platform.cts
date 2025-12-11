@@ -42,6 +42,7 @@ android_test {
         "truth",
         "android.app.appfunctions.flags-aconfig-java",
         "bedstead-enterprise",
+        "bedstead-flags",
         "bedstead-root",
         "testng",
     ],
@@ -60,6 +61,8 @@ android_test {
         ":CtsAppFunctionsSidecarTestHelper",
         ":CtsAppFunctionsTestAgentHelper",
         ":CtsAppFunctionsTestHelper",
+        ":CtsAppFunctionDeprecatedServiceTestHelper",
+        ":CtsAppFunctionServiceTestHelper",
         ":CtsAppFunctionsTestHelperDynamicSchema",
         ":CtsAppSearchIndexerTestAppAV1",
         ":CtsAppSearchIndexerTestAppAV2",
@@ -135,5 +138,47 @@ android_test_helper_app {
     ],
     asset_dirs: ["helper-app-dynamic-schema/assets"],
     manifest: "helper-app-dynamic-schema/AndroidManifest.xml",
+    min_sdk_version: "31",
+}
+
+android_test_helper_app {
+    name: "CtsAppFunctionDeprecatedServiceTestHelper",
+    defaults: ["cts_defaults"],
+    srcs: [
+        "deprecated-service-test-helper/src/**/*.kt",
+    ],
+    static_libs: [
+        "CtsAppFunctionsTestUtils",
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+        "compatibility-device-util-axt",
+        "testng",
+    ],
+    test_suites: [
+        "general-tests",
+    ],
+    asset_dirs: ["deprecated-service-test-helper/assets"],
+    manifest: "deprecated-service-test-helper/AndroidManifest.xml",
+    min_sdk_version: "31",
+}
+
+android_test_helper_app {
+    name: "CtsAppFunctionServiceTestHelper",
+    defaults: ["cts_defaults"],
+    srcs: [
+        "service-test-helper/src/**/*.kt",
+    ],
+    static_libs: [
+        "CtsAppFunctionsTestUtils",
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+        "compatibility-device-util-axt",
+        "testng",
+    ],
+    test_suites: [
+        "general-tests",
+    ],
+    asset_dirs: ["service-test-helper/assets"],
+    manifest: "service-test-helper/AndroidManifest.xml",
     min_sdk_version: "31",
 }
