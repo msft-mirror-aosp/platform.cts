@@ -868,7 +868,7 @@ def get_intrinsic_calibration(props, metadata, debug, fd=None):
       raise ValueError(f'fd_h(pixels): {fd_h_pix:.2f}\tcal[1](pixels): '
                        f'{ical[1]:.2f}\tTOL=20%')
 
-  # generate instrinsic matrix
+  # generate intrinsic matrix
   k = np.array([[ical[0], ical[4], ical[2]],
                 [0, ical[1], ical[3]],
                 [0, 0, 1]])
