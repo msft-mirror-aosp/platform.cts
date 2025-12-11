@@ -323,6 +323,44 @@ public class MediaExtractorTest {
                 "Mismatched level", MediaCodecInfo.CodecProfileLevel.VVCMainTierLevel20, level);
     }
 
+    @RequiresFlagsEnabled(FLAG_EXTRACTOR_MP4_ENABLE_VVC)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.CINNAMON_BUN)
+    @Test
+    public void testVvcHdrMediaExtractor() throws Exception {
+        assumeTrue(
+                "Device does not have VVC decoder and is not a Google device or emulator",
+                MediaUtils.hasDecoder(MediaFormat.MIMETYPE_VIDEO_VVC)
+                        || Build.MANUFACTURER.equals("Google")
+                        || isEmulator());
+        String testFileName = "bbb_320x180_360kbps_24fps_vvc_nob_bt2020_pq.mp4";
+        Preconditions.assertTestFileExists(mInpPrefix + testFileName);
+
+        TestMediaDataSource dataSource = setDataSource(testFileName);
+        assertNotNull("Extractor failed to initialize", mExtractor);
+
+        MediaFormat trackFormat = mExtractor.getTrackFormat(0);
+        assertNotNull("expected to find a track", trackFormat);
+
+        final String mimeType = trackFormat.getString(MediaFormat.KEY_MIME);
+        assertEquals("Unexpected Mime type value", "video/vvc", mimeType);
+
+        int profile = trackFormat.getInteger(MediaFormat.KEY_PROFILE);
+        assertEquals(
+                "Mismatched profile",
+                MediaCodecInfo.CodecProfileLevel.VVCProfileMain10HDR10,
+                profile);
+
+        int level = trackFormat.getInteger(MediaFormat.KEY_LEVEL);
+        assertEquals(
+                "Mismatched level", MediaCodecInfo.CodecProfileLevel.VVCMainTierLevel20, level);
+
+        int colorSrandard = trackFormat.getInteger(MediaFormat.KEY_COLOR_STANDARD);
+        assertEquals("Mismatched color standard", MediaFormat.COLOR_STANDARD_BT2020, colorSrandard);
+
+        int colorTransfer = trackFormat.getInteger(MediaFormat.KEY_COLOR_TRANSFER);
+        assertEquals("Mismatched color transfer", MediaFormat.COLOR_TRANSFER_ST2084, colorTransfer);
+    }
+
     // DolbyVisionMediaExtractor for profile-level (DvheDtr/Fhd30).
     @CddTest(requirements = {"5.3.8/C-1-1", "5.3.8/C-1-3"})
     @Test
