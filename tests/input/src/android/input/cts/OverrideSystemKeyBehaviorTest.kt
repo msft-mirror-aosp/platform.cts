@@ -63,7 +63,7 @@ class OverrideSystemKeyBehaviorTest {
             activity = it
             verifier = activity.verifier
         }
-        PollingCheck.waitFor { activity.hasWindowFocus() }
+        WindowUtil.waitForFocus(activity)
     }
 
     /**

@@ -24,8 +24,8 @@ import android.hardware.input.InputManager
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
-import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.SystemUtil
+import com.android.compatibility.common.util.WindowUtil
 import com.android.cts.input.CaptureEventActivity
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -54,7 +54,7 @@ class KeyboardLayoutTest {
             inputManager = it.getSystemService(InputManager::class.java)
             activity = it
         }
-        PollingCheck.waitFor { activity.hasWindowFocus() }
+        WindowUtil.waitForFocus(activity)
     }
 
     @Test
