@@ -21,11 +21,18 @@ import com.android.compatibility.common.util.ApiTest
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(DeviceJUnit4ClassRunner::class)
 class PersistsAcrossRebootsTest : BaseHostJUnit4Test() {
+    @Before
+    fun setUp() {
+        // Clear recent apps to ensure no persisted value exists.
+        device.executeAdbCommand(*"shell am clear-recent-apps".split(" ").toTypedArray())
+    }
+
     /**
      * Tests the persisted bundle is persisted across reboots through
      * [android.app.Activity.onSaveInstanceState] and [android.app.Activity.onCreate] when the
