@@ -17,6 +17,8 @@
 package com.android.cts.pcc.processes;
 
 import static android.app.privatecompute.flags.Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT;
+import static android.content.pm.PackageManager.PERMISSION_DENIED;
+import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -52,6 +54,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class PccProcessTest {
 
     private static final int TIMEOUT_SECONDS = 5;
+    private static final String CUSTOM_PCC_ALLOWED_PERMISSION =
+            "com.android.cts.pcc.PCC_ALLOWED_PERMISSION";
+    private static final String CUSTOM_PCC_DENIED_PERMISSION =
+            "com.android.cts.pcc.PCC_DENIED_PERMISSION";
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -328,5 +334,26 @@ public class PccProcessTest {
         if (exceptions[0] != null) {
             throw exceptions[0];
         }
+    }
+
+    @Test
+    public void testRestrictedPccPermissions() throws Exception {
+        assertTrue(
+                "Process should be a PCC process",
+                Process.isPrivateComputeCoreUid(Process.myUid()));
+
+        final int allowedPermissionResult =
+                mContext.checkSelfPermission(CUSTOM_PCC_ALLOWED_PERMISSION);
+        assertEquals(
+                "PCC process should hold a PCC allowed permission",
+                allowedPermissionResult,
+                PERMISSION_GRANTED);
+
+        final int deniedPermissionResult =
+                mContext.checkSelfPermission(CUSTOM_PCC_DENIED_PERMISSION);
+        assertEquals(
+                "PCC process should not hold a PCC-denied permission",
+                deniedPermissionResult,
+                PERMISSION_DENIED);
     }
 }
