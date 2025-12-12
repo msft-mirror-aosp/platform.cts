@@ -75,6 +75,14 @@
             </intent-filter>
         </service>
 
+        <service android:name=".CtsSharesheetTapToShareService"
+                 android:permission="android.permission.BIND_TO_TAP_TO_SHARE_SERVICE"
+                 android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.chooser.TapToShareService"/>
+            </intent-filter>
+        </service>
+
         <activity-alias android:name=".ExtraInitialIntentTestActivity"
              android:label="@string/test_extra_initial_intents_label"
              android:targetActivity=".CtsSharesheetDeviceActivity"/>

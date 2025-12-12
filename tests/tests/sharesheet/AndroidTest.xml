@@ -30,8 +30,9 @@
         <option name="test-file-name" value="CtsSharesheetIntentFilterLabelTester.apk" />
         <option name="test-file-name" value="CtsSharesheetExcludeTester.apk" />
         <option name="test-file-name" value="CtsSharesheetAlternateType.apk" />
+        <option name="test-file-name" value="CtsSharesheetOutOfProcessTapToShareService.apk" />
     </target_preparer>
-    
+
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.sharesheet.cts" />
         <option name="runtime-hint" value="7s" />-->
