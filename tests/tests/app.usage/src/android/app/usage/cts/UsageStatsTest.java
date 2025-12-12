@@ -32,6 +32,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -865,6 +866,41 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
         }
 
         assertEquals(events.hasNextEvent(), reparceledEvents.hasNextEvent());
+    }
+
+    @Test
+    @AsbSecurityTest(cveBugId = 399155883)
+    public void testUsageEventsParcelingWithOOBPositionInParcel() throws Exception {
+        // A "bad" Parcel is created by providing values that would lead to an out-of-bounds read
+        // if not for preventative checks.
+        Parcel badParcel = Parcel.obtain();
+        badParcel.setDataPosition(0);
+        // Although there is no actual event data, it is still important to set the "mEventCount" to
+        // 1, so there will be an attempt to read the positionInParcel value.
+        badParcel.writeInt(/* mEventCount= */ 1);
+        badParcel.writeInt(/* mIndex= */ 0);
+        badParcel.writeStringArray(/* mStringPool= */ new String[0]);
+        // listByteLength indicates the size of the event list data within the parcel.
+        // Set to 0 so there is no need to fake the actual event data.
+        badParcel.writeInt(/* listByteLength= */ 0);
+        // positionInParcel indicates the current read position in the event list data.
+        // This value must be less than or equal to listByteLength.
+        // By setting it to 1, which is greater than listByteLength (0), we are creating an
+        // inconsistent state that should be caught during unparceling.
+        badParcel.writeInt(/* positionInParcel= */ 1);
+        // Write the bad Parcel to a new Parcel as a blob so it can be accepted as valid input.
+        Parcel blobParcel = Parcel.obtain();
+        blobParcel.setDataPosition(0);
+        blobParcel.writeBlob(badParcel.marshall());
+        badParcel.recycle();
+
+        blobParcel.setDataPosition(0);
+        try {
+            assertThrows(IllegalArgumentException.class, () -> UsageEvents.CREATOR.createFromParcel(
+                    blobParcel));
+        } finally {
+            blobParcel.recycle();
+        }
     }
 
     @AppModeFull(reason = "No usage events access in instant apps")
