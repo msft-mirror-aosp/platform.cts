@@ -88,6 +88,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
 /**
@@ -2649,5 +2650,23 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
                 Log.w(TAG, failures.toString());
             }
         });
+    }
+
+    /**
+     * Attempts to check a feature flag's value, returning {@code false} if the flag method does not
+     * exist on the device the test is run on (since the flag would be implicitly off).
+     *
+     * <p>This is used to ensure that we can develop tests in a trunk stable world where the test
+     * suite will run on older OS versions where the flag does not yet exist.
+     *
+     * @param flagToCheck A {@link BooleanSupplier} which checks the flag value.
+     * @return The value of the flag, or {@code false} if the flag does not exist.
+     */
+    public boolean isFlagEnabled(BooleanSupplier flagToCheck) {
+        try {
+            return flagToCheck.getAsBoolean();
+        } catch (NoSuchMethodError nsme) {
+            return false;
+        }
     }
 }

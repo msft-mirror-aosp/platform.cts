@@ -792,7 +792,8 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
      * Test that the associated user of the call is propagated
      */
     public void testGetAssociatedUser() {
-        if (!mShouldTestTelecom || !android.telecom.flags.Flags.callDetailsGetAssociatedUserApi2()) {
+        if (!mShouldTestTelecom
+                || !isFlagEnabled(android.telecom.flags.Flags::callDetailsGetAssociatedUserApi2)) {
             return;
         }
         UserHandle testUser = mContext.getUser();
