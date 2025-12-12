@@ -346,8 +346,17 @@ public abstract class AudioDataPathsBaseActivity
 
         // Pass/Fail criteria (with defaults)
         static final double MIN_SIGNAL_PASS_MAGNITUDE = 0.005;
+        static final double MIN_SIGNAL_PASS_SPEAKER_SAFE_MAGNITUDE = 0.003;
         static final double MAX_SIGNAL_PASS_JITTER = 0.1;
         static final double MAX_XTALK_PASS_MAGNITUDE = 0.02;
+
+        double getMinSignalPassMagnitude() {
+            if (mOutDeviceType == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE) {
+                return MIN_SIGNAL_PASS_SPEAKER_SAFE_MAGNITUDE;
+            } else {
+                return MIN_SIGNAL_PASS_MAGNITUDE;
+            }
+        }
 
         //
         // A set of classes to store information specific to the
@@ -595,7 +604,7 @@ public abstract class AudioDataPathsBaseActivity
             if (hasRun() && mTestResults != null) {
                 if (mAnalysisType == TYPE_SIGNAL_PRESENCE) {
                     passed =
-                            mTestResults.mMaxMagnitude >= MIN_SIGNAL_PASS_MAGNITUDE
+                            mTestResults.mMaxMagnitude >= getMinSignalPassMagnitude()
                                     && mTestResults.mPhaseJitter <= MAX_SIGNAL_PASS_JITTER;
                 } else {
                     passed = mTestResults.mMaxMagnitude <= MAX_XTALK_PASS_MAGNITUDE;
@@ -994,7 +1003,7 @@ public abstract class AudioDataPathsBaseActivity
                         locale, "jitter:%.5f ", results.mPhaseJitter);
 
                 boolean passMagnitude = mAnalysisType == TYPE_SIGNAL_PRESENCE
-                        ? results.mMaxMagnitude >= MIN_SIGNAL_PASS_MAGNITUDE
+                        ? results.mMaxMagnitude >= getMinSignalPassMagnitude()
                         : results.mMaxMagnitude <= MAX_XTALK_PASS_MAGNITUDE;
 
                 // Values / Criteria
@@ -1008,7 +1017,7 @@ public abstract class AudioDataPathsBaseActivity
                     textFormatter.appendText(maxMagString
                             + String.format(locale,
                             passMagnitude ? " >= %.5f " : " < %.5f ",
-                            MIN_SIGNAL_PASS_MAGNITUDE));
+                            getMinSignalPassMagnitude()));
                 } else {
                     textFormatter.appendText(maxMagString
                             + String.format(locale,
@@ -1038,7 +1047,7 @@ public abstract class AudioDataPathsBaseActivity
                     if (results.mMaxMagnitude == 0.0) {
                         textFormatter.appendText("Dead Channel?");
                     } else if (results.mMaxMagnitude > 0.0
-                            && results.mMaxMagnitude < MIN_SIGNAL_PASS_MAGNITUDE) {
+                            && results.mMaxMagnitude < getMinSignalPassMagnitude()) {
                         textFormatter.appendText("Low Gain or Volume.");
                     } else if (results.mPhaseJitter > MAX_SIGNAL_PASS_JITTER) {
                         // if the signal is absent or really low, the jitter will be high, so
@@ -1091,6 +1100,8 @@ public abstract class AudioDataPathsBaseActivity
         private static final String KEY_MAX_MAGNITUDE = "max_magnitude";
         private static final String KEY_PHASE = "phase";
         private static final String KEY_PHASE_JITTER = "phase_jitter";
+        private static final String KEY_CRITERIA_MAG = "criteria_magnitude";
+        private static final String KEY_CRITERIA_JITTER = "criteria_jitter";
 
         //
         // CTS VerifierReportLog stuff
@@ -1118,6 +1129,13 @@ public abstract class AudioDataPathsBaseActivity
                 moduleJson.put(KEY_MAX_MAGNITUDE, mTestResults.mMaxMagnitude);
                 moduleJson.put(KEY_PHASE, mTestResults.mPhase);
                 moduleJson.put(KEY_PHASE_JITTER, mTestResults.mPhaseJitter);
+
+                if (mAnalysisType == TYPE_SIGNAL_PRESENCE) {
+                    moduleJson.put(KEY_CRITERIA_MAG, getMinSignalPassMagnitude());
+                    moduleJson.put(KEY_CRITERIA_JITTER, MAX_SIGNAL_PASS_JITTER);
+                } else {
+                    moduleJson.put(KEY_CRITERIA_MAG, MAX_XTALK_PASS_MAGNITUDE);
+                }
             }
 
             return moduleJson;
