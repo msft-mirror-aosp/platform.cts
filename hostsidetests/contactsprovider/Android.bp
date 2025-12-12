@@ -29,6 +29,8 @@ java_test_host {
         "cts-tradefed",
         "tradefed",
         "compatibility-host-util",
+    ],
+    static_libs: [
         "CompatChangeGatingTestBase",
     ],
     device_common_data: [
