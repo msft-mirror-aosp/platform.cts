@@ -231,7 +231,6 @@ public class CallSequencingBasicCallTest extends BaseAppVerifier {
      * unhold the fg call.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_AUTO_UNHOLD_ON_CALL_FAIL)
     public void testAutoUnholdOnCallFail() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -277,7 +276,6 @@ public class CallSequencingBasicCallTest extends BaseAppVerifier {
      * background call.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_AUTO_UNHOLD_ON_CALL_FAIL)
     public void testNoAutoUnholdOnCallFailAfterActive() throws Exception {
         if (!mShouldTestTelecom) {
             return;

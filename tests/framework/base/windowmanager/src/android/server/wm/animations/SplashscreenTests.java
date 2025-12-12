@@ -16,8 +16,6 @@
 
 package android.server.wm.animations;
 
-import static android.app.UiModeManager.MODE_NIGHT_AUTO;
-import static android.app.UiModeManager.MODE_NIGHT_CUSTOM;
 import static android.app.UiModeManager.MODE_NIGHT_NO;
 import static android.app.UiModeManager.MODE_NIGHT_YES;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
@@ -415,14 +413,14 @@ public class SplashscreenTests extends ActivityManagerTestBase {
         }
     }
 
-    @Test
-    public void testSetApplicationNightMode() throws Exception {
+    private void testSetApplicationNightMode(int systemNightMode) throws Exception {
+        final NightModeSession nightModeSession = createManagedNightModeSession();
+        nightModeSession.setNightMode(systemNightMode);
+
         final UiModeManager uiModeManager = mContext.getSystemService(UiModeManager.class);
         assumeTrue(uiModeManager != null);
-        final int systemNightMode = uiModeManager.getNightMode();
-        final int testNightMode = (systemNightMode == MODE_NIGHT_AUTO
-                || systemNightMode == MODE_NIGHT_CUSTOM) ? MODE_NIGHT_YES
-                : systemNightMode == MODE_NIGHT_YES ? MODE_NIGHT_NO : MODE_NIGHT_YES;
+        final int testNightMode =
+                systemNightMode == MODE_NIGHT_YES ? MODE_NIGHT_NO : MODE_NIGHT_YES;
         final int testConfigNightMode = testNightMode == MODE_NIGHT_YES
                 ? Configuration.UI_MODE_NIGHT_YES
                 : Configuration.UI_MODE_NIGHT_NO;
@@ -439,6 +437,16 @@ public class SplashscreenTests extends ActivityManagerTestBase {
                 testConfigNightMode == journal.extras.getInt(GET_NIGHT_MODE_ACTIVITY_CHANGED));
         assertEquals(testConfigNightMode,
                 journal.extras.getInt(GET_NIGHT_MODE_ACTIVITY_CHANGED));
+    }
+
+    @Test
+    public void testSetApplicationNightMode_yes() throws Exception {
+        testSetApplicationNightMode(MODE_NIGHT_YES);
+    }
+
+    @Test
+    public void testSetApplicationNightMode_no() throws Exception {
+        testSetApplicationNightMode(MODE_NIGHT_NO);
     }
 
     @Test

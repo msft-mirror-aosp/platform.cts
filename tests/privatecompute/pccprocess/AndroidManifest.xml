@@ -19,43 +19,46 @@
 
     <application>
         <uses-library android:name="android.test.runner" />
-        <activity android:name=".BaseActivity$NonPccActivity" />
-        <activity android:name=".BaseActivity$PccActivity" android:exported="true"
-            android:isPrivateComputeCoreProcess="true"/>
-        <activity-alias android:name=".PccActivityAlias" android:exported="true"
+        <activity android:name=".BaseActivity$NonPccActivity" android:exported="false"/>
+        <activity android:name=".BaseActivity$PccActivity" android:exported="false"
+            android:privateComputeCore="true"/>
+        <activity-alias android:name=".PccActivityAlias" android:exported="false"
             android:targetActivity=".BaseActivity$PccActivity"
-            android:isPrivateComputeCoreProcess="true"/>
+            android:privateComputeCore="true"/>
 
-        <activity-alias android:name=".PccAliasForNonPccActivity" android:exported="true"
+        <activity-alias android:name=".PccAliasForNonPccActivity" android:exported="false"
             android:targetActivity=".BaseActivity$NonPccActivity"
-            android:isPrivateComputeCoreProcess="true"/>
+            android:privateComputeCore="true"/>
 
-        <activity android:name=".BaseActivity$PccSecondProcessActivity" android:exported="true"
+        <activity android:name=".BaseActivity$PccSecondProcessActivity"
+            android:exported="false"
             android:process=":pcc_second"
-            android:isPrivateComputeCoreProcess="true"/>
+            android:privateComputeCore="true"/>
 
-        <service android:name="com.android.cts.pcc.processes.PccService" android:isPrivateComputeCoreProcess="true"/>
+        <service android:name="com.android.cts.pcc.processes.PccService"
+            android:exported="false"
+            android:privateComputeCore="true"/>
         <receiver android:name=".PccBroadcastReceiver"
-                android:exported="true" android:isPrivateComputeCoreProcess="true">
+                android:exported="true" android:privateComputeCore="true">
             <intent-filter>
                 <action android:name="com.android.cts.pcc.processes.ACTION_TEST_BROADCAST" />
             </intent-filter>
         </receiver>
         <receiver android:name=".PccSecondProcessBroadcastReceiver"
-                android:process=":pcc_second" android:exported="true" android:isPrivateComputeCoreProcess="true">
+                android:process=":pcc_second" android:exported="true" android:privateComputeCore="true">
             <intent-filter>
                 <action android:name="com.android.cts.pcc.processes.ACTION_TEST_BROADCAST_SECOND_PROCESS" />
             </intent-filter>
         </receiver>
         <provider
                 android:name=".PccContentProvider"
-                android:exported="true"
-                android:authorities="com.android.cts.pcc.processes.provider" android:isPrivateComputeCoreProcess="true"/>
+                android:exported="false"
+                android:authorities="com.android.cts.pcc.processes.provider" android:privateComputeCore="true"/>
         <provider
                 android:name=".PccSecondProcessContentProvider"
-                android:exported="true"
+                android:exported="false"
                 android:authorities="com.android.cts.pcc.processes.provider_second"
-                android:process=":pcc_second" android:isPrivateComputeCoreProcess="true"/>
+                android:process=":pcc_second" android:privateComputeCore="true"/>
     </application>
 
     <instrumentation

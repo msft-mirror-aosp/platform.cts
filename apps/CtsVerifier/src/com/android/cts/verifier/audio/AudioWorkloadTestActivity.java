@@ -65,6 +65,7 @@ public class AudioWorkloadTestActivity extends PassFailButtons.Activity {
     private static final String KEY_HEAR_WORKLOAD = "hear_workload";
     private static final String KEY_CPU_AFFINITY_MASK = "cpu_affinity_mask";
     private static final String KEY_XRUN_COUNT_THRESHOLD = "xrun_count_threshold";
+    private static final String KEY_MEDIA_PERFORMANCE_CLASS = "media_performance_class";
 
     private List<CallbackStatus> mCallbackStatuses = null;
     private boolean mTestRunning = false;
@@ -283,6 +284,11 @@ public class AudioWorkloadTestActivity extends PassFailButtons.Activity {
         reportLog.addValue(
                 KEY_XRUN_COUNT_THRESHOLD,
                 XRUN_COUNT_THRESHOLD,
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+        reportLog.addValue(
+                KEY_MEDIA_PERFORMANCE_CLASS,
+                MEDIA_PERFORMANCE_CLASS,
                 ResultType.NEUTRAL,
                 ResultUnit.NONE);
 

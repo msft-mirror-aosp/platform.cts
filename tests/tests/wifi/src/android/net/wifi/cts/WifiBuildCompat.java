@@ -80,4 +80,8 @@ public class WifiBuildCompat {
         return Build.VERSION.CODENAME.equals("Baklava")
                 || Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA;
     }
+
+    public static boolean isAtLeastC() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN;
+    }
 }

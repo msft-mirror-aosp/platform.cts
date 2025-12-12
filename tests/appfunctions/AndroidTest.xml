@@ -32,6 +32,8 @@
         <option name="cleanup-apks" value="true" />
         <option name="test-file-name" value="CtsAppFunctionTestCases.apk" />
         <option name="test-file-name" value="CtsAppFunctionsTestHelper.apk" />
+        <option name="test-file-name" value="CtsAppFunctionDeprecatedServiceTestHelper.apk" />
+        <option name="test-file-name" value="CtsAppFunctionServiceTestHelper.apk" />
         <option name="test-file-name" value="CtsAppFunctionsTestAgentHelper.apk" />
         <option name="test-file-name" value="CtsAppFunctionsSidecarTestHelper.apk" />
         <option name="test-file-name" value="CtsAppFunctionsTestHelperDynamicSchema.apk" />

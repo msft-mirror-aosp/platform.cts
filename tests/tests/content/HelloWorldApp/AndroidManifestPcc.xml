@@ -30,7 +30,7 @@
         </activity>
         <service android:name="android.security.cts.PccService"
               android:exported="true"
-              android:isPrivateComputeCoreProcess="true">
+              android:privateComputeCore="true">
             <intent-filter>
                 <action android:name="android.security.cts.PccProcessTest" />
             </intent-filter>

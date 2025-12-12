@@ -17,8 +17,6 @@
 package android.input.cts.hostside
 
 import android.compat.cts.CompatChangeGatingTestCase
-import android.platform.test.flag.junit.host.DeviceFlags
-import com.android.hardware.input.Flags
 import com.android.tradefed.log.LogUtil.CLog
 import com.google.common.collect.ImmutableSet
 
@@ -79,16 +77,7 @@ class MouseToTouchTest : CompatChangeGatingTestCase() {
             CLog.w("Device does not support companion device")
             return false
         }
-        if (!aconfigFlagEnabled()) {
-            CLog.w("Aconfig flag is not enabled")
-            return false
-        }
         return true
-    }
-
-    fun aconfigFlagEnabled(): Boolean {
-        val flags = DeviceFlags.createDeviceFlags(device)
-        return flags.getFlagValue(Flags.FLAG_MOUSE_TO_TOUCH_PER_APP_COMPAT)?.toBoolean() ?: false
     }
 
     companion object {

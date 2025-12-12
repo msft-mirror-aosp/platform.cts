@@ -24,7 +24,7 @@
         <service
             android:name=".services.EmptyPccService"
             android:exported="true"
-            android:isPrivateComputeCoreProcess="true">
+            android:privateComputeCore="true">
             <intent-filter>
                 <action android:name="com.example.pccapp.TEST_PCC_SERVICE" />
             </intent-filter>

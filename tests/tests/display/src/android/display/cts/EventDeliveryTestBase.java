@@ -17,10 +17,12 @@
 package android.display.cts;
 
 import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHED;
+import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 
 import static org.junit.Assert.fail;
 
 import android.app.ActivityManager;
+import android.app.ActivityOptions;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
@@ -28,6 +30,8 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Messenger;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -35,12 +39,12 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.bedstead.nene.TestApis;
 import com.android.compatibility.common.util.SystemUtil;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Rule;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 public abstract class EventDeliveryTestBase {
     protected static final int MESSAGE_LAUNCHED = 1;
@@ -62,6 +66,10 @@ public abstract class EventDeliveryTestBase {
     private Messenger mMessenger;
     protected int mPid;
     protected int mUid;
+    private final ActivityOptions mActivityOptions = ActivityOptions.makeBasic();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     protected abstract String getTag();
 
@@ -71,10 +79,7 @@ public abstract class EventDeliveryTestBase {
 
     protected abstract String getTestActivity();
 
-    protected abstract void putExtra(Intent intent);
-
-    @Before
-    public void setUp() throws Exception {
+    protected void setUp() {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mContext = mInstrumentation.getContext();
         mLatchActivityLaunch = new CountDownLatch(1);
@@ -96,24 +101,24 @@ public abstract class EventDeliveryTestBase {
         mHandler = getHandler(mHandlerThread.getLooper());
         mMessenger = new Messenger(mHandler);
         mPid = 0;
+        mActivityOptions.setLaunchWindowingMode(WINDOWING_MODE_FULLSCREEN);
     }
 
-    @After
-    public void tearDown() throws Exception {
+    protected void tearDown() throws Exception {
         mActivityManager.removeOnUidImportanceListener(mUidImportanceListener);
         mHandlerThread.quitSafely();
         SystemUtil.runShellCommand(mInstrumentation, "am force-stop " + getTestPackage());
     }
 
     /** Launch the test activity that would listen to events. Return its process ID. */
-    protected int launchTestActivity() {
+    protected int launchTestActivity(Consumer<Intent> putExtraConsumer) {
         Intent intent = new Intent(Intent.ACTION_MAIN);
         intent.setClassName(getTestPackage(), getTestActivity());
         intent.putExtra(TEST_MESSENGER, mMessenger);
-        putExtra(intent);
+        putExtraConsumer.accept(intent);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         SystemUtil.runWithShellPermissionIdentity(
-                () -> TestApis.activities().startActivity(intent));
+                () -> TestApis.activities().startActivity(intent, mActivityOptions.toBundle()));
         waitLatch(mLatchActivityLaunch, "Failed to launch test activity");
 
         try {
@@ -135,7 +140,7 @@ public abstract class EventDeliveryTestBase {
         intent.setClassName(getTestPackage(), getTestActivity());
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         SystemUtil.runWithShellPermissionIdentity(
-                () -> TestApis.activities().startActivity(intent));
+                () -> TestApis.activities().startActivity(intent, mActivityOptions.toBundle()));
     }
 
     /** Bring the test activity into cached mode by launching another 2 apps */
@@ -151,8 +156,8 @@ public abstract class EventDeliveryTestBase {
         intent2.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    mInstrumentation.startActivitySync(intent);
-                    mInstrumentation.startActivitySync(intent2);
+                    mInstrumentation.startActivitySync(intent, mActivityOptions.toBundle());
+                    mInstrumentation.startActivitySync(intent2, mActivityOptions.toBundle());
                 });
         waitLatch(mLatchActivityCached, "Failed to make test activity cached");
     }

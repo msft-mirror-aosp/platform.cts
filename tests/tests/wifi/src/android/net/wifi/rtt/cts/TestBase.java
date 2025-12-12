@@ -31,6 +31,7 @@ import android.location.LocationManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.net.wifi.cts.TestHelper;
+import android.net.wifi.cts.WifiBuildCompat;
 import android.net.wifi.cts.WifiFeature;
 import android.net.wifi.cts.WifiJUnit4TestBase;
 import android.net.wifi.rtt.ProximityDetectionCharacteristics;
@@ -203,7 +204,7 @@ public class TestBase extends WifiJUnit4TestBase {
             assertTrue("Wi-Fi RTT is not available (should be)", mWifiRttManager.isAvailable());
         }
         mCharacteristics = mWifiRttManager.getRttCharacteristics();
-        if (Flags.proximityRanging()) {
+        if (WifiBuildCompat.isAtLeastC() && Flags.proximityRanging()) {
             mProximityDetectionCharacteristics =
                     mWifiRttManager.getProximityDetectionCharacteristics();
             if (mProximityDetectionCharacteristics == null) {
