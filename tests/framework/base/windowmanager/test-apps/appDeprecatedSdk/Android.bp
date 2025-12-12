@@ -27,7 +27,7 @@ android_test {
         "src/**/*.kt",
     ],
 
-    sdk_version: "16",
+    sdk_version: "23",
 
     test_suites: [
         "cts",
