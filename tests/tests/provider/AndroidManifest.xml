@@ -52,6 +52,16 @@
             </intent-filter>
         </activity>
 
+        <activity android:name="android.provider.cts.ApprovedDocumentHandlerActivity"
+             android:label="ApprovedDocumentHandlerActivity"
+             android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.provider.category.APPROVED_DOCUMENT_HANDLER"/>
+                <data android:mimeType="text/plain"/>
+            </intent-filter>
+        </activity>
+
         <service android:name=".MockInputMethodService"
              android:label="UserDictionaryInputMethodTestService"
              android:permission="android.permission.BIND_INPUT_METHOD"
