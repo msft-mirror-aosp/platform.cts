@@ -84,12 +84,12 @@ open class BasePaletteTest {
     protected val mInstrumentation: Instrumentation = getInstrumentation()
     protected val mContext: Context = mInstrumentation.targetContext
     protected val outDir: File =
-        File(Environment.getExternalStorageDirectory(), "android.graphics.cts")
+        File(Environment.getExternalStorageDirectory(), "android.systemui.cts")
 
     private val goldenPathManager by lazy {
         GoldenPathManager(
             appContext = mContext,
-            assetsPathRelativeToBuildRoot = "cts/tests/tests/graphics/assets/",
+            assetsPathRelativeToBuildRoot = "cts/tests/tests/systemui/assets/",
             deviceLocalPath = outDir.path,
             pathConfig =
                 PathConfig(
