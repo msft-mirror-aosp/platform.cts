@@ -2977,7 +2977,7 @@
         <activity android:name=".usb.accessory.UsbAccessoryTestActivity"
                 android:label="@string/usb_accessory_test"
                 android:exported="true"
-                android:configChanges="keyboardHidden|orientation|screenSize">
+                android:configChanges="keyboard|keyboardHidden|orientation|screenSize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.cts.intent.category.MANUAL_TEST" />

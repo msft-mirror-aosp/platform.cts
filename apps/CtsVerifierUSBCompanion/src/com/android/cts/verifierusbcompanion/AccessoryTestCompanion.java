@@ -17,6 +17,7 @@
 package com.android.cts.verifierusbcompanion;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -29,7 +30,10 @@ import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
+
 import androidx.annotation.NonNull;
+
+import com.android.cts.usb.AccessoryTestConstants;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -128,7 +132,7 @@ class AccessoryTestCompanion extends TestCompanion {
                 updateStatus("Running test \"" + testName + "\"");
 
                 switch (testName) {
-                    case "echo 32 bytes": {
+                    case AccessoryTestConstants.ECHO_32_BYTES: {
                         byte[] buffer = new byte[32];
 
                         int numTransferred = connection.bulkTransfer(in, buffer, 32, 0);
@@ -139,7 +143,7 @@ class AccessoryTestCompanion extends TestCompanion {
                     }
                     break;
 
-                    case "echo two 16 byte transfers as one": {
+                    case AccessoryTestConstants.ECHO_TWO_16_BYTES_AS_ONE: {
                         byte[] buffer = new byte[48];
 
                         // We receive the individual transfers even if we wait for more data
@@ -153,7 +157,7 @@ class AccessoryTestCompanion extends TestCompanion {
                     }
                     break;
 
-                    case "echo 32 bytes as two 16 byte transfers": {
+                    case AccessoryTestConstants.ECHO_32_BYTES_AS_TWO_16_BYTES: {
                         byte[] buffer = new byte[32];
 
                         int numTransferred = connection.bulkTransfer(in, buffer, 32, 0);
@@ -166,7 +170,7 @@ class AccessoryTestCompanion extends TestCompanion {
                     }
                     break;
 
-                    case "measure out transfer speed": {
+                    case AccessoryTestConstants.MEASURE_OUT_TRANSFER_SPEED: {
                         byte[] buffer = new byte[MAX_BUFFER_SIZE];
 
                         long bytesRead = 0;
@@ -188,7 +192,7 @@ class AccessoryTestCompanion extends TestCompanion {
                     }
                     break;
 
-                    case "measure in transfer speed": {
+                    case AccessoryTestConstants.MEASURE_IN_TRANSFER_SPEED: {
                         byte[] buffer = new byte[MAX_BUFFER_SIZE];
 
                         long bytesWritten = 0;
@@ -206,7 +210,7 @@ class AccessoryTestCompanion extends TestCompanion {
                     }
                     break;
 
-                    case "echo max bytes": {
+                    case AccessoryTestConstants.ECHO_MAX_BYTES: {
                         byte[] buffer = new byte[MAX_BUFFER_SIZE];
 
                         int numTransferred = connection.bulkTransfer(in, buffer, MAX_BUFFER_SIZE,
@@ -224,7 +228,7 @@ class AccessoryTestCompanion extends TestCompanion {
                     }
                     break;
 
-                    case "echo max*2 bytes": {
+                    case AccessoryTestConstants.ECHO_MAX_2_BYTES: {
                         byte[] buffer = new byte[MAX_BUFFER_SIZE * 2];
 
                         int numTransferred = connection.bulkTransfer(in, buffer, MAX_BUFFER_SIZE,
@@ -251,10 +255,69 @@ class AccessoryTestCompanion extends TestCompanion {
                     }
                     break;
 
+                    case AccessoryTestConstants.TEST_SEND_DESCRIPTOR_FULL: {
+                        assertTrue(AoapHidTestUtils.testSendDescriptorInFull(connection));
+                        byte[] buffer = new byte[1];
+                        int numTransferred = connection.bulkTransfer(out, buffer, 1, 0);
+                        assertEquals(1, numTransferred);
+                    }
+                    break;
+
+                    case AccessoryTestConstants.TEST_SEND_DESCRIPTOR_CHUNKS: {
+                        assertTrue(AoapHidTestUtils.testSendDescriptorInChunks(connection));
+                        byte[] buffer = new byte[1];
+                        int numTransferred = connection.bulkTransfer(out, buffer, 1, 0);
+                        assertEquals(1, numTransferred);
+                    }
+                    break;
+
+                    case AccessoryTestConstants.TEST_SEND_INTERLEAVED_DESCRIPTOR: {
+                        assertTrue(
+                                AoapHidTestUtils.testSendInterleavedHidDescriptors(connection));
+                        byte[] buffer = new byte[1];
+                        int numTransferred = connection.bulkTransfer(out, buffer, 1, 0);
+                        assertEquals(1, numTransferred);
+                    }
+                    break;
+
+                    case AccessoryTestConstants.TEST_UNREGISTERED_DESCRIPTOR: {
+                        assertTrue(
+                                AoapHidTestUtils.testSendDescriptorToUnregisteredHid(
+                                        connection));
+                        byte[] buffer = new byte[1];
+                        int numTransferred = connection.bulkTransfer(out, buffer, 1, 0);
+                        assertEquals(1, numTransferred);
+                    }
+                    break;
+
+                    case AccessoryTestConstants.TEST_UNREGISTERED_EVENT: {
+                        assertTrue(AoapHidTestUtils.testSendEventToUnregisteredHid(connection));
+                        byte[] buffer = new byte[1];
+                        int numTransferred = connection.bulkTransfer(out, buffer, 1, 0);
+                        assertEquals(1, numTransferred);
+                    }
+                    break;
+
+                    case AccessoryTestConstants.TEST_DESCRIPTOR_OVERFLOW: {
+                        assertTrue(AoapHidTestUtils.testSendDescriptorOverflow(connection));
+                        byte[] buffer = new byte[1];
+                        int numTransferred = connection.bulkTransfer(out, buffer, 1, 0);
+                        assertEquals(1, numTransferred);
+                    }
+                    break;
+
+                    case AccessoryTestConstants.TEST_DESCRIPTOR_INCOMPLETE: {
+                        assertTrue(AoapHidTestUtils.testSendDescriptorIncomplete(connection));
+                        byte[] buffer = new byte[1];
+                        int numTransferred = connection.bulkTransfer(out, buffer, 1, 0);
+                        assertEquals(1, numTransferred);
+                    }
+                    break;
+
                     default:
                         break;
                 }
-            } while (!testName.equals("done"));
+            } while (!testName.equals(AccessoryTestConstants.DONE));
         } finally {
             connection.close();
         }

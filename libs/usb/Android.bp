@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2016 The Android Open Source Project
+// Copyright (C) 2025 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,17 +18,12 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_test_helper_app {
-    name: "CtsVerifierUSBCompanion",
-    static_libs: [
-        "androidx.annotation_annotation",
-        "junit",
-        "cts-verifier-usb-common",
-    ],
+java_library {
+    name: "cts-verifier-usb-common",
     srcs: ["src/**/*.java"],
-    sdk_version: "25",
-    //min_sdk_version: "12",
-    dex_preopt: {
-        enabled: false,
-    },
+    sdk_version: "current",
+    visibility: [
+        "//cts/apps/CtsVerifier",
+        "//cts/apps/CtsVerifierUSBCompanion",
+    ],
 }
