@@ -17,6 +17,21 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
+java_library_host {
+    name: "GpuProfilingDataUtils",
+    defaults: ["cts_defaults"],
+
+    static_libs: [
+        "perfetto_config-full",
+        "perfetto_trace-full",
+    ],
+
+    srcs: [
+        "src/**/ClockUtils.kt",
+        "src/**/ProfilingDataUtils.kt",
+    ],
+}
+
 java_test_host {
     name: "CtsGpuProfilingDataTestCases",
     srcs: [
@@ -29,11 +44,12 @@ java_test_host {
         "general-tests",
     ],
     libs: [
+        "compatibility-host-util",
         "cts-tradefed",
         "tradefed",
-        "compatibility-host-util",
     ],
     static_libs: [
+        "GpuProfilingDataUtils",
         "hamcrest-library",
         "host-libprotobuf-java-full",
         "perfetto_config-full",
@@ -51,10 +67,11 @@ java_test_host {
 java_test_host {
     name: "GpuProfilingUtilsTestCases",
     srcs: [
-        "src/**/ClockUtils.kt",
         "src/**/ClockUtilsTest.kt",
+        "src/**/ProfilingDataUtilsTest.kt",
     ],
     static_libs: [
+        "GpuProfilingDataUtils",
         "mockito-hostside-prebuilt",
         "perfetto_config-full",
         "perfetto_trace-full",
