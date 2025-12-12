@@ -51,11 +51,16 @@ public class SubscriptionPlanTest {
     private static final int DATA_LIMIT_BEHAVIOR = SubscriptionPlan.LIMIT_BEHAVIOR_BILLED;
     private static final long DATA_USAGE_BYTES = 512;
     private static final long DATA_USAGE_TIME = 1672531200000L; // 2023-01-01 00:00:00 UTC
+
+    private static final ZonedDateTime DATA_USAGE_RESET_TIME =
+            ZonedDateTime.of(2026, 2, 1, 0, 0, 0, 0, ZoneId.of("UTC"));
+    private static final Period NON_RECURRING_DURATION = Period.ofDays(7);
     private static final int[] NETWORK_TYPES = new int[] {TelephonyManager.NETWORK_TYPE_LTE,
             TelephonyManager.NETWORK_TYPE_NR};
     private static final int SUBSCRIPTION_STATUS = SubscriptionPlan.SUBSCRIPTION_STATUS_ACTIVE;
     private static final int[] PLAN_TYPES =
             new int[] {SubscriptionPlan.PLAN_TYPE_CELLULAR, SubscriptionPlan.PLAN_TYPE_POSTPAID};
+    private static final int ID = 123;
 
     private Clock mOriginalClock;
 
@@ -81,6 +86,7 @@ public class SubscriptionPlanTest {
                         .setNetworkTypes(NETWORK_TYPES)
                         .setSubscriptionStatus(SUBSCRIPTION_STATUS)
                         .setTypes(PLAN_TYPES)
+                        .setId(ID)
                         .build();
 
         assertThat(plan).isNotNull();
@@ -96,6 +102,7 @@ public class SubscriptionPlanTest {
         assertThat(plan.getPlanEndDate()).isNull();
         assertThat(plan.getTypes()).containsExactlyElementsIn(Arrays.stream(PLAN_TYPES)
                 .boxed().collect(Collectors.toList()));
+        assertThat(plan.getId()).isEqualTo(ID);
     }
 
     @Test
@@ -132,6 +139,8 @@ public class SubscriptionPlanTest {
                         .setNetworkTypes(NETWORK_TYPES)
                         .setSubscriptionStatus(SUBSCRIPTION_STATUS)
                         .setTypes(PLAN_TYPES)
+                        .setDataUsageResetTime(DATA_USAGE_RESET_TIME)
+                        .setId(ID)
                         .build();
 
         Parcel parcel = Parcel.obtain();
@@ -140,26 +149,56 @@ public class SubscriptionPlanTest {
 
         SubscriptionPlan fromParcel = SubscriptionPlan.CREATOR.createFromParcel(parcel);
 
+        // Verify general equality and hash code
         assertThat(fromParcel).isEqualTo(plan);
         assertThat(fromParcel.hashCode()).isEqualTo(plan.hashCode());
+
+        // Verify Cycle Rule (Recurring)
+        assertThat(fromParcel.getCycleRule()).isEqualTo(plan.getCycleRule());
+
+        // Verify Basic Info
+        assertThat(fromParcel.getTitle()).isEqualTo(TITLE);
+        assertThat(fromParcel.getSummary()).isEqualTo(SUMMARY);
+
+        // Verify Data Limits and Usage
+        assertThat(fromParcel.getDataLimitBytes()).isEqualTo(DATA_LIMIT_BYTES);
+        assertThat(fromParcel.getDataLimitBehavior()).isEqualTo(DATA_LIMIT_BEHAVIOR);
+        assertThat(fromParcel.getDataUsageBytes()).isEqualTo(DATA_USAGE_BYTES);
+        assertThat(fromParcel.getDataUsageTime()).isEqualTo(DATA_USAGE_TIME);
+        assertThat(fromParcel.getDataUsageResetTime()).isEqualTo(DATA_USAGE_RESET_TIME);
+
+        // Verify Network Types
+        assertThat(fromParcel.getNetworkTypes()).isEqualTo(NETWORK_TYPES);
+
+        // Assuming the getters follow the standard naming convention based on the setters
+        assertThat(fromParcel.getSubscriptionStatus()).isEqualTo(SUBSCRIPTION_STATUS);
+        assertThat(fromParcel.getTypes()).containsExactlyElementsIn(Arrays.stream(PLAN_TYPES)
+                .boxed().collect(Collectors.toList()));
+
+        parcel.recycle();
+        assertThat(fromParcel.getId()).isEqualTo(ID);
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUBSCRIPTION_PLAN_ENHANCEMENT)
     public void testEqualsAndHashCode() {
-        SubscriptionPlan plan1 =
-                SubscriptionPlan.Builder.createRecurring(START, PERIOD).setTitle(TITLE).build();
-        SubscriptionPlan plan2 =
-                SubscriptionPlan.Builder.createRecurring(START, PERIOD).setTitle(TITLE).build();
-        SubscriptionPlan plan3 =
-                SubscriptionPlan.Builder.createRecurring(START, PERIOD)
-                        .setTitle("different")
-                        .build();
+        SubscriptionPlan plan1 = SubscriptionPlan.Builder.createRecurring(START, PERIOD)
+                .setDataUsageResetTime(DATA_USAGE_RESET_TIME)
+                .build();
+        SubscriptionPlan plan2 = SubscriptionPlan.Builder.createRecurring(START, PERIOD)
+                .setDataUsageResetTime(DATA_USAGE_RESET_TIME)
+                .build();
+        SubscriptionPlan plan3 = SubscriptionPlan.Builder.createRecurring(START, PERIOD)
+                .build();
+        SubscriptionPlan plan4 = SubscriptionPlan.Builder.createRecurring(START, PERIOD)
+                .setDataUsageResetTime(DATA_USAGE_RESET_TIME.plusDays(1))
+                .build();
 
         assertThat(plan1).isEqualTo(plan2);
         assertThat(plan1.hashCode()).isEqualTo(plan2.hashCode());
 
         assertThat(plan1).isNotEqualTo(plan3);
-        assertThat(plan1.hashCode()).isNotEqualTo(plan3.hashCode());
+        assertThat(plan1).isNotEqualTo(plan4);
     }
 
     @Test
@@ -216,5 +255,32 @@ public class SubscriptionPlanTest {
         assertThat(plan.getTypes().containsAll(Arrays.asList(
                 SubscriptionPlan.PLAN_TYPE_SATELLITE,
                 SubscriptionPlan.PLAN_TYPE_POSTPAID))).isFalse();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUBSCRIPTION_PLAN_ENHANCEMENT)
+    public void testDataUsageResetTime() {
+        SubscriptionPlan plan = SubscriptionPlan.Builder.createRecurring(START, PERIOD)
+                .setDataUsageResetTime(DATA_USAGE_RESET_TIME)
+                .build();
+        assertThat(plan.getDataUsageResetTime()).isEqualTo(DATA_USAGE_RESET_TIME);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUBSCRIPTION_PLAN_ENHANCEMENT)
+    public void testCreateNonrecurringPlan() {
+        SubscriptionPlan plan = SubscriptionPlan.Builder
+                .createNonrecurring(NON_RECURRING_DURATION)
+                .setTitle(TITLE)
+                .build();
+
+        assertThat(plan).isNotNull();
+        assertThat(plan.getTitle()).isEqualTo(TITLE);
+        assertThat(plan.getCycleRule().start).isNull();
+        assertThat(plan.getCycleRule().end).isNull();
+        assertThat(plan.getCycleRule().period).isEqualTo(NON_RECURRING_DURATION);
+        assertThat(plan.getSubscriptionStatus())
+                .isEqualTo(SubscriptionPlan.SUBSCRIPTION_STATUS_INACTIVE);
+        assertThat(plan.getDataUsageResetTime()).isNull();
     }
 }
