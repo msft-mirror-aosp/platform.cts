@@ -157,6 +157,8 @@ class JcaJpegRImageParityClassTest(its_base_test.ItsBaseTest):
       # Check if HDR is supported on JCA or not
       supports_hdr = ui_interaction_utils.jca_hdr_supported(
           self.dut, self.log_path, props['android.lens.facing'])
+      # Check if JPEG_R is supported by the device
+      supports_jpeg_r = camera_properties_utils.jpeg_r(props)
 
       # Skip the test if camera is not primary or if it is a tablet and
       # if HDR is not supported on JCA
@@ -168,7 +170,8 @@ class JcaJpegRImageParityClassTest(its_base_test.ItsBaseTest):
             first_api_level >= its_session_utils.ANDROID17_API_LEVEL or
             cam.is_backported_issue_resolved(_KNOWN_ISSUE_398591036)
           ) and
-          supports_hdr
+          supports_hdr and
+          supports_jpeg_r
       )
 
       # Ensure that the device is orthogonal and then close camera
