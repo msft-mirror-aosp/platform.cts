@@ -968,10 +968,8 @@ public class NotificationAssistantServiceTest {
                 channels.stream().anyMatch(c -> c.getId().equals(conversationChannelId)));
 
         // --- Verify the notification in the conversation channel was canceled ---
-        StatusBarNotification sbnConvoAfterDelete =
-                mHelper.findPostedNotification(
-                        null, convoNotificationId, NotificationHelper.SEARCH_TYPE.POSTED);
-        assertNull("Notification in channel should be canceled after channel deletion", sbnConvoAfterDelete);
+        assertTrue("Notification in channel should be canceled after channel deletion",
+                mHelper.isNotificationGone(convoNotificationId, NotificationHelper.SEARCH_TYPE.APP));
 
         // Verify parent channel still exists.
         assertTrue("Parent channel should still exist",
