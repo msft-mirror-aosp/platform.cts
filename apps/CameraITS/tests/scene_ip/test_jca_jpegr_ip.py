@@ -133,7 +133,6 @@ class JcaJpegRImageParityClassTest(its_base_test.ItsBaseTest):
 
       # close camera after props have been retrieved
       cam.close_camera()
-      time.sleep(_CLOSE_CAMERA_WAIT_TIME_SECONDS)
       device_id = self.dut.serial
 
       # Set up gen2 rig controllers
@@ -176,6 +175,7 @@ class JcaJpegRImageParityClassTest(its_base_test.ItsBaseTest):
         gen2_rig_controller_utils.rotate_to_orthogonal_position(
             cam, self.log_path, self.motor_port, self.motor_channel)
       cam.close_camera()
+      time.sleep(_CLOSE_CAMERA_WAIT_TIME_SECONDS)
 
       # Take HDR capture and preview snapshot on JCA
       jca_capture_path, jca_preview_path = (
