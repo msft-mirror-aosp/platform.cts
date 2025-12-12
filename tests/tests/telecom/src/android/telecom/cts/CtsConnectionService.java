@@ -63,6 +63,7 @@ public class CtsConnectionService extends ConnectionService {
 
     @Override
     public void onBindClient(Intent intent) {
+        super.onBindClient(intent);
         Log.i("TelecomCTS", "CS bound");
         onTelecomConnected(this);
     }
