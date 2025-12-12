@@ -44,6 +44,7 @@ public final class AssistUtilsHelperTest {
     private static final int TIMEOUT_MS = 20_000;
 
     private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
+
     private final Context mContext = mInstrumentation.getContext();
 
     @Before
@@ -59,6 +60,8 @@ public final class AssistUtilsHelperTest {
 
     @Test
     public void testOnShownCallback() throws Exception {
+        TestVoiceInteractionSessionListener listener = new TestVoiceInteractionSessionListener();
+        AssistUtilsHelper.registerVoiceInteractionSessionListenerHelper(mContext, listener);
         SessionShowCallbackHelperImpl callbackHelperImpl = new SessionShowCallbackHelperImpl();
         boolean isAssistantComponentAvailable = AssistUtilsHelper
                 .showPushToTalkSessionForActiveService(mContext, callbackHelperImpl);
@@ -69,7 +72,7 @@ public final class AssistUtilsHelperTest {
         assertWithMessage("Voice session shown")
                 .that(callbackHelperImpl.isSessionOnShown()).isTrue();
 
-        hideSessionAndWait();
+        hideSessionAndWait(listener);
     }
 
     @Test
@@ -80,6 +83,8 @@ public final class AssistUtilsHelperTest {
 
     @Test
     public void isSessionRunning_whenSessionIsShown_succeeds() throws Exception {
+        TestVoiceInteractionSessionListener listener = new TestVoiceInteractionSessionListener();
+        AssistUtilsHelper.registerVoiceInteractionSessionListenerHelper(mContext, listener);
         SessionShowCallbackHelperImpl callbackHelperImpl = new SessionShowCallbackHelperImpl();
         boolean isAssistantComponentAvailable = AssistUtilsHelper
                 .showPushToTalkSessionForActiveService(mContext, callbackHelperImpl);
@@ -89,13 +94,12 @@ public final class AssistUtilsHelperTest {
 
         assertWithMessage("Voice interaction session running")
                 .that(AssistUtilsHelper.isSessionRunning(mContext)).isTrue();
-
-        hideSessionAndWait();
+        hideSessionAndWait(listener);
     }
 
     @Test
     public void registerVoiceInteractionSessionListenerHelper_onShowSession() throws Exception {
-        VoiceInteractionSessionListener listener = new VoiceInteractionSessionListener();
+        TestVoiceInteractionSessionListener listener = new TestVoiceInteractionSessionListener();
         AssistUtilsHelper.registerVoiceInteractionSessionListenerHelper(mContext, listener);
 
         SessionShowCallbackHelperImpl callbackHelperImpl = new SessionShowCallbackHelperImpl();
@@ -110,38 +114,37 @@ public final class AssistUtilsHelperTest {
         assertWithMessage("Voice interaction session shown")
                 .that(listener.mIsSessionShown).isTrue();
 
-        hideSessionAndWait();
+        hideSessionAndWait(listener);
     }
 
     @Test
     public void registerVoiceInteractionSessionListenerHelper_hideCurrentSession()
             throws Exception {
-        VoiceInteractionSessionListener listener = new VoiceInteractionSessionListener();
+        TestVoiceInteractionSessionListener listener = new TestVoiceInteractionSessionListener();
         AssistUtilsHelper.registerVoiceInteractionSessionListenerHelper(mContext, listener);
-
         SessionShowCallbackHelperImpl callbackHelperImpl = new SessionShowCallbackHelperImpl();
         boolean isAssistantComponentAvailable = AssistUtilsHelper
                 .showPushToTalkSessionForActiveService(mContext, callbackHelperImpl);
         assumeTrue(isAssistantComponentAvailable);
-
         callbackHelperImpl.waitForCallback();
-
         listener.waitForSessionChange();
         listener.reset();
 
         AssistUtilsHelper.hideCurrentSession(mContext);
-        listener.waitForSessionChange();
 
-        assertWithMessage("Voice interaction session shown")
+        // TODO(b/322219972): Fix potential race condition: mIsSessionShown can be accessed
+        // simultaneously from different threads.
+        // If the session is already hidden skip wait
+        if (listener.mIsSessionShown) {
+            listener.waitForSessionChange();
+        }
+        assertWithMessage("Voice interaction session when hidden")
                 .that(listener.mIsSessionShown).isFalse();
     }
 
-    private void hideSessionAndWait() throws Exception {
-        VoiceInteractionSessionListener listener = new VoiceInteractionSessionListener();
-        AssistUtilsHelper.registerVoiceInteractionSessionListenerHelper(mContext, listener);
-
+    private void hideSessionAndWait(TestVoiceInteractionSessionListener listener) throws Exception {
         // Do nothing if no Assistant session is running.
-        if (!AssistUtilsHelper.isSessionRunning(mContext)) {
+        if (!AssistUtilsHelper.isSessionRunning(mContext) || !listener.mIsSessionShown) {
             return;
         }
 
@@ -150,7 +153,7 @@ public final class AssistUtilsHelperTest {
         listener.waitForSessionChange();
     }
 
-    private static final class VoiceInteractionSessionListener implements
+    private static final class TestVoiceInteractionSessionListener implements
             AssistUtilsHelper.VoiceInteractionSessionListenerHelper {
 
         private CountDownLatch mChangeWait = new CountDownLatch(1);
@@ -177,6 +180,7 @@ public final class AssistUtilsHelperTest {
         }
 
         private void reset() {
+            Log.d(TAG, "reset is called");
             mChangeWait = new CountDownLatch(1);
         }
     }
