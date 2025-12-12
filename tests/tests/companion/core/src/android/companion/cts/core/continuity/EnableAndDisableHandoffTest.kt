@@ -26,6 +26,7 @@ import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.nene.TestApis
 import com.android.xts.root.annotations.RequireAdbRoot
 import kotlin.test.assertFailsWith
@@ -33,6 +34,7 @@ import kotlin.time.Duration.Companion.seconds
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -49,6 +51,13 @@ import org.junit.runner.RunWith
 class EnableAndDisableHandoffTest : CoreTestBase() {
 
     @get:Rule val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+
+    companion object {
+        @JvmField
+        @ClassRule
+        @Rule
+        val deviceState = DeviceState()
+    }
 
     @Test
     fun testSetHandoffForDeviceEnabled_requiresPermission() {
