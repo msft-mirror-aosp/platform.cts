@@ -16,6 +16,8 @@
 
 package android.mediav2.cts;
 
+import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ANY;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertFalse;
@@ -281,6 +283,10 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
     @Before
     public void setUp() throws IOException {
         mActiveEncCfg = mEncCfgParams[0];
+        MediaFormat format = mActiveEncCfg.getFormat();
+        ArrayList<MediaFormat> formatList = new ArrayList<>();
+        formatList.add(format);
+        checkFormatSupport(mCodecName, mMediaType, true, formatList, null, CODEC_ANY);
         mActiveRawRes = EncoderInput.getRawResource(mActiveEncCfg);
         assertNotNull("no raw resource found for testing config : " + mActiveEncCfg + mTestConfig
                 + mTestEnv, mActiveRawRes);
@@ -433,7 +439,10 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
     @LargeTest
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
     public void testReconfigure() throws IOException, InterruptedException {
-
+        ArrayList<MediaFormat> formatList = new ArrayList<>();
+        formatList.add(mEncCfgParams[0].getFormat());
+        formatList.add(mEncCfgParams[1].getFormat());
+        checkFormatSupport(mCodecName, mMediaType, true, formatList, null, CODEC_ANY);
         boolean[] boolStates = {true, false};
         {
             boolean saveToMem = false; /* TODO(b/149027258) */
