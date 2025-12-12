@@ -17,6 +17,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.android.cts.pcc.processes">
 
+    <permission android:name="com.android.cts.pcc.PCC_ALLOWED_PERMISSION"
+                android:permissionFlags="allowedInPrivateComputeCore" />
+    <permission android:name="com.android.cts.pcc.PCC_DENIED_PERMISSION" />
+
+    <uses-permission android:name="com.android.cts.pcc.PCC_ALLOWED_PERMISSION"/>
+    <uses-permission android:name="com.android.cts.pcc.PCC_DENIED_PERMISSION"/>
+
     <application>
         <uses-library android:name="android.test.runner" />
         <activity android:name=".BaseActivity$NonPccActivity" android:exported="false" />
