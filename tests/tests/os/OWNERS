@@ -19,3 +19,5 @@ per-file IntentLaunchActivity.java = mpgroover@google.com
 # Bug component: 25692
 include platform/frameworks/base:/OWNERS
 include platform/frameworks/base:/core/java/android/os/OWNERS
+
+per-file *Looper* = file:/platform/frameworks/base:/MESSAGE_QUEUE_OWNERS
