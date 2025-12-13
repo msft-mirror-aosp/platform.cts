@@ -3,5 +3,10 @@
     {
       "name": "CtsCarTestCases"
     }
+  ],
+  "auto-presubmit-all-ui-targets": [
+    {
+      "name": "CtsCarTestCases"
+    }
   ]
 }

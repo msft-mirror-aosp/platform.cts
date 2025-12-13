@@ -442,11 +442,26 @@ def y8(props):
     props: Camera properties object.
 
   Returns:
-     Boolean. True if device suupports Y8 output.
+     Boolean. True if device supports Y8 output.
   """
   if capture_request_utils.get_available_output_sizes('y8', props):
     return True
   return False
+
+
+def jpeg_r(props):
+  """Returns whether a device supports JPEG_R output.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+     Boolean. True if device supports JPEG_R output.
+  """
+  if capture_request_utils.get_available_output_sizes('jpeg_r', props):
+    return True
+  return False
+
 
 
 def jpeg_quality(props):
