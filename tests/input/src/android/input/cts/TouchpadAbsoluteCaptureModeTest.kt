@@ -26,7 +26,7 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
-import com.android.compatibility.common.util.PollingCheck
+import com.android.compatibility.common.util.WindowUtil
 import com.android.cts.input.BlockingQueueEventVerifier
 import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_LEFT
 import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_RIGHT
@@ -80,7 +80,7 @@ class TouchpadAbsoluteCaptureModeTest {
         touchpad = UinputTouchPad(InstrumentationRegistry.getInstrumentation(), activity.display)
         verifier = activity.verifier
 
-        PollingCheck.waitFor { activity.hasWindowFocus() }
+        WindowUtil.waitForFocus(activity)
         activity.ensurePointerCaptured(View.POINTER_CAPTURE_MODE_ABSOLUTE)
         // TODO(b/411389468): enable InputVerifier to check the captured pointer events produced.
     }

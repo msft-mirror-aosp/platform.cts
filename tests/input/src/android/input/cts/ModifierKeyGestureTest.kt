@@ -22,7 +22,7 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
-import com.android.compatibility.common.util.PollingCheck
+import com.android.compatibility.common.util.WindowUtil
 import com.android.cts.input.BlockingQueueEventVerifier
 import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_LEFTALT
@@ -64,7 +64,7 @@ class ModifierKeyGestureTest {
             verifier = activity.verifier
         }
         inputManager.resetLockedModifierState()
-        PollingCheck.waitFor { activity.hasWindowFocus() }
+        WindowUtil.waitForFocus(activity)
     }
 
     @After

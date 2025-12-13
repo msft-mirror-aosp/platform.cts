@@ -23,6 +23,7 @@ android_test_helper_app {
     static_libs: [
         "androidx.annotation_annotation",
         "junit",
+        "cts-verifier-usb-common",
     ],
     srcs: ["src/**/*.java"],
     sdk_version: "25",

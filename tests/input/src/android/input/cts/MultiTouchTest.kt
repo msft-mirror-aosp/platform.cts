@@ -25,8 +25,8 @@ import android.view.MotionEvent
 import android.view.View
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
-import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.UserHelper
+import com.android.compatibility.common.util.WindowUtil
 import com.android.cts.input.BlockingQueueEventVerifier
 import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.inputeventmatchers.withCoords
@@ -68,7 +68,7 @@ class MultiTouchTest {
 
         activity = instrumentation.startActivitySync(intent, bundle) as CaptureEventActivity
 
-        PollingCheck.waitFor { activity.hasWindowFocus() }
+        WindowUtil.waitForFocus(activity)
         verifier = activity.verifier
 
         val wmState = WindowManagerStateHelper()

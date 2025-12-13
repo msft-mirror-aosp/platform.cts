@@ -87,8 +87,8 @@ public class AudioDataPathsSpeakerMicActivity extends AudioDataPathsBaseActivity
                     AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
             testModule.setSectionTitle("Mono");
             testModule.setSources(sinSourceProvider, micSinkProvider);
-            testModule.setInputPreset(Recorder.INPUT_PRESET_NONE);
-            testModule.setDescription("Spkr:1 Mic:1:PRESET_NONE");
+            testModule.setInputPreset(Recorder.INPUT_PRESET_VOICERECOGNITION);
+            testModule.setDescription("Spkr:1 Mic:1:PRESET_VOICERECOGNITION");
             testManager.addTestModule(testModule);
 
             if (forceFailure) {
@@ -97,8 +97,8 @@ public class AudioDataPathsSpeakerMicActivity extends AudioDataPathsBaseActivity
                         AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 48000, 1,
                         AudioDeviceInfo.TYPE_BUILTIN_MIC, 42, 1);
                 testModule.setSources(sinSourceProvider, micSinkProvider);
-                testModule.setInputPreset(Recorder.INPUT_PRESET_NONE);
-                testModule.setDescription("Spkr:1 Mic:1:PRESET_NONE");
+                testModule.setInputPreset(Recorder.INPUT_PRESET_VOICERECOGNITION);
+                testModule.setDescription("Spkr:1 Mic:1:PRESET_VOICERECOGNITION");
                 testManager.addTestModule(testModule);
             }
         }
@@ -114,13 +114,16 @@ public class AudioDataPathsSpeakerMicActivity extends AudioDataPathsBaseActivity
             testModule.setDescription("Spkr:1 Mic:1:PRESET_UNPROCESSED");
             testManager.addTestModule(testModule);
 
-            testModule = new TestModule(
-                    AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 48000, 1,
-                    AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
-            testModule.setSources(sinSourceProvider, micSinkProvider);
-            testModule.setInputPreset(Recorder.INPUT_PRESET_VOICERECOGNITION);
-            testModule.setDescription("Spkr:1 Mic:1:PRESET_VOICERECOGNITION");
-            testManager.addTestModule(testModule);
+            // Ensure VOICERECOGNITION is tested even if mono test is disabled.
+            if (!doMono) {
+                testModule = new TestModule(
+                        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 48000, 1,
+                        AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
+                testModule.setSources(sinSourceProvider, micSinkProvider);
+                testModule.setInputPreset(Recorder.INPUT_PRESET_VOICERECOGNITION);
+                testModule.setDescription("Spkr:1 Mic:1:PRESET_VOICERECOGNITION");
+                testManager.addTestModule(testModule);
+            }
         }
 
         // - Stereo, channels individually
@@ -130,6 +133,7 @@ public class AudioDataPathsSpeakerMicActivity extends AudioDataPathsBaseActivity
                     AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
             testModule.setSectionTitle("Stereo");
             testModule.setSources(leftSineSourceProvider, micSinkProvider);
+            testModule.setInputPreset(Recorder.INPUT_PRESET_VOICERECOGNITION);
             testModule.setDescription("Spkr:2:Left Mic:1");
             testManager.addTestModule(testModule);
 
@@ -137,6 +141,7 @@ public class AudioDataPathsSpeakerMicActivity extends AudioDataPathsBaseActivity
                     AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 48000, 2,
                     AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
             testModule.setSources(rightSineSourceProvider, micSinkProvider);
+            testModule.setInputPreset(Recorder.INPUT_PRESET_VOICERECOGNITION);
             testModule.setDescription("Spkr:2:Right Mic:1");
             testManager.addTestModule(testModule);
         }
@@ -150,6 +155,7 @@ public class AudioDataPathsSpeakerMicActivity extends AudioDataPathsBaseActivity
                     AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
             testModule.setSectionTitle("Sample Rates");
             testModule.setSources(sinSourceProvider, micSinkProvider);
+            testModule.setInputPreset(Recorder.INPUT_PRESET_VOICERECOGNITION);
             testModule.setDescription("Spkr:2:11025 Mic:1:48000");
             testManager.addTestModule(testModule);
 
@@ -157,6 +163,7 @@ public class AudioDataPathsSpeakerMicActivity extends AudioDataPathsBaseActivity
                     AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 48000, 2,
                     AudioDeviceInfo.TYPE_BUILTIN_MIC, 44100, 1);
             testModule.setSources(sinSourceProvider, micSinkProvider);
+            testModule.setInputPreset(Recorder.INPUT_PRESET_VOICERECOGNITION);
             testModule.setDescription("Spkr:2:48000 Mic:1:44100");
             testManager.addTestModule(testModule);
 
@@ -164,6 +171,7 @@ public class AudioDataPathsSpeakerMicActivity extends AudioDataPathsBaseActivity
                     AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 44100, 2,
                     AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
             testModule.setSources(sinSourceProvider, micSinkProvider);
+            testModule.setInputPreset(Recorder.INPUT_PRESET_VOICERECOGNITION);
             testModule.setDescription("Spkr:2:44100 Mic:1:48000");
             testManager.addTestModule(testModule);
 
@@ -171,6 +179,7 @@ public class AudioDataPathsSpeakerMicActivity extends AudioDataPathsBaseActivity
                     AudioDeviceInfo.TYPE_BUILTIN_SPEAKER, 96000, 2,
                     AudioDeviceInfo.TYPE_BUILTIN_MIC, 48000, 1);
             testModule.setSources(sinSourceProvider, micSinkProvider);
+            testModule.setInputPreset(Recorder.INPUT_PRESET_VOICERECOGNITION);
             testModule.setDescription("Spkr:2:96000 Mic:1:48000");
             testManager.addTestModule(testModule);
         }
@@ -184,6 +193,7 @@ public class AudioDataPathsSpeakerMicActivity extends AudioDataPathsBaseActivity
                     AudioDeviceInfo.TYPE_BUILTIN_MIC, speakerSafeSampleRate, 1);
             testModule.setSectionTitle("Speaker Safe");
             testModule.setSources(leftSineSourceProvider, micSinkProvider);
+            testModule.setInputPreset(Recorder.INPUT_PRESET_VOICERECOGNITION);
             testModule.setDescription("SpeakerSafe:2:Left Mic:1");
             testManager.addTestModule(testModule);
 
@@ -192,6 +202,7 @@ public class AudioDataPathsSpeakerMicActivity extends AudioDataPathsBaseActivity
                     AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE, speakerSafeSampleRate, 2,
                     AudioDeviceInfo.TYPE_BUILTIN_MIC, speakerSafeSampleRate, 1);
             testModule.setSources(rightSineSourceProvider, micSinkProvider);
+            testModule.setInputPreset(Recorder.INPUT_PRESET_VOICERECOGNITION);
             testModule.setDescription("SpeakerSafe:2:Right Mic:1");
             testManager.addTestModule(testModule);
         }

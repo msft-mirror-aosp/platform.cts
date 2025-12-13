@@ -1713,6 +1713,7 @@
 
     <!-- Strings for USB accessory test activity -->
     <string name="usb_accessory_test">USB Accessory Test</string>
+    <string name="usb_accessory_test_input_text">Do not type or touch the screen during test</string>
     <string name="usb_accessory_test_info">
         1. Install the Cts Verifier USB Companion app on a separate helper device.
         \n\n2. Start the accessory test companion in the Cts Verifier USB Companion.

@@ -28,6 +28,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.ThrowingSupplier
+import com.android.compatibility.common.util.WindowUtil
 import com.android.cts.input.BlockingQueueEventVerifier
 import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_EAST
@@ -83,7 +84,7 @@ class ControllerButtonRemappingTest {
             verifier = activity.verifier
         }
         inputManager.resetLockedModifierState()
-        PollingCheck.waitFor { activity.hasWindowFocus() }
+        WindowUtil.waitForFocus(activity)
     }
 
     @Test

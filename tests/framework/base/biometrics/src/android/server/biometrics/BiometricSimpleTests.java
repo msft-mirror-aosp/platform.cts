@@ -423,11 +423,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
                 "android.hardware.biometrics.BiometricPrompt.Builder#setAllowedAuthenticators",
                 "android.hardware.biometrics.BiometricPrompt#authenticate",
             })
-    @RequiresFlagsEnabled({
-        Flags.FLAG_IDENTITY_CHECK_API,
-        Flags.FLAG_IDENTITY_CHECK_TEST_API,
-        Flags.FLAG_BP_FALLBACK_OPTIONS
-    })
+    @RequiresFlagsEnabled({Flags.FLAG_IDENTITY_CHECK_API, Flags.FLAG_IDENTITY_CHECK_TEST_API})
     @Test
     public void
             testBiometricAuth_identityCheckAndDeviceCredential_identityCheckActive_negativeButtonClicked()
@@ -588,8 +584,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
     @RequiresFlagsEnabled({
         Flags.FLAG_IDENTITY_CHECK_API,
         Flags.FLAG_IDENTITY_CHECK_TEST_API,
-        Flags.FLAG_IDENTITY_CHECK_ALL_SURFACES,
-        Flags.FLAG_BP_FALLBACK_OPTIONS
+        Flags.FLAG_IDENTITY_CHECK_ALL_SURFACES
     })
     @Test
     public void testBiometricAuth_biometricWeakAndDeviceCredential_identityCheckActive()
@@ -635,8 +630,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
     @RequiresFlagsEnabled({
         Flags.FLAG_IDENTITY_CHECK_API,
         Flags.FLAG_IDENTITY_CHECK_TEST_API,
-        Flags.FLAG_IDENTITY_CHECK_ALL_SURFACES,
-        Flags.FLAG_BP_FALLBACK_OPTIONS
+        Flags.FLAG_IDENTITY_CHECK_ALL_SURFACES
     })
     @Test
     public void testBiometricAuth_biometricStrongAndDeviceCredential_identityCheckActive()
@@ -678,8 +672,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
     @RequiresFlagsEnabled({
         Flags.FLAG_IDENTITY_CHECK_API,
         Flags.FLAG_IDENTITY_CHECK_TEST_API,
-        Flags.FLAG_IDENTITY_CHECK_ALL_SURFACES,
-        Flags.FLAG_BP_FALLBACK_OPTIONS
+        Flags.FLAG_IDENTITY_CHECK_ALL_SURFACES
     })
     @Test
     public void testBiometricAuth_deviceCredential_identityCheckActive() throws Exception {

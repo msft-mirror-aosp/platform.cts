@@ -45,7 +45,8 @@ public class CVE_2023_21256 extends NonRootSecurityTestCase {
             final String testPkg = "android.security.cts.CVE_2023_21256";
             device = getDevice();
 
-            assumeTrue(device.isMultiUserSupported());
+            assumeTrue("Test requires managed profiles",
+                    device.getMaxNumberOfUsersSupported("android.os.usertype.profile.MANAGED") > 0);
 
             AdbUtils.runCommandLine(
                     "pm create-user --profileOf 0 --managed CVE_2023_21256_work_user", device);

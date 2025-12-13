@@ -62,10 +62,8 @@ abstract public class BaseShortcutManagerHostTest extends BaseHostJUnit4Test {
             CLog.w("Managed users not supporeted");
         }
 
-        if (mIsMultiuserSupported) {
-            mInitialUserId = getDevice().getCurrentUser();
-            mOriginalUsers = new ArrayList<>(getDevice().listUsers());
-        }
+        mInitialUserId = getDevice().getCurrentUser();
+        mOriginalUsers = new ArrayList<>(getDevice().listUsers());
     }
 
     @After
@@ -130,9 +128,6 @@ abstract public class BaseShortcutManagerHostTest extends BaseHostJUnit4Test {
     }
 
     private void removeTestUsers() throws Exception {
-        if (!mIsMultiuserSupported) {
-            return;
-        }
         getDevice().switchUser(mInitialUserId);
         for (int userId : getDevice().listUsers()) {
             if (!mOriginalUsers.contains(userId)) {

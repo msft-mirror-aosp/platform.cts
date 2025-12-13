@@ -487,41 +487,6 @@ public class MultiWindowTests extends ActivityManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_DESKTOP_WINDOWING_ENTERPRISE_BUGFIX)
-    public void testDisallowReparentOperationWhenInLockedTask() {
-        launchActivity(TEST_ACTIVITY, WINDOWING_MODE_FULLSCREEN);
-        launchActivity(LAUNCHING_ACTIVITY, WINDOWING_MODE_MULTI_WINDOW);
-        final int fullscreenTaskId = getTopFullscreenTaskId();
-        final int rootTaskId =
-                mWmState.getStandardRootTaskByWindowingMode(WINDOWING_MODE_MULTI_WINDOW)
-                        .getTopTask()
-                        .getTaskId();
-
-        // Lock the task
-        try (SystemLockTaskModeSession ignored = new SystemLockTaskModeSession(fullscreenTaskId)) {
-            // Fetch tokens of testing task and multi-window root.
-            final WindowContainerToken multiWindowRoot = getTaskInfo(rootTaskId).getToken();
-            final WindowContainerToken testChild = getTaskInfo(fullscreenTaskId).getToken();
-
-            final WindowContainerTransaction wct = new WindowContainerTransaction();
-            wct.reparent(testChild, multiWindowRoot, true /* onTop */);
-            runWithShellPermission(() -> mTaskOrganizer.applyTransaction(wct));
-
-            // Verify performing reparent operation is no operation.
-            assertThrows(
-                    "Not allowed to perform hierarchy operation while in locked task mode.",
-                    AssertionError.class,
-                    () ->
-                            waitForOrFail(
-                                    "Fail to reparent",
-                                    () ->
-                                            getTaskInfo(fullscreenTaskId).getParentTaskId()
-                                                    == rootTaskId));
-        }
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DESKTOP_WINDOWING_ENTERPRISE_BUGFIX)
     public void testDisallowReparentOperationToLeafTask() {
         launchActivity(TEST_ACTIVITY, WINDOWING_MODE_FULLSCREEN);
         launchActivity(LAUNCHING_ACTIVITY, WINDOWING_MODE_MULTI_WINDOW);

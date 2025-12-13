@@ -30,9 +30,11 @@ import android.hardware.radio.network.IRadioNetwork;
 import android.hardware.radio.network.IRadioNetworkIndication;
 import android.hardware.radio.network.IRadioNetworkResponse;
 import android.hardware.radio.network.NetworkScanRequest;
+import android.hardware.radio.network.NetworkSecurityEvent;
+import android.hardware.radio.network.PrioritizedNetworkScanRequest;
 import android.hardware.radio.network.RadioAccessSpecifier;
 import android.hardware.radio.network.RegState;
-import android.hardware.radio.network.NetworkSecurityEvent;
+import android.hardware.radio.network.SatelliteNetworkInfo;
 import android.hardware.radio.network.SecurityAlgorithmUpdate;
 import android.hardware.radio.network.SignalThresholdInfo;
 import android.hardware.radio.sim.CardStatus;
@@ -47,9 +49,7 @@ import android.util.SparseArray;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class IRadioNetworkImpl extends IRadioNetwork.Stub {
     private static final String TAG = "MRNW";
@@ -82,7 +82,6 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
     private String[] mCarrierPlmnArray = new String[0];
     private String[] mAllSatellitePlmnArray = new String[0];
     private boolean mIsSatelliteEnabledForCarrier = false;
-    private final AtomicBoolean mIsNonTerrestrialNetwork = new AtomicBoolean(false);
     private int[] mAlertCategories = new int[0];
 
     public IRadioNetworkImpl(
@@ -480,11 +479,6 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
         // TODO: support accessTechnologySpecificInfo
         dataRegResponse.accessTechnologySpecificInfo =
                 android.hardware.radio.network.AccessTechnologySpecificInfo.noinit(true);
-        try {
-            dataRegResponse.isNonTerrestrialNetwork = mIsNonTerrestrialNetwork.get();
-        } catch (NoSuchFieldError e) {
-            Log.e(mTag, "Failed to set isNonTerrestrialNetwork" + e);
-        }
 
         RadioResponseInfo rsp = mService.makeSolRsp(serial);
         try {
@@ -761,19 +755,6 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
         } catch (RemoteException ex) {
             Log.e(mTag, "Failed to setLocationUpdates from AIDL. Exception" + ex);
         }
-    }
-
-    /**
-     * Sets the mock Non-Terrestrial Network (NTN) registration status. This method is called from
-     * MockModemManager to simulate whether the device is currently registered on an NTN.
-     *
-     * @param isNtn true if the network is to be considered NTN, false otherwise.
-     */
-    public void setIsNonTerrestrialNetwork(boolean isNtn) {
-        mIsNonTerrestrialNetwork.set(isNtn);
-        Log.d(mTag, "setIsNonTerrestrialNetwork: " + mIsNonTerrestrialNetwork);
-        // Notify the framework about the potential network state change.
-        unsolNetworkStateChanged();
     }
 
     @Override
@@ -1168,6 +1149,41 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
                     rsp, mIsSatelliteEnabledForCarrier);
         } catch (RemoteException ex) {
             Log.e(TAG, "Failed to isSatelliteEnabledForCarrier from AIDL. Exception " + ex);
+        }
+    }
+
+    @Override
+    public void setSatelliteNetworkInfo(int serial, SatelliteNetworkInfo satelliteNetworkInfo)
+            throws RemoteException {
+        Log.d(TAG, "setSatelliteNetworkInfo");
+        RadioResponseInfo rsp = mService.makeSolRsp(serial);
+        try {
+            mRadioNetworkResponse.setSatelliteNetworkInfoResponse(rsp);
+        } catch (RemoteException ex) {
+            Log.e(TAG, "Failed to setSatelliteNetworkInfo from AIDL. Exception " + ex);
+        }
+    }
+
+    @Override
+    public void enablePrioritizedNetworkScan(int serial, PrioritizedNetworkScanRequest scanRequest)
+            throws RemoteException {
+        Log.d(TAG, "enablePrioritizedNetworkScan");
+        RadioResponseInfo rsp = mService.makeSolRsp(serial);
+        try {
+            mRadioNetworkResponse.enablePrioritizedNetworkScanResponse(rsp);
+        } catch (RemoteException ex) {
+            Log.e(TAG, "Failed to enablePrioritizedNetworkScan from AIDL. Exception " + ex);
+        }
+    }
+
+    @Override
+    public void disablePrioritizedNetworkScan(int serial) throws RemoteException {
+        Log.d(TAG, "disablePrioritizedNetworkScan");
+        RadioResponseInfo rsp = mService.makeSolRsp(serial);
+        try {
+            mRadioNetworkResponse.disablePrioritizedNetworkScanResponse(rsp);
+        } catch (RemoteException ex) {
+            Log.e(TAG, "Failed to disablePrioritizedNetworkScan from AIDL. Exception " + ex);
         }
     }
 
