@@ -142,7 +142,7 @@ public class CtsSharesheetTapToShareServiceTest {
     }
 
     @Test
-    public void testDoTapToShare_shouldTriggerOnDeviceTapped() throws Exception {
+    public void testPerformTapToShare_shouldTriggerOnDeviceTapped() throws Exception {
         final CountDownLatch listenerLatch = new CountDownLatch(1);
         TapToShareClient.SessionListener listener = new TapToShareClient.SessionListener() {
             @Override
@@ -163,7 +163,7 @@ public class CtsSharesheetTapToShareServiceTest {
 
             assertTrue("onSessionStart timeout", service.awaitSessionStart(TIMEOUT_MS));
 
-            service.doTapToShare();
+            service.performTapToShare();
 
             assertTrue("Listener not notified in time",
                     listenerLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS));
