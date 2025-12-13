@@ -75,29 +75,4 @@
         <display_name_string_res>10</display_name_string_res>
         <restrict_callers_with_execute_app_functions>true</restrict_callers_with_execute_app_functions>
     </appfunction>
-    <appfunction>
-        <function_id>contextConcatStrings</function_id>
-        <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
-        <enabled_by_default>false</enabled_by_default>
-    </appfunction>
-    <appfunction>
-        <function_id>contextOutputInvalidArgument</function_id>
-        <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
-        <enabled_by_default>false</enabled_by_default>
-    </appfunction>
-    <appfunction>
-        <function_id>contextThrowUnknownException</function_id>
-        <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
-        <enabled_by_default>false</enabled_by_default>
-    </appfunction>
-    <appfunction>
-        <function_id>contextThrowInvalidArgumentException</function_id>
-        <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
-        <enabled_by_default>false</enabled_by_default>
-    </appfunction>
-    <appfunction>
-        <function_id>contextStopProcess</function_id>
-        <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
-        <enabled_by_default>false</enabled_by_default>
-    </appfunction>
 </appfunctions>

@@ -36,15 +36,33 @@ class AppFunctionMetadataTestHelper {
             AppFunctionName(TEST_HELPER_DYNAMIC_SCHEMA_PKG, "appFunctionDisabledByDefault_noSchema")
         val HIGH_SCHEMA_VERSION =
             AppFunctionName(TEST_HELPER_DYNAMIC_SCHEMA_PKG, "appFunctionWithHighSchemaVersion")
+
+        val DYNAMIC_CONCAT_STRINGS =
+            AppFunctionName(TEST_HELPER_DYNAMIC_SCHEMA_PKG, "contextConcatStrings")
+
+        val DYNAMIC_LONG_RUNNING =
+            AppFunctionName(TEST_HELPER_DYNAMIC_SCHEMA_PKG, "contextLongRunning")
+
+        val DYNAMIC_OUTPUT_INVALID_ARGUMENT =
+            AppFunctionName(TEST_HELPER_DYNAMIC_SCHEMA_PKG, "contextOutputInvalidArgument")
+
+        val DYNAMIC_THROW_UNKNOWN_EXCEPTION =
+            AppFunctionName(TEST_HELPER_DYNAMIC_SCHEMA_PKG, "contextThrowUnknownException")
+
+        val DYNAMIC_THROW_INVALID_ARGUMENT =
+            AppFunctionName(TEST_HELPER_DYNAMIC_SCHEMA_PKG, "contextThrowInvalidArgument")
+
+        val DYNAMIC_STOP_PROCESS =
+            AppFunctionName(TEST_HELPER_DYNAMIC_SCHEMA_PKG, "contextStopProcess")
         val SAME_PACKAGE_THROW_EXCEPTION = AppFunctionName(CURRENT_PKG, "throwException")
         val SAME_PACKAGE_UNCAUGHT_CLIENT_EXCEPTION =
             AppFunctionName(CURRENT_PKG, "uncaughtClientException")
         val SAME_PACKAGE_ADD_INVOKE_CALLBACK_TWICE =
             AppFunctionName(CURRENT_PKG, "add_invokeCallbackTwice")
-        val SAME_PACKAGE_CONTEXT_LONG_RUNNING = AppFunctionName(CURRENT_PKG, "contextLongRunning")
+        val SAME_PACKAGE_DYNAMIC_LONG_RUNNING = AppFunctionName(CURRENT_PKG, "contextLongRunning")
         val SAME_PACKAGE_ADD_ASYNC = AppFunctionName(CURRENT_PKG, "addAsync")
         val SAME_PACKAGE_NOT_INVOKE_CALLBACK = AppFunctionName(CURRENT_PKG, "notInvokeCallback")
-        val SAME_PACKAGE_CONTEXT_CONCAT_STRINGS =
+        val SAME_PACKAGE_DYNAMIC_CONCAT_STRINGS =
             AppFunctionName(CURRENT_PKG, "contextConcatStrings")
         val SAME_PACKAGE_RUN_FOREVER = AppFunctionName(CURRENT_PKG, "runForever")
         val SAME_PACKAGE_ADD = AppFunctionName(CURRENT_PKG, "add")
@@ -54,6 +72,24 @@ class AppFunctionMetadataTestHelper {
         val SAME_PACKAGE_KILL = AppFunctionName(CURRENT_PKG, "kill")
         val SAME_PACKAGE_LONG_RUNNING_FUNCTION = AppFunctionName(CURRENT_PKG, "longRunningFunction")
         val SAME_PACKAGE_NO_SCHEMA = AppFunctionName(CURRENT_PKG, "noSchema")
+
+        val HELPER_PACKAGE_APP_LEVEL_FUNCTIONS: Set<AppFunctionName> = setOf(
+            DYNAMIC_CONCAT_STRINGS,
+            DYNAMIC_LONG_RUNNING,
+            DYNAMIC_OUTPUT_INVALID_ARGUMENT,
+            DYNAMIC_THROW_UNKNOWN_EXCEPTION,
+            DYNAMIC_THROW_INVALID_ARGUMENT,
+            DYNAMIC_STOP_PROCESS,
+        )
+
+        val HELPER_PACKAGE_SERVICE_LEVEL_FUNCTIONS: Set<AppFunctionName> = setOf(
+            HIGH_SCHEMA_VERSION,
+            ENABLED_BY_DEFAULT,
+            DISABLED_BY_DEFAULT
+        )
+
+        val HELPER_PACKAGE_FUNCTIONS = HELPER_PACKAGE_APP_LEVEL_FUNCTIONS +
+                HELPER_PACKAGE_SERVICE_LEVEL_FUNCTIONS
     }
 
     object PackageMetadata {

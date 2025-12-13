@@ -33,13 +33,6 @@
                 <action android:name="android.app.appfunctions.AppFunctionService"/>
             </intent-filter>
         </service>
-        <service android:name="android.app.appfunctions.testutils.TestAppFunctionRegistrationService"
-            android:exported="true"
-            android:process=":appfunctions_callback">
-            <intent-filter>
-                <action android:name="android.app.appfunctions.helper.AppFunctionCallbackService"/>
-            </intent-filter>
-        </service>
         <receiver
             android:name="android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver"
             android:exported="false"/>

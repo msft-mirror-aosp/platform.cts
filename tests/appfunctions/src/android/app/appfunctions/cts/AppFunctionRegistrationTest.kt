@@ -22,6 +22,7 @@ import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.AppFunctionRegistration
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
+import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.Companion.TEST_HELPER_DYNAMIC_SCHEMA_PKG
 import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunctionAndWait
 import android.app.appfunctions.testutils.ConcatStrings
 import android.app.appfunctions.testutils.ConcatStrings.Companion.CONCAT_STRINGS_FUNCTION_ID
@@ -242,7 +243,7 @@ class AppFunctionRegistrationTest {
         service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())
 
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-            val request = createConcatStringsRequest(targetPackage = TEST_HELPER_PKG)
+            val request = createConcatStringsRequest(targetPackage = TEST_HELPER_DYNAMIC_SCHEMA_PKG)
 
             val response = executeAppFunctionAndWait(manager, request)
             assertConcatStringsResponseCorrect(response)
@@ -258,7 +259,7 @@ class AppFunctionRegistrationTest {
         service.registerAppFunction(FunctionType.OUTPUT_INVALID_ARGUMENT_EXCEPTION.toString())
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val request = ExecuteAppFunctionRequest.Builder(
-                TEST_HELPER_PKG,
+                TEST_HELPER_DYNAMIC_SCHEMA_PKG,
                 OUTPUT_INVALID_ARGUMENT_EXCEPTION_FUNCTION_ID
             )
                 .build()
@@ -282,7 +283,7 @@ class AppFunctionRegistrationTest {
         val service = bindToRegistrationService(false)
         service.registerAppFunction(FunctionType.THROW_UNKNOWN_EXCEPTION.toString())
         val request = ExecuteAppFunctionRequest.Builder(
-            TEST_HELPER_PKG,
+            TEST_HELPER_DYNAMIC_SCHEMA_PKG,
             THROW_UNKNOWN_EXCEPTION_FUNCTION_ID
         )
             .build()
@@ -308,7 +309,7 @@ class AppFunctionRegistrationTest {
         val service = bindToRegistrationService(false)
         service.registerAppFunction(FunctionType.THROW_INVALID_ARGUMENT_EXCEPTION.toString())
         val request = ExecuteAppFunctionRequest.Builder(
-            TEST_HELPER_PKG,
+            TEST_HELPER_DYNAMIC_SCHEMA_PKG,
             THROW_INVALID_ARGUMENT_FUNCTION_ID
         )
             .build()
@@ -420,9 +421,9 @@ class AppFunctionRegistrationTest {
         service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())
 
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-            val request = createConcatStringsRequest(targetPackage = TEST_HELPER_PKG)
+            val request = createConcatStringsRequest(targetPackage = TEST_HELPER_DYNAMIC_SCHEMA_PKG)
             serviceTestRule.unbindService()
-            ShellCommand.builder("am force-stop $TEST_HELPER_PKG").execute()
+            ShellCommand.builder("am force-stop $TEST_HELPER_DYNAMIC_SCHEMA_PKG").execute()
 
             val response = executeAppFunctionAndWait(manager, request)
 
@@ -443,7 +444,7 @@ class AppFunctionRegistrationTest {
 
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val request = ExecuteAppFunctionRequest.Builder(
-                TEST_HELPER_PKG,
+                TEST_HELPER_DYNAMIC_SCHEMA_PKG,
                 STOP_PROCESS_FUNCTION_ID
             )
                 .build()
@@ -509,7 +510,7 @@ class AppFunctionRegistrationTest {
         } else {
             Intent().apply {
                 component = ComponentName(
-                    TEST_HELPER_PKG,
+                    TEST_HELPER_DYNAMIC_SCHEMA_PKG,
                     "android.app.appfunctions.testutils.TestAppFunctionRegistrationService"
                 )
             }
@@ -549,7 +550,6 @@ class AppFunctionRegistrationTest {
 
     private companion object {
         @JvmField @ClassRule @Rule val sDeviceState: DeviceState = DeviceState()
-        const val TEST_HELPER_PKG: String = "android.app.appfunctions.cts.helper"
         const val CURRENT_PKG: String = "android.app.appfunctions.cts"
         const val SHORT_TIMEOUT_SECOND: Long = 2
         const val LONG_TIMEOUT_SECOND: Long = 20
