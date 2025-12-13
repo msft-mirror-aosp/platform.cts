@@ -57,6 +57,24 @@ public class NdkBinderTest {
             InstrumentationRegistry.getTargetContext(), NativeService.RemoteOld.class)
         .get().asBinder();
     }
+    static void freezeRemote() {
+        try {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .executeShellCommand("am freeze " +
+                    InstrumentationRegistry.getTargetContext().getPackageName() + ":native").close();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+    static void unfreezeRemote() {
+        try {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .executeShellCommand("am unfreeze " +
+                    InstrumentationRegistry.getTargetContext().getPackageName() + ":native").close();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
     static Parcel getEmptyParcel() {
         return Parcel.obtain();
     }
