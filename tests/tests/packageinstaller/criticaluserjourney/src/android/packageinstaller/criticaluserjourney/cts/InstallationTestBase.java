@@ -102,6 +102,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
     private static final String EXTRA_NO_LAUNCHER_ACTIVITY_TEST_APP =
             "extra_no_launcher_activity_test_app";
     private static final String EXTRA_USE_TEST_APP = "extra_use_test_app";
+    private static final String EXTRA_NEW_TASK = "extra_new_task";
 
     private static final int EVENT_REQUEST_INSTALLER_CLEAN_UP = -1;
     private static final int EVENT_REQUEST_INSTALLER_SESSION = 0;
@@ -235,7 +236,11 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
     }
 
     private static void requestInstallerCleanUp() throws Exception {
-        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_CLEAN_UP);
+        RequestInstallerBroadcastParams params =
+                new RequestInstallerBroadcastParams.Builder()
+                        .setEvent(EVENT_REQUEST_INSTALLER_CLEAN_UP)
+                        .build();
+        sendRequestInstallerBroadcast(params);
     }
 
     private static void startInstallationViaPackageInstallerSessionWithPermission(
@@ -298,7 +303,11 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      * Start the installation via PackageInstaller.Session APIs.
      */
     public static void startInstallationViaPackageInstallerSession() throws Exception {
-        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_SESSION);
+        RequestInstallerBroadcastParams params =
+                new RequestInstallerBroadcastParams.Builder()
+                        .setEvent(EVENT_REQUEST_INSTALLER_SESSION)
+                        .build();
+        sendRequestInstallerBroadcast(params);
         assertInstallPendingUserAction();
     }
 
@@ -307,7 +316,12 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      * PackageInstaller.Session APIs.
      */
     public static void startInstallationUpdateViaPackageInstallerSession() throws Exception {
-        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_SESSION, /* updateTestAppV2= */ true);
+        RequestInstallerBroadcastParams params =
+                new RequestInstallerBroadcastParams.Builder()
+                        .setEvent(EVENT_REQUEST_INSTALLER_SESSION)
+                        .setUpdate(true)
+                        .build();
+        sendRequestInstallerBroadcast(params);
         assertInstallPendingUserAction();
     }
 
@@ -315,7 +329,11 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      * Start the installation via startActivity with ACTION_VIEW.
      */
     public static void startInstallationViaIntentActionView() throws Exception {
-        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT_WITH_ACTION_VIEW);
+        RequestInstallerBroadcastParams params =
+                new RequestInstallerBroadcastParams.Builder()
+                        .setEvent(EVENT_REQUEST_INSTALLER_INTENT_WITH_ACTION_VIEW)
+                        .build();
+        sendRequestInstallerBroadcast(params);
         assertCUJInstallerStartActivityReady();
     }
 
@@ -324,8 +342,12 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      * via startActivity with ACTION_VIEW.
      */
     public static void startInstallationUpdateViaIntentActionView() throws Exception {
-        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT_WITH_ACTION_VIEW,
-                /* updateTestAppV2= */ true);
+        RequestInstallerBroadcastParams params =
+                new RequestInstallerBroadcastParams.Builder()
+                        .setEvent(EVENT_REQUEST_INSTALLER_INTENT_WITH_ACTION_VIEW)
+                        .setUpdate(true)
+                        .build();
+        sendRequestInstallerBroadcast(params);
         assertCUJInstallerStartActivityReady();
     }
 
@@ -333,7 +355,11 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      * Start the installation via startActivity with ACTION_INSTALL_PACKAGE
      */
     public static void startInstallationViaIntent() throws Exception {
-        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT);
+        RequestInstallerBroadcastParams params =
+                new RequestInstallerBroadcastParams.Builder()
+                        .setEvent(EVENT_REQUEST_INSTALLER_INTENT)
+                        .build();
+        sendRequestInstallerBroadcast(params);
         assertCUJInstallerStartActivityReady();
     }
 
@@ -342,7 +368,12 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      * via startActivity with ACTION_INSTALL_PACKAGE
      */
     public static void startInstallationUpdateViaIntent() throws Exception {
-        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT, /* updateTestAppV2= */ true);
+        RequestInstallerBroadcastParams params =
+                new RequestInstallerBroadcastParams.Builder()
+                        .setEvent(EVENT_REQUEST_INSTALLER_INTENT)
+                        .setUpdate(true)
+                        .build();
+        sendRequestInstallerBroadcast(params);
         assertCUJInstallerStartActivityReady();
     }
 
@@ -350,7 +381,11 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      * Start the installation via startActivity with Package uri.
      */
     public static void startInstallationViaIntentWithPackageUri() throws Exception {
-        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT_WITH_PACKAGE_URI);
+        RequestInstallerBroadcastParams params =
+                new RequestInstallerBroadcastParams.Builder()
+                        .setEvent(EVENT_REQUEST_INSTALLER_INTENT_WITH_PACKAGE_URI)
+                        .build();
+        sendRequestInstallerBroadcast(params);
         assertCUJInstallerStartActivityReady();
     }
 
@@ -359,8 +394,13 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      * with ACTION_INSTALL_PACKAGE
      */
     public static void startNoLauncherActivityInstallationViaIntent() throws Exception {
-        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT, /* useTestApp= */ false,
-                /* update= */ false, /* isNoLauncherActivityTestApp= */ true);
+        RequestInstallerBroadcastParams params =
+                new RequestInstallerBroadcastParams.Builder()
+                        .setEvent(EVENT_REQUEST_INSTALLER_INTENT)
+                        .setUseTestApp(false)
+                        .setNoLauncherActivityTestApp(true)
+                        .build();
+        sendRequestInstallerBroadcast(params);
         assertCUJInstallerStartActivityReady();
     }
 
@@ -369,8 +409,14 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      * to version 2 via startActivity with ACTION_INSTALL_PACKAGE
      */
     public static void startNoLauncherActivityInstallationUpdateViaIntent() throws Exception {
-        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT, /* useTestApp= */ false,
-                /* update= */ true, /* isNoLauncherActivityTestApp= */ true);
+        RequestInstallerBroadcastParams params =
+                new RequestInstallerBroadcastParams.Builder()
+                        .setEvent(EVENT_REQUEST_INSTALLER_INTENT)
+                        .setUseTestApp(false)
+                        .setUpdate(true)
+                        .setNoLauncherActivityTestApp(true)
+                        .build();
+        sendRequestInstallerBroadcast(params);
         assertCUJInstallerStartActivityReady();
     }
 
@@ -378,7 +424,11 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      * Start the installation via startActivityForResult.
      */
     public static void startInstallationViaIntentForResult() throws Exception {
-        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT_FOR_RESULT);
+        RequestInstallerBroadcastParams params =
+                new RequestInstallerBroadcastParams.Builder()
+                        .setEvent(EVENT_REQUEST_INSTALLER_INTENT_FOR_RESULT)
+                        .build();
+        sendRequestInstallerBroadcast(params);
         assertCUJInstallerStartActivityReady();
     }
 
@@ -387,8 +437,12 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      * via startActivityForResult.
      */
     public static void startInstallationUpdateViaIntentForResult() throws Exception {
-        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT_FOR_RESULT,
-                /* updateTestAppV2= */ true);
+        RequestInstallerBroadcastParams params =
+                new RequestInstallerBroadcastParams.Builder()
+                        .setEvent(EVENT_REQUEST_INSTALLER_INTENT_FOR_RESULT)
+                        .setUpdate(true)
+                        .build();
+        sendRequestInstallerBroadcast(params);
         assertCUJInstallerStartActivityReady();
     }
 
@@ -396,8 +450,66 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      * Start the installation via startActivityForResult with Package uri.
      */
     public static void startInstallationViaIntentWithPackageUriForResult() throws Exception {
-        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT_WITH_PACKAGE_URI_FOR_RESULT);
+        RequestInstallerBroadcastParams params =
+                new RequestInstallerBroadcastParams.Builder()
+                        .setEvent(EVENT_REQUEST_INSTALLER_INTENT_WITH_PACKAGE_URI_FOR_RESULT)
+                        .build();
+        sendRequestInstallerBroadcast(params);
         assertCUJInstallerStartActivityReady();
+    }
+
+    private static class RequestInstallerBroadcastParams {
+        final int mEvent;
+        final boolean mUseTestApp;
+        final boolean mUpdate;
+        final boolean mIsNoLauncherActivityTestApp;
+        final boolean mNewTask;
+
+        private RequestInstallerBroadcastParams(Builder builder) {
+            this.mEvent = builder.mEvent;
+            this.mUseTestApp = builder.mUseTestApp;
+            this.mUpdate = builder.mUpdate;
+            this.mIsNoLauncherActivityTestApp = builder.mIsNoLauncherActivityTestApp;
+            this.mNewTask = builder.mNewTask;
+        }
+
+        // Builder Class
+        static class Builder {
+            private int mEvent;
+            private boolean mUseTestApp = true;
+            private boolean mUpdate = false;
+            private boolean mIsNoLauncherActivityTestApp = false;
+            private boolean mNewTask = false;
+
+            Builder setEvent(int event) {
+                this.mEvent = event;
+                return this;
+            }
+
+            Builder setUseTestApp(boolean useTestApp) {
+                this.mUseTestApp = useTestApp;
+                return this;
+            }
+
+            Builder setUpdate(boolean update) {
+                this.mUpdate = update;
+                return this;
+            }
+
+            Builder setNoLauncherActivityTestApp(boolean isNoLauncherActivityTestApp) {
+                this.mIsNoLauncherActivityTestApp = isNoLauncherActivityTestApp;
+                return this;
+            }
+
+            Builder setNewTask(boolean newTask) {
+                this.mNewTask = newTask;
+                return this;
+            }
+
+            RequestInstallerBroadcastParams build() {
+                return new RequestInstallerBroadcastParams(this);
+            }
+        }
     }
 
     /**
@@ -405,8 +517,14 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      * via startActivity with ACTION_INSTALL_PACKAGE
      */
     public static void startInstallerUpdateItselfViaIntent() throws Exception {
-        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT,
-                /* useTestApp= */ false, /* update= */ true);
+        RequestInstallerBroadcastParams params =
+                new RequestInstallerBroadcastParams.Builder()
+                        .setEvent(EVENT_REQUEST_INSTALLER_INTENT)
+                        .setUseTestApp(false)
+                        .setUpdate(true)
+                        .setNewTask(true)
+                        .build();
+        sendRequestInstallerBroadcast(params);
         assertCUJInstallerStartActivityReady();
     }
 
@@ -415,47 +533,40 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      * PackageInstaller.Session APIs.
      */
     public static void startInstallerUpdateItselfViaPackageInstallerSession() throws Exception {
-        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_SESSION,
-                /* useTestApp= */ false, /* update= */ true);
+        RequestInstallerBroadcastParams params =
+                new RequestInstallerBroadcastParams.Builder()
+                        .setEvent(EVENT_REQUEST_INSTALLER_SESSION)
+                        .setUseTestApp(false)
+                        .setUpdate(true)
+                        .build();
+        sendRequestInstallerBroadcast(params);
         assertInstallPendingUserAction();
     }
 
     /** Start a multi-package installation using the PackageInstaller.Session APIs. */
     public static void startMultiPackageInstallViaPackageInstallerSession(boolean isUpdate)
             throws Exception {
-        sendRequestInstallerBroadcast(
-                EVENT_REQUEST_INSTALLER_SESSION_MULTI_PACKAGE,
-                /* useTestApp= */ true,
-                /* update= */ isUpdate,
-                /* isNoLauncherActivityTestApp= */ false);
+        RequestInstallerBroadcastParams params =
+                new RequestInstallerBroadcastParams.Builder()
+                        .setEvent(EVENT_REQUEST_INSTALLER_SESSION_MULTI_PACKAGE)
+                        .setUseTestApp(true)
+                        .setUpdate(isUpdate)
+                        .build();
+        sendRequestInstallerBroadcast(params);
         assertInstallPendingUserAction();
     }
 
-    private static void sendRequestInstallerBroadcast(int event) throws Exception {
-        sendRequestInstallerBroadcast(event, /* updateTestAppV2= */ false);
-    }
-
-    private static void sendRequestInstallerBroadcast(int event, boolean updateTestAppV2)
-            throws Exception {
-        sendRequestInstallerBroadcast(event, /* useTestApp= */ true, updateTestAppV2);
-    }
-
-    private static void sendRequestInstallerBroadcast(int event, boolean useTestApp,
-            boolean update) throws Exception {
-        sendRequestInstallerBroadcast(event, useTestApp, update,
-                /* isNoLauncherActivityTestApp= */ false);
-    }
-
-    private static void sendRequestInstallerBroadcast(
-            int event, boolean useTestApp, boolean update, boolean isNoLauncherActivityTestApp)
+    private static void sendRequestInstallerBroadcast(RequestInstallerBroadcastParams params)
             throws Exception {
         final Intent intent = new Intent(ACTION_REQUEST_INSTALLER);
         intent.setPackage(INSTALLER_PACKAGE_NAME);
         intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
-        intent.putExtra(EXTRA_EVENT, event);
-        intent.putExtra(EXTRA_USE_TEST_APP, useTestApp);
-        intent.putExtra(EXTRA_IS_UPDATE, update);
-        intent.putExtra(EXTRA_NO_LAUNCHER_ACTIVITY_TEST_APP, isNoLauncherActivityTestApp);
+        intent.putExtra(EXTRA_EVENT, params.mEvent);
+        intent.putExtra(EXTRA_USE_TEST_APP, params.mUseTestApp);
+        intent.putExtra(EXTRA_IS_UPDATE, params.mUpdate);
+        intent.putExtra(EXTRA_NO_LAUNCHER_ACTIVITY_TEST_APP, params.mIsNoLauncherActivityTestApp);
+        intent.putExtra(EXTRA_NEW_TASK, params.mNewTask);
+
         // Reset the installer response here to avoid unexpected result being received after
         // the previous resetting the result E.g. the test installer activity was relaunched
         sInstallerResponseReceiver.resetResult();
