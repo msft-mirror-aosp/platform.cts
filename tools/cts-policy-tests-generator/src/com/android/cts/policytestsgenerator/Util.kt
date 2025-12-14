@@ -20,6 +20,7 @@ import android.processor.devicepolicy.protos.FullyQualifiedClassName
 import android.processor.devicepolicy.protos.FullyQualifiedFieldName
 import com.google.common.base.CaseFormat
 import java.io.File
+import java.nio.file.Path
 import kotlin.io.path.Path
 import kotlin.io.path.exists
 import kotlin.io.path.listDirectoryEntries
@@ -35,7 +36,8 @@ fun FullyQualifiedClassName.toKotlinType(): String {
         "java.lang.String" -> "String"
         "java.lang.Boolean" -> "Boolean"
         "java.lang.Integer" -> "Int"
-        "java.util.List<String>" -> "List<String>"
+        "java.util.List<java.lang.String>" -> "List<String>"
+        "java.util.List<java.lang.Integer>" -> "List<Int>"
         else -> throw IllegalArgumentException("Unsupported type: ${this.format()}")
     }
 }
@@ -69,7 +71,7 @@ fun String.replacePrefixes(vararg prefixes: Pair<String, String>): String {
 }
 
 // We don't know exactly where the text proto is thanks to sharding.
-fun findPoliciesTextProtoFile(outDir: String): File? {
+fun findPoliciesTextProtoFile(outDir: String): Path? {
     val common_directory =
         Path("$outDir/soong/.intermediates/frameworks/base/framework-minus-apex/android_common/javac/")
     if (!common_directory.exists()) {
@@ -90,5 +92,5 @@ fun findPoliciesTextProtoFile(outDir: String): File? {
     require(actual_files.size == 1) {
         "SHOULD NOT HAPPEN - Multiple policies.textproto entries found? \n    ${actual_files.joinToString("\n    ")}"
     }
-    return actual_files.get(0)!!.toFile()
+    return actual_files.get(0).normalize()
 }
