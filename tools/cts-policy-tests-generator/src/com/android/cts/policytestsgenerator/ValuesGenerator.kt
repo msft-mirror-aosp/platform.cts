@@ -20,7 +20,8 @@ import android.processor.devicepolicy.protos.PolicyMetadata
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.BooleanPolicyMetadata
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.EnumPolicyMetadata
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.IntegerPolicyMetadata
-import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.ListOfStringPolicyMetadata
+import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.ListPolicyMetadata
+import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.ListPolicyMetadata.ListElementMetadataCase
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.StringPolicyMetadata
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.TypeMetadataCase
 
@@ -33,8 +34,7 @@ object ValuesGenerator {
             TypeMetadataCase.INTEGER_METADATA -> return generateValidIntegers(type.integerMetadata)
             TypeMetadataCase.BOOLEAN_METADATA -> return generateValidBooleans(type.booleanMetadata)
             TypeMetadataCase.ENUM_METADATA -> return generateValidEnums(type.enumMetadata)
-            TypeMetadataCase.LIST_OF_STRING_METADATA ->
-                return generateValidListOfStrings(type.listOfStringMetadata)
+            TypeMetadataCase.LIST_METADATA -> return generateValidLists(type.listMetadata)
             else -> throw IllegalArgumentException("Unsupported type ${type.typeMetadataCase}")
         }
     }
@@ -48,8 +48,7 @@ object ValuesGenerator {
             TypeMetadataCase.BOOLEAN_METADATA ->
                 return generateInvalidBooleans(type.booleanMetadata)
             TypeMetadataCase.ENUM_METADATA -> return generateInvalidEnums(type.enumMetadata)
-            TypeMetadataCase.LIST_OF_STRING_METADATA ->
-                return generateInvalidListOfStrings(type.listOfStringMetadata)
+            TypeMetadataCase.LIST_METADATA -> return generateInvalidLists(type.listMetadata)
             else -> throw IllegalArgumentException("Unsupported type")
         }
     }
@@ -112,20 +111,18 @@ object ValuesGenerator {
         )
     }
 
-    private fun generateValidListOfStrings(metadata: ListOfStringPolicyMetadata): List<String> {
-        val validStringValues = generateValidStrings(metadata.elementMetadata)
+    private fun generateValidLists(metadata: ListPolicyMetadata): List<String> {
+        val validElementValues = generateValidListElementValues(metadata)
         if (metadata.emptyListAllowed) {
-            return listOf("[]", "[${validStringValues.joinToString(", ")}]")
+            return listOf("[]", "[${validElementValues .joinToString(", ")}]")
         }
-        return listOf("[${validStringValues.joinToString(", ")}]")
+        return listOf("[${validElementValues .joinToString(", ")}]")
     }
 
-    private fun generateInvalidListOfStrings(
-        metadata: ListOfStringPolicyMetadata
-    ): List<InvalidValueTestCase> {
+    private fun generateInvalidLists(metadata: ListPolicyMetadata): List<InvalidValueTestCase> {
         val cases = mutableListOf<InvalidValueTestCase>()
         cases.addAll(
-            generateInvalidStrings(metadata.elementMetadata).map {
+            generateInvalidListElementValues(metadata).map {
                 it.copy(value = "[${it.value}]")
             }
         )
@@ -134,5 +131,35 @@ object ValuesGenerator {
             cases.add(InvalidValueTestCase("[]", "Empty list is not allowed"))
         }
         return cases
+    }
+
+    fun generateInvalidListElementValues(metadata: ListPolicyMetadata): List<InvalidValueTestCase> {
+        when (metadata.listElementMetadataCase) {
+            ListElementMetadataCase.STRING_METADATA ->
+                return generateInvalidStrings(metadata.stringMetadata)
+            ListElementMetadataCase.INTEGER_METADATA ->
+                return generateInvalidIntegers(metadata.integerMetadata)
+            ListElementMetadataCase.ENUM_METADATA ->
+                return generateInvalidEnums(metadata.enumMetadata)
+            else ->
+                throw IllegalArgumentException(
+                    "Unsupported list type ${metadata.listElementMetadataCase}"
+                )
+        }
+    }
+
+    fun generateValidListElementValues(metadata: ListPolicyMetadata): List<String> {
+        when (metadata.listElementMetadataCase) {
+            ListElementMetadataCase.STRING_METADATA ->
+                return generateValidStrings(metadata.stringMetadata)
+            ListElementMetadataCase.INTEGER_METADATA ->
+                return generateValidIntegers(metadata.integerMetadata)
+            ListElementMetadataCase.ENUM_METADATA ->
+                return generateValidEnums(metadata.enumMetadata)
+            else ->
+                throw IllegalArgumentException(
+                    "Unsupported list type ${metadata.listElementMetadataCase}"
+                )
+        }
     }
 }

@@ -24,7 +24,7 @@ import android.processor.devicepolicy.protos.PolicyMetadata.PolicyScope
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.BooleanPolicyMetadata
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.EnumPolicyMetadata
-import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.ListOfStringPolicyMetadata
+import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.ListPolicyMetadata
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.StringPolicyMetadata
 import com.google.common.truth.Truth.assertThat
 import junitparams.JUnitParamsRunner
@@ -54,6 +54,18 @@ class TestFileGeneratorTest {
         FullyQualifiedClassName.newBuilder()
             .setClassName("Boolean")
             .setPackageName("java.lang")
+            .build()
+
+    val stringListType =
+        FullyQualifiedClassName.newBuilder()
+            .setClassName("List<java.lang.String>")
+            .setPackageName("java.util")
+            .build()
+
+    val integerListType =
+        FullyQualifiedClassName.newBuilder()
+            .setClassName("List<java.lang.Integer>")
+            .setPackageName("java.util")
             .build()
 
     val allDpcTypes =
@@ -531,11 +543,12 @@ class TestFileGeneratorTest {
     @Test
     fun listOfStringPolicy_emptyListAllowed_generatesTestClass() {
         val metadata =
-            listOfStringPolicyMetadata(
+            listPolicyMetadata(
                 "MY_LIST_POLICY",
-                ListOfStringPolicyMetadata.newBuilder()
+                stringListType,
+                ListPolicyMetadata.newBuilder()
                     .setEmptyListAllowed(true)
-                    .setElementMetadata(
+                    .setStringMetadata(
                         StringPolicyMetadata.newBuilder().setEmptyStringAllowed(false)
                     ),
             )
@@ -545,7 +558,7 @@ class TestFileGeneratorTest {
         assertThat(output_file.getTestClass())
             .isEqualTo(
                 """
-                class MyListPolicyTest : CommonPolicyTests<String>() {
+                class MyListPolicyTest : CommonPolicyTests<List<String>>() {
 
                     override val policyIdentifier = PolicyIdentifier.MY_LIST_POLICY
 
@@ -570,11 +583,12 @@ class TestFileGeneratorTest {
     @Test
     fun listOfStringPolicy_emptyListNotAllowed_generatesTestClass() {
         val metadata =
-            listOfStringPolicyMetadata(
+            listPolicyMetadata(
                 "MY_LIST_POLICY",
-                ListOfStringPolicyMetadata.newBuilder()
+                stringListType,
+                ListPolicyMetadata.newBuilder()
                     .setEmptyListAllowed(false)
-                    .setElementMetadata(
+                    .setStringMetadata(
                         StringPolicyMetadata.newBuilder().setEmptyStringAllowed(true)
                     ),
             )
@@ -584,7 +598,7 @@ class TestFileGeneratorTest {
         assertThat(output_file.getTestClass())
             .isEqualTo(
                 """
-                class MyListPolicyTest : CommonPolicyTests<String>() {
+                class MyListPolicyTest : CommonPolicyTests<List<String>>() {
 
                     override val policyIdentifier = PolicyIdentifier.MY_LIST_POLICY
 
@@ -598,6 +612,49 @@ class TestFileGeneratorTest {
                     override val invalidValueTestCases =
                         listOf(
                             InvalidValueTestCase([], expectedError="Empty list is not allowed"),
+                        )
+                }
+                """
+                    .trimIndent()
+            )
+    }
+
+    @Test
+    fun listOfEnumPolicy_generatesTestClass() {
+        val metadata =
+            listPolicyMetadata(
+                "MY_LIST_POLICY",
+                integerListType,
+                ListPolicyMetadata.newBuilder()
+                    .setEmptyListAllowed(true)
+                    .setEnumMetadata(
+                        EnumPolicyMetadata.newBuilder()
+                    .addValue(fullyQualifiedFieldName("ENUM_VALUE_4"), 4)
+                    .addValue(fullyQualifiedFieldName("ENUM_VALUE_7"), 7)
+                    ),
+            )
+
+        val output_file = TestFileGenerator(metadata).generate()
+
+        assertThat(output_file.getTestClass())
+            .isEqualTo(
+                """
+                class MyListPolicyTest : CommonPolicyTests<List<Int>>() {
+
+                    override val policyIdentifier = PolicyIdentifier.MY_LIST_POLICY
+
+                    // TODO: Add other meaningful valid values here (if any). Remove this TODO before committing.
+                    override val validValues =
+                        listOf(
+                            [],
+                            [PolicyIdentifier.ENUM_VALUE_4, PolicyIdentifier.ENUM_VALUE_7],
+                        )
+
+                    // TODO: Add other meaningful invalid values here (if any). Remove this TODO before committing.
+                    override val invalidValueTestCases =
+                        listOf(
+                            InvalidValueTestCase([3]), // Lower than lowest value
+                            InvalidValueTestCase([8]), // Higher than highest value
                         )
                 }
                 """
@@ -724,16 +781,17 @@ class TestFileGeneratorTest {
             )
             .build()
 
-    private fun listOfStringPolicyMetadata(
+    private fun listPolicyMetadata(
         identifier: String,
-        typeSpecificMetadata: ListOfStringPolicyMetadata.Builder,
+        type: FullyQualifiedClassName,
+        typeSpecificMetadata: ListPolicyMetadata.Builder,
     ) =
         PolicyMetadata.newBuilder()
             .setIdentifier(fullyQualifiedFieldName(identifier))
-            .setType(stringType)
+            .setType(type)
             .setTypeSpecificMetadata(
                 TypeSpecificPolicyMetadata.newBuilder()
-                    .setListOfStringMetadata(typeSpecificMetadata)
+                    .setListMetadata(typeSpecificMetadata)
             )
             .build()
 }
