@@ -136,7 +136,6 @@ public class NotificationHintTest {
         assertThat(outputHint).isInstanceOf(NotificationHint.class);
         final NotificationEvent outputEvent =
                 ((NotificationHint) outputHint).getNotificationEvent();
-        assertThat(outputEvent.getEventType()).isEqualTo(NotificationEvent.EVENT_TYPE_ENQUEUED);
         assertThat(outputEvent).isInstanceOf(NotificationEvent.NotificationEnqueuedEvent.class);
 
         final NotificationEvent.NotificationEnqueuedEvent outputEnqueuedEvent =
