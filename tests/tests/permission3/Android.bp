@@ -67,6 +67,8 @@ android_test {
         ":CtsDifferentPkgNameApp",
         ":CtsUsePermissionAppImplicitUserSelectStorage",
         ":CtsAppThatAccessesMicAndCameraPermission",
+        ":CtsAppWithSharedUidNoPerms",
+        ":CtsAppWithSharedUidWithPerms",
     ],
     test_suites: [
         "cts",
