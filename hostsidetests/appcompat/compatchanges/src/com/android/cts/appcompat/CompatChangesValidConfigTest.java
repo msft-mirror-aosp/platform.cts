@@ -135,6 +135,7 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
                     "RETURN_DEVICE_VOLUME_BEHAVIOR_ABSOLUTE_ADJUST_ONLY",
                     "RO_DCL_CHANGE_ID",
                     "SEND_CHOOSER_RESULT",
+                    "SKIP_ACTIVITY_RECREATION_ON_CONFIG_CHANGE",
                     "UNIVERSAL_RESIZABLE_BY_DEFAULT",
                     "ENABLE_HARDCODED_XR_APP_COMPAT_OVERRIDES",
                     "LIMIT_REAR_CAMERA_AVAILABLE_STREAM_RESOLUTIONS",
