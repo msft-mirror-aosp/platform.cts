@@ -279,6 +279,6 @@ public class Utils {
 
     /** Returns true if Android XR Device */
     public static boolean isXr(Context context) {
-        return context.getPackageManager().hasSystemFeature("android.software.xr.immersive");
+        return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_XR_API_SPATIAL);
     }
 }
