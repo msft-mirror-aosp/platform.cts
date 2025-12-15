@@ -20,6 +20,10 @@
 #include <gtest/gtest.h>
 #include <nativetesthelper_jni/utils.h>
 
+#include <condition_variable>
+#include <mutex>
+#include <vector>
+
 #include "utilities.h"
 
 void* NothingClass_onCreate(void* args) { return args; }
@@ -50,4 +54,83 @@ TEST_F(NdkBinderTest_AIBinder_Jni, ConvertJni) {
 
   AIBinder_decStrong(binder);
   AIBinder_decStrong(fromJavaBinder);
+}
+
+std::mutex gMutex;
+std::condition_variable gCv;
+std::vector<bool> gResults;
+
+void OnFrozenStateChanged(void*, bool frozen) {
+  std::unique_lock<std::mutex> lock(gMutex);
+  gResults.push_back(frozen);
+  gCv.notify_one();
+}
+
+void OnBinderUnlinked(void*) {}
+
+TEST_F(NdkBinderTest_AIBinder_Jni, FrozenStateChangeCallback) {
+  {
+      std::unique_lock<std::mutex> lock(gMutex);
+      gResults.clear();
+  }
+  JNIEnv* env = GetEnv();
+  ASSERT_NE(nullptr, env);
+
+  jclass ndkBinderTest = env->FindClass("android/binder/cts/NdkBinderTest");
+  ASSERT_NE(nullptr, ndkBinderTest);
+  jmethodID getRemoteNativeService =
+      env->GetStaticMethodID(ndkBinderTest, "getRemoteNativeService", "()Landroid/os/IBinder;");
+  ASSERT_NE(nullptr, getRemoteNativeService);
+  jmethodID freezeRemote =
+      env->GetStaticMethodID(ndkBinderTest, "freezeRemote", "()V");
+  ASSERT_NE(nullptr, freezeRemote);
+  jmethodID unfreezeRemote =
+      env->GetStaticMethodID(ndkBinderTest, "unfreezeRemote", "()V");
+  ASSERT_NE(nullptr, unfreezeRemote);
+
+  // Ensure that the remote binder is unfrozen at the end of the test, regardless of
+  // the outcome of the test.
+  struct UnfreezeGuard {
+      JNIEnv* env;
+      jclass clazz;
+      jmethodID method;
+      ~UnfreezeGuard() { env->CallStaticVoidMethod(clazz, method); }
+  } unfreezeGuard{env, ndkBinderTest, unfreezeRemote};
+
+  jobject object = env->CallStaticObjectMethod(ndkBinderTest, getRemoteNativeService);
+  ASSERT_NE(nullptr, object);
+
+  AIBinder* binder = AIBinder_fromJavaBinder(env, object);
+  ASSERT_NE(nullptr, binder);
+
+  AIBinder_FrozenStateChangeCallback* callback =
+      AIBinder_FrozenStateChangeCallback_new(OnFrozenStateChanged, OnBinderUnlinked);
+  ASSERT_NE(nullptr, callback);
+
+  EXPECT_EQ(STATUS_OK, AIBinder_addFrozenStateChangeCallback(binder, callback, nullptr));
+
+  env->CallStaticVoidMethod(ndkBinderTest, freezeRemote);
+  {
+      std::unique_lock<std::mutex> lock(gMutex);
+      using namespace std::chrono_literals;
+      bool success = gCv.wait_for(lock, 5s, [] {
+          return !gResults.empty() && gResults.back() == true;
+      });
+      EXPECT_TRUE(success) << "Timed out waiting for freeze callback";
+  }
+
+  env->CallStaticVoidMethod(ndkBinderTest, unfreezeRemote);
+  {
+      std::unique_lock<std::mutex> lock(gMutex);
+      using namespace std::chrono_literals;
+      bool success = gCv.wait_for(lock, 5s, [] {
+          return !gResults.empty() && gResults.back() == false;
+      });
+      EXPECT_TRUE(success) << "Timed out waiting for unfreeze callback";
+  }
+
+  EXPECT_EQ(STATUS_OK, AIBinder_removeFrozenStateChangeCallback(binder, callback, nullptr));
+
+  AIBinder_FrozenStateChangeCallback_delete(callback);
+  AIBinder_decStrong(binder);
 }
