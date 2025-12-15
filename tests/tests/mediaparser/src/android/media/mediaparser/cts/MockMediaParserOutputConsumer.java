@@ -35,20 +35,16 @@ import androidx.media3.test.utils.FakeTrackOutput;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 
 public class MockMediaParserOutputConsumer implements MediaParser.OutputConsumer {
 
     private final boolean mUsingInBandCryptoInfo;
     private final FakeExtractorOutput mFakeExtractorOutput;
-    private final Map<Integer, TrackOutput> mTrackOutputs;
+    private final ArrayList<TrackOutput> mTrackOutputs;
 
     @Nullable private MediaParser.SeekMap mSeekMap;
     private int mCompletedSampleCount;
     @Nullable private MediaCodec.CryptoInfo mLastOutputCryptoInfo;
-    private int mTrackCount;
 
     public MockMediaParserOutputConsumer() {
         this(/* usingInBandCryptoInfo= */ false);
@@ -60,7 +56,7 @@ public class MockMediaParserOutputConsumer implements MediaParser.OutputConsumer
                 new FakeExtractorOutput(
                         /* trackOutputFactory= */ (id, type) ->
                                 new FakeTrackOutput(/* deduplicateConsecutiveFormats= */ true));
-        mTrackOutputs = new HashMap<>();
+        mTrackOutputs = new ArrayList<>();
     }
 
     public int getCompletedSampleCount() {
@@ -105,13 +101,13 @@ public class MockMediaParserOutputConsumer implements MediaParser.OutputConsumer
 
     @Override
     public void onTrackCountFound(int numberOfTracks) {
-        mTrackCount = numberOfTracks;
+        // Do nothing.
     }
 
     @Override
     public void onTrackDataFound(int trackIndex, MediaParser.TrackData trackData) {
-        if (!mTrackOutputs.containsKey(trackIndex)) {
-            mTrackOutputs.put(trackIndex, mFakeExtractorOutput.track(trackIndex, C.TRACK_TYPE_UNKNOWN));
+        while (mTrackOutputs.size() <= trackIndex) {
+            mTrackOutputs.add(mFakeExtractorOutput.track(trackIndex, C.TRACK_TYPE_UNKNOWN));
         }
         mTrackOutputs.get(trackIndex).format(toMedia3Format(trackData));
     }
@@ -341,14 +337,6 @@ public class MockMediaParserOutputConsumer implements MediaParser.OutputConsumer
 
     public MediaParser.SeekMap getSeekMap() {
         return mSeekMap;
-    }
-
-    public int getTrackCount() {
-        return mTrackCount;
-    }
-
-    public Set<Integer> getTrackIndices() {
-        return mTrackOutputs.keySet();
     }
 
     // Internal classes.
