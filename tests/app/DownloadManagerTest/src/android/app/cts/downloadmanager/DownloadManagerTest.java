@@ -66,6 +66,7 @@ import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.providers.downloads.flags.Flags;
 
+import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -76,6 +77,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLHandshakeException;
 
 @RunWith(AndroidJUnit4.class)
 public final class DownloadManagerTest extends DownloadManagerTestBase {
@@ -158,13 +164,16 @@ public final class DownloadManagerTest extends DownloadManagerTestBase {
         // As a result of testDownloadManagerSupportsHttpsWithExternalWebServer relying on an
         // external resource https://www.example.com this test uses http://www.example.com to help
         // disambiguate errors from testDownloadManagerSupportsHttpsWithExternalWebServer.
+        String urlString = "http://www.example.com";
+
+        checkServerConnectivityHttp(urlString);
 
         final DownloadCompleteReceiver receiver = new DownloadCompleteReceiver();
         try {
             IntentFilter intentFilter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
             mContext.registerReceiver(receiver, intentFilter, Context.RECEIVER_EXPORTED);
 
-            long id = mDownloadManager.enqueue(new Request(Uri.parse("http://www.example.com")));
+            long id = mDownloadManager.enqueue(new Request(Uri.parse(urlString)));
 
             assertThat(getTotalNumberDownloads()).isEqualTo(1);
 
@@ -195,13 +204,16 @@ public final class DownloadManagerTest extends DownloadManagerTestBase {
         // Until this is resolved (e.g., by making it possible to specify additional CA certs to
         // trust for a particular download), this test relies on https://www.example.com being
         // operational and reachable from the Android under test.
+        String urlString = "https://www.example.com";
+
+        checkServerConnectivityHttps(urlString);
 
         final DownloadCompleteReceiver receiver = new DownloadCompleteReceiver();
         try {
             IntentFilter intentFilter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
             mContext.registerReceiver(receiver, intentFilter, Context.RECEIVER_EXPORTED);
 
-            long id = mDownloadManager.enqueue(new Request(Uri.parse("https://www.example.com")));
+            long id = mDownloadManager.enqueue(new Request(Uri.parse(urlString)));
 
             assertThat(getTotalNumberDownloads()).isEqualTo(1);
 
@@ -1045,5 +1057,44 @@ public final class DownloadManagerTest extends DownloadManagerTestBase {
             FileUtils.copy(source, target);
         }
         return file;
+    }
+
+    private void checkServerConnectivityHttp(String urlString) {
+        HttpURLConnection connection = null;
+        try {
+            URL url = new URL(urlString);
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setConnectTimeout(5000); // 5 seconds timeout
+            connection.connect();
+        } catch (IOException e) {
+            // If we encounter an IOException, we skip the test as the server might be unreachable.
+            Assume.assumeNoException("Skipping test due to connectivity issue with the server", e);
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+    }
+
+    private void checkServerConnectivityHttps(String urlString) {
+        HttpsURLConnection connection = null;
+        try {
+            URL url = new URL(urlString);
+            connection = (HttpsURLConnection) url.openConnection();
+            connection.setConnectTimeout(5000); // 5 seconds timeout
+            connection.connect();
+        } catch (SSLHandshakeException handshakeException) {
+            Assume.assumeNoException(
+                    "Skipping test due to SSL handshake failure with external server: " + urlString,
+                    handshakeException);
+        } catch (IOException ioException) {
+            Assume.assumeNoException(
+                    "Skipping test due to connectivity issue with external server: " + urlString,
+                    ioException);
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
     }
 }
