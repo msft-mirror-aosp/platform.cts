@@ -19,11 +19,14 @@ package android.autofillservice.cts.saveui;
 import static android.autofillservice.cts.testcore.Helper.ID_PASSWORD;
 import static android.autofillservice.cts.testcore.Helper.ID_USERNAME;
 import static android.autofillservice.cts.testcore.Helper.assertActivityShownInBackground;
+import static android.autofillservice.cts.testcore.Helper.assertTextAndValue;
+import static android.autofillservice.cts.testcore.Helper.findNodeByResourceId;
 import static android.service.autofill.SaveInfo.SAVE_DATA_TYPE_PASSWORD;
 import static android.service.autofill.SaveInfo.SAVE_DATA_TYPE_USERNAME;
 
 import static org.junit.Assume.assumeTrue;
 
+import android.app.assist.AssistStructure;
 import android.autofillservice.cts.R;
 import android.autofillservice.cts.activities.LoginActivity;
 import android.autofillservice.cts.activities.LoginImportantForCredentialManagerActivity;
@@ -34,12 +37,17 @@ import android.autofillservice.cts.commontests.AutoFillServiceTestCase;
 import android.autofillservice.cts.testcore.CannedFillResponse;
 import android.autofillservice.cts.testcore.Helper;
 import android.autofillservice.cts.testcore.Helper.AutofillCriticalInternal;
+import android.autofillservice.cts.testcore.InstrumentedAutoFillService;
 import android.content.Context;
 import android.content.Intent;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.service.autofill.Flags;
 import android.view.View;
 
+import androidx.test.uiautomator.UiObject2;
 import com.android.compatibility.common.util.CddTest;
 
 import org.junit.Rule;
@@ -49,6 +57,7 @@ import org.junit.Test;
  * Tests whether autofill save dialog is shown as expected.
  */
 public class AutofillSaveDialogTest extends AutoFillServiceTestCase.ManualActivityLaunch {
+    public static final String TEST_USERNAME = "test";
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -257,6 +266,7 @@ public class AutofillSaveDialogTest extends AutoFillServiceTestCase.ManualActivi
     }
 
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_USE_CANDIDATE_SAVE_VALUE_WHEN_UPDATE_SAVE_ASSIST_STRUCTURE)
     public void testShowSaveUiAfterLoginViewReset() throws Exception {
         // Set service.
         enableService();
@@ -311,6 +321,74 @@ public class AutofillSaveDialogTest extends AutoFillServiceTestCase.ManualActivi
 
         // Verify save ui dialog.
         mUiBot.assertSaveShowing(SAVE_DATA_TYPE_USERNAME);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_USE_CANDIDATE_SAVE_VALUE_WHEN_UPDATE_SAVE_ASSIST_STRUCTURE)
+    public void testShowSaveUiAfterLoginViewReset_withUseCandidateSaveValueInStructure()
+            throws Exception {
+        // Set service.
+        enableService();
+
+        // Start SimpleBeforeLoginActivity before login activity.
+        startActivityWithFlag(mContext, SimpleBeforeLoginActivity.class,
+                Intent.FLAG_ACTIVITY_NEW_TASK);
+        mUiBot.assertShownByRelativeId(SimpleBeforeLoginActivity.ID_BEFORE_LOGIN);
+
+        // Start LoginActivity.
+        startActivityWithFlag(SimpleBeforeLoginActivity.getCurrentActivity(), LoginActivity.class,
+                /* flags= */ 0);
+        mUiBot.assertShownByRelativeId(LoginActivity.ID_USERNAME_CONTAINER);
+
+        sReplier.addResponse(new CannedFillResponse.Builder()
+                .addDataset(new CannedFillResponse.CannedDataset.Builder()
+                        .setField(ID_USERNAME, "placeholder")
+                        .setField(ID_PASSWORD, "placeholder")
+                        .setPresentation(createPresentation("placeholder"))
+                        .setInlinePresentation(createInlinePresentation("placeholder"))
+                        .build())
+                .setRequiredSavableIds(SAVE_DATA_TYPE_USERNAME, ID_USERNAME)
+                .build());
+
+        // Trigger autofill on username.
+        LoginActivity loginActivity = LoginActivity.getCurrentActivity();
+        loginActivity.onUsername(View::requestFocus);
+
+        // Wait for fill request to be processed.
+        sReplier.getNextFillRequest();
+
+        // Set data.
+        loginActivity.onUsername((v) -> v.setText(TEST_USERNAME));
+
+        // Reset view
+        loginActivity.onUsername((v) -> v.setText(""));
+
+        // Check suggestion shows after clearing the text (verifying fix ag/27270423)
+        mUiBot.assertDatasets("placeholder");
+
+        // Start SimpleAfterLoginActivity after login activity.
+        startActivityWithFlag(loginActivity, SimpleAfterLoginActivity.class, /* flags= */ 0);
+        mUiBot.assertShownByRelativeId(SimpleAfterLoginActivity.ID_AFTER_LOGIN);
+
+        mUiBot.assertSaveNotShowing(SAVE_DATA_TYPE_USERNAME);
+
+        // Restart SimpleBeforeLoginActivity with CLEAR_TOP and SINGLE_TOP.
+        startActivityWithFlag(SimpleAfterLoginActivity.getCurrentActivity(),
+                SimpleBeforeLoginActivity.class,
+                Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        assertActivityShownInBackground(SimpleBeforeLoginActivity.class);
+
+        // Verify save ui dialog.
+        UiObject2 saveDialog = mUiBot.assertSaveShowing(SAVE_DATA_TYPE_USERNAME);
+
+        // Click save button.
+        mUiBot.saveForAutofill(saveDialog, true);
+
+        // Get save request and verify the value is not empty
+        InstrumentedAutoFillService.SaveRequest saveRequest = sReplier.getNextSaveRequest();
+        final AssistStructure.ViewNode username =
+                findNodeByResourceId(saveRequest.structure, ID_USERNAME);
+        assertTextAndValue(username, TEST_USERNAME);
     }
 
     @Test
