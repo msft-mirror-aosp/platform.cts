@@ -2206,25 +2206,6 @@
     <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.virtualdevices.VirtualTouchscreenTest#sendHoverEvents"/>
     <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.input.cts.tests.virtualdevices.VirtualTouchscreenTest#sendTouchEvent"/>
     <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.lights.cts.tests.LightsManagerTest#testColorSequenceValidation"/>
-    <!-- CtsHealthConnectHostSideDeviceTestCases -->
-    <option name="compatibility:include-filter" value="CtsHealthConnectHostSideDeviceTestCases android.healthconnect.cts.device.HealthConnectChangeLogsDeviceTests#testChangeLogs_deleteSymptomsRecords_returnsAllDeletedSymptomRecordIds"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectHostSideDeviceTestCases android.healthconnect.cts.device.HealthConnectChangeLogsDeviceTests#testChangeLogs_getChangeLogToken_throwsExceptionForAppWithNoReadSymptomPermission"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectHostSideDeviceTestCases android.healthconnect.cts.device.HealthConnectChangeLogsDeviceTests#testChangeLogs_getChangeLogs_throwsExceptionForAppWithNoReadSymptomPermission"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectHostSideDeviceTestCases android.healthconnect.cts.device.HealthConnectChangeLogsDeviceTests#testChangeLogs_insertSymptomsRecords_returnsUpsertLogsAppHoldsPermissionFor"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectHostSideDeviceTestCases android.healthconnect.cts.device.HealthConnectDeviceTest#testAggregateRecords_onlyWritePermissions_requestsOwnDataOnly_succeeds"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectHostSideDeviceTestCases android.healthconnect.cts.device.HealthConnectDeviceTest#testAggregationOutputForTotalStepsCountWithDataFromTwoAppsHavingDifferentPriority"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectHostSideDeviceTestCases android.healthconnect.cts.device.HealthConnectDeviceTest#testAppCanReadRecordsUsingDataOriginFilters"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectHostSideDeviceTestCases android.healthconnect.cts.device.HealthConnectDeviceTest#testAppWithManageHealthDataPermissionCanUpdatePriority"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectHostSideDeviceTestCases android.healthconnect.cts.device.HealthConnectDeviceTest#testAppWithReadPerms_getChangeTokensAndLogsOfOtherApps_expectSuccess"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectHostSideDeviceTestCases android.healthconnect.cts.device.HealthConnectDeviceTest#testAppWithReadPerms_readOtherAppsDataByFilters_expectSuccess"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectHostSideDeviceTestCases android.healthconnect.cts.device.HealthConnectDeviceTest#testAppWithReadPerms_readOtherAppsDataByIds_expectSuccess"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectHostSideDeviceTestCases android.healthconnect.cts.device.HealthConnectDeviceTest#testMatchingApps_callingAppHasNoReadPermission_returnFalse"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectHostSideDeviceTestCases android.healthconnect.cts.device.HealthConnectDeviceTest#testMatchingApps_hasMatchingApp_returnTrue"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectHostSideDeviceTestCases android.healthconnect.cts.device.HealthConnectDeviceTest#testMatchingApps_multipleRequested_noReadPermission_returnFalse"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectHostSideDeviceTestCases android.healthconnect.cts.device.HealthConnectDeviceTest#testMatchingApps_multipleRequested_readPermissionForAll_returnTrue"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectHostSideDeviceTestCases android.healthconnect.cts.device.HealthConnectDeviceTest#testMatchingApps_multipleRequested_readPermissionForOne_returnTrue"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectHostSideDeviceTestCases android.healthconnect.cts.device.HealthConnectDeviceTest#testMatchingApps_sleepRequested_hasReadSleepPermission_returnTrue"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectHostSideDeviceTestCases android.healthconnect.cts.device.HealthConnectDeviceTest#testRevokingOnlyOneCorrectPermissionDoesntRemoveAppFromPriorityList"/>
     <!-- CtsHealthConnectHostTestCases -->
     <option name="compatibility:include-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.logging.HealthConnectDailyLogsStatsTests#testDatabaseStats"/>
     <option name="compatibility:include-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.logging.HealthConnectDailyLogsStatsTests#testIsUserActive_deleteRecord_userNotMonthlyActive"/>
@@ -2243,6 +2224,24 @@
     <option name="compatibility:include-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.logging.HealthConnectServiceStatsTests#testDeleteRecords"/>
     <option name="compatibility:include-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.logging.HealthConnectUiLogsTests#testImpressionsAndInteractionsSent"/>
     <!-- CtsHealthFitnessDeviceTestCases -->
+    <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsDeviceTests#testChangeLogs_deleteSymptomsRecords_returnsAllDeletedSymptomRecordIds"/>
+    <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsDeviceTests#testChangeLogs_getChangeLogToken_throwsExceptionForAppWithNoReadSymptomPermission"/>
+    <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsDeviceTests#testChangeLogs_getChangeLogs_throwsExceptionForAppWithNoReadSymptomPermission"/>
+    <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsDeviceTests#testChangeLogs_insertSymptomsRecords_returnsUpsertLogsAppHoldsPermissionFor"/>
+    <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectDeviceTest#testAggregateRecords_onlyWritePermissions_requestsOwnDataOnly_succeeds"/>
+    <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectDeviceTest#testAggregationOutputForTotalStepsCountWithDataFromTwoAppsHavingDifferentPriority"/>
+    <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectDeviceTest#testAppCanReadRecordsUsingDataOriginFilters"/>
+    <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectDeviceTest#testAppWithManageHealthDataPermissionCanUpdatePriority"/>
+    <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectDeviceTest#testAppWithReadPerms_getChangeTokensAndLogsOfOtherApps_expectSuccess"/>
+    <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectDeviceTest#testAppWithReadPerms_readOtherAppsDataByFilters_expectSuccess"/>
+    <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectDeviceTest#testAppWithReadPerms_readOtherAppsDataByIds_expectSuccess"/>
+    <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectDeviceTest#testMatchingApps_callingAppHasNoReadPermission_returnFalse"/>
+    <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectDeviceTest#testMatchingApps_hasMatchingApp_returnTrue"/>
+    <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectDeviceTest#testMatchingApps_multipleRequested_noReadPermission_returnFalse"/>
+    <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectDeviceTest#testMatchingApps_multipleRequested_readPermissionForAll_returnTrue"/>
+    <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectDeviceTest#testMatchingApps_multipleRequested_readPermissionForOne_returnTrue"/>
+    <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectDeviceTest#testMatchingApps_sleepRequested_hasReadSleepPermission_returnTrue"/>
+    <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectDeviceTest#testRevokingOnlyOneCorrectPermissionDoesntRemoveAppFromPriorityList"/>
     <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.GetActivityDatesTest#testActivityDates"/>
     <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.GetActivityDatesTest#testGetActivityDates_onUpdate"/>
     <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectAccessLogsTest#testAccessLogs_deleteByFilter_expectDeleteLogs"/>
