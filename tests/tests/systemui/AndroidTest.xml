@@ -50,6 +50,7 @@
 
     <!-- Collect the files in the dump directory for debugging -->
     <metrics_collector class="com.android.tradefed.device.metric.FilePullerLogCollector">
+        <option name="directory-keys" value="/sdcard/android.systemui.cts" />
         <option name="directory-keys" value="/sdcard/LightBarTestBase/" />
         <option name="directory-keys" value="/sdcard/WindowInsetsBehaviorTests" />
         <!-- Pull perfetto traces from DefaultUITraceListener -->
