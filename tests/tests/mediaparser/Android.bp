@@ -65,7 +65,6 @@ java_defaults {
         "androidx.test.ext.junit",
         "cts-media-common",
         "exoplayer-cts_media-test_assets",
-        "media_mainline_flags_java_lib",
     ],
     libs: [
         "android.test.base.stubs.test",
