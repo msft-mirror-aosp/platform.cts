@@ -821,13 +821,14 @@ public class SurfaceViewPreviewTest extends Camera2SurfaceViewTestCase {
     private void surfaceSetWithDiscardFreeBuffersTestByCamera(String cameraId) throws Exception {
         final int SURFACE_GROUP_ID = 2;
 
-        Size maxPreviewSz = mOrderedPreviewSizes.get(0);
+        Size[] sizes = mStaticInfo.getAvailableSizesForFormatChecked(ImageFormat.PRIVATE,
+                StaticMetadata.StreamDirection.Output);
+        Size maxPrivSz = getAscendingOrderSizes(Arrays.asList(sizes), /*ascending*/false).get(0);
         SimpleImageReaderListener imageListener = new SimpleImageReaderListener();
         ImageReader.Builder builder = (new ImageReader.Builder(
-                maxPreviewSz.getWidth(), maxPreviewSz.getHeight())).
+                maxPrivSz.getWidth(), maxPrivSz.getHeight())).
                 setImageFormat(ImageFormat.PRIVATE).
-                setMaxImages(MAX_READER_IMAGES).
-                setUsage(HardwareBuffer.USAGE_VIDEO_ENCODE);
+                setMaxImages(MAX_READER_IMAGES);
         ImageReader previewReader = builder.build();
         previewReader.setOnImageAvailableListener(imageListener, mHandler);
         Surface previewSurface = previewReader.getSurface();
@@ -880,8 +881,10 @@ public class SurfaceViewPreviewTest extends Camera2SurfaceViewTestCase {
 
     private void surfaceSetTestByCamera(String cameraId) throws Exception {
         final int MAX_SURFACE_GROUP_ID = 10;
-        Size maxPreviewSz = mOrderedPreviewSizes.get(0);
-        Size yuvSizeBound = maxPreviewSz; // Default case: legacy device
+        Size[] sizes = mStaticInfo.getAvailableSizesForFormatChecked(ImageFormat.PRIVATE,
+                StaticMetadata.StreamDirection.Output);
+        Size maxPrivSz = getAscendingOrderSizes(Arrays.asList(sizes), /*ascending*/false).get(0);
+        Size yuvSizeBound =  mOrderedPreviewSizes.get(0); // Default case: legacy device
         if (mStaticInfo.isHardwareLevelLimited()) {
             yuvSizeBound = mOrderedVideoSizes.get(0);
         } else if (mStaticInfo.isHardwareLevelAtLeastFull()) {
@@ -894,10 +897,9 @@ public class SurfaceViewPreviewTest extends Camera2SurfaceViewTestCase {
         ImageDropperListener imageListener = new ImageDropperListener();
 
         ImageReader.Builder builder = (new ImageReader.Builder(
-                maxPreviewSz.getWidth(), maxPreviewSz.getHeight())).
+                maxPrivSz.getWidth(), maxPrivSz.getHeight())).
                 setImageFormat(ImageFormat.PRIVATE).
-                setMaxImages(MAX_READER_IMAGES).
-                setUsage(HardwareBuffer.USAGE_VIDEO_ENCODE);
+                setMaxImages(MAX_READER_IMAGES);
         ImageReader previewReader = builder.build();
         previewReader.setOnImageAvailableListener(imageListener, mHandler);
         Surface previewSurface = previewReader.getSurface();
