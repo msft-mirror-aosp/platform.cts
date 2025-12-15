@@ -625,7 +625,8 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
                                     blackLevel[index], blackLevel[0]);
                             }
                         }
-                    } else if (key.equals(CaptureResult.LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS)) {
+                    } else if (Flags.logicalMultiCameraAdditionalResults()
+                            && key.equals(CaptureResult.LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS)) {
                         errorCollector.expectEquals(msg,
                                 requestBuilder.get(CaptureRequest.LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS),
                                 result.get(CaptureResult.LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS));
@@ -743,8 +744,9 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
         }
 
         // LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS not required if key is not supported.
-        if (!staticInfo.isLogicalMultiCamera() ||
-                !staticInfo.isLogicalMultiCameraAdditionalResultsSupported()) {
+        if (Flags.logicalMultiCameraAdditionalResults()
+                && (!staticInfo.isLogicalMultiCamera() ||
+                !staticInfo.isLogicalMultiCameraAdditionalResultsSupported())) {
             waiverKeys.add(CaptureResult.LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS);
         }
 
