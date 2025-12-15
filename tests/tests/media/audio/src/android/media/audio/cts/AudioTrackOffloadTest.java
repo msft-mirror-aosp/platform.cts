@@ -72,6 +72,8 @@ public class AudioTrackOffloadTest {
     private static final int PRESENTATION_END_PRECISION_MS = 1000; // 1s
     private static final int AUDIOTRACK_DEFAULT_SAMPLE_RATE = 44100;
     private static final int AUDIOTRACK_DEFAULT_CHANNEL_MASK = AudioFormat.CHANNEL_OUT_STEREO;
+    private static final int MAX_CONTINUOUS_ZERO_BYTES_WRITTEN = 5;
+    private static final int TIME_WAIT_FOR_AVAILABILITY_MS = 100;
 
     private static final AudioAttributes DEFAULT_ATTR = new AudioAttributes.Builder().build();
 
@@ -190,11 +192,23 @@ public class AudioTrackOffloadTest {
             trackOne.play();
             new Thread(() -> {
                 int written = 0;
+                int continuousZeroByteWritten = 0;
                 while (written < data.length) {
                     int wrote = trackOne.write(data, written, data.length - written,
                             AudioTrack.WRITE_BLOCKING);
                     if (wrote < 0) {
-                        Log.i(TAG, "First audiotrack write ended by: " + wrote);
+                        Log.e(TAG, "First audiotrack write ended by: " + wrote);
+                    } else if (wrote == 0) {
+                        continuousZeroByteWritten++;
+                        if (continuousZeroByteWritten > MAX_CONTINUOUS_ZERO_BYTES_WRITTEN) {
+                            Log.e(TAG, "First audiotrack tried " + continuousZeroByteWritten +
+                                    " times, but still get 0 byte written, total written bytes: "
+                                    + wrote);
+                            break;
+                        }
+                        SystemClock.sleep(TIME_WAIT_FOR_AVAILABILITY_MS);
+                    } else {
+                        continuousZeroByteWritten = 0;
                     }
                     written += wrote;
                     Log.i(TAG, String.format("wrote %d bytes (%d out of %d)",
@@ -211,7 +225,7 @@ public class AudioTrackOffloadTest {
             trackTwo.registerStreamEventCallback(mExec, mCallback);
 
             trackTwo.play();
-            writeAllBlocking(trackTwo, data);
+            writeAllBlocking(trackTwo, data, "testMultipleAudioTrackOffloadPreemption");
 
             // Verify that trackTwo started and completed (preempting trackOne)
             final long elapsed = checkDataRequest(DATA_REQUEST_TIMEOUT_MS);
@@ -387,7 +401,7 @@ public class AudioTrackOffloadTest {
                 .isEqualTo(bufferSizeInBytes3sec);
 
             track.play();
-            writeAllBlocking(track, data);
+            writeAllBlocking(track, data, "testAudioTrackOffload");
 
             try {
                 final long elapsed = checkDataRequest(DATA_REQUEST_TIMEOUT_MS);
@@ -418,16 +432,29 @@ public class AudioTrackOffloadTest {
         };
     }
 
-    private void writeAllBlocking(AudioTrack track, byte[] data) {
+    private void writeAllBlocking(AudioTrack track, byte[] data, String caller) {
         int written = 0;
+        int continuousZeroByteWriteAttempts = 0;
         while (written < data.length) {
             int wrote = track.write(data, written, data.length - written,
                     AudioTrack.WRITE_BLOCKING);
             if (wrote < 0) {
-                fail("Unable to write all read data, wrote " + written + " bytes");
+                fail(caller + ": unable to write all read data, wrote " + written + " bytes, "
+                        + " error=" + wrote);
+            } else if (wrote == 0) {
+                continuousZeroByteWriteAttempts++;
+                if (continuousZeroByteWriteAttempts > MAX_CONTINUOUS_ZERO_BYTES_WRITTEN) {
+                    fail(caller + ": tried " + continuousZeroByteWriteAttempts +
+                            " times, but still wrote 0 bytes, total written bytes=" + written);
+                }
+                // There may not be any availability to write, sleep a bit.
+                SystemClock.sleep(TIME_WAIT_FOR_AVAILABILITY_MS);
+            } else {
+                continuousZeroByteWriteAttempts = 0;
             }
             written += wrote;
-            Log.i(TAG, String.format("wrote %d bytes (%d out of %d)", wrote, written, data.length));
+            Log.i(TAG, String.format("%s wrote %d bytes (%d out of %d)",
+                    caller, wrote, written, data.length));
         }
     }
 
@@ -488,7 +515,7 @@ public class AudioTrackOffloadTest {
             offloadTrack.play();
             for (int i = 0; i <= playbackNumber; i++) {
                 offloadTrack.setOffloadDelayPadding(delay, padding);
-                writeAllBlocking(offloadTrack, audioInput);
+                writeAllBlocking(offloadTrack, audioInput, "testGaplessAudioTrackOffload");
                 offloadTrack.setOffloadEndOfStream();
             }
             offloadTrack.stop();
