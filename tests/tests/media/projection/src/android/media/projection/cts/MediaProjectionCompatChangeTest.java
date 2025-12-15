@@ -18,6 +18,7 @@ package android.media.projection.cts;
 
 import static android.media.cts.MediaProjectionActivity.ENTIRE_SCREEN_STRING_RES_NAME;
 import static android.media.cts.MediaProjectionActivity.SCREEN_SHARE_OPTIONS_RES_PATTERN;
+import static android.media.cts.MediaProjectionActivity.SHARE_TAB_TEST_TAG;
 import static android.media.cts.MediaProjectionActivity.SINGLE_APP_STRING_RES_NAME;
 import static android.media.cts.MediaProjectionActivity.getResourceString;
 import static android.media.projection.MediaProjectionConfig.createConfigForDefaultDisplay;
@@ -148,17 +149,26 @@ public class MediaProjectionCompatChangeTest {
         mMediaProjectionRule.showMediaProjectionConsent(config);
         sDevice.waitForIdle();
 
+        // TODO(b/468405990) Add tests for the new Compose MediaProjection UI.
+        // This test currently targets only the old UI. Early return if the new Compose UI
+        // is detected.
+        assumeFalse(isComposeUI());
+
         // check if we can find a view which has the expected default option
-        boolean foundOptionString = sDevice.hasObject(
-                By.res(SCREEN_SHARE_OPTIONS_RES_PATTERN)
-                        .hasDescendant(
-                                By.text(expectedSpinnerString)));
+        boolean foundOptionString =
+                sDevice.hasObject(
+                        By.res(SCREEN_SHARE_OPTIONS_RES_PATTERN)
+                                .hasDescendant(By.text(expectedSpinnerString)));
 
         // Dismiss the dialog using the back gesture, which is a generic way to close both
         // the old and new permission UIs without relying on specific button IDs.
         sDevice.pressBack();
 
         return foundOptionString;
+    }
+
+    private boolean isComposeUI() {
+        return sDevice.hasObject(By.res(SHARE_TAB_TEST_TAG));
     }
 
     private void initializePartialScreenshareSupport() throws Exception {
