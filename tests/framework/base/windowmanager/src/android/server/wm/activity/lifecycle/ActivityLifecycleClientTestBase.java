@@ -550,9 +550,6 @@ public class ActivityLifecycleClientTestBase extends MultiDisplayTestBase {
         }
     }
 
-    public static class AlwaysFocusablePipActivity extends CallbackTrackingActivity {
-    }
-
     public static class SlowActivity extends CallbackTrackingActivity {
 
         static final String EXTRA_CONTROL_FLAGS = "extra_control_flags";

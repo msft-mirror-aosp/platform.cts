@@ -103,13 +103,6 @@
              android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout"
              android:supportsPictureInPicture="true"/>
 
-        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$AlwaysFocusablePipActivity"
-             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout"
-             android:resizeableActivity="false"
-             android:supportsPictureInPicture="true"
-             androidprv:alwaysFocusable="true"
-             android:exported="true"/>
-
         <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$SlowActivity"/>
 
         <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$NoDisplayActivity"
