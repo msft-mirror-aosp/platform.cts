@@ -124,6 +124,14 @@ public class ImmersiveAudioActivity extends PassFailButtons.Activity {
         registerReceiver(mBroadcastReceiver, mIntentFilter, RECEIVER_EXPORTED);
     }
 
+    @Override
+    public void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        mIntent = intent;
+        displayIntent(mIntent);
+        getPassButton().setEnabled(calculatePass());
+    }
+
     private boolean calculatePass() {
         if (!mSupportsHeadTracking) {
             return true;

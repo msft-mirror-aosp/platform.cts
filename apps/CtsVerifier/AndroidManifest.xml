@@ -5668,6 +5668,7 @@
         </activity>
 
         <activity android:name=".audio.ImmersiveAudioActivity"
+            android:launchMode="singleTask"
             android:exported="true"
             android:label="@string/immersive_audio_test">
             <intent-filter>
