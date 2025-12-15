@@ -16,6 +16,8 @@
 
 package android.media.audio.cts;
 
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -36,12 +38,16 @@ import android.media.AudioTimestamp;
 import android.media.AudioTrack;
 import android.media.MediaFormat;
 import android.media.PlaybackParams;
+import android.media.audio.Flags;
 import android.media.cts.AudioHelper;
 import android.media.metrics.LogSessionId;
 import android.media.metrics.MediaMetricsManager;
 import android.media.metrics.PlaybackSession;
 import android.os.PersistableBundle;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
@@ -50,6 +56,7 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -73,6 +80,9 @@ public class AudioTrackTest {
     private void loge(String testName, String message) {
         Log.e(TAG, "[" + testName + "] " + message);
     }
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     // -----------------------------------------------------------------
     // private class to hold test results
@@ -1160,6 +1170,100 @@ public class AudioTrackTest {
                     AudioTrack.ERROR_BAD_VALUE);
         // -------- tear down --------------
         track.release();
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_PARTIAL_FLUSH_FOR_PCM_OFFLOAD)
+    @Test
+    public void testGetWrittenFramesCount() throws Exception {
+        final int sampleRate = 48000;
+        final int millisPerSecond = 1000;
+        final AudioFormat format =
+                new AudioFormat.Builder()
+                        .setChannelMask(AudioFormat.CHANNEL_CONFIGURATION_STEREO)
+                        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                        .setSampleRate(sampleRate)
+                        .build();
+        final int dataSizeInFrames = sampleRate * 200 / millisPerSecond;
+        final int bufferSizeInBytes = format.getFrameSizeInBytes() * dataSizeInFrames;
+
+        AudioTrack track = null;
+        try {
+            final short[] data = new short[dataSizeInFrames * format.getChannelCount()];
+
+            // Create streaming track.
+            track = new AudioTrack.Builder()
+                    .setAudioFormat(format)
+                    .setBufferSizeInBytes(bufferSizeInBytes)
+                    .build();
+
+            assertWithMessage("AudioTrack must be initialized")
+                    .that(track.getState())
+                    .isEqualTo(AudioTrack.STATE_INITIALIZED);
+
+            // frames written is 0 at start.
+            assertWithMessage("getWrittenFramesCount() starts at 0")
+                    .that(track.getWrittenFramesCount())
+                    .isEqualTo(0);
+
+            // make active
+            track.play();
+
+            assertWithMessage("play() does not affect getWrittenFramesCount()")
+                    .that(track.getWrittenFramesCount())
+                    .isEqualTo(0);
+
+            // write increases frames written.
+            final int written = track.write(data, 0 /* offsetInShorts */, data.length);
+            assertWithMessage("write() succeeds with data.length")
+                    .that(written)
+                    .isEqualTo(data.length);
+            assertWithMessage("write() advances getWrittenFramesCount()")
+                    .that(track.getWrittenFramesCount())
+                    .isEqualTo(dataSizeInFrames);
+
+            // the actual time isn't relevant, but for better testing
+            // allow time for audio activity.
+            Thread.sleep(100 /* millis */);
+
+            // pause does not affect frames written.
+            track.pause();
+            assertWithMessage("pause() does not affect getWrittenFramesCount()")
+                    .that(track.getWrittenFramesCount())
+                    .isEqualTo(dataSizeInFrames);
+
+            // flush does not affect frames written.
+            track.flush();
+            assertWithMessage("flush() does not affect getWrittenFramesCount()")
+                    .that(track.getWrittenFramesCount())
+                    .isEqualTo(dataSizeInFrames);
+
+            // stop does not affect frames written.
+            track.stop();
+            assertWithMessage("stop() does not affect getWrittenFramesCount()")
+                    .that(track.getWrittenFramesCount())
+                    .isEqualTo(dataSizeInFrames);
+
+            // release track.
+            track.release();
+
+            // Check uninitialized track throws IllegalStateException.
+            final AudioTrack ftrack = track;
+            assertThrows(IllegalStateException.class, () -> ftrack.getWrittenFramesCount());
+
+            // Check static track throws IllegalStateException.
+            track = new AudioTrack.Builder()
+                    .setAudioFormat(format)
+                    .setBufferSizeInBytes(bufferSizeInBytes)
+                    .setTransferMode(AudioTrack.MODE_STATIC)
+                    .build();
+            final AudioTrack ftrack2 = track;
+            assertThrows(IllegalStateException.class, () -> ftrack2.getWrittenFramesCount());
+
+        } finally {
+            if (track != null) {
+                track.release();
+            }
+        }
     }
 
     // -----------------------------------------------------------------
