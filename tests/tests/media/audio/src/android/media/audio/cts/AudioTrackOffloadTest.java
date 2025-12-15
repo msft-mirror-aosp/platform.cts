@@ -244,8 +244,10 @@ public class AudioTrackOffloadTest {
                     .isEqualTo(1);
             }
         } finally {
+            trackOne.pause();
             trackOne.release();
             if (trackTwo != null) {
+                trackTwo.pause();
                 trackTwo.unregisterStreamEventCallback(mCallback);
                 trackTwo.release();
             }
@@ -280,23 +282,27 @@ public class AudioTrackOffloadTest {
                         .build();
         // Average kbps for 44.1kHz 16b stereo = 1378 kbps
         final int bitRateInKbps = sampleRate * format.getFrameSizeInBytes() * 8 / 1024;
-        AudioTrack track =
-                getOffloadAudioTrack(bitRateInKbps, format,
-                                     /* testName= */ "testFlushWrittenFramesFromPosition");
+        AudioTrack track = getOffloadAudioTrack(
+                bitRateInKbps, format, /* testName= */ "testFlushWrittenFramesFromPosition");
         if (track == null) {
             Log.i(TAG, "testFlushWrittenFramesFromPosition skipped due to "
                     + "PCM offload not supported");
             return;
         }
-        assertEquals(0, track.flushWrittenFramesFromPosition(
-                0, AudioTrack.FLUSH_FROM_ACCURACY_BEST_EFFORT));
-        assertEquals(0, track.flushWrittenFramesFromPosition(
-                0, AudioTrack.FLUSH_FROM_ACCURACY_EXACT));
+        try {
+            assertEquals(0, track.flushWrittenFramesFromPosition(
+                    0, AudioTrack.FLUSH_FROM_ACCURACY_BEST_EFFORT));
+            assertEquals(0, track.flushWrittenFramesFromPosition(
+                    0, AudioTrack.FLUSH_FROM_ACCURACY_EXACT));
 
-        assertWithMessage("getWrittenFramesCount() equals "
-                + "successful return from flushWrittenFramesFromPosition()")
-                .that(track.getWrittenFramesCount())
-                .isEqualTo(0);
+            assertWithMessage("getWrittenFramesCount() equals "
+                    + "successful return from flushWrittenFramesFromPosition()")
+                    .that(track.getWrittenFramesCount())
+                    .isEqualTo(0);
+        } finally {
+            track.pause();
+            track.release();
+        }
     }
 
     @CddTest(requirements = {"5.5.4/C-SR-2"})
@@ -598,24 +604,29 @@ public class AudioTrackOffloadTest {
             return;
         }
 
-        assertThat(track.getOffloadPadding() >= 0).isTrue();
+        try {
+            assertThat(track.getOffloadPadding() >= 0).isTrue();
 
-        track.setOffloadDelayPadding(0 /*delayInFrames*/, 0 /*paddingInFrames*/);
+            track.setOffloadDelayPadding(0 /*delayInFrames*/, 0 /*paddingInFrames*/);
 
-        int offloadDelay;
-        offloadDelay = track.getOffloadDelay();
-        assertThat(offloadDelay).isEqualTo(0);
+            int offloadDelay;
+            offloadDelay = track.getOffloadDelay();
+            assertThat(offloadDelay).isEqualTo(0);
 
-        int padding = track.getOffloadPadding();
-        assertThat(padding).isEqualTo(0);
+            int padding = track.getOffloadPadding();
+            assertThat(padding).isEqualTo(0);
 
-        track.setOffloadDelayPadding(
-                TEST_DELAY /*delayInFrames*/,
-                TEST_PADDING /*paddingInFrames*/);
-        offloadDelay = track.getOffloadDelay();
-        assertThat(offloadDelay).isEqualTo(TEST_DELAY);
-        padding = track.getOffloadPadding();
-        assertThat(padding).isEqualTo(TEST_PADDING);
+            track.setOffloadDelayPadding(
+                    TEST_DELAY /*delayInFrames*/,
+                    TEST_PADDING /*paddingInFrames*/);
+            offloadDelay = track.getOffloadDelay();
+            assertThat(offloadDelay).isEqualTo(TEST_DELAY);
+            padding = track.getOffloadPadding();
+            assertThat(padding).isEqualTo(TEST_PADDING);
+        } finally {
+            track.pause();
+            track.release();
+        }
     }
 
     @Test
