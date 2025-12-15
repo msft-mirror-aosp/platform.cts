@@ -598,14 +598,18 @@ public final class ScreenCaptureDisabledTest {
         if (inputValue == null) {
             dpm.clearPolicy(policyIdentifier, scope);
             int returnedValue = dpm.getIntegerPolicy(policyIdentifier, scope);
+            int resolvedValue = dpm.getIntegerResolvedPerUserPolicy(policyIdentifier);
 
             // Bedstead doesn't support Integer values, so it returns -1 instead of null.
             assertThat(returnedValue).isEqualTo(-1);
+            assertThat(resolvedValue).isEqualTo(-1);
         } else {
             dpm.setIntegerPolicy(policyIdentifier, scope, inputValue);
             int returnedValue = dpm.getIntegerPolicy(policyIdentifier, scope);
+            int resolvedValue = dpm.getIntegerResolvedPerUserPolicy(policyIdentifier);
 
             assertThat(returnedValue).isEqualTo(inputValue);
+            assertThat(resolvedValue).isEqualTo(inputValue);
         }
     }
 
