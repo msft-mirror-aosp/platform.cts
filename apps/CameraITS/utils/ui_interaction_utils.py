@@ -753,6 +753,10 @@ def launch_and_take_capture(dut, pkg_name, camera_facing, log_path,
     launch_cmd = f'monkey -p {pkg_name} 1'
     its_device_utils.run_adb_shell_command(device_id, launch_cmd)
 
+    logging.debug('disable auto rotate')
+    its_device_utils.run_adb_shell_command(
+        device_id, 'settings put system accelerometer_rotation 0')
+
     # Click OK/Done button on initial pop up windows
     _click_if_exists(dut, AGREE_BUTTON)
     _click_if_exists(dut, AGREE_AND_CONTINUE_BUTTON)
