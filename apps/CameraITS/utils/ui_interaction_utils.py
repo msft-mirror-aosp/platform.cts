@@ -47,6 +47,13 @@ QUICK_SETTINGS_HDR_RESOURCE_ID = 'QuickSettingsHdrButton'
 QUICK_SET_FLASH_RESOURCE_ID = 'QuickSettingsFlashButton'
 QUICK_SET_FLIP_CAMERA_RESOURCE_ID = 'QuickSettingsFlipCameraButton'
 QUICK_SET_RATIO_RESOURCE_ID = 'QuickSettingsRatioButton'
+QUICK_SET_CAPTURE_MODE_RESOURCE_ID = 'quick_settings_btn_focus_capture_mode'
+QUICK_SET_FOCUSED_CAPTURE_MODE_STANDARD_RESOURCE_ID = (
+    'quick_settings_focused_capture_mode_btn_option_standard'
+)
+QUICK_SET_FOCUSED_CAPTURE_MODE_IMAGE_ONLY_RESOURCE_ID = (
+    'quick_settings_focused_capture_mode_btn_option_image_only'
+)
 CAPTURE_MODE_TOGGLE_BUTTON_JCA_RES_ID = 'CaptureModeToggleButton'
 QUICK_SET_RATIO_3_4_RESOURCE_ID = 'QuickSettingsRatio3:4Button'
 QUICK_SET_RATIO_9_16_RESOURCE_ID = 'QuickSettingsRatio9:16Button'
@@ -107,6 +114,8 @@ JCA_STABILIZATION_MODES = {
     2: STABILIZATION_DESC_ON,
     3: STABILIZATION_DESC_OPTICAL,
 }
+JCA_CAPTURE_MODE_STANDARD_TEXT = 'Standard'
+JCA_CAPTURE_MODE_IMAGE_ONLY_TEXT = 'Image only'
 JCA_VIDEO_QUALITY_AUTO = 'Auto'
 JCA_VIDEO_QUALITY_SD = 'SD'
 JCA_VIDEO_QUALITY_HD = 'HD'
@@ -844,6 +853,56 @@ def default_camera_app_dut_setup(device_id, pkg_name):
         device_id, f'{REMOVE_CAMERA_FILES_CMD} {path}/*')
 
 
+def _ensure_jca_can_take_photo(dut, log_path):
+  """Ensures the JCA app is in a state where a photo can be taken.
+
+  Args:
+    dut: An Android controller device object.
+    log_path: str; log path to save screenshots.
+  """
+  entered_sub_menu = False
+  success = False
+  dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()  # Open QS
+
+  capture_mode_quick_setting_button = dut.ui(
+      res=QUICK_SET_CAPTURE_MODE_RESOURCE_ID)
+  if capture_mode_quick_setting_button.wait.exists(UI_OBJECT_WAIT_TIME_SECONDS):
+    supports_photo_capture_texts = (
+        JCA_CAPTURE_MODE_STANDARD_TEXT,
+        JCA_CAPTURE_MODE_IMAGE_ONLY_TEXT,
+    )
+    if any(capture_mode_quick_setting_button.has(text=mode) for mode in supports_photo_capture_texts):
+      logging.debug('Photo capture supported in current capture mode.')
+      success = True
+
+    elif capture_mode_quick_setting_button.enabled:
+      logging.debug('Attempting to switch to capture mode that supports photo capture...')
+      dut.ui(res=QUICK_SET_CAPTURE_MODE_RESOURCE_ID).click()
+      entered_sub_menu = True
+      # List of capture modes that support photo capture, in order of precedence
+      supports_photo_capture_resource_ids = (
+          QUICK_SET_FOCUSED_CAPTURE_MODE_STANDARD_RESOURCE_ID,
+          QUICK_SET_FOCUSED_CAPTURE_MODE_IMAGE_ONLY_RESOURCE_ID,
+      )
+      for capture_mode_res in supports_photo_capture_resource_ids:
+        capture_mode_button = dut.ui(res=capture_mode_res)
+        if capture_mode_button.wait.exists(
+            UI_OBJECT_WAIT_TIME_SECONDS
+        ) and (capture_mode_button.enabled):
+          capture_mode_button.click()
+          time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
+          success = True
+          break  # exit the for loop
+
+  if not success:
+    dut.take_screenshot(log_path, prefix='no_supported_photo_capture_mode')
+    raise AssertionError('Camera does not support a photo capture mode')
+
+  if entered_sub_menu:
+    dut.ui.press.back()
+  dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()  # Close QS
+
+
 def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
                            video_stabilization=None, jca_aspect_ratio=None,
                            enable_hdr=False, take_preview_snap=False):
@@ -898,6 +957,8 @@ def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
     # Set zoom_ratio after setting video stabilization to avoid reset to default
     if zoom_ratio is not None:
       jca_ui_zoom(dut, zoom_ratio, log_path)
+    # Ensure JCA is in a state where a photo can be taken
+    _ensure_jca_can_take_photo(dut, log_path)
     # Take dumpsys before capturing the image
     take_dumpsys_report(dut, file_path=DEFAULT_JCA_UI_DUMPSYS_PATH)
     if dut.ui(res=CAPTURE_BUTTON_RESOURCE_ID).wait.exists(
@@ -952,7 +1013,6 @@ def enable_jca_hdr(dut, log_path):
     logging.debug('Enabled HDR on JCA')
     dut.take_screenshot(log_path, prefix='enabled_hdr_jca')
     dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
-    dut.ui(res=CAPTURE_MODE_TOGGLE_BUTTON_JCA_RES_ID).click()
 
 
 def jca_hdr_supported(dut, log_path, camera_facing):
