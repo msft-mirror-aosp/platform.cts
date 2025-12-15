@@ -57,7 +57,16 @@ public final class RoleContext implements AutoCloseable {
             if (currentRoleHolders.isEmpty() && mPreviousRoleHolders.size() == 1) {
                 Package roleHolderPackage = Package.of(
                         mPreviousRoleHolders.stream().collect(Collectors.toList()).get(0));
-                roleHolderPackage.setAsRoleHolder(mRole, mUser);
+
+                // Temporarily enable bypassing because Package.removeAsRoleholder disables it after
+                // removing the role holder.
+                boolean isBypassing = TestApis.roles().isBypassingRoleQualification();
+                try {
+                    TestApis.roles().setBypassingRoleQualification(true);
+                    roleHolderPackage.setAsRoleHolder(mRole, mUser);
+                } finally {
+                    TestApis.roles().setBypassingRoleQualification(isBypassing);
+                }
             }
         }
     }
