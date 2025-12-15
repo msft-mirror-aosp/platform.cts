@@ -93,9 +93,16 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
             "$APK_DIRECTORY/CtsUsePermissionAppImplicitUserSelectStorage.apk"
         const val APP_APK_PATH_OTHER_APP =
             "$APK_DIRECTORY/CtsDifferentPkgNameApp.apk"
+        const val APP_APK_PATH_SHARED_UID_NO_PERMS = "$APK_DIRECTORY/CtsAppWithSharedUidNoPerms.apk"
+        const val APP_APK_PATH_SHARED_UID_WITH_PERMS =
+            "$APK_DIRECTORY/CtsAppWithSharedUidWithPerms.apk"
         const val APP_PACKAGE_NAME = "android.permission3.cts.usepermission"
         const val OTHER_APP_PACKAGE_NAME = "android.permission3.cts.usepermissionother"
         const val TEST_INSTALLER_PACKAGE_NAME = "android.permission3.cts"
+        const val SHARED_UID_NO_PERMS_PACKAGE_NAME =
+            "android.permissionui.cts.appwithshareduidnoperms"
+        const val SHARED_UID_WITH_PERMS_PACKAGE_NAME =
+            "android.permissionui.cts.appwithshareduidwithperms"
 
         const val ALLOW_ALL_BUTTON =
             "com.android.permissioncontroller:id/permission_allow_all_button"
