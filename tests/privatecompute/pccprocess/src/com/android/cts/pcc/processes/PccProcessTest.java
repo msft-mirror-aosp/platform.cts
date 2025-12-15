@@ -24,13 +24,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import android.app.AppOpsManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.os.Process;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -40,6 +43,9 @@ import android.widget.Toast;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.SystemUtil;
+import com.android.cts.pcc.appops.IPccAppOpsBinder;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -48,10 +54,14 @@ import org.junit.runner.RunWith;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 @RunWith(AndroidJUnit4.class)
 @RequiresFlagsEnabled(FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT)
 public class PccProcessTest {
+
+    private static final String TEST_OP = AppOpsManager.OPSTR_RESERVED_FOR_TESTING;
+    private static final String APPOPS_TEST_PKG = "com.android.cts.pcc.appops";
 
     private static final int TIMEOUT_SECONDS = 5;
     private static final String CUSTOM_PCC_ALLOWED_PERMISSION =
@@ -355,5 +365,66 @@ public class PccProcessTest {
                 "PCC process should not hold a PCC-denied permission",
                 deniedPermissionResult,
                 PERMISSION_DENIED);
+    }
+
+    @Test
+    public void testPccAppOpsInheritedFromAppUid() throws Exception {
+        final int appUid = mContext.getPackageManager().getPackageUid(APPOPS_TEST_PKG, 0);
+
+        final AppOpsManager appOpsManager = mContext.getSystemService(AppOpsManager.class);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        final AtomicReference<IPccAppOpsBinder> binderRef = new AtomicReference<>();
+        ServiceConnection connection =
+                new ServiceConnection() {
+                    @Override
+                    public void onServiceConnected(ComponentName name, IBinder service) {
+                        binderRef.set(IPccAppOpsBinder.Stub.asInterface(service));
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onServiceDisconnected(ComponentName name) {}
+                };
+
+        Intent intent = new Intent();
+        intent.setComponent(new ComponentName(APPOPS_TEST_PKG, APPOPS_TEST_PKG + ".PccService"));
+        mContext.bindService(intent, connection, Context.BIND_AUTO_CREATE);
+
+        try {
+            assertTrue(
+                    "Service connection timed out", latch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+            IPccAppOpsBinder binder = binderRef.get();
+            assertNotNull("Binder should not be null", binder);
+
+            final int pccUid = binder.getPccUid();
+            assertTrue(
+                    "Bound service should be a PCC process",
+                    Process.isPrivateComputeCoreUid(pccUid));
+
+            // Set on the app UID, verify on the PCC uid
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> {
+                        appOpsManager.setUidMode(TEST_OP, appUid, AppOpsManager.MODE_ALLOWED);
+                        assertEquals(AppOpsManager.MODE_ALLOWED, binder.noteOp(TEST_OP));
+                        // Make the same call from this process itself
+                        assertEquals(
+                                AppOpsManager.MODE_ALLOWED,
+                                appOpsManager.noteOp(TEST_OP, pccUid, APPOPS_TEST_PKG));
+                    });
+
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> {
+                        appOpsManager.setUidMode(TEST_OP, appUid, AppOpsManager.MODE_IGNORED);
+                        assertEquals(AppOpsManager.MODE_IGNORED, binder.noteOp(TEST_OP));
+                        // Make the same call from this process itself
+                        assertEquals(
+                                AppOpsManager.MODE_IGNORED,
+                                appOpsManager.noteOp(TEST_OP, pccUid, APPOPS_TEST_PKG));
+                    });
+
+        } finally {
+            mContext.unbindService(connection);
+        }
     }
 }
