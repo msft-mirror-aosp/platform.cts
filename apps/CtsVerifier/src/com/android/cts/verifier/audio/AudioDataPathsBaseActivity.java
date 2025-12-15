@@ -1811,7 +1811,7 @@ public abstract class AudioDataPathsBaseActivity
         try {
             JSONArray tests = new JSONArray();
             for (TestManager manager : mTestManagers) {
-                if (manager.calculatePass()) {
+                if (manager.hasRun()) {
                     JSONArray testsForManager = manager.toJsonArray();
                     for (int i = 0; i < testsForManager.length(); i++) {
                         tests.put(testsForManager.get(i));
