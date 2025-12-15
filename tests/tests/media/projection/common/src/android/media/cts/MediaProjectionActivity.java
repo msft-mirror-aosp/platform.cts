@@ -89,6 +89,12 @@ public class MediaProjectionActivity extends Activity {
     public static final String CONNECTED_DISPLAY_STRING_RES_NAME =
             "screen_share_permission_dialog_option_text_entire_screen_for_display";
 
+    public static final String SHARE_TAB_TEST_TAG = "ShareTabOption";
+    public static final String SHARE_APP_WINDOW_TEST_TAG = "ShareAppWindowOption";
+    public static final String SHARE_ENTIRE_SCREEN_TEST_TAG = "ShareEntireScreenOption";
+    public static final String SHARE_BUTTON_TEST_TAG = "ShareButton";
+    public static final String SHARE_CONTENT_LIST_TEST_TAG = "ShareContentList";
+
     private boolean mHandleActivityResult = false;
 
     private MediaProjectionManager mProjectionManager;
@@ -222,6 +228,8 @@ public class MediaProjectionActivity extends Activity {
         mHandleActivityResult = true;
         final int retryCount = 5;
         int count = 0;
+        UiDevice uiDevice = UiDevice.getInstance(getInstrumentation());
+
         // Sometimes system decides to rotate the permission activity to another orientation
         // right after showing it. This results in: uiautomation thinks that accept button appears,
         // we successfully click it in terms of uiautomation, but nothing happens,
@@ -234,34 +242,113 @@ public class MediaProjectionActivity extends Activity {
                             ? getResourceString(
                                     this, CONNECTED_DISPLAY_STRING_RES_NAME, displayName)
                             : getResourceString(this, ENTIRE_SCREEN_STRING_RES_NAME);
-            dismissPermissionDialog(optionString);
+            dismissPermissionDialog(uiDevice, optionString);
             count++;
         } while (!mCountDownLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS));
     }
 
     /** The permission dialog will be auto-opened by the activity - find it and accept */
-    private static void dismissPermissionDialog(@Nullable String optionString) {
-        // Ensure the device is initialized before interacting with any UI elements.
-        UiDevice.getInstance(getInstrumentation());
-        if (optionString != null) {
-            // Select the screen option before pressing "Start recording" button.
-            if (!selectScreenOption(optionString)) {
-                Log.e(TAG, "Couldn't select screen option: " + optionString);
-            }
+    private static void dismissPermissionDialog(UiDevice uiDevice, @Nullable String optionString) {
+        uiDevice.waitForIdle();
+
+        BySelector shareTabSelector = By.res(SHARE_TAB_TEST_TAG);
+        boolean isNewUiPresent =
+                uiDevice.wait(Until.hasObject(shareTabSelector), PERMISSION_DIALOG_WAIT_MS);
+
+        if (isNewUiPresent) {
+            Log.d(TAG, "Compose permission UI detected via testTag: " + SHARE_TAB_TEST_TAG);
+            dismissNewComposePermissionDialog(uiDevice);
+        } else {
+            Log.d(TAG, "Old AlertDialog permission UI detected.");
+            dismissOldAlertDialog(uiDevice, optionString);
         }
-        pressStartRecording();
+    }
+
+    private static void dismissNewComposePermissionDialog(UiDevice uiDevice) {
+        UiObject2 shareEntireScreenButton =
+                uiDevice.wait(
+                        Until.findObject(By.res(SHARE_ENTIRE_SCREEN_TEST_TAG)),
+                        PERMISSION_DIALOG_WAIT_MS);
+
+        if (shareEntireScreenButton == null) {
+            Log.e(
+                    TAG,
+                    "Could not find 'Entire Screen' option with testTag: "
+                            + SHARE_ENTIRE_SCREEN_TEST_TAG);
+            return;
+        }
+
+        Log.d(TAG, "Found 'Entire Screen' option, clicking it.");
+        shareEntireScreenButton.click();
+        uiDevice.waitForIdle();
+
+        UiObject2 contentList =
+                uiDevice.wait(
+                        Until.findObject(By.res(SHARE_CONTENT_LIST_TEST_TAG)),
+                        PERMISSION_DIALOG_WAIT_MS);
+
+        if (contentList == null) {
+            Log.e(TAG, "Could not find content list with testTag: " + SHARE_CONTENT_LIST_TEST_TAG);
+            return;
+        }
+
+        Log.d(TAG, "Found content list with testTag: " + SHARE_CONTENT_LIST_TEST_TAG);
+        // Find the first clickable item within the displays list.
+        UiObject2 firstDisplay = contentList.findObject(By.clickable(true));
+        if (firstDisplay == null) {
+            Log.e(TAG, "Found content list via testTag, but it has no clickable items.");
+            return;
+        }
+
+        Log.d(TAG, "Found content list via testTag. Clicking the first item.");
+        firstDisplay.click();
+
+        uiDevice.waitForIdle();
+        // Find and click the "Share" button, which should now be enabled.
+        UiObject2 shareButton =
+                uiDevice.wait(
+                        Until.findObject(By.res(SHARE_BUTTON_TEST_TAG)), PERMISSION_DIALOG_WAIT_MS);
+
+        if (shareButton == null) {
+            Log.e(
+                    TAG,
+                    "Could not find Compose Share button with testTag: " + SHARE_BUTTON_TEST_TAG);
+            return;
+        }
+
+        // Wait for the button to be enabled after the display selection.
+        boolean enabled = shareButton.wait(Until.enabled(true), PERMISSION_DIALOG_WAIT_MS);
+        if (enabled) {
+            shareButton.click();
+            Log.d(TAG, "Clicked enabled Compose Share button.");
+        } else {
+            Log.e(
+                    TAG,
+                    "The 'Share' button did not become enabled after attempting to select a"
+                            + " display. The test will likely fail.");
+        }
+    }
+
+    private static void dismissOldAlertDialog(UiDevice uiDevice, @Nullable String optionString) {
+        if (optionString != null) {
+            if (!selectScreenOption(uiDevice, optionString)) {
+                Log.e(TAG, "Couldn't select screen option: " + optionString);
+        }
+        }
+        pressStartRecording(uiDevice);
     }
 
     @Nullable
-    private static UiObject2 findUiObject(BySelector selector, UiSelector uiSelector) {
+    private static UiObject2 findUiObject(
+            UiDevice uiDevice, BySelector selector, UiSelector uiSelector) {
         // Check if the View can be found on the current screen.
-        UiObject2 obj = waitForObject(selector);
+        UiObject2 obj = waitForObject(uiDevice, selector);
 
         // If the View is not found on the current screen. Try scrolling around to find it.
         if (obj == null) {
             Log.w(TAG, "Couldn't find " + selector + ", now scrolling to it.");
             scrollToGivenResource(uiSelector);
-            obj = waitForObject(selector);
+            obj = waitForObject(uiDevice, selector);
         }
         if (obj == null) {
             Log.w(TAG, "Still couldn't find " + selector + ", now scrolling screen height.");
@@ -279,9 +366,10 @@ public class MediaProjectionActivity extends Activity {
         return obj;
     }
 
-    private static boolean selectScreenOption(String optionString) {
+    private static boolean selectScreenOption(UiDevice uiDevice, String optionString) {
         UiObject2 optionSelector =
                 findUiObject(
+                        uiDevice,
                         By.res(SCREEN_SHARE_OPTIONS_RES_PATTERN),
                         new UiSelector().resourceIdMatches(SCREEN_SHARE_OPTIONS_REGEX));
         if (optionSelector == null) {
@@ -293,9 +381,8 @@ public class MediaProjectionActivity extends Activity {
         }
         optionSelector.click();
 
-        UiDevice.getInstance(getInstrumentation())
-                .waitForWindowUpdate(null, PERMISSION_DIALOG_WAIT_MS);
-        UiObject2 optionItem = waitForObject(By.text(optionString));
+        uiDevice.waitForWindowUpdate(null, PERMISSION_DIALOG_WAIT_MS);
+        UiObject2 optionItem = waitForObject(uiDevice, By.text(optionString));
         if (optionItem == null) {
             Log.e(TAG, "Couldn't find entire screen option");
             return false;
@@ -332,10 +419,11 @@ public class MediaProjectionActivity extends Activity {
         return sysUiResources.getString(resourceId, args);
     }
 
-    private static void pressStartRecording() {
+    private static void pressStartRecording(UiDevice uiDevice) {
         // May need to scroll down to the start button on small screen devices.
         UiObject2 startRecordingButton =
                 findUiObject(
+                        uiDevice,
                         By.res(ACCEPT_RESOURCE_ID),
                         new UiSelector().resourceId(ACCEPT_RESOURCE_ID));
         if (startRecordingButton != null) {
@@ -358,8 +446,7 @@ public class MediaProjectionActivity extends Activity {
         }
     }
 
-    private static UiObject2 waitForObject(BySelector selector) {
-        UiDevice uiDevice = UiDevice.getInstance(getInstrumentation());
+    private static UiObject2 waitForObject(UiDevice uiDevice, BySelector selector) {
         return uiDevice.wait(Until.findObject(selector), PERMISSION_DIALOG_WAIT_MS);
     }
 
