@@ -1496,8 +1496,10 @@ public class AccessibilityDisplayProxyTest {
                 filterForEventType(TYPE_VIEW_ACCESSIBILITY_FOCUSED),
                 filterWindowsChangedWithChangeTypes(WINDOWS_CHANGE_ACCESSIBILITY_FOCUSED)));
         if (!proxyEditText.isAccessibilityFocused()) {
-            proxyEditText.performAccessibilityAction(
-                    AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, null);
+            sInstrumentation.runOnMainSync(() -> {
+                proxyEditText.performAccessibilityAction(
+                        AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, null);
+            });
             waitOn(mA11yProxy.mWaitObject, ()-> mA11yProxy.mReceivedEvent.get(), TIMEOUT_MS,
                     "Expected event was not received within " + TIMEOUT_MS + " ms");
         }
