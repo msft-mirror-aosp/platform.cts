@@ -75,7 +75,7 @@ class MultiUserAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationE
             is RequireSwitchableUserSupport -> logic()
             is RequirePrivateSpaceSupported -> logic()
             is RequireNotHeadlessSystemUserMode -> logic()
-            is RequireHeadlessSystemUserMode -> logic()
+            is RequireHeadlessSystemUserMode -> logic(interactive)
             is RequireVisibleBackgroundUsers -> logic()
             is RequireNotVisibleBackgroundUsers -> logic()
             is RequireVisibleBackgroundUsersOnDefaultDisplay -> logic()
