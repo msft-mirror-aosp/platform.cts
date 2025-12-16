@@ -86,7 +86,7 @@ public class LightsManagerTest {
         mManager = mContext.getSystemService(LightsManager.class);
         mLights = mManager.getLights();
         for (Light light : mLights) {
-            if (light.hasAnimationControl()) {
+            if (Flags.enableLightAnimations() && light.hasAnimationControl()) {
                 mEffectLights.add(light);
             } else {
                 mStaticLights.add(light);
@@ -406,7 +406,7 @@ public class LightsManagerTest {
         LightsRequest.Builder requestBuilder = new LightsRequest.Builder();
 
         assertThrows(
-                IllegalStateException.class,
+                IllegalArgumentException.class,
                 () -> {
                     requestBuilder.setEffect(
                             new MultiLightEffect.Builder()
