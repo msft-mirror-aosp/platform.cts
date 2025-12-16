@@ -1,0 +1,198 @@
+/*
+ * Copyright (C) 2025 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package android.virtualdevice.cts.computercontrol
+
+import android.computercontrol.testapp.common.Action
+import android.computercontrol.testapp.common.Constants
+import android.util.Log
+import android.view.WindowManager
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
+import com.android.compatibility.common.util.AdoptShellPermissionsRule
+import com.google.common.truth.Truth.assertThat
+import org.junit.After
+import org.junit.Rule
+import org.junit.Test
+import org.junit.rules.TestName
+import org.junit.runner.RunWith
+
+@RunWith(AndroidJUnit4::class)
+class ComputerControlTest {
+    @Rule
+    @JvmField
+    val adoptShellPermissionsRule: AdoptShellPermissionsRule =
+        AdoptShellPermissionsRule(
+            getInstrumentation().getUiAutomation(),
+            "android.permission.ACCESS_COMPUTER_CONTROL",
+            "android.permission.POST_NOTIFICATIONS",
+        )
+
+    @get:Rule val testName = TestName()
+
+    private lateinit var testAppAgent: TestAppAgent
+    private val bounds =
+        getInstrumentation()
+            .context
+            .getSystemService(WindowManager::class.java)
+            .currentWindowMetrics
+            .bounds
+
+    fun launchTestApp(className: String? = null): TestAppAgent {
+        // TODO(b/463464798): Added failure test case to verify the behavior
+        // when permission dialog is pending on the screen or permission is
+        // refused from the settings.
+        return TestAppAgentLauncher()
+            .launch(
+                "CtsComputerControlTest-${testName.methodName}",
+                TEST_APP_PACKAGE_NAME,
+                className,
+            )
+    }
+
+    @After
+    fun tearDown() {
+        testAppAgent?.close()
+    }
+
+    @Test
+    fun testTap() {
+        testAppAgent = launchTestApp()
+        val x = bounds.width() / 2
+        val y = bounds.height() / 2
+        testAppAgent.tap(x, y)
+        Log.d(TAG, "Tapped at ($x, $y)")
+
+        val tap = testAppAgent.nextAction(Action.Tap::class.java)
+        assertThat(tap).isNotNull()
+        tap!!
+        Log.d(TAG, "Tap from TestApp: (${tap.x}, ${tap.y})")
+        assertThat(tap.x).isEqualTo(x)
+        assertThat(tap.y).isEqualTo(y)
+    }
+
+    @Test
+    fun testLongPress() {
+        testAppAgent = launchTestApp()
+        val x = bounds.width() / 2
+        val y = bounds.height() / 2
+        testAppAgent.longPress(x, y)
+        Log.d(TAG, "Long pressed at ($x, $y)")
+
+        val longPress = testAppAgent.nextAction(Action.LongPress::class.java)
+        assertThat(longPress).isNotNull()
+        longPress!!
+        Log.d(TAG, "LongPress from TestApp: (${longPress.x}, ${longPress.y})")
+        assertThat(longPress.x).isEqualTo(x)
+        assertThat(longPress.y).isEqualTo(y)
+    }
+
+    @Test
+    fun testSwipe() {
+        testAppAgent = launchTestApp()
+        val x1 = bounds.width() / 2
+        val y1 = bounds.height() / 2
+        val x2 = bounds.width() / 4
+        val y2 = bounds.height() / 4
+        testAppAgent.swipe(x1, y1, x2, y2)
+        Log.d(TAG, "Swiped from ($x1, $y1) to ($x2, $y2)")
+
+        val swipe = testAppAgent.nextAction(Action.Swipe::class.java)
+        assertThat(swipe).isNotNull()
+        swipe!!
+        Log.d(TAG, "Swipe from TestApp: (${swipe.x1}, ${swipe.y1}) to (${swipe.x2}, ${swipe.y2})")
+        assertThat(swipe.x1).isEqualTo(x1)
+        assertThat(swipe.y1).isEqualTo(y1)
+        assertThat(swipe.x2).isEqualTo(x2)
+        assertThat(swipe.y2).isEqualTo(y2)
+    }
+
+    @Test
+    fun testPerformAction_GoBack() {
+        testAppAgent = launchTestApp()
+        // 1 is the action code for GoBack.
+        testAppAgent.performAction(1)
+        Log.d(TAG, "Performed GoBack")
+
+        val goBack = testAppAgent.nextAction(Action.GoBack::class.java)
+        Log.d(TAG, "GoBack from TestApp")
+        assertThat(goBack).isNotNull()
+    }
+
+    @Test
+    fun testGetDisplaySize() {
+        testAppAgent = launchTestApp()
+        val screenSize = testAppAgent.getDisplaySize()
+        Log.d(TAG, "Screen size from agent: ${screenSize.getWidth()}x${screenSize.getHeight()}")
+        Log.d(TAG, "Screen size from OS: ${bounds.width()}x${bounds.height()}")
+        assertThat(screenSize.getWidth()).isEqualTo(bounds.width())
+        assertThat(screenSize.getHeight()).isEqualTo(bounds.height())
+    }
+
+    @Test
+    fun testGetScreenshot() {
+        testAppAgent = launchTestApp()
+        val screenshot = testAppAgent.getScreenshot()
+        assertThat(screenshot).isNotNull()
+        Log.d(TAG, "Screenshot size: ${screenshot!!.getWidth()}x${screenshot.getHeight()}")
+        assertThat(screenshot.getWidth()).isEqualTo(bounds.width())
+        assertThat(screenshot.getHeight()).isEqualTo(bounds.height())
+    }
+
+    @Test
+    fun testInsertText() {
+        testAppAgent = launchTestApp(TEST_APP_CLASS_NAME)
+        // Insert text1 to text field 1.
+        val text1 = "Hello World"
+        val text2 = "Goodbye World"
+        testAppAgent.requestFocus(Constants.TEXT_FIELD_1)
+        testAppAgent.insertText(text1)
+        Log.d(TAG, "Inserted text: $text1 in text field 1")
+        var insertText1 = testAppAgent.nextAction(Action.TextFieldValueChange::class.java)
+        assertThat(insertText1).isNotNull()
+        insertText1!!
+        Log.d(TAG, "InsertText from TestApp: ${insertText1.text} in text field 1")
+        assertThat(insertText1.textFieldId).isEqualTo(Constants.TEXT_FIELD_1)
+        assertThat(insertText1.text).isEqualTo(text1)
+
+        // Insert text2 to text field 1 again.
+        testAppAgent.insertText(text2)
+        Log.d(TAG, "Inserted text: $text2 in text field 1")
+        insertText1 = testAppAgent.nextAction(Action.TextFieldValueChange::class.java)
+        assertThat(insertText1).isNotNull()
+        insertText1!!
+        Log.d(TAG, "InsertText from TestApp: ${insertText1.text} in text field 1")
+        assertThat(insertText1.textFieldId).isEqualTo(Constants.TEXT_FIELD_1)
+        assertThat(insertText1.text).isEqualTo(text2)
+
+        // Insert text2 to text field 2.
+        testAppAgent.requestFocus(Constants.TEXT_FIELD_2)
+        testAppAgent.insertText(text2)
+        Log.d(TAG, "Inserted text: $text2")
+        var insertText2 = testAppAgent.nextAction(Action.TextFieldValueChange::class.java)
+        assertThat(insertText2).isNotNull()
+        insertText2!!
+        Log.d(TAG, "InsertText from TestApp: ${insertText2.text}")
+        assertThat(insertText2.textFieldId).isEqualTo(Constants.TEXT_FIELD_2)
+        assertThat(insertText2.text).isEqualTo(text2)
+    }
+
+    companion object {
+        private const val TAG = "ComputerControlTest"
+        private const val TEST_APP_PACKAGE_NAME = "android.computercontrol.testapp"
+        private const val TEST_APP_CLASS_NAME = "android.computercontrol.testapp.app.AppActivity"
+    }
+}
