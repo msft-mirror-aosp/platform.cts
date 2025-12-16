@@ -4,6 +4,3 @@ santoscordon@google.com
 per-file InattentiveSleepTests.java=qingxun@google.com
 per-file QuiescentBootTests.java=qingxun@google.com
 per-file StaticSharedLibsHostTests.java=patb@google.com
-
-per-file LooperCompatChangesHostTest.java = file:/platform/frameworks/base:/MESSAGE_QUEUE_OWNERS
-per-file LooperCompatChangesTest.java = file:/platform/frameworks/base:/MESSAGE_QUEUE_OWNERS
