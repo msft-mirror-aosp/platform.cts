@@ -26,6 +26,7 @@ import static android.server.wm.app.Components.TaskMoveTestActivity.EXTRA_DISPLA
 import static android.server.wm.app.Components.TaskMoveTestActivity.EXTRA_EXCEPTION_KEY;
 import static android.server.wm.app.Components.TaskMoveTestActivity.EXTRA_SYNC_EXCEPTION_KEY;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -47,6 +48,7 @@ import android.server.wm.TaskMoveTestBase;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerState.DisplayContent;
 import android.server.wm.WindowManagerState.Task;
+import android.server.wm.app.Components;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
@@ -320,6 +322,58 @@ public class TaskMoveTests extends TaskMoveTestBase {
         assertTaskMoveRequestReportedSuccess();
         assertSaneTaskLocation(
                 TEST_ACTIVITY, sourceDisplayId, initialBounds, targetDisplayId, requestedBounds);
+    }
+
+    /**
+     * Tests that a {@link android.app.ActivityManager.AppTask#moveTaskTo} call does not change the
+     * z-order of tasks provided the target display is the same as the source display. Assumes that
+     * task movability is guaranteed via {@link
+     * android.app.ActivityOptions#setMovableTaskRequired(boolean)}.
+     */
+    @ApiTest(
+            apis = {
+                "android.app.ActivityManager.AppTask#moveTaskTo",
+                "android.app.ActivityOptions#setMovableTaskRequired"
+            })
+    @Test
+    public void testMoveTaskTo_noReorder() {
+        final int displayId = getMainDisplayId();
+
+        launchMovableActivityOnDisplayWithSafetyMargins(
+                Components.TASK_MOVE_TEST_ACTIVITY, displayId);
+        mWmState.computeState(Components.TASK_MOVE_TEST_ACTIVITY);
+        final WindowManagerState.Task movableTask =
+                mWmState.getTaskByActivity(Components.TASK_MOVE_TEST_ACTIVITY);
+        assertEquals(
+                "The task to be moved should be focused",
+                mWmState.getFocusedActivity(),
+                movableTask.getResumedActivity());
+
+        launchActivityOnDisplay(Components.TEST_ACTIVITY, displayId);
+        mWmState.computeState(Components.TEST_ACTIVITY);
+        final WindowManagerState.Task occludingTask =
+                mWmState.getTaskByActivity(Components.TEST_ACTIVITY);
+        assertEquals(
+                "The occluding task should be focused",
+                mWmState.getFocusedActivity(),
+                occludingTask.getResumedActivity());
+
+        final Rect initialBounds = movableTask.getBounds();
+        final Rect requestedBounds = new Rect(initialBounds);
+        requestedBounds.inset(10, 10, 10, 10);
+        sendTaskMoveRequest(displayId, requestedBounds);
+
+        assertTaskMoveRequestReportedSuccess();
+        assertSaneTaskLocation(
+                Components.TASK_MOVE_TEST_ACTIVITY,
+                displayId,
+                initialBounds,
+                displayId,
+                requestedBounds);
+        assertEquals(
+                "The occluding task should still be focused",
+                mWmState.getFocusedActivity(),
+                occludingTask.getResumedActivity());
     }
 
     /**
