@@ -550,7 +550,6 @@ public class DocumentsContractTest {
     }
 
     @Test
-    @SdkSuppress(minSdkVersion = 37)
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SYNC_STATE)
     @ApiTest(
             apis = {
@@ -587,7 +586,6 @@ public class DocumentsContractTest {
     }
 
     @Test
-    @SdkSuppress(minSdkVersion = 37)
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SYNC_STATE)
     @ApiTest(
             apis = {
@@ -618,7 +616,6 @@ public class DocumentsContractTest {
     }
 
     @Test
-    @SdkSuppress(minSdkVersion = 37)
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SYNC_STATE)
     @ApiTest(
             apis = {
