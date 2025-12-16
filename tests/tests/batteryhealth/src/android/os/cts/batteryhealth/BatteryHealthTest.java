@@ -16,8 +16,11 @@
 package android.os.cts.batteryhealth;
 
 import static android.os.Flags.stateOfHealthPublic;
+
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
 import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.fail;
 
 import android.app.UiAutomation;
@@ -25,6 +28,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.BatteryManager;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.InstrumentationRegistry;
 
@@ -41,6 +47,9 @@ public class BatteryHealthTest {
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String TAG = "BatteryHealthTest";
 
@@ -190,6 +199,57 @@ public class BatteryHealthTest {
     }
 
     @Test
+    @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_MANUFACTURER"})
+    @RequiresFlagsEnabled("android.os.battery_manufacturer_diagnostics_api")
+    public void testBatteryManufacturer_dataValid() {
+        mAutomation = getInstrumentation().getUiAutomation();
+        mAutomation.adoptShellPermissionIdentity(android.Manifest.permission.BATTERY_STATS);
+        final String manufacturer =
+                mBatteryManager.getStringProperty(BatteryManager.BATTERY_PROPERTY_MANUFACTURER);
+
+        if (manufacturer != null) {
+            assertThat(manufacturer.length()).isAtLeast(2);
+            assertThat(isAsciiPrintable(manufacturer)).isTrue();
+        }
+
+        mAutomation.dropShellPermissionIdentity();
+    }
+
+    @Test
+    @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_MODEL_NAME"})
+    @RequiresFlagsEnabled("android.os.battery_manufacturer_diagnostics_api")
+    public void testBatteryModelName_dataValid() {
+        mAutomation = getInstrumentation().getUiAutomation();
+        mAutomation.adoptShellPermissionIdentity(android.Manifest.permission.BATTERY_STATS);
+        final String modelName =
+                mBatteryManager.getStringProperty(BatteryManager.BATTERY_PROPERTY_MODEL_NAME);
+
+        if (modelName != null) {
+            assertThat(modelName.length()).isAtLeast(2);
+            assertThat(isAsciiPrintable(modelName)).isTrue();
+        }
+
+        mAutomation.dropShellPermissionIdentity();
+    }
+
+    @Test
+    @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_VOLTAGE_MIN_DESIGN"})
+    @RequiresFlagsEnabled("android.os.battery_manufacturer_diagnostics_api")
+    public void testBatteryVoltageMinDesign_dataInRange() {
+        mAutomation = getInstrumentation().getUiAutomation();
+        mAutomation.adoptShellPermissionIdentity(android.Manifest.permission.BATTERY_STATS);
+        final long voltageMinDesign =
+                mBatteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_VOLTAGE_MIN_DESIGN);
+
+        if (voltageMinDesign != 0) {
+            // 2,000,000 uV = 2V
+            assertThat(voltageMinDesign).isAtLeast(2000000L);
+        }
+
+        mAutomation.dropShellPermissionIdentity();
+    }
+
+    @Test
     @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_MANUFACTURING_DATE"})
     public void testManufacturingDate_noPermission() {
         try {
@@ -223,6 +283,53 @@ public class BatteryHealthTest {
             return;
         }
         fail("Didn't throw SecurityException");
+    }
+
+    @Test
+    @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_SERIAL_NUMBER"})
+    public void testBatterySerialNumber_noPermission() {
+        try {
+            mBatteryManager.getStringProperty(BatteryManager.BATTERY_PROPERTY_SERIAL_NUMBER);
+        } catch (SecurityException expected) {
+            return;
+        }
+        fail("Didn't throw SecurityException for BATTERY_PROPERTY_SERIAL_NUMBER");
+    }
+
+    @Test
+    @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_MANUFACTURER"})
+    @RequiresFlagsEnabled("android.os.battery_manufacturer_diagnostics_api")
+    public void testBatteryManufacturer_noPermission() {
+        try {
+            mBatteryManager.getStringProperty(BatteryManager.BATTERY_PROPERTY_MANUFACTURER);
+        } catch (SecurityException expected) {
+            return;
+        }
+        fail("Didn't throw SecurityException for BATTERY_PROPERTY_MANUFACTURER");
+    }
+
+    @Test
+    @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_MODEL_NAME"})
+    @RequiresFlagsEnabled("android.os.battery_manufacturer_diagnostics_api")
+    public void testBatteryModelName_noPermission() {
+        try {
+            mBatteryManager.getStringProperty(BatteryManager.BATTERY_PROPERTY_MODEL_NAME);
+        } catch (SecurityException expected) {
+            return;
+        }
+        fail("Didn't throw SecurityException for BATTERY_PROPERTY_MODEL_NAME");
+    }
+
+    @Test
+    @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_VOLTAGE_MIN_DESIGN"})
+    @RequiresFlagsEnabled("android.os.battery_manufacturer_diagnostics_api")
+    public void testBatteryVoltageMinDesign_noPermission() {
+        try {
+            mBatteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_VOLTAGE_MIN_DESIGN);
+        } catch (SecurityException expected) {
+            return;
+        }
+        fail("Didn't throw SecurityException for BATTERY_PROPERTY_VOLTAGE_MIN_DESIGN");
     }
 
     @Test
@@ -292,5 +399,19 @@ public class BatteryHealthTest {
         final long energyCounter = mBatteryManager.getLongProperty(
                 BatteryManager.BATTERY_PROPERTY_ENERGY_COUNTER);
         assertThat(energyCounter).isAtLeast(0);
+    }
+
+    private static boolean isAsciiPrintable(String s) {
+        if (s == null) {
+            return true;
+        }
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            // Check if the character is within the ASCII printable range (space to ~).
+            if (c < 32 || c > 126) {
+                return false;
+            }
+        }
+        return true;
     }
 }
