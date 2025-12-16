@@ -219,7 +219,11 @@ specs {
   key: 37
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
-    specification: "MUST have a primary front-facing camera with a resolution of at least 6 megapixels and support video capture at 1080p@30fps. The primary front-facing camera is the front-facing camera with the lowest camera ID."
+    specification:
+      "MUST have a primary front-facing camera with a resolution "
+      "of at least 7.99 megapixels and support video capture at 1080p@30fps. "
+      "The primary front-facing camera is the front-facing camera with the "
+      "lowest camera ID."
     required_values {
       key: "primary_camera_available"
       value {
@@ -229,7 +233,7 @@ specs {
     required_values {
       key: "primary_camera_resolution"
       value {
-        long_value: 6000000
+        long_value: 7990000
       }
     }
     required_values {
