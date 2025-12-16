@@ -151,7 +151,6 @@
         <activity android:name=".LaunchEnterPipActivity"
              android:resizeableActivity="false"
              android:supportsPictureInPicture="true"
-             androidprv:alwaysFocusable="true"
              android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout"
              android:exported="true"/>
         <activity android:name=".PipActivityWithMinimalSize"

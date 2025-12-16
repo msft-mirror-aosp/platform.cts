@@ -1,0 +1,20 @@
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+android_test_helper_app {
+    name: "PccAppOpsApp",
+    sdk_version: "test_current",
+    manifest: "AndroidManifest.xml",
+
+    srcs: [
+        "src/**/*.java",
+        ":PccAppOpsAidl",
+    ],
+}
+
+filegroup {
+    name: "PccAppOpsAidl",
+    srcs: ["src/**/*.aidl"],
+    path: "src",
+}

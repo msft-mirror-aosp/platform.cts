@@ -593,8 +593,8 @@ public final class ActivityManagerProcessStateTest {
             mContext.stopService(serviceIntent);
             conn.waitForDisconnect();
 
-            uidWatcher.expect(WatchUidRunner.CMD_CACHED, null);
-            uidWatcher.expect(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
+            uidWatcher.waitFor(WatchUidRunner.CMD_CACHED, null);
+            uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
 
             CtsAppTestUtils.executeShellCmd(mInstrumentation,
                     "cmd deviceidle tempwhitelist -u " + userId + " -r " + SIMPLE_PACKAGE_NAME);
@@ -895,8 +895,8 @@ public final class ActivityManagerProcessStateTest {
             mContext.stopService(mServiceIntent);
             conn.waitForDisconnect();
 
-            uidWatcher.expect(WatchUidRunner.CMD_CACHED, null);
-            uidWatcher.expect(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
+            uidWatcher.waitFor(WatchUidRunner.CMD_CACHED, null);
+            uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
 
             controller.removeFromTempWhitelist();
 

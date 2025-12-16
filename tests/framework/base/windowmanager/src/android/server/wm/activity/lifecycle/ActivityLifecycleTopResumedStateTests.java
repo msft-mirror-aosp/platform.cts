@@ -1171,48 +1171,5 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
                 "finishPip");
     }
 
-    @Test
-    public void testTopPositionForAlwaysFocusableActivityInPip() throws Exception {
-        assumeTrue(supportsPip());
-
-        // Launch first activity
-        final Activity activity = launchActivityAndWait(CallbackTrackingActivity.class);
-
-        // Clear the log before launching to Pip
-        getTransitionLog().clear();
-
-        // Launch Pip-capable activity and enter Pip immediately
-        final Activity pipActivity = new Launcher(PipActivity.class)
-                .setExtraFlags(EXTRA_ENTER_PIP)
-                .setExpectedState(ON_PAUSE)
-                .launch();
-
-        // Launch always focusable activity into PiP
-
-        // Notice that do not clear the lifecycle log here, because it may clear the event
-        // ON_TOP_POSITION_LOST of CallbackTrackingActivity if PipMenuActivity is started earlier.
-        final Activity alwaysFocusableActivity =
-                launchActivityAndWait(AlwaysFocusablePipActivity.class);
-        waitAndAssertActivityStates(state(pipActivity, ON_STOP),
-                state(activity, ON_TOP_POSITION_LOST));
-        assertOrder(getTransitionLog(), Arrays.asList(
-                transition(CallbackTrackingActivity.class, ON_TOP_POSITION_LOST),
-                transition(AlwaysFocusablePipActivity.class, ON_TOP_POSITION_GAINED)),
-                "launchAlwaysFocusablePip");
-
-        // Finish always focusable activity - top position should go back to fullscreen activity
-        getTransitionLog().clear();
-        alwaysFocusableActivity.finish();
-
-        waitAndAssertActivityStates(state(alwaysFocusableActivity, ON_DESTROY),
-                state(activity, ON_TOP_POSITION_GAINED), state(pipActivity, ON_PAUSE));
-        assertResumeToDestroySequence(AlwaysFocusablePipActivity.class,
-                getTransitionLog());
-        assertOrder(getTransitionLog(), Arrays.asList(
-                transition(AlwaysFocusablePipActivity.class, ON_TOP_POSITION_LOST),
-                transition(CallbackTrackingActivity.class, ON_TOP_POSITION_GAINED)),
-                "finishAlwaysFocusablePip");
-    }
-
     public static class NoRelaunchCallbackTrackingActivity extends CallbackTrackingActivity {}
 }

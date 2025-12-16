@@ -100,6 +100,8 @@ TEST_F(NdkBinderTest_AIBinder, DestructionGivesUserData) {
 }
 
 void onBinderDied(void* /*cookie*/) {}
+void onFrozenStateChanged(void* /*cookie*/, bool /*frozen*/) {}
+void onBinderUnlinked(void* /*cookie*/) {}
 
 TEST_F(NdkBinderTest_AIBinder, LinkInProcess) {
   AIBinder* binder = SampleData::newBinder();
@@ -110,6 +112,43 @@ TEST_F(NdkBinderTest_AIBinder, LinkInProcess) {
             AIBinder_linkToDeath(binder, recipient, nullptr /*cookie*/));
 
   AIBinder_DeathRecipient_delete(recipient);
+  AIBinder_decStrong(binder);
+}
+
+TEST_F(NdkBinderTest_AIBinder, FrozenStateChangeCallbackMissingOnUnlinked) {
+  AIBinder* binder = SampleData::newBinder();
+  AIBinder_FrozenStateChangeCallback* callback =
+      AIBinder_FrozenStateChangeCallback_new(onFrozenStateChanged, nullptr);
+
+  EXPECT_EQ(STATUS_INVALID_OPERATION,
+            AIBinder_addFrozenStateChangeCallback(binder, callback, nullptr /*cookie*/));
+
+  AIBinder_FrozenStateChangeCallback_delete(callback);
+  AIBinder_decStrong(binder);
+}
+
+TEST_F(NdkBinderTest_AIBinder, FrozenStateChangeCallbackWithOnUnlinked) {
+  AIBinder* binder = SampleData::newBinder();
+  AIBinder_FrozenStateChangeCallback* callback =
+      AIBinder_FrozenStateChangeCallback_new(onFrozenStateChanged, onBinderUnlinked);
+
+  // Expected failure because binder is local, not a remote proxy.
+  EXPECT_EQ(STATUS_INVALID_OPERATION,
+            AIBinder_addFrozenStateChangeCallback(binder, callback, nullptr /*cookie*/));
+
+  AIBinder_FrozenStateChangeCallback_delete(callback);
+  AIBinder_decStrong(binder);
+}
+
+TEST_F(NdkBinderTest_AIBinder, RemoveFrozenStateChangeCallbackNotFound) {
+  AIBinder* binder = SampleData::newBinder();
+  AIBinder_FrozenStateChangeCallback* callback =
+      AIBinder_FrozenStateChangeCallback_new(onFrozenStateChanged, onBinderUnlinked);
+
+  EXPECT_EQ(STATUS_NAME_NOT_FOUND,
+            AIBinder_removeFrozenStateChangeCallback(binder, callback, nullptr /*cookie*/));
+
+  AIBinder_FrozenStateChangeCallback_delete(callback);
   AIBinder_decStrong(binder);
 }
 
@@ -381,6 +420,10 @@ TEST_F(NdkBinderTest_AIBinder, NullArguments) {
       AIBinder_DeathRecipient_new(onBinderDied);
   EXPECT_NE(nullptr, recipient);
 
+  AIBinder_FrozenStateChangeCallback* callback =
+      AIBinder_FrozenStateChangeCallback_new(onFrozenStateChanged, onBinderUnlinked);
+  EXPECT_NE(nullptr, callback);
+
   EXPECT_EQ(nullptr, AIBinder_Class_define(nullptr, EmptyOnCreate,
                                            EmptyOnDestroy, EmptyOnTransact));
   EXPECT_EQ(nullptr, AIBinder_Class_define(kStr, nullptr, EmptyOnDestroy,
@@ -403,6 +446,15 @@ TEST_F(NdkBinderTest_AIBinder, NullArguments) {
             AIBinder_unlinkToDeath(nullptr, recipient, kVoidStar /*cookie*/));
   EXPECT_EQ(STATUS_UNEXPECTED_NULL,
             AIBinder_unlinkToDeath(binder, nullptr, kVoidStar /*cookie*/));
+
+  EXPECT_EQ(STATUS_UNEXPECTED_NULL,
+            AIBinder_addFrozenStateChangeCallback(nullptr, callback, kVoidStar /*cookie*/));
+  EXPECT_EQ(STATUS_UNEXPECTED_NULL,
+            AIBinder_addFrozenStateChangeCallback(binder, nullptr, kVoidStar /*cookie*/));
+  EXPECT_EQ(STATUS_UNEXPECTED_NULL,
+            AIBinder_removeFrozenStateChangeCallback(nullptr, callback, kVoidStar /*cookie*/));
+  EXPECT_EQ(STATUS_UNEXPECTED_NULL,
+            AIBinder_removeFrozenStateChangeCallback(binder, nullptr, kVoidStar /*cookie*/));
 
   // Does not crash
   AIBinder_incStrong(nullptr);
@@ -461,6 +513,7 @@ TEST_F(NdkBinderTest_AIBinder, NullArguments) {
   EXPECT_EQ(nullptr, AIBinder_Weak_promote(nullptr));
 
   EXPECT_EQ(nullptr, AIBinder_DeathRecipient_new(nullptr));
+  EXPECT_EQ(nullptr, AIBinder_FrozenStateChangeCallback_new(nullptr, nullptr));
 
   EXPECT_EQ(nullptr, AIBinder_Weak_clone(nullptr));
 
@@ -471,10 +524,12 @@ TEST_F(NdkBinderTest_AIBinder, NullArguments) {
 
   // Does not crash
   AIBinder_DeathRecipient_delete(nullptr);
+  AIBinder_FrozenStateChangeCallback_delete(nullptr);
   AIBinder_DeathRecipient_setOnUnlinked(recipient, nullptr);
   AIBinder_DeathRecipient_setOnUnlinked(nullptr, nullptr);
 
   AIBinder_DeathRecipient_delete(recipient);
+  AIBinder_FrozenStateChangeCallback_delete(callback);
   AIBinder_decStrong(binder);
 
   EXPECT_EQ(STATUS_UNEXPECTED_NULL, AIBinder_getExtension(nullptr, nullptr));

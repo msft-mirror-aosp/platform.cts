@@ -122,6 +122,7 @@ import com.android.cts.input.UinputTouchScreen;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.MockImeSession;
 import com.android.window.flags.Flags;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -361,7 +362,9 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
     private void globalTapOnWindowCorner(@NonNull Supplier<IBinder> windowTokenSupplier)
             throws InterruptedException {
-        globalTapOnWindow(windowTokenSupplier, 0 /*xOffset*/, 0 /*yOffset*/);
+        // offset the tap towards the bottom-right to avoid the top-left rounded corner
+        Point offset = new Point(DEFAULT_SURFACE_VIEW_WIDTH - 1, DEFAULT_SURFACE_VIEW_HEIGHT - 1);
+        globalTapOnWindow(windowTokenSupplier, offset.x /*xOffset*/, offset.y /*yOffset*/);
     }
 
     private void globalTapOnWindow(@NonNull Supplier<IBinder> windowTokenSupplier, int xOffset,
@@ -1989,9 +1992,9 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // on-screen.
         final int[] viewOnScreenXY = new int[2];
         mSurfaceView.getLocationOnScreen(viewOnScreenXY);
-
-        final int injectedX = viewOnScreenXY[0] + 1;
-        final int injectedY = viewOnScreenXY[1] + 1;
+        // offset the inject towards the bottom-right to avoid the top-left rounded corner
+        final int injectedX = viewOnScreenXY[0] + DEFAULT_SURFACE_VIEW_WIDTH - 1;
+        final int injectedY = viewOnScreenXY[1] + DEFAULT_SURFACE_VIEW_HEIGHT - 1;
 
         // We inject a down event
         UinputTouchDevice.Pointer pointer = mTouchScreen.touchDown(injectedX, injectedY);
