@@ -114,11 +114,12 @@ public class FrameRateCtsActivity extends Activity {
 
         @Override
         public void onDisplayChanged(int displayId) {
-            if (displayId != Display.DEFAULT_DISPLAY) {
+            Display display = getDisplay();
+            if (displayId != display.getDisplayId()) {
                 return;
             }
             synchronized (mLock) {
-                Display.Mode mode = mDisplayManager.getDisplay(displayId).getMode();
+                Display.Mode mode = display.getMode();
                 mModeChangedEvents.add(mode);
                 float frameRate =  mode.getRefreshRate();
                 if (frameRate != mDeviceFrameRate) {
@@ -807,7 +808,7 @@ public class FrameRateCtsActivity extends Activity {
             return;
         }
         runOneSurfaceTest(api, useArrVersionApi, (TestSurface surface) -> {
-            Display display = mDisplayManager.getDisplay(Display.DEFAULT_DISPLAY);
+            Display display = getDisplay();
             Display.Mode currentMode = display.getMode();
 
             final FrameRateTester frameRateTester =
@@ -1096,7 +1097,7 @@ public class FrameRateCtsActivity extends Activity {
     }
 
     private void testClearFrameRate(Api api) throws InterruptedException {
-        Display display = mDisplayManager.getDisplay(Display.DEFAULT_DISPLAY);
+        Display display = getDisplay();
         Display.Mode initialMode = display.getMode();
 
         int width = mSurfaceView.getHolder().getSurfaceFrame().width();
