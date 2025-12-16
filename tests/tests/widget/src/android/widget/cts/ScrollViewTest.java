@@ -21,13 +21,18 @@ import static android.widget.cts.util.StretchEdgeUtil.fling;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static com.android.compatibility.common.util.CtsMockitoUtils.within;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
@@ -41,6 +46,9 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.AttributeSet;
 import android.util.Xml;
 import android.view.InputDevice;
@@ -52,6 +60,7 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.View.MeasureSpec;
 import android.view.ViewGroup;
+import android.view.flags.Flags;
 import android.widget.EdgeEffect;
 import android.widget.FrameLayout;
 import android.widget.ScrollView;
@@ -116,6 +125,9 @@ public class ScrollViewTest {
             Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
 
     @Rule(order = 1)
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Rule(order = 2)
     public ActivityTestRule<ScrollViewCtsActivity> mActivityRule =
             new ActivityTestRule<>(ScrollViewCtsActivity.class);
 
@@ -1387,6 +1399,66 @@ public class ScrollViewTest {
 
         PollingCheck.waitFor(1000L, () -> edgeEffect.getDistance() == 0);
         PollingCheck.waitFor(1000L, () -> mScrollViewStretch.getScrollY() != 210);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SCROLL_TO_TOP)
+    public void testAccessScrollToTopEnabled() {
+        // Default should be true
+        assertTrue(mScrollViewCustom.isScrollToTopEnabled());
+
+        mScrollViewCustom.setScrollToTopEnabled(false);
+        assertFalse(mScrollViewCustom.isScrollToTopEnabled());
+
+        mScrollViewCustom.setScrollToTopEnabled(true);
+        assertTrue(mScrollViewCustom.isScrollToTopEnabled());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SCROLL_TO_TOP)
+    public void testOnScrollToTop_scrollsToTop() throws Throwable {
+        mScrollViewCustom.setSmoothScrollingEnabled(true);
+        mScrollViewCustom.scrollTo(0, mScrollBottom);
+        assertEquals(mScrollBottom, mScrollViewCustom.getScrollY());
+
+        View.OnScrollChangeListener mockListener = mock(View.OnScrollChangeListener.class);
+        mScrollViewCustom.setOnScrollChangeListener(mockListener);
+
+        mActivityRule.runOnUiThread(
+                () -> {
+                    boolean consumed = mScrollViewCustom.onScrollToTop(0);
+                    assertTrue("Should consume event when scrolled down and enabled", consumed);
+                });
+
+        verify(mockListener, within(10000))
+                .onScrollChange(any(), anyInt(), eq(0), anyInt(), anyInt());
+        assertEquals(0, mScrollViewCustom.getScrollY());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SCROLL_TO_TOP)
+    public void testOnScrollToTop_ignoredWhenAlreadyAtTop() throws Throwable {
+        mScrollViewCustom.scrollTo(0, 0);
+        mActivityRule.runOnUiThread(
+                () -> {
+                    boolean consumed = mScrollViewCustom.onScrollToTop(0);
+                    assertFalse("Should not consume event when already at top", consumed);
+                });
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SCROLL_TO_TOP)
+    public void testOnScrollToTop_ignoredWhenDisabled() throws Throwable {
+        mScrollViewCustom.scrollTo(0, mScrollBottom);
+        mScrollViewCustom.setScrollToTopEnabled(false);
+
+        mActivityRule.runOnUiThread(
+                () -> {
+                    boolean consumed = mScrollViewCustom.onScrollToTop(0);
+                    assertFalse("Should not consume event when disabled", consumed);
+                });
+
+        assertEquals(mScrollBottom, mScrollViewCustom.getScrollY());
     }
 
     private MotionEvent createScrollEvent(float scrollAmount, int source) {
