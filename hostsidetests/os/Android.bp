@@ -30,7 +30,6 @@ java_test_host {
     ],
     static_libs: [
         "compatibility-host-util-axt",
-        "CompatChangeGatingTestBase",
     ],
     // Tag this module as a cts test artifact
     test_suites: [
@@ -41,7 +40,6 @@ java_test_host {
     device_common_data: [
         ":CtsDeviceOsTestApp",
         ":CtsHostEnvironmentTestApp",
-        ":CtsHostLooperCompatTestApp",
         ":CtsHostPowerManagerTestApp",
         ":CtsHostProcfsTestApp",
         ":CtsInattentiveSleepTestApp",
