@@ -68,6 +68,7 @@ android_test {
         ":CtsAppSearchIndexerTestAppAV2",
         ":CtsAppSearchIndexerTestAppAV3",
         ":CtsAppSearchIndexerTestAppBV1",
+        ":CtsAppSearchIndexerTestAppAAppLevelFunctionsReg",
     ],
 }
 
@@ -138,6 +139,25 @@ android_test_helper_app {
     ],
     asset_dirs: ["helper-app-dynamic-schema/assets"],
     manifest: "helper-app-dynamic-schema/AndroidManifest.xml",
+    min_sdk_version: "31",
+}
+
+android_test_helper_app {
+    name: "CtsAppSearchIndexerTestAppAAppLevelFunctionsReg",
+    defaults: ["cts_defaults"],
+    static_libs: [
+        "CtsAppFunctionsTestUtils",
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+        "compatibility-device-util-axt",
+        "testng",
+    ],
+    test_suites: [
+        "general-tests",
+    ],
+    asset_dirs: ["helper-app-dynamic-schema/assets"],
+    manifest: "helper-app-dynamic-schema/AndroidManifest_appLevelFunctionsOnly.xml",
+    certificate: ":cts-appsearch-helper-cert-a",
     min_sdk_version: "31",
 }
 

@@ -27,4 +27,9 @@
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
         <enabled_by_default>true</enabled_by_default>
     </appfunction>
+    <appfunction>
+        <id>contextDisabledByDefault</id>
+        <function_id>contextDisabledByDefault</function_id>
+        <enabled_by_default>false</enabled_by_default>
+    </appfunction>
 </appfunctions>

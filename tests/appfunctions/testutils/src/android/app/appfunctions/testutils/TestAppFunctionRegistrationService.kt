@@ -32,36 +32,40 @@ class TestAppFunctionRegistrationService : Service() {
     private val registrations = HashMap<String, AppFunctionRegistration>()
 
     private val binder =
-            object : ITestAppFunctionRegistrationService.Stub() {
-                override fun registerAppFunction(functionType: String) {
-                    val functionType = FunctionType.valueOf(functionType)
-                    val functionId = getFunctionId(functionType)
-                    val function = createAppFunction(
-                        functionType,
-                        this@TestAppFunctionRegistrationService
-                    )
+        object : ITestAppFunctionRegistrationService.Stub() {
+            override fun registerAppFunction(functionType: String): Boolean {
+                val functionType = FunctionType.valueOf(functionType)
+                val functionId = getFunctionId(functionType)
+                val function =
+                    createAppFunction(functionType, this@TestAppFunctionRegistrationService)
+                try {
                     val registration =
-                            manager.registerAppFunction(
-                                    functionId,
-                                    mainExecutor,
-                                    function
-                            )
+                        manager.registerAppFunction(functionId, mainExecutor, function)
                     registrations[functionId] = registration
-                    Log.d(TAG, "Registered callback for function id $functionId")
+                } catch (e: Exception) {
+                    return false
                 }
-
-                override fun unregisterAppFunction(functionType: String) {
-                    val functionId = getFunctionId(FunctionType.valueOf(functionType))
-                    if (!registrations.containsKey(functionId)) {
-                        throw IllegalStateException(
-                                "Callback for function id $functionId not registered"
-                        )
-                    }
-                    registrations[functionId]?.unregister()
-                    registrations.remove(functionId)
-                    Log.d(TAG, "Unregistered callback for function id $functionId")
-                }
+                Log.d(TAG, "Registered callback for function id $functionId")
+                return true
             }
+
+            override fun unregisterAppFunction(functionType: String): Boolean {
+                val functionId = getFunctionId(FunctionType.valueOf(functionType))
+                if (!registrations.containsKey(functionId)) {
+                    throw IllegalStateException(
+                        "Callback for function id $functionId not registered"
+                    )
+                }
+                try {
+                    registrations[functionId]?.unregister()
+                } catch (e: Exception) {
+                    return false
+                }
+                registrations.remove(functionId)
+                Log.d(TAG, "Unregistered callback for function id $functionId")
+                return true
+            }
+        }
 
     override fun onCreate() {
         super.onCreate()
