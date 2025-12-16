@@ -34,7 +34,6 @@ import android.app.supervision.flags.Flags.FLAG_ENABLE_LOCK_TASK_FEATURE_QUICK_S
 import android.permission.flags.Flags.FLAG_ENABLE_SYSTEM_SUPERVISION_ROLE_BEHAVIOR
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
-import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.supervision.withSystemSupervisionRoleHeld
@@ -46,9 +45,6 @@ import org.junit.runner.RunWith
 @RequireFlagsEnabled(
     FLAG_ENABLE_LOCK_TASK_FEATURE_QUICK_SETTINGS,
     FLAG_ENABLE_SYSTEM_SUPERVISION_ROLE_BEHAVIOR,
-)
-@RequireNotHeadlessSystemUserMode(
-    reason = "b/434645293 - SYSTEM_SUPERVISION role qualification bypass does not support HSUM"
 )
 class LockTaskTest : BaseSupervisionTest() {
     @Test
