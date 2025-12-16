@@ -21,7 +21,7 @@ android_test {
         "androidx.window_window",
         "aconfig_settings_flags_lib",
         "aconfig_settingslib_flags_java_lib",
-        "android.provider.flags-aconfig-java",
+        "android.provider.flags-aconfig-java-export",
         "compatibility-common-util-devicesidelib",
         "compatibility-device-util-axt",
         "com.android.window.flags.window-aconfig-java",
