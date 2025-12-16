@@ -297,7 +297,6 @@ public final class ActivityManagerAppStartInfoTest {
      * is indexed by package name and uid, not process name.
      */
     @Test
-    @RequiresFlagsEnabled(com.android.server.am.Flags.FLAG_APP_START_INFO_PROCESS_NAME_FIX)
     public void testQueryThisProcessCustomProcessName() throws Exception {
         clearHistoricalStartInfo();
 
