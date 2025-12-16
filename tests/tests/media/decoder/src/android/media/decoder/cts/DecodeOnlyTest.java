@@ -57,11 +57,16 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
 @MediaHeavyPresubmitTest
@@ -235,78 +240,92 @@ public class DecodeOnlyTest extends MediaTestBase {
         String mime = videoFormat.getString(MediaFormat.KEY_MIME);
         MediaCodec videoCodec = MediaCodec.createDecoderByType(mime);
 
-        AtomicBoolean done = new AtomicBoolean(false);
+        CountDownLatch hasReceivedEos = new CountDownLatch(1);
         List<Long> expectedPresentationTimes = new ArrayList<>();
         List<Long> receivedPresentationTimes = new ArrayList<>();
 
         // set a callback on the video codec to process the frames
-        videoCodec.setCallback(new MediaCodec.Callback() {
-            private boolean mEosQueued;
-            int mDecodeOnlyCounter = 0;
+        videoCodec.setCallback(
+                new MediaCodec.Callback() {
+                    private boolean mHasQueuedEos;
+                    int mDecodeOnlyCounter = 0;
 
-            // before queueing a frame, check if it is the last frame and set the EOS flag
-            // to the frame if that's the case. If the frame is to be only decoded
-            // (every other frame), then set the DECODE_ONLY flag to the frame. Only frames not
-            // tagged with EOS or DECODE_ONLY are expected to be rendered and added
-            // to expectedPresentationTimes
-            @Override
-            public void onInputBufferAvailable(MediaCodec codec, int index) {
-                if (!mEosQueued) {
-                    ByteBuffer inputBuffer = videoCodec.getInputBuffer(index);
-                    int sampleSize = videoExtractor.readSampleData(inputBuffer, 0);
-                    long presentationTime = videoExtractor.getSampleTime();
-                    int flags = 0;
-                    if (sampleSize < 0) {
-                        flags = MediaCodec.BUFFER_FLAG_END_OF_STREAM;
-                        sampleSize = 0;
-                        mEosQueued = true;
-                    } else if (mDecodeOnlyCounter % 2 == 0) {
-                        flags = MediaCodec.BUFFER_FLAG_DECODE_ONLY;
-                    } else {
-                        expectedPresentationTimes.add(presentationTime);
+                    // Before queueing a frame, check if it is the last frame and set the EOS flag
+                    // to the frame if that's the case. If the frame is to be only decoded
+                    // (every other frame), then set the DECODE_ONLY flag to the frame. Only frames
+                    // not tagged with EOS or DECODE_ONLY are expected to be rendered and added
+                    // to expectedPresentationTimes.
+                    @Override
+                    public void onInputBufferAvailable(MediaCodec codec, int index) {
+                        if (mHasQueuedEos) {
+                            return;
+                        }
+                        ByteBuffer inputBuffer = videoCodec.getInputBuffer(index);
+                        long sampleSizeToRead = videoExtractor.getSampleSize();
+                        int sampleSize = videoExtractor.readSampleData(inputBuffer, 0);
+                        assertEquals(
+                                "Test could not read the entire sample data into the buffer. "
+                                        + "Size of sample: "
+                                        + sampleSizeToRead
+                                        + ". Size that was read: "
+                                        + sampleSize
+                                        + ".",
+                                sampleSizeToRead,
+                                (long) sampleSize);
+
+                        long presentationTime = videoExtractor.getSampleTime();
+                        int extractorFlags = videoExtractor.getSampleFlags();
+                        int codecFlags = 0;
+
+                        if (sampleSize < 0) {
+                            codecFlags = MediaCodec.BUFFER_FLAG_END_OF_STREAM;
+                            sampleSize = 0;
+                            mHasQueuedEos = true;
+                        } else {
+                            if (mDecodeOnlyCounter % 2 == 0) {
+                                codecFlags |= MediaCodec.BUFFER_FLAG_DECODE_ONLY;
+                            }
+                            if ((extractorFlags & MediaExtractor.SAMPLE_FLAG_PARTIAL_FRAME) != 0) {
+                                codecFlags |= MediaCodec.BUFFER_FLAG_PARTIAL_FRAME;
+                            } else {
+                                if (mDecodeOnlyCounter % 2 != 0) {
+                                    expectedPresentationTimes.add(presentationTime);
+                                }
+                                mDecodeOnlyCounter++;
+                            }
+                        }
+
+                        videoCodec.queueInputBuffer(
+                                index, 0, sampleSize, presentationTime, codecFlags);
+                        videoExtractor.advance();
                     }
-                    mDecodeOnlyCounter++;
-                    videoCodec.queueInputBuffer(index, 0, sampleSize, presentationTime, flags);
-                    videoExtractor.advance();
-                }
-            }
 
-            // the frames received here are the frames that are rendered, not the DECODE_ONLY ones,
-            // if the DECODE_ONLY flag behaves correctly, receivedPresentationTimes should exactly
-            // match expectedPresentationTimes
-            // When the codec receives the EOS frame, set the done variable true, which will exit
-            // the loop below, signaling that the codec has finished processing the video and
-            // should now assert on the contents of the lists
-            @Override
-            public void onOutputBufferAvailable(MediaCodec codec, int index,
-                    MediaCodec.BufferInfo info) {
-                videoCodec.releaseOutputBuffer(index, false);
-                if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
-                    done.set(true);
-                } else {
-                    receivedPresentationTimes.add(info.presentationTimeUs);
-                }
-            }
+                    // Keep track of all received frames. Signal when the end of stream has been
+                    // reached.
+                    // The list of received frames is expected to be the same as all frames without
+                    // the DECODE_ONLY flag.
+                    @Override
+                    public void onOutputBufferAvailable(
+                            MediaCodec codec, int index, MediaCodec.BufferInfo info) {
+                        videoCodec.releaseOutputBuffer(index, false);
+                        if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                            hasReceivedEos.countDown();
+                        } else {
+                            receivedPresentationTimes.add(info.presentationTimeUs);
+                        }
+                    }
 
-            @Override
-            public void onError(MediaCodec codec, MediaCodec.CodecException e) {
+                    @Override
+                    public void onError(MediaCodec codec, MediaCodec.CodecException e) {}
 
-            }
-
-            @Override
-            public void onOutputFormatChanged(MediaCodec codec, MediaFormat format) {
-
-            }
-        });
+                    @Override
+                    public void onOutputFormatChanged(MediaCodec codec, MediaFormat format) {}
+                });
 
         videoCodec.configure(videoFormat, getActivity().getSurfaceHolder().getSurface(), null, 0);
-        // start the video the codec with track selected
         videoCodec.start();
 
-        // keep looping until the codec receives the EOS frame
-        while (!done.get()) {
-            Thread.sleep(100);
-        }
+        hasReceivedEos.await();
 
         videoCodec.stop();
         videoCodec.release();
@@ -357,83 +376,109 @@ public class DecodeOnlyTest extends MediaTestBase {
 
         List<Long> expectedPresentationTimes = new ArrayList<>();
 
-        videoCodec.setCallback(new MediaCodec.Callback() {
-            int mDecodeOnlyCounter = 0;
+        videoCodec.setCallback(
+                new MediaCodec.Callback() {
+                    boolean mHasQueuedEos = false;
+                    int mDecodeOnlyCounter = 0;
 
-            // before queueing a frame, check if it is the last frame and set the EOS flag
-            // to the frame if that's the case. If the frame is to be only decoded
-            // (every other frame), then set the DECODE_ONLY flag to the frame. Only frames not
-            // tagged with EOS or DECODE_ONLY are expected to be rendered and added
-            // to expectedPresentationTimes
-            @Override
-            public void onInputBufferAvailable(MediaCodec codec, int index) {
-                ByteBuffer inputBuffer = videoCodec.getInputBuffer(index);
-                int sampleSize = videoExtractor.readSampleData(inputBuffer, 0);
-                long presentationTime = videoExtractor.getSampleTime();
-                int flags = 0;
-                if (sampleSize < 0) {
-                    flags = MediaCodec.BUFFER_FLAG_END_OF_STREAM;
-                    sampleSize = 0;
-                } else if (mDecodeOnlyCounter % 2 == 0) {
-                    flags = MediaCodec.BUFFER_FLAG_DECODE_ONLY;
-                } else {
-                    expectedPresentationTimes.add(presentationTime);
-                }
-                mDecodeOnlyCounter++;
-                videoCodec.queueInputBuffer(index, 0, sampleSize, presentationTime, flags);
-                videoExtractor.advance();
-            }
+                    // Before queueing a frame, check if it is the last frame and set the EOS flag
+                    // to the frame if that's the case. If the frame is to be only decoded
+                    // (every other frame), then set the DECODE_ONLY flag to the frame. Only frames
+                    // not tagged with EOS or DECODE_ONLY are expected to be rendered and added
+                    // to expectedPresentationTimes
+                    @Override
+                    public void onInputBufferAvailable(MediaCodec codec, int index) {
+                        if (mHasQueuedEos) {
+                            return;
+                        }
+                        ByteBuffer inputBuffer = videoCodec.getInputBuffer(index);
+                        long sampleSizeToRead = videoExtractor.getSampleSize();
+                        int sampleSize = videoExtractor.readSampleData(inputBuffer, 0);
+                        assertEquals(
+                                "Test could not read the entire sample data into the buffer. "
+                                        + "Size of sample: "
+                                        + sampleSizeToRead
+                                        + ". Size that was read: "
+                                        + sampleSize
+                                        + ".",
+                                sampleSizeToRead,
+                                (long) sampleSize);
 
-            // nothing to do here - in tunneled mode, the frames are rendered directly by the
-            // hardware, they are not sent back to the codec for extra processing
-            @Override
-            public void onOutputBufferAvailable(MediaCodec codec, int index,
-                    MediaCodec.BufferInfo info) {
-                Assert.fail("onOutputBufferAvailable should not be called in tunnel mode.");
-            }
+                        long presentationTime = videoExtractor.getSampleTime();
+                        int extractorFlags = videoExtractor.getSampleFlags();
+                        int codecFlags = 0;
 
-            @Override
-            public void onError(MediaCodec codec, MediaCodec.CodecException e) {
-                Assert.fail("Encountered unexpected error while decoding video: " + e.getMessage());
-            }
+                        if (sampleSize < 0) {
+                            codecFlags |= MediaCodec.BUFFER_FLAG_END_OF_STREAM;
+                            sampleSize = 0;
+                            mHasQueuedEos = true;
+                        } else {
+                            if (mDecodeOnlyCounter % 2 == 0) {
+                                codecFlags |= MediaCodec.BUFFER_FLAG_DECODE_ONLY;
+                            }
+                            if ((extractorFlags & MediaExtractor.SAMPLE_FLAG_PARTIAL_FRAME) != 0) {
+                                codecFlags |= MediaCodec.BUFFER_FLAG_PARTIAL_FRAME;
+                            } else {
+                                if (mDecodeOnlyCounter % 2 != 0) {
+                                    expectedPresentationTimes.add(presentationTime);
+                                }
+                                mDecodeOnlyCounter++;
+                            }
+                        }
 
-            @Override
-            public void onOutputFormatChanged(MediaCodec codec, MediaFormat format) {
+                        videoCodec.queueInputBuffer(
+                                index, 0, sampleSize, presentationTime, codecFlags);
+                        videoExtractor.advance();
+                    }
 
-            }
-        });
+                    // nothing to do here - in tunneled mode, the frames are rendered directly by
+                    // the hardware, they are not sent back to the codec for extra processing
+                    @Override
+                    public void onOutputBufferAvailable(
+                            MediaCodec codec, int index, MediaCodec.BufferInfo info) {
+                        Assert.fail("onOutputBufferAvailable should not be called in tunnel mode.");
+                    }
+
+                    @Override
+                    public void onError(MediaCodec codec, MediaCodec.CodecException e) {
+                        Assert.fail(
+                                "Encountered unexpected error while decoding video: "
+                                        + e.getMessage());
+                    }
+
+                    @Override
+                    public void onOutputFormatChanged(MediaCodec codec, MediaFormat format) {}
+                });
         videoCodec.configure(videoFormat, getActivity().getSurfaceHolder().getSurface(), null, 0);
-        AtomicBoolean done = new AtomicBoolean(false);
         // Since data is written to AudioTrack in a blocking manner, run it in a separate thread to
         // not block other operations.
         HandlerThread audioThread = new HandlerThread("audioThread");
         audioThread.start();
-        audioCodec.setCallback(new AudioCallback(audioCodec, audioExtractor, audioTrack, done),
-                new Handler(audioThread.getLooper()));
+        AudioCallback audioCallback = new AudioCallback(audioCodec, audioExtractor, audioTrack);
+        audioCodec.setCallback(audioCallback, new Handler(audioThread.getLooper()));
         audioCodec.configure(audioFormat, null, null, 0);
 
+        // Keep track of all rendered frames. If it is the last frame, then signal a boolean that
+        // playback has finished. The list of rendered frames is compared against a list of frames
+        // that were not marked as DECODE_ONLY.
         List<Long> renderedPresentationTimes = new ArrayList<>();
+        CountDownLatch hasRenderedEos = new CountDownLatch(1);
+        videoCodec.setOnFrameRenderedListener(
+                (codec, presentationTimeUs, nanoTime) -> {
+                    if (presentationTimeUs == EOS_TIMESTAMP_TUNNEL_MODE) {
+                        hasRenderedEos.countDown();
+                    } else {
+                        renderedPresentationTimes.add(presentationTimeUs);
+                    }
+                },
+                new Handler(Looper.getMainLooper()));
 
-        // a listener on rendered frames, if it is the last frame (EOS), then set the boolean to
-        // true and exit the loop below, else add the frame to renderedPresentationTimes
-        // to expectedPresentationTimes should be equal at the end of the test
-        videoCodec.setOnFrameRenderedListener((codec, presentationTimeUs, nanoTime) -> {
-            if (presentationTimeUs == EOS_TIMESTAMP_TUNNEL_MODE) {
-                done.set(true);
-            } else {
-                renderedPresentationTimes.add(presentationTimeUs);
-            }
-        }, new Handler(Looper.getMainLooper()));
-
-        // start media playback
         videoCodec.start();
         audioCodec.start();
         audioTrack.play();
 
-        // keep looping until the codec receives the EOS frame
-        while (!done.get()) {
-            Thread.sleep(100);
-        }
+        hasRenderedEos.await();
+
         audioTrack.stop();
         audioTrack.release();
         videoCodec.stop();
@@ -501,27 +546,71 @@ public class DecodeOnlyTest extends MediaTestBase {
         audioExtractor.seekTo(audioSeekTime, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
 
         List<Long> expectedPresentationTimes = new ArrayList<>();
-        AtomicBoolean done = new AtomicBoolean(false);
         AtomicBoolean hasDecodeOnlyFrames = new AtomicBoolean(false);
-        videoCodec.setCallback(new MediaCodec.Callback() {
+
+        class VideoCallback extends MediaCodec.Callback {
+            private final Queue<Integer> mAvailableInputIndices = new ArrayDeque<>();
+            private final Lock mLock = new ReentrantLock();
+            boolean mHasQueuedEos = false;
+            boolean mShouldProcessBuffers = true;
+
+            private void queueInput(MediaCodec codec, int index) {
+                if (mHasQueuedEos) {
+                    return;
+                }
+                ByteBuffer inputBuffer = codec.getInputBuffer(index);
+                int sampleSize = videoExtractor.readSampleData(inputBuffer, 0);
+                long presentationTime = videoExtractor.getSampleTime();
+                int flags = 0;
+                if (sampleSize < 0) {
+                    flags = MediaCodec.BUFFER_FLAG_END_OF_STREAM;
+                    sampleSize = 0;
+                    mHasQueuedEos = true;
+                } else if (presentationTime < seekTime.get()) {
+                    flags = MediaCodec.BUFFER_FLAG_DECODE_ONLY;
+                    hasDecodeOnlyFrames.set(true);
+                } else {
+                    expectedPresentationTimes.add(presentationTime);
+                }
+                codec.queueInputBuffer(index, 0, sampleSize, presentationTime, flags);
+                videoExtractor.advance();
+            }
+
             @Override
             public void onInputBufferAvailable(MediaCodec codec, int index) {
-                if (!done.get()) {
-                    ByteBuffer inputBuffer = codec.getInputBuffer(index);
-                    int sampleSize = videoExtractor.readSampleData(inputBuffer, 0);
-                    long presentationTime = videoExtractor.getSampleTime();
-                    int flags = 0;
-                    if (sampleSize < 0) {
-                        flags = MediaCodec.BUFFER_FLAG_END_OF_STREAM;
-                        sampleSize = 0;
-                    } else if (presentationTime < seekTime.get()) {
-                        flags = MediaCodec.BUFFER_FLAG_DECODE_ONLY;
-                        hasDecodeOnlyFrames.set(true);
+                mLock.lock();
+                try {
+                    if (mShouldProcessBuffers) {
+                        queueInput(codec, index);
                     } else {
-                        expectedPresentationTimes.add(presentationTime);
+                        mAvailableInputIndices.offer(index);
                     }
-                    codec.queueInputBuffer(index, 0, sampleSize, presentationTime, flags);
-                    videoExtractor.advance();
+                } finally {
+                    mLock.unlock();
+                }
+            }
+
+            void setShouldProcessBuffers(boolean shouldProcessBuffers) {
+                mLock.lock();
+                try {
+                    mShouldProcessBuffers = shouldProcessBuffers;
+                    if (shouldProcessBuffers) {
+                        while (!mAvailableInputIndices.isEmpty()) {
+                            queueInput(videoCodec, mAvailableInputIndices.poll());
+                        }
+                    }
+                } finally {
+                    mLock.unlock();
+                }
+            }
+
+            void clearBufferQueue() {
+                mLock.lock();
+                try {
+                    mAvailableInputIndices.clear();
+                    mHasQueuedEos = false;
+                } finally {
+                    mLock.unlock();
                 }
             }
 
@@ -540,24 +629,32 @@ public class DecodeOnlyTest extends MediaTestBase {
             public void onOutputFormatChanged(MediaCodec codec, MediaFormat format) {
 
             }
-        });
+        }
+
+        VideoCallback videoCallback = new VideoCallback();
+        videoCodec.setCallback(videoCallback);
         videoCodec.configure(videoFormat, getActivity().getSurfaceHolder().getSurface(), null, 0);
+
         // Since data is written to AudioTrack in a blocking manner, run it in a separate thread to
         // not block other operations.
         HandlerThread audioThread = new HandlerThread("audioThread");
         audioThread.start();
-        audioCodec.setCallback(new AudioCallback(audioCodec, audioExtractor, audioTrack, done),
-                new Handler(audioThread.getLooper()));
+        AudioCallback audioCallback = new AudioCallback(audioCodec, audioExtractor, audioTrack);
+        audioCodec.setCallback(audioCallback, new Handler(audioThread.getLooper()));
         audioCodec.configure(audioFormat, null, null, 0);
 
+        // Keep track of all rendered frames. Signal once a frame 500ms after the seek position is
+        // rendered. The list of rendered frames is examined to verify the correct frame is peeked.
         List<Long> renderedPresentationTimes = new ArrayList<>();
-        // play for 500ms
-        videoCodec.setOnFrameRenderedListener((codec, presentationTimeUs, nanoTime) -> {
-            renderedPresentationTimes.add(presentationTimeUs);
-            if (presentationTimeUs >= seekTime.get() + 500 * 1000) {
-                done.set(true);
-            }
-        }, new Handler(Looper.getMainLooper()));
+        CountDownLatch hasRenderedAfterSeekTime = new CountDownLatch(1);
+        videoCodec.setOnFrameRenderedListener(
+                (codec, presentationTimeUs, nanoTime) -> {
+                    renderedPresentationTimes.add(presentationTimeUs);
+                    if (presentationTimeUs >= seekTime.get() + 500 * 1000) {
+                        hasRenderedAfterSeekTime.countDown();
+                    }
+                },
+                new Handler(Looper.getMainLooper()));
 
         AtomicBoolean firstTunnelFrameReady = new AtomicBoolean(false);
         videoCodec.setOnFirstTunnelFrameReadyListener(new Handler(Looper.getMainLooper()),
@@ -565,10 +662,12 @@ public class DecodeOnlyTest extends MediaTestBase {
                     firstTunnelFrameReady.set(true);
                 });
 
-        boolean isPeeking = setKeyTunnelPeek(videoCodec, initialPeek ? 1 : 0);
-        // start media playback
+        // Peek needs to be called after start, but before processing buffers
+        videoCallback.setShouldProcessBuffers(false);
         videoCodec.start();
         audioCodec.start();
+        boolean isPeeking = setKeyTunnelPeek(videoCodec, initialPeek ? 1 : 0);
+        videoCallback.setShouldProcessBuffers(true);
 
         // When video codecs are started, large chunks of contiguous physical memory need to be
         // allocated, which, on low-RAM devices, can trigger high CPU usage for moving memory
@@ -576,14 +675,16 @@ public class DecodeOnlyTest extends MediaTestBase {
         // startup time for playback.
         ActivityManager activityManager = mContext.getSystemService(ActivityManager.class);
         final int firstFrameReadyTimeoutSeconds = activityManager.isLowRamDevice() ? 3 : 1;
+
+        // Verify the first tunnel frame ready signal is received in a reasonable amount of time.
         sleepUntil(firstTunnelFrameReady::get, Duration.ofSeconds(firstFrameReadyTimeoutSeconds));
         assertTrue(String.format("onFirstTunnelFrameReady not called within %d seconds",
                 firstFrameReadyTimeoutSeconds), firstTunnelFrameReady.get());
 
-        final int waitForRenderingMs = 1000;
         // Sleep for 1s here to ensure that either (1) when peek is on, high-latency display
         // pipelines have enough time to render the first frame, or (2) when peek is off, the
         // frame isn't rendered after long time.
+        final int waitForRenderingMs = 1000;
         Thread.sleep(waitForRenderingMs);
         if (isPeeking) {
             assertEquals(1, renderedPresentationTimes.size());
@@ -600,24 +701,32 @@ public class DecodeOnlyTest extends MediaTestBase {
                         + " info about key frames and their timestamps.",
                 hasDecodeOnlyFrames.get());
 
-        // Run the playback to verify that frame at seek time is also rendered when peek is off.
+        // Run the playback to verify that the seek frame is rendered when peek is off.
         audioTrack.play();
-        while (!done.get()) {
-            Thread.sleep(100);
-        }
+        hasRenderedAfterSeekTime.await();
+
+        // Verify the first rendered frame is the seek frame, and not the preceding key frame.
         if (!isPeeking) {
             assertFalse(renderedPresentationTimes.isEmpty());
             assertEquals(seekTime.get(), (long) renderedPresentationTimes.get(0));
         }
 
+        // Pause and setup seeking to a new position.
         audioTrack.pause();
+        // TODO(b/291959069): Remove once MediaCodec stops sending stale callbacks when flushed.
+        videoCallback.setShouldProcessBuffers(false);
+        // TODO(b/291959069): Remove once MediaCodec stops sending stale callbacks when flushed.
+        audioCallback.setShouldProcessBuffers(false);
         // Just be safe that pause may take some time.
         Thread.sleep(500);
+        audioTrack.flush();
         videoCodec.flush();
         audioCodec.flush();
-        audioTrack.flush();
 
-        // Frames at 7s of each file are not key frame, and there is non-zero key frame before it
+        // Clear all buffers from callbacks that occurred prior to the flush
+        videoCallback.clearBufferQueue();
+
+        // Frames at 7s of each file are not key frame, and there is non-zero key frame before it.
         seekTime.set(7000 * 1000);
         videoExtractor.seekTo(seekTime.get(), MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
         audioSeekTime = videoExtractor.getSampleTime();
@@ -625,24 +734,31 @@ public class DecodeOnlyTest extends MediaTestBase {
         expectedPresentationTimes.clear();
         renderedPresentationTimes.clear();
 
-        // a listener on rendered frames, if it is the last frame (EOS), then set the boolean to
-        // true and exit the loop below, else add the frame to renderedPresentationTimes
-        // to expectedPresentationTimes should be equal at the end of the test
-        // renderedPresentationTimes should only contain frames starting with desired seek timestamp
-        videoCodec.setOnFrameRenderedListener((codec, presentationTimeUs, nanoTime) -> {
-            if (presentationTimeUs == EOS_TIMESTAMP_TUNNEL_MODE) {
-                done.set(true);
-            } else {
-                renderedPresentationTimes.add(presentationTimeUs);
-            }
-        }, new Handler(Looper.getMainLooper()));
+        // Keep track of all rendered frames. Signal once the last frame has been rendered. The list
+        // of rendered frames is examined to verify the correct frame is peeked.
+        CountDownLatch hasRenderedEos = new CountDownLatch(1);
+        videoCodec.setOnFrameRenderedListener(
+                (codec, presentationTimeUs, nanoTime) -> {
+                    if (presentationTimeUs == EOS_TIMESTAMP_TUNNEL_MODE) {
+                        hasRenderedEos.countDown();
+                    } else {
+                        renderedPresentationTimes.add(presentationTimeUs);
+                    }
+                },
+                new Handler(Looper.getMainLooper()));
 
-        // Restart media playback
+        // Restart media playback at the new seek position.
         firstTunnelFrameReady.set(false);
-        isPeeking = setKeyTunnelPeek(videoCodec, isPeeking ? 0 : 1);
-        done.set(false);
+        // TODO(b/291959069): Remove once MediaCodec stops sending stale callbacks when flushed.
+        audioCallback.setShouldProcessBuffers(true);
         videoCodec.start();
         audioCodec.start();
+        // Set peek on when it was off, and set it off when it was on.
+        isPeeking = setKeyTunnelPeek(videoCodec, isPeeking ? 0 : 1);
+        // TODO(b/291959069): Remove once MediaCodec stops sending stale callbacks when flushed.
+        videoCallback.setShouldProcessBuffers(true);
+
+        // Verify the first tunnel frame ready signal is received in a reasonable amount of time.
         sleepUntil(firstTunnelFrameReady::get, Duration.ofSeconds(firstFrameReadyTimeoutSeconds));
         assertTrue(String.format("onFirstTunnelFrameReady not called within %d seconds",
                 firstFrameReadyTimeoutSeconds), firstTunnelFrameReady.get());
@@ -656,22 +772,23 @@ public class DecodeOnlyTest extends MediaTestBase {
             assertEquals(seekTime.get(), (long) renderedPresentationTimes.get(0));
         } else {
             assertTrue(renderedPresentationTimes.isEmpty());
-        }
 
-        if (!isPeeking) {
             // First frame should be rendered immediately after setting peek on.
-            isPeeking = setKeyTunnelPeek(videoCodec, 1);
-            // This is long due to high-latency display pipelines on TV devices.
+            setKeyTunnelPeek(videoCodec, 1);
+            // Sleep to allow for high-latency display pipelines on TV devices.
             Thread.sleep(waitForRenderingMs);
             assertEquals(1, renderedPresentationTimes.size());
             assertEquals(seekTime.get(), (long) renderedPresentationTimes.get(0));
         }
 
         audioTrack.play();
-        // keep looping until the codec receives the EOS frame
-        while (!done.get()) {
-            Thread.sleep(100);
-        }
+
+        hasRenderedEos.await();
+
+        // TODO(b/291959069): Remove once MediaCodec stops sending stale callbacks when stopped.
+        videoCallback.setShouldProcessBuffers(false);
+        // TODO(b/291959069): Remove once MediaCodec stops sending stale callbacks when stopped.
+        audioCallback.setShouldProcessBuffers(false);
 
         audioTrack.stop();
         audioTrack.release();
@@ -692,7 +809,6 @@ public class DecodeOnlyTest extends MediaTestBase {
         videoCodec.setParameters(parameters);
         return value != 0;
     }
-
 
     private AudioTrack createAudioTrack(MediaFormat audioFormat, int audioSessionId) {
         int sampleRate = audioFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
@@ -754,18 +870,26 @@ public class DecodeOnlyTest extends MediaTestBase {
         private final MediaCodec mAudioCodec;
         private final MediaExtractor mAudioExtractor;
         private final AudioTrack mAudioTrack;
-        private final AtomicBoolean mDone;
+        // TODO(b/291959069): Remove after MediaCodec stops sending stale callbacks
+        private final AtomicBoolean mShouldProcessBuffers = new AtomicBoolean(true);
 
-        AudioCallback(MediaCodec audioCodec, MediaExtractor audioExtractor,
-                AudioTrack audioTrack, AtomicBoolean done) {
+        AudioCallback(MediaCodec audioCodec, MediaExtractor audioExtractor, AudioTrack audioTrack) {
             this.mAudioCodec = audioCodec;
             this.mAudioExtractor = audioExtractor;
             this.mAudioTrack = audioTrack;
-            this.mDone = done;
+        }
+
+        // TODO(b/291959069): Remove after MediaCodec stops sending stale callbacks
+        void setShouldProcessBuffers(boolean shouldProcessBuffers) {
+            mShouldProcessBuffers.set(shouldProcessBuffers);
         }
 
         @Override
         public void onInputBufferAvailable(MediaCodec codec, int index) {
+            // TODO(b/291959069): Remove after MediaCodec stops sending stale callbacks
+            if (!mShouldProcessBuffers.get()) {
+                return;
+            }
             ByteBuffer audioInputBuffer = mAudioCodec.getInputBuffer(index);
             int audioSampleSize = mAudioExtractor.readSampleData(audioInputBuffer, 0);
             long presentationTime = mAudioExtractor.getSampleTime();
@@ -782,25 +906,26 @@ public class DecodeOnlyTest extends MediaTestBase {
         @Override
         public void onOutputBufferAvailable(MediaCodec codec, int index,
                 MediaCodec.BufferInfo info) {
-            // TODO(b/291959069): Remove this once stale callbacks aren't fired by MediaCodec
-            if (mDone.get()) {
+            // TODO(b/291959069): Remove after MediaCodec stops sending stale callbacks
+            if (!mShouldProcessBuffers.get()) {
                 return;
             }
             ByteBuffer outputBuffer = mAudioCodec.getOutputBuffer(index);
-            byte[] audioArray = new byte[info.size];
-            outputBuffer.get(audioArray);
+            byte[] copyOfAudioData = new byte[info.size];
+            outputBuffer.get(copyOfAudioData);
             outputBuffer.clear();
-            long presentationTimeUs = info.presentationTimeUs;
             mAudioCodec.releaseOutputBuffer(index, false);
-
-            ByteBuffer audioData = ByteBuffer.wrap(audioArray);
-            while (audioData.remaining() > 0 && !mDone.get()) {
-                int written = mAudioTrack.write(audioData, audioData.remaining(),
-                        AudioTrack.WRITE_BLOCKING, presentationTimeUs * 1000);
+            ByteBuffer copyOfOutputBuffer = ByteBuffer.wrap(copyOfAudioData);
+            while (copyOfOutputBuffer.remaining() > 0 && mShouldProcessBuffers.get()) {
+                int written =
+                        mAudioTrack.write(
+                                copyOfOutputBuffer,
+                                copyOfOutputBuffer.remaining(),
+                                AudioTrack.WRITE_BLOCKING,
+                                info.presentationTimeUs * 1000);
                 if (written == 0) {
                     // When audio track is not in playing state, the write operation does not
-                    // block in WRITE_BLOCKING mode. And when audio track is full, the audio
-                    // data can not be fully written. Must sleep here to wait for free spaces.
+                    // block in WRITE_BLOCKING mode. Sleep to avoid busy looping.
                     try {
                         Thread.sleep(50);
                     } catch (InterruptedException ignored) {
