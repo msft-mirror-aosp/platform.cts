@@ -1135,6 +1135,9 @@ public abstract class AudioDataPathsBaseActivity
                     moduleJson.put(KEY_CRITERIA_JITTER, MAX_SIGNAL_PASS_JITTER);
                 } else {
                     moduleJson.put(KEY_CRITERIA_MAG, MAX_XTALK_PASS_MAGNITUDE);
+                    // We don't have a criteria for jitter in cross-talk, so set it to negative
+                    // to indicate that it was not used.
+                    moduleJson.put(KEY_CRITERIA_JITTER, -1);
                 }
             }
 
