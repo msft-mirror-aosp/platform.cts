@@ -1421,4 +1421,24 @@ public class MockModemManager {
             + " rilErrorCode=" + rilErrorCode);
         mMockModemService.getIRadioMessaging((byte) slotId).setSendSmsErrorCode(sendSmsErrorCode, rilErrorCode);
     }
+
+    /**
+     * Checks if rebootModem was called on the mock modem.
+     *
+     * @return true if rebootModem was called.
+     */
+    public boolean wasRebootModemCalled() {
+        if (mMockModemService == null) return false;
+        IRadioConfigImpl configImpl = mMockModemService.getIRadioConfig();
+        return configImpl != null && configImpl.wasRebootModemCalled();
+    }
+
+    /** Resets the rebootModem called flag on the mock modem. */
+    public void resetRebootModemCalledFlag() {
+        if (mMockModemService == null) return;
+        IRadioConfigImpl configImpl = mMockModemService.getIRadioConfig();
+        if (configImpl != null) {
+            configImpl.resetRebootModemCalledFlag();
+        }
+    }
 }

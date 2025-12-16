@@ -63,6 +63,8 @@ public class IRadioConfigImpl extends IRadioConfig.Stub {
 
     MockCentralizedNetworkAgent mMockCentralizedNetworkAgent;
 
+    private boolean mRebootModemCalled = false; // Flag to track if rebootModem was called
+
     public IRadioConfigImpl(
             MockModemService service, MockModemConfigInterface configInterface,
             MockCentralizedNetworkAgent centralizedNetworkAgent, int instanceId) {
@@ -334,6 +336,19 @@ public class IRadioConfigImpl extends IRadioConfig.Stub {
         }
     }
 
+    @Override
+    public void rebootModem(int serial) {
+        Log.d(mTag, "rebootModem: serial=" + serial);
+        RadioResponseInfo rsp = mService.makeSolRsp(serial);
+        try {
+            mRadioConfigResponse.rebootModemResponse(rsp);
+            mRebootModemCalled = true; // Set the flag
+            Log.i(mTag, "rebootModem: Simulated modem reboot success");
+        } catch (RemoteException ex) {
+            Log.e(mTag, "Failed to invoke rebootModemResponse from AIDL. Exception: " + ex);
+        }
+    }
+
     public void unsolSimSlotsStatusChanged() {
         Log.d(mTag, "unsolSimSlotsStatusChanged");
         SimSlotStatus[] slotStatus;
@@ -392,5 +407,19 @@ public class IRadioConfigImpl extends IRadioConfig.Stub {
     @Override
     public int getInterfaceVersion() {
         return IRadioConfig.VERSION;
+    }
+
+    /**
+     * Checks if rebootModem has been called.
+     *
+     * @return true if rebootModem was called, false otherwise.
+     */
+    public boolean wasRebootModemCalled() {
+        return mRebootModemCalled;
+    }
+
+    /** Resets the rebootModem called flag. */
+    public void resetRebootModemCalledFlag() {
+        mRebootModemCalled = false;
     }
 }
