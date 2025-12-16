@@ -27,7 +27,8 @@
         </activity>
 
         <service android:name="com.android.cts.appsearch.helper.AppFunctionService"
-            android:exported="true" android:enabled="false">
+            android:exported="true" android:enabled="false"
+            android:permission="android.permission.BIND_APP_FUNCTION_SERVICE">
             <property android:name="android.app.appfunctions" android:value="appfunctions.xml" />
             <property android:name="android.app.appfunctions.v2"
                 android:value="appfunctions_v2.xml" />
