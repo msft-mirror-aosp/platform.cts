@@ -106,7 +106,7 @@ public class Camera2HeadlessSystemUserTest extends Camera2ParameterizedTestCase 
     @RequiresFlagsEnabled(Flags.FLAG_CAMERA_HSUM_PERMISSION)
     @Test
     public void testHeadlessSystemUser_OpenCamera() throws Exception {
-        assumeTrue(mUserManager.isSystemUser());
+        assumeSystemUser();
         for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
             CameraDevice camera = null;
             try {
@@ -133,7 +133,7 @@ public class Camera2HeadlessSystemUserTest extends Camera2ParameterizedTestCase 
     @RequiresFlagsEnabled(Flags.FLAG_CAMERA_HSUM_PERMISSION)
     @Test
     public void testHeadlessSystemUser_InvalidAccess() throws Exception {
-        assumeTrue(mUserManager.isSystemUser());
+        assumeSystemUser();
         assumeFalse("Skipping test for system camera.", mAdoptShellPerm);
         for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
             try {
@@ -161,7 +161,7 @@ public class Camera2HeadlessSystemUserTest extends Camera2ParameterizedTestCase 
     public void testHeadlessSystemUser_SwitchForegroundUser() throws Exception {
         int initialUserId = getCurrentUserId();
         Log.d(TAG, "testHeadlessSystemUser_SwitchForegroundUser: initialUserId=" + initialUserId);
-        assumeTrue(mUserManager.isSystemUser());
+        assumeSystemUser();
         assumeTrue("Skipping test for devices which doesn't support multiple users.",
                 UserManager.supportsMultipleUsers());
         for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
@@ -182,6 +182,10 @@ public class Camera2HeadlessSystemUserTest extends Camera2ParameterizedTestCase 
                 switchUser(initialUserId);
             }
         }
+    }
+
+    private void assumeSystemUser() {
+        assumeTrue(mContext.getUser() + " is not system user", mUserManager.isSystemUser());
     }
 
     private void openCameraAsHeadlessSystemUser(String cameraId) throws Exception {
@@ -209,7 +213,8 @@ public class Camera2HeadlessSystemUserTest extends Camera2ParameterizedTestCase 
     }
 
     private void switchUser(int userId) throws Exception {
-        String cmd = "am switch-user " + userId;
+        Log.d(TAG, "switchUser(" + userId + ")");
+        String cmd = "am switch-user -w " + userId;
         SystemUtil.runShellCommand(cmd);
         waitUntilUserCurrent(userId);
         if (mAdoptShellPerm) {
