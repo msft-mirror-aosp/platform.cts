@@ -148,7 +148,7 @@ public abstract class AbstractRestrictBackgroundNetworkTestCase {
 
     private static final String EMPTY_STRING = "";
 
-    protected static final int TYPE_COMPONENT_ACTIVTIY = 0;
+    protected static final int TYPE_COMPONENT_ACTIVITY = 0;
     protected static final int TYPE_COMPONENT_FOREGROUND_SERVICE = 1;
     protected static final int TYPE_EXPEDITED_JOB = 2;
 
@@ -355,7 +355,7 @@ public abstract class AbstractRestrictBackgroundNetworkTestCase {
      */
     protected void assertsForegroundAlwaysHasNetworkAccess() throws Exception{
         // Checks foreground first.
-        launchComponentAndAssertNetworkAccess(TYPE_COMPONENT_ACTIVTIY);
+        launchComponentAndAssertNetworkAccess(TYPE_COMPONENT_ACTIVITY);
         finishActivity();
 
         // Then foreground service
@@ -923,7 +923,7 @@ public abstract class AbstractRestrictBackgroundNetworkTestCase {
     protected void launchActivity() throws Exception {
         turnScreenOn();
         final CountDownLatch latch = new CountDownLatch(1);
-        final Intent launchIntent = getIntentForComponent(TYPE_COMPONENT_ACTIVTIY);
+        final Intent launchIntent = getIntentForComponent(TYPE_COMPONENT_ACTIVITY);
         final RemoteCallback callback = new RemoteCallback(result -> latch.countDown());
         launchIntent.putExtra(Intent.EXTRA_REMOTE_CALLBACK, callback);
         mContext.startActivity(launchIntent);
@@ -945,7 +945,7 @@ public abstract class AbstractRestrictBackgroundNetworkTestCase {
         if (type == TYPE_COMPONENT_FOREGROUND_SERVICE) {
             startForegroundService();
             assertForegroundServiceNetworkAccess();
-        } else if (type == TYPE_COMPONENT_ACTIVTIY) {
+        } else if (type == TYPE_COMPONENT_ACTIVITY) {
             turnScreenOn();
             final CountDownLatch latch = new CountDownLatch(1);
             final Intent launchIntent = getIntentForComponent(type);
@@ -1023,7 +1023,7 @@ public abstract class AbstractRestrictBackgroundNetworkTestCase {
     }
 
     protected void startActivity() throws Exception {
-        final Intent launchIntent = getIntentForComponent(TYPE_COMPONENT_ACTIVTIY);
+        final Intent launchIntent = getIntentForComponent(TYPE_COMPONENT_ACTIVITY);
         mContext.startActivity(launchIntent);
     }
 
@@ -1035,7 +1035,7 @@ public abstract class AbstractRestrictBackgroundNetworkTestCase {
 
     private Intent getIntentForComponent(int type) {
         final Intent intent = new Intent();
-        if (type == TYPE_COMPONENT_ACTIVTIY) {
+        if (type == TYPE_COMPONENT_ACTIVITY) {
             intent.setComponent(new ComponentName(TEST_APP2_PKG, TEST_APP2_ACTIVITY_CLASS))
                     .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         } else if (type == TYPE_COMPONENT_FOREGROUND_SERVICE) {

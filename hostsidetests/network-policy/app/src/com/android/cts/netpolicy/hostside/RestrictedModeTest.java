@@ -36,7 +36,7 @@ public final class RestrictedModeTest extends AbstractRestrictBackgroundNetworkT
     @Test
     public void testNetworkAccess() throws Exception {
         // go to foreground state and enable restricted mode
-        launchComponentAndAssertNetworkAccess(TYPE_COMPONENT_ACTIVTIY);
+        launchComponentAndAssertNetworkAccess(TYPE_COMPONENT_ACTIVITY);
         setRestrictedNetworkingMode(true);
         assertTopNetworkAccess(false);
 
@@ -46,7 +46,7 @@ public final class RestrictedModeTest extends AbstractRestrictBackgroundNetworkT
 
         // disable restricted mode and assert network access in foreground and background states
         setRestrictedNetworkingMode(false);
-        launchComponentAndAssertNetworkAccess(TYPE_COMPONENT_ACTIVTIY);
+        launchComponentAndAssertNetworkAccess(TYPE_COMPONENT_ACTIVITY);
         assertTopNetworkAccess(true);
 
         // go to background state

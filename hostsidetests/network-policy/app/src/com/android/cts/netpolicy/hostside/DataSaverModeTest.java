@@ -106,7 +106,7 @@ public class DataSaverModeTest extends AbstractRestrictBackgroundNetworkTestCase
 
         // Make sure foreground app doesn't lose access upon enabling Data Saver.
         setRestrictBackground(false);
-        launchComponentAndAssertNetworkAccess(TYPE_COMPONENT_ACTIVTIY);
+        launchComponentAndAssertNetworkAccess(TYPE_COMPONENT_ACTIVITY);
         setRestrictBackground(true);
         assertTopNetworkAccess(true);
 

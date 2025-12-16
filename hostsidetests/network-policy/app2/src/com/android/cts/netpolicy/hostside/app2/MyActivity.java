@@ -17,7 +17,7 @@ package com.android.cts.netpolicy.hostside.app2;
 
 import static com.android.cts.netpolicy.hostside.app2.Common.ACTION_FINISH_ACTIVITY;
 import static com.android.cts.netpolicy.hostside.app2.Common.TAG;
-import static com.android.cts.netpolicy.hostside.app2.Common.TYPE_COMPONENT_ACTIVTY;
+import static com.android.cts.netpolicy.hostside.app2.Common.TYPE_COMPONENT_ACTIVITY;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -45,6 +45,22 @@ public class MyActivity extends Activity {
         Log.d(TAG, "MyActivity.onCreate()");
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        synchronized (this) {
+            if (finishCommandReceiver == null) {
+                finishCommandReceiver =
+                        new BroadcastReceiver() {
+                            @Override
+                            public void onReceive(Context context, Intent intent) {
+                                Log.d(TAG, "Finishing MyActivity");
+                                MyActivity.this.finish();
+                            }
+                        };
+                registerReceiver(
+                        finishCommandReceiver,
+                        new IntentFilter(ACTION_FINISH_ACTIVITY),
+                        Context.RECEIVER_EXPORTED);
+            }
+        }
     }
 
     @Override
@@ -75,18 +91,7 @@ public class MyActivity extends Activity {
     protected void onResume() {
         super.onResume();
         Log.d(TAG, "MyActivity.onResume(): " + getIntent());
-        Common.notifyNetworkStateObserver(this, getIntent(), TYPE_COMPONENT_ACTIVTY);
-        synchronized (this) {
-            finishCommandReceiver = new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    Log.d(TAG, "Finishing MyActivity");
-                    MyActivity.this.finish();
-                }
-            };
-            registerReceiver(finishCommandReceiver, new IntentFilter(ACTION_FINISH_ACTIVITY),
-                    Context.RECEIVER_EXPORTED);
-        }
+        Common.notifyNetworkStateObserver(this, getIntent(), TYPE_COMPONENT_ACTIVITY);
         final RemoteCallback callback = getIntent().getParcelableExtra(
                 Intent.EXTRA_REMOTE_CALLBACK);
         if (callback != null) {
@@ -96,6 +101,12 @@ public class MyActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        synchronized (this) {
+            if (finishCommandReceiver != null) {
+                unregisterReceiver(finishCommandReceiver);
+                finishCommandReceiver = null;
+            }
+        }
         Log.d(TAG, "MyActivity.onDestroy()");
         super.onDestroy();
     }

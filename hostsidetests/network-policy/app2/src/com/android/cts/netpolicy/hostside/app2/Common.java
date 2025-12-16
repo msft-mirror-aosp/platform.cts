@@ -76,7 +76,7 @@ public final class Common {
     static final String KEY_SKIP_VALIDATION_CHECKS = TEST_PKG + ".skip_validation_checks";
     static final String KEY_CUSTOM_URL =  TEST_PKG + ".custom_url";
 
-    static final int TYPE_COMPONENT_ACTIVTY = 0;
+    static final int TYPE_COMPONENT_ACTIVITY = 0;
     static final int TYPE_COMPONENT_FOREGROUND_SERVICE = 1;
     static final int TYPE_COMPONENT_EXPEDITED_JOB = 2;
     private static final int NETWORK_TIMEOUT_MS = (int) TimeUnit.SECONDS.toMillis(10);
@@ -103,7 +103,7 @@ public final class Common {
             INetworkStateObserver observer) throws RemoteException {
         final ActivityManager activityManager = context.getSystemService(ActivityManager.class);
         switch (componentType) {
-            case TYPE_COMPONENT_ACTIVTY: {
+            case TYPE_COMPONENT_ACTIVITY: {
                 final int procState = activityManager.getUidProcessState(Process.myUid());
                 if (procState != ActivityManager.PROCESS_STATE_TOP) {
                     observer.onNetworkStateChecked(RESULT_ERROR_UNEXPECTED_PROC_STATE,
