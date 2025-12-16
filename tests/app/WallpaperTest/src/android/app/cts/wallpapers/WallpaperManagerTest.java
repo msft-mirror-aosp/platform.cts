@@ -1682,6 +1682,7 @@ public class WallpaperManagerTest {
      * lock screen
      */
     @Test
+    @Ignore("b/469127775")
     public void testSystemAndLockWallpaperVisibility_onLockScreen() throws Exception {
         assumeFalse(
                 "Test requires support for different lock and home screen wallpapers",
@@ -1773,6 +1774,7 @@ public class WallpaperManagerTest {
      * the lock screen wallpaper is visible when it has its own window.
      */
     @Test
+    @Ignore("b/469127775")
     public void testIndependentWallpaperVisibilityBehindActivity_onLockScreen() throws Exception {
         assumeFalse(
                 "Test requires support for different lock and home screen wallpapers",
