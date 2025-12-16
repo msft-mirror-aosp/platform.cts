@@ -3422,7 +3422,6 @@ public class VehiclePropertyVerifiers {
     public static VehiclePropertyVerifier.Builder<Float> getTirePressureVerifierBuilder() {
         VehiclePropertyVerifier.Builder<Float> verifierBuilder =
                 VehiclePropertyVerifier.<Float>newDefaultBuilder(VehiclePropertyIds.TIRE_PRESSURE)
-                        .requireMinMaxValues()
                         .setCarPropertyValueVerifier(
                                 (verifierContext,
                                         carPropertyConfig,
@@ -3440,8 +3439,11 @@ public class VehiclePropertyVerifiers {
                                                 .isAtLeast(0))
                         .setReadPermission(ImmutableSet.of(Car.PERMISSION_TIRES));
 
-        if (VehiclePropertyVerifier.isAtLeastB() && Flags.vehicleProperty25q23pPermissions()) {
-            verifierBuilder.addReadPermission(Car.PERMISSION_TIRES_3P);
+        if (VehiclePropertyVerifier.isAtLeastB()) {
+            verifierBuilder.requireMinMaxValues();
+            if (Flags.vehicleProperty25q23pPermissions()) {
+                verifierBuilder.addReadPermission(Car.PERMISSION_TIRES_3P);
+            }
         }
         return verifierBuilder;
     }
