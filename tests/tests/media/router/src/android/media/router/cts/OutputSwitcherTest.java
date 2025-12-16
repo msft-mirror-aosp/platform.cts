@@ -21,6 +21,7 @@ import static android.content.Intent.ACTION_CLOSE_SYSTEM_DIALOGS;
 import static android.content.Intent.FLAG_RECEIVER_FOREGROUND;
 import static android.media.MediaRoute2Info.FEATURE_LIVE_AUDIO;
 import static android.media.RouteListingPreference.ACTION_RESOLVE_MISSING_PERMISSIONS;
+import static android.media.RouteListingPreference.ACTION_TRANSFER_MEDIA;
 import static android.media.router.cts.StubMediaRoute2ProviderService.FEATURE_SAMPLE;
 import static android.media.router.cts.StubMediaRoute2ProviderService.FEATURE_SPECIAL;
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID1;
@@ -707,32 +708,14 @@ public class OutputSwitcherTest {
     public void showSystemOutputSwitcher_showsCustomSubtextForRoute() throws Exception {
         mService.removeAllRoutesExcept(List.of(ROUTE_ID1, ROUTE_ID2));
         registerRouteCallback(List.of(FEATURE_SAMPLE));
-        String[] mFullRouteId = new String[2];
-        PollingCheck.waitFor(
-                TIMEOUT_MS,
-                () -> {
-                    boolean isFoundRoute1 = false, isFoundRoute2 = false;
-                    List<MediaRoute2Info> routes = mRouter2.getRoutes();
-                    for (MediaRoute2Info route : routes) {
-                        if (ROUTE_NAME1.equals(route.getName().toString())) {
-                            mFullRouteId[0] = route.getId();
-                            isFoundRoute1 = true;
-                        }
-                        if (ROUTE_NAME2.equals(route.getName().toString())) {
-                            mFullRouteId[1] = route.getId();
-                            isFoundRoute2 = true;
-                        }
-                    }
-                    return isFoundRoute1 && isFoundRoute2;
-                });
 
         RouteListingPreference.Item customSubtextItem1 =
-                new RouteListingPreference.Item.Builder(mFullRouteId[0])
+                new RouteListingPreference.Item.Builder(getRouteUniqueId(ROUTE_ID1))
                         .setSubText(RouteListingPreference.Item.SUBTEXT_CUSTOM)
                         .setCustomSubtextMessage("message1")
                         .build();
         RouteListingPreference.Item customSubtextItem2 =
-                new RouteListingPreference.Item.Builder(mFullRouteId[1])
+                new RouteListingPreference.Item.Builder(getRouteUniqueId(ROUTE_ID2))
                         .setSubText(RouteListingPreference.Item.SUBTEXT_CUSTOM)
                         .setCustomSubtextMessage("message2")
                         .build();
@@ -761,6 +744,90 @@ public class OutputSwitcherTest {
         assertThat(message1ForRoute2).isNull();
         UiObject2 message2ForRoute2 = route2TextContainer.findObject(subtextSelector2);
         assertThat(message2ForRoute2).isNotNull();
+    }
+
+    @Test
+    public void selectionBehavior_noneBehavior_itemUnclickable() throws Exception {
+        mService.removeAllRoutesExcept(List.of(ROUTE_ID1));
+        registerRouteCallback(List.of(FEATURE_SAMPLE));
+
+        RouteListingPreference.Item noneSelectionItem =
+                new RouteListingPreference.Item.Builder(getRouteUniqueId(ROUTE_ID1))
+                        .setSelectionBehavior(RouteListingPreference.Item.SELECTION_BEHAVIOR_NONE)
+                        .build();
+        RouteListingPreference routeListingPreference =
+                new RouteListingPreference.Builder().setItems(List.of(noneSelectionItem)).build();
+        mRouter2.setRouteListingPreference(routeListingPreference);
+        mRouter2.showSystemOutputSwitcher();
+
+        UiObject2 route =
+                UiAutomatorUtils2.waitFindObject(
+                        By.text(ROUTE_NAME1).pkg(SYSTEM_UI_PACKAGE), TIMEOUT_MS);
+        assertThat(route.isClickable()).isFalse();
+    }
+
+    @Test
+    public void selectionBehavior_transferBehavior_transferMediaOnClick() throws Exception {
+        mService.removeAllRoutesExcept(List.of(ROUTE_ID1));
+        registerRouteCallback(List.of(FEATURE_SAMPLE));
+        mRouter2.registerTransferCallback(mExecutor, mTransferCallback);
+        RouteListingPreference.Item transferSelectionItem =
+                new RouteListingPreference.Item.Builder(getRouteUniqueId(ROUTE_ID1))
+                        .setSelectionBehavior(
+                                RouteListingPreference.Item.SELECTION_BEHAVIOR_TRANSFER)
+                        .build();
+        RouteListingPreference routeListingPreference =
+                new RouteListingPreference.Builder()
+                        .setItems(List.of(transferSelectionItem))
+                        .build();
+        mRouter2.setRouteListingPreference(routeListingPreference);
+
+        mRouter2.showSystemOutputSwitcher();
+        clickRouteInDialog(ROUTE_NAME1);
+
+        verify(mProviderProxy, timeout(TIMEOUT_MS))
+                .onCreateSession(anyLong(), any(), eq(ROUTE_ID1), any());
+        ArgumentCaptor<RoutingController> newController =
+                ArgumentCaptor.forClass(RoutingController.class);
+        verify(mTransferCallback, timeout(TIMEOUT_MS)).onTransfer(any(), newController.capture());
+        assertThat(
+                        newController.getValue().getSelectedRoutes().stream()
+                                .map(MediaRoute2Info::getName))
+                .containsExactly(ROUTE_NAME1);
+    }
+
+    @Test
+    public void selectionBehavior_goToAppBehavior_launchAppIntentOnClick() throws Exception {
+        mService.removeAllRoutesExcept(List.of(ROUTE_ID1));
+        registerRouteCallback(List.of(FEATURE_SAMPLE));
+        Instrumentation.ActivityMonitor activityMonitor =
+                InstrumentationRegistry.getInstrumentation()
+                        .addMonitor(MediaRouter2TestActivity.class.getName(), null, false);
+
+        String uniqueId = getRouteUniqueId(ROUTE_ID1);
+        RouteListingPreference.Item goToAppSelectionItem =
+                new RouteListingPreference.Item.Builder(uniqueId)
+                        .setSelectionBehavior(
+                                RouteListingPreference.Item.SELECTION_BEHAVIOR_GO_TO_APP)
+                        .build();
+        ComponentName resolveComponent =
+                new ComponentName(mContext, MediaRouter2TestActivity.class);
+        RouteListingPreference routeListingPreference =
+                new RouteListingPreference.Builder()
+                        .setItems(List.of(goToAppSelectionItem))
+                        .setLinkedItemComponentName(resolveComponent)
+                        .build();
+        mRouter2.setRouteListingPreference(routeListingPreference);
+        mRouter2.showSystemOutputSwitcher();
+        clickRouteInDialog(ROUTE_NAME1);
+
+        Activity activity = activityMonitor.waitForActivityWithTimeout(TIMEOUT_MS);
+        Intent startedIntent = activity.getIntent();
+        assertThat(startedIntent).isNotNull();
+        assertThat(startedIntent.getAction()).isEqualTo(ACTION_TRANSFER_MEDIA);
+        assertThat(startedIntent.getComponent()).isEqualTo(resolveComponent);
+        String extraRoute = startedIntent.getStringExtra(RouteListingPreference.EXTRA_ROUTE_ID);
+        assertThat(extraRoute).isEqualTo(uniqueId);
     }
 
     /** Get a route unique ID, which includes the provider ID. */
