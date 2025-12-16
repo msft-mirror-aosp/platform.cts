@@ -71,8 +71,9 @@ import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.graphics.hwui.flags.Flags;
 
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
+import com.google.testing.junit.testparameterinjector.TestParameter;
+import com.google.testing.junit.testparameterinjector.TestParameterInjector;
+import com.google.testing.junit.testparameterinjector.TestParameterValuesProvider;
 
 import org.junit.After;
 import org.junit.Rule;
@@ -89,14 +90,15 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
+import java.util.stream.Collectors;
 
-@RunWith(JUnitParamsRunner.class)
+
+@RunWith(TestParameterInjector.class)
 public class ImageDecoderTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -115,6 +117,7 @@ public class ImageDecoderTest {
         public final boolean hasAlpha;
         public final String mimeType;
         public final ColorSpace colorSpace;
+        public final String name;
 
         Record(int resId, int width, int height, String mimeType, boolean isGray,
                 boolean hasAlpha, ColorSpace colorSpace) {
@@ -125,12 +128,59 @@ public class ImageDecoderTest {
             this.isGray   = isGray;
             this.hasAlpha = hasAlpha;
             this.colorSpace = colorSpace;
+
+            Resources resources = InstrumentationRegistry.getTargetContext().getResources();
+            this.name = resources.getResourceEntryName(resId);
+        }
+
+        @Override
+        public String toString() {
+            return this.name;
+        }
+    }
+
+    // we could use value(val).withName("name"), but it is hard to extract just a list of the values
+    // (some tests use a list of values but not via the parametarization framework)
+    static final class NamedParam<T extends Object> {
+        public String name;
+        public T value;
+
+        NamedParam(String name, T value) {
+            this.value = value;
+            this.name = name;
+        }
+
+        T getValue() {
+            return value;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
+    }
+
+    private static class RecordProvider extends TestParameterValuesProvider {
+        @Override
+        public List<Record> provideValues(Context context) {
+            return getRecords();
+        }
+    }
+
+    private static class AssetRecordProvider extends TestParameterValuesProvider {
+        @Override
+        public List<AssetRecord> provideValues(Context context) {
+            return getAssetRecords();
         }
     }
 
     private static final ColorSpace sSRGB = ColorSpace.get(ColorSpace.Named.SRGB);
 
-    static Record[] getRecords() {
+    static List<Record> getRecords() {
         ArrayList<Record> records = new ArrayList<>(Arrays.asList(new Record[] {
                 new Record(R.drawable.baseline_jpeg, 1280, 960, "image/jpeg", false, false, sSRGB),
                 new Record(R.drawable.grayscale_jpg, 128, 128, "image/jpeg", true, false, sSRGB),
@@ -151,8 +201,9 @@ public class ImageDecoderTest {
             records.add(new Record(R.raw.avif_yuv_420_8bit, 120, 160, "image/avif", false, false,
                                    sSRGB));
         }
-        return records.toArray(new Record[] {});
+        return records;
     }
+
 
     // offset is how many bytes to offset the beginning of the image.
     // extra is how many bytes to append at the end.
@@ -189,12 +240,12 @@ public class ImageDecoderTest {
         return getAsByteArray(resId, 0, 0);
     }
 
-    private ByteBuffer getAsByteBufferWrap(int resId) {
+    private static ByteBuffer getAsByteBufferWrap(int resId) {
         byte[] buffer = getAsByteArray(resId);
         return ByteBuffer.wrap(buffer);
     }
 
-    private ByteBuffer getAsDirectByteBuffer(int resId) {
+    private static ByteBuffer getAsDirectByteBuffer(int resId) {
         byte[] buffer = getAsByteArray(resId);
         ByteBuffer byteBuffer = ByteBuffer.allocateDirect(buffer.length);
         byteBuffer.put(buffer);
@@ -202,11 +253,11 @@ public class ImageDecoderTest {
         return byteBuffer;
     }
 
-    private ByteBuffer getAsReadOnlyByteBuffer(int resId) {
+    private static ByteBuffer getAsReadOnlyByteBuffer(int resId) {
         return getAsByteBufferWrap(resId).asReadOnlyBuffer();
     }
 
-    private File getAsFile(int resId) {
+    private static File getAsFile(int resId) {
         File file = null;
         try {
             Context context = InstrumentationRegistry.getTargetContext();
@@ -228,17 +279,17 @@ public class ImageDecoderTest {
         return file;
     }
 
-    private Uri getAsFileUri(int resId) {
+    private static Uri getAsFileUri(int resId) {
         return Uri.fromFile(getAsFile(resId));
     }
 
-    private Uri getAsContentUri(int resId) {
+    private static Uri getAsContentUri(int resId) {
         Context context = InstrumentationRegistry.getTargetContext();
         return FileProvider.getUriForFile(context,
                 "android.graphics.cts.fileprovider", getAsFile(resId));
     }
 
-    private Callable<AssetFileDescriptor> getAsCallable(int resId) {
+    private static Callable<AssetFileDescriptor> getAsCallable(int resId) {
         final Context context = InstrumentationRegistry.getTargetContext();
         return () -> {
             try {
@@ -254,22 +305,41 @@ public class ImageDecoderTest {
 
     private interface SourceCreator extends IntFunction<ImageDecoder.Source> {};
 
-    private SourceCreator[] mCreators = new SourceCreator[] {
-            resId -> ImageDecoder.createSource(getAsByteArray(resId)),
-            resId -> ImageDecoder.createSource(getAsByteBufferWrap(resId)),
-            resId -> ImageDecoder.createSource(getAsDirectByteBuffer(resId)),
-            resId -> ImageDecoder.createSource(getAsReadOnlyByteBuffer(resId)),
-            resId -> ImageDecoder.createSource(getAsFile(resId)),
-            resId -> ImageDecoder.createSource(getAsCallable(resId)),
-    };
+    private static List<NamedParam<SourceCreator>> sNamedSourceCreators = Arrays.asList(
+           new NamedParam<SourceCreator>("ByteArray",
+                   resId -> ImageDecoder.createSource(getAsByteArray(resId))),
+           new NamedParam<SourceCreator>("ByteBufferWrap",
+                   resId -> ImageDecoder.createSource(getAsByteBufferWrap(resId))),
+           new NamedParam<SourceCreator>("DirectByteBuffer",
+                   resId -> ImageDecoder.createSource(getAsDirectByteBuffer(resId))),
+           new NamedParam<SourceCreator>("ReadOnlyByteBuffer",
+                   resId -> ImageDecoder.createSource(getAsReadOnlyByteBuffer(resId))),
+           new NamedParam<SourceCreator>("File",
+                   resId -> ImageDecoder.createSource(getAsFile(resId))),
+           new NamedParam<SourceCreator>("Callable",
+                   resId -> ImageDecoder.createSource(getAsCallable(resId))));
+
+    private List<SourceCreator> mCreators = sNamedSourceCreators.stream()
+            .map(NamedParam::getValue)
+            .collect(Collectors.toList());
+
+    // Return a single Creator for simple tests.
+    private static SourceCreator getCreator() {
+        return sNamedSourceCreators.get(0).value;
+    }
 
     private interface UriCreator extends IntFunction<Uri> {};
 
-    private UriCreator[] mUriCreators = new UriCreator[] {
-            resId -> Utils.getAsResourceUri(resId),
-            resId -> getAsFileUri(resId),
-            resId -> getAsContentUri(resId),
-    };
+    private static class UriCreatorProvider extends TestParameterValuesProvider {
+        @Override
+        public List<?> provideValues(Context context) {
+            return Arrays.asList(
+                value((UriCreator) resId -> Utils.getAsResourceUri(resId))
+                    .withName("ResourseUri"),
+                value((UriCreator) resId -> getAsFileUri(resId)).withName("FileUri"),
+                value((UriCreator) resId -> getAsContentUri(resId)).withName("ContentUri"));
+        }
+    }
 
     @Test
     @RequiresDevice
@@ -431,29 +501,27 @@ public class ImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
     @DisabledOnRavenwood(blockedBy = ContentResolver.class)
-    public void testUris(Record record) {
+    public void testUris(@TestParameter(valuesProvider = RecordProvider.class) Record record,
+                         @TestParameter(valuesProvider = UriCreatorProvider.class) UriCreator f) {
         int resId = record.resId;
-        String name = getResources().getResourceEntryName(resId);
-        for (UriCreator f : mUriCreators) {
-            ImageDecoder.Source src = null;
-            Uri uri = f.apply(resId);
-            String fullName = name + ": " + uri.toString();
-            src = ImageDecoder.createSource(getContentResolver(), uri);
+        String name = record.name;
+        ImageDecoder.Source src = null;
+        Uri uri = f.apply(resId);
+        String fullName = name + ": " + uri.toString();
+        src = ImageDecoder.createSource(getContentResolver(), uri);
 
-            assertNotNull("failed to create Source for " + fullName, src);
-            try {
-                Drawable d = ImageDecoder.decodeDrawable(src, (decoder, info, s) -> {
-                    decoder.setOnPartialImageListener((e) -> {
-                        fail("error for image " + fullName + ":\n" + e);
-                        return false;
-                    });
+        assertNotNull("failed to create Source for " + fullName, src);
+        try {
+            Drawable d = ImageDecoder.decodeDrawable(src, (decoder, info, s) -> {
+                decoder.setOnPartialImageListener((e) -> {
+                    fail("error for image " + fullName + ":\n" + e);
+                    return false;
                 });
-                assertNotNull("failed to create drawable for " + fullName, d);
-            } catch (IOException e) {
-                fail("exception for image " + fullName + ":\n" + e);
-            }
+            });
+            assertNotNull("failed to create drawable for " + fullName, d);
+        } catch (IOException e) {
+            fail("exception for image " + fullName + ":\n" + e);
         }
     }
 
@@ -466,8 +534,7 @@ public class ImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testInfo(Record record) {
+    public void testInfo(@TestParameter(valuesProvider = RecordProvider.class) Record record) {
         for (SourceCreator f : mCreators) {
             ImageDecoder.Source src = f.apply(record.resId);
             assertNotNull(src);
@@ -485,8 +552,8 @@ public class ImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testDecodeDrawable(Record record) {
+    public void testDecodeDrawable(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record) {
         for (SourceCreator f : mCreators) {
             ImageDecoder.Source src = f.apply(record.resId);
             assertNotNull(src);
@@ -503,8 +570,8 @@ public class ImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testDecodeBitmap(Record record) {
+    public void testDecodeBitmap(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record) {
         for (SourceCreator f : mCreators) {
             ImageDecoder.Source src = f.apply(record.resId);
             assertNotNull(src);
@@ -526,13 +593,13 @@ public class ImageDecoderTest {
     }
 
     // Return a single Record for simple tests.
-    private Record getRecord() {
-        return ((Record[]) getRecords())[0];
+    private static Record getRecord() {
+        return getRecords().get(0);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testSetBogusAllocator() {
-        ImageDecoder.Source src = mCreators[0].apply(getRecord().resId);
+        ImageDecoder.Source src = getCreator().apply(getRecord().resId);
         try {
             ImageDecoder.decodeBitmap(src, (decoder, info, s) -> decoder.setAllocator(15));
         } catch (IOException e) {
@@ -540,23 +607,49 @@ public class ImageDecoderTest {
         }
     }
 
-    private static final int[] ALLOCATORS = new int[] {
-        ImageDecoder.ALLOCATOR_SOFTWARE,
-        ImageDecoder.ALLOCATOR_SHARED_MEMORY,
-        ImageDecoder.ALLOCATOR_HARDWARE,
-        ImageDecoder.ALLOCATOR_DEFAULT,
-    };
+    private static final List<NamedParam<Integer>> ALLOCATORS = Arrays.asList(
+                new NamedParam<Integer>("ALLOCATOR_SOFTWARE",
+                                            ImageDecoder.ALLOCATOR_SOFTWARE),
+                new NamedParam<Integer>("ALLOCATOR_SHARED_MEMORY",
+                                            ImageDecoder.ALLOCATOR_SHARED_MEMORY),
+                new NamedParam<Integer>("ALLOCATOR_HARDWARD",
+                                            ImageDecoder.ALLOCATOR_HARDWARE),
+                new NamedParam<Integer>("ALLOCATOR_DEFAULT",
+                                            ImageDecoder.ALLOCATOR_DEFAULT));
+
+    private static class AllocatorProvider extends TestParameterValuesProvider {
+        @Override
+        public List<?> provideValues(Context context) {
+            return ALLOCATORS;
+        }
+    }
+
+    private static class CropTestResourceProvider extends TestParameterValuesProvider {
+        @Override
+        public List<?> provideValues(Context context) {
+            return Arrays.asList(
+                value(R.drawable.png_test).withName("png_test"),
+                value(R.drawable.baseline_jpeg).withName("baseline_jpeg"));
+        }
+    }
+
+    private static class SourceCreatorProvider extends TestParameterValuesProvider {
+        @Override
+        public List<NamedParam<SourceCreator>> provideValues(Context context) {
+            return sNamedSourceCreators;
+        }
+    }
 
     @Test
     public void testGetAllocator() {
         final int resId = getRecord().resId;
-        ImageDecoder.Source src = mCreators[0].apply(resId);
+        ImageDecoder.Source src = getCreator().apply(resId);
         try {
             ImageDecoder.decodeDrawable(src, (decoder, info, s) -> {
                 assertEquals(ImageDecoder.ALLOCATOR_DEFAULT, decoder.getAllocator());
-                for (int allocator : ALLOCATORS) {
-                    decoder.setAllocator(allocator);
-                    assertEquals(allocator, decoder.getAllocator());
+                for (NamedParam<Integer> a : ALLOCATORS) {
+                    decoder.setAllocator(a.value);
+                    assertEquals((int) a.value, decoder.getAllocator());
                 }
             });
         } catch (IOException e) {
@@ -564,25 +657,12 @@ public class ImageDecoderTest {
         }
     }
 
-    private Collection<Object[]> paramsForTestSetAllocatorDecodeBitmap() {
-        boolean[] trueFalse = new boolean[] { true, false };
-        List<Object[]> temp = new ArrayList<>();
-        for (Object record : getRecords()) {
-            for (int allocator : ALLOCATORS) {
-                for (boolean doCrop : trueFalse) {
-                    for (boolean doScale : trueFalse) {
-                        temp.add(new Object[]{record, allocator, doCrop, doScale});
-                    }
-                }
-            }
-        }
-        return temp;
-    }
-
     @Test
-    @Parameters(method = "paramsForTestSetAllocatorDecodeBitmap")
-    public void testSetAllocatorDecodeBitmap(Record record, int allocator, boolean doCrop,
-                                             boolean doScale) {
+    public void testSetAllocatorDecodeBitmap(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record,
+                    @TestParameter(valuesProvider = AllocatorProvider.class) NamedParam<Integer> a,
+                    @TestParameter boolean doCrop, @TestParameter boolean doScale) {
+        int allocator = a.value;
         if (!Utils.isHardwareBufferSupported()) {
             assumeTrue(
                     "Ravenwood only support software allocator",
@@ -652,7 +732,7 @@ public class ImageDecoderTest {
     @Test
     public void testGetUnpremul() {
         final int resId = getRecord().resId;
-        ImageDecoder.Source src = mCreators[0].apply(resId);
+        ImageDecoder.Source src = getCreator().apply(resId);
         try {
             ImageDecoder.decodeBitmap(src, (decoder, info, s) -> {
                 assertFalse(decoder.isUnpremultipliedRequired());
@@ -708,7 +788,7 @@ public class ImageDecoderTest {
                 null,
         };
         final int resId = getRecord().resId;
-        ImageDecoder.Source src = mCreators[0].apply(resId);
+        ImageDecoder.Source src = getCreator().apply(resId);
         try {
             ImageDecoder.decodeDrawable(src, (decoder, info, s) -> {
                 assertNull(decoder.getPostProcessor());
@@ -724,8 +804,8 @@ public class ImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testPostProcessor(Record record) {
+    public void testPostProcessor(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record) {
         class Listener implements ImageDecoder.OnHeaderDecodedListener {
             public boolean requireSoftware;
             @Override
@@ -857,8 +937,8 @@ public class ImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testPostProcessorAndAddedTransparency(Record record) {
+    public void testPostProcessorAndAddedTransparency(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record) {
         class Listener implements ImageDecoder.OnHeaderDecodedListener {
             public boolean requireSoftware;
             @Override
@@ -889,7 +969,7 @@ public class ImageDecoderTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testPostProcessorTRANSPARENT() {
-        ImageDecoder.Source src = mCreators[0].apply(R.drawable.png_test);
+        ImageDecoder.Source src = getCreator().apply(R.drawable.png_test);
         try {
             ImageDecoder.decodeDrawable(src, (decoder, info, s) -> {
                 decoder.setPostProcessor((c) -> PixelFormat.TRANSPARENT);
@@ -901,7 +981,7 @@ public class ImageDecoderTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testPostProcessorInvalidReturn() {
-        ImageDecoder.Source src = mCreators[0].apply(getRecord().resId);
+        ImageDecoder.Source src = getCreator().apply(getRecord().resId);
         try {
             ImageDecoder.decodeDrawable(src, (decoder, info, s) -> {
                 decoder.setPostProcessor((c) -> 42);
@@ -913,7 +993,7 @@ public class ImageDecoderTest {
 
     @Test(expected = IllegalStateException.class)
     public void testPostProcessorAndUnpremul() {
-        ImageDecoder.Source src = mCreators[0].apply(getRecord().resId);
+        ImageDecoder.Source src = getCreator().apply(getRecord().resId);
         try {
             ImageDecoder.decodeDrawable(src, (decoder, info, s) -> {
                 decoder.setUnpremultipliedRequired(true);
@@ -925,8 +1005,8 @@ public class ImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testPostProcessorAndScale(Record record) {
+    public void testPostProcessorAndScale(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record) {
         class PostProcessorWithSize implements PostProcessor {
             public int width;
             public int height;
@@ -969,11 +1049,11 @@ public class ImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testSampleSize(Record record) {
+    public void testSampleSize(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record) {
         final String name = Utils.getAsResourceUri(record.resId).toString();
         for (int sampleSize : new int[] { 2, 3, 4, 8, 32 }) {
-            ImageDecoder.Source src = mCreators[0].apply(record.resId);
+            ImageDecoder.Source src = getCreator().apply(record.resId);
             try {
                 Drawable dr = ImageDecoder.decodeDrawable(src, (decoder, info, s) -> {
                     decoder.setTargetSampleSize(sampleSize);
@@ -990,9 +1070,9 @@ public class ImageDecoderTest {
     private interface SampleSizeSupplier extends ToIntFunction<Size> {};
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testLargeSampleSize(Record record) {
-        ImageDecoder.Source src = mCreators[0].apply(record.resId);
+    public void testLargeSampleSize(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record) {
+        ImageDecoder.Source src = getCreator().apply(record.resId);
         for (SampleSizeSupplier supplySampleSize : new SampleSizeSupplier[] {
                 (size) -> size.getWidth(),
                 (size) -> size.getWidth() + 5,
@@ -1014,7 +1094,7 @@ public class ImageDecoderTest {
     @Test
     @DisabledOnRavenwood(blockedBy = AnimatedImageDrawable.class)
     public void testResizeTransparency() {
-        ImageDecoder.Source src = mCreators[0].apply(R.drawable.animated);
+        ImageDecoder.Source src = getCreator().apply(R.drawable.animated);
         Drawable dr = null;
         try {
             dr = ImageDecoder.decodeDrawable(src, (decoder, info, s) -> {
@@ -1071,7 +1151,7 @@ public class ImageDecoderTest {
         };
 
         final int resId = getRecord().resId;
-        ImageDecoder.Source src = mCreators[0].apply(resId);
+        ImageDecoder.Source src = getCreator().apply(resId);
         try {
             ImageDecoder.decodeDrawable(src, (decoder, info, s) -> {
                 assertNull(decoder.getOnPartialImageListener());
@@ -1168,8 +1248,8 @@ public class ImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testOnPartialImage(Record record) {
+    public void testOnPartialImage(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record) {
         class PartialImageCallback implements OnPartialImageListener {
             public boolean wasCalled;
             public boolean returnDrawable;
@@ -1288,7 +1368,7 @@ public class ImageDecoderTest {
     @Test
     public void testGetMutable() {
         final int resId = getRecord().resId;
-        ImageDecoder.Source src = mCreators[0].apply(resId);
+        ImageDecoder.Source src = getCreator().apply(resId);
         try {
             ImageDecoder.decodeDrawable(src, (decoder, info, s) -> {
                 assertFalse(decoder.isMutableRequired());
@@ -1305,8 +1385,7 @@ public class ImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testMutable(Record record) {
+    public void testMutable(@TestParameter(valuesProvider = RecordProvider.class) Record record) {
         int allocators[] = new int[] { ImageDecoder.ALLOCATOR_DEFAULT,
                                        ImageDecoder.ALLOCATOR_SOFTWARE,
                                        ImageDecoder.ALLOCATOR_SHARED_MEMORY };
@@ -1326,7 +1405,7 @@ public class ImageDecoderTest {
         };
         HeaderListener l = new HeaderListener();
         boolean trueFalse[] = new boolean[] { true, false };
-        ImageDecoder.Source src = mCreators[0].apply(record.resId);
+        ImageDecoder.Source src = getCreator().apply(record.resId);
         for (boolean postProcess : trueFalse) {
             for (int allocator : allocators) {
                 l.allocator = allocator;
@@ -1346,7 +1425,7 @@ public class ImageDecoderTest {
 
     @Test(expected = IllegalStateException.class)
     public void testMutableHardware() {
-        ImageDecoder.Source src = mCreators[0].apply(getRecord().resId);
+        ImageDecoder.Source src = getCreator().apply(getRecord().resId);
         try {
             ImageDecoder.decodeBitmap(src, (decoder, info, s) -> {
                 decoder.setMutableRequired(true);
@@ -1359,7 +1438,7 @@ public class ImageDecoderTest {
 
     @Test(expected = IllegalStateException.class)
     public void testMutableDrawable() {
-        ImageDecoder.Source src = mCreators[0].apply(getRecord().resId);
+        ImageDecoder.Source src = getCreator().apply(getRecord().resId);
         try {
             ImageDecoder.decodeDrawable(src, (decoder, info, s) -> {
                 decoder.setMutableRequired(true);
@@ -1410,7 +1489,7 @@ public class ImageDecoderTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testZeroSampleSize() {
-        ImageDecoder.Source src = mCreators[0].apply(R.drawable.png_test);
+        ImageDecoder.Source src = getCreator().apply(R.drawable.png_test);
         try {
             ImageDecoder.decodeDrawable(src, (decoder, info, s) -> decoder.setTargetSampleSize(0));
         } catch (IOException e) {
@@ -1420,7 +1499,7 @@ public class ImageDecoderTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testNegativeSampleSize() {
-        ImageDecoder.Source src = mCreators[0].apply(R.drawable.png_test);
+        ImageDecoder.Source src = getCreator().apply(R.drawable.png_test);
         try {
             ImageDecoder.decodeDrawable(src, (decoder, info, s) -> decoder.setTargetSampleSize(-2));
         } catch (IOException e) {
@@ -1429,8 +1508,8 @@ public class ImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testTargetSize(Record record) {
+    public void testTargetSize(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record) {
         class ResizeListener implements ImageDecoder.OnHeaderDecodedListener {
             public int width;
             public int height;
@@ -1443,7 +1522,7 @@ public class ImageDecoderTest {
         ResizeListener l = new ResizeListener();
 
         float[] scales = new float[] { .0625f, .125f, .25f, .5f, .75f, 1.1f, 2.0f };
-        ImageDecoder.Source src = mCreators[0].apply(record.resId);
+        ImageDecoder.Source src = getCreator().apply(record.resId);
         for (int j = 0; j < scales.length; ++j) {
             l.width  = (int) (scales[j] * record.width);
             l.height = (int) (scales[j] * record.height);
@@ -1609,7 +1688,7 @@ public class ImageDecoderTest {
     @Test(expected = IllegalStateException.class)
     public void testResizeWebpLarger() {
         // libwebp does not upscale, so there is no way to get unpremul.
-        ImageDecoder.Source src = mCreators[0].apply(R.drawable.google_logo_2);
+        ImageDecoder.Source src = getCreator().apply(R.drawable.google_logo_2);
         try {
             ImageDecoder.decodeBitmap(src, (decoder, info, s) -> {
                 Size size = info.getSize();
@@ -1623,7 +1702,7 @@ public class ImageDecoderTest {
 
     @Test(expected = IllegalStateException.class)
     public void testResizeUnpremul() {
-        ImageDecoder.Source src = mCreators[0].apply(R.drawable.alpha);
+        ImageDecoder.Source src = getCreator().apply(R.drawable.alpha);
         try {
             ImageDecoder.decodeBitmap(src, (decoder, info, s) -> {
                 // Choose a width and height that cannot be achieved with sampling.
@@ -1641,7 +1720,7 @@ public class ImageDecoderTest {
     @Test
     public void testGetCrop() {
         final int resId = getRecord().resId;
-        ImageDecoder.Source src = mCreators[0].apply(resId);
+        ImageDecoder.Source src = getCreator().apply(resId);
         try {
             ImageDecoder.decodeDrawable(src, (decoder, info, s) -> {
                 assertNull(decoder.getCrop());
@@ -1660,8 +1739,7 @@ public class ImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testCrop(Record record) {
+    public void testCrop(@TestParameter(valuesProvider = RecordProvider.class) Record record) {
         class Listener implements ImageDecoder.OnHeaderDecodedListener {
             public boolean doScale;
             public boolean requireSoftware;
@@ -1739,7 +1817,7 @@ public class ImageDecoderTest {
             }
         }
         CropListener l = new CropListener();
-        ImageDecoder.Source src = mCreators[0].apply(R.drawable.png_test);
+        ImageDecoder.Source src = getCreator().apply(R.drawable.png_test);
 
         // Scale and crop in a single step.
         Bitmap oneStepBm = null;
@@ -1779,7 +1857,7 @@ public class ImageDecoderTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testResizeZeroX() {
-        ImageDecoder.Source src = mCreators[0].apply(R.drawable.png_test);
+        ImageDecoder.Source src = getCreator().apply(R.drawable.png_test);
         try {
             ImageDecoder.decodeDrawable(src, (decoder, info, s) ->
                     decoder.setTargetSize(0, info.getSize().getHeight()));
@@ -1790,7 +1868,7 @@ public class ImageDecoderTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testResizeZeroY() {
-        ImageDecoder.Source src = mCreators[0].apply(R.drawable.png_test);
+        ImageDecoder.Source src = getCreator().apply(R.drawable.png_test);
         try {
             ImageDecoder.decodeDrawable(src, (decoder, info, s) ->
                     decoder.setTargetSize(info.getSize().getWidth(), 0));
@@ -1801,7 +1879,7 @@ public class ImageDecoderTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testResizeNegativeX() {
-        ImageDecoder.Source src = mCreators[0].apply(R.drawable.png_test);
+        ImageDecoder.Source src = getCreator().apply(R.drawable.png_test);
         try {
             ImageDecoder.decodeDrawable(src, (decoder, info, s) ->
                     decoder.setTargetSize(-10, info.getSize().getHeight()));
@@ -1812,7 +1890,7 @@ public class ImageDecoderTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testResizeNegativeY() {
-        ImageDecoder.Source src = mCreators[0].apply(R.drawable.png_test);
+        ImageDecoder.Source src = getCreator().apply(R.drawable.png_test);
         try {
             ImageDecoder.decodeDrawable(src, (decoder, info, s) ->
                     decoder.setTargetSize(info.getSize().getWidth(), -10));
@@ -1832,7 +1910,7 @@ public class ImageDecoderTest {
             }
         };
         CachingCallback l = new CachingCallback();
-        ImageDecoder.Source src = mCreators[0].apply(R.drawable.png_test);
+        ImageDecoder.Source src = getCreator().apply(R.drawable.png_test);
         try {
             ImageDecoder.decodeDrawable(src, l);
         } catch (IOException e) {
@@ -1843,7 +1921,7 @@ public class ImageDecoderTest {
 
     @Test(expected = IllegalStateException.class)
     public void testDecodeUnpremulDrawable() {
-        ImageDecoder.Source src = mCreators[0].apply(R.drawable.png_test);
+        ImageDecoder.Source src = getCreator().apply(R.drawable.png_test);
         try {
             ImageDecoder.decodeDrawable(src, (decoder, info, s) ->
                     decoder.setUnpremultipliedRequired(true));
@@ -1852,16 +1930,10 @@ public class ImageDecoderTest {
         }
     }
 
-    // One static PNG and one animated GIF to test setting invalid crop rects,
-    // to test both paths (animated and non-animated) through ImageDecoder.
-    private static Object[] resourcesForCropTests() {
-        return new Object[] { R.drawable.png_test, R.drawable.animated };
-    }
-
     @Test(expected = IllegalStateException.class)
-    @Parameters(method = "resourcesForCropTests")
-    public void testInvertCropWidth(int resId) {
-        ImageDecoder.Source src = mCreators[0].apply(resId);
+    public void testInvertCropWidth(
+                    @TestParameter(valuesProvider = CropTestResourceProvider.class) int resId) {
+        ImageDecoder.Source src = getCreator().apply(resId);
         try {
             ImageDecoder.decodeDrawable(src, (decoder, info, s) -> {
                 // This rect is unsorted.
@@ -1874,9 +1946,9 @@ public class ImageDecoderTest {
     }
 
     @Test(expected = IllegalStateException.class)
-    @Parameters(method = "resourcesForCropTests")
-    public void testInvertCropHeight(int resId) {
-        ImageDecoder.Source src = mCreators[0].apply(resId);
+    public void testInvertCropHeight(
+                    @TestParameter(valuesProvider = CropTestResourceProvider.class) int resId) {
+        ImageDecoder.Source src = getCreator().apply(resId);
         try {
             ImageDecoder.decodeDrawable(src, (decoder, info, s) -> {
                 // This rect is unsorted.
@@ -1889,9 +1961,9 @@ public class ImageDecoderTest {
     }
 
     @Test(expected = IllegalStateException.class)
-    @Parameters(method = "resourcesForCropTests")
-    public void testEmptyCrop(int resId) {
-        ImageDecoder.Source src = mCreators[0].apply(resId);
+    public void testEmptyCrop(
+                    @TestParameter(valuesProvider = CropTestResourceProvider.class) int resId) {
+        ImageDecoder.Source src = getCreator().apply(resId);
         try {
             ImageDecoder.decodeDrawable(src, (decoder, info, s) -> {
                 decoder.setCrop(new Rect(1, 1, 1, 1));
@@ -1902,9 +1974,9 @@ public class ImageDecoderTest {
     }
 
     @Test(expected = IllegalStateException.class)
-    @Parameters(method = "resourcesForCropTests")
-    public void testCropNegativeLeft(int resId) {
-        ImageDecoder.Source src = mCreators[0].apply(resId);
+    public void testCropNegativeLeft(
+                    @TestParameter(valuesProvider = CropTestResourceProvider.class) int resId) {
+        ImageDecoder.Source src = getCreator().apply(resId);
         try {
             ImageDecoder.decodeDrawable(src, (decoder, info, s) -> {
                 decoder.setCrop(new Rect(-1, 0, info.getSize().getWidth(),
@@ -1916,9 +1988,9 @@ public class ImageDecoderTest {
     }
 
     @Test(expected = IllegalStateException.class)
-    @Parameters(method = "resourcesForCropTests")
-    public void testCropNegativeTop(int resId) {
-        ImageDecoder.Source src = mCreators[0].apply(resId);
+    public void testCropNegativeTop(
+                    @TestParameter(valuesProvider = CropTestResourceProvider.class) int resId) {
+        ImageDecoder.Source src = getCreator().apply(resId);
         try {
             ImageDecoder.decodeDrawable(src, (decoder, info, s) -> {
                 decoder.setCrop(new Rect(0, -1, info.getSize().getWidth(),
@@ -1930,9 +2002,9 @@ public class ImageDecoderTest {
     }
 
     @Test(expected = IllegalStateException.class)
-    @Parameters(method = "resourcesForCropTests")
-    public void testCropTooWide(int resId) {
-        ImageDecoder.Source src = mCreators[0].apply(resId);
+    public void testCropTooWide(
+                    @TestParameter(valuesProvider = CropTestResourceProvider.class) int resId) {
+        ImageDecoder.Source src = getCreator().apply(resId);
         try {
             ImageDecoder.decodeDrawable(src, (decoder, info, s) -> {
                 decoder.setCrop(new Rect(1, 0, info.getSize().getWidth() + 1,
@@ -1945,9 +2017,9 @@ public class ImageDecoderTest {
 
 
     @Test(expected = IllegalStateException.class)
-    @Parameters(method = "resourcesForCropTests")
-    public void testCropTooTall(int resId) {
-        ImageDecoder.Source src = mCreators[0].apply(resId);
+    public void testCropTooTall(
+                    @TestParameter(valuesProvider = CropTestResourceProvider.class) int resId) {
+        ImageDecoder.Source src = getCreator().apply(resId);
         try {
             ImageDecoder.decodeDrawable(src, (decoder, info, s) -> {
                 decoder.setCrop(new Rect(0, 1, info.getSize().getWidth(),
@@ -1959,9 +2031,9 @@ public class ImageDecoderTest {
     }
 
     @Test(expected = IllegalStateException.class)
-    @Parameters(method = "resourcesForCropTests")
-    public void testCropResize(int resId) {
-        ImageDecoder.Source src = mCreators[0].apply(resId);
+    public void testCropResize(
+                    @TestParameter(valuesProvider = CropTestResourceProvider.class) int resId) {
+        ImageDecoder.Source src = getCreator().apply(resId);
         try {
             ImageDecoder.decodeDrawable(src, (decoder, info, s) -> {
                 Size size = info.getSize();
@@ -1977,7 +2049,7 @@ public class ImageDecoderTest {
     @Test
     public void testAlphaMaskNonGray() {
         // It is safe to call setDecodeAsAlphaMaskEnabled on a non-gray image.
-        SourceCreator f = mCreators[0];
+        SourceCreator f = getCreator();
         ImageDecoder.Source src = f.apply(R.drawable.png_test);
         assertNotNull(src);
         try {
@@ -1995,7 +2067,7 @@ public class ImageDecoderTest {
     @Test
     public void testAlphaPlusSetTargetColorSpace() {
         // TargetColorSpace is ignored for ALPHA_8
-        ImageDecoder.Source src = mCreators[0].apply(R.drawable.grayscale_png);
+        ImageDecoder.Source src = getCreator().apply(R.drawable.grayscale_png);
         for (ColorSpace cs : BitmapTest.getRgbColorSpaces()) {
             try {
                 Bitmap bm = ImageDecoder.decodeBitmap(src, (decoder, info, s) -> {
@@ -2013,7 +2085,7 @@ public class ImageDecoderTest {
 
     @Test(expected = IllegalStateException.class)
     public void testAlphaMaskPlusHardware() {
-        SourceCreator f = mCreators[0];
+        SourceCreator f = getCreator();
         ImageDecoder.Source src = f.apply(R.drawable.png_test);
         assertNotNull(src);
         try {
@@ -2031,7 +2103,7 @@ public class ImageDecoderTest {
     public void testAlphaMaskPlusHardwareAnimated() {
         // AnimatedImageDrawable ignores both of these settings, so it is okay
         // to combine them.
-        SourceCreator f = mCreators[0];
+        SourceCreator f = getCreator();
         ImageDecoder.Source src = f.apply(R.drawable.animated);
         assertNotNull(src);
         try {
@@ -2048,7 +2120,7 @@ public class ImageDecoderTest {
     @Test
     public void testGetAlphaMask() {
         final int resId = R.drawable.grayscale_png;
-        ImageDecoder.Source src = mCreators[0].apply(resId);
+        ImageDecoder.Source src = getCreator().apply(resId);
         try {
             ImageDecoder.decodeDrawable(src, (decoder, info, s) -> {
                 assertFalse(decoder.isDecodeAsAlphaMaskEnabled());
@@ -2095,7 +2167,7 @@ public class ImageDecoderTest {
         // Both of these are encoded as single channel gray images.
         int resIds[] = new int[] { R.drawable.grayscale_png, R.drawable.grayscale_jpg };
         boolean trueFalse[] = new boolean[] { true, false };
-        SourceCreator f = mCreators[0];
+        SourceCreator f = getCreator();
         for (int resId : resIds) {
             // By default, this will decode to HARDWARE
             ImageDecoder.Source src = f.apply(resId);
@@ -2133,7 +2205,7 @@ public class ImageDecoderTest {
     @Test
     public void testGetConserveMemory() {
         final int resId = getRecord().resId;
-        ImageDecoder.Source src = mCreators[0].apply(resId);
+        ImageDecoder.Source src = getCreator().apply(resId);
         try {
             ImageDecoder.decodeDrawable(src, (decoder, info, s) -> {
                 assertEquals(ImageDecoder.MEMORY_POLICY_DEFAULT, decoder.getMemorySizePolicy());
@@ -2162,7 +2234,7 @@ public class ImageDecoderTest {
             }
         };
         Listener l = new Listener();
-        SourceCreator f = mCreators[0];
+        SourceCreator f = getCreator();
         for (int resId : new int[] { R.drawable.png_test, R.raw.f16 }) {
             Bitmap normal = null;
             try {
@@ -2236,7 +2308,7 @@ public class ImageDecoderTest {
         // even with postProcess it will only be promoted to 8888.
         boolean postProcessCancels[] = new boolean[] { true, true, false };
         boolean trueFalse[] = new boolean[] { true, false };
-        SourceCreator f = mCreators[0];
+        SourceCreator f = getCreator();
         for (int i = 0; i < resIds.length; ++i) {
             int resId = resIds[i];
             l.doPostProcess = false;
@@ -2432,8 +2504,8 @@ public class ImageDecoderTest {
     private interface ByteBufferSupplier extends Supplier<ByteBuffer> {};
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testOffsetByteArray(Record record) {
+    public void testOffsetByteArray(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record) {
         int offset = 10;
         int extra = 15;
         byte[] array = getAsByteArray(record.resId, offset, extra);
@@ -2518,8 +2590,9 @@ public class ImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testOffsetByteArray2(Record record) throws IOException {
+    public void testOffsetByteArray2(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record)
+                    throws IOException {
         ImageDecoder.Source src = ImageDecoder.createSource(getAsByteArray(record.resId));
         Bitmap expected = ImageDecoder.decodeBitmap(src, (decoder, info, s) -> {
             decoder.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE);
@@ -2536,8 +2609,8 @@ public class ImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testResourceSource(Record record) {
+    public void testResourceSource(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record) {
         ImageDecoder.Source src = ImageDecoder.createSource(getResources(), record.resId);
         try {
             Drawable drawable = ImageDecoder.decodeDrawable(src);
@@ -2561,8 +2634,7 @@ public class ImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testUpscale(Record record) {
+    public void testUpscale(@TestParameter(valuesProvider = RecordProvider.class) Record record) {
         Resources res = getResources();
         final int originalDensity = res.getDisplayMetrics().densityDpi;
 
@@ -2655,10 +2727,15 @@ public class ImageDecoderTest {
                 assertSame(this.name, mColorSpace, actual);
             }
         }
+
+        @Override
+        public String toString() {
+            return this.name;
+        }
     }
 
-    static Object[] getAssetRecords() {
-        return new Object [] {
+    static List<AssetRecord> getAssetRecords() {
+        return Arrays.asList(new AssetRecord[] {
             // A null ColorSpace means that the color space is "Unknown".
             new AssetRecord("almost-red-adobe.png", 1, 1, false, false, false, null),
             new AssetRecord("green-p3.png", 64, 64, false, false, false,
@@ -2682,12 +2759,14 @@ public class ImageDecoderTest {
                     ColorSpace.get(ColorSpace.Named.BT2020_HLG)),
             new AssetRecord("red-pq-profile.png", 100, 100, false, false, true,
                     ColorSpace.get(ColorSpace.Named.BT2020_PQ)),
-        };
+        });
     }
 
+
+
     @Test
-    @Parameters(method = "getAssetRecords")
-    public void testAssetSource(AssetRecord record) {
+    public void testAssetSource(
+                    @TestParameter(valuesProvider = AssetRecordProvider.class) AssetRecord record) {
         AssetManager assets = getResources().getAssets();
         ImageDecoder.Source src = ImageDecoder.createSource(assets, record.name);
         try {
@@ -2710,8 +2789,8 @@ public class ImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getAssetRecords")
-    public void testTargetColorSpace(AssetRecord record) {
+    public void testTargetColorSpace(
+                    @TestParameter(valuesProvider = AssetRecordProvider.class) AssetRecord record) {
         AssetManager assets = getResources().getAssets();
         ImageDecoder.Source src = ImageDecoder.createSource(assets, record.name);
         for (ColorSpace cs : BitmapTest.getRgbColorSpaces()) {
@@ -2732,8 +2811,8 @@ public class ImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getAssetRecords")
-    public void testTargetColorSpaceNoF16HARDWARE(AssetRecord record) {
+    public void testTargetColorSpaceNoF16HARDWARE(
+                    @TestParameter(valuesProvider = AssetRecordProvider.class) AssetRecord record) {
         final ColorSpace EXTENDED_SRGB = ColorSpace.get(ColorSpace.Named.EXTENDED_SRGB);
         final ColorSpace LINEAR_EXTENDED_SRGB = ColorSpace.get(
                 ColorSpace.Named.LINEAR_EXTENDED_SRGB);
@@ -2769,8 +2848,8 @@ public class ImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getAssetRecords")
-    public void testTargetColorSpaceUpconvert(AssetRecord record) {
+    public void testTargetColorSpaceUpconvert(
+                    @TestParameter(valuesProvider = AssetRecordProvider.class) AssetRecord record) {
         // Verify that decoding an asset to EXTENDED upconverts to F16.
         AssetManager assets = getResources().getAssets();
         boolean[] trueFalse = new boolean[] { true, false };
@@ -2859,7 +2938,7 @@ public class ImageDecoderTest {
                 x -> Math.pow(x, 1.0f / 2.2f), x -> Math.pow(x, 2.2f),
                 0, 1);
         for (int resId : new int[] { R.drawable.png_test, R.drawable.animated }) {
-            ImageDecoder.Source src = mCreators[0].apply(resId);
+            ImageDecoder.Source src = getCreator().apply(resId);
             for (ColorSpace cs : new ColorSpace[] {
                     ColorSpace.get(ColorSpace.Named.CIE_LAB),
                     ColorSpace.get(ColorSpace.Named.CIE_XYZ),
@@ -2917,7 +2996,7 @@ public class ImageDecoderTest {
 
     @Test
     public void testJpegInfiniteLoop() {
-        ImageDecoder.Source src = mCreators[0].apply(R.raw.b78329453);
+        ImageDecoder.Source src = getCreator().apply(R.raw.b78329453);
         try {
             ImageDecoder.decodeDrawable(src, (decoder, info, s) -> {
                 decoder.setTargetSampleSize(19);
@@ -2927,27 +3006,25 @@ public class ImageDecoderTest {
         }
     }
 
-    private Object[] getRecordsAsSources() {
-        return Utils.crossProduct(getRecords(), mCreators);
-    }
 
     @Test
     @LargeTest
-    @Parameters(method = "getRecordsAsSources")
-    public void testReuse(Record record, SourceCreator f) {
+    public void testReuse(@TestParameter(valuesProvider = RecordProvider.class) Record record,
+                          @TestParameter(valuesProvider = SourceCreatorProvider.class)
+                                                            NamedParam<SourceCreator> f) {
         if (record.mimeType.equals("image/heif") || record.mimeType.equals("image/avif")) {
             // These images take too long for this test.
             return;
         }
 
         String name = Utils.getAsResourceUri(record.resId).toString();
-        ImageDecoder.Source src = f.apply(record.resId);
+        SourceCreator sc = f.value;
+        ImageDecoder.Source src = sc.apply(record.resId);
         testReuse(src, name);
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testReuse2(Record record) {
+    public void testReuse2(@TestParameter(valuesProvider = RecordProvider.class) Record record) {
         if (record.mimeType.equals("image/heif") || record.mimeType.equals("image/avif")) {
             // These images take too long for this test.
             return;
@@ -2961,14 +3038,12 @@ public class ImageDecoderTest {
         testReuse(src, name);
     }
 
-    private Object[] getRecordsAsUris() {
-        return Utils.crossProduct(getRecords(), mUriCreators);
-    }
 
     @Test
-    @Parameters(method = "getRecordsAsUris")
     @DisabledOnRavenwood(blockedBy = {ContentResolver.class, Drawable.class})
-    public void testReuseUri(Record record, UriCreator f) {
+    public void testReuseUri(@TestParameter(valuesProvider = RecordProvider.class) Record record,
+                             @TestParameter(valuesProvider = UriCreatorProvider.class)
+                                                                UriCreator f) {
         if (record.mimeType.equals("image/heif") || record.mimeType.equals("image/avif")) {
             // These images take too long for this test.
             return;
@@ -2980,8 +3055,8 @@ public class ImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getAssetRecords")
-    public void testReuseAssetRecords(AssetRecord record) {
+    public void testReuseAssetRecords(
+                    @TestParameter(valuesProvider = AssetRecordProvider.class) AssetRecord record) {
         AssetManager assets = getResources().getAssets();
         ImageDecoder.Source src = ImageDecoder.createSource(assets, record.name);
         testReuse(src, record.name);
@@ -2990,17 +3065,18 @@ public class ImageDecoderTest {
     @Test
     @DisabledOnRavenwood(blockedBy = AnimatedImageDrawable.class)
     public void testReuseAnimated() {
-        ImageDecoder.Source src = mCreators[0].apply(R.drawable.animated);
+        ImageDecoder.Source src = getCreator().apply(R.drawable.animated);
         testReuse(src, "animated.gif");
     }
 
     @Test
-    public void testIsMimeTypeSupported() {
-        for (Object r : getRecords()) {
-            Record record = (Record) r;
-            assertTrue(record.mimeType, ImageDecoder.isMimeTypeSupported(record.mimeType));
-        }
+    public void testAllRecordsSupportMimeType(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record) {
+        assertTrue(record.mimeType, ImageDecoder.isMimeTypeSupported(record.mimeType));
+    }
 
+    @Test
+    public void testIsMimeTypeSupported() {
         for (String mimeType : new String[] {
                 "image/vnd.wap.wbmp",
                 "image/x-sony-arw",

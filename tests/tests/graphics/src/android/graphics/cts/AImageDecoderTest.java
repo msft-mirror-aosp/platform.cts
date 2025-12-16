@@ -16,6 +16,9 @@
 
 package android.graphics.cts;
 
+import static android.graphics.cts.ImageDecoderTest.AssetRecord;
+import static android.graphics.cts.ImageDecoderTest.NamedParam;
+import static android.graphics.cts.ImageDecoderTest.Record;
 import static android.system.OsConstants.SEEK_SET;
 
 import static org.junit.Assert.assertEquals;
@@ -48,6 +51,10 @@ import androidx.test.filters.RequiresDevice;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.MediaUtils;
 
+import com.google.testing.junit.testparameterinjector.TestParameter;
+import com.google.testing.junit.testparameterinjector.TestParameterInjector;
+import com.google.testing.junit.testparameterinjector.TestParameterValuesProvider;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -57,11 +64,10 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.List;
 
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
-
-@RunWith(JUnitParamsRunner.class)
+@RunWith(TestParameterInjector.class)
 public class AImageDecoderTest {
     static {
         System.loadLibrary("ctsgraphics_jni");
@@ -93,49 +99,38 @@ public class AImageDecoderTest {
         nTestEmptyCreate();
     }
 
-    private static Object[] getAssetRecords() {
-        return ImageDecoderTest.getAssetRecords();
+    private static class AssetRecordProvider extends TestParameterValuesProvider {
+        @Override
+        public List<AssetRecord> provideValues(Context context) {
+            return ImageDecoderTest.getAssetRecords();
+        }
     }
 
-    private static Object[] getRecords() {
-        return ImageDecoderTest.getRecords();
+    private static class RecordProvider extends TestParameterValuesProvider {
+        @Override
+        public List<Record> provideValues(Context context) {
+            return ImageDecoderTest.getRecords();
+        }
     }
 
-    // For testing all of the assets as premul and unpremul.
-    private static Object[] getAssetRecordsUnpremul() {
-        return Utils.crossProduct(getAssetRecords(), new Object[] { true, false });
-    }
-
-    private static Object[] getRecordsUnpremul() {
-        return Utils.crossProduct(getRecords(), new Object[] { true, false });
-    }
-
-    // For testing all of the assets at different sample sizes.
-    private static Object[] getAssetRecordsSample() {
-        return Utils.crossProduct(getAssetRecords(), new Object[] { 2, 3, 4, 8, 16 });
-    }
-
-    private static Object[] getRecordsSample() {
-        return Utils.crossProduct(getRecords(), new Object[] { 2, 3, 4, 8, 16 });
-    }
-
-    private static Object[] getBitMapFormatsUnpremul() {
-        return Utils.crossProduct(
-            new Object[] {
-                ANDROID_BITMAP_FORMAT_NONE,
-                ANDROID_BITMAP_FORMAT_RGBA_1010102,
-                ANDROID_BITMAP_FORMAT_RGB_565,
-                ANDROID_BITMAP_FORMAT_RGBA_F16
-            },
-            new Object[] {
-                true,
-                false
-            });
+    private static class BitmapFormatProvider extends TestParameterValuesProvider {
+        @Override
+        public List<?> provideValues(Context context) {
+            return Arrays.asList(
+                value(ANDROID_BITMAP_FORMAT_NONE)
+                    .withName("ANDROID_BITMAP_FORMAT_NONE"),
+                value(ANDROID_BITMAP_FORMAT_RGBA_1010102)
+                    .withName("ANDROID_BITMAP_FORMAT_RGBA_1010102"),
+                value(ANDROID_BITMAP_FORMAT_RGB_565)
+                    .withName("ANDROID_BITMAP_FORMAT_RGB_565"),
+                value(ANDROID_BITMAP_FORMAT_RGBA_F16)
+                    .withName("ANDROID_BITMAP_FORMAT_RGBA_F16"));
+        }
     }
 
     @Test
-    @Parameters(method = "getAssetRecords")
-    public void testNullDecoder(ImageDecoderTest.AssetRecord record) {
+    public void testNullDecoder(
+                    @TestParameter(valuesProvider = AssetRecordProvider.class) AssetRecord record) {
         nTestNullDecoder(getAssetManager(), record.name);
     }
 
@@ -148,8 +143,8 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getAssetRecords")
-    public void testCreateBuffer(ImageDecoderTest.AssetRecord record) {
+    public void testCreateBuffer(
+                    @TestParameter(valuesProvider = AssetRecordProvider.class) AssetRecord record) {
         // Note: This uses an asset for simplicity, but in native it gets a
         // buffer.
         long asset = nOpenAsset(getAssetManager(), record.name);
@@ -161,8 +156,8 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getAssetRecords")
-    public void testCreateFd(ImageDecoderTest.AssetRecord record) {
+    public void testCreateFd(
+                    @TestParameter(valuesProvider = AssetRecordProvider.class) AssetRecord record) {
         // Note: This uses an asset for simplicity, but in native it gets a
         // file descriptor.
         long asset = nOpenAsset(getAssetManager(), record.name);
@@ -174,8 +169,8 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getAssetRecords")
-    public void testCreateAsset(ImageDecoderTest.AssetRecord record) {
+    public void testCreateAsset(
+                    @TestParameter(valuesProvider = AssetRecordProvider.class) AssetRecord record) {
         long asset = nOpenAsset(getAssetManager(), record.name);
         long aimagedecoder = nCreateFromAsset(asset);
 
@@ -199,8 +194,9 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testCreateFdResources(ImageDecoderTest.Record record) throws IOException {
+    public void testCreateFdResources(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record)
+                    throws IOException {
         try (ParcelFileDescriptor pfd = open(record.resId)) {
             long aimagedecoder = nCreateFromFd(pfd.getFd());
 
@@ -212,8 +208,9 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testCreateFdOffset(ImageDecoderTest.Record record) throws IOException {
+    public void testCreateFdOffset(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record)
+                    throws IOException {
         // Use an arbitrary offset. This ensures that we rewind to the correct offset.
         final int offset = 15;
         try (ParcelFileDescriptor pfd = open(record.resId, offset)) {
@@ -238,14 +235,14 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters({"shaders/tri.frag", "test_video.mp4"})
-    public void testUnsupportedFormat(String file) {
+    public void testUnsupportedFormat(
+                    @TestParameter({"shaders/tri.frag", "test_video.mp4"}) String file) {
         nTestCreateUnsupported(getAssetManager(), file);
     }
 
     @Test
-    @Parameters(method = "getAssetRecords")
-    public void testSetFormat(ImageDecoderTest.AssetRecord record) {
+    public void testSetFormat(
+                    @TestParameter(valuesProvider = AssetRecordProvider.class) AssetRecord record) {
         long asset = nOpenAsset(getAssetManager(), record.name);
         long aimagedecoder = nCreateFromAsset(asset);
 
@@ -254,8 +251,9 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testSetFormatResources(ImageDecoderTest.Record record) throws IOException {
+    public void testSetFormatResources(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record)
+                    throws IOException {
         try (ParcelFileDescriptor pfd = open(record.resId)) {
             long aimagedecoder = nCreateFromFd(pfd.getFd());
 
@@ -266,8 +264,8 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getAssetRecords")
-    public void testSetUnpremul(ImageDecoderTest.AssetRecord record) {
+    public void testSetUnpremul(
+                    @TestParameter(valuesProvider = AssetRecordProvider.class) AssetRecord record) {
         long asset = nOpenAsset(getAssetManager(), record.name);
         long aimagedecoder = nCreateFromAsset(asset);
 
@@ -276,8 +274,9 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testSetUnpremulResources(ImageDecoderTest.Record record) throws IOException {
+    public void testSetUnpremulResources(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record)
+                    throws IOException {
         try (ParcelFileDescriptor pfd = open(record.resId)) {
             long aimagedecoder = nCreateFromFd(pfd.getFd());
 
@@ -288,8 +287,8 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getAssetRecords")
-    public void testGetMinimumStride(ImageDecoderTest.AssetRecord record) {
+    public void testGetMinimumStride(
+                    @TestParameter(valuesProvider = AssetRecordProvider.class) AssetRecord record) {
         long asset = nOpenAsset(getAssetManager(), record.name);
         long aimagedecoder = nCreateFromAsset(asset);
 
@@ -297,8 +296,9 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testGetMinimumStrideResources(ImageDecoderTest.Record record) throws IOException {
+    public void testGetMinimumStrideResources(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record)
+                    throws IOException {
         try (ParcelFileDescriptor pfd = open(record.resId)) {
             long aimagedecoder = nCreateFromFd(pfd.getFd());
 
@@ -337,8 +337,9 @@ public class AImageDecoderTest {
 
     @Test
     @RequiresDevice
-    @Parameters(method = "getBitMapFormatsUnpremul")
-    public void testDecode10BitHeif(int bitmapFormat, boolean unpremul) throws IOException {
+    public void testDecode10BitHeif(
+                    @TestParameter(valuesProvider = BitmapFormatProvider.class) int bitmapFormat,
+                    @TestParameter boolean unpremul) throws IOException {
         if (!MediaUtils.hasHardwareCodec(MediaFormat.MIMETYPE_VIDEO_HEVC, false)) {
             return;
         }
@@ -374,8 +375,9 @@ public class AImageDecoderTest {
     @Test
     @RequiresDevice
     @CddTest(requirements = {"5.1.5/C-0-7"})
-    @Parameters(method = "getBitMapFormatsUnpremul")
-    public void testDecode10BitAvif(int bitmapFormat, boolean unpremul) throws IOException {
+    public void testDecode10BitAvif(
+                @TestParameter(valuesProvider = BitmapFormatProvider.class) int bitmapFormat,
+                @TestParameter boolean unpremul) throws IOException {
         assumeTrue("AVIF is not supported on this device, skip this test.",
                 ImageDecoder.isMimeTypeSupported("image/avif"));
 
@@ -409,8 +411,9 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getAssetRecordsUnpremul")
-    public void testDecode(ImageDecoderTest.AssetRecord record, boolean unpremul) {
+    public void testDecode(
+                    @TestParameter(valuesProvider = AssetRecordProvider.class) AssetRecord record,
+                    @TestParameter boolean unpremul) {
         AssetManager assets = getAssetManager();
         ImageDecoder.Source src = ImageDecoder.createSource(assets, record.name);
         Bitmap bm = decode(src, unpremul);
@@ -423,9 +426,9 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecordsUnpremul")
-    public void testDecodeResources(ImageDecoderTest.Record record, boolean unpremul)
-            throws IOException {
+    public void testDecodeResources(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record,
+                    @TestParameter boolean unpremul) throws IOException {
         Bitmap bm = decode(record.resId, unpremul);
         try (ParcelFileDescriptor pfd = open(record.resId)) {
             long aimagedecoder = nCreateFromFd(pfd.getFd());
@@ -474,8 +477,8 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getAssetRecords")
-    public void testDecode565(ImageDecoderTest.AssetRecord record) {
+    public void testDecode565(
+                    @TestParameter(valuesProvider = AssetRecordProvider.class) AssetRecord record) {
         AssetManager assets = getAssetManager();
         ImageDecoder.Source src = ImageDecoder.createSource(assets, record.name);
         Bitmap bm = decode(src, Bitmap.Config.RGB_565);
@@ -492,9 +495,9 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testDecode565Resources(ImageDecoderTest.Record record)
-            throws IOException {
+    public void testDecode565Resources(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record)
+                    throws IOException {
         Bitmap bm = decode(record.resId, Bitmap.Config.RGB_565);
 
         if (bm.getConfig() != Bitmap.Config.RGB_565) {
@@ -511,8 +514,7 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters("grayscale-linearSrgb.png")
-    public void testDecodeA8(String name) {
+    public void testDecodeA8(@TestParameter({"grayscale-linearSrgb.png"}) String name) {
         AssetManager assets = getAssetManager();
         ImageDecoder.Source src = ImageDecoder.createSource(assets, name);
         Bitmap bm = decode(src, Bitmap.Config.ALPHA_8);
@@ -548,8 +550,9 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getAssetRecordsUnpremul")
-    public void testDecodeF16(ImageDecoderTest.AssetRecord record, boolean unpremul) {
+    public void testDecodeF16(
+                    @TestParameter(valuesProvider = AssetRecordProvider.class) AssetRecord record,
+                    @TestParameter boolean unpremul) {
         AssetManager assets = getAssetManager();
 
         // ImageDecoder doesn't allow forcing a decode to F16, so use BitmapFactory.
@@ -576,9 +579,9 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecordsUnpremul")
-    public void testDecodeF16Resources(ImageDecoderTest.Record record, boolean unpremul)
-            throws IOException {
+    public void testDecodeF16Resources(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record,
+                    @TestParameter boolean unpremul) throws IOException {
         // ImageDecoder doesn't allow forcing a decode to F16, so use BitmapFactory.
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inPreferredConfig = Bitmap.Config.RGBA_F16;
@@ -599,8 +602,8 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getAssetRecords")
-    public void testDecodeStride(ImageDecoderTest.AssetRecord record) {
+    public void testDecodeStride(
+                    @TestParameter(valuesProvider = AssetRecordProvider.class) AssetRecord record) {
         long asset = nOpenAsset(getAssetManager(), record.name);
         long aimagedecoder = nCreateFromAsset(asset);
         nTestDecodeStride(aimagedecoder);
@@ -608,9 +611,9 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testDecodeStrideResources(ImageDecoderTest.Record record)
-            throws IOException {
+    public void testDecodeStrideResources(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record)
+                    throws IOException {
         try (ParcelFileDescriptor pfd = open(record.resId)) {
             long aimagedecoder = nCreateFromFd(pfd.getFd());
 
@@ -621,8 +624,8 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getAssetRecords")
-    public void testSetTargetSize(ImageDecoderTest.AssetRecord record) {
+    public void testSetTargetSize(
+                    @TestParameter(valuesProvider = AssetRecordProvider.class) AssetRecord record) {
         long asset = nOpenAsset(getAssetManager(), record.name);
         long aimagedecoder = nCreateFromAsset(asset);
         nTestSetTargetSize(aimagedecoder);
@@ -630,9 +633,9 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testSetTargetSizeResources(ImageDecoderTest.Record record)
-            throws IOException {
+    public void testSetTargetSizeResources(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record)
+                    throws IOException {
         try (ParcelFileDescriptor pfd = open(record.resId)) {
             long aimagedecoder = nCreateFromFd(pfd.getFd());
 
@@ -657,8 +660,9 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getAssetRecordsSample")
-    public void testDecodeSampled(ImageDecoderTest.AssetRecord record, int sampleSize) {
+    public void testDecodeSampled(
+                    @TestParameter(valuesProvider = AssetRecordProvider.class) AssetRecord record,
+                    @TestParameter({"2", "3", "4", "8", "16"}) int sampleSize) {
         AssetManager assets = getAssetManager();
         ImageDecoder.Source src = ImageDecoder.createSource(assets, record.name);
         Bitmap bm = decodeSampled(record.name, src, sampleSize);
@@ -671,9 +675,9 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecordsSample")
-    public void testDecodeResourceSampled(ImageDecoderTest.Record record, int sampleSize)
-            throws IOException {
+    public void testDecodeResourceSampled(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record,
+                    @TestParameter({"2", "3", "4", "8", "16"}) int sampleSize) throws IOException {
         ImageDecoder.Source src = ImageDecoder.createSource(getResources(),
                 record.resId);
         String name = Utils.getAsResourceUri(record.resId).toString();
@@ -690,9 +694,10 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecordsSample")
-    public void testComputeSampledSize(ImageDecoderTest.Record record, int sampleSize)
-            throws IOException {
+    public void testComputeSampledSize(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record,
+                    @TestParameter({"2", "3", "4", "8", "16"}) int sampleSize)
+                    throws IOException {
         if (record.mimeType.equals("image/x-adobe-dng")) {
             // SkRawCodec does not support sampling.
             return;
@@ -716,14 +721,11 @@ public class AImageDecoderTest {
         }
     }
 
-    private static Object[] getExifsSample() {
-        return Utils.crossProduct(getExifImages(), new Object[] { 2, 3, 4, 8, 16 });
-    }
-
     @Test
-    @Parameters(method = "getExifsSample")
-    public void testComputeSampledSizeExif(int resId, int sampleSize)
-            throws IOException {
+    public void testComputeSampledSizeExif(
+                    @TestParameter(valuesProvider = ExifImagesProvider.class) int resId,
+                    @TestParameter ({"2", "3", "4", "8", "16"}) int sampleSize)
+                    throws IOException {
         testComputeSampledSizeInternal(resId, sampleSize);
     }
 
@@ -744,8 +746,8 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getAssetRecords")
-    public void testDecodeScaled(ImageDecoderTest.AssetRecord record) {
+    public void testDecodeScaled(
+                    @TestParameter(valuesProvider = AssetRecordProvider.class) AssetRecord record) {
         AssetManager assets = getAssetManager();
         ImageDecoder.Source src = ImageDecoder.createSource(assets, record.name);
         Bitmap bm = decodeScaled(record.name, src);
@@ -758,9 +760,9 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testDecodeResourceScaled(ImageDecoderTest.Record record)
-            throws IOException {
+    public void testDecodeResourceScaled(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record)
+                    throws IOException {
         ImageDecoder.Source src = ImageDecoder.createSource(getResources(),
                 record.resId);
         String name = Utils.getAsResourceUri(record.resId).toString();
@@ -792,8 +794,8 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getAssetRecords")
-    public void testDecodeScaleUp(ImageDecoderTest.AssetRecord record) {
+    public void testDecodeScaleUp(
+                    @TestParameter(valuesProvider = AssetRecordProvider.class) AssetRecord record) {
         AssetManager assets = getAssetManager();
         ImageDecoder.Source src = ImageDecoder.createSource(assets, record.name);
         Bitmap bm = decodeScaleUp(record.name, src);
@@ -806,9 +808,9 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testDecodeResourceScaleUp(ImageDecoderTest.Record record)
-            throws IOException {
+    public void testDecodeResourceScaleUp(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record)
+                    throws IOException {
         ImageDecoder.Source src = ImageDecoder.createSource(getResources(),
                 record.resId);
         String name = Utils.getAsResourceUri(record.resId).toString();
@@ -825,8 +827,8 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getAssetRecords")
-    public void testSetCrop(ImageDecoderTest.AssetRecord record) {
+    public void testSetCrop(
+                    @TestParameter(valuesProvider = AssetRecordProvider.class) AssetRecord record) {
         nTestSetCrop(getAssetManager(), record.name);
     }
 
@@ -901,8 +903,8 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getAssetRecords")
-    public void testCrop(ImageDecoderTest.AssetRecord record) {
+    public void testCrop(
+                    @TestParameter(valuesProvider = AssetRecordProvider.class) AssetRecord record) {
         AssetManager assets = getAssetManager();
         ImageDecoder.Source src = ImageDecoder.createSource(assets, record.name);
         Cropper cropper = new Cropper(false /* scale */);
@@ -917,9 +919,9 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testCropResource(ImageDecoderTest.Record record)
-            throws IOException {
+    public void testCropResource(
+                   @TestParameter(valuesProvider = RecordProvider.class) Record record)
+                   throws IOException {
         String name = Utils.getAsResourceUri(record.resId).toString();
         Cropper cropper = new Cropper(false /* scale */);
         Bitmap bm = decodeCropped(name, cropper, record.resId);
@@ -936,8 +938,8 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getAssetRecords")
-    public void testCropAndScale(ImageDecoderTest.AssetRecord record) {
+    public void testCropAndScale(
+                    @TestParameter(valuesProvider = AssetRecordProvider.class) AssetRecord record) {
         AssetManager assets = getAssetManager();
         ImageDecoder.Source src = ImageDecoder.createSource(assets, record.name);
         Cropper cropper = new Cropper(true /* scale */);
@@ -953,9 +955,9 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testCropAndScaleResource(ImageDecoderTest.Record record)
-            throws IOException {
+    public void testCropAndScaleResource(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record)
+                    throws IOException {
         ImageDecoder.Source src = ImageDecoder.createSource(getResources(),
                 record.resId);
         String name = Utils.getAsResourceUri(record.resId).toString();
@@ -974,30 +976,34 @@ public class AImageDecoderTest {
         }
     }
 
-    private static Object[] getExifImages() {
-        return new Object[] {
-            R.drawable.orientation_1,
-            R.drawable.orientation_2,
-            R.drawable.orientation_3,
-            R.drawable.orientation_4,
-            R.drawable.orientation_5,
-            R.drawable.orientation_6,
-            R.drawable.orientation_7,
-            R.drawable.orientation_8,
-            R.drawable.webp_orientation1,
-            R.drawable.webp_orientation2,
-            R.drawable.webp_orientation3,
-            R.drawable.webp_orientation4,
-            R.drawable.webp_orientation5,
-            R.drawable.webp_orientation6,
-            R.drawable.webp_orientation7,
-            R.drawable.webp_orientation8,
-        };
+    private static class ExifImagesProvider extends TestParameterValuesProvider {
+        @Override
+        public List<?> provideValues(Context context) {
+            return Arrays.asList(
+                value(R.drawable.orientation_1).withName("orientation_1"),
+                value(R.drawable.orientation_2).withName("orientation_2"),
+                value(R.drawable.orientation_3).withName("orientation_3"),
+                value(R.drawable.orientation_4).withName("orientation_4"),
+                value(R.drawable.orientation_5).withName("orientation_5"),
+                value(R.drawable.orientation_6).withName("orientation_6"),
+                value(R.drawable.orientation_7).withName("orientation_7"),
+                value(R.drawable.orientation_8).withName("orientation_8"),
+                value(R.drawable.webp_orientation1).withName("webp_orientation1"),
+                value(R.drawable.webp_orientation2).withName("webp_orientation2"),
+                value(R.drawable.webp_orientation3).withName("webp_orientation3"),
+                value(R.drawable.webp_orientation4).withName("webp_orientation4"),
+                value(R.drawable.webp_orientation5).withName("webp_orientation5"),
+                value(R.drawable.webp_orientation6).withName("webp_orientation6"),
+                value(R.drawable.webp_orientation7).withName("webp_orientation7"),
+                value(R.drawable.webp_orientation8).withName("webp_orientation8")
+            );
+        }
     }
 
     @Test
-    @Parameters(method = "getExifImages")
-    public void testRespectOrientation(int resId) throws IOException {
+    public void testRespectOrientation(
+                    @TestParameter(valuesProvider = ExifImagesProvider.class) int resId)
+                    throws IOException {
         Uri uri = Utils.getAsResourceUri(resId);
         ImageDecoder.Source src = ImageDecoder.createSource(getContentResolver(),
                 uri);
@@ -1032,14 +1038,15 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getAssetRecords")
-    public void testScalePlusUnpremul(ImageDecoderTest.AssetRecord record) {
+    public void testScalePlusUnpremul(
+                    @TestParameter(valuesProvider = AssetRecordProvider.class) AssetRecord record) {
         long asset = nOpenAsset(getAssetManager(), record.name);
         long aimagedecoder = nCreateFromAsset(asset);
 
         nTestScalePlusUnpremul(aimagedecoder);
         nCloseAsset(asset);
     }
+
 
     private static File createCompressedBitmap(int width, int height, ColorSpace colorSpace,
             Bitmap.CompressFormat format) {
@@ -1071,12 +1078,11 @@ public class AImageDecoderTest {
         }
     }
 
-    private static Object[] rgbColorSpaces() {
-        return BitmapTest.getRgbColorSpaces().toArray();
-    }
-
-    private static Object[] rgbColorSpacesAndCompressFormats() {
-        return Utils.crossProduct(rgbColorSpaces(), Bitmap.CompressFormat.values());
+    private static class RgbColorSpacesProvider extends TestParameterValuesProvider {
+        @Override
+        public List<ColorSpace> provideValues(Context context) {
+            return BitmapTest.getRgbColorSpaces();
+        }
     }
 
     String toMimeType(Bitmap.CompressFormat format) {
@@ -1094,9 +1100,19 @@ public class AImageDecoderTest {
         }
     }
 
+    private static class CompressFormatsProvider extends TestParameterValuesProvider {
+        @Override
+        public List<Bitmap.CompressFormat> provideValues(Context context) {
+            return Arrays.asList(Bitmap.CompressFormat.values());
+        }
+    }
+
     @Test
-    @Parameters(method = "rgbColorSpacesAndCompressFormats")
-    public void testGetDataSpace(ColorSpace colorSpace, Bitmap.CompressFormat format) {
+    public void testGetDataSpace(
+                    @TestParameter(valuesProvider = RgbColorSpacesProvider.class)
+                                                        ColorSpace colorSpace,
+                    @TestParameter(valuesProvider = CompressFormatsProvider.class)
+                                                        Bitmap.CompressFormat format) {
         if (colorSpace == ColorSpace.get(Named.EXTENDED_SRGB)
                 || colorSpace == ColorSpace.get(Named.LINEAR_EXTENDED_SRGB)) {
             // These will only be reported when the default AndroidBitmapFormat is F16.
@@ -1137,8 +1153,9 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "rgbColorSpaces")
-    public void testSetDataSpace(ColorSpace colorSpace) {
+    public void testSetDataSpace(
+                    @TestParameter(valuesProvider = RgbColorSpacesProvider.class)
+                                                        ColorSpace colorSpace) {
         int dataSpace = colorSpace.getDataSpace();
         if (dataSpace == DataSpace.ADATASPACE_UNKNOWN) {
             // AImageDecoder cannot decode to these ADATASPACEs
@@ -1158,9 +1175,11 @@ public class AImageDecoderTest {
         nCloseAsset(asset);
     }
 
+
     @Test
-    @Parameters({ "cmyk_yellow_224_224_32.jpg", "wide_gamut_yellow_224_224_64.jpeg" })
-    public void testNonStandardDataSpaces(String name) {
+    public void testNonStandardDataSpaces(
+                    @TestParameter({"cmyk_yellow_224_224_32.jpg",
+                                    "wide_gamut_yellow_224_224_64.jpeg"}) String name) {
         AssetManager assets = getAssetManager();
         long asset = nOpenAsset(assets, name);
         long aimagedecoder = nCreateFromAsset(asset);
@@ -1171,10 +1190,22 @@ public class AImageDecoderTest {
         nCloseAsset(asset);
     }
 
+    private static class NonStandardDataSpacesProvider extends TestParameterValuesProvider {
+        @Override
+        public List<NamedParam<String>> provideValues(Context context) {
+            return Arrays.asList(
+                    new NamedParam<String>("cmyk_yellow_224_224_32.jpg", "#FFD8FC04"),
+                    new NamedParam<String>("wide_gamut_yellow_224_224_64.jpeg", "#FFE0E040")
+            );
+        }
+    }
+
     @Test
-    @Parameters({ "cmyk_yellow_224_224_32.jpg,#FFD8FC04",
-                  "wide_gamut_yellow_224_224_64.jpeg,#FFE0E040" })
-    public void testNonStandardDataSpacesDecode(String name, String color) {
+    public void testNonStandardDataSpacesDecode(
+                    @TestParameter(valuesProvider = NonStandardDataSpacesProvider.class)
+                                                        NamedParam<String> input) {
+        String name = input.name;
+        String color = input.value;
         AssetManager assets = getAssetManager();
         long asset = nOpenAsset(assets, name);
         long aimagedecoder = nCreateFromAsset(asset);
@@ -1190,8 +1221,8 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getAssetRecords")
-    public void testNotAnimatedAssets(ImageDecoderTest.AssetRecord record) {
+    public void testNotAnimatedAssets(
+                    @TestParameter(valuesProvider = AssetRecordProvider.class) AssetRecord record) {
         long asset = nOpenAsset(getAssetManager(), record.name);
         long aimagedecoder = nCreateFromAsset(asset);
 
@@ -1200,8 +1231,9 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getRecords")
-    public void testNotAnimated(ImageDecoderTest.Record record) throws IOException {
+    public void testNotAnimated(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record)
+                    throws IOException {
         try (ParcelFileDescriptor pfd = open(record.resId)) {
             long aimagedecoder = nCreateFromFd(pfd.getFd());
 
@@ -1211,15 +1243,12 @@ public class AImageDecoderTest {
         }
     }
 
-    private static Object[] getAnimatedImagesPlusRepeatCounts() {
-        return AnimatedImageDrawableTest.parametersForTestEncodedRepeats();
-    }
-
     // Although these images have an encoded repeat count, they have only one frame,
     // so they are not considered animated.
     @Test
-    @Parameters({"still_with_loop_count.gif", "webp_still_with_loop_count.webp"})
-    public void testStill(String name) {
+    public void testStill(
+                    @TestParameter({"still_with_loop_count.gif",
+                                    "webp_still_with_loop_count.webp"}) String name) {
         long asset = nOpenAsset(getAssetManager(), name);
         long aimagedecoder = nCreateFromAsset(asset);
 
@@ -1227,9 +1256,21 @@ public class AImageDecoderTest {
         nCloseAsset(asset);
     }
 
+
+    private static class AnimatedImagesPlusRepeatCountsProvider
+            extends TestParameterValuesProvider {
+        @Override
+        public List<AnimatedImageDrawableTest.RepeatImage> provideValues(Context context) {
+            return Arrays.asList(AnimatedImageDrawableTest.getAnimatedRepeatImages());
+        }
+    }
+
     @Test
-    @Parameters(method = "getAnimatedImagesPlusRepeatCounts")
-    public void testAnimated(int resId, int unused) throws IOException {
+    public void testAnimated(
+                    @TestParameter(valuesProvider = AnimatedImagesPlusRepeatCountsProvider.class)
+                                                        AnimatedImageDrawableTest.RepeatImage image)
+                    throws IOException {
+        int resId = image.resId;
         try (ParcelFileDescriptor pfd = open(resId)) {
             long aimagedecoder = nCreateFromFd(pfd.getFd());
 
@@ -1240,8 +1281,12 @@ public class AImageDecoderTest {
     }
 
     @Test
-    @Parameters(method = "getAnimatedImagesPlusRepeatCounts")
-    public void testRepeatCount(int resId, int repeatCount) throws IOException {
+    public void testRepeatCount(
+                    @TestParameter(valuesProvider = AnimatedImagesPlusRepeatCountsProvider.class)
+                                                        AnimatedImageDrawableTest.RepeatImage image)
+                    throws IOException {
+        int resId = image.resId;
+        int repeatCount = image.repeatCount;
         try (ParcelFileDescriptor pfd = open(resId)) {
             long aimagedecoder = nCreateFromFd(pfd.getFd());
 
@@ -1251,9 +1296,22 @@ public class AImageDecoderTest {
         }
     }
 
+    private static class RepeatCountStillProvider extends TestParameterValuesProvider {
+        @Override
+        public List<NamedParam<Integer>> provideValues(Context context) {
+            return Arrays.asList(
+                    new NamedParam<Integer>("still_with_loop_count.gif", 1),
+                    new NamedParam<Integer>("webp_still_with_loop_count.webp", 31999)
+            );
+        }
+    }
+
     @Test
-    @Parameters({"still_with_loop_count.gif, 1", "webp_still_with_loop_count.webp,31999"})
-    public void testRepeatCountStill(String name, int repeatCount) {
+    public void testRepeatCountStill(
+                    @TestParameter(valuesProvider = RepeatCountStillProvider.class)
+                                                        NamedParam<Integer> input) {
+        String name = input.name;
+        int repeatCount = input.value;
         long asset = nOpenAsset(getAssetManager(), name);
         long aimagedecoder = nCreateFromAsset(asset);
 

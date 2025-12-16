@@ -446,22 +446,41 @@ public class AnimatedImageDrawableTest {
         assertTrue(drawable.isRunning());
     }
 
-    public static Object[] parametersForTestEncodedRepeats() {
-        return new Object[] {
-            new Object[] { R.drawable.animated, AnimatedImageDrawable.REPEAT_INFINITE },
-            new Object[] { R.drawable.animated_one_loop, 1 },
-            new Object[] { R.drawable.webp_animated, AnimatedImageDrawable.REPEAT_INFINITE },
-            new Object[] { R.drawable.webp_animated_large, AnimatedImageDrawable.REPEAT_INFINITE },
-            new Object[] { R.drawable.webp_animated_icc_xmp, 31999 },
-            new Object[] { R.drawable.count_down_color_test, 0 },
+    public static final class RepeatImage {
+        public final int resId;
+        public final int repeatCount;
+        public final String name;
+
+        RepeatImage(int resId, int repeatCount) {
+            this.resId          = resId;
+            this.repeatCount    = repeatCount;
+
+            Resources resources = InstrumentationRegistry.getTargetContext().getResources();
+            this.name = resources.getResourceEntryName(resId);
+        }
+
+        @Override
+        public String toString() {
+            return this.name;
+        }
+    }
+
+    public static RepeatImage[] getAnimatedRepeatImages() {
+        return new RepeatImage[] {
+            new RepeatImage(R.drawable.animated, AnimatedImageDrawable.REPEAT_INFINITE),
+            new RepeatImage(R.drawable.animated_one_loop, 1),
+            new RepeatImage(R.drawable.webp_animated, AnimatedImageDrawable.REPEAT_INFINITE),
+            new RepeatImage(R.drawable.webp_animated_large, AnimatedImageDrawable.REPEAT_INFINITE),
+            new RepeatImage(R.drawable.webp_animated_icc_xmp, 31999),
+            new RepeatImage(R.drawable.count_down_color_test, 0)
         };
     }
 
     @Test
-    @Parameters(method = "parametersForTestEncodedRepeats")
-    public void testEncodedRepeats(int resId, int expectedRepeatCount) {
-        AnimatedImageDrawable drawable = createFromImageDecoder(resId);
-        assertEquals(expectedRepeatCount, drawable.getRepeatCount());
+    @Parameters(method = "getAnimatedRepeatImages")
+    public void testEncodedRepeats(RepeatImage image) {
+        AnimatedImageDrawable drawable = createFromImageDecoder(image.resId);
+        assertEquals(image.repeatCount, drawable.getRepeatCount());
     }
 
     @Test
