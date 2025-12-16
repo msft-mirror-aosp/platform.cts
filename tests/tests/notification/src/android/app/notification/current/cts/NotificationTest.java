@@ -196,9 +196,7 @@ public class NotificationTest {
             builder.setBridgedNotificationMetadata(metadata);
         }
         builder.setShortCriticalText(SHORT_CRITICAL_TEXT);
-        if (Flags.nmSummarization()) {
-            builder.setHasSummarizedContent(true);
-        }
+        builder.setHasSummarizedContent(true);
         if (Flags.nmSummarizationAll()) {
             builder.setSummarizedContent("hello!");
         }
@@ -269,9 +267,7 @@ public class NotificationTest {
         assertEquals(
                 mNotification.getAllowSystemGeneratedContextualActions(),
                 result.getAllowSystemGeneratedContextualActions());
-        if (Flags.nmSummarization()) {
-            assertTrue(mNotification.hasSummarizedContent());
-        }
+        assertTrue(mNotification.hasSummarizedContent());
         if (Flags.nmSummarizationAll()) {
             assertEquals("hello!", mNotification.getSummarizedContent().toString());
         }
