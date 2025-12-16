@@ -117,12 +117,14 @@
     <appfunction>
         <function_id>longRunningFunction</function_id>
         <id>longRunningFunction</id>
-        <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts.helper</schema_name>
+        <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
+        <enabled_by_default>true</enabled_by_default>
     </appfunction>
     <appfunction>
         <function_id>runForever</function_id>
         <id>runForever</id>
-        <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts.helper</schema_name>
+        <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
+        <enabled_by_default>true</enabled_by_default>
     </appfunction>
     <appfunction>
         <function_id>noSchema</function_id>
