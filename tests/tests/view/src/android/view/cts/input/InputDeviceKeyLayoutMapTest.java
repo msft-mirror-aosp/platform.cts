@@ -54,6 +54,7 @@ import com.android.cts.input.ConfigurationItem;
 import com.android.cts.input.InputJsonParser;
 import com.android.cts.input.UinputDevice;
 import com.android.cts.input.UinputRegisterCommand;
+import com.android.hardware.input.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -91,27 +92,31 @@ public class InputDeviceKeyLayoutMapTest {
     private static final int GOOGLE_VIRTUAL_KEYBOARD_ID = 0x001f;
     private static final int POLL_EVENT_TIMEOUT_SECONDS = 5;
 
-    private static final Set<String> NEW_KEYS = new HashSet<>(Arrays.asList(
-            "DICTATE",
-            "NEW",
-            "CLOSE",
-            "DO_NOT_DISTURB",
-            "PRINT",
-            "LOCK",
-            "FULLSCREEN",
-            "F13",
-            "F14",
-            "F15",
-            "F16",
-            "F17",
-            "F18",
-            "F19",
-            "F20",
-            "F21",
-            "F22",
-            "F23",
-            "F24"
-    ));
+    private static final Set<String> NEW_KEYS =
+            new HashSet<>(
+                    Arrays.asList(
+                            // List of 25Q2 flagged keys.
+                            "DICTATE",
+                            "NEW",
+                            "CLOSE",
+                            "DO_NOT_DISTURB",
+                            "PRINT",
+                            "LOCK",
+                            "FULLSCREEN",
+                            "F13",
+                            "F14",
+                            "F15",
+                            "F16",
+                            "F17",
+                            "F18",
+                            "F19",
+                            "F20",
+                            "F21",
+                            "F22",
+                            "F23",
+                            "F24",
+                            // List of 26Q2 flagged keys.
+                            "ACCESSIBILITY"));
 
     private static final Set<String> EXCLUDED_KEYS = new HashSet<>(Arrays.asList(
             // Meta control keys.
@@ -313,7 +318,10 @@ public class InputDeviceKeyLayoutMapTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(com.android.hardware.input.Flags.FLAG_ENABLE_NEW_25Q2_KEYCODES)
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ENABLE_NEW_25Q2_KEYCODES,
+        Flags.FLAG_ENABLE_NEW_26Q2_KEYCODES,
+    })
     public void testNewKeycodes() {
         for (Map.Entry<String, Integer> entry : mKeyLayout.entrySet()) {
             if (!NEW_KEYS.contains(entry.getKey())) {
