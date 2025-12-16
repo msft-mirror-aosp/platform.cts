@@ -31,6 +31,7 @@ import android.security.advancedprotection.AdvancedProtectionFeature;
 import android.security.advancedprotection.AdvancedProtectionManager;
 import android.security.Flags;
 
+import android.util.Log;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnPrimaryUser;
@@ -39,6 +40,7 @@ import com.android.bedstead.nene.TestApis;
 import com.android.compatibility.common.util.ApiTest;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import org.junit.Assume;
 import org.junit.ClassRule;
@@ -173,6 +175,110 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
         }
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_AAPM_API_V2)
+    @ApiTest(
+            apis = {
+                "android.security.advancedprotection.AdvancedProtectionManager"
+                        + "#registerAdvancedProtectionFeatureCallback"
+            })
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    public void testRegisterFeatureCallback() throws InterruptedException {
+        // Called once on register, then on set
+        CountDownLatch onRegister = new CountDownLatch(1);
+        CountDownLatch onSet = new CountDownLatch(1);
+        Consumer<List<AdvancedProtectionFeature>> callback =
+                features -> {
+                    if (onRegister.getCount() > 0) {
+                        assertProvisioningMode(
+                                features,
+                                AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G,
+                                AdvancedProtectionFeature
+                                        .PROVISIONING_MODE_PROVISIONED_BY_FEATURE_ADMIN,
+                                /* isEnabled= */ true);
+                        onRegister.countDown();
+                    } else {
+                        assertProvisioningMode(
+                                features,
+                                AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G,
+                                AdvancedProtectionFeature
+                                        .PROVISIONING_MODE_PROVISIONED_BY_FEATURE_ADMIN,
+                                /* isEnabled= */ false);
+                        onSet.countDown();
+                    }
+                };
+
+        setAdvancedProtectionEnabled(true);
+        mManager.updateAdvancedProtectionFeaturesProvisioning(
+                new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G}, null);
+
+        // Wait for the feature to be provisioned. This happens async, and we can't check the state
+        // of the callback directly.
+        Thread.sleep(TIMEOUT_S * 1000);
+
+        mManager.registerAdvancedProtectionFeatureCallback(
+                new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G},
+                Runnable::run,
+                callback);
+
+        if (!onRegister.await(TIMEOUT_S, TimeUnit.SECONDS)) {
+            fail("Callback not called on register");
+        }
+
+        setAdvancedProtectionEnabled(false);
+
+        if (!onSet.await(TIMEOUT_S, TimeUnit.SECONDS)) {
+            fail("Callback not called on set");
+        }
+
+        // Cleanup
+        mManager.unregisterAdvancedProtectionFeatureCallback(callback);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_AAPM_API_V2)
+    @ApiTest(
+            apis = {
+                "android.security.advancedprotection.AdvancedProtectionManager"
+                        + "#unregisterAdvancedProtectionFeatureCallback"
+            })
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    public void testUnregisterFeatureCallback() throws InterruptedException {
+        // Called once on register
+        CountDownLatch onRegister = new CountDownLatch(1);
+        CountDownLatch onSet = new CountDownLatch(1);
+
+        Consumer<List<AdvancedProtectionFeature>> callback =
+                features -> {
+                    if (onRegister.getCount() > 0) {
+                        onRegister.countDown();
+                    } else {
+                        onSet.countDown();
+                    }
+                };
+
+        setAdvancedProtectionEnabled(true);
+
+        mManager.registerAdvancedProtectionFeatureCallback(
+                new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G},
+                Runnable::run,
+                callback);
+        if (!onRegister.await(TIMEOUT_S, TimeUnit.SECONDS)) {
+            fail("Callback not called on register");
+        }
+        mManager.unregisterAdvancedProtectionFeatureCallback(callback);
+        // Wait for the callback to be removed. This happens async, and we can't check the state
+        // of the callback directly.
+        Thread.sleep(TIMEOUT_S * 1000);
+        setAdvancedProtectionEnabled(false);
+
+        if (onSet.await(TIMEOUT_S, TimeUnit.SECONDS)) {
+            fail("Callback called on set after unregister");
+        }
+    }
+
     @ApiTest(
             apis = {
                 "android.security.advancedprotection.AdvancedProtectionManager"
@@ -228,6 +334,7 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
     @Test
     @IncludeRunOnPrimaryUser
     public void testUpdateAdvancedProtectionFeaturesProvisioning_provisioned() {
+        mManager.setAdvancedProtectionEnabled(true);
         List<AdvancedProtectionFeature> features =
                 mManager.updateAdvancedProtectionFeaturesProvisioning(
                         new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G},
@@ -235,13 +342,15 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
         assertProvisioningMode(
                 features,
                 AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G,
-                AdvancedProtectionFeature.PROVISIONING_MODE_PROVISIONED_BY_FEATURE_ADMIN);
+                AdvancedProtectionFeature.PROVISIONING_MODE_PROVISIONED_BY_FEATURE_ADMIN,
+                /* isEnabled= */ true);
 
         features = mManager.getAdvancedProtectionFeatures();
         assertProvisioningMode(
                 features,
                 AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G,
-                AdvancedProtectionFeature.PROVISIONING_MODE_PROVISIONED_BY_FEATURE_ADMIN);
+                AdvancedProtectionFeature.PROVISIONING_MODE_PROVISIONED_BY_FEATURE_ADMIN,
+                /* isEnabled= */ true);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_AAPM_API_V2)
@@ -253,6 +362,7 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
     @Test
     @IncludeRunOnPrimaryUser
     public void testUpdateAdvancedProtectionFeaturesProvisioning_deprovisioned() {
+        mManager.setAdvancedProtectionEnabled(true);
         List<AdvancedProtectionFeature> features =
                 mManager.updateAdvancedProtectionFeaturesProvisioning(
                         new int[] {},
@@ -260,13 +370,72 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
         assertProvisioningMode(
                 features,
                 AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G,
-                AdvancedProtectionFeature.PROVISIONING_MODE_DEPROVISIONED_BY_FEATURE_ADMIN);
+                AdvancedProtectionFeature.PROVISIONING_MODE_DEPROVISIONED_BY_FEATURE_ADMIN,
+                /* isEnabled= */ false);
 
         features = mManager.getAdvancedProtectionFeatures();
         assertProvisioningMode(
                 features,
                 AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G,
-                AdvancedProtectionFeature.PROVISIONING_MODE_DEPROVISIONED_BY_FEATURE_ADMIN);
+                AdvancedProtectionFeature.PROVISIONING_MODE_DEPROVISIONED_BY_FEATURE_ADMIN,
+                /* isEnabled= */ false);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_AAPM_API_V2)
+    @ApiTest(
+            apis = {
+                "android.security.advancedprotection.AdvancedProtectionManager"
+                        + "#updateAdvancedProtectionFeaturesProvisioning"
+            })
+    @Test
+    @IncludeRunOnPrimaryUser
+    public void testUpdateAdvancedProtectionFeaturesProvisioning_deprovisioned_callbackCalled()
+            throws InterruptedException {
+        CountDownLatch onRegister = new CountDownLatch(1);
+        CountDownLatch onSet = new CountDownLatch(1);
+        mManager.setAdvancedProtectionEnabled(true);
+        mManager.updateAdvancedProtectionFeaturesProvisioning(
+                new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G}, null);
+        Consumer<List<AdvancedProtectionFeature>> callback =
+                features -> {
+                    if (onRegister.getCount() > 0) {
+                        assertProvisioningMode(
+                                features,
+                                AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G,
+                                AdvancedProtectionFeature
+                                        .PROVISIONING_MODE_PROVISIONED_BY_FEATURE_ADMIN,
+                                /* isEnabled= */ true);
+                        onRegister.countDown();
+                    } else {
+                        assertProvisioningMode(
+                                features,
+                                AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G,
+                                AdvancedProtectionFeature
+                                        .PROVISIONING_MODE_DEPROVISIONED_BY_FEATURE_ADMIN,
+                                /* isEnabled= */ false);
+                        onSet.countDown();
+                    }
+                };
+
+        // Wait for the feature to be provisioned. This happens async, and we can't check the
+        // state of the feature directly.
+        Thread.sleep(TIMEOUT_S * 1000);
+
+        mManager.registerAdvancedProtectionFeatureCallback(
+                new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G},
+                Runnable::run,
+                callback);
+        if (!onRegister.await(TIMEOUT_S, TimeUnit.SECONDS)) {
+            fail("Callback not called on register");
+        }
+        mManager.updateAdvancedProtectionFeaturesProvisioning(
+                null, new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G});
+        if (!onSet.await(TIMEOUT_S, TimeUnit.SECONDS)) {
+            fail("Callback not called on set");
+        }
+
+        // Cleanup
+        mManager.unregisterAdvancedProtectionFeatureCallback(callback);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_AAPM_API_V2)
@@ -306,6 +475,7 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
     @Test
     @IncludeRunOnPrimaryUser
     public void testUpdateAdvancedProtectionFeaturesProvisioning_doesntUpdateOtherFeatures() {
+        mManager.setAdvancedProtectionEnabled(true);
         mManager.updateAdvancedProtectionFeaturesProvisioning(
                 new int[] {AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G}, null);
 
@@ -315,7 +485,8 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
         assertProvisioningMode(
                 features,
                 AdvancedProtectionManager.FEATURE_ID_DISALLOW_CELLULAR_2G,
-                AdvancedProtectionFeature.PROVISIONING_MODE_PROVISIONED_BY_FEATURE_ADMIN);
+                AdvancedProtectionFeature.PROVISIONING_MODE_PROVISIONED_BY_FEATURE_ADMIN,
+                /* isEnabled= */ true);
     }
 
     @ApiTest(
@@ -408,10 +579,14 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
     }
 
     private void assertProvisioningMode(
-            List<AdvancedProtectionFeature> features, int featureId, int provisioningMode) {
+            List<AdvancedProtectionFeature> features,
+            int featureId,
+            int provisioningMode,
+            boolean isEnabled) {
         AdvancedProtectionFeature feature =
                 features.stream().filter(f -> f.getId() == featureId).findFirst().get();
         assertEquals(featureId, feature.getId());
         assertEquals(provisioningMode, feature.getProvisioningMode());
+        assertEquals(isEnabled, feature.isEnabled());
     }
 }
