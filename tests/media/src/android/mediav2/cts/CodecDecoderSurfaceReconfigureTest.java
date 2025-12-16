@@ -16,9 +16,13 @@
 
 package android.mediav2.cts;
 
+import static android.media.codec.Flags.vvcSupport;
+
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 import static android.mediav2.cts.DolbyVisionDecoderParamPreparer.getDvTestParams;
+
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableVvc;
 
 import static org.junit.Assert.fail;
 
@@ -222,6 +226,14 @@ public class CodecDecoderSurfaceReconfigureTest extends CodecDecoderTestBase {
                 {MediaFormat.MIMETYPE_VIDEO_AV1, "cosmat_520x390_24fps_768kbps_av1_10bit.mkv",
                     "bbb_340x280_768kbps_30fps_av1.mp4", CODEC_ALL},
             }));
+        }
+        if (IS_AFTER_B) {
+            if (vvcSupport() && extractorMp4EnableVvc()) {
+                exhaustiveArgsList.addAll(Arrays.asList(new Object[][] {
+                    {MediaFormat.MIMETYPE_VIDEO_VVC, "bbb_640x360_600kbps_24fps_vvc.mp4",
+                            "bbb_1280x720_1mbps_24fps_vvc_10bit.mp4", CODEC_OPTIONAL},
+                }));
+            }
         }
         exhaustiveArgsList.addAll(getDvTestParams(CodecDecoderSurfaceReconfigureTest.class));
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, true);

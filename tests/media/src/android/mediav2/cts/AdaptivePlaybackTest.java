@@ -18,6 +18,7 @@ package android.mediav2.cts;
 
 import static android.media.codec.Flags.apvSupport;
 import static android.media.codec.Flags.dynamicColorAspects;
+import static android.media.codec.Flags.vvcSupport;
 import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_V;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_HW;
@@ -27,6 +28,7 @@ import static android.mediav2.common.cts.DecodeStreamToYuv.getFormatInStream;
 import static android.mediav2.cts.DolbyVisionDecoderParamPreparer.getDvTestParams;
 
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableVvc;
 
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -196,13 +198,26 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
             }));
         }
 
-        if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
-            exhaustiveArgsList.addAll(Arrays.asList(new Object[][] {
+        if (IS_AT_LEAST_B) {
+            if (apvSupport() && extractorMp4EnableApv()) {
+                exhaustiveArgsList.addAll(Arrays.asList(new Object[][] {
                     {MediaFormat.MIMETYPE_VIDEO_APV,
                             new String[] {"pattern_640x480_30fps_16mbps_apv_10bit.mp4",
                                     "pattern_1280x720_30fps_30mbps_apv_10bit.mp4"},
                             CODEC_OPTIONAL},
-            }));
+                }));
+            }
+        }
+        if (IS_AFTER_B) {
+            if (vvcSupport() && extractorMp4EnableVvc()) {
+                exhaustiveArgsList.addAll(Arrays.asList(new Object[][] {
+                    {MediaFormat.MIMETYPE_VIDEO_VVC,
+                            new String[] {"bbb_640x360_600kbps_24fps_vvc.mp4",
+                                    "bbb_1280x720_1mbps_24fps_vvc_10bit.mp4",
+                                    "bbb_320x180_600kbps_24fps_vvc.mp4"},
+                            CODEC_OPTIONAL},
+                }));
+            }
         }
         exhaustiveArgsList.addAll(getDvTestParams(AdaptivePlaybackTest.class));
         List<Object[]> argsList = prepareParamList(exhaustiveArgsList, isEncoder, needAudio,

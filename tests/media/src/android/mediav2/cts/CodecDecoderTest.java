@@ -22,6 +22,7 @@ import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420P
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar;
 import static android.media.audio.Flags.iamfDefinitionsApi;
 import static android.media.codec.Flags.apvSupport;
+import static android.media.codec.Flags.vvcSupport;
 import static android.media.tv.flags.Flags.FLAG_APPLY_PICTURE_PROFILES;
 import static android.media.tv.flags.Flags.FLAG_MEDIA_QUALITY_FW;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
@@ -30,6 +31,7 @@ import static android.mediav2.cts.DolbyVisionDecoderParamPreparer.getDvTestParam
 
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableIamf;
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableVvc;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -261,16 +263,33 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
                             null, -1.0f, 1021109556L, CODEC_ALL},
             }));
         }
-        if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
-            exhaustiveArgsList.addAll(Arrays.asList(new Object[][] {
+        if (IS_AT_LEAST_B) {
+            if (apvSupport() && extractorMp4EnableApv()) {
+                exhaustiveArgsList.addAll(Arrays.asList(new Object[][] {
                     {MediaFormat.MIMETYPE_VIDEO_APV, "pattern_640x480_30fps_16mbps_apv_10bit.mp4",
                             null, -1.0f, -1L, CODEC_OPTIONAL},
-            }));
+                }));
+            }
         }
-        if (IS_AT_LEAST_B && iamfDefinitionsApi() && extractorMp4EnableIamf()) {
-            exhaustiveArgsList.add(new Object[] {MediaFormat.MIMETYPE_AUDIO_IAMF,
+        if (IS_AT_LEAST_B) {
+            if (iamfDefinitionsApi() && extractorMp4EnableIamf()) {
+                exhaustiveArgsList.add(new Object[] {MediaFormat.MIMETYPE_AUDIO_IAMF,
                     "audio/7_1_4_Opus_no_video.mp4", null, -1.0f, -1L, CODEC_OPTIONAL});
+            }
         }
+        if (IS_AFTER_B) {
+            if (vvcSupport() && extractorMp4EnableVvc()) {
+                exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
+                    {MediaFormat.MIMETYPE_VIDEO_VVC,
+                            "bbb_640x360_600kbps_24fps_vvc.mp4", null, -1.0f, 1846548890L,
+                            CODEC_OPTIONAL},
+                    {MediaFormat.MIMETYPE_VIDEO_VVC,
+                            "bbb_640x360_600kbps_24fps_vvc_10bit.mp4", null, -1.0f, 1897879671L,
+                            CODEC_OPTIONAL},
+                }));
+            }
+        }
+
         exhaustiveArgsList.addAll(getDvTestParams(CodecDecoderTest.class));
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, true);
     }
