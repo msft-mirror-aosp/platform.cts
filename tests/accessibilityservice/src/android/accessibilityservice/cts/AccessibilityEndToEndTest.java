@@ -1609,8 +1609,10 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
 
             // Set up initial focus on the ADS view.
             toolService.setEventFilter(filterForEventType(TYPE_VIEW_ACCESSIBILITY_FOCUSED));
-            assertThat(mActivity.findViewById(R.id.adsView).performAccessibilityAction(
-                    ACTION_ACCESSIBILITY_FOCUS, null)).isTrue();
+            sInstrumentation.runOnMainSync(() -> {
+                assertThat(mActivity.findViewById(R.id.adsView).performAccessibilityAction(
+                        ACTION_ACCESSIBILITY_FOCUS, null)).isTrue();
+            });
             toolService.waitOnEvent(DEFAULT_TIMEOUT_MS,
                     "Expected TYPE_VIEW_ACCESSIBILITY_FOCUSED event");
 
