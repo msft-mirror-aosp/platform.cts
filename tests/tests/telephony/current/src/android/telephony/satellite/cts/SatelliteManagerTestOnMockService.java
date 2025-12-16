@@ -77,7 +77,6 @@ import android.telephony.CarrierConfigManager;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
-import android.telephony.cts.R;
 import android.telephony.cts.TelephonyManagerTest.ServiceStateRadioStateListener;
 import android.telephony.mockmodem.MockModemManager;
 import android.telephony.satellite.AntennaDirection;
@@ -5058,9 +5057,20 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
         InputStream inputStream = null;
         BufferedReader reader = null;
         try {
-            // Open the raw resource file
-            inputStream =
-                    context.getResources().openRawResource(R.raw.satellite_country_coordinates);
+            int rawResId =
+                    context.getResources()
+                            .getIdentifier(
+                                    "satellite_country_coordinates",
+                                    "raw",
+                                    context.getPackageName());
+            if (rawResId == 0) {
+                loge(
+                        "getLocationsPerCountryConfiguredForCts: Raw resource not found for"
+                                + " satellite_country_coordinates");
+                return locationsPerCountryMap;
+            }
+            inputStream = context.getResources().openRawResource(rawResId);
+
             reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
             StringBuilder stringBuilder = new StringBuilder();
             String line;
@@ -7630,14 +7640,20 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
     @Nullable
     private static String getSatelliteS2CellFileFromOverlayConfig(@NonNull Context context) {
         String s2CellFile = null;
-        try {
-            s2CellFile =
-                    context.getResources()
-                            .getString(
-                                    com.android.internal.R.string
-                                            .config_oem_enabled_satellite_s2cell_file);
-        } catch (Resources.NotFoundException ex) {
-            loge("getSatelliteS2CellFileFromOverlayConfig: got ex=" + ex);
+        final int resId =
+                context.getResources()
+                        .getIdentifier(
+                                "config_oem_enabled_satellite_s2cell_file", "string", "android");
+        if (resId != 0) {
+            try {
+                s2CellFile = context.getResources().getString(resId);
+            } catch (Resources.NotFoundException ex) {
+                loge("getSatelliteS2CellFileFromOverlayConfig: got ex=" + ex);
+            }
+        } else {
+            loge(
+                    "getSatelliteS2CellFileFromOverlayConfig: Resource ID not found for "
+                            + "config_oem_enabled_satellite_s2cell_file");
         }
         return s2CellFile;
     }
