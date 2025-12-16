@@ -70,6 +70,7 @@ import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.appops.AppOpsMode
 import com.android.bedstead.nene.devicepolicy.DeviceAdmin
 import com.android.bedstead.nene.packages.CommonPackages
+import com.android.bedstead.nene.types.OptionalBoolean.TRUE
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.users.UserType
@@ -732,8 +733,11 @@ class ProvisioningTest {
     @EnsureHasDevicePolicyManagerRoleHolder(onUser = SYSTEM_USER)
     @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING)
-    @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
-    @RequireRunOnSystemUser()
+    @RequireHeadlessSystemUserMode(
+        reason = "Multi-user device provisioning requires interactive HSUM",
+        interactive = TRUE,
+    )
+    @RequireRunOnSystemUser(switchedToUser = TRUE)
     @Test
     @ApiTest(
         apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserDevice",
@@ -765,8 +769,11 @@ class ProvisioningTest {
     @EnsureHasDevicePolicyManagerRoleHolder(onUser = SYSTEM_USER)
     @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING)
-    @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
-    @RequireRunOnSystemUser()
+    @RequireHeadlessSystemUserMode(
+        reason = "Multi-user device provisioning requires interactive HSUM",
+        interactive = TRUE,
+    )
+    @RequireRunOnSystemUser(switchedToUser = TRUE)
     @Test
     @ApiTest(
         apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserDevice",
@@ -866,7 +873,7 @@ class ProvisioningTest {
     @EnsureHasNoDeviceOwner
     @EnsureHasProfileOwner
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING)
-    @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
+    @RequireHeadlessSystemUserMode(reason = "Multi-user user provisioning requires HSUM")
     @RequireRunOnInitialUser
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserManagedUser"])
@@ -895,7 +902,7 @@ class ProvisioningTest {
     @EnsureHasNoProfileOwner
     @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING)
-    @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
+    @RequireHeadlessSystemUserMode(reason = "Multi-user user provisioning requires HSUM")
     @RequireRunOnInitialUser
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserManagedUser"])
@@ -926,7 +933,7 @@ class ProvisioningTest {
     @EnsureHasNoProfileOwner
     @EnsureHasWorkProfile
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING)
-    @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
+    @RequireHeadlessSystemUserMode(reason = "Multi-user user provisioning requires HSUM")
     @RequireRunOnInitialUser
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserManagedUser"])
@@ -958,7 +965,7 @@ class ProvisioningTest {
     @EnsureHasNoProfileOwner
     @EnsureHasNoWorkProfile
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING)
-    @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
+    @RequireHeadlessSystemUserMode(reason = "Multi-user user provisioning requires HSUM")
     @RequireRunOnInitialUser
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserManagedUser"])
@@ -983,6 +990,34 @@ class ProvisioningTest {
     }
 
     @Postsubmit(reason = "new test")
+    @EnsureHasPermission(
+        CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS,
+    )
+    @EnsureHasPrivateProfile
+    @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING)
+    @RequireHeadlessSystemUserMode(reason = "Multi-user user provisioning requires HSUM")
+    @RequireRunOnInitialUser
+    @Test
+    @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserManagedUser"])
+    fun provisionMultiUserManagedUser_userHasPrivateProfile_throwsException() {
+        val params = createDefaultMultiUserManagedUserProvisioningParamsBuilder().build()
+
+        val exception = assertThrows(ProvisioningException::class.java) {
+            localDevicePolicyManager.provisionMultiUserManagedUser(params)
+        }
+
+        assertThat(
+            localDevicePolicyManager.checkProvisioningPrecondition(
+                DevicePolicyManager.ACTION_PROVISION_MULTI_USER_MANAGED_USER,
+                params.profileAdminComponentName.packageName,
+            )
+        ).isEqualTo(DevicePolicyManager.STATUS_NOT_FULL_USER)
+        assertThat(
+            exception.provisioningError
+        ).isEqualTo(ProvisioningException.ERROR_PRE_CONDITION_FAILED)
+    }
+
+    @Postsubmit(reason = "new test")
     @EnsureHasNoDeviceOwner
     @EnsureHasNoProfileOwner
     @EnsureHasNoWorkProfile
@@ -990,7 +1025,7 @@ class ProvisioningTest {
         CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS,
     )
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING)
-    @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
+    @RequireHeadlessSystemUserMode(reason = "Multi-user user provisioning requires HSUM")
     @RequireRunOnInitialUser
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserManagedUser"])
@@ -1299,8 +1334,11 @@ class ProvisioningTest {
     @EnsureHasNoDpc
     @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING)
-    @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
-    @RequireRunOnSystemUser()
+    @RequireHeadlessSystemUserMode(
+        reason = "Multi-user device provisioning requires interactive HSUM",
+        interactive = TRUE,
+    )
+    @RequireRunOnSystemUser(switchedToUser = TRUE)
     @Test
     @ApiTest(
         apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPreCondition",
@@ -1320,7 +1358,7 @@ class ProvisioningTest {
     @EnsureHasNoDpc
     @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING)
-    @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
+    @RequireHeadlessSystemUserMode(reason = "Multi-user device provisioning requires HSUM")
     @RequireRunOnSecondaryUser
     @Test
     @ApiTest(
@@ -1362,8 +1400,11 @@ class ProvisioningTest {
     @EnsureHasNoDpc
     @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING)
-    @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
-    @RequireRunOnSystemUser()
+    @RequireHeadlessSystemUserMode(
+        reason = "Multi-user device provisioning requires interactive HSUM",
+        interactive = TRUE,
+    )
+    @RequireRunOnSystemUser(switchedToUser = TRUE)
     @Test
     @ApiTest(
         apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPreCondition",
@@ -1384,8 +1425,11 @@ class ProvisioningTest {
     @EnsureHasNoDpc
     @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING)
-    @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
-    @RequireRunOnSystemUser()
+    @RequireHeadlessSystemUserMode(
+        reason = "Multi-user device provisioning requires interactive HSUM",
+        interactive = TRUE,
+    )
+    @RequireRunOnSystemUser(switchedToUser = TRUE)
     @Test
     @ApiTest(
         apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPreCondition",

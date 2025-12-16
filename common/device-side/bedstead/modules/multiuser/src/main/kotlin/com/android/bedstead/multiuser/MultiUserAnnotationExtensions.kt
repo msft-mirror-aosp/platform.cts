@@ -37,7 +37,9 @@ import com.android.bedstead.multiuser.annotations.RequireUserSupported
 import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsers
 import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsersOnDefaultDisplay
 import com.android.bedstead.multiuser.annotations.meta.EnsureHasNoUserAnnotation
+import com.android.bedstead.nene.TestApis.resources
 import com.android.bedstead.nene.TestApis.users
+import com.android.bedstead.nene.types.OptionalBoolean
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.users.UserType
 import com.google.errorprone.annotations.CanIgnoreReturnValue
@@ -75,8 +77,14 @@ fun RequireNotHeadlessSystemUserMode.logic() {
     assumeFalse(reason, users().isHeadlessSystemUserMode())
 }
 
-fun RequireHeadlessSystemUserMode.logic() {
+fun RequireHeadlessSystemUserMode.logic(interactive: OptionalBoolean) {
     assumeTrue(reason, users().isHeadlessSystemUserMode())
+    val interactiveSystemUser = users().system().canBeSwitchedTo()
+    if (interactive == OptionalBoolean.TRUE) {
+        assumeTrue(reason, interactiveSystemUser)
+    } else if (interactive == OptionalBoolean.FALSE) {
+        assumeFalse(reason, interactiveSystemUser)
+    }
 }
 
 fun RequireVisibleBackgroundUsers.logic() {
