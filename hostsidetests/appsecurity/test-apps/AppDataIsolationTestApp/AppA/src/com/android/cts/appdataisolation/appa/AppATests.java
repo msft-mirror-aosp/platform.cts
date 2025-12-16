@@ -49,6 +49,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.SystemClock;
 import android.os.SystemProperties;
+import android.os.UserManager;
 import android.view.KeyEvent;
 
 import androidx.test.filters.SmallTest;
@@ -113,14 +114,29 @@ public class AppATests {
     }
 
     private void setUpExternalStoragePaths() {
-        File externalFilesDir = mContext.getExternalFilesDir("");
-        if (externalFilesDir != null) {
-            mExternalDataPath = externalFilesDir.getAbsolutePath();
+        if (!mContext.getSystemService(UserManager.class).isUserUnlocked()) {
+            return;
         }
-        File obbDir = mContext.getObbDir();
-        if (obbDir != null) {
-            mObbPath = obbDir.getAbsolutePath();
-        }
+
+        // TODO(b/302586971): Remove this when the vold resets are resolved.
+        // vold can reset on an HSUM configuration during the user unlock flow; wait until valid
+        // values are returned for the external and obb directories before continuing with the test.
+        int numRetries = 0;
+        do {
+            File externalFilesDir = mContext.getExternalFilesDir("");
+            if (externalFilesDir != null) {
+                mExternalDataPath = externalFilesDir.getAbsolutePath();
+            }
+            File obbDir = mContext.getObbDir();
+            if (obbDir != null) {
+                mObbPath = obbDir.getAbsolutePath();
+            }
+            if (mExternalDataPath == null || mObbPath == null) {
+                SystemClock.sleep(3000);
+                numRetries++;
+            }
+        } while ((mExternalDataPath == null || mObbPath == null)
+                && numRetries <= MAX_VOLD_QUERY_RETRIES);
     }
 
     @Test
@@ -285,16 +301,7 @@ public class AppATests {
         assertTrue("User not unlocked", unlocked.await(1, TimeUnit.MINUTES));
         assertTrue("No locked boot complete", bootCompleted.await(2, TimeUnit.MINUTES));
 
-        // TODO(b/302586971): Remove this when the vold resets are resolved.
-        // vold can reset on an HSUM configuration during the user unlock flow; wait until valid
-        // values are returned for the external and obb directories before continuing with the test.
-        int numRetries = 0;
-        do {
-            numRetries++;
-            SystemClock.sleep(3000);
-            setUpExternalStoragePaths();
-        } while ((mExternalDataPath == null || mObbPath == null)
-                && numRetries <= MAX_VOLD_QUERY_RETRIES);
+        setUpExternalStoragePaths();
 
         // The test app process should be still running, make sure CE DE now is available
         testAppACeDataExists();
