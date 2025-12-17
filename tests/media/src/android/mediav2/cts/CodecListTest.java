@@ -16,22 +16,37 @@
 
 package android.mediav2.cts;
 
-import static org.junit.Assert.assertTrue;
+import static android.mediav2.common.cts.CodecTestBase.hasSupportForProfile;
+import static android.mediav2.common.cts.CodecTestBase.selectCodecs;
+import static android.view.Display.HdrCapabilities.HDR_TYPE_DOLBY_VISION;
+import static android.view.Display.HdrCapabilities.HDR_TYPE_HDR10;
+import static android.view.Display.HdrCapabilities.HDR_TYPE_HDR10_PLUS;
+import static android.view.Display.HdrCapabilities.HDR_TYPE_HLG;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
+
+import android.hardware.display.DisplayManager;
 import android.media.MediaFormat;
 import android.mediav2.common.cts.CodecTestBase;
+import android.view.Display;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Checks if all required codecs are listed in media codec list. The scope of this test is to
@@ -80,6 +95,55 @@ public class CodecListTest {
             assertTrue("device has neither VP8 or AVC encoding",
                     CodecTestBase.hasEncoder(MediaFormat.MIMETYPE_VIDEO_AVC) ||
                             CodecTestBase.hasEncoder(MediaFormat.MIMETYPE_VIDEO_VP8));
+        }
+    }
+
+    /**
+     * For all the available decoders on the device, the test checks if their decoding capabilities
+     * are in sync with the device's display capabilities. Precisely, if device implementations
+     * advertise a HDR profile support through Display.HdrCapabilities, then there should be at
+     * least one decoder capable of handling that profile.
+     */
+    @Test
+    @FrameworkSpecificTest
+    @CddTest(requirements = {"5.1.7/C-2-1"})
+    @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#profileLevels"})
+    public void testHDRDisplayCapabilities() {
+        assumeTrue("Test needs Android 13", CodecTestBase.IS_AT_LEAST_T);
+        assumeTrue("Test needs VNDK Android 13", CodecTestBase.VNDK_IS_AT_LEAST_T);
+        assumeTrue("Test needs First SDK Android 13", CodecTestBase.FIRST_SDK_IS_AT_LEAST_T);
+
+        DisplayManager dm = CodecTestBase.getContext().getSystemService(DisplayManager.class);
+        int[] hdrTypes = dm.getDisplay(Display.DEFAULT_DISPLAY).getMode().getSupportedHdrTypes();
+        assumeTrue("Device display has no hdr capabilities", hdrTypes.length > 0);
+
+        for (int hdrType : hdrTypes) {
+            HashMap<String, int[]> profileMap = null;
+            if (hdrType == HDR_TYPE_HLG) {
+                profileMap = CodecTestBase.PROFILE_HLG_MAP;
+            } else if (hdrType == HDR_TYPE_HDR10) {
+                profileMap = CodecTestBase.PROFILE_HDR10_MAP;
+            } else if (hdrType == HDR_TYPE_HDR10_PLUS) {
+                profileMap = CodecTestBase.PROFILE_HDR10_PLUS_MAP;
+            } else if (hdrType == HDR_TYPE_DOLBY_VISION) {
+                profileMap = CodecTestBase.PROFILE_DOLBY_HDR_MAP;
+            }
+            assertNotNull("Did not find a profile list for hdrType " + hdrType, profileMap);
+            boolean foundDecoder = false;
+            outerloop:
+            for (Map.Entry<String, int[]> entry : profileMap.entrySet()) {
+                ArrayList<String> decoders = selectCodecs(entry.getKey(), null, null, false);
+                for (String decoder : decoders) {
+                    for (int profile : entry.getValue()) {
+                        if (hasSupportForProfile(decoder, entry.getKey(), profile)) {
+                            foundDecoder = true;
+                            break outerloop;
+                        }
+                    }
+                }
+            }
+            assertTrue("Device display advertises support for hdrType " + hdrType
+                    + " but there is no decoder capable of handling that profile", foundDecoder);
         }
     }
 }
