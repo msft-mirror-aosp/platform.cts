@@ -235,7 +235,7 @@ public class LightsManagerTest {
                         .addControlPoint(200, RED)
                         .build());
         // Can append control points through arrays.
-        colorSequenceBuilder.addControlPoints(new int[] {300, 400}, new int[] {YELLOW, MAGENTA});
+        colorSequenceBuilder.addControlPoints(new long[] {300, 400}, new int[] {YELLOW, MAGENTA});
 
         // 0 delay after the first control point is not a valid value.
         assertThrows(
@@ -258,7 +258,7 @@ public class LightsManagerTest {
                 IllegalArgumentException.class,
                 () -> {
                     colorSequenceBuilder.addControlPoints(
-                            new int[] {0, 100}, new int[] {YELLOW, MAGENTA});
+                            new long[] {0, 100}, new int[] {YELLOW, MAGENTA});
                 });
 
         // Bad inputs.
@@ -276,20 +276,20 @@ public class LightsManagerTest {
         assertThrows(
                 NullPointerException.class,
                 () -> {
-                    colorSequenceBuilder.addControlPoints(new int[] {100, 100}, null);
+                    colorSequenceBuilder.addControlPoints(new long[] {100, 100}, null);
                 });
 
         assertThrows(
                 IllegalArgumentException.class,
                 () -> {
                     colorSequenceBuilder.addControlPoints(
-                            new int[] {100}, new int[] {YELLOW, MAGENTA});
+                            new long[] {100}, new int[] {YELLOW, MAGENTA});
                 });
 
         ColorSequence colorSequence = colorSequenceBuilder.build();
         assertThat(colorSequence.getDelaysMillis())
                 .asList()
-                .containsExactly(0, 100, 200, 300, 400)
+                .containsExactly(0L, 100L, 200L, 300L, 400L)
                 .inOrder();
         assertThat(colorSequence.getColors())
                 .asList()
@@ -319,7 +319,7 @@ public class LightsManagerTest {
         assertThat(sequenceMap.keySet()).containsExactly(light.getId());
         assertThat(sequenceMap.get(light.getId()).getDelaysMillis())
                 .asList()
-                .containsExactly(0, 500)
+                .containsExactly(0L, 500L)
                 .inOrder();
         assertThat(sequenceMap.get(light.getId()).getColors())
                 .asList()
@@ -445,7 +445,7 @@ public class LightsManagerTest {
             assertThat(sequence.getColors().length).isEqualTo(1);
             assertThat(sequence.getColors()[0]).isEqualTo(BLUE);
             assertThat(sequence.getDelaysMillis().length).isEqualTo(1);
-            assertThat(sequence.getDelaysMillis()[0]).isEqualTo(500);
+            assertThat(sequence.getDelaysMillis()[0]).isEqualTo(500L);
         }
     }
 
@@ -474,7 +474,7 @@ public class LightsManagerTest {
         assertThat(sequence.getColors().length).isEqualTo(1);
         assertThat(sequence.getColors()[0]).isEqualTo(BLUE);
         assertThat(sequence.getDelaysMillis().length).isEqualTo(1);
-        assertThat(sequence.getDelaysMillis()[0]).isEqualTo(2000);
+        assertThat(sequence.getDelaysMillis()[0]).isEqualTo(2000L);
         assertThat(state.getColor()).isEqualTo(TRANSPARENT);
 
         // Let the light on for a few milliseconds and change to a state.
@@ -524,7 +524,7 @@ public class LightsManagerTest {
         assertThat(sequence.getColors().length).isEqualTo(1);
         assertThat(sequence.getColors()[0]).isEqualTo(BLUE);
         assertThat(sequence.getDelaysMillis().length).isEqualTo(1);
-        assertThat(sequence.getDelaysMillis()[0]).isEqualTo(2000);
+        assertThat(sequence.getDelaysMillis()[0]).isEqualTo(2000L);
         assertThat(state.getColor()).isEqualTo(TRANSPARENT);
 
         // Let the light on for a few milliseconds and change to a different effect.
@@ -537,7 +537,7 @@ public class LightsManagerTest {
         assertThat(sequence.getColors().length).isEqualTo(1);
         assertThat(sequence.getColors()[0]).isEqualTo(RED);
         assertThat(sequence.getDelaysMillis().length).isEqualTo(1);
-        assertThat(sequence.getDelaysMillis()[0]).isEqualTo(500);
+        assertThat(sequence.getDelaysMillis()[0]).isEqualTo(500L);
         assertThat(state.getColor()).isEqualTo(TRANSPARENT);
 
         session.close();
@@ -581,7 +581,7 @@ public class LightsManagerTest {
         assertThat(sequence.getColors().length).isEqualTo(1);
         assertThat(sequence.getColors()[0]).isEqualTo(BLUE);
         assertThat(sequence.getDelaysMillis().length).isEqualTo(1);
-        assertThat(sequence.getDelaysMillis()[0]).isEqualTo(500);
+        assertThat(sequence.getDelaysMillis()[0]).isEqualTo(500L);
         assertThat(state.getColor()).isEqualTo(TRANSPARENT);
 
         // Sleep beyond the transition from effect -> effect2.
@@ -593,7 +593,7 @@ public class LightsManagerTest {
         assertThat(sequence.getColors().length).isEqualTo(1);
         assertThat(sequence.getColors()[0]).isEqualTo(RED);
         assertThat(sequence.getDelaysMillis().length).isEqualTo(1);
-        assertThat(sequence.getDelaysMillis()[0]).isEqualTo(300);
+        assertThat(sequence.getDelaysMillis()[0]).isEqualTo(300L);
         assertThat(state.getColor()).isEqualTo(TRANSPARENT);
 
         session.close();
@@ -639,7 +639,7 @@ public class LightsManagerTest {
         ColorSequence sequence = mManager.getLightSequence(light);
         LightState state = mManager.getLightState(light);
         assertThat(sequence.getColors()).asList().containsExactly(BLUE, GREEN).inOrder();
-        assertThat(sequence.getDelaysMillis()).asList().containsExactly(200, 200);
+        assertThat(sequence.getDelaysMillis()).asList().containsExactly(200L, 200L);
         assertThat(state.getColor()).isEqualTo(TRANSPARENT);
 
         // Sleep beyond the transition from effect -> effect2.
@@ -649,7 +649,7 @@ public class LightsManagerTest {
         state = mManager.getLightState(light);
         sequence = mManager.getLightSequence(light);
         assertThat(sequence.getColors()).asList().containsExactly(RED);
-        assertThat(sequence.getDelaysMillis()).asList().containsExactly(300);
+        assertThat(sequence.getDelaysMillis()).asList().containsExactly(300L);
         assertThat(state.getColor()).isEqualTo(TRANSPARENT);
 
         session.close();
@@ -698,7 +698,7 @@ public class LightsManagerTest {
         ColorSequence sequence = mManager.getLightSequence(light);
         LightState state = mManager.getLightState(light);
         assertThat(sequence.getColors()).asList().containsExactly(BLUE).inOrder();
-        assertThat(sequence.getDelaysMillis()).asList().containsExactly(200);
+        assertThat(sequence.getDelaysMillis()).asList().containsExactly(200L);
         assertThat(state.getColor()).isEqualTo(TRANSPARENT);
 
         // The high priority session stops using the light. Low priority session should take over
@@ -708,7 +708,7 @@ public class LightsManagerTest {
         state = mManager.getLightState(light);
         sequence = mManager.getLightSequence(light);
         assertThat(sequence.getColors()).asList().containsExactly(RED);
-        assertThat(sequence.getDelaysMillis()).asList().containsExactly(300);
+        assertThat(sequence.getDelaysMillis()).asList().containsExactly(300L);
         assertThat(state.getColor()).isEqualTo(TRANSPARENT);
 
         // At t=200 the low priority session is still on effect2.
@@ -734,7 +734,7 @@ public class LightsManagerTest {
         state = mManager.getLightState(light);
         sequence = mManager.getLightSequence(light);
         assertThat(sequence.getColors()).asList().containsExactly(YELLOW);
-        assertThat(sequence.getDelaysMillis()).asList().containsExactly(300);
+        assertThat(sequence.getDelaysMillis()).asList().containsExactly(300L);
         assertThat(state.getColor()).isEqualTo(TRANSPARENT);
 
         lowPrioritySession.close();
