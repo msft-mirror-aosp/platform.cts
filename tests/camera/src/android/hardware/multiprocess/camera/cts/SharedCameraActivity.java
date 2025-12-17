@@ -29,7 +29,7 @@ import android.hardware.camera2.CameraExtensionCharacteristics;
 import android.hardware.camera2.CameraExtensionSession;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraOfflineSession;
-import android.hardware.camera2.CameraSharedCaptureSession;
+import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.cts.Camera2SurfaceViewCtsActivity;
 import android.hardware.camera2.cts.CameraTestUtils;
@@ -39,8 +39,6 @@ import android.hardware.camera2.params.ExtensionSessionConfiguration;
 import android.hardware.camera2.params.InputConfiguration;
 import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
-import android.hardware.camera2.params.SharedSessionConfiguration;
-import android.hardware.camera2.params.SharedSessionConfiguration.SharedOutputConfiguration;
 import android.media.ImageReader;
 import android.os.Bundle;
 import android.os.Handler;
@@ -58,6 +56,10 @@ import com.android.ex.camera2.blocking.BlockingExtensionSessionCallback;
 import com.android.ex.camera2.blocking.BlockingSessionCallback;
 import com.android.ex.camera2.utils.StateWaiter;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -81,14 +83,14 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
     String mCameraId;
     Messenger mMessenger;
     CameraDevice mCameraDevice;
-    CameraSharedCaptureSession mSession;
+    CameraCaptureSession mSession;
     BlockingSessionCallback mSessionMockListener;
     CaptureRequest.Builder mCaptureRequestBuilder;
     Surface mPreviewSurface;
     int mCaptureSequenceId;
     SimpleCaptureCallback mCaptureListener;
     SimpleImageReaderListener mImageListener;
-    SharedSessionConfiguration mSharedSessionConfig;
+    Object mSharedSessionConfig;
     ImageReader mReader;
     Surface mReaderSurface;
     boolean mIsSurfaceViewPresent = false;
@@ -160,22 +162,6 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
         }
 
         @Override
-        public void onOpenedInSharedMode(CameraDevice cameraDevice, boolean isPrimary) {
-            mCameraDevice = cameraDevice;
-            mIsPrimary = isPrimary;
-            if (isPrimary) {
-                mErrorServiceConnection.logAsync(TestConstants.EVENT_CAMERA_CONNECT_SHARED_PRIMARY,
-                        mChosenCameraId);
-            } else {
-                mErrorServiceConnection.logAsync(
-                        TestConstants.EVENT_CAMERA_CONNECT_SHARED_SECONDARY, mChosenCameraId);
-            }
-            Log.i(
-                    TAG,
-                    "Camera " + mChosenCameraId + " is opened in shared mode primary=" + isPrimary);
-        }
-
-        @Override
         public void onClosed(CameraDevice cameraDevice) {
             mErrorServiceConnection.logAsync(TestConstants.EVENT_CAMERA_CLOSED, mChosenCameraId);
             Log.i(TAG, "Camera " + mChosenCameraId + " is closed");
@@ -195,8 +181,13 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                     TAG + " Camera " + mChosenCameraId + " experienced error " + i);
             Log.e(TAG, "Camera " + mChosenCameraId + " onError called with error " + i);
         }
+    }
 
-        @Override
+    private class SharedStateCallback extends StateCallback {
+        SharedStateCallback(String camId) {
+            super(camId);
+        }
+
         public void onClientSharedAccessPriorityChanged(CameraDevice camera, boolean isPrimary) {
             mIsPrimary = isPrimary;
             if (isPrimary) {
@@ -214,6 +205,21 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                             + mChosenCameraId
                             + " onClientSharedAccessPriorityChanged primary="
                             + isPrimary);
+        }
+
+        public void onOpenedInSharedMode(CameraDevice cameraDevice, boolean isPrimary) {
+            mCameraDevice = cameraDevice;
+            mIsPrimary = isPrimary;
+            if (isPrimary) {
+                mErrorServiceConnection.logAsync(TestConstants.EVENT_CAMERA_CONNECT_SHARED_PRIMARY,
+                        mChosenCameraId);
+            } else {
+                mErrorServiceConnection.logAsync(
+                        TestConstants.EVENT_CAMERA_CONNECT_SHARED_SECONDARY, mChosenCameraId);
+            }
+            Log.i(
+                    TAG,
+                    "Camera " + mChosenCameraId + " is opened in shared mode primary=" + isPrimary);
         }
     }
 
@@ -234,7 +240,7 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
 
         @Override
         public void onConfigured(CameraCaptureSession session) {
-            mSession = (CameraSharedCaptureSession) session;
+            mSession = session;
             mErrorServiceConnection.logAsync(
                     TestConstants.EVENT_CAMERA_SESSION_CONFIGURED, mChosenCameraId);
             Log.i(TAG, "Camera capture session for camera " + mChosenCameraId + " is configured");
@@ -302,6 +308,27 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
         holder.setFixedSize(sz.getWidth(), sz.getHeight());
     }
 
+    private SessionConfiguration createSharedSessionConfiguration(
+        List<OutputConfiguration> outputs,
+        Executor executor,
+        CameraCaptureSession.StateCallback listener) {
+        try {
+            Field sessionSharedField = SessionConfiguration.class.getField("SESSION_SHARED");
+            int sessionSharedValue = (int) sessionSharedField.get(null);
+
+            Constructor<SessionConfiguration> constructor = SessionConfiguration.class.getConstructor(
+                    int.class, List.class, Executor.class, CameraCaptureSession.StateCallback.class);
+            return constructor.newInstance(sessionSharedValue, outputs, executor, listener);
+        } catch (NoSuchFieldException | IllegalAccessException | NoSuchMethodException |
+                InstantiationException | InvocationTargetException e) {
+            mErrorServiceConnection.logAsync(
+                    TestConstants.EVENT_CAMERA_ERROR,
+                    TAG + " exception during creating SessionConfiguration: " + e);
+            Log.e(TAG, "exception during creating SessionConfiguration: " + e);
+            return null;
+        }
+    }
+
     class IncomingHandler extends Handler {
 
         private void createImageReader(Size sz, int format) {
@@ -321,17 +348,33 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
         }
 
         private void checkValidSurfaceIsPresent() {
-            for (SharedOutputConfiguration sharedStreamInfo :
-                    mSharedSessionConfig.getOutputStreamsInformation()) {
-                if (sharedStreamInfo.getSurfaceType() == TestConstants.SURFACE_TYPE_SURFACE_VIEW) {
-                    mIsSurfaceViewPresent = true;
-                    mSurfaceViewSize = sharedStreamInfo.getSize();
-                }
-                if (sharedStreamInfo.getSurfaceType() == TestConstants.SURFACE_TYPE_IMAGE_READER) {
-                    mIsImageReaderPresent = true;
-                    mImageReaderSize = sharedStreamInfo.getSize();
-                    mImageReaderFormat = sharedStreamInfo.getFormat();
-                }
+            try {
+                if (mSharedSessionConfig == null) return;
+                Method getOutputStreamsInformation = mSharedSessionConfig.getClass().getMethod("getOutputStreamsInformation");
+                List<?> sharedStreamInfoList = (List<?>) getOutputStreamsInformation.invoke(mSharedSessionConfig);
+
+                for (Object sharedStreamInfo : sharedStreamInfoList) {
+                    Method getSurfaceType = sharedStreamInfo.getClass().getMethod("getSurfaceType");
+                    int surfaceType = (int) getSurfaceType.invoke(sharedStreamInfo);
+
+                    if (surfaceType == TestConstants.SURFACE_TYPE_SURFACE_VIEW) {
+                        mIsSurfaceViewPresent = true;
+                        Method getSize = sharedStreamInfo.getClass().getMethod("getSize");
+                        mSurfaceViewSize = (Size) getSize.invoke(sharedStreamInfo);
+                    }
+                    if (surfaceType == TestConstants.SURFACE_TYPE_IMAGE_READER) {
+                        mIsImageReaderPresent = true;
+                        Method getSize = sharedStreamInfo.getClass().getMethod("getSize");
+                        mImageReaderSize = (Size) getSize.invoke(sharedStreamInfo);
+                        Method getFormat = sharedStreamInfo.getClass().getMethod("getFormat");
+                        mImageReaderFormat = (int) getFormat.invoke(sharedStreamInfo);
+                  }
+              }
+            } catch (Exception e) {
+                mErrorServiceConnection.logAsync(
+                        TestConstants.EVENT_CAMERA_ERROR,
+                        TAG + " exception during shared session config parsing: " + e);
+                Log.e(TAG, "Exception during shared session config parsing: " + e);
             }
         }
 
@@ -358,8 +401,9 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                 case TestConstants.OP_OPEN_CAMERA_SHARED:
                     mCameraId = msg.getData().getString(TestConstants.EXTRA_CAMERA_ID);
                     try {
-                        boolean sharingEnabled =
-                                mCameraManager.isCameraDeviceSharingSupported(mCameraId);
+                        boolean sharingEnabled = false;
+                        Method isCameraDeviceSharingSupportedMethod = CameraManager.class.getMethod("isCameraDeviceSharingSupported", String.class);
+                        sharingEnabled = (boolean) isCameraDeviceSharingSupportedMethod.invoke(mCameraManager, mCameraId);
                         if (!sharingEnabled) {
                             mErrorServiceConnection.logAsync(
                                     TestConstants.EVENT_CAMERA_ERROR,
@@ -368,12 +412,15 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                             return;
                         }
                         if (mStateCallback == null || mStateCallback.mChosenCameraId != mCameraId) {
-                            mStateCallback = new StateCallback(mCameraId);
-                            mCameraManager.openSharedCamera(mCameraId, executor, mStateCallback);
+                            mStateCallback = new SharedStateCallback(mCameraId);
+                            Method openSharedCameraMethod = CameraManager.class.getMethod("openSharedCamera", String.class, Executor.class, CameraDevice.StateCallback.class);
+                            openSharedCameraMethod.invoke(mCameraManager, mCameraId, executor, mStateCallback);
                             CameraCharacteristics props =
                                     mCameraManager.getCameraCharacteristics(mCameraId);
-                            mSharedSessionConfig = props.get(
-                                    CameraCharacteristics.SHARED_SESSION_CONFIGURATION);
+                            Class<?> cameraCharacteristicsClass = Class.forName("android.hardware.camera2.CameraCharacteristics");
+                            java.lang.reflect.Field keyField = cameraCharacteristicsClass.getField("SHARED_SESSION_CONFIGURATION");
+                            CameraCharacteristics.Key<?> key = (CameraCharacteristics.Key<?>) keyField.get(null);
+                            mSharedSessionConfig = props.get(key);
                             if (mSharedSessionConfig == null) {
                                 mErrorServiceConnection.logAsync(
                                         TestConstants.EVENT_CAMERA_ERROR,
@@ -389,11 +436,11 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                                 createImageReader(mImageReaderSize, mImageReaderFormat);
                             }
                         }
-                    } catch (CameraAccessException e) {
+                    } catch (Exception e) {
                         mErrorServiceConnection.logAsync(
                                 TestConstants.EVENT_CAMERA_ERROR,
                                 TAG + " camera exception during connection: " + e);
-                        Log.e(TAG, "Access exception: " + e);
+                        Log.e(TAG, "Camera exception: " + e);
                     }
                     break;
 
@@ -458,12 +505,7 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                         }
                         mSessionMockListener = spy(new BlockingSessionCallback(mSessionCallback));
                         StateWaiter sessionWaiter = mSessionMockListener.getStateWaiter();
-                        SessionConfiguration sessionConfig =
-                                new SessionConfiguration(
-                                        SessionConfiguration.SESSION_SHARED,
-                                        outputs,
-                                        executor,
-                                        mSessionMockListener);
+                        SessionConfiguration sessionConfig = createSharedSessionConfiguration(outputs, executor, mSessionMockListener);
                         if (mIsPrimary) {
                             sessionConfig.setSessionParameters(mCaptureRequestBuilder.build());
                         }
@@ -514,9 +556,7 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                             outputs.add(surfaceViewOutputConfig);
                         }
 
-                        SessionConfiguration sessionConfig =
-                                new SessionConfiguration(
-                                        SessionConfiguration.SESSION_SHARED,
+                        SessionConfiguration sessionConfig = createSharedSessionConfiguration(
                                         outputs,
                                         executor,
                                         mSessionMockListener);
@@ -544,9 +584,7 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                             outputs.add(new OutputConfiguration(mPreviewSurface));
                         }
 
-                        SessionConfiguration sessionConfig =
-                                new SessionConfiguration(
-                                        SessionConfiguration.SESSION_SHARED,
+                        SessionConfiguration sessionConfig = createSharedSessionConfiguration(
                                         outputs,
                                         executor,
                                         mSessionMockListener);
@@ -582,12 +620,7 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                                     /* maxImages */ 2);
                             List<OutputConfiguration> outputs = new ArrayList<>();
                             outputs.add(new OutputConfiguration(newReader.getSurface()));
-                            SessionConfiguration sessionConfig =
-                                    new SessionConfiguration(
-                                            SessionConfiguration.SESSION_SHARED,
-                                            outputs,
-                                            executor,
-                                            mSessionMockListener);
+                            SessionConfiguration sessionConfig = createSharedSessionConfiguration(outputs, executor, mSessionMockListener);
                             mCameraDevice.createCaptureSession(sessionConfig);
                             sessionWaiter.waitForState(
                                     BlockingSessionCallback.SESSION_CONFIGURED,
@@ -971,8 +1004,14 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                                             mCaptureListener,
                                             mCameraHandler);
                         } else {
-                            mCaptureSequenceId =
-                                    mSession.startStreaming(surfaces, executor, mCaptureListener);
+                            try {
+                                Method startStreamingMethod = mSession.getClass().getMethod("startStreaming", List.class, Executor.class, CameraCaptureSession.CaptureCallback.class);
+                                mCaptureSequenceId = (Integer) startStreamingMethod.invoke(mSession, surfaces, executor, mCaptureListener);
+                            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                                    mErrorServiceConnection.logAsync(TestConstants.EVENT_CAMERA_ERROR,
+                                            TAG + " exception during startStreaming: " + e);
+                                    Log.e(TAG, "exception during startStreaming: " + e);
+                            }
                         }
                         mCaptureListener.getCaptureResult(CAPTURE_RESULT_TIMEOUT_MS);
                         if (imageReaderUsed) {
@@ -1000,7 +1039,14 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                         if (mIsPrimary) {
                             mSession.stopRepeating();
                         } else {
-                            mSession.stopStreaming();
+                            try {
+                                Method stopStreamingMethod = mSession.getClass().getMethod("stopStreaming");
+                                stopStreamingMethod.invoke(mSession);
+                            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                                mErrorServiceConnection.logAsync(TestConstants.EVENT_CAMERA_ERROR,
+                                        TAG + " exception during stopStreaming: " + e);
+                                Log.e(TAG, "exception during stopStreaming: " + e);
+                            }
                         }
                         mCaptureListener.getCaptureSequenceLastFrameNumber(
                                 mCaptureSequenceId, CAPTURE_RESULT_TIMEOUT_MS);

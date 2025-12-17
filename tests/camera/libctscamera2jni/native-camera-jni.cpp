@@ -1089,6 +1089,16 @@ class StaticInfo {
     const ACameraMetadata* mChars;
 };
 
+typedef void (*ACameraDevice_ClientSharedAccessPriorityChangedCallback)(void* context,
+        ACameraDevice* device, bool isPrimaryClient);
+
+struct ACameraDevice_StateCallbacks_WithPriority {
+    void*                               context;
+    ACameraDevice_StateCallback         onDisconnected;
+    ACameraDevice_ErrorStateCallback    onError;
+    ACameraDevice_ClientSharedAccessPriorityChangedCallback onClientSharedAccessPriorityChanged;
+};
+
 class PreviewTestCase {
   public:
     ~PreviewTestCase() {
@@ -1325,7 +1335,9 @@ class PreviewTestCase {
             return ret;
         }
 
-        ret = openSharedCamera(mCameraManager, cameraId, &mDeviceCb, &mDevice, isPrimary);
+        ACameraDevice_StateCallbacks* callbacks_to_use;
+        callbacks_to_use = reinterpret_cast<ACameraDevice_StateCallbacks*>(&mDeviceWithPriorityCb);
+        ret = openSharedCamera(mCameraManager, cameraId, callbacks_to_use, &mDevice, isPrimary);
         return ret;
     }
 
@@ -1969,9 +1981,16 @@ private:
     ACameraDevice_StateCallbacks mDeviceCb {
         &mDeviceListener,
         CameraDeviceListener::onDisconnected,
+        CameraDeviceListener::onError
+    };
+
+    ACameraDevice_StateCallbacks_WithPriority mDeviceWithPriorityCb{
+        &mDeviceListener,
+        CameraDeviceListener::onDisconnected,
         CameraDeviceListener::onError,
         CameraDeviceListener::onClientSharedAccessPriorityChanged
     };
+
     CaptureSessionListener mSessionListener;
     ACameraCaptureSession_stateCallbacks mSessionCb {
         &mSessionListener,

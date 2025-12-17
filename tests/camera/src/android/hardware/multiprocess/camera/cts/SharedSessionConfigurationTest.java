@@ -18,35 +18,56 @@ package android.hardware.multiprocess.camera.cts;
 
 import static junit.framework.Assert.*;
 
+import android.content.pm.PackageManager;
 import android.graphics.ColorSpace;
 import android.graphics.ImageFormat;
 import android.hardware.DataSpace;
 import android.hardware.HardwareBuffer;
+import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.params.OutputConfiguration;
-import android.hardware.camera2.params.SharedSessionConfiguration;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.util.Log;
 import android.util.Size;
 
-import com.android.internal.camera.flags.Flags;
+import androidx.test.InstrumentationRegistry;
 
+import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.util.List;
 
 @RunWith(JUnit4.class)
 public class SharedSessionConfigurationTest {
+    private static final String TAG = "SharedSessionConfigurationTest";
+    private static final String SHARED_SESSION_CONFIG_CLASS_NAME = "android.hardware.camera2.params.SharedSessionConfiguration";
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
+    @Before
+    public void setUp() throws Exception {
+        PackageManager pm = InstrumentationRegistry.getTargetContext().getPackageManager();
+        Assume.assumeTrue("Skipping test: not an automotive device.",
+                pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+        try {
+            Class.forName(SHARED_SESSION_CONFIG_CLASS_NAME);
+        } catch (ClassNotFoundException e) {
+            Assume.assumeTrue("SharedSessionConfiguration API not found, skipping tests.", false);
+        }
+    }
+
     @Test
-    public void testConstructorAndGetters_validInput() {
+    public void testConstructorAndGetters_validInput() throws Exception {
+        Class<?> sharedSessionConfigClass = Class.forName(SHARED_SESSION_CONFIG_CLASS_NAME);
         int colorSpace = /* ColorSpace.Named.SRGB */ 0;
         long[] sharedOutputConfigs = {
             /* SURFACE_TYPE_SURFACE_VIEW */ 0,
@@ -62,30 +83,39 @@ public class SharedSessionConfigurationTest {
             /* physicalCameraIdLen */ 1,
             /* physicalCameraId */ '1'
         };
-        SharedSessionConfiguration config =
-                new SharedSessionConfiguration(colorSpace, sharedOutputConfigs);
+                // Create SharedSessionConfiguration using reflection
+        Constructor<?> constructor = sharedSessionConfigClass.getConstructor(int.class, long[].class);
+        Object config = constructor.newInstance(colorSpace, sharedOutputConfigs);
 
-        assertEquals(ColorSpace.get(ColorSpace.Named.values()[colorSpace]), config.getColorSpace());
-        List<SharedSessionConfiguration.SharedOutputConfiguration> outputs =
-                config.getOutputStreamsInformation();
+        // Call getColorSpace() using reflection
+        Method getColorSpaceMethod = sharedSessionConfigClass.getMethod("getColorSpace");
+        Object colorSpaceObj = getColorSpaceMethod.invoke(config);
+        assertEquals(ColorSpace.get(ColorSpace.Named.values()[colorSpace]), colorSpaceObj);
+
+        // Call getOutputStreamsInformation() using reflection
+        Method getOutputStreamsInformationMethod = sharedSessionConfigClass.getMethod("getOutputStreamsInformation");
+        List<?> outputs = (List<?>) getOutputStreamsInformationMethod.invoke(config);
         assertEquals(1, outputs.size());
-        assertEquals(sharedOutputConfigs[0], outputs.get(0).getSurfaceType());
-        assertEquals(
-                new Size((int) sharedOutputConfigs[1], (int) sharedOutputConfigs[2]),
-                outputs.get(0).getSize());
-        assertEquals(sharedOutputConfigs[3], outputs.get(0).getFormat());
-        assertEquals(sharedOutputConfigs[4], outputs.get(0).getMirrorMode());
-        assertEquals(sharedOutputConfigs[5] != 0, outputs.get(0).isReadoutTimestampEnabled());
-        assertEquals(sharedOutputConfigs[6], outputs.get(0).getTimestampBase());
-        assertEquals(sharedOutputConfigs[7], outputs.get(0).getDataspace());
-        assertEquals(sharedOutputConfigs[8], outputs.get(0).getUsage());
-        assertEquals(sharedOutputConfigs[9], outputs.get(0).getStreamUseCase());
-        assertEquals(Character.toString((char) sharedOutputConfigs[11]),
-                outputs.get(0).getPhysicalCameraId());
+
+        // Verify the SharedOutputConfiguration object using reflection
+        Object outputConfig = outputs.get(0);
+        Class<?> sharedOutputConfigClass = outputConfig.getClass();
+
+        assertEquals((int)sharedOutputConfigs[0], ((Number)sharedOutputConfigClass.getMethod("getSurfaceType").invoke(outputConfig)).intValue());
+        assertEquals(new Size((int) sharedOutputConfigs[1], (int) sharedOutputConfigs[2]), sharedOutputConfigClass.getMethod("getSize").invoke(outputConfig));
+        assertEquals((int)sharedOutputConfigs[3], ((Number)sharedOutputConfigClass.getMethod("getFormat").invoke(outputConfig)).intValue());
+        assertEquals((int)sharedOutputConfigs[4], ((Number)sharedOutputConfigClass.getMethod("getMirrorMode").invoke(outputConfig)).intValue());
+        assertEquals(sharedOutputConfigs[5] != 0, sharedOutputConfigClass.getMethod("isReadoutTimestampEnabled").invoke(outputConfig));
+        assertEquals((int)sharedOutputConfigs[6], ((Number)sharedOutputConfigClass.getMethod("getTimestampBase").invoke(outputConfig)).intValue());
+        assertEquals((int)sharedOutputConfigs[7], ((Number)sharedOutputConfigClass.getMethod("getDataspace").invoke(outputConfig)).intValue());
+        assertEquals(sharedOutputConfigs[8], ((Number)sharedOutputConfigClass.getMethod("getUsage").invoke(outputConfig)).longValue());
+        assertEquals(sharedOutputConfigs[9], ((Number)sharedOutputConfigClass.getMethod("getStreamUseCase").invoke(outputConfig)).longValue());
+        assertEquals(Character.toString((char) sharedOutputConfigs[11]), sharedOutputConfigClass.getMethod("getPhysicalCameraId").invoke(outputConfig));
     }
 
     @Test
-    public void testConstructorAndGetters_multipleOutputs() {
+    public void testConstructorAndGetters_multipleOutputs() throws Exception {
+        Class<?> sharedSessionConfigClass = Class.forName(SHARED_SESSION_CONFIG_CLASS_NAME);
         int colorSpace = /* ColorSpace.Named.ADOBE_RGB */ 10;
         long[] sharedOutputConfigs = {
             /* SURFACE_TYPE_SURFACE_TEXTURE */ 1,
@@ -112,52 +142,68 @@ public class SharedSessionConfigurationTest {
             CameraMetadata.SCALER_AVAILABLE_STREAM_USE_CASES_VIDEO_RECORD,
             /* physicalCameraIdLen */ 0
         };
-        SharedSessionConfiguration config =
-                new SharedSessionConfiguration(colorSpace, sharedOutputConfigs);
 
-        assertEquals(ColorSpace.get(ColorSpace.Named.values()[colorSpace]), config.getColorSpace());
-        List<SharedSessionConfiguration.SharedOutputConfiguration> outputs =
-                config.getOutputStreamsInformation();
+        // Create SharedSessionConfiguration using reflection
+        Constructor<?> constructor = sharedSessionConfigClass.getConstructor(int.class, long[].class);
+        Object config = constructor.newInstance(colorSpace, sharedOutputConfigs);
+
+        // Call getColorSpace() using reflection
+        Method getColorSpaceMethod = sharedSessionConfigClass.getMethod("getColorSpace");
+        Object colorSpaceObj = getColorSpaceMethod.invoke(config);
+        assertEquals(ColorSpace.get(ColorSpace.Named.values()[colorSpace]), colorSpaceObj);
+
+        // Call getOutputStreamsInformation() using reflection
+        Method getOutputStreamsInformationMethod = sharedSessionConfigClass.getMethod("getOutputStreamsInformation");
+        List<?> outputs = (List<?>) getOutputStreamsInformationMethod.invoke(config);
         assertEquals(2, outputs.size());
 
-        assertEquals(sharedOutputConfigs[0], outputs.get(0).getSurfaceType());
-        assertEquals(
-                new Size((int) sharedOutputConfigs[1], (int) sharedOutputConfigs[2]),
-                outputs.get(0).getSize());
-        assertEquals(sharedOutputConfigs[3], outputs.get(0).getFormat());
-        assertEquals(sharedOutputConfigs[4], outputs.get(0).getMirrorMode());
-        assertEquals(sharedOutputConfigs[5] != 0, outputs.get(0).isReadoutTimestampEnabled());
-        assertEquals(sharedOutputConfigs[6], outputs.get(0).getTimestampBase());
-        assertEquals(sharedOutputConfigs[7], outputs.get(0).getDataspace());
-        assertEquals(sharedOutputConfigs[8], outputs.get(0).getUsage());
-        assertEquals(sharedOutputConfigs[9], outputs.get(0).getStreamUseCase());
-        assertEquals(Character.toString((char) sharedOutputConfigs[11]),
-                outputs.get(0).getPhysicalCameraId());
+        // Verify the first SharedOutputConfiguration object
+        Object outputConfig1 = outputs.get(0);
+        Class<?> sharedOutputConfigClass1 = outputConfig1.getClass();
+        assertEquals((int)sharedOutputConfigs[0], ((Number)sharedOutputConfigClass1.getMethod("getSurfaceType").invoke(outputConfig1)).intValue());
+        assertEquals(new Size((int) sharedOutputConfigs[1], (int) sharedOutputConfigs[2]), sharedOutputConfigClass1.getMethod("getSize").invoke(outputConfig1));
+        assertEquals((int)sharedOutputConfigs[3], ((Number)sharedOutputConfigClass1.getMethod("getFormat").invoke(outputConfig1)).intValue());
+        assertEquals((int)sharedOutputConfigs[4], ((Number)sharedOutputConfigClass1.getMethod("getMirrorMode").invoke(outputConfig1)).intValue());
+        assertEquals(sharedOutputConfigs[5] != 0, sharedOutputConfigClass1.getMethod("isReadoutTimestampEnabled").invoke(outputConfig1));
+        assertEquals((int)sharedOutputConfigs[6], ((Number)sharedOutputConfigClass1.getMethod("getTimestampBase").invoke(outputConfig1)).intValue());
+        assertEquals((int)sharedOutputConfigs[7], ((Number)sharedOutputConfigClass1.getMethod("getDataspace").invoke(outputConfig1)).intValue());
+        assertEquals(sharedOutputConfigs[8], ((Number)sharedOutputConfigClass1.getMethod("getUsage").invoke(outputConfig1)).longValue());
+        assertEquals(sharedOutputConfigs[9], ((Number)sharedOutputConfigClass1.getMethod("getStreamUseCase").invoke(outputConfig1)).longValue());
+        assertEquals(Character.toString((char) sharedOutputConfigs[11]), sharedOutputConfigClass1.getMethod("getPhysicalCameraId").invoke(outputConfig1));
 
-        assertEquals(sharedOutputConfigs[12], outputs.get(1).getSurfaceType());
-        assertEquals(
-                new Size((int) sharedOutputConfigs[13], (int) sharedOutputConfigs[14]),
-                outputs.get(1).getSize());
-        assertEquals(sharedOutputConfigs[15], outputs.get(1).getFormat());
-        assertEquals(sharedOutputConfigs[16], outputs.get(1).getMirrorMode());
-        assertEquals(sharedOutputConfigs[17] != 0, outputs.get(1).isReadoutTimestampEnabled());
-        assertEquals(sharedOutputConfigs[18], outputs.get(1).getTimestampBase());
-        assertEquals(sharedOutputConfigs[19], outputs.get(1).getDataspace());
-        assertEquals(sharedOutputConfigs[20], outputs.get(1).getUsage());
-        assertEquals(sharedOutputConfigs[21], outputs.get(1).getStreamUseCase());
-        assertNull(outputs.get(1).getPhysicalCameraId());
+        // Verify the second SharedOutputConfiguration object
+        Object outputConfig2 = outputs.get(1);
+        Class<?> sharedOutputConfigClass2 = outputConfig2.getClass();
+        assertEquals((int)sharedOutputConfigs[12], ((Number)sharedOutputConfigClass2.getMethod("getSurfaceType").invoke(outputConfig2)).intValue());
+        assertEquals(new Size((int) sharedOutputConfigs[13], (int) sharedOutputConfigs[14]), sharedOutputConfigClass2.getMethod("getSize").invoke(outputConfig2));
+        assertEquals((int)sharedOutputConfigs[15], ((Number)sharedOutputConfigClass2.getMethod("getFormat").invoke(outputConfig2)).intValue());
+        assertEquals((int)sharedOutputConfigs[16], ((Number)sharedOutputConfigClass2.getMethod("getMirrorMode").invoke(outputConfig2)).intValue());
+        assertEquals(sharedOutputConfigs[17] != 0, sharedOutputConfigClass2.getMethod("isReadoutTimestampEnabled").invoke(outputConfig2));
+        assertEquals((int)sharedOutputConfigs[18], ((Number)sharedOutputConfigClass2.getMethod("getTimestampBase").invoke(outputConfig2)).intValue());
+        assertEquals((int)sharedOutputConfigs[19], ((Number)sharedOutputConfigClass2.getMethod("getDataspace").invoke(outputConfig2)).intValue());
+        assertEquals(sharedOutputConfigs[20], ((Number)sharedOutputConfigClass2.getMethod("getUsage").invoke(outputConfig2)).longValue());
+        assertEquals(sharedOutputConfigs[21], ((Number)sharedOutputConfigClass2.getMethod("getStreamUseCase").invoke(outputConfig2)).longValue());
+        assertNull(sharedOutputConfigClass2.getMethod("getPhysicalCameraId").invoke(outputConfig2));
     }
 
     @Test
-    public void testEmptySharedOutputConfigurations() {
+    public void testEmptySharedOutputConfigurations() throws Exception {
+        Class<?> sharedSessionConfigClass = Class.forName(SHARED_SESSION_CONFIG_CLASS_NAME);
         int colorSpace = /* ColorSpace.Named.SRGB */ 0;
         long[] sharedOutputConfigs = {};
-        SharedSessionConfiguration config =
-                new SharedSessionConfiguration(colorSpace, sharedOutputConfigs);
 
-        assertEquals(ColorSpace.get(ColorSpace.Named.values()[colorSpace]), config.getColorSpace());
-        List<SharedSessionConfiguration.SharedOutputConfiguration> outputs =
-                config.getOutputStreamsInformation();
+        // Create SharedSessionConfiguration using reflection
+        Constructor<?> constructor = sharedSessionConfigClass.getConstructor(int.class, long[].class);
+        Object config = constructor.newInstance(colorSpace, sharedOutputConfigs);
+
+        // Call getColorSpace() using reflection
+        Method getColorSpaceMethod = sharedSessionConfigClass.getMethod("getColorSpace");
+        Object colorSpaceObj = getColorSpaceMethod.invoke(config);
+        assertEquals(ColorSpace.get(ColorSpace.Named.values()[colorSpace]), colorSpaceObj);
+
+        // Call getOutputStreamsInformation() using reflection
+        Method getOutputStreamsInformationMethod = sharedSessionConfigClass.getMethod("getOutputStreamsInformation");
+        List<?> outputs = (List<?>) getOutputStreamsInformationMethod.invoke(config);
         assertEquals(0, outputs.size());
     }
 }

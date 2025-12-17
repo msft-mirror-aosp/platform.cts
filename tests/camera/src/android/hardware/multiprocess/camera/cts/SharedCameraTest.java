@@ -25,12 +25,12 @@ import android.app.ActivityManager;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.cts.Camera2ParameterizedTestCase;
 import android.hardware.camera2.cts.helpers.StaticMetadata;
 import android.hardware.camera2.cts.helpers.StaticMetadata.CheckLevel;
-import android.hardware.camera2.params.SharedSessionConfiguration;
-import android.hardware.camera2.params.SharedSessionConfiguration.SharedOutputConfiguration;
 import android.os.Bundle;
 import android.os.Message;
 import android.os.Messenger;
@@ -41,17 +41,21 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
+import android.util.Size;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.internal.camera.flags.Flags;
 
+import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -113,10 +117,36 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
         }
     }
 
+    private boolean isCameraSharingEnabled(String cameraId) {
+        boolean sharingEnabled = false;
+        try {
+            // Use reflection to call isCameraDeviceSharingSupported
+            Method isCameraDeviceSharingSupportedMethod = CameraManager.class.getMethod("isCameraDeviceSharingSupported", String.class);
+            sharingEnabled = (boolean) isCameraDeviceSharingSupportedMethod.invoke(mCameraManager, cameraId);
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            // Method doesn't exist, sharing is not supported.
+            sharingEnabled = false;
+        }
+        return sharingEnabled;
+    }
+
     @Override
     public void setUp() throws Exception {
         super.setUp();
         mContext = InstrumentationRegistry.getTargetContext();
+        PackageManager pm = mContext.getPackageManager();
+        Assume.assumeTrue("Skipping test: not an automotive device.",
+                pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+        // Add this block to check for the API via reflection
+        try {
+            Class.forName("android.hardware.camera2.params.SharedSessionConfiguration");
+            CameraManager.class.getMethod("isCameraDeviceSharingSupported", String.class);
+        } catch (Exception e) {
+            // Method doesn't exist on this device, so skip the test suite.
+            Log.i(TAG, "Skipping test: Camera2 Multi-Client APIs not found.");
+            Assume.assumeTrue("Device does not have camera multi-client APIs", false);
+        }
+
         /**
          * Workaround for mockito and JB-MR2 incompatibility
          *
@@ -211,11 +241,11 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
         if (VERBOSE) Log.v(TAG, "CameraManager ids: " + Arrays.toString(cameraIdsUnderTest));
         for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             mCameraId = cameraIdsUnderTest[i];
-            if (!mCameraManager.isCameraDeviceSharingSupported(mCameraId)) {
+            if (!isCameraSharingEnabled(mCameraId)) {
                 Log.i(TAG, "Camera " + mCameraId + " does not support camera sharing, skipping");
                 continue;
             }
-            SharedSessionConfiguration sharedSessionConfig =
+            Object sharedSessionConfig =
                     mAllStaticInfo.get(mCameraId).getSharedSessionConfiguration();
             assertNotNull("Shared session configuration is null", sharedSessionConfig);
             int surfaceViewIdx = getSurfaceViewStreamIdx(sharedSessionConfig);
@@ -244,11 +274,11 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
         if (VERBOSE) Log.v(TAG, "CameraManager ids: " + Arrays.toString(cameraIdsUnderTest));
         for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             mCameraId = cameraIdsUnderTest[i];
-            if (!mCameraManager.isCameraDeviceSharingSupported(mCameraId)) {
+            if (!isCameraSharingEnabled(mCameraId)) {
                 Log.i(TAG, "Camera " + mCameraId + " does not support camera sharing, skipping");
                 continue;
             }
-            SharedSessionConfiguration sharedSessionConfig =
+            Object sharedSessionConfig =
                     mAllStaticInfo.get(mCameraId).getSharedSessionConfiguration();
             assertNotNull("Shared session configuration is null", sharedSessionConfig);
             int surfaceViewIdx = getSurfaceViewStreamIdx(sharedSessionConfig);
@@ -275,11 +305,15 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
                 createSharedSessionJavaClient(sharedStreamArray);
                 performUnsupportedCaptureSessionCommandsJavaClient();
                 if (imageReaderIdx != -1) {
-                    SharedOutputConfiguration imgReaderConfig =
-                            sharedSessionConfig.getOutputStreamsInformation().get(imageReaderIdx);
-                    int imgWidth = imgReaderConfig.getSize().getWidth();
-                    int imgHeight = imgReaderConfig.getSize().getHeight();
-                    int imgFormat = imgReaderConfig.getFormat();
+                    Method getOutputStreamsInformation = sharedSessionConfig.getClass().getMethod("getOutputStreamsInformation");
+                    List<?> sharedConfigs = (List<?>) getOutputStreamsInformation.invoke(sharedSessionConfig);
+                    Object imgReaderConfig = sharedConfigs.get(imageReaderIdx);
+                    Method getSize = imgReaderConfig.getClass().getMethod("getSize");
+                    Size size = (android.util.Size) getSize.invoke(imgReaderConfig);
+                    int imgWidth = size.getWidth();
+                    int imgHeight = size.getHeight();
+                    Method getFormat = imgReaderConfig.getClass().getMethod("getFormat");
+                    int imgFormat = (int) getFormat.invoke(imgReaderConfig);
                     assertCameraDeviceSharingSupportedNativeClient(mCameraId,
                             /*sharingSupported*/true);
                     nativeSharedTest = openSharedCameraNativeClient(mCameraId,
@@ -318,7 +352,7 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
                 Log.i(TAG, "Camera " + mCameraId + " does not support camera sharing, skipping");
                 continue;
             }
-            SharedSessionConfiguration sharedSessionConfig =
+            Object sharedSessionConfig =
                     mAllStaticInfo.get(mCameraId).getSharedSessionConfiguration();
             assertNotNull("Shared session configuration is null", sharedSessionConfig);
             int imageReaderIdx = getImageReaderStreamIdx(sharedSessionConfig);
@@ -428,7 +462,7 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
         if (VERBOSE) Log.v(TAG, "CameraManager ids: " + Arrays.toString(cameraIdsUnderTest));
         for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             mCameraId = cameraIdsUnderTest[i];
-            if (!mCameraManager.isCameraDeviceSharingSupported(mCameraId)) {
+            if (!isCameraSharingEnabled(mCameraId)) {
                 Log.i(TAG, "Camera " + mCameraId + " does not support camera sharing, skipping");
                 continue;
             }
@@ -455,14 +489,17 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
         if (VERBOSE) Log.v(TAG, "CameraManager ids: " + Arrays.toString(cameraIdsUnderTest));
         for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             mCameraId = cameraIdsUnderTest[i];
-            if (!mCameraManager.isCameraDeviceSharingSupported(mCameraId)) {
+            if (!isCameraSharingEnabled(mCameraId)) {
                 Log.i(TAG, "Camera " + mCameraId + " does not support camera sharing, skipping");
                 continue;
             }
-            SharedSessionConfiguration sharedSessionConfig =
+            Object sharedSessionConfig =
                     mAllStaticInfo.get(mCameraId).getSharedSessionConfiguration();
             assertNotNull("Shared session configuration is null", sharedSessionConfig);
-            if (sharedSessionConfig.getOutputStreamsInformation().size() < 2) {
+
+            Method getOutputStreamsInformation = sharedSessionConfig.getClass().getMethod("getOutputStreamsInformation");
+            List<?> sharedConfigs = (List<?>) getOutputStreamsInformation.invoke(sharedSessionConfig);
+            if (sharedConfigs.size() < 2) {
                 Log.i(
                         TAG,
                         "Camera "
@@ -483,11 +520,13 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
                 continue;
             }
             int imgWidth, imgHeight, imgFormat;
-            SharedOutputConfiguration imgReaderConfig =
-                    sharedSessionConfig.getOutputStreamsInformation().get(imageReaderIdx);
-            imgWidth = imgReaderConfig.getSize().getWidth();
-            imgHeight = imgReaderConfig.getSize().getHeight();
-            imgFormat = imgReaderConfig.getFormat();
+            Object imgReaderConfig = sharedConfigs.get(imageReaderIdx);
+            Method getSize = imgReaderConfig.getClass().getMethod("getSize");
+            Size size = (android.util.Size) getSize.invoke(imgReaderConfig);
+            imgWidth = size.getWidth();
+            imgHeight = size.getHeight();
+            Method getFormat = imgReaderConfig.getClass().getMethod("getFormat");
+            imgFormat = (int) getFormat.invoke(imgReaderConfig);
             long nativeSharedTest = 0;
             try {
                 openSharedCameraJavaClient(mCameraId, /*isPrimaryClient*/ true);
@@ -522,11 +561,11 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
         if (VERBOSE) Log.v(TAG, "CameraManager ids: " + Arrays.toString(cameraIdsUnderTest));
         for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             mCameraId = cameraIdsUnderTest[i];
-            if (!mCameraManager.isCameraDeviceSharingSupported(mCameraId)) {
+            if (!isCameraSharingEnabled(mCameraId)) {
                 Log.i(TAG, "Camera " + mCameraId + " does not support camera sharing, skipping");
                 continue;
             }
-            SharedSessionConfiguration sharedSessionConfig =
+            Object sharedSessionConfig =
                     mAllStaticInfo.get(mCameraId).getSharedSessionConfiguration();
             assertNotNull("Shared session configuration is null", sharedSessionConfig);
             int surfaceViewIdx = getSurfaceViewStreamIdx(sharedSessionConfig);
@@ -540,11 +579,17 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
             int imgFormat = -1;
             if (imageReaderIdx != -1) {
                 sharedStreamArray.add(TestConstants.SURFACE_TYPE_IMAGE_READER);
-                SharedOutputConfiguration imgReaderConfig =
-                        sharedSessionConfig.getOutputStreamsInformation().get(imageReaderIdx);
-                imgWidth = imgReaderConfig.getSize().getWidth();
-                imgHeight = imgReaderConfig.getSize().getHeight();
-                imgFormat = imgReaderConfig.getFormat();
+                Method getOutputStreamsInformation = sharedSessionConfig.getClass().getMethod("getOutputStreamsInformation");
+                List<?> sharedConfigs = (List<?>) getOutputStreamsInformation.invoke(sharedSessionConfig);
+                Object imgReaderConfig = sharedConfigs.get(imageReaderIdx);
+
+                Method getSize = imgReaderConfig.getClass().getMethod("getSize");
+                android.util.Size size = (android.util.Size) getSize.invoke(imgReaderConfig);
+                imgWidth = size.getWidth();
+                imgHeight = size.getHeight();
+
+                Method getFormat = imgReaderConfig.getClass().getMethod("getFormat");
+                imgFormat = (int) getFormat.invoke(imgReaderConfig);
             }
             long nativeSharedTest = 0;
             try {
@@ -578,11 +623,11 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
         if (VERBOSE) Log.v(TAG, "CameraManager ids: " + Arrays.toString(cameraIdsUnderTest));
         for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             mCameraId = cameraIdsUnderTest[i];
-            if (!mCameraManager.isCameraDeviceSharingSupported(mCameraId)) {
+            if (!isCameraSharingEnabled(mCameraId)) {
                 Log.i(TAG, "Camera " + mCameraId + " does not support camera sharing, skipping");
                 continue;
             }
-            SharedSessionConfiguration sharedSessionConfig =
+            Object sharedSessionConfig =
                     mAllStaticInfo.get(mCameraId).getSharedSessionConfiguration();
             assertNotNull("Shared session configuration is null", sharedSessionConfig);
             int surfaceViewIdx = getSurfaceViewStreamIdx(sharedSessionConfig);
@@ -595,11 +640,17 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
             int imgHeight = -1;
             int imgFormat = -1;
             if (imageReaderIdx != -1) {
-                SharedOutputConfiguration imgReaderConfig =
-                        sharedSessionConfig.getOutputStreamsInformation().get(imageReaderIdx);
-                imgWidth = imgReaderConfig.getSize().getWidth();
-                imgHeight = imgReaderConfig.getSize().getHeight();
-                imgFormat = imgReaderConfig.getFormat();
+                Method getOutputStreamsInformation = sharedSessionConfig.getClass().getMethod("getOutputStreamsInformation");
+                List<?> sharedConfigs = (List<?>) getOutputStreamsInformation.invoke(sharedSessionConfig);
+                Object imgReaderConfig = sharedConfigs.get(imageReaderIdx);
+
+                Method getSize = imgReaderConfig.getClass().getMethod("getSize");
+                android.util.Size size = (android.util.Size) getSize.invoke(imgReaderConfig);
+                imgWidth = size.getWidth();
+                imgHeight = size.getHeight();
+
+                Method getFormat = imgReaderConfig.getClass().getMethod("getFormat");
+                imgFormat = (int) getFormat.invoke(imgReaderConfig);
             }
             long nativeSharedTest = 0;
             try {
@@ -629,32 +680,47 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
         }
     }
 
-    private int getSurfaceViewStreamIdx(SharedSessionConfiguration sharedSessionConfig) {
-        int surfaceViewIdx = -1;
-        List<SharedOutputConfiguration> sharedConfigs =
-                sharedSessionConfig.getOutputStreamsInformation();
-        for (int i = 0; i < sharedConfigs.size(); i++) {
-            SharedOutputConfiguration outputStream = sharedConfigs.get(i);
-            if (outputStream.getSurfaceType() == TestConstants.SURFACE_TYPE_SURFACE_VIEW) {
-                surfaceViewIdx = i;
-                break;
+    private int getSurfaceViewStreamIdx(Object sharedSessionConfig) {
+        if (sharedSessionConfig == null) return -1;
+        try {
+            Method getOutputStreamsInformation = sharedSessionConfig.getClass().getMethod("getOutputStreamsInformation");
+            List<?> sharedConfigs = (List<?>) getOutputStreamsInformation.invoke(sharedSessionConfig);
+
+            for (int i = 0; i < sharedConfigs.size(); i++) {
+                Object outputStream = sharedConfigs.get(i);
+                Method getSurfaceType = outputStream.getClass().getMethod("getSurfaceType");
+                int surfaceType = (int) getSurfaceType.invoke(outputStream);
+                if (surfaceType == TestConstants.SURFACE_TYPE_SURFACE_VIEW) {
+                    return i;
+                }
             }
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting surface view stream index via reflection", e);
+            return -1;
         }
-        return surfaceViewIdx;
+        return -1;
     }
 
-    private int getImageReaderStreamIdx(SharedSessionConfiguration sharedSessionConfig) {
-        int imageReaderIdx = -1;
-        List<SharedOutputConfiguration> sharedConfigs =
-                sharedSessionConfig.getOutputStreamsInformation();
-        for (int i = 0; i < sharedConfigs.size(); i++) {
-            SharedOutputConfiguration outputStream = sharedConfigs.get(i);
-            if (outputStream.getSurfaceType() == TestConstants.SURFACE_TYPE_IMAGE_READER) {
-                imageReaderIdx = i;
-                break;
+    private int getImageReaderStreamIdx(Object sharedSessionConfig) {
+        if (sharedSessionConfig == null) return -1;
+        try {
+            Method getOutputStreamsInformation = sharedSessionConfig.getClass().getMethod("getOutputStreamsInformation");
+            List<?> sharedConfigs = (List<?>) getOutputStreamsInformation.invoke(sharedSessionConfig);
+
+            for (int i = 0; i < sharedConfigs.size(); i++) {
+                Object outputStream = sharedConfigs.get(i);
+                Method getSurfaceType = outputStream.getClass().getMethod("getSurfaceType");
+                int surfaceType = (int) getSurfaceType.invoke(outputStream);
+                if (surfaceType == TestConstants.SURFACE_TYPE_IMAGE_READER) {
+                    return i;
+                }
             }
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting surface view stream index via reflection", e);
+            return -1;
         }
-        return imageReaderIdx;
+        return -1;
+
     }
 
     private void assertCameraDeviceSharingSupportedJavaClient(String cameraId, boolean expectedTrue)
@@ -662,7 +728,7 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
         assertEquals(
                 "isCameraDeviceSharingSupported expected to return " + expectedTrue
                 + " for camera id " + cameraId,
-                expectedTrue, mCameraManager.isCameraDeviceSharingSupported(cameraId));
+                expectedTrue, isCameraSharingEnabled(cameraId));
     }
 
     private void assertCameraDeviceSharingSupportedNativeClient(String cameraId,

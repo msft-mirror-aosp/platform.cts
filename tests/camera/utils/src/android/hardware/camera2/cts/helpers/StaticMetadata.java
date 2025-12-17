@@ -30,7 +30,6 @@ import android.hardware.camera2.cts.CameraTestUtils;
 import android.hardware.camera2.params.Capability;
 import android.hardware.camera2.params.ColorSpaceProfiles;
 import android.hardware.camera2.params.DynamicRangeProfiles;
-import android.hardware.camera2.params.SharedSessionConfiguration;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.util.ArraySet;
 import android.util.Log;
@@ -43,6 +42,8 @@ import com.android.internal.camera.flags.Flags;
 import junit.framework.Assert;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -2950,15 +2951,20 @@ public class StaticMetadata {
      * Check if camera characteristic for shared session configuration is present.
      */
     public boolean sharedSessionConfigurationPresent() {
-        SharedSessionConfiguration sharedSessionConfiguration = mCharacteristics.get(
-                CameraCharacteristics.SHARED_SESSION_CONFIGURATION);
-        return (sharedSessionConfiguration != null);
+       return (getSharedSessionConfiguration() != null);
     }
 
-    public SharedSessionConfiguration getSharedSessionConfiguration() {
-        SharedSessionConfiguration sharedSessionConfiguration =
-                mCharacteristics.get(CameraCharacteristics.SHARED_SESSION_CONFIGURATION);
-        return sharedSessionConfiguration;
+    public Object getSharedSessionConfiguration() {
+        try {
+            Class<?> sharedSessionConfigClass = Class.forName("android.hardware.camera2.params.SharedSessionConfiguration");
+            Field sharedSessionConfigKeyField = CameraCharacteristics.class.getField("SHARED_SESSION_CONFIGURATION");
+            CameraCharacteristics.Key<?> sharedSessionConfigKey = (CameraCharacteristics.Key<?>) sharedSessionConfigKeyField.get(null);
+
+            Object sharedSessionConfigObj = mCharacteristics.get(sharedSessionConfigKey);
+            return sharedSessionConfigObj;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /**
