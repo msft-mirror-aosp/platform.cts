@@ -5075,9 +5075,6 @@
     <option name="compatibility:include-filter" value="CtsNetSecPolicyUsesCleartextTrafficUnspecifiedTestCases android.security.net.config.cts.NetworkSecurityPolicyCleartextUnspecifiedTest#testCleartextDenied"/>
     <option name="compatibility:include-filter" value="CtsNetSecPolicyUsesCleartextTrafficUnspecifiedTestCases android.security.net.config.cts.NetworkSecurityPolicyCleartextUnspecifiedTest#testCleartextDownloadManagerDenied"/>
     <option name="compatibility:include-filter" value="CtsNetSecPolicyUsesCleartextTrafficUnspecifiedTestCases android.security.net.config.cts.NetworkSecurityPolicyCleartextUnspecifiedTest#testTlsDownloadManagerAllowed"/>
-    <!-- CtsNetworkSecurityConfigHostTestCases -->
-    <option name="compatibility:include-filter" value="CtsNetworkSecurityConfigHostTestCases com.android.cts.networksecurityconfig.HostsideUsesCleartextTrafficTests#testDeprecateUsesCleartextTrafficChangeDisabled"/>
-    <option name="compatibility:include-filter" value="CtsNetworkSecurityConfigHostTestCases com.android.cts.networksecurityconfig.HostsideUsesCleartextTrafficTests#testDeprecateUsesCleartextTrafficChangeEnabled"/>
     <!-- CtsNfcTestCases -->
     <option name="compatibility:include-filter" value="CtsNfcTestCases android.nfc.cts.ApduServiceInfoTest#test_getShouldAutoTransact_overwrite"/>
     <option name="compatibility:include-filter" value="CtsNfcTestCases android.nfc.cts.ApduServiceInfoTest#test_offHostService_addPollingLoopPatternFilter_sameFilterTwice"/>
