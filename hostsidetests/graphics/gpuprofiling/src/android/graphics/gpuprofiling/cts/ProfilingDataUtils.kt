@@ -48,7 +48,7 @@ fun Trace.deviceSupportsRayTracing(): Boolean? {
         for (event in eventBundle.eventList) {
             if (!event.hasPrint()) continue
 
-            val ftraceBufItems = event.getPrint().getBuf().split("|")
+            val ftraceBufItems = event.getPrint().getBuf().trim().split("|")
             // Ray tracing is reported via Atrace, with 1 meaning it's supported and 0 meaning not.
             if (ftraceBufItems.contains(RAYTRACING_SUPPORT_EVENT)) {
                 return when (ftraceBufItems.last()) {
