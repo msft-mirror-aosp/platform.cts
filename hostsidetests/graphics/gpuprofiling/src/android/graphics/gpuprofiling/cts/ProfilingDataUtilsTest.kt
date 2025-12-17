@@ -185,6 +185,12 @@ class ProfilingDataUtilsTest {
         }
     }
 
+    @Test
+    fun deviceSupportsRayTracing_ignoresWhitespace() {
+        val trace = buildTraceWithRayTracingEvent("Test|Data|CtsTestDeviceRayTracingSupport|1 \n")
+        assertThat(trace.deviceSupportsRayTracing()).isTrue()
+    }
+
     private fun buildTraceWithRayTracingEvent(event: String): Trace {
         return Trace.newBuilder().apply {
             addPacket(TracePacket.newBuilder().apply {
