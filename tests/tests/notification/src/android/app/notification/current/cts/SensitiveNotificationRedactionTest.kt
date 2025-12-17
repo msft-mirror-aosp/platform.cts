@@ -455,7 +455,11 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
     fun testE2ERedaction_shouldRedact() {
         assumeFalse(
             mPackageManager.hasSystemFeature(PackageManager.FEATURE_WATCH) ||
-                    mPackageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+                    mPackageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE) ||
+                    // Because this test relies on a real TextClassifier, cuttlefish isn't performant
+                    // enough to get classification done in the 200ms timeout period, causing the
+                    // test to be very flaky
+                    NotificationManagerTest.onCuttlefish()
         )
         assertTrue(
             "Expected a notification assistant to be present",
@@ -474,7 +478,8 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
             "your code is (G-345821",
             "your code is \nG-345821",
             "you code is G-345821.",
-            "you code is (G-345821)")
+            "you code is (G-345821)"
+        )
         var notifNum = 0
         val notRedactedFailures = StringBuilder("")
         try {
@@ -532,6 +537,14 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
     @CddTest(requirement = "3.8.3.4/C-1-1")
     @RequiresFlagsEnabled(Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
     fun testE2ERedaction_shouldNotRedact() {
+        assumeFalse(
+            mPackageManager.hasSystemFeature(PackageManager.FEATURE_WATCH) ||
+                    mPackageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE) ||
+                    // Because this test relies on a real TextClassifier, cuttlefish isn't performant
+                    // enough to get classification done in the 200ms timeout period, causing the
+                    // test to be very flaky
+                    NotificationManagerTest.onCuttlefish()
+        )
         assertTrue(
             "Expected a notification assistant to be present",
             mPreviousEnabledAssistant != null
