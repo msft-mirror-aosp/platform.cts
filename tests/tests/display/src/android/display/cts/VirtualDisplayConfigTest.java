@@ -60,8 +60,6 @@ public class VirtualDisplayConfigTest {
 
     @Test
     public void parcelAndUnparcel_matches() {
-        final boolean cutoutEnabled =
-                android.companion.virtualdevice.flags.Flags.virtualDisplayInsets();
         final boolean forceAppUniversalResizableEnabled =
                 com.android.window.flags.Flags.vdmForceAppUniversalResizableApi();
         final boolean isDeviceAwareDisplayPowerEnabled =
@@ -81,10 +79,8 @@ public class VirtualDisplayConfigTest {
                         .setDisplayCategories(Set.of("C1", "C2"))
                         .addDisplayCategory("C3")
                         .setRequestedRefreshRate(REQUESTED_REFRESH_RATE)
+                        .setDisplayCutout(displayCutout)
                         .setHomeSupported(true);
-        if (cutoutEnabled) {
-            builder.setDisplayCutout(displayCutout);
-        }
         if (forceAppUniversalResizableEnabled) {
             builder.setIgnoreActivitySizeRestrictions(true);
         }
@@ -103,9 +99,7 @@ public class VirtualDisplayConfigTest {
         assertThat(originalConfig.getDisplayCategories()).containsExactly("C1", "C2", "C3");
         assertThat(originalConfig.getRequestedRefreshRate()).isEqualTo(REQUESTED_REFRESH_RATE);
         assertThat(originalConfig.isHomeSupported()).isEqualTo(true);
-        if (cutoutEnabled) {
-            assertThat(originalConfig.getDisplayCutout()).isEqualTo(displayCutout);
-        }
+        assertThat(originalConfig.getDisplayCutout()).isEqualTo(displayCutout);
         if (forceAppUniversalResizableEnabled) {
             assertThat(originalConfig.isIgnoreActivitySizeRestrictions()).isEqualTo(true);
         }
@@ -129,9 +123,7 @@ public class VirtualDisplayConfigTest {
         assertThat(recreatedConfig.getDisplayCategories()).containsExactly("C1", "C2", "C3");
         assertThat(recreatedConfig.getRequestedRefreshRate()).isEqualTo(REQUESTED_REFRESH_RATE);
         assertThat(recreatedConfig.isHomeSupported()).isEqualTo(true);
-        if (cutoutEnabled) {
-            assertThat(recreatedConfig.getDisplayCutout()).isEqualTo(displayCutout);
-        }
+        assertThat(recreatedConfig.getDisplayCutout()).isEqualTo(displayCutout);
         if (forceAppUniversalResizableEnabled) {
             assertThat(recreatedConfig.isIgnoreActivitySizeRestrictions()).isEqualTo(true);
         }
@@ -147,9 +139,7 @@ public class VirtualDisplayConfigTest {
         assertThat(config.getDisplayCategories()).isEmpty();
         assertThat(config.getRequestedRefreshRate()).isEqualTo(0.0f);
         assertThat(config.isHomeSupported()).isFalse();
-        if (android.companion.virtualdevice.flags.Flags.virtualDisplayInsets()) {
-            assertThat(config.getDisplayCutout()).isNull();
-        }
+        assertThat(config.getDisplayCutout()).isNull();
         if (com.android.window.flags.Flags.vdmForceAppUniversalResizableApi()) {
             assertThat(config.isIgnoreActivitySizeRestrictions()).isFalse();
         }
