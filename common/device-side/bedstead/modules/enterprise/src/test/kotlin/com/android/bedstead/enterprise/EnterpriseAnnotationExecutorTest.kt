@@ -26,7 +26,10 @@ import com.android.bedstead.enterprise.annotations.DEFAULT_DPC_KEY
 import com.android.bedstead.enterprise.annotations.DEFAULT_KEY
 import com.android.bedstead.enterprise.annotations.EnsureHasDelegate
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceAdmin
+import com.android.bedstead.enterprise.annotations.EnsureHasDeviceController
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
+import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceController
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc
 import com.android.bedstead.enterprise.annotations.EnsureHasNoProfileOwner
@@ -79,6 +82,7 @@ import com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME
 import com.android.bedstead.nene.utils.Assert.assertThrows
 import com.android.bedstead.permissions.CommonPermissions
 import com.android.bedstead.remotedpc.RemoteDelegate
+import com.android.bedstead.remotedpc.RemoteDevicePolicyManagerRoleHolder
 import com.android.bedstead.remotedpc.RemoteDpc
 import com.android.bedstead.testapps.testApp
 import com.android.queryable.annotations.BooleanQuery
@@ -383,6 +387,52 @@ class EnterpriseAnnotationExecutorTest {
     fun ensureHasNoUserControllerAnnotation_defaultUser_userControllerIsNotSet() {
         assertThrows(IllegalStateException::class.java) {
             sDeviceState.userController(UserType.INSTRUMENTED_USER)
+        }
+    }
+
+    @Test
+    @RequireRunOnInitialUser()
+    @EnsureHasDeviceController(isPrimary = true)
+    fun ensureHasDeviceController_primary_deviceControllerIsSet() {
+        assertThat(
+            sDeviceState.deviceController()
+        ).isNotNull()
+        assertThat(
+            sDeviceState.dpc() is RemoteDevicePolicyManagerRoleHolder
+        ).isTrue()
+        assertThat(
+            sDeviceState.deviceController()
+        ).isEqualTo(sDeviceState.dpc())
+    }
+
+    @Test
+    @RequireRunOnInitialUser()
+    @EnsureHasNoDeviceController()
+    @EnsureHasDevicePolicyManagerRoleHolder(onUser = UserType.SYSTEM_USER)
+    // TODO(b/476342654): Remove this test once the DeviceController definition requires
+    // an ActiveRecord/ActiveAdmin entry.
+    fun ensureHasDevicePolicyManagerRoleHolder_onSystemUser_deviceControllerIsSet() {
+        assertThat(
+            sDeviceState.deviceController()
+        ).isNotNull()
+    }
+
+    @Test
+    @RequireRunOnInitialUser()
+    @EnsureHasNoDeviceController()
+    fun ensureHasNoDeviceController_deviceControllerIsNotSet() {
+        assertThrows(IllegalStateException::class.java) {
+            sDeviceState.deviceController()
+        }
+    }
+
+    @Test
+    @RequireRunOnInitialUser()
+    @EnsureHasNoDeviceController()
+    @EnsureHasDevicePolicyManagerRoleHolder()
+    fun ensureHasDevicePolicyManagerRoleHolder_deviceControllerIsNotSet() {
+        assertThrows(IllegalStateException::class.java) {
+            sDeviceState.deviceController()
         }
     }
 

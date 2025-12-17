@@ -15,9 +15,11 @@
  */
 package com.android.bedstead.enterprise
 
+import android.content.ComponentName;
 import android.util.Log
 import com.android.bedstead.accounts.AccountsComponent
 import com.android.bedstead.enterprise.annotations.EnsureHasDelegate
+import com.android.bedstead.enterprise.annotations.EnsureHasDeviceController
 import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDelegate
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
@@ -31,6 +33,7 @@ import com.android.bedstead.harrier.components.UserTypeResolver
 import com.android.bedstead.multiuser.UsersComponent
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.TestApis.users
+import com.android.bedstead.nene.devicepolicy.DeviceAdmin
 import com.android.bedstead.nene.devicepolicy.ProfileOwner
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.remotedpc.RemoteDelegate
@@ -316,6 +319,43 @@ class EnterpriseComponent(locator: BedsteadServiceLocator) : DeviceStateComponen
                     primaryPolicyManager + ")")
         }
         primaryPolicyManager = RemoteTestApp(testAppInstance)
+    }
+
+    /**
+     * See [EnsureHasDeviceController]
+     */
+    fun ensureHasDeviceController(annotation: EnsureHasDeviceController) {
+        ensureHasDevicePolicyManagerRoleHolder(UserType.SYSTEM_USER, annotation.isPrimary)
+
+        // TODO(b/476342654): Also populate the ActiveRecord or ActiveAdmin entry, once decided
+        // what approach is taken for DeviceController.
+    }
+
+    /**
+     * See [EnsureHasNoDeviceController]
+     */
+    fun ensureHasNoDeviceController() {
+        if (devicePolicyManagerRoleHolder != null && devicePolicyManagerRoleHolder!!.user().isSystem) {
+            devicePolicyManagerRoleHolder = null
+            devicePolicy().unsetDevicePolicyManagementRoleHolder(
+                RemoteDevicePolicyManagerRoleHolder.sTestApp.pkg(), users().system()
+            )
+        }
+    }
+
+    /**
+     * See [com.android.bedstead.harrier.DeviceState.deviceController]
+     */
+    fun deviceController(): RemoteDevicePolicyManagerRoleHolder {
+        val dpmRoleHolder = dpmRoleHolder()
+        check(dpmRoleHolder.user().isSystem) {
+            "No Harrier-managed device controller."
+        }
+
+        // TODO(b/476342654): Also filter by the ActiveRecord or ActiveAdmin entry, once decided
+        // what approach is taken for DeviceController.
+
+        return dpmRoleHolder
     }
 
     companion object {
