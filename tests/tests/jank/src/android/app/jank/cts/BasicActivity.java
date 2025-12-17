@@ -41,6 +41,6 @@ public class BasicActivity extends Activity {
     public void reportAppJankStats(AppJankStats jankStats, String successMessage) {
         if (mTextView == null) return;
         mTextView.reportAppJankStats(jankStats);
-        mTextView.setText(successMessage);
+        runOnUiThread(() -> mTextView.setText(successMessage));
     }
 }
