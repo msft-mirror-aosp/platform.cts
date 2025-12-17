@@ -15,6 +15,9 @@
  */
 package android.uirendering.cts.testclasses;
 
+import static android.view.flags.Flags.FLAG_SURFACE_VIEW_SET_BLUR_REGIONS;
+import static android.view.flags.Flags.FLAG_SURFACE_VIEW_SET_COMPOSITION_ORDER;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -25,6 +28,7 @@ import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.HardwareBufferRenderer;
+import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RenderNode;
 import android.hardware.DataSpace;
@@ -38,6 +42,8 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.uirendering.cts.R;
+import android.uirendering.cts.bitmapcomparers.ExactComparer;
+import android.uirendering.cts.bitmapverifiers.BlurRegionVerifier;
 import android.uirendering.cts.bitmapverifiers.ColorVerifier;
 import android.uirendering.cts.bitmapverifiers.RectVerifier;
 import android.uirendering.cts.testinfrastructure.ActivityTestBase;
@@ -45,9 +51,11 @@ import android.uirendering.cts.testinfrastructure.CanvasClient;
 import android.uirendering.cts.testinfrastructure.DrawActivity;
 import android.uirendering.cts.testinfrastructure.ViewInitializer;
 import android.uirendering.cts.util.BitmapAsserter;
+import android.view.BlurRegion;
 import android.view.Display;
 import android.view.Gravity;
 import android.view.PixelCopy;
+import android.view.RRectBlurRegion;
 import android.view.SurfaceControl;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -58,6 +66,7 @@ import android.widget.FrameLayout;
 import androidx.test.filters.LargeTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.SynchronousPixelCopy;
 import com.android.compatibility.common.util.WidgetTestUtils;
 import com.android.graphics.hwui.flags.Flags;
@@ -69,6 +78,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -614,6 +625,309 @@ public class SurfaceViewTests extends ActivityTestBase {
             // Now that a new frame was drawn, the blue layer should be overlaid now.
             BitmapAsserter.assertBitmapIsVerified(
                     screenshot, new ColorVerifier(Color.BLUE, 2), "");
+        } finally {
+            activity.reset();
+        }
+    }
+
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.SurfaceView#setBlurRegions",
+                "android.view.SurfaceView#getBlurRegions"
+            })
+    @RequiresFlagsEnabled(FLAG_SURFACE_VIEW_SET_BLUR_REGIONS)
+    public void surfaceViewSetBlurRegions() throws InterruptedException {
+        SurfaceViewHelper helper =
+                new SurfaceViewHelper(
+                        (canvas, width, height) -> {
+                            Assert.assertNotNull(canvas);
+                            Paint redPaint = new Paint();
+                            redPaint.setColor(Color.RED);
+                            Paint bluePaint = new Paint();
+                            bluePaint.setColor(Color.BLUE);
+                            // Draw half the surface red, half blue.
+                            canvas.drawRect(0.0f, 0.0f, width / 2.0f, height, bluePaint);
+                            canvas.drawRect(width / 2.0f, 0.0f, width, height, redPaint);
+                        });
+        DrawActivity activity = getActivity();
+        try {
+            TestPositionInfo testInfo =
+                    activity.enqueueRenderSpecAndWait(
+                            R.layout.frame_layout, null, helper, true, false);
+            assertTrue(helper.hasSurface());
+            waitForScreenshottable();
+            Bitmap initialScreenshot = mScreenshotter.takeScreenshot(testInfo);
+            // Create a blur region that covers the entire SurfaceView.
+            float[] cornerRadius = new float[8];
+            int width = helper.getSurfaceView().getWidth();
+            int height = helper.getSurfaceView().getHeight();
+            RRectBlurRegion blurRegionOne =
+                    new RRectBlurRegion.Builder(0.0f, 0.0f, width, height, cornerRadius)
+                            .setBlurRadius(10.0f)
+                            .setAlpha(1.0f)
+                            .build();
+            ArrayList<BlurRegion> blurRegions = new ArrayList<>();
+            blurRegions.add(blurRegionOne);
+
+            activity.runOnUiThread(
+                    () -> {
+                        helper.getSurfaceView().setBlurRegions(blurRegions);
+                        List<BlurRegion> currentRegions = helper.getSurfaceView().getBlurRegions();
+                        Assert.assertEquals(1, currentRegions.size());
+                        Assert.assertEquals(blurRegionOne, currentRegions.get(0));
+                    });
+            waitForScreenshottable();
+            Rect blurRect = new Rect(0, 0, width, height);
+            BitmapAsserter.assertBitmapIsVerified(
+                    mScreenshotter.takeScreenshot(testInfo),
+                    new BlurRegionVerifier(blurRect, 10, 3),
+                    "");
+            activity.runOnUiThread(
+                    () -> {
+                        helper.getSurfaceView().setBlurRegions(null);
+                        List<BlurRegion> currentRegions = helper.getSurfaceView().getBlurRegions();
+                        Assert.assertEquals(0, currentRegions.size());
+                    });
+
+            // Verify after clearing blur regions
+            waitForScreenshottable();
+            BitmapAsserter.assertBitmapsAreSimilar(
+                    initialScreenshot,
+                    mScreenshotter.takeScreenshot(testInfo),
+                    new ExactComparer(),
+                    "");
+        } finally {
+            activity.reset();
+        }
+    }
+
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.SurfaceView#setBlurRegions",
+                "android.view.SurfaceView#getBlurRegions"
+            })
+    @RequiresFlagsEnabled(FLAG_SURFACE_VIEW_SET_BLUR_REGIONS)
+    public void surfaceViewSetBlurRegionsWithTranslation() throws InterruptedException {
+        SurfaceViewHelper helper =
+                new SurfaceViewHelper(
+                        (canvas, width, height) -> {
+                            Assert.assertNotNull(canvas);
+                            Paint redPaint = new Paint();
+                            redPaint.setColor(Color.RED);
+                            Paint bluePaint = new Paint();
+                            bluePaint.setColor(Color.BLUE);
+                            // Draw half the surface red, half blue.
+                            canvas.drawRect(0.0f, 0.0f, width / 2.0f, height, bluePaint);
+                            canvas.drawRect(width / 2.0f, 0.0f, width, height, redPaint);
+                        });
+        DrawActivity activity = getActivity();
+        try {
+            TestPositionInfo testInfo =
+                    activity.enqueueRenderSpecAndWait(
+                            R.layout.frame_layout, null, helper, true, false);
+            assertTrue(helper.hasSurface());
+            activity.runOnUiThread(
+                    () -> {
+                        helper.getSurfaceView()
+                                .setLayoutParams(
+                                        new FrameLayout.LayoutParams(TEST_WIDTH, TEST_HEIGHT / 2));
+                    });
+            activity.waitForRedraw();
+            // Create a blur region that covers the entire surface.
+            float[] cornerRadius = new float[8];
+            int width = helper.getSurfaceView().getWidth();
+            int height = helper.getSurfaceView().getHeight();
+            RRectBlurRegion blurRegionOne =
+                    new RRectBlurRegion.Builder(0.0f, 0.0f, width, height, cornerRadius)
+                            .setBlurRadius(10.0f)
+                            .setAlpha(1.0f)
+                            .build();
+            ArrayList<BlurRegion> blurRegions = new ArrayList<>();
+            blurRegions.add(blurRegionOne);
+
+            activity.runOnUiThread(
+                    () -> {
+                        helper.getSurfaceView().setBlurRegions(blurRegions);
+                    });
+            waitForScreenshottable();
+            Rect blurRect = new Rect(0, 0, TEST_WIDTH, TEST_HEIGHT / 2);
+            BitmapAsserter.assertBitmapIsVerified(
+                    mScreenshotter.takeScreenshot(testInfo),
+                    new BlurRegionVerifier(blurRect, 10, 3),
+                    "");
+
+            float translationY = TEST_HEIGHT / 2;
+
+            activity.runOnUiThread(
+                    () -> {
+                        // Move the SurfaceView
+                        helper.getSurfaceView().setTranslationY(translationY);
+                        List<BlurRegion> currentRegions = helper.getSurfaceView().getBlurRegions();
+                        Assert.assertEquals(1, currentRegions.size());
+                        Assert.assertEquals(blurRegionOne, currentRegions.get(0));
+                    });
+            waitForScreenshottable();
+            blurRect = new Rect(0, TEST_HEIGHT / 2, TEST_WIDTH, TEST_HEIGHT);
+            BitmapAsserter.assertBitmapIsVerified(
+                    mScreenshotter.takeScreenshot(testInfo),
+                    new BlurRegionVerifier(blurRect, 10, 3),
+                    "");
+        } finally {
+            activity.reset();
+        }
+    }
+
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.SurfaceView#setBlurRegions",
+                "android.view.SurfaceView#getBlurRegions"
+            })
+    @RequiresFlagsEnabled({
+        FLAG_SURFACE_VIEW_SET_BLUR_REGIONS,
+        FLAG_SURFACE_VIEW_SET_COMPOSITION_ORDER
+    })
+    public void surfaceViewSetBlurRegionsZOrderOnTop() throws InterruptedException {
+        SurfaceViewHelper helper =
+                new SurfaceViewHelper(
+                        (canvas, width, height) -> {
+                            Assert.assertNotNull(canvas);
+                            Paint redPaint = new Paint();
+                            redPaint.setColor(Color.RED);
+                            Paint bluePaint = new Paint();
+                            bluePaint.setColor(Color.BLUE);
+                            // Draw half the surface red, half blue.
+                            canvas.drawRect(0.0f, 0.0f, width / 2.0f, height, bluePaint);
+                            canvas.drawRect(width / 2.0f, 0.0f, width, height, redPaint);
+                        });
+        DrawActivity activity = getActivity();
+        try {
+            TestPositionInfo testInfo =
+                    activity.enqueueRenderSpecAndWait(
+                            R.layout.frame_layout, null, helper, true, false);
+            assertTrue(helper.hasSurface());
+            waitForScreenshottable();
+            Bitmap initialScreenshot = mScreenshotter.takeScreenshot(testInfo);
+
+            // Create a blur region that covers the entire SurfaceView.
+            float[] cornerRadius = new float[8];
+            int width = helper.getSurfaceView().getWidth();
+            int height = helper.getSurfaceView().getHeight();
+            RRectBlurRegion blurRegionOne =
+                    new RRectBlurRegion.Builder(0.0f, 0.0f, width, height, cornerRadius)
+                            .setBlurRadius(10.0f)
+                            .setAlpha(1.0f)
+                            .build();
+            ArrayList<BlurRegion> blurRegions = new ArrayList<>();
+            blurRegions.add(blurRegionOne);
+
+            activity.runOnUiThread(
+                    () -> {
+                        helper.getSurfaceView().setCompositionOrder(1);
+                        helper.getSurfaceView().setBlurRegions(blurRegions);
+                        List<BlurRegion> currentRegions = helper.getSurfaceView().getBlurRegions();
+                        Assert.assertEquals(1, currentRegions.size());
+                        Assert.assertEquals(blurRegionOne, currentRegions.get(0));
+                    });
+            waitForScreenshottable();
+            Rect blurRect = new Rect(0, 0, width, height);
+            BitmapAsserter.assertBitmapIsVerified(
+                    mScreenshotter.takeScreenshot(testInfo),
+                    new BlurRegionVerifier(blurRect, 10, 3),
+                    "");
+
+            activity.runOnUiThread(
+                    () -> {
+                        helper.getSurfaceView().setBlurRegions(null);
+                    });
+
+            // Verify after clearing blur regions
+            waitForScreenshottable();
+            BitmapAsserter.assertBitmapsAreSimilar(
+                    initialScreenshot,
+                    mScreenshotter.takeScreenshot(testInfo),
+                    new ExactComparer(),
+                    "");
+        } finally {
+            activity.reset();
+        }
+    }
+
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.SurfaceView#setBlurRegions",
+                "android.view.SurfaceView#getBlurRegions"
+            })
+    @RequiresFlagsEnabled(FLAG_SURFACE_VIEW_SET_BLUR_REGIONS)
+    public void surfaceViewSetBlurRegionsOnFixedSize() throws InterruptedException {
+        SurfaceViewHelper helper =
+                new SurfaceViewHelper(
+                        (canvas, width, height) -> {
+                            Assert.assertNotNull(canvas);
+                            Paint redPaint = new Paint();
+                            redPaint.setColor(Color.RED);
+                            Paint bluePaint = new Paint();
+                            bluePaint.setColor(Color.BLUE);
+                            // Draw half the surface red, half blue.
+                            canvas.drawRect(0.0f, 0.0f, width / 2.0f, height, bluePaint);
+                            canvas.drawRect(width / 2.0f, 0.0f, width, height, redPaint);
+                        }) {
+                    @Override
+                    public void surfaceCreated(SurfaceHolder holder) {
+                        super.surfaceCreated(holder);
+                        holder.setFixedSize(TEST_WIDTH / 2, TEST_HEIGHT / 2);
+                    }
+                };
+        DrawActivity activity = getActivity();
+        try {
+            TestPositionInfo testInfo =
+                    activity.enqueueRenderSpecAndWait(
+                            R.layout.frame_layout, null, helper, true, false);
+            assertTrue(helper.hasSurface());
+            waitForScreenshottable();
+            Bitmap initialScreenshot = mScreenshotter.takeScreenshot(testInfo);
+
+            // Create a blur region that covers the entire SurfaceView.
+            float[] cornerRadius = new float[8];
+            int width = helper.getSurfaceView().getWidth();
+            int height = helper.getSurfaceView().getHeight();
+            RRectBlurRegion blurRegionOne =
+                    new RRectBlurRegion.Builder(0.0f, 0.0f, width, height, cornerRadius)
+                            .setBlurRadius(10.0f)
+                            .setAlpha(1.0f)
+                            .build();
+            ArrayList<BlurRegion> blurRegions = new ArrayList<>();
+            blurRegions.add(blurRegionOne);
+
+            activity.runOnUiThread(
+                    () -> {
+                        helper.getSurfaceView().setBlurRegions(blurRegions);
+                        List<BlurRegion> currentRegions = helper.getSurfaceView().getBlurRegions();
+                        Assert.assertEquals(1, currentRegions.size());
+                        Assert.assertEquals(blurRegionOne, currentRegions.get(0));
+                    });
+            waitForScreenshottable();
+            Rect blurRect = new Rect(0, 0, width, height);
+            BitmapAsserter.assertBitmapIsVerified(
+                    mScreenshotter.takeScreenshot(testInfo),
+                    new BlurRegionVerifier(blurRect, 10, 3),
+                    "");
+
+            activity.runOnUiThread(
+                    () -> {
+                        helper.getSurfaceView().setBlurRegions(null);
+                    });
+
+            // Verify after clearing blur regions
+            waitForScreenshottable();
+            BitmapAsserter.assertBitmapsAreSimilar(
+                    initialScreenshot,
+                    mScreenshotter.takeScreenshot(testInfo),
+                    new ExactComparer(),
+                    "");
         } finally {
             activity.reset();
         }
