@@ -433,6 +433,48 @@ public class PhoneAccountTest extends BaseAppVerifier {
         }
     }
 
+    @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_OPT_OUT_PREMIUM_NETWORK)
+    @Test
+    public void testOptOutOfPremiumNetworkCapability() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        AppControlWrapper managedApp = null;
+        final PhoneAccountHandle uniqueHandle = new PhoneAccountHandle(MANAGED_APP_CN,
+                "PREMIUM_OPT_OUT");
+
+        final PhoneAccount acctWithOptOut =
+                PhoneAccount.builder(uniqueHandle, "PREMIUM_OPT_OUT_ACCT")
+                        .setCapabilities(
+                                PhoneAccount.CAPABILITY_CALL_PROVIDER |
+                                        PhoneAccount.CAPABILITY_OPT_OUT_OF_PREMIUM_NETWORK
+                        ).build();
+
+        try {
+            managedApp = bindToApp(ManagedConnectionServiceApp);
+            managedApp.registerCustomPhoneAccount(acctWithOptOut);
+            ShellCommandExecutor.enablePhoneAccount(
+                    InstrumentationRegistry.getInstrumentation(), acctWithOptOut.getAccountHandle());
+
+            List<PhoneAccount> accounts =
+                    invokeMethodWithShellPermissions(
+                            mTelecomManager, tm -> tm.getAllPhoneAccounts());
+
+            assertEquals(
+                    PhoneAccount.CAPABILITY_CALL_PROVIDER |
+                            PhoneAccount.CAPABILITY_OPT_OUT_OF_PREMIUM_NETWORK,
+                    accounts.stream()
+                            .filter(acct -> acct.getAccountHandle().equals(uniqueHandle))
+                            .findFirst()
+                            .get()
+                            .getCapabilities()
+            );
+            managedApp.unregisterPhoneAccountWithHandle(acctWithOptOut.getAccountHandle());
+        } finally {
+            tearDownApp(managedApp);
+        }
+    }
+
     /*********************************************************************************************
      *                           Helpers
      /*********************************************************************************************/
