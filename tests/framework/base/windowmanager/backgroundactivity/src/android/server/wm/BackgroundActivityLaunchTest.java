@@ -1312,6 +1312,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         pressHomeAndWaitHomeResumed();
 
         assertActivityNotFocused(APP_A_BACKGROUND_ACTIVITY);
+        Log.i(TAG, "Success:\n" + allTaskStateDumps());
     }
 
     @Test
