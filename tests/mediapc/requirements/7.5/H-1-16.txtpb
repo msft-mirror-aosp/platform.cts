@@ -17,44 +17,19 @@
 id: "7.5/H-1-16"
 name: "Camera Dynamic Range 10 Bit"
 description: "Support for 10 bit dynamic range for primary cameras"
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 64
-  }
-}
-measurements: {
-  key: "rear_camera_dynamic_tenbits_supported"
-  value: {
-    description: "Is the rear primary camera 10 bit dynamic range supported"
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 3
-  }
-}
-measurements: {
-  key: "front_camera_dynamic_tenbits_supported"
-  value: {
-    description: "Is the front primary camera 10 bit dynamic range supported"
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 4
-  }
-}
 specs {
   key: 34
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_14
     specification: "MUST support DYNAMIC_RANGE_TEN_BIT capability for the primary cameras."
     required_values {
-      key: "rear_camera_dynamic_tenbits_supported"
+      key: "front_camera_dynamic_tenbits_supported"
       value {
         bool_value: true
       }
     }
     required_values {
-      key: "front_camera_dynamic_tenbits_supported"
+      key: "rear_camera_dynamic_tenbits_supported"
       value {
         bool_value: true
       }
@@ -67,13 +42,13 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_15
     specification: "same"
     required_values {
-      key: "rear_camera_dynamic_tenbits_supported"
+      key: "front_camera_dynamic_tenbits_supported"
       value {
         bool_value: true
       }
     }
     required_values {
-      key: "front_camera_dynamic_tenbits_supported"
+      key: "rear_camera_dynamic_tenbits_supported"
       value {
         bool_value: true
       }
@@ -86,16 +61,41 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_17
     specification: "same"
     required_values {
-      key: "rear_camera_dynamic_tenbits_supported"
-      value {
-        bool_value: true
-      }
-    }
-    required_values {
       key: "front_camera_dynamic_tenbits_supported"
       value {
         bool_value: true
       }
     }
+    required_values {
+      key: "rear_camera_dynamic_tenbits_supported"
+      value {
+        bool_value: true
+      }
+    }
+  }
+}
+measurements {
+  key: "front_camera_dynamic_tenbits_supported"
+  value {
+    description: "Is the front primary camera 10 bit dynamic range supported"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 4
+  }
+}
+measurements {
+  key: "rear_camera_dynamic_tenbits_supported"
+  value {
+    description: "Is the rear primary camera 10 bit dynamic range supported"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 3
+  }
+}
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 64
   }
 }

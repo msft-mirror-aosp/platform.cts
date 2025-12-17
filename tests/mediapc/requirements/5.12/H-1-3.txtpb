@@ -17,28 +17,14 @@
 id: "5.12/H-1-3"
 name: "Ext Yuv Target"
 description: "YUV texture sampling"
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 38
-  }
-}
-measurements: {
-  key: "ext_yuv_target_supported"
-  value: {
-    description: "Is EXT_YUV_target supported."
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 3
-  }
-}
 specs {
   key: 34
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_14
-    specification: "MUST advertise support for the EXT_YUV_target extension to sample from YUV textures in both 8 and 10-bits."
-    required_values: {
+    specification:
+      "MUST advertise support for the EXT_YUV_target extension to sample from "
+      "YUV textures in both 8 and 10-bits."
+    required_values {
       key: "ext_yuv_target_supported"
       value {
         bool_value: true
@@ -51,7 +37,7 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
     specification: "same"
-    required_values: {
+    required_values {
       key: "ext_yuv_target_supported"
       value {
         bool_value: true
@@ -64,11 +50,27 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
     specification: "same"
-    required_values: {
+    required_values {
       key: "ext_yuv_target_supported"
       value {
         bool_value: true
       }
     }
+  }
+}
+measurements {
+  key: "ext_yuv_target_supported"
+  value {
+    description: "Is EXT_YUV_target supported."
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 3
+  }
+}
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 38
   }
 }

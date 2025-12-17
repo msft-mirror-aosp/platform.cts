@@ -17,27 +17,13 @@
 id: "7.5/H-1-12"
 name: "Camera Preview Stabilization"
 description: "Preview stabilization for primary rear camera"
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 60
-  }
-}
-measurements: {
-  key: "rear_camera_preview_stabilization_supported"
-  value: {
-    description: "Is the rear primary camera preview stabilization supported"
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 3
-  }
-}
 specs {
   key: 33
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_13
-    specification: "MUST support CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION for the primary back camera."
+    specification:
+      "MUST support CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION for "
+      "the primary back camera."
     required_values {
       key: "rear_camera_preview_stabilization_supported"
       value {
@@ -83,5 +69,21 @@ specs {
         bool_value: true
       }
     }
+  }
+}
+measurements {
+  key: "rear_camera_preview_stabilization_supported"
+  value {
+    description: "Is the rear primary camera preview stabilization supported"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 3
+  }
+}
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 60
   }
 }

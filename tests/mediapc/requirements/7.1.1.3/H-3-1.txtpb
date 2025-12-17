@@ -17,48 +17,20 @@
 id: "7.1.1.3/H-3-1"
 name: "HDR display"
 description: "HDR display"
-comment: "This requirement was not added to CTS for MPC 34 until the android16-mr1 release."
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 73
-  }
-}
-measurements: {
-  key: "is_hdr"
-  value: {
-    id: "is_hdr"
-    description: "Does the display support HDR"
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 3
-  }
-}
-measurements: {
-  key: "display_luminance_nits"
-  value: {
-    id: "display_luminance_nits"
-    description: "The display luminance in nits."
-    measurement_type: MEASUREMENT_TYPE_DOUBLE
-    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
-    proto_field_number: 4
-  }
-}
 specs {
   key: 34
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_INVALID
     specification: "MUST have a HDR display supporting at least 1000 nits"
-    required_values: {
+    required_values {
       key: "display_luminance_nits"
-      value: {
-        double_value: 1000
+      value {
+        double_value: 1000.0
       }
     }
-    required_values: {
+    required_values {
       key: "is_hdr"
-      value: {
+      value {
         bool_value: true
       }
     }
@@ -69,15 +41,15 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_INVALID
     specification: "MUST have a HDR display supporting at least 1000 nits"
-    required_values: {
+    required_values {
       key: "display_luminance_nits"
-      value: {
-        double_value: 1000
+      value {
+        double_value: 1000.0
       }
     }
-    required_values: {
+    required_values {
       key: "is_hdr"
-      value: {
+      value {
         bool_value: true
       }
     }
@@ -88,17 +60,47 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_INVALID
     specification: "MUST have a HDR display supporting at least 1000 nits"
-    required_values: {
+    required_values {
       key: "display_luminance_nits"
-      value: {
-        double_value: 1000
+      value {
+        double_value: 1000.0
       }
     }
-    required_values: {
+    required_values {
       key: "is_hdr"
-      value: {
+      value {
         bool_value: true
       }
     }
   }
 }
+measurements {
+  key: "display_luminance_nits"
+  value {
+    id: "display_luminance_nits"
+    description: "The display luminance in nits."
+    measurement_type: MEASUREMENT_TYPE_DOUBLE
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    proto_field_number: 4
+  }
+}
+measurements {
+  key: "is_hdr"
+  value {
+    id: "is_hdr"
+    description: "Does the display support HDR"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 3
+  }
+}
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 73
+  }
+}
+comment:
+  "This requirement was not added to CTS for MPC 34 until the android16-mr1 "
+  "release."

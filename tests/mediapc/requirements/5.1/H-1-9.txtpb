@@ -17,47 +17,6 @@
 id: "5.1/H-1-9"
 name: "Secure Video Decoder Sessions"
 description: "Secure hardware decoders"
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 21
-  }
-}
-test_configs: {
-  key: "HDR"
-  value: {
-    description: "Test config for hdr tests"
-    proto_field_number: 22
-  }
-}
-measurements: {
-  key: "concurrent_fps"
-  value: {
-    description: "Achieved FPS"
-    measurement_type: MEASUREMENT_TYPE_DOUBLE
-    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
-    proto_field_number: 3
-  }
-}
-measurements: {
-  key: "frame_drops_per_sec"
-  value: {
-    description: "Number of frame drops per second"
-    measurement_type: MEASUREMENT_TYPE_DOUBLE
-    comparison: COMPARISON_LESS_THAN_OR_EQUAL
-    proto_field_number: 4
-  }
-}
-measurements: {
-  key: "is_hdr"
-  value: {
-    description: "Whether the test is HDR or not"
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_CONFIG
-    proto_field_number: 5
-  }
-}
 specs {
   key: 33
   value {
@@ -66,13 +25,13 @@ specs {
       "MUST support 2 instances of secure hardware video decoder sessions "
       "(AVC, HEVC, VP9, AV1 or later) in any codec combination running "
       "concurrently at 1080p resolution@30 fps."
-    required_values: {
+    required_values {
       key: "concurrent_fps"
       value {
-        double_value: 57  # 2 decoders * 30 fps * 0.95 tolerance factor
+        double_value: 57.0
       }
     }
-    required_values: {
+    required_values {
       key: "is_hdr"
       value {
         bool_value: false
@@ -87,21 +46,21 @@ specs {
     specification:
       "MUST support 2 instances of secure hardware video decoder sessions "
       "(AVC, HEVC, VP9, AV1 or later) in any codec combination running "
-      "concurrently at 1080p resolution@30 fps for both 8-bit "
-      "(SDR) and 10-bit HDR content."
-    test_config_id: "HDR"
-    required_values: {
+      "concurrently at 1080p resolution@30 fps for both 8-bit (SDR) and 10-bit "
+      "HDR content."
+    required_values {
       key: "concurrent_fps"
       value {
-        double_value: 57  # 2 decoders * 30 fps * 0.95 tolerance factor
+        double_value: 57.0
       }
     }
-    required_values: {
+    required_values {
       key: "is_hdr"
       value {
         bool_value: true
       }
     }
+    test_config_id: "HDR"
   }
 }
 specs {
@@ -111,28 +70,28 @@ specs {
     specification:
       "MUST support 2 instances of secure hardware video decoder sessions "
       "(AVC, HEVC, VP9, AV1, or later) in any codec combination running "
-      "concurrently at 1080p resolution@30 fps for both 8-bit "
-      "(SDR) and 10-bit HDR content. For all sessions, there MUST NOT be "
-      "more than 1 frame dropped per second."
-    test_config_id: "HDR"
-    required_values: {
+      "concurrently at 1080p resolution@30 fps for both 8-bit (SDR) and 10-bit "
+      "HDR content. For all sessions, there MUST NOT be more than 1 frame "
+      "dropped per second."
+    required_values {
       key: "concurrent_fps"
       value {
-        double_value: 57  # 2 decoders * 30 fps * 0.95 tolerance factor
+        double_value: 57.0
       }
     }
-    required_values: {
+    required_values {
       key: "frame_drops_per_sec"
       value {
-        double_value: 1
+        double_value: 1.0
       }
     }
-    required_values: {
+    required_values {
       key: "is_hdr"
       value {
         bool_value: true
       }
     }
+    test_config_id: "HDR"
   }
 }
 specs {
@@ -142,27 +101,68 @@ specs {
     specification:
       "MUST support 2 instances of secure hardware video decoder sessions "
       "(AVC, HEVC, VP9, AV1, or later) in any codec combination running "
-      "concurrently at 1080p resolution@30 fps for both 8-bit "
-      "(SDR) and 10-bit HDR content. For all sessions, there MUST NOT be "
-      "more than 1 frame dropped per second."
-    test_config_id: "HDR"
-    required_values: {
+      "concurrently at 1080p resolution@30 fps for both 8-bit (SDR) and 10-bit "
+      "HDR content. For all sessions, there MUST NOT be more than 1 frame "
+      "dropped per second."
+    required_values {
       key: "concurrent_fps"
       value {
-        double_value: 57  # 2 decoders * 30 fps * 0.95 tolerance factor
+        double_value: 57.0
       }
     }
-    required_values: {
+    required_values {
       key: "frame_drops_per_sec"
       value {
-        double_value: 1
+        double_value: 1.0
       }
     }
-    required_values: {
+    required_values {
       key: "is_hdr"
       value {
         bool_value: true
       }
     }
+    test_config_id: "HDR"
+  }
+}
+measurements {
+  key: "concurrent_fps"
+  value {
+    description: "Achieved FPS"
+    measurement_type: MEASUREMENT_TYPE_DOUBLE
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    proto_field_number: 3
+  }
+}
+measurements {
+  key: "frame_drops_per_sec"
+  value {
+    description: "Number of frame drops per second"
+    measurement_type: MEASUREMENT_TYPE_DOUBLE
+    comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    proto_field_number: 4
+  }
+}
+measurements {
+  key: "is_hdr"
+  value {
+    description: "Whether the test is HDR or not"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_CONFIG
+    proto_field_number: 5
+  }
+}
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 21
+  }
+}
+test_configs {
+  key: "HDR"
+  value {
+    description: "Test config for hdr tests"
+    proto_field_number: 22
   }
 }
