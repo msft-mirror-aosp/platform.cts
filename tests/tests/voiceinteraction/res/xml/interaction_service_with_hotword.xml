@@ -21,4 +21,7 @@
     android:visualQueryDetectionService="android.voiceinteraction.service.MainVisualQueryDetectionService"
     android:settingsActivity=""
     android:supportsAssist="false"
-    android:supportsLocalInteraction="true" />
+    android:supportsLocalInteraction="true"
+    android:usesAssistData="true"
+    android:usesAssistScreenshots="true"
+    android:usesAssistStructureScreenContent="true" />
