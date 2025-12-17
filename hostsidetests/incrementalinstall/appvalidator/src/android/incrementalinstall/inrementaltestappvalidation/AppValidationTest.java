@@ -113,7 +113,8 @@ public class AppValidationTest {
     }
 
     private void launchTestApp() throws Exception {
-        mDevice.executeShellCommand(String.format("am start %s/.MainActivity", mPackageToLaunch));
+        mDevice
+            .executeShellCommand(String.format("am start -S %s/.MainActivity", mPackageToLaunch));
     }
 
     private InstalledAppInfo getInstalledAppInfo() throws Exception {
