@@ -88,33 +88,137 @@ public class VideoCodecClaimsPerformanceTest extends VideoCodecClaimsPerformance
 
         // mediaType, width, height, fps, isEncoder, SupportRequirements
         final List<Object[]> argsList = new ArrayList<>();
-        // TODO(b/275171549) Add tests as per TV multimedia requirements in 2.3.2
 
         // Video Encoder Requirements
+        // h263
+        // 5.2.1/C-1-1
+        argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_H263, 176, 144, 15, true, CODEC_ANY});
+        // 5.1.10/C-2-1
+        argsList.add(
+                new Object[] {MediaFormat.MIMETYPE_VIDEO_H263, 352, 288, 30, true, CODEC_OPTIONAL});
+        argsList.add(
+                new Object[] {MediaFormat.MIMETYPE_VIDEO_H263, 704, 576, 30, true, CODEC_OPTIONAL});
+        argsList.add(new Object[] {
+                MediaFormat.MIMETYPE_VIDEO_H263, 1408, 1152, 30, true, CODEC_OPTIONAL});
+
+        // mpeg4
+        // 5.1.10/C-2-1
+        argsList.add(new Object[] {
+                MediaFormat.MIMETYPE_VIDEO_MPEG4, 176, 144, 15, true, CODEC_OPTIONAL});
+        argsList.add(new Object[] {
+                MediaFormat.MIMETYPE_VIDEO_MPEG4, 352, 288, 30, true, CODEC_OPTIONAL});
+        argsList.add(new Object[] {
+                MediaFormat.MIMETYPE_VIDEO_MPEG4, 640, 480, 30, true, CODEC_OPTIONAL});
+        argsList.add(new Object[] {
+                MediaFormat.MIMETYPE_VIDEO_MPEG4, 1280, 720, 30, true, CODEC_OPTIONAL});
+
         // avc
         // 5.2.2/C-1-2
+        // 5.1.10/C-2-1
         argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_AVC, 320, 240, 20, true, CODEC_ANY});
         argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_AVC, 720, 480, 30, true, CODEC_ANY});
+        argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_AVC, 1280, 720, 30, true,
+                hasCodec(MediaFormat.MIMETYPE_VIDEO_AVC, 1280, 720, true) ? CODEC_ANY
+                                                                          : CODEC_OPTIONAL});
+        argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_AVC, 1920, 1080, 30, true,
+                hasCodec(MediaFormat.MIMETYPE_VIDEO_AVC, 1920, 1080, true) ? CODEC_ANY
+                                                                           : CODEC_OPTIONAL});
 
         // vp8
         // 5.2.3/C-1-1
+        // 5.1.10/C-2-1
         argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_VP8, 320, 180, 30, true, CODEC_ANY});
         argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_VP8, 640, 360, 30, true, CODEC_ANY});
+        argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_VP8, 1280, 720, 30, true,
+                hasCodec(MediaFormat.MIMETYPE_VIDEO_VP8, 1280, 720, true) ? CODEC_ANY
+                                                                          : CODEC_OPTIONAL});
+        argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_VP8, 1920, 1080, 30, true,
+                hasCodec(MediaFormat.MIMETYPE_VIDEO_VP8, 1920, 1080, true) ? CODEC_ANY
+                                                                           : CODEC_OPTIONAL});
+
+        // vp9
+        // 5.2.4/C-1-1
+        // 5.1.10/C-2-1
+        argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_VP9, 320, 180, 30, true, CODEC_ANY});
+        argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_VP9, 640, 360, 30, true, CODEC_ANY});
+        argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_VP9, 720, 480, 30, true, CODEC_ANY});
+        argsList.add(
+                new Object[] {MediaFormat.MIMETYPE_VIDEO_VP9, 1280, 720, 30, true, CODEC_OPTIONAL});
+        argsList.add(new Object[] {
+                MediaFormat.MIMETYPE_VIDEO_VP9, 1920, 1080, 30, true, CODEC_OPTIONAL});
+        argsList.add(new Object[] {
+                MediaFormat.MIMETYPE_VIDEO_VP9, 3840, 2160, 30, true, CODEC_OPTIONAL});
+
+        // hevc
+        // 5.2.5/C-1-1
+        // 5.1.10/C-2-1
+        argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_HEVC, 320, 240, 20, true, CODEC_ANY});
+        argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_HEVC, 512, 512, 30, true, CODEC_ANY});
+        argsList.add(
+                new Object[] {MediaFormat.MIMETYPE_VIDEO_HEVC, 720, 480, 30, true, CODEC_OPTIONAL});
+        argsList.add(new Object[] {
+                MediaFormat.MIMETYPE_VIDEO_HEVC, 1280, 720, 30, true, CODEC_OPTIONAL});
+        argsList.add(new Object[] {
+                MediaFormat.MIMETYPE_VIDEO_HEVC, 1920, 1080, 30, true, CODEC_OPTIONAL});
+        argsList.add(new Object[] {
+                MediaFormat.MIMETYPE_VIDEO_HEVC, 3840, 2160, 30, true, CODEC_OPTIONAL});
 
         // av1
         // 5.2.6/C-2-1
+        // 5.1.10/C-2-1
         if (CodecTestBase.IS_AT_LEAST_U) {
+            argsList.add(
+                    new Object[] {MediaFormat.MIMETYPE_VIDEO_AV1, 320, 240, 20, true, CODEC_ANY});
             argsList.add(
                     new Object[] {MediaFormat.MIMETYPE_VIDEO_AV1, 720, 480, 30, true, CODEC_HW});
             argsList.add(
                     new Object[] {MediaFormat.MIMETYPE_VIDEO_AV1, 1280, 720, 30, true, CODEC_HW});
             argsList.add(
                     new Object[] {MediaFormat.MIMETYPE_VIDEO_AV1, 1920, 1080, 30, true, CODEC_HW});
+            argsList.add(new Object[] {
+                    MediaFormat.MIMETYPE_VIDEO_AV1, 3840, 2160, 30, true, CODEC_OPTIONAL});
         }
 
         // Video Decoder Requirements
+        // mpeg2
+        // 5.3.1/C-1-1
+        argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_MPEG2, 176, 144, 30, false,
+                CODEC_ANY});
+        argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_MPEG2, 352, 288, 30, false,
+                CODEC_ANY});
+        argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_MPEG2, 720, 576, 30, false,
+                CODEC_ANY});
+        argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_MPEG2, 1280, 720, 30, false,
+                CODEC_ANY});
+        argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_MPEG2, 1920, 1080, 30, false,
+                CODEC_ANY});
+
+        // h263
+        // 5.3.2/C-1-1
+        argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_H263, 128, 96, 30, false, CODEC_ANY});
+        argsList.add(
+                new Object[] {MediaFormat.MIMETYPE_VIDEO_H263, 176, 144, 30, false, CODEC_ANY});
+        argsList.add(
+                new Object[] {MediaFormat.MIMETYPE_VIDEO_H263, 352, 288, 30, false, CODEC_ANY});
+        argsList.add(new Object[] {
+                MediaFormat.MIMETYPE_VIDEO_H263, 704, 576, 30, false, CODEC_OPTIONAL});
+        argsList.add(new Object[] {
+                MediaFormat.MIMETYPE_VIDEO_H263, 1408, 1152, 30, false, CODEC_OPTIONAL});
+
+        // mpeg4
+        // 5.3.3/C-1-1
+        argsList.add(
+                new Object[] {MediaFormat.MIMETYPE_VIDEO_MPEG4, 176, 144, 30, false, CODEC_ANY});
+        argsList.add(
+                new Object[] {MediaFormat.MIMETYPE_VIDEO_MPEG4, 352, 288, 30, false, CODEC_ANY});
+        argsList.add(new Object[] {
+                MediaFormat.MIMETYPE_VIDEO_MPEG4, 640, 480, 30, false, CODEC_OPTIONAL});
+        argsList.add(new Object[] {
+                MediaFormat.MIMETYPE_VIDEO_MPEG4, 1280, 720, 30, false, CODEC_OPTIONAL});
+
         // avc
         // 5.3.4/C-1-2
+        // 5.1.10/C-2-1
         argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_AVC, 320, 240, 30, false, CODEC_ANY});
         argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_AVC, 720, 480, 30, false, CODEC_ANY});
         argsList.add(
@@ -127,24 +231,33 @@ public class VideoCodecClaimsPerformanceTest extends VideoCodecClaimsPerformance
                 false, isDispHtAtleastFHD ? CODEC_ANY : CODEC_OPTIONAL});
 
         // hevc
+        // 5.1.10/C-2-1
+        argsList.add(
+                new Object[] {MediaFormat.MIMETYPE_VIDEO_HEVC, 320, 240, 30, false, CODEC_ANY});
         // 5.3.5/C-1-1
         argsList.add(
                 new Object[] {MediaFormat.MIMETYPE_VIDEO_HEVC, 352, 288, 30, false, CODEC_ANY});
         argsList.add(
                 new Object[] {MediaFormat.MIMETYPE_VIDEO_HEVC, 720, 480, 30, false, CODEC_ANY});
-        // 5.3.5/C-1-2
+        // 5.3.5/C-1-2, 5.1.10/C-2-1
         argsList.add(
                 new Object[] {MediaFormat.MIMETYPE_VIDEO_HEVC, 1280, 720, 30, false, CODEC_HW});
         argsList.add(new Object[] {
                 MediaFormat.MIMETYPE_VIDEO_HEVC, 1920, 1080, isTv ? 60 : 30, false, CODEC_HW});
+        argsList.add(new Object[] {
+                MediaFormat.MIMETYPE_VIDEO_HEVC, 3840, 2160, 60, false, CODEC_OPTIONAL});
 
         // vp8
-        // 5.3.6/C-1-1
+        // 5.3.6/C-1-1, 5.1.10/C-2-1
         argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_VP8, 320, 180, 30, false, CODEC_ANY});
         argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_VP8, 640, 360, 30, false, CODEC_ANY});
+        argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_VP8, 1280, 720, isTv ? 60 : 30, false,
+                isDispHtAtleastHD ? CODEC_ANY : CODEC_OPTIONAL});
+        argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_VP8, 1920, 1080, isTv ? 60 : 30,
+                false, isDispHtAtleastFHD ? CODEC_ANY : CODEC_OPTIONAL});
 
         // vp9
-        // 5.3.7/C-1-1
+        // 5.3.7/C-1-1, 5.1.10/C-2-1
         argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_VP9, 320, 180, 30, false, CODEC_ANY});
         argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_VP9, 640, 360, 30, false, CODEC_ANY});
         // 5.3.7/C-2-1
@@ -153,14 +266,18 @@ public class VideoCodecClaimsPerformanceTest extends VideoCodecClaimsPerformance
                 MediaFormat.MIMETYPE_VIDEO_VP9, 1920, 1080, isTv ? 60 : 30, false, CODEC_HW});
 
         // av1
-        // 5.3.9/C-2-1, 5.3.9/C-2-2
+        // 5.3.9/C-2-1, 5.3.9/C-2-2, 5.1.10/C-2-1
         if (CodecTestBase.IS_AT_LEAST_U) {
+            argsList.add(
+                    new Object[] {MediaFormat.MIMETYPE_VIDEO_AV1, 320, 240, 20, false, CODEC_ANY});
             argsList.add(
                     new Object[] {MediaFormat.MIMETYPE_VIDEO_AV1, 720, 480, 30, false, CODEC_ANY});
             argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_AV1, 1280, 720, 30, false,
                     isDispHtAtleastHD ? CODEC_HW : CODEC_OPTIONAL});
             argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_AV1, 1920, 1080, 30, false,
                     isDispHtAtleastFHD ? CODEC_HW : CODEC_OPTIONAL});
+            argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_AV1, 3840, 2160, 30, false,
+                    isDispHtAtleastUHD ? CODEC_HW : CODEC_OPTIONAL});
         }
 
         int argLength = argsList.get(0).length;
@@ -183,10 +300,10 @@ public class VideoCodecClaimsPerformanceTest extends VideoCodecClaimsPerformance
     /**
      * Check description of class {@link VideoCodecPerfCapabilityTest}
      */
-    @CddTest(requirements = {"5.2.2/C-1-2", "5.2.3/C-1-1", "5.2.6/C-2-1", "5.3.4/C-1-2",
-            "5.3.4/C-2-1", "5.3.4/C-2-2", "5.3.5/C-1-1", "5.3.5/C-1-2", "5.3.6/C-1-1",
-            "5.3.6/C-2-1", "5.3.6/C-2-2", "5.3.7/C-1-1", "5.3.7/C-2-1", "5.3.9/C-1-1",
-            "5.3.9/C-2-1", "5.3.9/C-2-2"})
+    @CddTest(requirements = {"5.1.10/C-2-1", "5.2.2/C-1-2", "5.2.3/C-1-1", "5.2.6/C-2-1",
+            "5.3.4/C-1-2", "5.3.4/C-2-1", "5.3.4/C-2-2", "5.3.5/C-1-1", "5.3.5/C-1-2",
+            "5.3.6/C-1-1", "5.3.6/C-2-1", "5.3.6/C-2-2", "5.3.7/C-1-1", "5.3.7/C-2-1",
+            "5.3.9/C-1-1", "5.3.9/C-2-1", "5.3.9/C-2-2"})
     @SmallTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
     public void testDeviceClaimsPerformanceSupported() throws IOException {
