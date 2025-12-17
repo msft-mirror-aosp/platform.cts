@@ -47,7 +47,6 @@ import perfetto.protos.PerfettoConfig.TracingServiceState.DataSource;
 import perfetto.protos.PerfettoTrace.FtraceEvent;
 import perfetto.protos.PerfettoTrace.FtraceEventBundle;
 import perfetto.protos.PerfettoTrace.GpuCounterDescriptor;
-import perfetto.protos.PerfettoTrace.GpuCounterEvent;
 import perfetto.protos.PerfettoTrace.GpuRenderStageEvent;
 import perfetto.protos.PerfettoTrace.Trace;
 import perfetto.protos.PerfettoTrace.TracePacket;
@@ -62,6 +61,7 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -177,7 +177,7 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
         }
         installPackage(APK);
         getDevice().setProperty(DEBUG_PROPERTY, "1");
-        mHasGpuCountersCapability = getProperty(GPU_COUNTERS_CAPABILITY_PROPERTY);
+        mHasGpuCountersCapability = true; // getProperty(GPU_COUNTERS_CAPABILITY_PROPERTY);
     }
 
     /**
@@ -298,14 +298,11 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
             trace = Trace.parseFrom(CodedInputStream.newInstance(in));
         }
 
-        List<GpuCounter> gpuCountersFromTrace = ProfilingDataUtilsKt.getCounters(trace);
+        GpuCounters gpuCountersFromTrace = new GpuCounters(trace);
 
         boolean foundValidGpuCounterEvent = containsValidGpuCounterEvent(gpuCountersFromTrace);
         boolean foundAllDefaultCounters =
-                gpuCountersFromTrace.stream()
-                        .map(GpuCounter::getCounterId)
-                        .collect(Collectors.toSet())
-                        .equals(defaultCounterIds);
+                gpuCountersFromTrace.getCounterValues().keySet().equals(defaultCounterIds);
         boolean foundGpuFrequencyEvent = containsGpuFrequencyEvent(trace);
         boolean foundValidGpuRenderStageEvent = containsValidRenderStageEvent(trace);
 
@@ -323,8 +320,10 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                 trace = Trace.parseFrom(CodedInputStream.newInstance(in));
             }
 
+            gpuCountersFromTrace = new GpuCounters(trace);
+
             String foundValidGpuCounterDescriptions =
-                    getSummaryDescriptionOfIdsInTrace(trace, counterIds);
+                    getSummaryDescriptionOfIdsInTrace(gpuCountersFromTrace, counterIds);
 
             traceResult.delete();
             deleteTraceStatus = getDevice().executeShellV2Command("rm -f " + TRACE_FILE_PATH);
@@ -362,43 +361,36 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
         allCountersConfigFile.delete();
     }
 
-    private static String getSummaryDescriptionOfIdsInTrace(Trace trace, Set<Integer> enabledIds) {
-        for (TracePacket packet : trace.getPacketList()) {
-            if (!packet.hasGpuCounterEvent()) continue;
-            if (packet.hasTimestamp() && packet.getTimestamp() != 0) {
-                return "first counter event packet has a non-zero timestamp";
-            }
-
-            GpuCounterEvent gpuCounterEvent = packet.getGpuCounterEvent();
-            if (!gpuCounterEvent.hasCounterDescriptor()) {
-                return "first counter event packet does not contain a descriptor";
-            }
-
-            GpuCounterDescriptor descriptor = gpuCounterEvent.getCounterDescriptor();
-
-            if (descriptor.getSpecsCount() == 0) return "descriptor contains no specs";
-
-            Set<Integer> foundIds = new HashSet<>();
-
-            for (GpuCounterDescriptor.GpuCounterSpec spec : descriptor.getSpecsList()) {
-                int counterId = spec.getCounterId();
-                if (!enabledIds.contains(counterId)) return "unknown counter ID: " + counterId;
-                if (!spec.hasName() || spec.getName().isEmpty()) {
-                    return "missing or empty name for counter id " + counterId;
-                }
-                foundIds.add(counterId);
-            }
-
-            return foundIds.size() == enabledIds.size()
-                    ? SUCCESS
-                    : "not all enabled counters were found in the descriptor";
+    private static String getSummaryDescriptionOfIdsInTrace(
+            GpuCounters gpuCounters, Set<Integer> enabledIds) {
+        if (!gpuCounters.getCounterDescriptorError().isEmpty()) {
+            return gpuCounters.getCounterDescriptorError();
         }
-        return "no counter descriptor events found";
+        if (gpuCounters.getCounterSpecs().isEmpty()) {
+            return "no counter descriptor events found";
+        }
+        for (Map.Entry<Integer, GpuCounterDescriptor.GpuCounterSpec> entry :
+                gpuCounters.getCounterSpecs().entrySet()) {
+            int id = entry.getKey();
+            if (!enabledIds.contains(id)) return "unknown counter ID: " + id;
+            if (!entry.getValue().hasName() || entry.getValue().getName().isEmpty()) {
+                return "missing or empty name for counter id " + id;
+            }
+        }
+        return gpuCounters.getCounterSpecs().size() == enabledIds.size()
+                ? SUCCESS
+                : "not all enabled counters were found in the descriptor, diff, expected: "
+                        + Arrays.stream(enabledIds.toArray()).sorted().toList().toString()
+                        + ", found: "
+                        + gpuCounters.getCounterSpecs().keySet().stream().sorted().toList();
     }
 
-    private static boolean containsValidGpuCounterEvent(List<GpuCounter> gpuCountersFromTrace) {
+    private static boolean containsValidGpuCounterEvent(GpuCounters gpuCounters) {
         // Currently, "valid counters" are defined by having at least one, non-zero value.
-        return gpuCountersFromTrace.stream().anyMatch(counter -> counter.getValue() > 0.0);
+        return gpuCounters.getCounterValues().values().stream()
+                .anyMatch(
+                        valueslist ->
+                                valueslist.stream().anyMatch(counter -> counter.getValue() > 0.0));
     }
 
     private static boolean containsGpuFrequencyEvent(Trace trace) {
