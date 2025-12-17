@@ -663,4 +663,22 @@ public class DocumentsContractTest {
         assertEquals(Integer.toHexString(expected & 0xF0F0F0F0),
                 Integer.toHexString(actual & 0xF0F0F0F0));
     }
+
+    @Test
+    public void testCategoryApprovedDocumentHandler() {
+        final Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.addCategory(DocumentsContract.CATEGORY_APPROVED_DOCUMENT_HANDLER);
+        intent.setType("text/plain");
+
+        final PackageManager pm = InstrumentationRegistry.getTargetContext().getPackageManager();
+        final List<ResolveInfo> infos = pm.queryIntentActivities(intent, 0);
+
+        boolean found =
+                infos.stream()
+                        .anyMatch(
+                                info ->
+                                        "android.provider.cts.ApprovedDocumentHandlerActivity"
+                                                .equals(info.activityInfo.name));
+        assertTrue("Could not find activity handling APPROVED_DOCUMENT_HANDLER category", found);
+    }
 }
