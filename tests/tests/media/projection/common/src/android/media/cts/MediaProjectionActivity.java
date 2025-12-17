@@ -242,13 +242,14 @@ public class MediaProjectionActivity extends Activity {
                             ? getResourceString(
                                     this, CONNECTED_DISPLAY_STRING_RES_NAME, displayName)
                             : getResourceString(this, ENTIRE_SCREEN_STRING_RES_NAME);
-            dismissPermissionDialog(uiDevice, optionString);
+            dismissPermissionDialog(uiDevice, optionString, displayName);
             count++;
         } while (!mCountDownLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS));
     }
 
     /** The permission dialog will be auto-opened by the activity - find it and accept */
-    private static void dismissPermissionDialog(UiDevice uiDevice, @Nullable String optionString) {
+    private static void dismissPermissionDialog(
+            UiDevice uiDevice, @Nullable String optionString, @Nullable String displayName) {
         uiDevice.waitForIdle();
 
         BySelector shareTabSelector = By.res(SHARE_TAB_TEST_TAG);
@@ -257,14 +258,15 @@ public class MediaProjectionActivity extends Activity {
 
         if (isNewUiPresent) {
             Log.d(TAG, "Compose permission UI detected via testTag: " + SHARE_TAB_TEST_TAG);
-            dismissNewComposePermissionDialog(uiDevice);
+            dismissNewComposePermissionDialog(uiDevice, displayName);
         } else {
             Log.d(TAG, "Old AlertDialog permission UI detected.");
             dismissOldAlertDialog(uiDevice, optionString);
         }
     }
 
-    private static void dismissNewComposePermissionDialog(UiDevice uiDevice) {
+    private static void dismissNewComposePermissionDialog(
+            UiDevice uiDevice, @Nullable String displayName) {
         UiObject2 shareEntireScreenButton =
                 uiDevice.wait(
                         Until.findObject(By.res(SHARE_ENTIRE_SCREEN_TEST_TAG)),
@@ -293,15 +295,29 @@ public class MediaProjectionActivity extends Activity {
         }
 
         Log.d(TAG, "Found content list with testTag: " + SHARE_CONTENT_LIST_TEST_TAG);
-        // Find the first clickable item within the displays list.
-        UiObject2 firstDisplay = contentList.findObject(By.clickable(true));
-        if (firstDisplay == null) {
-            Log.e(TAG, "Found content list via testTag, but it has no clickable items.");
+        UiObject2 displayToClick = null;
+
+        // Attempt specific search if name is provided.
+        if (displayName != null) {
+            displayToClick = contentList.findObject(By.textContains(displayName));
+        }
+
+        // Fallback to first clickable if name search failed or was skipped.
+        if (displayToClick == null) {
+            if (displayName != null) {
+                Log.w(TAG, "Could not find display with name: " + displayName + ". Falling back.");
+            }
+            displayToClick = contentList.findObject(By.clickable(true));
+        }
+
+        // Final safety check.
+        if (displayToClick == null) {
+            Log.e(TAG, "No clickable items found in content list.");
             return;
         }
 
-        Log.d(TAG, "Found content list via testTag. Clicking the first item.");
-        firstDisplay.click();
+        Log.d(TAG, "Clicking item: " + displayToClick.getText());
+        displayToClick.click();
 
         uiDevice.waitForIdle();
         // Find and click the "Share" button, which should now be enabled.
@@ -321,6 +337,7 @@ public class MediaProjectionActivity extends Activity {
         if (enabled) {
             shareButton.click();
             Log.d(TAG, "Clicked enabled Compose Share button.");
+            uiDevice.wait(Until.gone(By.res(SHARE_TAB_TEST_TAG)), PERMISSION_DIALOG_WAIT_MS);
         } else {
             Log.e(
                     TAG,
