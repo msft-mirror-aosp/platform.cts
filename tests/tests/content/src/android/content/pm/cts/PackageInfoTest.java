@@ -16,6 +16,8 @@
 
 package android.content.pm.cts;
 
+import static android.content.pm.PackageManager.GET_PERMISSIONS;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -25,6 +27,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.Attribution;
@@ -39,10 +42,16 @@ import android.content.pm.UsesPermissionPurposeInfo;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.DisabledOnRavenwood;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.SystemUtil;
+
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -54,6 +63,10 @@ import java.util.Map;
 public class PackageInfoTest {
 
     private static final String PACKAGE_NAME = "android.content.cts";
+    private static final String SAMPLE_APK_BASE = "/data/local/tmp/cts/content/";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Context getContext() {
         return InstrumentationRegistry.getInstrumentation().getTargetContext();
@@ -108,6 +121,32 @@ public class PackageInfoTest {
                 assertSame("component=" + ci.getComponentName(), ai, ci.applicationInfo);
             }
         }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.permission.flags.Flags.FLAG_LOCATION_BUTTON_ENABLED)
+    public void testOnlyForLocationButtonFlag() throws Exception {
+        installPackage(SAMPLE_APK_BASE + "CtsOnlyForLocationButtonApp.apk");
+        PackageInfo pkgInfo =
+                getContext()
+                        .getPackageManager()
+                        .getPackageInfo(
+                                "com.android.cts.permission.onlyforlocationbuttonapp",
+                                PackageManager.PackageInfoFlags.of(GET_PERMISSIONS));
+
+        boolean foundFineLocation = false;
+        for (int i = 0; i < pkgInfo.requestedPermissions.length; i++) {
+            if (Manifest.permission.ACCESS_FINE_LOCATION.equals(pkgInfo.requestedPermissions[i])) {
+                int flags = pkgInfo.requestedPermissionsFlags[i];
+                assertTrue(
+                        "REQUESTED_PERMISSION_ONLY_FOR_LOCATION_BUTTON flag not set",
+                        (flags & PackageInfo.REQUESTED_PERMISSION_ONLY_FOR_LOCATION_BUTTON) != 0);
+                foundFineLocation = true;
+                break;
+            }
+        }
+        assertTrue("ACCESS_FINE_LOCATION permission not found", foundFineLocation);
     }
 
     private void checkPkgInfoSame(PackageInfo expected, PackageInfo actual) {
@@ -222,5 +261,9 @@ public class PackageInfoTest {
             Map<String, UsesPermissionPurposeInfo> expected,
             Map<String, UsesPermissionPurposeInfo> actual) {
         assertEquals(expected.size(), actual.size());
+    }
+
+    private boolean installPackage(String apkPath) {
+        return SystemUtil.runShellCommand("pm install -t " + apkPath).equals("Success\n");
     }
 }
