@@ -23,6 +23,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
+import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -44,6 +45,7 @@ import java.util.concurrent.TimeUnit;
  * considering the presence or absence of the {@code <allow-component-access>} tag in the client's
  * manifest. These tests establish baseline behavior in a standard environment.
  */
+@AppModeFull(reason = "Test relies on other app to connect to. Instant apps can't see other apps")
 @RunWith(AndroidJUnit4.class)
 public class AllowComponentAccessTest {
 
