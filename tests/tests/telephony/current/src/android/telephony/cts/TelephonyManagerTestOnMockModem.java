@@ -26,6 +26,7 @@ import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -1161,5 +1162,29 @@ public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
         return InstrumentationRegistry.getInstrumentation().getContext()
                 .getPackageManager().hasSystemFeature(
                         PackageManager.FEATURE_TELEPHONY_CARRIERLOCK);
+    }
+
+    @Test
+    public void testRebootModem() {
+        Log.d(TAG, "TelephonyManagerTestOnMockModem#testRebootModem");
+        sMockModemManager.resetRebootModemCalledFlag(); // Reset flag before test
+        try {
+            Log.d(TAG, "Calling TelephonyManager.rebootModem()");
+            assertFalse(
+                    "rebootModem flag should be false", sMockModemManager.wasRebootModemCalled());
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    sTelephonyManager, (tm) -> tm.rebootModem());
+            Log.d(TAG, "TelephonyManager.rebootModem() call completed.");
+
+            // Assert that the flag was set in IRadioConfigImpl
+            assertTrue(
+                    "rebootModem should have been called on the mock modem",
+                    sMockModemManager.wasRebootModemCalled());
+            Log.d(TAG, "Assertion passed: rebootModem was called.");
+        } catch (Exception e) {
+            fail("Exception during rebootModem call on Mock Modem: " + e.getMessage());
+        } finally {
+            sMockModemManager.resetRebootModemCalledFlag(); // Clean up
+        }
     }
 }
