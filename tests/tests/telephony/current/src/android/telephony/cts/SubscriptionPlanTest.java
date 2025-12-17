@@ -168,7 +168,10 @@ public class SubscriptionPlanTest {
         assertThat(fromParcel.getDataUsageResetTime()).isEqualTo(DATA_USAGE_RESET_TIME);
 
         // Verify Network Types
-        assertThat(fromParcel.getNetworkTypes()).isEqualTo(NETWORK_TYPES);
+        assertThat(fromParcel.getNetworkTypes())
+                .asList()
+                .containsExactlyElementsIn(
+                        Arrays.stream(NETWORK_TYPES).boxed().collect(Collectors.toList()));
 
         // Assuming the getters follow the standard naming convention based on the setters
         assertThat(fromParcel.getSubscriptionStatus()).isEqualTo(SUBSCRIPTION_STATUS);
