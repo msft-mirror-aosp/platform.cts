@@ -46,6 +46,8 @@ import android.voiceinteraction.service.MainInteractionSession;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.bedstead.nene.TestApis;
+import com.android.compatibility.common.util.SettingsStateManager;
+import com.android.compatibility.common.util.StateKeeperRule;
 
 import org.junit.After;
 import org.junit.Before;
@@ -65,12 +67,21 @@ public class VoiceInteractionManifestAttributesTest {
     private static final String NO_PERMISSION_PKG = "android.voiceinteraction.nopermission";
     private static final long ENABLE_RESTRICT_ASSIST_STRUCTURE = 437416500L;
 
+    private static final String ASSIST_STRUCTURE_ENABLED = "assist_structure_enabled";
+    private static final SettingsStateManager sStructureEnabledMgr =
+            new SettingsStateManager(
+                    getInstrumentation().getTargetContext(), ASSIST_STRUCTURE_ENABLED);
+
     private static final String EXTRA_HAS_STRUCTURE = "has_structure";
     private static final String EXTRA_HAS_WINDOW_DATA = "has_window_data";
     private static final String EXTRA_HAS_VIEW_DATA = "has_view_data";
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Rule
+    public final StateKeeperRule<String> mStructureEnabledKeeperRule =
+            new StateKeeperRule<>(sStructureEnabledMgr);
 
     private final Context mContext = getInstrumentation().getTargetContext();
     private String mOriginalService;
@@ -256,6 +267,9 @@ public class VoiceInteractionManifestAttributesTest {
             if (!latch.await(5, TimeUnit.SECONDS)) {
                 Log.w(TAG, "Service ready broadcast not received for " + component);
             }
+
+            // Enable screen context as it is switched off by the system after after changing
+            sStructureEnabledMgr.set("1");
         } finally {
             mContext.unregisterReceiver(receiver);
         }

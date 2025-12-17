@@ -115,6 +115,9 @@ public class VoiceInteractionServiceTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
+    private static final SettingsStateManager sStructureEnabledMgr =
+            new SettingsStateManager(
+                    getInstrumentation().getTargetContext(), "assist_structure_enabled");
     private static final SettingsStateManager sScreenshotEnabledManager = new SettingsStateManager(
             getInstrumentation().getTargetContext(), "assist_screenshot_enabled");
     private static final TestApp sTestApp = testApps(sDeviceState).query()
@@ -149,6 +152,9 @@ public class VoiceInteractionServiceTest {
 
         // Check we can get the service, we need service object to call the service provided method
         Objects.requireNonNull(mService);
+
+        sStructureEnabledMgr.set("1");
+        sScreenshotEnabledManager.set("1");
 
         VoiceInteractionTestReceiver.reset();
     }
