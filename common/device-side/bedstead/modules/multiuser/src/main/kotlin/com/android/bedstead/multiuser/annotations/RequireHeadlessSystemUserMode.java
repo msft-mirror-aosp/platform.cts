@@ -17,9 +17,11 @@
 package com.android.bedstead.multiuser.annotations;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.FIRST;
+import static com.android.bedstead.nene.types.OptionalBoolean.ANY;
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
+import com.android.bedstead.nene.types.OptionalBoolean;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -52,4 +54,13 @@ public @interface RequireHeadlessSystemUserMode {
      * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any {@link int}.
      */
     int priority() default FIRST;
+
+    /**
+     * Whether the headless system user must be interactive, i.e. can be switched to.
+     *
+     * <p>ANY - only run if the device is in HSUM (regardless of whether the HSU can be switched to)
+     * <p>TRUE - only run if the device is interactive HSUM (with a switchable HSU)
+     * <p>FALSE - only run if the device is non-interactive HSUM (with a non-switchable HSU)
+     */
+    OptionalBoolean interactive() default ANY;
 }

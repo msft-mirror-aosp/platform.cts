@@ -39,10 +39,12 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.core.os.asOutcomeReceiver
 import androidx.test.core.app.ApplicationProvider
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
-import com.android.bedstead.harrier.BedsteadJUnit4
-import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnPrimaryUser
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSecondaryUser
+import com.android.bedstead.flags.annotations.RequireFlagsDisabled
+import com.android.bedstead.flags.annotations.RequireFlagsEnabled
+import com.android.bedstead.harrier.BedsteadJUnit4
+import com.android.bedstead.harrier.DeviceState
 import com.android.compatibility.common.util.ApiTest
 import com.android.extensions.appfunctions.AppFunctionException as SidecarAppFunctionException
 import com.android.extensions.appfunctions.AppFunctionManager as SidecarAppFunctionManager
@@ -133,6 +135,36 @@ class SidecarManagerTest {
     @EnsureHasNoDeviceOwner
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
+    @RequireFlagsEnabled(
+        android.app.appfunctions.flags.Flags.FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2
+    )
+    @Throws(Exception::class)
+    fun executeAppFunction_sidecarManager_verifyCallingPackageEmpty() = doBlocking {
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val request = SidecarExecuteAppFunctionRequest.Builder(CURRENT_PKG, "noOp").build()
+
+            val response = sidecarExecuteFunction(context, request)
+
+            assertThat(response.isSuccess).isTrue()
+            assertThat(
+                    response
+                        .getOrNull()!!
+                        .resultDocument
+                        .getPropertyString("TEST_PROPERTY_CALLING_PACKAGE")
+                )
+                .isEqualTo("")
+            assertServiceDestroyed()
+        }
+    }
+
+    @ApiTest(apis = ["com.android.extensions.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @RequireFlagsDisabled(
+        android.app.appfunctions.flags.Flags.FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2
+    )
     @Throws(Exception::class)
     fun executeAppFunction_sidecarManager_verifyCallingPackageFromRequest() = doBlocking {
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {

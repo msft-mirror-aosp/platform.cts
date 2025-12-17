@@ -54,7 +54,6 @@ import android.util.Base64;
 import android.util.IntArray;
 import android.util.Log;
 
-import com.android.internal.R;
 import com.android.internal.telephony.nano.PersistAtomsProto.PersistAtoms;
 
 import java.util.ArrayList;
@@ -2004,8 +2003,14 @@ class MockSatelliteServiceManager {
     }
 
     private String getSatelliteServicePackageName() {
-        return TextUtils.emptyIfNull(mInstrumentation.getContext().getResources().getString(
-                R.string.config_satellite_service_package));
+        Context context = mInstrumentation.getContext();
+        int resId =
+                context.getResources()
+                        .getIdentifier("config_satellite_service_package", "string", "android");
+        if (resId == 0) {
+            return "";
+        }
+        return TextUtils.emptyIfNull(context.getResources().getString(resId));
     }
 
     @NonNull

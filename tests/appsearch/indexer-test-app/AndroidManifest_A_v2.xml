@@ -34,7 +34,8 @@
 
         <service
             android:name=".AppFunctionService"
-            android:exported="true">
+            android:exported="true"
+            android:permission="android.permission.BIND_APP_FUNCTION_SERVICE">
             <property
                 android:name="android.app.appfunctions"
                 android:value="appfunctions.xml" />

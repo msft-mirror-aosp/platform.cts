@@ -1,4 +1,3 @@
-//
 // Copyright (C) 2025 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,36 +11,26 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 
 package {
+    default_team: "trendy_team_partner_eng",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_test_helper_app {
-    name: "CtsHostLooperCompatTestApp",
-    defaults: ["cts_support_defaults"],
-    platform_apis: true,
-    sdk_version: "current",
+java_test_host {
+    name: "CtsLogcatHostTestCases",
+    defaults: ["cts_defaults"],
     srcs: ["src/**/*.java"],
-    libs: [
-        "junit",
-    ],
-    static_libs: [
-        "androidx.test.rules",
-        "bedstead-enterprise",
-        "compatibility-common-util-devicesidelib",
-        "compatibility-device-info-tests",
-        "compatibility-device-info",
-        "compatibility-device-util-tests-axt",
-        "compatibility-device-util-axt",
-        "ctstestrunner-axt",
-        "truth",
-    ],
-
-    // Tag this module as a cts test artifact
     test_suites: [
         "cts",
         "general-tests",
+    ],
+    libs: [
+        "cts-tradefed",
+        "tradefed",
+        "compatibility-host-util",
+    ],
+    static_libs: [
+        "logcat-proto-java",
     ],
 }

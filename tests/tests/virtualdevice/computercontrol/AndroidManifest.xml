@@ -15,17 +15,21 @@
 -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="android.os.loopercompattests">
-    <application
-        android:appComponentFactory="com.android.bedstead.testapp.TestAppAppComponentFactory"
-        android:debuggable="true">
-        <uses-library android:name="android.test.runner" />
-    </application>
+    xmlns:tools="http://schemas.android.com/tools"
+    package="android.virtualdevice.cts.computercontrol">
 
-    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <queries>
+        <package android:name="android.computercontrol.testapp" />
+    </queries>
+
+    <application android:testOnly="true">
+        <uses-library android:name="android.test.runner" />
+        <uses-library android:name="com.android.extensions.computercontrol" android:required="false" />
+    </application>
 
     <instrumentation
         android:name="androidx.test.runner.AndroidJUnitRunner"
-        android:targetPackage="android.os.loopercompattests" />
+        android:targetPackage="android.virtualdevice.cts.computercontrol"
+        android:label="CTS Computer Control Tests" />
 
 </manifest>

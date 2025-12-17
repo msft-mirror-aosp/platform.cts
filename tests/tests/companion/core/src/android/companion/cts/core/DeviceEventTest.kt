@@ -21,6 +21,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -46,6 +47,27 @@ class DeviceEventTest : CoreTestBase() {
         assertEquals(expected = EVENT_BLE_APPEARED, actual = deviceEvent.event)
         assertEquals(expected = UUID_A, actual = deviceEvent.uuid)
         assertEquals(expected = ASSOCIATION_ID, actual = deviceEvent.associationId)
+    }
+
+    @Test
+    fun test_DevicePresenceEvent_builder() {
+        val deviceEventA = DevicePresenceEvent.Builder()
+            .setEvent(EVENT_BLE_APPEARED).setUuid(UUID_A).build()
+
+        assertEquals(expected = EVENT_BLE_APPEARED, actual = deviceEventA.event)
+        assertEquals(expected = UUID_A, actual = deviceEventA.uuid)
+
+        val deviceEventB = DevicePresenceEvent.Builder()
+            .setEvent(EVENT_BLE_APPEARED).setAssociationId(ASSOCIATION_ID).build()
+
+        assertEquals(expected = EVENT_BLE_APPEARED, actual = deviceEventB.event)
+        assertEquals(expected = ASSOCIATION_ID, actual = deviceEventB.associationId)
+
+        assertFailsWith(IllegalStateException::class) {
+            DevicePresenceEvent.Builder()
+                .setEvent(EVENT_BLE_APPEARED).setAssociationId(ASSOCIATION_ID)
+                .setUuid(UUID_A).build()
+        }
     }
 
     @Test

@@ -16,6 +16,7 @@
 
 package android.app.notification.current.cts;
 
+import static android.app.Notification.BridgedNotificationMetadata;
 import static android.app.Notification.FLAG_BUBBLE;
 import static android.app.Notification.FLAG_PROMOTED_ONGOING;
 import static android.app.Notification.SEMANTIC_STYLE_CAUTION;
@@ -172,18 +173,30 @@ public class NotificationTest {
     @Test
     public void testWriteToParcel() {
         Notification.BubbleMetadata bubble = makeBubbleMetadata();
-        Notification.Builder builder = new Notification.Builder(mContext, CHANNEL.getId())
-                .setBadgeIconType(Notification.BADGE_ICON_SMALL)
-                .setShortcutId(SHORTCUT_ID)
-                .setTimeoutAfter(TIMEOUT)
-                .setSettingsText(SETTING_TEXT)
-                .setGroupAlertBehavior(Notification.GROUP_ALERT_CHILDREN)
-                .setBubbleMetadata(bubble)
-                .setAllowSystemGeneratedContextualActions(ALLOW_SYS_GEN_CONTEXTUAL_ACTIONS);
-        builder.setShortCriticalText(SHORT_CRITICAL_TEXT);
-        if (Flags.nmSummarization()) {
-            builder.setHasSummarizedContent(true);
+        Notification.Builder builder =
+                new Notification.Builder(mContext, CHANNEL.getId())
+                        .setBadgeIconType(Notification.BADGE_ICON_SMALL)
+                        .setShortcutId(SHORTCUT_ID)
+                        .setTimeoutAfter(TIMEOUT)
+                        .setSettingsText(SETTING_TEXT)
+                        .setGroupAlertBehavior(Notification.GROUP_ALERT_CHILDREN)
+                        .setBubbleMetadata(bubble)
+                        .setAllowSystemGeneratedContextualActions(ALLOW_SYS_GEN_CONTEXTUAL_ACTIONS);
+        if (Flags.bridgedNotifications()) {
+            BridgedNotificationMetadata metadata = null;
+            Icon icon =
+                    Icon.createWithBitmap(Bitmap.createBitmap(300, 300, Bitmap.Config.ARGB_8888));
+            metadata =
+                    new BridgedNotificationMetadata(
+                            BridgedNotificationMetadata.BRIDGED_METADATA_TYPE_PHONE,
+                            "test_display_name",
+                            "test_package",
+                            "test_channel_id",
+                            icon);
+            builder.setBridgedNotificationMetadata(metadata);
         }
+        builder.setShortCriticalText(SHORT_CRITICAL_TEXT);
+        builder.setHasSummarizedContent(true);
         if (Flags.nmSummarizationAll()) {
             builder.setSummarizedContent("hello!");
         }
@@ -246,11 +259,15 @@ public class NotificationTest {
         assertEquals(mNotification.getShortCriticalText(), result.getShortCriticalText());
         assertEquals(mNotification.getGroupAlertBehavior(), result.getGroupAlertBehavior());
         assertNotNull(result.getBubbleMetadata());
-        assertEquals(mNotification.getAllowSystemGeneratedContextualActions(),
-                result.getAllowSystemGeneratedContextualActions());
-        if (Flags.nmSummarization()) {
-            assertTrue(mNotification.hasSummarizedContent());
+        if (Flags.bridgedNotifications()) {
+            assertNotNull(result.getBridgedNotificationMetadata());
+        } else {
+            assertNull(result.getBridgedNotificationMetadata());
         }
+        assertEquals(
+                mNotification.getAllowSystemGeneratedContextualActions(),
+                result.getAllowSystemGeneratedContextualActions());
+        assertTrue(mNotification.hasSummarizedContent());
         if (Flags.nmSummarizationAll()) {
             assertEquals("hello!", mNotification.getSummarizedContent().toString());
         }
@@ -310,25 +327,41 @@ public class NotificationTest {
         Notification.BubbleMetadata bubble = makeBubbleMetadata();
         final PendingIntent actionIntent =
                 PendingIntent.getBroadcast(mContext, 0, intent, PendingIntent.FLAG_IMMUTABLE);
-        mNotification = new Notification.Builder(mContext, CHANNEL.getId())
-                .setSmallIcon(1)
-                .setContentTitle(CONTENT_TITLE)
-                .setContentText(CONTENT_TEXT)
-                .setContentIntent(contentIntent)
-                .setBadgeIconType(Notification.BADGE_ICON_SMALL)
-                .setShortcutId(SHORTCUT_ID)
-                .setTimeoutAfter(TIMEOUT)
-                .setSettingsText(SETTING_TEXT)
-                .setGroupAlertBehavior(Notification.GROUP_ALERT_SUMMARY)
-                .setBubbleMetadata(bubble)
-                .setAllowSystemGeneratedContextualActions(ALLOW_SYS_GEN_CONTEXTUAL_ACTIONS)
-                .addAction(new Notification.Action.Builder(0, ACTION_TITLE, actionIntent)
-                        .setContextual(true)
-                        .build())
-                .addAction(new Notification.Action.Builder(0, "not contextual", actionIntent)
-                        .setContextual(false)
-                        .build())
-                .build();
+        Notification.Builder builder =
+                new Notification.Builder(mContext, CHANNEL.getId())
+                        .setSmallIcon(1)
+                        .setContentTitle(CONTENT_TITLE)
+                        .setContentText(CONTENT_TEXT)
+                        .setContentIntent(contentIntent)
+                        .setBadgeIconType(Notification.BADGE_ICON_SMALL)
+                        .setShortcutId(SHORTCUT_ID)
+                        .setTimeoutAfter(TIMEOUT)
+                        .setSettingsText(SETTING_TEXT)
+                        .setGroupAlertBehavior(Notification.GROUP_ALERT_SUMMARY)
+                        .setBubbleMetadata(bubble)
+                        .setAllowSystemGeneratedContextualActions(ALLOW_SYS_GEN_CONTEXTUAL_ACTIONS)
+                        .addAction(
+                                new Notification.Action.Builder(0, ACTION_TITLE, actionIntent)
+                                        .setContextual(true)
+                                        .build())
+                        .addAction(
+                                new Notification.Action.Builder(0, "not contextual", actionIntent)
+                                        .setContextual(false)
+                                        .build());
+        if (Flags.bridgedNotifications()) {
+            BridgedNotificationMetadata metadata = null;
+            Icon icon =
+                    Icon.createWithBitmap(Bitmap.createBitmap(300, 300, Bitmap.Config.ARGB_8888));
+            metadata =
+                    new BridgedNotificationMetadata(
+                            BridgedNotificationMetadata.BRIDGED_METADATA_TYPE_PHONE,
+                            "test_display_name",
+                            "test_package",
+                            "test_channel_id",
+                            icon);
+            builder.setBridgedNotificationMetadata(metadata);
+        }
+        mNotification = builder.build();
         assertEquals(CONTENT_TEXT, mNotification.extras.getString(Notification.EXTRA_TEXT));
         assertEquals(CONTENT_TITLE, mNotification.extras.getString(Notification.EXTRA_TITLE));
         assertEquals(1, mNotification.icon);
@@ -340,7 +373,25 @@ public class NotificationTest {
         assertEquals(SETTING_TEXT, mNotification.getSettingsText());
         assertEquals(Notification.GROUP_ALERT_SUMMARY, mNotification.getGroupAlertBehavior());
         assertEquals(bubble, mNotification.getBubbleMetadata());
-        assertEquals(ALLOW_SYS_GEN_CONTEXTUAL_ACTIONS,
+        if (Flags.bridgedNotifications()) {
+            assertNotNull(mNotification.getBridgedNotificationMetadata());
+            assertEquals(
+                    BridgedNotificationMetadata.BRIDGED_METADATA_TYPE_PHONE,
+                    mNotification.getBridgedNotificationMetadata().getOriginDeviceType());
+            assertEquals(
+                    "test_display_name",
+                    mNotification.getBridgedNotificationMetadata().getOriginDeviceName());
+            assertEquals(
+                    "test_package",
+                    mNotification.getBridgedNotificationMetadata().getPackageName());
+            assertEquals(
+                    "test_channel_id",
+                    mNotification.getBridgedNotificationMetadata().getChannelId());
+        } else {
+            assertNull(mNotification.getBridgedNotificationMetadata());
+        }
+        assertEquals(
+                ALLOW_SYS_GEN_CONTEXTUAL_ACTIONS,
                 mNotification.getAllowSystemGeneratedContextualActions());
         assertEquals(1, mNotification.getContextualActions().size());
         assertEquals(ACTION_TITLE, mNotification.getContextualActions().get(0).title);

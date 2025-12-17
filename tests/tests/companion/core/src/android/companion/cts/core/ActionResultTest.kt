@@ -24,6 +24,8 @@ import android.companion.ActionRequest.OP_DEACTIVATE
 import android.companion.ActionRequest.REQUEST_NEARBY_SCANNING
 import android.companion.ActionResult
 import android.companion.ActionResult.RESULT_ACTIVATED
+import android.companion.ActionResult.RESULT_DEACTIVATED
+import android.companion.ActionResult.RESULT_FAILED_TO_ACTIVATE
 import android.companion.DevicePresenceEvent
 import android.companion.Flags
 import android.companion.cts.common.DEVICE_DISPLAY_NAME_A
@@ -436,6 +438,33 @@ class ActionResultTest : CoreTestBase() {
                 )
             )
         }
+    }
+
+    @Test
+    fun testActionResult_Builder() {
+        val resultA = ActionResult.Builder(
+            REQUEST_NEARBY_SCANNING,
+            RESULT_ACTIVATED
+        ).build()
+
+        assertEquals(expected = REQUEST_NEARBY_SCANNING, actual = resultA.action)
+        assertEquals(expected = RESULT_ACTIVATED, actual = resultA.resultCode)
+
+        val resultB = ActionResult.Builder(
+            REQUEST_NEARBY_SCANNING,
+            RESULT_FAILED_TO_ACTIVATE
+        ).build()
+
+        assertEquals(expected = REQUEST_NEARBY_SCANNING, actual = resultB.action)
+        assertEquals(expected = RESULT_FAILED_TO_ACTIVATE, actual = resultB.resultCode)
+
+        val resultC = ActionResult.Builder(
+            REQUEST_NEARBY_SCANNING,
+            RESULT_DEACTIVATED
+        ).build()
+
+        assertEquals(expected = REQUEST_NEARBY_SCANNING, actual = resultC.action)
+        assertEquals(expected = RESULT_DEACTIVATED, actual = resultC.resultCode)
     }
 
     private fun assertResultReceived(

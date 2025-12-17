@@ -17,7 +17,6 @@ package android.app.cts;
 
 import static android.app.Flags.FLAG_APP_START_INFO;
 import static android.app.Flags.FLAG_USE_APP_INFO_NOT_LAUNCHED;
-import static android.content.pm.Flags.FLAG_STAY_STOPPED;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
@@ -41,7 +40,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.content.pm.Flags;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.ConditionVariable;
@@ -50,7 +48,6 @@ import android.os.RemoteException;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -127,7 +124,6 @@ public final class ForceStopTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_STAY_STOPPED)
     public void testPackageStoppedState() throws Exception {
         final Intent intent = createSimpleActivityIntent();
         final String packageName = intent.getPackage();
@@ -164,15 +160,12 @@ public final class ForceStopTest {
         final Long timestampMs = timestampQueue.poll(DELAY_MILLIS, TimeUnit.MILLISECONDS);
         assertWithMessage("Didn't get ACTION_PACKAGE_RESTARTED").that(timestampMs).isNotNull();
 
-        if (Flags.stayStopped()) {
-            assertWithMessage("EXTRA_TIME " + timestampMs + " not after " + preStopTimestampMs)
-                    .that(timestampMs >= preStopTimestampMs)
-                    .isTrue();
-        }
+        assertWithMessage("EXTRA_TIME " + timestampMs + " not after " + preStopTimestampMs)
+                .that(timestampMs >= preStopTimestampMs)
+                .isTrue();
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_STAY_STOPPED)
     public void testPackageUnstoppedBroadcast() throws Exception {
         final Intent intent = createSimpleActivityIntent();
         final String packageName = intent.getPackage();
@@ -197,7 +190,6 @@ public final class ForceStopTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_STAY_STOPPED)
     @AppModeFull(reason = "Instant apps don't get BOOT_COMPLETED broadcasts")
     public void testBootCompletedBroadcasts_activity() throws Exception {
         final Intent intent = createSimpleActivityIntent();
@@ -315,7 +307,6 @@ public final class ForceStopTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_STAY_STOPPED)
     @AppModeFull(reason = "Instant apps don't get BOOT_COMPLETED broadcasts")
     public void testBootCompletedBroadcasts_broadcast() throws Exception {
         final ConditionVariable appStarted = new ConditionVariable();
@@ -380,7 +371,7 @@ public final class ForceStopTest {
 
     @Test
     @Ignore("b/415721228 - Fix and re-enable")
-    @RequiresFlagsEnabled({FLAG_STAY_STOPPED, FLAG_APP_START_INFO})
+    @RequiresFlagsEnabled(FLAG_APP_START_INFO)
     public void testApplicationStartInfoWasForceStopped_bindService() throws Exception {
         clearHistoricalStartInfo();
         // Check bindService after a force-stop
@@ -404,7 +395,7 @@ public final class ForceStopTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_STAY_STOPPED, FLAG_APP_START_INFO})
+    @RequiresFlagsEnabled(FLAG_APP_START_INFO)
     public void testApplicationStartInfoWasForceStopped_activity() throws Exception {
         clearHistoricalStartInfo();
 
@@ -475,7 +466,6 @@ public final class ForceStopTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_STAY_STOPPED)
     public void testPendingIntentCancellation() throws Exception {
         final PendingIntent pendingIntent = triggerPendingIntentCreation(APP_PACKAGE);
         assertThat(pendingIntent).isNotNull();
@@ -498,43 +488,6 @@ public final class ForceStopTest {
                 .that(pendingIntentCancelled.block(DELAY_MILLIS))
                 .isTrue();
         assertThrows(CanceledException.class, pendingIntent::send);
-
-        // Trigger the PendingIntent creation to verify the app can create new PendingIntents
-        // as usual.
-        final PendingIntent pendingIntent2 = triggerPendingIntentCreation(APP_PACKAGE);
-        assertThat(pendingIntent2).isNotNull();
-
-        // Force-stop it again to clean up
-        runWithShellPermissionIdentity(
-                () -> mActivityManager.forceStopPackage(APP_PACKAGE));
-    }
-
-    @Test
-    @RequiresFlagsDisabled(FLAG_STAY_STOPPED)
-    public void testPendingIntentRetained() throws Exception {
-        final PendingIntent pendingIntent = triggerPendingIntentCreation(APP_PACKAGE);
-        assertThat(pendingIntent).isNotNull();
-
-        final ConditionVariable pendingIntentCancelled = new ConditionVariable();
-        pendingIntent.addCancelListener(mTargetContext.getMainExecutor(), pi -> {
-            if (pendingIntent.equals(pi)) {
-                pendingIntentCancelled.open();
-            }
-        });
-
-        runWithShellPermissionIdentity(
-                () -> mActivityManager.forceStopPackage(APP_PACKAGE));
-        assertWithMessage("Package " + APP_PACKAGE + " should be in the stopped state")
-                .that(mPackageManager.isPackageStopped(APP_PACKAGE))
-                .isTrue();
-
-        // Verify that pending intent does not get cancelled when the app that created it
-        // is force-stopped.
-        assertWithMessage("Received PendingIntent cancellation callback")
-                .that(pendingIntentCancelled.block(DELAY_MILLIS))
-                .isFalse();
-        // Trigger pendingIntent to verify there is no exception thrown.
-        pendingIntent.send();
 
         // Trigger the PendingIntent creation to verify the app can create new PendingIntents
         // as usual.

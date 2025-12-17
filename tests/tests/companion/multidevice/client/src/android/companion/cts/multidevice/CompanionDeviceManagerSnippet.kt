@@ -260,7 +260,9 @@ class CompanionDeviceManagerSnippet : Snippet {
     @Rpc(description = "Confirm if a task has been received by registering a listener and reading the first update.")
     fun wasRemoteTaskReceived(taskId: Int): Boolean {
         val remoteTaskCallback = CallbackUtils.RemoteTaskCallback()
-        taskContinuityManager.registerRemoteTaskListener(executor, remoteTaskCallback)
+        taskContinuityManager.registerRemoteTaskListener(
+            executor,
+            remoteTaskCallback::onRemoteTasksChanged)
         val latestRemoteTasks
             = remoteTaskCallback.waitForCompletion() ?: error("Remote task listener timed out.")
 
