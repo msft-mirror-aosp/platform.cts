@@ -28,6 +28,7 @@ import android.media.metrics.LogSessionId;
 import android.media.metrics.MediaMetricsManager;
 import android.media.metrics.PlaybackSession;
 import android.os.Build;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import androidx.media3.common.util.Util;
 import androidx.media3.test.utils.FakeExtractorInput;
@@ -36,6 +37,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ModuleSpecificTest;
+import com.android.media.mainline.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Ignore;
@@ -238,6 +240,41 @@ public class MediaParserTest {
         assertThat(mediaParser.supportsParameter("android.media.mediaparser.UNSUPPORTED_PARAMETER"))
                 .isFalse();
         mediaParser.release();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIAPARSER_TRACK_AWARE_SEEKING)
+    public void testTrackAwareSeeking() throws IOException {
+        MockMediaParserOutputConsumer outputConsumer = new MockMediaParserOutputConsumer();
+        MockMediaParserInputReader inputReader = getInputReader("media/mp4/sample.mp4");
+        MediaParser mediaParser = MediaParser.create(outputConsumer);
+        try {
+            while (mediaParser.advance(inputReader)) {}
+
+            assertThat(outputConsumer.getTrackCount()).isEqualTo(2);
+            Integer[] trackIndices = outputConsumer.getTrackIndices().toArray(new Integer[0]);
+            assertThat(trackIndices).hasLength(2);
+            int trackIndex0 = trackIndices[0];
+            int trackIndex1 = trackIndices[1];
+            MediaParser.SeekMap seekMap = outputConsumer.getSeekMap();
+            assertThat(seekMap).isNotNull();
+            boolean track0HasSeekPoints = seekMap.trackHasSeekPoints(trackIndex0);
+            if (!track0HasSeekPoints) {
+                assertThat(seekMap.getSeekPoints(/* timeMicros= */ 0, trackIndex0))
+                        .isEqualTo(seekMap.getSeekPoints(/* timeMicros= */ 0));
+            }
+            boolean track1HasSeekPoints = seekMap.trackHasSeekPoints(trackIndex1);
+            if (!track1HasSeekPoints) {
+                assertThat(seekMap.getSeekPoints(/* timeMicros= */ 0, trackIndex1))
+                        .isEqualTo(seekMap.getSeekPoints(/* timeMicros= */ 0));
+            }
+            if (track0HasSeekPoints && track1HasSeekPoints) {
+                assertThat(seekMap.getSeekPoints(/* timeMicros= */ 0, trackIndex0))
+                        .isNotEqualTo(seekMap.getSeekPoints(/* timeMicros= */ 0, trackIndex1));
+            }
+        } finally {
+            mediaParser.release();
+        }
     }
 
     // OGG.
