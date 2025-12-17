@@ -260,17 +260,18 @@ public class BasicBluetoothGattTest {
         associateDevice();
 
         // Check API return values under difference parameters
+        // It might be with SUCCESS & FEATURE_NOT_SUPPORTED (Remote not support BLE subrating)
         assertThat(mBluetoothGatt.requestSubrateMode(BluetoothGatt.SUBRATE_MODE_HIGH))
-                .isEqualTo(BluetoothStatusCodes.SUCCESS);
+                .isAnyOf(BluetoothStatusCodes.SUCCESS, BluetoothStatusCodes.FEATURE_NOT_SUPPORTED);
 
         assertThat(mBluetoothGatt.requestSubrateMode(BluetoothGatt.SUBRATE_MODE_BALANCED))
-                .isEqualTo(BluetoothStatusCodes.SUCCESS);
+                .isAnyOf(BluetoothStatusCodes.SUCCESS, BluetoothStatusCodes.FEATURE_NOT_SUPPORTED);
 
         assertThat(mBluetoothGatt.requestSubrateMode(BluetoothGatt.SUBRATE_MODE_LOW))
-                .isEqualTo(BluetoothStatusCodes.SUCCESS);
+                .isAnyOf(BluetoothStatusCodes.SUCCESS, BluetoothStatusCodes.FEATURE_NOT_SUPPORTED);
 
         assertThat(mBluetoothGatt.requestSubrateMode(BluetoothGatt.SUBRATE_MODE_OFF))
-                .isEqualTo(BluetoothStatusCodes.SUCCESS);
+                .isAnyOf(BluetoothStatusCodes.SUCCESS, BluetoothStatusCodes.FEATURE_NOT_SUPPORTED);
 
         assertThrows(
                 IllegalArgumentException.class,
