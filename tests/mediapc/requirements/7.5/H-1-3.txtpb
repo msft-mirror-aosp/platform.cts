@@ -17,46 +17,23 @@
 id: "7.5/H-1-3"
 name: "Camera Hardware Level"
 description: "Camera hardware level is FULL or better hardware level"
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 52
-  }
-}
-measurements: {
-  key: "rear_primary_camera_hwl_level"
-  value: {
-    description: "Hardware level of the primary camera"
-    measurement_type: MEASUREMENT_TYPE_INT
-    comparison: COMPARISON_CAMERA_HARDWARE_LEVEL_GREATER_THAN_OR_EQUAL
-    proto_field_number: 3
-  }
-}
-measurements: {
-  key: "front_primary_camera_hwl_level"
-  value: {
-    description: "Hardware level of the secondary camera"
-    measurement_type: MEASUREMENT_TYPE_INT
-    comparison: COMPARISON_CAMERA_HARDWARE_LEVEL_GREATER_THAN_OR_EQUAL
-    proto_field_number: 4
-  }
-}
 specs {
   key: 30
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_11
-    specification: "MUST support android.info.supportedHardwareLevel property as FULL or better for back primary and LIMITED or better for front primary camera."
-    required_values {
-      key: "rear_primary_camera_hwl_level"
-      value {
-        int_value: 1
-      }
-    }
+    specification:
+      "MUST support android.info.supportedHardwareLevel property as FULL or "
+      "better for back primary and LIMITED or better for front primary camera."
     required_values {
       key: "front_primary_camera_hwl_level"
       value {
         int_value: 0
+      }
+    }
+    required_values {
+      key: "rear_primary_camera_hwl_level"
+      value {
+        int_value: 1
       }
     }
   }
@@ -65,15 +42,17 @@ specs {
   key: 31
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_12
-    specification: "MUST support android.info.supportedHardwareLevel property as FULL or better for both primary cameras."
+    specification:
+      "MUST support android.info.supportedHardwareLevel property as FULL or "
+      "better for both primary cameras."
     required_values {
-      key: "rear_primary_camera_hwl_level"
+      key: "front_primary_camera_hwl_level"
       value {
         int_value: 1
       }
     }
     required_values {
-      key: "front_primary_camera_hwl_level"
+      key: "rear_primary_camera_hwl_level"
       value {
         int_value: 1
       }
@@ -86,13 +65,13 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_13
     specification: "same"
     required_values {
-      key: "rear_primary_camera_hwl_level"
+      key: "front_primary_camera_hwl_level"
       value {
         int_value: 1
       }
     }
     required_values {
-      key: "front_primary_camera_hwl_level"
+      key: "rear_primary_camera_hwl_level"
       value {
         int_value: 1
       }
@@ -105,13 +84,13 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_14
     specification: "same"
     required_values {
-      key: "rear_primary_camera_hwl_level"
+      key: "front_primary_camera_hwl_level"
       value {
         int_value: 1
       }
     }
     required_values {
-      key: "front_primary_camera_hwl_level"
+      key: "rear_primary_camera_hwl_level"
       value {
         int_value: 1
       }
@@ -124,13 +103,13 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_15
     specification: "same"
     required_values {
-      key: "rear_primary_camera_hwl_level"
+      key: "front_primary_camera_hwl_level"
       value {
         int_value: 1
       }
     }
     required_values {
-      key: "front_primary_camera_hwl_level"
+      key: "rear_primary_camera_hwl_level"
       value {
         int_value: 1
       }
@@ -143,16 +122,41 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_17
     specification: "same"
     required_values {
-      key: "rear_primary_camera_hwl_level"
-      value {
-        int_value: 1
-      }
-    }
-    required_values {
       key: "front_primary_camera_hwl_level"
       value {
         int_value: 1
       }
     }
+    required_values {
+      key: "rear_primary_camera_hwl_level"
+      value {
+        int_value: 1
+      }
+    }
+  }
+}
+measurements {
+  key: "front_primary_camera_hwl_level"
+  value {
+    description: "Hardware level of the secondary camera"
+    measurement_type: MEASUREMENT_TYPE_INT
+    comparison: COMPARISON_CAMERA_HARDWARE_LEVEL_GREATER_THAN_OR_EQUAL
+    proto_field_number: 4
+  }
+}
+measurements {
+  key: "rear_primary_camera_hwl_level"
+  value {
+    description: "Hardware level of the primary camera"
+    measurement_type: MEASUREMENT_TYPE_INT
+    comparison: COMPARISON_CAMERA_HARDWARE_LEVEL_GREATER_THAN_OR_EQUAL
+    proto_field_number: 3
+  }
+}
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 52
   }
 }

@@ -17,22 +17,6 @@
 id: "7.5/H-1-11"
 name: "Camera Concurrent Rear Front Streaming"
 description: "Concurrent camera front-back streaming"
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 59
-  }
-}
-measurements: {
-  key: "rear_front_concurrent_camera"
-  value: {
-    description: "Is the rear primary camera concurrent front-back streaming supported"
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 3
-  }
-}
 specs {
   key: 33
   value {
@@ -83,5 +67,21 @@ specs {
         bool_value: true
       }
     }
+  }
+}
+measurements {
+  key: "rear_front_concurrent_camera"
+  value {
+    description: "Is the rear primary camera concurrent front-back streaming supported"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 3
+  }
+}
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 59
   }
 }

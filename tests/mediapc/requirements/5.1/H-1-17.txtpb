@@ -17,28 +17,14 @@
 id: "5.1/H-1-17"
 name: "AVIF Baseline Profile"
 description: "AVIF Baseline Profile"
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 31
-  }
-}
-measurements: {
-  key: "avif_image_decoder_boolean"
-  value: {
-    description: "has decoder supporting AVIF Baseline Profile supported."
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 3
-  }
-}
 specs {
   key: 34
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_14
-    specification: "MUST have at least 1 hardware image decoder supporting AVIF Baseline Profile."
-    required_values: {
+    specification:
+      "MUST have at least 1 hardware image decoder supporting AVIF Baseline "
+      "Profile."
+    required_values {
       key: "avif_image_decoder_boolean"
       value {
         bool_value: true
@@ -51,7 +37,7 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
     specification: "same"
-    required_values: {
+    required_values {
       key: "avif_image_decoder_boolean"
       value {
         bool_value: true
@@ -64,11 +50,27 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
     specification: "same"
-    required_values: {
+    required_values {
       key: "avif_image_decoder_boolean"
       value {
         bool_value: true
       }
     }
+  }
+}
+measurements {
+  key: "avif_image_decoder_boolean"
+  value {
+    description: "has decoder supporting AVIF Baseline Profile supported."
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 3
+  }
+}
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 31
   }
 }

@@ -17,61 +17,29 @@
 id: "5.1/H-1-18"
 name: "AV1 Encoder"
 description: "AV1 encoder"
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 32
-  }
-}
-measurements: {
-  key: "av1_encoder_resolution"
-  value: {
-    description: "Resolution of the test."
-    measurement_type: MEASUREMENT_TYPE_INT
-    comparison: COMPARISON_CONFIG
-    proto_field_number: 3
-  }
-}
-measurements: {
-  key: "av1_encoder_fps"
-  value: {
-    description: "Achieved FPS."
-    measurement_type: MEASUREMENT_TYPE_DOUBLE
-    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
-    proto_field_number: 4
-  }
-}
-measurements: {
-  key: "av1_encoder_bitrate"
-  value: {
-    description: "Bitrate of the test."
-    measurement_type: MEASUREMENT_TYPE_INT
-    comparison: COMPARISON_CONFIG
-    proto_field_number: 5
-  }
-}
 specs {
   key: 34
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_14
-    specification: "MUST support AV1 encoder which can encode up to 480p resolution at 30fps and 1Mbps."
-    required_values: {
-      key: "av1_encoder_resolution"
+    specification:
+      "MUST support AV1 encoder which can encode up to 480p resolution at "
+      "30fps and 1Mbps."
+    required_values {
+      key: "av1_encoder_bitrate"
       value {
-        int_value: 480
+        int_value: 1
       }
     }
-    required_values: {
+    required_values {
       key: "av1_encoder_fps"
       value {
         double_value: 30.0
       }
     }
-    required_values: {
-      key: "av1_encoder_bitrate"
+    required_values {
+      key: "av1_encoder_resolution"
       value {
-        int_value: 1
+        int_value: 480
       }
     }
   }
@@ -81,22 +49,22 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
     specification: "same"
-    required_values: {
-      key: "av1_encoder_resolution"
+    required_values {
+      key: "av1_encoder_bitrate"
       value {
-        int_value: 480
+        int_value: 1
       }
     }
-    required_values: {
+    required_values {
       key: "av1_encoder_fps"
       value {
         double_value: 30.0
       }
     }
-    required_values: {
-      key: "av1_encoder_bitrate"
+    required_values {
+      key: "av1_encoder_resolution"
       value {
-        int_value: 1
+        int_value: 480
       }
     }
   }
@@ -106,23 +74,57 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
     specification: "same"
-    required_values: {
-      key: "av1_encoder_resolution"
-      value {
-        int_value: 480
-      }
-    }
-    required_values: {
-      key: "av1_encoder_fps"
-      value {
-        double_value: 30.0
-      }
-    }
-    required_values: {
+    required_values {
       key: "av1_encoder_bitrate"
       value {
         int_value: 1
       }
     }
+    required_values {
+      key: "av1_encoder_fps"
+      value {
+        double_value: 30.0
+      }
+    }
+    required_values {
+      key: "av1_encoder_resolution"
+      value {
+        int_value: 480
+      }
+    }
+  }
+}
+measurements {
+  key: "av1_encoder_bitrate"
+  value {
+    description: "Bitrate of the test."
+    measurement_type: MEASUREMENT_TYPE_INT
+    comparison: COMPARISON_CONFIG
+    proto_field_number: 5
+  }
+}
+measurements {
+  key: "av1_encoder_fps"
+  value {
+    description: "Achieved FPS."
+    measurement_type: MEASUREMENT_TYPE_DOUBLE
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    proto_field_number: 4
+  }
+}
+measurements {
+  key: "av1_encoder_resolution"
+  value {
+    description: "Resolution of the test."
+    measurement_type: MEASUREMENT_TYPE_INT
+    comparison: COMPARISON_CONFIG
+    proto_field_number: 3
+  }
+}
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 32
   }
 }

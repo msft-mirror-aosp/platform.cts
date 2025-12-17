@@ -17,44 +17,21 @@
 id: "7.5/H-1-10"
 name: "Camera Ultrawide Zoom Ratio"
 description: "Minimum zoom ratio for ultrawide cameras"
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 58
-  }
-}
-measurements: {
-  key: "rear_camera_ultrawide_zoom_req_met"
-  value: {
-    description: "Zoom ratio for rear primary camera is met"
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 3
-  }
-}
-measurements: {
-  key: "front_camera_ultrawide_zoom_req_met"
-  value: {
-    description: "Zoom ratio for front primary camera is met"
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 4
-  }
-}
 specs {
   key: 33
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_13
-    specification: "MUST have min ZOOM_RATIO < 1.0 for the primary cameras if there is an ultrawide RGB camera facing the same direction."
+    specification:
+      "MUST have min ZOOM_RATIO < 1.0 for the primary cameras if there is an "
+      "ultrawide RGB camera facing the same direction."
     required_values {
-      key: "rear_camera_ultrawide_zoom_req_met"
+      key: "front_camera_ultrawide_zoom_req_met"
       value {
         bool_value: true
       }
     }
     required_values {
-      key: "front_camera_ultrawide_zoom_req_met"
+      key: "rear_camera_ultrawide_zoom_req_met"
       value {
         bool_value: true
       }
@@ -67,13 +44,13 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_14
     specification: "same"
     required_values {
-      key: "rear_camera_ultrawide_zoom_req_met"
+      key: "front_camera_ultrawide_zoom_req_met"
       value {
         bool_value: true
       }
     }
     required_values {
-      key: "front_camera_ultrawide_zoom_req_met"
+      key: "rear_camera_ultrawide_zoom_req_met"
       value {
         bool_value: true
       }
@@ -86,13 +63,13 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_15
     specification: "same"
     required_values {
-      key: "rear_camera_ultrawide_zoom_req_met"
+      key: "front_camera_ultrawide_zoom_req_met"
       value {
         bool_value: true
       }
     }
     required_values {
-      key: "front_camera_ultrawide_zoom_req_met"
+      key: "rear_camera_ultrawide_zoom_req_met"
       value {
         bool_value: true
       }
@@ -105,16 +82,41 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_17
     specification: "same"
     required_values {
-      key: "rear_camera_ultrawide_zoom_req_met"
-      value {
-        bool_value: true
-      }
-    }
-    required_values {
       key: "front_camera_ultrawide_zoom_req_met"
       value {
         bool_value: true
       }
     }
+    required_values {
+      key: "rear_camera_ultrawide_zoom_req_met"
+      value {
+        bool_value: true
+      }
+    }
+  }
+}
+measurements {
+  key: "front_camera_ultrawide_zoom_req_met"
+  value {
+    description: "Zoom ratio for front primary camera is met"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 4
+  }
+}
+measurements {
+  key: "rear_camera_ultrawide_zoom_req_met"
+  value {
+    description: "Zoom ratio for rear primary camera is met"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 3
+  }
+}
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 58
   }
 }

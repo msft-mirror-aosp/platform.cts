@@ -17,27 +17,13 @@
 id: "7.5/H-1-8"
 name: "Camera RAW capability"
 description: "RAW capabilities"
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 56
-  }
-}
-measurements: {
-  key: "rear_camera_raw_supported"
-  value: {
-    description: "Is the rear primary camera RAW capability supported"
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 3
-  }
-}
 specs {
   key: 31
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_12
-    specification: "MUST support CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_RAW and android.graphics.ImageFormat.RAW_SENSOR for the primary back camera."
+    specification:
+      "MUST support CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_RAW and "
+      "android.graphics.ImageFormat.RAW_SENSOR for the primary back camera."
     required_values {
       key: "rear_camera_raw_supported"
       value {
@@ -96,5 +82,21 @@ specs {
         bool_value: true
       }
     }
+  }
+}
+measurements {
+  key: "rear_camera_raw_supported"
+  value {
+    description: "Is the rear primary camera RAW capability supported"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 3
+  }
+}
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 56
   }
 }

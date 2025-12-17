@@ -17,16 +17,28 @@
 id: "7.1.1.1/H-1-1"
 name: "Screen Resolution R"
 description: "- Screen resolution"
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 69
+specs {
+  key: 30
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_11
+    specification: "MUST have screen resolution of at least 1080p."
+    required_values {
+      key: "long_resolution_pixels"
+      value {
+        int_value: 1920
+      }
+    }
+    required_values {
+      key: "short_resolution_pixels"
+      value {
+        int_value: 1080
+      }
+    }
   }
 }
 measurements {
   key: "long_resolution_pixels"
-  value: {
+  value {
     id: "long_resolution_pixels"
     description: "The screen resolution width in pixels (longer of the two dimensions)."
     measurement_type: MEASUREMENT_TYPE_INT
@@ -36,7 +48,7 @@ measurements {
 }
 measurements {
   key: "short_resolution_pixels"
-  value: {
+  value {
     id: "short_resolution_pixels"
     description: "The screen resolution height in pixels (shorter of the two dimensions)."
     measurement_type: MEASUREMENT_TYPE_INT
@@ -44,22 +56,10 @@ measurements {
     proto_field_number: 4
   }
 }
-specs {
-  key: 30
+test_configs {
+  key: ""
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_11
-    specification: "MUST have screen resolution of at least 1080p."
-    required_values: {
-      key: "long_resolution_pixels"
-      value: {
-        int_value: 1920
-      }
-    }
-    required_values: {
-      key: "short_resolution_pixels"
-      value: {
-        int_value: 1080
-      }
-    }
+    description: "Default test config"
+    proto_field_number: 69
   }
 }

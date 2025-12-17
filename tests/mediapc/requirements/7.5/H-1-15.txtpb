@@ -17,60 +17,13 @@
 id: "7.5/H-1-15"
 name: "Camera Night Mode Extension"
 description: "Night mode extension"
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 63
-  }
-}
-measurements: {
-  key: "rear_camera2_extension_night_supported"
-  value: {
-    description: "Is the rear Camera2 night mode extension supported"
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 3
-  }
-}
-measurements: {
-  key: "front_camera2_extension_night_supported"
-  value: {
-    description: "Is the front Camera2 night mode extension supported"
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 4
-  }
-}
-measurements: {
-  key: "rear_camerax_extension_night_supported"
-  value: {
-    description: "Is the rear CameraX night mode extension supported"
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 5
-  }
-}
-measurements: {
-  key: "front_camerax_extension_night_supported"
-  value: {
-    description: "Is the front CameraX night mode extension supported"
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 6
-  }
-}
 specs {
   key: 34
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_14
-    specification: "MUST support Night mode extensions via both CameraX and Camera2 extensions for primary cameras."
-    required_values {
-      key: "rear_camera2_extension_night_supported"
-      value {
-        bool_value: true
-      }
-    }
+    specification:
+      "MUST support Night mode extensions via both CameraX and Camera2 "
+      "extensions for primary cameras."
     required_values {
       key: "front_camera2_extension_night_supported"
       value {
@@ -78,13 +31,19 @@ specs {
       }
     }
     required_values {
-      key: "rear_camerax_extension_night_supported"
+      key: "front_camerax_extension_night_supported"
       value {
         bool_value: true
       }
     }
     required_values {
-      key: "front_camerax_extension_night_supported"
+      key: "rear_camera2_extension_night_supported"
+      value {
+        bool_value: true
+      }
+    }
+    required_values {
+      key: "rear_camerax_extension_night_supported"
       value {
         bool_value: true
       }
@@ -97,25 +56,25 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_15
     specification: "same"
     required_values {
-      key: "rear_camera2_extension_night_supported"
-      value {
-        bool_value: true
-      }
-    }
-    required_values {
       key: "front_camera2_extension_night_supported"
       value {
         bool_value: true
       }
     }
     required_values {
-      key: "rear_camerax_extension_night_supported"
+      key: "front_camerax_extension_night_supported"
       value {
         bool_value: true
       }
     }
     required_values {
-      key: "front_camerax_extension_night_supported"
+      key: "rear_camera2_extension_night_supported"
+      value {
+        bool_value: true
+      }
+    }
+    required_values {
+      key: "rear_camerax_extension_night_supported"
       value {
         bool_value: true
       }
@@ -128,19 +87,7 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_17
     specification: "same"
     required_values {
-      key: "rear_camera2_extension_night_supported"
-      value {
-        bool_value: true
-      }
-    }
-    required_values {
       key: "front_camera2_extension_night_supported"
-      value {
-        bool_value: true
-      }
-    }
-    required_values {
-      key: "rear_camerax_extension_night_supported"
       value {
         bool_value: true
       }
@@ -151,5 +98,60 @@ specs {
         bool_value: true
       }
     }
+    required_values {
+      key: "rear_camera2_extension_night_supported"
+      value {
+        bool_value: true
+      }
+    }
+    required_values {
+      key: "rear_camerax_extension_night_supported"
+      value {
+        bool_value: true
+      }
+    }
+  }
+}
+measurements {
+  key: "front_camera2_extension_night_supported"
+  value {
+    description: "Is the front Camera2 night mode extension supported"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 4
+  }
+}
+measurements {
+  key: "front_camerax_extension_night_supported"
+  value {
+    description: "Is the front CameraX night mode extension supported"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 6
+  }
+}
+measurements {
+  key: "rear_camera2_extension_night_supported"
+  value {
+    description: "Is the rear Camera2 night mode extension supported"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 3
+  }
+}
+measurements {
+  key: "rear_camerax_extension_night_supported"
+  value {
+    description: "Is the rear CameraX night mode extension supported"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 5
+  }
+}
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 63
   }
 }

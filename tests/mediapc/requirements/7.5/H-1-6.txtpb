@@ -17,47 +17,24 @@
 id: "7.5/H-1-6"
 name: "Camera Startup Latency"
 description: "Startup latencies"
-is_non_cts_test: true
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 55
-  }
-}
-measurements: {
-  key: "rear_camera_latency"
-  value: {
-    description: "Startup latency in ms for the rear primary camera"
-    measurement_type: MEASUREMENT_TYPE_FLOAT
-    comparison: COMPARISON_LESS_THAN_OR_EQUAL
-    proto_field_number: 3
-  }
-}
-measurements: {
-  key: "front_camera_latency"
-  value: {
-    description: "Startup latency in ms for the front primary camera"
-    measurement_type: MEASUREMENT_TYPE_FLOAT
-    comparison: COMPARISON_LESS_THAN_OR_EQUAL
-    proto_field_number: 4
-  }
-}
 specs {
   key: 30
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_11
-    specification: "MUST have camera2 startup latency (open camera to first preview frame) < 600 ms as measured by the CTS camera PerformanceTest under ITS lighting conditions (3000K) for both primary cameras."
-    required_values {
-      key: "rear_camera_latency"
-      value {
-        float_value: 600
-      }
-    }
+    specification:
+      "MUST have camera2 startup latency (open camera to first preview frame) "
+      "< 600 ms as measured by the CTS camera PerformanceTest under ITS "
+      "lighting conditions (3000K) for both primary cameras."
     required_values {
       key: "front_camera_latency"
       value {
-        float_value: 600
+        float_value: 600.0
+      }
+    }
+    required_values {
+      key: "rear_camera_latency"
+      value {
+        float_value: 600.0
       }
     }
   }
@@ -68,15 +45,15 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_12
     specification: "same"
     required_values {
-      key: "rear_camera_latency"
+      key: "front_camera_latency"
       value {
-        float_value: 600
+        float_value: 600.0
       }
     }
     required_values {
-      key: "front_camera_latency"
+      key: "rear_camera_latency"
       value {
-        float_value: 600
+        float_value: 600.0
       }
     }
   }
@@ -85,17 +62,20 @@ specs {
   key: 33
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_13
-    specification: "MUST have camera2 startup latency (open camera to first preview frame) < 500 ms as measured by the CTS camera PerformanceTest under ITS lighting conditions (3000K) for both primary cameras."
-    required_values {
-      key: "rear_camera_latency"
-      value {
-        float_value: 500
-      }
-    }
+    specification:
+      "MUST have camera2 startup latency (open camera to first preview frame) "
+      "< 500 ms as measured by the CTS camera PerformanceTest under ITS "
+      "lighting conditions (3000K) for both primary cameras."
     required_values {
       key: "front_camera_latency"
       value {
-        float_value: 500
+        float_value: 500.0
+      }
+    }
+    required_values {
+      key: "rear_camera_latency"
+      value {
+        float_value: 500.0
       }
     }
   }
@@ -106,15 +86,15 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_14
     specification: "same"
     required_values {
-      key: "rear_camera_latency"
+      key: "front_camera_latency"
       value {
-        float_value: 500
+        float_value: 500.0
       }
     }
     required_values {
-      key: "front_camera_latency"
+      key: "rear_camera_latency"
       value {
-        float_value: 500
+        float_value: 500.0
       }
     }
   }
@@ -125,15 +105,15 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_15
     specification: "same"
     required_values {
-      key: "rear_camera_latency"
+      key: "front_camera_latency"
       value {
-        float_value: 500
+        float_value: 500.0
       }
     }
     required_values {
-      key: "front_camera_latency"
+      key: "rear_camera_latency"
       value {
-        float_value: 500
+        float_value: 500.0
       }
     }
   }
@@ -144,16 +124,42 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_17
     specification: "same"
     required_values {
-      key: "rear_camera_latency"
+      key: "front_camera_latency"
       value {
-        float_value: 500
+        float_value: 500.0
       }
     }
     required_values {
-      key: "front_camera_latency"
+      key: "rear_camera_latency"
       value {
-        float_value: 500
+        float_value: 500.0
       }
     }
+  }
+}
+measurements {
+  key: "front_camera_latency"
+  value {
+    description: "Startup latency in ms for the front primary camera"
+    measurement_type: MEASUREMENT_TYPE_FLOAT
+    comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    proto_field_number: 4
+  }
+}
+measurements {
+  key: "rear_camera_latency"
+  value {
+    description: "Startup latency in ms for the rear primary camera"
+    measurement_type: MEASUREMENT_TYPE_FLOAT
+    comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    proto_field_number: 3
+  }
+}
+is_non_cts_test: true
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 55
   }
 }

@@ -17,28 +17,15 @@
 id: "5.1/H-1-20"
 name: "Video Codec Hlg Editing"
 description: "Video codec Hlg Editing"
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 34
-  }
-}
-measurements: {
-  key: "hlg_editing"
-  value: {
-    description: "Is hdr Editing supported."
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 3
-  }
-}
 specs {
   key: 35
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
-    specification: "MUST support the Feature_HdrEditing feature for all hardware AV1 and HEVC encoders present on the device at 4K resolution or the largest Camera-supported resolution, whichever is less."
-    required_values: {
+    specification:
+      "MUST support the Feature_HdrEditing feature for all hardware AV1 and "
+      "HEVC encoders present on the device at 4K resolution or the largest "
+      "Camera-supported resolution, whichever is less."
+    required_values {
       key: "hlg_editing"
       value {
         bool_value: true
@@ -50,12 +37,31 @@ specs {
   key: 37
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
-    specification: "MUST support the Feature_HdrEditing feature for all hardware AV1 and HEVC encoders present on the device at 4K resolution or the largest Camera-supported resolution, whichever is less."
-    required_values: {
+    specification:
+      "MUST support the Feature_HdrEditing feature for all hardware AV1 and "
+      "HEVC encoders present on the device at 4K resolution or the largest "
+      "Camera-supported resolution, whichever is less."
+    required_values {
       key: "hlg_editing"
       value {
         bool_value: true
       }
     }
+  }
+}
+measurements {
+  key: "hlg_editing"
+  value {
+    description: "Is hdr Editing supported."
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 3
+  }
+}
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 34
   }
 }

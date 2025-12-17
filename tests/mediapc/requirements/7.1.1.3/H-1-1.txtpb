@@ -17,16 +17,22 @@
 id: "7.1.1.3/H-1-1"
 name: "Screen Density R"
 description: "- Screen density"
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 71
+specs {
+  key: 30
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_11
+    specification: "MUST have screen density of at least 400 dpi."
+    required_values {
+      key: "display_density_dpi"
+      value {
+        int_value: 400
+      }
+    }
   }
 }
 measurements {
   key: "display_density_dpi"
-  value: {
+  value {
     id: "display_density_dpi"
     description: "The screen display density in pixels per square inch."
     measurement_type: MEASUREMENT_TYPE_INT
@@ -34,16 +40,10 @@ measurements {
     proto_field_number: 3
   }
 }
-specs {
-  key: 30
+test_configs {
+  key: ""
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_11
-    specification: "MUST have screen density of at least 400 dpi."
-    required_values: {
-      key: "display_density_dpi"
-      value: {
-        int_value: 400
-      }
-    }
+    description: "Default test config"
+    proto_field_number: 71
   }
 }
