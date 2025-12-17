@@ -954,17 +954,27 @@ def eliminate_duplicate_centers(coordinates_list):
     non_duplicate_list: list; coordinates of face rectangles' centers
     without duplicates on the same face
   """
-  output = set()
+  if not coordinates_list:
+    return []
 
-  for _, xy1 in enumerate(coordinates_list):
-    for _, xy2 in enumerate(coordinates_list):
-      if scipy.spatial.distance.euclidean(xy1, xy2) < FACE_MIN_CENTER_DELTA:
-        continue
-      if xy1 not in output:
-        output.add(xy1)
-      else:
-        output.add(xy2)
-  return list(output)
+  non_duplicate_list = []
+  for center1 in coordinates_list:
+    center1 = (int(center1[0]), int(center1[1]))
+    is_duplicate = False
+    for center2 in non_duplicate_list:
+      distance = scipy.spatial.distance.euclidean(center1, center2)
+      if distance < FACE_MIN_CENTER_DELTA:
+        is_duplicate = True
+        logging.debug('Center %s is a duplicate of %s (distance: %.2f)',
+                      center1, center2, distance)
+        break
+    if not is_duplicate:
+        non_duplicate_list.append(center1)
+
+  if len(coordinates_list) != len(non_duplicate_list):
+      logging.debug('Eliminated %d duplicate face centers',
+                    len(coordinates_list) - len(non_duplicate_list))
+  return non_duplicate_list
 
 
 def match_face_locations(faces_cropped, faces_opencv, img, img_name):
@@ -986,20 +996,20 @@ def match_face_locations(faces_cropped, faces_opencv, img, img_name):
       ((l+r)//2, (t+b)//2) for (l, r, t, b) in faces_cropped]
   faces_opencv_center.sort(key=lambda t: [t[1], t[0]])
   cropped_faces_centers.sort(key=lambda t: [t[1], t[0]])
-  logging.debug('cropped face centers: %s', str(cropped_faces_centers))
-  logging.debug('opencv face center: %s', str(faces_opencv_center))
+  logging.debug('Cropped face centers: %s', str(cropped_faces_centers))
+  logging.debug('Opencv face center: %s', str(faces_opencv_center))
   faces_opencv_centers = []
   num_centers_aligned = 0
 
   # eliminate duplicate openCV face rectangles' centers the same face
   faces_opencv_centers = eliminate_duplicate_centers(faces_opencv_center)
-  logging.debug('opencv face centers: %s', str(faces_opencv_centers))
+  logging.debug('Opencv face centers: %s', str(faces_opencv_centers))
 
   for (x, y) in faces_opencv_centers:
     for (x1, y1) in cropped_faces_centers:
       centers_dist = math.hypot(x-x1, y-y1)
       if centers_dist < FACE_CENTER_MIN_LOGGING_DIST:
-        logging.debug('centers_dist: %.3f', centers_dist)
+        logging.debug('Centers_dist: %.3f', centers_dist)
       if (abs(x-x1) < FACE_CENTER_MATCH_TOL_X and
           abs(y-y1) < FACE_CENTER_MATCH_TOL_Y):
         num_centers_aligned += 1

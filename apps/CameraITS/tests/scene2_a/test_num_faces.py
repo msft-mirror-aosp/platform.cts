@@ -167,23 +167,27 @@ class NumFacesTest(its_base_test.ItsBaseTest):
           if i == _NUM_TEST_FRAMES - 1:
             img = image_processing_utils.convert_capture_to_rgb_image(
                 cap, props=props)
+
+            # Create a copy for drawing rectangles
+            img_with_rectangle = img.copy()
             fnd_faces = len(faces)
             logging.debug('Found %d face(s), expected %d.',
                           fnd_faces, _NUM_FACES)
 
-            # draw boxes around faces in green
+            # Draw boxes around faces in green on the copy
             crop_region = cap['metadata']['android.scaler.cropRegion']
             faces_cropped = opencv_processing_utils.correct_faces_for_crop(
                 faces, img, crop_region)
             for (l, r, t, b) in faces_cropped:
-              cv2.rectangle(img, (l, t), (r, b), _CV2_GREEN, 2)
+              cv2.rectangle(img_with_rectangle, (l, t), (r, b), _CV2_GREEN, 2)
 
             # Save image with green rectangles
             img_name = f'{file_name_stem}_fd_mode_{fd_mode}.jpg'
-            image_processing_utils.write_image(img, img_name)
+            image_processing_utils.write_image(img_with_rectangle, img_name)
             if fnd_faces != _NUM_FACES:
               raise AssertionError('Wrong num of faces found! Found: '
                                    f'{fnd_faces}, expected: {_NUM_FACES}')
+
             # Reasonable scores for faces
             face_scores = [face['score'] for face in faces]
             for score in face_scores:
@@ -208,7 +212,7 @@ class NumFacesTest(its_base_test.ItsBaseTest):
                   img, _CV2_FACE_SCALE_FACTOR, _CV2_FACE_MIN_NEIGHBORS)
               if fd_mode:  # non-zero value for ON
                 opencv_processing_utils.match_face_locations(
-                    faces_cropped, faces_opencv, img, img_name)
+                    faces_cropped, faces_opencv, img_with_rectangle, img_name)
 
           if not faces:
             continue
