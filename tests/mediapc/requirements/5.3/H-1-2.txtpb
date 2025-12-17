@@ -52,7 +52,7 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_12
     specification:
-      "MUST NOT drop more than 2 frames in 10 seconds during a video "
+      "MUST NOT drop  more than 2 frames in 10 seconds  during a video "
       "resolution change in a 60 fps video session under load. Load is defined "
       "as a concurrent 1080p to 720p video-only transcoding session using "
       "hardware video codecs, as well as a 128 kbps AAC audio playback."
@@ -82,10 +82,10 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_13
     specification:
-      "MUST NOT drop more than 1 frame in 10 seconds during a video resolution "
-      "change in a 60 fps video session under load. Load is defined as a "
-      "concurrent 1080p to 720p video-only transcoding session using hardware "
-      "video codecs, as well as a 128 kbps AAC audio playback."
+      "MUST NOT drop  more than 1 frame in 10 seconds  during a video "
+      "resolution change in a 60 fps video session under load. Load is defined "
+      "as a concurrent 1080p to 720p video-only transcoding session using "
+      "hardware video codecs, as well as a 128 kbps AAC audio playback."
     required_values {
       key: "frame_drops_per_30sec"
       value {
@@ -139,7 +139,9 @@ specs {
   key: 35
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
-    specification: "same"
+    specification:
+      "MUST NOT drop more than 1 frame in 10 seconds during a video resolution "
+      "change in a 60 fps video session under load for a 4K session."
     required_values {
       key: "frame_drops_per_30sec"
       value {
