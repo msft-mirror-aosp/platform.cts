@@ -27,6 +27,8 @@ import android.os.UserManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.security.Flags;
 
+import com.android.compatibility.common.util.PollingCheck;
+
 import org.junit.Before;
 
 @RequiresFlagsEnabled(Flags.FLAG_EXTEND_AAPM_TO_A11Y_SERVICES)
@@ -64,6 +66,12 @@ public class DisallowNonToolAccessibilityServicesTest extends BaseAdvancedProtec
 
     @Override
     protected void assertFeatureEnabled() {
+        try {
+            PollingCheck.waitFor(
+                    1000,
+                    () -> mUserManager.hasUserRestriction(DISALLOW_NON_TOOL_ACCESSIBILITY_SERVICE));
+        } catch (AssertionError ignored) {
+        }
         assertTrue(
                 "The DISALLOW_NON_TOOL_ACCESSIBILITY_SERVICE restriction is not set",
                 mUserManager.hasUserRestriction(DISALLOW_NON_TOOL_ACCESSIBILITY_SERVICE));
@@ -71,6 +79,14 @@ public class DisallowNonToolAccessibilityServicesTest extends BaseAdvancedProtec
 
     @Override
     protected void assertFeatureDisabled() {
+        try {
+            PollingCheck.waitFor(
+                    1000,
+                    () ->
+                            !mUserManager.hasUserRestriction(
+                                    DISALLOW_NON_TOOL_ACCESSIBILITY_SERVICE));
+        } catch (AssertionError ignored) {
+        }
         assertFalse(
                 "The DISALLOW_NON_TOOL_ACCESSIBILITY_SERVICE restriction is set",
                 mUserManager.hasUserRestriction(DISALLOW_NON_TOOL_ACCESSIBILITY_SERVICE));
