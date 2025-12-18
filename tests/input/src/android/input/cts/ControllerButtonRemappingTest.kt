@@ -28,6 +28,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.ThrowingSupplier
+import com.android.compatibility.common.util.UserHelper
 import com.android.compatibility.common.util.WindowUtil
 import com.android.cts.input.BlockingQueueEventVerifier
 import com.android.cts.input.CaptureEventActivity
@@ -51,6 +52,7 @@ import com.android.hardware.input.Flags.FLAG_CONTROLLER_REMAPPING
 import com.android.input.flags.Flags.FLAG_DEVICE_ASSOCIATIONS
 import org.hamcrest.Matchers.allOf
 import org.junit.Assert.assertEquals
+import org.junit.Assume.assumeFalse
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -78,6 +80,14 @@ class ControllerButtonRemappingTest {
 
     @Before
     fun setUp() {
+        // TODO(b/454344508): Consider making InputManagerService multi-user aware.
+        assumeFalse(
+            "InputManagerService only tracks the current user. " +
+                    "Settings changes for non-current users are not applied, causing tests " +
+                    "to fail for visible background users.",
+            UserHelper().isVisibleBackgroundUser()
+        )
+
         rule.getScenario().onActivity {
             inputManager = it.getSystemService(InputManager::class.java)
             activity = it
