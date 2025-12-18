@@ -17,7 +17,7 @@
 
     <include name="cts-v-host" />
 
-    <option name="plan" value="cts-v-host-default-devices" />
+    <option name="plan" value="cts-v-host-multidevice-default" />
 
     <!-- Exclude modules that do not use the default 2-device setup.-->
     <option name="compatibility:exclude-filter" value="CtsNfcHceMultiDeviceTestCases" />
