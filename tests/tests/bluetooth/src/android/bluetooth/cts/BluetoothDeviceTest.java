@@ -895,7 +895,6 @@ public class BluetoothDeviceTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_KEY_MISSING_COUNT_API)
     @Test
     public void getKeyMissingCount() {
         // Skip the test if bluetooth or companion device are not present.
