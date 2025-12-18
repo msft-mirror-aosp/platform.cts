@@ -43,8 +43,9 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_12
     specification:
-      "MUST support android.info.supportedHardwareLevel property as FULL or "
-      "better for both primary cameras."
+      "MUST support `android.info.supportedHardwareLevel` property as `FULL` "
+      "or better for back primary and `LIMITED` or better for front primary "
+      "camera."
     required_values {
       key: "front_primary_camera_hwl_level"
       value {
@@ -63,7 +64,10 @@ specs {
   key: 33
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_13
-    specification: "same"
+    specification:
+      "MUST support `android.info.supportedHardwareLevel` property as `FULL` "
+      "or better for back primary and `LIMITED` or better for front primary "
+      "camera."
     required_values {
       key: "front_primary_camera_hwl_level"
       value {
