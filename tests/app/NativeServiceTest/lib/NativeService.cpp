@@ -20,6 +20,7 @@
 
 #include <android/binder_ibinder.h>
 #include <dlfcn.h>
+#include <inttypes.h>
 #include <log/log.h>
 
 #include <map>
@@ -102,7 +103,7 @@ extern "C" void native_service_onDestroy(ANativeService* _Nonnull service) {
 extern "C" AIBinder* native_service_onBind(ANativeService* _Nonnull service, uint64_t bindToken,
                                            char const* _Nullable action,
                                            char const* _Nullable data) {
-    ALOGI("native_service_onBind – service %p, bindToken %lu, action: %s, data %s", service,
+    ALOGI("native_service_onBind – service %p, bindToken %" PRIu64 ", action: %s, data %s", service,
           bindToken, action, data);
 
     std::shared_ptr<NativeServiceWrapper> wrapper;
@@ -136,7 +137,7 @@ extern "C" AIBinder* native_service_onBind(ANativeService* _Nonnull service, uin
 }
 
 extern "C" void native_service_onRebind(ANativeService* _Nonnull service, uint64_t bindToken) {
-    ALOGI("native_service_onRebind – service %p, bindToken %lu", service, bindToken);
+    ALOGI("native_service_onRebind – service %p, bindToken %" PRIu64, service, bindToken);
 
     auto itr = gBindingMap.find(service);
     ASSERT_VOID(itr != gBindingMap.end());
@@ -152,7 +153,7 @@ extern "C" void native_service_onRebind(ANativeService* _Nonnull service, uint64
 }
 
 extern "C" bool native_service_onUnbind(ANativeService* _Nonnull service, uint64_t bindToken) {
-    ALOGI("native_service_onUnbind – service %p, bindToken %lu", service, bindToken);
+    ALOGI("native_service_onUnbind – service %p, bindToken %" PRIu64, service, bindToken);
 
     bool res = false;
 
