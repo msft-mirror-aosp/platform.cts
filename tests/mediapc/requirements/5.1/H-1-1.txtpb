@@ -67,11 +67,7 @@ specs {
   key: 31
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_12
-    specification:
-      "MUST advertise the maximum number of hardware video decoder sessions "
-      "that can be run concurrently in any codec combination via the "
-      "`CodecCapabilities.getMaxSupportedInstances()` and "
-      "`VideoCapabilities.getSupportedPerformancePoints()` methods."
+    specification: "same"
     required_values {
       key: "concurrent_sessions"
       value {
@@ -125,11 +121,7 @@ specs {
   key: 33
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_13
-    specification:
-      "MUST advertise the maximum number of hardware video decoder sessions "
-      "that can be run concurrently in any codec combination via the "
-      "`CodecCapabilities.getMaxSupportedInstances()` and "
-      "`VideoCapabilities.getSupportedPerformancePoints()` methods."
+    specification: "same"
     required_values {
       key: "concurrent_sessions"
       value {
@@ -149,11 +141,7 @@ specs {
   key: 34
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_14
-    specification:
-      "MUST advertise the maximum number of hardware video decoder sessions "
-      "that can be run concurrently in any codec combination via the "
-      "`CodecCapabilities.getMaxSupportedInstances()` and "
-      "`VideoCapabilities.getSupportedPerformancePoints()` methods."
+    specification: "same"
     required_values {
       key: "concurrent_sessions"
       value {
@@ -173,11 +161,7 @@ specs {
   key: 35
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
-    specification:
-      "MUST advertise the maximum number of hardware video decoder sessions "
-      "that can be run concurrently in any codec combination via the "
-      "`CodecCapabilities.getMaxSupportedInstances()` and "
-      "`VideoCapabilities.getSupportedPerformancePoints()` methods."
+    specification: "same"
     required_values {
       key: "concurrent_sessions"
       value {
