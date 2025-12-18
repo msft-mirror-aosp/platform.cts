@@ -19,7 +19,6 @@ import struct
 import subprocess
 import time
 
-import capture_request_utils
 import cv2
 import image_processing_utils
 import ip_chart_extraction_utils as ce
@@ -587,7 +586,7 @@ def setup_gen2_rig(rotator_ch, lighting_ch):
   return motor_port, lights_port
 
 
-def setup_gen2_rig(self, cam):
+def setup_gen2_rig_with_cam(self, cam):
   """Set up the gen2 rig and establish communication with ports.
 
   Args:

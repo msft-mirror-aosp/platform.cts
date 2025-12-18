@@ -86,8 +86,8 @@ def _do_brightness_check(patch_list_w, patch_list_uw):
   brightness_diff = brightness_1st - brightness_2nd
   logging.debug('Brightness difference between w and uw: %.2f',
                 brightness_diff)
-  e_msg = ""
-  marginal_pass_msg = ""
+  e_msg = ''
+  marginal_pass_msg = ''
   marginal_brightness_pass = False
   if (abs(brightness_diff) > (
       _BRIGHTNESS_DIFF_THRESHOLD * its_session_utils.MARGINAL_PASS_FACTOR)
@@ -175,7 +175,7 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
       if self.rotator_cntl == 'None' or self.lighting_cntl == 'None':
         logging.debug('Gen2 rig is not available.')
       else:
-        gen2_rig_controller_utils.setup_gen2_rig(self, cam)
+        gen2_rig_controller_utils.setup_gen2_rig_with_cam(self, cam)
 
       # Set up scene and configure preview size
       preview_test_size = preview_processing_utils.get_max_preview_test_size(
@@ -277,7 +277,7 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
         raise AssertionError(e_msg)
       elif (marginal_brightness_pass or marginal_awb_pass):
         logging.warning('%s\n %s', its_session_utils.MARGINAL_PASSING_MESSAGE,
-                          marginal_pass_msg)
+                        marginal_pass_msg)
 
 if __name__ == '__main__':
   test_runner.main()
