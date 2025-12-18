@@ -96,6 +96,7 @@ public class DataServiceCallbackTest {
     int mResult;
     DataCallResponse mResponse;
     List<DataCallResponse> mDataCallList;
+    boolean mRequireExplicitDisconnect;
     String mApn;
     DataProfile mDataProfile;
 
@@ -124,6 +125,7 @@ public class DataServiceCallbackTest {
 
         public void onDataCallListChanged(List<DataCallResponse> dataCallList) {
             mDataCallList = dataCallList;
+            mRequireExplicitDisconnect = false;
         }
 
         public void onHandoverStarted(int result) {
@@ -140,6 +142,12 @@ public class DataServiceCallbackTest {
 
         public void onDataProfileUnthrottled(DataProfile dataProfile) {
             mDataProfile = dataProfile;
+        }
+
+        @Override
+        public void onDataCallListUpdated(List<DataCallResponse> dataCallList) {
+            mDataCallList = dataCallList;
+            mRequireExplicitDisconnect = true;
         }
 
         public IBinder asBinder() {
@@ -189,6 +197,14 @@ public class DataServiceCallbackTest {
         mDataServiceCallback.onDataCallListChanged(DATA_CALL_LIST);
         assertThat(DATA_CALL_LIST).isEqualTo(mDataCallList);
     }
+
+    @Test
+    public void testOnDataCallListChangedWithFlag() {
+        mDataServiceCallback.onDataCallListUpdated(DATA_CALL_LIST);
+        assertThat(DATA_CALL_LIST).isEqualTo(mDataCallList);
+        assertThat(mRequireExplicitDisconnect).isEqualTo(true);
+    }
+
     @Test
     public void testOnHandoverStarted() {
         mDataServiceCallback.onHandoverStarted(RESULT);

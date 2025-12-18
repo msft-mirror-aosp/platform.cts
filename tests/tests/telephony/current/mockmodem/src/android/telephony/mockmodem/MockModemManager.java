@@ -1441,4 +1441,24 @@ public class MockModemManager {
             configImpl.resetRebootModemCalledFlag();
         }
     }
+
+    /**
+     * Sets new HAL's explicit disconnect behaviour for phoneId
+     *
+     * @param phoneId phone id
+     * @param useNewHal whether to use new hal
+     */
+    public void setUseNewHalDataCallListChanged(int phoneId, boolean useNewHal) {
+        Log.d(
+                TAG,
+                "setUseNewHalDataCallListChanged phoneId = "
+                        + phoneId
+                        + " useNewHal = "
+                        + useNewHal);
+        if (mMockModemService == null) {
+            Log.e(TAG, "setUseNewHalDataCallListChanged: mMockModemService is null");
+            return;
+        }
+        mMockModemService.getIRadioData((byte) phoneId).setUseNewHalDataCallListChanged(useNewHal);
+    }
 }

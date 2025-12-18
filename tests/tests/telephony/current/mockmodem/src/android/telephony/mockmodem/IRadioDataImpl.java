@@ -60,6 +60,8 @@ public class IRadioDataImpl extends IRadioData.Stub {
 
     private static MockNetworkService sServiceState;
 
+    private boolean mUseNewHalDataCallListChanged = true;
+
     // Event
     static final int EVENT_NETWORK_STATUS_CHANGED = 1;
 
@@ -129,17 +131,32 @@ public class IRadioDataImpl extends IRadioData.Stub {
 
     @Override
     public void deactivateDataCall(int serial, int cid, int reason) {
-        Log.d(mTag, "deactivateDataCall");
-
-        mMockDataService.deactivateDataCall(cid, reason);
-        RadioResponseInfo rsp = mService.makeSolRsp(serial);
-        try {
-            mRadioDataResponse.deactivateDataCallResponse(rsp);
-        } catch (RemoteException ex) {
-            Log.e(mTag, "Failed to deactivateDataCall from AIDL. Exception" + ex);
+        Log.d(
+                mTag,
+                "deactivateDataCall mUseNewHalDataCallListChanged: "
+                        + mUseNewHalDataCallListChanged);
+        if (mUseNewHalDataCallListChanged) {
+            mMockDataService.setCallInactive(cid);
+            RadioResponseInfo rsp = mService.makeSolRsp(serial);
+            try {
+                mRadioDataResponse.deactivateDataCallResponse(rsp);
+            } catch (RemoteException ex) {
+                Log.e(mTag, "Failed to deactivateDataCall from AIDL. Exception" + ex);
+            }
+            unsolDataCallListChanged();
+            mMockDataService.deactivateDataCall(cid, reason);
+            unsolDataCallListChanged();
+        } else {
+            mMockDataService.deactivateDataCall(cid, reason);
+            RadioResponseInfo rsp = mService.makeSolRsp(serial);
+            try {
+                mRadioDataResponse.deactivateDataCallResponse(rsp);
+            } catch (RemoteException ex) {
+                Log.e(mTag, "Failed to deactivateDataCall from AIDL. Exception" + ex);
+            }
+            // send the data call list changed
+            unsolDataCallListChanged();
         }
-        // send the data call list changed
-        unsolDataCallListChanged();
     }
 
     @Override
@@ -368,22 +385,45 @@ public class IRadioDataImpl extends IRadioData.Stub {
     }
 
     public void unsolDataCallListChanged() {
-        Log.d(mTag, "unsolDataCallListChanged");
+        Log.d(
+                mTag,
+                "unsolDataCallListChanged mUseNewHalDataCallListChanged: "
+                        + mUseNewHalDataCallListChanged);
+        if (mUseNewHalDataCallListChanged) {
+            if (mRadioDataResponse != null) {
+                List<SetupDataCallResult> dataCallLists = mMockDataService.getDataCallList();
+                SetupDataCallResult[] dcList = new SetupDataCallResult[dataCallLists.size()];
+                dcList = dataCallLists.toArray(dcList);
 
-        if (mRadioDataIndication != null) {
-            List<SetupDataCallResult> dataCallLists = mMockDataService.getDataCallList();
-            SetupDataCallResult[] dcList = new SetupDataCallResult[dataCallLists.size()];
-            dcList = dataCallLists.toArray(dcList);
-
-            try {
-                mRadioDataIndication.dataCallListChanged(RadioIndicationType.UNSOLICITED, dcList);
-            } catch (RemoteException ex) {
-                Log.e(
-                        mTag,
-                        "Failed to invoke dataCallListChanged change from AIDL. Exception" + ex);
+                try {
+                    mRadioDataResponse.dataCallListUpdated(RadioIndicationType.UNSOLICITED, dcList);
+                } catch (RemoteException ex) {
+                    Log.e(
+                            mTag,
+                            "Failed to invoke dataCallListChanged change from AIDL. Exception"
+                                    + ex);
+                }
+            } else {
+                Log.e(mTag, "null mRadioDataResponse");
             }
         } else {
-            Log.e(mTag, "null mRadioDataIndication");
+            if (mRadioDataIndication != null) {
+                List<SetupDataCallResult> dataCallLists = mMockDataService.getDataCallList();
+                SetupDataCallResult[] dcList = new SetupDataCallResult[dataCallLists.size()];
+                dcList = dataCallLists.toArray(dcList);
+
+                try {
+                    mRadioDataIndication.dataCallListChanged(
+                            RadioIndicationType.UNSOLICITED, dcList);
+                } catch (RemoteException ex) {
+                    Log.e(
+                            mTag,
+                            "Failed to invoke dataCallListChanged change from AIDL. Exception"
+                                    + ex);
+                }
+            } else {
+                Log.e(mTag, "null mRadioDataIndication");
+            }
         }
     }
 
@@ -454,5 +494,11 @@ public class IRadioDataImpl extends IRadioData.Stub {
                 }
             }
         }
+    }
+
+    /** Set to use new HAL explicit disconnect behaviour */
+    public void setUseNewHalDataCallListChanged(boolean useNew) {
+        mUseNewHalDataCallListChanged = useNew;
+        Log.d(TAG, "setUseNewHalDataCallListChanged: " + useNew);
     }
 }
