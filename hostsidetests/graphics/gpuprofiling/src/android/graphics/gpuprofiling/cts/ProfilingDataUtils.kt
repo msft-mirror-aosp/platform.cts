@@ -112,3 +112,15 @@ fun Trace.deviceSupportsRayTracing(): Boolean? {
     }
     return null
 }
+
+fun List<GpuCounterValue>.containsThreeConsecutiveZeroes(): Boolean {
+    if (size < 3) {
+        return false
+    }
+    for (i in 0..size - 3) {
+        if (this[i].value == 0.0 && this[i + 1].value == 0.0 && this[i + 2].value == 0.0) {
+            return true
+        }
+    }
+    return false
+}

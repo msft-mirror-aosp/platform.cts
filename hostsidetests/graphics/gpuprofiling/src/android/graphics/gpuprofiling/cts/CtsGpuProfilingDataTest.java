@@ -97,6 +97,8 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
             "graphics.gpu.profiler.support.gpu_counters";
     private static final String GPU_COUNTERS_GROUPS_PROPERTY =
             "graphics.gpu.profiler.support.gpu_counters.groups";
+    private static final String GPU_COUNTERS_ZEROES_OPTIMIZATION_PROPERTY =
+            "graphics.gpu.profiler.support.gpu_counters.zeroes_optimization";
     private static final String LAYER_PACKAGE_PROPERTY = "graphics.gpu.profiler.vulkan_layer_apk";
     private static final String LAYER_NAME = "VkRenderStagesProducer";
     private static final String DEBUG_PROPERTY = "debug.graphics.gpu.profiler.perfetto";
@@ -341,6 +343,12 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                     "Trace failed to report one of the default GPU counter values.",
                     foundAllDefaultCounters,
                     is(true));
+            if (getProperty(GPU_COUNTERS_ZEROES_OPTIMIZATION_PROPERTY)) {
+                errorCollector.checkThat(
+                        "Some of the counters report 0 values unnecessarily: ",
+                        getSummaryComplianceWithZeroesOptimization(gpuCountersFromTrace),
+                        is(""));
+            }
             if (getProperty(GPU_COUNTERS_GROUPS_PROPERTY)) {
                 checkRequiredGroupsPresent(errorCollector, gpuCounterSpecsList, trace);
             }
@@ -391,6 +399,23 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                 .anyMatch(
                         valueslist ->
                                 valueslist.stream().anyMatch(counter -> counter.getValue() > 0.0));
+    }
+
+    private static String getSummaryComplianceWithZeroesOptimization(GpuCounters gpuCounters) {
+        StringBuilder zeroesOptimizationSummary = new StringBuilder();
+
+        for (Map.Entry<Integer, List<GpuCounterValue>> entry :
+                gpuCounters.getCounterValues().entrySet()) {
+            if (ProfilingDataUtilsKt.containsThreeConsecutiveZeroes(entry.getValue())) {
+                zeroesOptimizationSummary
+                        .append("counter ")
+                        .append(gpuCounters.getCounterSpecs().get(entry.getKey()).getName())
+                        .append(" with ID ")
+                        .append(entry.getKey())
+                        .append(" ; ");
+            }
+        }
+        return zeroesOptimizationSummary.toString();
     }
 
     private static boolean containsGpuFrequencyEvent(Trace trace) {

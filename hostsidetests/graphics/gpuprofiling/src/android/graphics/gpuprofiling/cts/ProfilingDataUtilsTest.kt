@@ -82,6 +82,56 @@ class ProfilingDataUtilsTest {
         assertThat(trace.deviceSupportsRayTracing()).isTrue()
     }
 
+    @Test
+    fun containsThreeConsecutiveZeroes_emptyList_returnsFalse() {
+        val list = emptyList<GpuCounterValue>()
+        assertThat(list.containsThreeConsecutiveZeroes()).isFalse()
+    }
+
+    @Test
+    fun containsThreeConsecutiveZeroes_lessThanThreeElements_returnsFalse() {
+        val list = listOf(
+            GpuCounterValue(1, 0.0),
+            GpuCounterValue(2, 0.0)
+        )
+        assertThat(list.containsThreeConsecutiveZeroes()).isFalse()
+    }
+
+    @Test
+    fun containsThreeConsecutiveZeroes_noConsecutiveZeroes_returnsFalse() {
+        val list = listOf(
+            GpuCounterValue(1, 0.0),
+            GpuCounterValue(2, 1.0),
+            GpuCounterValue(3, 0.0),
+            GpuCounterValue(4, 0.0),
+            GpuCounterValue(5, 2.0)
+        )
+        assertThat(list.containsThreeConsecutiveZeroes()).isFalse()
+    }
+
+    @Test
+    fun containsThreeConsecutiveZeroes_hasThreeConsecutiveZeroes_returnsTrue() {
+        val list = listOf(
+            GpuCounterValue(1, 1.0),
+            GpuCounterValue(2, 0.0),
+            GpuCounterValue(3, 0.0),
+            GpuCounterValue(4, 0.0),
+            GpuCounterValue(5, 2.0)
+        )
+        assertThat(list.containsThreeConsecutiveZeroes()).isTrue()
+    }
+
+    @Test
+    fun containsThreeConsecutiveZeroes_moreThanThreeConsecutiveZeroes_returnsTrue() {
+        val list = listOf(
+            GpuCounterValue(1, 0.0),
+            GpuCounterValue(2, 0.0),
+            GpuCounterValue(3, 0.0),
+            GpuCounterValue(4, 0.0)
+        )
+        assertThat(list.containsThreeConsecutiveZeroes()).isTrue()
+    }
+
     private fun buildTraceWithRayTracingEvent(event: String): Trace {
         return Trace.newBuilder().apply {
             addPacket(TracePacket.newBuilder().apply {
