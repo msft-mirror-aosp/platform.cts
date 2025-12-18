@@ -18,6 +18,7 @@ package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
+import static android.Manifest.permission.MODIFY_PHONE_STATE;
 import static android.bluetooth.BluetoothDevice.ACCESS_ALLOWED;
 import static android.bluetooth.BluetoothDevice.ACCESS_REJECTED;
 import static android.bluetooth.BluetoothDevice.ACCESS_UNKNOWN;
@@ -319,6 +320,23 @@ public class BluetoothDeviceTest {
         // This should throw a SecurityException because no BLUETOOTH_PRIVILEGED permission
         assertThrows(SecurityException.class, () -> mFakeDevice.connect());
         assertThrows(SecurityException.class, () -> mFakeDevice.disconnect());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_GATT_CONN_SETTINGS)
+    public void connect_disconnect_with_permissions() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
+        try (var p =
+                Permissions.withPermissions(
+                        BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED, MODIFY_PHONE_STATE)) {
+            assertThat(mFakeDevice.connect()).isEqualTo(BluetoothStatusCodes.SUCCESS);
+        }
+
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+            assertThat(mFakeDevice.disconnect()).isEqualTo(BluetoothStatusCodes.SUCCESS);
+        }
     }
 
     @Test
