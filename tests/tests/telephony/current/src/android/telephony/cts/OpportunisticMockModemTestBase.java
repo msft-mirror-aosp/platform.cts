@@ -80,10 +80,23 @@ public class OpportunisticMockModemTestBase extends MockModemTestBase {
     public static void afterAllTests() throws Exception {
         if (sShouldTearDownSims) {
             // Get ICCID of subs before removing the SIM cards.
-            String primarySubIccid =
+            setSubAsOpportunistic(sOpptSubId, false);
+            String primarySubIccid = "";
+            String opptSubIccid = "";
+            // TODO(b/457756111): Migrate to Bedstead.
+            InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation()
+                    .adoptShellPermissionIdentity();
+            try {
+                primarySubIccid =
                     sSubscriptionManager.getActiveSubscriptionInfo(sPrimarySubId).getIccId();
-            String opptSubIccid =
-                    sSubscriptionManager.getActiveSubscriptionInfo(sOpptSubId).getIccId();
+                opptSubIccid =
+                        sSubscriptionManager.getActiveSubscriptionInfo(sOpptSubId).getIccId();
+            } finally {
+                InstrumentationRegistry.getInstrumentation()
+                        .getUiAutomation()
+                        .dropShellPermissionIdentity();
+            }
 
             removeSimCard(OPPT_SIM_SLOT_INDEX);
             removeSimCard(PRIMARY_SIM_SLOT_INDEX);
