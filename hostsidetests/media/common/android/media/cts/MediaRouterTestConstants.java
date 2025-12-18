@@ -57,6 +57,7 @@ public final class MediaRouterTestConstants {
     public static final String ROUTE_ID_APP_3_ROUTE_5 = "route_3-5";
 
     public static final String ROUTE_ID_BUILTIN_SPEAKER = "ROUTE_ID_BUILTIN_SPEAKER";
+    public static final String ROUTE_ID_HDMI = "ROUTE_ID_HDMI";
 
     public static final String ROUTE_ID_SELF_SCAN_ONLY = "route_self_scan_only";
 
