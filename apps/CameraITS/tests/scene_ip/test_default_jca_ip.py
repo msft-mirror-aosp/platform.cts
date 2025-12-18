@@ -216,6 +216,9 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
         gen2_rig_controller_utils.rotate_to_orthogonal_position(
             cam, self.log_path, self.motor_port, self.motor_channel)
       cam.close_camera()
+      ui_interaction_utils.force_stop_app(
+          self.dut, its_device_utils.CTS_VERIFIER_PKG
+      )
       time.sleep(_CLOSE_CAMERA_WAIT_TIME_SECONDS)
 
       # Take capture with default camera app
@@ -229,8 +232,12 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       ui_interaction_utils.pull_img_files(
           device_id, device_img_path, self.log_path
       )
+      time.sleep(_CLOSE_CAMERA_WAIT_TIME_SECONDS)  # wait for camera to close
 
       # Check if the image captured is HDR or not
+      its_device_utils.start_its_test_activity(device_id)
+      cam.__init__(device_id=self.dut.serial, camera_id=self.camera_id,
+                   hidden_physical_id=self.hidden_physical_id)
       gainmap_present = cam.check_gain_map_present(device_img_path)
       logging.debug('gainmap_present: %s', gainmap_present)
 
@@ -301,6 +308,11 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
             ' as default.', video_stabilization_mode
         )
       # Take JCA capture with UI
+      ui_interaction_utils.force_stop_app(
+          self.dut, its_device_utils.CTS_VERIFIER_PKG
+      )
+      time.sleep(_CLOSE_CAMERA_WAIT_TIME_SECONDS)
+
       jca_capture_path, _ = ui_interaction_utils.launch_jca_and_capture(
           self.dut,
           self.log_path,
