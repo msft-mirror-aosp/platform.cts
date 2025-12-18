@@ -251,7 +251,7 @@ class AppOpDefinitionTest {
             APP_OPS[AppOpsManager.OPSTR_READ_RESPIRATORY_RATE] = 172
             APP_OPS[AppOpsManager.OPSTR_READ_VO2_MAX] = 173
             APP_OPS[AppOpsManager.OPSTR_CONTINUE_ACROSS_DEVICES] = 174
-            APP_OPS[AppOpsManager.OPSTR_VOICE_INTERACTION_ASSIST_STRUCTURE] = 175
+            APP_OPS[AppOpsManager.OPSTR_READ_SCREEN_CONTEXT] = 175
             APP_OPS[AppOpsManager.OPSTR_READ_RESTRICTED_MESSAGES] = 176
             APP_OPS[AppOpsManager.OPSTR_WRITE_RESTRICTED_MESSAGES] = 177
         }
