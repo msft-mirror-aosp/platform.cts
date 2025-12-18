@@ -65,6 +65,8 @@ class DisplayP3Test(its_base_test.ItsBaseTest):
       its_session_utils.load_scene(
           cam, props, self.scene, self.tablet, self.chart_distance)
 
+      its_session_utils.verify_tablet_display_wide_gamut(self.tablet)
+
       cam.do_3a()
 
       req = capture_request_utils.auto_capture_request()

@@ -3506,3 +3506,32 @@ def define_raw_stats_fmt_exposure(props, img_stats_grid):
   return {'format': 'rawStats',
           'gridWidth': aa_width // img_stats_grid,
           'gridHeight': aa_height // img_stats_grid}
+
+def verify_tablet_display_wide_gamut(tablet):
+  """Verify if the tablet supports display wide gamut image and in the right color mode."""
+  # The command to get the SurfaceFlinger dump
+  command = "dumpsys SurfaceFlinger | grep -iE 'color mode|ColorMode|wide color'"
+  output = tablet.adb.shell(command)
+
+  if output is None:
+      raise error_util.CameraItsError('Failed to fetch color mode info from device')
+  lines = output.decode('utf-8').strip().split('\n')
+  # The output is lines of color mode related message, we go through each line to verify
+  # wide color support and current color mode
+  for line in lines:
+      # Search for wide color support
+      wide_color_support_match = re.search(r'Device supports wide color:\s*(.+)', line.strip())
+      if wide_color_support_match:
+          wide_color_support = wide_color_support_match.group(1).strip()
+          if wide_color_support != '1':
+              raise error_util.CameraItsError('Device does not support wide gamut')
+
+      # Search for current color mode
+      current_color_mode_match = re.search(r'Current color mode:\s*(.+)', line.strip())
+      if current_color_mode_match:
+          current_color_mode = current_color_mode_match.group(1).strip().lower()
+          if 'p3' not in current_color_mode:
+              raise error_util.CameraItsError('Device current color mode is not in wide gamut')
+          else:
+              return
+  raise error_util.CameraItsError('Device does not have color mode info')
