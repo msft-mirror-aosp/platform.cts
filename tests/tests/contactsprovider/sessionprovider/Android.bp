@@ -1,0 +1,35 @@
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_data_aegis",
+}
+
+android_test {
+    name: "CtsContactsProviderSessionTestCases",
+    defaults: ["cts_defaults"],
+
+    test_suites: [
+        "cts",
+        "general-tests",
+        "sts",
+    ],
+
+    srcs: [
+        "src/**/*.java",
+    ],
+
+    static_libs: [
+        "android.content.flags-aconfig-java",
+        "androidx.test.ext.junit",
+        "ctstestrunner-axt",
+        "contactsprovider_flags_java_lib",
+        "flag-junit",
+        "bedstead-root",
+        "bedstead",
+        "truth",
+    ],
+
+    data: [":CtsContactsProviderSessionClient"],
+
+    min_sdk_version: "30",
+    sdk_version: "test_current",
+}
