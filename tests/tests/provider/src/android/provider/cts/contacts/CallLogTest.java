@@ -627,9 +627,6 @@ public class CallLogTest extends InstrumentationTestCase {
     }
 
     public void testAddCallLogs_withMaximumCallLogEntriesPerSim() {
-        if (!android.provider.Flags.allowConfigMaximumCallLogEntriesPerSim()) {
-            return;
-        }
         final CallLogGenerator callLogGenerator =
                 new CallLogGenerator(getInstrumentation().getContext());
         final int maxCallLogEntriesPerSim =
