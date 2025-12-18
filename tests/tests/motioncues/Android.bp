@@ -1,0 +1,68 @@
+// Copyright (C) 2025 The Android Open Source Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+android_library {
+    name: "CtsMotionCuesTestCases_lib",
+    srcs: [
+        "src/**/*.java",
+    ],
+    libs: [
+        "platform-test-annotations",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
+    ],
+    static_libs: [
+        "androidx.test.core",
+        "androidx.test.rules",
+        "androidx.test.ext.truth",
+        "compatibility-device-util-axt",
+        "ctstestrunner-axt",
+        "platform-test-rules",
+        "SystemUI-proto",
+        "testng",
+        "bedstead-root",
+    ],
+    resource_dirs: [
+        "res",
+    ],
+    platform_apis: true,
+}
+
+android_test {
+    name: "CtsMotionCuesTestCases",
+    defaults: ["cts_defaults"],
+    team: "trendy_team_motioncues",
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+    static_libs: [
+        "CtsMotionCuesTestCases_lib",
+    ],
+    platform_apis: true,
+    resource_dirs: [],
+    sdk_version: "test_current",
+}
+
+team {
+    name: "trendy_team_motioncues",
+
+    // go/trendy/manage/engineers/6536344753307648
+    trendy_team_id: "6536344753307648",
+}
