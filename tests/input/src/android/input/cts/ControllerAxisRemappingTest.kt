@@ -30,6 +30,7 @@ import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.ThrowingSupplier
+import com.android.compatibility.common.util.UserHelper
 import com.android.compatibility.common.util.WindowUtil
 import com.android.cts.input.BlockingQueueEventVerifier
 import com.android.cts.input.CaptureEventActivity
@@ -49,6 +50,7 @@ import org.hamcrest.Matchers.allOf
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeFalse
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -77,6 +79,14 @@ class ControllerAxisRemappingTest {
 
     @Before
     fun setUp() {
+        // TODO(b/454344508): Consider making InputManagerService multi-user aware.
+        assumeFalse(
+            "InputManagerService only tracks the current user. " +
+                    "Settings changes for non-current users are not applied, causing tests " +
+                    "to fail for visible background users.",
+            UserHelper().isVisibleBackgroundUser()
+        )
+
         rule.scenario.onActivity {
             inputManager = it.getSystemService(InputManager::class.java)!!
             activity = it
