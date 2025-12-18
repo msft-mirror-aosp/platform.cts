@@ -70,18 +70,22 @@ public class AttachingTest {
     public static Collection<Object[]> data() {
         Collection<Object[]> params = new ArrayList<>();
 
-        try {
-            // Test that an absolute path works w/o given classloader.
-            File agentExtracted = copyAgentToFile("jvmtiattachingtestagent1");
-            Callable<Boolean> success = AttachingTest::isAttached1;
-            params.add(new Object[] {
-                agentExtracted.getAbsolutePath(),
-                null,
-                success,
-            });
-            createdFiles.add(agentExtracted);
-        } catch (Exception exc) {
-            throw new RuntimeException(exc);
+        // When running with native bridge skip the variant w/o classloader
+        // since Android Runtime doesn't currently detect native bridge and
+        // defaults to native when classloader is not specified.
+        if (!runningWithNativeBridge()) {
+            try {
+                // Test that an absolute path works w/o given classloader.
+                File agentExtracted = copyAgentToFile("jvmtiattachingtestagent1");
+                Callable<Boolean> success = AttachingTest::isAttached1;
+                params.add(
+                        new Object[] {
+                            agentExtracted.getAbsolutePath(), null, success,
+                        });
+                createdFiles.add(agentExtracted);
+            } catch (Exception exc) {
+                throw new RuntimeException(exc);
+            }
         }
 
         try {
@@ -229,6 +233,13 @@ public class AttachingTest {
 
         assertTrue(isAttachedFn.call());
     }
+
+    static {
+        System.loadLibrary("jvmtitests");
+    }
+
+    // Returns true if the test is running with native_bridge.
+    private static native boolean runningWithNativeBridge();
 
     // Functions the agents can bind to.
 
