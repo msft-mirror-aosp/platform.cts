@@ -28,9 +28,7 @@ specs {
   key: 35
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
-    specification:
-      "Are STRONGLY RECOMMENDED to support 24 channel mixing with at least "
-      "support for 9.1.6 and 22.2 channel masks."
+    specification: "same"
   }
 }
 specs {

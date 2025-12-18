@@ -36,9 +36,7 @@ specs {
   key: 34
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_14
-    specification:
-      "MUST support a secure decoder for every hardware AVC, HEVC, VP9 or AV1 "
-      "decoder on the device."
+    specification: "same"
     required_values {
       key: "secure_requirement_satisfied_boolean"
       value {
@@ -51,9 +49,7 @@ specs {
   key: 35
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
-    specification:
-      "MUST support a secure decoder for every hardware AVC, HEVC, VP9, or AV1 "
-      "decoder on the device."
+    specification: "same"
     required_values {
       key: "secure_requirement_satisfied_boolean"
       value {

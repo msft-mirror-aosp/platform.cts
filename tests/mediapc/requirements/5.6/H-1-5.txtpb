@@ -29,18 +29,14 @@ specs {
   key: 34
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_14
-    specification:
-      "MUST support class compliant MIDI devices and declare the MIDI feature "
-      "flag."
+    specification: "same"
   }
 }
 specs {
   key: 35
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
-    specification:
-      "MUST support class compliant MIDI devices and declare the MIDI feature "
-      "flag."
+    specification: "same"
   }
 }
 specs {

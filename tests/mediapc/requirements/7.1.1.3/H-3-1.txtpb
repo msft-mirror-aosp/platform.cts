@@ -21,7 +21,7 @@ specs {
   key: 34
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_INVALID
-    specification: "MUST have a HDR display supporting at least 1000 nits average."
+    specification: "MUST have a HDR display supporting at least 1000 nits"
     required_values {
       key: "display_luminance_nits"
       value {
@@ -40,7 +40,7 @@ specs {
   key: 35
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_INVALID
-    specification: "MUST have a HDR display supporting at least 1000 nits average."
+    specification: "MUST have a HDR display supporting at least 1000 nits"
     required_values {
       key: "display_luminance_nits"
       value {

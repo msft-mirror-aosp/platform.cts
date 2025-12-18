@@ -48,12 +48,12 @@ specs {
     specification:
       "MUST support 3 instances of non-secure hardware video decoder sessions "
       "together with 1 instance of secure hardware video decoder session (4 "
-      "instances total) (AVC, HEVC, VP9, AV1, or later) in any codec "
+      "instances total) (AVC, HEVC, VP9, AV1 or later) in any codec "
       "combination running concurrently with 3 sessions at 4K resolution@30 "
-      "fps which includes one secure decoder session and 1 nn-secure session "
-      "at 1080p resolution@30fps where at most 2 sessions can be in 10-bit "
-      "HDR. _AV1 codec sessions are only required to support 1080p resolution "
-      "even when this requirement calls for 4K._"
+      "fps (unless AV1) which includes one secure decoder session and 1 "
+      "nn-secure session at 1080p resolution@30fps where at most 2 sessions "
+      "can be in 10-bit HDR. AV1 codec sessions are only required to support "
+      "1080p resolution even when this requirement calls for 4K."
     required_values {
       key: "concurrent_fps"
       value {
@@ -78,11 +78,11 @@ specs {
       "together with 1 instance of secure hardware video decoder session (4 "
       "instances total) (AVC, HEVC, VP9, AV1, or later) in any codec "
       "combination running concurrently with 3 sessions at 4K resolution@30fps "
-      "which includes one secure decoder session and 1 nn-secure session at "
-      "1080p resolution@30fps where at most 2 sessions can be in 10-bit HDR. "
-      "For all sessions, there MUST NOT be more than 1 frame dropped per "
-      "second. _AV1 codec sessions are only required to support 1080p "
-      "resolution even when this requirement calls for 4K._"
+      "(unless AV1) which includes one secure decoder session and 1 nn-secure "
+      "session at 1080p resolution@30fps where at most 2 sessions can be in "
+      "10-bit HDR. For all sessions, there MUST NOT be more than 1 frame "
+      "dropped per second. AV1 codec sessions are only required to support "
+      "1080p resolution even when this requirement calls for 4K."
     required_values {
       key: "concurrent_fps"
       value {

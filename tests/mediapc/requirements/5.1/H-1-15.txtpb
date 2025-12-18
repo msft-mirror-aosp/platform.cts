@@ -34,7 +34,7 @@ specs {
   key: 34
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_14
-    specification: "MUST have at least 1 hardware video decoder supporting 4K60."
+    specification: "same"
     required_values {
       key: "number_4k_hw_decoders"
       value {
@@ -47,7 +47,7 @@ specs {
   key: 35
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
-    specification: "MUST have at least 1 hardware video decoder supporting 4K60."
+    specification: "same"
     required_values {
       key: "number_4k_hw_decoders"
       value {
