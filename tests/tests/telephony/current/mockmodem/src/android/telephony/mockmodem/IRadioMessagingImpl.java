@@ -23,6 +23,7 @@ import android.hardware.radio.messaging.IRadioMessaging;
 import android.hardware.radio.messaging.IRadioMessagingIndication;
 import android.hardware.radio.messaging.IRadioMessagingResponse;
 import android.hardware.radio.messaging.SendSmsResult;
+import android.hardware.radio.network.NetworkSecurityEvent;
 import android.os.RemoteException;
 import android.support.annotation.GuardedBy;
 import android.util.ArraySet;
@@ -475,6 +476,20 @@ public class IRadioMessagingImpl extends IRadioMessaging.Stub {
                 mRadioMessagingIndication.newSms(RadioIndicationType.UNSOLICITED, pdu);
             } catch (RemoteException ex) {
                 Log.e(mTag, "Failed to newSms indication from AIDL. Exception" + ex);
+            }
+        } else {
+            Log.e(mTag, "null mRadioMessagingIndication");
+        }
+    }
+
+    public void newSecureSms(byte[] pdu, NetworkSecurityEvent event) {
+        Log.d(mTag, "newSecureSms");
+
+        if (mRadioMessagingIndication != null) {
+            try {
+                mRadioMessagingIndication.newSecureSms(RadioIndicationType.UNSOLICITED, pdu, event);
+            } catch (RemoteException ex) {
+                Log.e(mTag, "Failed to newSecureSms indication from AIDL. Exception" + ex);
             }
         } else {
             Log.e(mTag, "null mRadioMessagingIndication");
