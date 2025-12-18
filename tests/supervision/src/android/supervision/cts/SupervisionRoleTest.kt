@@ -94,7 +94,7 @@ class SupervisionRoleTest : BaseSupervisionTest() {
     @EnsureDoesNotHavePermission(MANAGE_ROLE_HOLDERS)
     @EnsureHasNoAdditionalUser
     @EnsureHasPermission(QUERY_USERS)
-    fun createConfirmSupervisionCredentialsIntent_noPermission_throwsException() {
+    fun shouldAllowBypassingSupervisionRoleQualification_noPermission_throwsException() {
         setSupervisionEnabled(false)
 
         assertThrows(SecurityException::class.java) {
