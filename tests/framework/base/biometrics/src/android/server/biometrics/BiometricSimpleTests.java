@@ -781,6 +781,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
 
         //TODO(b/347123256): Update once mandatory biometrics becomes public
         final int mandatoryBiometricsBit = 1 << 16;
+        final int deviceCredentialAndIdentityCheck = 1 << 17;
         for (int i = 0; i < 32; i++) {
             final int authenticator = 1 << i;
             // If it's a public constant, no need to test
@@ -789,6 +790,10 @@ public class BiometricSimpleTests extends BiometricTestBase {
             }
 
             if (authenticator == mandatoryBiometricsBit && !Flags.identityCheckApi()) {
+                continue;
+            }
+
+            if (Flags.doubleAuth() && authenticator == deviceCredentialAndIdentityCheck) {
                 continue;
             }
 
