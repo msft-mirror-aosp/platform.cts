@@ -38,6 +38,7 @@ android_test {
     ],
 
     static_libs: [
+        "android.companion.virtualdevice.flags-aconfig-java",
         "CtsComputerControlTestAppCommonLib",
         "androidx.test.ext.junit",
         "androidx.test.rules",
