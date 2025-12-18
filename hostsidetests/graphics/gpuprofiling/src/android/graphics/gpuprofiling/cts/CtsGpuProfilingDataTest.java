@@ -177,7 +177,7 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
         }
         installPackage(APK);
         getDevice().setProperty(DEBUG_PROPERTY, "1");
-        mHasGpuCountersCapability = true; // getProperty(GPU_COUNTERS_CAPABILITY_PROPERTY);
+        mHasGpuCountersCapability = getProperty(GPU_COUNTERS_CAPABILITY_PROPERTY);
     }
 
     /**
