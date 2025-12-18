@@ -35,6 +35,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -133,6 +134,7 @@ class AppOpsMemoryUsageTest {
 
     @Test
     @AsbSecurityTest(cveBugId = [443742082])
+    @Ignore("b/444627795 - SDKRuntime is disabled through flag and moving to no-op implementation & deprecation.")
     fun testSdkSandboxAppCannotSupplyArbitraryAttribution() {
         val notedLatch = CountDownLatch(1)
         var tag: String? = null
