@@ -25,6 +25,7 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanResult
 import android.companion.AssociationRequest
+import android.companion.AssociationRequest.DEVICE_PROFILE_FITNESS_TRACKER
 import android.companion.AssociationRequest.DEVICE_PROFILE_GLASSES
 import android.companion.AssociationRequest.DEVICE_PROFILE_MEDICAL
 import android.companion.AssociationRequest.DEVICE_PROFILE_WATCH
@@ -70,6 +71,7 @@ class CompanionDeviceTestAppActivity : Activity() {
     } }
     val singleCheckbox by lazy { CheckBox(this).apply { text = "Single Device" } }
     val watchCheckbox by lazy { CheckBox(this).apply { text = "Watch" } }
+    val fitnessCheckbox by lazy { CheckBox(this).apply { text = "Fitness Tracker" } }
     val glassesCheckbox by lazy { CheckBox(this).apply { text = "Glasses" } }
     val medicalCheckbox by lazy { CheckBox(this).apply { text = "Medical" } }
     val nearbyCheckbox by lazy { CheckBox(this).apply { text = "Nearby Devices" } }
@@ -119,6 +121,7 @@ class CompanionDeviceTestAppActivity : Activity() {
             addView(singleCheckbox)
             addView(watchCheckbox)
             addView(glassesCheckbox)
+            addView(fitnessCheckbox)
             addView(medicalCheckbox)
             addView(nearbyCheckbox)
             addView(associationListLabel)
@@ -130,6 +133,9 @@ class CompanionDeviceTestAppActivity : Activity() {
                 }
                 if (watchCheckbox.isChecked) {
                     setDeviceProfile(DEVICE_PROFILE_WATCH)
+                }
+                if (fitnessCheckbox.isChecked) {
+                    setDeviceProfile(DEVICE_PROFILE_FITNESS_TRACKER)
                 }
                 if (glassesCheckbox.isChecked) {
                     setDeviceProfile(DEVICE_PROFILE_GLASSES)
