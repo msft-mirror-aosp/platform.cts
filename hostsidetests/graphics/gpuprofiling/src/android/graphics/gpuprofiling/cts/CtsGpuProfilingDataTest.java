@@ -16,6 +16,8 @@
 
 package android.graphics.gpuprofiling.cts;
 
+import static android.graphics.gpuprofiling.cts.ProfilingDataUtilsKt.counterMatchesGpuUtilisation;
+
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -295,18 +297,31 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
         captureTrace(configFile);
 
         File traceResult = getDevice().pullFile(TRACE_FILE_PATH);
-        Trace trace = null;
+        Trace trace;
         try (InputStream in = new FileInputStream(traceResult)) {
             trace = Trace.parseFrom(CodedInputStream.newInstance(in));
         }
 
         GpuCounters gpuCountersFromTrace = new GpuCounters(trace);
 
-        boolean foundValidGpuCounterEvent = containsValidGpuCounterEvent(gpuCountersFromTrace);
         boolean foundAllDefaultCounters =
                 gpuCountersFromTrace.getCounterValues().keySet().equals(defaultCounterIds);
         boolean foundGpuFrequencyEvent = containsGpuFrequencyEvent(trace);
         boolean foundValidGpuRenderStageEvent = containsValidRenderStageEvent(trace);
+        // Need to be effectively final so we can reference trace in lambda below.
+        Trace finalTrace = trace;
+        GpuCounters finalGpuCountersFromTrace = gpuCountersFromTrace;
+        boolean foundGpuUtilisationCounter =
+                gpuCountersFromTrace.getCounterValues().entrySet().stream()
+                        .anyMatch(
+                                entry ->
+                                        counterMatchesGpuUtilisation(
+                                                finalGpuCountersFromTrace
+                                                        .getCounterSpecs()
+                                                        .get(entry.getKey()),
+                                                entry.getValue(),
+                                                ProfilingDataUtilsKt.getGpuUsageTimeline(
+                                                        finalTrace)));
 
         traceResult.delete();
         CommandResult deleteTraceStatus =
@@ -336,8 +351,8 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                     foundValidGpuCounterDescriptions,
                     is(SUCCESS));
             errorCollector.checkThat(
-                    "Trace does not contain valid GPU counter values.",
-                    foundValidGpuCounterEvent,
+                    "Trace does not contain a GPU counter that reflects GPU utilisation.",
+                    foundGpuUtilisationCounter,
                     is(true));
             errorCollector.checkThat(
                     "Trace failed to report one of the default GPU counter values.",
@@ -391,14 +406,6 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                         + Arrays.stream(enabledIds.toArray()).sorted().toList().toString()
                         + ", found: "
                         + gpuCounters.getCounterSpecs().keySet().stream().sorted().toList();
-    }
-
-    private static boolean containsValidGpuCounterEvent(GpuCounters gpuCounters) {
-        // Currently, "valid counters" are defined by having at least one, non-zero value.
-        return gpuCounters.getCounterValues().values().stream()
-                .anyMatch(
-                        valueslist ->
-                                valueslist.stream().anyMatch(counter -> counter.getValue() > 0.0));
     }
 
     private static String getSummaryComplianceWithZeroesOptimization(GpuCounters gpuCounters) {

@@ -16,11 +16,26 @@
 
 package android.graphics.gpuprofiling.cts
 
+import kotlin.math.max
+import kotlin.math.min
 import perfetto.protos.PerfettoTrace
 import perfetto.protos.PerfettoTrace.GpuCounterDescriptor.GpuCounterSpec
 import perfetto.protos.PerfettoTrace.Trace
 
 private const val RAYTRACING_SUPPORT_EVENT = "CtsTestDeviceRayTracingSupport"
+private const val GPU_USAGE_MODE_EVENT = "CtsTestGpuUsageMode"
+
+enum class Mode {
+    LOW_GPU_USAGE,
+    HIGH_GPU_USAGE;
+
+    // Acts as the negation operator, might extend to more modes in the future.
+    fun next(): Mode {
+        return if (this == LOW_GPU_USAGE) HIGH_GPU_USAGE else LOW_GPU_USAGE
+    }
+}
+
+data class GpuUsageEvent(val timestamp: Long, val mode: Mode)
 
 data class GpuCounterValue(val timestamp: Long, val value: Double)
 
@@ -111,6 +126,112 @@ fun Trace.deviceSupportsRayTracing(): Boolean? {
         }
     }
     return null
+}
+
+fun Trace.getGpuUsageTimeline(): List<GpuUsageEvent> {
+    val gpuUsageTimeline = mutableListOf<GpuUsageEvent>()
+
+    for (packet in packetList) {
+        if (!packet.hasFtraceEvents()) continue
+
+        val eventBundle = packet.getFtraceEvents()
+        for (event in eventBundle.eventList) {
+            if (!event.hasPrint()) continue
+
+            val ftraceBufItems = event.getPrint().getBuf().trim().split("|")
+            // GPU usage is reported via Atrace, with 1 meaning high usage and 0 meaning low.
+            if (ftraceBufItems.contains(GPU_USAGE_MODE_EVENT)) {
+                when (ftraceBufItems.last()) {
+                    "1" -> gpuUsageTimeline.add(
+                        GpuUsageEvent(event.timestamp, Mode.HIGH_GPU_USAGE)
+                    )
+                    "0" -> gpuUsageTimeline.add(GpuUsageEvent(event.timestamp, Mode.LOW_GPU_USAGE))
+                    else -> throw IllegalArgumentException(
+                        "Invalid value for GPU usage mode: [" + ftraceBufItems.last() + "]"
+                    )
+                }
+            }
+        }
+    }
+    if (gpuUsageTimeline.isEmpty()) {
+        throw IllegalArgumentException("No GPU usage timeline; this is a test infra issue")
+    }
+    return gpuUsageTimeline.sortedBy { it.timestamp }
+}
+
+fun counterMatchesGpuUtilisation(
+    counterSpec: GpuCounterSpec,
+    counterValues: List<GpuCounterValue>,
+    gpuUsageTimeline: List<GpuUsageEvent>
+): Boolean {
+    if (counterSpec.numeratorUnitsList.size != 1 ||
+        counterSpec.numeratorUnitsList[0] != PerfettoTrace.GpuCounterDescriptor.MeasureUnit.PERCENT
+    ) {
+        return false
+    }
+    if (gpuUsageTimeline.size < 2 || counterValues.size < 2 ||
+        counterValues.last().timestamp < gpuUsageTimeline.last().timestamp) {
+        return false
+    }
+
+    var highGpuUsageWeightedSum = 0.0
+    var lowGpuUsageWeightedSum = 0.0
+    var highGpuUsageTotalDuration = 0L
+    var lowGpuUsageTotalDuration = 0L
+
+    var counterIndex = 0
+    // Discard values before the initial GPU usage event.
+    while (counterIndex < counterValues.size - 1 &&
+        counterValues[counterIndex].timestamp <= gpuUsageTimeline.first().timestamp) {
+        counterIndex++
+    }
+
+    for (usagePeriodIndex in 0 until gpuUsageTimeline.size) {
+        // Some usage periods might not contain any counter values; this is ok as counter events
+        // timing is not aligned to the GPU usage events.
+        while (counterIndex < counterValues.size) {
+            val value = counterValues[counterIndex].value
+            val intervalStart = if (counterIndex == 0) {
+                gpuUsageTimeline[usagePeriodIndex].timestamp
+            } else {
+                max(
+                    counterValues[counterIndex - 1].timestamp,
+                    gpuUsageTimeline[usagePeriodIndex].timestamp
+                )
+            }
+            val intervalEnd = if (usagePeriodIndex == gpuUsageTimeline.size - 1) {
+                counterValues[counterIndex].timestamp
+            } else {
+                min(
+                    counterValues[counterIndex].timestamp,
+                    gpuUsageTimeline[usagePeriodIndex + 1].timestamp
+                )
+            }
+            val duration = intervalEnd - intervalStart
+            if (duration > 0) {
+                if (gpuUsageTimeline[usagePeriodIndex].mode == Mode.HIGH_GPU_USAGE) {
+                    highGpuUsageWeightedSum += value * duration
+                    highGpuUsageTotalDuration += duration
+                } else {
+                    lowGpuUsageWeightedSum += value * duration
+                    lowGpuUsageTotalDuration += duration
+                }
+            }
+            if (usagePeriodIndex < gpuUsageTimeline.size - 1 &&
+                intervalEnd == gpuUsageTimeline[usagePeriodIndex + 1].timestamp) {
+                // Move on to the next usage period.
+                break
+            }
+            ++counterIndex
+        }
+    }
+    // Note: our assumption is that the application keeps its last reported usage mode till the end
+    // of the trace.
+
+    val highGpuUsageAverage = highGpuUsageWeightedSum / highGpuUsageTotalDuration
+    val lowGpuUsageAverage = lowGpuUsageWeightedSum / lowGpuUsageTotalDuration
+
+    return highGpuUsageAverage > lowGpuUsageAverage
 }
 
 fun List<GpuCounterValue>.containsThreeConsecutiveZeroes(): Boolean {
