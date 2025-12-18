@@ -356,6 +356,8 @@ public class BluetoothLeAudioCodecTest {
         leAudioCodecConfig =
                 new BluetoothLeAudioCodecConfig.Builder().setCodecId(lc3CodecId).build();
         assertThat(leAudioCodecConfig.getCodecId()).isEqualTo(lc3CodecId);
+        assertThat(leAudioCodecConfig.getCodecType())
+                .isEqualTo(BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_LC3);
 
         leAudioCodecConfig =
                 new BluetoothLeAudioCodecConfig.Builder().setCodecId(vendorSpecificCodecId).build();
@@ -368,6 +370,7 @@ public class BluetoothLeAudioCodecTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setInvalidCodecId() {
+        // Invalid codec id 0x7
         final long invalidStandardCodecId = 0x0000_0000_07L;
         assertThrows(
                 IllegalArgumentException.class,
@@ -375,12 +378,21 @@ public class BluetoothLeAudioCodecTest {
                     new BluetoothLeAudioCodecConfig.Builder().setCodecId(invalidStandardCodecId);
                 });
 
+        // Invalid codec id 0xfe
         final long invalidVendorSpecificCodecId = 0x0001_00e0_feL;
         assertThrows(
                 IllegalArgumentException.class,
                 () -> {
                     new BluetoothLeAudioCodecConfig.Builder()
                             .setCodecId(invalidVendorSpecificCodecId);
+                });
+
+        // Invalid codec id longer than 40 bits
+        final long invalidLongCodecId = 0x1_0001_00e0_ffL;
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> {
+                    new BluetoothLeAudioCodecConfig.Builder().setCodecId(invalidLongCodecId);
                 });
     }
 }
