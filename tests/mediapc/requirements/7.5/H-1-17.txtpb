@@ -17,44 +17,22 @@
 id: "7.5/H-1-17"
 name: "Camera Face Detection"
 description: "Face detection scene mode"
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 65
-  }
-}
-measurements: {
-  key: "rear_camera_face_detection_supported"
-  value: {
-    description: "Is the rear primary camera face detection supported"
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 3
-  }
-}
-measurements: {
-  key: "front_camera_face_detection_supported"
-  value: {
-    description: "Is the front primary camera face detection supported"
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 4
-  }
-}
 specs {
   key: 34
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_14
-    specification: "MUST support face detection capability (STATISTICS_FACE_DETECT_MODE_SIMPLE or STATISTICS_FACE_DETECT_MODE_FULL) for the primary cameras."
+    specification:
+      "MUST support face detection capability "
+      "(STATISTICS_FACE_DETECT_MODE_SIMPLE or "
+      "STATISTICS_FACE_DETECT_MODE_FULL) for the primary cameras."
     required_values {
-      key: "rear_camera_face_detection_supported"
+      key: "front_camera_face_detection_supported"
       value {
         bool_value: true
       }
     }
     required_values {
-      key: "front_camera_face_detection_supported"
+      key: "rear_camera_face_detection_supported"
       value {
         bool_value: true
       }
@@ -67,13 +45,13 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_15
     specification: "same"
     required_values {
-      key: "rear_camera_face_detection_supported"
+      key: "front_camera_face_detection_supported"
       value {
         bool_value: true
       }
     }
     required_values {
-      key: "front_camera_face_detection_supported"
+      key: "rear_camera_face_detection_supported"
       value {
         bool_value: true
       }
@@ -86,16 +64,41 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_17
     specification: "same"
     required_values {
-      key: "rear_camera_face_detection_supported"
-      value {
-        bool_value: true
-      }
-    }
-    required_values {
       key: "front_camera_face_detection_supported"
       value {
         bool_value: true
       }
     }
+    required_values {
+      key: "rear_camera_face_detection_supported"
+      value {
+        bool_value: true
+      }
+    }
+  }
+}
+measurements {
+  key: "front_camera_face_detection_supported"
+  value {
+    description: "Is the front primary camera face detection supported"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 4
+  }
+}
+measurements {
+  key: "rear_camera_face_detection_supported"
+  value {
+    description: "Is the rear primary camera face detection supported"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 3
+  }
+}
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 65
   }
 }

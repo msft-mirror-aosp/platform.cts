@@ -16,9 +16,9 @@
 
 package android.media.projection.cts;
 
-import static android.media.cts.MediaProjectionActivity.CANCEL_RESOURCE_ID;
 import static android.media.cts.MediaProjectionActivity.ENTIRE_SCREEN_STRING_RES_NAME;
 import static android.media.cts.MediaProjectionActivity.SCREEN_SHARE_OPTIONS_RES_PATTERN;
+import static android.media.cts.MediaProjectionActivity.SHARE_TAB_TEST_TAG;
 import static android.media.cts.MediaProjectionActivity.SINGLE_APP_STRING_RES_NAME;
 import static android.media.cts.MediaProjectionActivity.getResourceString;
 import static android.media.projection.MediaProjectionConfig.createConfigForDefaultDisplay;
@@ -40,7 +40,6 @@ import android.media.projection.MediaProjectionConfig;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiDevice;
-import androidx.test.uiautomator.UiObject2;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 
@@ -150,17 +149,26 @@ public class MediaProjectionCompatChangeTest {
         mMediaProjectionRule.showMediaProjectionConsent(config);
         sDevice.waitForIdle();
 
-        // check if we can find a view which has the expected default option
-        boolean foundOptionString = sDevice.hasObject(
-                By.res(SCREEN_SHARE_OPTIONS_RES_PATTERN)
-                        .hasDescendant(
-                                By.text(expectedSpinnerString)));
+        // TODO(b/468405990) Add tests for the new Compose MediaProjection UI.
+        // This test currently targets only the old UI. Early return if the new Compose UI
+        // is detected.
+        assumeFalse(isComposeUI());
 
-        // close the dialog so it doesn't linger for subsequent tests
-        UiObject2 cancelButton = sDevice.findObject(By.res(CANCEL_RESOURCE_ID));
-        cancelButton.click();
+        // check if we can find a view which has the expected default option
+        boolean foundOptionString =
+                sDevice.hasObject(
+                        By.res(SCREEN_SHARE_OPTIONS_RES_PATTERN)
+                                .hasDescendant(By.text(expectedSpinnerString)));
+
+        // Dismiss the dialog using the back gesture, which is a generic way to close both
+        // the old and new permission UIs without relying on specific button IDs.
+        sDevice.pressBack();
 
         return foundOptionString;
+    }
+
+    private boolean isComposeUI() {
+        return sDevice.hasObject(By.res(SHARE_TAB_TEST_TAG));
     }
 
     private void initializePartialScreenshareSupport() throws Exception {

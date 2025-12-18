@@ -68,10 +68,13 @@ import org.junit.runners.Parameterized;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * Basic test for MultiResolutionImageReader APIs.
@@ -324,6 +327,36 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
     @RequiresFlagsEnabled(Flags.FLAG_MULTI_RESOLUTION_CONCURRENT_READERS)
     @Test
     public void testMultiResolutionImageReaderConcurrentReaders() throws Exception {
+        testMultiResolutionImageReaderConcurrentReadersInternal(
+                /*useReadoutTimestamp*/ false, OutputConfiguration.TIMESTAMP_BASE_DEFAULT);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MULTI_RESOLUTION_CONCURRENT_READERS)
+    @Test
+    public void testMultiResolutionImageReaderConcurrentReadersWithSensorTimestamp()
+            throws Exception {
+        testMultiResolutionImageReaderConcurrentReadersInternal(
+                /*useReadoutTimestamp*/ false, OutputConfiguration.TIMESTAMP_BASE_SENSOR);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MULTI_RESOLUTION_CONCURRENT_READERS)
+    @Test
+    public void testMultiResolutionImageReaderConcurrentReadersWithReadoutTimestamp()
+            throws Exception {
+        testMultiResolutionImageReaderConcurrentReadersInternal(
+                /*useReadoutTimestamp*/ true, OutputConfiguration.TIMESTAMP_BASE_DEFAULT);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MULTI_RESOLUTION_CONCURRENT_READERS)
+    @Test
+    public void testMultiResolutionImageReaderConcurrentReadersWithReadoutMonotonicTimestamp()
+            throws Exception {
+        testMultiResolutionImageReaderConcurrentReadersInternal(
+                /*useReadoutTimestamp*/ true, OutputConfiguration.TIMESTAMP_BASE_MONOTONIC);
+    }
+
+    private void testMultiResolutionImageReaderConcurrentReadersInternal(
+            boolean useReadoutTimestamp, int timestampBase) throws Exception {
         for (String id : getCameraIdsUnderTest()) {
             if (VERBOSE) {
                 Log.v(
@@ -332,6 +365,10 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
                                 + id);
             }
             StaticMetadata info = mAllStaticInfo.get(id);
+            if (!info.isReadoutTimestampSupported() && useReadoutTimestamp) {
+                Log.i(TAG, "Camera " + id + " doesn't support readout timestamp!");
+                continue;
+            }
             CameraCharacteristics c = info.getCharacteristics();
             MultiResolutionStreamConfigurationMap multiResolutionMap =
                     c.get(CameraCharacteristics.SCALER_MULTI_RESOLUTION_STREAM_CONFIGURATION_MAP);
@@ -343,10 +380,20 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
             for (int format : multiResolutionOutputFormats) {
                 if (multiResolutionMap.isConcurrentReadersSupported(format)) {
                     testMultiResolutionConcurrentReadersForCamera(
-                            id, info, multiResolutionMap, format);
+                            id,
+                            info,
+                            multiResolutionMap,
+                            format,
+                            useReadoutTimestamp,
+                            timestampBase);
                 } else {
                     testMultiResolutionConcurrentReadersNotSupported(
-                            id, info, multiResolutionMap, format);
+                            id,
+                            info,
+                            multiResolutionMap,
+                            format,
+                            useReadoutTimestamp,
+                            timestampBase);
                 }
             }
         }
@@ -405,7 +452,9 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
             String cameraId,
             StaticMetadata staticInfo,
             MultiResolutionStreamConfigurationMap multiResolutionMap,
-            int format)
+            int format,
+            boolean useReadoutTimestamp,
+            int timestampBase)
             throws Exception {
         Collection<MultiResolutionStreamInfo> multiResolutionStreams =
                 multiResolutionMap.getOutputInfo(format);
@@ -438,6 +487,10 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
             Collection<OutputConfiguration> outputConfigs =
                     OutputConfiguration.createInstancesForMultiResolutionOutput(
                             mMultiResolutionImageReader);
+            for (OutputConfiguration config : outputConfigs) {
+                config.setReadoutTimestampEnabled(useReadoutTimestamp);
+                config.setTimestampBase(timestampBase);
+            }
             ArrayList<OutputConfiguration> outputConfigsList =
                     new ArrayList<OutputConfiguration>(outputConfigs);
 
@@ -466,31 +519,45 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
                 assertTrue("MultiResolutionImageReader onActiveOutputSurfaces returned "
                         + "0 surfaces. Must be at least 1",
                         outputSurfaces.size() > 0);
-                assertTrue("MultiResolutionImageReader onActiveOutputSurfaces returned "
-                        + outputSurfaces.size() + " surfaces. Must be at most "
-                        + multiResolutionStreams.size(),
+                assertTrue(
+                        "MultiResolutionImageReader onActiveOutputSurfaces returned "
+                                + outputSurfaces.size()
+                                + " surfaces. Must be at most "
+                                + multiResolutionStreams.size(),
                         outputSurfaces.size() <= multiResolutionStreams.size());
-                assertEquals("MultiResolutionImageReader onActiveOutputSurfaces frameNumber "
-                        + outputSurfacesHolder.frameNumber + " doesn't match onCaptureStarted "
-                        + "frameNumber " + nextFrameNumber, outputSurfacesHolder.frameNumber,
+                assertEquals(
+                        "MultiResolutionImageReader onActiveOutputSurfaces frameNumber "
+                                + outputSurfacesHolder.frameNumber
+                                + " doesn't match onCaptureStarted "
+                                + "frameNumber "
+                                + nextFrameNumber,
+                        outputSurfacesHolder.frameNumber,
                         nextFrameNumber);
 
                 /**
                  * For MultiResolutionImageReader with concurrency, the number of images to be
                  * verified could be more than the captureCount, because each sensor capture may
-                 * generate concurrent outputs on a single MultiResolutionImageReader.
+                 * generate concurrent outputs on a single MultiResolutionImageReader. Only validate
+                 * matching SENSOR_TIMESTAMP with image timestamp if not using readout timestamp and
+                 * timestamp base is DEFAULT or SENSOR.
                  */
-                long expectedTimestamp = outputSurfacesHolder.timestamp;
-                for (Surface expectedSurface : outputSurfaces) {
-                    validateImage(
-                            format,
-                            multiResolutionStreams,
-                            /*numFrameVerified*/ 1,
-                            listener,
-                            /*repeating*/ false,
-                            expectedSurface,
-                            expectedTimestamp);
-                }
+                boolean matchSensorTimestamp =
+                        !useReadoutTimestamp
+                                && (timestampBase == OutputConfiguration.TIMESTAMP_BASE_DEFAULT
+                                        || timestampBase
+                                                == OutputConfiguration.TIMESTAMP_BASE_SENSOR);
+
+                List<MultiResOutputSurfacesHolder> outputSurfaceHolders = new ArrayList<>();
+                outputSurfaceHolders.add(outputSurfacesHolder);
+                validateImage(
+                        format,
+                        multiResolutionStreams,
+                        /*numFrameVerified*/ 1,
+                        listener,
+                        /*repeating*/ false,
+                        matchSensorTimestamp,
+                        request,
+                        outputSurfaceHolders);
             }
         } finally {
             closeDevice(cameraId);
@@ -507,7 +574,10 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
             String cameraId,
             StaticMetadata staticInfo,
             MultiResolutionStreamConfigurationMap multiResolutionMap,
-            int format) throws Exception {
+            int format,
+            boolean useReadoutTimestamp,
+            int timestampBase)
+            throws Exception {
         Collection<MultiResolutionStreamInfo> multiResolutionStreams =
                 multiResolutionMap.getOutputInfo(format);
 
@@ -522,6 +592,10 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
             Collection<OutputConfiguration> outputConfigs =
                     OutputConfiguration.createInstancesForMultiResolutionOutput(
                             mMultiResolutionImageReader);
+            for (OutputConfiguration config : outputConfigs) {
+                config.setReadoutTimestampEnabled(useReadoutTimestamp);
+                config.setTimestampBase(timestampBase);
+            }
             ArrayList<OutputConfiguration> outputConfigsList =
                     new ArrayList<OutputConfiguration>(outputConfigs);
 
@@ -762,15 +836,16 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
                     mCameraSession.capture(request, listener, mHandler);
                 }
 
-                // Validate  images
+                // Validate images
                 validateImage(
                         format,
                         multiResolutionStreams,
                         numFrameVerified,
                         listener,
                         repeating,
-                        /*expectedSurface*/ null,
-                        /*expectedTimestamp*/ 0);
+                        /*matchSensorTimestamp*/ true,
+                        request,
+                        /*outputSurfaceHolders*/ null);
 
                 if (repeating) {
                     mCameraSession.stopRepeating();
@@ -798,15 +873,52 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
             int captureCount,
             SimpleCaptureCallback listener,
             boolean repeating,
-            Surface expectedSurface,
-            long expectedTimestamp)
+            boolean matchSensorTimestamp,
+            CaptureRequest request,
+            List<MultiResOutputSurfacesHolder> outputSurfaceHolders)
             throws Exception {
+        assertTrue(outputSurfaceHolders == null || outputSurfaceHolders.size() == captureCount);
+
+        int imageCount = captureCount;
+        if (outputSurfaceHolders != null) {
+            imageCount =
+                    outputSurfaceHolders.stream()
+                            .map(s -> s.outputSurfaces)
+                            .mapToInt(List::size)
+                            .sum();
+        }
+
+        // Get active physical camera id in the capture result. Only do the correlation
+        // between activePhysicalCameraId with image size for:
+        // - single capture for simplicity,
+        // - non concurrent case, and
+        // - buffer timestamp matches SENSOR_TIMESTAMP
+        boolean checkActivePhysicalCameraId =
+                (!repeating
+                        && mStaticInfo.isActivePhysicalCameraIdSupported()
+                        && outputSurfaceHolders == null
+                        && matchSensorTimestamp);
+        Map<Long, String> timestampToActivePhysicalId = new HashMap<>();
+        if (checkActivePhysicalCameraId) {
+            for (int i = 0; i < captureCount; i++) {
+                CaptureResult result = listener.getCaptureResultForRequest(request, 1);
+                String activePhysicalCameraId =
+                        result.get(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID);
+                mCollector.expectNotNull(
+                        "Camera's capture result should contain ACTIVE_PHYSICAL_ID",
+                        activePhysicalCameraId);
+                long timestamp =
+                        CameraTestUtils.getValueNotNull(result, CaptureResult.SENSOR_TIMESTAMP);
+                timestampToActivePhysicalId.put(timestamp, activePhysicalCameraId);
+            }
+        }
+
         ImageAndMultiResStreamInfo imgAndStreamInfo;
         final int MAX_RETRY_COUNT = 20;
         int retryCount = 0;
+        assertNotNull("Image listener is null", mListener);
         int numImageVerified = 0;
-        while (numImageVerified < captureCount) {
-            assertNotNull("Image listener is null", mListener);
+        while (numImageVerified < imageCount) {
             imgAndStreamInfo = mListener.getAnyImageAndInfoAvailable(CAPTURE_WAIT_TIMEOUT_MS);
             if (imgAndStreamInfo == null && retryCount < MAX_RETRY_COUNT) {
                 // For acquireLatestImage, a null image may be returned.
@@ -815,27 +927,31 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
             }
 
             Image img = imgAndStreamInfo.image;
+            long imageTimestamp = img.getTimestamp();
             MultiResolutionStreamInfo streamInfoForImage = imgAndStreamInfo.streamInfo;
             Surface readerSurface = imgAndStreamInfo.surface;
+            if (checkActivePhysicalCameraId) {
+                mCollector.expectTrue(
+                        "Image timestamp "
+                                + imageTimestamp
+                                + " doesn't match "
+                                + "any CaptureResult SENSOR_TIMESTAMP!",
+                        timestampToActivePhysicalId.containsKey(imageTimestamp));
+                mCollector.expectEquals(
+                        String.format(
+                                "Active physical camera id %s doesn't "
+                                        + "match the physical camera id %s for the image",
+                                timestampToActivePhysicalId.get(imageTimestamp),
+                                streamInfoForImage.getPhysicalCameraId()),
+                        timestampToActivePhysicalId.get(imageTimestamp),
+                        streamInfoForImage.getPhysicalCameraId());
+            }
             mCollector.expectEquals(String.format("Output image width %d doesn't match " +
                     " the expected width %d", img.getWidth(), streamInfoForImage.getWidth()),
                     img.getWidth(), streamInfoForImage.getWidth());
             mCollector.expectEquals(String.format("Output image height %d doesn't match " +
                     " the expected height %d", img.getHeight(), streamInfoForImage.getHeight()),
                     img.getHeight(), streamInfoForImage.getHeight());
-            if (expectedSurface != null) {
-                mCollector.expectEquals(
-                        "Output surface doesn't match with the expected value",
-                        readerSurface,
-                        expectedSurface);
-            }
-            if (expectedTimestamp != 0) {
-                long imageTimestamp = img.getTimestamp();
-                mCollector.expectEquals(
-                        String.format("Output image timestamp %d doesn't match " +
-                        " the expected timestamp %d", imageTimestamp, expectedTimestamp),
-                        imageTimestamp, expectedTimestamp);
-            }
 
             if (format != ImageFormat.PRIVATE) {
                 CameraTestUtils.validateImage(img, img.getWidth(), img.getHeight(), format,
@@ -843,24 +959,6 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
             } else {
                 mCollector.expectEquals(String.format("Output image format %d doesn't match " +
                         "expected format %d", img.getFormat(), format), format, img.getFormat());
-            }
-
-            // Get active physical camera id in the capture result. Only do the correlation
-            // between activePhysicalCameraId with image size for single request for simplicity
-            // reasons.
-            String activePhysicalCameraId = null;
-            if (!repeating && mStaticInfo.isActivePhysicalCameraIdSupported()) {
-                TotalCaptureResult result = listener.getCaptureResult(
-                        WAIT_FOR_RESULT_TIMEOUT_MS, img.getTimestamp());
-                activePhysicalCameraId =
-                        result.get(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID);
-                mCollector.expectNotNull(
-                        "Camera's capture result should contain ACTIVE_PHYSICAL_ID",
-                        activePhysicalCameraId);
-                mCollector.expectEquals(String.format("Active physical camera id %s doesn't " +
-                        "match the expected physical camera id %s for the image",
-                        activePhysicalCameraId, streamInfoForImage.getPhysicalCameraId()),
-                        activePhysicalCameraId, streamInfoForImage.getPhysicalCameraId());
             }
 
             // Make sure the image size is one within streams
@@ -881,9 +979,55 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
             HardwareBuffer hwb = img.getHardwareBuffer();
             assertNotNull("Unable to retrieve the Image's HardwareBuffer", hwb);
 
+            // Find the expected image timestamp and its origin surface based on
+            // onActiveOutputSurfaces call, and remove it from the outputSurfaceHolders.
+            if (outputSurfaceHolders != null) {
+                List<MultiResOutputSurfacesHolder> matchingHolders =
+                        outputSurfaceHolders.stream()
+                                .filter(
+                                        s ->
+                                                (s.timestamp == imageTimestamp
+                                                        && s.outputSurfaces.contains(
+                                                                readerSurface)))
+                                .collect(Collectors.toList());
+                mCollector.expectTrue(
+                        "The output image's timestamp and origin surface "
+                                + "doesn't match what's expected.",
+                        matchingHolders.size() == 1);
+
+                if (matchingHolders.size() == 1) {
+                    MultiResOutputSurfacesHolder matchedHolder = matchingHolders.get(0);
+                    if (VERBOSE) {
+                        Log.v(
+                                TAG,
+                                "Remove timestamp " + imageTimestamp + " surface " + readerSurface);
+                    }
+                    matchedHolder.outputSurfaces.remove(readerSurface);
+                    if (matchedHolder.outputSurfaces.size() == 0) {
+                        outputSurfaceHolders.remove(matchedHolder);
+                    }
+                }
+            }
+
             img.close();
             numImageVerified++;
             retryCount = 0;
+        }
+
+        if (outputSurfaceHolders != null) {
+            // Make sure all expected images for all surfaces are returned.
+            mCollector.expectTrue(
+                    "Not all expected images are returned!", outputSurfaceHolders.isEmpty());
+            for (MultiResOutputSurfacesHolder holder : outputSurfaceHolders) {
+                for (Surface surface : holder.outputSurfaces) {
+                    Log.e(
+                            TAG,
+                            "Still expecting timestamp "
+                                    + holder.timestamp
+                                    + " from surface "
+                                    + surface);
+                }
+            }
         }
     }
 }

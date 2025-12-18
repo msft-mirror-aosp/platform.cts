@@ -1,3 +1,4 @@
+//
 // Copyright (C) 2025 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,32 +12,36 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
 
 package {
-    default_team: "trendy_team_network_security",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-java_test_host {
-    name: "CtsNetworkSecurityConfigHostTestCases",
-    defaults: ["cts_defaults"],
+android_test_helper_app {
+    name: "CtsHostLooperCompatTestApp",
+    defaults: ["cts_support_defaults"],
+    platform_apis: true,
+    sdk_version: "current",
     srcs: ["src/**/*.java"],
-    // tag this module as a cts test artifact
+    libs: [
+        "junit",
+    ],
+    static_libs: [
+        "androidx.test.rules",
+        "bedstead-enterprise",
+        "compatibility-common-util-devicesidelib",
+        "compatibility-device-info-tests",
+        "compatibility-device-info",
+        "compatibility-device-util-tests-axt",
+        "compatibility-device-util-axt",
+        "ctstestrunner-axt",
+        "truth",
+    ],
+
+    // Tag this module as a cts test artifact
     test_suites: [
         "cts",
         "general-tests",
-    ],
-    static_libs: [
-        "CompatChangeGatingTestBase",
-        "flag-junit-host",
-        "android.security.flags-aconfig-java-host",
-    ],
-    libs: [
-        "cts-tradefed",
-        "tradefed",
-        "compatibility-host-util",
-    ],
-    device_common_data: [
-        ":CtsNetworkSecurityConfigHostDeviceApp",
     ],
 }

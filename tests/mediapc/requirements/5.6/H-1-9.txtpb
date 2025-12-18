@@ -20,7 +20,10 @@ specs {
   key: 34
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_14
-    specification: "MUST support at least 12 channel mixing. This implies the capability to open an AudioTrack with 7.1.4 channel mask and properly spatialise or downmix all channels to stereo."
+    specification:
+      "MUST support at least 12 channel mixing. This implies the capability to "
+      "open an AudioTrack with 7.1.4 channel mask and properly spatialise or "
+      "downmix all channels to stereo."
   }
 }
 specs {

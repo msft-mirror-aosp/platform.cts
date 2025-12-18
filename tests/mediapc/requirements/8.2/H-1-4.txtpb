@@ -17,32 +17,15 @@
 id: "8.2/H-1-4"
 name: "Random Read"
 description: "- Random read"
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 82
-  }
-}
-measurements: {
-  key: "filesystem_io_rate_mbps"
-  value: {
-    id: "filesystem_io_rate_mbps"
-    description: "Random read performance in MB per second."
-    measurement_type: MEASUREMENT_TYPE_DOUBLE
-    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
-    proto_field_number: 3
-  }
-}
 specs {
   key: 30
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_11
     specification: "MUST ensure a random read performance of at least 25 MB/s."
-    required_values: {
+    required_values {
       key: "filesystem_io_rate_mbps"
-      value: {
-        double_value: 25
+      value {
+        double_value: 25.0
       }
     }
   }
@@ -52,10 +35,10 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_13
     specification: "MUST ensure a random read performance of at least 40 MB/s."
-    required_values: {
+    required_values {
       key: "filesystem_io_rate_mbps"
-      value: {
-        double_value: 40
+      value {
+        double_value: 40.0
       }
     }
   }
@@ -65,10 +48,10 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_14
     specification: "MUST ensure a random read performance of at least 100 MB/s."
-    required_values: {
+    required_values {
       key: "filesystem_io_rate_mbps"
-      value: {
-        double_value: 100
+      value {
+        double_value: 100.0
       }
     }
   }
@@ -78,10 +61,10 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
     specification: "same"
-    required_values: {
+    required_values {
       key: "filesystem_io_rate_mbps"
-      value: {
-        double_value: 100
+      value {
+        double_value: 100.0
       }
     }
   }
@@ -91,11 +74,28 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
     specification: "MUST ensure a random read performance of at least 200 MB/s."
-    required_values: {
+    required_values {
       key: "filesystem_io_rate_mbps"
-      value: {
-        double_value: 200
+      value {
+        double_value: 200.0
       }
     }
+  }
+}
+measurements {
+  key: "filesystem_io_rate_mbps"
+  value {
+    id: "filesystem_io_rate_mbps"
+    description: "Random read performance in MB per second."
+    measurement_type: MEASUREMENT_TYPE_DOUBLE
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    proto_field_number: 3
+  }
+}
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 82
   }
 }

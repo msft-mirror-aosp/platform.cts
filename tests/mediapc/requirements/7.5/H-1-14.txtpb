@@ -17,44 +17,21 @@
 id: "7.5/H-1-14"
 name: "Camera Stream Use Case"
 description: "Stream use case for primary cameras"
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 62
-  }
-}
-measurements: {
-  key: "rear_camera_stream_usecase_supported"
-  value: {
-    description: "Is the rear primary camera stream use case supported"
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 3
-  }
-}
-measurements: {
-  key: "front_camera_stream_usecase_supported"
-  value: {
-    description: "Is the front primary camera stream use case supported"
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 4
-  }
-}
 specs {
   key: 33
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_13
-    specification: "MUST support STREAM_USE_CASE capability for both primary front and primary back camera."
+    specification:
+      "MUST support STREAM_USE_CASE capability for both primary front and "
+      "primary back camera."
     required_values {
-      key: "rear_camera_stream_usecase_supported"
+      key: "front_camera_stream_usecase_supported"
       value {
         bool_value: true
       }
     }
     required_values {
-      key: "front_camera_stream_usecase_supported"
+      key: "rear_camera_stream_usecase_supported"
       value {
         bool_value: true
       }
@@ -67,13 +44,13 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_14
     specification: "same"
     required_values {
-      key: "rear_camera_stream_usecase_supported"
+      key: "front_camera_stream_usecase_supported"
       value {
         bool_value: true
       }
     }
     required_values {
-      key: "front_camera_stream_usecase_supported"
+      key: "rear_camera_stream_usecase_supported"
       value {
         bool_value: true
       }
@@ -86,13 +63,13 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_15
     specification: "same"
     required_values {
-      key: "rear_camera_stream_usecase_supported"
+      key: "front_camera_stream_usecase_supported"
       value {
         bool_value: true
       }
     }
     required_values {
-      key: "front_camera_stream_usecase_supported"
+      key: "rear_camera_stream_usecase_supported"
       value {
         bool_value: true
       }
@@ -105,16 +82,41 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_17
     specification: "same"
     required_values {
-      key: "rear_camera_stream_usecase_supported"
-      value {
-        bool_value: true
-      }
-    }
-    required_values {
       key: "front_camera_stream_usecase_supported"
       value {
         bool_value: true
       }
     }
+    required_values {
+      key: "rear_camera_stream_usecase_supported"
+      value {
+        bool_value: true
+      }
+    }
+  }
+}
+measurements {
+  key: "front_camera_stream_usecase_supported"
+  value {
+    description: "Is the front primary camera stream use case supported"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 4
+  }
+}
+measurements {
+  key: "rear_camera_stream_usecase_supported"
+  value {
+    description: "Is the rear primary camera stream use case supported"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 3
+  }
+}
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 62
   }
 }

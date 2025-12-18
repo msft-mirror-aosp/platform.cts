@@ -17,44 +17,21 @@
 id: "7.5/H-1-4"
 name: "Timestamp Source Realtime"
 description: "Timestamp source is realtime"
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 53
-  }
-}
-measurements: {
-  key: "rear_primary_camera_timestamp_source"
-  value: {
-    description: "Is the rear primary camera timestamp source realtime"
-    measurement_type: MEASUREMENT_TYPE_INT
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 3
-  }
-}
-measurements: {
-  key: "front_primary_camera_timestamp_source"
-  value: {
-    description: "Is the front primary camera timestamp source realtime"
-    measurement_type: MEASUREMENT_TYPE_INT
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 4
-  }
-}
 specs {
   key: 30
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_11
-    specification: "MUST support CameraMetadata.SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME for both primary cameras."
+    specification:
+      "MUST support CameraMetadata.SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME for "
+      "both primary cameras."
     required_values {
-      key: "rear_primary_camera_timestamp_source"
+      key: "front_primary_camera_timestamp_source"
       value {
         int_value: 1
       }
     }
     required_values {
-      key: "front_primary_camera_timestamp_source"
+      key: "rear_primary_camera_timestamp_source"
       value {
         int_value: 1
       }
@@ -67,13 +44,13 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_12
     specification: "same"
     required_values {
-      key: "rear_primary_camera_timestamp_source"
+      key: "front_primary_camera_timestamp_source"
       value {
         int_value: 1
       }
     }
     required_values {
-      key: "front_primary_camera_timestamp_source"
+      key: "rear_primary_camera_timestamp_source"
       value {
         int_value: 1
       }
@@ -86,13 +63,13 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_13
     specification: "same"
     required_values {
-      key: "rear_primary_camera_timestamp_source"
+      key: "front_primary_camera_timestamp_source"
       value {
         int_value: 1
       }
     }
     required_values {
-      key: "front_primary_camera_timestamp_source"
+      key: "rear_primary_camera_timestamp_source"
       value {
         int_value: 1
       }
@@ -105,13 +82,13 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_14
     specification: "same"
     required_values {
-      key: "rear_primary_camera_timestamp_source"
+      key: "front_primary_camera_timestamp_source"
       value {
         int_value: 1
       }
     }
     required_values {
-      key: "front_primary_camera_timestamp_source"
+      key: "rear_primary_camera_timestamp_source"
       value {
         int_value: 1
       }
@@ -124,13 +101,13 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_15
     specification: "same"
     required_values {
-      key: "rear_primary_camera_timestamp_source"
+      key: "front_primary_camera_timestamp_source"
       value {
         int_value: 1
       }
     }
     required_values {
-      key: "front_primary_camera_timestamp_source"
+      key: "rear_primary_camera_timestamp_source"
       value {
         int_value: 1
       }
@@ -143,16 +120,41 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_17
     specification: "same"
     required_values {
-      key: "rear_primary_camera_timestamp_source"
-      value {
-        int_value: 1
-      }
-    }
-    required_values {
       key: "front_primary_camera_timestamp_source"
       value {
         int_value: 1
       }
     }
+    required_values {
+      key: "rear_primary_camera_timestamp_source"
+      value {
+        int_value: 1
+      }
+    }
+  }
+}
+measurements {
+  key: "front_primary_camera_timestamp_source"
+  value {
+    description: "Is the front primary camera timestamp source realtime"
+    measurement_type: MEASUREMENT_TYPE_INT
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 4
+  }
+}
+measurements {
+  key: "rear_primary_camera_timestamp_source"
+  value {
+    description: "Is the rear primary camera timestamp source realtime"
+    measurement_type: MEASUREMENT_TYPE_INT
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 3
+  }
+}
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 53
   }
 }

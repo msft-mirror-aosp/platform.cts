@@ -281,8 +281,8 @@ public class DisplayTest extends TestBase {
     public void tearDown() throws InterruptedException {
         if (mDisplayManager != null) {
             mDisplayManager.overrideHdrTypes(DEFAULT_DISPLAY, new int[]{});
+            removeSecondaryDisplays();
         }
-        removeSecondaryDisplays();
     }
 
     private void enableAppOps() {

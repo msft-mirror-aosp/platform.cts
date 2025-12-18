@@ -61,7 +61,7 @@ public class ContextHintWithSignatureTest {
                 "android.service.personalcontext.hint.ContextHintWithSignature.Builder"
                         + "#setRenderToken",
                 "android.service.personalcontext.hint.ContextHintWithSignature.Builder"
-                        + "#setOriginatingComponent",
+                        + "#setOriginatingPackage",
                 "android.service.personalcontext.hint.ContextHintWithSignature.Builder"
                         + "#addAttributionHint",
                 "android.service.personalcontext.hint.ContextHintWithSignature.Builder#build",
@@ -101,7 +101,7 @@ public class ContextHintWithSignatureTest {
         parcel.writeParcelable(
                 new ContextHintWithSignature.Builder(hint, key)
                         .setRenderToken(renderToken)
-                        .setOriginatingComponent(origin)
+                        .setOriginatingPackage(origin.getPackageName())
                         .addAttributionHint(signedAttributedHint1)
                         .addAttributionHint(signedAttributedHint2)
                         .build(),
@@ -197,7 +197,7 @@ public class ContextHintWithSignatureTest {
     @ApiTest(
             apis = {
                 "android.service.personalcontext.hint.ContextHintWithSignature.Builder"
-                        + "#setOriginatingComponent",
+                        + "#setOriginatingPackage",
                 "android.service.personalcontext.hint.ContextHintWithSignature.Builder"
                         + "#addAttributionHint",
                 "android.service.personalcontext.hint.ContextHintWithSignature.Builder#build",
@@ -227,7 +227,7 @@ public class ContextHintWithSignatureTest {
         final Parcel parcel = Parcel.obtain();
         parcel.writeParcelable(
                 new ContextHintWithSignature.Builder(hint, key)
-                        .setOriginatingComponent(origin)
+                        .setOriginatingPackage(origin.getPackageName())
                         .addAttributionHints(List.of(signedAttributedHint1, signedAttributedHint2))
                         .build(),
                 0);
@@ -255,7 +255,7 @@ public class ContextHintWithSignatureTest {
                 "android.service.personalcontext.hint.ContextHintWithSignature.Builder"
                         + "#setRenderToken",
                 "android.service.personalcontext.hint.ContextHintWithSignature.Builder"
-                        + "#setOriginatingComponent",
+                        + "#setOriginatingPackage",
                 "android.service.personalcontext.hint.ContextHintWithSignature.Builder#build",
                 "android.service.personalcontext.hint.ContextHintWithSignature#isSignatureValid",
                 "android.service.personalcontext.hint.ContextHintWithSignature#getContextHint",
@@ -279,7 +279,7 @@ public class ContextHintWithSignatureTest {
         final Parcel parcel = Parcel.obtain();
         parcel.writeParcelable(
                 new ContextHintWithSignature.Builder(hint, key)
-                        .setOriginatingComponent(origin)
+                        .setOriginatingPackage(origin.getPackageName())
                         .setRenderToken(renderToken)
                         .build(),
                 0);

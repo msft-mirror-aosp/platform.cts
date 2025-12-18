@@ -798,6 +798,20 @@ public abstract class CodecTestBase {
         return false;
     }
 
+    public static boolean hasSupportForProfile(String name, String mediaType, int profile) {
+        for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_ALL.getCodecInfos()) {
+            if (name.equals(codecInfo.getName())) {
+                MediaCodecInfo.CodecCapabilities cap = codecInfo.getCapabilitiesForType(mediaType);
+                for (CodecProfileLevel pl : cap.profileLevels) {
+                    if (pl.profile == profile) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     public static boolean isDefaultCodec(String codecName, String mediaType, boolean isEncoder)
             throws IOException {
         Map<String, String> mDefaultCodecs = isEncoder ? DEFAULT_ENCODERS : DEFAULT_DECODERS;

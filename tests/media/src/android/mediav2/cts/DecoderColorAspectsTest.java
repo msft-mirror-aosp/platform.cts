@@ -17,11 +17,13 @@
 package android.mediav2.cts;
 
 import static android.media.codec.Flags.apvSupport;
+import static android.media.codec.Flags.vvcSupport;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ANY;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableVvc;
 
 import android.media.MediaFormat;
 import android.mediav2.common.cts.CodecDecoderTestBase;
@@ -79,6 +81,11 @@ public class DecoderColorAspectsTest extends CodecDecoderTestBase {
         mCheckESList.add(MediaFormat.MIMETYPE_VIDEO_HEVC);
         mCheckESList.add(MediaFormat.MIMETYPE_VIDEO_MPEG2);
         mCheckESList.add(MediaFormat.MIMETYPE_VIDEO_AV1);
+        if (IS_AFTER_B) {
+            if (vvcSupport() && extractorMp4EnableVvc()) {
+                mCheckESList.add(MediaFormat.MIMETYPE_VIDEO_VVC);
+            }
+        }
         mCanIgnoreColorBox = canIgnoreColorBox;
         mSupportRequirements = supportRequirements;
     }
@@ -266,13 +273,29 @@ public class DecoderColorAspectsTest extends CodecDecoderTestBase {
                         MediaFormat.COLOR_TRANSFER_HLG, true, CODEC_OPTIONAL},
         }));
 
-        if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
-            exhaustiveArgsList.addAll(Arrays.asList(new Object[][] {
+        if (IS_AT_LEAST_B) {
+            if (apvSupport() && extractorMp4EnableApv()) {
+                exhaustiveArgsList.addAll(Arrays.asList(new Object[][] {
                     {MediaFormat.MIMETYPE_VIDEO_APV,
                             "pattern_dynamic_aspect_1280x720_30fps_30mbps_apv_10bit.mp4",
                             MediaFormat.COLOR_RANGE_LIMITED, MediaFormat.COLOR_STANDARD_BT2020,
                             MediaFormat.COLOR_TRANSFER_ST2084, false, CODEC_OPTIONAL},
-            }));
+                }));
+            }
+        }
+        if (IS_AFTER_B) {
+            if (vvcSupport() && extractorMp4EnableVvc()) {
+                exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
+                        {MediaFormat.MIMETYPE_VIDEO_VVC,
+                            "bbb_320x180_color_bt2020_smpte2084_lr_vvc.mp4",
+                            MediaFormat.COLOR_RANGE_LIMITED, MediaFormat.COLOR_STANDARD_BT2020,
+                            MediaFormat.COLOR_TRANSFER_ST2084, true, CODEC_OPTIONAL},
+                        {MediaFormat.MIMETYPE_VIDEO_VVC,
+                            "bbb_320x180_color_bt709_hlg_lr_vvc.mp4",
+                            MediaFormat.COLOR_RANGE_LIMITED, MediaFormat.COLOR_STANDARD_BT709,
+                            MediaFormat.COLOR_TRANSFER_HLG, true, CODEC_OPTIONAL},
+                }));
+            }
         }
 
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, false);

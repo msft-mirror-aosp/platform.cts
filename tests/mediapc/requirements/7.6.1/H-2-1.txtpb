@@ -16,31 +16,17 @@
 # proto-message: Requirement
 id: "7.6.1/H-2-1"
 name: "Memory"
-description: "Minimum memory available to the kernel as reported by ActivityManager.MemoryInfo.totalMemory"
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 75
-  }
-}
-measurements: {
-  key: "physical_memory_mb"
-  value: {
-    description: "Physical memory in MiB as reported by ActivityManager.MemoryInfo.totalMemory."
-    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
-    measurement_type: MEASUREMENT_TYPE_LONG
-    proto_field_number: 3
-  }
-}
+description:
+  "Minimum memory available to the kernel as reported by "
+  "ActivityManager.MemoryInfo.totalMemory"
 specs {
   key: 31
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_12
     specification: "MUST have at least 6 GB of physical memory."
-    required_values: {
+    required_values {
       key: "physical_memory_mb"
-      value: {
+      value {
         long_value: 5120
       }
     }
@@ -51,9 +37,9 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_13
     specification: "MUST have at least 8 GB of physical memory."
-    required_values: {
+    required_values {
       key: "physical_memory_mb"
-      value: {
+      value {
         long_value: 6800
       }
     }
@@ -64,9 +50,9 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_14
     specification: "MUST have at least 8 GB of physical memory."
-    required_values: {
+    required_values {
       key: "physical_memory_mb"
-      value: {
+      value {
         long_value: 6800
       }
     }
@@ -76,10 +62,13 @@ specs {
   key: 35
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
-    specification: "MUST have at least 8 GB of physical memory, with at least 6.64 GB available to the kernel as reported by android.app.ActivityManager.MemoryInfo."
-    required_values: {
+    specification:
+      "MUST have at least 8 GB of physical memory, with at least 6.64 GB "
+      "available to the kernel as reported by "
+      "android.app.ActivityManager.MemoryInfo."
+    required_values {
       key: "physical_memory_mb"
-      value: {
+      value {
         long_value: 6800
       }
     }
@@ -89,12 +78,32 @@ specs {
   key: 37
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
-    specification: "MUST have at least 8.0 GiB available to the kernel as reported by android.app.ActivityManager.MemoryInfo."
-    required_values: {
+    specification:
+      "MUST have at least 8.0 GiB available to the kernel as reported by "
+      "android.app.ActivityManager.MemoryInfo."
+    required_values {
       key: "physical_memory_mb"
-      value: {
+      value {
         long_value: 8000
       }
     }
+  }
+}
+measurements {
+  key: "physical_memory_mb"
+  value {
+    description:
+      "Physical memory in MiB as reported by "
+      "ActivityManager.MemoryInfo.totalMemory."
+    measurement_type: MEASUREMENT_TYPE_LONG
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    proto_field_number: 3
+  }
+}
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 75
   }
 }

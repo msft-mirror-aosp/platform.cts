@@ -17,40 +17,23 @@
 id: "5.7/H-1-2"
 name: "Media Drm Security Level Hardware Secure All"
 description: "Hardware-backed trusted execution environment"
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 49
-  }
-}
-measurements: {
-  key: "number_crypto_hw_secure_all_support"
-  value: {
-    description: "Number of crypto hw secure all supported."
-    measurement_type: MEASUREMENT_TYPE_INT
-    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
-    proto_field_number: 3
-  }
-}
 specs {
   key: 33
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_13
     specification:
-      "MUST support MediaDrm.SECURITY_LEVEL_HW_SECURE_ALL with the below "
-      "content decryption capabilities.\n"
-      "Minimum Sample size        4 MiB\n"
-      "Minimum Number of Subsamples - H264 or HEVC        32\n"
+      "MUST support MediaDrm.SECURITY_LEVEL_HW_SECURE_ALL with the below content decryption capabilities.\n"
+      "Minimum Sample size 4 MiB\n"
+      "Minimum Number of Subsamples - H264 or HEVC 32\n"
       "Minimum Number of Subsamples - VP9        9\n"
       "Minimum Number of Subsamples - AV1        288\n"
-      "Minimum subsample buffer size        1 MiB\n"
-      "Minimum Generic crypto buffer size        500 KiB\n"
-      "Minimum Number of concurrent sessions        30\n"
+      "Minimum subsample buffer size 1 MiB\n"
+      "Minimum Generic crypto buffer size 500 KiB\n"
+      "Minimum Number of concurrent sessions 30\n"
       "Minimum Number of keys per session        20\n"
-      "Minimum Total Number of Keys (all sessions)        80\n"
+      "Minimum Total Number of Keys (all sessions) 80\n"
       "Minimum Total Number of DRM Keys (all sessions)        6\n"
-      "Message Size        16 KiB\n"
+      "Message Size 16 KiB\n"
       "Decrypted Frames per Second        60 fps"
     required_values {
       key: "number_crypto_hw_secure_all_support"
@@ -97,5 +80,21 @@ specs {
         int_value: 1
       }
     }
+  }
+}
+measurements {
+  key: "number_crypto_hw_secure_all_support"
+  value {
+    description: "Number of crypto hw secure all supported."
+    measurement_type: MEASUREMENT_TYPE_INT
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    proto_field_number: 3
+  }
+}
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 49
   }
 }

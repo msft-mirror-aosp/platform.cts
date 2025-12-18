@@ -17,27 +17,13 @@
 id: "7.5/H-1-9"
 name: "Camera Slow Motion"
 description: "Slow-mo recording"
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 57
-  }
-}
-measurements: {
-  key: "rear_camera_240fps_supported"
-  value: {
-    description: "Is the rear primary camera slow motion supported"
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 3
-  }
-}
 specs {
   key: 33
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_13
-    specification: "MUST have a rear-facing primary camera supporting 720p or 1080p @ 240fps."
+    specification:
+      "MUST have a rear-facing primary camera supporting 720p or 1080p @ "
+      "240fps."
     required_values {
       key: "rear_camera_240fps_supported"
       value {
@@ -83,5 +69,21 @@ specs {
         bool_value: true
       }
     }
+  }
+}
+measurements {
+  key: "rear_camera_240fps_supported"
+  value {
+    description: "Is the rear primary camera slow motion supported"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 3
+  }
+}
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 57
   }
 }

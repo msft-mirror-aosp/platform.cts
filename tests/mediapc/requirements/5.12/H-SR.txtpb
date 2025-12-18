@@ -19,7 +19,9 @@ specs {
   key: 34
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_14
-    specification: "Are Strongly Recommended to support support the Feature_HdrEditing feature for all hardware AV1 and HEVC encoders present on the device."
+    specification:
+      "Are Strongly Recommended to support support the Feature_HdrEditing "
+      "feature for all hardware AV1 and HEVC encoders present on the device."
   }
 }
 specs {

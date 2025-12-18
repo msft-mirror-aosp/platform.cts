@@ -18,6 +18,8 @@ package android.bluetooth.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertThrows;
+
 import android.bluetooth.BluetoothLeAudioCodecConfig;
 import android.os.Parcel;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -336,5 +338,49 @@ public class BluetoothLeAudioCodecTest {
         assertThat(toBuilderCodecConfig.getOctetsPerFrame()).isEqualTo(octetsPerFrame);
         assertThat(toBuilderCodecConfig.getMinOctetsPerFrame()).isEqualTo(minOctetsPerFrame);
         assertThat(toBuilderCodecConfig.getMaxOctetsPerFrame()).isEqualTo(maxOctetsPerFrame);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_CODEC_ID_SUPPORT)
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void getCodecId() {
+        final long lc3CodecId = 0x0000_0000_06L;
+        final long vendorSpecificCodecId = 0x0111_2222_ffL;
+
+        BluetoothLeAudioCodecConfig leAudioCodecConfig =
+                new BluetoothLeAudioCodecConfig.Builder()
+                        .setCodecType(BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_LC3)
+                        .build();
+        assertThat(leAudioCodecConfig.getCodecId()).isEqualTo(lc3CodecId);
+
+        leAudioCodecConfig =
+                new BluetoothLeAudioCodecConfig.Builder().setCodecId(lc3CodecId).build();
+        assertThat(leAudioCodecConfig.getCodecId()).isEqualTo(lc3CodecId);
+
+        leAudioCodecConfig =
+                new BluetoothLeAudioCodecConfig.Builder().setCodecId(vendorSpecificCodecId).build();
+        assertThat(leAudioCodecConfig.getCodecId()).isEqualTo(vendorSpecificCodecId);
+        assertThat(leAudioCodecConfig.getCodecType())
+                .isEqualTo(BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_VENDOR_SPECIFIC);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_CODEC_ID_SUPPORT)
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void setInvalidCodecId() {
+        final long invalidStandardCodecId = 0x0000_0000_07L;
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> {
+                    new BluetoothLeAudioCodecConfig.Builder().setCodecId(invalidStandardCodecId);
+                });
+
+        final long invalidVendorSpecificCodecId = 0x0001_00e0_feL;
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> {
+                    new BluetoothLeAudioCodecConfig.Builder()
+                            .setCodecId(invalidVendorSpecificCodecId);
+                });
     }
 }

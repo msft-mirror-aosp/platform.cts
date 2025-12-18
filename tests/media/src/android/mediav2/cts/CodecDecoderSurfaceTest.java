@@ -17,6 +17,7 @@
 package android.mediav2.cts;
 
 import static android.media.codec.Flags.apvSupport;
+import static android.media.codec.Flags.vvcSupport;
 import static android.media.codec.Flags.FLAG_NULL_OUTPUT_SURFACE;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
@@ -24,6 +25,7 @@ import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTION
 import static android.mediav2.cts.DolbyVisionDecoderParamPreparer.getDvTestParams;
 
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableVvc;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -192,11 +194,23 @@ public class CodecDecoderSurfaceTest extends CodecDecoderTestBase {
                             CODEC_ALL},
             }));
         }
-        if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
-            exhaustiveArgsList.addAll(Arrays.asList(new Object[][] {
+        if (IS_AT_LEAST_B) {
+            if (apvSupport() && extractorMp4EnableApv()) {
+                exhaustiveArgsList.addAll(Arrays.asList(new Object[][] {
                     {MediaFormat.MIMETYPE_VIDEO_APV, "pattern_640x480_30fps_16mbps_apv_10bit.mp4",
                             CODEC_OPTIONAL},
-            }));
+                }));
+            }
+        }
+        if (IS_AFTER_B) {
+            if (vvcSupport() && extractorMp4EnableVvc()) {
+                exhaustiveArgsList.addAll(Arrays.asList(new Object[][] {
+                    {MediaFormat.MIMETYPE_VIDEO_VVC,
+                            "bbb_640x360_600kbps_24fps_vvc.mp4", CODEC_OPTIONAL},
+                    {MediaFormat.MIMETYPE_VIDEO_VVC,
+                            "bbb_640x360_600kbps_24fps_vvc_10bit.mp4", CODEC_OPTIONAL},
+                }));
+            }
         }
         exhaustiveArgsList.addAll(getDvTestParams(CodecDecoderSurfaceTest.class));
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, true);

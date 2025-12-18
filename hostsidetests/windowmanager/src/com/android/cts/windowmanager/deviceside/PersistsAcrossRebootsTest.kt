@@ -48,7 +48,7 @@ class PersistsAcrossRebootsTest : BaseHostJUnit4Test() {
     )
     fun testPersistsAcrossReboots() {
         assertTrue(runDeviceTests(TEST_PKG, TEST_CLASS, TEST_METHOD_PREBOOT))
-        device.reboot()
+        device.frameworkReboot()
         assertTrue(runDeviceTests(TEST_PKG, TEST_CLASS, TEST_METHOD_POSTBOOT))
     }
 

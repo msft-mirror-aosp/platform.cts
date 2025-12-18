@@ -17,45 +17,21 @@
 id: "7.5/H-1-20"
 name: "Camera Ultra HDR"
 description: "Ultra HDR support for primary camera"
-is_non_cts_test: true
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 68
-  }
-}
-measurements: {
-  key: "rear_camera_ultra_hdr_supported"
-  value: {
-    description: "Is the rear primary camera Ultra HDR supported"
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 3
-  }
-}
-measurements: {
-  key: "front_camera_ultra_hdr_supported"
-  value: {
-    description: "Is the front primary camera Ultra HDR supported"
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 4
-  }
-}
 specs {
   key: 35
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
-    specification: "MUST by default output JPEG_R for the primary rear and primary front cameras in the native camera app."
+    specification:
+      "MUST by default output JPEG_R for the primary rear and primary front "
+      "cameras in the native camera app."
     required_values {
-      key: "rear_camera_ultra_hdr_supported"
+      key: "front_camera_ultra_hdr_supported"
       value {
         bool_value: true
       }
     }
     required_values {
-      key: "front_camera_ultra_hdr_supported"
+      key: "rear_camera_ultra_hdr_supported"
       value {
         bool_value: true
       }
@@ -66,18 +42,46 @@ specs {
   key: 37
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
-    specification: "MUST by default output JPEG_R for the primary rear and primary front cameras in the native camera app."
-    required_values {
-      key: "rear_camera_ultra_hdr_supported"
-      value {
-        bool_value: true
-      }
-    }
+    specification:
+      "MUST by default output JPEG_R for the primary rear and primary front "
+      "cameras in the native camera app."
     required_values {
       key: "front_camera_ultra_hdr_supported"
       value {
         bool_value: true
       }
     }
+    required_values {
+      key: "rear_camera_ultra_hdr_supported"
+      value {
+        bool_value: true
+      }
+    }
+  }
+}
+measurements {
+  key: "front_camera_ultra_hdr_supported"
+  value {
+    description: "Is the front primary camera Ultra HDR supported"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 4
+  }
+}
+measurements {
+  key: "rear_camera_ultra_hdr_supported"
+  value {
+    description: "Is the rear primary camera Ultra HDR supported"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 3
+  }
+}
+is_non_cts_test: true
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 68
   }
 }

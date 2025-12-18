@@ -193,6 +193,12 @@ public class MediaProjectionMirroringTest {
                         // for possible insets caused by DisplayCutout
                         final Rect activityRect = new Rect();
                         activity.getWindow().getDecorView().getGlobalVisibleRect(activityRect);
+                        Log.d(
+                                TAG,
+                                "Source Activity: MaxMetrics="
+                                        + maxWindowMetrics.getBounds()
+                                        + " VisibleRect="
+                                        + activityRect);
 
                         try {
                             // Start capture of the single app.
@@ -200,11 +206,20 @@ public class MediaProjectionMirroringTest {
                                     mMediaProjectionRule.createVirtualDisplay(
                                             maxWindowMetrics.getBounds().width(),
                                             maxWindowMetrics.getBounds().height());
+                            Log.d(
+                                    TAG,
+                                    "Virtual Display created with size: "
+                                            + virtualDisplay.getSurface().getDefaultSize());
 
+                            final Point mirroredSize =
+                                    calculateScaledMirroredActivitySize(
+                                            activity.getWindowManager().getCurrentWindowMetrics(),
+                                            virtualDisplay,
+                                            new Point(activityRect.width(), activityRect.height()));
                             validateMirroredHierarchy(
                                     activity,
                                     virtualDisplay.getDisplay().getDisplayId(),
-                                    new Point(activityRect.width(), activityRect.height()));
+                                    mirroredSize);
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
@@ -304,11 +319,25 @@ public class MediaProjectionMirroringTest {
     private static void validateMirroredHierarchy(
             Activity activity, int virtualDisplayId,
             @NonNull Point expectedWindowSize) {
-        Predicate<WindowInfo> hasExpectedDimensions = windowInfo -> {
-            int widthDiff = Math.abs(windowInfo.bounds.width() - expectedWindowSize.x);
-            int heightDiff = Math.abs(windowInfo.bounds.height() - expectedWindowSize.y);
-            return widthDiff <= TOLERANCE && heightDiff <= TOLERANCE;
-        };
+        Predicate<WindowInfo> hasExpectedDimensions =
+                windowInfo -> {
+                    int widthDiff = Math.abs(windowInfo.bounds.width() - expectedWindowSize.x);
+                    int heightDiff = Math.abs(windowInfo.bounds.height() - expectedWindowSize.y);
+                    Log.d(
+                            TAG,
+                            "Checking Window: "
+                                    + windowInfo
+                                    + " RawBounds="
+                                    + windowInfo.bounds
+                                    + " Expected="
+                                    + expectedWindowSize
+                                    + " Diff=("
+                                    + widthDiff
+                                    + ","
+                                    + heightDiff
+                                    + ")");
+                    return widthDiff <= TOLERANCE && heightDiff <= TOLERANCE;
+                };
         Supplier<IBinder> taskWindowTokenSupplier =
                 activity.getWindow().getDecorView()::getWindowToken;
         try {

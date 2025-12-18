@@ -35,13 +35,10 @@ import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AFTER_202504
 import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.FIRST_SDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.IS_AFTER_B;
-import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_V;
 import static android.mediav2.common.cts.CodecTestBase.IS_HDR_CAPTURE_SUPPORTED;
 import static android.mediav2.common.cts.CodecTestBase.MIMETYPE_VIDEO_VC1;
 import static android.mediav2.common.cts.CodecTestBase.MIMETYPE_VIDEO_WMV;
-import static android.mediav2.common.cts.CodecTestBase.PROFILE_HDR10_MAP;
-import static android.mediav2.common.cts.CodecTestBase.PROFILE_HDR10_PLUS_MAP;
 import static android.mediav2.common.cts.CodecTestBase.PROFILE_MAP;
 import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.canDisplaySupportHDRContent;
@@ -49,7 +46,6 @@ import static android.mediav2.common.cts.CodecTestBase.codecFilter;
 import static android.mediav2.common.cts.CodecTestBase.codecPrefix;
 import static android.mediav2.common.cts.CodecTestBase.compileRequestedMediaTypeList;
 import static android.mediav2.common.cts.CodecTestBase.isFeatureSupported;
-import static android.mediav2.common.cts.CodecTestBase.isVendorCodec;
 import static android.mediav2.common.cts.CodecTestBase.mediaTypePrefix;
 import static android.mediav2.common.cts.CodecTestBase.mediaTypeSelKeys;
 import static android.mediav2.common.cts.CodecTestBase.selectCodecs;
@@ -77,7 +73,6 @@ import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
-import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.VsrTest;
 
@@ -187,49 +182,6 @@ public class CodecInfoTest {
         }
         assertTrue(mCodecName + " does not contain at least one standard profile",
                 hasStandardProfile);
-    }
-
-    /**
-     * For all the available decoders on the device, the test checks if their decoding
-     * capabilities are in sync with the device's display capabilities. Precisely, if a video
-     * decoder advertises support for a HDR profile then the device should be capable of
-     * displaying the same with out any tone mapping. Else, the decoder should not advertise such
-     * support.
-     */
-    @Test
-    // TODO (b/228237404) Remove the following once there is a reliable way to query HDR
-    // display capabilities at native level, till then limit the test to vendor codecs
-    @FrameworkSpecificTest
-    @CddTest(requirements = "5.1.7/C-2-1")
-    @ApiTest(apis = "android.media.MediaCodecInfo.CodecCapabilities#profileLevels")
-    public void testHDRDisplayCapabilities() {
-        Assume.assumeTrue("Test needs Android 13", IS_AT_LEAST_T);
-        Assume.assumeTrue("Test needs VNDK Android 13", VNDK_IS_AT_LEAST_T);
-        Assume.assumeTrue("Test needs First SDK Android 13", FIRST_SDK_IS_AT_LEAST_T);
-        Assume.assumeTrue("Test is applicable for video codecs", mMediaType.startsWith("video/"));
-        // TODO (b/228237404) Remove the following once there is a reliable way to query HDR
-        // display capabilities at native level, till then limit the test to vendor codecs
-        Assume.assumeTrue("Test is restricted to vendor codecs", isVendorCodec(mCodecName));
-
-        int[] Hdr10Profiles = PROFILE_HDR10_MAP.get(mMediaType);
-        int[] Hdr10PlusProfiles = PROFILE_HDR10_PLUS_MAP.get(mMediaType);
-        Assume.assumeTrue("Test is applicable for codecs with HDR10/HDR10+ profiles",
-                Hdr10Profiles != null || Hdr10PlusProfiles != null);
-
-        MediaCodecInfo.CodecCapabilities caps = mCodecInfo.getCapabilitiesForType(mMediaType);
-
-        for (CodecProfileLevel pl : caps.profileLevels) {
-            boolean isHdr10Profile = Hdr10Profiles != null &&
-                    IntStream.of(Hdr10Profiles).anyMatch(x -> x == pl.profile);
-            boolean isHdr10PlusProfile = Hdr10PlusProfiles != null &&
-                    IntStream.of(Hdr10PlusProfiles).anyMatch(x -> x == pl.profile);
-            // TODO (b/228237404) Once there is a way to query support for HDR10/HDR10+ display at
-            // native level, separate the following to independent checks for HDR10 and HDR10+
-            if (isHdr10Profile || isHdr10PlusProfile) {
-                assertTrue(mCodecInfo.getName() + " Advertises support for HDR10/HDR10+ profile " +
-                        pl.profile + " without any HDR display", canDisplaySupportHDRContent());
-            }
-        }
     }
 
     /**

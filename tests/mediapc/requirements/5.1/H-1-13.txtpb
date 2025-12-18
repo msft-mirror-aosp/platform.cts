@@ -16,28 +16,20 @@
 # proto-message: Requirement
 id: "5.1/H-1-13"
 name: "Audio decoder init latency"
-description: "Maximum codec initialization latency for a 128 kbps or lower bitrate audio decoding session for all audio decoders when under load."
-test_configs: {
-  key: ""
-  value: {
-    proto_field_number: 27
-  }
-}
-measurements: {
-  key: "codec_initialization_latency_ms"
-  value: {
-    description: "Codec initialization latency in milliseconds"
-    measurement_type: MEASUREMENT_TYPE_LONG
-    comparison: COMPARISON_LESS_THAN_OR_EQUAL
-    proto_field_number: 3
-  }
-}
+description:
+  "Maximum codec initialization latency for a 128 kbps or lower bitrate audio "
+  "decoding session for all audio decoders when under load."
 specs {
   key: 33
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_13
-    specification: "MUST have a codec initialization latency of 30 ms or less for a 128 kbps or lower bitrate audio decoding session for all audio decoders when under load. Load here is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs together with the 1080p audio-video playback initialization."
-    required_values: {
+    specification:
+      "MUST have a codec initialization latency of 30 ms or less for a 128 "
+      "kbps or lower bitrate audio decoding session for all audio decoders "
+      "when under load. Load here is defined as a concurrent 1080p to 720p "
+      "video-only transcoding session using hardware video codecs together "
+      "with the 1080p audio-video playback initialization."
+    required_values {
       key: "codec_initialization_latency_ms"
       value {
         long_value: 30
@@ -49,8 +41,13 @@ specs {
   key: 34
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_14
-    specification: "MUST have a codec initialization latency of 30 ms or less for a 128 kbps or lower bitrate audio decoding session for all audio decoders when under load. Load here is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs together with the 1080p audio-video playback initialization."
-    required_values: {
+    specification:
+      "MUST have a codec initialization latency of 30 ms or less for a 128 "
+      "kbps or lower bitrate audio decoding session for all audio decoders "
+      "when under load. Load here is defined as a concurrent 1080p to 720p "
+      "video-only transcoding session using hardware video codecs together "
+      "with the 1080p audio-video playback initialization."
+    required_values {
       key: "codec_initialization_latency_ms"
       value {
         long_value: 30
@@ -62,8 +59,13 @@ specs {
   key: 35
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
-    specification: "MUST have a codec initialization latency of 30 ms or less for a 128 kbps or lower bitrate audio decoding session for all audio decoders when under load. Load here is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs together with the 1080p audio-video playback initialization."
-    required_values: {
+    specification:
+      "MUST have a codec initialization latency of 30 ms or less for a 128 "
+      "kbps or lower bitrate audio decoding session for all audio decoders "
+      "when under load. Load here is defined as a concurrent 1080p to 720p "
+      "video-only transcoding session using hardware video codecs together "
+      "with the 1080p audio-video playback initialization."
+    required_values {
       key: "codec_initialization_latency_ms"
       value {
         long_value: 30
@@ -75,12 +77,32 @@ specs {
   key: 37
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
-    specification: "MUST have a codec initialization latency of 30 ms or less for a 128 kbps or lower bitrate audio decoding session for all audio decoders when under load. Load here is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs together with the 1080p audio-video playback initialization."
-    required_values: {
+    specification:
+      "MUST have a codec initialization latency of 30 ms or less for a 128 "
+      "kbps or lower bitrate audio decoding session for all audio decoders "
+      "when under load. Load here is defined as a concurrent 1080p to 720p "
+      "video-only transcoding session using hardware video codecs together "
+      "with the 1080p audio-video playback initialization."
+    required_values {
       key: "codec_initialization_latency_ms"
       value {
         long_value: 30
       }
     }
+  }
+}
+measurements {
+  key: "codec_initialization_latency_ms"
+  value {
+    description: "Codec initialization latency in milliseconds"
+    measurement_type: MEASUREMENT_TYPE_LONG
+    comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    proto_field_number: 3
+  }
+}
+test_configs {
+  key: ""
+  value {
+    proto_field_number: 27
   }
 }

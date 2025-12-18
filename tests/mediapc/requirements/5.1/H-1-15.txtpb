@@ -17,28 +17,12 @@
 id: "5.1/H-1-15"
 name: "Hardware Decoder 4K60"
 description: "4K60 hardware decoder"
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 29
-  }
-}
-measurements: {
-  key: "number_4k_hw_decoders"
-  value: {
-    description: "Number of 4K60 hardware decoders."
-    measurement_type: MEASUREMENT_TYPE_INT
-    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
-    proto_field_number: 3
-  }
-}
 specs {
   key: 33
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_13
     specification: "MUST have at least 1 hardware video decoder supporting 4K60."
-    required_values: {
+    required_values {
       key: "number_4k_hw_decoders"
       value {
         int_value: 1
@@ -51,7 +35,7 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_14
     specification: "same"
-    required_values: {
+    required_values {
       key: "number_4k_hw_decoders"
       value {
         int_value: 1
@@ -64,7 +48,7 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
     specification: "same"
-    required_values: {
+    required_values {
       key: "number_4k_hw_decoders"
       value {
         int_value: 1
@@ -77,11 +61,27 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
     specification: "same"
-    required_values: {
+    required_values {
       key: "number_4k_hw_decoders"
       value {
         int_value: 1
       }
     }
+  }
+}
+measurements {
+  key: "number_4k_hw_decoders"
+  value {
+    description: "Number of 4K60 hardware decoders."
+    measurement_type: MEASUREMENT_TYPE_INT
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    proto_field_number: 3
+  }
+}
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 29
   }
 }

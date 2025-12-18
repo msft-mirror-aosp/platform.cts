@@ -23,6 +23,7 @@ import static com.android.cts.pcc.common.StorageTestUtils.deleteThrowException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -105,6 +106,11 @@ public class PccStorageTest {
         } finally {
             deleteIgnoreException(testFile);
         }
+    }
+
+    @Test
+    public void testPccStorage_getExternalFilesDir_returnsNull() {
+        assertNull(mContext.getExternalFilesDir(null));
     }
 
     @Test

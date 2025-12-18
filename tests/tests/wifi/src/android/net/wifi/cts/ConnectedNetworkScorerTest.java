@@ -162,7 +162,7 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
 
         // check we have >= 1 saved network
         List<WifiConfiguration> savedNetworks = ShellIdentityUtils.invokeWithShellPermissions(
-                () -> sWifiManager.getConfiguredNetworks());
+                () -> sWifiManager.getPrivilegedConfiguredNetworks());
         assertWithMessage("Need at least one saved network").that(savedNetworks).isNotEmpty();
         List<WifiConfiguration> networks = TestHelper.findMatchingSavedNetworksWithBssid(
                 sWifiManager, savedNetworks, 1);

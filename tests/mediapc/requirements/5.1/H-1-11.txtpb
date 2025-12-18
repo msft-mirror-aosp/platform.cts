@@ -17,28 +17,14 @@
 id: "5.1/H-1-11"
 name: "Secure Hardware Decoders"
 description: "Supports various secure hardware decoders"
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 25
-  }
-}
-measurements: {
-  key: "secure_requirement_satisfied_boolean"
-  value: {
-    description: "Are secure hardware decoders supported"
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 3
-  }
-}
 specs {
   key: 33
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_13
-    specification: "MUST support a secure decoder for every hardware AVC, HEVC, VP9 or AV1 decoder on the device."
-    required_values: {
+    specification:
+      "MUST support a secure decoder for every hardware AVC, HEVC, VP9 or AV1 "
+      "decoder on the device."
+    required_values {
       key: "secure_requirement_satisfied_boolean"
       value {
         bool_value: true
@@ -51,7 +37,7 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_14
     specification: "same"
-    required_values: {
+    required_values {
       key: "secure_requirement_satisfied_boolean"
       value {
         bool_value: true
@@ -64,7 +50,7 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
     specification: "same"
-    required_values: {
+    required_values {
       key: "secure_requirement_satisfied_boolean"
       value {
         bool_value: true
@@ -77,11 +63,27 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
     specification: "same"
-    required_values: {
+    required_values {
       key: "secure_requirement_satisfied_boolean"
       value {
         bool_value: true
       }
     }
+  }
+}
+measurements {
+  key: "secure_requirement_satisfied_boolean"
+  value {
+    description: "Are secure hardware decoders supported"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 3
+  }
+}
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 25
   }
 }

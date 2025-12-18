@@ -17,54 +17,15 @@
 id: "7.5/H-1-2"
 name: "Primary Front Camera Resolution and Frame Rate"
 description: "Primary front camera resolution and frame rate"
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 51
-  }
-}
-measurements: {
-  key: "primary_camera_available"
-  value: {
-    description: "Is the primary camera available"
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 3
-  }
-}
-measurements: {
-  key: "primary_camera_resolution"
-  value: {
-    description: "Resolution of the primary camera"
-    measurement_type: MEASUREMENT_TYPE_LONG
-    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
-    proto_field_number: 4
-  }
-}
-measurements: {
-  key: "primary_camera_video_size_req_satisfied"
-  value: {
-    description: "Video size requirement satisfied"
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 5
-  }
-}
-measurements: {
-  key: "primary_camera_video_fps"
-  value: {
-    description: "Video fps"
-    measurement_type: MEASUREMENT_TYPE_DOUBLE
-    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
-    proto_field_number: 6
-  }
-}
 specs {
   key: 30
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_11
-    specification: "MUST have a primary front facing camera with a resolution of at least 4 megapixels supporting video capture at 1080p@30fps. The primary front-facing camera is the front-facing camera with the lowest camera ID."
+    specification:
+      "MUST have a primary front facing camera with a resolution of at least 4 "
+      "megapixels supporting video capture at 1080p@30fps. The primary "
+      "front-facing camera is the front-facing camera with the lowest camera "
+      "ID."
     required_values {
       key: "primary_camera_available"
       value {
@@ -78,15 +39,15 @@ specs {
       }
     }
     required_values {
-      key: "primary_camera_video_size_req_satisfied"
-      value {
-        bool_value: true
-      }
-    }
-    required_values {
       key: "primary_camera_video_fps"
       value {
         double_value: 29.9
+      }
+    }
+    required_values {
+      key: "primary_camera_video_size_req_satisfied"
+      value {
+        bool_value: true
       }
     }
   }
@@ -95,7 +56,11 @@ specs {
   key: 31
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_12
-    specification: "MUST have a primary front facing camera with a resolution of at least 5 megapixels and support video capture at 1080p@30fps. The primary front-facing camera is the front-facing camera with the lowest camera ID."
+    specification:
+      "MUST have a primary front facing camera with a resolution of at least 5 "
+      "megapixels and support video capture at 1080p@30fps. The primary "
+      "front-facing camera is the front-facing camera with the lowest camera "
+      "ID."
     required_values {
       key: "primary_camera_available"
       value {
@@ -109,15 +74,15 @@ specs {
       }
     }
     required_values {
-      key: "primary_camera_video_size_req_satisfied"
-      value {
-        bool_value: true
-      }
-    }
-    required_values {
       key: "primary_camera_video_fps"
       value {
         double_value: 29.9
+      }
+    }
+    required_values {
+      key: "primary_camera_video_size_req_satisfied"
+      value {
+        bool_value: true
       }
     }
   }
@@ -140,15 +105,15 @@ specs {
       }
     }
     required_values {
-      key: "primary_camera_video_size_req_satisfied"
-      value {
-        bool_value: true
-      }
-    }
-    required_values {
       key: "primary_camera_video_fps"
       value {
         double_value: 29.9
+      }
+    }
+    required_values {
+      key: "primary_camera_video_size_req_satisfied"
+      value {
+        bool_value: true
       }
     }
   }
@@ -157,7 +122,11 @@ specs {
   key: 34
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_14
-    specification: "MUST have a primary front-facing camera with a resolution of at least 6 megapixels and support video capture at 1080p@30fps. The primary front-facing camera is the front-facing camera with the lowest camera ID."
+    specification:
+      "MUST have a primary front-facing camera with a resolution of at least 6 "
+      "megapixels and support video capture at 1080p@30fps. The primary "
+      "front-facing camera is the front-facing camera with the lowest camera "
+      "ID."
     required_values {
       key: "primary_camera_available"
       value {
@@ -171,15 +140,15 @@ specs {
       }
     }
     required_values {
-      key: "primary_camera_video_size_req_satisfied"
-      value {
-        bool_value: true
-      }
-    }
-    required_values {
       key: "primary_camera_video_fps"
       value {
         double_value: 29.9
+      }
+    }
+    required_values {
+      key: "primary_camera_video_size_req_satisfied"
+      value {
+        bool_value: true
       }
     }
   }
@@ -188,7 +157,11 @@ specs {
   key: 35
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
-    specification: "MUST have a primary front-facing camera with a resolution of at least 6 megapixels and support video capture at 1080p@30fps. The primary front-facing camera is the front-facing camera with the lowest camera ID."
+    specification:
+      "MUST have a primary front-facing camera with a resolution of at least 6 "
+      "megapixels and support video capture at 1080p@30fps. The primary "
+      "front-facing camera is the front-facing camera with the lowest camera "
+      "ID."
     required_values {
       key: "primary_camera_available"
       value {
@@ -202,15 +175,15 @@ specs {
       }
     }
     required_values {
-      key: "primary_camera_video_size_req_satisfied"
-      value {
-        bool_value: true
-      }
-    }
-    required_values {
       key: "primary_camera_video_fps"
       value {
         double_value: 29.9
+      }
+    }
+    required_values {
+      key: "primary_camera_video_size_req_satisfied"
+      value {
+        bool_value: true
       }
     }
   }
@@ -220,10 +193,10 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
     specification:
-      "MUST have a primary front-facing camera with a resolution "
-      "of at least 7.99 megapixels and support video capture at 1080p@30fps. "
-      "The primary front-facing camera is the front-facing camera with the "
-      "lowest camera ID."
+      "MUST have a primary front-facing camera with a resolution of at least "
+      "7.99 megapixels and support video capture at 1080p@30fps. The primary "
+      "front-facing camera is the front-facing camera with the lowest camera "
+      "ID."
     required_values {
       key: "primary_camera_available"
       value {
@@ -237,16 +210,59 @@ specs {
       }
     }
     required_values {
-      key: "primary_camera_video_size_req_satisfied"
-      value {
-        bool_value: true
-      }
-    }
-    required_values {
       key: "primary_camera_video_fps"
       value {
         double_value: 29.9
       }
     }
+    required_values {
+      key: "primary_camera_video_size_req_satisfied"
+      value {
+        bool_value: true
+      }
+    }
+  }
+}
+measurements {
+  key: "primary_camera_available"
+  value {
+    description: "Is the primary camera available"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 3
+  }
+}
+measurements {
+  key: "primary_camera_resolution"
+  value {
+    description: "Resolution of the primary camera"
+    measurement_type: MEASUREMENT_TYPE_LONG
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    proto_field_number: 4
+  }
+}
+measurements {
+  key: "primary_camera_video_fps"
+  value {
+    description: "Video fps"
+    measurement_type: MEASUREMENT_TYPE_DOUBLE
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    proto_field_number: 6
+  }
+}
+measurements {
+  key: "primary_camera_video_size_req_satisfied"
+  value {
+    description: "Video size requirement satisfied"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 5
+  }
+}
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 51
   }
 }

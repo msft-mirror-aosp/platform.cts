@@ -17,43 +17,27 @@
 id: "5.1/H-1-12"
 name: "Video Decoder Init Latency"
 description: "Video decoder initialization latency"
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 26
-  }
-}
-variants: {
-  key: "dolby"
-  value: {
-    description: "When the codec is Dolby Vision"
-  }
-}
-measurements: {
-  key: "codec_initialization_latency_ms"
-  value: {
-    description: "Codec initialization latency in milliseconds"
-    measurement_type: MEASUREMENT_TYPE_LONG
-    comparison: COMPARISON_LESS_THAN_OR_EQUAL
-    proto_field_number: 3
-  }
-}
 specs {
   key: 33
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_13
-    specification: "MUST have a codec initialization latency of 40 ms or less for a 1080p or smaller video decoding session for all hardware video decoders when under load. Load here is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs together with the 1080p audio-video playback initialization. For Dolby vision codec, the codec initialization latency MUST be 50 ms or less."
-    required_values: {
+    specification:
+      "MUST have a codec initialization latency of 40 ms or less for a 1080p "
+      "or smaller video decoding session for all hardware video decoders when "
+      "under load. Load here is defined as a concurrent 1080p to 720p "
+      "video-only transcoding session using hardware video codecs together "
+      "with the 1080p audio-video playback initialization. For Dolby vision "
+      "codec, the codec initialization latency MUST be 50 ms or less."
+    required_values {
       key: "codec_initialization_latency_ms"
       value {
         long_value: 40
       }
     }
-    variant_specs: {
+    variant_specs {
       key: "dolby"
-      value: {
-        required_values: {
+      value {
+        required_values {
           key: "codec_initialization_latency_ms"
           value {
             long_value: 50
@@ -68,16 +52,16 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_14
     specification: "same"
-    required_values: {
+    required_values {
       key: "codec_initialization_latency_ms"
       value {
         long_value: 40
       }
     }
-    variant_specs: {
+    variant_specs {
       key: "dolby"
-      value: {
-        required_values: {
+      value {
+        required_values {
           key: "codec_initialization_latency_ms"
           value {
             long_value: 50
@@ -92,16 +76,16 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
     specification: "same"
-    required_values: {
+    required_values {
       key: "codec_initialization_latency_ms"
       value {
         long_value: 40
       }
     }
-    variant_specs: {
+    variant_specs {
       key: "dolby"
-      value: {
-        required_values: {
+      value {
+        required_values {
           key: "codec_initialization_latency_ms"
           value {
             long_value: 50
@@ -116,16 +100,16 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
     specification: "same"
-    required_values: {
+    required_values {
       key: "codec_initialization_latency_ms"
       value {
         long_value: 40
       }
     }
-    variant_specs: {
+    variant_specs {
       key: "dolby"
-      value: {
-        required_values: {
+      value {
+        required_values {
           key: "codec_initialization_latency_ms"
           value {
             long_value: 50
@@ -133,5 +117,27 @@ specs {
         }
       }
     }
+  }
+}
+measurements {
+  key: "codec_initialization_latency_ms"
+  value {
+    description: "Codec initialization latency in milliseconds"
+    measurement_type: MEASUREMENT_TYPE_LONG
+    comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    proto_field_number: 3
+  }
+}
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 26
+  }
+}
+variants {
+  key: "dolby"
+  value {
+    description: "When the codec is Dolby Vision"
   }
 }

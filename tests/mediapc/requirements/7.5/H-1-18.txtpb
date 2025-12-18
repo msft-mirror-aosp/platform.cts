@@ -17,44 +17,19 @@
 id: "7.5/H-1-18"
 name: "Camera JPEG R"
 description: "JPEG R support for primary cameras"
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 66
-  }
-}
-measurements: {
-  key: "primary_rear_camera_jpeg_r_supported"
-  value: {
-    description: "Is the rear primary camera JPEG R supported"
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 3
-  }
-}
-measurements: {
-  key: "primary_front_camera_jpeg_r_supported"
-  value: {
-    description: "Is the front primary camera JPEG R supported"
-    measurement_type: MEASUREMENT_TYPE_BOOL
-    comparison: COMPARISON_EQUAL
-    proto_field_number: 4
-  }
-}
 specs {
   key: 35
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
     specification: "MUST support JPEG_R for the primary rear and primary front cameras."
     required_values {
-      key: "primary_rear_camera_jpeg_r_supported"
+      key: "primary_front_camera_jpeg_r_supported"
       value {
         bool_value: true
       }
     }
     required_values {
-      key: "primary_front_camera_jpeg_r_supported"
+      key: "primary_rear_camera_jpeg_r_supported"
       value {
         bool_value: true
       }
@@ -67,16 +42,41 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_17
     specification: "MUST support JPEG_R for the primary rear and primary front cameras."
     required_values {
-      key: "primary_rear_camera_jpeg_r_supported"
-      value {
-        bool_value: true
-      }
-    }
-    required_values {
       key: "primary_front_camera_jpeg_r_supported"
       value {
         bool_value: true
       }
     }
+    required_values {
+      key: "primary_rear_camera_jpeg_r_supported"
+      value {
+        bool_value: true
+      }
+    }
+  }
+}
+measurements {
+  key: "primary_front_camera_jpeg_r_supported"
+  value {
+    description: "Is the front primary camera JPEG R supported"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 4
+  }
+}
+measurements {
+  key: "primary_rear_camera_jpeg_r_supported"
+  value {
+    description: "Is the rear primary camera JPEG R supported"
+    measurement_type: MEASUREMENT_TYPE_BOOL
+    comparison: COMPARISON_EQUAL
+    proto_field_number: 3
+  }
+}
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 66
   }
 }
