@@ -20,6 +20,7 @@ import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_
 import static android.media.cts.MediaProjectionActivity.ACCEPT_RESOURCE_ID;
 import static android.media.cts.MediaProjectionActivity.ENTIRE_SCREEN_STRING_RES_NAME;
 import static android.media.cts.MediaProjectionActivity.SCREEN_SHARE_OPTIONS_RES_PATTERN;
+import static android.media.cts.MediaProjectionActivity.SHARE_TAB_TEST_TAG;
 import static android.media.cts.MediaProjectionActivity.getResourceString;
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 
@@ -35,6 +36,7 @@ import android.content.pm.PackageManager;
 import android.graphics.PixelFormat;
 import android.hardware.display.VirtualDisplay;
 import android.media.ImageReader;
+import android.media.cts.MediaProjectionActivity;
 import android.media.cts.MediaProjectionRule;
 import android.os.Handler;
 import android.os.Looper;
@@ -83,6 +85,7 @@ public class MediaProjectionSDK33Test {
 
     private ImageReader mSecondImageReader;
     private VirtualDisplay mSecondVirtualDisplay;
+    private UiDevice mUiDevice;
 
     private final MediaProjection.Callback mSecondCallback = new MediaProjection.Callback() {
         @Override
@@ -98,14 +101,14 @@ public class MediaProjectionSDK33Test {
     @Before
     public void setUp() {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
+        mUiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         mTimeoutMs = 1000 * HW_TIMEOUT_MULTIPLIER;
         mMediaProjectionRule.enableConsentFlow();
     }
 
     @After
     public void cleanup() {
-        UiDevice uiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
-        uiDevice.pressHome();
+        mUiDevice.pressHome();
     }
 
     /**
@@ -172,17 +175,16 @@ public class MediaProjectionSDK33Test {
                         /* VirtualDisplay.Callback= */ null,
                         new Handler(Looper.getMainLooper()));
 
-        // Start recording the entire screen on the re-shown permission dialog.
-        // This will wait for the UI elements to appear.
-        final UiObject2 startRecordingButton = navigatePermissionDialogToStartButton(mContext);
-        if (startRecordingButton == null) {
-            Log.e(TAG, "Couldn't find start recording button, something is really wrong");
+        // Find the confirmation button on the re-shown permission dialog.
+        final UiObject2 confirmationButton = findConfirmationButton();
+        if (confirmationButton == null) {
+            Log.e(TAG, "Couldn't find confirmation button, something is really wrong");
         } else {
-            Log.d(TAG, "found permission dialog after searching all windows, clicked");
+            Log.d(TAG, "Found confirmation button after reshowing the permission dialog, clicked.");
             // No image buffers should have arrived before we dismiss the dialog.
             assertThat(firstBufferLatch.getCount()).isEqualTo(1);
             dismissPermissionDialogLatch.countDown();
-            startRecordingButton.click();
+            confirmationButton.click();
         }
 
         // Validate that the permission dialog is dismissed before the first screenshot arrives.
@@ -234,18 +236,17 @@ public class MediaProjectionSDK33Test {
                         /* VirtualDisplay.Callback= */ null,
                         new Handler(Looper.getMainLooper()));
 
-        // Start recording the entire screen on the re-shown permission dialog.
-        // This will wait for the UI elements to appear.
-        final UiObject2 startRecordingButton = navigatePermissionDialogToStartButton(mContext);
-        if (startRecordingButton == null) {
-            Log.e(TAG, "Couldn't find start recording button, something is really wrong");
+        // Find the confirmation button on the re-shown permission dialog.
+        final UiObject2 confirmationButton = findConfirmationButton();
+        if (confirmationButton == null) {
+            Log.e(TAG, "Couldn't find confirmation button, something is really wrong");
         } else {
-            Log.d(TAG, "Found permission dialog after searching all windows, clicked");
+            Log.d(TAG, "Found confirmation button after reshowing the permission dialog, clicked.");
             // No image buffers should have arrived before we dismiss the dialog.
             assertThat(firstBufferLatch.getCount()).isEqualTo(1);
             dismissPermissionDialogLatch.countDown();
-            startRecordingButton.click();
-            UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressHome();
+            confirmationButton.click();
+            mUiDevice.pressHome();
         }
 
         // Validate that the permission dialog is dismissed before the first screenshot arrives.
@@ -273,18 +274,21 @@ public class MediaProjectionSDK33Test {
     }
 
     /**
-     * The permission dialog will be auto-opened by the activity - find it and navigate to the
-     * start recording button
+     * Finds the confirmation button on the permission dialog, handling both old and new UIs.
      *
-     * @return start recording button, or null if it wasn't found.
+     * @return The confirmation button (`UiObject2`), or `null` if not found.
      */
-    public UiObject2 navigatePermissionDialogToStartButton(Context context) {
-        // Ensure the device is initialized before interacting with any UI elements.
-        UiDevice.getInstance(androidx.test.InstrumentationRegistry.getInstrumentation());
-        final boolean isWatch = context.getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_WATCH);
+    private UiObject2 findConfirmationButton() {
+        mUiDevice.waitForIdle();
+        boolean isNewUiPresent = mUiDevice.hasObject(By.res(SHARE_TAB_TEST_TAG));
+        if (isNewUiPresent) {
+            return MediaProjectionActivity.findAndEnableNewShareButton(
+                    mUiDevice, /* displayName= */ null, mTimeoutMs);
+        }
+        final boolean isWatch =
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
         if (!isWatch) {
-            String entireScreenString = getResourceString(context, ENTIRE_SCREEN_STRING_RES_NAME);
+            String entireScreenString = getResourceString(mContext, ENTIRE_SCREEN_STRING_RES_NAME);
             // if not testing on a watch device, then we need to select the entire screen option
             // (if available) before pressing "Start recording" button.
             if (entireScreenString != null && !selectEntireScreenOption(entireScreenString)) {
@@ -332,7 +336,6 @@ public class MediaProjectionSDK33Test {
     }
 
     private UiObject2 waitForObject(BySelector selector) {
-        UiDevice uiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
-        return uiDevice.wait(Until.findObject(selector), mTimeoutMs);
+        return mUiDevice.wait(Until.findObject(selector), mTimeoutMs);
     }
 }

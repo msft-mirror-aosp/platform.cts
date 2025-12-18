@@ -267,17 +267,53 @@ public class MediaProjectionActivity extends Activity {
 
     private static void dismissNewComposePermissionDialog(
             UiDevice uiDevice, @Nullable String displayName) {
+        UiObject2 shareButton =
+                findAndEnableNewShareButton(uiDevice, displayName, PERMISSION_DIALOG_WAIT_MS);
+        if (shareButton == null) {
+            Log.e(
+                    TAG,
+                    "Could not find Compose Share button with testTag: " + SHARE_BUTTON_TEST_TAG);
+            return;
+        }
+
+        // Wait for the button to be enabled after the display selection.
+        boolean enabled = shareButton.wait(Until.enabled(true), PERMISSION_DIALOG_WAIT_MS);
+        if (enabled) {
+            shareButton.click();
+            Log.d(TAG, "Clicked enabled Compose Share button.");
+            uiDevice.wait(Until.gone(By.res(SHARE_TAB_TEST_TAG)), PERMISSION_DIALOG_WAIT_MS);
+        } else {
+            Log.e(
+                    TAG,
+                    "The 'Share' button did not become enabled after attempting to select a"
+                            + " display. The test will likely fail.");
+        }
+    }
+
+    /**
+     * Finds and enables the "Share" button on the new (Compose) permission dialog.
+     *
+     * <p>This involves selecting the "Entire Screen" option and then selecting a display, which
+     * should enable the share button.
+     *
+     * @param uiDevice The {@link UiDevice} instance to use.
+     * @param displayName The name of the display to select. If {@code null}, the first available
+     *     display will be selected.
+     * @param timeoutMs The timeout in milliseconds to wait for UI elements.
+     * @return The "Share" button as a {@link UiObject2}, or {@code null} if not found.
+     */
+    @Nullable
+    public static UiObject2 findAndEnableNewShareButton(
+            UiDevice uiDevice, @Nullable String displayName, int timeoutMs) {
         UiObject2 shareEntireScreenButton =
-                uiDevice.wait(
-                        Until.findObject(By.res(SHARE_ENTIRE_SCREEN_TEST_TAG)),
-                        PERMISSION_DIALOG_WAIT_MS);
+                uiDevice.wait(Until.findObject(By.res(SHARE_ENTIRE_SCREEN_TEST_TAG)), timeoutMs);
 
         if (shareEntireScreenButton == null) {
             Log.e(
                     TAG,
                     "Could not find 'Entire Screen' option with testTag: "
                             + SHARE_ENTIRE_SCREEN_TEST_TAG);
-            return;
+            return null;
         }
 
         Log.d(TAG, "Found 'Entire Screen' option, clicking it.");
@@ -285,13 +321,11 @@ public class MediaProjectionActivity extends Activity {
         uiDevice.waitForIdle();
 
         UiObject2 contentList =
-                uiDevice.wait(
-                        Until.findObject(By.res(SHARE_CONTENT_LIST_TEST_TAG)),
-                        PERMISSION_DIALOG_WAIT_MS);
+                uiDevice.wait(Until.findObject(By.res(SHARE_CONTENT_LIST_TEST_TAG)), timeoutMs);
 
         if (contentList == null) {
             Log.e(TAG, "Could not find content list with testTag: " + SHARE_CONTENT_LIST_TEST_TAG);
-            return;
+            return null;
         }
 
         Log.d(TAG, "Found content list with testTag: " + SHARE_CONTENT_LIST_TEST_TAG);
@@ -313,7 +347,7 @@ public class MediaProjectionActivity extends Activity {
         // Final safety check.
         if (displayToClick == null) {
             Log.e(TAG, "No clickable items found in content list.");
-            return;
+            return null;
         }
 
         Log.d(TAG, "Clicking item: " + displayToClick.getText());
@@ -321,29 +355,7 @@ public class MediaProjectionActivity extends Activity {
 
         uiDevice.waitForIdle();
         // Find and click the "Share" button, which should now be enabled.
-        UiObject2 shareButton =
-                uiDevice.wait(
-                        Until.findObject(By.res(SHARE_BUTTON_TEST_TAG)), PERMISSION_DIALOG_WAIT_MS);
-
-        if (shareButton == null) {
-            Log.e(
-                    TAG,
-                    "Could not find Compose Share button with testTag: " + SHARE_BUTTON_TEST_TAG);
-            return;
-        }
-
-        // Wait for the button to be enabled after the display selection.
-        boolean enabled = shareButton.wait(Until.enabled(true), PERMISSION_DIALOG_WAIT_MS);
-        if (enabled) {
-            shareButton.click();
-            Log.d(TAG, "Clicked enabled Compose Share button.");
-            uiDevice.wait(Until.gone(By.res(SHARE_TAB_TEST_TAG)), PERMISSION_DIALOG_WAIT_MS);
-        } else {
-            Log.e(
-                    TAG,
-                    "The 'Share' button did not become enabled after attempting to select a"
-                            + " display. The test will likely fail.");
-        }
+        return uiDevice.wait(Until.findObject(By.res(SHARE_BUTTON_TEST_TAG)), timeoutMs);
     }
 
     private static void dismissOldAlertDialog(UiDevice uiDevice, @Nullable String optionString) {
