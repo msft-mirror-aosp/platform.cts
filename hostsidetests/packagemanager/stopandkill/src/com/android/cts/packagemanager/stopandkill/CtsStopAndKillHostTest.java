@@ -59,6 +59,7 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
     private static final String PERSISTABLE_ACTIVITY = "PersistableActivity";
     private static final String NON_PERSISTABLE_ACTIVITY = "NonPersistableActivity";
     private static final String PERSISTABLE_TIMEOUT_ACTIVITY = "PersistableTimeoutActivity";
+    private static final String ALIAS_ACTIVITY = "AliasActivity";
 
     private static final int FLAG_ACTIVITY_NEW_TASK = 0x10000000;
     private static final int FLAG_ACTIVITY_MULTIPLE_TASK = 0x08000000;
@@ -342,6 +343,48 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
         }
     }
 
+    /**
+     * Verifies that when launching an activity alias of a persistable activity, the app's instance
+     * state is saved during an update and restored in the new version.
+     */
+    @Test
+    @RequiresFlagsEnabled(
+            com.android.internal.pm.pkg.component.flags.Flags
+                    .FLAG_ENABLE_ACTIVITY_ALIAS_PERSISTABLE_MODE)
+    public void testUpdate_activityAlias_stopsAppOnPackageUpdate() throws Exception {
+        mApp1.installPackage();
+        launchActivityAndAssertResumed(mApp1.aliasActivity);
+
+        // Activity shouldn't have been stopped before we update
+        mApp1.assertStateFileCreatedOnStop(/* shouldExist= */ false);
+
+        mApp1.installPackage("-r");
+
+        // Assert that the app was stopped since the activity was persistable
+        mApp1.assertStateFileCreatedOnStop(/* shouldExist= */ true);
+    }
+
+    /**
+     * Verifies that when the flag is disabled, the app is not stopped on update even when a
+     * persistable activity alias is running.
+     */
+    @Test
+    @RequiresFlagsDisabled(
+            com.android.internal.pm.pkg.component.flags.Flags
+                    .FLAG_ENABLE_ACTIVITY_ALIAS_PERSISTABLE_MODE)
+    public void testUpdate_activityAlias_flagDisabled_doesNotStopApp() throws Exception {
+        mApp1.installPackage();
+        launchActivityAndAssertResumed(mApp1.aliasActivity);
+
+        // Activity shouldn't have been stopped before we update
+        mApp1.assertStateFileCreatedOnStop(/* shouldExist= */ false);
+
+        mApp1.installPackage("-r");
+
+        // Assert that the app was NOT stopped since the flag is disabled.
+        mApp1.assertStateFileCreatedOnStop(/* shouldExist= */ false);
+    }
+
     private void launchActivityAndAssertResumed(String componentName) throws Exception {
         getDevice()
                 .executeShellCommand(
@@ -419,6 +462,7 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
         public final String persistableActivity;
         public final String nonPersistableActivity;
         public final String persistableTimeoutActivity;
+        public final String aliasActivity;
 
         TestApp(String pkg, String apk) {
             this.pkg = pkg;
@@ -426,6 +470,7 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
             this.persistableActivity = getComponentName(pkg, PERSISTABLE_ACTIVITY);
             this.nonPersistableActivity = getComponentName(pkg, NON_PERSISTABLE_ACTIVITY);
             this.persistableTimeoutActivity = getComponentName(pkg, PERSISTABLE_TIMEOUT_ACTIVITY);
+            this.aliasActivity = getComponentName(pkg, ALIAS_ACTIVITY);
         }
 
         private String getStoragePath() {
@@ -445,6 +490,13 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
             userOptions[2] = "-g";
             System.arraycopy(options, 0, userOptions, 3, options.length);
             CtsStopAndKillHostTest.this.installPackage(apk, userOptions);
+            getDevice()
+                    .executeShellCommand(
+                            "appops set --user "
+                                    + mUserId
+                                    + " "
+                                    + pkg
+                                    + " MANAGE_EXTERNAL_STORAGE allow");
         }
 
         void uninstall() throws Exception {
