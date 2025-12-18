@@ -18,40 +18,9 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_test {
-    name: "CtsPccProcessTests",
-    team: "trendy_team_private_compute_core",
+android_test_helper_app {
+    name: "PccQueryableByIntentFilter",
     defaults: ["cts_defaults"],
     sdk_version: "test_current",
-
-    srcs: [
-        "src/**/processes/*.java",
-        "src/**/*.aidl",
-        ":PccAppOpsAidl",
-        ":PccCheckingVisibilityAidl",
-    ],
-
-    static_libs: [
-        "androidx.test.ext.junit",
-        "androidx.test.rules",
-        "flag-junit",
-        "android.app.privatecompute.flags-aconfig-java",
-        "privatecompute-common",
-        "compatibility-device-util-axt",
-    ],
-
-    test_suites: [
-        "cts",
-        "general-tests",
-    ],
-    test_config: "AndroidTest.xml",
     manifest: "AndroidManifest.xml",
-
-    data: [
-        ":PccAppOpsApp",
-        ":PccQueryableByPackage",
-        ":PccQueryableByIntentFilter",
-        ":PccQueryableByProvider",
-        ":PccCheckingVisibilityApp",
-    ],
 }

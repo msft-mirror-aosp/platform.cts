@@ -24,6 +24,16 @@
     <uses-permission android:name="com.android.cts.pcc.PCC_ALLOWED_PERMISSION"/>
     <uses-permission android:name="com.android.cts.pcc.PCC_DENIED_PERMISSION"/>
 
+    <queries>
+        <package android:name="com.android.cts.pcc.appops" />
+        <package android:name="com.android.cts.pcc.checkingvisibilityapp" />
+        <package android:name="com.android.cts.pcc.queryablebypackage" />
+        <intent>
+            <action android:name="com.android.cts.pcc.queryablebyintentfilter.TEST_ACTION" />
+        </intent>
+        <provider android:authorities="com.android.cts.pcc.queryablebyprovider.provider" />
+    </queries>
+
     <application>
         <uses-library android:name="android.test.runner" />
         <activity android:name=".BaseActivity$NonPccActivity" android:exported="false"/>
