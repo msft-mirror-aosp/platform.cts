@@ -17,6 +17,7 @@
 package android.sharesheet.cts;
 
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
+import static android.service.chooser.Flags.interactiveChooserDefaultBounds;
 
 import android.app.ActionBar;
 import android.app.Activity;
@@ -72,9 +73,9 @@ public class CtsInteractiveChooserTestActivity extends Activity {
                     ChooserSession chooserSession = mChooserSession;
                     onChooserBoundsChanged(
                             bounds,
-                            chooserSession == null
-                                    ? null
-                                    : chooserSession.getInitialRestingBounds());
+                            interactiveChooserDefaultBounds() && chooserSession != null
+                                    ? chooserSession.getInitialRestingBounds()
+                                    : null);
                 }
             };
 
