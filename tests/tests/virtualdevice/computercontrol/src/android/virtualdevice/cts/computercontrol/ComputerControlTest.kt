@@ -18,6 +18,9 @@ package android.virtualdevice.cts.computercontrol
 
 import android.computercontrol.testapp.common.Action
 import android.computercontrol.testapp.common.Constants
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.CheckFlagsRule
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.util.Log
 import android.view.WindowManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -31,7 +34,11 @@ import org.junit.rules.TestName
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
+@RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_COMPUTER_CONTROL_ACCESS)
 class ComputerControlTest {
+
+    @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+
     @Rule
     @JvmField
     val adoptShellPermissionsRule: AdoptShellPermissionsRule =
@@ -43,7 +50,7 @@ class ComputerControlTest {
 
     @get:Rule val testName = TestName()
 
-    private lateinit var testAppAgent: TestAppAgent
+    private var testAppAgent: TestAppAgent? = null
     private val bounds =
         getInstrumentation()
             .context
@@ -73,10 +80,10 @@ class ComputerControlTest {
         testAppAgent = launchTestApp()
         val x = bounds.width() / 2
         val y = bounds.height() / 2
-        testAppAgent.tap(x, y)
+        testAppAgent!!.tap(x, y)
         Log.d(TAG, "Tapped at ($x, $y)")
 
-        val tap = testAppAgent.nextAction(Action.Tap::class.java)
+        val tap = testAppAgent!!.nextAction(Action.Tap::class.java)
         assertThat(tap).isNotNull()
         tap!!
         Log.d(TAG, "Tap from TestApp: (${tap.x}, ${tap.y})")
@@ -89,10 +96,10 @@ class ComputerControlTest {
         testAppAgent = launchTestApp()
         val x = bounds.width() / 2
         val y = bounds.height() / 2
-        testAppAgent.longPress(x, y)
+        testAppAgent!!.longPress(x, y)
         Log.d(TAG, "Long pressed at ($x, $y)")
 
-        val longPress = testAppAgent.nextAction(Action.LongPress::class.java)
+        val longPress = testAppAgent!!.nextAction(Action.LongPress::class.java)
         assertThat(longPress).isNotNull()
         longPress!!
         Log.d(TAG, "LongPress from TestApp: (${longPress.x}, ${longPress.y})")
@@ -107,10 +114,10 @@ class ComputerControlTest {
         val y1 = bounds.height() / 2
         val x2 = bounds.width() / 4
         val y2 = bounds.height() / 4
-        testAppAgent.swipe(x1, y1, x2, y2)
+        testAppAgent!!.swipe(x1, y1, x2, y2)
         Log.d(TAG, "Swiped from ($x1, $y1) to ($x2, $y2)")
 
-        val swipe = testAppAgent.nextAction(Action.Swipe::class.java)
+        val swipe = testAppAgent!!.nextAction(Action.Swipe::class.java)
         assertThat(swipe).isNotNull()
         swipe!!
         Log.d(TAG, "Swipe from TestApp: (${swipe.x1}, ${swipe.y1}) to (${swipe.x2}, ${swipe.y2})")
@@ -124,10 +131,10 @@ class ComputerControlTest {
     fun testPerformAction_GoBack() {
         testAppAgent = launchTestApp()
         // 1 is the action code for GoBack.
-        testAppAgent.performAction(1)
+        testAppAgent!!.performAction(1)
         Log.d(TAG, "Performed GoBack")
 
-        val goBack = testAppAgent.nextAction(Action.GoBack::class.java)
+        val goBack = testAppAgent!!.nextAction(Action.GoBack::class.java)
         Log.d(TAG, "GoBack from TestApp")
         assertThat(goBack).isNotNull()
     }
@@ -135,7 +142,7 @@ class ComputerControlTest {
     @Test
     fun testGetDisplaySize() {
         testAppAgent = launchTestApp()
-        val screenSize = testAppAgent.getDisplaySize()
+        val screenSize = testAppAgent!!.getDisplaySize()
         Log.d(TAG, "Screen size from agent: ${screenSize.getWidth()}x${screenSize.getHeight()}")
         Log.d(TAG, "Screen size from OS: ${bounds.width()}x${bounds.height()}")
         assertThat(screenSize.getWidth()).isEqualTo(bounds.width())
@@ -145,7 +152,7 @@ class ComputerControlTest {
     @Test
     fun testGetScreenshot() {
         testAppAgent = launchTestApp()
-        val screenshot = testAppAgent.getScreenshot()
+        val screenshot = testAppAgent!!.getScreenshot()
         assertThat(screenshot).isNotNull()
         Log.d(TAG, "Screenshot size: ${screenshot!!.getWidth()}x${screenshot.getHeight()}")
         assertThat(screenshot.getWidth()).isEqualTo(bounds.width())
@@ -158,10 +165,10 @@ class ComputerControlTest {
         // Insert text1 to text field 1.
         val text1 = "Hello World"
         val text2 = "Goodbye World"
-        testAppAgent.requestFocus(Constants.TEXT_FIELD_1)
-        testAppAgent.insertText(text1)
+        testAppAgent!!.requestFocus(Constants.TEXT_FIELD_1)
+        testAppAgent!!.insertText(text1)
         Log.d(TAG, "Inserted text: $text1 in text field 1")
-        var insertText1 = testAppAgent.nextAction(Action.TextFieldValueChange::class.java)
+        var insertText1 = testAppAgent!!.nextAction(Action.TextFieldValueChange::class.java)
         assertThat(insertText1).isNotNull()
         insertText1!!
         Log.d(TAG, "InsertText from TestApp: ${insertText1.text} in text field 1")
@@ -169,9 +176,9 @@ class ComputerControlTest {
         assertThat(insertText1.text).isEqualTo(text1)
 
         // Insert text2 to text field 1 again.
-        testAppAgent.insertText(text2)
+        testAppAgent!!.insertText(text2)
         Log.d(TAG, "Inserted text: $text2 in text field 1")
-        insertText1 = testAppAgent.nextAction(Action.TextFieldValueChange::class.java)
+        insertText1 = testAppAgent!!.nextAction(Action.TextFieldValueChange::class.java)
         assertThat(insertText1).isNotNull()
         insertText1!!
         Log.d(TAG, "InsertText from TestApp: ${insertText1.text} in text field 1")
@@ -179,10 +186,10 @@ class ComputerControlTest {
         assertThat(insertText1.text).isEqualTo(text2)
 
         // Insert text2 to text field 2.
-        testAppAgent.requestFocus(Constants.TEXT_FIELD_2)
-        testAppAgent.insertText(text2)
+        testAppAgent!!.requestFocus(Constants.TEXT_FIELD_2)
+        testAppAgent!!.insertText(text2)
         Log.d(TAG, "Inserted text: $text2")
-        var insertText2 = testAppAgent.nextAction(Action.TextFieldValueChange::class.java)
+        var insertText2 = testAppAgent!!.nextAction(Action.TextFieldValueChange::class.java)
         assertThat(insertText2).isNotNull()
         insertText2!!
         Log.d(TAG, "InsertText from TestApp: ${insertText2.text}")
