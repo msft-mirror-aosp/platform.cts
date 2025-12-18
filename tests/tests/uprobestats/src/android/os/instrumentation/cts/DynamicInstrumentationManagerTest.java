@@ -22,14 +22,17 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assume.assumeTrue;
 
 import android.annotation.SuppressLint;
+import android.content.ComponentName;
 import android.os.Build;
 import android.os.Process;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.service.uprobestats.DynamicInstrumentationManager;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SdkSuppress;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
@@ -156,6 +159,25 @@ public class DynamicInstrumentationManagerTest {
         OffsetsWithStatusCode result = getOffsetsWithStatusCode("", "", new String[]{});
         assertThat(result.statusCode).isEqualTo(-3);
         assertThat(result.offsets).isNull();
+    }
+
+    @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @EnsureHasPermission(DYNAMIC_INSTRUMENTATION)
+    public void setDynamicInstrumentationEventConsumer() {
+        DynamicInstrumentationManager dynamicInstrumentationManager =
+                InstrumentationRegistry.getInstrumentation()
+                        .getContext()
+                        .getSystemService(DynamicInstrumentationManager.class);
+        try {
+            ComponentName original = ComponentName.createRelative("package", "class");
+            dynamicInstrumentationManager.setDynamicInstrumentationEventConsumer(original);
+            ComponentName result =
+                    dynamicInstrumentationManager.getDynamicInstrumentationEventConsumer();
+            assertThat(result).isEqualTo(original);
+        } finally {
+            dynamicInstrumentationManager.setDynamicInstrumentationEventConsumer(null);
+        }
     }
 
     private static OffsetsWithStatusCode getOffsetsWithStatusCode(String fqcn, String methodName,
