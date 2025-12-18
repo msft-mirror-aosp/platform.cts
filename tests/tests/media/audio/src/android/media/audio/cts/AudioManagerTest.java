@@ -3185,6 +3185,37 @@ public class AudioManagerTest {
         return null;
     }
 
+    @Test
+    @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_TELECOM_MAINLINE_API)
+    public void testSetRttEnabled_noCrash() throws Exception {
+
+        // Gaining permission
+        getInstrumentation().getUiAutomation()
+               .adoptShellPermissionIdentity(Manifest.permission.MODIFY_PHONE_STATE);
+
+        try {
+            mAudioManager.setRttEnabled(true);
+            mAudioManager.setRttEnabled(false);
+        } finally {
+            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_TELECOM_MAINLINE_API)
+    public void testSetRttEnabled_noPermission_throwsException() {
+
+        // Without permissions
+        getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+
+        try {
+            mAudioManager.setRttEnabled(true);
+            fail("Should have thrown SecurityException without MODIFY_PHONE_STATE");
+        } catch (SecurityException e) {
+            // Expected
+        }
+    }
+
     private void waitForMixerAttrChanged(ListenableFuture<Void> future)
             throws Exception {
         future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
