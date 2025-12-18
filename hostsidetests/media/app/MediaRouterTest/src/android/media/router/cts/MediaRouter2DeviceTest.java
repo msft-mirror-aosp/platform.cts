@@ -40,6 +40,7 @@ import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_3_ROUTE_3;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_3_ROUTE_4;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_3_ROUTE_5;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_BUILTIN_SPEAKER;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_HDMI;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_SELF_SCAN_ONLY;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_4;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_5;
@@ -345,14 +346,15 @@ public class MediaRouter2DeviceTest {
                 // removes the 'ROUTE_ID_DEVICE' and replaces it with 'ROUTE_ID_BUILTIN_SPEAKER'.
                 Predicate<Set<String>> isDeviceOrBuiltinSpeakerPredicate =
                                 routeIds ->
-                                                routeIds.contains(ROUTE_ID_DEVICE)
-                                                || routeIds.contains(ROUTE_ID_BUILTIN_SPEAKER);
+                                        routeIds.contains(ROUTE_ID_DEVICE)
+                                                || routeIds.contains(ROUTE_ID_BUILTIN_SPEAKER)
+                                                || routeIds.contains(ROUTE_ID_HDMI);
                 assertThat(
                                 waitForAndGetRoutes(
                                                 SYSTEM_ROUTE_DISCOVERY_PREFERENCE,
                                                 isDeviceOrBuiltinSpeakerPredicate)
                                         .keySet())
-                        .containsAnyOf(ROUTE_ID_DEVICE, ROUTE_ID_BUILTIN_SPEAKER);
+                        .containsAnyOf(ROUTE_ID_DEVICE, ROUTE_ID_BUILTIN_SPEAKER, ROUTE_ID_HDMI);
         } else {
                 assertThat(
                                 waitForAndGetRoutes(

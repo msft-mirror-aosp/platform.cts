@@ -188,12 +188,24 @@ public class CarInputTest extends AbstractCarTestCase {
         });
     }
 
+    // required audio zone to occupant zone mapping is not available on all systems
+    // as it clashes with application UID based audio routing
+    private boolean isAudioZoneToOccupantZoneMappingAvailable() {
+        // **mAudioZoneIdToOccupantZoneIdMapping**
+        //   audioZoneId=0 zoneId=0
+        //   audioZoneId=1 zoneId=1
+        // **mActiveOccupantConfigs**
+        String dump = runShellCommand("dumpsys car_service --services CarOccupantZoneService");
+        return !dump.contains("**mAudioZoneIdToOccupantZoneIdMapping**\n**");
+    }
+
     @Test
     @CddTest(requirements = {"TODO(b/262236403)"})
     @ApiRequirements(minCarVersion = ApiRequirements.CarVersion.UPSIDE_DOWN_CAKE_0,
             minPlatformVersion = ApiRequirements.PlatformVersion.UPSIDE_DOWN_CAKE_0)
     @EnsureHasPermission(Car.PERMISSION_CAR_CONTROL_AUDIO_VOLUME)
     public void testVolumeDownKeyForEachPassengerMainDisplay() throws Exception {
+        assumeTrue(isAudioZoneToOccupantZoneMappingAvailable());
         CarAudioManager audioManager = (CarAudioManager) getCar().getCarManager(Car.AUDIO_SERVICE);
         assumeTrue(audioManager.isAudioFeatureEnabled(AUDIO_FEATURE_DYNAMIC_ROUTING));
         CarVolumeMonitor callback = new CarVolumeMonitor();
@@ -219,6 +231,7 @@ public class CarInputTest extends AbstractCarTestCase {
             minPlatformVersion = ApiRequirements.PlatformVersion.UPSIDE_DOWN_CAKE_0)
     @EnsureHasPermission(Car.PERMISSION_CAR_CONTROL_AUDIO_VOLUME)
     public void testVolumeUpKeyForEachPassengerMainDisplay() throws Exception {
+        assumeTrue(isAudioZoneToOccupantZoneMappingAvailable());
         CarAudioManager audioManager = (CarAudioManager) getCar().getCarManager(Car.AUDIO_SERVICE);
         assumeTrue(audioManager.isAudioFeatureEnabled(AUDIO_FEATURE_DYNAMIC_ROUTING));
         CarVolumeMonitor callback = new CarVolumeMonitor();
@@ -244,6 +257,7 @@ public class CarInputTest extends AbstractCarTestCase {
             minPlatformVersion = ApiRequirements.PlatformVersion.UPSIDE_DOWN_CAKE_0)
     @EnsureHasPermission(Car.PERMISSION_CAR_CONTROL_AUDIO_VOLUME)
     public void testVolumeMuteKeyForEachPassengerMainDisplay() throws Exception {
+        assumeTrue(isAudioZoneToOccupantZoneMappingAvailable());
         CarAudioManager audioManager = (CarAudioManager) getCar().getCarManager(Car.AUDIO_SERVICE);
         assumeTrue(audioManager.isAudioFeatureEnabled(AUDIO_FEATURE_DYNAMIC_ROUTING));
         assumeTrue(audioManager.isAudioFeatureEnabled(AUDIO_FEATURE_VOLUME_GROUP_MUTING));

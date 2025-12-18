@@ -235,7 +235,7 @@ public class VolumeShaperTest {
                 new AudioAttributes.Builder()
                     .setUsage(offloaded ?
                             AudioAttributes.USAGE_MEDIA  // offload allowed
-                            : AudioAttributes.USAGE_NOTIFICATION) // offload not allowed
+                            : AudioAttributes.USAGE_ALARM) // offload not allowed
                     .build(),
                 new AudioManager(getContext()).generateAudioSessionId());
         mediaPlayer.setWakeMode(getContext(), PowerManager.PARTIAL_WAKE_LOCK);
