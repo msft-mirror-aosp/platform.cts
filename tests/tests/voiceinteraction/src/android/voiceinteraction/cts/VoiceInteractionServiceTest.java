@@ -46,7 +46,6 @@ import android.os.PersistableBundle;
 import android.os.RemoteCallback;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
@@ -56,7 +55,6 @@ import android.service.voice.HotwordDetector;
 import android.service.voice.HotwordRejectedResult;
 import android.service.voice.VoiceInteractionService;
 import android.service.voice.VoiceInteractionSession;
-import android.service.voice.flags.Flags;
 import android.util.Log;
 import android.voiceinteraction.common.Utils;
 import android.voiceinteraction.cts.activities.EmptyActivity;
@@ -534,7 +532,6 @@ public class VoiceInteractionServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SET_INVOCATION_EFFECT_ENABLED_API)
     public void testSetInvocationEffectEnabled_noActiveService_throwsSecurityException()
             throws Exception {
         // Ensure mService is initially active
@@ -582,7 +579,6 @@ public class VoiceInteractionServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SET_INVOCATION_EFFECT_ENABLED_API)
     public void testSetInvocationEffectEnabled_activeService_throwsNoException() {
         mService.setInvocationEffectEnabled(true);
         mService.setInvocationEffectEnabled(false);
