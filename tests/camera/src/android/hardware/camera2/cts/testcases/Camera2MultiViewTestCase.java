@@ -320,6 +320,14 @@ public class Camera2MultiViewTestCase extends Camera2ParameterizedTestCase {
         return camera.capture(request, listener);
     }
 
+    protected int captureBurst(String cameraId, List<CaptureRequest> requestList,
+            CaptureCallback listener)
+            throws Exception {
+        CameraHolder camera = getCameraHolder(cameraId);
+        assertTrue("Camera " + cameraId + " is not opened", camera.isOpened());
+        return camera.captureBurst(requestList, listener);
+    }
+
     protected CaptureRequest.Builder getCaptureBuilder(String cameraId, int templateId)
             throws Exception {
         CameraHolder camera = getCameraHolder(cameraId);
@@ -578,6 +586,11 @@ public class Camera2MultiViewTestCase extends Camera2ParameterizedTestCase {
             return isSessionConfigSupported(mCamera, mHandler, configs,
                     /*inputConig*/ null, SessionConfiguration.SESSION_REGULAR,
                     mCameraManager, /*expectedResult*/ true).configSupported;
+        }
+
+        public int captureBurst(List<CaptureRequest> requestList, CaptureCallback listener)
+                throws Exception {
+            return mSession.captureBurst(requestList, listener, mHandler);
         }
 
         public int capture(CaptureRequest request, CaptureCallback listener)
