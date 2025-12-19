@@ -113,11 +113,12 @@ public class FrameRateCtsActivity extends Activity {
 
         @Override
         public void onDisplayChanged(int displayId) {
-            if (displayId != Display.DEFAULT_DISPLAY) {
+            Display display = getDisplay();
+            if (displayId != display.getDisplayId()) {
                 return;
             }
             synchronized (mLock) {
-                Display.Mode mode = mDisplayManager.getDisplay(displayId).getMode();
+                Display.Mode mode = display.getMode();
                 mModeChangedEvents.add(mode);
                 float frameRate =  mode.getRefreshRate();
                 if (frameRate != mDeviceFrameRate) {
@@ -757,7 +758,7 @@ public class FrameRateCtsActivity extends Activity {
     private void testExactFrameRateMatch(Api api, int changeFrameRateStrategy)
             throws InterruptedException {
         runOneSurfaceTest(api, (TestSurface surface) -> {
-            Display display = mDisplayManager.getDisplay(Display.DEFAULT_DISPLAY);
+            Display display = getDisplay();
             Display.Mode currentMode = display.getMode();
 
             if (changeFrameRateStrategy == Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS) {
