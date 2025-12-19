@@ -162,11 +162,19 @@ public class TvInputServiceTest {
         private Integer mTvMessageType;
         private Bundle mTvMessageData;
         private Boolean mVideoFrozen;
+        private Bundle mExtraInfoOnRetune;
 
         @Override
         public void onChannelRetuned(String inputId, Uri channelUri) {
             mChannelRetunedCount++;
             mChannelRetunedUri = channelUri;
+        }
+
+        @Override
+        public void onChannelRetuned(String inputId, Uri channelUri, Bundle arg) {
+            mChannelRetunedCount++;
+            mChannelRetunedUri = channelUri;
+            mExtraInfoOnRetune = arg;
         }
 
         @Override
@@ -309,6 +317,7 @@ public class TvInputServiceTest {
             mTvMessageData = null;
             mTvMessageType = null;
             mVideoFrozen = null;
+            mExtraInfoOnRetune = null;
         }
     }
 
@@ -980,6 +989,21 @@ public class TvInputServiceTest {
         assertThat(mCallback.mChannelRetunedCount).isEqualTo(1);
         assertThat(mCallback.mChannelRetunedUri).isEqualTo(CHANNEL_0);
 
+    }
+
+    @Test
+    public void verifyCallbackChannelRetunedWithExtraInfo() {
+        final CountingSession session = tune(CHANNEL_0);
+        resetPassedValues();
+
+        Bundle extraInfo = new Bundle();
+        extraInfo.putBoolean("KEY_TUNED_QUIETLY_FLAG", true);
+        session.notifyChannelRetuned(CHANNEL_0, extraInfo);
+        PollingCheck.waitFor(TIME_OUT, () -> mCallback.mChannelRetunedCount > 0);
+
+        assertThat(mCallback.mChannelRetunedCount).isEqualTo(1);
+        assertThat(mCallback.mChannelRetunedUri).isEqualTo(CHANNEL_0);
+        assertThat(mCallback.mExtraInfoOnRetune.getBoolean("KEY_TUNED_QUIETLY_FLAG")).isTrue();
     }
 
     @Test
