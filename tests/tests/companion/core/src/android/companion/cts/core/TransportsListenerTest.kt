@@ -240,10 +240,12 @@ class TransportsListenerTest : CoreTestBase() {
     @RequiresFlagsEnabled(Flags.FLAG_TRUSTED_DEVICES)
     fun test_isSystemDataTransportAttached_with_pcc_permission() {
         targetApp.associate(MAC_ADDRESS_A)
+        val associationId = cdm.myAssociations.first().id
+
         withShellPermissionIdentity(ACCESS_COMPANION_MESSAGE_PCC) {
             // The device must be trusted even hold ACCESS_COMPANION_MESSAGE_PCC permission.
             assertFailsWith(SecurityException::class) {
-                cdm.isSystemDataTransportAttached(1)
+                cdm.isSystemDataTransportAttached(associationId)
             }
         }
     }
