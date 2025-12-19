@@ -58,6 +58,7 @@ class InstallConstraintsTest {
     companion object {
         private const val TAG = "InstallConstraintsTest"
         private const val MATCH_STATIC_SHARED_AND_SDK_LIBRARIES = 0x04000000
+        private const val OPSTR_CONTROL_AUDIO = "android:control_audio"
         private val HelloWorldSdk1 =
             TestApp("HelloWorldSdk1", "com.test.sdk1_1", 1, false, "HelloWorldSdk1.apk")
         private val HelloWorldUsingSdk1 =
@@ -116,8 +117,9 @@ class InstallConstraintsTest {
 
         Install.single(TestApp.A1).commit()
         try {
-            // Grant the OPSTR_TAKE_AUDIO_FOCUS to the test app
+            // Acquire ops for audio hardening
             AppOpsUtils.setOpMode(TestApp.A, OPSTR_TAKE_AUDIO_FOCUS, MODE_ALLOWED)
+            AppOpsUtils.setOpMode(TestApp.A, OPSTR_CONTROL_AUDIO, MODE_ALLOWED)
             // The app will have audio focus and be considered interactive with the user
             InstallUtils.requestAudioFocus(TestApp.A)
             val pi = InstallUtils.getPackageInstaller()
