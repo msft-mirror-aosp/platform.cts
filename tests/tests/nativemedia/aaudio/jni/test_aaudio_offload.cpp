@@ -249,6 +249,48 @@ TEST_P(AAudioOffloadTest, testPlaybackParameters) {
     EXPECT_EQ(AAUDIO_OK, result);
 }
 
+TEST_P(AAudioOffloadTest, testGetFlushFromFrameSupport) {
+    bool mmapCanBeUsed = false;
+    if (mStream != nullptr) {
+        if (AAudioStream_isMMapUsed(mStream)) {
+            mmapCanBeUsed = true;
+        }
+        // Close the stream to avoid affecting query flushFromFrame capabilities.
+        AAudioStream_requestPause(mStream);
+        AAudioStream_close(mStream);
+        mStream = nullptr;
+    }
+
+    AAudioStreamBuilder* builder = nullptr;
+    // Calling with null pointer will throw exception
+    // AAudio_getFlushFromFrameSupport(builder);
+    ASSERT_EQ(AAUDIO_OK, AAudio_createStreamBuilder(&builder));
+
+    // It is not supported if it is an input stream
+    AAudioStreamBuilder_setDirection(builder, AAUDIO_DIRECTION_INPUT);
+    EXPECT_EQ(AAUDIO_FLUSH_FROM_FRAME_UNSUPPORTED, AAudio_getFlushFromFrameSupport(builder));
+
+    // It is not supported if the performance mode is not offload
+    AAudioStreamBuilder_setDirection(builder, AAUDIO_DIRECTION_OUTPUT);
+    EXPECT_EQ(AAUDIO_FLUSH_FROM_FRAME_UNSUPPORTED, AAudio_getFlushFromFrameSupport(builder));
+
+    // For offload, it is the configuration is not set, it is not supported
+    AAudioStreamBuilder_setPerformanceMode(builder, AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED);
+    EXPECT_EQ(AAUDIO_FLUSH_FROM_FRAME_UNSUPPORTED, AAudio_getFlushFromFrameSupport(builder));
+
+    const aaudio_format_t format = GetParam();
+    AAudioStreamBuilder_setFormat(builder, format);
+    AAudioStreamBuilder_setChannelMask(builder, AAUDIO_CHANNEL_STEREO);
+    AAudioStreamBuilder_setSampleRate(builder, kSampleRate);
+    const AAudio_FlushFromFrameSupport support = AAudio_getFlushFromFrameSupport(builder);
+    if (isCompressedFormat(format)) {
+        EXPECT_EQ(AAUDIO_FLUSH_FROM_FRAME_UNSUPPORTED, support);
+    }
+    if (mmapCanBeUsed) {
+        EXPECT_EQ(AAUDIO_FLUSH_FROM_FRAME_SUPPORTED, support);
+    } // else, it is on classical path, it is up to the HAL to support flushFromFrame or not.
+}
+
 INSTANTIATE_TEST_CASE_P(Offload, AAudioOffloadTest,
                         ::testing::Values(AAUDIO_FORMAT_PCM_I16, AAUDIO_FORMAT_MP3,
                                           AAUDIO_FORMAT_AAC_LC, AAUDIO_FORMAT_AAC_HE_V1,
