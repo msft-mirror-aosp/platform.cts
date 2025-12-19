@@ -18,7 +18,6 @@ package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
-import static android.Manifest.permission.MODIFY_PHONE_STATE;
 import static android.bluetooth.BluetoothDevice.ACCESS_ALLOWED;
 import static android.bluetooth.BluetoothDevice.ACCESS_REJECTED;
 import static android.bluetooth.BluetoothDevice.ACCESS_UNKNOWN;
@@ -328,15 +327,56 @@ public class BluetoothDeviceTest {
         // Skip the test if bluetooth or companion device are not present.
         assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
-        try (var p =
-                Permissions.withPermissions(
-                        BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED, MODIFY_PHONE_STATE)) {
-            assertThat(mFakeDevice.connect()).isEqualTo(BluetoothStatusCodes.SUCCESS);
-        }
-
         try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+            assertThat(mFakeDevice.connect()).isEqualTo(BluetoothStatusCodes.SUCCESS);
             assertThat(mFakeDevice.disconnect()).isEqualTo(BluetoothStatusCodes.SUCCESS);
         }
+    }
+
+    private void removeAssociation() {
+        int userId = mContext.getUser().getIdentifier();
+        String packageName = mContext.getOpPackageName();
+        runShellCommand(
+                String.format(
+                        "cmd companiondevice disassociate %d %s %s",
+                        userId, packageName, mFakeDeviceAddress));
+    }
+
+    private void associateDevice() {
+        int userId = mContext.getUser().getIdentifier();
+        String packageName = mContext.getOpPackageName();
+        runShellCommand(
+                String.format(
+                        "cmd companiondevice associate %d %s %s",
+                        userId, packageName, mFakeDeviceAddress));
+        String output = runShellCommand("dumpsys companiondevice");
+        assertThat(output).contains(packageName);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_GATT_CONN_SETTINGS)
+    public void connect_disconnect_with_cdm_association() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
+        // This should throw a SecurityException because no permissions
+        // or no CDM association
+        Permissions.enforce(
+                List.of(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED), () -> mFakeDevice.connect());
+        Permissions.enforce(
+                List.of(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED), () -> mFakeDevice.disconnect());
+
+        associateDevice();
+        Permissions.enforce(BLUETOOTH_CONNECT, () -> mFakeDevice.connect());
+        Permissions.enforce(BLUETOOTH_CONNECT, () -> mFakeDevice.disconnect());
+
+        // This should go through fine with CDM association
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
+            assertThat(mFakeDevice.connect()).isEqualTo(BluetoothStatusCodes.SUCCESS);
+            assertThat(mFakeDevice.disconnect()).isEqualTo(BluetoothStatusCodes.SUCCESS);
+        }
+
+        removeAssociation();
     }
 
     @Test
