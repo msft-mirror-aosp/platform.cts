@@ -3569,7 +3569,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.app.Flags.FLAG_HIDE_STATUS_BAR_NOTIFICATION)
     public void testHideStatusBarNotification_noPermission() throws Exception {
         int id = 99;
 
@@ -3594,7 +3593,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.app.Flags.FLAG_HIDE_STATUS_BAR_NOTIFICATION)
     public void testHideStatusBarNotification_hasPermission() throws Exception {
         int id = 99;
 
