@@ -17,12 +17,13 @@
 package android.content.cts.contentprovider;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.RETURNS_DEFAULTS;
 import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -41,6 +42,7 @@ import android.content.OperationApplicationException;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.CancellationSignal;
+import android.os.DeadObjectException;
 import android.os.ICancellationSignal;
 import android.os.OperationCanceledException;
 import android.os.RemoteException;
@@ -442,6 +444,113 @@ public final class ContentProviderClientTest {
                 .call(mAttributionSource, AUTHORITY, METHOD, ARG, ARGS);
     }
 
+    @Test
+    public void testRefresh_deadObjectException() throws Exception {
+        doThrow(new DeadObjectException())
+                .when(mIContentProvider)
+                .refresh(mAttributionSource, URI, ARGS, mICancellationSignal);
+
+        assertThrows(
+                DeadObjectException.class,
+                () -> mContentProviderClient.refresh(URI, ARGS, mCancellationSignal));
+        verify(mContentResolver).unstableProviderDied(mIContentProvider);
+    }
+
+    @Test
+    public void testCheckUriPermission_deadObjectException() throws Exception {
+        doThrow(new DeadObjectException())
+                .when(mIContentProvider)
+                .checkUriPermission(mAttributionSource, URI, 0, 0);
+
+        assertThrows(
+                DeadObjectException.class,
+                () -> mContentProviderClient.checkUriPermission(URI, 0, 0));
+        verify(mContentResolver).unstableProviderDied(mIContentProvider);
+    }
+
+    @Test
+    public void testCanonicalize_deadObjectException() throws Exception {
+        doThrow(new DeadObjectException())
+                .when(mIContentProvider)
+                .canonicalize(mAttributionSource, URI);
+
+        assertThrows(DeadObjectException.class, () -> mContentProviderClient.canonicalize(URI));
+        verify(mContentResolver).unstableProviderDied(mIContentProvider);
+    }
+
+    @Test
+    public void testUncanonicalize_deadObjectException() throws Exception {
+        doThrow(new DeadObjectException())
+                .when(mIContentProvider)
+                .uncanonicalize(mAttributionSource, URI);
+
+        assertThrows(DeadObjectException.class, () -> mContentProviderClient.uncanonicalize(URI));
+        verify(mContentResolver).unstableProviderDied(mIContentProvider);
+    }
+
+    @Test
+    public void testOpenFile_fileNotFoundException() throws Exception {
+        doThrow(new FileNotFoundException())
+                .when(mIContentProvider)
+                .openFile(mAttributionSource, URI, MODE, mICancellationSignal);
+        assertThrows(
+                FileNotFoundException.class,
+                () -> mContentProviderClient.openFile(URI, MODE, mCancellationSignal));
+    }
+
+    @Test
+    public void testOpenAssetFile_fileNotFoundException() throws Exception {
+        doThrow(new FileNotFoundException())
+                .when(mIContentProvider)
+                .openAssetFile(mAttributionSource, URI, MODE, mICancellationSignal);
+        assertThrows(
+                FileNotFoundException.class,
+                () -> mContentProviderClient.openAssetFile(URI, MODE, mCancellationSignal));
+    }
+
+    @Test
+    public void testOpenTypedAssetFile_fileNotFoundException() throws Exception {
+        doThrow(new FileNotFoundException())
+                .when(mIContentProvider)
+                .openTypedAssetFile(mAttributionSource, URI, MODE, ARGS, mICancellationSignal);
+        assertThrows(
+                FileNotFoundException.class,
+                () ->
+                        mContentProviderClient.openTypedAssetFile(
+                                URI, MODE, ARGS, mCancellationSignal));
+    }
+
+    @Test
+    public void testApplyBatch_operationApplicationException() throws Exception {
+        doThrow(new OperationApplicationException())
+                .when(mIContentProvider)
+                .applyBatch(mAttributionSource, AUTHORITY, OPS);
+
+        assertThrows(
+                OperationApplicationException.class,
+                () -> mContentProviderClient.applyBatch(AUTHORITY, OPS));
+    }
+
+    @Test
+    public void testBulkInsert_deadObjectException() throws Exception {
+        doThrow(new DeadObjectException())
+                .when(mIContentProvider)
+                .bulkInsert(mAttributionSource, URI, VALUES_ARRAY);
+        assertThrows(
+                DeadObjectException.class,
+                () -> mContentProviderClient.bulkInsert(URI, VALUES_ARRAY));
+        verify(mContentResolver).unstableProviderDied(mIContentProvider);
+    }
+
+    @Test
+    public void testDelete_deadObjectException() throws Exception {
+        doThrow(new DeadObjectException())
+                .when(mIContentProvider)
+                .delete(mAttributionSource, URI, EXTRAS);
+        assertThrows(DeadObjectException.class, () -> mContentProviderClient.delete(URI, EXTRAS));
+        verify(mContentResolver).unstableProviderDied(mIContentProvider);
+    }
+
     private void testTimeout(Function function) throws InterruptedException {
         mContentProviderClient.setDetectNotResponding(1);
         CountDownLatch latch = new CountDownLatch(1);
@@ -471,15 +580,10 @@ public final class ContentProviderClientTest {
         verify(mContentResolver).appNotRespondingViaProvider(mIContentProvider);
     }
 
-    private void testAlreadyCancelled(Function function) throws Exception {
+    private void testAlreadyCancelled(Function function) {
         mCancellationSignal.cancel();
         mCalledCancel = true;
-
-        try {
-            function.run();
-            assertWithMessage("Expected OperationCanceledException").fail();
-        } catch (OperationCanceledException expected) {
-        }
+        assertThrows(OperationCanceledException.class, function::run);
     }
 
     private interface Function {
