@@ -3189,6 +3189,10 @@ public class AudioManagerTest {
     @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_TELECOM_MAINLINE_API)
     public void testSetRttEnabled_noCrash() throws Exception {
 
+        if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+            return;
+        }
+
         // Gaining permission
         getInstrumentation().getUiAutomation()
                .adoptShellPermissionIdentity(Manifest.permission.MODIFY_PHONE_STATE);
@@ -3204,6 +3208,10 @@ public class AudioManagerTest {
     @Test
     @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_TELECOM_MAINLINE_API)
     public void testSetRttEnabled_noPermission_throwsException() {
+
+        if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+            return;
+        }
 
         // Without permissions
         getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
