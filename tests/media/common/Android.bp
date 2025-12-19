@@ -23,6 +23,7 @@ android_library {
         "aconfig_mediacodec_flags_java_lib",
         "android.media.codec-aconfig-java",
         "androidx.test.core",
+        "apache-commons-math",
         "compatibility-device-util-axt",
         "cts-media-common",
     ],
