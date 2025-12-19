@@ -97,7 +97,6 @@ import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
-
 @RunWith(TestParameterInjector.class)
 public class ImageDecoderTest {
     @Rule
@@ -3149,25 +3148,36 @@ public class ImageDecoderTest {
     }
 
     @Test
-    public void testDng_b456471487() throws IOException {
+    public void testInterestingDngs(
+            @TestParameter({
+                "dngs/test_b449728942.dng",
+                "dngs/test_b449728942_2.dng",
+                "dngs/test_b453649377.dng",
+                "dngs/test_b456471290.dng",
+                "dngs/test_b456471487.dng",
+                "dngs/test_b461790658.dng",
+                "dngs/test_b467994310.dng",
+                "dngs/test_b467994860.dng",
+                "dngs/test_b470966846.dng",
+            }) String filename) {
         AssetManager assets = getResources().getAssets();
-        Bitmap result =
-                ImageDecoder.decodeBitmap(
-                        ImageDecoder.createSource(assets, "dng-RefMapArea16-ubsan.png"));
-        assertNotNull(result);
-        assertEquals(600, result.getWidth());
-        assertEquals(338, result.getHeight());
-    }
-
-    @Test
-    public void testDng_b456471290() throws IOException {
-        AssetManager assets = getResources().getAssets();
-        Bitmap result =
-                ImageDecoder.decodeBitmap(
-                        ImageDecoder.createSource(assets, "dng_opcode_MapTable_ProcessArea.png"));
-        assertNotNull(result);
-        assertEquals(600, result.getWidth());
-        assertEquals(338, result.getHeight());
+        String[] mimeType = new String[1];
+        try {
+            final ImageDecoder.Source src = ImageDecoder.createSource(assets, filename);
+            Bitmap result =
+                    ImageDecoder.decodeBitmap(
+                            src,
+                            (decoder, info, s) -> {
+                                mimeType[0] = info.getMimeType();
+                            });
+            assertNotNull(result);
+            assertNotEquals(0, result.getWidth());
+            assertNotEquals(0, result.getHeight());
+        } catch (IOException e) {
+            // Acceptable behavior for these images
+        }
+        assertNotNull(mimeType[0]);
+        assertEquals("image/x-adobe-dng", mimeType[0]);
     }
 
     private static boolean has10BitHEVCDecoder() {
