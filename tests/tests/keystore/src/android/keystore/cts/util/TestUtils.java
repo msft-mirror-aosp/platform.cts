@@ -81,6 +81,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -608,6 +609,8 @@ public class TestUtils {
         }
         PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(pkcs8EncodedForm);
 
+        // TODO(b/395069350): Figure out why key generation fails with the ML-DSA test resources,
+        // then add ML-DSA to this list.
         String[] algorithms = new String[] {"EC", "RSA", "XDH"};
         for (String algo : algorithms) {
             try {
@@ -617,6 +620,46 @@ public class TestUtils {
         }
         throw new InvalidKeySpecException(
                 "The key should be one of " + Arrays.toString(algorithms));
+    }
+
+    // TODO(b/395069350): Delete this and use getRawResPrivateKey() once parsing of
+    // cts/tests/tests/keystore/res/raw/mldsa65_pkcs8.der works.
+    public static PrivateKey getMlDsa65PrivateKey()
+            throws NoSuchAlgorithmException, InvalidKeySpecException {
+        return getMlDsaPrivateKey("ML-DSA-65");
+    }
+
+    // TODO(b/395069350): Delete this and use getRawResPrivateKey() once parsing of
+    // cts/tests/tests/keystore/res/raw/mldsa87_pkcs8.der works.
+    public static PrivateKey getMlDsa87PrivateKey()
+            throws NoSuchAlgorithmException, InvalidKeySpecException {
+        return getMlDsaPrivateKey("ML-DSA-87");
+    }
+
+    // TODO(b/395069350): Delete this once ML-DSA test resources work.
+    private static PrivateKey getMlDsaPrivateKey(String algorithm)
+            throws NoSuchAlgorithmException, InvalidKeySpecException {
+        String privateKeyBase64;
+        switch (algorithm) {
+            case "ML-DSA-65":
+                // From RFC 9881 section C.1.2
+                privateKeyBase64 =
+                        "MDQCAQAwCwYJYIZIAWUDBAMSBCKAIAABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4f";
+                break;
+            case "ML-DSA-87":
+                // From RFC 9881 section C.1.3
+                privateKeyBase64 =
+                        "MDQCAQAwCwYJYIZIAWUDBAMTBCKAIAABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4f";
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported ML-DSA variant: " + algorithm);
+        }
+
+        byte[] pkcs8EncodedForm = Base64.getDecoder().decode(privateKeyBase64);
+        assertEquals(54, pkcs8EncodedForm.length);
+        PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(pkcs8EncodedForm);
+        KeyFactory keyFactory = KeyFactory.getInstance("ML-DSA");
+        return keyFactory.generatePrivate(privateKeySpec);
     }
 
     public static X509Certificate getRawResX509Certificate(Context context, int resId) throws Exception {
