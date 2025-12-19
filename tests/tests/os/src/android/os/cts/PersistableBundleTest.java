@@ -22,7 +22,10 @@ import static org.junit.Assert.assertTrue;
 import android.app.privatecompute.flags.Flags;
 import android.os.PersistableBundle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -32,6 +35,9 @@ import java.util.Arrays;
 
 public class PersistableBundleTest {
     private static final double DELTA_DOUBLE = 0.0d;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
     public void testWriteToStreamAndReadFromStream() throws IOException {

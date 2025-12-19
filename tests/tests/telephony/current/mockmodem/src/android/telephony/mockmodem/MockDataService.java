@@ -16,6 +16,8 @@
 
 package android.telephony.mockmodem;
 
+import static android.hardware.radio.data.SetupDataCallResult.DATA_CONNECTION_STATUS_INACTIVE;
+
 import android.content.Context;
 import android.hardware.radio.RadioError;
 import android.hardware.radio.data.DataCallFailCause;
@@ -491,5 +493,23 @@ public class MockDataService {
 
     public synchronized void setImsDataNetworkNotified(boolean isImsDataNetworkNotified) {
         this.mIsImsDataNetworkNotified = isImsDataNetworkNotified;
+    }
+
+    /**
+     * Sets the PDN with the particular cid as INACTIVE. Used to simulate explicit disconnect HAL
+     * behaviour.
+     *
+     * @param cid The cid for the PDN to be set INACTIVE
+     */
+    public synchronized void setCallInactive(int cid) {
+        synchronized (mDataCallListLock) {
+            for (SetupDataCallResult dc : sDataCallLists) {
+                if (dc.cid == cid) {
+                    dc.active = DATA_CONNECTION_STATUS_INACTIVE;
+                    Log.d(mTag, "setCallInactive: cid=" + cid);
+                    break;
+                }
+            }
+        }
     }
 }

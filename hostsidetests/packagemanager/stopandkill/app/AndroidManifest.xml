@@ -17,6 +17,13 @@
 
         <activity android:name="com.android.cts.stopandkillapp.NonPersistableActivity"
             android:exported="true" android:persistableMode="persistNever" />
+
+        <activity-alias
+            android:name="com.android.cts.stopandkillapp.AliasActivity"
+            android:targetActivity="com.android.cts.stopandkillapp.PersistableActivity"
+            android:exported="true">
+        </activity-alias>
+
     </application>
 
 </manifest>
