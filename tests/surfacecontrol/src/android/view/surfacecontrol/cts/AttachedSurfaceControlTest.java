@@ -606,6 +606,8 @@ public class AttachedSurfaceControlTest {
 
             // Create a mirror of the root surface control.
             final AttachedSurfaceControl asc = activity.getParentLayout().getRootSurfaceControl();
+            final int width = activity.getParentLayout().getWidth();
+            final int height = activity.getParentLayout().getHeight();
             assertNotNull(asc);
             SurfaceControl mirror = asc.createMirror();
             assertTrue(mirror.isValid());
@@ -635,7 +637,7 @@ public class AttachedSurfaceControlTest {
             CountDownLatch latch = new CountDownLatch(1);
             imageReader.setOnImageAvailableListener(
                     reader -> {
-                        if (verifyImage(reader, Color.YELLOW)) {
+                        if (verifyImage(reader, Color.YELLOW, width, height)) {
                             latch.countDown();
                             vdHelper.releaseDisplay();
                         }
@@ -645,7 +647,8 @@ public class AttachedSurfaceControlTest {
         }
     }
 
-    private boolean verifyImage(ImageReader reader, int color) {
+    private boolean verifyImage(
+            ImageReader reader, int color, int surfaceWidth, int surfaceHeight) {
         Bitmap bitmap;
         try (Image image = reader.acquireLatestImage()) {
             HardwareBuffer hardwareBuffer = image.getHardwareBuffer();
@@ -658,10 +661,14 @@ public class AttachedSurfaceControlTest {
         }
         // The color of the source surface is yellow.
         BitmapPixelChecker checker = new BitmapPixelChecker(color);
-        int numMatchedPixels =
-                checker.getNumMatchingPixels(
-                        bitmap, new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight()));
-        return bitmap.getWidth() * bitmap.getHeight() == numMatchedPixels;
+        Rect checkingBounds =
+                new Rect(
+                        0,
+                        0,
+                        Math.min(bitmap.getWidth(), surfaceWidth),
+                        Math.min(bitmap.getHeight(), surfaceHeight));
+        int numMatchedPixels = checker.getNumMatchingPixels(bitmap, checkingBounds);
+        return checkingBounds.width() * checkingBounds.height() == numMatchedPixels;
     }
 
     private static class MirrorPresentation extends Presentation implements SurfaceHolder.Callback {
