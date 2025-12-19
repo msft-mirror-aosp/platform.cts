@@ -108,6 +108,7 @@ java_test_host {
         "src/**/perf/*.java",
         "src/**/perfetto/*.java",
         "src/**/performancehintmanager/*.java",
+        "src/**/power/*.java",
         "src/**/permissionstate/*.java",
         "src/**/powermanager/*.java",
         "src/**/settingsstats/*.java",
