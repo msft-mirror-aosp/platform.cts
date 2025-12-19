@@ -90,13 +90,25 @@ class DisplayP3Test(its_base_test.ItsBaseTest):
         p3_jpeg_img = image_processing_utils.get_img(p3_cap['data'])
         p3_jpeg_img.save(p3_img_name)
 
-        if not _check_icc(p3_jpeg_img, 'DISPLAY_P3', fmt_str, p3_img_icc):
+        if not _check_icc(p3_jpeg_img, image_processing_utils.COLOR_SPACE_DISPLAY_P3, fmt_str,
+           p3_img_icc):
           raise AssertionError('Failure: P3 JPEG does not contain correct '
                                'icc profile')
 
-        if not image_processing_utils.p3_img_has_wide_gamut(p3_jpeg_img):
-         raise AssertionError('Failure: P3 JPEG does not contain wide gamut '
-                              'pixels outside the SRGB color space.')
+        wide_gamut_percentile = image_processing_utils.image_wide_gamut_percentile(
+                                    p3_jpeg_img, image_processing_utils.COLOR_SPACE_DISPLAY_P3)
+        if wide_gamut_percentile > image_processing_utils.WIDE_GAMUT_PIXELS_THRESHOLD:
+          return
+        elif wide_gamut_percentile > (image_processing_utils.WIDE_GAMUT_PIXELS_THRESHOLD *
+                                    its_session_utils.MARGINAL_PASS_FACTOR):
+          logging.warning('%s\n %s', its_session_utils.MARGINAL_PASSING_MESSAGE,
+              "percentile of pixels out of srgb boundary less than 1%")
+          return
+        else:
+          raise AssertionError('Failure: P3 JPEG does not contain more than '
+                               f'{image_processing_utils.WIDE_GAMUT_PIXELS_THRESHOLD * 100}%'
+                               ' wide gamut pixels outside the SRGB color space.'
+                              )
 
       # pylint: disable=broad-except
       except Exception as e:

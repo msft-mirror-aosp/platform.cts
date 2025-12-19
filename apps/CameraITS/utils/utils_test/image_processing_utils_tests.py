@@ -110,7 +110,7 @@ class ImageProcessingUtilsTest(unittest.TestCase):
     y_ref = [i*2 for i in ref_image]
     self.assertTrue(numpy.allclose(y, y_ref, atol=1/lut_max))
 
-  def test_p3_img_has_wide_gamut(self):
+  def test_image_wide_gamut_percentile(self):
     # (255, 0, 0) and (0, 255, 0) in sRGB converted to Display P3
     srgb_red = numpy.array([[[234, 51, 35]]], dtype='uint8')
     srgb_green = numpy.array([[[117, 252, 76]]], dtype='uint8')
@@ -122,20 +122,34 @@ class ImageProcessingUtilsTest(unittest.TestCase):
     p3_red = numpy.array([[[255, 0, 0]]], dtype='uint8')
     p3_green = numpy.array([[[0, 255, 0]]], dtype='uint8')
 
-    self.assertFalse(image_processing_utils.p3_img_has_wide_gamut(
-        Image.fromarray(srgb_red)))
+    self.assertTrue(image_processing_utils.image_wide_gamut_percentile(
+        Image.fromarray(srgb_red), image_processing_utils.COLOR_SPACE_DISPLAY_P3) <
+        image_processing_utils.WIDE_GAMUT_PIXELS_THRESHOLD)
+    self.assertTrue(image_processing_utils.image_wide_gamut_percentile(
+        Image.fromarray(srgb_red), image_processing_utils.COLOR_SPACE_SRGB) <
+        image_processing_utils.WIDE_GAMUT_PIXELS_THRESHOLD)
 
-    self.assertFalse(image_processing_utils.p3_img_has_wide_gamut(
-        Image.fromarray(srgb_green)))
+    self.assertTrue(image_processing_utils.image_wide_gamut_percentile(
+        Image.fromarray(srgb_green), image_processing_utils.COLOR_SPACE_DISPLAY_P3) <
+        image_processing_utils.WIDE_GAMUT_PIXELS_THRESHOLD)
+    self.assertTrue(image_processing_utils.image_wide_gamut_percentile(
+        Image.fromarray(srgb_green), image_processing_utils.COLOR_SPACE_SRGB) <
+        image_processing_utils.WIDE_GAMUT_PIXELS_THRESHOLD)
 
-    self.assertFalse(image_processing_utils.p3_img_has_wide_gamut(
-        Image.fromarray(blue)))
+    self.assertTrue(image_processing_utils.image_wide_gamut_percentile(
+        Image.fromarray(blue), image_processing_utils.COLOR_SPACE_DISPLAY_P3) <
+        image_processing_utils.WIDE_GAMUT_PIXELS_THRESHOLD)
+    self.assertTrue(image_processing_utils.image_wide_gamut_percentile(
+        Image.fromarray(blue), image_processing_utils.COLOR_SPACE_SRGB) <
+        image_processing_utils.WIDE_GAMUT_PIXELS_THRESHOLD)
 
-    self.assertTrue(image_processing_utils.p3_img_has_wide_gamut(
-        Image.fromarray(p3_red)))
+    self.assertTrue(image_processing_utils.image_wide_gamut_percentile(
+        Image.fromarray(p3_red), image_processing_utils.COLOR_SPACE_DISPLAY_P3) >
+        image_processing_utils.WIDE_GAMUT_PIXELS_THRESHOLD)
 
-    self.assertTrue(image_processing_utils.p3_img_has_wide_gamut(
-        Image.fromarray(p3_green)))
+    self.assertTrue(image_processing_utils.image_wide_gamut_percentile(
+        Image.fromarray(p3_green), image_processing_utils.COLOR_SPACE_DISPLAY_P3) >
+        image_processing_utils.WIDE_GAMUT_PIXELS_THRESHOLD)
 
   def test_compute_slanted_edge_image_sharpness(self):
     """Unit test for computing slanted edge img sharpness.

@@ -79,10 +79,22 @@ P3_TO_XYZ = numpy.array([
     [-0.0010505, 0.0418791, 0.7840713]
 ]).transpose()
 
+# Color conversion matrix for sRGB to CIEXYZ (D50 white point)
+# Derived from IEC 61966-2.1 with Bradford adaptation to D50
+SRGB_TO_XYZ = numpy.array([
+    [0.4360747, 0.3850649, 0.1430804],
+    [0.2225045, 0.7168786, 0.0606169],
+    [0.0139322, 0.0971045, 0.7141733]
+]).transpose()
+
 # Chosen empirically - tolerance for the point in triangle test for colorspace
 # chromaticities
 COLORSPACE_TRIANGLE_AREA_TOL = 0.00039
 
+COLOR_SPACE_SRGB = 'SRGB'
+COLOR_SPACE_DISPLAY_P3 = 'DISPLAY_P3'
+
+WIDE_GAMUT_PIXELS_THRESHOLD = 0.01
 
 def plot_lsc_maps(lsc_maps, plot_name, test_name_with_log_path):
   """Plot the lens shading correction maps.
@@ -1409,7 +1421,7 @@ def is_jpeg_icc_profile_correct(jpeg_img, color_space, icc_profile_path=None):
   (gx, gy) = get_primary_chromaticity(cms_profile.green_primary)
   (bx, by) = get_primary_chromaticity(cms_profile.blue_primary)
 
-  if color_space == 'DISPLAY_P3':
+  if color_space == COLOR_SPACE_DISPLAY_P3:
     # Expected primaries based on Apple's Display P3 primaries
     expected_rx = EXPECTED_RX_P3
     expected_ry = EXPECTED_RY_P3
@@ -1417,7 +1429,7 @@ def is_jpeg_icc_profile_correct(jpeg_img, color_space, icc_profile_path=None):
     expected_gy = EXPECTED_GY_P3
     expected_bx = EXPECTED_BX_P3
     expected_by = EXPECTED_BY_P3
-  elif color_space == 'SRGB':
+  elif color_space == COLOR_SPACE_SRGB:
     # Expected primaries based on Pixel sRGB profile
     expected_rx = EXPECTED_RX_SRGB
     expected_ry = EXPECTED_RY_SRGB
@@ -1531,45 +1543,6 @@ def ciexyz_to_xy(img):
   img[:, :, 0] = img[:, :, 0] / img_sums
   img[:, :, 1] = img[:, :, 1] / img_sums
   return img[:, :, :2]
-
-
-def p3_img_has_wide_gamut(wide_img):
-  """Check if a DISPLAY_P3 image contains wide gamut pixels.
-
-  Given a DISPLAY_P3 image that should have a wider gamut than SRGB, checks all
-  pixel values to see if any reside outside the SRGB gamut. This is done by
-  converting to CIE xy chromaticities using a Bradford chromatic adaptation for
-  consistency with ICC profiles.
-
-  Args:
-    wide_img: The PIL.Image in the DISPLAY_P3 color space.
-
-  Returns:
-    True if the gamut of wide_img is greater than that of SRGB.
-    False otherwise.
-  """
-  w = wide_img.size[0]
-  h = wide_img.size[1]
-  wide_arr = numpy.array(wide_img)
-  linear_arr = srgb_eotf(wide_arr / float(numpy.iinfo(numpy.uint8).max))
-
-  xyz_arr = numpy.matmul(linear_arr, P3_TO_XYZ)
-  xy_arr = ciexyz_to_xy(xyz_arr)
-
-  for y in range(h):
-    for x in range(w):
-      # Check if the pixel chromaticity is inside or outside the SRGB gamut.
-      # This check is not guaranteed not to emit false positives / negatives,
-      # however the probability of either on an arbitrary DISPLAY_P3 camera
-      # capture is exceedingly unlikely.
-      if not point_in_triangle(x1=EXPECTED_RX_SRGB, y1=EXPECTED_RY_SRGB,
-                               x2=EXPECTED_GX_SRGB, y2=EXPECTED_GY_SRGB,
-                               x3=EXPECTED_BX_SRGB, y3=EXPECTED_BY_SRGB,
-                               xp=xy_arr[y][x][0], yp=xy_arr[y][x][1],
-                               abs_tol=COLORSPACE_TRIANGLE_AREA_TOL):
-        return True
-
-  return False
 
 
 def compute_patch_noise(yuv_img, patch_region):
@@ -1816,4 +1789,46 @@ def get_slanted_edge_patch(img, img_path, suffix, patch_margin):
   )
   write_uint8_image(slanted_edge_patch, filename_with_path)
   return slanted_edge_patch
+
+
+def image_wide_gamut_percentile(wide_img, color_space):
+    """Check the percentile of wide gamut pixels within a DISPLAY_P3 or SRGB image.
+
+      Given an image that should have a wider gamut than SRGB, checks all
+      pixel values to see if any reside outside the SRGB gamut. This is done by
+      converting to CIE xy chromaticities using a Bradford chromatic adaptation for
+      consistency with ICC profiles.
+
+      Args:
+        wide_img: The PIL.Image in the DISPLAY_P3 or SRGB color space.
+        color_space: The color space of the image.
+
+      Returns:
+        True if the gamut percentile of wide_img is greater than that of SRGB.
+        False otherwise.
+    """
+    wide_arr = numpy.array(wide_img)
+    linear_arr = srgb_eotf(wide_arr / float(numpy.iinfo(numpy.uint8).max))
+    if color_space == COLOR_SPACE_SRGB:
+        xyz_D50_arr = numpy.matmul(linear_arr, SRGB_TO_XYZ)
+    elif color_space == COLOR_SPACE_DISPLAY_P3:
+        xyz_D50_arr = numpy.matmul(linear_arr, P3_TO_XYZ)
+    xy_arr = ciexyz_to_xy(xyz_D50_arr)
+
+    flat_xy = xy_arr.reshape(-1, 2)
+    out_of_gamut_count = 0
+    total_pixels = flat_xy.shape[0]
+    for i, (px, py) in enumerate(flat_xy):
+        # Ignore Black/Dark Pixels.
+        if px == 0 and py == 0:
+            continue
+        if not point_in_triangle(EXPECTED_RX_SRGB, EXPECTED_RY_SRGB,
+                                   EXPECTED_GX_SRGB, EXPECTED_GY_SRGB,
+                                   EXPECTED_BX_SRGB, EXPECTED_BY_SRGB,
+                                   px, py,
+                                   COLORSPACE_TRIANGLE_AREA_TOL):
+            out_of_gamut_count += 1
+    percentile = out_of_gamut_count / total_pixels
+    logging.debug(f'The percentile of pixels out of sRGB range: {percentile}')
+    return percentile
 
