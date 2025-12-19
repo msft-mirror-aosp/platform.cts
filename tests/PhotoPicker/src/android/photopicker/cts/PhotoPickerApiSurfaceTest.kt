@@ -269,10 +269,10 @@ class PhotoPickerApiSurfaceTest {
     @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
     @ModernPhotopickerOnly
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PICKER_LOCATION_METADATA_API)
-    fun testLaunch_withLocationMetadataExtra_succeeds() {
+    fun testPickImageLaunch_withLocationMetadataExtra_succeeds() {
         val intent =
             Intent(MediaStore.ACTION_PICK_IMAGES)
-                .putExtra(MediaStore.EXTRA_PICK_IMAGES_REQUEST_LOCATION_METADATA_ACCESS, true)
+                .putExtra(MediaStore.EXTRA_REQUEST_LOCATION_METADATA_ACCESS, true)
         val future = photoPickerRule.launchPhotoPicker(intent)
         // press back to ensure picker launches successfully
         photoPickerRule.device.pressBack()
@@ -370,15 +370,17 @@ class PhotoPickerApiSurfaceTest {
     @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE, count = 3)])
     @ModernPhotopickerOnly
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PICKER_LOCATION_METADATA_API)
-    fun testGetContent_locationMetadataExtra_failsToLaunchPicker() {
+    fun testGetContentLaunch_withLocationMetadataExtra_succeeds() {
         val intent =
             Intent(Intent.ACTION_GET_CONTENT).apply {
                 type = "image/*"
-                putExtra(MediaStore.EXTRA_PICK_IMAGES_REQUEST_LOCATION_METADATA_ACCESS, true)
+                putExtra(MediaStore.EXTRA_REQUEST_LOCATION_METADATA_ACCESS, true)
             }
 
-        val result = photoPickerRule.launchPhotoPicker(intent).get(5, TimeUnit.SECONDS)
-        assertThat(result.resultCode).isEqualTo(Activity.RESULT_CANCELED)
+        val future = photoPickerRule.launchPhotoPicker(intent)
+        // press back to ensure picker launches successfully
+        photoPickerRule.device.pressBack()
+        future.get(5, TimeUnit.SECONDS)
     }
 
     // USER_SELECT - Only available U+ SDK.
@@ -456,7 +458,7 @@ class PhotoPickerApiSurfaceTest {
     fun testUserSelect_locationMetadataExtra_failsToLaunchPicker() {
         val intent =
             Intent(MediaStore.ACTION_USER_SELECT_IMAGES_FOR_APP).apply {
-                putExtra(MediaStore.EXTRA_PICK_IMAGES_REQUEST_LOCATION_METADATA_ACCESS, true)
+                putExtra(MediaStore.EXTRA_REQUEST_LOCATION_METADATA_ACCESS, true)
             }
 
         TestApis.permissions().withPermission(Manifest.permission.GRANT_RUNTIME_PERMISSIONS).use {
