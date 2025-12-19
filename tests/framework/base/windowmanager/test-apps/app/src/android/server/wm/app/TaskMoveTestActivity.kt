@@ -18,6 +18,7 @@ package android.server.wm.app
 
 import android.app.Activity
 import android.app.ActivityManager
+import android.app.ActivityOptions
 import android.app.TaskDisplayPolicyState
 import android.app.TaskLocation
 import android.content.BroadcastReceiver
@@ -28,11 +29,13 @@ import android.graphics.Rect
 import android.os.OutcomeReceiver
 import android.server.wm.app.Components.TaskMoveTestActivity.ACTION_CHECK_IS_TASK_MOVE_ALLOWED
 import android.server.wm.app.Components.TaskMoveTestActivity.ACTION_NOTIFY_LISTENER_CALLED
+import android.server.wm.app.Components.TaskMoveTestActivity.ACTION_NOTIFY_START_ACTIVITY_WITH_MOVABLE_FLAG_RESULT
 import android.server.wm.app.Components.TaskMoveTestActivity.ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT
 import android.server.wm.app.Components.TaskMoveTestActivity.ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT
 import android.server.wm.app.Components.TaskMoveTestActivity.ACTION_REGISTER_LISTENER
 import android.server.wm.app.Components.TaskMoveTestActivity.ACTION_REGISTER_LISTENER_ACK
 import android.server.wm.app.Components.TaskMoveTestActivity.ACTION_REQUEST_TASK_MOVE
+import android.server.wm.app.Components.TaskMoveTestActivity.ACTION_START_ACTIVITY_WITH_MOVABLE_FLAG
 import android.server.wm.app.Components.TaskMoveTestActivity.ACTION_UNREGISTER_LISTENER
 import android.server.wm.app.Components.TaskMoveTestActivity.ACTION_UNREGISTER_LISTENER_ACK
 import android.server.wm.app.Components.TaskMoveTestActivity.EXTRA_BOUNDS_KEY
@@ -51,6 +54,10 @@ class TaskMoveTestActivity : Activity() {
     private val mReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
+            ACTION_START_ACTIVITY_WITH_MOVABLE_FLAG -> {
+                val displayId = intent.getIntExtra(EXTRA_DISPLAY_ID_KEY, getDisplayId())
+                launchWithMovableTaskRequired(displayId)
+            }
             ACTION_CHECK_IS_TASK_MOVE_ALLOWED -> {
                 val displayId = intent.getIntExtra(EXTRA_DISPLAY_ID_KEY, getDisplayId())
                 sendIsTaskMoveAllowed(displayId)
@@ -97,6 +104,7 @@ class TaskMoveTestActivity : Activity() {
         super.onStart()
         val intentFilter = IntentFilter().apply {
             addAction(ACTION_CHECK_IS_TASK_MOVE_ALLOWED)
+            addAction(ACTION_START_ACTIVITY_WITH_MOVABLE_FLAG)
             addAction(ACTION_REGISTER_LISTENER)
             addAction(ACTION_REQUEST_TASK_MOVE)
             addAction(ACTION_UNREGISTER_LISTENER)
@@ -118,6 +126,25 @@ class TaskMoveTestActivity : Activity() {
         } catch (e: Exception) {
             broadcast.putExtra(EXTRA_SYNC_EXCEPTION_KEY, e)
         }
+        sendBroadcast(broadcast)
+    }
+
+    private fun launchWithMovableTaskRequired(displayId: Int) {
+        val intent = Intent(this, TaskMoveTestActivity::class.java)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+
+        val options = ActivityOptions.makeBasic()
+        options.launchDisplayId = displayId
+        options.isMovableTaskRequired = true
+
+        val broadcast = Intent(ACTION_NOTIFY_START_ACTIVITY_WITH_MOVABLE_FLAG_RESULT)
+
+        try {
+            startActivity(intent, options.toBundle())
+        } catch (e: Exception) {
+            broadcast.putExtra(EXTRA_SYNC_EXCEPTION_KEY, e)
+        }
+
         sendBroadcast(broadcast)
     }
 
