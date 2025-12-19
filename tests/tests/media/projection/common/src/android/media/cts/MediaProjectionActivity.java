@@ -237,19 +237,14 @@ public class MediaProjectionActivity extends Activity {
         // Thus, we try to click that button multiple times.
         do {
             assertTrue("Can't get the permission", count <= retryCount);
-            String optionString =
-                    displayName != null
-                            ? getResourceString(
-                                    this, CONNECTED_DISPLAY_STRING_RES_NAME, displayName)
-                            : getResourceString(this, ENTIRE_SCREEN_STRING_RES_NAME);
-            dismissPermissionDialog(uiDevice, optionString, displayName);
+            dismissPermissionDialog(this, uiDevice, displayName);
             count++;
         } while (!mCountDownLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS));
     }
 
     /** The permission dialog will be auto-opened by the activity - find it and accept */
     private static void dismissPermissionDialog(
-            UiDevice uiDevice, @Nullable String optionString, @Nullable String displayName) {
+            Context context, UiDevice uiDevice, @Nullable String displayName) {
         uiDevice.waitForIdle();
 
         BySelector shareTabSelector = By.res(SHARE_TAB_TEST_TAG);
@@ -261,6 +256,11 @@ public class MediaProjectionActivity extends Activity {
             dismissNewComposePermissionDialog(uiDevice, displayName);
         } else {
             Log.d(TAG, "Old AlertDialog permission UI detected.");
+            String optionString =
+                    displayName != null
+                            ? getResourceString(
+                                    context, CONNECTED_DISPLAY_STRING_RES_NAME, displayName)
+                            : getResourceString(context, ENTIRE_SCREEN_STRING_RES_NAME);
             dismissOldAlertDialog(uiDevice, optionString);
         }
     }
@@ -477,6 +477,11 @@ public class MediaProjectionActivity extends Activity {
 
     private static UiObject2 waitForObject(UiDevice uiDevice, BySelector selector) {
         return uiDevice.wait(Until.findObject(selector), PERMISSION_DIALOG_WAIT_MS);
+    }
+
+    /** Returns true if the MediaProjection permission dialog is using the new Compose UI. */
+    public static boolean isComposeUI(UiDevice device) {
+        return device.hasObject(By.res(SHARE_TAB_TEST_TAG));
     }
 
     @Override

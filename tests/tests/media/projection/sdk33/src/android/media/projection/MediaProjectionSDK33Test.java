@@ -20,7 +20,6 @@ import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_
 import static android.media.cts.MediaProjectionActivity.ACCEPT_RESOURCE_ID;
 import static android.media.cts.MediaProjectionActivity.ENTIRE_SCREEN_STRING_RES_NAME;
 import static android.media.cts.MediaProjectionActivity.SCREEN_SHARE_OPTIONS_RES_PATTERN;
-import static android.media.cts.MediaProjectionActivity.SHARE_TAB_TEST_TAG;
 import static android.media.cts.MediaProjectionActivity.getResourceString;
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 
@@ -280,8 +279,8 @@ public class MediaProjectionSDK33Test {
      */
     private UiObject2 findConfirmationButton() {
         mUiDevice.waitForIdle();
-        boolean isNewUiPresent = mUiDevice.hasObject(By.res(SHARE_TAB_TEST_TAG));
-        if (isNewUiPresent) {
+        boolean isComposeUI = MediaProjectionActivity.isComposeUI(mUiDevice);
+        if (isComposeUI) {
             return MediaProjectionActivity.findAndEnableNewShareButton(
                     mUiDevice, /* displayName= */ null, mTimeoutMs);
         }
