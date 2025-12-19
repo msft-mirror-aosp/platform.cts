@@ -198,6 +198,15 @@ public class VirtualContainerActivityTest
         mActivityRule.runOnUiThread(() -> mActivity.mPassword.changeFocus(true));
     }
 
+    void setUsername(String username) throws TimeoutException{
+        mActivity.syncRunOnUiThread(() -> mActivity.mUsername.setText(username));
+    }
+
+    void setPassword(String password) throws TimeoutException {
+        mActivity.syncRunOnUiThread(() -> mActivity.mPassword.setText(password));
+    }
+
+
     /**
      * Tests autofilling the virtual views, using the sync / async version of ViewStructure.addChild
      */
@@ -640,14 +649,14 @@ public class VirtualContainerActivityTest
         focusToUsernameExpectNoWindowEvent();
         sReplier.getNextFillRequest();
         // Fill in some stuff
-        mActivity.mUsername.setText("foo");
+        setUsername("foo");
 
         // Add a delay to prevent fill request triggers when focusing on
         // password field
         mUiBot.waitForIdleSync();
 
         focusToPasswordExpectNoWindowEvent();
-        mActivity.mPassword.setText("bar");
+        setPassword("bar");
 
         // Add a delay to prevent save trigger happens too fast
         mUiBot.waitForIdleSync();
@@ -689,6 +698,12 @@ public class VirtualContainerActivityTest
     }
 
     protected void setViewsInvisible(VisibilityIntegrationMode mode) {
+        mActivity.syncRunOnUiThread(
+                () -> setViewsInvisibleInternal(mode)
+        );
+    }
+
+    private void setViewsInvisibleInternal(VisibilityIntegrationMode mode) {
         mActivity.mUsername.setVisibilityIntegrationMode(mode);
         mActivity.mPassword.setVisibilityIntegrationMode(mode);
         mActivity.mUsername.changeVisibility(false);
@@ -725,8 +740,8 @@ public class VirtualContainerActivityTest
     @AppModeFull(reason = "testSaveNotShown_noUserInput() is enough")
     public void testSaveNotShown_initialValues_noUserInput() throws Throwable {
         // Prepare activitiy.
-        mActivity.mUsername.setText("foo");
-        mActivity.mPassword.setText("bar");
+        setUsername("foo");
+        setPassword("bar");
 
         // Set service.
         enableService();
@@ -750,8 +765,8 @@ public class VirtualContainerActivityTest
     @AppModeFull(reason = "testSaveNotShown_noUserInput() is enough")
     public void testSaveNotShown_initialValues_noUserInput_serviceDatasets() throws Throwable {
         // Prepare activitiy.
-        mActivity.mUsername.setText("foo");
-        mActivity.mPassword.setText("bar");
+        setUsername("foo");
+        setPassword("bar");
 
         // Set service.
         enableService();
@@ -781,8 +796,8 @@ public class VirtualContainerActivityTest
     @AppModeFull(reason = "testSaveNotShown_noUserInput() is enough")
     public void testSaveNotShown_userInputMatchesDatasets() throws Throwable {
         // Prepare activitiy.
-        mActivity.mUsername.setText("foo");
-        mActivity.mPassword.setText("bar");
+        setUsername("foo");
+        setPassword("bar");
 
         // Set service.
         enableService();
@@ -841,24 +856,24 @@ public class VirtualContainerActivityTest
         assertDatasetShown(mActivity.mUsername, aa, ab, b);
 
         // Only two datasets start with 'a'
-        mActivity.mUsername.setText("a");
+        setUsername("a");
         assertDatasetShown(mActivity.mUsername, aa, ab);
 
         // Only one dataset start with 'aa'
-        mActivity.mUsername.setText("aa");
+        setUsername("aa");
         assertDatasetShown(mActivity.mUsername, aa);
 
         // Only two datasets start with 'a'
-        mActivity.mUsername.setText("a");
+        setUsername("a");
         assertDatasetShown(mActivity.mUsername, aa, ab);
 
         // With no filter text all datasets should be shown
-        mActivity.mUsername.setText("");
+        setUsername("");
         assertDatasetShown(mActivity.mUsername, aa, ab, b);
 
         // No dataset start with 'aaa'
         final MyAutofillCallback callback = mActivity.registerCallback();
-        mActivity.mUsername.setText("aaa");
+        setUsername("aaa");
         callback.assertUiHiddenEvent(mActivity.mCustomView, mActivity.mUsername.text.id);
         mUiBot.assertNoDatasets();
     }
