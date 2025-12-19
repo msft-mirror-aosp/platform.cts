@@ -22,7 +22,7 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
     specification:
-      "MUST support the `Feature_HdrEditing` feature for all hardware AV1 and "
+      "MUST support the Feature_HdrEditing feature for all hardware AV1 and "
       "HEVC encoders present on the device at 4K resolution or the largest "
       "Camera-supported resolution, whichever is less."
     required_values {

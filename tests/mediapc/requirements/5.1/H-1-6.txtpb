@@ -69,7 +69,8 @@ specs {
     specification:
       "MUST support 6 instances of hardware video decoder and hardware video "
       "encoder sessions (AVC, HEVC, VP9* or later) in any codec combination "
-      "running concurrently at 720p@30fps resolution."
+      "running concurrently at 720p@30fps resolution. *Only 2 instances are "
+      "required if VP9 codec is present."
     required_values {
       key: "concurrent_fps"
       value {
@@ -148,12 +149,12 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_14
     specification:
       "MUST support 6 instances of 8-bit (SDR) hardware video decoder and "
-      "hardware video encoder sessions (AVC, HEVC, VP9, AV1, or later) in any "
+      "hardware video encoder sessions (AVC, HEVC, VP9, AV1 or later) in any "
       "codec combination running concurrently with 3 sessions at 4K@30fps "
-      "resolution, out of which at most 2 are encoder sessions and 3 sessions "
-      "at 1080p resolution.  _AV1 codecs are only required to support 1080p "
-      "resolution, but are still required to support 6 instances at "
-      "1080p30fps._"
+      "resolution (unless AV1), out of which at most 2 are encoder sessions "
+      "and 3 sessions at 1080p resolution. AV1 codecs are only required to "
+      "support 1080p resolution, but are still required to support 6 instances "
+      "at 1080p30fps."
     required_values {
       key: "concurrent_fps"
       value {
@@ -177,11 +178,11 @@ specs {
       "MUST support 6 instances of 8-bit (SDR) hardware video decoder and "
       "hardware video encoder sessions (AVC, HEVC, VP9, AV1, or later) in any "
       "codec combination running concurrently with 3 sessions at 4K@30fps "
-      "resolution, out of which at most 2 are encoder sessions and 3 sessions "
-      "at 1080p resolution. For all sessions, there MUST NOT be more than 1 "
-      "frame dropped per second. _AV1 codecs are only required to support "
-      "1080p resolution, but are still required to support 6 instances at "
-      "1080p30fps._"
+      "resolution (unless AV1), out of which at most 2 are encoder sessions "
+      "and 3 sessions at 1080p resolution. For all sessions, there MUST NOT be "
+      "more than 1 frame dropped per second. AV1 codecs are only required to "
+      "support 1080p resolution, but are still required to support 6 instances "
+      "at 1080p30fps."
     required_values {
       key: "concurrent_fps"
       value {

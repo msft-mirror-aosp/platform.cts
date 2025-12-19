@@ -27,10 +27,10 @@ specs {
       "for low latency and streaming configurations. For the low latency "
       "configuration, AAudio should be used by the app in low-latency callback "
       "mode. For the streaming configuration, a Java AudioTrack should be used "
-      "by the app.  In both the low latency and streaming configurations, the "
-      "HAL output sink should accept either `AUDIO_FORMAT_PCM_24_BIT`, "
-      "`AUDIO_FORMAT_PCM_24_BIT_PACKED`, `AUDIO_FORMAT_PCM_32_BIT` or "
-      "`AUDIO_FORMAT_PCM_FLOAT` for its target output format."
+      "by the app. In both the low latency and streaming configurations, the "
+      "HAL output sink should accept either AUDIO_FORMAT_PCM_24_BIT, "
+      "AUDIO_FORMAT_PCM_24_BIT_PACKED, AUDIO_FORMAT_PCM_32_BIT or "
+      "AUDIO_FORMAT_PCM_FLOAT for its target output format."
     required_values {
       key: "twenty_four_bit_audio_supported"
       value {
@@ -43,16 +43,7 @@ specs {
   key: 34
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_14
-    specification:
-      "MUST support >=24-bit audio for stereo output over 3.5 mm audio jacks "
-      "if present and over USB audio if supported through the entire data path "
-      "for low latency and streaming configurations. For the low latency "
-      "configuration, AAudio should be used by the app in low-latency callback "
-      "mode. For the streaming configuration, a Java AudioTrack should be used "
-      "by the app. In both the low latency and streaming configurations, the "
-      "HAL output sink should accept either `AUDIO_FORMAT_PCM_24_BIT`, "
-      "`AUDIO_FORMAT_PCM_24_BIT_PACKED`, `AUDIO_FORMAT_PCM_32_BIT` or "
-      "`AUDIO_FORMAT_PCM_FLOAT` for its target output format."
+    specification: "same"
     required_values {
       key: "twenty_four_bit_audio_supported"
       value {
@@ -65,16 +56,7 @@ specs {
   key: 35
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
-    specification:
-      "MUST support >= 24-bit audio for stereo output over 3.5 mm audio jacks "
-      "if present and over USB audio if supported through the entire data path "
-      "for low latency and streaming configurations. For the low latency "
-      "configuration, AAudio should be used by the app in low-latency callback "
-      "mode. For the streaming configuration, a Java AudioTrack should be used "
-      "by the app. In both the low latency and streaming configurations, the "
-      "HAL output sink should accept either `AUDIO_FORMAT_PCM_24_BIT`, "
-      "`AUDIO_FORMAT_PCM_24_BIT_PACKED`, `AUDIO_FORMAT_PCM_32_BIT` or "
-      "`AUDIO_FORMAT_PCM_FLOAT` for its target output format."
+    specification: "same"
     required_values {
       key: "twenty_four_bit_audio_supported"
       value {

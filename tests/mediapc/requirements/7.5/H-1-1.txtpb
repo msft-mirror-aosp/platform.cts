@@ -55,10 +55,7 @@ specs {
   key: 31
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_12
-    specification:
-      "MUST have a primary rear facing camera with a resolution of at least 12 "
-      "megapixels supporting video capture at 4k@30fps. The primary "
-      "rear-facing camera is the rear-facing camera with the lowest camera ID."
+    specification: "same"
     required_values {
       key: "primary_camera_available"
       value {
@@ -89,10 +86,7 @@ specs {
   key: 33
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_13
-    specification:
-      "MUST have a primary rear facing camera with a resolution of at least 12 "
-      "megapixels supporting video capture at 4k@30fps. The primary "
-      "rear-facing camera is the rear-facing camera with the lowest camera ID."
+    specification: "same"
     required_values {
       key: "primary_camera_available"
       value {
