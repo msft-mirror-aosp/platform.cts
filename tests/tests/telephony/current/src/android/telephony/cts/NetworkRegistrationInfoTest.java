@@ -27,6 +27,7 @@ import android.telephony.CellIdentityLte;
 import android.telephony.NetworkRegistrationInfo;
 import android.telephony.TelephonyManager;
 import android.telephony.cts.util.TelephonyUtils;
+import android.telephony.satellite.SatelliteManager;
 
 import androidx.test.InstrumentationRegistry;
 
@@ -410,5 +411,17 @@ public class NetworkRegistrationInfoTest {
                 .setIsNonTerrestrialNetwork(true)
                 .build();
         assertTrue(nri.isNonTerrestrialNetwork());
+    }
+
+    @Test
+    public void testGetSatelliteTechnology() {
+        NetworkRegistrationInfo nri = new NetworkRegistrationInfo.Builder().build();
+        assertEquals(SatelliteManager.NT_RADIO_TECHNOLOGY_UNKNOWN, nri.getSatelliteTechnology());
+
+        nri =
+                new NetworkRegistrationInfo.Builder()
+                        .setSatelliteTechnology(SatelliteManager.NT_RADIO_TECHNOLOGY_LTE_DTC)
+                        .build();
+        assertEquals(SatelliteManager.NT_RADIO_TECHNOLOGY_LTE_DTC, nri.getSatelliteTechnology());
     }
 }
