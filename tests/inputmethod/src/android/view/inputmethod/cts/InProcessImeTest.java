@@ -19,9 +19,13 @@ package android.view.inputmethod.cts;
 import static android.view.inputmethod.cts.util.TestUtils.getOnMainSync;
 import static android.view.inputmethod.cts.util.TestUtils.runOnMainSync;
 
+import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import android.Manifest;
+import android.app.UiAutomation;
 import android.content.ComponentName;
 import android.content.Context;
 import android.graphics.Color;
@@ -45,7 +49,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.harrier.DeviceState;
 import com.android.compatibility.common.util.PollingCheck;
-import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.ClassRule;
@@ -63,20 +66,47 @@ public final class InProcessImeTest extends EndToEndImeTestBase {
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
+
+    private static final String[] IME_TEST_API_PERMISSIONS = {
+        Manifest.permission.INTERACT_ACROSS_USERS_FULL,
+        Manifest.permission.TEST_INPUT_METHOD,
+        Manifest.permission.WRITE_SECURE_SETTINGS
+    };
+
     private static final long TIMEOUT = TimeUnit.MINUTES.toMillis(1);
 
+    private InputMethodManager mInputMethodManager;
+    private UiAutomation mUiAutomation;
+    private int mUserId;
+
     private void enableInProcIme() {
-        final int userId = UserHandle.myUserId();
+        final var instrumentation = InstrumentationRegistry.getInstrumentation();
+        mUiAutomation = instrumentation.getUiAutomation();
+        mInputMethodManager =
+                instrumentation.getContext().getSystemService(InputMethodManager.class);
+
+        mUserId = UserHandle.myUserId();
+
         final String inProcImeId = new ComponentName(
                 InstrumentationRegistry.getInstrumentation().getContext().getPackageName(),
                 InProcIme.class.getName()).flattenToShortString();
-        SystemUtil.runShellCommandOrThrow("ime enable --user " + userId + " " + inProcImeId);
-        SystemUtil.runShellCommandOrThrow("ime set --user " + userId + " " + inProcImeId);
+        runWithShellPermissionIdentity(
+                mUiAutomation,
+                () -> {
+                    mInputMethodManager.enableInputMethodForTesting(inProcImeId, mUserId);
+                    mInputMethodManager.setInputMethodForTesting(inProcImeId, mUserId);
+                },
+                IME_TEST_API_PERMISSIONS);
     }
 
     @After
-    public final void resetIme() {
-        SystemUtil.runShellCommandOrThrow("ime reset --user " + UserHandle.myUserId());
+    public void resetIme() {
+        runWithShellPermissionIdentity(
+                mUiAutomation,
+                () -> {
+                    mInputMethodManager.resetInputMethodsForTesting(mUserId);
+                },
+                IME_TEST_API_PERMISSIONS);
     }
 
     /**
