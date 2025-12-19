@@ -107,7 +107,15 @@ TEST_F(NdkBinderTest_AIBinder_Jni, FrozenStateChangeCallback) {
       AIBinder_FrozenStateChangeCallback_new(OnFrozenStateChanged, OnBinderUnlinked);
   ASSERT_NE(nullptr, callback);
 
-  EXPECT_EQ(STATUS_OK, AIBinder_addFrozenStateChangeCallback(binder, callback, nullptr));
+  binder_status_t status = AIBinder_addFrozenStateChangeCallback(binder, callback, nullptr);
+  if (status == STATUS_INVALID_OPERATION) {
+      // The binder driver on the device under test does not support frozen state callbacks.
+      // Clean up and return.
+      AIBinder_FrozenStateChangeCallback_delete(callback);
+      AIBinder_decStrong(binder);
+      return;
+  }
+  EXPECT_EQ(STATUS_OK, status);
 
   env->CallStaticVoidMethod(ndkBinderTest, freezeRemote);
   {
