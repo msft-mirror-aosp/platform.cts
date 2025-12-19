@@ -140,6 +140,7 @@ class YuvJpegCaptureSamenessTest(its_base_test.ItsBaseTest):
           rgb_yuv, rgb_jpg)
       msg = f'RMS diff: {rms_diff:.4f}'
       logging.debug('%s', msg)
+      print(f'test_yuv_jpeg_capture_sameness_rms_diff: {rms_diff:.4f}')
       marginal_pass_msg = []
       if rms_diff >= _THRESHOLD_MAX_RMS_DIFF_YUV_JPEG:
         raise AssertionError(f'{msg}, ATOL: {_THRESHOLD_MAX_RMS_DIFF_YUV_JPEG:.4f}')
