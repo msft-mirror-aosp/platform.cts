@@ -36,21 +36,11 @@ class AppFunctionServiceImpl : AppFunctionService() {
         callback.onResult(
             ExecuteAppFunctionResponse(
                 GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                    .setPropertyBoolean("isDeprecated", true)
-                    .build()
-            )
-        )
-    }
-
-    override fun onExecuteFunction(
-        request: ExecuteAppFunctionRequest,
-        cancellationSignal: CancellationSignal,
-        callback: OutcomeReceiver<ExecuteAppFunctionResponse?, AppFunctionException?>,
-    ) {
-        callback.onResult(
-            ExecuteAppFunctionResponse(
-                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                    .setPropertyBoolean("isDeprecated", false)
+                    .setPropertyString("callingPackage", callingPackage)
+                    .setPropertyBoolean(
+                        "hasCallingPackageSigningInfo",
+                        !callingPackageSigningInfo.signersMatchExactly(SigningInfo()),
+                    )
                     .build()
             )
         )

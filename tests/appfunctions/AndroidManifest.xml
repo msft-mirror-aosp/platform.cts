@@ -27,7 +27,6 @@
         <package android:name="android.app.appfunctions.cts.helper" />
         <package android:name="android.app.appfunctions.cts.helper.sidecar" />
         <package android:name="android.app.appfunctions.cts.dynamic.schema" />
-        <package android:name="android.app.appfunctions.cts.deprecated.service.helper" />
         <package android:name="android.app.appfunctions.cts.service.helper" />
     </queries>
     <application>
