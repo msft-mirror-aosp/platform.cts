@@ -49,6 +49,7 @@ import androidx.annotation.ChecksSdkIntAtLeast;
 
 import com.android.ex.camera2.blocking.BlockingCameraManager;
 import com.android.ex.camera2.blocking.BlockingStateCallback;
+import com.android.internal.camera.flags.Flags;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -459,8 +460,19 @@ public class ItsUtils {
                     // Skip LEGACY and EXTERNAL devices
                     continue;
                 }
+
+                // Skip devices that are VIRTUAL
+                if (Flags.cameraDeviceTypeApi()) {
+                    int deviceType = characteristics.get(CameraCharacteristics.INFO_DEVICE_TYPE);
+                    if (deviceType == CameraCharacteristics.INFO_DEVICE_TYPE_VIRTUAL) {
+                        continue;
+                    }
+                }
+
+                // Add logical / regular camera IDs to list
                 outList.mCameraIds.add(id);
                 outList.mCameraIdCombos.add(id);
+
 
                 // Only add hidden physical cameras for multi-camera.
                 if (!isMultiCamera) continue;
@@ -493,6 +505,15 @@ public class ItsUtils {
                     if (!physicalHaveBC) {
                         continue;
                     }
+                    // Skip physical devices that are VIRTUAL
+                    if (Flags.cameraDeviceTypeApi()) {
+                        int deviceType =
+                                characteristics.get(CameraCharacteristics.INFO_DEVICE_TYPE);
+                        if (deviceType == CameraCharacteristics.INFO_DEVICE_TYPE_VIRTUAL) {
+                            continue;
+                        }
+                    }
+
                     // To reduce duplicate tests, only additionally test hidden physical cameras
                     // with different focal length compared to the default focal length of the
                     // logical camera.
