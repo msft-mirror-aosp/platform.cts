@@ -219,7 +219,7 @@ def _do_captures_and_extract_patch(
     - patch: image patch of center 20% of image.
   """
   last_cap = None
-  for i in range(_NUM_CAPTURES):
+  for _ in range(_NUM_CAPTURES):
     cap = cam.do_capture([req]*num_frames_per_cap, fmt)
     last_cap = cap[-1]
     img = image_processing_utils.convert_capture_to_rgb_image(cap[-1])
@@ -273,7 +273,7 @@ class TonemapSequence(its_base_test.ItsBaseTest):
       if self.rotator_cntl == 'None' or self.lighting_cntl == 'None':
         logging.debug('Gen2 rig is not available.')
       else:
-        gen2_rig_controller_utils.setup_gen2_rig(self, cam)
+        gen2_rig_controller_utils.setup_gen2_rig_with_cam(self, cam)
 
       # Define formats
       largest_yuv = capture_request_utils.get_largest_format('yuv', props)

@@ -198,9 +198,9 @@ public class VirtualContainerActivityCompatModeTest extends VirtualContainerActi
         sReplier.getNextFillRequest();
 
         // Fill in some stuff
-        mActivity.mUsername.setText("foo");
+        setUsername("foo");
         focusToPasswordExpectNoWindowEvent();
-        mActivity.mPassword.setText("bar");
+        setPassword("bar");
 
         // Change URL bar before views become invisible
         final OneTimeTextWatcher urlWatcher = new OneTimeTextWatcher("urlWatcher",
@@ -257,9 +257,9 @@ public class VirtualContainerActivityCompatModeTest extends VirtualContainerActi
         assertDatasetShown(mActivity.mUsername, "The Dude");
 
         // Fill in some stuff
-        mActivity.mUsername.setText("foo");
+        setUsername("foo");
         focusToPasswordExpectNoWindowEvent();
-        mActivity.mPassword.setText("bar");
+        setPassword("bar");
 
         // Change URL bar before views become invisible
         final OneTimeTextWatcher urlWatcher = new OneTimeTextWatcher("urlWatcher",
@@ -289,12 +289,12 @@ public class VirtualContainerActivityCompatModeTest extends VirtualContainerActi
         sReplier.getNextFillRequest();
 
         // Fill in some stuff
-        mActivity.mUsername.setText("foo");
+        setUsername("foo");
         sReplier.addResponse(CannedFillResponse.NO_RESPONSE);
         SystemClock.sleep(Timeouts.FILL_TIMEOUT.ms());
         focusToPasswordExpectNoWindowEvent();
         sReplier.getNextFillRequest();
-        mActivity.mPassword.setText("bar");
+        setPassword("bar");
 
         // Change URL bar before views become invisible
         final OneTimeTextWatcher urlWatcher = new OneTimeTextWatcher("urlWatcher",

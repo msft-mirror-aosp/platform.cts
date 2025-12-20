@@ -153,6 +153,7 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
                     mContactUri = insertContactWithPhoto(
                             resolver, getTestNumber().getSchemeSpecificPart());
                 } catch (Exception e) {
+                    Log.w(TAG, "Failed to insert test contact into ContactsProvider: " + e);
                     assertTrue("Failed to insert test contact into ContactsProvider", false);
                 }
 

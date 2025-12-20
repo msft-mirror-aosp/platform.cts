@@ -19,13 +19,12 @@ package android.hardware.camera2.cts;
 import static android.hardware.cts.helpers.CameraUtils.getAvailableSurfaceTexture;
 
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
 
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
-import android.hardware.DataSpace;
-import android.hardware.HardwareBuffer;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CaptureRequest;
@@ -87,7 +86,6 @@ public class CameraUpdateOutputConfigurations extends Camera2MultiViewTestCase
 
     @Test
     public void testCameraImageReaderUpdate() throws Exception {
-        final int PREVIEW_DURATION_MS = 1000;
         final int CAPTURE_WAIT_TIMEOUT_MS = 1000;
         ImageReader reader = null;
         for (String id : getCameraIdsUnderTest()) {
@@ -373,6 +371,353 @@ public class CameraUpdateOutputConfigurations extends Camera2MultiViewTestCase
                 updateRepeatingRequest(cameraId, previewOutputList, captureListener);
 
                 SystemClock.sleep(PREVIEW_DURATION_MS);
+            }
+        }
+    }
+
+    @Test
+    public void testJpegRImageReaderUpdate() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            try {
+                StaticMetadata staticMeta =
+                        new StaticMetadata(mCameraManager.getCameraCharacteristics(id));
+                if (!staticMeta.isColorOutputSupported()) {
+                    continue;
+                }
+
+                if (!staticMeta.isJpegRSupported()) {
+                    Log.i(TAG, "Camera " + id + " does not support Jpeg/R, skipping");
+                    continue;
+                }
+
+                openCamera(id);
+
+                testImageReaderUpdate(id, ImageFormat.JPEG_R, staticMeta);
+            } finally {
+                closeCamera(id);
+            }
+        }
+    }
+
+    @Test
+    public void testDepthJpegImageReaderUpdate() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            try {
+                StaticMetadata staticMeta =
+                        new StaticMetadata(mCameraManager.getCameraCharacteristics(id));
+                if (!staticMeta.isColorOutputSupported()) {
+                    continue;
+                }
+
+                if (!staticMeta.isDepthJpegSupported()) {
+                    Log.i(TAG, "Camera " + id + " does not support DepthJpeg, skipping");
+                    continue;
+                }
+
+                openCamera(id);
+
+                testImageReaderUpdate(id, ImageFormat.DEPTH_JPEG, staticMeta);
+            } finally {
+                closeCamera(id);
+            }
+        }
+    }
+
+    @Test
+    public void testHEICUltraHDRImageReaderUpdate() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            try {
+                StaticMetadata staticMeta =
+                        new StaticMetadata(mCameraManager.getCameraCharacteristics(id));
+                if (!staticMeta.isColorOutputSupported()) {
+                    continue;
+                }
+
+                if (!staticMeta.isHeicUltraHdrSupported()) {
+                    Log.i(TAG, "Camera " + id + " does not support HEIC_ULTRAHDR, skipping");
+                    continue;
+                }
+
+                openCamera(id);
+
+                testImageReaderUpdate(id, ImageFormat.HEIC_ULTRAHDR, staticMeta);
+            } finally {
+                closeCamera(id);
+            }
+        }
+    }
+
+    public void testImageReaderUpdate(String id, int format, StaticMetadata staticMeta)
+            throws Exception {
+        final int CAPTURE_WAIT_TIMEOUT_MS = 1000;
+        final int BURST_SIZE = 5;
+        ImageReader reader1 = null, reader2 = null;
+        try {
+            // Create image reader and surfaces.
+            Size size= staticMeta.getAvailableSizesForFormatChecked(format,
+                    StaticMetadata.StreamDirection.Output)[0];
+            CameraTestUtils.ImageDropperListener dropperListener1 =
+                    new CameraTestUtils.ImageDropperListener();
+            reader1 = ImageReader.newInstance(size.getWidth(), size.getHeight(), format, 1);
+            reader1.setOnImageAvailableListener(dropperListener1, mHandler);
+            CameraTestUtils.ImageDropperListener dropperListener2 =
+                    new CameraTestUtils.ImageDropperListener();
+            reader2 = ImageReader.newInstance(size.getWidth(), size.getHeight(), format, 1);
+            reader2.setOnImageAvailableListener(dropperListener2, mHandler);
+
+            // Configure output streams.
+            List<OutputConfiguration> outputSurfaces = new ArrayList<>(1);
+            OutputConfiguration outConfig = new OutputConfiguration(reader1.getSurface());
+            outputSurfaces.add(outConfig);
+            createSessionWithConfigs(id, outputSurfaces);
+
+            // Start burst capture
+            CameraTestUtils.SimpleCaptureCallback
+                    captureListener = new CameraTestUtils.SimpleCaptureCallback();
+            CaptureRequest.Builder requestBuilder = getCaptureBuilder(id,
+                    CameraDevice.TEMPLATE_STILL_CAPTURE);
+            assertNotNull("Failed to create capture request", requestBuilder);
+            requestBuilder.addTarget(reader1.getSurface());
+            ArrayList<CaptureRequest> burstList = new ArrayList<>(BURST_SIZE);
+            for (int i = 0; i < BURST_SIZE; i++) {
+                burstList.add(requestBuilder.build());
+            }
+            int seqId = captureBurst(id, burstList, captureListener);
+
+            assertTrue(dropperListener1.waitForAnyImageAvailable(CAPTURE_WAIT_TIMEOUT_MS));
+
+            // Switch readers dynamically
+            outConfig.makeDeferredAndRemoveSurfaces();
+            outConfig.addSurface(reader2.getSurface());
+            updateOutputConfigurations(id, outputSurfaces);
+
+            // The affected burst requests must be flagged as complete
+            captureListener.getCaptureSequenceLastFrameNumber(seqId, CAPTURE_WAIT_TIMEOUT_MS);
+
+            // The new output must not receive any frames from previous requests
+            assertFalse(dropperListener2.waitForAnyImageAvailable(CAPTURE_WAIT_TIMEOUT_MS));
+
+            requestBuilder = getCaptureBuilder(id, CameraDevice.TEMPLATE_STILL_CAPTURE);
+            assertNotNull("Failed to create capture request", requestBuilder);
+            requestBuilder.addTarget(reader2.getSurface());
+            burstList.clear();
+            for (int i = 0; i < BURST_SIZE; i++) {
+                burstList.add(requestBuilder.build());
+            }
+
+            // Start capture
+            seqId = captureBurst(id, burstList, captureListener);
+            assertTrue(dropperListener2.waitForAnyImageAvailable(CAPTURE_WAIT_TIMEOUT_MS));
+
+            outConfig.makeDeferredAndRemoveSurfaces();
+            updateOutputConfigurations(id, outputSurfaces);
+            captureListener.getCaptureSequenceLastFrameNumber(seqId, CAPTURE_WAIT_TIMEOUT_MS);
+        } finally {
+            if (reader1 != null) {
+                reader1.close();
+            }
+            if (reader2 != null) {
+                reader2.close();
+            }
+        }
+    }
+
+    @Test
+    public void testSharedSurfaceSwapAndUpdate() throws Exception {
+        final int SURFACE_AVAILABLE_TIMEOUT_MS = 5000;
+        final int PREVIEW_DURATION_MS = 1000;
+        final int CAPTURE_WAIT_TIMEOUT_MS = 1000;
+        for (String id : getCameraIdsUnderTest()) {
+            StaticMetadata staticMeta =
+                    new StaticMetadata(mCameraManager.getCameraCharacteristics(id));
+            if (!staticMeta.isColorOutputSupported()) {
+                continue;
+            }
+
+            try {
+                openCamera(id);
+
+                // Initialize preview surfaces
+                Size previewSize = getOrderedPreviewSizes(id).getFirst();
+                Surface[] previewSurfaces = new Surface[4];
+                for (int i = 0; i < 4; i++) {
+                    SurfaceTexture previewTexture = getAvailableSurfaceTexture(
+                            SURFACE_AVAILABLE_TIMEOUT_MS, mTextureView[i]);
+                    assertNotNull("Unable to get preview surface texture",
+                            previewTexture);
+                    previewTexture.setDefaultBufferSize(previewSize.getWidth(),
+                            previewSize.getHeight());
+                    previewSurfaces[i] = new Surface(previewTexture);
+                }
+
+                // Configure shared deferred stream.
+                List<OutputConfiguration> outputSurfaces = new ArrayList<>();
+                OutputConfiguration previewConfig = new OutputConfiguration(previewSize,
+                        SurfaceTexture.class);
+                previewConfig.enableSurfaceSharing();
+                outputSurfaces.add(previewConfig);
+
+                createSessionWithConfigs(id, outputSurfaces);
+
+                previewConfig.addSurface(previewSurfaces[0]);
+                previewConfig.addSurface(previewSurfaces[1]);
+                updateOutputConfigurations(id, outputSurfaces);
+
+                // Start repeating capture
+                CameraTestUtils.SimpleCaptureCallback
+                        captureListener = new CameraTestUtils.SimpleCaptureCallback();
+                int seqId = updateRepeatingRequest(id, outputSurfaces, captureListener);
+
+                SystemClock.sleep(PREVIEW_DURATION_MS);
+
+                // Swap to an entirely new set of outputs
+                previewConfig.makeDeferredAndRemoveSurfaces();
+                previewConfig.addSurface(previewSurfaces[2]);
+                previewConfig.addSurface(previewSurfaces[3]);
+                updateOutputConfigurations(id, outputSurfaces);
+
+                captureListener.getCaptureSequenceLastFrameNumber(seqId, CAPTURE_WAIT_TIMEOUT_MS);
+
+                // Start repeating capture
+                seqId = updateRepeatingRequest(id, outputSurfaces, captureListener);
+
+                SystemClock.sleep(PREVIEW_DURATION_MS);
+
+                // Switch to a deferred shared configuration again
+                previewConfig.makeDeferredAndRemoveSurfaces();
+                updateOutputConfigurations(id, outputSurfaces);
+                captureListener.getCaptureSequenceLastFrameNumber(seqId, CAPTURE_WAIT_TIMEOUT_MS);
+
+                // Update again to the original configuration
+                previewConfig.addSurface(previewSurfaces[0]);
+                previewConfig.addSurface(previewSurfaces[1]);
+                updateOutputConfigurations(id, outputSurfaces);
+
+                updateRepeatingRequest(id, outputSurfaces, captureListener);
+
+                SystemClock.sleep(PREVIEW_DURATION_MS);
+
+                stopRepeating(id);
+            } finally {
+                closeCamera(id);
+            }
+        }
+    }
+
+    @Test
+    public void testDeferredJpegRImageReader() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            try {
+                StaticMetadata staticMeta =
+                        new StaticMetadata(mCameraManager.getCameraCharacteristics(id));
+                if (!staticMeta.isColorOutputSupported()) {
+                    continue;
+                }
+
+                if (!staticMeta.isJpegRSupported()) {
+                    Log.i(TAG, "Camera " + id + " does not support Jpeg/R, skipping");
+                    continue;
+                }
+
+                openCamera(id);
+                testDeferredImageReader(id, ImageFormat.JPEG_R, staticMeta);
+            } finally {
+                closeCamera(id);
+            }
+        }
+    }
+
+    @Test
+    public void testDeferredHEICUltraHDRImageReader() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            try {
+                StaticMetadata staticMeta =
+                        new StaticMetadata(mCameraManager.getCameraCharacteristics(id));
+                if (!staticMeta.isColorOutputSupported()) {
+                    continue;
+                }
+
+                if (!staticMeta.isHeicUltraHdrSupported()) {
+                    Log.i(TAG, "Camera " + id + " does not support HEIC_UltraHDR, skipping");
+                    continue;
+                }
+
+                openCamera(id);
+                testDeferredImageReader(id, ImageFormat.HEIC_ULTRAHDR, staticMeta);
+            } finally {
+                closeCamera(id);
+            }
+        }
+    }
+
+    @Test
+    public void testDeferredDepthJpegImageReader() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            try {
+                StaticMetadata staticMeta =
+                        new StaticMetadata(mCameraManager.getCameraCharacteristics(id));
+                if (!staticMeta.isColorOutputSupported()) {
+                    continue;
+                }
+
+                if (!staticMeta.isDepthJpegSupported()) {
+                    Log.i(TAG, "Camera " + id + " does not support DEPTH_JPEG, skipping");
+                    continue;
+                }
+
+                openCamera(id);
+                testDeferredImageReader(id, ImageFormat.DEPTH_JPEG, staticMeta);
+            } finally {
+                closeCamera(id);
+            }
+        }
+    }
+
+    private void testDeferredImageReader(String id, int format, StaticMetadata staticMeta)
+            throws Exception {
+        final int CAPTURE_WAIT_TIMEOUT_MS = 1000;
+        ImageReader reader = null;
+        try {
+            // Create image reader and surface.
+            Size size= staticMeta.getAvailableSizesForFormatChecked(format,
+                    StaticMetadata.StreamDirection.Output)[0];
+            CameraTestUtils.ImageDropperListener dropperListener =
+                    new CameraTestUtils.ImageDropperListener();
+            reader = ImageReader.newInstance(size.getWidth(), size.getHeight(), format, 1);
+            reader.setOnImageAvailableListener(dropperListener, mHandler);
+
+            // Configure output streams.
+            List<OutputConfiguration> outputSurfaces = new ArrayList<>(1);
+            OutputConfiguration outConfig = new OutputConfiguration(format, size);
+            outputSurfaces.add(outConfig);
+            createSessionWithConfigs(id, outputSurfaces);
+
+            // Try to capture
+            CameraTestUtils.SimpleCaptureCallback
+                    captureListener = new CameraTestUtils.SimpleCaptureCallback();
+            CaptureRequest.Builder requestBuilder = getCaptureBuilder(id,
+                    CameraDevice.TEMPLATE_STILL_CAPTURE);
+            assertNotNull("Failed to create capture request", requestBuilder);
+            requestBuilder.addTarget(reader.getSurface());
+            try {
+                capture(id, requestBuilder.build(), captureListener);
+                throw new Exception("Camera should not support capture on " + format +
+                        " deferred output");
+            } catch (IllegalArgumentException e) {
+                // Expected
+            }
+
+            // Finalize
+            outConfig.addSurface(reader.getSurface());
+            finalizeOutputConfigs(id, outputSurfaces, captureListener);
+
+            // Capture should be functional now
+            capture(id, requestBuilder.build(), captureListener);
+
+            dropperListener.waitForAnyImageAvailable(CAPTURE_WAIT_TIMEOUT_MS);
+        } finally {
+            if (reader != null) {
+                reader.close();
             }
         }
     }

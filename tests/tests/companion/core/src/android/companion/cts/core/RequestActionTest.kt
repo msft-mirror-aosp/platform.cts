@@ -15,6 +15,7 @@
  */
 package android.companion.cts.core
 
+import android.Manifest.permission.ACCESS_COMPANION_MESSAGE_PCC
 import android.Manifest.permission.REQUEST_COMPANION_SELF_MANAGED
 import android.Manifest.permission.USE_COMPANION_TRANSPORTS
 import android.companion.ActionRequest
@@ -165,6 +166,19 @@ class RequestActionTest : CoreTestBase() {
                 SERVICE_NAME_A,
                 intArrayOf(association.id)
             )
+        }
+
+        if (Flags.trustedDevices()) {
+            // The device must be trusted even hold ACCESS_COMPANION_MESSAGE_PCC permission.
+            withShellPermissionIdentity(ACCESS_COMPANION_MESSAGE_PCC) {
+                assertFailsWith(SecurityException::class) {
+                    cdm.requestAction(
+                        ActionRequest.Builder(REQUEST_TRANSPORT, OP_ACTIVATE).build(),
+                        SERVICE_NAME_A,
+                        intArrayOf(association.id)
+                    )
+                }
+            }
         }
     }
 }

@@ -17,6 +17,7 @@
 package android.companion.cts.core
 
 import android.Manifest
+import android.Manifest.permission.ACCESS_COMPANION_MESSAGE_PCC
 import android.companion.AssociationInfo
 import android.companion.CompanionDeviceManager.MESSAGE_ONEWAY_PCC
 import android.companion.CompanionDeviceManager.MESSAGE_REQUEST_PING
@@ -233,6 +234,20 @@ class TransportsListenerTest : CoreTestBase() {
             message = "Transport should not be attached after" +
                     "detachSystemDataTransport() is called."
         )
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TRUSTED_DEVICES)
+    fun test_isSystemDataTransportAttached_with_pcc_permission() {
+        targetApp.associate(MAC_ADDRESS_A)
+        val associationId = cdm.myAssociations.first().id
+
+        withShellPermissionIdentity(ACCESS_COMPANION_MESSAGE_PCC) {
+            // The device must be trusted even hold ACCESS_COMPANION_MESSAGE_PCC permission.
+            assertFailsWith(SecurityException::class) {
+                cdm.isSystemDataTransportAttached(associationId)
+            }
+        }
     }
 
     class BlockedInputStream : FilterInputStream(ByteArrayInputStream(byteArrayOf(0))) {

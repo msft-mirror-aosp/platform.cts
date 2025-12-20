@@ -178,6 +178,9 @@ class JcaJpegRImageParityClassTest(its_base_test.ItsBaseTest):
         gen2_rig_controller_utils.rotate_to_orthogonal_position(
             cam, self.log_path, self.motor_port, self.motor_channel)
       cam.close_camera()
+      ui_interaction_utils.force_stop_app(
+          self.dut, its_device_utils.CTS_VERIFIER_PKG
+      )
       time.sleep(_CLOSE_CAMERA_WAIT_TIME_SECONDS)
 
       # Take HDR capture and preview snapshot on JCA
@@ -242,6 +245,13 @@ class JcaJpegRImageParityClassTest(its_base_test.ItsBaseTest):
           abs(mean_white_balance_diff) <= (_AWB_DIFF_THRESHOLD)):
         marginal_while_balance_pass = True
         marginal_pass_msg.append('Marginally passing white balance diff check.')
+
+      # Restart ItsTestActivity to use ItsSession known issue check.
+      its_device_utils.start_its_test_activity(device_id)
+      cam.__init__(
+          device_id=self.dut.serial, camera_id=self.camera_id,
+          hidden_physical_id=self.hidden_physical_id
+      )
 
       # Logging for data collection
       result_str = f'{_NAME}_mean_white_balance_diff: {mean_white_balance_diff}'

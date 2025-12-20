@@ -18,6 +18,7 @@ import os
 import subprocess
 
 ITS_TEST_ACTIVITY = 'com.android.cts.verifier/.camera.its.ItsTestActivity'
+CTS_VERIFIER_PKG = 'com.android.cts.verifier'
 SYSTEM_USER = '0'
 
 
