@@ -58,12 +58,16 @@ class VoiceInteractionManagerTest {
         SettingsStateKeeperRule(context, ASSIST_STRUCTURE_ENABLED)
     @get:Rule val assistScreenshotEnabledManagersKeeper =
         SettingsStateKeeperRule(context, ASSIST_SCREENSHOT_ENABLED)
+    @get:Rule val readScreenContextDeniedCountManagersKeeper =
+        SettingsStateKeeperRule(context, READ_SCREEN_CONTEXT_REQUEST_DENIED_COUNT)
     @get:Rule val activityRule = ActivityTestRule(WaitForResultActivity::class.java)
 
     private val assistStructureEnabledManager =
         SettingsStateManager(context, ASSIST_STRUCTURE_ENABLED)
     private val assistScreenshotEnabledManager =
         SettingsStateManager(context, ASSIST_SCREENSHOT_ENABLED)
+    private val readScreenContextDeniedCountManager =
+        SettingsStateManager(context, READ_SCREEN_CONTEXT_REQUEST_DENIED_COUNT)
 
     private lateinit var appOpsManager: AppOpsManager
     private lateinit var roleManager: RoleManager
@@ -120,6 +124,100 @@ class VoiceInteractionManagerTest {
         assertWithMessage("Expected intent to be directed to PermissionController")
             .that(intent.getPackage())
             .isEqualTo(context.packageManager.permissionControllerPackageName)
+    }
+
+    @ApiTest(
+        apis = ["android.app.voiceinteraction.VoiceInteractionManager#getReadScreenContextRequestState"]
+    )
+    @Test
+    fun testGetReadScreenContextRequestState() {
+        Helper.addAssistRoleHolder(ASSISTANT_ROLE_HOLDER_PACKAGE, context, roleManager)
+
+        setAppOpMode(AppOpsManager.MODE_ALLOWED)
+        assertReadScreenContextRequestState(
+            VoiceInteractionManager.READ_SCREEN_CONTEXT_REQUEST_STATE_GRANTED
+        )
+
+        setAppOpMode(AppOpsManager.MODE_IGNORED)
+        assertReadScreenContextRequestState(
+            VoiceInteractionManager.READ_SCREEN_CONTEXT_REQUEST_STATE_REQUESTABLE
+        )
+
+        setAppOpMode(AppOpsManager.MODE_IGNORED)
+        setReadScreenContextRequestDeniedCount(BLOCKED_DENIED_COUNT)
+        assertReadScreenContextRequestState(
+            VoiceInteractionManager.READ_SCREEN_CONTEXT_REQUEST_STATE_UNREQUESTABLE
+        )
+    }
+
+    @ApiTest(
+        apis = ["android.app.voiceinteraction.VoiceInteractionManager#getReadScreenContextRequestState"]
+    )
+    @Test
+    fun testGetReadScreenContextRequestState_nonRoldHolder() {
+        assertThat(Helper.getAssistRoleHolders(roleManager))
+            .doesNotContain(ASSISTANT_ROLE_HOLDER_PACKAGE)
+
+        setAppOpMode(AppOpsManager.MODE_ALLOWED)
+        setReadScreenContextRequestDeniedCount(0)
+        assertReadScreenContextRequestState(
+            VoiceInteractionManager.READ_SCREEN_CONTEXT_REQUEST_STATE_UNREQUESTABLE
+        )
+    }
+
+    @ApiTest(
+        apis = ["android.app.voiceinteraction.VoiceInteractionManager#getReadScreenContextRequestState"]
+    )
+    @Test
+    fun testGetReadScreenContextRequestStateForUid() {
+        Helper.addAssistRoleHolder(ASSISTANT_ROLE_HOLDER_PACKAGE, context, roleManager)
+
+        setAppOpMode(AppOpsManager.MODE_ALLOWED)
+        assertWithMessage(
+            "Expected state to be" +
+            " ${VoiceInteractionManager.READ_SCREEN_CONTEXT_REQUEST_STATE_GRANTED} when" +
+            " MODE_ALLOWED"
+        )
+            .that(getReadScreenContextRequestState())
+            .isEqualTo(VoiceInteractionManager.READ_SCREEN_CONTEXT_REQUEST_STATE_GRANTED)
+
+        setAppOpMode(AppOpsManager.MODE_IGNORED)
+        assertWithMessage(
+            "Expected state to be" +
+            " ${VoiceInteractionManager.READ_SCREEN_CONTEXT_REQUEST_STATE_REQUESTABLE} when" +
+            " MODE_IGNORED"
+        )
+            .that(getReadScreenContextRequestState())
+            .isEqualTo(VoiceInteractionManager.READ_SCREEN_CONTEXT_REQUEST_STATE_REQUESTABLE)
+
+        setAppOpMode(AppOpsManager.MODE_IGNORED)
+        setReadScreenContextRequestDeniedCount(BLOCKED_DENIED_COUNT)
+        assertWithMessage(
+            "Expected state to be" +
+            " ${VoiceInteractionManager.READ_SCREEN_CONTEXT_REQUEST_STATE_UNREQUESTABLE} when" +
+            " denied count $BLOCKED_DENIED_COUNT"
+        )
+            .that(getReadScreenContextRequestState())
+            .isEqualTo(VoiceInteractionManager.READ_SCREEN_CONTEXT_REQUEST_STATE_UNREQUESTABLE)
+    }
+
+    @ApiTest(
+        apis = ["android.app.voiceinteraction.VoiceInteractionManager#getReadScreenContextRequestState"]
+    )
+    @Test
+    fun testGetReadScreenContextRequestStateForUid_nonRoldHolder() {
+        assertThat(Helper.getAssistRoleHolders(roleManager))
+            .doesNotContain(ASSISTANT_ROLE_HOLDER_PACKAGE)
+
+        setAppOpMode(AppOpsManager.MODE_ALLOWED)
+        setReadScreenContextRequestDeniedCount(0)
+        assertWithMessage(
+            "Expected state to be" +
+            " ${VoiceInteractionManager.READ_SCREEN_CONTEXT_REQUEST_STATE_UNREQUESTABLE} when" +
+            " not role holder"
+        )
+            .that(getReadScreenContextRequestState())
+            .isEqualTo(VoiceInteractionManager.READ_SCREEN_CONTEXT_REQUEST_STATE_UNREQUESTABLE)
     }
 
     @Test
@@ -207,6 +305,28 @@ class VoiceInteractionManagerTest {
             .isEqualTo(initialAssistScreenshotSecureSettings)
     }
 
+    @ApiTest(
+        apis = [
+            "android.app.voiceinteraction.VoiceInteractionManager#incrementReadScreenContextRequestDeniedCount",
+            "android.app.voiceinteraction.VoiceInteractionManager#clearReadScreenContextRequestDeniedCount",
+        ]
+    )
+    @Test
+    fun testUpdateReadScreenContextRequestDeniedCount() {
+        clearReadScreenContextRequestDeniedCount()
+        assertThat(getReadScreenContextRequestDeniedCount())
+            .isEqualTo(0)
+        incrementReadScreenContextRequestDeniedCount()
+        assertThat(getReadScreenContextRequestDeniedCount())
+            .isEqualTo(1)
+        incrementReadScreenContextRequestDeniedCount()
+        assertThat(getReadScreenContextRequestDeniedCount())
+            .isEqualTo(2)
+        clearReadScreenContextRequestDeniedCount()
+        assertThat(getReadScreenContextRequestDeniedCount())
+            .isEqualTo(0)
+    }
+
     private fun getAppOpMode(): Int =
         runWithShellPermissionIdentity<Int> {
             appOpsManager.checkOpNoThrow(
@@ -225,7 +345,48 @@ class VoiceInteractionManagerTest {
             )
         }
 
-    @Throws(InterruptedException::class)
+    private fun getReadScreenContextRequestDeniedCount(): Int =
+        readScreenContextDeniedCountManager.get()?.toIntOrNull() ?: 0
+
+    private fun setReadScreenContextRequestDeniedCount(count: Int) =
+        readScreenContextDeniedCountManager.set(count.toString())
+
+    private fun incrementReadScreenContextRequestDeniedCount() =
+        runWithShellPermissionIdentity {
+            voiceInteractionManager.incrementReadScreenContextRequestDeniedCount()
+        }
+
+    private fun clearReadScreenContextRequestDeniedCount() =
+        runWithShellPermissionIdentity {
+            voiceInteractionManager.clearReadScreenContextRequestDeniedCount()
+        }
+
+    private fun getReadScreenContextRequestState(): Int =
+        runWithShellPermissionIdentity<Int> {
+            voiceInteractionManager.getReadScreenContextRequestState(
+                assistantRoleHolderPackageUid
+            )
+        }
+
+    private fun assertReadScreenContextRequestState(expectedRequestState: Int) {
+        val intent: Intent = Intent()
+            .setComponent(
+                ComponentName(
+                    ASSISTANT_ROLE_HOLDER_PACKAGE,
+                    APP_GET_READ_SCREEN_CONTEXT_REQUEST_STATE_ACTIVITY_NAME
+                )
+            )
+        activityRule.activity.startActivityToWaitForResult(intent)
+
+        val result = activityRule.activity.waitForActivityResult(ACTIVITY_WAIT_TIMEOUT_MILLIS)
+
+        assertThat(result.first).isEqualTo(Activity.RESULT_OK)
+        assertThat(result.second).isNotNull()
+        assertThat(result.second.hasExtra(EXTRA_REQUEST_STATE)).isTrue()
+        assertThat(result.second.getIntExtra(EXTRA_REQUEST_STATE, -1))
+            .isEqualTo(expectedRequestState)
+    }
+
     private fun assertCanReadAssistStructure(assistStructureIsReadable: Boolean) {
         val intent: Intent = Intent()
             .setComponent(
@@ -252,10 +413,17 @@ class VoiceInteractionManagerTest {
         private const val ASSISTANT_ROLE_HOLDER_PACKAGE = "android.voiceinteraction.testassistant"
         private const val APP_CAN_READ_ASSIST_STRUCTURE_ACTIVITY_NAME =
             "$ASSISTANT_ROLE_HOLDER_PACKAGE.CanReadAssistStructureActivity"
+        private const val APP_GET_READ_SCREEN_CONTEXT_REQUEST_STATE_ACTIVITY_NAME =
+            "$ASSISTANT_ROLE_HOLDER_PACKAGE.GetReadScreenContextRequestStateActivity"
         private const val EXTRA_CAN_READ_ASSIST_STRUCTURE =
             "android.voiceinteraction.testassistant.extra.CAN_READ_ASSIST_STRUCTURE"
+        private const val EXTRA_REQUEST_STATE =
+            "android.voiceinteraction.testassistant.extra.REQUEST_STATE"
         private const val ASSIST_STRUCTURE_ENABLED = "assist_structure_enabled"
         private const val ASSIST_SCREENSHOT_ENABLED = "assist_screenshot_enabled"
+        private const val READ_SCREEN_CONTEXT_REQUEST_DENIED_COUNT =
+            "read_screen_context_request_denied_count"
         private const val ACTIVITY_WAIT_TIMEOUT_MILLIS: Long = 5000
+        private const val BLOCKED_DENIED_COUNT = 10
     }
 }
