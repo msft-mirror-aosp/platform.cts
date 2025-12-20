@@ -66,6 +66,9 @@ class SerialApiTest {
         mContext = ApplicationProvider.getApplicationContext()
         mSerialManager = mContext!!.getSystemService(SerialManager::class.java)
 
+        // Clear previous user access choices
+        SystemUtil.runShellCommand("cmd serial clear-user-access")
+
         // Clear any dialogs, e.g. "Allow SerialApiTest to access USB serial port?"
         val uiDevice = UiAutomatorUtils2.getUiDevice()
         uiDevice.pressHome()
