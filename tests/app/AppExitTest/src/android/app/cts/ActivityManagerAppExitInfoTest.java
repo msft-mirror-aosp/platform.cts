@@ -175,6 +175,8 @@ public final class ActivityManagerAppExitInfoTest {
 
     private static final String KEY_TIMEOUT = "bcast_timeout";
 
+    private static final long INPUT_DISPATCH_ANR_TIMEOUT = 5000L * Build.HW_TIMEOUT_MULTIPLIER;
+
     private Context mContext;
     private Instrumentation mInstrumentation;
     private int mStubPackageUid;
@@ -1140,8 +1142,7 @@ public final class ActivityManagerAppExitInfoTest {
             // Inject an input event
             mInstrumentation.sendKeySync(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_P));
 
-            final long anrTimeout = 5_000;
-            final long testTimeout = 5_000 * 3;
+            final long testTimeout = INPUT_DISPATCH_ANR_TIMEOUT * 3;
 
             monitor.waitFor(AmMonitor.WAIT_FOR_EARLY_ANR, testTimeout);
             monitor.sendCommand(AmMonitor.CMD_CONTINUE);
@@ -1186,7 +1187,7 @@ public final class ActivityManagerAppExitInfoTest {
                     info.getAnrInfo(),
                     AnrTypes.ANR_TYPE_INPUT_DISPATCH,
                     /* isUserPerceptible= */ true,
-                    anrTimeout);
+                    INPUT_DISPATCH_ANR_TIMEOUT);
 
         } finally {
             monitor.finish();
@@ -1236,9 +1237,9 @@ public final class ActivityManagerAppExitInfoTest {
             mInstrumentation.sendKeySync(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_P));
 
             // Use AmMonitor to wait for the ANR, collect traces, and kill the process.
-            long anrTimeout = 5_000;
             // Use 3 times the anrTimeout as test timeout
-            final long testTimeout = anrTimeout * 3; // Allow time for input timeout.
+            final long testTimeout =
+                    INPUT_DISPATCH_ANR_TIMEOUT * 3; // Allow time for input timeout.
             monitor.waitFor(AmMonitor.WAIT_FOR_EARLY_ANR, testTimeout);
             monitor.sendCommand(AmMonitor.CMD_CONTINUE);
             monitor.waitFor(AmMonitor.WAIT_FOR_ANR, testTimeout);
@@ -1283,7 +1284,7 @@ public final class ActivityManagerAppExitInfoTest {
                     info.getAnrInfo(),
                     AnrTypes.ANR_TYPE_INPUT_DISPATCH_NO_FOCUSED_WINDOW,
                     /* isUserPerceptible= */ true,
-                    anrTimeout);
+                    INPUT_DISPATCH_ANR_TIMEOUT);
 
         } finally {
             monitor.finish();
