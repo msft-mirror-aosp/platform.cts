@@ -26,6 +26,10 @@
             android:exported="true" />
 
         <activity
+            android:name=".GetReadScreenContextRequestStateActivity"
+            android:exported="true" />
+
+        <activity
             android:name=".AssistantActivity"
             android:exported="true">
             <intent-filter>

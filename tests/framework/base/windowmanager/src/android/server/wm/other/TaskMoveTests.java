@@ -17,18 +17,25 @@
 package android.server.wm.other;
 
 import static android.server.wm.StateLogger.logAlways;
+import static android.server.wm.app.Components.TaskMoveTestActivity.ACTION_NOTIFY_START_ACTIVITY_WITH_MOVABLE_FLAG_RESULT;
 import static android.server.wm.app.Components.TaskMoveTestActivity.ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT;
 import static android.server.wm.app.Components.TaskMoveTestActivity.ACTION_REQUEST_TASK_MOVE;
+import static android.server.wm.app.Components.TaskMoveTestActivity.ACTION_START_ACTIVITY_WITH_MOVABLE_FLAG;
 import static android.server.wm.app.Components.TaskMoveTestActivity.EXTRA_BOUNDS_KEY;
 import static android.server.wm.app.Components.TaskMoveTestActivity.EXTRA_DISPLAY_ID_KEY;
 import static android.server.wm.app.Components.TaskMoveTestActivity.EXTRA_EXCEPTION_KEY;
 import static android.server.wm.app.Components.TaskMoveTestActivity.EXTRA_SYNC_EXCEPTION_KEY;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
+import android.app.ActivityOptions;
+import android.app.InfeasibleActivityOptionsException;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -41,6 +48,7 @@ import android.server.wm.TaskMoveTestBase;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerState.DisplayContent;
 import android.server.wm.WindowManagerState.Task;
+import android.server.wm.app.Components;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
@@ -54,7 +62,10 @@ import java.util.function.Function;
 /** Build/Install/Run: atest CtsWindowManagerDeviceOther:TaskMoveTests */
 @Presubmit
 @android.server.wm.annotation.Group3
-@RequiresFlagsEnabled(Flags.FLAG_ENABLE_WINDOW_REPOSITIONING_API)
+@RequiresFlagsEnabled({
+    Flags.FLAG_ENABLE_REQUIRE_MOVABLE_TASK_API,
+    Flags.FLAG_ENABLE_WINDOW_REPOSITIONING_API
+})
 public class TaskMoveTests extends TaskMoveTestBase {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -62,19 +73,20 @@ public class TaskMoveTests extends TaskMoveTestBase {
     @Override
     protected IntentFilter getIntentFilter() {
         final IntentFilter filter = super.getIntentFilter();
+        filter.addAction(ACTION_NOTIFY_START_ACTIVITY_WITH_MOVABLE_FLAG_RESULT);
         filter.addAction(ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT);
         return filter;
     }
 
     /**
      * Tests that a {@link android.app.ActivityManager.AppTask#moveTaskTo} call succeeds when the
-     * request is to move the task 10 pixels to the right. Assumes that task moving is allowed on
-     * the host display.
+     * request is to move the task 10 pixels to the right. Assumes that task movability is
+     * guaranteed via {@link android.app.ActivityOptions#setMovableTaskRequired(boolean)}.
      */
     @ApiTest(
             apis = {
                 "android.app.ActivityManager.AppTask#moveTaskTo",
-                "android.app.ActivityManager#isTaskMoveAllowedOnDisplay"
+                "android.app.ActivityOptions#setMovableTaskRequired"
             })
     @Test
     public void testMoveTaskTo_move10PxRight() {
@@ -87,13 +99,13 @@ public class TaskMoveTests extends TaskMoveTestBase {
 
     /**
      * Tests that a {@link android.app.ActivityManager.AppTask#moveTaskTo} call succeeds when the
-     * request is to expand the task 10 pixels to the left. Assumes that task moving is allowed on
-     * the host display.
+     * request is to expand the task 10 pixels to the left. Assumes that task movability is
+     * guaranteed via {@link android.app.ActivityOptions#setMovableTaskRequired(boolean)}.
      */
     @ApiTest(
             apis = {
                 "android.app.ActivityManager.AppTask#moveTaskTo",
-                "android.app.ActivityManager#isTaskMoveAllowedOnDisplay"
+                "android.app.ActivityOptions#setMovableTaskRequired"
             })
     @Test
     public void testMoveTaskTo_expand10PxLeft() {
@@ -106,13 +118,13 @@ public class TaskMoveTests extends TaskMoveTestBase {
 
     /**
      * Tests that a {@link android.app.ActivityManager.AppTask#moveTaskTo} call succeeds when the
-     * request is to shrink the task 10 pixels from the bottom. Assumes that task moving is allowed
-     * on the host display.
+     * request is to shrink the task 10 pixels from the bottom. Assumes that task movability is
+     * guaranteed via {@link android.app.ActivityOptions#setMovableTaskRequired(boolean)}.
      */
     @ApiTest(
             apis = {
                 "android.app.ActivityManager.AppTask#moveTaskTo",
-                "android.app.ActivityManager#isTaskMoveAllowedOnDisplay"
+                "android.app.ActivityOptions#setMovableTaskRequired"
             })
     @Test
     public void testMoveTaskTo_shrink10PxBottom() {
@@ -126,12 +138,13 @@ public class TaskMoveTests extends TaskMoveTestBase {
     /**
      * Tests that a {@link android.app.ActivityManager.AppTask#moveTaskTo} call succeeds when the
      * request is to resize the task so that its bounds are shrunk by 10 px in all directions
-     * compared to initial ones. Assumes that task moving is allowed on the host display.
+     * compared to initial ones. Assumes that task movability is guaranteed via {@link
+     * android.app.ActivityOptions#setMovableTaskRequired(boolean)}.
      */
     @ApiTest(
             apis = {
                 "android.app.ActivityManager.AppTask#moveTaskTo",
-                "android.app.ActivityManager#isTaskMoveAllowedOnDisplay"
+                "android.app.ActivityOptions#setMovableTaskRequired"
             })
     @Test
     public void testMoveTaskTo_shrink10PxAllDirs() {
@@ -145,12 +158,13 @@ public class TaskMoveTests extends TaskMoveTestBase {
     /**
      * Tests that a {@link android.app.ActivityManager.AppTask#moveTaskTo} call succeeds when the
      * request is to resize the task so that its bounds are expanded by 10 px in all directions
-     * compared to initial ones. Assumes that task moving is allowed on the host display.
+     * compared to initial ones. Assumes that task movability is guaranteed via {@link
+     * android.app.ActivityOptions#setMovableTaskRequired(boolean)}.
      */
     @ApiTest(
             apis = {
                 "android.app.ActivityManager.AppTask#moveTaskTo",
-                "android.app.ActivityManager#isTaskMoveAllowedOnDisplay"
+                "android.app.ActivityOptions#setMovableTaskRequired"
             })
     @Test
     public void testMoveTaskTo_expand10PxAllDirs() {
@@ -163,10 +177,8 @@ public class TaskMoveTests extends TaskMoveTestBase {
 
     private void testMoveTaskTo_generalBoundsOperation(Function<Rect, Rect> boundsModifier) {
         final int displayId = getMainDisplayId();
-        launchActivityOnDisplayWithSafetyMargins(TEST_ACTIVITY, displayId);
+        launchMovableActivityOnDisplayWithSafetyMargins(TEST_ACTIVITY, displayId);
         mWmState.computeState(TEST_ACTIVITY);
-
-        assumeTaskMoveAllowedOnDisplay(displayId);
 
         final WindowManagerState.Task task = mWmState.getTaskByActivity(TEST_ACTIVITY);
         final Rect initialBounds = task.getBounds();
@@ -180,22 +192,20 @@ public class TaskMoveTests extends TaskMoveTestBase {
     /**
      * Tests that a {@link android.app.ActivityManager.AppTask#moveTaskTo} call whose requested task
      * location has bounds smaller than the CDD requires (width and height no smaller than 220dp)
-     * does not resize the task to be smaller than the CDD requirement. Assumes that task moving is
-     * allowed on the host display.
+     * does not resize the task to be smaller than the CDD requirement. Assumes that task movability
+     * is guaranteed via {@link android.app.ActivityOptions#setMovableTaskRequired(boolean)}.
      */
     @ApiTest(
             apis = {
                 "android.app.ActivityManager.AppTask#moveTaskTo",
-                "android.app.ActivityManager#isTaskMoveAllowedOnDisplay"
+                "android.app.ActivityOptions#setMovableTaskRequired"
             })
     @CddTest(requirements = "3.8.14/C-1-4")
     @Test
     public void testMoveTaskTo_resizeToTooSmallBounds() {
         final int displayId = getMainDisplayId();
-        launchActivityOnDisplay(TEST_ACTIVITY, displayId);
+        launchMovableActivityOnDisplay(TEST_ACTIVITY, displayId);
         mWmState.computeState(TEST_ACTIVITY);
-
-        assumeTaskMoveAllowedOnDisplay(displayId);
 
         final WindowManagerState.DisplayContent dc = mWmState.getDisplay(displayId);
         final int minimalTaskSize = WindowManagerState.dpToPx(220f, dc.getDpi());
@@ -220,20 +230,19 @@ public class TaskMoveTests extends TaskMoveTestBase {
     /**
      * Tests that a {@link android.app.ActivityManager.AppTask#moveTaskTo} call whose requested task
      * location has bounds partially off screen does not result in the task being off screen in any
-     * part. Assumes that task moving is allowed on the host display.
+     * part. Assumes that task movability is guaranteed via {@link
+     * android.app.ActivityOptions#setMovableTaskRequired(boolean)}.
      */
     @ApiTest(
             apis = {
                 "android.app.ActivityManager.AppTask#moveTaskTo",
-                "android.app.ActivityManager#isTaskMoveAllowedOnDisplay"
+                "android.app.ActivityOptions#setMovableTaskRequired"
             })
     @Test
     public void testMoveTaskTo_moveToPartiallyOffscreenBounds() {
         final int displayId = getMainDisplayId();
-        launchActivityOnDisplay(TEST_ACTIVITY, displayId);
+        launchMovableActivityOnDisplay(TEST_ACTIVITY, displayId);
         mWmState.computeState(TEST_ACTIVITY);
-
-        assumeTaskMoveAllowedOnDisplay(displayId);
 
         final WindowManagerState.DisplayContent dc = mWmState.getDisplay(displayId);
         final Rect displayRect = dc.getDisplayRect();
@@ -255,20 +264,19 @@ public class TaskMoveTests extends TaskMoveTestBase {
     /**
      * Tests that a {@link android.app.ActivityManager.AppTask#moveTaskTo} call whose requested task
      * location has bounds fully off screen does not result in the task being off screen in any
-     * part. Assumes that task moving is allowed on the host display.
+     * part. Assumes that task movability is guaranteed via {@link
+     * android.app.ActivityOptions#setMovableTaskRequired(boolean)}.
      */
     @ApiTest(
             apis = {
                 "android.app.ActivityManager.AppTask#moveTaskTo",
-                "android.app.ActivityManager#isTaskMoveAllowedOnDisplay"
+                "android.app.ActivityOptions#setMovableTaskRequired"
             })
     @Test
     public void testMoveTaskTo_moveToFullyOffscreenBounds() {
         final int displayId = getMainDisplayId();
-        launchActivityOnDisplay(TEST_ACTIVITY, displayId);
+        launchMovableActivityOnDisplay(TEST_ACTIVITY, displayId);
         mWmState.computeState(TEST_ACTIVITY);
-
-        assumeTaskMoveAllowedOnDisplay(displayId);
 
         final WindowManagerState.DisplayContent dc = mWmState.getDisplay(displayId);
         final Rect displayRect = dc.getDisplayRect();
@@ -290,12 +298,13 @@ public class TaskMoveTests extends TaskMoveTestBase {
     /**
      * Tests that a {@link android.app.ActivityManager.AppTask#moveTaskTo} call succeeds when the
      * requested task location points to a different display than the current host display of the
-     * task being moved. Assumes that task moving is allowed on the original host display.
+     * task being moved. Assumes that task movability is guaranteed via {@link
+     * android.app.ActivityOptions#setMovableTaskRequired(boolean)}.
      */
     @ApiTest(
             apis = {
                 "android.app.ActivityManager.AppTask#moveTaskTo",
-                "android.app.ActivityManager#isTaskMoveAllowedOnDisplay"
+                "android.app.ActivityOptions#setMovableTaskRequired"
             })
     @Test
     public void testMoveTaskTo_moveToAnotherDisplay() {
@@ -303,11 +312,9 @@ public class TaskMoveTests extends TaskMoveTestBase {
         final int targetDisplayId = createNewDisplay();
 
         final int sourceDisplayId = getMainDisplayId();
-        launchActivityOnDisplay(TEST_ACTIVITY, sourceDisplayId);
+        launchMovableActivityOnDisplay(TEST_ACTIVITY, sourceDisplayId);
         mWmState.computeState(TEST_ACTIVITY);
         final Rect initialBounds = mWmState.getTaskByActivity(TEST_ACTIVITY).getBounds();
-
-        assumeTaskMoveAllowedOnDisplay(sourceDisplayId);
 
         final Rect requestedBounds = new Rect(100, 100, 600, 600);
         sendTaskMoveRequest(targetDisplayId, requestedBounds);
@@ -318,41 +325,55 @@ public class TaskMoveTests extends TaskMoveTestBase {
     }
 
     /**
-     * Tests that the {@link android.app.ActivityManager.AppTask#isTaskMoveAllowedOnDisplay} method
-     * returns {@code false} when the caller does not hold the {@link
-     * android.Manifest.permission.REPOSITION_SELF_WINDOWS} permission.
+     * Tests that a {@link android.app.ActivityManager.AppTask#moveTaskTo} call does not change the
+     * z-order of tasks provided the target display is the same as the source display. Assumes that
+     * task movability is guaranteed via {@link
+     * android.app.ActivityOptions#setMovableTaskRequired(boolean)}.
      */
-    @ApiTest(apis = {"android.app.ActivityManager#isTaskMoveAllowedOnDisplay"})
+    @ApiTest(
+            apis = {
+                "android.app.ActivityManager.AppTask#moveTaskTo",
+                "android.app.ActivityOptions#setMovableTaskRequired"
+            })
     @Test
-    public void testIsTaskMoveAllowedOnDisplay_withoutPermission() {
+    public void testMoveTaskTo_noReorder() {
         final int displayId = getMainDisplayId();
 
-        revokeBrowserRole();
+        launchMovableActivityOnDisplayWithSafetyMargins(
+                Components.TASK_MOVE_TEST_ACTIVITY, displayId);
+        mWmState.computeState(Components.TASK_MOVE_TEST_ACTIVITY);
+        final WindowManagerState.Task movableTask =
+                mWmState.getTaskByActivity(Components.TASK_MOVE_TEST_ACTIVITY);
+        assertEquals(
+                "The task to be moved should be focused",
+                mWmState.getFocusedActivity(),
+                movableTask.getResumedActivity());
 
-        launchActivityOnDisplay(TEST_ACTIVITY, displayId);
-        mWmState.computeState(TEST_ACTIVITY);
+        launchActivityOnDisplay(Components.TEST_ACTIVITY, displayId);
+        mWmState.computeState(Components.TEST_ACTIVITY);
+        final WindowManagerState.Task occludingTask =
+                mWmState.getTaskByActivity(Components.TEST_ACTIVITY);
+        assertEquals(
+                "The occluding task should be focused",
+                mWmState.getFocusedActivity(),
+                occludingTask.getResumedActivity());
 
-        assertFalse(
-                "The isTaskMoveAllowedOnDisplay call should return false as the caller does not"
-                        + " hold permission REPOSITION_SELF_WINDOWS (granted by the BROWSER role)",
-                getIsTaskMoveAllowedOnDisplay(displayId));
-    }
+        final Rect initialBounds = movableTask.getBounds();
+        final Rect requestedBounds = new Rect(initialBounds);
+        requestedBounds.inset(10, 10, 10, 10);
+        sendTaskMoveRequest(displayId, requestedBounds);
 
-    /**
-     * Tests that the {@link android.app.ActivityManager.AppTask#isTaskMoveAllowedOnDisplay} method
-     * throws {@code IllegalArgumentException} when the display ID provided does not specify a valid
-     * display.
-     */
-    @ApiTest(apis = {"android.app.ActivityManager#isTaskMoveAllowedOnDisplay"})
-    @Test
-    public void testIsTaskMoveAllowedOnDisplay_throwsForInvalidDisplayId() {
-        final int badDisplayId = -93;
-
-        launchActivityOnDisplay(TEST_ACTIVITY, getMainDisplayId());
-        mWmState.computeState(TEST_ACTIVITY);
-
-        assertIsTaskMoveAllowedOnDisplayThrownException(
-                badDisplayId, IllegalArgumentException.class);
+        assertTaskMoveRequestReportedSuccess();
+        assertSaneTaskLocation(
+                Components.TASK_MOVE_TEST_ACTIVITY,
+                displayId,
+                initialBounds,
+                displayId,
+                requestedBounds);
+        assertEquals(
+                "The occluding task should still be focused",
+                mWmState.getFocusedActivity(),
+                occludingTask.getResumedActivity());
     }
 
     /**
@@ -363,15 +384,13 @@ public class TaskMoveTests extends TaskMoveTestBase {
     @ApiTest(
             apis = {
                 "android.app.ActivityManager.AppTask#moveTaskTo",
-                "android.app.ActivityManager#isTaskMoveAllowedOnDisplay"
+                "android.app.ActivityOptions#setMovableTaskRequired"
             })
     @Test
     public void testMoveTaskTo_withoutPermission() {
         final int displayId = getMainDisplayId();
-        launchActivityOnDisplay(TEST_ACTIVITY, displayId);
+        launchMovableActivityOnDisplay(TEST_ACTIVITY, displayId);
         mWmState.computeState(TEST_ACTIVITY);
-
-        assumeTaskMoveAllowedOnDisplay(displayId);
 
         revokeBrowserRole();
 
@@ -385,6 +404,61 @@ public class TaskMoveTests extends TaskMoveTestBase {
         sendTaskMoveRequest(displayId, requestedBounds);
         assertTaskMoveRequestReportedError(SecurityException.class);
         assertExactTaskLocation(TEST_ACTIVITY, displayId, initialBounds);
+    }
+
+    /**
+     * Tests that if an activity is started with options with {@link
+     * android.app.ActivityOptions#setMovableTaskRequired(boolean)} set to true by a caller which
+     * does not hold the {@link android.Manifest.permission.REPOSITION_SELF_WINDOWS} permission
+     * results in a {@link SecurityException} being thrown by {@link
+     * android.content.Context#startActivity(android.content.Intent, android.os.Bundle)}.
+     */
+    @ApiTest(apis = {"android.app.ActivityOptions#setMovableTaskRequired"})
+    @Test
+    public void testStartActivityWithMovableTaskRequired_withoutPermission() {
+        final int displayId = getMainDisplayId();
+
+        revokeBrowserRole();
+
+        launchActivityOnDisplay(TEST_ACTIVITY, displayId);
+        mWmState.computeState(TEST_ACTIVITY);
+
+        sendStartActivityWithMovableTaskRequired(displayId);
+
+        final boolean notified =
+                awaitBroadcast(ACTION_NOTIFY_START_ACTIVITY_WITH_MOVABLE_FLAG_RESULT);
+        final Intent intent =
+                getIntentOfBroadcast(ACTION_NOTIFY_START_ACTIVITY_WITH_MOVABLE_FLAG_RESULT);
+
+        if (!notified || intent == null) {
+            fail("The activity has not notified about the launch result.");
+        }
+
+        final Exception syncException =
+                intent.getParcelableExtra(EXTRA_SYNC_EXCEPTION_KEY, Exception.class);
+        assertTrue("Expected a SecurityException", syncException instanceof SecurityException);
+    }
+
+    /**
+     * Tests basic setter/getter capabilities of {@link
+     * android.app.ActivityOptions#setMovableTaskRequired(boolean)} and {@link
+     * android.app.ActivityOptions#isMovableTaskRequired()}.
+     */
+    @ApiTest(
+            apis = {
+                "android.app.ActivityOptions#isMovableTaskRequired",
+                "android.app.ActivityOptions#setMovableTaskRequired"
+            })
+    @Test
+    public void testActivityOptionsMovableTaskRequired() {
+        final ActivityOptions ao = ActivityOptions.makeBasic().setMovableTaskRequired(true);
+        assertTrue(
+                "Expected ActivityOptions to have the movableTaskRequired bit set",
+                ao.isMovableTaskRequired());
+        ao.setMovableTaskRequired(false);
+        assertFalse(
+                "Expected ActivityOptions to have the movableTaskRequired bit not set",
+                ao.isMovableTaskRequired());
     }
 
     private void assertExactTaskLocation(
@@ -571,19 +645,61 @@ public class TaskMoveTests extends TaskMoveTestBase {
                         .putExtra(EXTRA_BOUNDS_KEY, bounds));
     }
 
-    private void launchActivityOnDisplayWithSafetyMargins(
-            ComponentName activityName, int displayId) {
-        launchActivityOnDisplayWithSafetyMargins(activityName, displayId, 100);
+    private void sendStartActivityWithMovableTaskRequired(int displayId) {
+        logAlways(
+                "Sending ACTION_START_ACTIVITY_WITH_MOVABLE_FLAG intent for display " + displayId);
+        mContext.sendBroadcast(
+                new Intent(ACTION_START_ACTIVITY_WITH_MOVABLE_FLAG)
+                        .setFlags(Intent.FLAG_RECEIVER_FOREGROUND)
+                        .putExtra(EXTRA_DISPLAY_ID_KEY, displayId));
     }
 
-    private void launchActivityOnDisplayWithSafetyMargins(
+    /**
+     * Launches the test activity by asking an existing instance (trampoline) to launch a new
+     * instance with {@link android.app.ActivityOptions#setMovableTaskRequired(boolean)}. If the
+     * launch fails because movability cannot be guaranteed (InfeasibleActivityOptionsException),
+     * the test assumption fails.
+     */
+    private void launchMovableActivityOnDisplay(ComponentName activityName, int displayId) {
+        launchActivityOnDisplay(activityName, displayId);
+        mWmState.computeState(activityName);
+
+        sendStartActivityWithMovableTaskRequired(displayId);
+
+        final boolean notified =
+                awaitBroadcast(ACTION_NOTIFY_START_ACTIVITY_WITH_MOVABLE_FLAG_RESULT);
+        final Intent intent =
+                getIntentOfBroadcast(ACTION_NOTIFY_START_ACTIVITY_WITH_MOVABLE_FLAG_RESULT);
+
+        if (!notified || intent == null) {
+            fail("The activity has not notified about the launch result.");
+        }
+
+        final Exception syncException =
+                intent.getParcelableExtra(EXTRA_SYNC_EXCEPTION_KEY, Exception.class);
+        assumeFalse(
+                "Task movability is not supported on this display/config",
+                syncException instanceof InfeasibleActivityOptionsException);
+        assertNull("Failed to launch movable activity: " + syncException, syncException);
+
+        mWmState.waitForAppTransitionIdleOnDisplay(displayId);
+        mWmState.computeState(activityName);
+    }
+
+    private void launchMovableActivityOnDisplayWithSafetyMargins(
+            ComponentName activityName, int displayId) {
+        launchMovableActivityOnDisplayWithSafetyMargins(activityName, displayId, 100);
+    }
+
+    private void launchMovableActivityOnDisplayWithSafetyMargins(
             ComponentName activityName, int displayId, int safetyMargin) {
+        launchMovableActivityOnDisplay(activityName, displayId);
+
         mWmState.computeState();
         final DisplayContent display = mWmState.getDisplay(displayId);
         final Rect displayBounds = display.getDisplayRect();
         displayBounds.inset(safetyMargin, safetyMargin);
 
-        launchActivityOnDisplay(activityName, displayId);
         resizeActivityTask(
                 activityName,
                 displayBounds.left,

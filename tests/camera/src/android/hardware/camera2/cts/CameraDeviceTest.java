@@ -325,7 +325,8 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
                                 capReq.get(CaptureRequest.CONTROL_SETTINGS_OVERRIDE)
                                 == CameraMetadata.CONTROL_SETTINGS_OVERRIDE_OFF);
                     }
-                    if (mStaticInfo.areKeysAvailable(
+                    if (Flags.logicalMultiCameraAdditionalResults()
+                            && mStaticInfo.areKeysAvailable(
                             CaptureRequest.LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS)) {
                         assertTrue("LOGICAL_MULTI_CAMERA_ADDITIONAL_RESULTS key is null in capture"
                                 + " request template",

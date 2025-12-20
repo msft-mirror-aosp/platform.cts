@@ -453,4 +453,8 @@
     <option name="compatibility:exclude-filter" value="CtsWifiNonUpdatableTestCases android.net.wifi.sharedconnectivity.cts.app.SharedConnectivityManagerTest#bindToServiceFails_userUnlocked_callsOnRegisterCallbackFailed"/>
     <option name="compatibility:exclude-filter" value="CtsWifiNonUpdatableTestCases android.net.wifi.sharedconnectivity.cts.app.SharedConnectivityManagerTest#bindToServiceFails_userUnlocked_failedManyTimes_callsOnRegisterCallbackFailed"/>
     <option name="compatibility:exclude-filter" value="CtsWifiNonUpdatableTestCases android.net.wifi.sharedconnectivity.cts.app.SharedConnectivityManagerTest#onServiceDisconnected_whenDisconnectedUnexpectedly_shouldRecover"/>
+
+    <!-- b/463382540 -->
+    <option name="compatibility:exclude-filter" value="CtsAdExtServicesEndToEndTests com.android.adservices.tests.cts.topics.PreviewApiTest"/>
+    <option name="compatibility:exclude-filter" value="CtsAdExtServicesEndToEndTests com.android.adservices.tests.cts.topics.TopicsManagerTest"/>
 </configuration>

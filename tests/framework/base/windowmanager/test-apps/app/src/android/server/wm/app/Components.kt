@@ -665,9 +665,13 @@ object Components : ComponentsProvider() {
                 "action_notify_task_move_allowed_result"
         const val ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT =
                 "action_notify_task_move_request_result"
+        const val ACTION_NOTIFY_START_ACTIVITY_WITH_MOVABLE_FLAG_RESULT =
+                "action_notify_start_activity_with_movable_flag_result"
         const val ACTION_REGISTER_LISTENER = "action_register_listener"
         const val ACTION_REGISTER_LISTENER_ACK = "action_register_listener_ack"
         const val ACTION_REQUEST_TASK_MOVE = "action_request_task_move"
+        const val ACTION_START_ACTIVITY_WITH_MOVABLE_FLAG =
+                "action_start_activity_with_movable_flag"
         const val ACTION_UNREGISTER_LISTENER = "action_unregister_listener"
         const val ACTION_UNREGISTER_LISTENER_ACK = "action_unregister_listener_ack"
         const val EXTRA_BOUNDS_KEY = "extra_bounds_key"

@@ -36,5 +36,5 @@ android_test {
         "general-tests",
     ],
     //LOCAL_MIN_SDK_VERSION := 16
-    sdk_version: "16",
+    sdk_version: "23",
 }

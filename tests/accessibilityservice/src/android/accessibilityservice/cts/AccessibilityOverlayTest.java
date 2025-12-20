@@ -204,7 +204,6 @@ public class AccessibilityOverlayTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(com.android.server.accessibility.Flags.FLAG_CLEANUP_A11Y_OVERLAYS)
     public void testEmbeddedDisplayOverlayWithServiceExit_shouldAppearAndDisappear()
             throws Exception {
         // Set up a view that will become our accessibility overlay.
@@ -263,7 +262,6 @@ public class AccessibilityOverlayTest {
 
     @Test
     @FlakyTest
-    @RequiresFlagsEnabled(com.android.server.accessibility.Flags.FLAG_CLEANUP_A11Y_OVERLAYS)
     public void testEmbeddedWindowOverlayWithServiceExit_shouldAppearAndDisappear()
             throws Exception {
         final String overlayTitle = "App Overlay title";

@@ -1835,6 +1835,30 @@ public class PkgInstallSignatureVerificationTest extends BaseAppSecurityTest {
         assertInstallFails("v2v3-with-mldsa-87-invalid-sig.apk");
     }
 
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
+    public void testInstallV31_mldsaTargets36Dev_installUsesMlDsa() throws Exception {
+        assertInstallSucceeds("v31-rsa-2048_2-tgt-33-mldsa-65-tgt-36-dev.apk");
+        Utils.runDeviceTests(
+                getDevice(),
+                DEVICE_TESTS_PKG,
+                DEVICE_TESTS_CLASS,
+                "testMlDsaTargetedSignerIsUsedDuringInstall");
+    }
+
+    @CddTest(requirement = "4/C-0-2")
+    @Test
+    public void testInstallV31_multipleSignersTargetingSameRelease_installFails() throws Exception {
+        // To support new signature algorithms targeting the same SDK version as the previous
+        // rotated signer, the V3 signature verification had to be updated to handle two signers
+        // targeting the same SDK version, one targeting the release and the other the development
+        // version. This test verifies that the install will still fail if there are multiple
+        // signers targeting the same release or dev versions.
+        assertInstallFails("v31-rsa-2048_2-tgt-36-rsa-2048_3-tgt-36.apk");
+        assertInstallFails("v31-rsa-2048_2-tgt-36-dev-rsa-2048_3-tgt-36-dev.apk");
+    }
+
     private boolean hasIncrementalFeature() throws Exception {
         return "true\n".equals(getDevice().executeShellCommand(
                 "pm has-feature android.software.incremental_delivery"));

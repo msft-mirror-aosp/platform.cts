@@ -37,6 +37,7 @@ public class V3RotationTest extends AndroidTestCase {
     private static final String PKG = "android.appsecurity.cts.tinyapp";
     private static final String COMPANION_PKG = "android.appsecurity.cts.tinyapp_companion";
     private static final String PERMISSION_NAME = "android.appsecurity.cts.tinyapp.perm";
+    private static final char[] HEX_VALUES = "0123456789abcdef".toCharArray();
 
     private static final String FIRST_CERT_HEX =
             "308203773082025fa0030201020204357f7a97300d06092a864886f70d01010b0500306c310b3009060355"
@@ -162,6 +163,15 @@ public class V3RotationTest extends AndroidTestCase {
                     + "2a8648ce3d040302034700304402202ded97f7ddcd3229ad26783436186f"
                     + "1e74247a4422baf99f1eeb715dfe7e895502207814248b1b7742f3009602"
                     + "bdc96f66529884fc605a070ff25c84648c8fccb44b";
+
+    // ML-DSA certificates are prohibitively large to store as hex, so perform verification based
+    // on the digest of the certificate.
+    private static final String ML_DSA_65_CERT_SHA256_DIGEST =
+            "6db4c701ac75b9a29b264dbae2027ad4d34792bee5b4f2c5d5834d960d2f4c81";
+    private static final String RSA_2048_SHA256_DIGEST =
+            "fb5dbd3c669af9fc236c6991e6387b7f11ff0590997f22d0f5c74ff40e04fca8";
+    private static final String RSA_2048_2_SHA256_DIGEST =
+            "681b0e56a796350c08647352a4db800cc44b2adc8f4c72fa350bd05d4d50264d";
 
     public void testHasPerm() throws Exception {
         PackageManager pm = getContext().getPackageManager();
@@ -350,6 +360,36 @@ public class V3RotationTest extends AndroidTestCase {
                 pm.hasSigningCertificate(PKG, firstCertBytes, PackageManager.CERT_INPUT_RAW_X509));
     }
 
+    public void testMlDsaTargetedSignerIsUsedDuringInstall() throws Exception {
+        // Verifies that the platform recognizes the ML-DSA signer as the signer targeting the
+        // current platform release.
+        PackageManager pm = getContext().getPackageManager();
+        assertTrue(
+                pm.hasSigningCertificate(
+                        PKG,
+                        fromHexToByteArray(ML_DSA_65_CERT_SHA256_DIGEST),
+                        PackageManager.CERT_INPUT_SHA256));
+        assertTrue(
+                pm.hasSigningCertificate(
+                        PKG,
+                        fromHexToByteArray(RSA_2048_SHA256_DIGEST),
+                        PackageManager.CERT_INPUT_SHA256));
+        assertTrue(
+                pm.hasSigningCertificate(
+                        PKG,
+                        fromHexToByteArray(RSA_2048_2_SHA256_DIGEST),
+                        PackageManager.CERT_INPUT_SHA256));
+
+        PackageInfo pi = pm.getPackageInfo(PKG, PackageManager.GET_SIGNING_CERTIFICATES);
+        assertExpectedSignaturesDigests(
+                pi.signingInfo.getApkContentsSigners(), ML_DSA_65_CERT_SHA256_DIGEST);
+        assertExpectedSignaturesDigests(
+                pi.signingInfo.getSigningCertificateHistory(),
+                RSA_2048_SHA256_DIGEST,
+                RSA_2048_2_SHA256_DIGEST,
+                ML_DSA_65_CERT_SHA256_DIGEST);
+    }
+
     private  static byte[] fromHexToByteArray(String str) {
         if (str == null || str.length() == 0 || str.length() % 2 != 0) {
             return null;
@@ -365,6 +405,16 @@ public class V3RotationTest extends AndroidTestCase {
                             | (getIndex(chars[i * 2 + 1]) & 0x0F));
         }
         return bytes;
+    }
+
+    private static String bytesToHex(byte[] bytes) {
+        char[] hexChars = new char[bytes.length * 2];
+        for (int i = 0; i < bytes.length; i++) {
+            int byteValue = bytes[i] & 0xFF;
+            hexChars[i * 2] = HEX_VALUES[byteValue >>> 4];
+            hexChars[i * 2 + 1] = HEX_VALUES[byteValue & 0x0F];
+        }
+        return new String(hexChars);
     }
 
     // copy of ByteStringUtils - lowercase version (to match inputs)
@@ -396,6 +446,22 @@ public class V3RotationTest extends AndroidTestCase {
             // Remove the reported certificate from the set to ensure duplicates are not matched.
             if (!expectedSignatureSet.remove(reportedCert)) {
                 fail("Received an unexpected signature during the test: " + reportedCert);
+            }
+        }
+    }
+
+    private static void assertExpectedSignaturesDigests(
+            Signature[] signatures, String... expectedSignatures) throws Exception {
+        int numSigners = signatures.length;
+        assertEquals(expectedSignatures.length, numSigners);
+
+        Set<String> expectedSignatureSet = new HashSet<>(Arrays.asList(expectedSignatures));
+        for (int i = 0; i < numSigners; i++) {
+            String reportedCertDigest =
+                    bytesToHex(computeSha256DigestBytes(signatures[i].toByteArray()));
+            // Remove the reported certificate from the set to ensure duplicates are not matched.
+            if (!expectedSignatureSet.remove(reportedCertDigest)) {
+                fail("Received an unexpected signature during the test: " + reportedCertDigest);
             }
         }
     }

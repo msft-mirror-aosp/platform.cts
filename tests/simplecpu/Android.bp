@@ -34,5 +34,5 @@ android_test {
         "cts",
         "general-tests",
     ],
-    sdk_version: "16",
+    sdk_version: "23",
 }

@@ -97,6 +97,7 @@ public class MainActivity extends Activity {
     private static final String EXTRA_NO_LAUNCHER_ACTIVITY_TEST_APP =
             "extra_no_launcher_activity_test_app";
     private static final String EXTRA_USE_TEST_APP = "extra_use_test_app";
+    private static final String EXTRA_NEW_TASK = "extra_new_task";
 
     private static final String APK_MIME_TYPE = "application/vnd.android.package-archive";
 
@@ -308,11 +309,14 @@ public class MainActivity extends Activity {
                 STATUS_CUJ_INSTALLER_START_ACTIVITY_READY);
     }
 
-    private void startInstallationViaIntent(boolean getResult, String apkName) {
+    private void startInstallationViaIntent(boolean getResult, String apkName, boolean newTask) {
         final File apkFile = new File(getFilesDir(), apkName);
         final Intent intent = new Intent(Intent.ACTION_INSTALL_PACKAGE);
         intent.setData(FileProvider.getUriForFile(this, CONTENT_AUTHORITY, apkFile));
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        if (newTask) {
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        }
         intent.putExtra(Intent.EXTRA_RETURN_RESULT, getResult);
         if (getResult) {
             startActivityForResult(intent, REQUEST_CODE);
@@ -401,6 +405,8 @@ public class MainActivity extends Activity {
                     /* defaultValue= */ false);
             final boolean useTestApp = intent.getBooleanExtra(EXTRA_USE_TEST_APP,
                     /* defaultValue= */ false);
+            final boolean newTask =
+                    intent.getBooleanExtra(EXTRA_NEW_TASK, /* defaultValue= */ false);
             Log.i(TAG, "RequestInstallerReceiver Received intent " + intent
                     + ", event: " + event + ", isUpdate:" + isUpdate
                     + ", useTestApp:" + useTestApp
@@ -420,13 +426,13 @@ public class MainActivity extends Activity {
                 }
             } else if (event == EVENT_REQUEST_INSTALLER_INTENT) {
                 try {
-                    startInstallationViaIntent(/* getResult= */ false, testApkName);
+                    startInstallationViaIntent(/* getResult= */ false, testApkName, newTask);
                 } catch (Exception ex) {
                     Log.e(TAG, "Exception event:" + event, ex);
                 }
             } else if (event == EVENT_REQUEST_INSTALLER_INTENT_FOR_RESULT) {
                 try {
-                    startInstallationViaIntent(/* getResult= */ true, testApkName);
+                    startInstallationViaIntent(/* getResult= */ true, testApkName, newTask);
                 } catch (Exception ex) {
                     Log.e(TAG, "Exception event:" + event, ex);
                 }
