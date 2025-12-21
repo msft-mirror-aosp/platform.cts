@@ -167,7 +167,6 @@ import java.net.InetAddress;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -4324,68 +4323,6 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         new WifiNetworkConnectionStatistics(stats);
     }
 
-    public static class TestRestrictAutoJoinToSubscriptionIdCallback
-            implements WifiManager.RestrictAutoJoinToSubscriptionIdCallback {
-        private static class Event {}
-
-        private static class StartedEvent extends Event {
-            public final int subscriptionId;
-
-            StartedEvent(int subId) {
-                this.subscriptionId = subId;
-            }
-
-            @Override
-            public String toString() {
-                return "StartedEvent[subId=" + subscriptionId + "]";
-            }
-        }
-
-        private static class StoppedEvent extends Event {
-            @Override
-            public String toString() {
-                return "StoppedEvent";
-            }
-        }
-
-        private final Object mLock;
-        private final ArrayDeque<Event> mEvents = new ArrayDeque<>();
-
-        TestRestrictAutoJoinToSubscriptionIdCallback(Object lock) {
-            mLock = lock;
-        }
-
-        @Override
-        public void onRestrictionStarted(int subscriptionId) {
-            synchronized (mLock) {
-                mEvents.add(new StartedEvent(subscriptionId));
-                mLock.notifyAll();
-            }
-        }
-
-        @Override
-        public void onRestrictionsStopped() {
-            synchronized (mLock) {
-                mEvents.add(new StoppedEvent());
-                mLock.notifyAll();
-            }
-        }
-
-        /** Waits for the next event and returns it. Fails the test if the timeout is exceeded. */
-        public Event waitForNextEvent(long timeoutMillis) throws InterruptedException {
-            synchronized (mLock) {
-                long deadline = System.currentTimeMillis() + timeoutMillis;
-                while (mEvents.isEmpty() && System.currentTimeMillis() < deadline) {
-                    mLock.wait(deadline - System.currentTimeMillis());
-                }
-                if (mEvents.isEmpty()) {
-                    fail("Timed out waiting for RestrictAutoJoinToSubIdCallback event.");
-                }
-                return mEvents.poll();
-            }
-        }
-    }
-
     /**
      * Verify that startRestrictingAutoJoinToSubscriptionId disconnects wifi and disables
      * auto-connect to non-carrier-merged networks. Then verify that
@@ -4397,8 +4334,8 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
     @Test
     public void testStartAndStopRestrictingAutoJoinToSubscriptionId() throws Exception {
         final int fakeSubscriptionId = 5;
-        final TestRestrictAutoJoinToSubscriptionIdCallback callback =
-                new TestRestrictAutoJoinToSubscriptionIdCallback(mLock);
+        final TestHelper.TestRestrictAutoJoinToSubscriptionIdCallback callback =
+                new TestHelper.TestRestrictAutoJoinToSubscriptionIdCallback(mLock);
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
 
         try {
@@ -4406,27 +4343,30 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             sWifiManager.addRestrictAutoJoinToSubscriptionIdCallback(mExecutor, callback);
 
             // Verify that the initial callback reports that the restriction is inactive.
-            TestRestrictAutoJoinToSubscriptionIdCallback.Event initialEvent =
+            TestHelper.TestRestrictAutoJoinToSubscriptionIdCallback.Event initialEvent =
                     callback.waitForNextEvent(TEST_WAIT_DURATION_MS);
             assertTrue(
                     "Initial event should be StoppedEvent, but was " + initialEvent,
                     initialEvent
-                            instanceof TestRestrictAutoJoinToSubscriptionIdCallback.StoppedEvent);
+                            instanceof
+                            TestHelper.TestRestrictAutoJoinToSubscriptionIdCallback.StoppedEvent);
 
             // Start the restriction.
             sWifiManager.startRestrictingAutoJoinToSubscriptionId(fakeSubscriptionId);
 
             // Verify the listener receives the 'started' event with the correct subId.
-            TestRestrictAutoJoinToSubscriptionIdCallback.Event startedEvent =
+            TestHelper.TestRestrictAutoJoinToSubscriptionIdCallback.Event startedEvent =
                     callback.waitForNextEvent(TEST_WAIT_DURATION_MS);
             assertTrue(
                     "Event after starting should be StartedEvent, but was " + startedEvent,
                     startedEvent
-                            instanceof TestRestrictAutoJoinToSubscriptionIdCallback.StartedEvent);
+                            instanceof
+                            TestHelper.TestRestrictAutoJoinToSubscriptionIdCallback.StartedEvent);
             assertEquals(
                     "Subscription ID should match",
                     fakeSubscriptionId,
-                    ((TestRestrictAutoJoinToSubscriptionIdCallback.StartedEvent) startedEvent)
+                    ((TestHelper.TestRestrictAutoJoinToSubscriptionIdCallback.StartedEvent)
+                                    startedEvent)
                             .subscriptionId);
 
             // Verify that the restriction prevents us from auto-joining our saved network.
@@ -4438,12 +4378,13 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             sWifiManager.stopRestrictingAutoJoinToSubscriptionId();
 
             // Verify the listener receives the 'stopped' event.
-            TestRestrictAutoJoinToSubscriptionIdCallback.Event stoppedEvent =
+            TestHelper.TestRestrictAutoJoinToSubscriptionIdCallback.Event stoppedEvent =
                     callback.waitForNextEvent(TEST_WAIT_DURATION_MS);
             assertTrue(
                     "Event after stopping should be StoppedEvent, but was " + stoppedEvent,
                     stoppedEvent
-                            instanceof TestRestrictAutoJoinToSubscriptionIdCallback.StoppedEvent);
+                            instanceof
+                            TestHelper.TestRestrictAutoJoinToSubscriptionIdCallback.StoppedEvent);
 
             // Verify that we can auto-join the saved network again.
             startScan();
