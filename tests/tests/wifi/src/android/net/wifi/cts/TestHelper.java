@@ -66,6 +66,7 @@ import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.wifi.flags.Flags;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -438,6 +439,68 @@ public class TestHelper {
                 return noTimeout;
             } catch (InterruptedException e) {
                 return false;
+            }
+        }
+    }
+
+    public static class TestRestrictAutoJoinToSubscriptionIdCallback
+            implements WifiManager.RestrictAutoJoinToSubscriptionIdCallback {
+        public static class Event {}
+
+        public static class StartedEvent extends Event {
+            public final int subscriptionId;
+
+            public StartedEvent(int subId) {
+                this.subscriptionId = subId;
+            }
+
+            @Override
+            public String toString() {
+                return "StartedEvent[subId=" + subscriptionId + "]";
+            }
+        }
+
+        public static class StoppedEvent extends Event {
+            @Override
+            public String toString() {
+                return "StoppedEvent";
+            }
+        }
+
+        private final Object mLock;
+        private final ArrayDeque<Event> mEvents = new ArrayDeque<>();
+
+        TestRestrictAutoJoinToSubscriptionIdCallback(Object lock) {
+            mLock = lock;
+        }
+
+        @Override
+        public void onRestrictionStarted(int subscriptionId) {
+            synchronized (mLock) {
+                mEvents.add(new StartedEvent(subscriptionId));
+                mLock.notifyAll();
+            }
+        }
+
+        @Override
+        public void onRestrictionsStopped() {
+            synchronized (mLock) {
+                mEvents.add(new StoppedEvent());
+                mLock.notifyAll();
+            }
+        }
+
+        /** Waits for the next event and returns it. Fails the test if the timeout is exceeded. */
+        public Event waitForNextEvent(long timeoutMillis) throws InterruptedException {
+            synchronized (mLock) {
+                long deadline = System.currentTimeMillis() + timeoutMillis;
+                while (mEvents.isEmpty() && System.currentTimeMillis() < deadline) {
+                    mLock.wait(deadline - System.currentTimeMillis());
+                }
+                if (mEvents.isEmpty()) {
+                    fail("Timed out waiting for RestrictAutoJoinToSubIdCallback event.");
+                }
+                return mEvents.poll();
             }
         }
     }
