@@ -42,6 +42,8 @@ import com.android.internal.camera.flags.Flags;
 import junit.framework.Assert;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -2943,6 +2945,26 @@ public class StaticMetadata {
                     (poseReference == CameraMetadata.LENS_POSE_REFERENCE_UNDEFINED);
         }
         return isPoseReferenceUndefined;
+    }
+
+    /**
+     * Check if camera characteristic for shared session configuration is present.
+     */
+    public boolean sharedSessionConfigurationPresent() {
+       return (getSharedSessionConfiguration() != null);
+    }
+
+    public Object getSharedSessionConfiguration() {
+        try {
+            Class<?> sharedSessionConfigClass = Class.forName("android.hardware.camera2.params.SharedSessionConfiguration");
+            Field sharedSessionConfigKeyField = CameraCharacteristics.class.getField("SHARED_SESSION_CONFIGURATION");
+            CameraCharacteristics.Key<?> sharedSessionConfigKey = (CameraCharacteristics.Key<?>) sharedSessionConfigKeyField.get(null);
+
+            Object sharedSessionConfigObj = mCharacteristics.get(sharedSessionConfigKey);
+            return sharedSessionConfigObj;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /**
