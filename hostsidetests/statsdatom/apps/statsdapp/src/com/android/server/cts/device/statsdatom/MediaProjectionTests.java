@@ -49,9 +49,13 @@ public class MediaProjectionTests {
     private static final String SYSTEM_UI_PACKAGE = "com.android.systemui";
     private static final String ACCEPT_RESOURCE_ID = "android:id/button1";
     private static final String CANCEL_RESOURCE_ID = "android:id/button2";
-    private static final String MEDIA_PROJECTION_CONSENT_DIALOG =
-            SYSTEM_UI_PACKAGE + ":id/screen_share_permission_dialog";
     private static final String SHARE_TAB_TEST_TAG = "ShareTabOption";
+    private static final Pattern MEDIA_PROJECTION_CONSENT_DIALOG =
+            Pattern.compile(
+                    SHARE_TAB_TEST_TAG
+                            + "|"
+                            + SYSTEM_UI_PACKAGE
+                            + ":id/screen_share_permission_dialog");
     private static final String SHARE_APP_WINDOW_TEST_TAG = "ShareAppWindowOption";
 
     // Builds from 24Q3 and earlier will have screen_share_mode_spinner, while builds from
@@ -109,13 +113,12 @@ public class MediaProjectionTests {
         mActivityRule.launchActivity(null);
         mDevice.waitForIdle();
 
-        UiObject2 consentDialog = mDevice.wait(
-                Until.findObject(By.res(MEDIA_PROJECTION_CONSENT_DIALOG)), TIMEOUT);
-        UiObject2 cancelButton =
-                consentDialog.scrollUntil(
-                        Direction.DOWN, Until.findObject(By.res(CANCEL_RESOURCE_ID)));
+        // Wait for either the new UI or the old UI to appear
+        mDevice.wait(Until.hasObject(By.res(MEDIA_PROJECTION_CONSENT_DIALOG)), TIMEOUT);
+
+        // Dismiss the dialog using the back gesture.
         mDevice.waitForIdle();
-        cancelButton.click();
+        mDevice.pressBack();
         mDevice.wait(Until.gone(By.res(MEDIA_PROJECTION_CONSENT_DIALOG)), TIMEOUT);
     }
 
