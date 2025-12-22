@@ -35,4 +35,8 @@ extern jboolean nativeTestSimpleDecodeQueueCSD(JNIEnv* env, jobject, jstring jDe
                                                jstring jMediaType, jstring jtestFile,
                                                jint jColorFormat, jobject jRetMsg);
 
+extern jboolean nativeTestImageSurfaceCropRect(JNIEnv* env, jobject, jstring jDecoder,
+                                               jstring jMediaType, jstring jtestFile,
+                                               jint jColorFormat, jobject jRetMsg);
+
 #endif // MEDIACTSNATIVE_NATIVE_CODEC_DECODER_TEST_COMMON_H

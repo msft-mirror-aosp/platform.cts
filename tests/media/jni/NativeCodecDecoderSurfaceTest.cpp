@@ -35,9 +35,20 @@ int registerAndroidMediaV2CtsDecoderSurfaceTest(JNIEnv* env) {
     return env->RegisterNatives(c, methodTable, sizeof(methodTable) / sizeof(JNINativeMethod));
 }
 
+int registerAndroidMediaV2CtsImageSurfaceCropTest(JNIEnv* env) {
+    const JNINativeMethod methodTable[] = {
+            {"nativeTestImageSurfaceCropRect",
+             "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/StringBuilder;)Z",
+             (void*)nativeTestImageSurfaceCropRect},
+    };
+    jclass c = env->FindClass("android/mediav2/cts/ImageReaderCropValidationTest");
+    return env->RegisterNatives(c, methodTable, sizeof(methodTable) / sizeof(JNINativeMethod));
+}
+
 extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void*) {
     JNIEnv* env;
     if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) return JNI_ERR;
     if (registerAndroidMediaV2CtsDecoderSurfaceTest(env) != JNI_OK) return JNI_ERR;
+    if (registerAndroidMediaV2CtsImageSurfaceCropTest(env) != JNI_OK) return JNI_ERR;
     return JNI_VERSION_1_6;
 }

@@ -20,16 +20,123 @@
 
 #include <android/native_window_jni.h>
 #include <jni.h>
+#include <media/NdkImage.h>
+#include <media/NdkImageReader.h>
 #include <media/NdkMediaExtractor.h>
 #include <sys/stat.h>
 
 #include <array>
+#include <chrono>
+#include <condition_variable>
 #include <fstream>
 #include <string>
 
 #include "NativeCodecDecoderTestCommon.h"
 #include "NativeCodecTestBase.h"
 #include "NativeMediaCommon.h"
+
+class ImageReaderHelper {
+  public:
+    ImageReaderHelper(int32_t width, int32_t height, int32_t format, uint64_t usage,
+                      int32_t maxImages);
+    ~ImageReaderHelper();
+    int initImageReader();
+    ANativeWindow* getNativeWindow() { return mImgReaderAnw; }
+    void handleImageAvailable();
+    AImage* getImage();
+    static void onImageAvailable(void* context, AImageReader* reader);
+
+  private:
+    int32_t mWidth;
+    int32_t mHeight;
+    int32_t mFormat;
+    uint64_t mUsage;
+    uint32_t mMaxImages;
+    std::mutex mMutex;
+    std::condition_variable mCv;
+    size_t mAvailableImages{0};
+    AImageReader* mImgReader{nullptr};
+    ANativeWindow* mImgReaderAnw{nullptr};
+    AImage* mImage{nullptr};
+    AImageReader_ImageListener mReaderAvailableCb{this, onImageAvailable};
+};
+
+ImageReaderHelper::ImageReaderHelper(int32_t width, int32_t height, int32_t format, uint64_t usage,
+                                     int32_t maxImages)
+      : mWidth(width), mHeight(height), mFormat(format), mUsage(usage), mMaxImages(maxImages) {}
+
+ImageReaderHelper::~ImageReaderHelper() {
+    if (mImage) {
+        AImage_delete(mImage);
+        mImage = nullptr;
+    }
+    if (mImgReaderAnw) {
+        AImageReader_delete(mImgReader);
+        mImgReader = nullptr;
+        mImgReaderAnw = nullptr;
+    }
+}
+
+int ImageReaderHelper::initImageReader() {
+    if (mImgReader != nullptr || mImgReaderAnw != nullptr) {
+        ALOGE("Cannot reinitialize image reader, mImgReader=%p, mImgReaderAnw=%p", mImgReader,
+              mImgReaderAnw);
+        return -1;
+    }
+
+    int ret = AImageReader_newWithUsage(mWidth, mHeight, mFormat, mUsage, mMaxImages, &mImgReader);
+    if (ret != AMEDIA_OK || mImgReader == nullptr) {
+        ALOGE("Failed to create new AImageReader, ret=%d, mImgReader=%p", ret, mImgReader);
+        return -1;
+    }
+
+    ret = AImageReader_setImageListener(mImgReader, &mReaderAvailableCb);
+    if (ret != AMEDIA_OK) {
+        ALOGE("Failed to set image available listener, ret=%d.", ret);
+        return ret;
+    }
+
+    ret = AImageReader_getWindow(mImgReader, &mImgReaderAnw);
+    if (ret != AMEDIA_OK || mImgReaderAnw == nullptr) {
+        ALOGE("Failed to get ANativeWindow from AImageReader, ret=%d, mImgReaderAnw=%p.", ret,
+              mImgReaderAnw);
+        return -1;
+    }
+
+    return 0;
+}
+
+void ImageReaderHelper::handleImageAvailable() {
+    std::unique_lock<std::mutex> lock(mMutex);
+    mAvailableImages += 1;
+    lock.unlock();
+    mCv.notify_one();
+}
+
+AImage* ImageReaderHelper::getImage() {
+    int retry = 3;
+    std::unique_lock<std::mutex> lock(mMutex);
+    if (mImage != nullptr) {
+        AImage_delete(mImage);
+        mImage = nullptr;
+        mAvailableImages--;
+    }
+    while (retry > 0) {
+        if (mAvailableImages > 0) {
+            auto result = AImageReader_acquireNextImage(mImgReader, &mImage);
+            if (result == AMEDIA_OK && mImage != nullptr) break;
+        }
+        mCv.wait_for(lock, std::chrono::seconds(1));
+        retry--;
+    }
+    lock.unlock();
+    return mImage;
+}
+
+void ImageReaderHelper::onImageAvailable(void* obj, AImageReader*) {
+    ImageReaderHelper* thiz = reinterpret_cast<ImageReaderHelper*>(obj);
+    thiz->handleImageAvailable();
+}
 
 class CodecDecoderTest final : public CodecTestBase {
   private:
@@ -42,6 +149,7 @@ class CodecDecoderTest final : public CodecTestBase {
     std::vector<std::pair<void*, size_t>> mCsdBuffers;
     int mCurrCsdIdx;
     ANativeWindow* mWindow;
+    ImageReaderHelper* mImgReaderHelper;
 
     void setUpAudioReference(const char* refFile);
     void deleteReference();
@@ -67,6 +175,7 @@ class CodecDecoderTest final : public CodecTestBase {
     bool testFlush(const char* decoder, const char* testFile, int colorFormat);
     bool testOnlyEos(const char* decoder, const char* testFile, int colorFormat);
     bool testSimpleDecodeQueueCSD(const char* decoder, const char* testFile, int colorFormat);
+    bool testSimpleDecodeToImageSurface(const char* decoder, const char* testFile, int colorFormat);
 };
 
 CodecDecoderTest::CodecDecoderTest(const char* mediaType, ANativeWindow* window)
@@ -77,11 +186,16 @@ CodecDecoderTest::CodecDecoderTest(const char* mediaType, ANativeWindow* window)
       mInpDecFormat(nullptr),
       mInpDecDupFormat(nullptr),
       mCurrCsdIdx(0),
-      mWindow{window} {}
+      mWindow{window},
+      mImgReaderHelper{nullptr} {}
 
 CodecDecoderTest::~CodecDecoderTest() {
     deleteReference();
     deleteExtractor();
+    if (mImgReaderHelper != nullptr) {
+        delete mImgReaderHelper;
+        mImgReaderHelper = nullptr;
+    }
 }
 
 void CodecDecoderTest::setUpAudioReference(const char* refFile) {
@@ -247,6 +361,7 @@ bool CodecDecoderTest::dequeueOutput(size_t bufferIndex, AMediaCodecBufferInfo* 
     if ((info->flags & AMEDIACODEC_BUFFER_FLAG_END_OF_STREAM) != 0) {
         mSawOutputEOS = true;
     }
+    AImageCropRect refRect;
     if (info->size > 0 && (info->flags & AMEDIACODEC_BUFFER_FLAG_CODEC_CONFIG) == 0) {
         if (mSaveToMem) {
             size_t buffSize;
@@ -267,6 +382,31 @@ bool CodecDecoderTest::dequeueOutput(size_t bufferIndex, AMediaCodecBufferInfo* 
                 mOutputBuff->updateChecksum(buf, info, width, height, stride, mBytesPerSample);
             }
         }
+        if (mImgReaderHelper != nullptr) {
+            AMediaFormat* format = AMediaCodec_getBufferFormat(mCodec, bufferIndex);
+            int width, height;
+            AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_WIDTH, &width);
+            AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_HEIGHT, &height);
+
+            int cropLeft, cropRight, cropTop, cropBottom;
+            if (AMediaFormat_getRect(format, "crop", &cropLeft, &cropTop, &cropRight,
+                                     &cropBottom) ||
+                (AMediaFormat_getInt32(format, "crop-left", &cropLeft) &&
+                 AMediaFormat_getInt32(format, "crop-top", &cropTop) &&
+                 AMediaFormat_getInt32(format, "crop-right", &cropRight) &&
+                 AMediaFormat_getInt32(format, "crop-bottom", &cropBottom))) {
+                refRect.left = cropLeft;
+                refRect.top = cropTop;
+                refRect.right = cropRight + 1;
+                refRect.bottom = cropBottom + 1;
+            } else {
+                refRect.left = 0;
+                refRect.top = 0;
+                refRect.right = width;
+                refRect.bottom = height;
+            }
+            AMediaFormat_delete(format);
+        }
         mOutputBuff->saveOutPTS(info->presentationTimeUs);
         mOutputCount++;
     }
@@ -274,6 +414,20 @@ bool CodecDecoderTest::dequeueOutput(size_t bufferIndex, AMediaCodecBufferInfo* 
           info->presentationTimeUs, info->flags);
     RETURN_IF_FAIL(AMediaCodec_releaseOutputBuffer(mCodec, bufferIndex, mWindow != nullptr),
                    "AMediaCodec_releaseOutputBuffer failed")
+    if (mImgReaderHelper != nullptr) {
+        if (info->size > 0 && (info->flags & AMEDIACODEC_BUFFER_FLAG_CODEC_CONFIG) == 0) {
+            const AImage* img = mImgReaderHelper->getImage();
+            RETURN_IF_NULL(img, std::string{"failed to obtain image from image reader"})
+            AImageCropRect rect;
+            RETURN_IF_FAIL(AImage_getCropRect(img, &rect),
+                           "failed to obtained crop rect for image acquired by image reader")
+            RETURN_IF_TRUE(refRect.left != rect.left || refRect.top != rect.top ||
+                                   refRect.right != rect.right || refRect.bottom != rect.bottom,
+                           StringFormat("expected rect (%d, %d, %d, %d), got rect (%d %d %d %d)",
+                                        refRect.left, refRect.top, refRect.right, refRect.bottom,
+                                        rect.left, rect.top, rect.right, rect.bottom))
+        }
+    }
     return !hasSeenError();
 }
 
@@ -634,6 +788,34 @@ bool CodecDecoderTest::testSimpleDecodeQueueCSD(const char* decoder, const char*
     return true;
 }
 
+bool CodecDecoderTest::testSimpleDecodeToImageSurface(const char* decoder, const char* testFile,
+                                                      int colorFormat) {
+    if (!setUpExtractor(testFile, colorFormat)) return false;
+    int format =
+            colorFormat == COLOR_FormatSurface ? AIMAGE_FORMAT_PRIVATE : AIMAGE_FORMAT_YUV_420_888;
+    int usage = format == AIMAGE_FORMAT_PRIVATE ? 0 : AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN;
+    mImgReaderHelper = new ImageReaderHelper(getWidth(mInpDecFormat), getHeight(mInpDecFormat),
+                                             format, usage, 1);
+    RETURN_IF_TRUE(mImgReaderHelper->initImageReader() != 0,
+                   std::string{"failed to initialize image reader"});
+    mWindow = mImgReaderHelper->getNativeWindow();
+    mSaveToMem = false;
+    mOutputBuff = mRefBuff;
+    mOutputBuff->reset();
+    AMediaExtractor_seekTo(mExtractor, 0, AMEDIAEXTRACTOR_SEEK_CLOSEST_SYNC);
+    mCodec = AMediaCodec_createCodecByName(decoder);
+    RETURN_IF_NULL(mCodec, StringFormat("unable to create codec %s", decoder))
+    if (!configureCodec(mInpDecFormat, true, false, false)) return false;
+    RETURN_IF_FAIL(AMediaCodec_start(mCodec), "AMediaCodec_start failed")
+    if (!doWork(5)) return false;
+    if (!queueEOS()) return false;
+    if (!waitForAllOutputs()) return false;
+    RETURN_IF_FAIL(AMediaCodec_stop(mCodec), "AMediaCodec_stop failed")
+    RETURN_IF_FAIL(AMediaCodec_delete(mCodec), "AMediaCodec_delete failed")
+    mCodec = nullptr;
+    return true;
+}
+
 jboolean nativeTestSimpleDecode(JNIEnv* env, jobject, jstring jDecoder, jobject surface,
                                 jstring jMediaType, jstring jtestFile, jstring jrefFile,
                                 jint jColorFormat, jfloat jrmsError, jlong jChecksum,
@@ -718,6 +900,26 @@ jboolean nativeTestSimpleDecodeQueueCSD(JNIEnv* env, jobject, jstring jDecoder, 
     const char* cTestFile = env->GetStringUTFChars(jtestFile, nullptr);
     auto codecDecoderTest = new CodecDecoderTest(cMediaType, nullptr);
     bool isPass = codecDecoderTest->testSimpleDecodeQueueCSD(cDecoder, cTestFile, jColorFormat);
+    std::string msg = isPass ? std::string{} : codecDecoderTest->getErrorMsg();
+    delete codecDecoderTest;
+    jclass clazz = env->GetObjectClass(jRetMsg);
+    jmethodID mId =
+            env->GetMethodID(clazz, "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;");
+    env->CallObjectMethod(jRetMsg, mId, env->NewStringUTF(msg.c_str()));
+    env->ReleaseStringUTFChars(jDecoder, cDecoder);
+    env->ReleaseStringUTFChars(jMediaType, cMediaType);
+    env->ReleaseStringUTFChars(jtestFile, cTestFile);
+    return static_cast<jboolean>(isPass);
+}
+
+jboolean nativeTestImageSurfaceCropRect(JNIEnv* env, jobject, jstring jDecoder, jstring jMediaType,
+                                        jstring jtestFile, jint jColorFormat, jobject jRetMsg) {
+    const char* cDecoder = env->GetStringUTFChars(jDecoder, nullptr);
+    const char* cMediaType = env->GetStringUTFChars(jMediaType, nullptr);
+    const char* cTestFile = env->GetStringUTFChars(jtestFile, nullptr);
+    auto codecDecoderTest = new CodecDecoderTest(cMediaType, nullptr);
+    bool isPass =
+            codecDecoderTest->testSimpleDecodeToImageSurface(cDecoder, cTestFile, jColorFormat);
     std::string msg = isPass ? std::string{} : codecDecoderTest->getErrorMsg();
     delete codecDecoderTest;
     jclass clazz = env->GetObjectClass(jRetMsg);
