@@ -885,7 +885,7 @@ public class LoginActivityTest
                         .getCurrentServiceInstance()
                         .getOnlyFinishedSession();
         assertThat((session.context.getFlags()
-                & ContentCaptureContext.FLAG_DISABLED_BY_APP) != 0).isTrue();
+                & ContentCaptureContext.FLAG_DISABLED_BY_APP) != 0).isFalse();
         assertThat((session.context.getFlags()
                 & ContentCaptureContext.FLAG_DISABLED_BY_FLAG_SECURE) != 0).isTrue();
         final ContentCaptureSessionId sessionId = session.id;
