@@ -23,9 +23,7 @@ import static android.Manifest.permission.MANAGE_USERS;
 import static android.Manifest.permission.QUERY_USERS;
 import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
 
-import android.content.pm.Flags;
 import android.content.pm.PackageManager;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
@@ -46,7 +44,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
-@RequiresFlagsEnabled(Flags.FLAG_PROTECT_SUPERVISION_PACKAGES)
 public class ProtectedPackagesTest {
 
     @Rule
