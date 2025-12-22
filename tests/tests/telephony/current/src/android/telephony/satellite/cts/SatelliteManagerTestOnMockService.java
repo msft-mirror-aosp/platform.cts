@@ -7661,12 +7661,19 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
     @Nullable
     private static String getSatelliteAccessConfigFromOverlayConfig(@NonNull Context context) {
         String satAccessConfigFile = null;
-        try {
-            satAccessConfigFile =
-                    context.getResources()
-                            .getString(com.android.internal.R.string.satellite_access_config_file);
-        } catch (Resources.NotFoundException ex) {
-            loge("getSatelliteAccessConfigFromOverlayConfig: got ex=" + ex);
+        final int resId =
+                context.getResources()
+                        .getIdentifier("satellite_access_config_file", "string", "android");
+        if (resId != 0) {
+            try {
+                satAccessConfigFile = context.getResources().getString(resId);
+            } catch (Resources.NotFoundException ex) {
+                loge("getSatelliteAccessConfigFromOverlayConfig: got ex=" + ex);
+            }
+        } else {
+            loge(
+                    "getSatelliteAccessConfigFromOverlayConfig: Resource ID not found for "
+                            + "satellite_access_config_file");
         }
         return satAccessConfigFile;
     }
@@ -7676,8 +7683,7 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
      * accordingly.
      * - Skip the test if the geofence or access config file paths are not configured.
      * - Fail the test if paths are configured but the file does not exist.
-     * - Continue the test if
-     * paths are configured and files exist.
+     * - Continue the test if paths are configured and files exist.
      */
     private static void assumeSatelliteConfigFilesExistAndFailIfMisconfigured() {
         String geofenceFilePath = getSatelliteS2CellFileFromOverlayConfig(getContext());
