@@ -35,9 +35,10 @@ import static android.view.accessibility.AccessibilityEvent.TYPE_TOUCH_INTERACTI
 import static android.view.accessibility.AccessibilityEvent.TYPE_TOUCH_INTERACTION_START;
 import static android.view.accessibility.AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
+
+import static org.junit.Assume.assumeTrue;
 
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
 import android.accessibility.cts.common.InstrumentedAccessibilityService;
@@ -47,11 +48,9 @@ import android.accessibilityservice.GestureDescription;
 import android.accessibilityservice.GestureDescription.StrokeDescription;
 import android.accessibilityservice.TouchInteractionController;
 import android.accessibilityservice.cts.AccessibilityGestureDispatchTest.GestureDispatchActivity;
-import android.accessibilityservice.cts.utils.ActivityLaunchUtils;
 import android.accessibilityservice.cts.utils.EventCapturingClickListener;
-import android.accessibilityservice.cts.utils.EventCapturingHoverListener;
 import android.accessibilityservice.cts.utils.EventCapturingLongClickListener;
-import android.accessibilityservice.cts.utils.EventCapturingTouchListener;
+import android.accessibilityservice.cts.utils.EventCapturingMotionEventListener;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.content.pm.PackageManager;
@@ -65,12 +64,13 @@ import android.util.TypedValue;
 import android.view.Display;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.WindowManager;
 import android.view.accessibility.AccessibilityNodeInfo;
 
-import androidx.test.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.lifecycle.Lifecycle;
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.Configurator;
 
 import com.android.compatibility.common.util.CddTest;
 
@@ -107,14 +107,14 @@ public class TouchInteractionControllerTest {
     private boolean mHasTouchscreen;
     private boolean mScreenBigEnough;
     private long mSwipeTimeMillis;
-    private EventCapturingHoverListener mHoverListener = new EventCapturingHoverListener(false);
-    private EventCapturingTouchListener mTouchListener = new EventCapturingTouchListener(false);
+    private EventCapturingMotionEventListener mMotionEventListener =
+            new EventCapturingMotionEventListener(false);
     private EventCapturingClickListener mClickListener = new EventCapturingClickListener();
     private EventCapturingLongClickListener mLongClickListener =
             new EventCapturingLongClickListener();
 
-    private ActivityTestRule<GestureDispatchActivity> mActivityRule =
-            new ActivityTestRule<>(GestureDispatchActivity.class, false, false);
+    private ActivityScenarioRule<GestureDispatchActivity> mActivityRule =
+            new ActivityScenarioRule<>(GestureDispatchActivity.class);
 
     private InstrumentedAccessibilityServiceTestRule<TouchExplorationStubAccessibilityService>
             mServiceRule =
@@ -135,6 +135,8 @@ public class TouchInteractionControllerTest {
 
     @BeforeClass
     public static void oneTimeSetup() {
+        Configurator.getInstance()
+                .setUiAutomationFlags(UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
         sInstrumentation = InstrumentationRegistry.getInstrumentation();
         // Save enabled accessibility services before disabling them so they can be re-enabled after
         // the test.
@@ -160,47 +162,46 @@ public class TouchInteractionControllerTest {
 
     @Before
     public void setUp() throws Exception {
-        ActivityLaunchUtils.homeScreenOrBust(sInstrumentation.getContext(), sUiAutomation);
-        mActivityRule.launchActivity(null);
-
         PackageManager pm = sInstrumentation.getContext().getPackageManager();
         mHasTouchscreen =
                 pm.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)
                         || pm.hasSystemFeature(PackageManager.FEATURE_FAKETOUCH);
+        assumeTrue("The test device should have a touch screen", mHasTouchscreen);
+        mActivityRule.getScenario().moveToState(Lifecycle.State.RESUMED);
         // Find window size, check that it is big enough for gestures.
         // Gestures will start in the center of the window, so we need enough horiz/vert space.
         mService = mServiceRule.enableService();
-        mView = mActivityRule.getActivity().findViewById(R.id.full_screen_text_view);
-        WindowManager windowManager =
-                sInstrumentation.getContext().getSystemService(WindowManager.class);
         final DisplayMetrics metrics = new DisplayMetrics();
-        windowManager.getDefaultDisplay().getRealMetrics(metrics);
-        mScreenBigEnough =
-                mView.getWidth()
-                        > TypedValue.applyDimension(
-                                TypedValue.COMPLEX_UNIT_MM, MIN_SCREEN_WIDTH_MM, metrics);
-        if (!mHasTouchscreen || !mScreenBigEnough) return;
+        mActivityRule.getScenario().onActivity(activity -> {
+            mView = activity.findViewById(R.id.full_screen_text_view);
+            activity.getDisplay().getRealMetrics(metrics);
+            mScreenBigEnough =
+                    mView.getWidth()
+                            > TypedValue.applyDimension(
+                            TypedValue.COMPLEX_UNIT_MM, MIN_SCREEN_WIDTH_MM, metrics);
+        });
+        assumeTrue("The screen is not big enough", mScreenBigEnough);
 
-        mView.setOnHoverListener(mHoverListener);
-        mView.setOnTouchListener(mTouchListener);
-        sInstrumentation.runOnMainSync(
-                () -> {
-                    int[] viewLocation = new int[2];
-                    mView = mActivityRule.getActivity().findViewById(R.id.full_screen_text_view);
-                    final int midX = mView.getWidth() / 2;
-                    final int midY = mView.getHeight() / 2;
-                    mView.getLocationOnScreen(viewLocation);
-                    mTapLocation = new PointF(viewLocation[0] + midX, viewLocation[1] + midY);
-                    mSwipeDistance =
-                            TypedValue.applyDimension(
-                                    TypedValue.COMPLEX_UNIT_MM, GESTURE_LENGTH_MM, metrics);
-                    // This must be slower than 10mm per 150ms to be detected as touch exploration.
-                    final double swipeDistanceMm = mSwipeDistance / metrics.xdpi * 25.4;
-                    mSwipeTimeMillis = (long) swipeDistanceMm * 20;
+        mView.setOnHoverListener(mMotionEventListener);
+        mView.setOnTouchListener(mMotionEventListener);
+        mActivityRule.getScenario().onActivity(activity -> {
+            int[] viewLocation = new int[2];
+            mView = activity.findViewById(R.id.full_screen_text_view);
+            final int midX = mView.getWidth() / 2;
+            final int midY = mView.getHeight() / 2;
+            mView.getLocationOnScreen(viewLocation);
+            mTapLocation = new PointF(viewLocation[0] + midX, viewLocation[1] + midY);
+            mSwipeDistance =
+                    TypedValue.applyDimension(
+                            TypedValue.COMPLEX_UNIT_MM, GESTURE_LENGTH_MM, metrics);
+            // This must be slower than 10mm per 150ms to be detected as touch exploration.
+            final double swipeDistanceMm = mSwipeDistance / metrics.xdpi * 25.4;
+            mSwipeTimeMillis = (long) swipeDistanceMm * 20;
 
-                    mView.setOnClickListener(mClickListener);
-                    mView.setOnLongClickListener(mLongClickListener);
-                });
+            mView.setOnClickListener(mClickListener);
+            mView.setOnLongClickListener(mLongClickListener);
+            mView.requestFocusFromTouch();
+        });
         mController = mService.getTouchInteractionController(Display.DEFAULT_DISPLAY);
     }
 
@@ -212,17 +213,17 @@ public class TouchInteractionControllerTest {
     }
 
     public void assertBasicConsistency() {
-        assertEquals(Display.DEFAULT_DISPLAY, mController.getDisplayId());
-        assertTrue(mController.getMaxPointerCount() > 0);
+        assertThat(Display.DEFAULT_DISPLAY).isEqualTo(mController.getDisplayId());
+        assertThat(mController.getMaxPointerCount()).isGreaterThan(0);
         int state = mController.getState();
-        assertNotEquals("Unknown state: " + state, TouchInteractionController.stateToString(state));
+        assertThat("Unknown state: " + state)
+                .isNotEqualTo(TouchInteractionController.stateToString(state));
     }
 
     /** Test whether we can initiate touch exploration when performing a single tap. */
     @Test
     @AppModeFull
     public void testSingleTap_initiatesTouchExploration() {
-        if (!mHasTouchscreen || !mScreenBigEnough) return;
         assertBasicConsistency();
         mController.registerCallback(
                 Executors.newSingleThreadExecutor(),
@@ -234,8 +235,7 @@ public class TouchInteractionControllerTest {
                     }
                 });
         dispatch(click(mTapLocation));
-        mHoverListener.assertPropagated(ACTION_HOVER_ENTER, ACTION_HOVER_EXIT);
-        mTouchListener.assertNonePropagated();
+        mMotionEventListener.assertPropagated(ACTION_HOVER_ENTER, ACTION_HOVER_EXIT);
     }
 
     /** Test whether we can initiate a drag. */
@@ -243,7 +243,6 @@ public class TouchInteractionControllerTest {
     @AppModeFull
     @FlakyTest
     public void testTwoFingerDrag_sendsTouchEvents() {
-        if (!mHasTouchscreen || !mScreenBigEnough) return;
         assertBasicConsistency();
         mController.registerCallback(
                 Executors.newSingleThreadExecutor(),
@@ -268,8 +267,7 @@ public class TouchInteractionControllerTest {
         dispatch(
                 swipe(finger1Start, finger1End, mSwipeTimeMillis),
                 swipe(finger2Start, finger2End, mSwipeTimeMillis));
-        mHoverListener.assertNonePropagated();
-        mTouchListener.assertPropagated(ACTION_DOWN, ACTION_MOVE, ACTION_UP);
+        mMotionEventListener.assertPropagated(ACTION_DOWN, ACTION_MOVE, ACTION_UP);
     }
 
     /**
@@ -280,7 +278,6 @@ public class TouchInteractionControllerTest {
     @Test
     @AppModeFull
     public void testTwoFingersMovingIndependently_shouldDelegate() {
-        if (!mHasTouchscreen || !mScreenBigEnough) return;
         assertBasicConsistency();
         mController.registerCallback(
                 Executors.newSingleThreadExecutor(),
@@ -299,8 +296,7 @@ public class TouchInteractionControllerTest {
         PointF finger2End = add(mTapLocation, 10, 0);
         StrokeDescription swipe2 = swipe(finger2Start, finger2End, mSwipeTimeMillis);
         dispatch(swipe1, swipe2);
-        mHoverListener.assertNonePropagated();
-        mTouchListener.assertPropagated(
+        mMotionEventListener.assertPropagated(
                 ACTION_DOWN, ACTION_POINTER_DOWN, ACTION_MOVE, ACTION_POINTER_UP, ACTION_UP);
     }
 
@@ -308,7 +304,6 @@ public class TouchInteractionControllerTest {
     @Test
     @AppModeFull
     public void testDoubleTap_producesSingleInteraction() {
-        if (!mHasTouchscreen || !mScreenBigEnough) return;
         assertBasicConsistency();
         dispatch(doubleTap(mTapLocation));
         mService.assertPropagated(TYPE_TOUCH_INTERACTION_START, TYPE_TOUCH_INTERACTION_END);
@@ -324,14 +319,12 @@ public class TouchInteractionControllerTest {
     @AppModeFull
     @FlakyTest
     public void testPerformClickAccessibilityFocus_performsClick() {
-        if (!mHasTouchscreen || !mScreenBigEnough) return;
         assertBasicConsistency();
         syncAccessibilityFocusToInputFocus();
         mController.performClick();
         mService.assertPropagated(TYPE_VIEW_ACCESSIBILITY_FOCUSED);
-        mHoverListener.assertNonePropagated();
         // The click should not be delivered via touch events in this case.
-        mTouchListener.assertNonePropagated();
+        mMotionEventListener.assertNonePropagated();
         mClickListener.assertClicked(mView);
     }
 
@@ -341,11 +334,9 @@ public class TouchInteractionControllerTest {
     @Test
     @AppModeFull
     public void testPerformClickNoFocus_doesNotPerformClick() {
-        if (!mHasTouchscreen || !mScreenBigEnough) return;
         assertBasicConsistency();
         mController.performClick();
-        mHoverListener.assertNonePropagated();
-        mTouchListener.assertNonePropagated();
+        mMotionEventListener.assertNonePropagated();
         mClickListener.assertNoneClicked();
     }
 
@@ -353,7 +344,6 @@ public class TouchInteractionControllerTest {
     @Test
     @AppModeFull
     public void testPerformLongClick_sendsMotionEvents() {
-        if (!mHasTouchscreen || !mScreenBigEnough) return;
         assertBasicConsistency();
         // First perform touch exploration.
         mController.registerCallback(
@@ -366,8 +356,7 @@ public class TouchInteractionControllerTest {
                     }
                 });
         dispatch(click(mTapLocation));
-        mHoverListener.assertPropagated(ACTION_HOVER_ENTER, ACTION_HOVER_EXIT);
-        mTouchListener.assertNonePropagated();
+        mMotionEventListener.assertPropagated(ACTION_HOVER_ENTER, ACTION_HOVER_EXIT);
         // Wait for the interaction ends before beginning a new one.
         mService.assertPropagated(
                 TYPE_TOUCH_INTERACTION_START,
@@ -386,42 +375,39 @@ public class TouchInteractionControllerTest {
                 });
         PointF endPoint = add(mTapLocation, mSwipeDistance, 0);
         dispatch(swipe(mTapLocation, add(mTapLocation, mSwipeDistance, 0), mSwipeTimeMillis));
-        mTouchListener.assertPropagated(ACTION_DOWN, ACTION_MOVE, ACTION_UP);
+        mMotionEventListener.assertPropagated(ACTION_DOWN, ACTION_MOVE, ACTION_UP);
     }
 
     @Test
     @AppModeFull
     public void testRemove_shouldReturnControlToFramework() {
-        if (!mHasTouchscreen || !mScreenBigEnough) return;
         assertBasicConsistency();
         TouchInteractionController.Callback callback = new BaseCallback();
         mController.registerCallback(Executors.newSingleThreadExecutor(), callback);
         dispatch(click(mTapLocation));
         // Nothing should happen because the callback is empty.
-        mTouchListener.assertNonePropagated();
+        mMotionEventListener.assertNonePropagated();
         mController.unregisterCallback(callback);
-        mHoverListener.assertNonePropagated();
+        mMotionEventListener.assertNonePropagated();
         dispatch(click(mTapLocation));
-        mHoverListener.assertPropagated(ACTION_HOVER_ENTER, ACTION_HOVER_EXIT);
-        mTouchListener.assertNonePropagated();
+        mMotionEventListener.assertPropagated(ACTION_HOVER_ENTER, ACTION_HOVER_EXIT);
     }
 
     /** Test whether service gesture detection remains active when we rebuild the input filter. */
     @Test
     @AppModeFull
     public void testRebuildInputFilter_shouldRetainState() {
-        if (!mHasTouchscreen || !mScreenBigEnough) return;
         assertBasicConsistency();
         // Set up a touch interaction controller that records incoming motion events.
         mController.registerCallback(
                 Executors.newSingleThreadExecutor(),
                 new BaseCallback() {
                     public void onMotionEvent(MotionEvent event) {
-                        mTouchListener.onTouch(null, event);
+                        mMotionEventListener.onTouch(null, event);
                     }
                 });
         dispatch(click(mTapLocation));
-        mTouchListener.assertPropagated(ACTION_DOWN, ACTION_UP);
+        mMotionEventListener.assertPropagated(ACTION_DOWN, ACTION_UP);
         // Start another service
         StubMagnificationAccessibilityService secondService;
         secondService =
@@ -430,21 +416,17 @@ public class TouchInteractionControllerTest {
         try {
             // We should still be recording incoming motion events.
             dispatch(click(mTapLocation));
-            mHoverListener.assertNonePropagated();
-            mTouchListener.assertPropagated(ACTION_DOWN, ACTION_UP);
+            mMotionEventListener.assertPropagated(ACTION_DOWN, ACTION_UP);
         } finally {
             secondService.disableSelfAndRemove();
         }
     }
 
     private void syncAccessibilityFocusToInputFocus() {
-        mService.runOnServiceSync(
-                () -> {
-                    AccessibilityNodeInfo focus =
-                            mService.findFocus(AccessibilityNodeInfo.FOCUS_INPUT);
-                    focus.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS);
-                    focus.recycle();
-                });
+        AccessibilityNodeInfo focus =
+                mService.findFocus(AccessibilityNodeInfo.FOCUS_INPUT);
+        assertWithMessage("Could not find input focused node").that(focus).isNotNull();
+        focus.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS);
         mService.waitForAccessibilityFocus();
     }
 
