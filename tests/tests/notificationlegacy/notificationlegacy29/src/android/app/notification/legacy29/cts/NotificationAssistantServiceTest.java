@@ -67,6 +67,7 @@ import android.os.SystemClock;
 import android.permission.PermissionManager;
 import android.permission.cts.PermissionUtils;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Telephony;
@@ -213,6 +214,26 @@ public class NotificationAssistantServiceTest {
                 .build();
         final Notification notification = new Notification.Builder(
                 mContext, NOTIFICATION_CHANNEL_ID)
+                .setContentTitle("foo")
+                .setShortcutId("shareShortcut")
+                .setStyle(new Notification.MessagingStyle(person)
+                        .setConversationTitle("Test Chat")
+                        .addMessage("Hello?",
+                                SystemClock.currentThreadTimeMillis() - 300000, person)
+                        .addMessage("Is it me you're looking for?",
+                                SystemClock.currentThreadTimeMillis(), person)
+                )
+                .setSmallIcon(ICON_ID)
+                .build();
+        mNotificationManager.notify(id, notification);
+    }
+
+    private void sendConversationNotification(final int id, String channelID) {
+        Person person = new Person.Builder()
+                .setName("test")
+                .build();
+        final Notification notification = new Notification.Builder(
+                mContext, channelID)
                 .setContentTitle("foo")
                 .setShortcutId("shareShortcut")
                 .setStyle(new Notification.MessagingStyle(person)
@@ -860,10 +881,27 @@ public class NotificationAssistantServiceTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_NOTIFICATION_CONVERSATION_CHANNEL_MANAGEMENT)
     public void testCreateConversationNotificationChannel() throws Exception {
-        setUpListeners(); // also enables assistant
+        // Create a inner channel for test
+        String NOTIFICATION_CHANNEL_ID_LOCAL = "CreateConversationNotificationChannelTest";
+        NotificationChannel channelLocal = new NotificationChannel(
+                NOTIFICATION_CHANNEL_ID_LOCAL, "name", NotificationManager.IMPORTANCE_DEFAULT);
+        channelLocal.setSound(null, null);
+        mNotificationManager.createNotificationChannel(channelLocal);
+
+        // also enables assistant
+        setUpListeners();
+
+        // Cleanup potential leftover conversation channels from other tests
+        List<NotificationChannel> existingChannels =
+                mAssistant.getNotificationChannels(mContext.getPackageName(), Process.myUserHandle());
+        for (NotificationChannel nc : existingChannels) {
+            if (NOTIFICATION_CHANNEL_ID_LOCAL.equals(nc.getParentChannelId())) {
+                mNotificationManager.deleteNotificationChannel(nc.getId());
+            }
+        }
 
         // Send a conversation notification.
-        sendConversationNotification(mAssistant.mNotificationId);
+        sendConversationNotification(mAssistant.mNotificationId,NOTIFICATION_CHANNEL_ID_LOCAL);
         StatusBarNotification sbn =
                 mHelper.findPostedNotification(
                         null, mAssistant.mNotificationId, NotificationHelper.SEARCH_TYPE.POSTED);
@@ -1000,6 +1038,7 @@ public class NotificationAssistantServiceTest {
         // Verify no other channels were accidentally deleted.
         assertEquals("Channel count should not change when attempting to delete non-conversation channel",
                 initialChannelCount, channels.size());
+
     }
 
     @Test
