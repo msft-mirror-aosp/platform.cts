@@ -28,6 +28,7 @@ import android.media.tv.TvContentRating;
 import android.media.tv.TvRecordingInfo;
 import android.media.tv.TvTrackInfo;
 import android.media.tv.interactive.AppLinkInfo;
+import android.media.tv.interactive.TvInteractiveAppInfo;
 import android.media.tv.interactive.TvInteractiveAppManager;
 import android.media.tv.interactive.TvInteractiveAppService;
 import android.net.Uri;
@@ -237,6 +238,11 @@ public class StubTvInteractiveAppService extends TvInteractiveAppService {
         @Override
         public void notifySessionStateChanged(int state, int err) {
             super.notifySessionStateChanged(state, err);
+        }
+
+        @Override
+        public void notifyInteractiveAppInfoChanged(TvInteractiveAppInfo appInfo) {
+            super.notifyInteractiveAppInfoChanged(appInfo);
         }
 
         @Override
