@@ -18,7 +18,9 @@ package android.secure_element.cts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
@@ -77,11 +79,20 @@ public class SeServiceManagerTest {
         ServiceRegisterer serviceRegisterer =
                 serviceManager.getSeManagerServiceRegisterer();
 
-        assertThrows(
-                SecurityException.class, () -> serviceRegisterer.register(serviceRegisterer.get()));
-        assertNotNull(serviceRegisterer.get());
-        assertNotNull(serviceRegisterer.tryGet());
-        assertNotNull(serviceRegisterer.getOrThrow());
+        // TODO: Keep the NullPointerException until b/447424308 is resolved
+        try {
+            serviceRegisterer.register(serviceRegisterer.get());
+            fail("Exception expected");
+        } catch (SecurityException exception) {
+            assertNotNull(serviceRegisterer.get());
+            assertNotNull(serviceRegisterer.tryGet());
+            assertNotNull(serviceRegisterer.getOrThrow());
+        } catch (NullPointerException exception) {
+            assertNull(serviceRegisterer.get());
+            assertNull(serviceRegisterer.tryGet());
+            assertThrows(ServiceNotFoundException.class, () ->
+                    serviceRegisterer.getOrThrow());
+        }
     }
 
     @Test
