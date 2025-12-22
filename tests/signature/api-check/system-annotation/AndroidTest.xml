@@ -44,8 +44,4 @@
         <!-- disable isolated storage so tests can access dynamic config stored in /sdcard. -->
         <option name="isolated-storage" value="false" />
     </test>
-
-    <!-- Controller that will skip the module if a native bridge situation is detected -->
-    <!-- For example: module wants to run arm32 and device is x86 -->
-    <object type="module_controller" class="com.android.tradefed.testtype.suite.module.NativeBridgeModuleController" />
 </configuration>
