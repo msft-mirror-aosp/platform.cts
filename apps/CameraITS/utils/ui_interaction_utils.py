@@ -904,7 +904,6 @@ def _ensure_jca_can_take_photo(dut, log_path):
 
   if entered_sub_menu:
     dut.ui.press.back()
-  dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()  # Close QS
 
 
 def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
