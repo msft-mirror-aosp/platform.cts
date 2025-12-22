@@ -33,7 +33,6 @@ import android.app.WindowConfiguration;
 import android.content.Context;
 import android.graphics.Rect;
 import android.hardware.display.DisplayManager;
-import android.os.Binder;
 import android.os.IBinder;
 import android.os.SystemClock;
 import android.util.ArraySet;
@@ -42,6 +41,7 @@ import android.view.Surface;
 import android.view.SurfaceControl;
 import android.view.WindowManager;
 import android.window.TaskAppearedInfo;
+import android.window.TaskCreationParams;
 import android.window.TaskOrganizer;
 import android.window.WindowContainerToken;
 import android.window.WindowContainerTransaction;
@@ -119,11 +119,24 @@ public class TestTaskOrganizer extends TaskOrganizer {
     private void createRootTasksIfNeeded() {
         synchronized (this) {
             if (mPrimaryCookie != null) return;
-            mPrimaryCookie = new Binder();
-            mSecondaryCookie = new Binder();
 
-            createRootTask(DEFAULT_DISPLAY, WINDOWING_MODE_MULTI_WINDOW, mPrimaryCookie);
-            createRootTask(DEFAULT_DISPLAY, WINDOWING_MODE_MULTI_WINDOW, mSecondaryCookie);
+            final TaskCreationParams primaryParams =
+                    new TaskCreationParams.Builder()
+                            .setName("cts-split-primary")
+                            .setDisplayId(DEFAULT_DISPLAY)
+                            .setWindowingMode(WINDOWING_MODE_MULTI_WINDOW)
+                            .build();
+            final TaskCreationParams secondaryParams =
+                    new TaskCreationParams.Builder()
+                            .setName("cts-split-secondary")
+                            .setDisplayId(DEFAULT_DISPLAY)
+                            .setWindowingMode(WINDOWING_MODE_MULTI_WINDOW)
+                            .build();
+            mPrimaryCookie = primaryParams.getLaunchCookie();
+            mSecondaryCookie = secondaryParams.getLaunchCookie();
+
+            createTask(primaryParams);
+            createTask(secondaryParams);
 
             waitForAndAssert(o -> mRootPrimary != null && mRootSecondary != null,
                     "Failed to get root tasks");
@@ -178,22 +191,23 @@ public class TestTaskOrganizer extends TaskOrganizer {
             if (!mRegistered) return;
             mRegistered = false;
 
-            NestedShellPermission.run(() -> {
-                dismissSplitScreen();
+            NestedShellPermission.run(
+                    () -> {
+                        dismissSplitScreen();
 
-                deleteRootTask(mRootPrimary.getToken());
-                mRootPrimary = null;
-                mPrimaryCookie = null;
-                mPrimaryChildrenTaskIds.clear();
-                deleteRootTask(mRootSecondary.getToken());
-                mRootSecondary = null;
-                mSecondaryCookie = null;
-                mSecondaryChildrenTaskIds.clear();
-                mPrePrimarySplitTaskInfo = null;
-                mPreSecondarySplitTaskInfo = null;
+                        deleteTask(mRootPrimary.getToken());
+                        mRootPrimary = null;
+                        mPrimaryCookie = null;
+                        mPrimaryChildrenTaskIds.clear();
+                        deleteTask(mRootSecondary.getToken());
+                        mRootSecondary = null;
+                        mSecondaryCookie = null;
+                        mSecondaryChildrenTaskIds.clear();
+                        mPrePrimarySplitTaskInfo = null;
+                        mPreSecondarySplitTaskInfo = null;
 
-                super.unregisterOrganizer();
-            });
+                        super.unregisterOrganizer();
+                    });
         }
     }
 
