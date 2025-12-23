@@ -402,6 +402,8 @@ public class IRadioDataImpl extends IRadioData.Stub {
                             mTag,
                             "Failed to invoke dataCallListChanged change from AIDL. Exception"
                                     + ex);
+                } catch (NoSuchMethodError e) {
+                    Log.e(mTag, "Failed to invoke dataCallListChanged change from AIDL. Error" + e);
                 }
             } else {
                 Log.e(mTag, "null mRadioDataResponse");

@@ -23,6 +23,7 @@ import static junit.framework.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import android.Manifest;
 import android.os.PersistableBundle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -37,6 +38,8 @@ import android.telephony.ims.ImsMmTelManager;
 import android.telephony.mockmodem.MockModemConfigBase;
 import android.telephony.satellite.PlmnSatelliteConfig;
 import android.telephony.satellite.SatelliteManager;
+
+import androidx.annotation.RequiresPermission;
 
 import com.android.internal.telephony.flags.Flags;
 
@@ -61,8 +64,7 @@ import java.util.stream.Collectors;
 
 public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatelliteTestBase {
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String TAG = "AutoConnectCarrierRoamingSatelliteTest";
 
@@ -154,6 +156,38 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
         if (!shouldTestSatelliteWithMockService()) return;
         testQuerySatelliteEntitlementService_success(
                 SLOT_ID_0, CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC);
+    }
+
+    @Test
+    @RequiresPermission(Manifest.permission.SATELLITE_COMMUNICATION)
+    public void testRequestEntitlementRefresh_Success_And_BypassThrottling() throws Exception {
+        logd(TAG, "testRequestEntitlementRefresh_Success_And_BypassThrottling");
+        if (!shouldTestSatelliteWithMockService()) return;
+        testRequestEntitlementRefresh_Success_And_BypassThrottling(SLOT_ID_0);
+    }
+
+    @Test
+    @RequiresPermission(Manifest.permission.SATELLITE_COMMUNICATION)
+    public void testRequestEntitlementRefresh_NoPermission_ThrowsSecurityException() {
+        logd(TAG, "testRequestEntitlementRefresh_NoPermission_ThrowsSecurityException");
+        if (!shouldTestSatelliteWithMockService()) return;
+        testRequestEntitlementRefresh_NoPermission_ThrowsSecurityException(SLOT_ID_0);
+    }
+
+    @Test
+    @RequiresPermission(Manifest.permission.SATELLITE_COMMUNICATION)
+    public void testRequestEntitlementRefresh_NullArguments_ThrowsNPE() {
+        logd(TAG, "testRequestEntitlementRefresh_NullArguments_ThrowsNPE");
+        if (!shouldTestSatelliteWithMockService()) return;
+        testRequestEntitlementRefresh_NullArguments_ThrowsNPE(SLOT_ID_0);
+    }
+
+    @Test
+    @RequiresPermission(Manifest.permission.SATELLITE_COMMUNICATION)
+    public void testRequestEntitlementRefresh_InvalidSubId() throws Exception {
+        logd(TAG, "testRequestEntitlementRefresh_InvalidSubId");
+        if (!shouldTestSatelliteWithMockService()) return;
+        testRequestEntitlementRefresh_InvalidSubId(SubscriptionManager.INVALID_SUBSCRIPTION_ID);
     }
 
     @Test
