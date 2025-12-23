@@ -23,9 +23,12 @@ import android.net.Uri;
 import android.platform.test.annotations.AppModeFull;
 import android.view.Surface;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
+
 import java.io.File;
 import java.util.List;
 
+@FrameworkSpecificTest
 @AppModeFull(reason = "Instant apps cannot access the SD card")
 public class MediaCodecPlayerTest extends MediaCodecPlayerTestBase<MediaStubActivity2> {
 
