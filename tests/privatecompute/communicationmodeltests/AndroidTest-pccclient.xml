@@ -31,6 +31,10 @@
         <option name="cleanup-apks" value="true" />
         <option name="test-file-name" value="PccServicePccClientTest.apk" />
     </target_preparer>
+    <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <option name="run-command" value="cmd pcc_sandbox add-allowed-package com.android.cts.pcc.service.pccclient" />
+        <option name="teardown-command" value="cmd pcc_sandbox remove-allowed-package com.android.cts.pcc.service.pccclient" />
+    </target_preparer>
     <test class="com.android.tradefed.testtype.AndroidJUnitTest">
         <option name="package" value="com.android.cts.pcc.service.pccclient" />
         <option name="runner" value="androidx.test.runner.AndroidJUnitRunner" />
