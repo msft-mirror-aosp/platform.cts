@@ -58,6 +58,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.support.test.uiautomator.UiDevice;
 import android.telephony.TelephonyManager;
+import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
@@ -174,14 +175,25 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
         List<WifiConfiguration> savedNetworks = ShellIdentityUtils.invokeWithShellPermissions(
                 () -> sWifiManager.getPrivilegedConfiguredNetworks());
         if (savedNetworks.isEmpty()) {
-            return;
+            Log.e(
+                    TAG,
+                    "SetUpClass: No saved networks found. Please ensure there are enough saved"
+                            + " networks on the devices for testing");
         }
         // Pick any network in range.
 
-        List<WifiConfiguration> networks = TestHelper.findMatchingSavedNetworksWithBssid(
-                sWifiManager, savedNetworks, 2);
+        int numberOfApRequests = 2;
+        List<WifiConfiguration> networks =
+                TestHelper.findMatchingSavedNetworksWithBssid(
+                        sWifiManager, savedNetworks, numberOfApRequests);
         if (!networks.isEmpty()) {
             sTestNetwork = networks.get(0);
+        } else {
+            Log.e(
+                    TAG,
+                    "SetUpClass: No valid test network found. numberOfApRequests="
+                            + numberOfApRequests
+                            + ". Please check test AP setup for issues");
         }
 
         // Disable auto-join on the saved network to prevent auto-connect from
@@ -1131,7 +1143,7 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     @Test
     public void testConnectToSuggestionThenRemoveWithImmediateDisconnect() throws Exception {
-        assertNotNull(sTestNetwork);
+        assertNotNull("Setup issue: No valid test network", sTestNetwork);
         WifiNetworkSuggestion suggestion =
                 TestHelper.createSuggestionBuilderWithCredentialFromSavedNetworkWithBssid(
                         sTestNetwork)
@@ -1162,7 +1174,7 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
                         || packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
                         || packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
         assumeFalse(notPhoneDevice);
-        assertNotNull(sTestNetwork);
+        assertNotNull("Setup issue: No valid test network", sTestNetwork);
         WifiNetworkSuggestion suggestion =
                 TestHelper.createSuggestionBuilderWithCredentialFromSavedNetworkWithBssid(
                                 sTestNetwork)
@@ -1191,7 +1203,7 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     @Test
     public void testConnectToRestrictedSuggestion() throws Exception {
-        assertNotNull(sTestNetwork);
+        assertNotNull("Setup issue: No valid test network", sTestNetwork);
         WifiNetworkSuggestion suggestion =
                 TestHelper.createSuggestionBuilderWithCredentialFromSavedNetworkWithBssid(
                         sTestNetwork)
@@ -1209,7 +1221,7 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     @Test
     public void testConnectToOemPaidSuggestion() throws Exception {
-        assertNotNull(sTestNetwork);
+        assertNotNull("Setup issue: No valid test network", sTestNetwork);
         WifiNetworkSuggestion suggestion =
                 TestHelper.createSuggestionBuilderWithCredentialFromSavedNetworkWithBssid(
                         sTestNetwork)
@@ -1225,7 +1237,7 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     @Test
     public void testConnectToOemPaidAndOemPrivateSuggestion() throws Exception {
-        assertNotNull(sTestNetwork);
+        assertNotNull("Setup issue: No valid test network", sTestNetwork);
         WifiNetworkSuggestion suggestion =
                 TestHelper.createSuggestionBuilderWithCredentialFromSavedNetworkWithBssid(
                         sTestNetwork)
@@ -1243,7 +1255,7 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     @Test
     public void testConnectToOemPrivateSuggestion() throws Exception {
-        assertNotNull(sTestNetwork);
+        assertNotNull("Setup issue: No valid test network", sTestNetwork);
         WifiNetworkSuggestion suggestion =
                 TestHelper.createSuggestionBuilderWithCredentialFromSavedNetworkWithBssid(
                         sTestNetwork)
@@ -1261,7 +1273,7 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     @Test
     public void testConnectToOemPaidSuggestionFailure() throws Exception {
-        assertNotNull(sTestNetwork);
+        assertNotNull("Setup issue: No valid test network", sTestNetwork);
         WifiNetworkSuggestion suggestion =
                 TestHelper.createSuggestionBuilderWithCredentialFromSavedNetworkWithBssid(
                         sTestNetwork)
@@ -1278,7 +1290,7 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     @Test
     public void testConnectToOemPrivateSuggestionFailure() throws Exception {
-        assertNotNull(sTestNetwork);
+        assertNotNull("Setup issue: No valid test network", sTestNetwork);
         WifiNetworkSuggestion suggestion =
                 TestHelper.createSuggestionBuilderWithCredentialFromSavedNetworkWithBssid(
                         sTestNetwork)
@@ -1295,7 +1307,7 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     @Test
     public void testConnectSuggestionFailureWithOemPaidNetCapability() throws Exception {
-        assertNotNull(sTestNetwork);
+        assertNotNull("Setup issue: No valid test network", sTestNetwork);
         WifiNetworkSuggestion suggestion =
                 TestHelper.createSuggestionBuilderWithCredentialFromSavedNetworkWithBssid(
                         sTestNetwork)
@@ -1311,7 +1323,7 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     @Test
     public void testConnectSuggestionFailureWithOemPrivateNetCapability() throws Exception {
-        assertNotNull(sTestNetwork);
+        assertNotNull("Setup issue: No valid test network", sTestNetwork);
         WifiNetworkSuggestion suggestion =
                 TestHelper.createSuggestionBuilderWithCredentialFromSavedNetworkWithBssid(
                         sTestNetwork)
