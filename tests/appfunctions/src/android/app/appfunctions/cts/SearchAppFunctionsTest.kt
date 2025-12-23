@@ -33,6 +33,7 @@ import android.app.appfunctions.cts.AppFunctionUtils.getAllRuntimeMetadataPackag
 import android.app.appfunctions.cts.AppFunctionUtils.getAllStaticMetadataPackages
 import android.app.appfunctions.cts.AppFunctionUtils.installExistingPackageAsUser
 import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabled
+import android.app.appfunctions.cts.AppFunctionUtils.uninstallPackageAsUser
 import android.app.appfunctions.cts.AppSearchUtils.sanitizeGenericDocument
 import android.app.appfunctions.flags.Flags
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
@@ -52,6 +53,7 @@ import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.multiuser.additionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.nene.TestApis
+import com.android.bedstead.nene.utils.ShellCommand
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.compatibility.common.util.ApiTest
@@ -61,6 +63,7 @@ import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
+import org.junit.After
 import org.junit.Assert.assertThrows
 import org.junit.Assume.assumeNotNull
 import org.junit.Assume.assumeTrue
@@ -85,6 +88,8 @@ class SearchAppFunctionsTest {
 
     @Before
     fun setup() = doBlocking {
+        setTestPageSize(2)
+
         uninstallPackage(TEST_APP_A_PKG)
 
         TestAppFunctionServiceLifecycleReceiver.reset()
@@ -103,6 +108,11 @@ class SearchAppFunctionsTest {
         }
     }
 
+    @After
+    fun reset() {
+        resetTestPageSize()
+    }
+
     @Test
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#searchAppFunctions"])
     @IncludeRunOnSecondaryUser
@@ -114,7 +124,7 @@ class SearchAppFunctionsTest {
     )
     @RequireRootInstrumentation(
         "Require to remove QUERY_ALL_PACKAGES permission that is granted by default when" +
-                "using Bedstead"
+            "using Bedstead"
     )
     fun searchAppFunctions_withoutAnyPermission_shouldOnlySeeSelfFunctions() = doBlocking {
         installPackage(TEST_APP_A_PATH)
@@ -140,6 +150,7 @@ class SearchAppFunctionsTest {
                     FunctionName.SAME_PACKAGE_KILL,
                     FunctionName.SAME_PACKAGE_LONG_RUNNING_FUNCTION,
                     FunctionName.SAME_PACKAGE_NO_SCHEMA,
+                    FunctionName.SAME_PACKAGE_CONTEXT,
                 )
         } finally {
             uninstallPackage(TEST_APP_A_PKG)
@@ -155,7 +166,7 @@ class SearchAppFunctionsTest {
     @EnsureHasPermission(Manifest.permission.QUERY_ALL_PACKAGES)
     @RequireRootInstrumentation(
         "Require to remove QUERY_ALL_PACKAGES permission that is granted by default " +
-                "when using Bedstead"
+            "when using Bedstead"
     )
     fun searchAppFunctions_withoutExecuteAppFunctionPermission_shouldOnlySeeSelfFunctions() =
         doBlocking {
@@ -182,6 +193,7 @@ class SearchAppFunctionsTest {
                         FunctionName.SAME_PACKAGE_KILL,
                         FunctionName.SAME_PACKAGE_LONG_RUNNING_FUNCTION,
                         FunctionName.SAME_PACKAGE_NO_SCHEMA,
+                        FunctionName.SAME_PACKAGE_CONTEXT,
                     )
             } finally {
                 uninstallPackage(TEST_APP_A_PKG)
@@ -199,24 +211,23 @@ class SearchAppFunctionsTest {
     )
     @RequireRootInstrumentation(
         "Require to remove QUERY_ALL_PACKAGES permission that is granted by default " +
-                "when using Bedstead"
+            "when using Bedstead"
     )
-    fun searchAppFunctions_noPermissions_shouldReturnEmpty_whenTargetOtherPackages() =
-        doBlocking {
-            installPackage(TEST_APP_A_PATH)
-            try {
-                val searchSpec =
-                    AppFunctionSearchSpec.Builder()
-                        .setPackageNames(listOf(TEST_HELPER_DYNAMIC_SCHEMA_PKG))
-                        .build()
+    fun searchAppFunctions_noPermissions_shouldReturnEmpty_whenTargetOtherPackages() = doBlocking {
+        installPackage(TEST_APP_A_PATH)
+        try {
+            val searchSpec =
+                AppFunctionSearchSpec.Builder()
+                    .setPackageNames(listOf(TEST_HELPER_DYNAMIC_SCHEMA_PKG))
+                    .build()
 
-                val resultAppFunctions = searchAppFunctions(searchSpec)
+            val resultAppFunctions = searchAppFunctions(searchSpec)
 
-                assertThat(resultAppFunctions).isEmpty()
-            } finally {
-                uninstallPackage(TEST_APP_A_PKG)
-            }
+            assertThat(resultAppFunctions).isEmpty()
+        } finally {
+            uninstallPackage(TEST_APP_A_PKG)
         }
+    }
 
     @Test
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#searchAppFunctions"])
@@ -229,7 +240,7 @@ class SearchAppFunctionsTest {
     )
     @RequireRootInstrumentation(
         "Require to remove QUERY_ALL_PACKAGES permission that is granted by default " +
-                "when using Bedstead"
+            "when using Bedstead"
     )
     fun searchAppFunctions_noPermissions_shouldReturnEmpty_whenTargetOtherPackagesFunctions() =
         doBlocking {
@@ -257,7 +268,7 @@ class SearchAppFunctionsTest {
     @EnsureDoesNotHavePermission(Manifest.permission.QUERY_ALL_PACKAGES)
     @RequireRootInstrumentation(
         "Require to remove QUERY_ALL_PACKAGES permission that is granted by default " +
-                "when using Bedstead"
+            "when using Bedstead"
     )
     fun searchAppFunctions_searchAllWithExecuteAppFunctionPermission_shouldSeeAllVisiblePackages() =
         doBlocking {
@@ -480,9 +491,7 @@ class SearchAppFunctionsTest {
             searchAppFunctions(searchSpec).associateBy { it.name }
 
         assertThat(resultAppFunctionsByName.keys)
-            .containsExactlyElementsIn(
-                HELPER_PACKAGE_FUNCTIONS
-            )
+            .containsExactlyElementsIn(HELPER_PACKAGE_FUNCTIONS)
         assertAppFunctionMetadataEquals(
             resultAppFunctionsByName[FunctionName.DISABLED_BY_DEFAULT]!!,
             FunctionMetadata.DISABLED_BY_DEFAULT_NO_SCHEMA,
@@ -663,9 +672,18 @@ class SearchAppFunctionsTest {
             "Test requires an additional user different from the primary user.",
             secondaryUser != TestApis.users().instrumented(),
         )
+        uninstallPackageAsUser(TEST_HELPER_PKG, secondaryUser)
         installExistingPackageAsUser(CURRENT_PKG, secondaryUser)
         installExistingPackageAsUser(TEST_HELPER_DYNAMIC_SCHEMA_PKG, secondaryUser)
         retryAssert {
+            assertThat(
+                    context
+                        .createContextAsUser(secondaryUser.userHandle(), 0)
+                        .packageManager
+                        .getInstalledPackages(0)
+                        .map { it.packageName }
+                )
+                .doesNotContain(TEST_HELPER_PKG)
             assertThat(
                     getAllStaticMetadataPackages(
                         context.createContextAsUser(secondaryUser.userHandle(), 0)
@@ -697,10 +715,7 @@ class SearchAppFunctionsTest {
                 )
                 .associateBy { it.name }
 
-        assertThat(result.keys)
-            .containsExactlyElementsIn(
-                HELPER_PACKAGE_FUNCTIONS
-            )
+        assertThat(result.keys).containsExactlyElementsIn(HELPER_PACKAGE_FUNCTIONS)
         assertAppFunctionMetadataEquals(
             result[FunctionName.ENABLED_BY_DEFAULT]!!,
             FunctionMetadata.ENABLED_BY_DEFAULT,
@@ -792,6 +807,19 @@ class SearchAppFunctionsTest {
         //        val clearedActualGd = sanitizeGenericDocument(actual.metadataDocument)
         //        val expectedGd = sanitizeGenericDocument(expected.metadataDocument)
         //        assertThat(clearedActualGd).isEqualTo(expectedGd)
+    }
+
+    private fun setTestPageSize(pageSize: Int) {
+        assertThat(
+                ShellCommand.builder("cmd app_function set-test-page-size")
+                    .addOption("--page-size", pageSize.toString())
+                    .execute()
+            )
+            .isEqualTo("Set test page size to $pageSize\n")
+    }
+
+    private fun resetTestPageSize() {
+        ShellCommand.builder("cmd app_function reset-test-page-size").execute()
     }
 
     private companion object {
