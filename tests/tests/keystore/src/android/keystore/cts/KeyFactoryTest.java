@@ -197,8 +197,11 @@ public class KeyFactoryTest {
         }
     }
 
+    // A "transparent key spec" is a class that implements java.security.spec.KeySpec and exposes
+    // information about a key. The only such class that Android Keystore supports for its
+    // private keys is android.security.keystore.KeyInfo.
     @Test
-    public void testGetKeySpecWithKeystorePrivateKeyRejectsTransparentKeySpecAndEncodedKeySpec()
+    public void testGetKeySpecWithKeystorePrivateKeyRejectsTransparentKeySpec()
             throws Exception {
         for (String algorithm : EXPECTED_ALGORITHMS) {
             try {
@@ -221,7 +224,22 @@ public class KeyFactoryTest {
                     keyFactory.getKeySpec(keyPair.getPrivate(), transparentKeySpecClass);
                     fail();
                 } catch (InvalidKeySpecException expected) {}
+            } catch (Throwable e) {
+                throw new RuntimeException("Failed for " + algorithm, e);
+            }
+        }
+    }
 
+    @Test
+    public void testGetKeySpecWithKeystorePrivateKeyRejectsPKCS8EncodedKeySpec()
+            throws Exception {
+        for (String algorithm : EXPECTED_ALGORITHMS) {
+            try {
+                KeyPairGenerator keyGenerator =
+                        KeyPairGenerator.getInstance(algorithm, EXPECTED_PROVIDER_NAME);
+                keyGenerator.initialize(new KeyGenParameterSpec.Builder("test1", 0).build());
+                KeyPair keyPair = keyGenerator.generateKeyPair();
+                KeyFactory keyFactory = getKeyFactory(algorithm);
                 try {
                     keyFactory.getKeySpec(keyPair.getPrivate(), PKCS8EncodedKeySpec.class);
                     fail();
