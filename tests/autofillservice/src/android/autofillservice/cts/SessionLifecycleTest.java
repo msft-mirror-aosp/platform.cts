@@ -67,6 +67,7 @@ import android.view.autofill.AutofillValue;
 
 import androidx.test.uiautomator.UiObject2;
 
+import com.android.compatibility.common.util.GestureNavSwitchHelper;
 import com.android.compatibility.common.util.Timeout;
 
 import org.junit.After;
@@ -97,6 +98,8 @@ public class SessionLifecycleTest extends AutoFillServiceTestCase.ManualActivity
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    private final GestureNavSwitchHelper mGestureNavSwitchHelper = new GestureNavSwitchHelper();
 
     /**
      * Runs an {@code assertion}, retrying until {@code timeout} is reached.
@@ -571,51 +574,62 @@ public class SessionLifecycleTest extends AutoFillServiceTestCase.ManualActivity
 
     @Test
     public void testSaveRemainsWhenAutofilledAppIsKilled() throws Exception {
-        // Set service.
-        enableService();
+        assumeTrue(
+                "Device must support the navigation bar",
+                mGestureNavSwitchHelper.hasNavigationBar());
+        assumeTrue(
+                "Gesture navigation mode overlay should be installed",
+                mGestureNavSwitchHelper.hasGestureNavOverlay());
 
-        // Start activity that is autofilled in a separate process so it can be killed
-        startAndWaitExternalActivity();
+        try (var ignored = mGestureNavSwitchHelper.withGestureNavigationMode()) {
+            // Set service.
+            enableService();
 
-        final CannedFillResponse response = new CannedFillResponse.Builder()
-                .setRequiredSavableIds(SAVE_DATA_TYPE_USERNAME, ID_USERNAME)
-                .build();
-        sReplier.addResponse(response);
+            // Start activity that is autofilled in a separate process so it can be killed
+            startAndWaitExternalActivity();
 
-        // Trigger autofill on username
-        mUiBot.selectByRelativeId(ID_USERNAME);
+            final CannedFillResponse response =
+                    new CannedFillResponse.Builder()
+                            .setRequiredSavableIds(SAVE_DATA_TYPE_USERNAME, ID_USERNAME)
+                            .build();
+            sReplier.addResponse(response);
 
-        // Wait for fill request to be processed
-        sReplier.getNextFillRequest();
+            // Trigger autofill on username
+            mUiBot.selectByRelativeId(ID_USERNAME);
 
-        // Wait until dataset is shown
-        mUiBot.assertNoDatasetsEver();
+            // Wait for fill request to be processed
+            sReplier.getNextFillRequest();
 
-        // Trigger save
-        mUiBot.setTextByRelativeId(ID_USERNAME, "dude");
+            // Wait until dataset is shown
+            mUiBot.assertNoDatasetsEver();
 
-        // It works fine for portrait but for the platforms that the default orientation
-        // is landscape, e.g. automotive. Depending on the height of the IME, the ID_LOGIN
-        // button may not be visible.
+            // Trigger save
+            mUiBot.setTextByRelativeId(ID_USERNAME, "dude");
 
-        // In order to avoid that, scroll until the ID_LOGIN button appears.
-        mUiBot.scrollToTextObject(ID_LOGIN);
-        mUiBot.selectByRelativeId(ID_LOGIN);
-        mUiBot.assertSaveShowing(SAVE_DATA_TYPE_USERNAME);
+            // It works fine for portrait but for the platforms that the default orientation
+            // is landscape, e.g. automotive. Depending on the height of the IME, the ID_LOGIN
+            // button may not be visible.
 
-        // Kill activity
-        killOfProcessLoginActivityProcess();
+            // In order to avoid that, scroll until the ID_LOGIN button appears.
+            mUiBot.scrollToTextObject(ID_LOGIN);
+            mUiBot.selectByRelativeId(ID_LOGIN);
+            mUiBot.assertSaveShowing(SAVE_DATA_TYPE_USERNAME);
 
-        // Make sure save is still showing
-        final UiObject2 saveSnackBar = mUiBot.assertSaveShowing(SAVE_DATA_TYPE_USERNAME);
+            // Kill activity
+            killOfProcessLoginActivityProcess();
 
-        mUiBot.saveForAutofill(saveSnackBar, true);
+            // Make sure save is still showing
+            final UiObject2 saveSnackBar = mUiBot.assertSaveShowing(SAVE_DATA_TYPE_USERNAME);
 
-        final InstrumentedAutoFillService.SaveRequest saveRequest = sReplier.getNextSaveRequest();
+            mUiBot.saveForAutofill(saveSnackBar, true);
 
-        // Make sure data is correctly saved
-        final AssistStructure.ViewNode username = findNodeByResourceId(saveRequest.structure,
-                ID_USERNAME);
-        assertTextAndValue(username, "dude");
+            final InstrumentedAutoFillService.SaveRequest saveRequest =
+                    sReplier.getNextSaveRequest();
+
+            // Make sure data is correctly saved
+            final AssistStructure.ViewNode username =
+                    findNodeByResourceId(saveRequest.structure, ID_USERNAME);
+            assertTextAndValue(username, "dude");
+        }
     }
 }
