@@ -71,6 +71,9 @@ import android.os.Process;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 import android.server.wm.BuildUtils;
 import android.server.wm.WindowManagerStateHelper;
@@ -82,6 +85,7 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.WindowInsets;
 import android.view.WindowManager;
+import android.view.inputmethod.Flags;
 import android.view.inputmethod.InputMethod;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.cts.util.AutoCloseableWrapper;
@@ -121,6 +125,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.testng.Assert;
 
+import java.util.Collections;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -132,6 +137,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @MediumTest
 public final class FocusHandlingTest extends EndToEndImeTestBase {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @ClassRule
     @Rule
@@ -350,6 +358,34 @@ public final class FocusHandlingTest extends EndToEndImeTestBase {
 
             // Input shouldn't start
             notExpectEvent(stream, editorMatcher("onStartInput", marker), NOT_EXPECT_TIMEOUT);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_PREVENT_IME_STARTUP_BYPASSED_APPS)
+    public void testPreventImeStartupBypassedApps() throws Exception {
+        Assume.assumeTrue(isPreventImeStartup());
+
+        final InputMethodManager imm =
+                InstrumentationRegistry.getInstrumentation()
+                        .getTargetContext()
+                        .getSystemService(InputMethodManager.class);
+
+        SystemUtil.runWithShellPermissionIdentity(
+                () ->
+                        imm.setPreventImeStartupBypassedAppsForTest(
+                                Collections.singletonList("android.view.inputmethod.cts")));
+
+        try (MockImeSession imeSession = createTestImeSession()) {
+            final ImeEventStream stream = imeSession.openEventStream();
+            // No specific views needed
+            TestActivity.startSync(activity -> new LinearLayout(activity));
+
+            // Input should start for the bypassed app.
+            expectEvent(stream, eventMatcher("onStartInput"), TIMEOUT);
+        } finally {
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> imm.setPreventImeStartupBypassedAppsForTest(null));
         }
     }
 
