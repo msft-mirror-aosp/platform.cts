@@ -16,6 +16,7 @@
 
 package android.mediav2.cts;
 
+import static android.mediav2.common.cts.CodecTestBase.compileMediaTypesList;
 import static android.mediav2.common.cts.CodecTestBase.hasSupportForProfile;
 import static android.mediav2.common.cts.CodecTestBase.selectCodecs;
 import static android.view.Display.HdrCapabilities.HDR_TYPE_DOLBY_VISION;
@@ -30,6 +31,7 @@ import static org.junit.Assume.assumeTrue;
 import android.hardware.display.DisplayManager;
 import android.media.MediaFormat;
 import android.mediav2.common.cts.CodecTestBase;
+import android.mediav2.common.cts.CodecTestBase.ComponentClass;
 import android.view.Display;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -54,6 +56,7 @@ import java.util.Map;
  * cdd requirements are not verified.
  */
 @SmallTest
+@FrameworkSpecificTest
 @RunWith(AndroidJUnit4.class)
 public class CodecListTest {
     static final String MEDIA_TYPE_PREFIX_KEY = "media-type-prefix";
@@ -105,7 +108,6 @@ public class CodecListTest {
      * least one decoder capable of handling that profile.
      */
     @Test
-    @FrameworkSpecificTest
     @CddTest(requirements = {"5.1.7/C-2-1"})
     @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#profileLevels"})
     public void testHDRDisplayCapabilities() {
@@ -144,6 +146,23 @@ public class CodecListTest {
             }
             assertTrue("Device display advertises support for hdrType " + hdrType
                     + " but there is no decoder capable of handling that profile", foundDecoder);
+        }
+    }
+
+    /**
+     * For all the available encoders on the device, the test checks if their encoding
+     * capabilities are in sync with the device's decoding capabilities.
+     */
+    @CddTest(requirements = {"5/C-0-3"})
+    @Test
+    public void testDecoderAvailability() {
+        ArrayList<String> mediaTypes = compileMediaTypesList(ComponentClass.ALL, true, true);
+        for (String mediaType : mediaTypes) {
+            if (selectCodecs(mediaType, null, null, true).size() > 0) {
+                assertTrue("Device advertises support for encoding " + mediaType +
+                                ", but not decoding it",
+                        selectCodecs(mediaType, null, null, false).size() > 0);
+            }
         }
     }
 }
