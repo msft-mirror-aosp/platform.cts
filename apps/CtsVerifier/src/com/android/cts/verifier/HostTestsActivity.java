@@ -79,7 +79,9 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
         new HostTestCategory("Notification Tests")
                 .addTest(
                         "CtsNotificationSizeVerifierHostTest",
-                        "CtsNotificationSizeVerifierHostTest")
+                        "CtsNotificationSizeVerifierHostTest"),
+        new HostTestCategory("SystemUI Tests")
+                .addTest("CtsSysuiInteractiveTestCases", "CtsSysuiInteractiveTestCases")
     };
 
     // List of test categories that will be excluded on Automotive.
