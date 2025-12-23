@@ -73,6 +73,7 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
                     "DOWNSCALE_85",
                     "DOWNSCALE_90",
                     "DO_NOT_DOWNSCALE_TO_1080P_ON_TV",
+                    "ENABLE_FLUID_RESIZING",
                     "ENABLE_PREVENT_INTENT_REDIRECT_TAKE_ACTION",
                     "ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS",
                     "ENFORCE_MINIMUM_TIME_WINDOWS",
