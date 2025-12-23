@@ -18,6 +18,7 @@ package android.service.personalcontext.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.content.ComponentName;
 import android.graphics.Rect;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -45,7 +46,9 @@ public class UserInputHintTest {
     @ApiTest(
             apis = {
                 "android.service.personalcontext.hint.UserInputHint.Builder#build",
+                "android.service.personalcontext.hint.UserInputHint.Builder#setSourceAppActivityComponentName",
                 "android.service.personalcontext.hint.UserInputHint#getUserInputText",
+                "android.service.personalcontext.hint.UserInputHint#getSourceAppActivityComponentName",
                 "android.service.personalcontext.hint.ContextHint#createHintFromBundle",
                 "android.service.personalcontext.hint.UserInputHint#toBundle"
             })
@@ -58,12 +61,18 @@ public class UserInputHintTest {
                         .setFieldType(UserInputText.FIELD_TYPE_SEARCH_BOX)
                         .setUserInputTextSource(UserInputText.USER_INPUT_TEXT_SOURCE_TYPED)
                         .build();
-        final UserInputHint hint = new UserInputHint.Builder(userInputText).build();
+        final ComponentName componentName = new ComponentName("packageName", "activityName");
+        final UserInputHint hint =
+                new UserInputHint.Builder(userInputText)
+                        .setSourceAppActivityComponentName(componentName)
+                        .build();
 
         final ContextHint outputHint = bundleUnbundle(hint);
         assertThat(outputHint).isInstanceOf(UserInputHint.class);
-        final UserInputText outputUserInputText = ((UserInputHint) outputHint).getUserInputText();
+        final UserInputHint outputUserInputHint = (UserInputHint) outputHint;
+        final UserInputText outputUserInputText = outputUserInputHint.getUserInputText();
         assertThat(outputUserInputText).isEqualTo(userInputText);
+        assertThat(outputUserInputHint.getSourceAppActivityComponentName()).isEqualTo(componentName);
         assertThat(outputHint).isEqualTo(hint);
     }
 
@@ -116,7 +125,11 @@ public class UserInputHintTest {
                         .setFieldType(UserInputText.FIELD_TYPE_SEARCH_BOX)
                         .setUserInputTextSource(UserInputText.USER_INPUT_TEXT_SOURCE_TYPED)
                         .build();
-        final UserInputHint hint = new UserInputHint.Builder(userInputText).build();
+        final ComponentName componentName = new ComponentName("packageName", "activityName");
+        final UserInputHint hint =
+                new UserInputHint.Builder(userInputText)
+                        .setSourceAppActivityComponentName(componentName)
+                        .build();
 
         final UserInputHint unbundledHint = (UserInputHint) bundleUnbundle(hint);
         assertThat(unbundledHint).isEqualTo(hint);
@@ -131,7 +144,9 @@ public class UserInputHintTest {
                         .setUserInputTextSource(UserInputText.USER_INPUT_TEXT_SOURCE_TYPED)
                         .build();
         final UserInputHint differentHint =
-                new UserInputHint.Builder(differentUserInputText).build();
+                new UserInputHint.Builder(differentUserInputText)
+                        .setSourceAppActivityComponentName(componentName)
+                        .build();
         assertThat(hint).isNotEqualTo(differentHint);
     }
 
