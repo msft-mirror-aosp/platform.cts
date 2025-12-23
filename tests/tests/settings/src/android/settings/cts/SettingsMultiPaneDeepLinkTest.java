@@ -61,16 +61,9 @@ public class SettingsMultiPaneDeepLinkTest {
     private  static final String TAG = "SettingsMultiPaneDeepLinkTest";
 
     /**
-     * Whether split is supported when the connected display support flag is disabled.
-     *
-     * @deprecated use {@link mIsSplitSupportedWithCdFlag} unless the flag {@link
-     *     com.android.window.flags.Flags
-     *     .FLAG_ENABLE_ACTIVITY_EMBEDDING_SUPPORT_FOR_CONNECTED_DISPLAYS} is disabled.
+     * Whether split is supported.
      */
-    @Deprecated private boolean mIsSplitSupported;
-
-    /** Whether split is supported when the connected display support flag is enabled. */
-    private boolean mIsSplitSupportedWithCdFlag;
+    private boolean mIsSplitSupported;
 
     private ResolveInfo mDeepLinkIntentResolveInfo;
 
@@ -90,19 +83,13 @@ public class SettingsMultiPaneDeepLinkTest {
                         "persist.settings.large_screen_opt_for_dp.enabled", false);
         boolean isSplitSupported = SplitController.getInstance(targetContext)
                 .getSplitSupportStatus() == SplitController.SplitSupportStatus.SPLIT_AVAILABLE;
-        mIsSplitSupported = isFlagEnabled && isSplitSupported
-                && shouldEnableLargeScreenOptimization;
-        mIsSplitSupportedWithCdFlag =
-                isFlagEnabled
-                        && isSplitSupported
-                        && (shouldEnableLargeScreenOptimization
-                                || shouldEnableLargeScreenOptimizationForCd);
+        mIsSplitSupported = isFlagEnabled && isSplitSupported && (
+                shouldEnableLargeScreenOptimization || shouldEnableLargeScreenOptimizationForCd);
         Log.d(TAG, "isFlagEnabled : " + isFlagEnabled);
         Log.d(TAG, "shouldEnableLargeScreenOptimization: "
                 + shouldEnableLargeScreenOptimization);
         Log.d(TAG, "isSplitSupported : " + isSplitSupported);
         Log.d(TAG, "mIsSplitSupported : " + mIsSplitSupported);
-        Log.d(TAG, "mIsSplitSupportedWithCdFlag : " + mIsSplitSupportedWithCdFlag);
         mDeepLinkIntentResolveInfo = InstrumentationRegistry.getInstrumentation().getContext()
                 .getPackageManager().resolveActivity(
                 new Intent(Settings.ACTION_SETTINGS_EMBED_DEEP_LINK_ACTIVITY),
@@ -124,58 +111,22 @@ public class SettingsMultiPaneDeepLinkTest {
                 DEEP_LINK_PERMISSION.equals(mDeepLinkIntentResolveInfo.activityInfo.permission));
     }
 
-    @RequiresFlagsDisabled(
-            com.android.window.flags.Flags
-                    .FLAG_ENABLE_ACTIVITY_EMBEDDING_SUPPORT_FOR_CONNECTED_DISPLAYS)
     @CddTest(requirement = "3.2.3.5/C-17-1")
     @Test
     public void deepLinkHomeActivity_splitSupported_deepLinkHomeEnabled() throws Exception {
         assumeTrue(mIsSplitSupported);
 
         assertTrue("The Activity to handle the Intent ACTION_SETTINGS_EMBED_DEEP_LINK_ACTIVITY must"
-                + " be enabled when the device supports Activity embedding",
-                mDeepLinkIntentResolveInfo != null);
-    }
-
-    @RequiresFlagsEnabled(
-            com.android.window.flags.Flags
-                    .FLAG_ENABLE_ACTIVITY_EMBEDDING_SUPPORT_FOR_CONNECTED_DISPLAYS)
-    @CddTest(requirement = "3.2.3.5/C-17-1")
-    @Test
-    public void deepLinkHomeActivity_splitSupported_deepLinkHomeEnabled_withCdFlag()
-            throws Exception {
-        assumeTrue(mIsSplitSupportedWithCdFlag);
-
-        assertTrue(
-                "The Activity to handle the Intent ACTION_SETTINGS_EMBED_DEEP_LINK_ACTIVITY must"
                         + " be enabled when the device supports Activity embedding",
                 mDeepLinkIntentResolveInfo != null);
     }
 
-    @RequiresFlagsDisabled(
-            com.android.window.flags.Flags
-                    .FLAG_ENABLE_ACTIVITY_EMBEDDING_SUPPORT_FOR_CONNECTED_DISPLAYS)
     @CddTest(requirement = "3.2.3.5/C-17-1")
     @Test
     public void deepLinkHomeActivity_splitNotSupported_deepLinkHomeDisabled() throws Exception {
         assumeFalse(mIsSplitSupported);
 
         assertTrue("The Activity to handle the Intent ACTION_SETTINGS_EMBED_DEEP_LINK_ACTIVITY must"
-                + " be disabled when the device does NOT support Activity embedding",
-                mDeepLinkIntentResolveInfo == null);
-    }
-
-    @RequiresFlagsEnabled(
-            com.android.window.flags.Flags
-                    .FLAG_ENABLE_ACTIVITY_EMBEDDING_SUPPORT_FOR_CONNECTED_DISPLAYS)
-    @CddTest(requirement = "3.2.3.5/C-17-1")
-    @Test
-    public void deepLinkHomeActivity_splitNotSupported_deepLinkHomeDisabled_withCdFlag()
-            throws Exception {
-        assumeFalse(mIsSplitSupportedWithCdFlag);
-
-        assertTrue(
-                "The Activity to handle the Intent ACTION_SETTINGS_EMBED_DEEP_LINK_ACTIVITY must"
                         + " be disabled when the device does NOT support Activity embedding",
                 mDeepLinkIntentResolveInfo == null);
     }
