@@ -66,9 +66,12 @@ import com.android.compatibility.common.util.CarrierPrivilegeUtils;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.internal.annotations.GuardedBy;
 import com.android.internal.telephony.satellite.DatagramController;
+import com.android.libraries.entitlement.utils.Ts43Constants;
 
 import com.google.common.collect.ImmutableList;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -1487,6 +1490,85 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
                 "Should return REQUEST_NOT_SUPPORTED for invalid subId",
                 SatelliteManager.SATELLITE_RESULT_REQUEST_NOT_SUPPORTED,
                 result);
+    }
+
+    @RequiresPermission(Manifest.permission.SATELLITE_COMMUNICATION)
+    public void testNotifyEntitlementStatusChanged(int slotId) throws Exception {
+        logd(TAG, "testNotifyEntitlementStatusChanged: slotId = " + slotId);
+
+        assertTrue(
+                sMockSatelliteServiceManager.overrideSatelliteEntilementQueryConditions(
+                        true, false));
+
+        sMockSatelliteServiceManager.setMaxAllowedDataModeForCtsTest(
+                SatelliteManager.SATELLITE_DATA_SUPPORT_UNCONSTRAINED);
+
+        final int subId = SubscriptionManager.getSubscriptionId(slotId);
+
+        try {
+            prepareValidDisabledEntitlementStatus();
+            enableSatelliteEntitlementSupport(subId);
+
+            waitForSatelliteDisabledForCarrier(slotId);
+
+            sMockModemManager.clearEventOnSetSatellitePlmn();
+            sMockModemManager.clearEventOnSetSatelliteEnabledForCarrier();
+            sMockSatelliteServiceManager.clearEventOnSetSatellitePlmn();
+            sMockSatelliteServiceManager.clearEventOnSetSatelliteEnabledForCarrier();
+
+            final EntilementStatusResponseGenerator generator =
+                    prepareValidEnabledEntitlementStatus(false);
+            final List<String> allowedPlmnList = generator.getAllowedPlmns();
+
+            List<String> entitlementStatusChangedAppIds =
+                    List.of(Ts43Constants.APP_SATELLITE_ENTITLEMENT, Ts43Constants.APP_UNKNOWN);
+            ZonedDateTime entitlementStatusChangedTime = ZonedDateTime.now(ZoneId.systemDefault());
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    sTelephonyManager,
+                    (tm) ->
+                            tm.notifyEntitlementStatusChanged(
+                                    subId,
+                                    entitlementStatusChangedAppIds,
+                                    entitlementStatusChangedTime),
+                    "android.permission.MODIFY_PHONE_STATE");
+
+            // Verify that Telephony has updated its internal state correctly.
+            waitForCarrierPlmnListConfigured(slotId, allowedPlmnList);
+        } finally {
+            sMockSatelliteServiceManager.overrideSatelliteEntilementQueryConditions(false, false);
+            sMockSatelliteServiceManager.overrideSatelliteEntilementStatusResponseForCtsTest(
+                    null, false);
+            sMockSatelliteServiceManager.setMaxAllowedDataModeForCtsTest(-1);
+        }
+    }
+
+    @RequiresPermission(Manifest.permission.SATELLITE_COMMUNICATION)
+    public void testNotifyEntitlementStatusChanged_NoPermission_ThrowsSecurityException(
+            int slotId) {
+        logd(
+                TAG,
+                "testNotifyEntitlementStatusChanged_NoPermission_ThrowsSecurityException: slotId = "
+                        + slotId);
+
+        final int subId = SubscriptionManager.getSubscriptionId(slotId);
+
+        try {
+            List<String> entitlementStatusChangedAppIds =
+                    List.of(Ts43Constants.APP_SATELLITE_ENTITLEMENT, Ts43Constants.APP_UNKNOWN);
+            ZonedDateTime entitlementStatusChangedTime = ZonedDateTime.now(ZoneId.systemDefault());
+
+            // [Execution] Execute API call
+            sTelephonyManager.notifyEntitlementStatusChanged(
+                    subId, entitlementStatusChangedAppIds, entitlementStatusChangedTime);
+            // [Verification] Expect failure before this line is reached.
+            fail(
+                    "SecurityException expected when calling notifyEntitlementStatusChanged without"
+                            + " MODIFY_PHONE_STATE permission");
+        } catch (SecurityException e) {
+            // [Verification] Expected behavior
+        } finally {
+            // [Cleanup] Restore default test environment state.
+        }
     }
 
     private static void setupEnvironmentForSatelliteDataTest(int slotId,
