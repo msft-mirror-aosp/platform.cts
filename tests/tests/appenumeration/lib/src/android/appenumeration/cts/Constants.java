@@ -143,6 +143,7 @@ public class Constants {
     public static final String TARGET_PREFERRED_ACTIVITY = PKG_BASE + "preferred.activity";
     /** An authority that offers a syncadapter. */
     public static final String TARGET_SYNCADAPTER_AUTHORITY = TARGET_SYNCADAPTER + ".authority";
+    public static final String TARGET_APP_LOCK_SUPPORTED_APP = PKG_BASE + "applocksupportedtestapp";
 
     public static final String AUTHORITY_SUFFIX = ".authority";
     private static final String BASE_PATH = "/data/local/tmp/cts/appenumeration/";
@@ -151,6 +152,8 @@ public class Constants {
     public static final String TARGET_STUB_SHARED_USER_APK =
             BASE_PATH + "CtsAppEnumerationStubSharedUser.apk";
     public static final String TARGET_FILTERS_APK = BASE_PATH + "CtsAppEnumerationFilters.apk";
+    public static final String TARGET_APP_LOCK_SUPPORTED_APK =
+            BASE_PATH + "CtsAppEnumerationAppLockSupportedTarget.apk";
     public static final String QUERIES_NOTHING_APK =
             BASE_PATH + "CtsAppEnumerationQueriesNothing.apk";
     public static final String QUERIES_NOTHING_PROVIDER_APK =
