@@ -564,13 +564,12 @@ public class CarrierConfigManagerTest {
 
     @Test
     public void testGetConfig_withValidKeys() {
-        PersistableBundle allConfigs = mConfigManager.getConfig();
-        Set<String> allKeys = allConfigs.keySet();
+        Set<String> allKeys =  mConfigManager.getConfig().keySet();
         assertThat(allKeys).isNotNull();
 
         for (String key : allKeys) {
             PersistableBundle configSubset = mConfigManager.getConfig(key);
-            checkConfigSubset(configSubset, allConfigs, key);
+            checkConfigSubset(configSubset, mConfigManager.getConfig(), key);
         }
     }
 
