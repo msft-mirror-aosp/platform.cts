@@ -204,9 +204,7 @@ public class SystemMediaRouter2Test {
         releaseAllSessions();
         // unregister callbacks
         clearCallbacks();
-
-        // Clearing RouteListingPreference.
-        mAppRouter2.setRouteListingPreference(null);
+        clearRouteListingPreference();
 
         mUiAutomation.dropShellPermissionIdentity();
     }
@@ -1677,5 +1675,27 @@ public class SystemMediaRouter2Test {
 
     private boolean isAutomotive() {
         return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+    }
+
+    private void clearRouteListingPreference() throws InterruptedException {
+        if (mAppRouter2.getRouteListingPreference() == null) {
+            return; // The callback will not be called if the preference is already null.
+        }
+        CountDownLatch preferenceChangedLatch = new CountDownLatch(1);
+        Consumer<RouteListingPreference> callback =
+                (preference) -> {
+                    if (Objects.equals(preference, null)) {
+                        preferenceChangedLatch.countDown();
+                    }
+                };
+
+        try {
+            mSystemRouter2ForCts.registerRouteListingPreferenceUpdatedCallback(mExecutor, callback);
+
+            mAppRouter2.setRouteListingPreference(null);
+            assertThat(preferenceChangedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+        } finally {
+            mSystemRouter2ForCts.unregisterRouteListingPreferenceUpdatedCallback(callback);
+        }
     }
 }
