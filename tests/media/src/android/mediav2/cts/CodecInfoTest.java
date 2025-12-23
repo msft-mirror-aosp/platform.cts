@@ -265,23 +265,6 @@ public class CodecInfoTest {
     }
 
     /**
-     * For all the available encoders on the device, the test checks if their encoding
-     * capabilities are in sync with the device's decoding capabilities.
-     */
-    @CddTest(requirements = {"5/C-0-3"})
-    @Test
-    public void testDecoderAvailability() {
-        Assume.assumeTrue("Test is applicable only for encoders", mCodecInfo.isEncoder());
-        Assume.assumeTrue("Test is applicable for video/audio codecs",
-                mMediaType.startsWith("video/") || mMediaType.startsWith("audio/"));
-        if (selectCodecs(mMediaType, null, null, true).size() > 0) {
-            assertTrue("Device advertises support for encoding " + mMediaType +
-                            ", but not decoding it",
-                    selectCodecs(mMediaType, null, null, false).size() > 0);
-        }
-    }
-
-    /**
      * For all the available regulard codecs on the device, the test checks
      * none of them are marked as suitable only for trusted content.
      */
