@@ -14,6 +14,7 @@
 """Check if the default camera app capture is Ultra HDR or not.
 """
 import logging
+import time
 
 from mobly import test_runner
 
@@ -23,6 +24,8 @@ import its_device_utils
 import its_session_utils
 import ui_interaction_utils
 from snippet_uiautomator import uiautomator
+
+_CLOSE_CAMERA_WAIT_TIME_SEC = 5
 
 
 class DefaultCapturePerfClassTest(its_base_test.ItsBaseTest):
@@ -84,8 +87,10 @@ class DefaultCapturePerfClassTest(its_base_test.ItsBaseTest):
 
       ui_interaction_utils.default_camera_app_dut_setup(device_id, pkg_name)
 
-      # Launch ItsTestActivity
-      its_device_utils.start_its_test_activity(device_id)
+      ui_interaction_utils.force_stop_app(
+          self.dut, its_device_utils.CTS_VERIFIER_PKG
+      )
+      time.sleep(_CLOSE_CAMERA_WAIT_TIME_SEC)
       device_img_path = ui_interaction_utils.launch_and_take_capture(
           self.dut, pkg_name, camera_facing, self.log_path,
           flip_camera=flip_camera)
@@ -95,6 +100,9 @@ class DefaultCapturePerfClassTest(its_base_test.ItsBaseTest):
 
       # Analyze the captured image
       logging.debug('device_img_path: %s', device_img_path)
+      its_device_utils.start_its_test_activity(device_id)
+      cam.__init__(device_id=self.dut.serial, camera_id=self.camera_id,
+                   hidden_physical_id=self.hidden_physical_id)
       gainmap_present = cam.check_gain_map_present(device_img_path)
       logging.debug('gainmap_present: %s', gainmap_present)
 
