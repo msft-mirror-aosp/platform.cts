@@ -62,7 +62,6 @@ static std::string deviceToString(AAudio_DeviceType device) {
         AAUDIO_CASE_ENUM(AAUDIO_DEVICE_HDMI_EARC);
         AAUDIO_CASE_ENUM(AAUDIO_DEVICE_BLE_BROADCAST);
         AAUDIO_CASE_ENUM(AAUDIO_DEVICE_DOCK_ANALOG);
-        AAUDIO_CASE_ENUM(AAUDIO_DEVICE_BLE_HEARING_AID);
         default:
             return std::to_string(device);
     }
@@ -130,7 +129,7 @@ INSTANTIATE_TEST_CASE_P(
                         AAUDIO_DEVICE_BUILTIN_SPEAKER_SAFE, AAUDIO_DEVICE_REMOTE_SUBMIX,
                         AAUDIO_DEVICE_BLE_HEADSET, AAUDIO_DEVICE_BLE_SPEAKER,
                         AAUDIO_DEVICE_HDMI_EARC, AAUDIO_DEVICE_BLE_BROADCAST,
-                        AAUDIO_DEVICE_DOCK_ANALOG, AAUDIO_DEVICE_BLE_HEARING_AID,
+                        AAUDIO_DEVICE_DOCK_ANALOG,
                         1234567 /*random number that is not yet defined as a device type*/),
                 ::testing::Values(AAUDIO_DIRECTION_INPUT, AAUDIO_DIRECTION_OUTPUT)),
         &PlatformPolicyTest::getTestName);
