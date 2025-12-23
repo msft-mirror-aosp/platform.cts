@@ -16,23 +16,16 @@
 package android.autofillservice.cts.dialog;
 
 
-import static android.autofillservice.cts.testcore.CannedFillResponse.NO_RESPONSE;
-import static android.autofillservice.cts.testcore.Helper.assertHasFlags;
 import static android.autofillservice.cts.testcore.Helper.setFillDialogHints;
-import static android.service.autofill.FillRequest.FLAG_SUPPORTS_FILL_DIALOG;
-
-import static org.testng.Assert.assertThrows;
 
 import android.autofillservice.cts.activities.MyWebView;
 import android.autofillservice.cts.activities.WebViewActivity;
 import android.autofillservice.cts.commontests.AbstractWebViewTestCase;
 import android.autofillservice.cts.testcore.AutofillActivityTestRule;
 import android.autofillservice.cts.testcore.Helper;
-import android.autofillservice.cts.testcore.InstrumentedAutoFillService;
 import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
 
-import org.junit.Assume;
 import org.junit.Test;
 
 public class WebViewActivityTest extends AbstractWebViewTestCase<WebViewActivity> {
@@ -67,129 +60,15 @@ public class WebViewActivityTest extends AbstractWebViewTestCase<WebViewActivity
 
     @Test
     @AppModeFull(reason = "LoginActivityTest is enough")
-    public void testViewReady_hintsMatch() throws Exception {
-        // TODO(b/226240255) WebView does not inform the autofill service about editText (re-)entry
-        Assume.assumeFalse(isPreventImeStartup());
-
-        // Enable the instrumented service
+    public void testVirtualViewsReady_doNothing() throws Exception {
         enableService();
-
         // Load WebView
         final MyWebView myWebView = mActivity.loadWebView(mUiBot);
         // Validation check to make sure autofill is enabled in the application context
         Helper.assertAutofillEnabled(myWebView.getContext(), true);
-
-        // Set expectations.
-        sReplier.addResponse(NO_RESPONSE);
 
         mActivity.notifyViewReady(new String[]{"email"});
 
-        // Check onFillRequest has the flag: FLAG_SUPPORTS_FILL_DIALOG
-        final InstrumentedAutoFillService.FillRequest fillRequest = sReplier.getNextFillRequest();
-        assertHasFlags(fillRequest.flags, FLAG_SUPPORTS_FILL_DIALOG);
-    }
-
-    @Test
-    @AppModeFull(reason = "LoginActivityTest is enough")
-    public void testTwoViewReady_hintsMatchSecondView() throws Exception {
-        // TODO(b/226240255) WebView does not inform the autofill service about editText (re-)entry
-        Assume.assumeFalse(isPreventImeStartup());
-
-        // Enable the instrumented service
-        enableService();
-
-        // Load WebView
-        final MyWebView myWebView = mActivity.loadWebView(mUiBot);
-        // Validation check to make sure autofill is enabled in the application context
-        Helper.assertAutofillEnabled(myWebView.getContext(), true);
-
-        // Set expectations.
-        sReplier.addResponse(NO_RESPONSE);
-
-        mActivity.notifyViewReady(new String[]{"phone"}, new String[]{"email"});
-
-        // Check onFillRequest has the flag: FLAG_SUPPORTS_FILL_DIALOG
-        final InstrumentedAutoFillService.FillRequest fillRequest = sReplier.getNextFillRequest();
-        assertHasFlags(fillRequest.flags, FLAG_SUPPORTS_FILL_DIALOG);
-    }
-
-    @Test
-    @AppModeFull(reason = "LoginActivityTest is enough")
-    public void testViewReady_hintsMatchUpperCase() throws Exception {
-        // TODO(b/226240255) WebView does not inform the autofill service about editText (re-)entry
-        Assume.assumeFalse(isPreventImeStartup());
-
-        // Enable the instrumented service
-        enableService();
-
-        // Load WebView
-        final MyWebView myWebView = mActivity.loadWebView(mUiBot);
-        // Validation check to make sure autofill is enabled in the application context
-        Helper.assertAutofillEnabled(myWebView.getContext(), true);
-
-        // Set expectations.
-        sReplier.addResponse(NO_RESPONSE);
-
-        mActivity.notifyViewReady(new String[]{"EMAIL"});
-
-        // Check onFillRequest has the flag: FLAG_SUPPORTS_FILL_DIALOG
-        final InstrumentedAutoFillService.FillRequest fillRequest = sReplier.getNextFillRequest();
-        assertHasFlags(fillRequest.flags, FLAG_SUPPORTS_FILL_DIALOG);
-    }
-
-    @Test
-    @AppModeFull(reason = "LoginActivityTest is enough")
-    public void testViewReady_hintsNotMatch_noFillRequest() throws Exception {
-        // TODO(b/226240255) WebView does not inform the autofill service about editText (re-)entry
-        Assume.assumeFalse(isPreventImeStartup());
-
-        // Enable the instrumented service
-        enableService();
-
-        // Load WebView
-        final MyWebView myWebView = mActivity.loadWebView(mUiBot);
-        // Validation check to make sure autofill is enabled in the application context
-        Helper.assertAutofillEnabled(myWebView.getContext(), true);
-
-        // Set expectations.
-        sReplier.addResponse(NO_RESPONSE);
-
-        mActivity.notifyViewReady(new String[]{"phone"});
-
         sReplier.assertNoUnhandledFillRequests();
-    }
-
-    @Test
-    public void testViewReady_nullInfo() throws Exception {
-        // TODO(b/226240255) WebView does not inform the autofill service about editText (re-)entry
-        Assume.assumeFalse(isPreventImeStartup());
-
-        // Enable the instrumented service
-        enableService();
-
-        // Load WebView
-        final MyWebView myWebView = mActivity.loadWebView(mUiBot);
-        // Validation check to make sure autofill is enabled in the application context
-        Helper.assertAutofillEnabled(myWebView.getContext(), true);
-
-        assertThrows(NullPointerException.class,
-                () ->mActivity.notifyViewReadyWithNullInfo());
-    }
-
-    @Test
-    public void testViewReady_emptyInfo() throws Exception {
-        // TODO(b/226240255) WebView does not inform the autofill service about editText (re-)entry
-        Assume.assumeFalse(isPreventImeStartup());
-
-        // Enable the instrumented service
-        enableService();
-
-        // Load WebView
-        final MyWebView myWebView = mActivity.loadWebView(mUiBot);
-        // Validation check to make sure autofill is enabled in the application context
-        Helper.assertAutofillEnabled(myWebView.getContext(), true);
-
-        assertThrows(IllegalArgumentException.class,
-                () ->mActivity.notifyViewReadyWithEmptyInfo());
     }
 }
