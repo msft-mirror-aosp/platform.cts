@@ -84,14 +84,6 @@
     <option name="compatibility:include-filter" value="CtsAccessibilityTestCases android.view.accessibility.cts.AccessibilityServiceInfoTest#testSetMotionEvents_shouldZeroObservedMotionEvents"/>
     <!-- CtsActivityRecognitionTestCases -->
     <option name="compatibility:include-filter" value="CtsActivityRecognitionTestCases android.activityrecognition.cts.RenouncedPermissionsTest#testActivityRecognitionAttributionTagBlaming"/>
-    <!-- CtsAdServicesDebuggableDeviceTestCases -->
-    <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionMediationTest#testAdSelectionFromOutcome_buyerMustEnrolledToParticipate"/>
-    <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionMediationTest#testSelectAdsWithUnifiedTable_withImpressionReporting_eventsAreReceived"/>
-    <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionMediationTest#testSelectAds_withAdSelectionFromOutcomes_happyPath"/>
-    <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionMediationTest#testSelectAds_withImpressionReporting_eventsAreReceived"/>
-    <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionReportingTest#testAdSelection_withDataVersionHeader_unifiedTable"/>
-    <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionReportingTest#testReportImpression_biddingLogicDownloadTimesOut_throwsException"/>
-    <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.GenerateInputForEncodingShellCommandTest#testRun_generateInputForEncoding_happyPath"/>
     <!-- CtsAdServicesExtDataStorageServiceTest -->
     <option name="compatibility:include-filter" value="CtsAdServicesExtDataStorageServiceTest com.android.adservices.tests.extdata.AdServicesExtDataServiceCtsTest#testAdServicesExtDataStorageService"/>
     <!-- CtsAdServicesNotInAllowListEndToEndTests -->

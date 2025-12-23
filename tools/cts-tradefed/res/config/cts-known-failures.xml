@@ -457,4 +457,7 @@
     <!-- b/463382540 -->
     <option name="compatibility:exclude-filter" value="CtsAdExtServicesEndToEndTests com.android.adservices.tests.cts.topics.PreviewApiTest"/>
     <option name="compatibility:exclude-filter" value="CtsAdExtServicesEndToEndTests com.android.adservices.tests.cts.topics.TopicsManagerTest"/>
+    <option name="compatibility:exclude-filter" value="AdExtServicesFrameworkUnitTests android.adservices.adselection.AdSelectionManagerTest"/>
+    <option name="compatibility:exclude-filter" value="CtsAdExtServicesDeviceTestCases android.adservices.cts.TestAdSelectionManagerTest"/>
+    <option name="compatibility:exclude-filter" value="AdExtServicesServiceCoreProtectedAudienceUnitTests com.android.adservices.service.adselection.OnDeviceAdSelectionFailureIntegrationTest"/>
 </configuration>
