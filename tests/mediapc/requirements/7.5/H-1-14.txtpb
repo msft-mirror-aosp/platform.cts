@@ -22,7 +22,7 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_13
     specification:
-      "MUST support STREAM_USE_CASE capability for both primary front and "
+      "MUST support `STREAM_USE_CASE` capability for both primary front and "
       "primary back camera."
     required_values {
       key: "front_camera_stream_usecase_supported"

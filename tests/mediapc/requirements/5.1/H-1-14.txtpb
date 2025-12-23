@@ -50,8 +50,8 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
     specification:
-      "MUST support AV1 hardware decoder Main 10, Level 4.1 with film grain "
-      "effect over GPU composition."
+      "MUST support AV1 hardware decoder Main 10, Level 4.1 and film grain "
+      "with film grain effect over GPU composition."
     required_values {
       key: "av1_decoder_requirement_boolean"
       value {

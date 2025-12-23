@@ -22,8 +22,8 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_12
     specification:
-      "MUST support CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_RAW and "
-      "android.graphics.ImageFormat.RAW_SENSOR for the primary back camera."
+      "MUST support `CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_RAW` and "
+      "`android.graphics.ImageFormat.RAW_SENSOR` for the primary back camera."
     required_values {
       key: "rear_camera_raw_supported"
       value {
@@ -36,7 +36,9 @@ specs {
   key: 33
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_13
-    specification: "same"
+    specification:
+      "MUST support `CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_RAW` and "
+      "`android.graphics.ImageFormat.RAW_SENSOR` for the primary back camera."
     required_values {
       key: "rear_camera_raw_supported"
       value {

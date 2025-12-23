@@ -21,7 +21,7 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_13
     specification:
-      "MUST support >=4 channel USB audio devices (This is used by DJ "
+      "MUST support >=4 channel USB audio devices (This is used  by DJ "
       "controllers for previewing songs.)"
   }
 }
@@ -29,14 +29,18 @@ specs {
   key: 34
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_14
-    specification: "same"
+    specification:
+      "MUST support >=4 channel USB audio devices (This is used by DJ "
+      "controllers for previewing songs.)"
   }
 }
 specs {
   key: 35
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
-    specification: "same"
+    specification:
+      "MUST support >= 4 channel USB audio devices. (This is used by DJ "
+      "controllers for previewing songs.)"
   }
 }
 specs {

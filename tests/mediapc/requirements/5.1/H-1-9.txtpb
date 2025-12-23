@@ -45,7 +45,7 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_14
     specification:
       "MUST support 2 instances of secure hardware video decoder sessions "
-      "(AVC, HEVC, VP9, AV1 or later) in any codec combination running "
+      "(AVC, HEVC, VP9, AV1, or later) in any codec combination running "
       "concurrently at 1080p resolution@30 fps for both 8-bit (SDR) and 10-bit "
       "HDR content."
     required_values {

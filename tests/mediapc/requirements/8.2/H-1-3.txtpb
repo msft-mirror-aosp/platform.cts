@@ -47,7 +47,7 @@ specs {
   key: 34
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_14
-    specification: "same"
+    specification: "MUST ensure a sequential read performance of at least 250 MB/s."
     required_values {
       key: "filesystem_io_rate_mbps"
       value {
@@ -60,7 +60,7 @@ specs {
   key: 35
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
-    specification: "same"
+    specification: "MUST ensure a sequential read performance of at least 250&nbsp;MB/s."
     required_values {
       key: "filesystem_io_rate_mbps"
       value {
