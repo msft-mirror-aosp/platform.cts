@@ -25,12 +25,16 @@ import perfetto.protos.PerfettoTrace.FtraceEvent
 import perfetto.protos.PerfettoTrace.FtraceEventBundle
 import perfetto.protos.PerfettoTrace.GpuCounterDescriptor
 import perfetto.protos.PerfettoTrace.GpuCounterDescriptor.GpuCounterSpec
+import perfetto.protos.PerfettoTrace.GpuCounterDescriptor.MeasureUnit.PERCENT
 import perfetto.protos.PerfettoTrace.GpuCounterEvent
 import perfetto.protos.PerfettoTrace.PrintFtraceEvent
 import perfetto.protos.PerfettoTrace.Trace
 import perfetto.protos.PerfettoTrace.TraceConfig
 import perfetto.protos.PerfettoTrace.TraceConfig.BuiltinDataSource
 import perfetto.protos.PerfettoTrace.TracePacket
+
+private const val RAYTRACING_SUPPORT_EVENT = "CtsTestDeviceRayTracingSupport"
+private const val GPU_USAGE_MODE_EVENT = "CtsTestGpuUsageMode"
 
 class ProfilingDataUtilsTest {
 
@@ -52,13 +56,13 @@ class ProfilingDataUtilsTest {
 
     @Test
     fun deviceSupportsRayTracing_eventPresentAndTrue_returnsTrue() {
-        val trace = buildTraceWithRayTracingEvent("Test|Data|CtsTestDeviceRayTracingSupport|1")
+        val trace = buildTraceWithFtraceEvent(RAYTRACING_SUPPORT_EVENT, "1")
         assertThat(trace.deviceSupportsRayTracing()).isTrue()
     }
 
     @Test
     fun deviceSupportsRayTracing_eventPresentAndFalse_returnsFalse() {
-        val trace = buildTraceWithRayTracingEvent("Test|Data|CtsTestDeviceRayTracingSupport|0")
+        val trace = buildTraceWithFtraceEvent(RAYTRACING_SUPPORT_EVENT, "0")
         assertThat(trace.deviceSupportsRayTracing()).isFalse()
     }
 
@@ -70,7 +74,7 @@ class ProfilingDataUtilsTest {
 
     @Test
     fun deviceSupportsRayTracing_eventMalformed_throws() {
-        val trace = buildTraceWithRayTracingEvent("Test|Data|CtsTestDeviceRayTracingSupport|123")
+        val trace = buildTraceWithFtraceEvent(RAYTRACING_SUPPORT_EVENT, "123")
         assertThrows(IllegalArgumentException::class.java) {
             trace.deviceSupportsRayTracing()
         }
@@ -78,7 +82,7 @@ class ProfilingDataUtilsTest {
 
     @Test
     fun deviceSupportsRayTracing_ignoresWhitespace() {
-        val trace = buildTraceWithRayTracingEvent("Test|Data|CtsTestDeviceRayTracingSupport|1 \n")
+        val trace = buildTraceWithFtraceEvent(RAYTRACING_SUPPORT_EVENT, "1 \n")
         assertThat(trace.deviceSupportsRayTracing()).isTrue()
     }
 
@@ -132,13 +136,167 @@ class ProfilingDataUtilsTest {
         assertThat(list.containsThreeConsecutiveZeroes()).isTrue()
     }
 
-    private fun buildTraceWithRayTracingEvent(event: String): Trace {
+    @Test
+    fun getGpuUsageTimeline_emptyTrace_throws() {
+        val trace = Trace.newBuilder().build()
+        val e = assertThrows(IllegalArgumentException::class.java) {
+            trace.getGpuUsageTimeline()
+        }
+        assertThat(e).hasMessageThat().contains("No GPU usage timeline")
+    }
+
+    @Test
+    fun getGpuUsageTimeline_noMatchingEvents_throws() {
+        val trace = buildTraceWithFtraceEvent("SomeOtherEvent", "1")
+        val e = assertThrows(IllegalArgumentException::class.java) {
+            trace.getGpuUsageTimeline()
+        }
+        assertThat(e).hasMessageThat().contains("No GPU usage timeline")
+    }
+
+    @Test
+    fun getGpuUsageTimeline_extractsEvents() {
+        val trace = Trace.newBuilder().apply {
+            addPacket(buildFtracePacket(100L, GPU_USAGE_MODE_EVENT, "0")) // LOW
+            addPacket(buildFtracePacket(200L, GPU_USAGE_MODE_EVENT, "1")) // HIGH
+        }.build()
+        assertThat(trace.getGpuUsageTimeline()).containsExactly(
+            GpuUsageEvent(100L, Mode.LOW_GPU_USAGE),
+            GpuUsageEvent(200L, Mode.HIGH_GPU_USAGE)
+        ).inOrder()
+    }
+
+    @Test
+    fun getGpuUsageTimeline_malformedEvent_throws() {
+        val trace = buildTraceWithFtraceEvent(GPU_USAGE_MODE_EVENT, "invalid")
+        assertThrows(IllegalArgumentException::class.java) {
+            trace.getGpuUsageTimeline()
+        }
+    }
+
+    @Test
+    fun counterMatchesGpuUtilisation_emptyTimeline_returnsFalse() {
+        val counterSpec = GpuCounterSpec.newBuilder().addNumeratorUnits(PERCENT).buildPartial()
+        val counterValues = listOf(GpuCounterValue(100L, 10.0))
+        val gpuUsageTimeline = emptyList<GpuUsageEvent>()
+        assertThat(
+            counterMatchesGpuUtilisation(counterSpec, counterValues, gpuUsageTimeline)
+        ).isFalse()
+    }
+
+    @Test
+    fun counterMatchesGpuUtilisation_emptyCounters_returnsFalse() {
+        val counterSpec = GpuCounterSpec.newBuilder().addNumeratorUnits(PERCENT).buildPartial()
+        val counterValues = emptyList<GpuCounterValue>()
+        val gpuUsageTimeline = listOf(
+            GpuUsageEvent(100L, Mode.LOW_GPU_USAGE),
+            GpuUsageEvent(200L, Mode.HIGH_GPU_USAGE),
+        )
+        assertThat(
+            counterMatchesGpuUtilisation(counterSpec, counterValues, gpuUsageTimeline)
+        ).isFalse()
+    }
+
+    @Test
+    fun counterMatchesGpuUtilisation_notEnoughValues_returnsFalse() {
+        val counterSpec = GpuCounterSpec.newBuilder().addNumeratorUnits(PERCENT).buildPartial()
+        val counterValues = listOf(GpuCounterValue(150L, 10.0))
+        val gpuUsageTimeline = listOf(
+            GpuUsageEvent(100L, Mode.LOW_GPU_USAGE),
+            GpuUsageEvent(200L, Mode.HIGH_GPU_USAGE),
+        )
+        assertThat(
+            counterMatchesGpuUtilisation(counterSpec, counterValues, gpuUsageTimeline)
+        ).isFalse()
+    }
+
+    @Test
+    fun counterMatchesGpuUtilisation_highIsGreater_returnsTrue() {
+        val counterSpec = GpuCounterSpec.newBuilder().addNumeratorUnits(PERCENT).buildPartial()
+        val counterValues = listOf(
+            GpuCounterValue(1L, 0.0), // LOW
+            GpuCounterValue(99L, 0.0), // LOW
+            GpuCounterValue(150L, 100.0), // HIGH
+        )
+        val gpuUsageTimeline = listOf(
+            GpuUsageEvent(0L, Mode.LOW_GPU_USAGE),
+            GpuUsageEvent(100L, Mode.HIGH_GPU_USAGE),
+        )
+
+        assertThat(
+            counterMatchesGpuUtilisation(counterSpec, counterValues, gpuUsageTimeline)
+        ).isTrue()
+    }
+
+    @Test
+    fun counterMatchesGpuUtilisation_lowIsGreater_returnsFalse() {
+        val counterSpec = GpuCounterSpec.newBuilder().addNumeratorUnits(PERCENT).buildPartial()
+        val counterValues = listOf(
+            GpuCounterValue(100L, 100.0), // LOW
+            GpuCounterValue(150L, 0.0), // HIGH
+        )
+        val gpuUsageTimeline = listOf(
+            GpuUsageEvent(0L, Mode.LOW_GPU_USAGE),
+            GpuUsageEvent(100L, Mode.HIGH_GPU_USAGE),
+        )
+
+        assertThat(
+            counterMatchesGpuUtilisation(counterSpec, counterValues, gpuUsageTimeline)
+        ).isFalse()
+    }
+
+    @Test
+    fun counterMatchesGpuUtilisation_averagesAreEqual_returnsFalse() {
+        val counterSpec = GpuCounterSpec.newBuilder().addNumeratorUnits(PERCENT).buildPartial()
+        val counterValues = listOf(
+            GpuCounterValue(50L, 10.0),
+            GpuCounterValue(150L, 10.0),
+            GpuCounterValue(250L, 10.0)
+        )
+        val gpuUsageTimeline = listOf(
+            GpuUsageEvent(0L, Mode.LOW_GPU_USAGE),
+            GpuUsageEvent(100L, Mode.HIGH_GPU_USAGE),
+            GpuUsageEvent(200L, Mode.LOW_GPU_USAGE),
+        )
+
+        assertThat(
+            counterMatchesGpuUtilisation(counterSpec, counterValues, gpuUsageTimeline)
+        ).isFalse()
+    }
+
+    @Test
+    fun counterMatchesGpuUtilisation_timeWeighted() {
+        val counterSpec = GpuCounterSpec.newBuilder().addNumeratorUnits(PERCENT).buildPartial()
+        // With simple averaging, low usage avg = 50 and high usage average is 50 => check fails.
+        // With time-weighted averaging, low usage average is ((100*10)+(0*20)+(10*70))/100 = 17.
+        // High usage average is ((10*10)+(90*90))/100 = 82 => check passes.
+        val counterValues = listOf(
+            GpuCounterValue(10L, 100.0),
+            GpuCounterValue(30L, 0.0),
+            GpuCounterValue(110L, 10.0),
+            GpuCounterValue(200L, 90.0)
+        )
+        val gpuUsageTimeline = listOf(
+            GpuUsageEvent(0L, Mode.LOW_GPU_USAGE),
+            GpuUsageEvent(100L, Mode.HIGH_GPU_USAGE),
+        )
+        assertThat(
+            counterMatchesGpuUtilisation(counterSpec, counterValues, gpuUsageTimeline)
+        ).isTrue()
+    }
+
+    private fun buildTraceWithFtraceEvent(eventName: String, value: String): Trace {
         return Trace.newBuilder().apply {
-            addPacket(TracePacket.newBuilder().apply {
-                setFtraceEvents(FtraceEventBundle.newBuilder().apply {
-                    addEvent(FtraceEvent.newBuilder().apply {
-                        setPrint(PrintFtraceEvent.newBuilder().setBuf(event))
-                    })
+            addPacket(buildFtracePacket(1L, eventName, value))
+        }.build()
+    }
+
+    private fun buildFtracePacket(timestamp: Long, eventName: String, value: String): TracePacket {
+        return TracePacket.newBuilder().apply {
+            setFtraceEvents(FtraceEventBundle.newBuilder().apply {
+                addEvent(FtraceEvent.newBuilder().apply {
+                    setTimestamp(timestamp)
+                    setPrint(PrintFtraceEvent.newBuilder().setBuf("$eventName|$value"))
                 })
             })
         }.build()

@@ -98,6 +98,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
             new CtsTouchUtils(InstrumentationRegistry.getTargetContext());
 
     private UiDevice mUiDevice;
+    private LockScreenSession mLockScreenSession;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -114,14 +115,17 @@ public class KeyguardLockedTests extends KeyguardTestBase {
 
     @After
     public void tearDown() {
+        if (mLockScreenSession != null) {
+            mLockScreenSession.close();
+        }
         Components.forceStopPackage();
     }
 
     @Test
     @RequiresFlagsDisabled(android.app.Flags.FLAG_DEVICE_UNLOCK_LISTENER)
     public void testLockAndUnlock() {
-        final LockScreenSession lockScreenSession = createManagedLockScreenSession();
-        lockScreenSession.setLockCredential().gotoKeyguard();
+        mLockScreenSession = createManagedLockScreenSession();
+        mLockScreenSession.setLockCredential().gotoKeyguard();
 
         assertTrue(mKeyguardManager.isKeyguardLocked());
         assertTrue(mKeyguardManager.isDeviceLocked());
@@ -129,7 +133,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
         assertTrue(mKeyguardManager.isKeyguardSecure());
         mWmState.assertKeyguardShowingAndNotOccluded();
 
-        lockScreenSession.unlockDevice().enterAndConfirmLockCredential();
+        mLockScreenSession.unlockDevice().enterAndConfirmLockCredential();
 
         mWmState.waitAndAssertKeyguardGone();
         assertFalse(mKeyguardManager.isDeviceLocked());
@@ -141,13 +145,13 @@ public class KeyguardLockedTests extends KeyguardTestBase {
         final KeyguardManager.KeyguardLock keyguardLock = mContext.getSystemService(
                 KeyguardManager.class).newKeyguardLock("KeyguardLockedTests");
 
-        try (LockScreenSession lockScreenSession =
-                    new LockScreenSession(mInstrumentation, mWmState)) {
-            lockScreenSession.gotoKeyguard();
+        mLockScreenSession = new LockScreenSession(mInstrumentation, mWmState);
+        try {
+            mLockScreenSession.gotoKeyguard();
             keyguardLock.disableKeyguard();
 
-            lockScreenSession.setLockCredential();
-            lockScreenSession.gotoKeyguard();
+            mLockScreenSession.setLockCredential();
+            mLockScreenSession.gotoKeyguard();
 
             mWmState.waitForKeyguardShowingAndNotOccluded();
             mWmState.assertKeyguardShowingAndNotOccluded();
@@ -162,12 +166,12 @@ public class KeyguardLockedTests extends KeyguardTestBase {
 
     @Test
     public void testDismissKeyguard() {
-        final LockScreenSession lockScreenSession = createManagedLockScreenSession();
-        lockScreenSession.setLockCredential().gotoKeyguard();
+        mLockScreenSession = createManagedLockScreenSession();
+        mLockScreenSession.setLockCredential().gotoKeyguard();
 
         mWmState.assertKeyguardShowingAndNotOccluded();
         launchActivity(DISMISS_KEYGUARD_ACTIVITY);
-        lockScreenSession.enterAndConfirmLockCredential();
+        mLockScreenSession.enterAndConfirmLockCredential();
 
         mWmState.waitAndAssertKeyguardGone();
         mWmState.computeState(DISMISS_KEYGUARD_ACTIVITY);
@@ -179,12 +183,12 @@ public class KeyguardLockedTests extends KeyguardTestBase {
     public void testLockAndUnlockWithStateListener() {
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
                 SUBSCRIBE_TO_KEYGUARD_LOCKED_STATE);
-        final LockScreenSession lockScreenSession = createManagedLockScreenSession();
+        mLockScreenSession = createManagedLockScreenSession();
 
         final DeviceLockedStateListener listener = mock(DeviceLockedStateListener.class);
         mKeyguardManager.addDeviceLockedStateListener(mContext.getMainExecutor(), listener);
         try {
-            lockScreenSession.setLockCredential().gotoKeyguard();
+            mLockScreenSession.setLockCredential().gotoKeyguard();
             assertTrue(mKeyguardManager.isKeyguardLocked());
             assertTrue(mKeyguardManager.isDeviceLocked());
             assertTrue(mKeyguardManager.isDeviceSecure());
@@ -192,7 +196,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
             mWmState.assertKeyguardShowingAndNotOccluded();
             verify(listener, times(1)).onDeviceLockedStateChanged(true);
 
-            lockScreenSession.unlockDevice().enterAndConfirmLockCredential();
+            mLockScreenSession.unlockDevice().enterAndConfirmLockCredential();
 
             mWmState.waitAndAssertKeyguardGone();
             PollingCheck.waitFor(
@@ -210,8 +214,8 @@ public class KeyguardLockedTests extends KeyguardTestBase {
 
     @Test
     public void testDismissKeyguard_whileOccluded() {
-        final LockScreenSession lockScreenSession = createManagedLockScreenSession();
-        lockScreenSession.setLockCredential().gotoKeyguard();
+        mLockScreenSession = createManagedLockScreenSession();
+        mLockScreenSession.setLockCredential().gotoKeyguard();
 
         mWmState.assertKeyguardShowingAndNotOccluded();
         launchActivity(SHOW_WHEN_LOCKED_ACTIVITY);
@@ -219,7 +223,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
         mWmState.assertVisibility(SHOW_WHEN_LOCKED_ACTIVITY, true);
 
         launchActivity(DISMISS_KEYGUARD_ACTIVITY);
-        lockScreenSession.enterAndConfirmLockCredential();
+        mLockScreenSession.enterAndConfirmLockCredential();
         mWmState.waitAndAssertKeyguardGone();
         mWmState.computeState(DISMISS_KEYGUARD_ACTIVITY);
 
@@ -231,15 +235,15 @@ public class KeyguardLockedTests extends KeyguardTestBase {
 
     @Test
     public void testDismissKeyguard_fromShowWhenLocked_notAllowed() {
-        final LockScreenSession lockScreenSession = createManagedLockScreenSession();
-        lockScreenSession.setLockCredential().gotoKeyguard();
+        mLockScreenSession = createManagedLockScreenSession();
+        mLockScreenSession.setLockCredential().gotoKeyguard();
 
         mWmState.assertKeyguardShowingAndNotOccluded();
         launchActivity(SHOW_WHEN_LOCKED_ACTIVITY);
         mWmState.computeState(SHOW_WHEN_LOCKED_ACTIVITY);
         mWmState.assertVisibility(SHOW_WHEN_LOCKED_ACTIVITY, true);
         mBroadcastActionTrigger.dismissKeyguardByFlag();
-        lockScreenSession.enterAndConfirmLockCredential();
+        mLockScreenSession.enterAndConfirmLockCredential();
 
         // Make sure we stay on Keyguard.
         mWmState.assertKeyguardShowingAndOccluded();
@@ -248,8 +252,8 @@ public class KeyguardLockedTests extends KeyguardTestBase {
 
     @Test
     public void testDismissKeyguardIfInsecure_notAllowed() {
-        final LockScreenSession lockScreenSession = createManagedLockScreenSession();
-        lockScreenSession.setLockCredential().gotoKeyguard();
+        mLockScreenSession = createManagedLockScreenSession();
+        mLockScreenSession.setLockCredential().gotoKeyguard();
 
         mWmState.assertKeyguardShowingAndNotOccluded();
         launchActivityWithDismissKeyguardIfInsecure(SHOW_WHEN_LOCKED_ACTIVITY);
@@ -262,16 +266,16 @@ public class KeyguardLockedTests extends KeyguardTestBase {
 
     @Test
     public void testDismissKeyguardActivity_method() {
-        final LockScreenSession lockScreenSession = createManagedLockScreenSession();
-        lockScreenSession.setLockCredential();
+        mLockScreenSession = createManagedLockScreenSession();
+        mLockScreenSession.setLockCredential();
         separateTestJournal();
 
-        lockScreenSession.gotoKeyguard();
+        mLockScreenSession.gotoKeyguard();
         mWmState.computeState();
         assertTrue(mWmState.getKeyguardControllerState().isKeyguardShowing());
 
         launchActivity(DISMISS_KEYGUARD_METHOD_ACTIVITY);
-        lockScreenSession.enterAndConfirmLockCredential();
+        mLockScreenSession.enterAndConfirmLockCredential();
         mWmState.waitForKeyguardGone();
         mWmState.computeState(DISMISS_KEYGUARD_METHOD_ACTIVITY);
         mWmState.assertVisibility(DISMISS_KEYGUARD_METHOD_ACTIVITY, true);
@@ -285,11 +289,11 @@ public class KeyguardLockedTests extends KeyguardTestBase {
         assumeFalse(isCar());
         assumeFalse(FeatureUtil.isXrHeadset());
 
-        final LockScreenSession lockScreenSession = createManagedLockScreenSession();
-        lockScreenSession.setLockCredential();
+        mLockScreenSession = createManagedLockScreenSession();
+        mLockScreenSession.setLockCredential();
         separateTestJournal();
 
-        lockScreenSession.gotoKeyguard();
+        mLockScreenSession.gotoKeyguard();
         mWmState.computeState();
         assertTrue(mWmState.getKeyguardControllerState().isKeyguardShowing());
 
@@ -303,8 +307,8 @@ public class KeyguardLockedTests extends KeyguardTestBase {
 
     @Test
     public void testDismissKeyguardAttrActivity_method_turnScreenOn_withSecureKeyguard() {
-        final LockScreenSession lockScreenSession = createManagedLockScreenSession();
-        lockScreenSession.setLockCredential().sleepDevice();
+        mLockScreenSession = createManagedLockScreenSession();
+        mLockScreenSession.setLockCredential().sleepDevice();
         mWmState.computeState();
         assertTrue(mWmState.getKeyguardControllerState().isKeyguardShowing());
 
@@ -317,8 +321,8 @@ public class KeyguardLockedTests extends KeyguardTestBase {
 
     @Test
     public void testShowWhenLockedActivity_removeAttr_hideImmediately() {
-        final var lockScreenSession = createManagedLockScreenSession();
-        lockScreenSession.gotoKeyguard();
+        mLockScreenSession = createManagedLockScreenSession();
+        mLockScreenSession.gotoKeyguard();
 
         // Start on Keyguard.
         mWmState.waitForKeyguardShowingAndNotOccluded();
@@ -343,14 +347,14 @@ public class KeyguardLockedTests extends KeyguardTestBase {
     public void testEnterPipOverKeyguard() {
         assumeTrue(supportsPip());
 
-        final LockScreenSession lockScreenSession = createManagedLockScreenSession();
-        lockScreenSession.setLockCredential();
+        mLockScreenSession = createManagedLockScreenSession();
+        mLockScreenSession.setLockCredential();
 
         // Show the PiP activity in fullscreen.
         launchActivity(PIP_ACTIVITY, extraString(EXTRA_SHOW_OVER_KEYGUARD, "true"));
 
         // Lock the screen and ensure that the PiP activity showing over the LockScreen.
-        lockScreenSession.gotoKeyguard(PIP_ACTIVITY);
+        mLockScreenSession.gotoKeyguard(PIP_ACTIVITY);
         mWmState.waitForKeyguardShowingAndOccluded();
         mWmState.assertKeyguardShowingAndOccluded();
 
@@ -361,7 +365,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
                 WINDOWING_MODE_PINNED, ACTIVITY_TYPE_STANDARD);
 
         // Enter the credentials and ensure that the activity actually entered picture-in-picture.
-        lockScreenSession.enterAndConfirmLockCredential();
+        mLockScreenSession.enterAndConfirmLockCredential();
         mWmState.waitAndAssertKeyguardGone();
         waitForEnterPip(PIP_ACTIVITY);
         mWmState.assertContainsStack("Must contain pinned stack.", WINDOWING_MODE_PINNED,
@@ -372,8 +376,8 @@ public class KeyguardLockedTests extends KeyguardTestBase {
     public void testShowWhenLockedActivityAndPipActivity() {
         assumeTrue(supportsPip());
 
-        final LockScreenSession lockScreenSession = createManagedLockScreenSession();
-        lockScreenSession.setLockCredential();
+        mLockScreenSession = createManagedLockScreenSession();
+        mLockScreenSession.setLockCredential();
 
         // Show an activity in PIP.
         launchActivity(PIP_ACTIVITY, extraString(EXTRA_ENTER_PIP, "true"));
@@ -389,7 +393,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
 
         // Lock the screen and ensure that the fullscreen activity showing over the lockscreen
         // is visible, but not the PiP activity.
-        lockScreenSession.gotoKeyguard(SHOW_WHEN_LOCKED_ACTIVITY);
+        mLockScreenSession.gotoKeyguard(SHOW_WHEN_LOCKED_ACTIVITY);
         mWmState.computeState();
         mWmState.assertKeyguardShowingAndOccluded();
         mWmState.assertVisibility(SHOW_WHEN_LOCKED_ACTIVITY, true);
@@ -400,8 +404,8 @@ public class KeyguardLockedTests extends KeyguardTestBase {
     public void testShowWhenLockedPipActivity() {
         assumeTrue(supportsPip());
 
-        final LockScreenSession lockScreenSession = createManagedLockScreenSession();
-        lockScreenSession.setLockCredential();
+        mLockScreenSession = createManagedLockScreenSession();
+        mLockScreenSession.setLockCredential();
 
         // Show an activity in PIP.
         launchActivity(PIP_ACTIVITY, extraString(EXTRA_ENTER_PIP, "true"),
@@ -413,7 +417,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
 
         // Lock the screen and ensure the PiP activity is not visible on the lockscreen even
         // though it's marked as showing over the lockscreen itself.
-        lockScreenSession.gotoKeyguard();
+        mLockScreenSession.gotoKeyguard();
         mWmState.assertKeyguardShowingAndNotOccluded();
         mWmState.assertVisibility(PIP_ACTIVITY, false);
     }
@@ -422,7 +426,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
     public void testDismissKeyguardPipActivity() {
         assumeTrue(supportsPip());
 
-        final LockScreenSession lockScreenSession = createManagedLockScreenSession();
+        mLockScreenSession = createManagedLockScreenSession();
         // Show an activity in PIP.
         launchActivity(PIP_ACTIVITY, extraString(EXTRA_ENTER_PIP, "true"),
                 extraString(EXTRA_DISMISS_KEYGUARD, "true"));
@@ -433,7 +437,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
 
         // Lock the screen and ensure the PiP activity is not visible on the lockscreen even
         // though it's marked as dismiss keyguard.
-        lockScreenSession.gotoKeyguard();
+        mLockScreenSession.gotoKeyguard();
         mWmState.computeState();
         mWmState.assertKeyguardShowingAndNotOccluded();
         mWmState.assertVisibility(PIP_ACTIVITY, false);
@@ -443,7 +447,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
     public void testDismissKeyguardPipActivityWhenKeyguardOccluded() {
         assumeTrue(supportsPip());
 
-        final LockScreenSession lockScreenSession = createManagedLockScreenSession();
+        mLockScreenSession = createManagedLockScreenSession();
         // Start a show-when-lock activity
         launchActivity(SHOW_WHEN_LOCKED_ACTIVITY);
         mWmState.computeState(SHOW_WHEN_LOCKED_ACTIVITY);
@@ -462,7 +466,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
 
         // Lock the screen and ensure the PiP activity is not visible on the lockscreen
         // ShowWhenLockActivity should still be visible and keyguard is occluded
-        lockScreenSession.gotoKeyguard(SHOW_WHEN_LOCKED_ACTIVITY);
+        mLockScreenSession.gotoKeyguard(SHOW_WHEN_LOCKED_ACTIVITY);
         mWmState.computeState();
         mWmState.assertKeyguardShowingAndOccluded();
         mWmState.assertVisibility(PIP_ACTIVITY, false);
@@ -473,10 +477,10 @@ public class KeyguardLockedTests extends KeyguardTestBase {
     public void testShowWhenLockedAttrImeActivityAndShowSoftInput() throws Exception {
         assumeTrue(MSG_NO_MOCK_IME, supportsInstallableIme());
 
-        final LockScreenSession lockScreenSession = createManagedLockScreenSession();
+        mLockScreenSession = createManagedLockScreenSession();
         final MockImeSession mockImeSession = createManagedMockImeSession(this);
 
-        lockScreenSession.setLockCredential().gotoKeyguard();
+        mLockScreenSession.setLockCredential().gotoKeyguard();
         mWmState.assertKeyguardShowingAndNotOccluded();
         launchActivity(SHOW_WHEN_LOCKED_ATTR_IME_ACTIVITY);
         mWmState.computeState(SHOW_WHEN_LOCKED_ATTR_IME_ACTIVITY);
@@ -494,12 +498,12 @@ public class KeyguardLockedTests extends KeyguardTestBase {
     public void testShowWhenLockedImeActivityAndShowSoftInput() throws Exception {
         assumeTrue(MSG_NO_MOCK_IME, supportsInstallableIme());
 
-        final LockScreenSession lockScreenSession = createManagedLockScreenSession();
+        mLockScreenSession = createManagedLockScreenSession();
         final MockImeSession mockImeSession = createManagedMockImeSession(this);
         final TestActivitySession<ShowWhenLockedImeActivity> imeTestActivitySession =
                 createManagedTestActivitySession();
 
-        lockScreenSession.setLockCredential().gotoKeyguard();
+        mLockScreenSession.setLockCredential().gotoKeyguard();
         mWmState.assertKeyguardShowingAndNotOccluded();
         imeTestActivitySession.launchTestActivityOnDisplaySync(ShowWhenLockedImeActivity.class,
                 DEFAULT_DISPLAY);
@@ -519,7 +523,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
         assumeTrue(MSG_NO_MOCK_IME, supportsInstallableIme());
 
         final MockImeSession mockImeSession = createManagedMockImeSession(this);
-        final LockScreenSession lockScreenSession = createManagedLockScreenSession();
+        mLockScreenSession = createManagedLockScreenSession();
         final TestActivitySession<ShowImeAfterLockscreenActivity> imeTestActivitySession =
                 createManagedTestActivitySession();
         imeTestActivitySession.launchTestActivityOnDisplaySync(ShowImeAfterLockscreenActivity.class,
@@ -533,10 +537,10 @@ public class KeyguardLockedTests extends KeyguardTestBase {
                 TIMEOUT_IME,
                 () -> rootView.getRootWindowInsets().isVisible(ime()));
 
-        lockScreenSession.setLockCredential().gotoKeyguard();
+        mLockScreenSession.setLockCredential().gotoKeyguard();
         assertTrue(
                 "Keyguard is showing", mWmState.getKeyguardControllerState().isKeyguardShowing());
-        lockScreenSession.unlockDevice().enterAndConfirmLockCredential();
+        mLockScreenSession.unlockDevice().enterAndConfirmLockCredential();
         mWmState.waitAndAssertKeyguardGone();
 
         // Wait for the UI idle, make sure the application is idle and input windows is up-to-date.

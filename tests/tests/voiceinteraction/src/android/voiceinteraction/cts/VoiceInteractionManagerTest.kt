@@ -20,7 +20,7 @@ import android.app.Activity
 import android.app.AppOpsManager
 import android.app.role.RoleManager
 import android.app.voiceinteraction.VoiceInteractionManager
-import android.app.voiceinteraction.VoiceInteractionManager.ACTION_REQUEST_ASSIST_STRUCTURE
+import android.app.voiceinteraction.VoiceInteractionManager.ACTION_REQUEST_READ_SCREEN_CONTEXT
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -111,16 +111,16 @@ class VoiceInteractionManagerTest {
     }
 
     @ApiTest(
-        apis = ["android.app.voiceinteraction.VoiceInteractionManager#createRequestAssistStructureIntent"]
+        apis = ["android.app.voiceinteraction.VoiceInteractionManager#createRequestReadScreenContextIntent"]
     )
     @Test
-    fun testCreateRequestAssistStructureIntent() {
-        val intent = voiceInteractionManager.createRequestAssistStructureIntent()
+    fun testCreateRequestReadScreenContextIntent() {
+        val intent = voiceInteractionManager.createRequestReadScreenContextIntent()
         assertWithMessage(
-            "Expected intent action to be ${ACTION_REQUEST_ASSIST_STRUCTURE}"
+            "Expected intent action to be ${ACTION_REQUEST_READ_SCREEN_CONTEXT}"
         )
             .that(intent.action)
-            .isEqualTo(ACTION_REQUEST_ASSIST_STRUCTURE)
+            .isEqualTo(ACTION_REQUEST_READ_SCREEN_CONTEXT)
         assertWithMessage("Expected intent to be directed to PermissionController")
             .that(intent.getPackage())
             .isEqualTo(context.packageManager.permissionControllerPackageName)
@@ -222,14 +222,14 @@ class VoiceInteractionManagerTest {
 
     @Test
     @ApiTest(
-        apis = ["android.app.voiceinteraction.VoiceInteractionManager#canReadAssistStructure"]
+        apis = ["android.app.voiceinteraction.VoiceInteractionManager#canReadScreenContext"]
     )
     fun testCanReadAssistStructure() {
         Helper.addAssistRoleHolder(ASSISTANT_ROLE_HOLDER_PACKAGE, context, roleManager)
 
         // Mode Allowed
         setAppOpMode(AppOpsManager.MODE_ALLOWED)
-        assertCanReadAssistStructure(true)
+        assertCanReadScreenContext(true)
         eventually {
             assertThat(assistStructureEnabledManager.get()).isEqualTo("1")
             assertThat(assistScreenshotEnabledManager.get()).isEqualTo("1")
@@ -237,7 +237,7 @@ class VoiceInteractionManagerTest {
 
         // Mode ignored
         setAppOpMode(AppOpsManager.MODE_IGNORED)
-        assertCanReadAssistStructure(false)
+        assertCanReadScreenContext(false)
         eventually {
             assertThat(assistStructureEnabledManager.get()).isEqualTo("0")
             assertThat(assistScreenshotEnabledManager.get()).isEqualTo("0")
@@ -245,7 +245,7 @@ class VoiceInteractionManagerTest {
 
         // Mode default
         setAppOpMode(AppOpsManager.MODE_DEFAULT)
-        assertCanReadAssistStructure(true)
+        assertCanReadScreenContext(true)
         eventually {
             assertThat(assistStructureEnabledManager.get()).isEqualTo("1")
             assertThat(assistScreenshotEnabledManager.get()).isEqualTo("1")
@@ -253,7 +253,7 @@ class VoiceInteractionManagerTest {
 
         // Mode errored
         setAppOpMode(AppOpsManager.MODE_ERRORED)
-        assertCanReadAssistStructure(false)
+        assertCanReadScreenContext(false)
         eventually {
             assertThat(assistStructureEnabledManager.get()).isEqualTo("0")
             assertThat(assistScreenshotEnabledManager.get()).isEqualTo("0")
@@ -262,7 +262,7 @@ class VoiceInteractionManagerTest {
 
     @Test
     @ApiTest(
-        apis = ["android.app.voiceinteraction.VoiceInteractionManager#canReadAssistStructure"]
+        apis = ["android.app.voiceinteraction.VoiceInteractionManager#canReadScreenContext"]
     )
     fun testCanReadAssistStructure_nonRoleHolder() {
         Helper.removeAssistRoleHolder(ASSISTANT_ROLE_HOLDER_PACKAGE, context, roleManager)
@@ -274,7 +274,7 @@ class VoiceInteractionManagerTest {
 
         // Mode Allowed
         setAppOpMode(AppOpsManager.MODE_ALLOWED)
-        assertCanReadAssistStructure(false)
+        assertCanReadScreenContext(false)
         assertThat(assistStructureEnabledManager.get())
             .isEqualTo(initialAssistStructureSecureSettings)
         assertThat(assistScreenshotEnabledManager.get())
@@ -282,7 +282,7 @@ class VoiceInteractionManagerTest {
 
         // Mode ignored
         setAppOpMode(AppOpsManager.MODE_IGNORED)
-        assertCanReadAssistStructure(false)
+        assertCanReadScreenContext(false)
         assertThat(assistStructureEnabledManager.get())
             .isEqualTo(initialAssistStructureSecureSettings)
         assertThat(assistScreenshotEnabledManager.get())
@@ -290,7 +290,7 @@ class VoiceInteractionManagerTest {
 
         // Mode default
         setAppOpMode(AppOpsManager.MODE_DEFAULT)
-        assertCanReadAssistStructure(false)
+        assertCanReadScreenContext(false)
         assertThat(assistStructureEnabledManager.get())
             .isEqualTo(initialAssistStructureSecureSettings)
         assertThat(assistScreenshotEnabledManager.get())
@@ -298,7 +298,7 @@ class VoiceInteractionManagerTest {
 
         // Mode errored
         setAppOpMode(AppOpsManager.MODE_ERRORED)
-        assertCanReadAssistStructure(false)
+        assertCanReadScreenContext(false)
         assertThat(assistStructureEnabledManager.get())
             .isEqualTo(initialAssistStructureSecureSettings)
         assertThat(assistScreenshotEnabledManager.get())
@@ -330,7 +330,7 @@ class VoiceInteractionManagerTest {
     private fun getAppOpMode(): Int =
         runWithShellPermissionIdentity<Int> {
             appOpsManager.checkOpNoThrow(
-                AppOpsManager.OPSTR_VOICE_INTERACTION_ASSIST_STRUCTURE,
+                AppOpsManager.OPSTR_READ_SCREEN_CONTEXT,
                 assistantRoleHolderPackageUid,
                 ASSISTANT_ROLE_HOLDER_PACKAGE,
             )
@@ -339,7 +339,7 @@ class VoiceInteractionManagerTest {
     private fun setAppOpMode(mode: Int) =
         runWithShellPermissionIdentity {
             appOpsManager.setUidMode(
-                AppOpsManager.OPSTR_VOICE_INTERACTION_ASSIST_STRUCTURE,
+                AppOpsManager.OPSTR_READ_SCREEN_CONTEXT,
                 assistantRoleHolderPackageUid,
                 mode,
             )
@@ -387,12 +387,12 @@ class VoiceInteractionManagerTest {
             .isEqualTo(expectedRequestState)
     }
 
-    private fun assertCanReadAssistStructure(assistStructureIsReadable: Boolean) {
+    private fun assertCanReadScreenContext(isReadable: Boolean) {
         val intent: Intent = Intent()
             .setComponent(
                 ComponentName(
                     ASSISTANT_ROLE_HOLDER_PACKAGE,
-                    APP_CAN_READ_ASSIST_STRUCTURE_ACTIVITY_NAME
+                    APP_CAN_READ_SCREEN_CONTEXT_ACTIVITY_NAME
                 )
             )
         activityRule.activity.startActivityToWaitForResult(intent)
@@ -401,22 +401,22 @@ class VoiceInteractionManagerTest {
 
         assertThat(result.first).isEqualTo(Activity.RESULT_OK)
         assertThat(result.second).isNotNull()
-        assertThat(result.second.hasExtra(EXTRA_CAN_READ_ASSIST_STRUCTURE)).isTrue()
+        assertThat(result.second.hasExtra(EXTRA_CAN_READ_SCREEN_CONTEXT)).isTrue()
         assertThat(result.second.getBooleanExtra(
-            EXTRA_CAN_READ_ASSIST_STRUCTURE,
-            !assistStructureIsReadable
+            EXTRA_CAN_READ_SCREEN_CONTEXT,
+            !isReadable
         ))
-            .isEqualTo(assistStructureIsReadable)
+            .isEqualTo(isReadable)
     }
 
     private companion object {
         private const val ASSISTANT_ROLE_HOLDER_PACKAGE = "android.voiceinteraction.testassistant"
-        private const val APP_CAN_READ_ASSIST_STRUCTURE_ACTIVITY_NAME =
-            "$ASSISTANT_ROLE_HOLDER_PACKAGE.CanReadAssistStructureActivity"
+        private const val APP_CAN_READ_SCREEN_CONTEXT_ACTIVITY_NAME =
+            "$ASSISTANT_ROLE_HOLDER_PACKAGE.CanReadScreenContextActivity"
         private const val APP_GET_READ_SCREEN_CONTEXT_REQUEST_STATE_ACTIVITY_NAME =
             "$ASSISTANT_ROLE_HOLDER_PACKAGE.GetReadScreenContextRequestStateActivity"
-        private const val EXTRA_CAN_READ_ASSIST_STRUCTURE =
-            "android.voiceinteraction.testassistant.extra.CAN_READ_ASSIST_STRUCTURE"
+        private const val EXTRA_CAN_READ_SCREEN_CONTEXT =
+            "android.voiceinteraction.testassistant.extra.CAN_READ_SCREEN_CONTEXT"
         private const val EXTRA_REQUEST_STATE =
             "android.voiceinteraction.testassistant.extra.REQUEST_STATE"
         private const val ASSIST_STRUCTURE_ENABLED = "assist_structure_enabled"

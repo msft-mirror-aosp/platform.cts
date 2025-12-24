@@ -20,8 +20,6 @@ import static android.content.pm.ApplicationInfo.PRIVATE_FLAG_EXT_ENABLE_ON_BACK
 import static android.view.accessibility.AccessibilityNodeInfo.EXTRA_DATA_RENDERING_INFO_KEY;
 import static android.view.accessibility.Flags.FLAG_REQUEST_RECTANGLE_WITH_SOURCE;
 
-import static com.android.text.flags.Flags.FLAG_FIX_NULL_TYPEFACE_BOLDING;
-
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -359,7 +357,6 @@ public class TextViewTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_FIX_NULL_TYPEFACE_BOLDING)
     public void testFontWeightAdjustment_forceBoldTextEnabled_typefaceNull_textIsBolded()
             throws Throwable {
         mActivityRule.runOnUiThread(() -> mTextView = findTextView(R.id.textview_text));

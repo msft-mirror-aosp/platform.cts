@@ -17,8 +17,12 @@
 package android.widget.cts;
 
 import static android.util.TypedValue.COMPLEX_UNIT_DIP;
+import static android.util.TypedValue.COMPLEX_UNIT_PT;
 import static android.util.TypedValue.COMPLEX_UNIT_PX;
+import static android.util.TypedValue.COMPLEX_UNIT_SP;
 import static android.view.View.MeasureSpec.makeMeasureSpec;
+import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
+import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 import static android.view.inputmethod.Flags.FLAG_HOME_SCREEN_HANDWRITING_DELEGATOR;
 import static android.widget.RemoteViews.MARGIN_BOTTOM;
 import static android.widget.RemoteViews.MARGIN_END;
@@ -1605,17 +1609,202 @@ public class RemoteViewsTest {
 
         mRemoteViews.setViewPadding(R.id.remoteView_text, 10, 20, 30, 40);
         reapplyRemoteViews();
-        assertEquals(10, textView.getPaddingLeft());
-        assertEquals(20, textView.getPaddingTop());
-        assertEquals(30, textView.getPaddingRight());
-        assertEquals(40, textView.getPaddingBottom());
+        assertPadding(textView, 10, 20, 30, 40);
 
         mRemoteViews.setViewPadding(R.id.remoteView_text, 40, 30, 20, 10);
         reapplyRemoteViews();
-        assertEquals(40, textView.getPaddingLeft());
-        assertEquals(30, textView.getPaddingTop());
-        assertEquals(20, textView.getPaddingRight());
-        assertEquals(10, textView.getPaddingBottom());
+        assertPadding(textView, 40, 30, 20, 10);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.appwidget.flags.Flags.FLAG_WIDGET_DISPLAY_CHANGES)
+    public void testSetViewPadding_complexUnits() throws Throwable {
+        View textView = mResult.findViewById(R.id.remoteView_text);
+        DisplayMetrics displayMetrics = textView.getResources().getDisplayMetrics();
+
+        for (int unit :
+                List.of(COMPLEX_UNIT_DIP, COMPLEX_UNIT_PX, COMPLEX_UNIT_SP, COMPLEX_UNIT_PT)) {
+            mRemoteViews.setViewPadding(R.id.remoteView_text, 10, 20, 30, 40, unit);
+            reapplyRemoteViews();
+            assertPadding(
+                    textView,
+                    (int) TypedValue.convertDimensionToPixels(unit, 10, displayMetrics),
+                    (int) TypedValue.convertDimensionToPixels(unit, 20, displayMetrics),
+                    (int) TypedValue.convertDimensionToPixels(unit, 30, displayMetrics),
+                    (int) TypedValue.convertDimensionToPixels(unit, 40, displayMetrics));
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.appwidget.flags.Flags.FLAG_WIDGET_DISPLAY_CHANGES)
+    public void testScalePixelValues() throws Throwable {
+        setRemoteViewsPixelLayoutAttributes(
+                mRemoteViews,
+                R.id.remoteView_text,
+                /* leftPadding= */ 10,
+                /* topPadding= */ 20,
+                /* rightPadding= */ 30,
+                /* bottomPadding= */ 40,
+                /* leftMargin= */ 10,
+                /* topMargin= */ 20,
+                /* rightMargin= */ 30,
+                /* bottomMargin= */ 40,
+                /* width= */ 100,
+                /* height= */ 100,
+                /* textSize= */ 20);
+        // Since the original density is set to twice the current display density, RemoteViews
+        // should scale down the pixel values by half.
+        DisplayMetrics displayMetrics = mContext.getResources().getDisplayMetrics();
+        mRemoteViews.setOriginalDensity(2 * displayMetrics.density);
+        reapplyRemoteViews();
+        TextView textView = mResult.findViewById(R.id.remoteView_text);
+        checkRemoteViewsPixelLayoutAttributes(
+                textView,
+                /* leftPadding= */ 5,
+                /* topPadding= */ 10,
+                /* rightPadding= */ 15,
+                /* bottomPadding= */ 20,
+                /* leftMargin= */ 5,
+                /* topMargin= */ 10,
+                /* rightMargin= */ 15,
+                /* bottomMargin= */ 20,
+                /* width= */ 50,
+                /* height= */ 50,
+                /* textSize= */ 10);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.appwidget.flags.Flags.FLAG_WIDGET_DISPLAY_CHANGES)
+    public void testScalePixelValues_addView() throws Throwable {
+        RemoteViews child = new RemoteViews(mContext.getPackageName(), R.layout.remoteviews_small);
+        setRemoteViewsPixelLayoutAttributes(
+                child,
+                R.id.remoteView_text,
+                /* leftPadding= */ 10,
+                /* topPadding= */ 20,
+                /* rightPadding= */ 30,
+                /* bottomPadding= */ 40,
+                /* leftMargin= */ 10,
+                /* topMargin= */ 20,
+                /* rightMargin= */ 30,
+                /* bottomMargin= */ 40,
+                /* width= */ 100,
+                /* height= */ 100,
+                /* textSize= */ 20);
+        mRemoteViews.addView(R.id.remoteView_linear, child);
+        // Since the original density is set to twice the current display density, RemoteViews
+        // should scale down the pixel values by half.
+        DisplayMetrics displayMetrics = mContext.getResources().getDisplayMetrics();
+        mRemoteViews.setOriginalDensity(2 * displayMetrics.density);
+        reapplyRemoteViews();
+        TextView textView =
+                mResult.findViewById(R.id.remoteView_linear).findViewById(R.id.remoteView_text);
+        checkRemoteViewsPixelLayoutAttributes(
+                textView,
+                /* leftPadding= */ 5,
+                /* topPadding= */ 10,
+                /* rightPadding= */ 15,
+                /* bottomPadding= */ 20,
+                /* leftMargin= */ 5,
+                /* topMargin= */ 10,
+                /* rightMargin= */ 15,
+                /* bottomMargin= */ 20,
+                /* width= */ 50,
+                /* height= */ 50,
+                /* textSize= */ 10);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.appwidget.flags.Flags.FLAG_WIDGET_DISPLAY_CHANGES)
+    public void testScalePixelValues_landscapePortrait() throws Throwable {
+        RemoteViews child = new RemoteViews(mContext.getPackageName(), R.layout.remoteviews_small);
+        setRemoteViewsPixelLayoutAttributes(
+                child,
+                R.id.remoteView_text,
+                /* leftPadding= */ 10,
+                /* topPadding= */ 20,
+                /* rightPadding= */ 30,
+                /* bottomPadding= */ 40,
+                /* leftMargin= */ 10,
+                /* topMargin= */ 20,
+                /* rightMargin= */ 30,
+                /* bottomMargin= */ 40,
+                /* width= */ 100,
+                /* height= */ 100,
+                /* textSize= */ 20);
+        mRemoteViews = new RemoteViews(child, child);
+        // Since the original density is set to twice the current display density, RemoteViews
+        // should scale down the pixel values by half.
+        DisplayMetrics displayMetrics = mContext.getResources().getDisplayMetrics();
+        mRemoteViews.setOriginalDensity(2 * displayMetrics.density);
+        applyRemoteViews();
+        TextView textView = mResult.findViewById(R.id.remoteView_text);
+        checkRemoteViewsPixelLayoutAttributes(
+                textView,
+                /* leftPadding= */ 5,
+                /* topPadding= */ 10,
+                /* rightPadding= */ 15,
+                /* bottomPadding= */ 20,
+                /* leftMargin= */ 5,
+                /* topMargin= */ 10,
+                /* rightMargin= */ 15,
+                /* bottomMargin= */ 20,
+                /* width= */ 50,
+                /* height= */ 50,
+                /* textSize= */ 10);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.appwidget.flags.Flags.FLAG_WIDGET_DISPLAY_CHANGES)
+    public void testScalePixelValues_sizedViews() throws Throwable {
+        RemoteViews child = new RemoteViews(mContext.getPackageName(), R.layout.remoteviews_small);
+        setRemoteViewsPixelLayoutAttributes(
+                child,
+                R.id.remoteView_text,
+                /* leftPadding= */ 10,
+                /* topPadding= */ 20,
+                /* rightPadding= */ 30,
+                /* bottomPadding= */ 40,
+                /* leftMargin= */ 10,
+                /* topMargin= */ 20,
+                /* rightMargin= */ 30,
+                /* bottomMargin= */ 40,
+                /* width= */ 100,
+                /* height= */ 100,
+                /* textSize= */ 20);
+        mRemoteViews = new RemoteViews(Map.of(new SizeF(10, 10), child, new SizeF(20, 20), child));
+        // Since the original density is set to twice the current display density, RemoteViews
+        // should scale down the pixel values by half.
+        DisplayMetrics displayMetrics = mContext.getResources().getDisplayMetrics();
+        mRemoteViews.setOriginalDensity(2 * displayMetrics.density);
+        applyRemoteViews();
+        TextView textView = mResult.findViewById(R.id.remoteView_text);
+        checkRemoteViewsPixelLayoutAttributes(
+                textView,
+                /* leftPadding= */ 5,
+                /* topPadding= */ 10,
+                /* rightPadding= */ 15,
+                /* bottomPadding= */ 20,
+                /* leftMargin= */ 5,
+                /* topMargin= */ 10,
+                /* rightMargin= */ 15,
+                /* bottomMargin= */ 20,
+                /* width= */ 50,
+                /* height= */ 50,
+                /* textSize= */ 10);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.appwidget.flags.Flags.FLAG_WIDGET_DISPLAY_CHANGES)
+    public void testScalePixelValues_dontScaleNegativeSizeValues() throws Throwable {
+        mRemoteViews.setViewLayoutWidth(R.id.remoteView_text, WRAP_CONTENT, COMPLEX_UNIT_PX);
+        mRemoteViews.setViewLayoutHeight(R.id.remoteView_text, MATCH_PARENT, COMPLEX_UNIT_PX);
+        DisplayMetrics displayMetrics = mContext.getResources().getDisplayMetrics();
+        mRemoteViews.setOriginalDensity(2 * displayMetrics.density);
+        applyRemoteViews();
+        View view = mResult.findViewById(R.id.remoteView_text);
+        assertEquals(WRAP_CONTENT, view.getLayoutParams().width);
+        assertEquals(MATCH_PARENT, view.getLayoutParams().height);
     }
 
     @Test
@@ -2574,7 +2763,7 @@ public class RemoteViewsTest {
         }
     }
 
-    private static void assertMargins(View view, int left, int top, int right, int bottom) {
+    static void assertMargins(View view, int left, int top, int right, int bottom) {
         ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
         if (!(layoutParams instanceof ViewGroup.MarginLayoutParams)) {
             fail("View doesn't have MarginLayoutParams");
@@ -2587,6 +2776,13 @@ public class RemoteViewsTest {
         assertEquals("[bottom margin]", bottom, margins.bottomMargin);
     }
 
+    static void assertPadding(View view, int left, int top, int right, int bottom) {
+        assertEquals("[left padding]", left, view.getPaddingLeft());
+        assertEquals("[top padding]", top, view.getPaddingTop());
+        assertEquals("[right padding]", right, view.getPaddingRight());
+        assertEquals("[bottom padding]", bottom, view.getPaddingBottom());
+    }
+
     private static int resolveDimenOffset(float value, int unit, DisplayMetrics displayMetrics) {
         return TypedValue.complexToDimensionPixelOffset(
                 TypedValue.createComplexDimension(value, unit), displayMetrics);
@@ -2595,6 +2791,50 @@ public class RemoteViewsTest {
     private static int resolveDimenSize(float value, int unit, DisplayMetrics displayMetrics) {
         return TypedValue.complexToDimensionPixelSize(
                 TypedValue.createComplexDimension(value, unit), displayMetrics);
+    }
+
+    static void checkRemoteViewsPixelLayoutAttributes(
+            TextView view,
+            int leftPadding,
+            int topPadding,
+            int rightPadding,
+            int bottomPadding,
+            int leftMargin,
+            int topMargin,
+            int rightMargin,
+            int bottomMargin,
+            int width,
+            int height,
+            int textSize) {
+        assertPadding(view, leftPadding, topPadding, rightPadding, bottomPadding);
+        assertMargins(view, leftMargin, topMargin, rightMargin, bottomMargin);
+        assertEquals(height, view.getLayoutParams().height);
+        assertEquals(width, view.getLayoutParams().width);
+        assertEquals(0, Float.compare(10F, view.getTextSize()));
+    }
+
+    static void setRemoteViewsPixelLayoutAttributes(
+            RemoteViews views,
+            int viewId,
+            int leftPadding,
+            int topPadding,
+            int rightPadding,
+            int bottomPadding,
+            int leftMargin,
+            int topMargin,
+            int rightMargin,
+            int bottomMargin,
+            int width,
+            int height,
+            int textSize) {
+        views.setViewPadding(viewId, leftPadding, topPadding, rightPadding, bottomPadding);
+        views.setViewLayoutMargin(viewId, MARGIN_LEFT, leftMargin, COMPLEX_UNIT_PX);
+        views.setViewLayoutMargin(viewId, MARGIN_TOP, topMargin, COMPLEX_UNIT_PX);
+        views.setViewLayoutMargin(viewId, MARGIN_RIGHT, rightMargin, COMPLEX_UNIT_PX);
+        views.setViewLayoutMargin(viewId, MARGIN_BOTTOM, bottomMargin, COMPLEX_UNIT_PX);
+        views.setViewLayoutWidth(viewId, width, COMPLEX_UNIT_PX);
+        views.setViewLayoutHeight(viewId, height, COMPLEX_UNIT_PX);
+        views.setTextViewTextSize(viewId, COMPLEX_UNIT_PX, textSize);
     }
 
     private static final class MockBroadcastReceiver extends BroadcastReceiver {

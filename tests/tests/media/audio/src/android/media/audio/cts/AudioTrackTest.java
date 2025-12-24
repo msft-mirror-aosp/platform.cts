@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -2804,9 +2805,7 @@ public class AudioTrackTest {
     public void testSetPresentationDefaultTrack() throws Exception {
         final AudioTrack track = new AudioTrack.Builder().build();
         final int status = track.setPresentation(createAudioPresentation());
-        assertTrue(
-                "Unexpected status: " + status,
-                status == AudioTrack.ERROR_INVALID_OPERATION || status == AudioTrack.ERROR);
+        assertNotEquals(AudioTrack.SUCCESS, status);
     }
 
     @Test

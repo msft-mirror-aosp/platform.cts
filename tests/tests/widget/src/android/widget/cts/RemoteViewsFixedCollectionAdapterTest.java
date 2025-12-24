@@ -16,6 +16,9 @@
 
 package android.widget.cts;
 
+import static android.widget.cts.RemoteViewsTest.checkRemoteViewsPixelLayoutAttributes;
+import static android.widget.cts.RemoteViewsTest.setRemoteViewsPixelLayoutAttributes;
+
 import static com.android.compatibility.common.util.WidgetTestUtils.runOnMainAndDrawSync;
 
 import static org.junit.Assert.assertEquals;
@@ -40,6 +43,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Parcel;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.util.DisplayMetrics;
 import android.util.SizeF;
 import android.util.TypedValue;
 import android.util.proto.ProtoInputStream;
@@ -51,6 +58,7 @@ import android.widget.Adapter;
 import android.widget.AdapterViewFlipper;
 import android.widget.CompoundButton;
 import android.widget.GridView;
+import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.RemoteViews;
 import android.widget.RemoteViews.RemoteCollectionItems;
@@ -97,6 +105,9 @@ public class RemoteViewsFixedCollectionAdapterTest {
     @Rule(order = 1)
     public ActivityTestRule<RemoteViewsCtsActivity> mActivityRule =
             new ActivityTestRule<>(RemoteViewsCtsActivity.class);
+
+    @Rule(order = 2)
+    public CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Parameterized.Parameters(name = "isProtoTest={0}")
     public static Object[] parameters() {
@@ -898,6 +909,49 @@ public class RemoteViewsFixedCollectionAdapterTest {
         mRemoteViews.setEmptyView(R.id.remoteView_list, R.id.remoteView_grid);
         reapplyRemoteViews();
         assertTrue(listView.getEmptyView() instanceof GridView);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.appwidget.flags.Flags.FLAG_WIDGET_DISPLAY_CHANGES)
+    public void testScalePixelValues_collectionItems() throws Throwable {
+        RemoteViews child = new RemoteViews(mActivity.getPackageName(), R.layout.remoteviews_small);
+        setRemoteViewsPixelLayoutAttributes(
+                child,
+                R.id.remoteView_text,
+                /* leftPadding= */ 10,
+                /* topPadding= */ 20,
+                /* rightPadding= */ 30,
+                /* bottomPadding= */ 40,
+                /* leftMargin= */ 10,
+                /* topMargin= */ 20,
+                /* rightMargin= */ 30,
+                /* bottomMargin= */ 40,
+                /* width= */ 100,
+                /* height= */ 100,
+                /* textSize= */ 20);
+        mRemoteViews.setRemoteAdapter(
+                R.id.remoteView_list,
+                new RemoteViews.RemoteCollectionItems.Builder().addItem(0, child).build());
+        // Since the original density is set to twice the current display density,
+        // RemoteViews should scale down the pixel values by half.
+        DisplayMetrics displayMetrics = mActivity.getResources().getDisplayMetrics();
+        mRemoteViews.setOriginalDensity(2 * displayMetrics.density);
+        reapplyRemoteViews();
+        ListAdapter adapter = mListView.getAdapter();
+        TextView textView = adapter.getView(0, null, mListView).findViewById(R.id.remoteView_text);
+        checkRemoteViewsPixelLayoutAttributes(
+                textView,
+                /* leftPadding= */ 5,
+                /* topPadding= */ 10,
+                /* rightPadding= */ 15,
+                /* bottomPadding= */ 20,
+                /* leftMargin= */ 5,
+                /* topMargin= */ 10,
+                /* rightMargin= */ 15,
+                /* bottomMargin= */ 20,
+                /* width= */ 50,
+                /* height= */ 50,
+                /* textSize= */ 10);
     }
 
     /**

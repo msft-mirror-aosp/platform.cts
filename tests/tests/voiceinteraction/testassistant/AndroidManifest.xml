@@ -22,7 +22,7 @@
         <uses-library android:name="android.test.runner"/>
 
         <activity
-            android:name=".CanReadAssistStructureActivity"
+            android:name=".CanReadScreenContextActivity"
             android:exported="true" />
 
         <activity

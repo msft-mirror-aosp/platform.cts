@@ -22,7 +22,7 @@ import android.content.Intent
 import android.os.Bundle
 
 /** An activity that checks whether it can read assist data or not. */
-class CanReadAssistStructureActivity : Activity() {
+class CanReadScreenContextActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -30,15 +30,15 @@ class CanReadAssistStructureActivity : Activity() {
         setResult(
             RESULT_OK,
             Intent().putExtra(
-                EXTRA_CAN_READ_ASSIST_STRUCTURE,
-                voiceInteractionManager.canReadAssistStructure()
+                EXTRA_CAN_READ_SCREEN_CONTEXT,
+                voiceInteractionManager.canReadScreenContext()
             )
         )
         finish()
     }
 
     companion object {
-        const val EXTRA_CAN_READ_ASSIST_STRUCTURE =
-            "android.voiceinteraction.testassistant.extra.CAN_READ_ASSIST_STRUCTURE"
+        const val EXTRA_CAN_READ_SCREEN_CONTEXT =
+            "android.voiceinteraction.testassistant.extra.CAN_READ_SCREEN_CONTEXT"
     }
 }

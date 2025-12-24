@@ -124,6 +124,14 @@ public class ImmersiveAudioActivity extends PassFailButtons.Activity {
         registerReceiver(mBroadcastReceiver, mIntentFilter, RECEIVER_EXPORTED);
     }
 
+    @Override
+    public void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        mIntent = intent;
+        displayIntent(mIntent);
+        getPassButton().setEnabled(calculatePass());
+    }
+
     private boolean calculatePass() {
         if (!mSupportsHeadTracking) {
             return true;
@@ -174,11 +182,16 @@ public class ImmersiveAudioActivity extends PassFailButtons.Activity {
         } else {
             // sent in this format "0.0.1"
             // "12.34.56" -> (int32)123456
+            // "12.34"    -> (int32)123400
             // Decompose
             String[] parts = versionString.split("\\.");
-            return Integer.parseInt(parts[0]) * 10000
-                    + Integer.parseInt(parts[1]) * 100
-                    + Integer.parseInt(parts[2]);
+            int result = 0;
+            int[] multipliers = {10000, 100, 1};
+
+            for (int i = 0; i < Math.min(parts.length, 3); i++) {
+                result += Integer.parseInt(parts[i].trim()) * multipliers[i];
+            }
+            return result;
         }
     }
 
