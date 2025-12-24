@@ -1678,6 +1678,14 @@ public class UiBot {
         noButton.click();
     }
 
+    /** click continue button of the fill dialog. */
+    public void clickFillDialogContinue() throws Exception {
+        final UiObject2 picker = findFillDialogPicker();
+        final UiObject2 continueButton =
+                picker.findObject(By.res("android", RESOURCE_ID_FILL_DIALOG_BUTTON_YES));
+        continueButton.click();
+    }
+
     private UiObject2 findFillDialogPicker() throws Exception {
         return waitForObject(mFillDialogSelector, UI_DATASET_PICKER_TIMEOUT);
     }

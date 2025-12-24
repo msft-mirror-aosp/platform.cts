@@ -748,6 +748,61 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         activity.assertAutoFilled();
     }
 
+    @Test
+    public void testSingleItemFillDialog_fillByContinueButton() throws Exception {
+        // TODO(b/420943436): Skip this test in Automotive with multi-window until b/420943436 is
+        // fixed.
+        assumeFalse(
+                "Skipping test on Automotive with multi-window",
+                isAutomotiveWithMultiWindow(sContext));
+
+        mUiBot.assumeMinimumResolution(500);
+        // Enable feature and test service
+        enableFillDialogImprovements(sContext);
+        enableService();
+
+        // Set response with a dataset, there are two ids to trigger fill dialog.
+        final CannedFillResponse.Builder builder =
+                new CannedFillResponse.Builder()
+                        .addDataset(
+                                new CannedDataset.Builder()
+                                        .setField(ID_USERNAME, "dude")
+                                        .setField(ID_PASSWORD, "sweet")
+                                        .setPresentation(
+                                                createPresentation("Dropdown Presentation"))
+                                        .setDialogPresentation(
+                                                createPresentation("Dialog Presentation"))
+                                        .build())
+                        .setDialogHeader(createPresentation("Dialog Header"))
+                        .setDialogTriggerIds(ID_USERNAME, ID_PASSWORD);
+        sReplier.addResponse(builder.build());
+
+        // Start activity and autofill
+        LoginActivity activity = startLoginActivity();
+        mUiBot.waitForIdleSync();
+
+        // Click on password field to trigger fill dialog
+        mUiBot.selectByRelativeId(ID_PASSWORD);
+        mUiBot.waitForIdleSync();
+
+        sReplier.getNextFillRequest();
+        mUiBot.waitForIdleSync();
+
+        // In expressive fill dialog, the header becomes part of the list.
+        mUiBot.assertFillDialogDatasets("Dialog Header", "Dialog Presentation");
+
+        // Set expected value, then click on the continue button
+        activity.expectAutoFill("dude", "sweet");
+        mUiBot.clickFillDialogContinue();
+
+        // Check the fill dialog is not shown
+        mUiBot.waitForIdleSync();
+        mUiBot.assertNoFillDialog();
+
+        // Check the results.
+        activity.assertAutoFilled();
+    }
+
     @RequiresFlagsDisabled("android.service.autofill.improve_fill_dialog_aconfig")
     @Test
     public void testShowFillDialog_twoSuggestions_oneButton() throws Exception {
