@@ -44,6 +44,7 @@ public class DefaultCtsPrintHelper implements ICtsPrintHelper {
     protected static final long OPERATION_TIMEOUT_MILLIS = 60000;
     private static final long GET_UIAUTOMATION_TIMEOUT_MS = 60000;
     private static final int UI_RETRIES = 5;
+    private static final String SETUP_REGEX = "(?i:set\\s?up)";
 
     protected Instrumentation mInstrumentation;
     protected UiDevice mDevice;
@@ -137,7 +138,24 @@ public class DefaultCtsPrintHelper implements ICtsPrintHelper {
     @Override
     public boolean canSubmitJob() {
         UiObject2 button = mDevice.findObject(By.res("com.android.printspooler:id/print_button"));
-        return button != null && button.isEnabled();
+        boolean enabled = button != null && button.isEnabled();
+        boolean needsSetup = false;
+        if (android.print.flags.Flags.enableSetupActivity()) {
+            needsSetup = button.getText().matches(SETUP_REGEX);
+        }
+        return enabled && !needsSetup;
+    }
+
+    @Override
+    public boolean printerNeedsSetup() {
+        UiObject2 button = mDevice.findObject(By.res("com.android.printspooler:id/print_button"));
+        return button != null && button.getText().matches(SETUP_REGEX);
+    }
+
+    @Override
+    public void triggerPrinterSetup() throws TestHelperException {
+        // Default UI uses the same button as the print button.
+        submitPrintJob();
     }
 
     @Override
