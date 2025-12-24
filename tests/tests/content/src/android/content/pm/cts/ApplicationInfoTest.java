@@ -23,7 +23,12 @@ import static android.content.pm.ApplicationInfo.CATEGORY_UNDEFINED;
 import static android.content.pm.ApplicationInfo.FLAG_SUPPORTS_RTL;
 import static android.content.pm.cts.util.PackageTestUtils.APP_LOCK_SUPPORTED_APK;
 import static android.content.pm.cts.util.PackageTestUtils.APP_LOCK_SUPPORTED_PACKAGE_NAME;
+import static android.content.pm.cts.util.PackageTestUtils.HEADLESS_APK;
+import static android.content.pm.cts.util.PackageTestUtils.HEADLESS_APP_PACKAGE_NAME;
+import static android.content.pm.cts.util.PackageTestUtils.createManagedProfileScoped;
+import static android.content.pm.cts.util.PackageTestUtils.createSupervisedUserScoped;
 import static android.content.pm.cts.util.PackageTestUtils.hasLockAppsPermission;
+import static android.content.pm.cts.util.PackageTestUtils.installPackageScopedForUser;
 import static android.content.pm.cts.util.PackageTestUtils.installPackageScoped;
 import static android.content.pm.cts.util.PackageTestUtils.setHomeRoleHolderScoped;
 
@@ -42,11 +47,15 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNotNull;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.pm.ResolveInfo;
 import android.content.pm.cts.util.AppLockSupportRule;
+import android.content.pm.cts.util.PackageTestUtils.ScopedManagedProfile;
+import android.content.pm.cts.util.PackageTestUtils.ScopedSupervisedUser;
 import android.content.pm.cts.util.RequiresAppLockSupported;
 import android.os.Build;
 import android.os.Environment;
@@ -58,6 +67,7 @@ import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.provider.Settings;
 import android.util.StringBuilderPrinter;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -65,6 +75,7 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.sts.common.LockSettingsUtil;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -431,6 +442,102 @@ public class ApplicationInfoTest {
                 "android.content.pm.PackageManager#getApplicationInfo",
                 "android.content.pm.PackageManager#GET_APP_LOCK_INFO",
             })
+    public void testGetApplicationInfo_withAppLockEnabled_returnsIsAppLockEnabledTrue()
+            throws Exception {
+        final Context context = getContext();
+        final PackageManager packageManager = context.getPackageManager();
+
+        try (AutoCloseable withAppLockSupportedApp =
+                        installPackageScoped(
+                                APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME);
+                AutoCloseable withLockAppsPermission = setHomeRoleHolderScoped(context);
+                AutoCloseable lockScreen = new LockSettingsUtil(getContext()).withPin("1234")) {
+            assertThat(hasLockAppsPermission(context)).isTrue();
+            SystemUtil.runWithShellPermissionIdentity(() -> {
+                packageManager.setPackageAppLockEnabled(APP_LOCK_SUPPORTED_PACKAGE_NAME, true);
+            }, "android.permission.TEST_LOCK_APPS");
+
+            // If App Lock is enabled for the package then isAppLockEnabled should be true.
+            final ApplicationInfo infoWithPermission =
+                    packageManager.getApplicationInfo(
+                            APP_LOCK_SUPPORTED_PACKAGE_NAME,
+                            PackageManager.ApplicationInfoFlags.of(
+                                    PackageManager.GET_APP_LOCK_INFO));
+            assertThat(infoWithPermission.isAppLockSupported).isTrue();
+            assertThat(infoWithPermission.isAppLockEnabled).isTrue();
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(
+            apis = {
+                "android.content.pm.PackageManager#getApplicationInfo",
+                "android.content.pm.PackageManager#GET_APP_LOCK_INFO",
+            })
+    public void testGetApplicationInfo_withoutScreenLock_returnsIsAppLockEnabledFalse()
+            throws Exception {
+        final Context context = getContext();
+        final PackageManager packageManager = context.getPackageManager();
+
+        try (AutoCloseable withAppLockSupportedApp =
+                        installPackageScoped(
+                                APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME);
+                AutoCloseable withLockAppsPermission = setHomeRoleHolderScoped(context)) {
+            assertThat(hasLockAppsPermission(context)).isTrue();
+
+            // If no lock screen is present, isAppLockEnabled should be false.
+            final ApplicationInfo infoWithPermission =
+                    packageManager.getApplicationInfo(
+                            APP_LOCK_SUPPORTED_PACKAGE_NAME,
+                            PackageManager.ApplicationInfoFlags.of(
+                                    PackageManager.GET_APP_LOCK_INFO));
+            assertThat(infoWithPermission.isAppLockSupported).isTrue();
+            assertThat(infoWithPermission.isAppLockEnabled).isFalse();
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(
+            apis = {
+                "android.content.pm.PackageManager#getApplicationInfo",
+                "android.content.pm.PackageManager#GET_APP_LOCK_INFO",
+            })
+    public void testGetApplicationInfo_withHeadlessApp_returnsIsAppLockSupportedFalse()
+            throws Exception {
+        final Context context = getContext();
+        final PackageManager packageManager = context.getPackageManager();
+
+        try (AutoCloseable withHeadlessApp =
+                        installPackageScoped(HEADLESS_APK, HEADLESS_APP_PACKAGE_NAME);
+                AutoCloseable withLockAppsPermission = setHomeRoleHolderScoped(context)) {
+            assertThat(hasLockAppsPermission(context)).isTrue();
+
+            final ApplicationInfo info =
+                    packageManager.getApplicationInfo(
+                            HEADLESS_APP_PACKAGE_NAME,
+                            PackageManager.ApplicationInfoFlags.of(
+                                    PackageManager.GET_APP_LOCK_INFO));
+
+            // For headless apps, isAppLockSupported should be false.
+            assertThat(info.isAppLockSupported).isFalse();
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(
+            apis = {
+                "android.content.pm.PackageManager#getApplicationInfo",
+                "android.content.pm.PackageManager#GET_APP_LOCK_INFO",
+            })
     public void
             testGetApplicationInfo_getAppLockInfoFlag_withoutPermission_throwsSecurityException()
                     throws Exception {
@@ -600,6 +707,99 @@ public class ApplicationInfoTest {
                                             | PackageManager.GET_APP_LOCK_INFO));
             assertThat(infoWithPermission.isAppLockSupported).isTrue();
             assertThat(infoWithPermission.isAppLockEnabled).isFalse();
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(apis = {
+            "android.content.pm.PackageManager#getApplicationInfo",
+            "android.content.pm.PackageManager#GET_APP_LOCK_INFO",
+    })
+    public void testGetApplicationInfo_exemptPackage_returnsIsAppLockSupportedFalse()
+            throws Exception {
+        final Context context = getContext();
+        final PackageManager packageManager = context.getPackageManager();
+        final ResolveInfo resolveInfo = packageManager.resolveActivity(
+                new Intent(Settings.ACTION_SETTINGS), PackageManager.ResolveInfoFlags.of(0));
+        final String settingsPackageName = resolveInfo.activityInfo.packageName;
+
+        assertThat(resolveInfo).isNotNull();
+        assertThat(settingsPackageName).isNotNull();
+
+        try (AutoCloseable homeRole = setHomeRoleHolderScoped(context)) {
+            assertThat(hasLockAppsPermission(context)).isTrue();
+
+            final ApplicationInfo infoWithPermission =
+                    packageManager.getApplicationInfo(
+                            settingsPackageName,
+                            PackageManager.ApplicationInfoFlags.of(
+                                    PackageManager.GET_APP_LOCK_INFO));
+
+            assertThat(infoWithPermission.isAppLockSupported).isFalse();
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(apis = {
+            "android.content.pm.PackageManager#getApplicationInfo",
+            "android.content.pm.PackageManager#GET_APP_LOCK_INFO",
+    })
+    public void testGetApplicationInfo_supervisedUser_returnsIsAppLockSupportedFalse()
+            throws Exception {
+        final Context context = getContext();
+        final PackageManager packageManager = context.getPackageManager();
+
+        try (AutoCloseable roleContext = setHomeRoleHolderScoped(context)) {
+            try (ScopedSupervisedUser supervisedUser = createSupervisedUserScoped(context)) {
+                try (AutoCloseable targetApp = installPackageScoped(
+                        APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME)) {
+                    assertThat(hasLockAppsPermission(context)).isTrue();
+
+                    final ApplicationInfo infoWithPermission =
+                            packageManager.getApplicationInfo(
+                                    APP_LOCK_SUPPORTED_PACKAGE_NAME,
+                                    PackageManager.ApplicationInfoFlags.of(
+                                            PackageManager.GET_APP_LOCK_INFO));
+
+                    assertThat(infoWithPermission.isAppLockSupported).isFalse();
+                }
+            }
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(apis = {
+            "android.content.pm.PackageManager#getApplicationInfoAsUser",
+            "android.content.pm.PackageManager#GET_APP_LOCK_INFO",
+    })
+    public void testGetApplicationInfo_managedProfile_returnsIsAppLockSupportedFalse()
+            throws Exception {
+        final Context context = getContext();
+        final PackageManager packageManager = context.getPackageManager();
+
+        try (AutoCloseable roleContext = setHomeRoleHolderScoped(context)) {
+            try (ScopedManagedProfile managedProfile = createManagedProfileScoped(context)) {
+                try (AutoCloseable targetApp = installPackageScopedForUser(APP_LOCK_SUPPORTED_APK,
+                        APP_LOCK_SUPPORTED_PACKAGE_NAME, managedProfile.getUser())) {
+                    final ApplicationInfo infoWithPermission =
+                            packageManager.getApplicationInfoAsUser(
+                                    APP_LOCK_SUPPORTED_PACKAGE_NAME,
+                                    PackageManager.ApplicationInfoFlags.of(
+                                            PackageManager.GET_APP_LOCK_INFO),
+                                                managedProfile.getUser().getIdentifier());
+
+                    assertThat(infoWithPermission.isAppLockSupported).isFalse();
+                }
+            }
         }
     }
 

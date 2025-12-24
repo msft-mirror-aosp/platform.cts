@@ -24,12 +24,16 @@ import android.Manifest;
 import android.app.role.RoleManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.pm.UserInfo;
 import android.os.Process;
+import android.os.UserHandle;
+import android.os.UserManager;
 
 import com.android.compatibility.common.util.SystemUtil;
 
 import com.google.common.util.concurrent.SettableFuture;
 
+import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 
 public final class PackageTestUtils {
@@ -43,6 +47,8 @@ public final class PackageTestUtils {
             SAMPLE_APK_BASE + "CtsAppLockSupportedTestApp.apk";
     public static final String APP_LOCK_SUPPORTED_PACKAGE_NAME =
             "android.content.cts.applocksupportedtestapp";
+    public static final String HEADLESS_APK = SAMPLE_APK_BASE + "CtsHeadlessApp.apk";
+    public static final String HEADLESS_APP_PACKAGE_NAME = "com.android.cts.headlessapp";
 
     /**
      * Installs a package for the duration of the {@link AutoCloseable}, and uninstalls it afterward
@@ -53,6 +59,23 @@ public final class PackageTestUtils {
      */
     public static AutoCloseable installPackageScoped(String apkPath, String packageName) {
         assertThat(SystemUtil.runShellCommand("pm install -t " + apkPath)).isEqualTo("Success\n");
+        return () -> SystemUtil.runShellCommand("pm uninstall " + packageName);
+    }
+
+    /**
+     * Installs a package for the given user for the duration of the {@link AutoCloseable}, and
+     * uninstalls it afterward.
+     *
+     * @param apkPath the path to the APK file to install.
+     * @param packageName the package name to uninstall when the scope is closed.
+     * @param user the user to install the package for.
+     * @return an {@link AutoCloseable} that will uninstall the package for the user.
+     */
+    public static AutoCloseable installPackageScopedForUser(String apkPath, String packageName,
+            UserHandle user) {
+        assertThat(SystemUtil.runShellCommand("pm install -t " + apkPath)).isEqualTo("Success\n");
+        assertThat(SystemUtil.runShellCommand("pm install-existing --user " + user.getIdentifier()
+                + " " + packageName)).contains("installed for user");
         return () -> SystemUtil.runShellCommand("pm uninstall " + packageName);
     }
 
@@ -103,6 +126,53 @@ public final class PackageTestUtils {
     }
 
     /**
+     * Creates a user of type {@link UserManager#USER_TYPE_PROFILE_SUPERVISING} for the duration of
+     * the {@link AutoCloseable}, and removes it afterward.
+     *
+     * @param context the {@link Context} of the test.
+     * @return a {@link ScopedSupervisedUser} that allows retrieving the user and closing it.
+     */
+    public static ScopedSupervisedUser createSupervisedUserScoped(Context context) {
+        final UserManager userManager = context.getSystemService(UserManager.class);
+        final UserHandle user = SystemUtil.runWithShellPermissionIdentity(() -> {
+            final UserInfo userInfo = userManager.createUser("Supervised",
+                    UserManager.USER_TYPE_PROFILE_SUPERVISING, 0);
+            return userInfo != null ? userInfo.getUserHandle() : null;
+        });
+
+        if (user == null) {
+            throw new IllegalStateException("Failed to create supervised user");
+        }
+
+        SystemUtil.runShellCommand("am start-user -w " + user.getIdentifier());
+
+        return new ScopedSupervisedUser(user);
+    }
+
+    /**
+     * Creates a managed profile of type {@link UserManager#USER_TYPE_PROFILE_MANAGED} for the
+     * duration of the {@link AutoCloseable}, and removes it afterward.
+     *
+     * @param context the {@link Context} of the test.
+     * @return a {@link ScopedManagedProfile} that allows retrieving the user and closing it.
+     */
+    public static ScopedManagedProfile createManagedProfileScoped(Context context) {
+        final UserManager userManager = context.getSystemService(UserManager.class);
+        final UserHandle user = SystemUtil.runWithShellPermissionIdentity(() -> {
+            return userManager.createProfile("Managed", UserManager.USER_TYPE_PROFILE_MANAGED,
+                    new HashSet<>());
+        });
+
+        if (user == null) {
+            throw new IllegalStateException("Failed to create managed profile");
+        }
+
+        SystemUtil.runShellCommand("am start-user -w " + user.getIdentifier());
+
+        return new ScopedManagedProfile(user);
+    }
+
+    /**
      * Returns {@code true} if the app context has been granted the {@link
      * android.Manifest.permission#LOCK_APPS} permission.
      */
@@ -129,5 +199,42 @@ public final class PackageTestUtils {
             return false;
         }
         return true;
+    }
+
+    public static class ScopedSupervisedUser implements AutoCloseable {
+        private final UserHandle mUser;
+
+        ScopedSupervisedUser(UserHandle user) {
+            mUser = user;
+
+            SystemUtil.runShellCommand("cmd supervision enable 0");
+        }
+
+        public UserHandle getUser() {
+            return mUser;
+        }
+
+        @Override
+        public void close() {
+            SystemUtil.runShellCommand("cmd supervision disable 0");
+            SystemUtil.runShellCommand("pm remove-user " + mUser.getIdentifier());
+        }
+    }
+
+    public static class ScopedManagedProfile implements AutoCloseable {
+        private final UserHandle mUser;
+
+        ScopedManagedProfile(UserHandle user) {
+            mUser = user;
+        }
+
+        public UserHandle getUser() {
+            return mUser;
+        }
+
+        @Override
+        public void close() {
+            SystemUtil.runShellCommand("pm remove-user " + mUser.getIdentifier());
+        }
     }
 }
