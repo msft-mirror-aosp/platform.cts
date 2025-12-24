@@ -17,10 +17,10 @@
 package android.app.appfunctions.cts
 
 import android.app.appfunctions.AppFunctionUriGrant
+import android.app.appfunctions.flags.Flags
 import android.content.Intent
 import android.net.Uri
 import android.os.Parcel
-import android.permission.flags.Flags.FLAG_APP_FUNCTION_ACCESS_API_ENABLED
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -34,7 +34,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-@RequiresFlagsEnabled(FLAG_APP_FUNCTION_ACCESS_API_ENABLED)
+@RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
 class AppFunctionUriGrantTest {
     @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
