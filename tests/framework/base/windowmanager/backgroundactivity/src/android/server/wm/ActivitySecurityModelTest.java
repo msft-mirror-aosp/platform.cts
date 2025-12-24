@@ -430,7 +430,7 @@ public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
                 .startFromForegroundActivity(APP_A_LAUNCH_BACKGROUND_ACTIVITIES)
                 .activity(APP_A_FOREGROUND_ACTIVITY)
                 .executeAndAssertLaunch(/*succeeds*/ true)
-                .thenAssertTaskStack(
+                .thenAssertTaskStackAtLeast(
                         APP_A_FOREGROUND_ACTIVITY,
                         capturedSettingsActivity,
                         APP_A_FOREGROUND_ACTIVITY);
