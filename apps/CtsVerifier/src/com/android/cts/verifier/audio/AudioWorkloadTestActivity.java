@@ -317,10 +317,18 @@ public class AudioWorkloadTestActivity extends PassFailButtons.Activity {
         pce.submitAndVerify();
     }
 
+    private boolean hasRun() {
+        return mCallbackStatuses != null
+                && !mCallbackStatuses.isEmpty()
+                && mTestDurationMs >= TARGET_DURATION_MS;
+    }
+
     @Override
     public void recordTestResults() {
-        recordCtsVerifierReportLog();
-        recordPerformanceClassTestResults();
+        if (hasRun()) {
+            recordCtsVerifierReportLog();
+            recordPerformanceClassTestResults();
+        }
     }
 
     public void startTest(View view) {
