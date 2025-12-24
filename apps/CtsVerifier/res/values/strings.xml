@@ -7999,6 +7999,7 @@ You should be prompted to select credentials; choose the ones you just installed
         \nThe test passes if no glitches are detected (xRun count = 0).
         For devices with Media Performance Class &gt;= 37, the test fails and the "Pass" button
         is disabled if the xRun count is &gt; 0.
+        \n\n(see <a href="https://source.android.com/compatibility/android-cdd#2271_media">Android CDD § 2.2.7.1 Media [5.6/H-3-1]</a>)
     </string>
     <string name="audio_workload_instructions">
         \n1. Tap the \"Start\" button.

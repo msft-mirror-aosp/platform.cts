@@ -455,7 +455,7 @@ public final class AudioTest extends CtsVerifierTest {
     @Test
     @SupportMultiDisplayMode
     // MultiDisplayMode
-    @CddTest(requirements = "2.2.7.1")
+    @CddTest(requirements = "5.6/H-3-1")
     public void AudioWorkloadTest() throws Exception {
         requireFeatures("android.hardware.audio.output");
 

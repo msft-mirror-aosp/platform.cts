@@ -5712,7 +5712,7 @@
             </intent-filter>
             <meta-data android:name="test_category" android:value="@string/test_category_audio" />
             <meta-data android:name="display_mode" android:value="single_display_mode" />
-            <meta-data android:name="CddTest" android:value="2.2.7.1" />
+            <meta-data android:name="CddTest" android:value="5.6/H-3-1" />
         </activity>
 
         <service android:name=".tv.MockTvInputService"
