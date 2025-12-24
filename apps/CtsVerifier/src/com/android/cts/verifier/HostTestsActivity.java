@@ -74,7 +74,9 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
         new HostTestCategory("Wi-Fi Tests")
                 .addTest("CtsWifiAwareTests", "CtsWifiAwareTests")
                 .addTest("CtsWifiSoftApTestCases", "CtsWifiSoftApTestCases")
-                .addTest("CtsWifiDirectTests", "CtsWifiDirectTests"),
+                .addTest("CtsWifiDirectTests", "CtsWifiDirectTests")
+                .addTest("CtsWifiUsdTests", "CtsWifiUsdTests")
+                .addTest("CtsWifiPermissionTests", "CtsWifiPermissionTests"),
         // Interactive Modules
         new HostTestCategory("Notification Tests")
                 .addTest(
