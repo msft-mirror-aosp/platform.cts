@@ -17,6 +17,7 @@
 package android.graphics.gpuprofiling.cts;
 
 import static android.graphics.gpuprofiling.cts.ProfilingDataUtilsKt.counterMatchesGpuUtilisation;
+import static android.graphics.gpuprofiling.cts.ProfilingDataUtilsKt.getGpuUsageTimeline;
 
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
@@ -105,7 +106,7 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
     private static final String LAYER_NAME = "VkRenderStagesProducer";
     private static final String DEBUG_PROPERTY = "debug.graphics.gpu.profiler.perfetto";
     private static final int TRACE_BUFFER_SIZE_KB = 131072; // 1024 * 128
-    private static final Duration TRACE_COUNTER_PERIOD = Duration.ofMillis(5);
+    private static final Duration TRACE_COUNTER_PERIOD_5MS = Duration.ofMillis(5);
     private static final Duration TRACE_DURATION = Duration.ofSeconds(10);
     private static final String TRACE_FILE_PATH = "/data/misc/perfetto-traces/cts-trace";
 
@@ -215,7 +216,7 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
 
         boolean countersSourceFound = false;
         boolean stagesSourceFound = false;
-        Set<Integer> counterIds = null;
+        Set<Integer> allCounterIds = null;
         Set<Integer> defaultCounterIds = null;
         List<GpuCounterSpec> gpuCounterSpecsList = null;
 
@@ -256,10 +257,10 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
 
                 List<Integer> counterIdsList =
                         gpuCounterSpecsList.stream().map(GpuCounterSpec::getCounterId).toList();
-                counterIds = new HashSet<>(counterIdsList);
+                allCounterIds = new HashSet<>(counterIdsList);
                 errorCollector.checkThat(
                         "Counter IDs in DataSourceDescriptor must be unique.",
-                        counterIdsList.size() == counterIds.size(),
+                        counterIdsList.size() == allCounterIds.size(),
                         is(true));
 
                 defaultCounterIds =
@@ -283,105 +284,69 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                     "Producer " + COUNTERS_SOURCE_NAME + " not found", countersSourceFound);
         }
 
-        // Create trace config based on queried data sources.
-        File configFile = File.createTempFile("perfetto", ".cfg");
-        try (OutputStream out = new FileOutputStream(configFile)) {
-            buildConfig(defaultCounterIds).writeTo(out);
-        }
+        Trace traceFrequencyRenderStagesDefaultCounters5Ms =
+                captureTrace(buildConfig(defaultCounterIds, TRACE_COUNTER_PERIOD_5MS, true));
 
-        File allCountersConfigFile = File.createTempFile("perfetto", ".cfg");
-        try (OutputStream out = new FileOutputStream(allCountersConfigFile)) {
-            buildConfig(counterIds).writeTo(out);
-        }
-
-        captureTrace(configFile);
-
-        File traceResult = getDevice().pullFile(TRACE_FILE_PATH);
-        Trace trace;
-        try (InputStream in = new FileInputStream(traceResult)) {
-            trace = Trace.parseFrom(CodedInputStream.newInstance(in));
-        }
-
-        GpuCounters gpuCountersFromTrace = new GpuCounters(trace);
-
-        boolean foundAllDefaultCounters =
-                gpuCountersFromTrace.getCounterValues().keySet().equals(defaultCounterIds);
-        boolean foundGpuFrequencyEvent = containsGpuFrequencyEvent(trace);
-        boolean foundValidGpuRenderStageEvent = containsValidRenderStageEvent(trace);
-        // Need to be effectively final so we can reference trace in lambda below.
-        Trace finalTrace = trace;
-        GpuCounters finalGpuCountersFromTrace = gpuCountersFromTrace;
-        boolean foundGpuUtilisationCounter =
-                gpuCountersFromTrace.getCounterValues().entrySet().stream()
-                        .anyMatch(
-                                entry ->
-                                        counterMatchesGpuUtilisation(
-                                                finalGpuCountersFromTrace
-                                                        .getCounterSpecs()
-                                                        .get(entry.getKey()),
-                                                entry.getValue(),
-                                                ProfilingDataUtilsKt.getGpuUsageTimeline(
-                                                        finalTrace)));
-
-        traceResult.delete();
-        CommandResult deleteTraceStatus =
-                getDevice().executeShellV2Command("rm -f " + TRACE_FILE_PATH);
-        Assert.assertEquals(CommandStatus.SUCCESS, deleteTraceStatus.getStatus());
-
-        if (mHasGpuCountersCapability) {
-            // Additionally try enabling *all* counters, and make sure descriptions are present.
-            captureTrace(allCountersConfigFile);
-
-            traceResult = getDevice().pullFile(TRACE_FILE_PATH);
-            try (InputStream in = new FileInputStream(traceResult)) {
-                trace = Trace.parseFrom(CodedInputStream.newInstance(in));
-            }
-
-            gpuCountersFromTrace = new GpuCounters(trace);
-
-            String foundValidGpuCounterDescriptions =
-                    getSummaryDescriptionOfIdsInTrace(gpuCountersFromTrace, counterIds);
-
-            traceResult.delete();
-            deleteTraceStatus = getDevice().executeShellV2Command("rm -f " + TRACE_FILE_PATH);
-            Assert.assertEquals(CommandStatus.SUCCESS, deleteTraceStatus.getStatus());
-
-            errorCollector.checkThat(
-                    "Trace does not contain valid and complete GPU counter descriptions: ",
-                    foundValidGpuCounterDescriptions,
-                    is(SUCCESS));
-            errorCollector.checkThat(
-                    "Trace does not contain a GPU counter that reflects GPU utilisation.",
-                    foundGpuUtilisationCounter,
-                    is(true));
-            errorCollector.checkThat(
-                    "Trace failed to report one of the default GPU counter values.",
-                    foundAllDefaultCounters,
-                    is(true));
-            if (getProperty(GPU_COUNTERS_ZEROES_OPTIMIZATION_PROPERTY)) {
-                errorCollector.checkThat(
-                        "Some of the counters report 0 values unnecessarily: ",
-                        getSummaryComplianceWithZeroesOptimization(gpuCountersFromTrace),
-                        is(""));
-            }
-            if (getProperty(GPU_COUNTERS_GROUPS_PROPERTY)) {
-                checkRequiredGroupsPresent(errorCollector, gpuCounterSpecsList, trace);
-            }
-        }
+        errorCollector.checkThat(
+                "Trace does not contain valid GPU render stages.",
+                containsValidRenderStageEvent(traceFrequencyRenderStagesDefaultCounters5Ms),
+                is(true));
 
         if (getProperty(GPU_FREQUENCY_CAPABILITY_PROPERTY)) {
             errorCollector.checkThat(
                     "Trace does not contain valid GPU frequency.",
-                    foundGpuFrequencyEvent,
+                    containsGpuFrequencyEvent(traceFrequencyRenderStagesDefaultCounters5Ms),
                     is(true));
         }
-        errorCollector.checkThat(
-                "Trace does not contain valid GPU render stages.",
-                foundValidGpuRenderStageEvent,
-                is(true));
 
-        configFile.delete();
-        allCountersConfigFile.delete();
+        if (mHasGpuCountersCapability) {
+            GpuCounters gpuCountersDefaultIds5Ms =
+                    new GpuCounters(traceFrequencyRenderStagesDefaultCounters5Ms);
+
+            errorCollector.checkThat(
+                    "Trace failed to report one of the default GPU counter values.",
+                    gpuCountersDefaultIds5Ms.getCounterValues().keySet().equals(defaultCounterIds),
+                    is(true));
+
+            List<GpuUsageEvent> gpuUsageTimelineFromTrace =
+                    getGpuUsageTimeline(traceFrequencyRenderStagesDefaultCounters5Ms);
+            boolean foundGpuUtilisationCounter =
+                    gpuCountersDefaultIds5Ms.getCounterValues().entrySet().stream()
+                            .anyMatch(
+                                    entry ->
+                                            counterMatchesGpuUtilisation(
+                                                    gpuCountersDefaultIds5Ms
+                                                            .getCounterSpecs()
+                                                            .get(entry.getKey()),
+                                                    entry.getValue(),
+                                                    gpuUsageTimelineFromTrace));
+            errorCollector.checkThat(
+                    "Trace does not contain a GPU counter that reflects GPU utilisation.",
+                    foundGpuUtilisationCounter,
+                    is(true));
+
+            if (getProperty(GPU_COUNTERS_ZEROES_OPTIMIZATION_PROPERTY)) {
+                errorCollector.checkThat(
+                        "Some of the counters report 0 values unnecessarily: ",
+                        getSummaryComplianceWithZeroesOptimization(gpuCountersDefaultIds5Ms),
+                        is(""));
+            }
+
+            // Additionally try enabling *all* counters, and make sure descriptions are present.
+            Trace traceAllCounters5Ms =
+                    captureTrace(buildConfig(allCounterIds, TRACE_COUNTER_PERIOD_5MS, false));
+            GpuCounters gpuCountersAllIds5Ms = new GpuCounters(traceAllCounters5Ms);
+
+            errorCollector.checkThat(
+                    "Trace does not contain valid and complete GPU counter descriptions: ",
+                    getSummaryDescriptionOfIdsInTrace(gpuCountersAllIds5Ms, allCounterIds),
+                    is(SUCCESS));
+
+            if (getProperty(GPU_COUNTERS_GROUPS_PROPERTY)) {
+                checkRequiredGroupsPresent(
+                        errorCollector, gpuCounterSpecsList, traceAllCounters5Ms);
+            }
+        }
     }
 
     private static String getSummaryDescriptionOfIdsInTrace(
@@ -493,11 +458,29 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
         return rayTracingSupportFromTrace;
     }
 
-    private void captureTrace(File configFile) throws Exception {
+    private Trace captureTrace(TraceConfig traceConfig) throws Exception {
+        File configFile = File.createTempFile("perfetto", ".cfg");
+        try (OutputStream out = new FileOutputStream(configFile)) {
+            traceConfig.writeTo(out);
+        }
         CommandResult queryStatus =
                 getDevice()
                         .executeShellV2Command("perfetto -c - -o " + TRACE_FILE_PATH, configFile);
         Assert.assertEquals(CommandStatus.SUCCESS, queryStatus.getStatus());
+
+        File traceResult = getDevice().pullFile(TRACE_FILE_PATH);
+        Trace trace;
+        try (InputStream in = new FileInputStream(traceResult)) {
+            trace = Trace.parseFrom(CodedInputStream.newInstance(in));
+        }
+        traceResult.delete();
+        configFile.delete();
+
+        CommandResult deleteTraceStatus =
+                getDevice().executeShellV2Command("rm -f " + TRACE_FILE_PATH);
+        Assert.assertEquals(CommandStatus.SUCCESS, deleteTraceStatus.getStatus());
+
+        return trace;
     }
 
     private boolean getProperty(String propertyName) throws Exception {
@@ -511,7 +494,8 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
         }
     }
 
-    private TraceConfig buildConfig(Set<Integer> counterIds) {
+    private TraceConfig buildConfig(
+            Set<Integer> counterIds, Duration counterPeriod, boolean withFrequencyAndRenderStages) {
         TraceConfig.Builder config =
                 TraceConfig.newBuilder().setDurationMs((int) TRACE_DURATION.toMillis());
         config.addBuffersBuilder().setSizeKb(TRACE_BUFFER_SIZE_KB);
@@ -520,16 +504,18 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                     .getConfigBuilder()
                     .setName(COUNTERS_SOURCE_NAME)
                     .getGpuCounterConfigBuilder()
-                    .setCounterPeriodNs((int) TRACE_COUNTER_PERIOD.toNanos())
+                    .setCounterPeriodNs(counterPeriod.toNanos())
                     .addAllCounterIds(counterIds);
         }
+        if (withFrequencyAndRenderStages) {
         config.addDataSourcesBuilder()
                 .getConfigBuilder()
                 .setName(FTRACE_SOURCE_NAME)
                 .getFtraceConfigBuilder()
                 .addFtraceEvents(GPU_FREQ_FTRACE)
                 .addAtraceApps(APP);
-        config.addDataSourcesBuilder().getConfigBuilder().setName(STAGES_SOURCE_NAME);
+            config.addDataSourcesBuilder().getConfigBuilder().setName(STAGES_SOURCE_NAME);
+        }
         return config.build();
     }
 }
