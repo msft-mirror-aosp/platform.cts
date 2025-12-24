@@ -274,8 +274,8 @@ public class MockModemManager {
                 if (result) {
                     try {
                         waitForSubscriptionCondition(
-                                () -> (TelephonyManager.SIM_STATE_PRESENT == tm.getSimCardState()),
-                                TIMEOUT_IN_MSEC_FOR_SIM_STATUS_CHANGED);
+                            () -> (TelephonyManager.SIM_STATE_READY == tm.getSimState(slotId)),
+                            TIMEOUT_IN_MSEC_FOR_SIM_STATUS_CHANGED);
                     } finally {
                         Log.d(TAG, "Insert Sim - subscription changed.");
                     }
@@ -308,8 +308,9 @@ public class MockModemManager {
                 if (result) {
                     try {
                         waitForSubscriptionCondition(
-                                () -> (TelephonyManager.SIM_STATE_ABSENT == tm.getSimCardState()),
-                                TIMEOUT_IN_MSEC_FOR_SIM_STATUS_CHANGED);
+                            () -> (TelephonyManager.SIM_STATE_NOT_READY == tm.getSimState(slotId)
+                                || TelephonyManager.SIM_STATE_ABSENT == tm.getSimState(slotId)),
+                            TIMEOUT_IN_MSEC_FOR_SIM_STATUS_CHANGED);
                     } finally {
                         Log.d(TAG, "Remove Sim - subscription changed.");
                     }
@@ -1539,5 +1540,36 @@ public class MockModemManager {
             return;
         }
         mMockModemService.getIRadioData((byte) phoneId).setUseNewHalDataCallListChanged(useNewHal);
+    }
+
+    /**
+     * Sets the Multi-SIM configuration mode for the MockModem.
+     *
+     * @param isEnabled The mode to set (true for MODE_EE, false for MODE_PE).
+     * @return true if the operation is successful, otherwise false.
+     */
+    public boolean setMultiEsimConfiguration(boolean isEnabled) {
+        Log.d(TAG, "setMultiEsimConfiguration: " + isEnabled);
+
+        if (mMockModemService == null) {
+            Log.e(TAG, "setMultiEsimConfiguration: mMockModemService is null");
+            return false;
+        }
+
+        MockModemConfigInterface config = mMockModemService.getMockModemConfigInterface();
+        if (config == null) {
+            Log.e(TAG, "setMultiEsimConfiguration: config is null");
+            return false;
+        }
+
+        config.setMultiEsimConfiguration(isEnabled);
+        try {
+            waitForTelephonyFrameworkDone(2);
+        } catch (Exception e) {
+            Log.e(TAG, "Wait failed", e);
+            // Return false on failure
+            return false;
+        }
+        return true;
     }
 }

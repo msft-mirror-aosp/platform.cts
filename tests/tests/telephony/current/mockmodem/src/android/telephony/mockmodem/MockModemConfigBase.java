@@ -44,12 +44,72 @@ import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
+import android.os.SystemProperties;
 
 public class MockModemConfigBase implements MockModemConfigInterface {
     // ***** Instance Variables
     private static final int DEFAULT_SLOT_ID = 0;
     private static final int ESIM_SLOT_ID = 1;
+    private static final int INVALID_LOGICAL_SLOT_ID = -1;
+    private static final int PHYSICAL_SIM_SLOT_INVALID = -1;
+    private static final int PORT_INDEX_INVALID = -1;
+    //Device Identity array indices
+    private static final int DEVICE_ID_IMEI = 0;
+    private static final int DEVICE_ID_IMEISV = 1;
+    private static final int DEVICE_ID_ESN = 2;
+    private static final int DEVICE_ID_MEID = 3;
+
+    // The port index for a Physical SIM (pSIM). pSIMs typically support only one port (Port 0).
+    // This is used when configuring the pSIM slot in P+E mode.
+    private static final int PSIM_PORT_INDEX = 0;
+
+    // The primary port index (Port 0) for an eSIM.
+    // This port is active in all eSIM configurations (P+E, E+E, and eSIM-only).
+    private static final int FIRST_ESIM_PORT_INDEX = 0;
+
+    // The secondary port index (Port 1) for an eSIM.
+    // This is only relevant/active in MEP configurations (E+E or eSIM-only modes).
+    // In standard P+E mode, this port is inactive.
+    private static final int SECOND_ESIM_PORT_INDEX = 1;
+
+    // Represents Logical Slot 0 (Phone 0).
+    // In P+E mode, this maps to the pSIM. In E+E mode, it maps to one of the eSIM ports.
+    private static final int FIRST_ESIM_LOGICAL_SLOT_ID = 0;
+
+    // Represents Logical Slot 1 (Phone 1).
+    // This generally maps to the eSIM (either Port 0 or Port 1 depending on the mode).
+    private static final int SECOND_ESIM_LOGICAL_SLOT_ID = 1;
+
+    // eSIM MEP (Multiple Enabled Profiles) mode allows a device (User Equipment) to have
+    // multiple active eSIM profiles simultaneously.
+    // If there is no jointly supported MEP mode, set supported MEP mode to NONE.
+    private static final int SUPPORTED_MEP_MODE_NONE = 0;
+
+    // In case of MEP-B, profiles are selected on eSIM ports 0 and higher, with the ISD-R being
+    // selectable on any of these eSIM ports.
+    private static final int SUPPORTED_MEP_MODE_MEP_B = 3;
+
+    // This system property is set to 1 for eSIM-only devices.
+    // For other devices, the value is not set (returning default -1).
+    private static final int NUM_SLOTS_PROPERTY = SystemProperties.getInt(
+        "ro.telephony.sim_slots.count", -1);
+    // TODO(b/477553823): Decouple MockModem slot configuration from physical hardware
+    // properties. Currently relies on ro.telephony.sim_slots.count to initialize slot number.
+    // Future work should allow explicit configuration independent of the underlying device.
+    private static final boolean IS_ESIM_ONLY_DEVICE = NUM_SLOTS_PROPERTY == 1;
+
+    // TODO(b/477541239): Refactor to use structured data (Enum/Record) for slot mapping
+    // configuration. Currently using boolean logic to support P+E and E+E modes for immediate
+    // MEP validation. Future work will introduce a SimSlotConfig structure to support dynamic
+    // mappings (setSimSlotsMapping).
+    private enum SimSlotMapping {
+        MODE_P_E,        // Physical SIM + eSIM (Default)
+        MODE_E_E,        // Dual eSIM (MEP)
+        MODE_ESIM_ONLY   // eSIM Only Device
+    }
+    private SimSlotMapping mCurrentMode;
     private final String mTAG = "MockModemConfigBase";
     private final Handler[] mHandler;
     private Context mContext;
@@ -57,7 +117,7 @@ public class MockModemConfigBase implements MockModemConfigInterface {
     private int mSimPhyicalId;
     private Object[] mConfigAccess;
     private final Object mSimMappingAccess = new Object();
-    private int mNumOfSim = MockModemConfigInterface.MAX_NUM_OF_SIM_SLOT;
+    private int mNumOfPhysicalSlots = MockModemConfigInterface.MAX_NUM_OF_SIM_SLOT;
     private int mNumOfPhone = MockModemConfigInterface.MAX_NUM_OF_LOGICAL_MODEM;
 
     // ***** Events
@@ -71,6 +131,7 @@ public class MockModemConfigBase implements MockModemConfigInterface {
     static final int EVENT_RINGBACK_TONE = 8;
     static final int EVENT_SET_SIMUL_CALLING_LOGICAL_SLOTS = 9;
     static final int EVENT_SET_MAX_ACTIVE_VOICE_SUBS = 10;
+    static final int EVENT_SET_MULTI_SIM_CONFIG = 11;
 
     // ***** Modem config values
     private String mBasebandVersion = MockModemConfigInterface.DEFAULT_BASEBAND_VERSION;
@@ -90,7 +151,7 @@ public class MockModemConfigBase implements MockModemConfigInterface {
     private int[] mLogicalSimIdMap;
     private int[] mFdnStatus;
     private MockSimService[] mSimService;
-    private ArrayList<SimAppData>[] mSimAppList;
+    private List<SimAppData>[] mSimAppList;
 
     // **** Voice config values
     private MockVoiceService[] mVoiceService;
@@ -125,14 +186,23 @@ public class MockModemConfigBase implements MockModemConfigInterface {
 
     public MockModemConfigBase(Context context, int numOfSim, int numOfPhone) {
         mContext = context;
-        mNumOfSim =
-                (numOfSim > MockModemConfigInterface.MAX_NUM_OF_SIM_SLOT)
-                        ? MockModemConfigInterface.MAX_NUM_OF_SIM_SLOT
-                        : numOfSim;
+        if (IS_ESIM_ONLY_DEVICE) {
+            mNumOfPhysicalSlots = 1;
+            Log.i(mTAG, "eSim Only Device: mNumOfPhysicalSlots=1");
+        } else {
+            if (numOfSim > MockModemConfigInterface.MAX_NUM_OF_SIM_SLOT) {
+                throw new IllegalArgumentException("Requested number of SIM slots (" + numOfSim
+                        + ") exceeds the maximum allowed ("
+                                + MockModemConfigInterface.MAX_NUM_OF_SIM_SLOT + ")");
+            }
+            mNumOfPhysicalSlots = numOfSim;
+            Log.i(mTAG, "Multi Slot Mode: mNumOfPhysicalSlots=" + mNumOfPhysicalSlots);
+        }
         mNumOfPhone =
                 (numOfPhone > MockModemConfigInterface.MAX_NUM_OF_LOGICAL_MODEM)
                         ? MockModemConfigInterface.MAX_NUM_OF_LOGICAL_MODEM
                         : numOfPhone;
+        Log.i(mTAG, "mNumOfPhone: " + mNumOfPhone);
         mConfigAccess = new Object[mNumOfPhone];
         mHandler = new MockModemConfigHandler[mNumOfPhone];
 
@@ -162,11 +232,11 @@ public class MockModemConfigBase implements MockModemConfigInterface {
 
         // IRadioSim caches
         mCardStatus = new CardStatus[mNumOfPhone];
-        mSimSlotStatus = new SimSlotStatus[mNumOfSim];
-        mLogicalSimIdMap = new int[mNumOfSim];
-        mFdnStatus = new int[mNumOfSim];
-        mSimService = new MockSimService[mNumOfSim];
-        mSimAppList = (ArrayList<SimAppData>[]) new ArrayList[mNumOfSim];
+        mSimSlotStatus = new SimSlotStatus[mNumOfPhysicalSlots];
+        mLogicalSimIdMap = new int[mNumOfPhysicalSlots];
+        mFdnStatus = new int[mNumOfPhysicalSlots];
+        mSimService = new MockSimService[mNumOfPhysicalSlots];
+        mSimAppList = (List<SimAppData>[]) new ArrayList[mNumOfPhone];
 
         // IRadioVoice caches
         mVoiceService = new MockVoiceService[mNumOfPhone];
@@ -324,7 +394,7 @@ public class MockModemConfigBase implements MockModemConfigInterface {
             }
         }
 
-        for (int i = 0; i < mNumOfSim; i++) {
+        for (int i = 0; i < mNumOfPhysicalSlots; i++) {
             if (mSimSlotStatus != null && mSimSlotStatus[i] == null) {
                 mSimSlotStatus[i] = new SimSlotStatus();
             }
@@ -342,7 +412,41 @@ public class MockModemConfigBase implements MockModemConfigInterface {
             }
         }
 
+        if (IS_ESIM_ONLY_DEVICE) {
+            mCurrentMode = SimSlotMapping.MODE_ESIM_ONLY;
+            configureSingleSlotMep();
+        } else {
+            mCurrentMode = SimSlotMapping.MODE_P_E;
+        }
+
         setDefaultConfigValue();
+    }
+
+    /**
+     * Configures the MockModem for an eSIM-only device with Multiple Enabled Profiles (MEP).
+     *
+     * <p>Intended Final State:
+     * Physical Slot 0: Active (acting as the sole eSIM).
+     * Port 0: Active and mapped to Logical Slot 0 (Phone 0).
+     * Port 1: Active and mapped to Logical Slot 1 (Phone 1).
+     *
+     * This setup allows validating DSDS (Dual SIM Dual Standby) behaviors on hardware
+     * that lacks a physical SIM slot.
+     */
+    private void configureSingleSlotMep() {
+        if (mSimService == null || mSimService[0] == null || mNumOfPhone < 2) {
+            Log.e(mTAG, "Cannot configure Single Slot MEP Mode");
+            return;
+        }
+        Log.d(mTAG, "Configuring Single Slot MEP Mode mappings");
+
+        MockSimService simService = mSimService[0];
+        // Activate both ports on the single physical SIM
+        simService.setSlotPortActive(FIRST_ESIM_PORT_INDEX, true);
+        simService.setSlotPortActive(SECOND_ESIM_PORT_INDEX, true);
+        // Map logical slots to ports
+        simService.setLogicalSlotId(FIRST_ESIM_PORT_INDEX, FIRST_ESIM_LOGICAL_SLOT_ID);
+        simService.setLogicalSlotId(SECOND_ESIM_PORT_INDEX, SECOND_ESIM_LOGICAL_SLOT_ID);
     }
 
     public static class SimInfoChangedResult {
@@ -384,6 +488,19 @@ public class MockModemConfigBase implements MockModemConfigInterface {
         public void handleMessage(Message msg) {
             int physicalSimSlot = getSimPhysicalSlotId(mLogicalSlotId);
 
+            // Handle global multi-SIM configuration changes (switching between P+E and E+E).
+            // This is processed outside the per-slot synchronization block below because it
+            // modifies the global slot mapping and affects state across multiple physical slots.
+            if (msg.what == EVENT_SET_MULTI_SIM_CONFIG) {
+                Log.d(mTAG, "EVENT_SET_MULTI_SIM_CONFIG: " + msg.arg1);
+                if (!IS_ESIM_ONLY_DEVICE) {
+                    handleSetMultiEsimConfiguration(msg.arg1 == 1);
+                } else {
+                    Log.d(mTAG, "Ignoring EVENT_SET_MULTI_SIM_CONFIG in eSIM only mode");
+                }
+                return;
+            }
+
             synchronized (mConfigAccess[physicalSimSlot]) {
                 switch (msg.what) {
                     case EVENT_SET_RADIO_POWER:
@@ -399,7 +516,8 @@ public class MockModemConfigBase implements MockModemConfigInterface {
                             if (mRadioState != state) {
                                 mRadioState = state;
                                 mRadioStateChangedRegistrants.notifyRegistrants(
-                                        new AsyncResult(null, mRadioState, null));
+                                        new AsyncResult(null /* userObj */, mRadioState,
+                                                null /* exception */));
                             }
                         } else {
                             Log.e(mTAG, "EVENT_SET_RADIO_POWER: invalid state(" + state + ")");
@@ -413,21 +531,43 @@ public class MockModemConfigBase implements MockModemConfigInterface {
                                                 "changeSimProfile",
                                                 MockSimService.MOCK_SIM_PROFILE_ID_DEFAULT);
                         Log.d(mTAG, "EVENT_CHANGE_SIM_PROFILE: sim profile(" + simprofileid + ")");
-                        if (loadSIMCard(physicalSimSlot, simprofileid)) {
-                            if (mLogicalSlotId == DEFAULT_SLOT_ID) {
-                                mSimSlotStatusChangedRegistrants.notifyRegistrants(
-                                        new AsyncResult(null, mSimSlotStatus, null));
-                            }
+                        if (loadSIMCard(mLogicalSlotId, simprofileid)) {
+                            updateSimSlotStatus();
+                            // Notify IRadioConfigImpl to send UNSOL_SIM_SLOT_STATUS_CHANGED to the
+                            // framework. This indicates changes to the physical slots, port states,
+                            // or logical-to-physical mappings.
+                            mSimSlotStatusChangedRegistrants.notifyRegistrants(
+                                    new AsyncResult(null /* userObj */, mSimSlotStatus,
+                                            null /* exception */));
+
+                            updateCardStatus(mLogicalSlotId);
+                            // Notify IRadioSimImpl to send UNSOL_RESPONSE_SIM_STATUS_CHANGED to the
+                            // framework. This indicates changes to the specific card state (e.g.
+                            // Present/Absent, PIN state, Apps).
                             mCardStatusChangedRegistrants[mLogicalSlotId].notifyRegistrants(
-                                    new AsyncResult(null, mCardStatus[physicalSimSlot], null));
-                            mSimAppDataChangedRegistrants[mLogicalSlotId].notifyRegistrants(
-                                    new AsyncResult(null, mSimAppList[physicalSimSlot], null));
-                            mSimIoDataChangedRegistrants[mLogicalSlotId].notifyRegistrants(
-                                    new AsyncResult(null,
-                                            mSimService[mLogicalSlotId].getSimIoMap(),
-                                            null));
+                                    new AsyncResult(null /* userObj */, mCardStatus[mLogicalSlotId],
+                                            null /* exception */));
+
+                            if (mSimAppList != null && mLogicalSlotId < mSimAppList.length) {
+                                // Notify listeners that SIM Application Data (EF files) has changed
+                                mSimAppDataChangedRegistrants[mLogicalSlotId].notifyRegistrants(
+                                            new AsyncResult(null /* userObj */,
+                                                mSimAppList[mLogicalSlotId], null /* exception */));
+                            }
+
+                            int portIndex = getSimPortIndex(mLogicalSlotId, physicalSimSlot);
+                            if (physicalSimSlot != PHYSICAL_SIM_SLOT_INVALID
+                                    && portIndex != PORT_INDEX_INVALID
+                                    && mSimService[physicalSimSlot] != null) {
+                                mSimIoDataChangedRegistrants[mLogicalSlotId].notifyRegistrants(
+                                        new AsyncResult(null /* userObj */,
+                                                mSimService[physicalSimSlot].getSimIoMap(portIndex),
+                                                        null /* exception */));
+                            }
+                            Log.d(mTAG, "Sim card loaded and notifications sent for logicalSlot="
+                                + mLogicalSlotId);
                         } else {
-                            Log.e(mTAG, "Load Sim card failed.");
+                            Log.e(mTAG, "Load Sim card failed for logicalSlot=" + mLogicalSlotId);
                         }
                         break;
                     case EVENT_SERVICE_STATE_CHANGE:
@@ -454,7 +594,7 @@ public class MockModemConfigBase implements MockModemConfigInterface {
                             Log.d(mTAG, "simInfoData[" + i + "] = " + simInfoData[i]);
                         }
                         SimInfoChangedResult simInfoChangeResult =
-                                setSimInfo(physicalSimSlot, simInfoType, simInfoData);
+                                setSimInfo(mLogicalSlotId, simInfoType, simInfoData);
                         if (simInfoChangeResult != null) {
                             switch (simInfoChangeResult.mSimInfoType) {
                                 case SimInfoChangedResult.SIM_INFO_TYPE_MCC_MNC:
@@ -463,7 +603,7 @@ public class MockModemConfigBase implements MockModemConfigInterface {
                                             new AsyncResult(null, simInfoChangeResult, null));
                                     mSimAppDataChangedRegistrants[mLogicalSlotId].notifyRegistrants(
                                             new AsyncResult(
-                                                    null, mSimAppList[physicalSimSlot], null));
+                                                    null, mSimAppList[mLogicalSlotId], null));
                                     // Card status changed still needed for updating carrier config
                                     // in Telephony Framework
                                     if (mLogicalSlotId == DEFAULT_SLOT_ID) {
@@ -472,7 +612,7 @@ public class MockModemConfigBase implements MockModemConfigInterface {
                                     }
                                     mCardStatusChangedRegistrants[mLogicalSlotId].notifyRegistrants(
                                             new AsyncResult(
-                                                    null, mCardStatus[physicalSimSlot], null));
+                                                    null, mCardStatus[mLogicalSlotId], null));
                                     break;
                                 case SimInfoChangedResult.SIM_INFO_TYPE_ATR:
                                     if (mLogicalSlotId == DEFAULT_SLOT_ID) {
@@ -481,7 +621,7 @@ public class MockModemConfigBase implements MockModemConfigInterface {
                                     }
                                     mCardStatusChangedRegistrants[mLogicalSlotId].notifyRegistrants(
                                             new AsyncResult(
-                                                    null, mCardStatus[physicalSimSlot], null));
+                                                    null, mCardStatus[mLogicalSlotId], null));
                                     break;
                             }
                         }
@@ -513,6 +653,90 @@ public class MockModemConfigBase implements MockModemConfigInterface {
         }
     }
 
+    /**
+     * Handles switching the Multi-SIM configuration between P+E (Physical + eSIM) and
+     * E+E (Dual eSIM / MEP) modes.
+     *
+     * <p>This method performs the following state changes:
+     *
+     * 1. Reset: Sets all logical slot mappings to {@code INVALID_LOGICAL_SLOT_ID}.
+     * 2. Mode Selection:
+     *    - E+E Mode (MEP): Deactivates the pSIM slot. Activates both ports on the
+     *      eSIM slot. Maps Port 0 to Logical Slot 1 and Port 1 to Logical Slot 0 (Cross-mapping).
+     *    - P+E Mode (Default): Activates the pSIM slot (mapped to Logical Slot 0).
+     *      Activates only Port 0 on the eSIM slot (mapped to Logical Slot 1).
+     * 3. Notification: Updates internal SimSlotStatus and CardStatus, then notifies
+     *    all registrants (Framework) of the topology change.
+     *
+     * @param isEnabled true to enable E+E (MEP) mode; false to enable P+E mode.
+     */
+    private void handleSetMultiEsimConfiguration(boolean isEnabled) {
+        // We require at least 2 physical slots (pSIM + eSIM) to support switching
+        // between P+E and E+E modes in this configuration.
+        if (mSimService == null || mSimService.length <= ESIM_SLOT_ID) {
+            String msg = "handleSetMultiEsimConfiguration: Requires at least "
+                    + (ESIM_SLOT_ID + 1) + " physical slots.";
+            Log.e(mTAG, msg);
+            throw new IllegalStateException(msg);
+        }
+
+        MockSimService pSimService = mSimService[DEFAULT_SLOT_ID];
+        MockSimService eSimService = mSimService[ESIM_SLOT_ID];
+
+        if (pSimService == null || eSimService == null) {
+            String msg = "handleSetMultiEsimConfiguration: MockSimServices are not initialized.";
+            Log.e(mTAG, msg);
+            throw new IllegalStateException(msg);
+        }
+
+        mCurrentMode = isEnabled ? SimSlotMapping.MODE_E_E : SimSlotMapping.MODE_P_E;
+
+        // Reset logical slot mappings
+        for(int i = 0; i < mNumOfPhysicalSlots; i++) {
+            mLogicalSimIdMap[i] = INVALID_LOGICAL_SLOT_ID;
+        }
+        pSimService.setLogicalSlotId(PSIM_PORT_INDEX, INVALID_LOGICAL_SLOT_ID);
+        eSimService.setLogicalSlotId(FIRST_ESIM_PORT_INDEX, INVALID_LOGICAL_SLOT_ID);
+        eSimService.setLogicalSlotId(SECOND_ESIM_PORT_INDEX, INVALID_LOGICAL_SLOT_ID);
+
+        switch (mCurrentMode) {
+            case MODE_E_E -> {
+                Log.d(mTAG, "handleSetMultiSimConfiguration: Setting MODE_EE");
+                // Disable pSim slot
+                pSimService.setSlotPortActive(PSIM_PORT_INDEX, false);
+
+                // Configure eSIM Ports
+                eSimService.setSlotPortActive(FIRST_ESIM_PORT_INDEX, true);
+                eSimService.setLogicalSlotId(FIRST_ESIM_PORT_INDEX, SECOND_ESIM_LOGICAL_SLOT_ID);
+                eSimService.setSlotPortActive(SECOND_ESIM_PORT_INDEX, true);
+                eSimService.setLogicalSlotId(SECOND_ESIM_PORT_INDEX, FIRST_ESIM_LOGICAL_SLOT_ID);
+
+                mLogicalSimIdMap[ESIM_SLOT_ID] = FIRST_ESIM_LOGICAL_SLOT_ID;
+            }
+            case MODE_P_E -> {
+                Log.d(mTAG, "handleSetMultiSimConfiguration: Setting MODE_PE");
+                // Enable pSim slot
+                pSimService.setSlotPortActive(PSIM_PORT_INDEX, true);
+                pSimService.setLogicalSlotId(PSIM_PORT_INDEX, FIRST_ESIM_LOGICAL_SLOT_ID);
+
+                // Reset eSIM Ports
+                eSimService.setSlotPortActive(FIRST_ESIM_PORT_INDEX, true);
+                eSimService.setLogicalSlotId(FIRST_ESIM_PORT_INDEX, SECOND_ESIM_LOGICAL_SLOT_ID);
+                eSimService.setSlotPortActive(SECOND_ESIM_PORT_INDEX, false);
+
+                mLogicalSimIdMap[DEFAULT_SLOT_ID] = FIRST_ESIM_LOGICAL_SLOT_ID;
+                mLogicalSimIdMap[ESIM_SLOT_ID] = SECOND_ESIM_LOGICAL_SLOT_ID;
+            }
+            default -> Log.e(mTAG, "handleSetMultiSimConfiguration: Unsupported mode");
+        }
+
+        updateSimSlotStatus();
+        for (int i = 0; i < mNumOfPhone; i++) {
+            updateCardStatus(i);
+            notifyAllRegistrantNotifications(i);
+        }
+    }
+
     private int getSimLogicalSlotId(int physicalSlotId) {
         int logicalSimId = DEFAULT_SLOT_ID;
 
@@ -524,17 +748,31 @@ public class MockModemConfigBase implements MockModemConfigInterface {
     }
 
     private int getSimPhysicalSlotId(int logicalSlotId) {
-        int physicalSlotId = DEFAULT_SLOT_ID;
-
-        synchronized (mSimMappingAccess) {
-            for (int i = 0; i < mNumOfSim; i++) {
-                if (mLogicalSimIdMap[i] == logicalSlotId) {
-                    physicalSlotId = i;
+        return switch (mCurrentMode) {
+            case MODE_ESIM_ONLY -> DEFAULT_SLOT_ID;
+            case MODE_E_E -> ESIM_SLOT_ID;
+            case MODE_P_E -> {
+                int physicalSlotId = DEFAULT_SLOT_ID;
+                synchronized (mSimMappingAccess) {
+                    for (int i = 0; i < mNumOfPhysicalSlots; i++) {
+                        if (mLogicalSimIdMap[i] == logicalSlotId) {
+                            physicalSlotId = i;
+                        }
+                    }
                 }
+                yield physicalSlotId;
             }
-        }
+        };
+    }
 
-        return physicalSlotId;
+    private int getSimPortIndex(int logicalSlotId, int physicalSlotId) {
+        if (physicalSlotId < 0) return PORT_INDEX_INVALID;
+
+        return switch (mCurrentMode) {
+            case MODE_ESIM_ONLY -> logicalSlotId;
+            case MODE_E_E -> (logicalSlotId == 0) ? SECOND_ESIM_PORT_INDEX : FIRST_ESIM_PORT_INDEX;
+            case MODE_P_E -> PSIM_PORT_INDEX;
+        };
     }
 
     private void setDefaultConfigValue() {
@@ -602,71 +840,108 @@ public class MockModemConfigBase implements MockModemConfigInterface {
     private void updateSimSlotStatus() {
         if (mSimService == null) {
             Log.e(mTAG, "SIM service didn't be created yet.");
+            return;
         }
 
-        for (int i = 0; i < mNumOfSim; i++) {
-            if (mSimService[i] == null) {
-                Log.e(mTAG, "SIM service[" + i + "] didn't be created yet.");
+        for (int physicalSimSlotId = 0; physicalSimSlotId < mNumOfPhysicalSlots;
+                physicalSimSlotId++) {
+            if (mSimService[physicalSimSlotId] == null) {
+                Log.e(mTAG, "SIM service[" + physicalSimSlotId + "] didn't be created yet.");
                 continue;
             }
-            int portInfoListLen = mSimService[i].getNumOfSimPortInfo();
-            mSimSlotStatus[i] = new SimSlotStatus();
-            mSimSlotStatus[i].cardState =
-                    mSimService[i].isCardPresent()
-                            ? CardStatus.STATE_PRESENT
-                            : CardStatus.STATE_ABSENT;
-            mSimSlotStatus[i].atr = mSimService[i].getATR();
-            mSimSlotStatus[i].eid = mSimService[i].getEID();
-            // TODO: support multiple sim port
-            SimPortInfo[] portInfoList0 = new SimPortInfo[portInfoListLen];
-            portInfoList0[0] = new SimPortInfo();
-            portInfoList0[0].portActive = mSimService[i].isSlotPortActive();
-            portInfoList0[0].logicalSlotId = mSimService[i].getLogicalSlotId();
-            portInfoList0[0].iccId = mSimService[i].getICCID();
-            mSimSlotStatus[i].portInfo = portInfoList0;
-        }
-    }
 
-    private void updateCardStatus(int slotId) {
-        if (slotId >= 0
-                && slotId < mSimService.length
-                && mSimService != null
-                && mSimService[slotId] != null) {
-            mCardStatus[slotId] = new CardStatus();
-            mCardStatus[slotId].cardState =
-                    mSimService[slotId].isCardPresent()
-                            ? CardStatus.STATE_PRESENT
-                            : CardStatus.STATE_ABSENT;
-            mCardStatus[slotId].universalPinState = mSimService[slotId].getUniversalPinState();
-            mCardStatus[slotId].gsmUmtsSubscriptionAppIndex = mSimService[slotId].getGsmAppIndex();
-            mCardStatus[slotId].cdmaSubscriptionAppIndex = mSimService[slotId].getCdmaAppIndex();
-            mCardStatus[slotId].imsSubscriptionAppIndex = mSimService[slotId].getImsAppIndex();
-            mCardStatus[slotId].applications = mSimService[slotId].getSimApp();
-            mCardStatus[slotId].atr = mSimService[slotId].getATR();
-            mCardStatus[slotId].iccid = mSimService[slotId].getICCID();
-            mCardStatus[slotId].eid = mSimService[slotId].getEID();
-            mCardStatus[slotId].slotMap = new SlotPortMapping();
-            mCardStatus[slotId].slotMap.physicalSlotId = mSimService[slotId].getPhysicalSlotId();
-            mCardStatus[slotId].slotMap.portId = mSimService[slotId].getSlotPortId();
-            mSimAppList[slotId] = mSimService[slotId].getSimAppList();
-        } else {
-            Log.e(mTAG, "Invalid Sim physical id(" + slotId + ") or SIM card didn't be created.");
-        }
-    }
+            int numPorts = mSimService[physicalSimSlotId].getNumOfSimPortInfo();
 
-    private boolean loadSIMCard(int slotId, int simProfileId) {
-        boolean result = false;
-        if (slotId >= 0
-                && slotId < mSimService.length
-                && mSimService != null
-                && mSimService[slotId] != null) {
-            result = mSimService[slotId].loadSimCard(simProfileId);
-            if (slotId == DEFAULT_SLOT_ID) {
-                updateSimSlotStatus();
+            mSimSlotStatus[physicalSimSlotId] = new SimSlotStatus();
+            mSimSlotStatus[physicalSimSlotId].cardState =
+                    mSimService[physicalSimSlotId].isCardPresent()
+                            ? CardStatus.STATE_PRESENT : CardStatus.STATE_ABSENT;
+            mSimSlotStatus[physicalSimSlotId].atr = mSimService[physicalSimSlotId].getATR();
+            mSimSlotStatus[physicalSimSlotId].eid = mSimService[physicalSimSlotId].getEID();
+
+            mSimSlotStatus[physicalSimSlotId].portInfo = new SimPortInfo[numPorts];
+
+            for (int portIndex = 0; portIndex < numPorts; portIndex++) {
+                mSimSlotStatus[physicalSimSlotId].portInfo[portIndex] = new SimPortInfo();
+                mSimSlotStatus[physicalSimSlotId].portInfo[portIndex].portActive =
+                         mSimService[physicalSimSlotId].isSlotPortActive(portIndex);
+                mSimSlotStatus[physicalSimSlotId].portInfo[portIndex].logicalSlotId =
+                         mSimService[physicalSimSlotId].getLogicalSlotId(portIndex);
+                mSimSlotStatus[physicalSimSlotId].portInfo[portIndex].iccId =
+                         mSimService[physicalSimSlotId].getICCID(portIndex);
             }
-            updateCardStatus(slotId);
+
+            // For eSIM-only devices, the single physical slot (Slot 0) acts as the eSIM and
+            // supports MEP. For P+E devices, the second slot (Slot 1) is the eSIM and supports MEP.
+            boolean isMepSupportedSlot =
+                (IS_ESIM_ONLY_DEVICE && physicalSimSlotId == DEFAULT_SLOT_ID)
+                    || physicalSimSlotId == ESIM_SLOT_ID;
+
+            mSimSlotStatus[physicalSimSlotId].supportedMepMode =
+                isMepSupportedSlot ? SUPPORTED_MEP_MODE_MEP_B : SUPPORTED_MEP_MODE_NONE;
         }
-        return result;
+    }
+
+    private void updateCardStatus(int logicalSlotId) {
+        int physicalSlotId = getSimPhysicalSlotId(logicalSlotId);
+        int portIndex = getSimPortIndex(logicalSlotId, physicalSlotId);
+
+        if (physicalSlotId < 0 || physicalSlotId >= mSimService.length
+                || mSimService[physicalSlotId] == null) {
+            Log.e(mTAG, "Invalid Physical Slot for Logical Slot " + logicalSlotId);
+            return;
+        }
+
+        mCardStatus[logicalSlotId] = new CardStatus();
+        mCardStatus[logicalSlotId].cardState =
+                 mSimService[physicalSlotId].isCardPresent()
+                          ? CardStatus.STATE_PRESENT : CardStatus.STATE_ABSENT;
+        mCardStatus[logicalSlotId].universalPinState =
+                 mSimService[physicalSlotId].getUniversalPinState();
+        mCardStatus[logicalSlotId].gsmUmtsSubscriptionAppIndex =
+                 mSimService[physicalSlotId].getGsmAppIndex(portIndex);
+        mCardStatus[logicalSlotId].cdmaSubscriptionAppIndex =
+                 mSimService[physicalSlotId].getCdmaAppIndex(portIndex);
+        mCardStatus[logicalSlotId].imsSubscriptionAppIndex =
+                 mSimService[physicalSlotId].getImsAppIndex(portIndex);
+        mCardStatus[logicalSlotId].applications = mSimService[physicalSlotId].getSimApp(portIndex);
+        mCardStatus[logicalSlotId].atr = mSimService[physicalSlotId].getATR();
+        mCardStatus[logicalSlotId].iccid = mSimService[physicalSlotId].getICCID(portIndex);
+        mCardStatus[logicalSlotId].eid = mSimService[physicalSlotId].getEID();
+
+        boolean isMepSupported = (IS_ESIM_ONLY_DEVICE && physicalSlotId == DEFAULT_SLOT_ID)
+                 || physicalSlotId == ESIM_SLOT_ID;
+
+        mCardStatus[logicalSlotId].supportedMepMode =
+                 isMepSupported ? SUPPORTED_MEP_MODE_MEP_B : SUPPORTED_MEP_MODE_NONE;
+
+        mCardStatus[logicalSlotId].slotMap = new SlotPortMapping();
+        mCardStatus[logicalSlotId].slotMap.physicalSlotId =
+                 mSimService[physicalSlotId].getPhysicalSlotId();
+        mCardStatus[logicalSlotId].slotMap.portId =
+                 mSimService[physicalSlotId].getSlotPortId(portIndex);
+
+        mSimAppList[logicalSlotId] = mSimService[physicalSlotId].getSimAppList(portIndex);
+    }
+
+    private boolean loadSIMCard(int logicalSlotId, int simProfileId) {
+        Log.d(mTAG, "loadSIMCard: logicalSlot=" + logicalSlotId + " profileId=" + simProfileId);
+
+        int physicalSlotId = getSimPhysicalSlotId(logicalSlotId);
+        int portIndex = getSimPortIndex(logicalSlotId, physicalSlotId);
+
+        if (physicalSlotId == PHYSICAL_SIM_SLOT_INVALID || physicalSlotId >= mSimService.length
+                     || mSimService[physicalSlotId] == null || portIndex < 0) {
+            Log.e(mTAG,
+                     "loadSIMCard: Cannot find valid physical/port for logicalSlotId "
+                              + logicalSlotId);
+            return false;
+        }
+
+        Log.d(mTAG, "loadSIMCard: Mapping logicalSlot=" + logicalSlotId + " to physicalSlot="
+                 + physicalSlotId + " port=" + portIndex);
+
+        return mSimService[physicalSlotId].loadSimCard(simProfileId, portIndex);
     }
 
     private String generateRandomIccid(String baseIccid) {
@@ -693,7 +968,8 @@ public class MockModemConfigBase implements MockModemConfigInterface {
         return newIccid;
     }
 
-    private SimInfoChangedResult setSimInfo(int slotId, int simInfoType, String[] simInfoData) {
+    private SimInfoChangedResult setSimInfo(int logicalSlotId, int simInfoType,
+        String[] simInfoData) {
         SimInfoChangedResult result = null;
 
         if (simInfoData == null) {
@@ -701,88 +977,162 @@ public class MockModemConfigBase implements MockModemConfigInterface {
             return result;
         }
 
-        switch (simInfoType) {
-            case SimInfoChangedResult.SIM_INFO_TYPE_MCC_MNC:
-                if (simInfoData.length == 2 && simInfoData[0] != null && simInfoData[1] != null) {
-                    String msin = mSimService[slotId].getMsin();
-
-                    // Adjust msin length to make sure IMSI length is valid.
-                    if (simInfoData[1].length() == 3 && msin.length() == 10) {
-                        msin = msin.substring(0, msin.length() - 1);
-                        Log.d(mTAG, "Modify msin = " + msin);
-                    }
-                    mSimService[slotId].setImsi(simInfoData[0], simInfoData[1], msin);
-
-                    // Auto-generate a new Iccid to change carrier config id in Android Framework
-                    mSimService[slotId].setICCID(
-                            generateRandomIccid(mSimService[slotId].getICCID()));
-                    updateSimSlotStatus();
-                    updateCardStatus(slotId);
-
-                    result =
-                            new SimInfoChangedResult(
-                                    simInfoType, EF_ICCID, mSimService[slotId].getActiveSimAppId());
-                }
-                break;
-            case SimInfoChangedResult.SIM_INFO_TYPE_IMSI:
-                if (simInfoData.length == 3
-                        && simInfoData[0] != null
-                        && simInfoData[1] != null
-                        && simInfoData[2] != null) {
-                    mSimService[slotId].setImsi(simInfoData[0], simInfoData[1], simInfoData[2]);
-
-                    // Auto-generate a new Iccid to change carrier config id in Android Framework
-                    mSimService[slotId].setICCID(
-                            generateRandomIccid(mSimService[slotId].getICCID()));
-                    updateSimSlotStatus();
-                    updateCardStatus(slotId);
-
-                    result =
-                            new SimInfoChangedResult(
-                                    simInfoType, EF_ICCID, mSimService[slotId].getActiveSimAppId());
-                }
-                break;
-            case SimInfoChangedResult.SIM_INFO_TYPE_ATR:
-                if (simInfoData[0] != null) {
-                    mSimService[slotId].setATR(simInfoData[0]);
-                    updateSimSlotStatus();
-                    updateCardStatus(slotId);
-                    result = new SimInfoChangedResult(simInfoType, 0, "");
-                }
-                break;
-            default:
-                Log.e(mTAG, "Not support Sim info type(" + simInfoType + ") to modify");
-                break;
+        int physicalSlotId = getSimPhysicalSlotId(logicalSlotId);
+        int portIndex = getSimPortIndex(logicalSlotId, physicalSlotId);
+        if (physicalSlotId == PHYSICAL_SIM_SLOT_INVALID || mSimService[physicalSlotId] == null) {
+            Log.e(mTAG, "Invalid physical slot for logical slot " + logicalSlotId);
+            return null;
         }
 
+        switch (simInfoType) {
+            case SimInfoChangedResult.SIM_INFO_TYPE_MCC_MNC -> {
+                result = processMccMncSimInfoChange(physicalSlotId, portIndex, logicalSlotId,
+                    simInfoData);
+            }
+            case SimInfoChangedResult.SIM_INFO_TYPE_IMSI -> {
+                result = processImsiSimInfoChange(physicalSlotId, portIndex, logicalSlotId,
+                    simInfoData);
+            }
+            case SimInfoChangedResult.SIM_INFO_TYPE_ATR -> {
+                result = processAtrSimInfoChange(physicalSlotId, simInfoData);
+            }
+            default -> Log.e(mTAG, "Not support Sim info type(" + simInfoType + ") to modify");
+        }
         return result;
+    }
+
+    /**
+     * Handles SIM Info change for MCC/MNC type.
+     */
+    private SimInfoChangedResult processMccMncSimInfoChange(int physicalSlotId, int portIndex,
+        int logicalSlotId, String[] simInfoData) {
+        if (simInfoData.length != 2 || simInfoData[0] == null || simInfoData[1] == null) {
+            Log.e(mTAG, "processMccMncSimInfoChange: Invalid simInfoData");
+            return null;
+        }
+
+        String msin = mSimService[physicalSlotId].getMsin(portIndex);
+
+        // Adjust msin length to make sure IMSI length is valid.
+        if (simInfoData[1].length() == 3 && msin.length() == 10) {
+            msin = msin.substring(0, msin.length() - 1);
+            Log.d(mTAG, "Modify msin = " + msin);
+        }
+        mSimService[physicalSlotId].setImsi(simInfoData[0], simInfoData[1], msin,
+                portIndex);
+
+        // Auto-generate a new Iccid to change carrier config id in Android Framework
+        mSimService[physicalSlotId].setICCID(
+                generateRandomIccid(mSimService[physicalSlotId].getICCID(portIndex)), portIndex);
+        updateSimSlotStatus();
+        updateCardStatus(logicalSlotId);
+
+        return new SimInfoChangedResult(
+                SimInfoChangedResult.SIM_INFO_TYPE_MCC_MNC, EF_ICCID,
+                        mSimService[physicalSlotId].getActiveSimAppId(portIndex));
+    }
+
+    /**
+     * Handles SIM Info change for IMSI type.
+     */
+    private SimInfoChangedResult processImsiSimInfoChange(int physicalSlotId, int portIndex,
+        int logicalSlotId, String[] simInfoData) {
+        if (simInfoData.length != 3 || simInfoData[0] == null || simInfoData[1] == null
+                || simInfoData[2] == null) {
+            Log.e(mTAG, "processImsiSimInfoChange: Invalid simInfoData");
+            return null;
+        }
+
+        mSimService[physicalSlotId].setImsi(simInfoData[0], simInfoData[1],
+                simInfoData[2], portIndex);
+
+        // Auto-generate a new Iccid to change carrier config id in Android Framework
+        mSimService[physicalSlotId].setICCID(
+                generateRandomIccid(mSimService[physicalSlotId].getICCID(portIndex)),
+                        portIndex);
+
+        updateSimSlotStatus();
+        updateCardStatus(logicalSlotId);
+
+        return new SimInfoChangedResult(
+                SimInfoChangedResult.SIM_INFO_TYPE_IMSI, EF_ICCID,
+                        mSimService[physicalSlotId].getActiveSimAppId(portIndex));
+    }
+
+    /**
+     * Handles SIM Info change for ATR type.
+     */
+    private SimInfoChangedResult processAtrSimInfoChange(int physicalSlotId, String[] simInfoData) {
+        if (simInfoData[0] == null) {
+            Log.e(mTAG, "processAtrSimInfoChange: Invalid simInfoData");
+            return null;
+        }
+
+        mSimService[physicalSlotId].setATR(simInfoData[0]);
+
+        updateSimSlotStatus();
+        for (int i = 0; i < mNumOfPhone; i++) {
+            if (getSimPhysicalSlotId(i) == physicalSlotId) {
+                updateCardStatus(i);
+            }
+        }
+        return new SimInfoChangedResult(SimInfoChangedResult.SIM_INFO_TYPE_ATR, 0 /* efid */,
+                "" /* aid */);
+    }
+
+
+    private int getArrayIndexForDeviceProperties(int logicalSlotId) {
+        if (IS_ESIM_ONLY_DEVICE) {
+            return logicalSlotId;
+        } else {
+            return getSimPhysicalSlotId(logicalSlotId);
+        }
     }
 
     private void notifyDeviceIdentityChangedRegistrants(int logicalSlotId) {
         String[] deviceIdentity = new String[4];
-        int physicalSlotId = getSimLogicalSlotId(logicalSlotId);
+        int index = getArrayIndexForDeviceProperties(logicalSlotId);
 
-        synchronized (mConfigAccess[physicalSlotId]) {
-            deviceIdentity[0] = mImei[physicalSlotId];
-            deviceIdentity[1] = mImeiSv[physicalSlotId];
-            deviceIdentity[2] = mEsn[physicalSlotId];
-            deviceIdentity[3] = mMeid[physicalSlotId];
+        if (index == INVALID_LOGICAL_SLOT_ID || index >= mNumOfPhone) {
+            Log.e(mTAG, "notifyDeviceIdentityChangedRegistrants: Invalid index " + index
+                    + " for logicalSlotId " + logicalSlotId);
+            return;
         }
-        AsyncResult ar = new AsyncResult(null, deviceIdentity, null);
-        mDeviceIdentityChangedRegistrants[logicalSlotId].notifyRegistrants(ar);
+
+        synchronized (mConfigAccess[index]) {
+            deviceIdentity[DEVICE_ID_IMEI] = mImei[index];
+            deviceIdentity[DEVICE_ID_IMEISV] = mImeiSv[index];
+            deviceIdentity[DEVICE_ID_ESN] = mEsn[index];
+            deviceIdentity[DEVICE_ID_MEID] = mMeid[index];
+        }
+        AsyncResult ar = new AsyncResult(null /* userObj */, deviceIdentity, null /* exception */);
+        if (mDeviceIdentityChangedRegistrants != null
+                && logicalSlotId < mDeviceIdentityChangedRegistrants.length) {
+            mDeviceIdentityChangedRegistrants[logicalSlotId].notifyRegistrants(ar);
+        }
     }
 
     private void notifyDeviceImeiTypeChangedRegistrants(int logicalSlotId) {
-        int physicalSlotId = getSimLogicalSlotId(logicalSlotId);
         android.hardware.radio.modem.ImeiInfo imeiInfo =
-                new android.hardware.radio.modem.ImeiInfo();
-        synchronized (mConfigAccess[physicalSlotId]) {
-            imeiInfo.type = mImeiType[physicalSlotId];
-            imeiInfo.imei = mImei[physicalSlotId];
-            imeiInfo.svn = mImeiSv[physicalSlotId];
+            new android.hardware.radio.modem.ImeiInfo();
+        int index = getArrayIndexForDeviceProperties(logicalSlotId);
+
+        if (index < 0 || index >= mNumOfPhone) {
+            Log.e(mTAG, "notifyDeviceImeiTypeChangedRegistrants: Invalid index " + index
+                    + " for logicalSlotId " + logicalSlotId);
+            return;
         }
-        AsyncResult ar = new AsyncResult(null, imeiInfo, null);
-        mDeviceImeiInfoChangedRegistrants[logicalSlotId].notifyRegistrants(ar);
+
+        synchronized (mConfigAccess[index]) {
+            imeiInfo.type = mImeiType[index];
+            imeiInfo.imei = mImei[index];
+            imeiInfo.svn = mImeiSv[index];
+        }
+        AsyncResult ar = new AsyncResult(null /* userObj */, imeiInfo, null /* exception */);
+        if (mDeviceImeiInfoChangedRegistrants != null
+                && logicalSlotId < mDeviceImeiInfoChangedRegistrants.length) {
+            mDeviceImeiInfoChangedRegistrants[logicalSlotId].notifyRegistrants(ar);
+        }
     }
 
     // ***** MockModemConfigInterface implementation
@@ -829,9 +1179,9 @@ public class MockModemConfigBase implements MockModemConfigInterface {
 
             // IRadioSim
             mCardStatusChangedRegistrants[phoneId].notifyRegistrants(
-                    new AsyncResult(null, mCardStatus[physicalSlotId], null));
+                    new AsyncResult(null, mCardStatus[phoneId], null));
             mSimAppDataChangedRegistrants[phoneId].notifyRegistrants(
-                    new AsyncResult(null, mSimAppList[physicalSlotId], null));
+                    new AsyncResult(null, mSimAppList[phoneId], null));
         }
     }
 
@@ -1187,22 +1537,32 @@ public class MockModemConfigBase implements MockModemConfigInterface {
     @Override
     public boolean isSimCardPresent(int logicalSlotId, String client) {
         Log.d(mTAG, "isSimCardPresent[" + logicalSlotId + "] from: " + client);
+        if (logicalSlotId < 0 || logicalSlotId >= mNumOfPhone) {
+            Log.e(mTAG, "isSimCardPresent: Invalid logicalSlotId " + logicalSlotId);
+            return false;
+        }
 
-        int physicalSlotId = getSimPhysicalSlotId(logicalSlotId);
-        boolean isPresent = false;
-        if (physicalSlotId == DEFAULT_SLOT_ID) {
-            synchronized (mConfigAccess[physicalSlotId]) {
-                isPresent =
-                        (mCardStatus[physicalSlotId].cardState == CardStatus.STATE_PRESENT)
-                                ? true
-                                : false;
+        synchronized (mConfigAccess[logicalSlotId]) {
+            if (mCardStatus[logicalSlotId] == null) {
+                return false;
             }
-        } else if (physicalSlotId == ESIM_SLOT_ID) {
-            synchronized (mConfigAccess[physicalSlotId]) {
-                isPresent = (mCardStatus[physicalSlotId].iccid.trim().length() > 0) ? true : false;
+
+            if (mCardStatus[logicalSlotId].cardState == CardStatus.STATE_ABSENT) {
+                return false;
+            }
+
+            int physicalSlotId = getSimPhysicalSlotId(logicalSlotId);
+            boolean isPotentiallyEsim =
+                    (IS_ESIM_ONLY_DEVICE && physicalSlotId == DEFAULT_SLOT_ID) || (physicalSlotId
+                            == ESIM_SLOT_ID);
+
+            if (isPotentiallyEsim) {
+                return mCardStatus[logicalSlotId].iccid != null
+                        && mCardStatus[logicalSlotId].iccid.trim().length() > 0;
+            } else {
+                return true;
             }
         }
-        return isPresent;
     }
 
     @Override
@@ -1257,16 +1617,18 @@ public class MockModemConfigBase implements MockModemConfigInterface {
         String result = "";
         int physicalSlotId = getSimPhysicalSlotId(logicalSlotId);
 
+        int portIndex = getSimPortIndex(logicalSlotId, physicalSlotId);
+
         synchronized (mConfigAccess[physicalSlotId]) {
             switch (type) {
                 case SimInfoChangedResult.SIM_INFO_TYPE_MCC_MNC:
-                    result = mSimService[physicalSlotId].getMccMnc();
+                    result = mSimService[physicalSlotId].getMccMnc(portIndex);
                     break;
                 case SimInfoChangedResult.SIM_INFO_TYPE_IMSI:
-                    result = mSimService[physicalSlotId].getImsi();
+                    result = mSimService[physicalSlotId].getImsi(portIndex);
                     break;
                 case SimInfoChangedResult.SIM_INFO_TYPE_ATR:
-                    result = mCardStatus[physicalSlotId].atr;
+                    result = mCardStatus[logicalSlotId].atr;
                     break;
                 default:
                     Log.e(mTAG, "Not support this type of SIM info.");
@@ -1322,5 +1684,17 @@ public class MockModemConfigBase implements MockModemConfigInterface {
     public int getNumberOfCalls(int logicalSlotId, String client) {
         Log.d(mTAG, "getNumberOfCalls[" + logicalSlotId + "] from: " + client);
         return mVoiceService[logicalSlotId].getNumberOfCalls();
+    }
+
+    @Override
+    public void setMultiEsimConfiguration(boolean isEnabled) {
+        Log.d(mTAG, "setMultiEsimConfiguration: mode=" + isEnabled);
+        if (IS_ESIM_ONLY_DEVICE) {
+            Log.d(mTAG, "Ignoring setMultiEsimConfiguration for eSim only device");
+            return;
+        }
+        Message msg = mHandler[DEFAULT_SLOT_ID].obtainMessage(EVENT_SET_MULTI_SIM_CONFIG);
+        msg.arg1 = isEnabled ? 1 : 0;
+        msg.sendToTarget();
     }
 }
