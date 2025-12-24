@@ -64,6 +64,9 @@ import static android.content.pm.PackageManager.SYSTEM_APP_STATE_HIDDEN_UNTIL_IN
 import static android.content.pm.cts.PackageManagerShellCommandIncrementalTest.parsePackageDump;
 import static android.content.pm.cts.util.PackageTestUtils.APP_LOCK_SUPPORTED_APK;
 import static android.content.pm.cts.util.PackageTestUtils.APP_LOCK_SUPPORTED_PACKAGE_NAME;
+import static android.content.pm.cts.util.PackageTestUtils.HEADLESS_APK;
+import static android.content.pm.cts.util.PackageTestUtils.HEADLESS_APP_PACKAGE_NAME;
+import static android.content.pm.cts.util.PackageTestUtils.createSupervisedUserScoped;
 import static android.content.pm.cts.util.PackageTestUtils.hasLockAppsPermission;
 import static android.content.pm.cts.util.PackageTestUtils.installPackageScoped;
 import static android.content.pm.cts.util.PackageTestUtils.setHomeRoleHolderScoped;
@@ -135,6 +138,7 @@ import android.content.pm.SuspendDialogInfo;
 import android.content.pm.cts.PackageManagerShellCommandInstallTest.PackageBroadcastReceiver;
 import android.content.pm.cts.util.AbandonAllPackageSessionsRule;
 import android.content.pm.cts.util.AppLockSupportRule;
+import android.content.pm.cts.util.PackageTestUtils.ScopedSupervisedUser;
 import android.content.pm.cts.util.RequiresAppLockSupported;
 import android.content.res.Configuration;
 import android.content.res.Resources;
@@ -4358,6 +4362,24 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
         }
     }
 
+   // TODO(b/483637043): Implement
+   // testGetEnableAppLockIntentForPackage_managedProfile_returnsNull().
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(apis = {"android.content.pm.PackageManager#getEnableAppLockIntentForPackage"})
+    public void testGetEnableAppLockIntentForPackage_withPermission_returnsIntent() throws
+            Exception {
+        try (AutoCloseable homeRole = setHomeRoleHolderScoped(mContext)) {
+            assertThat(hasLockAppsPermission(mContext)).isTrue();
+
+            assertThat(mPackageManager.getEnableAppLockIntentForPackage(mContext.getPackageName(),
+                        /* enabled= */ true)).isNotNull();
+        }
+    }
+
     @Test
     @DisabledOnRavenwood(blockedBy = PackageManager.class)
     @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
@@ -4377,6 +4399,119 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
                                     APP_LOCK_SUPPORTED_PACKAGE_NAME, /* enabled= */ true);
 
             assertThat(pendingIntent).isNotNull();
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(apis = {"android.content.pm.PackageManager#getEnableAppLockIntentForPackage"})
+    public void testGetEnableAppLockIntentForPackage_nonExistentPackage_returnsNull() throws
+                Exception {
+        try (AutoCloseable homeRole = setHomeRoleHolderScoped(mContext)) {
+            assertThat(hasLockAppsPermission(mContext)).isTrue();
+
+            assertThat(mPackageManager.getEnableAppLockIntentForPackage(NON_EXISTENT_PACKAGE_NAME,
+                        /* enabled= */ true)).isNull();
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(apis = {"android.content.pm.PackageManager#getEnableAppLockIntentForPackage"})
+    public void testGetEnableAppLockIntentForPackage_headlessPackage_returnsNull() throws
+                Exception {
+        try (AutoCloseable withHeadlessAppInstalled =
+                installPackageScoped(HEADLESS_APK, HEADLESS_APP_PACKAGE_NAME)) {
+            try (AutoCloseable homeRole = setHomeRoleHolderScoped(mContext)) {
+                assertThat(hasLockAppsPermission(mContext)).isTrue();
+
+                assertThat(mPackageManager.getEnableAppLockIntentForPackage(
+                        HEADLESS_APP_PACKAGE_NAME, /* enabled= */ true)).isNull();
+            }
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(apis = {"android.content.pm.PackageManager#getEnableAppLockIntentForPackage"})
+    public void testGetEnableAppLockIntentForPackage_validSampleApp_returnsIntent() throws
+                Exception {
+        try (AutoCloseable withSampleAppInstalled =
+                installPackageScoped(APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME)) {
+            try (AutoCloseable homeRole = setHomeRoleHolderScoped(mContext)) {
+                assertThat(hasLockAppsPermission(mContext)).isTrue();
+
+                assertThat(mPackageManager.getEnableAppLockIntentForPackage(
+                        APP_LOCK_SUPPORTED_PACKAGE_NAME, /* enabled= */ true)).isNotNull();
+            }
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(apis = {"android.content.pm.PackageManager#getEnableAppLockIntentForPackage"})
+    public void testGetEnableAppLockIntentForPackage_invalidEnabledState_returnsNull() throws
+                Exception {
+        try (AutoCloseable installedApp =
+                installPackageScoped(APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME)) {
+            try (AutoCloseable homeRole = setHomeRoleHolderScoped(mContext)) {
+                assertThat(hasLockAppsPermission(mContext)).isTrue();
+
+                assertThat(mPackageManager.getEnableAppLockIntentForPackage(
+                        APP_LOCK_SUPPORTED_PACKAGE_NAME, /* enabled= */ true)).isNotNull();
+
+                assertThat(mPackageManager.getEnableAppLockIntentForPackage(
+                        APP_LOCK_SUPPORTED_PACKAGE_NAME, /* enabled= */ false)).isNull();
+            }
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(apis = {"android.content.pm.PackageManager#getEnableAppLockIntentForPackage"})
+    public void testGetEnableAppLockIntentForPackage_exemptPackage_returnsNull() throws
+            Exception {
+        final ResolveInfo resolveInfo = mPackageManager.resolveActivity(
+                new Intent(Settings.ACTION_SETTINGS), PackageManager.ResolveInfoFlags.of(0));
+        assertThat(resolveInfo).isNotNull();
+
+        final String settingsPackageName = resolveInfo.activityInfo.packageName;
+        assertThat(settingsPackageName).isNotNull();
+
+        try (AutoCloseable homeRole = setHomeRoleHolderScoped(mContext)) {
+            assertThat(hasLockAppsPermission(mContext)).isTrue();
+
+            assertThat(mPackageManager.getEnableAppLockIntentForPackage(settingsPackageName,
+                    /* enabled= */ true)).isNull();
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(apis = {"android.content.pm.PackageManager#getEnableAppLockIntentForPackage"})
+    public void testGetEnableAppLockIntentForPackage_supervisedUser_returnsNull() throws
+            Exception {
+        try (AutoCloseable roleContext = setHomeRoleHolderScoped(mContext)) {
+            try (ScopedSupervisedUser supervisedUser = createSupervisedUserScoped(mContext)) {
+                try (AutoCloseable targetApp = installPackageScoped(
+                        APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME)) {
+
+                    assertThat(mPackageManager.getEnableAppLockIntentForPackage(
+                            APP_LOCK_SUPPORTED_PACKAGE_NAME, /* enabled= */ true)).isNull();
+                }
+            }
         }
     }
 }
