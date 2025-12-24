@@ -87,8 +87,6 @@ public class AudioDescriptorActivity extends PassFailButtons.Activity {
     private CheckBox mClaimsHDMICheckBox;
     private TextView mHDMISupportLbl;
 
-    private OnBtnClickListener mClickListener = new OnBtnClickListener();
-
     TextView mTestStatusLbl;
 
     boolean mIsValidHal;
@@ -115,13 +113,14 @@ public class AudioDescriptorActivity extends PassFailButtons.Activity {
         });
 
         mClaimsHDMICheckBox = (CheckBox) findViewById(R.id.audioDescriptorHasHDMICheckBox);
-        mClaimsHDMICheckBox.setOnClickListener(mClickListener);
+        mClaimsHDMICheckBox.setEnabled(false);
         mHDMISupportLbl = (TextView) findViewById(R.id.audioDescriptorHDMISupportLbl);
         mTestStatusLbl = (TextView) findViewById(R.id.audioDescriptorTestStatusLbl);
 
         setInfoResources(R.string.audio_descriptor_test, R.string.audio_descriptor_test_info, -1);
         setPassFailButtonClickListeners();
         clearTestResult();
+        detectHDMISupport();
     }
 
     @Override
@@ -200,59 +199,55 @@ public class AudioDescriptorActivity extends PassFailButtons.Activity {
         }
     }
 
+    private void detectHDMISupport() {
+        final Set<Integer> supportedOutputDeviceTypes =
+                mAudioManager.getSupportedDeviceTypes(AudioManager.GET_DEVICES_OUTPUTS);
+        final boolean hasHDMISupport =
+                supportedOutputDeviceTypes.contains(AudioDeviceInfo.TYPE_HDMI)
+                        || supportedOutputDeviceTypes.contains(AudioDeviceInfo.TYPE_HDMI_ARC)
+                        || supportedOutputDeviceTypes.contains(AudioDeviceInfo.TYPE_HDMI_EARC);
+        mClaimsHDMI = hasHDMISupport;
+        mClaimsHDMICheckBox.setChecked(hasHDMISupport);
+    }
+
     private void detectHDMIDevice() {
+        if (!mClaimsHDMI) {
+            mHDMISupportLbl.setText(R.string.audio_descriptor_hdmi_NA);
+            return;
+        }
         mHDMIDeviceInfo = null;
-        AudioDeviceInfo[] deviceInfos = mAudioManager.getDevices(AudioManager.GET_DEVICES_ALL);
+        AudioDeviceInfo[] deviceInfos = mAudioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
         for (AudioDeviceInfo deviceInfo : deviceInfos) {
             Log.i(TAG, "  " + deviceInfo.getProductName() + " type:" + deviceInfo.getType());
-            if (deviceInfo.isSink() && (deviceInfo.getType() == AudioDeviceInfo.TYPE_HDMI ||
-                    deviceInfo.getType() == AudioDeviceInfo.TYPE_HDMI_ARC ||
-                    deviceInfo.getType() == AudioDeviceInfo.TYPE_HDMI_EARC)) {
+            if (deviceInfo.getType() == AudioDeviceInfo.TYPE_HDMI
+                    || deviceInfo.getType() == AudioDeviceInfo.TYPE_HDMI_ARC
+                    || deviceInfo.getType() == AudioDeviceInfo.TYPE_HDMI_EARC) {
                 mHDMIDeviceInfo = deviceInfo;
                 break;
             }
         }
 
-        if (mHDMIDeviceInfo != null) {
-            mClaimsHDMICheckBox.setChecked(true);
-            mClaimsHDMI = true;
-        }
-        if (mClaimsHDMI) {
-            mHDMISupportLbl.setText(
-                    mHDMIDeviceInfo == null ? R.string.audio_descriptor_hdmi_pending
-                                            : R.string.audio_descriptor_hdmi_connected);
+        if (mHDMIDeviceInfo == null) {
+            mHDMISupportLbl.setText(R.string.audio_descriptor_hdmi_pending);
         } else {
-            mHDMISupportLbl.setText(R.string.audio_descriptor_hdmi_NA);
+            mHDMISupportLbl.setText(R.string.audio_descriptor_hdmi_connected);
+            clearTestResult();
         }
     }
 
-    private class OnBtnClickListener implements OnClickListener {
-        @Override
-        public void onClick(View v) {
-            int id = v.getId();
-            if (id == R.id.audioDescriptorHasHDMICheckBox) {
-                Log.i(TAG, "HDMI check box is clicked");
-                if (mClaimsHDMICheckBox.isChecked()) {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(
-                            v.getContext(), android.R.style.Theme_Material_Dialog_Alert);
-                    builder.setTitle(R.string.audio_descriptor_hdmi_info_title);
-                    builder.setMessage(R.string.audio_descriptor_hdmi_message);
-                    builder.setPositiveButton(android.R.string.ok,
-                            new DialogInterface.OnClickListener() {
-                                public void onClick(DialogInterface dialog, int which) {
-                                }
-                            });
-                    builder.setIcon(android.R.drawable.ic_dialog_alert);
-                    builder.show();
-
-                    mClaimsHDMI = true;
-                } else {
-                    mClaimsHDMI = false;
-                }
-                detectHDMIDevice();
-                clearTestResult();
-            }
-        }
+    private void showHDMIConnectionRequiredDialog() {
+        AlertDialog.Builder builder =
+                new AlertDialog.Builder(
+                        mHDMISupportLbl.getContext(), android.R.style.Theme_Material_Dialog_Alert);
+        builder.setTitle(R.string.audio_descriptor_hdmi_info_title);
+        builder.setMessage(R.string.audio_descriptor_hdmi_message);
+        builder.setPositiveButton(
+                android.R.string.ok,
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {}
+                });
+        builder.setIcon(android.R.drawable.ic_dialog_alert);
+        builder.show();
     }
 
     private void displayTestResult() {
@@ -377,6 +372,7 @@ public class AudioDescriptorActivity extends PassFailButtons.Activity {
         if (mClaimsHDMI && mHDMIDeviceInfo == null) {
             // Do not run the test if the HDMI is claimed but not connected.
             mTestStatusLbl.setText(R.string.audio_descriptor_hdmi_claimed_but_not_connected);
+            showHDMIConnectionRequiredDialog();
             return;
         }
         detectHalVersion();
