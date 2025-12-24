@@ -136,6 +136,7 @@ public abstract class CodecTestBase {
             SystemProperties.getInt("ro.board.api_level", Build.VERSION_CODES.CUR_DEVELOPMENT);
     public static final int VNDK_VERSION =
             SystemProperties.getInt("ro.vndk.version", BOARD_API_LEVEL);
+    public static final int VENDOR_API_LEVEL = SystemProperties.getInt("ro.vendor.api_level", 0);
     public static final boolean VNDK_IS_AT_LEAST_T = VNDK_VERSION >= Build.VERSION_CODES.TIRAMISU;
     public static final boolean VNDK_IS_AT_LEAST_U =
             VNDK_VERSION >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
@@ -159,9 +160,11 @@ public abstract class CodecTestBase {
     // needs to use default of 0 to ensure that this does't get treated as >= 202404 on those
     // builds.
     public static final boolean BOARD_FIRST_SDK_IS_AT_LEAST_202404 =
-            SystemProperties.getInt("ro.vendor.api_level", 0) >= ANDROID_VENDOR_API_202404;
+            VENDOR_API_LEVEL >= ANDROID_VENDOR_API_202404;
     public static final boolean BOARD_FIRST_SDK_IS_AT_LEAST_202504 =
-            SystemProperties.getInt("ro.vendor.api_level", 0) >= ANDROID_VENDOR_API_202504;
+            VENDOR_API_LEVEL >= ANDROID_VENDOR_API_202504;
+    public static final boolean BOARD_FIRST_SDK_IS_AFTER_202504 =
+            VENDOR_API_LEVEL > ANDROID_VENDOR_API_202504;
     public static final boolean IS_HDR_EDITING_SUPPORTED;
     public static final boolean IS_HLG_EDITING_SUPPORTED;
     public static final boolean IS_HDR_CAPTURE_SUPPORTED;
