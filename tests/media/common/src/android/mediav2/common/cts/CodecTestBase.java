@@ -201,8 +201,6 @@ public abstract class CodecTestBase {
     // max poll counter before test aborts and returns error
     public static final int RETRY_LIMIT = 100;
     public static final String INVALID_CODEC = "unknown.codec_";
-    public static final String MIMETYPE_VIDEO_VC1 = "video/wvc1";
-    public static final String MIMETYPE_VIDEO_WMV = "video/x-ms-wmv";
     // Arrays,
     // <MEDIATYPE>_PROFILES contains all profiles of that media type
     // <MEDIATYPE>_SDR_PROFILES contains all sdr profiles of that media type
@@ -572,6 +570,24 @@ public abstract class CodecTestBase {
     public static boolean isMediaTypeLossless(String mediaType) {
         if (mediaType.equals(MediaFormat.MIMETYPE_AUDIO_FLAC)) return true;
         if (mediaType.equals(MediaFormat.MIMETYPE_AUDIO_RAW)) return true;
+        return false;
+    }
+
+    // this list comprises of coding technologies that are part of android eco system
+    public static boolean isVideoCodingTechnology2003OrLater(String mediaType) {
+        if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG2)) return false;
+        if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG4)) return false;
+        if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_H263)) return false;
+        if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_AVC)) return true;
+        if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_VP8)) return true;
+        if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_HEVC)) return true;
+        if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_VP9)) return true;
+        if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_AV1)) return true;
+        if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_APV)) return true;
+        if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION)) return true;
+        if (IS_AFTER_B && vvcSupport()) {
+            if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_VVC)) return true;
+        }
         return false;
     }
 
