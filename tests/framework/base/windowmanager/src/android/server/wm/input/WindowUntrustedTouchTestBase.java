@@ -474,9 +474,10 @@ public abstract class WindowUntrustedTouchTestBase {
         String packageName = component.getPackageName();
         String activity = ComponentNameUtils.getActivityName(component);
         if (!mWmState.waitFor("activity window " + activity,
-                state -> activity.equals(state.getFocusedActivity())
-                        && state.hasActivityState(component, STATE_RESUMED)
-                        && state.isWindowSurfaceShown(activity))) {
+                state ->
+                        activity.equals(state.getFocusedActivityOnDisplay(mActivityDisplayId))
+                                && state.hasActivityState(component, STATE_RESUMED)
+                                && state.isWindowSurfaceShown(activity))) {
             fail("Activity from app " + packageName + " did not appear on time");
         }
 
@@ -512,7 +513,7 @@ public abstract class WindowUntrustedTouchTestBase {
         if (!mWmState.waitFor(
                 "test rule activity focused",
                 state ->
-                        name.equals(state.getFocusedActivity())
+                        name.equals(state.getFocusedActivityOnDisplay(mActivityDisplayId))
                                 && state.hasActivityState(component, STATE_RESUMED))) {
             fail(message);
         }
