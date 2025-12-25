@@ -80,7 +80,7 @@ public class ShadowCallLogTest extends BaseHostJUnit4Test {
 
             Log.i(TAG, "Rebooting device");
             // Reboot system into known state with keys ejected
-            getDevice().rebootUntilOnline();
+            getDevice().reboot();
             waitForBootCompleted(getDevice());
 
             assertTrue(runDeviceTests(PKG, CLASS, "testShadowCallComposerPicture"));
@@ -96,8 +96,7 @@ public class ShadowCallLogTest extends BaseHostJUnit4Test {
                 getDevice().uninstallPackage(PKG);
 
                 // Get ourselves back into a known-good state
-                getDevice().rebootUntilOnline();
-                getDevice().waitForDeviceAvailable();
+                getDevice().reboot();
             }
         }
     }
