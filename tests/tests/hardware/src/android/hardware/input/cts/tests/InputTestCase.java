@@ -259,7 +259,13 @@ public abstract class InputTestCase {
      */
     protected void assertNoMoreEvents() {
         mInstrumentation.waitForIdleSync();
-        InputEvent event = mEvents.poll();
+        final InputEvent event;
+        try {
+            event = mEvents.poll(100, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            failWithMessage("unexpectedly interrupted while waiting for InputEvent");
+            return;
+        }
         if (event == null) {
             return;
         }
