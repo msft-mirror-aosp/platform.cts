@@ -643,7 +643,7 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
     @Test
     public void testStackFocusSwitchOnTouchEventAfterKeyguard() {
         assumeFalse(perDisplayFocusEnabled());
-        assumeTrue(supportsLockScreen());
+        assumeTrue(supportsSecureLock());
 
         final int mainDisplayId = getMainDisplayId();
 
@@ -652,8 +652,8 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
         waitAndAssertResumedAndFocusedActivityOnDisplay(RESIZEABLE_ACTIVITY, mainDisplayId,
                 "Activity launched on primary display must be resumed");
 
-        final LockScreenSession lockScreenSession = createManagedLockScreenSession();
-        lockScreenSession.sleepDevice();
+        final LockScreenSession lockScreenSession =
+                createManagedLockScreenSession().setLockCredential().gotoKeyguard().sleepDevice();
 
         // Make sure there is no resumed activity when the primary display is off
         waitAndAssertActivityState(RESIZEABLE_ACTIVITY, STATE_STOPPED,
@@ -669,9 +669,8 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
         launchActivityOnDisplay(TEST_ACTIVITY, newDisplay.mId);
 
         // Unlock the device and tap on the middle of the primary display
-        lockScreenSession.wakeUpDevice();
-        executeShellCommand("wm dismiss-keyguard");
-        mWmState.waitForKeyguardGone();
+        lockScreenSession.wakeUpDevice().unlockDevice().enterAndConfirmLockCredential();
+        mWmState.waitAndAssertKeyguardGone();
         mWmState.waitForValidState(RESIZEABLE_ACTIVITY, TEST_ACTIVITY);
 
         // Check that the test activity is resumed on the external display and is on top
