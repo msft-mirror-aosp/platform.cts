@@ -57,7 +57,7 @@ class GeneratedPreviewsTest : BaseHostJUnit4Test() {
         assertThat(setResult).isTrue()
 
         // Reboot
-        device.rebootUntilOnline()
+        device.reboot()
         device.waitForBootComplete(60_000L)
         device.startUser(user, true)
 
