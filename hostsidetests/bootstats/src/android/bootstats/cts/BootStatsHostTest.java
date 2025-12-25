@@ -64,7 +64,7 @@ public class BootStatsHostTest implements IDeviceTest {
         getDevice().executeShellCommand("logcat --buffer=events --clear");
 
         // reboot device
-        getDevice().rebootUntilOnline();
+        getDevice().reboot();
 
         LinkedList<String> expectedAtomHeaders = new LinkedList<>();
         // example format: Atom 239->(total count)5, (error count)0
@@ -124,7 +124,7 @@ public class BootStatsHostTest implements IDeviceTest {
         getDevice().executeShellCommand("logcat --buffer=events --clear");
 
         // reboot device
-        getDevice().rebootUntilOnline();
+        getDevice().reboot();
         waitForBootCompleted();
         int upperBoundMilliseconds = (int) (System.currentTimeMillis() - startTime);
 
