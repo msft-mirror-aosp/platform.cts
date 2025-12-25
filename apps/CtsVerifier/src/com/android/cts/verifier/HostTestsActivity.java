@@ -61,6 +61,7 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
     // Add module categories
     private static final HostTestCategory[] HOST_TEST_CATEGORIES = {
         // Multi-device Modules
+        new HostTestCategory("Multidevice Tests"),
         new HostTestCategory("CompanionDeviceManager Tests")
                 .addTest(
                         "CtsCompanionDeviceManagerMultiDeviceTestCases",
@@ -76,6 +77,7 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
                 .addTest("CtsWifiSoftApTestCases", "CtsWifiSoftApTestCases")
                 .addTest("CtsWifiDirectTests", "CtsWifiDirectTests"),
         // Interactive Modules
+        new HostTestCategory("Interactive Tests"),
         new HostTestCategory("Notification Tests")
                 .addTest(
                         "CtsNotificationSizeVerifierHostTest",
