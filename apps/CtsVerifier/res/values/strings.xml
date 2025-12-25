@@ -7978,6 +7978,8 @@ You should be prompted to select credentials; choose the ones you just installed
         <item>CtsWifiAwareTests</item>
         <item>CtsWifiSoftApTestCases</item>
         <item>CtsWifiDirectTests</item>
+        <item>CtsWifiUsdTests</item>
+        <item>CtsWifiPermissionTests</item>
         <!-- Interactive modules -->
         <item>CtsNotificationSizeVerifierHostTest</item>
     </string-array>

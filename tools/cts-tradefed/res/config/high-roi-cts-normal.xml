@@ -218,13 +218,6 @@
     <!-- CtsAppFunctionTestCases -->
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionInteractionHistoryTest#executeAppFunctionInDifferentUser_shouldCreateInteractionHistoryInTargetUser"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionInteractionHistoryTest#executeAppFunction_shouldCreateInteractionHistoryInCurrentUser[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerAccessEnabledTest#executeAppFunctionWithPermissionAndAccess_processStateIsBfgs[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerAccessEnabledTest#executeAppFunction_crossUser_targetWorkProfile_fail[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerAccessEnabledTest#executeAppFunction_deviceOwnerRestricted_fail[IncludeRunOnProfileOwnerPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerAccessEnabledTest#executeAppFunction_deviceOwnerRestricted_fail[IncludeRunOnSystemDeviceOwnerUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerAccessEnabledTest#executeAppFunction_deviceOwnerRestricted_fail[Permission_MANAGE_DEVICE_POLICY_APP_FUNCTIONS]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerAccessEnabledTest#executeAppFunction_onRemoteProcessKilled[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerAccessEnabledTest#setAppFunctionEnabled_functionDefaultDisabled[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerTest#checkManagerNotNull[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerTest#executeAppFunctionWithoutPermission_processStateIsNotBfgs[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerTest#executeAppFunction_cancellationSignal_cancellationTimedOut_unbind[IncludeRunOnPrimaryUser]"/>
@@ -277,10 +270,6 @@
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.SidecarManagerTest#executeAppFunction_cancellationSignalReceived_unbind[IncludeRunOnPrimaryUser]"/>
     <!-- CtsAppFunctionTestCases[run-on-secondary-user] -->
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.AppFunctionInteractionHistoryTest#executeAppFunction_shouldCreateInteractionHistoryInCurrentUser[IncludeRunOnSecondaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.AppFunctionManagerAccessEnabledTest#executeAppFunction_deviceOwnerRestricted_fail[IncludeRunOnUnaffiliatedProfileOwnerAdditionalUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.AppFunctionManagerAccessEnabledTest#executeAppFunction_deviceOwnerUnrestricted_success[IncludeRunOnSecondaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.AppFunctionManagerAccessEnabledTest#executeAppFunction_disabledByDefault_fail[IncludeRunOnSecondaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.AppFunctionManagerAccessEnabledTest#executeAppFunction_onRemoteProcessKilled[IncludeRunOnSecondaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.AppFunctionManagerTest#executeAppFunction_crossUser_targetWorkProfileUnrestricted_success[IncludeRunOnSecondaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.AppFunctionManagerTest#executeAppFunction_onRemoteProcessKilled[IncludeRunOnSecondaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.AppFunctionManagerTest#onPackageDataCleared_disabledByDefault_enabledInRuntime_restoredToDefault[IncludeRunOnSecondaryUser]"/>
@@ -322,7 +311,6 @@
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.SearchAppFunctionsTest#searchAppFunctions_withoutExecuteAppFunctionPermission_shouldOnlySeeSelfFunctions[IncludeRunOnSecondaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.SidecarManagerTest#executeAppFunction_cancellationSignalReceived_unbind[IncludeRunOnSecondaryUser]"/>
     <!-- CtsAppFunctionTestCases[run-on-work-profile] -->
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-work-profile] android.app.appfunctions.cts.AppFunctionManagerAccessEnabledTest#executeAppFunction_runInManagedProfile_fail"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-work-profile] android.app.appfunctions.cts.AppFunctionManagerTest#executeAppFunction_crossUser_targetWorkProfileRestricted_fail[IncludeRunOnProfileOwnerProfileWithNoDeviceOwner]"/>
     <!-- CtsAppInteractionTestCases -->
     <option name="compatibility:include-filter" value="CtsAppInteractionTestCases android.app.cts.AppInteractionAttributionTest#buildFromParcelWithInvalidInteractionType_shouldFail"/>

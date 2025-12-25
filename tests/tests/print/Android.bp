@@ -29,6 +29,7 @@ android_test {
     static_libs: [
         "print-test-util-lib",
         "flag-junit",
+        "android.print.flags-aconfig-java",
         "printspooler_aconfig_flags_java_lib",
     ],
     sdk_version: "test_current",

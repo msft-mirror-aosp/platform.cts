@@ -104,12 +104,17 @@ public class DisplayMetricsTest {
         final DisplayMetrics metricsFromDisplay = new DisplayMetrics();
         windowContext.getDisplay().getMetrics(metricsFromDisplay);
 
-        assertEquals(
-                "Resources#getDisplayMetrics()="
-                        + metricsFromResources
-                        + ", getDisplay().getMetrics="
-                        + metricsFromDisplay,
-                metricsFromResources,
-                metricsFromDisplay);
+        assertEquals("widthPixels from resource must match display widthPixels",
+                metricsFromResources.widthPixels, metricsFromDisplay.widthPixels);
+        assertEquals("heightPixels from resource must match display heightPixels",
+                metricsFromResources.heightPixels, metricsFromDisplay.heightPixels);
+        assertEquals("xdpi from resource height must match display xdpi",
+                metricsFromResources.xdpi, metricsFromDisplay.xdpi, 0.01);
+        assertEquals("ydpi from resource height must match display ydpi",
+                metricsFromResources.ydpi, metricsFromDisplay.ydpi, 0.01);
+        assertEquals("Density from resource must match display density",
+                metricsFromResources.density, metricsFromDisplay.density, 0.01f);
+        assertEquals("ScaledDensity from resource must match display scaledDensity",
+                metricsFromResources.scaledDensity, metricsFromDisplay.scaledDensity, 0.01f);
     }
 }

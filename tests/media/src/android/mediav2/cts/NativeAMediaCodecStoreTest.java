@@ -32,6 +32,7 @@ import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.Preconditions;
 
 import org.junit.Assert;
@@ -55,6 +56,7 @@ import java.util.stream.Stream;
  */
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
 @SmallTest
+@FrameworkSpecificTest
 @RunWith(AndroidJUnit4.class)
 public class NativeAMediaCodecStoreTest {
     private static final String LOG_TAG = NativeAMediaCodecStoreTest.class.getSimpleName();

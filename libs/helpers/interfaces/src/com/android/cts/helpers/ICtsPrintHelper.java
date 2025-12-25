@@ -38,12 +38,29 @@ public interface ICtsPrintHelper extends ICtsDeviceInteractionHelper {
     /**
      * Check if the print job can be submitted.
      *
-     * <p>A print job can be submitted when a valid printer is selected and all of the options
-     * contain valid values.
+     * <p>A print job can be submitted when a valid printer is selected, all of the options contain
+     * valid values, and no setup is required.
      *
      * @return true if the print button is enabled, false if not.
      */
     boolean canSubmitJob();
+
+    /**
+     * Check if the selected printer needs setup.
+     *
+     * <p>If the selected printer has a setup Intent attached, it requires setup before printing
+     * will be enabled.
+     *
+     * @return true if the current printer requires setup, false if not.
+     */
+    boolean printerNeedsSetup();
+
+    /**
+     * Trigger printer setup activity.
+     *
+     * <p>If the selected printer requires setup, trigger the setup screen.
+     */
+    void triggerPrinterSetup();
 
     /**
      * Respond to the first-time dialog when printing to a new service.

@@ -40,7 +40,7 @@ specs {
   key: 33
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_13
-    specification: "same"
+    specification: "MUST have screen resolution of at least 1080p."
     required_values {
       key: "long_resolution_pixels"
       value {
@@ -59,7 +59,7 @@ specs {
   key: 34
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_14
-    specification: "same"
+    specification: "MUST have screen resolution of at least 1080p."
     required_values {
       key: "long_resolution_pixels"
       value {
@@ -78,7 +78,7 @@ specs {
   key: 35
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
-    specification: "same"
+    specification: "MUST have screen resolution of at least 1080p."
     required_values {
       key: "long_resolution_pixels"
       value {

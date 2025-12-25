@@ -22,8 +22,8 @@ specs {
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_13
     specification:
-      "MUST support CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION for "
-      "the primary back camera."
+      "MUST support `CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION` "
+      "for the primary back camera."
     required_values {
       key: "rear_camera_preview_stabilization_supported"
       value {

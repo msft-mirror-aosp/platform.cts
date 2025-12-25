@@ -40,6 +40,9 @@ import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.Icon;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.print.PrintAttributes;
 import android.print.PrintAttributes.Margins;
 import android.print.PrintAttributes.MediaSize;
@@ -49,6 +52,7 @@ import android.print.PrintManager;
 import android.print.PrinterCapabilitiesInfo;
 import android.print.PrinterId;
 import android.print.PrinterInfo;
+import android.print.flags.Flags;
 import android.print.test.BasePrintTest;
 import android.print.test.services.FirstPrintService;
 import android.print.test.services.InfoActivity;
@@ -60,12 +64,14 @@ import android.print.test.services.StubbablePrinterDiscoverySession;
 import android.printservice.CustomPrinterIconCallback;
 import android.printservice.PrintJob;
 import android.printservice.PrintService;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -78,6 +84,7 @@ import java.util.List;
 @Presubmit
 @RunWith(AndroidJUnit4.class)
 public class PrintServicesTest extends BasePrintTest {
+    private static final String LOG_TAG = "PrintServicesTest";
     private static String sPreviousEnabledServices;
 
     @BeforeClass
@@ -89,6 +96,9 @@ public class PrintServicesTest extends BasePrintTest {
     public static void reenablePrintServices() throws Exception {
         enablePrintServices(sPreviousEnabledServices);
     }
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String PRINTER_NAME = "Test printer";
 
@@ -582,7 +592,7 @@ public class PrintServicesTest extends BasePrintTest {
     }
 
     /**
-     * Test that the icon get be updated.
+     * Test that the printer can be selected by clicking the info icon.
      *
      * @throws Throwable If anything is unexpected.
      */
@@ -706,6 +716,157 @@ public class PrintServicesTest extends BasePrintTest {
         }
 
         mPrintHelper.cancelPrinting();
+        waitForPrinterDiscoverySessionDestroyCallbackCalled(1);
+    }
+
+    /**
+     * Test that a printer with a setup activity shows setup instead of printing.
+     *
+     * @throws Throwable If anything is unexpected.
+     */
+    @Test
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ENABLE_SETUP_ACTIVITY,
+        com.android.printspooler.flags.Flags.FLAG_UPDATED_BUTTON_LAYOUT
+    })
+    public void setupActivityBlocksPrinting() throws Throwable {
+        ArrayList<String> trackedPrinters = new ArrayList<>();
+
+        // Create the session callbacks that we will be checking.
+        final PrinterDiscoverySessionCallbacks sessionCallbacks =
+                createMockPrinterDiscoverySessionCallbacks(
+                        invocation -> {
+                            // Get the session.
+                            StubbablePrinterDiscoverySession session =
+                                    ((PrinterDiscoverySessionCallbacks) invocation.getMock())
+                                            .getSession();
+
+                            Intent setupIntent = new Intent(getActivity(), InfoActivity.class);
+                            setupIntent.putExtra("PRINTER_NAME", PRINTER_NAME);
+                            PendingIntent setupPendingIntent =
+                                    PendingIntent.getActivity(
+                                            getActivity(),
+                                            0,
+                                            setupIntent,
+                                            PendingIntent.FLAG_UPDATE_CURRENT
+                                                    | PendingIntent.FLAG_IMMUTABLE);
+
+                            PrinterId printerId =
+                                    session.getService().generatePrinterId(PRINTER_NAME);
+                            sPrinter =
+                                    new PrinterInfo.Builder(
+                                                    printerId,
+                                                    PRINTER_NAME,
+                                                    PrinterInfo.STATUS_IDLE)
+                                            .setSetupIntent(setupPendingIntent)
+                                            .setCapabilities(
+                                                    getDefaultOptionPrinterCapabilites(printerId))
+                                            .build();
+
+                            List<PrinterInfo> printers = new ArrayList<>();
+                            printers.add(sPrinter);
+                            session.addPrinters(printers);
+
+                            onPrinterDiscoverySessionCreateCalled();
+
+                            return null;
+                        },
+                        null,
+                        null,
+                        invocation -> {
+                            synchronized (trackedPrinters) {
+                                trackedPrinters.add(
+                                        ((PrinterId) invocation.getArguments()[0]).getLocalId());
+                                trackedPrinters.notifyAll();
+                            }
+
+                            return null;
+                        },
+                        null,
+                        invocation -> {
+                            synchronized (trackedPrinters) {
+                                trackedPrinters.remove(
+                                        ((PrinterId) invocation.getArguments()[0]).getLocalId());
+                                trackedPrinters.notifyAll();
+                            }
+
+                            return null;
+                        },
+                        invocation -> {
+                            onPrinterDiscoverySessionDestroyCalled();
+                            return null;
+                        });
+
+        // Create the service callbacks for the first print service.
+        PrintServiceCallbacks serviceCallbacks =
+                createMockPrinterServiceCallbacks(sessionCallbacks);
+
+        // Configure the print services.
+        FirstPrintService.setCallbacks(serviceCallbacks);
+
+        // We don't use the second service, but we have to still configure it
+        SecondPrintService.setCallbacks(createMockPrintServiceCallbacks(null, null, null));
+
+        // Create a print adapter that respects the print contract.
+        PrintDocumentAdapter adapter = createDefaultPrintDocumentAdapter(1);
+
+        // Start printing.
+        print(adapter);
+
+        // Wait for write of the first page.
+        waitForWriteAdapterCallback(1);
+
+        // Select the printer.
+        selectPrinter(PRINTER_NAME);
+
+        assertFalse(mPrintHelper.canSubmitJob());
+        assertTrue(mPrintHelper.printerNeedsSetup());
+
+        InfoActivity.addObserver(
+                activity -> {
+                    Log.d(LOG_TAG, "Started InfoActivity");
+                    Intent intent = activity.getIntent();
+
+                    assertEquals(PRINTER_NAME, intent.getStringExtra("PRINTER_NAME"));
+                    Log.d(LOG_TAG, "Printer: " + PRINTER_NAME);
+
+                    try {
+                        PrinterId printerId = sPrinter.getId();
+                        PrinterInfo printer =
+                                new PrinterInfo.Builder(sPrinter)
+                                        .setSetupIntent(null)
+                                        .setCapabilities(
+                                                getDefaultOptionPrinterCapabilites(printerId))
+                                        .build();
+                        Log.d(LOG_TAG, "Removing setup intent");
+                        List<PrinterInfo> printers = new ArrayList<>();
+                        printers.add(printer);
+                        sessionCallbacks.getSession().addPrinters(printers);
+                        sPrinter = printer;
+                        Log.d(LOG_TAG, "Updated printer");
+                    } catch (Throwable t) {
+                        Log.e(LOG_TAG, "Error updating printer: " + t);
+                    }
+
+                    activity.setResult(
+                            Activity.RESULT_OK,
+                            (new Intent()).putExtra(PrintService.EXTRA_SELECT_PRINTER, true));
+                    activity.finish();
+                });
+
+        mPrintHelper.triggerPrinterSetup();
+
+        try {
+            eventually(
+                    () -> {
+                        assertTrue(mPrintHelper.canSubmitJob());
+                    },
+                    OPERATION_TIMEOUT_MILLIS);
+        } finally {
+            InfoActivity.clearObservers();
+        }
+
+        mPrintHelper.submitPrintJob();
         waitForPrinterDiscoverySessionDestroyCallbackCalled(1);
     }
 }

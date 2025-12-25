@@ -54,10 +54,11 @@ specs {
     mpc: MEDIA_PERFORMANCE_CLASS_12
     specification:
       "MUST have a codec initialization latency of 50 ms or less for a 1080p "
-      "or smaller video encoding session for all hardware video encoders when "
-      "under load. Load here is defined as a concurrent 1080p to 720p "
-      "video-only transcoding session using hardware video codecs together "
-      "with the 1080p audio-video recording initialization."
+      "or smaller video encoding session for all hardware video encoders "
+      "(other than Dolby vision codec) when under load. Load here is defined "
+      "as a concurrent 1080p to 720p video-only transcoding session using "
+      "hardware video codecs together with the 1080p audio-video recording "
+      "initialization."
     required_values {
       key: "codec_initialization_latency_ms"
       value {
@@ -86,7 +87,8 @@ specs {
       "or smaller video encoding session for all hardware video encoders when "
       "under load. Load here is defined as a concurrent 1080p to 720p "
       "video-only transcoding session using hardware video codecs together "
-      "with the 1080p audio-video recording initialization."
+      "with the 1080p audio-video recording initialization. For Dolby vision "
+      "codec, the codec initialization latency MUST be 50 ms or less."
     required_values {
       key: "codec_initialization_latency_ms"
       value {
