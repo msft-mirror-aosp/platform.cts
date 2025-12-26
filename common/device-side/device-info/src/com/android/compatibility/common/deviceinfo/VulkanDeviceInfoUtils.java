@@ -150,7 +150,9 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_COOPERATIVE_VECTOR_TRAINING_FLOAT_16_ACCUMULATION = "cooperativeVectorTrainingFloat16Accumulation";
     public static final String KEY_COOPERATIVE_VECTOR_TRAINING_FLOAT_32_ACCUMULATION = "cooperativeVectorTrainingFloat32Accumulation";
     public static final String KEY_COPY_DST_LAYOUT_COUNT = "copyDstLayoutCount";
+    public static final String KEY_COPY_MEMORY_INDIRECT_FEATURES_KHR = "copyMemoryIndirectFeaturesKHR";
     public static final String KEY_COPY_MEMORY_INDIRECT_FEATURES_NV = "copyMemoryIndirectFeaturesNV";
+    public static final String KEY_COPY_MEMORY_INDIRECT_PROPERTIES_KHR = "copyMemoryIndirectPropertiesKHR";
     public static final String KEY_COPY_MEMORY_INDIRECT_PROPERTIES_NV = "copyMemoryIndirectPropertiesNV";
     public static final String KEY_COPY_SRC_LAYOUT_COUNT = "copySrcLayoutCount";
     public static final String KEY_CORE11 = "core11";
@@ -169,6 +171,16 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_CUSTOM_BORDER_COLOR_FEATURES_EXT = "customBorderColorFeaturesEXT";
     public static final String KEY_CUSTOM_BORDER_COLOR_PROPERTIES_EXT = "customBorderColorPropertiesEXT";
     public static final String KEY_CUSTOM_BORDER_COLOR_WITHOUT_FORMAT = "customBorderColorWithoutFormat";
+    public static final String KEY_CUSTOM_RESOLVE = "customResolve";
+    public static final String KEY_CUSTOM_RESOLVE_FEATURES_EXT = "customResolveFeaturesEXT";
+    public static final String KEY_DATA_GRAPH = "dataGraph";
+    public static final String KEY_DATA_GRAPH_DESCRIPTOR_BUFFER = "dataGraphDescriptorBuffer";
+    public static final String KEY_DATA_GRAPH_FEATURES_ARM = "dataGraphFeaturesARM";
+    public static final String KEY_DATA_GRAPH_MODEL = "dataGraphModel";
+    public static final String KEY_DATA_GRAPH_MODEL_FEATURES_QCOM = "dataGraphModelFeaturesQCOM";
+    public static final String KEY_DATA_GRAPH_SHADER_MODULE = "dataGraphShaderModule";
+    public static final String KEY_DATA_GRAPH_SPECIALIZATION_CONSTANTS = "dataGraphSpecializationConstants";
+    public static final String KEY_DATA_GRAPH_UPDATE_AFTER_BIND = "dataGraphUpdateAfterBind";
     public static final String KEY_DECODE_MODE_SHARED_EXPONENT = "decodeModeSharedExponent";
     public static final String KEY_DECOMPRESSION_METHODS = "decompressionMethods";
     public static final String KEY_DEDICATED_ALLOCATION_IMAGE_ALIASING = "dedicatedAllocationImageAliasing";
@@ -381,6 +393,9 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_FRAGMENT_DENSITY_MAP_DEFERRED = "fragmentDensityMapDeferred";
     public static final String KEY_FRAGMENT_DENSITY_MAP_DYNAMIC = "fragmentDensityMapDynamic";
     public static final String KEY_FRAGMENT_DENSITY_MAP_FEATURES_EXT = "fragmentDensityMapFeaturesEXT";
+    public static final String KEY_FRAGMENT_DENSITY_MAP_LAYERED = "fragmentDensityMapLayered";
+    public static final String KEY_FRAGMENT_DENSITY_MAP_LAYERED_FEATURES_VALVE = "fragmentDensityMapLayeredFeaturesVALVE";
+    public static final String KEY_FRAGMENT_DENSITY_MAP_LAYERED_PROPERTIES_VALVE = "fragmentDensityMapLayeredPropertiesVALVE";
     public static final String KEY_FRAGMENT_DENSITY_MAP_NON_SUBSAMPLED_IMAGES = "fragmentDensityMapNonSubsampledImages";
     public static final String KEY_FRAGMENT_DENSITY_MAP_OFFSET = "fragmentDensityMapOffset";
     public static final String KEY_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_EXT = "fragmentDensityMapOffsetFeaturesEXT";
@@ -449,6 +464,7 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_HOST_QUERY_RESET_FEATURES = "hostQueryResetFeatures";
     public static final String KEY_HOST_QUERY_RESET_FEATURES_EXT = "hostQueryResetFeaturesEXT";
     public static final String KEY_IDENTICAL_MEMORY_TYPE_REQUIREMENTS = "identicalMemoryTypeRequirements";
+    public static final String KEY_IDENTITY_TRANSFORM_ORDER = "identityTransformOrder";
     public static final String KEY_ID_PROPERTIES = "idProperties";
     public static final String KEY_ID_PROPERTIES_KHR = "IDPropertiesKHR";
     public static final String KEY_IMAGELESS_FRAMEBUFFER = "imagelessFramebuffer";
@@ -488,6 +504,8 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_INDEX_TYPE_UINT_8_FEATURES = "indexTypeUint8Features";
     public static final String KEY_INDIRECT_BUFFER_OFFSET_ALIGNMENT = "indirectBufferOffsetAlignment";
     public static final String KEY_INDIRECT_COPY = "indirectCopy";
+    public static final String KEY_INDIRECT_MEMORY_COPY = "indirectMemoryCopy";
+    public static final String KEY_INDIRECT_MEMORY_TO_IMAGE_COPY = "indirectMemoryToImageCopy";
     public static final String KEY_INHERITED_CONDITIONAL_RENDERING = "inheritedConditionalRendering";
     public static final String KEY_INHERITED_QUERIES = "inheritedQueries";
     public static final String KEY_INHERITED_VIEWPORT_SCISSOR_2_D = "inheritedViewportScissor2D";
@@ -564,6 +582,9 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_MAINTENANCE4 = "maintenance4";
     public static final String KEY_MAINTENANCE5 = "maintenance5";
     public static final String KEY_MAINTENANCE6 = "maintenance6";
+    public static final String KEY_MAINTENANCE_10 = "maintenance10";
+    public static final String KEY_MAINTENANCE_10_FEATURES_KHR = "maintenance10FeaturesKHR";
+    public static final String KEY_MAINTENANCE_10_PROPERTIES_KHR = "maintenance10PropertiesKHR";
     public static final String KEY_MAINTENANCE_3_PROPERTIES = "maintenance3Properties";
     public static final String KEY_MAINTENANCE_3_PROPERTIES_KHR = "maintenance3PropertiesKHR";
     public static final String KEY_MAINTENANCE_4_FEATURES = "maintenance4Features";
@@ -651,6 +672,7 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_MAX_EXTERNAL_QUEUES = "maxExternalQueues";
     public static final String KEY_MAX_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE = "maxExtraPrimitiveOverestimationSize";
     public static final String KEY_MAX_FRAGMENT_COMBINED_OUTPUT_RESOURCES = "maxFragmentCombinedOutputResources";
+    public static final String KEY_MAX_FRAGMENT_DENSITY_MAP_LAYERS = "maxFragmentDensityMapLayers";
     public static final String KEY_MAX_FRAGMENT_DENSITY_TEXEL_SIZE = "maxFragmentDensityTexelSize";
     public static final String KEY_MAX_FRAGMENT_DUAL_SRC_ATTACHMENTS = "maxFragmentDualSrcAttachments";
     public static final String KEY_MAX_FRAGMENT_INPUT_COMPONENTS = "maxFragmentInputComponents";
@@ -716,6 +738,7 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_MAX_OUTPUT_CLUSTER_COUNT = "maxOutputClusterCount";
     public static final String KEY_MAX_PARTITION_COUNT = "maxPartitionCount";
     public static final String KEY_MAX_PER_DIMENSION_TENSOR_ELEMENTS = "maxPerDimensionTensorElements";
+    public static final String KEY_MAX_PER_REGION_PERFORMANCE_COUNTERS = "maxPerRegionPerformanceCounters";
     public static final String KEY_MAX_PER_SET_DESCRIPTORS = "maxPerSetDescriptors";
     public static final String KEY_MAX_PER_STAGE_DESCRIPTOR_ACCELERATION_STRUCTURES = "maxPerStageDescriptorAccelerationStructures";
     public static final String KEY_MAX_PER_STAGE_DESCRIPTOR_INLINE_UNIFORM_BLOCKS = "maxPerStageDescriptorInlineUniformBlocks";
@@ -758,6 +781,7 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_MAX_SAMPLE_LOCATION_GRID_SIZE = "maxSampleLocationGridSize";
     public static final String KEY_MAX_SAMPLE_MASK_WORDS = "maxSampleMaskWords";
     public static final String KEY_MAX_SGPR_ALLOCATION = "maxSgprAllocation";
+    public static final String KEY_MAX_SHADER_BINDING_TABLE_RECORD_INDEX = "maxShaderBindingTableRecordIndex";
     public static final String KEY_MAX_SHADER_GROUP_STRIDE = "maxShaderGroupStride";
     public static final String KEY_MAX_STORAGE_BUFFER_RANGE = "maxStorageBufferRange";
     public static final String KEY_MAX_SUBGROUP_SIZE = "maxSubgroupSize";
@@ -818,7 +842,9 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_MAX_WORK_GROUP_SIZE = "maxWorkGroupSize";
     public static final String KEY_MEMORY = "memory";
     public static final String KEY_MEMORY_DECOMPRESSION = "memoryDecompression";
+    public static final String KEY_MEMORY_DECOMPRESSION_FEATURES_EXT = "memoryDecompressionFeaturesEXT";
     public static final String KEY_MEMORY_DECOMPRESSION_FEATURES_NV = "memoryDecompressionFeaturesNV";
+    public static final String KEY_MEMORY_DECOMPRESSION_PROPERTIES_EXT = "memoryDecompressionPropertiesEXT";
     public static final String KEY_MEMORY_DECOMPRESSION_PROPERTIES_NV = "memoryDecompressionPropertiesNV";
     public static final String KEY_MEMORY_HEAP = "memoryHeap";
     public static final String KEY_MEMORY_HEAPS = "memoryHeaps";
@@ -926,8 +952,12 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_PCI_DEVICE = "pciDevice";
     public static final String KEY_PCI_DOMAIN = "pciDomain";
     public static final String KEY_PCI_FUNCTION = "pciFunction";
+    public static final String KEY_PERFORMANCE_COUNTERS_BY_REGION = "performanceCountersByRegion";
+    public static final String KEY_PERFORMANCE_COUNTERS_BY_REGION_FEATURES_ARM = "performanceCountersByRegionFeaturesARM";
+    public static final String KEY_PERFORMANCE_COUNTERS_BY_REGION_PROPERTIES_ARM = "performanceCountersByRegionPropertiesARM";
     public static final String KEY_PERFORMANCE_COUNTER_MULTIPLE_QUERY_POOLS = "performanceCounterMultipleQueryPools";
     public static final String KEY_PERFORMANCE_COUNTER_QUERY_POOLS = "performanceCounterQueryPools";
+    public static final String KEY_PERFORMANCE_COUNTER_REGION_SIZE = "performanceCounterRegionSize";
     public static final String KEY_PERFORMANCE_QUERY_FEATURES_KHR = "performanceQueryFeaturesKHR";
     public static final String KEY_PERFORMANCE_QUERY_PROPERTIES_KHR = "performanceQueryPropertiesKHR";
     public static final String KEY_PER_STAGE_DESCRIPTOR_SET = "perStageDescriptorSet";
@@ -941,6 +971,8 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_PIPELINE_BINARY_PRECOMPILED_INTERNAL_CACHE = "pipelineBinaryPrecompiledInternalCache";
     public static final String KEY_PIPELINE_BINARY_PREFERS_INTERNAL_CACHE = "pipelineBinaryPrefersInternalCache";
     public static final String KEY_PIPELINE_BINARY_PROPERTIES_KHR = "pipelineBinaryPropertiesKHR";
+    public static final String KEY_PIPELINE_CACHE_INCREMENTAL_MODE = "pipelineCacheIncrementalMode";
+    public static final String KEY_PIPELINE_CACHE_INCREMENTAL_MODE_FEATURES_SEC = "pipelineCacheIncrementalModeFeaturesSEC";
     public static final String KEY_PIPELINE_CACHE_UUID = "pipelineCacheUUID";
     public static final String KEY_PIPELINE_CREATION_CACHE_CONTROL = "pipelineCreationCacheControl";
     public static final String KEY_PIPELINE_CREATION_CACHE_CONTROL_FEATURES = "pipelineCreationCacheControlFeatures";
@@ -975,6 +1007,8 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_PREFERS_LOCAL_INVOCATION_PRIMITIVE_OUTPUT = "prefersLocalInvocationPrimitiveOutput";
     public static final String KEY_PREFERS_LOCAL_INVOCATION_VERTEX_OUTPUT = "prefersLocalInvocationVertexOutput";
     public static final String KEY_PREFER_NON_COHERENT = "preferNonCoherent";
+    public static final String KEY_PRESENT_AT_ABSOLUTE_TIME = "presentAtAbsoluteTime";
+    public static final String KEY_PRESENT_AT_RELATIVE_TIME = "presentAtRelativeTime";
     public static final String KEY_PRESENT_BARRIER = "presentBarrier";
     public static final String KEY_PRESENT_BARRIER_FEATURES_NV = "presentBarrierFeaturesNV";
     public static final String KEY_PRESENT_ID = "presentId";
@@ -982,7 +1016,9 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_PRESENT_ID_2_FEATURES_KHR = "presentId2FeaturesKHR";
     public static final String KEY_PRESENT_ID_FEATURES_KHR = "presentIdFeaturesKHR";
     public static final String KEY_PRESENT_MODE_FIFO_LATEST_READY = "presentModeFifoLatestReady";
-    public static final String KEY_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_EXT = "presentModeFifoLatestReadyFeaturesEXT";
+    public static final String KEY_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_KHR = "presentModeFifoLatestReadyFeaturesKHR";
+    public static final String KEY_PRESENT_TIMING = "presentTiming";
+    public static final String KEY_PRESENT_TIMING_FEATURES_EXT = "presentTimingFeaturesEXT";
     public static final String KEY_PRESENT_WAIT = "presentWait";
     public static final String KEY_PRESENT_WAIT_2 = "presentWait2";
     public static final String KEY_PRESENT_WAIT_2_FEATURES_KHR = "presentWait2FeaturesKHR";
@@ -1035,7 +1071,9 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_RAY_QUERY = "rayQuery";
     public static final String KEY_RAY_QUERY_FEATURES_KHR = "rayQueryFeaturesKHR";
     public static final String KEY_RAY_TRACING_INVOCATION_REORDER = "rayTracingInvocationReorder";
+    public static final String KEY_RAY_TRACING_INVOCATION_REORDER_FEATURES_EXT = "rayTracingInvocationReorderFeaturesEXT";
     public static final String KEY_RAY_TRACING_INVOCATION_REORDER_FEATURES_NV = "rayTracingInvocationReorderFeaturesNV";
+    public static final String KEY_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_EXT = "rayTracingInvocationReorderPropertiesEXT";
     public static final String KEY_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_NV = "rayTracingInvocationReorderPropertiesNV";
     public static final String KEY_RAY_TRACING_INVOCATION_REORDER_REORDERING_HINT = "rayTracingInvocationReorderReorderingHint";
     public static final String KEY_RAY_TRACING_LINEAR_SWEPT_SPHERES_FEATURES_NV = "rayTracingLinearSweptSpheresFeaturesNV";
@@ -1058,6 +1096,7 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_RAY_TRACING_VALIDATION_FEATURES_NV = "rayTracingValidationFeaturesNV";
     public static final String KEY_RAY_TRAVERSAL_PRIMITIVE_CULLING = "rayTraversalPrimitiveCulling";
     public static final String KEY_RECTANGULAR_LINES = "rectangularLines";
+    public static final String KEY_REGION_ALIGNMENT = "regionAlignment";
     public static final String KEY_RELAXED_LINE_RASTERIZATION = "relaxedLineRasterization";
     public static final String KEY_RELAXED_LINE_RASTERIZATION_FEATURES_IMG = "relaxedLineRasterizationFeaturesIMG";
     public static final String KEY_RENDER_MAJOR = "renderMajor";
@@ -1075,8 +1114,11 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_RESIDENCY_STANDARD_2D_BLOCK_SHAPE = "residencyStandard2DBlockShape";
     public static final String KEY_RESIDENCY_STANDARD_2D_MULTISAMPLE_BLOCK_SHAPE = "residencyStandard2DMultisampleBlockShape";
     public static final String KEY_RESIDENCY_STANDARD_3D_BLOCK_SHAPE = "residencyStandard3DBlockShape";
+    public static final String KEY_RESOLVE_SRGB_FORMAT_APPLIES_TRANSFER_FUNCTION = "resolveSrgbFormatAppliesTransferFunction";
+    public static final String KEY_RESOLVE_SRGB_FORMAT_SUPPORTS_TRANSFER_FUNCTION_CONTROL = "resolveSrgbFormatSupportsTransferFunctionControl";
     public static final String KEY_RESOURCE_DESCRIPTOR_BUFFER_ADDRESS_SPACE_SIZE = "resourceDescriptorBufferAddressSpaceSize";
     public static final String KEY_RGBA_10_X_6_FORMATS_FEATURES_EXT = "RGBA10X6FormatsFeaturesEXT";
+    public static final String KEY_RGBA_4_OPAQUE_BLACK_SWIZZLED = "rgba4OpaqueBlackSwizzled";
     public static final String KEY_ROBUSTNESS_2_FEATURES_EXT = "robustness2FeaturesEXT";
     public static final String KEY_ROBUSTNESS_2_FEATURES_KHR = "robustness2FeaturesKHR";
     public static final String KEY_ROBUSTNESS_2_PROPERTIES_EXT = "robustness2PropertiesEXT";
@@ -1094,6 +1136,7 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_ROBUST_UNIFORM_BUFFER_DESCRIPTOR_SIZE = "robustUniformBufferDescriptorSize";
     public static final String KEY_ROBUST_UNIFORM_TEXEL_BUFFER_DESCRIPTOR_SIZE = "robustUniformTexelBufferDescriptorSize";
     public static final String KEY_ROUNDING_MODE_INDEPENDENCE = "roundingModeIndependence";
+    public static final String KEY_ROW_STRIDE_ALIGNMENT = "rowStrideAlignment";
     public static final String KEY_RUNTIME_DESCRIPTOR_ARRAY = "runtimeDescriptorArray";
     public static final String KEY_SAMPLED_IMAGE_COLOR_SAMPLE_COUNTS = "sampledImageColorSampleCounts";
     public static final String KEY_SAMPLED_IMAGE_DEPTH_SAMPLE_COUNTS = "sampledImageDepthSampleCounts";
@@ -1132,6 +1175,8 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES_KHR = "separateDepthStencilLayoutsFeaturesKHR";
     public static final String KEY_SGPRS_PER_SIMD = "sgprsPerSimd";
     public static final String KEY_SGPR_ALLOCATION_GRANULARITY = "sgprAllocationGranularity";
+    public static final String KEY_SHADER_64_BIT_INDEXING = "shader64BitIndexing";
+    public static final String KEY_SHADER_64_BIT_INDEXING_FEATURES_EXT = "shader64BitIndexingFeaturesEXT";
     public static final String KEY_SHADER_ARRAYS_PER_ENGINE_COUNT = "shaderArraysPerEngineCount";
     public static final String KEY_SHADER_ATOMIC_FLOAT_16_VECTOR_FEATURES_NV = "shaderAtomicFloat16VectorFeaturesNV";
     public static final String KEY_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT = "shaderAtomicFloat2FeaturesEXT";
@@ -1196,6 +1241,10 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_SHADER_FLOAT_CONTROLS2 = "shaderFloatControls2";
     public static final String KEY_SHADER_FLOAT_CONTROLS_2_FEATURES = "shaderFloatControls2Features";
     public static final String KEY_SHADER_FLOAT_CONTROLS_2_FEATURES_KHR = "shaderFloatControls2FeaturesKHR";
+    public static final String KEY_SHADER_FMA_FEATURES_KHR = "shaderFmaFeaturesKHR";
+    public static final String KEY_SHADER_FMA_FLOAT_16 = "shaderFmaFloat16";
+    public static final String KEY_SHADER_FMA_FLOAT_32 = "shaderFmaFloat32";
+    public static final String KEY_SHADER_FMA_FLOAT_64 = "shaderFmaFloat64";
     public static final String KEY_SHADER_GROUP_BASE_ALIGNMENT = "shaderGroupBaseAlignment";
     public static final String KEY_SHADER_GROUP_HANDLE_ALIGNMENT = "shaderGroupHandleAlignment";
     public static final String KEY_SHADER_GROUP_HANDLE_CAPTURE_REPLAY_SIZE = "shaderGroupHandleCaptureReplaySize";
@@ -1308,8 +1357,12 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_SHADER_UNIFORM_BUFFER_ARRAY_DYNAMIC_INDEXING = "shaderUniformBufferArrayDynamicIndexing";
     public static final String KEY_SHADER_UNIFORM_BUFFER_ARRAY_NONUNIFORM_INDEXING_NATIVE = "shaderUniformBufferArrayNonUniformIndexingNative";
     public static final String KEY_SHADER_UNIFORM_BUFFER_ARRAY_NON_UNIFORM_INDEXING = "shaderUniformBufferArrayNonUniformIndexing";
+    public static final String KEY_SHADER_UNIFORM_BUFFER_UNSIZED_ARRAY = "shaderUniformBufferUnsizedArray";
+    public static final String KEY_SHADER_UNIFORM_BUFFER_UNSIZED_ARRAY_FEATURES_EXT = "shaderUniformBufferUnsizedArrayFeaturesEXT";
     public static final String KEY_SHADER_UNIFORM_TEXEL_BUFFER_ARRAY_DYNAMIC_INDEXING = "shaderUniformTexelBufferArrayDynamicIndexing";
     public static final String KEY_SHADER_UNIFORM_TEXEL_BUFFER_ARRAY_NON_UNIFORM_INDEXING = "shaderUniformTexelBufferArrayNonUniformIndexing";
+    public static final String KEY_SHADER_UNTYPED_POINTERS = "shaderUntypedPointers";
+    public static final String KEY_SHADER_UNTYPED_POINTERS_FEATURES_KHR = "shaderUntypedPointersFeaturesKHR";
     public static final String KEY_SHADER_WARPS_PER_CORE = "shaderWarpsPerCore";
     public static final String KEY_SHADER_WARPS_PER_SM = "shaderWarpsPerSM";
     public static final String KEY_SHADER_ZERO_INITIALIZE_WORKGROUP_MEMORY = "shaderZeroInitializeWorkgroupMemory";
@@ -1396,6 +1449,7 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_SUPPORTS_NON_ZERO_FIRST_INSTANCE = "supportsNonZeroFirstInstance";
     public static final String KEY_SWAPCHAIN_MAINTENANCE_1 = "swapchainMaintenance1";
     public static final String KEY_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT = "swapchainMaintenance1FeaturesEXT";
+    public static final String KEY_SWAPCHAIN_MAINTENANCE_1_FEATURES_KHR = "swapchainMaintenance1FeaturesKHR";
     public static final String KEY_SYNCHRONIZATION2 = "synchronization2";
     public static final String KEY_SYNCHRONIZATION_2_FEATURES = "synchronization2Features";
     public static final String KEY_SYNCHRONIZATION_2_FEATURES_KHR = "synchronization2FeaturesKHR";
@@ -1505,8 +1559,12 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_VIDEO_DECODE_VP_9_FEATURES_KHR = "videoDecodeVP9FeaturesKHR";
     public static final String KEY_VIDEO_ENCODE_AV_1 = "videoEncodeAV1";
     public static final String KEY_VIDEO_ENCODE_AV_1_FEATURES_KHR = "videoEncodeAV1FeaturesKHR";
+    public static final String KEY_VIDEO_ENCODE_INTRA_REFRESH = "videoEncodeIntraRefresh";
+    public static final String KEY_VIDEO_ENCODE_INTRA_REFRESH_FEATURES_KHR = "videoEncodeIntraRefreshFeaturesKHR";
     public static final String KEY_VIDEO_ENCODE_QUANTIZATION_MAP = "videoEncodeQuantizationMap";
     public static final String KEY_VIDEO_ENCODE_QUANTIZATION_MAP_FEATURES_KHR = "videoEncodeQuantizationMapFeaturesKHR";
+    public static final String KEY_VIDEO_ENCODE_RGB_CONVERSION = "videoEncodeRgbConversion";
+    public static final String KEY_VIDEO_ENCODE_RGB_CONVERSION_FEATURES_VALVE = "videoEncodeRgbConversionFeaturesVALVE";
     public static final String KEY_VIDEO_MAINTENANCE_1 = "videoMaintenance1";
     public static final String KEY_VIDEO_MAINTENANCE_1_FEATURES_KHR = "videoMaintenance1FeaturesKHR";
     public static final String KEY_VIDEO_MAINTENANCE_2 = "videoMaintenance2";
@@ -1519,7 +1577,9 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_VK_AMD_SHADER_CORE_PROPERTIES2 = "VK_AMD_shader_core_properties2";
     public static final String KEY_VK_AMD_SHADER_EARLY_AND_LATE_FRAGMENT_TESTS = "VK_AMD_shader_early_and_late_fragment_tests";
     public static final String KEY_VK_ANDROID_EXTERNAL_FORMAT_RESOLVE = "VK_ANDROID_external_format_resolve";
+    public static final String KEY_VK_ARM_DATA_GRAPH = "VK_ARM_data_graph";
     public static final String KEY_VK_ARM_FORMAT_PACK = "VK_ARM_format_pack";
+    public static final String KEY_VK_ARM_PERFORMANCE_COUNTERS_BY_REGION = "VK_ARM_performance_counters_by_region";
     public static final String KEY_VK_ARM_PIPELINE_OPACITY_MICROMAP = "VK_ARM_pipeline_opacity_micromap";
     public static final String KEY_VK_ARM_RASTERIZATION_ORDER_ATTACHMENT_ACCESS = "VK_ARM_rasterization_order_attachment_access";
     public static final String KEY_VK_ARM_RENDER_PASS_STRIPED = "VK_ARM_render_pass_striped";
@@ -1538,6 +1598,7 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_VK_EXT_CONDITIONAL_RENDERING = "VK_EXT_conditional_rendering";
     public static final String KEY_VK_EXT_CONSERVATIVE_RASTERIZATION = "VK_EXT_conservative_rasterization";
     public static final String KEY_VK_EXT_CUSTOM_BORDER_COLOR = "VK_EXT_custom_border_color";
+    public static final String KEY_VK_EXT_CUSTOM_RESOLVE = "VK_EXT_custom_resolve";
     public static final String KEY_VK_EXT_DEPTH_BIAS_CONTROL = "VK_EXT_depth_bias_control";
     public static final String KEY_VK_EXT_DEPTH_CLAMP_CONTROL = "VK_EXT_depth_clamp_control";
     public static final String KEY_VK_EXT_DEPTH_CLIP_CONTROL = "VK_EXT_depth_clip_control";
@@ -1575,6 +1636,7 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_VK_EXT_LEGACY_VERTEX_ATTRIBUTES = "VK_EXT_legacy_vertex_attributes";
     public static final String KEY_VK_EXT_LINE_RASTERIZATION = "VK_EXT_line_rasterization";
     public static final String KEY_VK_EXT_MAP_MEMORY_PLACED = "VK_EXT_map_memory_placed";
+    public static final String KEY_VK_EXT_MEMORY_DECOMPRESSION = "VK_EXT_memory_decompression";
     public static final String KEY_VK_EXT_MEMORY_PRIORITY = "VK_EXT_memory_priority";
     public static final String KEY_VK_EXT_MESH_SHADER = "VK_EXT_mesh_shader";
     public static final String KEY_VK_EXT_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED = "VK_EXT_multisampled_render_to_single_sampled";
@@ -1591,17 +1653,19 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_VK_EXT_PIPELINE_PROPERTIES = "VK_EXT_pipeline_properties";
     public static final String KEY_VK_EXT_PIPELINE_PROTECTED_ACCESS = "VK_EXT_pipeline_protected_access";
     public static final String KEY_VK_EXT_PIPELINE_ROBUSTNESS = "VK_EXT_pipeline_robustness";
-    public static final String KEY_VK_EXT_PRESENT_MODE_FIFO_LATEST_READY = "VK_EXT_present_mode_fifo_latest_ready";
+    public static final String KEY_VK_EXT_PRESENT_TIMING = "VK_EXT_present_timing";
     public static final String KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY = "VK_EXT_primitives_generated_query";
     public static final String KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART = "VK_EXT_primitive_topology_list_restart";
     public static final String KEY_VK_EXT_PRIVATE_DATA = "VK_EXT_private_data";
     public static final String KEY_VK_EXT_PROVOKING_VERTEX = "VK_EXT_provoking_vertex";
     public static final String KEY_VK_EXT_RASTERIZATION_ORDER_ATTACHMENT_ACCESS = "VK_EXT_rasterization_order_attachment_access";
+    public static final String KEY_VK_EXT_RAY_TRACING_INVOCATION_REORDER = "VK_EXT_ray_tracing_invocation_reorder";
     public static final String KEY_VK_EXT_RGBA10X6_FORMATS = "VK_EXT_rgba10x6_formats";
     public static final String KEY_VK_EXT_ROBUSTNESS2 = "VK_EXT_robustness2";
     public static final String KEY_VK_EXT_SAMPLER_FILTER_MINMAX = "VK_EXT_sampler_filter_minmax";
     public static final String KEY_VK_EXT_SAMPLE_LOCATIONS = "VK_EXT_sample_locations";
     public static final String KEY_VK_EXT_SCALAR_BLOCK_LAYOUT = "VK_EXT_scalar_block_layout";
+    public static final String KEY_VK_EXT_SHADER_64BIT_INDEXING = "VK_EXT_shader_64bit_indexing";
     public static final String KEY_VK_EXT_SHADER_ATOMIC_FLOAT = "VK_EXT_shader_atomic_float";
     public static final String KEY_VK_EXT_SHADER_ATOMIC_FLOAT2 = "VK_EXT_shader_atomic_float2";
     public static final String KEY_VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION = "VK_EXT_shader_demote_to_helper_invocation";
@@ -1611,6 +1675,7 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_VK_EXT_SHADER_OBJECT = "VK_EXT_shader_object";
     public static final String KEY_VK_EXT_SHADER_REPLICATED_COMPOSITES = "VK_EXT_shader_replicated_composites";
     public static final String KEY_VK_EXT_SHADER_TILE_IMAGE = "VK_EXT_shader_tile_image";
+    public static final String KEY_VK_EXT_SHADER_UNIFORM_BUFFER_UNSIZED_ARRAY = "VK_EXT_shader_uniform_buffer_unsized_array";
     public static final String KEY_VK_EXT_SUBGROUP_SIZE_CONTROL = "VK_EXT_subgroup_size_control";
     public static final String KEY_VK_EXT_SUBPASS_MERGE_FEEDBACK = "VK_EXT_subpass_merge_feedback";
     public static final String KEY_VK_EXT_SWAPCHAIN_MAINTENANCE1 = "VK_EXT_swapchain_maintenance1";
@@ -1635,6 +1700,7 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_VK_KHR_BUFFER_DEVICE_ADDRESS = "VK_KHR_buffer_device_address";
     public static final String KEY_VK_KHR_COMPUTE_SHADER_DERIVATIVES = "VK_KHR_compute_shader_derivatives";
     public static final String KEY_VK_KHR_COOPERATIVE_MATRIX = "VK_KHR_cooperative_matrix";
+    public static final String KEY_VK_KHR_COPY_MEMORY_INDIRECT = "VK_KHR_copy_memory_indirect";
     public static final String KEY_VK_KHR_DEPTH_CLAMP_ZERO_ONE = "VK_KHR_depth_clamp_zero_one";
     public static final String KEY_VK_KHR_DEPTH_STENCIL_RESOLVE = "VK_KHR_depth_stencil_resolve";
     public static final String KEY_VK_KHR_DRIVER_PROPERTIES = "VK_KHR_driver_properties";
@@ -1649,6 +1715,7 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_VK_KHR_IMAGELESS_FRAMEBUFFER = "VK_KHR_imageless_framebuffer";
     public static final String KEY_VK_KHR_INDEX_TYPE_UINT8 = "VK_KHR_index_type_uint8";
     public static final String KEY_VK_KHR_LINE_RASTERIZATION = "VK_KHR_line_rasterization";
+    public static final String KEY_VK_KHR_MAINTENANCE10 = "VK_KHR_maintenance10";
     public static final String KEY_VK_KHR_MAINTENANCE2 = "VK_KHR_maintenance2";
     public static final String KEY_VK_KHR_MAINTENANCE3 = "VK_KHR_maintenance3";
     public static final String KEY_VK_KHR_MAINTENANCE4 = "VK_KHR_maintenance4";
@@ -1663,6 +1730,7 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES = "VK_KHR_pipeline_executable_properties";
     public static final String KEY_VK_KHR_PRESENT_ID = "VK_KHR_present_id";
     public static final String KEY_VK_KHR_PRESENT_ID2 = "VK_KHR_present_id2";
+    public static final String KEY_VK_KHR_PRESENT_MODE_FIFO_LATEST_READY = "VK_KHR_present_mode_fifo_latest_ready";
     public static final String KEY_VK_KHR_PRESENT_WAIT = "VK_KHR_present_wait";
     public static final String KEY_VK_KHR_PRESENT_WAIT2 = "VK_KHR_present_wait2";
     public static final String KEY_VK_KHR_PUSH_DESCRIPTOR = "VK_KHR_push_descriptor";
@@ -1680,6 +1748,7 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_VK_KHR_SHADER_FLOAT16_INT8 = "VK_KHR_shader_float16_int8";
     public static final String KEY_VK_KHR_SHADER_FLOAT_CONTROLS = "VK_KHR_shader_float_controls";
     public static final String KEY_VK_KHR_SHADER_FLOAT_CONTROLS2 = "VK_KHR_shader_float_controls2";
+    public static final String KEY_VK_KHR_SHADER_FMA = "VK_KHR_shader_fma";
     public static final String KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT = "VK_KHR_shader_integer_dot_product";
     public static final String KEY_VK_KHR_SHADER_MAXIMAL_RECONVERGENCE = "VK_KHR_shader_maximal_reconvergence";
     public static final String KEY_VK_KHR_SHADER_QUAD_CONTROL = "VK_KHR_shader_quad_control";
@@ -1688,6 +1757,8 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_VK_KHR_SHADER_SUBGROUP_ROTATE = "VK_KHR_shader_subgroup_rotate";
     public static final String KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW = "VK_KHR_shader_subgroup_uniform_control_flow";
     public static final String KEY_VK_KHR_SHADER_TERMINATE_INVOCATION = "VK_KHR_shader_terminate_invocation";
+    public static final String KEY_VK_KHR_SHADER_UNTYPED_POINTERS = "VK_KHR_shader_untyped_pointers";
+    public static final String KEY_VK_KHR_SWAPCHAIN_MAINTENANCE1 = "VK_KHR_swapchain_maintenance1";
     public static final String KEY_VK_KHR_SYNCHRONIZATION2 = "VK_KHR_synchronization2";
     public static final String KEY_VK_KHR_TIMELINE_SEMAPHORE = "VK_KHR_timeline_semaphore";
     public static final String KEY_VK_KHR_UNIFIED_IMAGE_LAYOUTS = "VK_KHR_unified_image_layouts";
@@ -1696,6 +1767,7 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_VK_KHR_VERTEX_ATTRIBUTE_DIVISOR = "VK_KHR_vertex_attribute_divisor";
     public static final String KEY_VK_KHR_VIDEO_DECODE_VP9 = "VK_KHR_video_decode_vp9";
     public static final String KEY_VK_KHR_VIDEO_ENCODE_AV1 = "VK_KHR_video_encode_av1";
+    public static final String KEY_VK_KHR_VIDEO_ENCODE_INTRA_REFRESH = "VK_KHR_video_encode_intra_refresh";
     public static final String KEY_VK_KHR_VIDEO_ENCODE_QUANTIZATION_MAP = "VK_KHR_video_encode_quantization_map";
     public static final String KEY_VK_KHR_VIDEO_MAINTENANCE1 = "VK_KHR_video_maintenance1";
     public static final String KEY_VK_KHR_VIDEO_MAINTENANCE2 = "VK_KHR_video_maintenance2";
@@ -1743,6 +1815,7 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_VK_NV_SHADER_IMAGE_FOOTPRINT = "VK_NV_shader_image_footprint";
     public static final String KEY_VK_NV_SHADER_SM_BUILTINS = "VK_NV_shader_sm_builtins";
     public static final String KEY_VK_NV_SHADING_RATE_IMAGE = "VK_NV_shading_rate_image";
+    public static final String KEY_VK_QCOM_DATA_GRAPH_MODEL = "VK_QCOM_data_graph_model";
     public static final String KEY_VK_QCOM_FILTER_CUBIC_CLAMP = "VK_QCOM_filter_cubic_clamp";
     public static final String KEY_VK_QCOM_FILTER_CUBIC_WEIGHTS = "VK_QCOM_filter_cubic_weights";
     public static final String KEY_VK_QCOM_FRAGMENT_DENSITY_MAP_OFFSET = "VK_QCOM_fragment_density_map_offset";
@@ -1755,8 +1828,11 @@ public final class VulkanDeviceInfoUtils {
     public static final String KEY_VK_QCOM_TILE_SHADING = "VK_QCOM_tile_shading";
     public static final String KEY_VK_QCOM_YCBCR_DEGAMMA = "VK_QCOM_ycbcr_degamma";
     public static final String KEY_VK_SEC_AMIGO_PROFILING = "VK_SEC_amigo_profiling";
+    public static final String KEY_VK_SEC_PIPELINE_CACHE_INCREMENTAL_MODE = "VK_SEC_pipeline_cache_incremental_mode";
     public static final String KEY_VK_VALVE_DESCRIPTOR_SET_HOST_MAPPING = "VK_VALVE_descriptor_set_host_mapping";
+    public static final String KEY_VK_VALVE_FRAGMENT_DENSITY_MAP_LAYERED = "VK_VALVE_fragment_density_map_layered";
     public static final String KEY_VK_VALVE_MUTABLE_DESCRIPTOR_TYPE = "VK_VALVE_mutable_descriptor_type";
+    public static final String KEY_VK_VALVE_VIDEO_ENCODE_RGB_CONVERSION = "VK_VALVE_video_encode_rgb_conversion";
     public static final String KEY_VULKAN_11_FEATURES = "vulkan11Features";
     public static final String KEY_VULKAN_11_PROPERTIES = "vulkan11Properties";
     public static final String KEY_VULKAN_12_FEATURES = "vulkan12Features";
