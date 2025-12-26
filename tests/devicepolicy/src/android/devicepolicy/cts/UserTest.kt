@@ -16,6 +16,10 @@
 package android.devicepolicy.cts
 
 import android.os.UserManager
+import android.platform.test.annotations.RequiresFlagsDisabled
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.CheckFlagsRule
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
 import com.android.bedstead.enterprise.annotations.EnsureDoesNotHaveUserRestriction
@@ -35,6 +39,7 @@ import com.android.bedstead.multiuser.additionalUser
 import com.android.bedstead.multiuser.annotations.EnsureCanAddSecondaryUser
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser
+import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.types.OptionalBoolean.ANY
 import com.android.bedstead.nene.types.OptionalBoolean.FALSE
@@ -122,8 +127,33 @@ class UserTest {
     //  specify @RequireRunOnAdminUser, once such an annotation exists. Otherwise what would happen
     //  if the initial user weren't actually an Admin?!
     @RequireRunOnInitialUser
+    @RequiresFlagsEnabled(android.multiuser.Flags.FLAG_HSU_NOT_ADMIN)
     @EnsureDoesNotHaveUserRestriction(DISALLOW_REMOVE_USER, onUser = UserType.ANY)
     fun removeUser_disallowRemoveUserIsNotSet_isRemoved() {
+        val additionalUser = deviceState.additionalUser()
+
+        val result = localUserManager.removeUser(additionalUser.userHandle())
+
+        assertThat(result).isTrue()
+        assertThat(additionalUser.exists()).isFalse()
+    }
+
+    @EnsureHasAdditionalUser(switchedToUser = FALSE)
+    @EnsureDoesNotHaveUserRestriction(
+        value = DISALLOW_REMOVE_USER,
+        onUser = UserType.ADMIN_USER
+    )
+    @Test
+    @Postsubmit(reason = "new test")
+    @ApiTest(apis = ["android.os.UserManager#DISALLOW_REMOVE_USER"])
+    @EnsureHasPermission(CommonPermissions.CREATE_USERS)
+    // TODO(b/461900451): This, and all similar ADMIN_USER tests, should probably instead
+    //  specify @RequireRunOnAdminUser, once such an annotation exists. Otherwise what would happen
+    //  if the initial user weren't actually an Admin?!
+    @RequireRunOnSystemUser(switchedToUser = ANY)
+    @RequiresFlagsDisabled(android.multiuser.Flags.FLAG_HSU_NOT_ADMIN)
+    @EnsureDoesNotHaveUserRestriction(DISALLOW_REMOVE_USER, onUser = UserType.ANY)
+    fun removeUser_disallowRemoveUserIsNotSet_isRemoved_hsuNotAdminDisabled() {
         val additionalUser = deviceState.additionalUser()
 
         val result = localUserManager.removeUser(additionalUser.userHandle())
@@ -145,7 +175,31 @@ class UserTest {
     //  specify @RequireRunOnAdminUser, once such an annotation exists. Otherwise what would happen
     //  if the initial user weren't actually an Admin?!
     @RequireRunOnInitialUser
+    @RequiresFlagsEnabled(android.multiuser.Flags.FLAG_HSU_NOT_ADMIN)
     fun removeUser_disallowRemoveUserIsSetOnAdminUser_returnsFalse() {
+        val additionalUser = deviceState.additionalUser()
+
+        val result = localUserManager.removeUser(additionalUser.userHandle())
+
+        assertThat(result).isFalse()
+        assertThat(additionalUser.exists()).isTrue()
+    }
+
+    @EnsureHasAdditionalUser
+    @EnsureHasUserRestriction(
+        value = DISALLOW_REMOVE_USER,
+        onUser = UserType.ADMIN_USER
+    )
+    @Test
+    @Postsubmit(reason = "new test")
+    @ApiTest(apis = ["android.os.UserManager#DISALLOW_REMOVE_USER"])
+    @EnsureHasPermission(CommonPermissions.CREATE_USERS)
+    // TODO(b/461900451): This, and all similar ADMIN_USER tests, should probably instead
+    //  specify @RequireRunOnAdminUser, once such an annotation exists. Otherwise what would happen
+    //  if the initial user weren't actually an Admin?!
+    @RequireRunOnSystemUser(switchedToUser = ANY)
+    @RequiresFlagsDisabled(android.multiuser.Flags.FLAG_HSU_NOT_ADMIN)
+    fun removeUser_disallowRemoveUserIsSetOnAdminUser_returnsFalse_hsuNotAdminDisabled() {
         val additionalUser = deviceState.additionalUser()
 
         val result = localUserManager.removeUser(additionalUser.userHandle())
@@ -334,11 +388,16 @@ class UserTest {
         }
     }
 
+    @Rule
+    @JvmField
+    val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+
     companion object {
         @JvmField
         @ClassRule
         @Rule
         val deviceState = DeviceState()
+
         private val localUserManager = TestApis.context().instrumentedContext().getSystemService(
             UserManager::class.java
         )!!
