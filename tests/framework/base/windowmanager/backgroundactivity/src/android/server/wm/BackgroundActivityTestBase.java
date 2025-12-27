@@ -163,6 +163,13 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
 
     void assertTaskStackHasComponents(ComponentName sourceComponent,
             ComponentName... expectedComponents) {
+        assertTaskStackHasComponents(sourceComponent, false, expectedComponents);
+    }
+
+    void assertTaskStackHasComponents(
+            ComponentName sourceComponent,
+            boolean allowExtraComponents,
+            ComponentName... expectedComponents) {
         Task task = mWmState.getTaskByActivity(sourceComponent);
         assertWithMessage("task for %s", sourceComponent.flattenToShortString()).that(task)
                 .isNotNull();
@@ -172,10 +179,17 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
         List<String> expectedNames = Arrays.stream(expectedComponents)
                 .map((c) -> c.flattenToShortString()).collect(Collectors.toList());
 
-        assertWithMessage("task activities" + allTaskStateDumps())
-                .that(actualNames)
-                .containsExactlyElementsIn(expectedNames)
-                .inOrder();
+        if (allowExtraComponents) {
+            assertWithMessage("task activities" + allTaskStateDumps())
+                    .that(actualNames)
+                    .containsAtLeastElementsIn(expectedNames)
+                    .inOrder();
+        } else {
+            assertWithMessage("task activities" + allTaskStateDumps())
+                    .that(actualNames)
+                    .containsExactlyElementsIn(expectedNames)
+                    .inOrder();
+        }
     }
 
     void assertTaskDoesNotHaveVisibleComponents(ComponentName sourceComponent,
@@ -319,6 +333,12 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
         ActivityStartVerifier thenAssertTaskStack(ComponentName... expectedComponents) {
             assertTaskStackHasComponents(expectedComponents[expectedComponents.length - 1],
                     expectedComponents);
+            return this;
+        }
+
+        ActivityStartVerifier thenAssertTaskStackAtLeast(ComponentName... expectedComponents) {
+            assertTaskStackHasComponents(
+                    expectedComponents[expectedComponents.length - 1], true, expectedComponents);
             return this;
         }
 
