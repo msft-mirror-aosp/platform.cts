@@ -217,8 +217,27 @@ public class PccServiceTest {
         }
     }
 
+    @Test
+    public void bind_extrasWithBinder_doesNotThrow() throws Exception {
+        Intent intent = new Intent();
+        intent.setComponent(PCC_SERVICE_COMPONENT);
+        Bundle extras = new Bundle();
+        extras.putBinder("my_binder", new Binder());
+        intent.putExtras(extras);
+        mContext.bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+
+        IBinder binder = mBinderQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        assertNotNull(binder);
+    }
+
     @After
     public void tearDown() {
-        mContext.unbindService(mConnection);
+        if (mConnection != null) {
+            try {
+                mContext.unbindService(mConnection);
+            } catch (IllegalArgumentException e) {
+                // Ignore if not bound
+            }
+        }
     }
 }
