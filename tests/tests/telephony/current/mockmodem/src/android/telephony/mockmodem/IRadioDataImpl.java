@@ -135,7 +135,7 @@ public class IRadioDataImpl extends IRadioData.Stub {
                 mTag,
                 "deactivateDataCall mUseNewHalDataCallListChanged: "
                         + mUseNewHalDataCallListChanged);
-        if (mUseNewHalDataCallListChanged) {
+        if (mUseNewHalDataCallListChanged && getInterfaceVersion() > 4) {
             mMockDataService.setCallInactive(cid);
             RadioResponseInfo rsp = mService.makeSolRsp(serial);
             try {
@@ -388,8 +388,10 @@ public class IRadioDataImpl extends IRadioData.Stub {
         Log.d(
                 mTag,
                 "unsolDataCallListChanged mUseNewHalDataCallListChanged: "
-                        + mUseNewHalDataCallListChanged);
-        if (mUseNewHalDataCallListChanged) {
+                        + mUseNewHalDataCallListChanged
+                        + " on Interface Version: "
+                        + getInterfaceVersion());
+        if (mUseNewHalDataCallListChanged && getInterfaceVersion() > 4) {
             if (mRadioDataResponse != null) {
                 List<SetupDataCallResult> dataCallLists = mMockDataService.getDataCallList();
                 SetupDataCallResult[] dcList = new SetupDataCallResult[dataCallLists.size()];
@@ -400,7 +402,7 @@ public class IRadioDataImpl extends IRadioData.Stub {
                 } catch (RemoteException ex) {
                     Log.e(
                             mTag,
-                            "Failed to invoke dataCallListChanged change from AIDL. Exception"
+                            "Failed to invoke dataCallListUpdated change from AIDL. Exception"
                                     + ex);
                 } catch (NoSuchMethodError e) {
                     Log.e(mTag, "Failed to invoke dataCallListChanged change from AIDL. Error" + e);
