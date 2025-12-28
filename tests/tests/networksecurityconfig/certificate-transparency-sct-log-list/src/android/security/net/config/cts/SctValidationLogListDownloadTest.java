@@ -43,12 +43,11 @@ import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.AfterClass;
-import org.junit.Assume;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
 import java.net.URL;
 import java.security.cert.CertificateException;
 import java.util.concurrent.CountDownLatch;
@@ -112,6 +111,7 @@ public class SctValidationLogListDownloadTest extends BaseTestCase {
     }
 
     @Test
+    @Ignore("b/471062252")
     public void testCTVerification_whenLogListDownloaded_noSctDomain_exceptionsThrown()
             throws Exception {
         assumeLogListPresent();

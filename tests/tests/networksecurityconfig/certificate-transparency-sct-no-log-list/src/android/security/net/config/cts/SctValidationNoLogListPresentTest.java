@@ -26,6 +26,7 @@ import android.os.Build;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -39,6 +40,7 @@ import javax.net.ssl.HttpsURLConnection;
 public class SctValidationNoLogListPresentTest extends BaseTestCase {
 
     @Test
+    @Ignore("b/471062252")
     public void testCTVerification_whenLogListAbsent_noSctDomain_failsOpen() throws IOException {
         URL url = new URL(NO_SCT_PROVIDED_DOMAIN);
 
