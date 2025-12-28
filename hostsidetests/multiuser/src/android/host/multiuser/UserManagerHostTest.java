@@ -138,16 +138,6 @@ public final class UserManagerHostTest extends BaseMultiUserTest {
 
     private void assumeSecondaryUsersCanBeAdded(int noOfUsers) throws DeviceNotAvailableException {
         assumeSupportsSecondaryUser();
-        if (!Boolean.valueOf(DeviceFlags.createDeviceFlags(getDevice())
-                .getFlagValue("android.multiuser.consistent_max_users"))) {
-            int nonGuestUsersCount =  (int) getDevice().getUserInfos().values().stream()
-                    .filter(userInfo -> !userInfo.isGuest())
-                    .count();
-            int remainingUsersAllowedToBeCreated
-                    = getDevice().getMaxNumberOfUsersSupported() - nonGuestUsersCount;
-            assumeTrue("Cannot allow adding " + noOfUsers + " new users.",
-                    noOfUsers <= remainingUsersAllowedToBeCreated);
-        }
         assumeTrue(
                 "Cannot allow adding " + noOfUsers + " new users.",
                 getDevice().getRemainingCreatableUserCount("android.os.usertype.full.SECONDARY")
