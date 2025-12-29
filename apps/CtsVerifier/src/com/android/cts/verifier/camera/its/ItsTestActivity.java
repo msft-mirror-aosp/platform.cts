@@ -151,6 +151,8 @@ public class ItsTestActivity extends DialogTestListActivity {
 
     private static final Pattern PERF_METRICS_YUV_PLUS_JPEG_PATTERN =
             Pattern.compile("test_yuv_plus_jpeg_rms_diff:(\\d+(\\.\\d+)?)");
+    private static final Pattern PERF_METRICS_YUV_JPEG_CAPTURE_SAMENESS_PATTERN =
+            Pattern.compile("test_yuv_jpeg_capture_sameness_.*");
     /* TODO b/346817862 - More concise regex. */
     private static final Pattern PERF_METRICS_YUV_PLUS_RAW_PATTERN =
             Pattern.compile("test_yuv_plus_raw.*");
@@ -194,6 +196,10 @@ public class ItsTestActivity extends DialogTestListActivity {
     private static final String PERF_METRICS_KEY_PREFIX_NOISE_CHROMA_V = "noise_chroma_v";
     private static final String PERF_METRICS_KEY_PREFIX_REDUCTION_PERCENTAGE =
             "reduction_percentage";
+    private static final String PERF_METRICS_KEY_PREFIX_YUV_JPEG_CAPTURE_SAMENESS =
+            "yuv_jpeg_capture_sameness";
+    private static final String PERF_METRICS_KEY_PREFIX_RMS_DIFF =
+            "rms_diff";
 
     private static final Pattern PERF_METRICS_DISTORTION_PATTERN =
             Pattern.compile("test_preview_distortion_.*");
@@ -875,6 +881,11 @@ public class ItsTestActivity extends DialogTestListActivity {
                         perfMetricsResult);
             boolean yuvPlusRawMetricsMatches = yuvPlusRawMetricsMatcher.matches();
 
+            Matcher yuvJpegCaptureSamenessMetricsMatcher =
+                    PERF_METRICS_YUV_JPEG_CAPTURE_SAMENESS_PATTERN.matcher(perfMetricsResult);
+            boolean yuvJpegCaptureSamenessMetricsMatches =
+                    yuvJpegCaptureSamenessMetricsMatcher.matches();
+
             Matcher imuDriftMetricsMatcher = PERF_METRICS_IMU_DRIFT_PATTERN.matcher(
                         perfMetricsResult);
             boolean imuDriftMetricsMatches = imuDriftMetricsMatcher.matches();
@@ -929,19 +940,19 @@ public class ItsTestActivity extends DialogTestListActivity {
 
 
             if (!yuvPlusJpegMetricsMatches && !yuvPlusRawMetricsMatches
-                        && !imuDriftMetricsMatches && !sensorFusionMetricsMatches
-                        && !burstCaptureMetricsMatches && !distortionMetricsMatches
-                        && !intrinsicMetricsMatches && !lowLightBoostMetricsMatches
-                        && !nightModeExtensionMetricsMatches && !aeAwbMetricsMatches
-                        && !multiCamMetricsMatches && !previewFrameDropMetricsMatches
-                        && !previewZoomMetricsMatches && !previewStabilizationFovMetricsMatches
-                        && !sceneIpMetricsMatches) {
+                        && !yuvJpegCaptureSamenessMetricsMatches && !imuDriftMetricsMatches
+                        && !sensorFusionMetricsMatches && !burstCaptureMetricsMatches
+                        && !distortionMetricsMatches && !intrinsicMetricsMatches
+                        && !lowLightBoostMetricsMatches && !nightModeExtensionMetricsMatches
+                        && !aeAwbMetricsMatches && !multiCamMetricsMatches
+                        && !previewFrameDropMetricsMatches && !previewZoomMetricsMatches
+                        && !previewStabilizationFovMetricsMatches && !sceneIpMetricsMatches) {
                 return false;
             }
 
             try {
                 if (yuvPlusJpegMetricsMatches) {
-                    Log.i(TAG, "jpeg pattern  matches");
+                    Log.i(TAG, "yuv plus jpeg pattern matches");
                     float diff = Float.parseFloat(yuvPlusJpegMetricsMatcher.group(1));
                     obj.put("yuv_plus_jpeg_rms_diff", diff);
                 }
@@ -949,6 +960,12 @@ public class ItsTestActivity extends DialogTestListActivity {
                 if (yuvPlusRawMetricsMatches) {
                     Log.i(TAG, "yuv plus raw pattern matches");
                     addPerfMetricsResult(PERF_METRICS_KEY_PREFIX_YUV_PLUS, perfMetricsResult, obj);
+                }
+
+                if (yuvJpegCaptureSamenessMetricsMatches) {
+                    Log.i(TAG, "yuv jpeg capture sameness pattern matches");
+                    addPerfMetricsResult(PERF_METRICS_KEY_PREFIX_YUV_JPEG_CAPTURE_SAMENESS,
+                            perfMetricsResult, obj);
                 }
 
                 if (imuDriftMetricsMatches) {
@@ -1132,6 +1149,9 @@ public class ItsTestActivity extends DialogTestListActivity {
         } else if (resultKey.contains(PERF_METRICS_KEY_PREFIX_REDUCTION_PERCENTAGE)) {
             BigDecimal floatValue = new BigDecimal(value);
             obj.put(keyPrefix + "_" + PERF_METRICS_KEY_PREFIX_REDUCTION_PERCENTAGE, floatValue);
+        } else if (resultKey.contains(PERF_METRICS_KEY_PREFIX_RMS_DIFF)) {
+            BigDecimal floatValue = new BigDecimal(value);
+            obj.put(keyPrefix + "_" + PERF_METRICS_KEY_PREFIX_RMS_DIFF, floatValue);
         }
     }
 
