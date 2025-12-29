@@ -17,6 +17,7 @@
 package android.graphics.gpuprofiling.cts
 
 import com.google.common.truth.Truth.assertThat
+import java.time.Duration
 import org.junit.Assert.assertThrows
 import org.junit.Test
 import perfetto.protos.PerfettoTrace.BuiltinClock
@@ -283,6 +284,67 @@ class ProfilingDataUtilsTest {
         assertThat(
             counterMatchesGpuUtilisation(counterSpec, counterValues, gpuUsageTimeline)
         ).isTrue()
+    }
+
+    @Test
+    fun buildConfig_withCountersOnly() {
+        val counterIds = setOf(1, 2, 3)
+        val period = Duration.ofMillis(5)
+        val config = buildConfig(counterIds, period, false)
+
+        assertThat(config.durationMs).isEqualTo(TRACE_DURATION.toMillis().toInt())
+        assertThat(config.buffersList[0].sizeKb).isEqualTo(TRACE_BUFFER_SIZE_KB)
+        assertThat(config.dataSourcesList.map { it.config.name }).containsExactly(
+            COUNTERS_SOURCE_NAME,
+            FTRACE_SOURCE_NAME
+        )
+
+        val countersSource = config.dataSourcesList.find { it.config.name == COUNTERS_SOURCE_NAME }
+        assertThat(countersSource!!.config.name).isEqualTo(COUNTERS_SOURCE_NAME)
+        assertThat(
+            countersSource.config.gpuCounterConfig.counterPeriodNs
+        ).isEqualTo(period.toNanos())
+        assertThat(
+            countersSource.config.gpuCounterConfig.counterIdsList
+        ).containsExactlyElementsIn(counterIds)
+
+        val ftraceSource = config.dataSourcesList.find { it.config.name == FTRACE_SOURCE_NAME }
+        assertThat(
+            ftraceSource!!.config.ftraceConfig.ftraceEventsList
+        ).doesNotContain(GPU_FREQ_FTRACE)
+        assertThat(ftraceSource.config.ftraceConfig.atraceAppsList).contains(APP)
+    }
+
+    @Test
+    fun buildConfig_withFrequencyAndRenderStages() {
+        val counterIds = emptySet<Int>()
+        val period = Duration.ofMillis(5)
+        val config = buildConfig(counterIds, period, true)
+
+        assertThat(config.dataSourcesList.map { it.config.name }).containsExactly(
+            FTRACE_SOURCE_NAME,
+            STAGES_SOURCE_NAME
+        )
+
+        val ftraceSource = config.dataSourcesList.find { it.config.name == FTRACE_SOURCE_NAME }
+        assertThat(ftraceSource!!.config.ftraceConfig.ftraceEventsList).contains(GPU_FREQ_FTRACE)
+        assertThat(ftraceSource.config.ftraceConfig.atraceAppsList).contains(APP)
+
+        val stagesSource = config.dataSourcesList.find { it.config.name == STAGES_SOURCE_NAME }
+        assertThat(stagesSource).isNotNull()
+    }
+
+    @Test
+    fun buildConfig_withAllOptions() {
+        val counterIds = setOf(1)
+        val period = Duration.ofMillis(5)
+        val config = buildConfig(counterIds, period, true)
+
+        assertThat(config.dataSourcesList.map { it.config.name }).containsExactly(
+            COUNTERS_SOURCE_NAME,
+            FTRACE_SOURCE_NAME,
+            STAGES_SOURCE_NAME
+        )
     }
 
     private fun buildTraceWithFtraceEvent(eventName: String, value: String): Trace {
