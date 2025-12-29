@@ -20,6 +20,7 @@ import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_HdrEditing;
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_HlgEditing;
 import static android.media.MediaCodecInfo.CodecProfileLevel.*;
 import static android.media.codec.Flags.hlgEditing;
+import static android.media.codec.Flags.vvcSupport;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -467,6 +468,9 @@ public abstract class CodecTestBase {
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("mpeg2", MediaFormat.MIMETYPE_VIDEO_MPEG2);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("dolbyvision", MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("vraw", MediaFormat.MIMETYPE_VIDEO_RAW);
+        if (vvcSupport()) {
+            CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("vvc", MediaFormat.MIMETYPE_VIDEO_VVC);
+        }
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("amrnb", MediaFormat.MIMETYPE_AUDIO_AMR_NB);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("amrwb", MediaFormat.MIMETYPE_AUDIO_AMR_WB);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("mp3", MediaFormat.MIMETYPE_AUDIO_MPEG);
