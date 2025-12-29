@@ -556,8 +556,17 @@ public final class DeviceUtils {
     }
 
     public static boolean checkDeviceFor(ITestDevice device, String methodName) throws Exception {
+        return checkDeviceFor(device, STATSD_ATOM_TEST_PKG, ".Checkers", methodName);
+    }
+
+    public static boolean checkDeviceFor(
+            ITestDevice device,
+            String pkgName,
+            @Nullable String className,
+            @Nullable String methodName)
+            throws Exception {
         try {
-            runDeviceTestsOnStatsdApp(device, ".Checkers", methodName);
+            runDeviceTests(device, pkgName, className, methodName);
             // Test passes, meaning that the answer is true.
             LogUtil.CLog.d(methodName + "() indicates true.");
             return true;
