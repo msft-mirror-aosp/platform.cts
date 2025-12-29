@@ -185,6 +185,52 @@ public final class PackageTestUtils {
     }
 
     /**
+     * Removes the provided {@link Context}'s app the {@link RoleManager#ROLE_HOME} for the duration
+     * of the {@link AutoCloseable}, and grants it afterward.
+     *
+     * <p>This is used to remove the {@code LOCK_APPS} permission from the test app.
+     *
+     * @param context the {@link Context} of the test.
+     * @return an {@link AutoCloseable} that will grant the role.
+     */
+    public static AutoCloseable clearHomeRoleHolderScoped(Context context) throws Exception {
+        final RoleManager roleManager = context.getSystemService(RoleManager.class);
+        assertThat(roleManager.isRoleHeld(RoleManager.ROLE_HOME)).isTrue();
+
+        // Remove role ROLE_HOME from the test app.
+        SettableFuture<Boolean> roleRemovedFuture = SettableFuture.create();
+        runWithShellPermissionIdentity(
+                () -> {
+                    roleManager.removeRoleHolderAsUser(
+                            RoleManager.ROLE_HOME,
+                            context.getPackageName(),
+                            RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP,
+                            Process.myUserHandle(),
+                            context.getMainExecutor(),
+                            (successful) -> roleRemovedFuture.set(successful));
+                },
+                Manifest.permission.MANAGE_ROLE_HOLDERS);
+        assertThat(roleRemovedFuture.get(ROLE_CHANGE_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();
+
+        // Grant role ROLE_HOME to the test app.
+        return () -> {
+            SettableFuture<Boolean> roleAddedFuture = SettableFuture.create();
+            runWithShellPermissionIdentity(
+                    () -> {
+                        roleManager.addRoleHolderAsUser(
+                                RoleManager.ROLE_HOME,
+                                context.getPackageName(),
+                                RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP,
+                                Process.myUserHandle(),
+                                context.getMainExecutor(),
+                                (successful) -> roleAddedFuture.set(successful));
+                    },
+                    Manifest.permission.MANAGE_ROLE_HOLDERS);
+            assertThat(roleAddedFuture.get(ROLE_CHANGE_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();
+        };
+    }
+
+    /**
      * Returns {@code true} if the app context has been granted the {@link
      * android.Manifest.permission#LOCK_APPS} permission.
      */
