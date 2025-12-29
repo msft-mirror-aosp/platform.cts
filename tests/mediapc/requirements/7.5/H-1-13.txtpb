@@ -36,7 +36,9 @@ specs {
   key: 34
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_14
-    specification: "same"
+    specification:
+      "MUST support `LOGICAL_MULTI_CAMERA` capability for the primary "
+      "rear-facing camera if there are more than 1 RGB rear-facing cameras."
     required_values {
       key: "rear_camera_logical_multi_camera_req_met"
       value {
@@ -49,7 +51,9 @@ specs {
   key: 35
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
-    specification: "same"
+    specification:
+      "MUST support `LOGICAL_MULTI_CAMERA` capability for the primary "
+      "rear-facing camera if there are more than 1 RGB rear-facing cameras."
     required_values {
       key: "rear_camera_logical_multi_camera_req_met"
       value {
@@ -62,7 +66,9 @@ specs {
   key: 37
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
-    specification: "same"
+    specification:
+      "MUST support `LOGICAL_MULTI_CAMERA` capability for the primary "
+      "rear-facing camera if there are more than 1 RGB rear-facing cameras."
     required_values {
       key: "rear_camera_logical_multi_camera_req_met"
       value {
