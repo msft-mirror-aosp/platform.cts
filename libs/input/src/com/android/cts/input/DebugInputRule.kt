@@ -89,7 +89,7 @@ class DebugInputRule : TestWatcher() {
 
                 val path = pathLine.substringAfter("SysfsDevicePath:").trim()
                 if (path.isNotEmpty()) {
-                    logShellCommand("ls -l $path/$node")
+                    logShellCommand("ls -lZ $path/$node")
                 } else {
                     Log.i(TAG, "SysfsDevicePath is blank.")
                 }
