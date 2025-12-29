@@ -30,6 +30,7 @@ _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _TEST_REQUIRED_MPC = 33
 _THRESHOLD_MAX_RMS_DIFF_YUV_JPEG = 0.03  # YUV/JPEG bit exactness threshold
 _THRESHOLD_MAX_RMS_DIFF_USE_CASE = 0.1  # Catch swapped color channels
+_THRESHOLD_MAX_RMS_DIFF_USE_CASE_ANDROID17 = 0.04  # For Android API 17 and above
 _USE_CASE_PREVIEW = 1
 _USE_CASE_STILL_CAPTURE = 2
 _USE_CASE_VIDEO_RECORD = 3
@@ -177,12 +178,18 @@ class YuvJpegCaptureSamenessTest(its_base_test.ItsBaseTest):
         if rms_diff >= _THRESHOLD_MAX_RMS_DIFF_USE_CASE:
           logging.error('%s, ATOL: %.2f', msg, _THRESHOLD_MAX_RMS_DIFF_USE_CASE)
           num_fail += 1
+        elif first_api_level >= its_session_utils.ANDROID17_API_LEVEL:
+          if rms_diff >= _THRESHOLD_MAX_RMS_DIFF_USE_CASE_ANDROID17:
+            logging.error('%s, ATOL: %.2f', msg,
+                          _THRESHOLD_MAX_RMS_DIFF_USE_CASE_ANDROID17)
+            num_fail += 1
         else:
           if rms_diff >= marginal_pass_tol_use_case:
             marginal_pass_msg.append(
                 f'Marginal pass for use case {use_case_name}, '
                 f'RMS diff: {rms_diff:.4f}, '
                 f'ATOL: {marginal_pass_tol_use_case:.4f}')
+
       if marginal_pass_msg:
         for msg in marginal_pass_msg:
           logging.warning('%s\n%s',
