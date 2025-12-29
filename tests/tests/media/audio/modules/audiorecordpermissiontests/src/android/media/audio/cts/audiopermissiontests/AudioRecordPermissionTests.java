@@ -47,7 +47,9 @@ import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.UiDevice;
 
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
 
@@ -642,6 +644,14 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
     }
 
     private void stopActivity(String packageName) throws Exception {
+        // On desktop, finishing the activity doesn't always bring the app to the background.
+        // Pressing home ensures the activity is no longer in the foreground.
+        if (FeatureUtil.isDesktop()) {
+            final UiDevice uiDevice =
+                    UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+            uiDevice.pressHome();
+            uiDevice.waitForIdle();
+        }
         final var future = makeFuture(packageName + ACTION_ACTIVITY_FINISHED);
         mContext.sendBroadcast(
                 new Intent(packageName + ACTION_FINISH_ACTIVITY).setPackage(packageName));
