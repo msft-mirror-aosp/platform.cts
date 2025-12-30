@@ -28,6 +28,8 @@ import android.app.WallpaperManager;
 import android.app.admin.DevicePolicyManager;
 import android.app.admin.RemoteDevicePolicyManager;
 import android.app.admin.RemoteDevicePolicyManagerWrapper;
+import android.app.supervision.RemoteSupervisionManager;
+import android.app.supervision.RemoteSupervisionManagerWrapper;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.RemoteBluetoothManager;
 import android.bluetooth.RemoteBluetoothManagerWrapper;
@@ -501,6 +503,15 @@ public class TestAppInstance implements AutoCloseable, ConnectionListener {
      */
     public RemoteMediaProjectionManager mediaProjectionManager() {
         return new RemoteMediaProjectionManagerWrapper(mConnector, mUser, mTestApp.pkg());
+    }
+
+    /**
+     * Access the {@link android.app.supervision.SupervisionManager} using this test app.
+     *
+     * <p>Almost all methods are available. Those that are not will be missing from the interface.
+     */
+    public RemoteSupervisionManager supervisionManager() {
+        return new RemoteSupervisionManagerWrapper(mConnector, mUser, mTestApp.pkg());
     }
 
     /**
