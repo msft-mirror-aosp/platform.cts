@@ -1625,10 +1625,6 @@ public class VehiclePropertyVerifier<T> {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA;
     }
 
-    public static boolean isAtLeastC() {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN;
-    }
-
     /** Gets the possible values for an integer property. */
     private List<Integer> getPossibleIntegerValues(int areaId) {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
@@ -2184,7 +2180,7 @@ public class VehiclePropertyVerifier<T> {
                         carPropertyValue,
                         carPropertyValue.getAreaId(),
                         CAR_PROPERTY_VALUE_SOURCE_CALLBACK);
-                if (isAtLeastC() && Flags.carPropertyStatusDetailedNotAvailable()) {
+                if (Flags.carPropertyStatusDetailedNotAvailable()) {
                     if (sContext.checkSelfPermission(Car.PERMISSION_READ_PROPERTY_VENDOR_STATUS)
                             != PERMISSION_GRANTED) {
                         assertThrows(
@@ -2764,7 +2760,7 @@ public class VehiclePropertyVerifier<T> {
                 .isTrue();
 
         ImmutableSet<Integer> validStatuses = VALID_CAR_PROPERTY_VALUE_STATUSES;
-        if (!(isAtLeastC() && Flags.carPropertyStatusDetailedNotAvailable())) {
+        if (!Flags.carPropertyStatusDetailedNotAvailable()) {
             validStatuses = VALID_CAR_PROPERTY_VALUE_STATUSES_BEFORE_C;
         }
         assertWithMessage(
@@ -4536,8 +4532,7 @@ public class VehiclePropertyVerifier<T> {
     }
 
     private static void verifyVendorErrorCode(Supplier<Integer> getVendorErrorCode) {
-        if (isAtLeastC()
-                && Flags.carPropertyVendorErrorCodePermission()
+        if (Flags.carPropertyVendorErrorCodePermission()
                 && sContext.checkSelfPermission(Car.PERMISSION_READ_PROPERTY_VENDOR_ERROR_CODE)
                         != PERMISSION_GRANTED) {
             assertThrows(SecurityException.class, () -> getVendorErrorCode.get());
