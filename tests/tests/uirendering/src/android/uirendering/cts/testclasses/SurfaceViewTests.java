@@ -872,8 +872,18 @@ public class SurfaceViewTests extends ActivityTestBase {
                             Paint bluePaint = new Paint();
                             bluePaint.setColor(Color.BLUE);
                             // Draw half the surface red, half blue.
-                            canvas.drawRect(0.0f, 0.0f, width / 2.0f, height, bluePaint);
-                            canvas.drawRect(width / 2.0f, 0.0f, width, height, redPaint);
+                            canvas.drawRect(
+                                    0.0f,
+                                    0.0f,
+                                    canvas.getWidth() / 2.0f,
+                                    canvas.getHeight(),
+                                    bluePaint);
+                            canvas.drawRect(
+                                    canvas.getWidth() / 2.0f,
+                                    0.0f,
+                                    canvas.getWidth(),
+                                    canvas.getHeight(),
+                                    redPaint);
                         }) {
                     @Override
                     public void surfaceCreated(SurfaceHolder holder) {
