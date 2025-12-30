@@ -72,24 +72,23 @@ class AppFunctionMetadataTestHelper {
         val SAME_PACKAGE_KILL = AppFunctionName(CURRENT_PKG, "kill")
         val SAME_PACKAGE_LONG_RUNNING_FUNCTION = AppFunctionName(CURRENT_PKG, "longRunningFunction")
         val SAME_PACKAGE_NO_SCHEMA = AppFunctionName(CURRENT_PKG, "noSchema")
+        val SAME_PACKAGE_CONTEXT = AppFunctionName(CURRENT_PKG, "contextDisabledByDefault")
 
-        val HELPER_PACKAGE_APP_LEVEL_FUNCTIONS: Set<AppFunctionName> = setOf(
-            DYNAMIC_CONCAT_STRINGS,
-            DYNAMIC_LONG_RUNNING,
-            DYNAMIC_OUTPUT_INVALID_ARGUMENT,
-            DYNAMIC_THROW_UNKNOWN_EXCEPTION,
-            DYNAMIC_THROW_INVALID_ARGUMENT,
-            DYNAMIC_STOP_PROCESS,
-        )
+        val HELPER_PACKAGE_APP_LEVEL_FUNCTIONS: Set<AppFunctionName> =
+            setOf(
+                DYNAMIC_CONCAT_STRINGS,
+                DYNAMIC_LONG_RUNNING,
+                DYNAMIC_OUTPUT_INVALID_ARGUMENT,
+                DYNAMIC_THROW_UNKNOWN_EXCEPTION,
+                DYNAMIC_THROW_INVALID_ARGUMENT,
+                DYNAMIC_STOP_PROCESS,
+            )
 
-        val HELPER_PACKAGE_SERVICE_LEVEL_FUNCTIONS: Set<AppFunctionName> = setOf(
-            HIGH_SCHEMA_VERSION,
-            ENABLED_BY_DEFAULT,
-            DISABLED_BY_DEFAULT
-        )
+        val HELPER_PACKAGE_SERVICE_LEVEL_FUNCTIONS: Set<AppFunctionName> =
+            setOf(HIGH_SCHEMA_VERSION, ENABLED_BY_DEFAULT, DISABLED_BY_DEFAULT)
 
-        val HELPER_PACKAGE_FUNCTIONS = HELPER_PACKAGE_APP_LEVEL_FUNCTIONS +
-                HELPER_PACKAGE_SERVICE_LEVEL_FUNCTIONS
+        val HELPER_PACKAGE_FUNCTIONS =
+            HELPER_PACKAGE_APP_LEVEL_FUNCTIONS + HELPER_PACKAGE_SERVICE_LEVEL_FUNCTIONS
     }
 
     object PackageMetadata {
@@ -133,8 +132,8 @@ class AppFunctionMetadataTestHelper {
                         GenericDocument.Builder<GenericDocument.Builder<*>>(
                                 "app_functions",
                                 "android.app.appfunctions.cts.dynamic.schema/" +
-                                        "appFunctionEnabledByDefault/" +
-                                        "nestedDocumentProperty",
+                                    "appFunctionEnabledByDefault/" +
+                                    "nestedDocumentProperty",
                                 "NestedDocument-android.app.appfunctions.cts.dynamic.schema",
                             )
                             .setPropertyString("nestedRepeatedString", "value 1", "value 2")
