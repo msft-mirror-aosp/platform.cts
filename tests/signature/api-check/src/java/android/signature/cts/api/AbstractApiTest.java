@@ -95,6 +95,24 @@ public abstract class AbstractApiTest {
                 Settings.Global.HIDDEN_API_POLICY);
     }
 
+    private static boolean shouldExcludeClass(String name) {
+        // com.android.internal.R.* inner classes are also excluded as they are
+        // not part of API though exist in the runtime.
+        if (name.startsWith("com.android.internal.R.")) {
+            return true;
+        }
+        // http://b/407596762: This class requires prior initialization which
+        // this test does not know how to perform.
+        // This would normally not be an issue, but this leads to a native
+        // crash instead of a native exception; which this test is not able to
+        // recover from.
+        if (name.startsWith("android.net.connectivity.org.chromium.base.TraceEvent")
+                || name.startsWith("android.net.http.internal.org.chromium.base.TraceEvent")) {
+            return true;
+        }
+        return false;
+    }
+
     @Before
     public void setUp() throws Exception {
         mResultObserver = new TestResultObserver();
@@ -119,24 +137,7 @@ public abstract class AbstractApiTest {
                 new ExcludingClassProvider(
                         new BootClassPathClassesProvider(),
                         name -> {
-                            if (name == null) {
-                                return false;
-                            }
-                            // com.android.internal.R.* inner classes are also excluded as they are
-                            // not part of API though exist in the runtime.
-                            if (name.startsWith("com.android.internal.R.")) {
-                                return true;
-                            }
-                            // http://b/407596762: This class requires prior initialization which
-                            // this test does not know how to perform.
-                            // This would normally not be an issue, but this leads to a native
-                            // crash instead of a native exception; which this test is not able to
-                            // recover from.
-                            if (name.startsWith(
-                                    "android.net.connectivity.org.chromium.base.TraceEvent")) {
-                                return true;
-                            }
-                            return false;
+                            return name != null && shouldExcludeClass(name);
                         });
 
         String dynamicConfigName = instrumentationArgs.getString(DYNAMIC_CONFIG_NAME_OPTION);
