@@ -2191,10 +2191,17 @@ public class VehiclePropertyVerifier<T> {
                                 SecurityException.class,
                                 () -> carPropertyValue.getPropertyVendorStatus());
                     } else {
-                        assertThat(carPropertyValue.getPropertyVendorStatus())
-                                .isAtLeast(PROPERTY_VENDOR_STATUS_MINIMUM_VALUE);
-                        assertThat(carPropertyValue.getPropertyVendorStatus())
-                                .isAtMost(PROPERTY_VENDOR_STATUS_MAXIMUM_VALUE);
+                        assertWithMessage(
+                                        "Property Vendor Status %s is out of expected range [%s,"
+                                                + " %s]",
+                                        carPropertyValue.getPropertyVendorStatus(),
+                                        PROPERTY_VENDOR_STATUS_MINIMUM_VALUE,
+                                        PROPERTY_VENDOR_STATUS_MAXIMUM_VALUE)
+                                .that(carPropertyValue.getPropertyVendorStatus())
+                                .isIn(
+                                        Range.closed(
+                                                PROPERTY_VENDOR_STATUS_MINIMUM_VALUE,
+                                                PROPERTY_VENDOR_STATUS_MAXIMUM_VALUE));
                     }
                 }
             }
