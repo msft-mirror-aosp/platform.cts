@@ -1121,7 +1121,12 @@ public class VehiclePropertyVerifier<T> {
         for (String writePermission : writePermissions) {
             runWithShellPermissionIdentity(
                     () -> {
-                        assertThat(getCarPropertyConfig(/* useCache= */ false)).isNull();
+                        // It is possible that the caller has the read permissions without adopting
+                        // the shell identity (e.g. ATS adopts all GMSCore permissions). In this
+                        // case, getCarPropertyConfig will not return null.
+                        if (!hasReadPermissions(mReadPermissions)) {
+                            assertThat(getCarPropertyConfig(/* useCache= */ false)).isNull();
+                        }
                         assertThrows(
                                 mPropertyName
                                         + " - property ID: "
