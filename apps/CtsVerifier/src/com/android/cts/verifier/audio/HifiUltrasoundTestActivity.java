@@ -16,9 +16,6 @@
 
 package com.android.cts.verifier.audio;
 
-import com.android.cts.verifier.PassFailButtons;
-import com.android.cts.verifier.R;
-
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -33,11 +30,12 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
-import android.widget.LinearLayout;
 import android.widget.LinearLayout.LayoutParams;
 import android.widget.PopupWindow;
 import android.widget.TextView;
-import java.util.Arrays;
+
+import com.android.cts.verifier.PassFailButtons;
+import com.android.cts.verifier.R;
 
 import com.androidplot.ui.AnchorPosition;
 import com.androidplot.ui.DynamicTableModel;
@@ -45,13 +43,15 @@ import com.androidplot.ui.XLayoutStyle;
 import com.androidplot.ui.YLayoutStyle;
 import com.androidplot.ui.widget.TextLabelWidget;
 import com.androidplot.util.PixelUtils;
-import com.androidplot.xy.PointLabelFormatter;
 import com.androidplot.xy.LineAndPointFormatter;
 import com.androidplot.xy.SimpleXYSeries;
 import com.androidplot.xy.XYLegendWidget;
 import com.androidplot.xy.XYPlot;
 import com.androidplot.xy.XYSeries;
 import com.androidplot.xy.XYStepMode;
+
+import java.util.Arrays;
+
 public class HifiUltrasoundTestActivity extends PassFailButtons.Activity {
 
   public enum Status {
@@ -418,3 +418,4 @@ public class HifiUltrasoundTestActivity extends PassFailButtons.Activity {
     }
   }
 }
+
