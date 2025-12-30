@@ -29,25 +29,6 @@ import perfetto.protos.PerfettoTrace.ClockSnapshot
 import perfetto.protos.PerfettoTrace.Trace
 import perfetto.protos.PerfettoTrace.TracePacket
 
-fun Trace.getPrimaryTraceClock(): BuiltinClock {
-    for (packet in this.packetList) {
-        if (!packet.hasTraceConfig()) continue
-        if (!packet.traceConfig.hasBuiltinDataSources()) continue
-        if (packet.traceConfig.builtinDataSources.hasPrimaryTraceClock()){
-            return packet.traceConfig.builtinDataSources.primaryTraceClock
-        }
-    }
-
-    for (packet in this.packetList) {
-        if (!packet.hasClockSnapshot()) continue
-        if (!packet.clockSnapshot.hasPrimaryTraceClock()) continue
-
-        return packet.clockSnapshot.primaryTraceClock
-    }
-
-    return BuiltinClock.BUILTIN_CLOCK_BOOTTIME
-}
-
 fun Trace.getTraceClockSnapshots(): List<Map<Int, Long>> {
     val packetList: List<TracePacket> = this.packetList
     val snapshots: MutableList<Map<Int, Long>> = ArrayList()
@@ -64,12 +45,23 @@ fun Trace.getTraceClockSnapshots(): List<Map<Int, Long>> {
     return snapshots
 }
 
-fun convertTimestamp(
+fun TracePacket.getTimestampNs(clockSnapshots: List<Map<Int, Long>>): Long {
+    if (!this.hasTimestampClockId()) {
+        return this.timestamp
+    }
+    return convertTimestamp(
+        timestamp,
+        this.timestampClockId,
+        clockSnapshots
+    )
+}
+
+private fun convertTimestamp(
     timestamp: Long,
     sourceClockId: Int,
-    destClockId: Int,
     clockSnapshots: List<Map<Int, Long>>
 ): Long {
+    val destClockId = BuiltinClock.BUILTIN_CLOCK_BOOTTIME.number
     val relevantSnapshots = clockSnapshots.filter {
         it.containsKey(sourceClockId) && it.containsKey(destClockId)
     }.distinctBy { it[sourceClockId] }.sortedBy { it[sourceClockId] }

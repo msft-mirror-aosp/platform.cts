@@ -30,8 +30,6 @@ import perfetto.protos.PerfettoTrace.GpuCounterDescriptor.MeasureUnit.PERCENT
 import perfetto.protos.PerfettoTrace.GpuCounterEvent
 import perfetto.protos.PerfettoTrace.PrintFtraceEvent
 import perfetto.protos.PerfettoTrace.Trace
-import perfetto.protos.PerfettoTrace.TraceConfig
-import perfetto.protos.PerfettoTrace.TraceConfig.BuiltinDataSource
 import perfetto.protos.PerfettoTrace.TracePacket
 
 private const val RAYTRACING_SUPPORT_EVENT = "CtsTestDeviceRayTracingSupport"
@@ -347,6 +345,42 @@ class ProfilingDataUtilsTest {
         )
     }
 
+    @Test
+    fun calculateMostCommonIntervalNs_emptyList_throws() {
+        val list = emptyList<Long>()
+        assertThrows(IllegalArgumentException::class.java) {
+            calculateMostCommonIntervalNs(list, 10)
+        }
+    }
+
+    @Test
+    fun calculateMostCommonIntervalNs_singleElement_throws() {
+        val list = listOf(100L)
+        assertThrows(IllegalArgumentException::class.java) {
+            calculateMostCommonIntervalNs(list, 10)
+        }
+    }
+
+    @Test
+    fun calculateMostCommonIntervalNs_zeroBucketSize_throws() {
+        val list = listOf(100L, 200L)
+        assertThrows(IllegalArgumentException::class.java) {
+            calculateMostCommonIntervalNs(list, 0)
+        }
+    }
+
+    @Test
+    fun calculateMostCommonIntervalNs_returnsMostFrequentBucket() {
+        val list = listOf(0L, 10L, 20L, 40L)
+        assertThat(calculateMostCommonIntervalNs(list, 10)).isEqualTo(10L)
+    }
+
+    @Test
+    fun calculateMostCommonIntervalNs_handlesJitter() {
+        val list = listOf(0L, 11L, 20L, 30L, 55L)
+        assertThat(calculateMostCommonIntervalNs(list, 10)).isEqualTo(10L)
+    }
+
     private fun buildTraceWithFtraceEvent(eventName: String, value: String): Trace {
         return Trace.newBuilder().apply {
             addPacket(buildFtracePacket(1L, eventName, value))
@@ -412,7 +446,7 @@ class GpuCountersTest {
             // Note the packets are out of order
             addPacket(buildCounterPacket(200L, 20, 22.0))
             addPacket(buildCounterPacket(100L, 10, 11.0))
-            addPacket(buildCounterPacket(300L, 10, 12.0))
+            addPacket(buildCounterPacket(400L, 10, 12.0))
         }.build()
 
         val gpuCounters = GpuCounters(trace)
@@ -427,11 +461,12 @@ class GpuCountersTest {
         assertThat(gpuCounters.counterValues.keys).containsExactly(10, 20)
         assertThat(gpuCounters.counterValues[10]).containsExactly(
             GpuCounterValue(100L, 11.0),
-            GpuCounterValue(300L, 12.0)
+            GpuCounterValue(400L, 12.0)
         ).inOrder()
         assertThat(gpuCounters.counterValues[20]).containsExactly(
             GpuCounterValue(200L, 22.0)
         ).inOrder()
+        assertThat(gpuCounters.eventTimestampsNs).containsExactly(100L, 200L, 400L).inOrder()
     }
 
     @Test
@@ -471,7 +506,7 @@ class GpuCountersTest {
             addPacket(TracePacket.newBuilder().apply {
                 setGpuCounterEvent(GpuCounterEvent.newBuilder().apply {
                     setCounterDescriptor(GpuCounterDescriptor.newBuilder().apply {
-                        addSpecs(GpuCounterDescriptor.GpuCounterSpec.newBuilder().setCounterId(10))
+                        addSpecs(GpuCounterSpec.newBuilder().setCounterId(10))
                     })
                 })
             })
@@ -486,17 +521,10 @@ class GpuCountersTest {
     fun constructor_handlesClockSync() {
         val trace = Trace.newBuilder().apply {
             addPacket(TracePacket.newBuilder().apply {
-                setTraceConfig(TraceConfig.newBuilder().apply {
-                    setBuiltinDataSources(BuiltinDataSource.newBuilder().apply {
-                        setPrimaryTraceClock(BuiltinClock.BUILTIN_CLOCK_MONOTONIC)
-                    })
-                })
-            })
-            addPacket(TracePacket.newBuilder().apply {
                 setClockSnapshot(ClockSnapshot.newBuilder().apply {
                     addClocks(
                         ClockSnapshot.Clock.newBuilder().setClockId(
-                            BuiltinClock.BUILTIN_CLOCK_MONOTONIC.number
+                            BuiltinClock.BUILTIN_CLOCK_BOOTTIME.number
                         ).setTimestamp(10L)
                     )
                     addClocks(
@@ -510,7 +538,7 @@ class GpuCountersTest {
                 setClockSnapshot(ClockSnapshot.newBuilder().apply {
                     addClocks(
                         ClockSnapshot.Clock.newBuilder().setClockId(
-                            BuiltinClock.BUILTIN_CLOCK_MONOTONIC.number
+                            BuiltinClock.BUILTIN_CLOCK_BOOTTIME.number
                         ).setTimestamp(20L)
                     )
                     addClocks(

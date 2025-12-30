@@ -23,64 +23,10 @@ import perfetto.protos.PerfettoTrace.BuiltinClock
 import perfetto.protos.PerfettoTrace.ClockSnapshot
 import perfetto.protos.PerfettoTrace.ClockSnapshot.Clock
 import perfetto.protos.PerfettoTrace.Trace
-import perfetto.protos.PerfettoTrace.TraceConfig
-import perfetto.protos.PerfettoTrace.TraceConfig.BuiltinDataSource
 import perfetto.protos.PerfettoTrace.TracePacket
 
 /** Run as {@code atest GpuProfilingUtilsTestCases}. */
 class ClockUtilsTest {
-    @Test
-    fun getPrimaryTraceClock_configHasClock_usesClockFromConfig() {
-        val trace = Trace.newBuilder().apply {
-            addPacket(TracePacket.newBuilder().apply {
-                setTraceConfig(TraceConfig.newBuilder().apply {
-                    setBuiltinDataSources(BuiltinDataSource.newBuilder().apply {
-                        setPrimaryTraceClock(BuiltinClock.BUILTIN_CLOCK_MONOTONIC)
-                    })
-                })
-            })
-            // This snapshot should be ignored
-            addPacket(TracePacket.newBuilder().apply {
-                setClockSnapshot(ClockSnapshot.newBuilder().apply {
-                    setPrimaryTraceClock(BuiltinClock.BUILTIN_CLOCK_UNKNOWN)
-                })
-            })
-        }.build()
-
-        assertThat(trace.getPrimaryTraceClock()).isEqualTo(BuiltinClock.BUILTIN_CLOCK_MONOTONIC)
-    }
-
-    @Test
-    fun getPrimaryTraceClock_noConfig_usesClockFromSnapshot() {
-        val trace = Trace.newBuilder().apply {
-            addPacket(TracePacket.newBuilder().apply {
-                setClockSnapshot(ClockSnapshot.newBuilder().apply {
-                    setPrimaryTraceClock(BuiltinClock.BUILTIN_CLOCK_UNKNOWN)
-                })
-            })
-        }.build()
-
-        assertThat(trace.getPrimaryTraceClock()).isEqualTo(BuiltinClock.BUILTIN_CLOCK_UNKNOWN)
-    }
-
-    @Test
-    fun getPrimaryTraceClock_noPrimaryClockData_fallsBackToBoottime() {
-        val trace = Trace.newBuilder().apply {
-            addPacket(TracePacket.newBuilder().apply {
-                setClockSnapshot(ClockSnapshot.newBuilder().apply {
-                    addClocks(Clock.newBuilder().apply {
-                        setClockId(456)
-                    })
-                    addClocks(Clock.newBuilder().apply {
-                        setClockId(123)
-                    })
-                })
-            })
-        }.build()
-
-        assertThat(trace.getPrimaryTraceClock()).isEqualTo(BuiltinClock.BUILTIN_CLOCK_BOOTTIME)
-    }
-
     @Test
     fun getTraceClockSnapshots_extractsSnapshotsCorrectly() {
         val trace = Trace.newBuilder().apply {
@@ -107,97 +53,147 @@ class ClockUtilsTest {
     }
 
     @Test
-    fun convertTimestamp_interpolatesCorrectly() {
+    fun getTimestampNs_interpolatesCorrectly() {
+        val bootTime = BuiltinClock.BUILTIN_CLOCK_BOOTTIME.number
         val testSnapshots = listOf(
-            mapOf(1 to 100L, 2 to 1000L),
-            mapOf(1 to 200L, 2 to 2000L),
-            mapOf(1 to 300L, 2 to 3000L)
+            mapOf(1 to 100L, bootTime to 1000L),
+            mapOf(1 to 200L, bootTime to 2000L),
+            mapOf(1 to 300L, bootTime to 3000L)
         )
-        assertThat(convertTimestamp(150L, 1, 2, testSnapshots)).isEqualTo(1500L)
+        val packet = TracePacket.newBuilder()
+            .setTimestamp(150L)
+            .setTimestampClockId(1)
+            .build()
+        assertThat(packet.getTimestampNs(testSnapshots)).isEqualTo(1500L)
     }
 
     @Test
-    fun convertTimestamp_handlesExactMatch() {
+    fun getTimestampNs_handlesExactMatch() {
+        val bootTime = BuiltinClock.BUILTIN_CLOCK_BOOTTIME.number
         val testSnapshots = listOf(
-            mapOf(1 to 100L, 2 to 1000L),
-            mapOf(1 to 200L, 2 to 2000L),
-            mapOf(1 to 300L, 2 to 3000L)
+            mapOf(1 to 100L, bootTime to 1000L),
+            mapOf(1 to 200L, bootTime to 2000L),
+            mapOf(1 to 300L, bootTime to 3000L)
         )
-        assertThat(convertTimestamp(200L, 1, 2, testSnapshots)).isEqualTo(2000L)
+        val packet = TracePacket.newBuilder()
+            .setTimestamp(200L)
+            .setTimestampClockId(1)
+            .build()
+        assertThat(packet.getTimestampNs(testSnapshots)).isEqualTo(2000L)
     }
 
     @Test
-    fun convertTimestamp_extrapolatesBeforeFirstSnapshot() {
+    fun getTimestampNs_extrapolatesBeforeFirstSnapshot() {
+        val bootTime = BuiltinClock.BUILTIN_CLOCK_BOOTTIME.number
         val testSnapshots = listOf(
-            mapOf(1 to 100L, 2 to 1000L),
-            mapOf(1 to 200L, 2 to 2000L),
-            mapOf(1 to 300L, 2 to 3000L)
+            mapOf(1 to 100L, bootTime to 1000L),
+            mapOf(1 to 200L, bootTime to 2000L),
+            mapOf(1 to 300L, bootTime to 3000L)
         )
-        assertThat(convertTimestamp(50L, 1, 2, testSnapshots)).isEqualTo(500L)
+        val packet = TracePacket.newBuilder()
+            .setTimestamp(50L)
+            .setTimestampClockId(1)
+            .build()
+        assertThat(packet.getTimestampNs(testSnapshots)).isEqualTo(500L)
     }
 
     @Test
-    fun convertTimestamp_extrapolatesAfterLastSnapshot() {
+    fun getTimestampNs_extrapolatesAfterLastSnapshot() {
+        val bootTime = BuiltinClock.BUILTIN_CLOCK_BOOTTIME.number
         val testSnapshots = listOf(
-            mapOf(1 to 100L, 2 to 1000L),
-            mapOf(1 to 200L, 2 to 2000L),
-            mapOf(1 to 300L, 2 to 3000L)
+            mapOf(1 to 100L, bootTime to 1000L),
+            mapOf(1 to 200L, bootTime to 2000L),
+            mapOf(1 to 300L, bootTime to 3000L)
         )
-        assertThat(convertTimestamp(350L, 1, 2, testSnapshots)).isEqualTo(3500L)
+        val packet = TracePacket.newBuilder()
+            .setTimestamp(350L)
+            .setTimestampClockId(1)
+            .build()
+        assertThat(packet.getTimestampNs(testSnapshots)).isEqualTo(3500L)
     }
 
     @Test
-    fun convertTimestamp_withDuplicateSnapshots_interpolatesCorrectly() {
+    fun getTimestampNs_withDuplicateSnapshots_interpolatesCorrectly() {
+        val bootTime = BuiltinClock.BUILTIN_CLOCK_BOOTTIME.number
         val testSnapshots = listOf(
-            mapOf(1 to 100L, 2 to 1000L),
-            mapOf(1 to 100L, 2 to 1000L),
-            mapOf(1 to 200L, 2 to 2000L),
-            mapOf(1 to 300L, 2 to 3000L)
+            mapOf(1 to 100L, bootTime to 1000L),
+            mapOf(1 to 100L, bootTime to 1000L),
+            mapOf(1 to 200L, bootTime to 2000L),
+            mapOf(1 to 300L, bootTime to 3000L)
         )
-        assertThat(convertTimestamp(150L, 1, 2, testSnapshots)).isEqualTo(1500L)
+        val packet = TracePacket.newBuilder()
+            .setTimestamp(150L)
+            .setTimestampClockId(1)
+            .build()
+        assertThat(packet.getTimestampNs(testSnapshots)).isEqualTo(1500L)
     }
 
     @Test
-    fun convertTimestamp_withClockDrift_interpolatesCorrectly() {
+    fun getTimestampNs_withClockDrift_interpolatesCorrectly() {
+        val bootTime = BuiltinClock.BUILTIN_CLOCK_BOOTTIME.number
         val snapshotsWithDrift = listOf(
-            mapOf(1 to 100L, 2 to 1000L),
-            mapOf(1 to 200L, 2 to 2000L),
-            mapOf(1 to 300L, 2 to 4000L)
+            mapOf(1 to 100L, bootTime to 1000L),
+            mapOf(1 to 200L, bootTime to 2000L),
+            mapOf(1 to 300L, bootTime to 4000L)
         )
-        assertThat(convertTimestamp(50L, 1, 2, snapshotsWithDrift)).isEqualTo(500L)
-        assertThat(convertTimestamp(150L, 1, 2, snapshotsWithDrift)).isEqualTo(1500L)
-        assertThat(convertTimestamp(250L, 1, 2, snapshotsWithDrift)).isEqualTo(3000L)
-        assertThat(convertTimestamp(350L, 1, 2, snapshotsWithDrift)).isEqualTo(5000L)
+        val packetBuilder = TracePacket.newBuilder().setTimestampClockId(1)
+
+        assertThat(
+            packetBuilder.setTimestamp(50L).build().getTimestampNs(snapshotsWithDrift)
+        ).isEqualTo(500L)
+        assertThat(
+            packetBuilder.setTimestamp(150L).build().getTimestampNs(snapshotsWithDrift)
+        ).isEqualTo(1500L)
+        assertThat(
+            packetBuilder.setTimestamp(250L).build().getTimestampNs(snapshotsWithDrift)
+        ).isEqualTo(3000L)
+        assertThat(
+            packetBuilder.setTimestamp(350L).build().getTimestampNs(snapshotsWithDrift)
+        ).isEqualTo(5000L)
     }
 
     @Test
-    fun convertTimestamp_withMissingClocks_interpolatesWherePossible() {
+    fun getTimestampNs_withMissingClocks_interpolatesWherePossible() {
+        val bootTime = BuiltinClock.BUILTIN_CLOCK_BOOTTIME.number
         val snapshotsWithMissing = listOf(
-            mapOf(1 to 100L, 2 to 1000L, 3 to 10000L),
-            mapOf(2 to 2000L, 3 to 20000L), // Missing clock 1
-            mapOf(1 to 300L, 2 to 3000L, 3 to 30000L),
+            mapOf(1 to 100L, bootTime to 1000L, 3 to 10000L),
+            mapOf(bootTime to 2000L, 3 to 20000L), // Missing clock 1
+            mapOf(1 to 300L, bootTime to 3000L, 3 to 30000L),
         )
-        assertThat(convertTimestamp(150L, 1, 2, snapshotsWithMissing)).isEqualTo(1500L)
-        assertThat(convertTimestamp(150L, 1, 3, snapshotsWithMissing)).isEqualTo(15000L)
+        val packet = TracePacket.newBuilder()
+            .setTimestamp(150L)
+            .setTimestampClockId(1)
+            .build()
+        assertThat(packet.getTimestampNs(snapshotsWithMissing)).isEqualTo(1500L)
     }
 
     @Test
-    fun convertTimestamp_withMissingClocks_throwsForIncompatibleSnapshots() {
+    fun getTimestampNs_withMissingClocks_throwsForIncompatibleSnapshots() {
+        val bootTime = BuiltinClock.BUILTIN_CLOCK_BOOTTIME.number
         val snapshotsWithMissing = listOf(
-            mapOf(1 to 100L, 2 to 1000L, 3 to 10000L),
-            mapOf(2 to 2000L, 3 to 20000L), // Missing clock 1
-            mapOf(1 to 300L, 3 to 30000L), // Missing clock 2
+            mapOf(1 to 100L, bootTime to 1000L, 3 to 10000L),
+            mapOf(bootTime to 2000L, 3 to 20000L), // Missing clock 1
+            mapOf(1 to 300L, 3 to 30000L), // Missing clock bootTime
         )
+        val packet = TracePacket.newBuilder()
+            .setTimestamp(150L)
+            .setTimestampClockId(1)
+            .build()
         assertThrows(IllegalArgumentException::class.java) {
-            convertTimestamp(150L, 1, 2, snapshotsWithMissing)
+            packet.getTimestampNs(snapshotsWithMissing)
         }
     }
 
     @Test
-    fun convertTimestamp_throwsForInsufficientSnapshots() {
-        val notEnoughSnapshots = listOf(mapOf(1 to 100L, 2 to 1000L))
+    fun getTimestampNs_throwsForInsufficientSnapshots() {
+        val bootTime = BuiltinClock.BUILTIN_CLOCK_BOOTTIME.number
+        val notEnoughSnapshots = listOf(mapOf(1 to 100L, bootTime to 1000L))
+        val packet = TracePacket.newBuilder()
+            .setTimestamp(150L)
+            .setTimestampClockId(1)
+            .build()
         assertThrows(IllegalArgumentException::class.java) {
-            convertTimestamp(150L, 1, 2, notEnoughSnapshots)
+            packet.getTimestampNs(notEnoughSnapshots)
         }
     }
 }
