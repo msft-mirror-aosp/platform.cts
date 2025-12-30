@@ -18,10 +18,14 @@ package android.telephonyprovider.cts;
 
 import static android.Manifest.permission.RECEIVE_SENSITIVE_NOTIFICATIONS;
 import static android.provider.Telephony.Sms.CONTAINS_OTP;
+import static android.provider.Telephony.Sms.OTP_SUBTYPE_SMS_RETRIEVER_OTP;
+import static android.provider.Telephony.Sms.OTP_SUBTYPE_WEB_OTP;
 import static android.provider.Telephony.Sms.OTP_TYPE_CONTAINS_OTP;
 import static android.provider.Telephony.Sms.OTP_TYPE_NONE;
 import static android.telephony.cts.util.DefaultSmsAppHelper.assumeMessaging;
 import static android.telephony.cts.util.DefaultSmsAppHelper.assumeTelephony;
+import static android.view.flags.Flags.FLAG_REDACT_OTP_APP_COMPAT_API;
+import static android.view.flags.Flags.FLAG_REDACT_WEB_OTP_SMS_API;
 
 import static androidx.test.InstrumentationRegistry.getContext;
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
@@ -93,16 +97,25 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+
 @SmallTest
 @RunWith(BedsteadJUnit4.class)
 public class SmsTest {
     private static final String TAG = "SmsTest";
     private static final String TEST_SMS_BODY = "TEST_SMS_BODY";
+    private static final String TEST_WEB_OTP_SMS_SUFFIX = "\n\n@test.domain #12345";
     private static final String TEST_OTP_SMS_BODY = "Your one time code is 12345";
     private static final String TEST_NOT_OTP_SMS_BODY = "Your account number is 12345";
     private static final String TEST_ADDRESS = "+19998880001";
     private static final int TEST_THREAD_ID_1 = 101;
     private static final long OTP_HIDING_TIME_MS = TimeUnit.HOURS.toMillis(3);
+    private static final int CONTAINS_SMS_RETRIEVER_OTP =
+            OTP_TYPE_CONTAINS_OTP | OTP_SUBTYPE_SMS_RETRIEVER_OTP;
+    private static final int CONTAINS_WEB_OTP =
+            OTP_TYPE_CONTAINS_OTP | OTP_SUBTYPE_WEB_OTP;
+    private static final int CONTAINS_GENERIC_OTP =
+            OTP_TYPE_CONTAINS_OTP;
+    private static final long FILTER_GENERIC_OTP_CHANGE_ID = 437043173L;
     private Context mContext;
     private ContentResolver mContentResolver;
     private RoleManager mRoleManager;
@@ -631,17 +644,19 @@ public class SmsTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    @RequiresFlagsEnabled({
+            FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API, FLAG_REDACT_OTP_APP_COMPAT_API})
     @EnsureHasNoDeviceOwner
     public void testOtpSms_defaultSmsAppCanRead() {
         final String message = getSmsRetrieverOtpMessage();
         Uri inserted = mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(TEST_ADDRESS,
-                message, System.currentTimeMillis());
+                message, System.currentTimeMillis(), CONTAINS_SMS_RETRIEVER_OTP, -1);
         assertSmsPresence(inserted, message, true);
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    @RequiresFlagsEnabled({
+            FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API, FLAG_REDACT_OTP_APP_COMPAT_API})
     @EnsureHasNoDeviceOwner
     public void testOtpSms_roleHoldingAppCanRead() throws Exception {
         final String message = getSmsRetrieverOtpMessage();
@@ -649,7 +664,8 @@ public class SmsTest {
                 List.of(RoleManager.ROLE_ASSISTANT, RoleManager.ROLE_DIALER);
         Uri inserted =
                 mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(
-                        TEST_ADDRESS, message, System.currentTimeMillis());
+                        TEST_ADDRESS, message, System.currentTimeMillis(),
+                        CONTAINS_SMS_RETRIEVER_OTP, -1);
         for (String roleName : smsOtpReadingRoles) {
             List<String> oldRoleHolders =
                     callWithShellPermissionIdentity(
@@ -669,11 +685,13 @@ public class SmsTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    @RequiresFlagsEnabled({
+            FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API, FLAG_REDACT_OTP_APP_COMPAT_API})
     @EnsureHasNoDeviceOwner
     public void testOtpSms_defaultSmsAppCantUpdate() {
         Uri inserted = mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(TEST_ADDRESS,
-                getSmsRetrieverOtpMessage(), System.currentTimeMillis());
+                getSmsRetrieverOtpMessage(), System.currentTimeMillis(),
+                CONTAINS_SMS_RETRIEVER_OTP, -1);
         ContentValues values = new ContentValues();
         values.put(CONTAINS_OTP, OTP_TYPE_NONE);
         try {
@@ -686,7 +704,8 @@ public class SmsTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    @RequiresFlagsEnabled({
+            FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API, FLAG_REDACT_OTP_APP_COMPAT_API})
     @EnsureHasNoDeviceOwner
     public void testOtpSms_standardAppCantRead() {
         final String message = getSmsRetrieverOtpMessage();
@@ -695,7 +714,7 @@ public class SmsTest {
                         TEST_ADDRESS,
                         message,
                         System.currentTimeMillis(),
-                        OTP_TYPE_CONTAINS_OTP,
+                        CONTAINS_SMS_RETRIEVER_OTP,
                         TEST_THREAD_ID_1);
         try {
             stopBeingDefaultSmsApp();
@@ -709,12 +728,13 @@ public class SmsTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    @RequiresFlagsEnabled({
+            FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API, FLAG_REDACT_OTP_APP_COMPAT_API})
     @EnsureHasNoDeviceOwner
     public void testOtpSms_retrieverHashOwningAppCanRead() {
         final String message = TEST_OTP_SMS_BODY + " " + getSelfSmsRetrieverHash();
         Uri inserted = mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(TEST_ADDRESS,
-                message, System.currentTimeMillis());
+                message, System.currentTimeMillis(), CONTAINS_SMS_RETRIEVER_OTP, -1);
         try {
             stopBeingDefaultSmsApp();
             assertSmsPresence(inserted, message, true);
@@ -724,14 +744,15 @@ public class SmsTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    @RequiresFlagsEnabled({
+            FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API, FLAG_REDACT_OTP_APP_COMPAT_API})
     @EnsureHasNoDeviceOwner
     public void testOtpSms_standardAppCanReadAfterOtpHidingTimeExpires() {
         final String message = getSmsRetrieverOtpMessage();
         long expiredOtpHidingTime =
                 System.currentTimeMillis() - OTP_HIDING_TIME_MS - TimeUnit.MINUTES.toMillis(1);
         Uri inserted = mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(TEST_ADDRESS,
-                message, expiredOtpHidingTime);
+                message, expiredOtpHidingTime, CONTAINS_SMS_RETRIEVER_OTP, -1);
         try {
             stopBeingDefaultSmsApp();
             assertSmsPresence(inserted, message, true);
@@ -741,12 +762,13 @@ public class SmsTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    @RequiresFlagsEnabled({
+            FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API, FLAG_REDACT_OTP_APP_COMPAT_API})
     @EnsureHasNoDeviceOwner
     public void testOtpSms_appWithReadSensitiveNotificationsCanRead() {
         final String message = getSmsRetrieverOtpMessage();
         Uri inserted = mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(TEST_ADDRESS,
-                message, System.currentTimeMillis());
+                message, System.currentTimeMillis(), CONTAINS_SMS_RETRIEVER_OTP, -1);
         try {
             stopBeingDefaultSmsApp();
             SystemUtil.runWithShellPermissionIdentity(
@@ -758,13 +780,15 @@ public class SmsTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    @RequiresFlagsEnabled({
+            FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API, FLAG_REDACT_OTP_APP_COMPAT_API})
     @EnsureHasNoDeviceOwner
     public void testOtpSms_appWithCdmAssociationCanRead() {
         final String message = getSmsRetrieverOtpMessage();
         Uri inserted =
                 mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(
-                        TEST_ADDRESS, message, System.currentTimeMillis());
+                        TEST_ADDRESS, message, System.currentTimeMillis(),
+                        CONTAINS_SMS_RETRIEVER_OTP, -1);
         associateCdm();
         try {
             stopBeingDefaultSmsApp();
@@ -776,7 +800,8 @@ public class SmsTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    @RequiresFlagsEnabled({
+            FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API, FLAG_REDACT_OTP_APP_COMPAT_API})
     @EnsureHasNoDeviceOwner
     public void testOtpSms_appWithCarrierPrivilegeCanRead() throws Exception {
         assumeTrue(
@@ -790,7 +815,8 @@ public class SmsTest {
                         .hasSystemFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         Uri inserted =
                 mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(
-                        TEST_ADDRESS, message, System.currentTimeMillis());
+                        TEST_ADDRESS, message, System.currentTimeMillis(),
+                        CONTAINS_SMS_RETRIEVER_OTP, -1);
         try {
             stopBeingDefaultSmsApp();
             CarrierPrivilegeUtils.withCarrierPrivileges(
@@ -804,15 +830,17 @@ public class SmsTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    @RequiresFlagsEnabled({
+            FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API, FLAG_REDACT_OTP_APP_COMPAT_API})
     @EnsureHasNoDeviceOwner
     public void testOtpSms_updatesFromOtpPending() {
         Uri inserted = mSmsTestHelper.insertTestSms(TEST_ADDRESS, getSmsRetrieverOtpMessage());
-        SystemUtil.eventually(() -> assertSmsOtpColumn(inserted, OTP_TYPE_CONTAINS_OTP));
+        SystemUtil.eventually(() -> assertSmsOtpColumn(inserted, CONTAINS_SMS_RETRIEVER_OTP));
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    @RequiresFlagsEnabled({
+            FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API, FLAG_REDACT_OTP_APP_COMPAT_API})
     @EnsureHasDeviceOwner
     public void testOtpSms_standardAppCanRead_ifOwnedDevice() {
         final String message = getSmsRetrieverOtpMessage();
@@ -823,7 +851,8 @@ public class SmsTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API})
+    @RequiresFlagsEnabled({
+            FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API, FLAG_REDACT_OTP_APP_COMPAT_API})
     @EnsureHasNoDeviceOwner
     public void testOtpSms_otpFalsePositive() {
         Uri inserted = mSmsTestHelper.insertTestSms(TEST_ADDRESS, TEST_NOT_OTP_SMS_BODY);
@@ -901,7 +930,6 @@ public class SmsTest {
         }
     }
 
-
     @Test
     @RequiresFlagsEnabled(FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
     public void queryRestrictedSms_byDefaultSmsApp_returnsTheMessage() {
@@ -909,6 +937,124 @@ public class SmsTest {
                 TEST_THREAD_ID_1, /* isRestricted= */ true);
 
         assertSmsPresence(inserted, TEST_SMS_BODY, /* canRead= */ true);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+            FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API, FLAG_REDACT_WEB_OTP_SMS_API,
+            FLAG_REDACT_OTP_APP_COMPAT_API})
+    @EnsureHasNoDeviceOwner
+    public void testWebOtpSms_defaultSmsApp_handlesWebOtpSuccessfully() {
+        // This test inserts a Web OTP message.
+        // The TextClassifier should correctly classifies it as a Web OTP message.
+        // Default SMS app is considered a trusted package.
+        // Hence a Web OTP message should be visible to a default SMS app.
+        final String message = getWebOtpMessage();
+        Uri inserted = mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(TEST_ADDRESS,
+                message, System.currentTimeMillis(), CONTAINS_WEB_OTP, -1);
+        assertSmsPresence(inserted, message, true);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+            FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API, FLAG_REDACT_WEB_OTP_SMS_API,
+            FLAG_REDACT_OTP_APP_COMPAT_API})
+    @EnsureHasNoDeviceOwner
+    public void testWebOtpSms_standardApp_protectsWebOtpSuccessfully() {
+        // This test inserts a Web OTP message.
+        // The TextClassifier should correctly classifies it as a Web OTP message.
+        // A standard app is considered not a trusted package by default (unless by exception).
+        // Hence a Web OTP message should not be visible to a standard app.
+        final String message = getWebOtpMessage();
+        Uri inserted =
+                mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(
+                        TEST_ADDRESS,
+                        message,
+                        System.currentTimeMillis(),
+                        CONTAINS_WEB_OTP,
+                        TEST_THREAD_ID_1);
+        try {
+            stopBeingDefaultSmsApp();
+            // Message should be inaccessible when querying directly, or by conversation ID
+            assertSmsPresence(inserted, message, /* canRead */ false);
+            Uri threadUri = Uri.parse(Telephony.Sms.CONTENT_URI + "/conversations");
+            assertSmsPresence(threadUri, message, /* canRead */ false);
+        } finally {
+            ensureDefaultSmsApp();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+            FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API, FLAG_REDACT_OTP_APP_COMPAT_API})
+    @EnsureHasNoDeviceOwner
+    public void testGenericOtpSms_defaultSmsApp_handlesGenericOtpSuccessfully() {
+        // In this test, a Generic OTP message is inserted.
+        // The TextClassifier should correctly classifies the message as a Generic OTP.
+        // The default SMS app is considered a trusted package.
+        // Hence, the Generic OTP should be visible to the trusted package.
+        String message = getGenericOtpMessage();
+        Uri inserted = mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(TEST_ADDRESS,
+                message, System.currentTimeMillis(), CONTAINS_GENERIC_OTP, -1);
+        assertSmsPresence(inserted, message, true);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+            FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API, FLAG_REDACT_OTP_APP_COMPAT_API})
+    @EnsureHasNoDeviceOwner
+    public void testGenericOtpSms_filterGenericOtpEnabled_protectsGenericOtpSuccessfully() {
+        // If a standard app targets SDK 37 or above, generic OTP protection is strictly enabled.
+        // This means, a standard app should not be able to view the generic OTP.
+        try {
+            runShellCommand("am compat enable --no-kill "
+                    + FILTER_GENERIC_OTP_CHANGE_ID + " " + getContext().getPackageName());
+            final String message = getGenericOtpMessage();
+            Uri inserted =
+                    mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(
+                            TEST_ADDRESS,
+                            message,
+                            System.currentTimeMillis(),
+                            CONTAINS_GENERIC_OTP,
+                            TEST_THREAD_ID_1);
+            stopBeingDefaultSmsApp();
+            // Message should be inaccessible when querying directly, or by conversation ID
+            assertSmsPresence(inserted, message, /* canRead */ false);
+            Uri threadUri = Uri.parse(Telephony.Sms.CONTENT_URI + "/conversations");
+            assertSmsPresence(threadUri, message, /* canRead */ false);
+        } finally {
+            ensureDefaultSmsApp();
+            runShellCommand("am compat reset --no-kill "
+                    + FILTER_GENERIC_OTP_CHANGE_ID + " " + getContext().getPackageName());
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+            FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API, FLAG_REDACT_OTP_APP_COMPAT_API})
+    @EnsureHasNoDeviceOwner
+    public void testGenericOtpSms_filterGenericOtpDisabled_handlesAppCompatSuccessfully() {
+        // If a standard app does not target SDK 37 or above, the generic OTP protection is not
+        // enabled for that app to ensure app compatibility. Hence, the app should still be able
+        // to see the generic OTP message.
+        try {
+            runShellCommand("am compat disable --no-kill "
+                    + FILTER_GENERIC_OTP_CHANGE_ID + " " + getContext().getPackageName());
+            final String message = getGenericOtpMessage();
+            Uri inserted =
+                    mSmsTestHelper.insertTestOtpSmsAndWaitForOtpDetection(
+                            TEST_ADDRESS,
+                            message,
+                            System.currentTimeMillis(),
+                            CONTAINS_GENERIC_OTP,
+                            TEST_THREAD_ID_1);
+            stopBeingDefaultSmsApp();
+            assertSmsPresence(inserted, message, /* canRead */ true);
+        } finally {
+            ensureDefaultSmsApp();
+            runShellCommand("am compat reset --no-kill "
+                    + FILTER_GENERIC_OTP_CHANGE_ID + " " + getContext().getPackageName());
+        }
     }
 
     // Gets the retriever hash belong to itself
@@ -949,6 +1095,14 @@ public class SmsTest {
 
     private String getSmsRetrieverOtpMessage() {
         return TEST_OTP_SMS_BODY + " " + getSmsRetrieverHash();
+    }
+
+    private String getGenericOtpMessage() {
+        return TEST_OTP_SMS_BODY;
+    }
+
+    private String getWebOtpMessage() {
+        return TEST_OTP_SMS_BODY + TEST_WEB_OTP_SMS_SUFFIX;
     }
 
     private void assertSmsPresence(Uri uri, String smsBody, boolean canRead) {
