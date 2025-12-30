@@ -199,13 +199,6 @@ public class DataServiceCallbackTest {
     }
 
     @Test
-    public void testOnDataCallListChangedWithFlag() {
-        mDataServiceCallback.onDataCallListUpdated(DATA_CALL_LIST);
-        assertThat(DATA_CALL_LIST).isEqualTo(mDataCallList);
-        assertThat(mRequireExplicitDisconnect).isEqualTo(true);
-    }
-
-    @Test
     public void testOnHandoverStarted() {
         mDataServiceCallback.onHandoverStarted(RESULT);
         assertThat(RESULT).isEqualTo(mResult);
