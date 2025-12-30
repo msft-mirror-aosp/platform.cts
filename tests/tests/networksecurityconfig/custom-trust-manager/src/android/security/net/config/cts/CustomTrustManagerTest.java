@@ -25,6 +25,10 @@ import android.security.net.config.cts.CtsNetSecConfigCustomTrustManagerTestCase
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.io.InputStream;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
@@ -34,10 +38,6 @@ import java.util.Collection;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
 public class CustomTrustManagerTest {
@@ -54,7 +54,8 @@ public class CustomTrustManagerTest {
         SSLContext sslContext = getCustomSSLContext(R.raw.for_connecting_to_google_certs);
 
         assertSslSocketSucceeds(sslContext, "android.com", 443);
-        assertSslSocketSucceeds(sslContext, "no-sct.badssl.com", 443);
+        // TODO(b/471062252): re-enable once badssl.com gets a new certificate.
+        // assertSslSocketSucceeds(sslContext, "no-sct.badssl.com", 443);
     }
 
     @Test
