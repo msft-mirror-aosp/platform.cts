@@ -16,6 +16,10 @@
 
 package android.graphics.gpuprofiling.cts;
 
+import static android.graphics.gpuprofiling.cts.ProfilingDataUtilsKt.APP;
+import static android.graphics.gpuprofiling.cts.ProfilingDataUtilsKt.COUNTERS_SOURCE_NAME;
+import static android.graphics.gpuprofiling.cts.ProfilingDataUtilsKt.STAGES_SOURCE_NAME;
+import static android.graphics.gpuprofiling.cts.ProfilingDataUtilsKt.buildConfig;
 import static android.graphics.gpuprofiling.cts.ProfilingDataUtilsKt.counterMatchesGpuUtilisation;
 import static android.graphics.gpuprofiling.cts.ProfilingDataUtilsKt.getGpuUsageTimeline;
 
@@ -23,6 +27,8 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assume.assumeFalse;
+
+import static java.util.Collections.emptySet;
 
 import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
@@ -85,14 +91,9 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
     // - Ensure the validity of GPU counter values
 
     private static final String BIN_NAME = "gpu_counter_producer";
-    private static final String APP = "android.graphics.gpuprofiling.app";
     private static final String APK = "CtsGraphicsProfilingDataApp.apk";
     private static final String ACTIVITY = APP + "/.GpuProfilingNativeActivity";
     private static final int MAX_WAIT_FOR_ACTIVITY_SECONDS = 10;
-    private static final String COUNTERS_SOURCE_NAME = "gpu.counters";
-    private static final String STAGES_SOURCE_NAME = "gpu.renderstages";
-    private static final String FTRACE_SOURCE_NAME = "linux.ftrace";
-    private static final String GPU_FREQ_FTRACE = "power/gpu_frequency";
     private static final String PROFILING_PROPERTY = "graphics.gpu.profiler.support";
     private static final String GPU_FREQUENCY_CAPABILITY_PROPERTY =
             "graphics.gpu.profiler.support.gpu_frequency";
@@ -105,9 +106,7 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
     private static final String LAYER_PACKAGE_PROPERTY = "graphics.gpu.profiler.vulkan_layer_apk";
     private static final String LAYER_NAME = "VkRenderStagesProducer";
     private static final String DEBUG_PROPERTY = "debug.graphics.gpu.profiler.perfetto";
-    private static final int TRACE_BUFFER_SIZE_KB = 131072; // 1024 * 128
     private static final Duration TRACE_COUNTER_PERIOD_5MS = Duration.ofMillis(5);
-    private static final Duration TRACE_DURATION = Duration.ofSeconds(10);
     private static final String TRACE_FILE_PATH = "/data/misc/perfetto-traces/cts-trace";
 
     // Copied from PackageManager
@@ -216,8 +215,8 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
 
         boolean countersSourceFound = false;
         boolean stagesSourceFound = false;
-        Set<Integer> allCounterIds = null;
-        Set<Integer> defaultCounterIds = null;
+        Set<Integer> allCounterIds = emptySet();
+        Set<Integer> defaultCounterIds = emptySet();
         List<GpuCounterSpec> gpuCounterSpecsList = null;
 
         CommandResult queryStatus =
@@ -492,30 +491,5 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
         for (String feature : features) {
             assumeFalse(hasDeviceFeature(feature));
         }
-    }
-
-    private TraceConfig buildConfig(
-            Set<Integer> counterIds, Duration counterPeriod, boolean withFrequencyAndRenderStages) {
-        TraceConfig.Builder config =
-                TraceConfig.newBuilder().setDurationMs((int) TRACE_DURATION.toMillis());
-        config.addBuffersBuilder().setSizeKb(TRACE_BUFFER_SIZE_KB);
-        if (mHasGpuCountersCapability) {
-            config.addDataSourcesBuilder()
-                    .getConfigBuilder()
-                    .setName(COUNTERS_SOURCE_NAME)
-                    .getGpuCounterConfigBuilder()
-                    .setCounterPeriodNs(counterPeriod.toNanos())
-                    .addAllCounterIds(counterIds);
-        }
-        if (withFrequencyAndRenderStages) {
-        config.addDataSourcesBuilder()
-                .getConfigBuilder()
-                .setName(FTRACE_SOURCE_NAME)
-                .getFtraceConfigBuilder()
-                .addFtraceEvents(GPU_FREQ_FTRACE)
-                .addAtraceApps(APP);
-            config.addDataSourcesBuilder().getConfigBuilder().setName(STAGES_SOURCE_NAME);
-        }
-        return config.build();
     }
 }

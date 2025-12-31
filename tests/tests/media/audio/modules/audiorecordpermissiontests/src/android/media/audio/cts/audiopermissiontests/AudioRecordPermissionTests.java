@@ -16,11 +16,9 @@
 
 package android.media.audio.cts.audiopermissiontests;
 
-import static android.media.audio.cts.audiopermissiontests.common.ActionsKt.*;
-import static android.app.AppOpsManager.OP_RECORD_AUDIO;
 import static android.app.AppOpsManager.OPSTR_RECORD_AUDIO;
-import static android.app.AppOpsManager.MODE_ALLOWED;
-import static android.app.AppOpsManager.MODE_IGNORED;
+import static android.app.AppOpsManager.OP_RECORD_AUDIO;
+import static android.media.audio.cts.audiopermissiontests.common.ActionsKt.*;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 import static com.android.media.mediatestutils.TestUtils.getFutureForIntent;
@@ -30,14 +28,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
-import static org.junit.Assume.assumeFalse;
 
-import android.Manifest;
-import android.app.Instrumentation;
 import android.app.AppOpsManager;
-import android.os.Bundle;
-import android.content.Context;
+import android.app.Instrumentation;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.AudioFormat;
@@ -52,11 +47,11 @@ import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.UiDevice;
 
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
-import com.android.compatibility.common.util.DeviceConfigStateChangerRule;
-
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -65,8 +60,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.List;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -585,8 +580,11 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
     public void testIfAttemptChangeCapabilities_isNotSilenced() throws Exception {
         var TEST_PACKAGE = API_34_PACKAGE;
         // Go foreground without WIU caps. Note: if we attempt to start with record here, AMS throws
-        mContext.sendBroadcast(new Intent(TEST_PACKAGE + ACTION_BOUNCE_FOREGROUND)
-                .setComponent(new ComponentName(TEST_PACKAGE, TEST_PACKAGE + ".TrampolineReceiver")));
+        mContext.sendBroadcast(
+                new Intent(TEST_PACKAGE + ACTION_BOUNCE_FOREGROUND)
+                        .setComponent(
+                                new ComponentName(
+                                        TEST_PACKAGE, TEST_PACKAGE + ".TrampolineReceiver")));
         SystemUtil.runShellCommand("am wait-for-broadcast-barrier");
         SystemUtil.runShellCommand(mInstrumentation, "am unfreeze --sticky " + TEST_PACKAGE);
 
@@ -646,6 +644,14 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
     }
 
     private void stopActivity(String packageName) throws Exception {
+        // On desktop, finishing the activity doesn't always bring the app to the background.
+        // Pressing home ensures the activity is no longer in the foreground.
+        if (FeatureUtil.isDesktop()) {
+            final UiDevice uiDevice =
+                    UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+            uiDevice.pressHome();
+            uiDevice.waitForIdle();
+        }
         final var future = makeFuture(packageName + ACTION_ACTIVITY_FINISHED);
         mContext.sendBroadcast(
                 new Intent(packageName + ACTION_FINISH_ACTIVITY).setPackage(packageName));

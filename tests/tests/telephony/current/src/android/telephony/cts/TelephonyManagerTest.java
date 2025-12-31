@@ -3205,7 +3205,8 @@ public class TelephonyManagerTest {
             // IllegalArgumentException and IllegalStateException is okay, just not
             // SecurityException
         } catch (SecurityException e) {
-            throw new AssertionError("iccOpenLogicalChannelByPort: SecurityException not expected", e);
+            throw new AssertionError(
+                    "iccOpenLogicalChannelByPort: SecurityException not expected", e);
         }
     }
 
@@ -4929,7 +4930,7 @@ public class TelephonyManagerTest {
     }
 
     @Test
-    public void testGetAllCellInfo() {
+    public void testGetAllCellInfo() throws Exception {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         mLocationHelper.enable();
@@ -4939,6 +4940,28 @@ public class TelephonyManagerTest {
             mTelephonyManager.getAllCellInfo();
             return;
         }
+
+        // Partial fix for a race condition in the event that devices do not proactively
+        // update Android about a change in the available CellInfo. This bit of code tries
+        // to force the update to happen if it didn't happen organically. Note: it is still
+        // possible that a device which is reselecting between cells during CTS testing
+        // (which is unlikely but possible) will have stale cellInfo during this test due to
+        // power optimizations.
+        final CountDownLatch latch = new CountDownLatch(1);
+        mTelephonyManager.requestCellInfoUpdate(
+                Runnable::run,
+                new TelephonyManager.CellInfoCallback() {
+                    @Override
+                    public void onCellInfo(List<CellInfo> unused) {
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(int unusedErrorCode, Throwable unusedThrowable) {
+                        latch.countDown();
+                    }
+                });
+        assertTrue(latch.await(500, TimeUnit.MILLISECONDS));
 
         boolean isVoiceCapable = mTelephonyManager.isDeviceVoiceCapable();
         boolean isDataCapable = mTelephonyManager.isDataCapable();

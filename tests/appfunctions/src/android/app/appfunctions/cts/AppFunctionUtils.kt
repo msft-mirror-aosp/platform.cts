@@ -111,6 +111,11 @@ object AppFunctionUtils {
             .isEqualTo("Package $packageName installed for user: $userId\n")
     }
 
+    fun uninstallPackageAsUser(packageName: String, user: UserReference) {
+        val userId = user.id()
+        SystemUtil.runShellCommand("pm uninstall --user $userId $packageName")
+    }
+
     /** Gets all the static metadata packages. */
     fun getAllStaticMetadataPackages(context: Context? = null) =
         searchStaticMetadata(context).map { it.getPropertyString(PROPERTY_PACKAGE_NAME) }.toSet()

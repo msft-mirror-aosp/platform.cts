@@ -16,14 +16,24 @@
 
 package android.graphics.gpuprofiling.cts
 
+import java.time.Duration
 import kotlin.math.max
 import kotlin.math.min
+import perfetto.protos.PerfettoConfig.TraceConfig
 import perfetto.protos.PerfettoTrace
 import perfetto.protos.PerfettoTrace.GpuCounterDescriptor.GpuCounterSpec
 import perfetto.protos.PerfettoTrace.Trace
 
 private const val RAYTRACING_SUPPORT_EVENT = "CtsTestDeviceRayTracingSupport"
 private const val GPU_USAGE_MODE_EVENT = "CtsTestGpuUsageMode"
+
+const val COUNTERS_SOURCE_NAME = "gpu.counters"
+const val STAGES_SOURCE_NAME = "gpu.renderstages"
+const val FTRACE_SOURCE_NAME = "linux.ftrace"
+const val GPU_FREQ_FTRACE = "power/gpu_frequency"
+const val APP = "android.graphics.gpuprofiling.app"
+const val TRACE_BUFFER_SIZE_KB = 131072 // 1024 * 128
+val TRACE_DURATION: Duration = Duration.ofSeconds(10)
 
 enum class Mode {
     LOW_GPU_USAGE,
@@ -244,4 +254,32 @@ fun List<GpuCounterValue>.containsThreeConsecutiveZeroes(): Boolean {
         }
     }
     return false
+}
+
+fun buildConfig(
+    counterIds: Set<Int>,
+    counterPeriod: Duration,
+    withFrequencyAndRenderStages: Boolean
+): TraceConfig {
+    val config = TraceConfig.newBuilder().setDurationMs(TRACE_DURATION.toMillis().toInt())
+    config.addBuffersBuilder().setSizeKb(TRACE_BUFFER_SIZE_KB)
+    if (counterIds.isNotEmpty()) {
+        config.addDataSourcesBuilder()
+            .configBuilder
+            .setName(COUNTERS_SOURCE_NAME)
+            .gpuCounterConfigBuilder
+            .setCounterPeriodNs(counterPeriod.toNanos())
+            .addAllCounterIds(counterIds)
+    }
+    val ftraceConfig = config.addDataSourcesBuilder()
+        .configBuilder
+        .setName(FTRACE_SOURCE_NAME)
+        .ftraceConfigBuilder
+        .addAtraceApps(APP)
+
+    if (withFrequencyAndRenderStages) {
+        ftraceConfig.addFtraceEvents(GPU_FREQ_FTRACE)
+        config.addDataSourcesBuilder().configBuilder.setName(STAGES_SOURCE_NAME)
+    }
+    return config.build()
 }

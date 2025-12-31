@@ -83,7 +83,9 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
         new HostTestCategory("Notification Tests")
                 .addTest(
                         "CtsNotificationSizeVerifierHostTest",
-                        "CtsNotificationSizeVerifierHostTest")
+                        "CtsNotificationSizeVerifierHostTest"),
+        new HostTestCategory("SystemUI Tests")
+                .addTest("CtsSysuiInteractiveTestCases", "CtsSysuiInteractiveTestCases")
     };
 
     // List of test categories that will be excluded on Automotive.
@@ -320,9 +322,14 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
 
         boolean isAutomotive =
                 getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+        boolean hasNfc =
+            getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION);
         mTestListAdapter = new ArrayTestListAdapter(this);
         for (HostTestCategory testCategory : mHostTestCategories) {
             if (isAutomotive && EXCLUDED_CATEGORIES_ON_AUTOMOTIVE.contains(testCategory.mTitle)) {
+                continue;
+            }
+            if (!hasNfc && "NFC Tests".equals(testCategory.mTitle)) {
                 continue;
             }
             mTestListAdapter.addAll(testCategory.generateTestListItems());

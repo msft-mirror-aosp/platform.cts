@@ -7982,6 +7982,7 @@ You should be prompted to select credentials; choose the ones you just installed
         <item>CtsWifiPermissionTests</item>
         <!-- Interactive modules -->
         <item>CtsNotificationSizeVerifierHostTest</item>
+        <item>CtsSysuiInteractiveTestCases</item>
     </string-array>
 
     <!-- Strings for Audio Workload Test. -->

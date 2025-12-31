@@ -23,6 +23,7 @@ import android.app.NotificationManager;
 import android.app.Service;
 import android.app.WallpaperManager;
 import android.app.admin.DevicePolicyManager;
+import android.app.supervision.SupervisionManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.content.BroadcastReceiver;
@@ -128,7 +129,12 @@ import com.android.eventlib.premade.EventLibService;
                     frameworkClass = MediaProjectionManager.class,
                     constructor =
                             "context.getSystemService(android.media.projection."
-                                    + "MediaProjectionManager.class)")
+                                    + "MediaProjectionManager.class)"),
+            @FrameworkClass(
+                    frameworkClass = SupervisionManager.class,
+                    constructor =
+                            "context.getSystemService(android.app.supervision."
+                                    + "SupervisionManager.class)")
         })
 public final class TestAppAppComponentFactory extends AppComponentFactory {
 
