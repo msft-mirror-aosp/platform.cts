@@ -302,8 +302,8 @@ public class TabWidgetTest {
 
     @Test
     public void testStripDrawables() throws Throwable {
-        mTabWidget.setStripEnabled(true);
-
+        WidgetTestUtils.runOnMainAndDrawSync(
+                mActivityRule, mTabWidget, () -> mTabWidget.setStripEnabled(true));
         // Test setting left strip drawable
         WidgetTestUtils.runOnMainAndDrawSync(mActivityRule, mTabWidget,
                 () -> mTabWidget.setLeftStripDrawable(R.drawable.icon_green));

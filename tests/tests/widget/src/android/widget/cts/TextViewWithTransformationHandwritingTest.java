@@ -311,8 +311,13 @@ public class TextViewWithTransformationHandwritingTest {
                 .setInsertionPoint(point)
                 .setTextToInsert(INSERT_TEXT)
                 .build();
-        InputConnection inputConnection = mEditText.onCreateInputConnection(new EditorInfo());
-        inputConnection.performHandwritingGesture(gesture, Runnable::run, mResultConsumer);
+        sInstrumentation.runOnMainSync(
+                () -> {
+                    InputConnection inputConnection =
+                            mEditText.onCreateInputConnection(new EditorInfo());
+                    inputConnection.performHandwritingGesture(
+                            gesture, Runnable::run, mResultConsumer);
+                });
     }
 
     private void assertGestureSelectedRange(int start, int end) {
