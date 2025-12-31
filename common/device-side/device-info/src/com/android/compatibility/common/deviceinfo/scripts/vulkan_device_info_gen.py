@@ -308,63 +308,10 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     store.endGroup();
                 }
                 store.endArray();
-
-                if (properties.getLong(KEY_API_VERSION) >= VK_API_VERSION_1_1) {
 \n""")
-        f.write(util.generate_vk_dependent_groups("VK_VERSION_1_1"))
+        f.write(util.generate_vk_version_dependent_structs())
 
         f.write("""
-                    JSONArray externalFences = device.getJSONArray(KEY_EXTERNAL_FENCE_PROPERTIES);
-                    store.startArray(getConvertedName(KEY_EXTERNAL_FENCE_PROPERTIES));
-                    for (int idx = 0; idx < externalFences.length(); ++idx) {
-                        JSONArray externalFencePair = externalFences.getJSONArray(idx);
-                        JSONObject externalFenceProperties = externalFencePair.getJSONObject(1);
-                        store.startGroup();
-                        {
-                            store.addResult(KEY_HANDLE_TYPE, externalFencePair.getLong(0));
-                            emitLong(store, externalFenceProperties, KEY_EXPORT_FROM_IMPORTED_HANDLE_TYPES);
-                            emitLong(store, externalFenceProperties, KEY_COMPATIBLE_HANDLE_TYPES);
-                            emitLong(store, externalFenceProperties, KEY_EXTERNAL_FENCE_FEATURES);
-                        }
-                        store.endGroup();
-                    }
-                    store.endArray();
-
-                    JSONArray externalSemaphores = device.getJSONArray(KEY_EXTERNAL_SEMAPHORE_PROPERTIES);
-                    store.startArray(getConvertedName(KEY_EXTERNAL_SEMAPHORE_PROPERTIES));
-                    for (int idx = 0; idx < externalSemaphores.length(); ++idx) {
-                        JSONArray externalSemaphorePair = externalSemaphores.getJSONArray(idx);
-                        JSONObject externalSemaphoreProperties = externalSemaphorePair.getJSONObject(1);
-                        store.startGroup();
-                        {
-                            store.addResult(KEY_HANDLE_TYPE, externalSemaphorePair.getLong(0));
-                            emitLong(store, externalSemaphoreProperties, KEY_EXPORT_FROM_IMPORTED_HANDLE_TYPES);
-                            emitLong(store, externalSemaphoreProperties, KEY_COMPATIBLE_HANDLE_TYPES);
-                            emitLong(store, externalSemaphoreProperties, KEY_EXTERNAL_SEMAPHORE_FEATURES);
-                        }
-                        store.endGroup();
-                    }
-                    store.endArray();
-                }
-                if (properties.getLong(KEY_API_VERSION) >= VK_API_VERSION_1_2) {
-\n""")
-        f.write(util.generate_vk_dependent_groups("VK_VERSION_1_2"))
-
-        f.write("""
-                }
-
-                if (properties.getLong(KEY_API_VERSION) >= VK_API_VERSION_1_3) {
-\n""")
-        f.write(util.generate_vk_dependent_groups("VK_VERSION_1_3"))
-
-        f.write("""
-                }
-                if (properties.getLong(KEY_API_VERSION) >= VK_API_VERSION_1_4) {
-\n""")
-        f.write(util.generate_vk_dependent_groups("VK_VERSION_1_4"))
-
-        f.write("""
-                }
             }
             store.endGroup();
         }
