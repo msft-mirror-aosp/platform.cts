@@ -28,6 +28,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,6 +41,7 @@ import org.junit.runner.RunWith;
 @SmallTest
 @RequiresDevice
 @AppModeFull(reason = "TODO: evaluate and port to instant")
+@FrameworkSpecificTest
 @RunWith(AndroidJUnit4.class)
 public class MediaPlayerSurfaceTest {
 
