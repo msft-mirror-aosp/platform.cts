@@ -63,6 +63,7 @@ import android.telephony.cts.util.TelephonyUtils;
 import android.telephony.mockmodem.MockCallControlInfo;
 import android.telephony.mockmodem.MockModemConfigInterface;
 import android.util.Log;
+import android.util.Pair;
 
 import androidx.annotation.RequiresApi;
 import androidx.test.InstrumentationRegistry;
@@ -1166,7 +1167,16 @@ public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
 
     @Test
     public void testRebootModem() {
-        Log.d(TAG, "TelephonyManagerTestOnMockModem#testRebootModem");
+        Pair<Integer, Integer> halVersion =
+                sTelephonyManager.getHalVersion(TelephonyManager.HAL_SERVICE_RADIO);
+        Log.d(
+                TAG,
+                "TelephonyManagerTestOnMockModem#testRebootModem on Radio Version "
+                        + halVersion.first
+                        + "."
+                        + halVersion.second);
+        assumeTrue("Radio HAL should be on major version >= 2", halVersion.first >= 2);
+        assumeTrue("Radio HAL should be on minor version >= 4", halVersion.second >= 4);
         sMockModemManager.resetRebootModemCalledFlag(); // Reset flag before test
         try {
             Log.d(TAG, "Calling TelephonyManager.rebootModem()");

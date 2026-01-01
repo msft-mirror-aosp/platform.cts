@@ -20,6 +20,10 @@ import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
 import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
 import static java.lang.Math.max;
 
+import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.Requirements;
+import android.mediapc.cts.common.Requirements.AudioCPUWorkloadRequirement;
+
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -42,9 +46,9 @@ import java.util.List;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.rules.TestName;
 
-// TODO(b/443273535): Update to the correct CDD section when the audio workload CDD is added.
-@CddTest(requirements = "2.2.7.1")
+@CddTest(requirements = "5.6/H-3-1")
 public class AudioWorkloadTestActivity extends PassFailButtons.Activity {
     private static final String TAG = AudioWorkloadTestActivity.class.getSimpleName();
 
@@ -73,6 +77,7 @@ public class AudioWorkloadTestActivity extends PassFailButtons.Activity {
     private int mFinalXRunCount = 0;
     private boolean mWorkloadTestPassed = false;
 
+    public final TestName mTestName = new TestName();
     private static final int MEDIA_PERFORMANCE_CLASS = Build.VERSION.MEDIA_PERFORMANCE_CLASS;
     private static final boolean CLAIMS_MEDIA_PERFORMANCE = MEDIA_PERFORMANCE_CLASS != 0;
     public static final int MPC_CINNAMON_BUN = Build.VERSION_CODES.CINNAMON_BUN;
@@ -253,8 +258,7 @@ public class AudioWorkloadTestActivity extends PassFailButtons.Activity {
         return setTestNameSuffix(sCurrentDisplayMode, SECTION_AUDIO_WORKLOAD);
     }
 
-    @Override
-    public void recordTestResults() {
+    private void recordCtsVerifierReportLog(){
         CtsVerifierReportLog reportLog = getReportLog();
 
         // ReportLog Schema
@@ -303,6 +307,28 @@ public class AudioWorkloadTestActivity extends PassFailButtons.Activity {
                     KEY_TEST_DURATION_MS, mTestDurationMs, ResultType.NEUTRAL, ResultUnit.MS);
         }
         reportLog.submit();
+
+    }
+
+    private void recordPerformanceClassTestResults() {
+        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(mTestName);
+        AudioCPUWorkloadRequirement audioWorkloadRequirement = Requirements.addR5_6__H_3_1().to(pce);
+        audioWorkloadRequirement.setUnderrunCount(mFinalXRunCount);
+        pce.submitAndVerify();
+    }
+
+    private boolean hasRun() {
+        return mCallbackStatuses != null
+                && !mCallbackStatuses.isEmpty()
+                && mTestDurationMs >= TARGET_DURATION_MS;
+    }
+
+    @Override
+    public void recordTestResults() {
+        if (hasRun()) {
+            recordCtsVerifierReportLog();
+            recordPerformanceClassTestResults();
+        }
     }
 
     public void startTest(View view) {

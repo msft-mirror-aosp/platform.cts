@@ -77,6 +77,7 @@ import com.android.internal.annotations.GuardedBy;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Range;
 import com.google.common.collect.Sets;
 
 import org.hamcrest.Matchers;
@@ -93,6 +94,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -1623,10 +1625,6 @@ public class VehiclePropertyVerifier<T> {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA;
     }
 
-    public static boolean isAtLeastC() {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN;
-    }
-
     /** Gets the possible values for an integer property. */
     private List<Integer> getPossibleIntegerValues(int areaId) {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
@@ -2182,17 +2180,24 @@ public class VehiclePropertyVerifier<T> {
                         carPropertyValue,
                         carPropertyValue.getAreaId(),
                         CAR_PROPERTY_VALUE_SOURCE_CALLBACK);
-                if (isAtLeastC() && Flags.carPropertyStatusDetailedNotAvailable()) {
+                if (Flags.carPropertyStatusDetailedNotAvailable()) {
                     if (sContext.checkSelfPermission(Car.PERMISSION_READ_PROPERTY_VENDOR_STATUS)
                             != PERMISSION_GRANTED) {
                         assertThrows(
                                 SecurityException.class,
                                 () -> carPropertyValue.getPropertyVendorStatus());
                     } else {
-                        assertThat(carPropertyValue.getPropertyVendorStatus())
-                                .isAtLeast(PROPERTY_VENDOR_STATUS_MINIMUM_VALUE);
-                        assertThat(carPropertyValue.getPropertyVendorStatus())
-                                .isAtMost(PROPERTY_VENDOR_STATUS_MAXIMUM_VALUE);
+                        assertWithMessage(
+                                        "Property Vendor Status %s is out of expected range [%s,"
+                                                + " %s]",
+                                        carPropertyValue.getPropertyVendorStatus(),
+                                        PROPERTY_VENDOR_STATUS_MINIMUM_VALUE,
+                                        PROPERTY_VENDOR_STATUS_MAXIMUM_VALUE)
+                                .that(carPropertyValue.getPropertyVendorStatus())
+                                .isIn(
+                                        Range.closed(
+                                                PROPERTY_VENDOR_STATUS_MINIMUM_VALUE,
+                                                PROPERTY_VENDOR_STATUS_MAXIMUM_VALUE));
                     }
                 }
             }
@@ -2671,34 +2676,15 @@ public class VehiclePropertyVerifier<T> {
         if (!isAtLeastU()) {
             return;
         }
-        assertThat(((PropertyNotAvailableException) e).getDetailedErrorCode())
-                .isIn(PROPERTY_NOT_AVAILABLE_ERROR_CODES);
-        if (isAtLeastC()
-                && Flags.carPropertyVendorErrorCodePermission()
-                && sContext.checkSelfPermission(Car.PERMISSION_READ_PROPERTY_VENDOR_ERROR_CODE)
-                        != PERMISSION_GRANTED) {
-            assertThrows(SecurityException.class, () -> e.getVendorErrorCode());
-            return;
-        }
-        int vendorErrorCode = e.getVendorErrorCode();
-        assertThat(vendorErrorCode).isAtLeast(VENDOR_ERROR_CODE_MINIMUM_VALUE);
-        assertThat(vendorErrorCode).isAtMost(VENDOR_ERROR_CODE_MAXIMUM_VALUE);
+        assertThat(e.getDetailedErrorCode()).isIn(PROPERTY_NOT_AVAILABLE_ERROR_CODES);
+        verifyVendorErrorCode(e::getVendorErrorCode);
     }
 
     private static void verifyInternalErrorException(CarInternalErrorException e) {
         if (!isAtLeastU()) {
             return;
         }
-        if (isAtLeastC()
-                && Flags.carPropertyVendorErrorCodePermission()
-                && sContext.checkSelfPermission(Car.PERMISSION_READ_PROPERTY_VENDOR_ERROR_CODE)
-                        != PERMISSION_GRANTED) {
-            assertThrows(SecurityException.class, () -> e.getVendorErrorCode());
-            return;
-        }
-        int vendorErrorCode = e.getVendorErrorCode();
-        assertThat(vendorErrorCode).isAtLeast(VENDOR_ERROR_CODE_MINIMUM_VALUE);
-        assertThat(vendorErrorCode).isAtMost(VENDOR_ERROR_CODE_MAXIMUM_VALUE);
+        verifyVendorErrorCode(e::getVendorErrorCode);
     }
 
     /**
@@ -2774,7 +2760,7 @@ public class VehiclePropertyVerifier<T> {
                 .isTrue();
 
         ImmutableSet<Integer> validStatuses = VALID_CAR_PROPERTY_VALUE_STATUSES;
-        if (!(isAtLeastC() && Flags.carPropertyStatusDetailedNotAvailable())) {
+        if (!Flags.carPropertyStatusDetailedNotAvailable()) {
             validStatuses = VALID_CAR_PROPERTY_VALUE_STATUSES_BEFORE_C;
         }
         assertWithMessage(
@@ -4111,18 +4097,7 @@ public class VehiclePropertyVerifier<T> {
             assertThat(propertyAsyncError.getAreaId())
                     .isEqualTo(requestIdToAreaIdMap.get(requestId));
             assertThat(propertyAsyncError.getErrorCode()).isIn(ASYNC_GENERAL_ERROR_CODES);
-
-            if (isAtLeastC()
-                    && Flags.carPropertyVendorErrorCodePermission()
-                    && sContext.checkSelfPermission(Car.PERMISSION_READ_PROPERTY_VENDOR_ERROR_CODE)
-                            != PERMISSION_GRANTED) {
-                assertThrows(
-                        SecurityException.class, () -> propertyAsyncError.getVendorErrorCode());
-            } else {
-                int vendorErrorCode = propertyAsyncError.getVendorErrorCode();
-                assertThat(vendorErrorCode).isAtLeast(VENDOR_ERROR_CODE_MINIMUM_VALUE);
-                assertThat(vendorErrorCode).isAtMost(VENDOR_ERROR_CODE_MAXIMUM_VALUE);
-            }
+            verifyVendorErrorCode(propertyAsyncError::getVendorErrorCode);
 
             if (isAtLeastV()) {
                 assertThat(propertyAsyncError.getDetailedErrorCode())
@@ -4253,20 +4228,7 @@ public class VehiclePropertyVerifier<T> {
                 assertThat(propertyAsyncError.getAreaId())
                         .isEqualTo(requestIdToAreaIdMap.get(requestId));
                 assertThat(propertyAsyncError.getErrorCode()).isIn(ASYNC_GENERAL_ERROR_CODES);
-
-                if (isAtLeastC()
-                        && Flags.carPropertyVendorErrorCodePermission()
-                        && sContext.checkSelfPermission(
-                                        Car.PERMISSION_READ_PROPERTY_VENDOR_ERROR_CODE)
-                                != PERMISSION_GRANTED) {
-                    assertThrows(
-                            SecurityException.class, () -> propertyAsyncError.getVendorErrorCode());
-                    continue;
-                } else {
-                    int vendorErrorCode = propertyAsyncError.getVendorErrorCode();
-                    assertThat(vendorErrorCode).isAtLeast(VENDOR_ERROR_CODE_MINIMUM_VALUE);
-                    assertThat(vendorErrorCode).isAtMost(VENDOR_ERROR_CODE_MAXIMUM_VALUE);
-                }
+                verifyVendorErrorCode(propertyAsyncError::getVendorErrorCode);
 
                 if (isAtLeastV()) {
                     assertThat(propertyAsyncError.getDetailedErrorCode())
@@ -4567,6 +4529,24 @@ public class VehiclePropertyVerifier<T> {
                         .isFalse();
             }
         }
+    }
+
+    private static void verifyVendorErrorCode(Supplier<Integer> getVendorErrorCode) {
+        if (Flags.carPropertyVendorErrorCodePermission()
+                && sContext.checkSelfPermission(Car.PERMISSION_READ_PROPERTY_VENDOR_ERROR_CODE)
+                        != PERMISSION_GRANTED) {
+            assertThrows(SecurityException.class, () -> getVendorErrorCode.get());
+            return;
+        }
+        assertWithMessage(
+                        "Vendor Error Code %s is out of expected range [%s, %s]",
+                        getVendorErrorCode.get(),
+                        VENDOR_ERROR_CODE_MINIMUM_VALUE,
+                        VENDOR_ERROR_CODE_MAXIMUM_VALUE)
+                .that(getVendorErrorCode.get())
+                .isIn(
+                        Range.closed(
+                                VENDOR_ERROR_CODE_MINIMUM_VALUE, VENDOR_ERROR_CODE_MAXIMUM_VALUE));
     }
 
     private static <U> CarPropertyValue<U> setPropertyAndWaitForChange(

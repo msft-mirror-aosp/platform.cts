@@ -20,14 +20,17 @@ import static android.graphics.gpuprofiling.cts.ProfilingDataUtilsKt.APP;
 import static android.graphics.gpuprofiling.cts.ProfilingDataUtilsKt.COUNTERS_SOURCE_NAME;
 import static android.graphics.gpuprofiling.cts.ProfilingDataUtilsKt.STAGES_SOURCE_NAME;
 import static android.graphics.gpuprofiling.cts.ProfilingDataUtilsKt.buildConfig;
+import static android.graphics.gpuprofiling.cts.ProfilingDataUtilsKt.calculateMostCommonIntervalNs;
 import static android.graphics.gpuprofiling.cts.ProfilingDataUtilsKt.counterMatchesGpuUtilisation;
 import static android.graphics.gpuprofiling.cts.ProfilingDataUtilsKt.getGpuUsageTimeline;
 
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assume.assumeFalse;
 
+import static java.lang.Math.abs;
 import static java.util.Collections.emptySet;
 
 import com.android.tradefed.log.LogUtil.CLog;
@@ -103,9 +106,12 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
             "graphics.gpu.profiler.support.gpu_counters.groups";
     private static final String GPU_COUNTERS_ZEROES_OPTIMIZATION_PROPERTY =
             "graphics.gpu.profiler.support.gpu_counters.zeroes_optimization";
+    private static final String GPU_COUNTERS_SAMPLING_PERIOD_PROPERTY =
+            "graphics.gpu.profiler.support.gpu_counters.period";
     private static final String LAYER_PACKAGE_PROPERTY = "graphics.gpu.profiler.vulkan_layer_apk";
     private static final String LAYER_NAME = "VkRenderStagesProducer";
     private static final String DEBUG_PROPERTY = "debug.graphics.gpu.profiler.perfetto";
+    private static final Duration TRACE_COUNTER_PERIOD_1MS = Duration.ofMillis(1);
     private static final Duration TRACE_COUNTER_PERIOD_5MS = Duration.ofMillis(5);
     private static final String TRACE_FILE_PATH = "/data/misc/perfetto-traces/cts-trace";
 
@@ -331,6 +337,27 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                         is(""));
             }
 
+            if (getProperty(GPU_COUNTERS_SAMPLING_PERIOD_PROPERTY)) {
+                checkSamplingRate(
+                        errorCollector,
+                        gpuCountersDefaultIds5Ms.getEventTimestampsNs(),
+                        TRACE_COUNTER_PERIOD_5MS);
+
+                // The supported sampling rate MUST be 1 ms or faster.
+                GpuCounters gpuCountersDefaultIds1Ms =
+                        new GpuCounters(
+                                captureTrace(
+                                        buildConfig(
+                                                defaultCounterIds,
+                                                TRACE_COUNTER_PERIOD_1MS,
+                                                true)));
+
+                checkSamplingRate(
+                        errorCollector,
+                        gpuCountersDefaultIds1Ms.getEventTimestampsNs(),
+                        TRACE_COUNTER_PERIOD_1MS);
+            }
+
             // Additionally try enabling *all* counters, and make sure descriptions are present.
             Trace traceAllCounters5Ms =
                     captureTrace(buildConfig(allCounterIds, TRACE_COUNTER_PERIOD_5MS, false));
@@ -346,6 +373,20 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                         errorCollector, gpuCounterSpecsList, traceAllCounters5Ms);
             }
         }
+    }
+
+    private static void checkSamplingRate(
+            ErrorCollector errorCollector, List<Long> counterEventTimesNs, Duration expected) {
+        long expectedNanos = expected.toNanos();
+
+        // The mode of bucketed rates from trace should be within 50% of expected rate.
+        long mostCommonRateBucket =
+                calculateMostCommonIntervalNs(counterEventTimesNs, expectedNanos / 10);
+
+        errorCollector.checkThat(
+                "Most common sampling rate too different from expected: ",
+                abs(mostCommonRateBucket - expectedNanos),
+                is(lessThan((long) (0.5 * expectedNanos))));
     }
 
     private static String getSummaryDescriptionOfIdsInTrace(

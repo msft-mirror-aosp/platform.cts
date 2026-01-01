@@ -773,7 +773,6 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
                                         .setDialogPresentation(
                                                 createPresentation("Dialog Presentation"))
                                         .build())
-                        .setDialogHeader(createPresentation("Dialog Header"))
                         .setDialogTriggerIds(ID_USERNAME, ID_PASSWORD);
         sReplier.addResponse(builder.build());
 
@@ -788,8 +787,7 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         sReplier.getNextFillRequest();
         mUiBot.waitForIdleSync();
 
-        // In expressive fill dialog, the header becomes part of the list.
-        mUiBot.assertFillDialogDatasets("Dialog Header", "Dialog Presentation");
+        mUiBot.assertFillDialogDatasets("Dialog Presentation");
 
         // Set expected value, then click on the continue button
         activity.expectAutoFill("dude", "sweet");

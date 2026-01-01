@@ -58,14 +58,16 @@ class GpuCounters(trace: Trace) {
     val counterSpecs: Map<Int, GpuCounterSpec>
     val counterValues: Map<Int, List<GpuCounterValue>>
 
+    val eventTimestampsNs: List<Long>
+
     var counterDescriptorError: String = ""
 
     init {
+        val clockSnapshots = trace.getTraceClockSnapshots()
+
         var mutableCounterSpecs: MutableMap<Int, GpuCounterSpec> = mutableMapOf()
         var mutableCounterValues: MutableMap<Int, MutableList<GpuCounterValue>> = mutableMapOf()
-
-        val primaryClockId = trace.getPrimaryTraceClock().number
-        val clockSnapshots = trace.getTraceClockSnapshots()
+        var mutableCounterEventTimes: MutableList<Long> = mutableListOf()
 
         for (packet in trace.packetList) {
             if (!packet.hasGpuCounterEvent()) continue
@@ -89,21 +91,11 @@ class GpuCounters(trace: Trace) {
                 }
                 continue
             }
-            if (packet.gpuCounterEvent.countersCount == 0) continue
+            var packetTimestampNs = packet.getTimestampNs(clockSnapshots)
+            mutableCounterEventTimes.add(packetTimestampNs)
             for (counter in packet.gpuCounterEvent.countersList) {
-                val primaryClockTimestamp =
-                    if (packet.hasTimestampClockId() && packet.timestampClockId != primaryClockId) {
-                    convertTimestamp(
-                        packet.timestamp,
-                        packet.timestampClockId,
-                        primaryClockId,
-                        clockSnapshots
-                    )
-                } else {
-                    packet.timestamp
-                }
                 mutableCounterValues.computeIfAbsent(counter.counterId) { mutableListOf() }
-                    .add(GpuCounterValue(primaryClockTimestamp, counter.doubleValue()))
+                    .add(GpuCounterValue(packetTimestampNs, counter.doubleValue()))
             }
         }
         counterSpecs = mutableCounterSpecs
@@ -111,6 +103,8 @@ class GpuCounters(trace: Trace) {
         counterValues = mutableCounterValues.mapValues {
             list -> list.value.sortedBy { it.timestamp }.toList()
         }
+        mutableCounterEventTimes.sort()
+        eventTimestampsNs = mutableCounterEventTimes
     }
 }
 
@@ -282,4 +276,18 @@ fun buildConfig(
         config.addDataSourcesBuilder().configBuilder.setName(STAGES_SOURCE_NAME)
     }
     return config.build()
+}
+
+// Returns the most common interval, with coarseness of bucketSize, in nanoseconds.
+fun calculateMostCommonIntervalNs(timestampsNs: List<Long>, bucketSize: Long): Long {
+    if (timestampsNs.size < 2 || bucketSize == 0L) {
+        throw IllegalArgumentException()
+    }
+    val histogram = mutableMapOf<Long, Int>()
+    for (i in 0 until timestampsNs.size - 1) {
+        val diff = timestampsNs[i + 1] - timestampsNs[i]
+        val bucketId = diff / bucketSize
+        histogram[bucketId] = histogram.getOrDefault(bucketId, 0) + 1
+    }
+    return bucketSize * histogram.maxBy { it.value }.key
 }
