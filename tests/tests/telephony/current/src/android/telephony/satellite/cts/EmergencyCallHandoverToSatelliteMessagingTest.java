@@ -1466,7 +1466,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
     private static Pair<String, String> readSatelliteHandoverAppFromOverlayConfig() {
         String app = sMockSatelliteServiceManager.readStringFromOverlayConfig(
                 "config_oem_enabled_satellite_sos_handover_app");
-        if (TextUtils.isEmpty(app)) return new Pair<>("", "");
+        assumeTrue("The target device doesn't have esos handover app.", !TextUtils.isEmpty(app));
 
         String[] appComponent = app.split(";");
         if (appComponent.length == 2) {
