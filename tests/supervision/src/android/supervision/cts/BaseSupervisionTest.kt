@@ -83,7 +83,10 @@ open class BaseSupervisionTest {
         }
     }
 
-    fun withSupervisionApp(action: (app: TestAppInstance) -> Unit) {
+    fun withSupervisionApp(
+        enableSupervision: Boolean = false,
+        action: (app: TestAppInstance) -> Unit,
+    ) {
         val testAppProvider = TestAppProvider()
         val testApp =
             checkNotNull(testAppProvider.query().whereLabel().isEqualTo("SupervisionApp").get()) {
@@ -95,17 +98,20 @@ open class BaseSupervisionTest {
             }
 
         try {
+            app.pkg().setAllowTestApiAccess(true)
             callWithShellPermissionIdentity(
                 BYPASS_ROLE_QUALIFICATION,
                 MANAGE_ROLE_HOLDERS,
                 QUERY_USERS,
-                OBSERVE_ROLE_HOLDERS
+                OBSERVE_ROLE_HOLDERS,
             ) {
                 withSystemSupervisionRoleHeld(app.packageName()) {
+                    setSupervisionEnabled(enableSupervision)
                     action(app)
                 }
             }
         } finally {
+            setSupervisionEnabled(false)
             app.uninstall()
         }
     }
