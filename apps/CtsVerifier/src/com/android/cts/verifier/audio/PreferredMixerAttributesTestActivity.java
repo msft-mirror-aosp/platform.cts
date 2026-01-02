@@ -16,6 +16,9 @@
 
 package com.android.cts.verifier.audio;
 
+import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
+import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
+
 import android.media.AudioAttributes;
 import android.media.AudioDeviceCallback;
 import android.media.AudioDeviceInfo;
@@ -24,10 +27,18 @@ import android.media.AudioMixerAttributes;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.util.Log;
 import android.widget.TextView;
 
+import com.android.compatibility.common.util.ResultType;
+import com.android.compatibility.common.util.ResultUnit;
+import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +53,26 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class PreferredMixerAttributesTestActivity extends PassFailButtons.Activity {
     private static final String TAG = "PreferredMixerAttributesTestActivity";
+
+    private static final String SECTION_AUDIO_PREFERRED_MIXER_ATTRIBUTES =
+            "audio_preferred_mixer_attributes";
+
+    private static final String KEY_FAILURE_MESSAGE = "failure_message";
+    private static final String KEY_FAILING_DEVICE_NAME = "failing_device_name";
+    private static final String KEY_FAILING_DEVICE_ID = "failing_device_id";
+
+    private static final String KEY_USB_DEVICE_DETECTED = "usb_device_detected";
+    private static final String KEY_NUM_USB_DEVICES = "num_usb_devices";
+    private static final String KEY_USB_DEVICES_INFO = "usb_devices_info";
+    private static final String KEY_DEVICE_NAME = "device_name";
+    private static final String KEY_DEVICE_ID = "device_id";
+    private static final String KEY_IS_SINK = "is_sink";
+    private static final String KEY_IS_SOURCE = "is_source";
+
+    private boolean mTestPassed = false;
+    private String mFailureMessage = "";
+    private AudioDeviceInfo mFailingDevice = null;
+    private AudioDeviceInfo mCurrentTestDevice = null;
 
     private static final long TIMEOUT_MS = 1000;
 
@@ -61,6 +92,7 @@ public class PreferredMixerAttributesTestActivity extends PassFailButtons.Activi
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.audio_preferred_mixer_attributes);
+        mRequireReportLogToPass = true;
 
         mAudioManager = getSystemService(AudioManager.class);
 
@@ -131,6 +163,7 @@ public class PreferredMixerAttributesTestActivity extends PassFailButtons.Activi
 
     private void displayTestResult() {
         for (AudioDeviceInfo device : mUsbDevices) {
+            mCurrentTestDevice = device;
             List<AudioMixerAttributes> supportedMixerAttrs =
                     mAudioManager.getSupportedMixerAttributes(device);
             if (supportedMixerAttrs.isEmpty()) {
@@ -208,6 +241,7 @@ public class PreferredMixerAttributesTestActivity extends PassFailButtons.Activi
             }
             mAudioManager.removeOnPreferredMixerAttributesChangedListener(listener);
         }
+        mCurrentTestDevice = null;
         testComplete(R.string.audio_preferred_mixer_attributes_test_usb_device_connected,
                 R.string.result_success,
                 R.string.empty,
@@ -219,6 +253,14 @@ public class PreferredMixerAttributesTestActivity extends PassFailButtons.Activi
             boolean passButtonEnabled, MyPreferredMixerAttributesListener listener) {
         if (listener != null) {
             mAudioManager.removeOnPreferredMixerAttributesChangedListener(listener);
+        }
+        mTestPassed = passButtonEnabled;
+        if (!mTestPassed) {
+            mFailureMessage = getString(failureMsgResId);
+            mFailingDevice = mCurrentTestDevice;
+        } else {
+            mFailureMessage = "";
+            mFailingDevice = null;
         }
         updateUI(usbStatusResId, testStatusResId, failureMsgResId, passButtonEnabled);
     }
@@ -256,6 +298,66 @@ public class PreferredMixerAttributesTestActivity extends PassFailButtons.Activi
         public void onAudioDevicesRemoved(AudioDeviceInfo[] removedDevices) {
             detectUsbDeviceConnectionAndRunTest();
         }
+    }
+
+    @Override
+    public final String getReportSectionName() {
+        return setTestNameSuffix(sCurrentDisplayMode, SECTION_AUDIO_PREFERRED_MIXER_ATTRIBUTES);
+    }
+
+    @Override
+    public boolean requiresReportLog() {
+        return true;
+    }
+
+    @Override
+    public String getReportFileName() {
+        return PassFailButtons.AUDIO_TESTS_REPORT_LOG_NAME;
+    }
+
+    @Override
+    public void recordTestResults() {
+        CtsVerifierReportLog reportLog = getReportLog();
+        if (!mTestPassed) {
+            reportLog.addValue(
+                    KEY_FAILURE_MESSAGE, mFailureMessage, ResultType.NEUTRAL, ResultUnit.NONE);
+            if (mFailingDevice != null) {
+                reportLog.addValue(
+                        KEY_FAILING_DEVICE_NAME,
+                        mFailingDevice.getProductName().toString(),
+                        ResultType.NEUTRAL,
+                        ResultUnit.NONE);
+                reportLog.addValue(
+                        KEY_FAILING_DEVICE_ID,
+                        mFailingDevice.getId(),
+                        ResultType.NEUTRAL,
+                        ResultUnit.NONE);
+            }
+        }
+
+        boolean usbDeviceDetected = !mUsbDevices.isEmpty();
+        reportLog.addValue(
+                KEY_USB_DEVICE_DETECTED, usbDeviceDetected, ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.addValue(
+                KEY_NUM_USB_DEVICES, mUsbDevices.size(), ResultType.NEUTRAL, ResultUnit.NONE);
+        if (usbDeviceDetected) {
+            JSONArray devicesJson = new JSONArray();
+            for (AudioDeviceInfo device : mUsbDevices) {
+                JSONObject deviceJson = new JSONObject();
+                try {
+                    deviceJson.put(KEY_DEVICE_NAME, device.getProductName().toString());
+                    deviceJson.put(KEY_DEVICE_ID, device.getId());
+                    deviceJson.put(KEY_IS_SINK, device.isSink());
+                    deviceJson.put(KEY_IS_SOURCE, device.isSource());
+                    devicesJson.put(deviceJson);
+                } catch (JSONException e) {
+                    Log.e(TAG, "Error creating JSON for USB device.", e);
+                }
+            }
+            reportLog.addValues(KEY_USB_DEVICES_INFO, devicesJson);
+        }
+
+        reportLog.submit();
     }
 
     private final class MyPreferredMixerAttributesListener
