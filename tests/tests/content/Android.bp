@@ -230,6 +230,7 @@ android_test {
     srcs: [
         "src/android/content/pm/**/*.java",
         "src/android/content/pm/**/*.kt",
+        "src/android/content/pm/**/*.aidl",
     ],
     data: [
         ":CtsContentEmptyTestApp",
@@ -336,9 +337,12 @@ android_test {
         ":CtsPackageChangedSharedUserIdTestApp",
         ":CtsIntentResolutionApplicationOverrideTestApp",
         ":CtsIntentResolutionComponentOverrideTestApp",
-        ":CtsAllowComponentAccessClientAllow",
-        ":CtsAllowComponentAccessClientNoTag",
-        ":CtsAllowComponentAccessServer",
+        ":CtsAllowComponentAccessSourceAllow",
+        ":CtsAllowComponentAccessSourceNoTag",
+        ":CtsAllowComponentAccessSourceBlock",
+        ":CtsAllowComponentAccessTargetNoTag",
+        ":CtsAllowComponentAccessTargetBlock",
+        ":CtsAllowComponentAccessTargetAllow",
     ],
     java_resources: [
         ":PackagePropertyTestApp1",
@@ -503,4 +507,17 @@ android_ravenwood_test {
     ],
     platform_apis: true,
     auto_gen_config: true,
+}
+
+filegroup {
+    name: "CtsAllowComponentAccessTest_Constants",
+    srcs: ["src/android/content/pm/cts/allowcomponentaccess/Constants.java"],
+    visibility: [":__subpackages__"],
+}
+
+filegroup {
+    name: "CtsAllowComponentAccessTest_Aidl",
+    srcs: ["src/android/content/pm/cts/allowcomponentaccess/ITestCallback.aidl"],
+    path: "src",
+    visibility: [":__subpackages__"],
 }
