@@ -16,6 +16,7 @@
 
 package com.android.bedstead.testapp;
 
+import android.app.supervision.Policy;
 import com.android.eventlib.premade.EventLibSupervisionAppService;
 
 import java.io.FileDescriptor;
@@ -32,6 +33,11 @@ public class BaseTestSupervisionAppService extends EventLibSupervisionAppService
     @Override
     public void onSupervisionDisabled() {
         super.onSupervisionDisabled();
+    }
+
+    @Override
+    public void onPolicyChanged(Policy policy) {
+        super.onPolicyChanged(policy);
     }
 
     @Override

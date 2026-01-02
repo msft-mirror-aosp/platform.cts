@@ -15,6 +15,7 @@
  */
 package com.android.eventlib.premade
 
+import android.app.supervision.Policy
 import android.app.supervision.SupervisionAppService
 import android.content.Intent
 import com.android.eventlib.events.services.ServiceBoundEvent
@@ -26,6 +27,7 @@ import com.android.eventlib.events.services.ServiceReboundEvent
 import com.android.eventlib.events.services.ServiceStartedEvent
 import com.android.eventlib.events.services.ServiceTaskRemovedEvent
 import com.android.eventlib.events.services.ServiceUnboundEvent
+import com.android.eventlib.events.supervisionappservice.SupervisionAppServiceOnPolicyChangedEvent
 import com.android.eventlib.events.supervisionappservice.SupervisionAppServiceOnSupervisionDisabledEvent
 import com.android.eventlib.events.supervisionappservice.SupervisionAppServiceOnSupervisionEnabledEvent
 import java.io.FileDescriptor
@@ -57,6 +59,11 @@ open class EventLibSupervisionAppService : SupervisionAppService() {
     override fun onSupervisionDisabled() {
         SupervisionAppServiceOnSupervisionDisabledEvent.logger(this, getClassName()).log()
         super.onSupervisionDisabled()
+    }
+
+    override fun onPolicyChanged(policy: Policy) {
+        SupervisionAppServiceOnPolicyChangedEvent.logger(this, getClassName(), policy).log()
+        super.onPolicyChanged(policy)
     }
 
     override fun onServiceBound(intent: Intent?) {
