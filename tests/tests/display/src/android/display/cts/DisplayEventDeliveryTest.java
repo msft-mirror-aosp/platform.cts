@@ -31,14 +31,11 @@ import android.hardware.display.VirtualDisplay;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 import android.util.SparseArray;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
-import com.android.server.display.feature.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -64,7 +61,6 @@ public class DisplayEventDeliveryTest extends EventDeliveryTestBase {
     private static final int DISPLAY_ADDED = 1;
     private static final int DISPLAY_CHANGED = 2;
     private static final int DISPLAY_REMOVED = 3;
-    private static final int DISPLAY_SNAPSHOT = 4;
 
     private static final String TEST_PACKAGE =
             "com.android.servicestests.apps.displaymanagertestapp";
@@ -85,8 +81,6 @@ public class DisplayEventDeliveryTest extends EventDeliveryTestBase {
      * necessary to lock mDisplayBundles when accessing it from the test function.
      */
     private SparseArray<DisplayBundle> mDisplayBundles;
-
-    private DisplayBundle mSnapshotBundle;
 
     /**
      * Helper class to store VirtualDisplay and its corresponding display events expected to be sent
@@ -187,11 +181,6 @@ public class DisplayEventDeliveryTest extends EventDeliveryTestBase {
                     break;
                 case MESSAGE_CALLBACK:
                     synchronized (mLock) {
-                        // arg2: display event type
-                        if (msg.arg2 == DISPLAY_SNAPSHOT) {
-                            mSnapshotBundle.addDisplayEvent(msg.arg2);
-                            break;
-                        }
                         // arg1: displayId
                         DisplayBundle bundle = mDisplayBundles.get(msg.arg1);
                         if (bundle != null) {
@@ -211,7 +200,6 @@ public class DisplayEventDeliveryTest extends EventDeliveryTestBase {
         super.setUp();
         mDisplayManager = mContext.getSystemService(DisplayManager.class);
         mDisplayBundles = new SparseArray<>();
-        mSnapshotBundle = new DisplayBundle(null);
     }
 
     @After
@@ -254,16 +242,10 @@ public class DisplayEventDeliveryTest extends EventDeliveryTestBase {
      */
     @Test
     public void testDisplayEvents() {
-        testDisplayEventsInternal(/* isSnapshotEnabled= */ false);
+        testDisplayEventsInternal();
     }
 
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DISPLAY_LISTENER_SNAPSHOT)
-    public void testDisplayEventsWithSnapshot() {
-        testDisplayEventsInternal(/* isSnapshotEnabled= */ true);
-    }
-
-    private void testDisplayEventsInternal(boolean isSnapshotEnabled) {
+    private void testDisplayEventsInternal() {
         Log.d(TAG, "Start test testDisplayEvents " + mDisplayCount + " " + mCached);
         // Launch DisplayEventActivity and start listening to display events
         launchTestActivity(
@@ -273,17 +255,8 @@ public class DisplayEventDeliveryTest extends EventDeliveryTestBase {
                             TEST_EVENT_MASK,
                             DisplayManager.EVENT_TYPE_DISPLAY_ADDED
                                     | DisplayManager.EVENT_TYPE_DISPLAY_CHANGED
-                                    | DisplayManager.EVENT_TYPE_DISPLAY_REMOVED
-                                    | ((isSnapshotEnabled)
-                                            ? DisplayManager.EVENT_TYPE_DISPLAY_SNAPSHOT
-                                            : 0));
+                                    | DisplayManager.EVENT_TYPE_DISPLAY_REMOVED);
                 });
-
-        if (isSnapshotEnabled) {
-            mSnapshotBundle.waitDisplayEvent(DISPLAY_SNAPSHOT);
-        } else {
-            mSnapshotBundle.assertNoDisplayEvents();
-        }
 
         if (mCached) {
             // The test activity in cached mode won't receive the pending display events
