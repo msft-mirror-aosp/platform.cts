@@ -185,7 +185,7 @@ def _get_current_camera_facing(content_desc, resource_id):
         or 'selfie' in content_desc.lower() or 'selfie' in resource_id.lower()):
     return 'rear'
   else:
-    raise ValueError('Failed to determine current camera facing.')
+    return None
 
 
 def switch_default_camera(dut, facing, log_path):
@@ -211,6 +211,7 @@ def switch_default_camera(dut, facing, log_path):
   default_ui_dump = dut.ui.dump()
   logging.debug('Default camera UI dump: %s', default_ui_dump)
   root = et.fromstring(default_ui_dump)
+  found_nodes = []
   for node in root.iter('node'):
     resource_id = node.get('resource-id')
     content_desc = node.get('content-desc')
@@ -218,39 +219,52 @@ def switch_default_camera(dut, facing, log_path):
     if (re.search(non_switch_pattern, content_desc, re.IGNORECASE) or
         re.search(non_switch_pattern, resource_id, re.IGNORECASE)):
       continue
-    if resource_id:
-      if re.search(
-          flip_camera_pattern, resource_id, re.IGNORECASE
-      ):
-        logging.debug('Pattern matches')
-        logging.debug('Resource id: %s', resource_id)
-        logging.debug('Flip camera content-desc: %s', content_desc)
-        break
-      else:
-        if re.search(
-            flip_camera_pattern, content_desc, re.IGNORECASE
-        ):
-          logging.debug('Pattern matches')
-          logging.debug('Resource id: %s', resource_id)
-          logging.debug('Flip camera content-desc: %s', content_desc)
-          break
+
+    # Check if the node matches the pattern for a flip camera button.
+    if (re.search(flip_camera_pattern, resource_id, re.IGNORECASE) or
+        re.search(flip_camera_pattern, content_desc, re.IGNORECASE)):
+      logging.debug('Pattern matches. Found flip camera button.')
+      logging.debug('Resource id: %s', resource_id)
+      logging.debug('Flip camera content-desc: %s', content_desc)
+      found_nodes.append(node)
+
+  flip_camera_node = None
+  current_facing = None
+
+  # Iterate through the found nodes to find one that works without raising an exception.
+  for node in found_nodes:
+    current_facing = _get_current_camera_facing(
+        node.get('content-desc', ''),
+        node.get('resource-id', '')
+    )
+
+    if current_facing is not None:
+      # If the call succeeds, we have found our node.
+      flip_camera_node = node
+      break
+
     else:
-      if re.search(
-          flip_camera_pattern, content_desc, re.IGNORECASE
-      ):
-        logging.debug('Pattern matches')
-        logging.debug('Resource id: %s', resource_id)
-        logging.debug('Flip camera content-desc: %s', content_desc)
-        break
+      # Log the error and continue to the next node.
+      logging.warning(
+          'Could not determine camera facing from node with resource_id="%s" '
+          'and content_desc="%s".',
+          node.get('resource-id', ''),
+          node.get('content-desc', ''),
+      )
+
+  # If no valid flip camera button was found, raise an assertion error.
+  if flip_camera_node is None:
+    raise AssertionError('No valid flip camera resource found that can be used.')
+
+  # If the camera is already in the desired state, log a message and exit.
+  if facing == current_facing:
+    logging.debug('Camera is already switched to the correct direction (%s).', facing)
   else:
-    raise AssertionError('Flip camera resource not found.')
-  if facing == _get_current_camera_facing(content_desc, resource_id):
-    logging.debug('Pattern found but camera is already switched.')
-  else:
-    if content_desc:
-      dut.ui(desc=content_desc).click.wait()
+    # Click the flip camera button.
+    if flip_camera_node.get('content-desc'):
+      dut.ui(desc=flip_camera_node.get('content-desc')).click.wait()
     else:
-      dut.ui(res=resource_id).click.wait()
+      dut.ui(res=flip_camera_node.get('resource-id')).click.wait()
 
   dut.take_screenshot(
       log_path, prefix=f'switched_to_{facing}_default_camera'
