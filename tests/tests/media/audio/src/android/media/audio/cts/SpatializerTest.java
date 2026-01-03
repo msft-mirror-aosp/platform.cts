@@ -51,9 +51,9 @@ import com.android.compatibility.common.util.FrameworkSpecificTest;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.Rule;
 
 import java.util.Arrays;
 import java.util.List;
@@ -144,50 +144,80 @@ public class SpatializerTest {
             return;
         }
 
-        final AudioDeviceAttributes device = new AudioDeviceAttributes(
-                AudioDeviceAttributes.ROLE_OUTPUT, AudioDeviceInfo.TYPE_BLUETOOTH_A2DP, "bla");
+        final AudioDeviceAttributes binauralDevice =
+                new AudioDeviceAttributes(
+                        AudioDeviceAttributes.ROLE_OUTPUT,
+                        AudioDeviceInfo.TYPE_BLE_HEADSET,
+                        "ble_headset");
+        final AudioDeviceAttributes transauralDevice =
+                new AudioDeviceAttributes(
+                        AudioDeviceAttributes.ROLE_OUTPUT,
+                        AudioDeviceInfo.TYPE_BLE_SPEAKER,
+                        "ble_speaker");
+
         // try to add/remove compatible device without permission, expect failure
-        assertThrows("Able to call addCompatibleAudioDevice without permission",
+        assertThrows(
+                "Able to call addCompatibleAudioDevice without permission",
                 SecurityException.class,
-                () -> spat.addCompatibleAudioDevice(device));
-        assertThrows("Able to call removeCompatibleAudioDevice without permission",
+                () -> spat.addCompatibleAudioDevice(binauralDevice));
+        assertThrows(
+                "Able to call removeCompatibleAudioDevice without permission",
                 SecurityException.class,
-                () -> spat.removeCompatibleAudioDevice(device));
+                () -> spat.removeCompatibleAudioDevice(binauralDevice));
         assertThrows("Able to call getCompatibleAudioDevice without permission",
                 SecurityException.class,
                 () -> spat.getCompatibleAudioDevices());
-        assertThrows("Able to call isAvailableForDevice without permission",
+        assertThrows(
+                "Able to call isAvailableForDevice without permission",
                 SecurityException.class,
-                () -> spat.isAvailableForDevice(device));
-        assertThrows("Able to call hasHeadTracker without permission",
+                () -> spat.isAvailableForDevice(binauralDevice));
+        assertThrows(
+                "Able to call hasHeadTracker without permission",
                 SecurityException.class,
-                () -> spat.hasHeadTracker(device));
-        assertThrows("Able to call setHeadTrackerEnabled without permission",
+                () -> spat.hasHeadTracker(binauralDevice));
+        assertThrows(
+                "Able to call setHeadTrackerEnabled without permission",
                 SecurityException.class,
-                () -> spat.setHeadTrackerEnabled(true, device));
-        assertThrows("Able to call isHeadTrackerEnabled without permission",
+                () -> spat.setHeadTrackerEnabled(true, binauralDevice));
+        assertThrows(
+                "Able to call isHeadTrackerEnabled without permission",
                 SecurityException.class,
-                () -> spat.isHeadTrackerEnabled(device));
+                () -> spat.isHeadTrackerEnabled(binauralDevice));
 
         // try again with permission, then add a device and remove it
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity("android.permission.MODIFY_DEFAULT_AUDIO_EFFECTS");
-        spat.addCompatibleAudioDevice(device);
-        List<AudioDeviceAttributes> compatDevices = spat.getCompatibleAudioDevices();
-        assertTrue("added device not in list of compatible devices",
-                compatDevices.contains(device));
-        assertTrue("compatible device should be available", spat.isAvailableForDevice(device));
-        if (spat.hasHeadTracker(device)) {
-            spat.setHeadTrackerEnabled(true, device);
-            assertTrue("head tracker not found enabled", spat.isHeadTrackerEnabled(device));
-            spat.setHeadTrackerEnabled(false, device);
-            assertFalse("head tracker not found disabled", spat.isHeadTrackerEnabled(device));
+
+        int compatibleDevices = 0;
+        final AudioDeviceAttributes[] devices = {binauralDevice, transauralDevice};
+        for (AudioDeviceAttributes device : devices) {
+            spat.addCompatibleAudioDevice(device);
+            List<AudioDeviceAttributes> compatDevices = spat.getCompatibleAudioDevices();
+            if (!compatDevices.contains(device)) continue;
+
+            try {
+                assertTrue(
+                        "compatible device should be available", spat.isAvailableForDevice(device));
+                if (spat.hasHeadTracker(device)) {
+                    spat.setHeadTrackerEnabled(true, device);
+                    assertTrue("head tracker not found enabled", spat.isHeadTrackerEnabled(device));
+                    spat.setHeadTrackerEnabled(false, device);
+                    assertFalse(
+                            "head tracker not found disabled", spat.isHeadTrackerEnabled(device));
+                }
+            } finally {
+                spat.removeCompatibleAudioDevice(device);
+            }
+            compatDevices = spat.getCompatibleAudioDevices();
+            assertFalse(
+                    "removed device still in list of compatible devices",
+                    compatDevices.contains(device));
+            ++compatibleDevices;
         }
-        spat.removeCompatibleAudioDevice(device);
-        compatDevices = spat.getCompatibleAudioDevices();
-        assertFalse("removed device still in list of compatible devices",
-                compatDevices.contains(device));
+        assertTrue(
+                "at least a binaural or a transaural device must be supported",
+                compatibleDevices > 0);
 
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
