@@ -18,6 +18,7 @@ package android.hardware.camera2.cts;
 
 import static android.hardware.camera2.cts.CameraTestUtils.*;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -72,6 +73,7 @@ public class OfflineSessionTest extends Camera2SurfaceViewTestCase {
     private static final Size MANDATORY_STREAM_BOUND = new Size(1920, 1080);
     private static final int WAIT_FOR_FRAMES_TIMEOUT_MS = 3000;
     private static final int WAIT_FOR_STATE_TIMEOUT_MS = 5000;
+    private static final int WAIT_FOR_CALLBACK_TIMEOUT_MS = 2000;
     private static final int WAIT_FOR_REMOTE_ACTIVITY_LAUNCH_MS = 2000;
     private static final int WAIT_FOR_REMOTE_ACTIVITY_DESTROY_MS = 2000;
 
@@ -645,7 +647,7 @@ public class OfflineSessionTest extends Camera2SurfaceViewTestCase {
         assertNotNull("Invalid offline session", offlineSession);
 
         // The regular capture session must be closed as well
-        verify(sessionCb, times(1)).onClosed(mSession);
+        verify(sessionCb, timeout(WAIT_FOR_CALLBACK_TIMEOUT_MS).times(1)).onClosed(mSession);
 
         int offlineState = offlineCb.waitForAnyOfStates(allowedOfflineStates,
                 WAIT_FOR_STATE_TIMEOUT_MS);
