@@ -20,14 +20,11 @@ import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN
 import static android.telephony.satellite.cts.ManualConnectCarrierRoamingSatelliteTest.addCtsPackageToSupportedSmsApps;
 import static android.telephony.satellite.cts.ManualConnectCarrierRoamingSatelliteTest.shouldTestManualConnectCarrierRoaming;
 
-import static com.android.bedstead.nene.notifications.NotificationListenerQuerySubject.assertThat;
-
 import static junit.framework.Assert.assertTrue;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Notification;
@@ -47,6 +44,7 @@ import com.android.bedstead.harrier.annotations.NotificationsTest;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.notifications.NotificationListener;
 import com.android.bedstead.nene.notifications.NotificationListenerQuery;
+import com.android.bedstead.nene.utils.Poll;
 import com.android.internal.R;
 import com.android.internal.telephony.flags.Flags;
 
@@ -377,6 +375,7 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
             setUp_AutoConnect(true);
             assertTrue(ntnStateListener.waitForModeChanged(1));
             assertTrue(ntnStateListener.getNtnMode());
+            ntnStateListener.clearModeChanges();
             // triggers the satellite notification
 
             // satellite notification should be posted
@@ -391,7 +390,12 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
                                 .whereNotification()
                                 .tag()
                                 .isEqualTo("SatelliteController");
-                assertThat(satelliteNotificationQuery).wasPosted();
+                Poll.forValue(
+                                "testNotificationDismissed_AutoConnect: Notification posting",
+                                satelliteNotificationQuery::poll)
+                        .toNotBeNull()
+                        .errorOnFail("Notification not posted")
+                        .await();
             }
 
             // Satellite network is lost, no callback as hysteresis timeout is not expired
@@ -403,11 +407,10 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
             assertTrue(ntnStateListener.waitForModeChanged(1));
             assertFalse(ntnStateListener.getNtnMode());
 
-            // satellite notification should now be dismissed
-
-            try (NotificationListener listener = TestApis.notifications().createListener()) {
+            try (NotificationListener dismissListener = TestApis.notifications().createListener()) {
                 NotificationListenerQuery satelliteNotificationQuery =
-                        listener.query()
+                        dismissListener
+                                .query()
                                 .wherePackageName()
                                 .isEqualTo("com.android.phone")
                                 .whereNotification()
@@ -416,11 +419,12 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
                                 .whereNotification()
                                 .tag()
                                 .isEqualTo("SatelliteController");
-
-                com.android.bedstead.nene.notifications.Notification satelliteNotification =
-                        satelliteNotificationQuery.poll();
-
-                assertNull(satelliteNotification);
+                Poll.forValue(
+                                "testNotificationDismissed_AutoConnect: Notification dismissal",
+                                satelliteNotificationQuery::poll)
+                        .toBeNull()
+                        .errorOnFail("Notification not dismissed")
+                        .await();
             }
         } finally {
             sTelephonyManager.unregisterTelephonyCallback(ntnStateListener);
