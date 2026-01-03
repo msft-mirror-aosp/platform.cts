@@ -2835,12 +2835,16 @@ public class ImsCallingTest extends ImsCallingBase {
     }
 
     private void addOutgoingCalls() throws Exception {
+        addOutgoingCalls(null, null);
+    }
+
+    private void addOutgoingCalls(Uri uri1, Uri uri2) throws Exception {
         TelecomManager telecomManager = (TelecomManager) InstrumentationRegistry
                 .getInstrumentation().getContext().getSystemService(Context.TELECOM_SERVICE);
 
         // Place first outgoing call
-        final Uri imsUri1 = Uri.fromParts(PhoneAccount.SCHEME_TEL, String.valueOf(++sCounter),
-                null);
+        final Uri imsUri1 = (uri1 != null) ? uri1
+                : Uri.fromParts(PhoneAccount.SCHEME_TEL, String.valueOf(++sCounter), null);
         Bundle extras1 = new Bundle();
 
         telecomManager.placeCall(imsUri1, extras1);
@@ -2855,8 +2859,8 @@ public class ImsCallingTest extends ImsCallingBase {
                 == Call.STATE_ACTIVE));
 
         // Place second outgoing call
-        final Uri imsUri2 = Uri.fromParts(PhoneAccount.SCHEME_TEL, String.valueOf(++sCounter),
-                null);
+        final Uri imsUri2 = (uri2 != null) ? uri2
+                : Uri.fromParts(PhoneAccount.SCHEME_TEL, String.valueOf(++sCounter), null);
         Bundle extras2 = new Bundle();
 
         telecomManager.placeCall(imsUri2, extras2);
@@ -3010,10 +3014,14 @@ public class ImsCallingTest extends ImsCallingBase {
     }
 
     private void makeConferenceCall() throws Exception {
+        makeConferenceCall(null, null);
+    }
+
+    private void makeConferenceCall(Uri uri1, Uri uri2) throws Exception {
         // Initialize the MERGE_START latch with a count of 2 (one for each call of the conference):
         overrideLatchCount(LATCH_IS_ON_MERGE_START, 2);
 
-        addOutgoingCalls();
+        addOutgoingCalls(uri1, uri2);
         addConferenceCall(mCall1, mCall2);
 
         // Wait for merge start first and second call
@@ -3109,5 +3117,52 @@ public class ImsCallingTest extends ImsCallingBase {
                     firstCallSession.isSessionOnHold()
                             && firstCall.getDetails().getState() == Call.STATE_HOLDING);
         }
+    }
+
+    @Test
+    public void testConferenceHostAsParticipant() throws Exception {
+        if (!ImsUtils.shouldTestImsCall()) {
+            return;
+        }
+
+        bindImsService();
+        mServiceCallBack = new ServiceCallBack();
+        InCallServiceStateValidator.setCallbacks(mServiceCallBack);
+
+        SubscriptionManager sm = getContext().getSystemService(SubscriptionManager.class);
+        String deviceNumber = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                sm, (m) -> m.getPhoneNumber(sTestSub));
+
+        if (TextUtils.isEmpty(deviceNumber)) {
+            Log.w(LOG_TAG, "testConferenceHostAsParticipant: device number is empty, skipping");
+            return;
+        }
+
+        makeConferenceCall(null, Uri.fromParts(PhoneAccount.SCHEME_TEL, deviceNumber, null));
+
+        List<Call> children = mConferenceCall.getChildren();
+        Call hostParticipantCall = null;
+        for (Call child : children) {
+            Uri handle = child.getDetails().getHandle();
+            if (handle != null) {
+                String handleNumber = handle.getSchemeSpecificPart();
+                if (handleNumber.contains(deviceNumber)) {
+                    hostParticipantCall = child;
+                    break;
+                }
+            }
+        }
+
+        if (hostParticipantCall != null) {
+            Bundle callExtras = hostParticipantCall.getDetails().getExtras();
+            assertNotNull(callExtras);
+            assertTrue("TelecomManager.EXTRA_DO_NOT_LOG_CALL should be present",
+                    callExtras.getBoolean(TelecomManager.EXTRA_DO_NOT_LOG_CALL));
+        }
+
+        mConferenceCall.disconnect();
+        isCallDisconnected(mConferenceCall, mConfCallSession);
+        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        waitForUnboundService();
     }
 }
