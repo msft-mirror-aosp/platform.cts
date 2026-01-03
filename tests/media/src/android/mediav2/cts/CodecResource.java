@@ -126,6 +126,15 @@ class CodecResourceUtils {
         }
     }
 
+    // Normalize store prefixes to "default" for cross-API consistency:
+    // - getGloballyAvailableResources() -> always "default-<id>"
+    // - getRequiredResources()          -> "default-<id>" or "default8-<id>" or "<token>-<id>"
+    // Result: All IDs are converted to "default-<id>" for uniform handling.
+    private static String normalizeResourceName(String name) {
+        // resource name = "componentStoreName-id"
+        return "default-" + name.split("-")[1];
+    }
+
     public static void addResources(List<MediaCodec.InstanceResourceInfo> from,
             List<CodecResource> to, boolean addNewEntry) {
         Map<String, CodecResource> toMap = new HashMap<>();
@@ -135,12 +144,12 @@ class CodecResourceUtils {
 
         for (MediaCodec.InstanceResourceInfo fromResource : from) {
             long amount = fromResource.getStaticCount();
-            CodecResource toResource = toMap.get(fromResource.getName());
+            String resId = normalizeResourceName(fromResource.getName());
+            CodecResource toResource = toMap.get(resId);
             if (toResource != null) {
                 toResource.addAvailable(amount);
             } else if (addNewEntry) {
-                CodecResource entry =
-                        new CodecResource(fromResource.getName(), CAPACITY_UNKNOWN, amount);
+                CodecResource entry = new CodecResource(resId, CAPACITY_UNKNOWN, amount);
                 to.add(entry);
                 toMap.put(entry.getResourceId(), entry);
             }
