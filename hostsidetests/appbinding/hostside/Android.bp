@@ -52,4 +52,5 @@ java_test_host {
         ":CtsAppBindingServiceSupervision4",
         ":CtsAppBindingServiceSupervision5",
     ],
+    enable_static_aconfig_pb: true,
 }
