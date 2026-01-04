@@ -141,6 +141,9 @@ public abstract class TestListAdapter extends BaseAdapter {
         /** Configs test pass mode to record the test result. */
         public final boolean passInEitherMode;
 
+        /** Category of the test. */
+        public final String category;
+
         protected TestListItem(Builder builder) {
             this.title = builder.mTitle;
             this.testName = setTestNameSuffix(sCurrentDisplayMode, builder.mTestName);
@@ -153,6 +156,7 @@ public abstract class TestListAdapter extends BaseAdapter {
             this.applicableFeatures = builder.mApplicableFeatures;
             this.displayMode = builder.mDisplayMode;
             this.passInEitherMode = builder.mPassInEitherMode;
+            this.category = builder.mCategory;
         }
 
         boolean isTest() {
@@ -182,6 +186,7 @@ public abstract class TestListAdapter extends BaseAdapter {
             private String[] mApplicableFeatures;
             private String mDisplayMode;
             private boolean mPassInEitherMode;
+            private String mCategory;
 
             protected Builder(String title) {
                 this.mTitle = title;
@@ -234,6 +239,11 @@ public abstract class TestListAdapter extends BaseAdapter {
 
             public Builder setPassInEitherMode(boolean passInEitherMode) {
                 this.mPassInEitherMode = passInEitherMode;
+                return this;
+            }
+
+            public Builder setCategory(String category) {
+                this.mCategory = category;
                 return this;
             }
 

@@ -315,6 +315,7 @@ public class ManifestTestListAdapter extends TestListAdapter {
             String[] applicableFeatures = getApplicableFeatures(info.activityInfo.metaData);
             String displayMode = getDisplayMode(info.activityInfo.metaData);
             boolean passInEitherMode = getTestPassMode(info.activityInfo.metaData, displayMode);
+            String testCategory = getTestCategory(mContext, info.activityInfo.metaData);
 
             TestListItem item =
                     TestListItem.newBuilder(title)
@@ -328,9 +329,9 @@ public class ManifestTestListAdapter extends TestListAdapter {
                             .setExcludedUserTypes(excludedUserTypes)
                             .setDisplayMode(displayMode)
                             .setPassInEitherMode(passInEitherMode)
+                            .setCategory(testCategory)
                             .build();
 
-            String testCategory = getTestCategory(mContext, info.activityInfo.metaData);
             addTestToCategory(testsByCategory, testCategory, item);
         }
 
