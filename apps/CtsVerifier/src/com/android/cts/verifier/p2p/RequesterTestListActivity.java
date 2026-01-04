@@ -15,8 +15,6 @@
  */
 package com.android.cts.verifier.p2p;
 
-import java.util.ArrayList;
-
 import android.content.Context;
 import android.content.Intent;
 import android.database.DataSetObserver;
@@ -29,6 +27,8 @@ import com.android.cts.verifier.TestListAdapter;
 import com.android.cts.verifier.TestListAdapter.TestListItem;
 import com.android.cts.verifier.p2p.testcase.ReqTestCase;
 import com.android.cts.verifier.p2p.testcase.TestCase;
+
+import java.util.ArrayList;
 
 /**
  * A base class for requester test list activity.
@@ -100,7 +100,10 @@ public abstract class RequesterTestListActivity extends
         Intent intent = new Intent(this, getRequesterActivityClass());
         intent.putExtra(TestCase.EXTRA_TEST_NAME,
                 testcase.getTestId());
-        adapter.add(TestListItem.newTest(testcase.getTestName(), testcase.getTestId(),
-                intent, null));
+        adapter.add(
+                TestListItem.newBuilder(testcase.getTestName())
+                        .setTestName(testcase.getTestId())
+                        .setIntent(intent)
+                        .build());
     }
 }

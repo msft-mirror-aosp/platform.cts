@@ -142,8 +142,9 @@ public class DeviceOwnerRequestingBugreportTestActivity extends PassFailButtons.
         setPassFailButtonClickListeners();
 
         final ArrayTestListAdapter adapter = new ArrayTestListAdapter(this);
-        adapter.add(TestListItem.newCategory(this,
-                R.string.device_owner_requesting_bugreport_category));
+        adapter.add(
+                TestListItem.newBuilder(this, R.string.device_owner_requesting_bugreport_category)
+                        .build());
 
         addTestsToAdapter(adapter);
 
@@ -255,7 +256,10 @@ public class DeviceOwnerRequestingBugreportTestActivity extends PassFailButtons.
     static TestListItem createTestItem(Activity activity, String id, int titleRes,
             Intent intent) {
         intent.putExtra(EXTRA_TEST_ID, id);
-        return TestListItem.newTest(activity, titleRes, id, intent, null);
+        return TestListItem.newBuilder(activity.getString(titleRes))
+                .setTestName(id)
+                .setIntent(intent)
+                .build();
     }
 
     private Intent createTearDownIntent() {

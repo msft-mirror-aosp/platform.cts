@@ -58,12 +58,18 @@ public class NfcTestActivity extends PassFailButtons.TestListActivity {
         NfcAdapter nfcAdapter = NfcAdapter.getDefaultAdapter(this);
 
         if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC)) {
-            adapter.add(TestListItem.newCategory(this, R.string.nfc_tag_verification));
-            adapter.add(TestListItem.newTest(this, R.string.nfc_ndef,
-                    NDEF_ID, getTagIntent(Ndef.class), null));
+            adapter.add(TestListItem.newBuilder(this, R.string.nfc_tag_verification).build());
+            adapter.add(
+                    TestListItem.newBuilder(this, R.string.nfc_ndef)
+                            .setTestName(NDEF_ID)
+                            .setIntent(getTagIntent(Ndef.class))
+                            .build());
             if (getPackageManager().hasSystemFeature(FEATURE_NFC_MIFARE)) {
-                adapter.add(TestListItem.newTest(this, R.string.nfc_mifare_ultralight,
-                        MIFARE_ULTRALIGHT_ID, getTagIntent(MifareUltralight.class), null));
+                adapter.add(
+                        TestListItem.newBuilder(this, R.string.nfc_mifare_ultralight)
+                                .setTestName(MIFARE_ULTRALIGHT_ID)
+                                .setIntent(getTagIntent(MifareUltralight.class))
+                                .build());
             }
         }
 
@@ -72,47 +78,54 @@ public class NfcTestActivity extends PassFailButtons.TestListActivity {
                 && nfcAdapter != null
                 && nfcAdapter.isObserveModeSupported()
                 && nfcAdapter.isReaderModeAnnotationSupported()) {
-            adapter.add(TestListItem.newCategory(this, R.string.nfc_hce));
+            adapter.add(TestListItem.newBuilder(this, R.string.nfc_hce).build());
             if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC)) {
                 adapter.add(
-                        TestListItem.newTest(
-                                this,
-                                R.string.nfc_hce_reader_polling_loop_annotations,
-                                HceReaderPollingLoopTestActivity.class.getName(),
-                                new Intent(this, HceReaderPollingLoopTestActivity.class),
-                                null));
+                        TestListItem.newBuilder(
+                                        this, R.string.nfc_hce_reader_polling_loop_annotations)
+                                .setTestName(HceReaderPollingLoopTestActivity.class.getName())
+                                .setIntent(new Intent(this, HceReaderPollingLoopTestActivity.class))
+                                .build());
             }
             adapter.add(
-                    TestListItem.newTest(
-                            this,
-                            R.string.nfc_hce_emulator_polling_loop_annotations,
-                            HceEmulatorPollingLoopTestActivity.class.getName(),
-                            new Intent(this, HceEmulatorPollingLoopTestActivity.class),
-                            null));
+                    TestListItem.newBuilder(
+                                    this, R.string.nfc_hce_emulator_polling_loop_annotations)
+                            .setTestName(HceEmulatorPollingLoopTestActivity.class.getName())
+                            .setIntent(new Intent(this, HceEmulatorPollingLoopTestActivity.class))
+                            .build());
         }
 
         if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION_NFCF)) {
-            adapter.add(TestListItem.newCategory(this, R.string.nfc_hce_f));
+            adapter.add(TestListItem.newBuilder(this, R.string.nfc_hce_f).build());
             if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC)) {
-                adapter.add(TestListItem.newTest(this, R.string.nfc_hce_f_reader_tests,
-                        HceFReaderTestActivity.class.getName(),
-                        new Intent(this, HceFReaderTestActivity.class), null));
+                adapter.add(
+                        TestListItem.newBuilder(this, R.string.nfc_hce_f_reader_tests)
+                                .setTestName(HceFReaderTestActivity.class.getName())
+                                .setIntent(new Intent(this, HceFReaderTestActivity.class))
+                                .build());
             }
-            adapter.add(TestListItem.newTest(this, R.string.nfc_hce_f_emulator_tests,
-                    HceFEmulatorTestActivity.class.getName(),
-                    new Intent(this, HceFEmulatorTestActivity.class), null));
+            adapter.add(
+                    TestListItem.newBuilder(this, R.string.nfc_hce_f_emulator_tests)
+                            .setTestName(HceFEmulatorTestActivity.class.getName())
+                            .setIntent(new Intent(this, HceFEmulatorTestActivity.class))
+                            .build());
         }
 
-        if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC_OFF_HOST_CARD_EMULATION_UICC)) {
-            adapter.add(TestListItem.newCategory(this, R.string.nfc_offhost_uicc));
+        if (getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_NFC_OFF_HOST_CARD_EMULATION_UICC)) {
+            adapter.add(TestListItem.newBuilder(this, R.string.nfc_offhost_uicc).build());
             if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC)) {
-                adapter.add(TestListItem.newTest(this, R.string.nfc_offhost_uicc_reader_tests,
-                        OffhostUiccReaderTestActivity.class.getName(),
-                        new Intent(this, OffhostUiccReaderTestActivity.class), null));
+                adapter.add(
+                        TestListItem.newBuilder(this, R.string.nfc_offhost_uicc_reader_tests)
+                                .setTestName(OffhostUiccReaderTestActivity.class.getName())
+                                .setIntent(new Intent(this, OffhostUiccReaderTestActivity.class))
+                                .build());
             }
-            adapter.add(TestListItem.newTest(this, R.string.nfc_offhost_uicc_emulator_tests,
-                    OffhostUiccEmulatorTestActivity.class.getName(),
-                    new Intent(this, OffhostUiccEmulatorTestActivity.class), null));
+            adapter.add(
+                    TestListItem.newBuilder(this, R.string.nfc_offhost_uicc_emulator_tests)
+                            .setTestName(OffhostUiccEmulatorTestActivity.class.getName())
+                            .setIntent(new Intent(this, OffhostUiccEmulatorTestActivity.class))
+                            .build());
         }
 
         setTestListAdapter(adapter);

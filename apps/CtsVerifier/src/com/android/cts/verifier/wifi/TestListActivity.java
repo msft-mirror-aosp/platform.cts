@@ -32,7 +32,7 @@ import android.widget.ListView;
 import com.android.cts.verifier.ArrayTestListAdapter;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
-import com.android.cts.verifier.TestListAdapter;
+import com.android.cts.verifier.TestListAdapter.TestListItem;
 
 /**
  * Activity listing all Wi-Fi Wifi tests.
@@ -59,48 +59,84 @@ public class TestListActivity extends PassFailButtons.TestListActivity {
 
         // Add the sub-test/categories
         ArrayTestListAdapter adapter = new ArrayTestListAdapter(this);
-        adapter.add(TestListAdapter.TestListItem.newCategory(this,
-                R.string.wifi_test_network_request));
-        adapter.add(TestListAdapter.TestListItem.newTest(this,
-                R.string.wifi_test_network_request_specific,
-                NetworkRequestSpecificNetworkSpecifierTestActivity.class.getName(),
-                new Intent(this, NetworkRequestSpecificNetworkSpecifierTestActivity.class), null));
-        adapter.add(TestListAdapter.TestListItem.newTest(this,
-                R.string.wifi_test_network_request_pattern,
-                NetworkRequestPatternNetworkSpecifierTestActivity.class.getName(),
-                new Intent(this, NetworkRequestPatternNetworkSpecifierTestActivity.class), null));
-        adapter.add(TestListAdapter.TestListItem.newTest(this,
-                R.string.wifi_test_network_request_unavailable,
-                NetworkRequestUnavailableNetworkSpecifierTestActivity.class.getName(),
-                new Intent(this, NetworkRequestUnavailableNetworkSpecifierTestActivity.class),
-                null));
-        adapter.add(TestListAdapter.TestListItem.newTest(this,
-                R.string.wifi_test_network_request_invalid_credential,
-                NetworkRequestInvalidCredentialNetworkSpecifierTestActivity.class.getName(),
-                new Intent(this, NetworkRequestInvalidCredentialNetworkSpecifierTestActivity.class),
-                null));
-        adapter.add(TestListAdapter.TestListItem.newCategory(this,
-                R.string.wifi_test_network_suggestion));
-        adapter.add(TestListAdapter.TestListItem.newTest(this,
-                R.string.wifi_test_network_suggestion_ssid,
-                NetworkSuggestionSsidTestActivity.class.getName(),
-                new Intent(this, NetworkSuggestionSsidTestActivity.class), null));
-        adapter.add(TestListAdapter.TestListItem.newTest(this,
-                R.string.wifi_test_network_suggestion_ssid_bssid,
-                NetworkSuggestionSsidBssidTestActivity.class.getName(),
-                new Intent(this, NetworkSuggestionSsidBssidTestActivity.class), null));
-        adapter.add(TestListAdapter.TestListItem.newTest(this,
-                R.string.wifi_test_network_suggestion_ssid_post_connect,
-                NetworkSuggestionSsidPostConnectTestActivity.class.getName(),
-                new Intent(this, NetworkSuggestionSsidPostConnectTestActivity.class), null));
-        adapter.add(TestListAdapter.TestListItem.newTest(this,
-                R.string.wifi_test_network_suggestion_connection_failure,
-                NetworkSuggestionConnectionFailureTestActivity.class.getName(),
-                new Intent(this, NetworkSuggestionConnectionFailureTestActivity.class), null));
-        adapter.add(TestListAdapter.TestListItem.newTest(this,
-                R.string.wifi_test_network_suggestion_modification_in_place,
-                NetworkSuggestionModificationInPlaceTestActivity.class.getName(),
-                new Intent(this, NetworkSuggestionModificationInPlaceTestActivity.class), null));
+        adapter.add(TestListItem.newBuilder(this, R.string.wifi_test_network_request).build());
+        adapter.add(
+                TestListItem.newBuilder(this, R.string.wifi_test_network_request_specific)
+                        .setTestName(
+                                NetworkRequestSpecificNetworkSpecifierTestActivity.class.getName())
+                        .setIntent(
+                                new Intent(
+                                        this,
+                                        NetworkRequestSpecificNetworkSpecifierTestActivity.class))
+                        .build());
+        adapter.add(
+                TestListItem.newBuilder(this, R.string.wifi_test_network_request_pattern)
+                        .setTestName(
+                                NetworkRequestPatternNetworkSpecifierTestActivity.class.getName())
+                        .setIntent(
+                                new Intent(
+                                        this,
+                                        NetworkRequestPatternNetworkSpecifierTestActivity.class))
+                        .build());
+        adapter.add(
+                TestListItem.newBuilder(this, R.string.wifi_test_network_request_unavailable)
+                        .setTestName(
+                                NetworkRequestUnavailableNetworkSpecifierTestActivity.class
+                                        .getName())
+                        .setIntent(
+                                new Intent(
+                                        this,
+                                        NetworkRequestUnavailableNetworkSpecifierTestActivity
+                                                .class))
+                        .build());
+        adapter.add(
+                TestListItem.newBuilder(this, R.string.wifi_test_network_request_invalid_credential)
+                        .setTestName(
+                                NetworkRequestInvalidCredentialNetworkSpecifierTestActivity.class
+                                        .getName())
+                        .setIntent(
+                                new Intent(
+                                        this,
+                                        NetworkRequestInvalidCredentialNetworkSpecifierTestActivity
+                                                .class))
+                        .build());
+        adapter.add(TestListItem.newBuilder(this, R.string.wifi_test_network_suggestion).build());
+        adapter.add(
+                TestListItem.newBuilder(this, R.string.wifi_test_network_suggestion_ssid)
+                        .setTestName(NetworkSuggestionSsidTestActivity.class.getName())
+                        .setIntent(new Intent(this, NetworkSuggestionSsidTestActivity.class))
+                        .build());
+        adapter.add(
+                TestListItem.newBuilder(this, R.string.wifi_test_network_suggestion_ssid_bssid)
+                        .setTestName(NetworkSuggestionSsidBssidTestActivity.class.getName())
+                        .setIntent(new Intent(this, NetworkSuggestionSsidBssidTestActivity.class))
+                        .build());
+        adapter.add(
+                TestListItem.newBuilder(
+                                this, R.string.wifi_test_network_suggestion_ssid_post_connect)
+                        .setTestName(NetworkSuggestionSsidPostConnectTestActivity.class.getName())
+                        .setIntent(
+                                new Intent(
+                                        this, NetworkSuggestionSsidPostConnectTestActivity.class))
+                        .build());
+        adapter.add(
+                TestListItem.newBuilder(
+                                this, R.string.wifi_test_network_suggestion_connection_failure)
+                        .setTestName(NetworkSuggestionConnectionFailureTestActivity.class.getName())
+                        .setIntent(
+                                new Intent(
+                                        this, NetworkSuggestionConnectionFailureTestActivity.class))
+                        .build());
+        adapter.add(
+                TestListItem.newBuilder(
+                                this, R.string.wifi_test_network_suggestion_modification_in_place)
+                        .setTestName(
+                                NetworkSuggestionModificationInPlaceTestActivity.class.getName())
+                        .setIntent(
+                                new Intent(
+                                        this,
+                                        NetworkSuggestionModificationInPlaceTestActivity.class))
+                        .build());
 
         adapter.registerDataSetObserver(new DataSetObserver() {
             @Override

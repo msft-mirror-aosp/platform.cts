@@ -16,6 +16,8 @@
 
 package com.android.cts.verifier.managedprovisioning;
 
+import static com.android.cts.verifier.managedprovisioning.Utils.createInteractiveTestItem;
+
 import android.app.Activity;
 import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
@@ -32,8 +34,6 @@ import com.android.cts.verifier.IntentDrivenTestActivity.TestInfo;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.TestListAdapter.TestListItem;
-
-import static com.android.cts.verifier.managedprovisioning.Utils.createInteractiveTestItem;
 
 /**
  * Activity that lists all device owner negative tests.
@@ -56,7 +56,7 @@ public class DeviceOwnerNegativeTestActivity extends PassFailButtons.TestListAct
         setPassFailButtonClickListeners();
 
         final ArrayTestListAdapter adapter = new ArrayTestListAdapter(this);
-        adapter.add(TestListItem.newCategory(this, R.string.device_owner_negative_category));
+        adapter.add(TestListItem.newBuilder(this, R.string.device_owner_negative_category).build());
 
         addTestsToAdapter(adapter);
 
@@ -87,18 +87,27 @@ public class DeviceOwnerNegativeTestActivity extends PassFailButtons.TestListAct
                             provisioningNegativeTestInfo.getInfoText())
                     .putExtra(IntentDrivenTestActivity.EXTRA_BUTTONS,
                             provisioningNegativeTestInfo.getButtons());
-        adapter.add(TestListItem.newTest(this, provisioningNegativeTestInfo.getTitle(),
-                provisioningNegativeTestInfo.getTestId(), startTestIntent, null));
-        adapter.add(TestListItem.newTest(this, R.string.enterprise_privacy_quick_settings_negative,
-                ENTERPRISE_PRIVACY_QUICK_SETTINGS_NEGATIVE,
-                new Intent(this, EnterprisePrivacyInfoOnlyTestActivity.class)
-                        .putExtra(EnterprisePrivacyInfoOnlyTestActivity.EXTRA_ID,
-                                ENTERPRISE_PRIVACY_QUICK_SETTINGS_NEGATIVE)
-                        .putExtra(EnterprisePrivacyInfoOnlyTestActivity.EXTRA_TITLE,
-                                R.string.enterprise_privacy_quick_settings_negative)
-                        .putExtra(EnterprisePrivacyInfoOnlyTestActivity.EXTRA_INFO,
-                                R.string.enterprise_privacy_quick_settings_negative_info),
-                        null));
+        adapter.add(
+                TestListItem.newBuilder(this, provisioningNegativeTestInfo.getTitle())
+                        .setTestName(provisioningNegativeTestInfo.getTestId())
+                        .setIntent(startTestIntent)
+                        .build());
+        adapter.add(
+                TestListItem.newBuilder(this, R.string.enterprise_privacy_quick_settings_negative)
+                        .setTestName(ENTERPRISE_PRIVACY_QUICK_SETTINGS_NEGATIVE)
+                        .setIntent(
+                                new Intent(this, EnterprisePrivacyInfoOnlyTestActivity.class)
+                                        .putExtra(
+                                                EnterprisePrivacyInfoOnlyTestActivity.EXTRA_ID,
+                                                ENTERPRISE_PRIVACY_QUICK_SETTINGS_NEGATIVE)
+                                        .putExtra(
+                                                EnterprisePrivacyInfoOnlyTestActivity.EXTRA_TITLE,
+                                                R.string.enterprise_privacy_quick_settings_negative)
+                                        .putExtra(
+                                                EnterprisePrivacyInfoOnlyTestActivity.EXTRA_INFO,
+                                                R.string
+                                                        .enterprise_privacy_quick_settings_negative_info))
+                        .build());
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
                 && Utils.isLockscreenSupported(this)) {
             adapter.add(createInteractiveTestItem(this, ENTERPRISE_PRIVACY_KEYGUARD_NEGATIVE,
@@ -136,4 +145,3 @@ public class DeviceOwnerNegativeTestActivity extends PassFailButtons.TestListAct
         }
     }
 }
-

@@ -50,13 +50,15 @@ public class Utils {
 
     static TestListItem createInteractiveTestItem(Activity activity, String id, int titleRes,
             int infoRes, ButtonInfo[] buttonInfos) {
-        return TestListItem.newTest(activity, titleRes,
-                id, new Intent(activity, IntentDrivenTestActivity.class)
-                .putExtra(IntentDrivenTestActivity.EXTRA_ID, id)
-                .putExtra(IntentDrivenTestActivity.EXTRA_TITLE, titleRes)
-                .putExtra(IntentDrivenTestActivity.EXTRA_INFO, infoRes)
-                .putExtra(IntentDrivenTestActivity.EXTRA_BUTTONS, buttonInfos),
-                null);
+        return TestListItem.newBuilder(activity, titleRes)
+                .setTestName(id)
+                .setIntent(
+                        new Intent(activity, IntentDrivenTestActivity.class)
+                                .putExtra(IntentDrivenTestActivity.EXTRA_ID, id)
+                                .putExtra(IntentDrivenTestActivity.EXTRA_TITLE, titleRes)
+                                .putExtra(IntentDrivenTestActivity.EXTRA_INFO, infoRes)
+                                .putExtra(IntentDrivenTestActivity.EXTRA_BUTTONS, buttonInfos))
+                .build();
     }
 
     static TestListItem createInteractiveTestItem(Activity activity, String id, int titleRes,

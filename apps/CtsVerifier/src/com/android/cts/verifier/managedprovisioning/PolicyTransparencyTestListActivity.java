@@ -156,7 +156,8 @@ public final class PolicyTransparencyTestListActivity extends PassFailButtons.Te
             String title = UserRestrictions.getRestrictionLabel(this, restriction);
             String testId = getTestId(title);
             intent.putExtra(PolicyTransparencyTestActivity.EXTRA_TEST_ID, testId);
-            adapter.add(TestListItem.newTest(title, testId, intent, null));
+            adapter.add(
+                    TestListItem.newBuilder(title).setTestName(testId).setIntent(intent).build());
         }
         for (Pair<Intent, Integer> policy : POLICIES) {
             Intent intent = policy.first;
@@ -184,7 +185,8 @@ public final class PolicyTransparencyTestListActivity extends PassFailButtons.Te
             if (mMode == MODE_DEVICE_OWNER || ALSO_VALID_FOR_MANAGED_USER.contains(test)) {
                 intent.putExtra(CommandReceiverActivity.EXTRA_USE_CURRENT_USER_DPM, true);
             }
-            adapter.add(TestListItem.newTest(title, testId, intent, null));
+            adapter.add(
+                    TestListItem.newBuilder(title).setTestName(testId).setIntent(intent).build());
         }
     }
 
