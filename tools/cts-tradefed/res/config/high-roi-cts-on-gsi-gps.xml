@@ -28,13 +28,10 @@
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssMeasurementRegistrationTest#testGnssMeasurementRegistration_enableFullTracking"/>
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssMeasurementRegistrationTest#testGnssMeasurementRegistration_passiveListenerAndNonPassiveListener"/>
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssMeasurementValuesTest#testListenForGnssMeasurements"/>
-    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssMeasurementsConstellationTest#testGnssMultiConstellationSupported"/>
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssPseudorangeVerificationTest#testPseudoPosition"/>
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssStatusTest#testGnssStatusChanges"/>
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssStatusTest#testGnssStatusValues"/>
-    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssStatusTest#testGnssStatusValuesWithCodetype"/>
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssTtffTests#testTtffWithNetwork"/>
-    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssTtffTests#testTtffWithNetwork_registerGnssMeasurementFirst"/>
     <!-- CtsLocationPrivilegedTestCases -->
     <option name="compatibility:include-filter" value="CtsLocationPrivilegedTestCases android.location.cts.privileged.GnssLocationValuesTest#testLowPowerModeGnssLocation"/>
     <option name="compatibility:include-filter" value="CtsLocationPrivilegedTestCases android.location.cts.privileged.GnssMeasurementCorrectionsInjectionTest#testInjectGnssMeasurementCorrections"/>
