@@ -21,7 +21,6 @@ android_test_helper_app {
     defaults: ["cts_support_defaults"],
     srcs: ["src/**/*.java"],
     test_suites: [
-        "cts",
         "vts10",
         "sts",
     ],
