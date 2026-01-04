@@ -29,33 +29,22 @@ import android.widget.LinearLayout;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsers;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
-import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
 /** Test for 'dumpsys input_method'. */
 @SmallTest
-// TODO(b/356239178): Add tests for concurrent multi-user
 public final class DumpTest {
 
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(30);
 
-    // Required for Bedstead annotations to take effect.
-    @ClassRule
-    @Rule
-    public static final DeviceState sDeviceState = new DeviceState();
-
     @Test
-    @RequireNotVisibleBackgroundUsers(reason = "Test IMMS dump on single user mode")
     public void test_dumpDoesNotContainEditorText() throws Exception {
         final String marker = "TEST_MARKER/" + SystemClock.elapsedRealtimeNanos();
         final String text = "TEST_TEXT/" + SystemClock.elapsedRealtimeNanos();
