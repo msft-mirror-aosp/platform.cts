@@ -37,7 +37,6 @@ android_test_helper_app {
     exclude_srcs: ["src/com/android/cts/writeexternalstorageapp/WriteGiftTest.java"],
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }

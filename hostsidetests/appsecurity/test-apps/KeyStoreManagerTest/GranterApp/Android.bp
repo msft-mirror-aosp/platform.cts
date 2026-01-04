@@ -24,7 +24,6 @@ android_test_helper_app {
     ],
     libs: ["android.test.base.stubs.test"],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",

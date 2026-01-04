@@ -27,7 +27,6 @@ android_test_helper_app {
     sdk_version: "current",
     min_sdk_version: "27",
     test_suites: [
-        "cts",
         "general-tests",
     ],
     optimize: {

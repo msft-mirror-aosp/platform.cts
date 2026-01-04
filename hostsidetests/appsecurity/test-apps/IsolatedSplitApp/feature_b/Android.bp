@@ -24,7 +24,6 @@ android_test_helper_app {
     defaults: ["cts_support_defaults"],
     sdk_version: "current",
     test_suites: [
-        "cts",
         "general-tests",
     ],
     // Make sure our test locale polish is not stripped.

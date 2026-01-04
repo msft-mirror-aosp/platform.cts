@@ -26,7 +26,6 @@ android_test_helper_app {
     sdk_version: "current",
     certificate: ":cts-testkey1",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -38,7 +37,6 @@ android_test_helper_app {
     sdk_version: "28",
     certificate: ":cts-testkey1",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -53,7 +51,6 @@ android_test_helper_app {
         "rro_src/**/*.java",
     ],
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -65,7 +62,6 @@ android_test_helper_app {
     sdk_version: "current",
     certificate: ":cts-testkey1",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -77,7 +73,6 @@ android_test_helper_app {
     sdk_version: "current",
     certificate: ":cts-testkey2",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
