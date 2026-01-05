@@ -26,15 +26,12 @@
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SensorBatchingTests#testOrientation_50hz_batching"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SensorParameterRangeTest#testMagnetometerRange"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SingleSensorTests#testAccelerometer_1hz"/>
-    <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SingleSensorTests#testAccelerometer_5hz"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SingleSensorTests#testGravity_200hz"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SingleSensorTests#testGravity_50hz"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SingleSensorTests#testGravity_fastest"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SingleSensorTests#testGyroscopeUncalibrated_10hz"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SingleSensorTests#testGyroscopeUncalibrated_fastest"/>
-    <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SingleSensorTests#testGyroscope_1hz"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SingleSensorTests#testGyroscope_50hz"/>
-    <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SingleSensorTests#testGyroscope_5hz"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SingleSensorTests#testMagneticField_10hz"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SingleSensorTests#testMagneticField_15hz"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases android.hardware.cts.SingleSensorTests#testMagneticField_5hz"/>
@@ -46,7 +43,5 @@
     <option name="compatibility:include-filter" value="CtsSensorTestCases[instant] android.hardware.cts.SensorBatchingTests#testMagneticField_50hz_flush"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases[instant] android.hardware.cts.SensorBatchingTests#testMagneticField_fastest_batching"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases[instant] android.hardware.cts.SensorBatchingTests#testMagneticField_fastest_flush"/>
-    <option name="compatibility:include-filter" value="CtsSensorTestCases[instant] android.hardware.cts.SingleSensorTests#testGyroscope_1hz"/>
-    <option name="compatibility:include-filter" value="CtsSensorTestCases[instant] android.hardware.cts.SingleSensorTests#testGyroscope_5hz"/>
     <option name="compatibility:include-filter" value="CtsSensorTestCases[instant] android.hardware.cts.SingleSensorTests#testMagneticField_10hz"/>
 </configuration>

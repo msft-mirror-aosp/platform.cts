@@ -19,31 +19,21 @@
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.BurstCaptureRawTest#testManualAutoSwitch[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.BurstCaptureRawTest#testMetadataRoundDown[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.BurstCaptureTest#testJpegBurst[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testAudioRestrictionSingleDevice[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testCameraDeviceAbort[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testCameraDeviceCaptureBurst[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.BurstCaptureTest#testYuvBurst[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testCameraDeviceCapture[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testCameraDeviceManualTemplate[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testCameraDevicePreviewTemplate[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testCameraDeviceRecordingTemplate[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testCameraDeviceRepeatingBurst[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testCameraDeviceRepeatingRequest[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testCameraDeviceSetErrorListener[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testCameraDeviceStillTemplate[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testCameraDeviceVideoSnapShotTemplate[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testChainedOperation[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testCreateCustomSession[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testCreateSessionWithParameters[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testCreateSessions[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testInvalidCapture[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testPrepareForSharedSurfaces[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testPrepare[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testSessionParametersStateLeak[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testSurfaceSizeChange[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraExtensionCharacteristicsTest#testExtensionAvailability"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraExtensionCharacteristicsTest#testExtensionGetCharacteristics"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraExtensionCharacteristicsTest#testExtensionLatencyRanges"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraExtensionCharacteristicsTest#testExtensionRequestKeys"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraExtensionCharacteristicsTest#testExtensionResultKeys"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraExtensionCharacteristicsTest#testGetRequiredKeys"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraExtensionSessionTest#testAFMetering[1]"/>
@@ -55,28 +45,30 @@
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraExtensionSessionTest#testRepeatingAndCaptureCombined[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraExtensionSessionTest#testZoomRatio[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraManagerTest#testCameraManagerGetDeviceIdList[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraManagerTest#testCameraManagerListenerCallbacks[0]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testCameraSurfaceTextureSwap[0]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testCameraSurfaceTextureSwap[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testCameraSurfaceTextureUpdate[0]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testCameraSurfaceTextureUpdate[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testCameraSurfaceViewSwap[0]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testCameraSurfaceViewSwap[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testCameraSurfaceViewUpdate[0]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testCameraSurfaceViewUpdate[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testAeModeOnLowLightBoostBrightnessPriorityWithStreamUseCase[0]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testAeModeOnLowLightBoostBrightnessPriorityWithStreamUseCase[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testDeferredDepthJpegImageReader[0]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testDeferredDepthJpegImageReader[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testDeferredHEICUltraHDRImageReader[0]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testDeferredHEICUltraHDRImageReader[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testDeferredJpegRImageReader[0]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testDeferredJpegRImageReader[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testDepthJpegImageReaderUpdate[0]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testDepthJpegImageReaderUpdate[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testHEICUltraHDRImageReaderUpdate[0]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testHEICUltraHDRImageReaderUpdate[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testJpegRImageReaderUpdate[0]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testJpegRImageReaderUpdate[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testSharedSurfaceSwapAndUpdate[0]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testSharedSurfaceSwapAndUpdate[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testAeModeAndLock[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testAntiBandingModes[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testAwbModeAndLock[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testBlackLevelLock[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testCameraStabilizations[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testColorCorrectionControl[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testDigitalZoomPreviewCombinations[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testDynamicBlackWhiteLevel[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testEdgeModeControlFastFps[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testEdgeModeControl[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testEffectModes[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testExtendedSceneModes[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testFaceDetection[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testFlashControl[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testFlashTurnOff[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testFocusDistanceControl[1]"/>
@@ -88,37 +80,30 @@
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testToneMapControl[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testZoomRatioWithMethod[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testZoomRatio[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureResultTest#testDeviceType[0]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureResultTest#testDeviceType[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureResultTest#testPartialResult[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.DngCreatorTest#testDngRenderingByBitmapFactor[0]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.DngCreatorTest#testDngRenderingByBitmapFactor[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.DngCreatorTest#testRaw16JpegConsistency[0]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.DngCreatorTest#testRaw16JpegConsistency[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.DngCreatorTest#testRaw16JpegMaximumResolutionConsistency[0]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.DngCreatorTest#testRaw16JpegMaximumResolutionConsistency[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.DngCreatorTest#testSingleImageBasicMaximumResolution[0]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.DngCreatorTest#testSingleImageBasicMaximumResolution[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.DngCreatorTest#testSingleImageBasic[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.DngCreatorTest#testSingleImageThumbnail[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraPerfClassCharacteristics[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraUPerfClassCharacteristics[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraUPerfClassExtensionCharacteristics[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraVPerfClassCharacteristics[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testKeys[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testSPerfClassJpegSizes[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.FastBasicsTest#testCamera1[0]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.FastBasicsTest#testCamera1[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.FastBasicsTest#testCamera2[0]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.FeatureCombinationTest#testIsSessionConfigurationSupportedForPrimaryFront[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.FeatureCombinationTest#testIsSessionConfigurationSupportedForPrimaryRear[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.FeatureCombinationTest#testVPerfClassRequirements[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.FlashlightTest#testTurnOnTorchWithStrengthLevel[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testAllOutputYUVResolutions[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testDiscardFreeBuffers[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testFlexibleYuvWithTimestampBase[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testFlexibleYuv[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testHeicUltraHdr[0]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testHeicUltraHdr[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testImageReaderBuilderWithBLOBAndHeicUltraHdr[0]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testImageReaderBuilderWithBLOBAndHeicUltraHdr[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testImageReaderPrivateWithProtectedUsageFlag[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testImageReaderYuvAndPrivate[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testImageReaderYuvAndRawWithUsageFlag[1]"/>
@@ -129,31 +114,21 @@
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testLongProcessingRepeatingFlexibleYuv[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testLongProcessingRepeatingRaw[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testP010[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testP210[0]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testP210[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testRaw[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testRepeatingJpeg[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testRepeatingRaw[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testYuvAndJpegWithUsageFlag[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testYuvAndJpeg[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageWriterTest#testYuvImageWriterReaderOperationAlt[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageWriterTest#testYuvImageWriterReaderOperation[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.LogicalCameraDeviceTest#testBasicLogicalPhysicalStreamCombination[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.LogicalCameraDeviceTest#testBasicPhysicalStreaming[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.LogicalCameraDeviceTest#testInvalidPhysicalCameraRequests[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.LogicalCameraDeviceTest#testLogicalCameraAdditionalResult[0]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.LogicalCameraDeviceTest#testLogicalCameraAdditionalResult[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.LogicalCameraDeviceTest#testLogicalCameraZoomSwitch[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.MultiResolutionImageReaderTest#testMultiResolutionImageReaderPrivateUsage[0]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.MultiResolutionImageReaderTest#testMultiResolutionImageReaderPrivateUsage[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.MultiResolutionImageReaderTest#testMultiResolutionImageReaderRaw[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.MultiResolutionImageReaderTest#testMultiResolutionImageReaderRepeatingPrivateUsage[0]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.MultiResolutionImageReaderTest#testMultiResolutionImageReaderRepeatingPrivateUsage[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.MultiResolutionImageReaderTest#testMultiResolutionImageReaderRepeatingRaw[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.MultiViewTest#testDualCameraPreview[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.MultiViewTest#testDualTextureViewAndImageReaderPreview[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.MultiViewTest#testDualTextureViewPreview[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.MultiViewTest#testPreviewMirroringForSharedSurfaces[0]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.MultiViewTest#testPreviewMirroringForSharedSurfaces[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.MultiViewTest#testSharedSurfaceBasic[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.MultiViewTest#testSharedSurfaceLimit[1]"/>
@@ -175,7 +150,6 @@
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.NativeCameraDeviceTest#testCameraDeviceSimplePreviewWithV2Callbacks[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.NativeCameraDeviceTest#testCameraDeviceSimplePreview[0]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.NativeCameraDeviceTest#testCameraDeviceSimplePreview[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.NativeImageReaderTest#testHeic[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.NativeImageReaderTest#testImageReaderCloseAcquiredImages[0]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.NativeImageReaderTest#testImageReaderCloseAcquiredImages[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.NativeImageReaderTest#testJpeg[0]"/>
@@ -192,9 +166,9 @@
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.RecordingTest#testBasicVideoStabilizationRecording[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.RecordingTest#testConstrainedHighSpeedRecording[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.RecordingTest#testIntermediateSurfaceRecording[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.RecordingTest#testMediaCodecSurfaceUpdate[0]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.RecordingTest#testMediaCodecSurfaceUpdate[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.RecordingTest#testRecordingFramerateLowToHigh[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.RecordingTest#testRecordingFromPersistentSurface[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.RecordingTest#testRecordingWithDifferentPreviewSizes[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.RecordingTest#testVideoPreviewSurfaceSharing[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.RobustnessTest#testAbandonRepeatingRequestSurface[1]"/>
@@ -203,9 +177,10 @@
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.RobustnessTest#testMandatory10BitStreamCombinations[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.RobustnessTest#testMandatoryPreviewStabilizationOutputCombinations[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.RobustnessTest#testMandatoryUseCaseOutputCombinations[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.StaticMetadataTest#testDeviceType[0]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.StaticMetadataTest#testDeviceType[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.StaticMetadataTest#testLensFacing[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.StillCaptureTest#testAePrecaptureTriggerCancelJpegCapture[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.StillCaptureTest#testAeRegions[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.StillCaptureTest#testAfRegions[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.StillCaptureTest#testBasicRawCapture[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.StillCaptureTest#testBasicRawZslCapture[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.StillCaptureTest#testFullRawCapture[1]"/>
@@ -228,50 +203,60 @@
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testDisplayOrientation"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testFaceDetection"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testFocusAreas"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testFocusDistances"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testGetParameterDuringFocus"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testJpegExif"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testJpegThumbnailSize"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testLockUnlock"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testMeteringAreas"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testMultiCameraRelease"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testPreviewCallback"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testPreviewCallbackWithBuffer"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testPreviewCallbackWithPicture"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testPreviewFormats"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testPreviewFpsRange"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testRecordingHint"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testSetOneShotPreviewCallback"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testSetPreviewDisplay"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testStabilizationOneShotPreviewCallback"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.Camera_SizeTest#testConstructor"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.LegacyCameraPerformanceTest#testLegacyApiPerformance"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.multiprocess.camera.cts.CameraEvictionTest#testBasicCamera2ActivityEviction"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.multiprocess.camera.cts.CameraEvictionTest#testCamera2AccessCallbackInSplitMode"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.multiprocess.camera.cts.CameraEvictionTest#testCamera2OomScoreOffsetPermissions"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.multiprocess.camera.cts.CameraEvictionTest#testMediaRecorderCameraActivityEviction"/>
     <!-- CtsCameraTestCases[instant] -->
-    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testCameraImageReaderUpdate[0]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testCameraImageReaderUpdate[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testCameraSurfaceTextureSwap[0]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testCameraSurfaceTextureSwap[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testCameraSurfaceTextureUpdate[0]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testCameraSurfaceTextureUpdate[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testCameraSurfaceViewSwap[0]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testCameraSurfaceViewSwap[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testCameraSurfaceViewUpdate[0]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testCameraSurfaceViewUpdate[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CaptureRequestTest#testAeModeOnLowLightBoostBrightnessPriorityWithStreamUseCase[0]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CaptureRequestTest#testAeModeOnLowLightBoostBrightnessPriorityWithStreamUseCase[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CaptureResultTest#testDeviceType[0]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CaptureResultTest#testDeviceType[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.DngCreatorTest#testDngRenderingByBitmapFactor[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testDeferredDepthJpegImageReader[0]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testDeferredDepthJpegImageReader[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testDeferredHEICUltraHDRImageReader[0]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testDeferredHEICUltraHDRImageReader[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testDeferredJpegRImageReader[0]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testDeferredJpegRImageReader[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testDepthJpegImageReaderUpdate[0]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testDepthJpegImageReaderUpdate[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testHEICUltraHDRImageReaderUpdate[0]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testHEICUltraHDRImageReaderUpdate[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testJpegRImageReaderUpdate[0]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testJpegRImageReaderUpdate[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testSharedSurfaceSwapAndUpdate[0]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.CameraUpdateOutputConfigurations#testSharedSurfaceSwapAndUpdate[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.DngCreatorTest#testSingleImageBasicMaximumResolution[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testKeys[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.LogicalCameraDeviceTest#testBasicPhysicalStreaming[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.LogicalCameraDeviceTest#testLogicalCameraAdditionalResult[0]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.LogicalCameraDeviceTest#testLogicalCameraAdditionalResult[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.MultiResolutionImageReaderTest#testMultiResolutionImageReaderConcurrentReadersWithReadoutMonotonicTimestamp[0]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.MultiResolutionImageReaderTest#testMultiResolutionImageReaderConcurrentReadersWithReadoutMonotonicTimestamp[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.MultiResolutionImageReaderTest#testMultiResolutionImageReaderConcurrentReadersWithReadoutTimestamp[0]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.MultiResolutionImageReaderTest#testMultiResolutionImageReaderConcurrentReadersWithReadoutTimestamp[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.MultiResolutionImageReaderTest#testMultiResolutionImageReaderConcurrentReadersWithSensorTimestamp[0]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.MultiResolutionImageReaderTest#testMultiResolutionImageReaderConcurrentReadersWithSensorTimestamp[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.MultiViewTest#testSharedSurfaceYUVImageReaderSwitch[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.RecordingTest#testMediaCodecSurfaceUpdate[0]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.RecordingTest#testMediaCodecSurfaceUpdate[1]"/>
-    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.StaticMetadataTest#testDeviceType[0]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.StaticMetadataTest#testDeviceType[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.StillCaptureTest#testAfRegions[1]"/>
     <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.SurfaceViewPreviewTest#testSurfaceSet[1]"/>
+    <option name="compatibility:include-filter" value="CtsCameraTestCases[instant] android.hardware.cts.CameraTest#testFocusDistances"/>
+    <!-- Exclude the failing tests in CtsCameraTestCases -->
+    <option name="compatibility:exclude-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testKeys[1]"/>
+    <option name="compatibility:exclude-filter" value="CtsCameraTestCases android.hardware.camera2.cts.StaticMetadataTest#testDeviceType[1]"/>
+    <!-- Exclude the failing tests in CtsCameraTestCases[instant] -->
+    <option name="compatibility:exclude-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testKeys[1]"/>
+    <option name="compatibility:exclude-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.StaticMetadataTest#testDeviceType[1]"/>
 </configuration>
