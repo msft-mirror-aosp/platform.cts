@@ -70,4 +70,5 @@ java_test_host {
         ":CtsMediaRouterHostSideTestPerAppDiscoveryPrefsConsumer2",
         ":CtsMediaRouterHostSideTestProviderPerApp",
     ],
+    enable_static_aconfig_pb: true,
 }

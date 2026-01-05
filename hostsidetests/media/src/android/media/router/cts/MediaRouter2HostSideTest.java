@@ -102,7 +102,7 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice, this.getClass());
 
     private int mUserId;
 
