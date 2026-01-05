@@ -30,6 +30,8 @@ import android.media.metrics.PlaybackSession;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import androidx.media3.common.util.Util;
 import androidx.media3.test.utils.FakeExtractorInput;
 import androidx.media3.test.utils.TestUtil;
@@ -41,6 +43,7 @@ import com.android.media.mainline.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -55,6 +58,9 @@ public class MediaParserTest {
 
     private static final String PARAMETER_IN_BAND_CRYPTO_INFO =
             "android.media.mediaparser.inBandCryptoInfo";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() {
