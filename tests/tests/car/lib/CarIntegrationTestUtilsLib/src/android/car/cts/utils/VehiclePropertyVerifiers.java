@@ -82,6 +82,8 @@ import android.car.hardware.property.WindshieldWipersState;
 import android.car.hardware.property.WindshieldWipersSwitch;
 import android.util.ArraySet;
 
+import com.android.car.internal.util.DebugUtils;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Range;
@@ -555,7 +557,8 @@ public class VehiclePropertyVerifiers {
                             "WHEEL_TICK configArray["
                                     + configArrayIndex
                                     + "] must specify the ticks to micrometers for "
-                                    + wheelToString(wheelToVerify))
+                                    + DebugUtils.constantToString(
+                                            VehicleAreaWheel.class, wheelToVerify))
                     .that(wheelTicksToUm)
                     .isGreaterThan(0);
         } else {
@@ -563,7 +566,8 @@ public class VehiclePropertyVerifiers {
                             "WHEEL_TICK configArray["
                                     + configArrayIndex
                                     + "] should be zero since "
-                                    + wheelToString(wheelToVerify)
+                                    + DebugUtils.constantToString(
+                                            VehicleAreaWheel.class, wheelToVerify)
                                     + " is not supported")
                     .that(wheelTicksToUm)
                     .isEqualTo(0);
@@ -577,25 +581,11 @@ public class VehiclePropertyVerifiers {
                             "WHEEL_TICK value["
                                     + valueIndex
                                     + "] should be zero since "
-                                    + wheelToString(wheelToVerify)
+                                    + DebugUtils.constantToString(
+                                            VehicleAreaWheel.class, wheelToVerify)
                                     + " is not supported")
                     .that(ticks)
                     .isEqualTo(0);
-        }
-    }
-
-    private static String wheelToString(int wheel) {
-        switch (wheel) {
-            case VehicleAreaWheel.WHEEL_LEFT_FRONT:
-                return "WHEEL_LEFT_FRONT";
-            case VehicleAreaWheel.WHEEL_RIGHT_FRONT:
-                return "WHEEL_RIGHT_FRONT";
-            case VehicleAreaWheel.WHEEL_RIGHT_REAR:
-                return "WHEEL_RIGHT_REAR";
-            case VehicleAreaWheel.WHEEL_LEFT_REAR:
-                return "WHEEL_LEFT_REAR";
-            default:
-                return Integer.toString(wheel);
         }
     }
 
