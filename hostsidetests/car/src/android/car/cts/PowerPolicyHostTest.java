@@ -77,7 +77,7 @@ public final class PowerPolicyHostTest extends CarHostJUnit4TestCase {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice, this.getClass());
 
     @Before
     public void checkPrecondition() throws Exception {
