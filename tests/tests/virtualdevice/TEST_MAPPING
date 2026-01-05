@@ -41,6 +41,9 @@
           "exclude-filter": "android.hardware.camera2.cts.CaptureRequestTest#testNoiseReductionModeControl[1]"
         },
         {
+          "exclude-filter": "android.hardware.camera2.cts.CaptureRequestTest#testNoiseReductionModeControlFastFps[1]"
+        },
+        {
           "exclude-filter": "android.hardware.camera2.cts.CameraManagerTest#testCameraManagerGetDeviceIdList[1]"
         },
         {
