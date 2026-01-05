@@ -1909,6 +1909,9 @@ public class PinnedStackTests extends ActivityManagerTestBase {
                 "onPictureInPictureModeChanged",
                 1,
                 lifecycles.getCount(ActivityCallback.ON_PICTURE_IN_PICTURE_MODE_CHANGED));
+
+        // TODO(b/469998831), disabled ordering check on TV. Re-enable after TV migrates to PiP2.
+        assumeFalse(isTv());
         final int lastUiStateChangedIndex =
                 lifecycles.getLastIndex(ActivityCallback.ON_PICTURE_IN_PICTURE_UI_STATE_CHANGED);
         final int lastPipModeChangedIndex =
