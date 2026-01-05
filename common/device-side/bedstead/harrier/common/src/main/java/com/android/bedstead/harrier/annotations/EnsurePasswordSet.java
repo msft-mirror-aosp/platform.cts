@@ -35,6 +35,7 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
+@RequireLockScreenSupport
 @UsesAnnotationExecutor(UsesAnnotationExecutor.MAIN)
 public @interface EnsurePasswordSet {
 
@@ -55,5 +56,5 @@ public @interface EnsurePasswordSet {
      *
      * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any {@link int}.
      */
-    int priority() default MIDDLE;
+     int priority() default MIDDLE;
 }
