@@ -30,6 +30,7 @@ import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_HlgEditing;
 import static android.media.codec.Flags.FLAG_DYNAMIC_COLOR_ASPECTS;
 import static android.media.codec.Flags.FLAG_IN_PROCESS_SW_AUDIO_CODEC;
 import static android.media.codec.Flags.hlgEditing;
+import static android.mediav2.common.cts.CodecTestBase.BOARD_FIRST_SDK_IS_AFTER_202504;
 import static android.mediav2.common.cts.CodecTestBase.BOARD_FIRST_SDK_IS_AT_LEAST_202404;
 import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AFTER_202504;
 import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AT_LEAST_T;
@@ -351,5 +352,22 @@ public class CodecInfoTest {
                         + "  should be equal to 1 ", 1, heightAlignment);
                 break;
         }
+    }
+
+    /**
+     * Components advertising support for compression technologies that were introduced since 2003
+     * must support a minimum resolution of 128x96.
+     */
+    @VsrTest(requirements = {"VSR-4.2.1-002"})
+    @Test
+    public void testMinimumVideoSize() {
+        Assume.assumeTrue("Test is applicable for video codecs", mMediaType.startsWith("video/"));
+        Assume.assumeTrue("Skipping, Only intended for coding technologies introduced since 2003.",
+                CodecTestBase.isVideoCodingTechnology2003OrLater(mMediaType));
+        Assume.assumeTrue("Skipping, Only intended for devices with SDK > 202504",
+                BOARD_FIRST_SDK_IS_AFTER_202504);
+        MediaCodecInfo.VideoCapabilities vCaps =
+                mCodecInfo.getCapabilitiesForType(mMediaType).getVideoCapabilities();
+        assertTrue(mCodecName + " does not support size 128x96", vCaps.isSizeSupported(128, 96));
     }
 }
