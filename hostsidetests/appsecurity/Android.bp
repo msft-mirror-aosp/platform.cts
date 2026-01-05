@@ -79,6 +79,7 @@ java_defaults {
     java_resource_dirs: ["res"],
 
     per_testcase_directory: true,
+    enable_static_aconfig_pb: true,
 }
 
 // Unit tests for utilities used by the CTS tests - not CTS itself

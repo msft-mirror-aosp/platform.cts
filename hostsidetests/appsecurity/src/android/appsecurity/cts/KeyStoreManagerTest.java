@@ -52,7 +52,7 @@ public final class KeyStoreManagerTest extends BaseHostJUnit4Test {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice, this.getClass());
 
     @Test
     @ApiTest(apis = {"android.security.keystore.KeyStoreManager#grantKeyAccess",
