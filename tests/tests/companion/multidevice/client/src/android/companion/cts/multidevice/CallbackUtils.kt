@@ -152,12 +152,12 @@ object CallbackUtils {
         }
     }
 
-    class RemoteTaskCallback() {
+    class RemoteTaskCallback() : TaskContinuityManager.RemoteTaskListener {
 
         private val callCountLatch = CountDownLatch(1)
         var lastRemoteTasks: List<RemoteTask> = emptyList()
 
-        fun onRemoteTasksChanged(remoteTasks: List<RemoteTask>) {
+        override fun onRemoteTasksChanged(remoteTasks: List<RemoteTask>) {
             lastRemoteTasks = remoteTasks
             callCountLatch.countDown()
         }
