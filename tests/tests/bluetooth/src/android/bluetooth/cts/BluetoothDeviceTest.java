@@ -293,8 +293,40 @@ public class BluetoothDeviceTest {
         mFakeDevice.prepareToEnterProcess(null);
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_APAIRING_26Q2_PERMISSION_IMPROVEMENTS)
     @Test
     public void setPin() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
+        // Starting with API level 37, setPin() requires BLUETOOTH_PRIVILEGED permission
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+            assertThrows(NullPointerException.class, () -> mFakeDevice.setPin((byte[]) null));
+
+            // check PIN too big
+            assertThat(mFakeDevice.setPin("12345678901234567")).isFalse();
+            assertThat(mFakeDevice.setPin("123456")).isFalse(); // device is not bonding
+        }
+
+        mUiAutomation.dropShellPermissionIdentity();
+        if (Build.VERSION.SDK_INT >= 37) {
+            Permissions.enforceEachPermissions(
+                    () -> mFakeDevice.setPin("123456"),
+                    List.of(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED));
+        } else {
+            assertThrows(SecurityException.class, () -> mFakeDevice.setPin("123456"));
+        }
+
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+            assertThat(mFakeDevice.setPin("123456")).isFalse();
+        }
+    }
+
+    // TODO(delwiche): Remove this test once the flag is fully rolled out.
+    @RequiresFlagsDisabled(Flags.FLAG_APAIRING_26Q2_PERMISSION_IMPROVEMENTS)
+    @Test
+    public void setPinLegacy() {
         // Skip the test if bluetooth or companion device are not present.
         assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
