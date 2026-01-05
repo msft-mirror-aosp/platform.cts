@@ -16,6 +16,7 @@
 
 package android.media.router.cts;
 
+import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_TEST_PACKAGE;
 import static android.media.cts.MediaRouterTestConstants.PROXY_MEDIA_ROUTER_SCANNING_TEST_APP_PACKAGE;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_DEDUPLICATION_ID_1;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_DEDUPLICATION_ID_2;
@@ -24,6 +25,7 @@ import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_1_ROUTE_2;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_1_ROUTE_3;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_1_ROUTE_4;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_1_ROUTE_5;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_OSW_PACKAGE_RESTRICTED_TO_BT_APP;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_RESTRICTED_ALLOW_PRIVILEGED;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_VISIBILITY_RESTRICTED;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_1;
@@ -31,6 +33,7 @@ import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_2;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_3;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_4;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_5;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_OSW_PACKAGE_RESTRICTED_TO_BT_APP;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_RESTRICTED_ALLOW_PRIVILEGED;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_VISIBILITY_RESTRICTED;
 
@@ -78,7 +81,11 @@ public final class FakeMediaRoute2ProviderService1 extends BaseFakeRouteProvider
                                 createRestrictedRoute(
                                         ROUTE_ID_VISIBILITY_RESTRICTED,
                                         ROUTE_NAME_VISIBILITY_RESTRICTED,
-                                        Set.of(PROXY_MEDIA_ROUTER_SCANNING_TEST_APP_PACKAGE))));
+                                        Set.of(PROXY_MEDIA_ROUTER_SCANNING_TEST_APP_PACKAGE)),
+                                createRestrictedRoute(
+                                        ROUTE_ID_OSW_PACKAGE_RESTRICTED_TO_BT_APP,
+                                        ROUTE_NAME_OSW_PACKAGE_RESTRICTED_TO_BT_APP,
+                                        Set.of(MEDIA_ROUTER_TEST_PACKAGE))));
 
         if (Flags.enableRouteVisibilityControlApi()) {
             routes.add(
