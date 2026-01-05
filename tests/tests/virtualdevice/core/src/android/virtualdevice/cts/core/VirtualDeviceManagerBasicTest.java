@@ -464,7 +464,6 @@ public class VirtualDeviceManagerBasicTest {
 
     @Parameters(method = "allDynamicDisplayPolicies")
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
     public void dynamicDisplayPolicyType_unsupportedDisplay_throws(int policyType) {
         assertThrows(SecurityException.class,
                 () -> mVirtualDevice.setDevicePolicy(
@@ -699,14 +698,13 @@ public class VirtualDeviceManagerBasicTest {
     }
 
     private static List<Integer> allDynamicPolicies() {
-        List<Integer> dynamicPolicies = new ArrayList<>(Arrays.asList(
-                POLICY_TYPE_RECENTS,
-                POLICY_TYPE_ACTIVITY,
-                POLICY_TYPE_CLIPBOARD
-        ));
-        if (Flags.activityControlApi()) {
-            dynamicPolicies.add(POLICY_TYPE_BLOCKED_ACTIVITY);
-        }
+        List<Integer> dynamicPolicies =
+                new ArrayList<>(
+                        Arrays.asList(
+                                POLICY_TYPE_RECENTS,
+                                POLICY_TYPE_ACTIVITY,
+                                POLICY_TYPE_CLIPBOARD,
+                                POLICY_TYPE_BLOCKED_ACTIVITY));
         return dynamicPolicies;
     }
 

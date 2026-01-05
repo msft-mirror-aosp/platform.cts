@@ -43,7 +43,6 @@ import android.companion.virtual.ActivityPolicyExemption;
 import android.companion.virtual.VirtualDeviceManager.ActivityListener;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
-import android.companion.virtualdevice.flags.Flags;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -52,7 +51,6 @@ import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.os.Bundle;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.virtualdevice.cts.applaunch.AppComponents.EmptyActivity;
 import android.virtualdevice.cts.common.StreamedAppConstants;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
@@ -195,7 +193,6 @@ public class ActivityBlockingTest {
         assertActivityLaunchBlocked(mMonitoredIntent);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
     @Test
     public void defaultActivityPolicy_addPackageExemption_shouldBlockFromLaunching() {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder()
@@ -220,7 +217,6 @@ public class ActivityBlockingTest {
         assertActivityLaunchAllowed(mMonitoredIntent);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
     @Test
     public void customActivityPolicy_addPackageExemption_shouldAllowLaunching() {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder()
@@ -246,7 +242,6 @@ public class ActivityBlockingTest {
         assertActivityLaunchAllowed(mMonitoredIntent);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
     @Test
     public void defaultActivityPolicy_removePackageExemption_shouldAllowLaunching() {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder()
@@ -275,7 +270,6 @@ public class ActivityBlockingTest {
         assertActivityLaunchBlocked(mMonitoredIntent);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
     @Test
     public void customActivityPolicy_removePackageExemption_shouldBlockFromLaunching() {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder()
@@ -344,7 +338,6 @@ public class ActivityBlockingTest {
         assertActivityLaunchBlocked(mMonitoredIntent);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
     @Test
     public void defaultActivityPolicy_changePolicy_clearsPackageExemptions() {
         // Initially, allow launches by default except for the monitored component.
@@ -381,7 +374,6 @@ public class ActivityBlockingTest {
         assertActivityLaunchBlocked(mMonitoredIntent);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
     @Test
     public void testPerDisplayActivityPolicy() {
         // Allow launches by default except for the monitored component.
@@ -429,7 +421,6 @@ public class ActivityBlockingTest {
         assertActivityLaunchAllowed(mMonitoredIntent, customPolicyDisplay);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
     @Test
     public void testPerDisplayActivityPolicy_packageExemption() {
         // Allow launches by default except for the monitored component.
@@ -484,7 +475,6 @@ public class ActivityBlockingTest {
     }
 
     /** Test all combinations of default policy, package exemption and component exemption. */
-    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
     @Test
     public void testActivityPolicy_componentAndPackageExemptions() {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder()
@@ -610,7 +600,6 @@ public class ActivityBlockingTest {
         assertBlockedAppStreamingActivityLaunched();
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
     @Test
     public void blockedActivity_customBlockedActivityLaunchPolicy() {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder()
@@ -625,7 +614,6 @@ public class ActivityBlockingTest {
         assertNoActivityLaunched(mMonitoredIntent);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
     @Test
     public void blockedActivity_intentSenderPassedToListener() {
         createVirtualDeviceAndTrustedDisplay();
@@ -659,7 +647,6 @@ public class ActivityBlockingTest {
         mRule.waitAndAssertActivityResumed(blockedIntent.getComponent(), DEFAULT_DISPLAY);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
     @Test
     public void blockedActivity_resultExpected_intentSenderNotPassedToListener() {
         createVirtualDeviceAndTrustedDisplay();
@@ -717,11 +704,12 @@ public class ActivityBlockingTest {
         assertThat(mActivityManager.isActivityStartAllowedOnDisplay(
                 mContext, display.getDisplay().getDisplayId(), intent)).isFalse();
         mRule.sendIntentToDisplay(intent, display);
-        if (Flags.activityControlApi()) {
-            verify(mActivityListener, timeout(TIMEOUT_MILLIS)).onActivityLaunchBlocked(
-                    eq(display.getDisplay().getDisplayId()),
-                    eq(intent.getComponent()), any(), any());
-        }
+        verify(mActivityListener, timeout(TIMEOUT_MILLIS))
+                .onActivityLaunchBlocked(
+                        eq(display.getDisplay().getDisplayId()),
+                        eq(intent.getComponent()),
+                        any(),
+                        any());
         assertBlockedAppStreamingActivityLaunched(display);
     }
 
