@@ -16,11 +16,17 @@
 
 package android.app.appfunctions.testutils
 
+import android.app.appfunctions.AppFunctionUriGrant
+import android.app.appfunctions.ExecuteAppFunctionResponse
+import android.app.appsearch.GenericDocument
 import android.content.ContentProvider
 import android.content.ContentValues
+import android.content.Intent
 import android.content.res.AssetFileDescriptor
 import android.database.Cursor
 import android.net.Uri
+import android.os.Bundle
+import androidx.core.net.toUri
 
 class TestContentProvider : ContentProvider() {
     override fun openAssetFile(uri: Uri, mode: String): AssetFileDescriptor? {
@@ -65,5 +71,40 @@ class TestContentProvider : ContentProvider() {
 
     override fun onCreate(): Boolean {
         return true
+    }
+
+    companion object {
+        fun getExecuteResponseWithUris(folderPath: String): ExecuteAppFunctionResponse {
+            val readOnlyUri = ("$folderPath/read_only_test_file.txt").toUri()
+            val writeOnlyUri = ("$folderPath/write_only_test_file.txt").toUri()
+            val readWriteUri = ("$folderPath/read_write_test_file.txt").toUri()
+
+            val result =
+                GenericDocument.Builder<GenericDocument.Builder<*>?>("", "", "")
+                    .setPropertyString(
+                        ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE,
+                        "$folderPath/read_only_test_file.txt",
+                        "$folderPath/write_only_test_file.txt",
+                        "$folderPath/read_write_test_file.txt"
+                    )
+                    .build()
+
+            return ExecuteAppFunctionResponse(
+                result,
+                Bundle.EMPTY,
+                listOf<AppFunctionUriGrant?>(
+                    AppFunctionUriGrant(readOnlyUri, Intent.FLAG_GRANT_READ_URI_PERMISSION),
+                    AppFunctionUriGrant(
+                        writeOnlyUri,
+                        Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    ),
+                    AppFunctionUriGrant(
+                        readWriteUri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    )
+                )
+            )
+        }
     }
 }

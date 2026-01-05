@@ -17,11 +17,17 @@
 package android.app.appfunctions.testutils
 
 import android.app.UiAutomation
+import android.content.ContentResolver
+import android.content.ContentValues
+import android.net.Uri
+import android.os.Bundle
 import android.os.ParcelFileDescriptor
+import android.util.Log
 import com.android.bedstead.nene.TestApis.permissions
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import kotlinx.coroutines.delay
+import org.junit.Assert.fail
 
 /** Contains testing utilities related to AppFunction's Sidecar library. */
 object CtsTestUtil {
@@ -107,6 +113,56 @@ object CtsTestUtil {
                 }
             }
         }
+    }
+
+    fun assertReadAccessible(contentResolver: ContentResolver, uri: Uri) {
+        try {
+            contentResolver.openAssetFile(uri, "r", null).use { fd ->
+                if (fd != null) {
+                    return
+                }
+            }
+        } catch (e: Exception) {
+            Log.d("DEBUG", e.message!!)
+        }
+        fail("Uri $uri is not read accessible")
+    }
+
+    fun assertReadInaccessible(contentResolver: ContentResolver, uri: Uri) {
+        try {
+            contentResolver.openAssetFile(uri, "r", null).use { fd -> }
+        } catch (e: SecurityException) {
+            return
+        }
+        fail("Uri $uri is still read accessible")
+    }
+
+    fun assertWriteAccessible(contentResolver: ContentResolver, uri: Uri) {
+        try {
+            val result =
+                contentResolver.update(
+                    uri,
+                    ContentValues().apply { put("echo_value", 100) },
+                    Bundle.EMPTY,
+                )
+            if (result == 100) {
+                return
+            }
+        } catch (e: Exception) {}
+        fail("Uri $uri is not write accessible")
+    }
+
+    fun assertWriteInaccessible(contentResolver: ContentResolver, uri: Uri) {
+        try {
+            contentResolver.update(
+                uri,
+                ContentValues().apply { put("echo_value", 100) },
+                Bundle.EMPTY,
+            )
+        } catch (e: Exception) {
+            return
+        }
+        fail("Uri $uri is still write accessible")
     }
 
     private const val RETRY_CHECK_INTERVAL_MILLIS: Long = 1000

@@ -21,6 +21,7 @@ import android.app.appfunctions.AppFunctionException
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
 import android.app.appfunctions.testutils.TestAppFunctionFactory.buildEmptyGenericDocument
+import android.app.appfunctions.testutils.TestContentProvider.Companion.getExecuteResponseWithUris
 import android.app.appsearch.GenericDocument
 import android.content.Context
 import android.os.CancellationSignal
@@ -39,6 +40,7 @@ enum class FunctionType {
     THROW_INVALID_ARGUMENT_EXCEPTION,
     STOP_PROCESS,
     DISABLED_BY_DEFAULT,
+    GET_URIS,
 }
 
 object TestAppFunctionFactory {
@@ -51,6 +53,7 @@ object TestAppFunctionFactory {
             FunctionType.THROW_INVALID_ARGUMENT_EXCEPTION -> ThrowInvalidArgumentException()
             FunctionType.STOP_PROCESS -> StopProcess()
             FunctionType.DISABLED_BY_DEFAULT -> DisabledByDefault()
+            FunctionType.GET_URIS -> GetUris()
         }
     }
 
@@ -66,6 +69,7 @@ object TestAppFunctionFactory {
                 ThrowInvalidArgumentException.THROW_INVALID_ARGUMENT_FUNCTION_ID
             FunctionType.STOP_PROCESS -> StopProcess.STOP_PROCESS_FUNCTION_ID
             FunctionType.DISABLED_BY_DEFAULT -> DisabledByDefault.DISABLED_BY_DEFAULT_FUNCTION_ID
+            FunctionType.GET_URIS -> GetUris.GET_URIS_FUNCTION_ID
         }
     }
 
@@ -198,6 +202,22 @@ class DisabledByDefault() : AppFunction {
 
     companion object {
         const val DISABLED_BY_DEFAULT_FUNCTION_ID = "contextDisabledByDefault"
+    }
+}
+
+class GetUris() : AppFunction {
+    override fun onExecuteAppFunction(
+        request: ExecuteAppFunctionRequest,
+        cancellationSignal: CancellationSignal,
+        callback: OutcomeReceiver<ExecuteAppFunctionResponse?, AppFunctionException?>,
+    ) {
+        callback.onResult(getExecuteResponseWithUris(URIS_FOLDER_PATH))
+    }
+
+    companion object {
+        const val GET_URIS_FUNCTION_ID = "contextGetUris"
+        const val URIS_FOLDER_PATH =
+            "content://android.app.appfunctions.cts.dynamic.schema.provider"
     }
 }
 

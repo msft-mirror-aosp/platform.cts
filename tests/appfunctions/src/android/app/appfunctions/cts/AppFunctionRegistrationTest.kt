@@ -29,11 +29,17 @@ import android.app.appfunctions.cts.AppFunctionUtils.getAllStaticMetadataPackage
 import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabled
 import android.app.appfunctions.testutils.ConcatStrings
 import android.app.appfunctions.testutils.ConcatStrings.Companion.CONCAT_STRINGS_FUNCTION_ID
+import android.app.appfunctions.testutils.CtsTestUtil.assertReadAccessible
+import android.app.appfunctions.testutils.CtsTestUtil.assertReadInaccessible
+import android.app.appfunctions.testutils.CtsTestUtil.assertWriteAccessible
+import android.app.appfunctions.testutils.CtsTestUtil.assertWriteInaccessible
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
 import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
 import android.app.appfunctions.testutils.DisabledByDefault
 import android.app.appfunctions.testutils.DisabledByDefault.Companion.DISABLED_BY_DEFAULT_FUNCTION_ID
 import android.app.appfunctions.testutils.FunctionType
+import android.app.appfunctions.testutils.GetUris.Companion.GET_URIS_FUNCTION_ID
+import android.app.appfunctions.testutils.GetUris.Companion.URIS_FOLDER_PATH
 import android.app.appfunctions.testutils.ITestAppFunctionRegistrationService
 import android.app.appfunctions.testutils.LongRunning
 import android.app.appfunctions.testutils.LongRunning.Companion.LONG_RUNNING_FUNCTION_ID
@@ -49,8 +55,10 @@ import android.app.appfunctions.testutils.ThrowUnknownException
 import android.app.appfunctions.testutils.ThrowUnknownException.Companion.THROW_UNKNOWN_EXCEPTION_FUNCTION_ID
 import android.app.appsearch.GenericDocument
 import android.content.ComponentName
+import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.CancellationSignal
 import android.os.IBinder
 import android.os.OutcomeReceiver
@@ -92,6 +100,9 @@ class AppFunctionRegistrationTest {
 
     private val context: Context
         get() = ApplicationProvider.getApplicationContext()
+
+    private val contentResolver: ContentResolver
+        get() = context.contentResolver
 
     private lateinit var manager: AppFunctionManager
 
@@ -186,7 +197,7 @@ class AppFunctionRegistrationTest {
             installPackage(
                 TEST_APP_A_PATH_DYNAMIC_ONLY_FUNCTIONS,
                 TEST_APP_A_PKG,
-                /* checkIndexation= */ true,
+                checkIndexation = true,
             )
             val service = bindToRegistrationService(TEST_APP_A_PKG)
             retryAssert {
@@ -207,12 +218,12 @@ class AppFunctionRegistrationTest {
             installPackage(
                 TEST_APP_A_PATH_NO_FUNCTIONS,
                 TEST_APP_A_PKG,
-                /* checkIndexation= */ false,
+                checkIndexation = false,
             )
             installPackage(
                 TEST_APP_A_PATH_DYNAMIC_ONLY_FUNCTIONS,
                 TEST_APP_A_PKG,
-                /* checkIndexation= */ true,
+                checkIndexation = true,
             )
             val service = bindToRegistrationService(TEST_APP_A_PKG)
             retryAssert {
@@ -233,12 +244,12 @@ class AppFunctionRegistrationTest {
             installPackage(
                 TEST_APP_A_PATH_STATIC_ONLY_FUNCTIONS,
                 TEST_APP_A_PKG,
-                /* checkIndexation= */ true,
+                checkIndexation = true,
             )
             installPackage(
                 TEST_APP_A_PATH_DYNAMIC_ONLY_FUNCTIONS,
                 TEST_APP_A_PKG,
-                /* checkIndexation= */ true,
+                checkIndexation = true,
             )
             val service = bindToRegistrationService(TEST_APP_A_PKG)
             retryAssert {
@@ -629,6 +640,37 @@ class AppFunctionRegistrationTest {
             assertThat(response.isSuccess).isFalse()
             assertThat(response.appFunctionException().errorCode)
                 .isEqualTo(AppFunctionException.ERROR_APP_UNKNOWN_ERROR)
+        }
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    fun execute_getUrisFunction_hasAccessToReturnedUris() = doBlocking {
+        val service = bindToRegistrationService(TEST_HELPER_DYNAMIC_SCHEMA_PKG)
+        service.registerAppFunction(FunctionType.GET_URIS.toString())
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val request =
+                ExecuteAppFunctionRequest.Builder(
+                    TEST_HELPER_DYNAMIC_SCHEMA_PKG,
+                    GET_URIS_FUNCTION_ID,
+                )
+                    .build()
+
+            val response = executeAppFunctionAndWait(manager, request)
+            assertThat(response.isSuccess).isTrue()
+            assertThat(response.getOrNull()).isNotNull()
+            val uris = response.getOrNull()!!.uriGrants
+            assertThat(uris).hasSize(3)
+            val readOnlyUri = uris[0].uri
+            val writeOnlyUri = uris[1].uri
+            val readWriteUri = uris[2].uri
+            assertReadAccessible(contentResolver, readOnlyUri)
+            assertReadAccessible(contentResolver, readWriteUri)
+            assertReadInaccessible(contentResolver, writeOnlyUri)
+            assertWriteAccessible(contentResolver, writeOnlyUri)
+            assertWriteAccessible(contentResolver, readWriteUri)
+            assertWriteInaccessible(contentResolver, readOnlyUri)
         }
     }
 
