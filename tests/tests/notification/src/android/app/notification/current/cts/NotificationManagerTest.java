@@ -3401,6 +3401,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
                         .setExtras(extras)
                         .build();
 
+        mNotificationManager.notify(id, notification);
         StatusBarNotification sbn =
                 mNotificationHelper.findPostedNotification(null, id, SEARCH_TYPE.APP);
         assertNotNull(sbn);
