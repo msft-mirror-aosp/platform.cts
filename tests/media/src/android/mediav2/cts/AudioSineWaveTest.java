@@ -266,7 +266,7 @@ public class AudioSineWaveTest extends CodecEncoderTestBase {
                                                 new int[] {16000},
                                                 new int[] {1},
                                                 -1,
-                                                0.1f,
+                                                0.6f,
                                                 4.0f,
                                                 5.0f,
                                                 0.25f)

@@ -250,7 +250,7 @@ public class AudioSineSweepTest extends CodecEncoderTestBase {
                                                 -1,
                                                 50.0f,
                                                 7000.0f,
-                                                20.0f)
+                                                35.0f)
                                     },
                                     {
                                         MediaFormat.MIMETYPE_AUDIO_FLAC,
