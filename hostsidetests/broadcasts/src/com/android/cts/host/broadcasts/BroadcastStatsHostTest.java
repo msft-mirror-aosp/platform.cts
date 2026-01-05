@@ -27,7 +27,6 @@ import android.app.ProcessStateEnum;
 import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
@@ -57,7 +56,7 @@ import java.util.List;
 public class BroadcastStatsHostTest extends BaseHostJUnit4Test implements IBuildReceiver {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice, this.getClass());
 
     private IBuildInfo mCtsBuild;
 
