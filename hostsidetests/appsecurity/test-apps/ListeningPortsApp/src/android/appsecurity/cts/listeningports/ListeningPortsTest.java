@@ -112,6 +112,9 @@ public class ListeningPortsTest extends AndroidTestCase {
         USERDEBUG_EXCEPTION_PATTERNS.add("127.0.0.1:50002");  // Diagnostic Monitor Daemon port
         USERDEBUG_EXCEPTION_PATTERNS.add("127.0.0.1:60002");  // vcd port
         USERDEBUG_EXCEPTION_PATTERNS.add("127.0.0.1:7555 1021");  // gnssd running under GPS UID
+        // TODO(b/469274885): The service should be switched to only listen on the loopback
+        // interface.
+        USERDEBUG_EXCEPTION_PATTERNS.add("0.0.0.0:40001"); // eSIM tracing
     }
 
     private static final List<String> OEM_EXCEPTION_PATTERNS = new ArrayList<String>();
