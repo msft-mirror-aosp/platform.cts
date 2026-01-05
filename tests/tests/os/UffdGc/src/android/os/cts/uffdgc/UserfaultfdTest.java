@@ -19,14 +19,11 @@ package android.os.cts.uffdgc;
 import static org.junit.Assert.assertEquals;
 
 import android.os.Build.VERSION_CODES;
-import android.system.Os;
-import android.system.OsConstants;
 
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.FeatureUtil;
-import com.android.compatibility.common.util.PropertyUtil;
 
 import org.junit.Assume;
 import org.junit.Before;
@@ -46,16 +43,6 @@ public final class UserfaultfdTest {
               && ApiLevelUtil.isAtMost(VERSION_CODES.S_V2));
       Assume.assumeTrue("Skip userfaultfd tests on Automotive targets till S_V2", mShouldRunTest);
       Assume.assumeTrue("Skip userfaultfd tests on kernels lower than 5.4", confirmKernelVersion());
-      Assume.assumeFalse("Skip userfaultfd tests on x86_64 with page size != 4096",
-                         shouldSkipX86WithLargePageSize());
-  }
-
-  private boolean shouldSkipX86WithLargePageSize() {
-      if (!"x86_64".equals(PropertyUtil.getProperty("ro.bionic.arch"))) {
-          return false;
-      }
-
-      return Os.sysconf(OsConstants._SC_PAGESIZE) != 4096;
   }
 
   // Test if a userfault from kernel-space fails or not. It is
