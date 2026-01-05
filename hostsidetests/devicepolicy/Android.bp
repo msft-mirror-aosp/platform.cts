@@ -107,6 +107,7 @@ java_test_host {
         ":CtsLockTaskApp",
     ],
     per_testcase_directory: true,
+    enable_static_aconfig_pb: true,
 }
 
 test_module_config_host {

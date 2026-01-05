@@ -61,7 +61,7 @@ public final class ManagedProfileCrossProfileTest extends BaseManagedProfileTest
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice, this.getClass());
 
     @FlakyTest
     @Test
