@@ -39,6 +39,8 @@ import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.telephony.cts.util.TelephonyUtils;
 import android.telephony.mockmodem.MockModemManager;
+import android.util.Log;
+import android.util.Pair;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -52,6 +54,8 @@ import org.junit.Test;
 import java.util.concurrent.TimeUnit;
 
 public class DataServiceTestOnMockModem {
+    private static final String LOG_TAG = "DataServiceTestOnMockModem";
+    public static final int RADIO_HAL_VERSION_2_4 = makeRadioVersion(2, 4);
     // the timeout to wait for latch countdonw in milliseconds
     private static final int WAIT_LATCH_TIMEOUT_MS = 10000;
     // the timeout to wait for result in milliseconds
@@ -163,6 +167,7 @@ public class DataServiceTestOnMockModem {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_DATA_SERVICE_USER_DATA_TOGGLE_NOTIFY)
     public void testNotifyUserDataEnabled() {
+        assumeTrue(canMakeRequest(RADIO_HAL_VERSION_2_4));
         mTelephonyManager.setDataEnabledForReason(TelephonyManager.DATA_ENABLED_REASON_USER, true);
         waitForDataLatchCountdown(LATCH_SET_USER_DATA_ENABLED);
         assertTrue(mMockModemManager.getIsUserDataEnabled(TEST_SLOT));
@@ -177,6 +182,7 @@ public class DataServiceTestOnMockModem {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_DATA_SERVICE_USER_DATA_TOGGLE_NOTIFY)
     public void testNotifyUserDataRoamingEnabled() {
+        assumeTrue(canMakeRequest(RADIO_HAL_VERSION_2_4));
         mTelephonyManager.setDataRoamingEnabled(true);
         waitForDataLatchCountdown(LATCH_SET_USER_DATA_ROAMING_ENABLED);
         assertTrue(mMockModemManager.getIsUserDataRoamingEnabled(TEST_SLOT));
@@ -192,6 +198,7 @@ public class DataServiceTestOnMockModem {
     @RequiresFlagsEnabled(Flags.FLAG_DATA_SERVICE_NOTIFY_IMS_DATA_NETWORK)
     public void testNotifyImsDataNetwork() {
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_IMS));
+        assumeTrue(canMakeRequest(RADIO_HAL_VERSION_2_4));
         ConnectivityManager connectivityManager =
                 (ConnectivityManager) getContext().getSystemService(ConnectivityManager.class);
         NetworkRequest.Builder builder = new NetworkRequest.Builder();
@@ -211,6 +218,23 @@ public class DataServiceTestOnMockModem {
             @Override
             public void onLost(Network network) {}
         };
+    }
+
+    private static boolean canMakeRequest(int minHalVersion) {
+        TelephonyManager tm =
+                (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
+        Pair<Integer, Integer> halVersion = tm.getHalVersion(TelephonyManager.HAL_SERVICE_DATA);
+        int currentHalVersion = makeRadioVersion(halVersion.first, halVersion.second);
+        if (currentHalVersion < minHalVersion) {
+            Log.d(LOG_TAG, "canMakeRequest: the current HAL version = " + currentHalVersion);
+            return false;
+        }
+        return true;
+    }
+
+    private static int makeRadioVersion(int major, int minor) {
+        if (major < 0 || minor < 0) return 0;
+        return major * 100 + minor;
     }
 
     private boolean waitForDataLatchCountdown(int latchIndex) {
