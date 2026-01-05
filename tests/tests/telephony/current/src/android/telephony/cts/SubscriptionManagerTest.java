@@ -732,7 +732,10 @@ public class SubscriptionManagerTest {
         if (Flags.subscriptionPlanAllowStatusAndEndDate()) {
             builder.setSubscriptionStatus(SubscriptionPlan.SUBSCRIPTION_STATUS_ACTIVE);
         }
-
+        if (Flags.subscriptionPlanEnhancement()) {
+            builder.setStreamingAppMaxDownlinkKbps(DOWNLINK_KBPS);
+            builder.setStreamingAppMaxUplinkKbps(UPLINK_KBPS);
+        }
         SubscriptionPlan plan = builder.build();
         assertEquals(plan, buildValidSubscriptionPlan(time));
     }
