@@ -47,7 +47,7 @@ public final class UseEmbeddedDexTest extends BaseAppSecurityTest {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice, this.getClass());
 
     @After
     public void tearDown() throws Exception {
