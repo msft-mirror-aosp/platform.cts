@@ -1874,6 +1874,10 @@ public abstract class ActivityManagerTestBase {
                 sleepDevice();
                 wakeUpDevice();
             }
+
+            // After sleep and wakeup cycle, it might take a while for UI to stabilize. Wait for all
+            // animations to complete before checking keyguard state.
+            mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
             if (isKeyguardLocked()) {
                 unlockDevice();
             }
