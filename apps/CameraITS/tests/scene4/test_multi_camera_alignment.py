@@ -336,7 +336,7 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
       android.lens.poseReference
       android.lens.poseTranslation
       android.lens.poseRotation
-      android.lens.instrinsicCalibration
+      android.lens.intrinsicCalibration
       android.lens.distortion (if available)
   project the circle center to the world coordinates for each camera.
   Compare the difference between the two cameras' circle centers in
