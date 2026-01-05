@@ -43,6 +43,8 @@ public final class UserfaultfdTest {
               && ApiLevelUtil.isAtMost(VERSION_CODES.S_V2));
       Assume.assumeTrue("Skip userfaultfd tests on Automotive targets till S_V2", mShouldRunTest);
       Assume.assumeTrue("Skip userfaultfd tests on kernels lower than 5.4", confirmKernelVersion());
+      Assume.assumeFalse("Skip userfaultfd tests on targets with an emulated page size",
+                         isPageSizeEmulated());
   }
 
   // Test if a userfault from kernel-space fails or not. It is
@@ -85,6 +87,7 @@ public final class UserfaultfdTest {
     assertEquals(13, checkGetattr());
   }
 
+  private native boolean isPageSizeEmulated();
   private native boolean confirmKernelArch64bit();
   private native boolean confirmKernelVersion();
   private native int performKernelSpaceUffd();
