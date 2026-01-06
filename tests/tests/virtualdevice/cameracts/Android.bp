@@ -49,6 +49,7 @@ test_module_config {
         "android.hardware.camera2.cts.CameraExtensionCharacteristicsTest#testExtensionAvailability",
         "android.hardware.camera2.cts.CameraManagerTest#testCameraManagerGetDeviceIdList[1]",
         "android.hardware.camera2.cts.CaptureRequestTest#testNoiseReductionModeControl[1]",
+        "android.hardware.camera2.cts.CaptureRequestTest#testNoiseReductionModeControlFastFps[1]",
         "android.hardware.camera2.cts.ConcurrentCameraTest#testMandatoryConcurrentStreamCombination[1]",
         "android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraOrientationAlignedWithDevice[1]",
         "android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraPerfClassCharacteristics[1]",
