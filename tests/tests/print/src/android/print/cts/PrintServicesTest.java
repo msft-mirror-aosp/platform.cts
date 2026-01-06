@@ -832,9 +832,10 @@ public class PrintServicesTest extends BasePrintTest {
 
                     try {
                         PrinterId printerId = sPrinter.getId();
+                        // New PrinterInfo without the setup Intent.
                         PrinterInfo printer =
-                                new PrinterInfo.Builder(sPrinter)
-                                        .setSetupIntent(null)
+                                new PrinterInfo.Builder(
+                                                printerId, sPrinter.getName(), sPrinter.getStatus())
                                         .setCapabilities(
                                                 getDefaultOptionPrinterCapabilites(printerId))
                                         .build();
