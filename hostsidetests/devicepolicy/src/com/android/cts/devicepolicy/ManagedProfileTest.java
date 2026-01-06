@@ -462,6 +462,22 @@ public final class ManagedProfileTest extends BaseManagedProfileTest {
         }
     }
 
+    /** Ensures that the device boots successfully after the profile owner hides all apps. */
+    @Test
+    @LargeTest
+    public void testHideAllApps() throws Exception {
+        runDeviceTestsAsUser(
+                MANAGED_PROFILE_PKG,
+                ".SetApplicationHiddenTest",
+                "testHideAllApps",
+                mProfileUserId);
+        installAppAsUser(SIMPLE_APP_APK, mProfileUserId);
+        rebootAndWaitUntilReady();
+        waitForUserUnlock(mProfileUserId);
+
+        runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".BasicTest", mProfileUserId);
+    }
+
     private void pressHome() throws Exception {
         executeShellCommand("input keyevent KEYCODE_HOME");
     }
