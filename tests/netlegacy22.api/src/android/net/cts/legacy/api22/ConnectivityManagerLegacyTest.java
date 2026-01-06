@@ -16,6 +16,18 @@
 
 package android.net.cts.legacy.api22;
 
+import static android.net.ConnectivityManager.CONNECTIVITY_ACTION;
+import static android.net.ConnectivityManager.TYPE_MOBILE;
+import static android.net.ConnectivityManager.TYPE_MOBILE_HIPRI;
+import static android.net.ConnectivityManager.TYPE_VPN;
+import static android.net.ConnectivityManager.TYPE_WIFI;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -26,13 +38,19 @@ import android.net.LinkAddress;
 import android.net.LinkProperties;
 import android.net.Network;
 import android.net.NetworkInfo;
+import android.os.ConditionVariable;
 import android.telephony.ServiceState;
 import android.telephony.TelephonyManager;
-import android.os.ConditionVariable;
-import android.test.AndroidTestCase;
 import android.util.Log;
 
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.runner.AndroidJUnit4;
+
 import com.android.compatibility.common.util.SystemUtil;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.net.DatagramSocket;
 import java.net.Inet4Address;
@@ -40,13 +58,8 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 
-import static android.net.ConnectivityManager.CONNECTIVITY_ACTION;
-import static android.net.ConnectivityManager.TYPE_MOBILE;
-import static android.net.ConnectivityManager.TYPE_MOBILE_HIPRI;
-import static android.net.ConnectivityManager.TYPE_VPN;
-import static android.net.ConnectivityManager.TYPE_WIFI;
-
-public class ConnectivityManagerLegacyTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public class ConnectivityManagerLegacyTest {
     private static final String TAG = ConnectivityManagerLegacyTest.class.getSimpleName();
     private static final String FEATURE_ENABLE_HIPRI = "enableHIPRI";
     private static final String HOST_ADDRESS1 = "192.0.2.1";
@@ -61,19 +74,22 @@ public class ConnectivityManagerLegacyTest extends AndroidTestCase {
     private ConnectivityManager mCm;
     private PackageManager mPackageManager;
     private TelephonyManager mTm;
+    private Context mContext;
 
     private final List<Integer>mProtectedNetworks = new ArrayList<Integer>();
 
-    protected void setUp() throws Exception {
-        super.setUp();
-        mCm = getContext().getSystemService(ConnectivityManager.class);
+    @Before
+    public void setUp() throws Exception {
+        mContext = InstrumentationRegistry.getInstrumentation().getContext();
+        mCm = mContext.getSystemService(ConnectivityManager.class);
 
-        mPackageManager = getContext().getPackageManager();
-        mTm = getContext().getSystemService(TelephonyManager.class);
+        mPackageManager = mContext.getPackageManager();
+        mTm = mContext.getSystemService(TelephonyManager.class);
 
         // Get com.android.internal.R.array.config_protectedNetworks
-        int resId = getContext().getResources().getIdentifier("config_protectedNetworks", "array", "android");
-        int[] protectedNetworks = getContext().getResources().getIntArray(resId);
+        int resId = mContext.getResources().getIdentifier(
+                "config_protectedNetworks", "array", "android");
+        int[] protectedNetworks = mContext.getResources().getIntArray(resId);
         for (int p : protectedNetworks) {
             mProtectedNetworks.add(p);
         }
@@ -152,6 +168,7 @@ public class ConnectivityManagerLegacyTest extends AndroidTestCase {
     }
 
     /** Test that hipri can be brought up when Wifi is enabled. */
+    @Test
     public void testStartUsingNetworkFeature_enableHipri() throws Exception {
         if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)
                 || !mPackageManager.hasSystemFeature(PackageManager.FEATURE_WIFI)) {
@@ -203,6 +220,7 @@ public class ConnectivityManagerLegacyTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testStartUsingNetworkFeature() {
 
         final String invalidFeature = "invalidFeature";
@@ -294,6 +312,7 @@ public class ConnectivityManagerLegacyTest extends AndroidTestCase {
         return mCm.getNetworkInfo(networkType) != null;
     }
 
+    @Test
     public void testRequestRouteToHost() throws Exception {
         for (int type = -1 ; type <= MAX_NETWORK_TYPE; type++) {
             NetworkInfo ni = mCm.getNetworkInfo(type);
@@ -301,8 +320,8 @@ public class ConnectivityManagerLegacyTest extends AndroidTestCase {
                     ni != null && ni.isConnected();
 
             try {
-                assertTrue("Network type " + type,
-                        mCm.requestRouteToHost(type, ipv4AddrToInt(HOST_ADDRESS4)) == expectToWork);
+                assertEquals("Network type " + type,
+                        expectToWork, mCm.requestRouteToHost(type, ipv4AddrToInt(HOST_ADDRESS4)));
             } catch (Exception e) {
                 Log.d(TAG, "got exception in requestRouteToHost for type " + type);
                 assertFalse("Exception received for type " + type, expectToWork);
