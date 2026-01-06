@@ -41,7 +41,7 @@ public final class PccStorageHostTest extends BaseHostJUnit4Test {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice, this.getClass());
 
     private static final String PCC_TEST_APK = "PccHostTestApp.apk";
     private static final String NON_PCC_TEST_APK = "NonPccHostTestApp.apk";
