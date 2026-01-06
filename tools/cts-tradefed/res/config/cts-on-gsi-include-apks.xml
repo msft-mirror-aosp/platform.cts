@@ -145,6 +145,10 @@
     <option name="compatibility:include-filter" value="CtsGameFrameRateTestCases android.gameframerate.cts.GameFrameRateTest#testGameModeBackpressure" />
     <option name="compatibility:include-filter" value="CtsGameFrameRateTestCases android.gameframerate.cts.GameFrameRateTest#testGameModeDisplayGetRefreshRate" />
 
-      <!-- b/152359655: ResumeOnReboot can't work on GSI -->
+    <!-- b/152359655: ResumeOnReboot can't work on GSI -->
     <option name="compatibility:include-filter" value="CtsResumeOnRebootHostTestCases android.appsecurity.cts.ResumeOnRebootHostTest" />
+
+    <!-- b/471855896 Remove Strongbox system properties tests from running on GSI -->
+    <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.BuildTest#testStrongboxConstants" />
+
 </configuration>

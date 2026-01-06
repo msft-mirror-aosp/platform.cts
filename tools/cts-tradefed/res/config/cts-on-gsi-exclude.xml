@@ -212,4 +212,7 @@
     <!-- b/454631245 -->
     <option name="compatibility:exclude-filter" value="CtsBiometricsTestCases android.server.biometrics.BiometricPromptContentViewTest#testMoreOptionsButton_clickButton" />
 
+    <!-- b/471855896 Remove Strongbox system properties tests from running on GSI -->
+    <option name="compatibility:exclude-filter" value="CtsOsTestCases android.os.cts.BuildTest#testStrongboxConstants" />
+
 </configuration>
