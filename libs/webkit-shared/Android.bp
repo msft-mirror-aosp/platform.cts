@@ -34,7 +34,6 @@ java_library {
     ],
     visibility: [
         "//cts/tests/tests/webkit:__subpackages__",
-        "//cts/tests/tests/sdksandbox/webkit:__subpackages__",
     ],
     sdk_version: "test_current",
 }

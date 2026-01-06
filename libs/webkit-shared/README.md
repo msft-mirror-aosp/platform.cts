@@ -2,16 +2,13 @@
 
 ## Overview
 
+TODO(b/453666068): this library is now obsolete. Do not convert new tests to use
+this library. We will be refactoring the code to remove this library soon.
+
 This helper lib makes a test suite extendable to run in both an activity based environment and
 within the SDK Runtime.
 
 [design](go/shared-sdk-sandbox-webview-tests) (*only visible to Googlers)
-
-## Expected prior knowledge
-
-Read the test scenario documentation to get a better understanding of how we invoke tests inside
-the SDK Runtime:
-`//packages/modules/AdServices/sdksandbox/tests/testutils/testscenario/README.md`
 
 ## Tutorial
 
@@ -57,23 +54,7 @@ Your test suite is now sharable with an SDK runtime test suite!
 
 ### 2. Sharing your tests with the SDK Runtime
 
-The SDK Runtime tests for webkit live under `//cts/tests/tests/sdksandbox/webkit`.
-
-You need a test SDK that will actually have your tests, and a JUnit test suite that JUnit will have to invoke your tests from an activity.
-
-You can follow the "Creating new SDK Runtime tests" section under the SDK testscenario
-guide (store these SDK tests in `//cts/tests/tests/sdksandbox/webkit`):
-`//packages/modules/AdServices/sdksandbox/tests/testutils/testscenario/README.md`
-
-*** aside
-**Note:**  If you reuse the WebViewSandboxTestSdk below you will only need to follow the last step of the "Invoke from a JUnit test suite" section from the guide above.
-***
-
-However, instead of creating a new test SDK as per the guide above, you can reuse the WebViewSandboxTestSdk
-`//cts/tests/tests/sdksandbox/webkit/sdksidetests/WebViewSandboxTest/src/com/android/cts/sdksidetests/webviewsandboxtest/WebViewSandboxTestSdk.java`
-To do this use the `android.sdksandbox.webkit.cts.WebViewSandboxTestRule` and pass in the fully qualified name of your test class.
-
-Congratulations! Your webkit tests are now shared with your SDK Runtime tests!
+**Note:** this section is obsolete. The SDK runtime tests have been deleted.
 
 ### 3. Converting a test to shared
 
@@ -118,22 +99,6 @@ public void setup() {
 }
 ```
 ***
-
-Next you will invoke this shared test from your SDK JUnit test suite. An example of a JUnit
-test suite can be found here:
-`//cts/tests/tests/sdksandbox/webkit/src/android/sdksandbox/webkit/cts/WebViewSandboxTest.java`
-
-You can see in this file that we use `SdkSandboxScenarioRule#assertSdkTestRunPasses` to invoke
-test methods.
-
-And that's it! Your test should now run! You can test that your method was added with `atest`:
-
-```sh
-# Confirm the test runs in the sandbox
-atest CtsSdkSandboxWebkitTestCases:WebViewSandboxTest#<shared_test>
-# Confirm the test still runs normally
-atest CtsWebkitTestCases:WebViewTest#<shared_test>
-```
 
 ## Invoking behavior in the Activity
 

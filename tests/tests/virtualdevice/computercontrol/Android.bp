@@ -26,6 +26,8 @@ android_test {
 
     defaults: ["cts_defaults"],
     sdk_version: "test_current",
+    target_sdk_version: "current",
+    platform_apis: true,
 
     test_suites: [
         "cts",

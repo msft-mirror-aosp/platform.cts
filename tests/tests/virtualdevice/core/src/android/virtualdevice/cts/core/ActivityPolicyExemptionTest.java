@@ -24,28 +24,20 @@ import android.companion.virtual.ActivityPolicyExemption;
 import android.content.ComponentName;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.Display;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
-@RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_ACTIVITY_CONTROL_API)
 public class ActivityPolicyExemptionTest {
 
     private static final ComponentName COMPONENT_NAME = new ComponentName("foo.bar", "foo.bar.Baz");
     private static final String PACKAGE_NAME = "foo.bar";
     private static final int DISPLAY_ID = 7;
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
     public void componentLevel_shouldRecreateSuccessfully() {

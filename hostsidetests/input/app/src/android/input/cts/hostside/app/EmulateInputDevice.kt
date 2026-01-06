@@ -247,9 +247,13 @@ class EmulateInputDevice {
     }
 
     @Test
-    fun createKeyboardDeviceAndSendCapsLockKey() {
+    fun createKeyboardDeviceAndSend2CapsLockKeys() {
         UinputKeyboard(instrumentation).use { keyboard ->
             // Wait for device to be added
+            // Toggle CAPS_LOCK twice to return it to its initial state, ensuring the test is
+            // hermetic and doesn't affect subsequent tests.
+            keyboard.injectKeyDown(KEY_CAPSLOCK)
+            keyboard.injectKeyUp(KEY_CAPSLOCK)
             keyboard.injectKeyDown(KEY_CAPSLOCK)
             keyboard.injectKeyUp(KEY_CAPSLOCK)
             Thread.sleep(UINPUT_POST_EVENT_DELAY_MILLIS)

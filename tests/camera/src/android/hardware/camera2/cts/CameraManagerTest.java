@@ -752,6 +752,11 @@ public class CameraManagerTest extends Camera2ParameterizedTestCase {
                 // Verify that we see the expected 'onCameraOpened' event.
                 CameraTestUtils.verifySingleAvailabilityCbsReceived(onCameraOpenedEventQueue,
                         onCameraClosedEventQueue, id, "onCameraOpened", "onCameraClosed");
+            } else if (Flags.resetListenerAfterAdoptShellPermission()) {
+                // Verify that we don't see the 'onCameraOpened' event.
+                String candidateId = onCameraOpenedEventQueue.poll(AVAILABILITY_TIMEOUT_MS,
+                        java.util.concurrent.TimeUnit.MILLISECONDS);
+                assertNull("Received unexpected onCameraOpened notice!", candidateId);
             }
 
             // Verify that we see the expected 'unavailable' events if this camera is a physical
@@ -783,6 +788,11 @@ public class CameraManagerTest extends Camera2ParameterizedTestCase {
             if (mAdoptShellPerm) {
                 CameraTestUtils.verifySingleAvailabilityCbsReceived(onCameraClosedEventQueue,
                         onCameraOpenedEventQueue, id, "onCameraClosed", "onCameraOpened");
+            } else if (Flags.resetListenerAfterAdoptShellPermission()) {
+                // Verify that we don't see the 'onCameraClosed' event.
+                String candidateId = onCameraClosedEventQueue.poll(AVAILABILITY_TIMEOUT_MS,
+                        java.util.concurrent.TimeUnit.MILLISECONDS);
+                assertNull("Received unexpected onCameraClosed notice!", candidateId);
             }
 
             expectedLogicalCameras = new HashSet<Pair<String, String>>(relatedLogicalCameras);

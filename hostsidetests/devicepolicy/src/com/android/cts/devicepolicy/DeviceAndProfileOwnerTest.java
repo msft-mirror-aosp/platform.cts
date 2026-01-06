@@ -166,7 +166,7 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDeviceOwnerTest {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice, this.getClass());
 
     @Override
     public void setUp() throws Exception {

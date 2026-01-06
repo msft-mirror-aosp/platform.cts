@@ -151,7 +151,6 @@ public class ActivityManagementTest {
         verify(mActivityListener, timeout(TIMEOUT_MILLIS)).onDisplayEmpty(mVirtualDisplayId);
     }
 
-    @RequiresFlagsEnabled({Flags.FLAG_ACTIVITY_CONTROL_API})
     @Test
     public void activityListener_shouldCallOnActivityLaunchRequestedAndOnActivityLaunchBlocked() {
         mVirtualDevice.addActivityPolicyExemption(mEmptyActivityComponent);
@@ -170,7 +169,6 @@ public class ActivityManagementTest {
                 any());
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
     @Test
     public void windowFlagChanged_onTopActivity_shouldCallSecureWindowCallbacks() {
         EmptyActivity activity =
@@ -189,10 +187,7 @@ public class ActivityManagementTest {
                 eq(mVirtualDisplayId));
     }
 
-    @RequiresFlagsEnabled({
-        Flags.FLAG_ACTIVITY_CONTROL_API,
-        Flags.FLAG_GWPC_SECURE_WINDOW_STATE_TRACKING
-    })
+    @RequiresFlagsEnabled(Flags.FLAG_GWPC_SECURE_WINDOW_STATE_TRACKING)
     @Test
     public void windowFlagChanged_notOnTopActivity_shouldNotCallSecureWindowCallbacks() {
         // Set an insecure top activity.
@@ -227,10 +222,7 @@ public class ActivityManagementTest {
                 .onSecureWindowHidden(eq(mVirtualDisplayId));
     }
 
-    @RequiresFlagsEnabled({
-        Flags.FLAG_ACTIVITY_CONTROL_API,
-        Flags.FLAG_GWPC_SECURE_WINDOW_STATE_TRACKING
-    })
+    @RequiresFlagsEnabled(Flags.FLAG_GWPC_SECURE_WINDOW_STATE_TRACKING)
     @Test
     public void activityChanged_topActivitySecureStateChanged_shouldCallSecureWindowCallbacks() {
         // Set a secure top activity.
@@ -258,10 +250,7 @@ public class ActivityManagementTest {
                         eq(mContext.getUser()));
     }
 
-    @RequiresFlagsEnabled({
-        Flags.FLAG_ACTIVITY_CONTROL_API,
-        Flags.FLAG_GWPC_SECURE_WINDOW_STATE_TRACKING
-    })
+    @RequiresFlagsEnabled(Flags.FLAG_GWPC_SECURE_WINDOW_STATE_TRACKING)
     @Test
     public void activityChanged_topActivitySecureStateSame_shouldNotCallSecureWindowCallbacks() {
         // Set an insecure top activity.

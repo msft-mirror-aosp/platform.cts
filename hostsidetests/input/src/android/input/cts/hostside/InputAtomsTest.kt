@@ -324,10 +324,10 @@ class InputAtomsTest : DeviceTestCase() {
             // changed by the OEMs or in future QPR releases. Other "SystemsEvents" especially
             // shortcuts are not enforced by other CTS tests, so using those here might cause CTS
             // compatibility issues.
-            "createKeyboardDeviceAndSendCapsLockKey"
+            "createKeyboardDeviceAndSend2CapsLockKeys"
         )
 
-        val metricData = waitForMetricData()
+        val metricData = waitForMetricData(minCount = 2)
         val matchesAtom = Matchers.allOf<KeyboardSystemsEventReported>(
             member(
                 "vendorId",
@@ -346,7 +346,8 @@ class InputAtomsTest : DeviceTestCase() {
             )
         )
 
-        assertThat(metricData, hasItem<EventMetricData>(
+        assertThat(metricData, Matchers.hasSize(2))
+        assertThat(metricData, Matchers.everyItem(
             member(
                 "atom",
                 { atom.getExtension(InputExtensionAtoms.keyboardSystemsEventReported) },
@@ -355,11 +356,11 @@ class InputAtomsTest : DeviceTestCase() {
         ))
     }
 
-    private fun waitForMetricData(): List<EventMetricData> {
+    private fun waitForMetricData(minCount: Int = 1): List<EventMetricData> {
         var metricData: List<EventMetricData> = listOf()
         PollingCheck.waitFor(TimeUnit.SECONDS.toMillis(5)) {
             metricData = ReportUtils.getEventMetricDataList(device, registry)
-            metricData.isNotEmpty()
+            metricData.size >= minCount
         }
         return metricData
     }

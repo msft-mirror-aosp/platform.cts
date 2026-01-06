@@ -74,7 +74,7 @@ public class StorageHostTest extends BaseHostJUnit4Test {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice, this.getClass());
 
     @Before
     public void setUp() throws Exception {
@@ -221,7 +221,8 @@ public class StorageHostTest extends BaseHostJUnit4Test {
                 runDeviceTests(PKG_STATS, CLASS_STATS, "testCacheBehavior", user);
             }
         } finally {
-            getDevice().executeShellCommand("settings delete global sys_storage_threshold_max_bytes");
+            getDevice()
+                    .executeShellCommand("settings delete global sys_storage_threshold_max_bytes");
             getDevice().executeShellCommand("svc data enable");
             getDevice().executeShellCommand("svc wifi enable");
         }

@@ -136,6 +136,7 @@ public abstract class CodecTestBase {
             SystemProperties.getInt("ro.board.api_level", Build.VERSION_CODES.CUR_DEVELOPMENT);
     public static final int VNDK_VERSION =
             SystemProperties.getInt("ro.vndk.version", BOARD_API_LEVEL);
+    public static final int VENDOR_API_LEVEL = SystemProperties.getInt("ro.vendor.api_level", 0);
     public static final boolean VNDK_IS_AT_LEAST_T = VNDK_VERSION >= Build.VERSION_CODES.TIRAMISU;
     public static final boolean VNDK_IS_AT_LEAST_U =
             VNDK_VERSION >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
@@ -159,9 +160,11 @@ public abstract class CodecTestBase {
     // needs to use default of 0 to ensure that this does't get treated as >= 202404 on those
     // builds.
     public static final boolean BOARD_FIRST_SDK_IS_AT_LEAST_202404 =
-            SystemProperties.getInt("ro.vendor.api_level", 0) >= ANDROID_VENDOR_API_202404;
+            VENDOR_API_LEVEL >= ANDROID_VENDOR_API_202404;
     public static final boolean BOARD_FIRST_SDK_IS_AT_LEAST_202504 =
-            SystemProperties.getInt("ro.vendor.api_level", 0) >= ANDROID_VENDOR_API_202504;
+            VENDOR_API_LEVEL >= ANDROID_VENDOR_API_202504;
+    public static final boolean BOARD_FIRST_SDK_IS_AFTER_202504 =
+            VENDOR_API_LEVEL > ANDROID_VENDOR_API_202504;
     public static final boolean IS_HDR_EDITING_SUPPORTED;
     public static final boolean IS_HLG_EDITING_SUPPORTED;
     public static final boolean IS_HDR_CAPTURE_SUPPORTED;
@@ -201,8 +204,6 @@ public abstract class CodecTestBase {
     // max poll counter before test aborts and returns error
     public static final int RETRY_LIMIT = 100;
     public static final String INVALID_CODEC = "unknown.codec_";
-    public static final String MIMETYPE_VIDEO_VC1 = "video/wvc1";
-    public static final String MIMETYPE_VIDEO_WMV = "video/x-ms-wmv";
     // Arrays,
     // <MEDIATYPE>_PROFILES contains all profiles of that media type
     // <MEDIATYPE>_SDR_PROFILES contains all sdr profiles of that media type
@@ -572,6 +573,24 @@ public abstract class CodecTestBase {
     public static boolean isMediaTypeLossless(String mediaType) {
         if (mediaType.equals(MediaFormat.MIMETYPE_AUDIO_FLAC)) return true;
         if (mediaType.equals(MediaFormat.MIMETYPE_AUDIO_RAW)) return true;
+        return false;
+    }
+
+    // this list comprises of coding technologies that are part of android eco system
+    public static boolean isVideoCodingTechnology2003OrLater(String mediaType) {
+        if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG2)) return false;
+        if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG4)) return false;
+        if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_H263)) return false;
+        if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_AVC)) return true;
+        if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_VP8)) return true;
+        if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_HEVC)) return true;
+        if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_VP9)) return true;
+        if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_AV1)) return true;
+        if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_APV)) return true;
+        if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION)) return true;
+        if (IS_AFTER_B && vvcSupport()) {
+            if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_VVC)) return true;
+        }
         return false;
     }
 

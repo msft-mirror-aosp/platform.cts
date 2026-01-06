@@ -30,6 +30,7 @@ import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_HlgEditing;
 import static android.media.codec.Flags.FLAG_DYNAMIC_COLOR_ASPECTS;
 import static android.media.codec.Flags.FLAG_IN_PROCESS_SW_AUDIO_CODEC;
 import static android.media.codec.Flags.hlgEditing;
+import static android.mediav2.common.cts.CodecTestBase.BOARD_FIRST_SDK_IS_AFTER_202504;
 import static android.mediav2.common.cts.CodecTestBase.BOARD_FIRST_SDK_IS_AT_LEAST_202404;
 import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AFTER_202504;
 import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AT_LEAST_T;
@@ -37,8 +38,6 @@ import static android.mediav2.common.cts.CodecTestBase.FIRST_SDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.IS_AFTER_B;
 import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_V;
 import static android.mediav2.common.cts.CodecTestBase.IS_HDR_CAPTURE_SUPPORTED;
-import static android.mediav2.common.cts.CodecTestBase.MIMETYPE_VIDEO_VC1;
-import static android.mediav2.common.cts.CodecTestBase.MIMETYPE_VIDEO_WMV;
 import static android.mediav2.common.cts.CodecTestBase.PROFILE_MAP;
 import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.canDisplaySupportHDRContent;
@@ -48,7 +47,6 @@ import static android.mediav2.common.cts.CodecTestBase.compileRequestedMediaType
 import static android.mediav2.common.cts.CodecTestBase.isFeatureSupported;
 import static android.mediav2.common.cts.CodecTestBase.mediaTypePrefix;
 import static android.mediav2.common.cts.CodecTestBase.mediaTypeSelKeys;
-import static android.mediav2.common.cts.CodecTestBase.selectCodecs;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -281,7 +279,7 @@ public class CodecInfoTest {
     }
 
     /**
-     * All decoders for compression technologies that were introduced after 2006 must support
+     * All decoders for compression technologies that were introduced since 2003 must support
      * dynamic color aspects feature on CHIPSETs that set ro.board.first_api_level to V or higher.
      */
     @RequiresFlagsEnabled(FLAG_DYNAMIC_COLOR_ASPECTS)
@@ -291,12 +289,8 @@ public class CodecInfoTest {
     public void testDynamicColorAspectSupport() {
         Assume.assumeTrue("Test is applicable for video codecs", mMediaType.startsWith("video/"));
         Assume.assumeFalse("Test is applicable only for decoders", mCodecInfo.isEncoder());
-        Assume.assumeTrue("Skipping, Only intended for coding technologies introduced after 2006.",
-                !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG4)
-                && !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_H263)
-                && !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG2)
-                && !mMediaType.equals(MIMETYPE_VIDEO_VC1)
-                && !mMediaType.equals(MIMETYPE_VIDEO_WMV));
+        Assume.assumeTrue("Skipping, Only intended for coding technologies introduced since 2003.",
+                CodecTestBase.isVideoCodingTechnology2003OrLater(mMediaType));
         Assume.assumeTrue("Skipping, Only intended for devices with board first_api_level >= V",
                 BOARD_FIRST_SDK_IS_AT_LEAST_202404);
         assertTrue(mCodecName + " does not support FEATURE_DynamicColorAspects.",
@@ -304,19 +298,15 @@ public class CodecInfoTest {
     }
 
     /**
-     * Components advertising support for compression technologies that were introduced after 2006
+     * Components advertising support for compression technologies that were introduced since 2003
      * must support a given resolution in both portrait and landscape mode.
      */
     @VsrTest(requirements = {"VSR-4.2-004.002"})
     @Test
     public void testResolutionSupport() {
         Assume.assumeTrue("Test is applicable for video codecs", mMediaType.startsWith("video/"));
-        Assume.assumeTrue("Skipping, Only intended for coding technologies introduced after 2006.",
-                !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG4)
-                && !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_H263)
-                && !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG2)
-                && !mMediaType.equals(MIMETYPE_VIDEO_VC1)
-                && !mMediaType.equals(MIMETYPE_VIDEO_WMV));
+        Assume.assumeTrue("Skipping, Only intended for coding technologies introduced since 2003.",
+                CodecTestBase.isVideoCodingTechnology2003OrLater(mMediaType));
         Assume.assumeTrue("Skipping, Only intended for devices with SDK >= 202404",
                 BOARD_FIRST_SDK_IS_AT_LEAST_202404);
         if (!isFeatureSupported(mCodecName, mMediaType, "can-swap-width-height")) {
@@ -330,19 +320,15 @@ public class CodecInfoTest {
     }
 
     /**
-     * Components advertising support for compression technologies that were introduced after 2006
+     * Components advertising support for compression technologies that were introduced since 2003
      * must support 1x1 alignment for vp8, av1 and 2x2 for avc, hevc and vp9.
      */
     @VsrTest(requirements = {"VSR-4.2-004.001"})
     @Test
     public void testAlignmentSupport() {
         Assume.assumeTrue("Test is applicable for video codecs", mMediaType.startsWith("video/"));
-        Assume.assumeTrue("Skipping, Only intended for coding technologies introduced after 2006.",
-                !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG4)
-                        && !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_H263)
-                        && !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG2)
-                        && !mMediaType.equals(MIMETYPE_VIDEO_VC1)
-                        && !mMediaType.equals(MIMETYPE_VIDEO_WMV));
+        Assume.assumeTrue("Skipping, Only intended for coding technologies introduced since 2003.",
+                CodecTestBase.isVideoCodingTechnology2003OrLater(mMediaType));
         Assume.assumeTrue("Skipping, Only intended for devices with SDK >= 202404",
                 BOARD_FIRST_SDK_IS_AT_LEAST_202404);
         MediaCodecInfo.VideoCapabilities vCaps =
@@ -366,5 +352,22 @@ public class CodecInfoTest {
                         + "  should be equal to 1 ", 1, heightAlignment);
                 break;
         }
+    }
+
+    /**
+     * Components advertising support for compression technologies that were introduced since 2003
+     * must support a minimum resolution of 128x96.
+     */
+    @VsrTest(requirements = {"VSR-4.2.1-002"})
+    @Test
+    public void testMinimumVideoSize() {
+        Assume.assumeTrue("Test is applicable for video codecs", mMediaType.startsWith("video/"));
+        Assume.assumeTrue("Skipping, Only intended for coding technologies introduced since 2003.",
+                CodecTestBase.isVideoCodingTechnology2003OrLater(mMediaType));
+        Assume.assumeTrue("Skipping, Only intended for devices with SDK > 202504",
+                BOARD_FIRST_SDK_IS_AFTER_202504);
+        MediaCodecInfo.VideoCapabilities vCaps =
+                mCodecInfo.getCapabilitiesForType(mMediaType).getVideoCapabilities();
+        assertTrue(mCodecName + " does not support size 128x96", vCaps.isSizeSupported(128, 96));
     }
 }

@@ -28,11 +28,9 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
-import android.companion.virtualdevice.flags.Flags;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.virtualdevice.cts.applaunch.AppComponents.EmptyActivity;
 import android.virtualdevice.cts.applaunch.AppComponents.SecondActivity;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
@@ -116,7 +114,6 @@ public class RecentTasksTest {
         assertThat(isTaskIncludedInRecents(taskId)).isTrue();
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
     @Test
     public void testOverrideRecentsPolicyPerDisplay() {
         VirtualDevice virtualDevice = createVirtualDeviceWithRecentsPolicy(DEVICE_POLICY_DEFAULT);

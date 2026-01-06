@@ -22,6 +22,7 @@ import android.companion.cts.core.CoreTestBase
 import android.companion.datatransfer.continuity.RemoteTask
 import android.companion.datatransfer.continuity.TaskContinuityManager
 import android.companion.datatransfer.continuity.TaskContinuityManager.HandoffRequestCallback
+import android.companion.datatransfer.continuity.TaskContinuityManager.RemoteTaskListener
 import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -95,9 +96,13 @@ class TaskContinuityManagerEnforcesPermissionsTest : CoreTestBase() {
     @Test
     fun testRegisterRemoteTaskListener_failsWithoutPermission() {
         var invocationCount = 0
-        val listener : (List<RemoteTask>) -> Unit  = {
-            invocationCount++
-        }
+        val listener =
+            object : RemoteTaskListener {
+
+                override fun onRemoteTasksChanged(remoteTasks: List<RemoteTask>) {
+                    invocationCount++
+                }
+            }
 
         assertFailsWith(SecurityException::class) {
             val taskContinuityManager =

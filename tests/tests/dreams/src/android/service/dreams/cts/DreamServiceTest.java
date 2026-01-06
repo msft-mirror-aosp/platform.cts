@@ -58,7 +58,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -303,8 +302,6 @@ public class DreamServiceTest extends ActivityManagerTestBase {
      * Validates that pressing a confirm key when dreaming over an insecure keyguard wakes and
      * dismisses the keyguard.
      */
-    // TODO(b/466314766): Re-enable this test once the culprit of the failure is found and fixed.
-    @Ignore("b/466314766")
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_DREAM_HANDLES_CONFIRM_KEYS)
     public void testKeyHandling_InsecureKeyguardDismissesOnConfirmKey()
