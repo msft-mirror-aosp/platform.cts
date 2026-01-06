@@ -44,7 +44,7 @@ static jboolean doTestSyscallBlocked(std::function<void()> execSyscall) {
     int pid = fork();
     if (pid == 0) {
         execSyscall();
-        exit(0);
+        _exit(0);
     } else {
         int status;
         int ret = waitpid(pid, &status, 0);
