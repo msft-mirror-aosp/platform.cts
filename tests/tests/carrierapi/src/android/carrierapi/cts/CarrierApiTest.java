@@ -594,7 +594,11 @@ public class CarrierApiTest extends BaseCarrierApiTest {
             if (hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING)) {
                 mTelephonyManager.getVoiceNetworkType();
                 mTelephonyManager.getVoiceMailNumber();
-                mTelephonyManager.getVisualVoicemailPackageName();
+                if (!isWear()) {
+                    // Wear devices may turn off the RADIO which causes an NPE in this API, so skip
+                    // this part of the test for now.
+                    mTelephonyManager.getVisualVoicemailPackageName();
+                }
                 mTelephonyManager.getVoiceMailAlphaTag();
             }
         } catch (SecurityException e) {
