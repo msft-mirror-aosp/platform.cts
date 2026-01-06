@@ -31,6 +31,7 @@ import com.android.security.identity.internal.Util;
 
 import androidx.test.InstrumentationRegistry;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.FileOutputStream;
@@ -50,6 +51,11 @@ import java.security.cert.X509Certificate;
 public class X509CertificateSigningTest {
 
     private static final String TAG = "X509CertificateSigningTest";
+
+    @Before
+    public void setUp() throws Exception {
+        TestUtil.assumeVendorMaySetRkpProperties();
+    }
 
     @Test
     public void testSigning() {

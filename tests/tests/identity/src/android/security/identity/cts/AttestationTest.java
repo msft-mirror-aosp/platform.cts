@@ -25,6 +25,7 @@ import android.security.identity.IdentityCredential;
 import android.security.identity.IdentityCredentialStore;
 import androidx.test.InstrumentationRegistry;
 
+import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assume.assumeTrue;
 
@@ -52,6 +53,11 @@ public class AttestationTest {
     //
     public static final int KM_TAG_ATTESTATION_APPLICATION_ID = 709;
     public static final int KM_TAG_IDENTITY_CREDENTIAL_KEY = 721;
+
+    @Before
+    public void setUp() throws Exception {
+        TestUtil.assumeVendorMaySetRkpProperties();
+    }
 
     @Test
     public void attestationTest() throws Exception {

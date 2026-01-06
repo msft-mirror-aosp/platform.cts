@@ -42,6 +42,7 @@ import android.security.identity.ResultData;
 import android.security.identity.WritableIdentityCredential;
 import androidx.test.InstrumentationRegistry;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -67,6 +68,10 @@ import co.nstant.in.cbor.CborException;
 public class ReaderAuthTest {
     private static final String TAG = "ReaderAuthTest";
 
+    @Before
+    public void setUp() throws Exception {
+        TestUtil.assumeVendorMaySetRkpProperties();
+    }
 
     static KeyPair createReaderKey(String readerKeyAlias, boolean createCaKey)
             throws InvalidAlgorithmParameterException, NoSuchProviderException,

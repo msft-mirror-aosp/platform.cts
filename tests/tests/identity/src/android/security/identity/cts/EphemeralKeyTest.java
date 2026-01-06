@@ -32,6 +32,7 @@ import android.security.identity.IdentityCredentialStore;
 import androidx.test.InstrumentationRegistry;
 import com.android.security.identity.internal.Util;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
@@ -58,6 +59,11 @@ import javax.crypto.spec.SecretKeySpec;
 // TODO: For better coverage, use different ECDH and HKDF implementations in test code.
 public class EphemeralKeyTest {
     private static final String TAG = "EphemeralKeyTest";
+
+    @Before
+    public void setUp() throws Exception {
+        TestUtil.assumeVendorMaySetRkpProperties();
+    }
 
     @Test
     public void createEphemeralKey() throws IdentityCredentialException {

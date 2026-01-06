@@ -34,6 +34,7 @@ import android.security.identity.CredentialDataResult;
 import com.android.security.identity.internal.Util;
 import androidx.test.InstrumentationRegistry;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -56,6 +57,11 @@ import javax.crypto.SecretKey;
 
 public class NoSessionEncryptionTest {
     private static final String TAG = "NoSessionEncryptionTest";
+
+    @Before
+    public void setUp() throws Exception {
+        TestUtil.assumeVendorMaySetRkpProperties();
+    }
 
     @Test
     public void noSessionEncryption() throws Exception {

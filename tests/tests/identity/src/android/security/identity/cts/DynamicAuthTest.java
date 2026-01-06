@@ -36,6 +36,7 @@ import android.security.identity.ResultData;
 import androidx.test.InstrumentationRegistry;
 import com.android.security.identity.internal.Util;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -62,6 +63,11 @@ import co.nstant.in.cbor.CborException;
 
 public class DynamicAuthTest {
     private static final String TAG = "DynamicAuthTest";
+
+    @Before
+    public void setUp() throws Exception {
+        TestUtil.assumeVendorMaySetRkpProperties();
+    }
 
     @Test
     public void dynamicAuthTest() throws Exception {

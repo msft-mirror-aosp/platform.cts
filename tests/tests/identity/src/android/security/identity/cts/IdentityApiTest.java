@@ -35,11 +35,17 @@ import android.security.identity.UnknownAuthenticationKeyException;
 
 import androidx.test.InstrumentationRegistry;
 
+import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 public class IdentityApiTest {
     private static final String TAG = "IdentityApiTest";
+
+    @Before
+    public void setUp() throws Exception {
+        TestUtil.assumeVendorMaySetRkpProperties();
+    }
 
     @Test
     public void testConstructorsAlreadyPersonalizedException()  {
