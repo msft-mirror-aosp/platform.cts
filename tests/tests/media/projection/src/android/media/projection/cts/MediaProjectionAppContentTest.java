@@ -23,6 +23,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import android.Manifest;
+import android.R;
 import android.app.Instrumentation;
 import android.app.Service;
 import android.content.ComponentName;
@@ -30,6 +31,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
+import android.graphics.drawable.Icon;
 import android.media.cts.MediaProjectionRule;
 import android.media.projection.AppContentProjectionService;
 import android.media.projection.IAppContentProjectionCallback;
@@ -93,17 +95,21 @@ public class MediaProjectionAppContentTest {
         int width = 10;
         int height = 20;
         Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        Icon icon = Icon.createWithResource(mContext, R.drawable.ic_info);
         String title = "title";
         int id = 1234;
         MediaProjectionAppContent appContent =
                 new MediaProjectionAppContent.Builder(id)
                         .setThumbnail(bitmap)
                         .setTitle(title)
+                        .setIcon(icon)
                         .build();
         assertThat(appContent.getId()).isEqualTo(id);
         assertThat(appContent.getTitle()).isEqualTo(title);
         assertThat(appContent.getThumbnail().getWidth()).isEqualTo(width);
         assertThat(appContent.getThumbnail().getHeight()).isEqualTo(height);
+        assertThat(appContent.getIcon()).isNotNull();
+        assertThat(appContent.getIcon().sameAs(icon)).isTrue();
         Parcel parcel = Parcel.obtain();
         appContent.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
@@ -113,6 +119,7 @@ public class MediaProjectionAppContentTest {
         assertThat(unparcel.getTitle()).isEqualTo(title);
         assertThat(unparcel.getThumbnail().getWidth()).isEqualTo(width);
         assertThat(unparcel.getThumbnail().getHeight()).isEqualTo(height);
+        assertThat(appContent.getIcon().sameAs(icon)).isTrue();
     }
 
     @Test
