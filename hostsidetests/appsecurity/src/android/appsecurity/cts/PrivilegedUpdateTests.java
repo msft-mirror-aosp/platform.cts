@@ -98,8 +98,9 @@ public class PrivilegedUpdateTests extends DeviceTestCase implements IAbiReceive
 
     public void testPrivilegedAppUpgradeRestricted() throws Exception {
         getDevice().uninstallPackage(SHIM_PKG);
-        assertEquals(RESTRICTED_UPGRADE_FAILURE, getDevice().installPackage(
-                mBuildHelper.getTestFile(SHIM_UPDATE_FAIL_APK), true));
+        String res =
+                getDevice().adbInstallPackage(mBuildHelper.getTestFile(SHIM_UPDATE_FAIL_APK), true);
+        assertTrue(res.contains(RESTRICTED_UPGRADE_FAILURE));
     }
 
     public void testSystemAppPriorities() throws Exception {
