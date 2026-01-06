@@ -47,7 +47,6 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.showSoftInputMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.waitForInputViewLayoutStable;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.withDescription;
-import static com.android.window.flags.Flags.FLAG_IME_BACK_CALLBACK_LEAK_PREVENTION;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -534,7 +533,6 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
      * enableOnBackInvokedCallback=true).
      */
     @Test
-    @RequiresFlagsEnabled(FLAG_IME_BACK_CALLBACK_LEAK_PREVENTION)
     public void testCustomImeBackCallbackNotRegisteredUntilSystemCallbackRegistered()
             throws Exception {
         verifyCustomImeBackCallbackRegistration(
@@ -548,7 +546,6 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
      * enableOnBackInvokedCallback=false).
      */
     @Test
-    @RequiresFlagsEnabled(FLAG_IME_BACK_CALLBACK_LEAK_PREVENTION)
     public void testCustomImeBackCallbackNotRegisteredUntilSystemCallbackRegistered_legacyApp()
             throws Exception {
         verifyCustomImeBackCallbackRegistration(
@@ -560,7 +557,6 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
      * process when the IME gets hidden (when the app has enableOnBackInvokedCallback=true).
      */
     @Test
-    @RequiresFlagsEnabled(FLAG_IME_BACK_CALLBACK_LEAK_PREVENTION)
     public void testCustomImeBackCallbackUnregisteredWhenSystemCallbackUnregistered()
             throws Exception {
         verifyCustomImeBackCallbackRegistration(
@@ -572,7 +568,6 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
      * process when the IME gets hidden (when the app has enableOnBackInvokedCallback=false).
      */
     @Test
-    @RequiresFlagsEnabled(FLAG_IME_BACK_CALLBACK_LEAK_PREVENTION)
     public void testCustomImeBackCallbackUnregisteredWhenSystemCallbackUnregistered_legacyApp()
             throws Exception {
         verifyCustomImeBackCallbackRegistration(
@@ -678,7 +673,6 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
      * app process).
      */
     @Test
-    @RequiresFlagsEnabled(FLAG_IME_BACK_CALLBACK_LEAK_PREVENTION)
     public void testCustomImeBackCallbackTransferredToNewDispatcher() throws Exception {
         final Context context = mInstrumentation.getTargetContext();
         final boolean onBackCallbackEnabled =
