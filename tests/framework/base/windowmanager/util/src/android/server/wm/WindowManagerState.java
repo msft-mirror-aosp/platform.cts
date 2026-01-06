@@ -56,11 +56,9 @@ import androidx.annotation.Nullable;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.nano.InvalidProtocolBufferNanoException;
 
-import perfetto.protos.Displaycutout.DisplayCutoutProto;
 import perfetto.protos.Displayinfo.DisplayInfoProto;
 import perfetto.protos.Insets.InsetsProto;
 import perfetto.protos.Insetssource.InsetsSourceProto;
-import perfetto.protos.Insetsstate.InsetsStateProto;
 import perfetto.protos.Rect.RectProto;
 import perfetto.protos.Windowmanagerservice.ActivityRecordProto;
 import perfetto.protos.Windowmanagerservice.AppTransitionProto;
@@ -72,7 +70,6 @@ import perfetto.protos.Windowmanagerservice.DisplayFramesProto;
 import perfetto.protos.Windowmanagerservice.DisplayRotationProto;
 import perfetto.protos.Windowmanagerservice.IdentifierProto;
 import perfetto.protos.Windowmanagerservice.InsetsSourceProviderProto;
-import perfetto.protos.Windowmanagerservice.InsetsStateControllerProto;
 import perfetto.protos.Windowmanagerservice.KeyguardControllerProto;
 import perfetto.protos.Windowmanagerservice.KeyguardServiceDelegateProto;
 import perfetto.protos.Windowmanagerservice.PinnedTaskControllerProto;
@@ -1051,8 +1048,8 @@ public class WindowManagerState {
 
     public List<WindowState> getAllNavigationBarStates() {
         return mDisplays.stream()
-                .filter(dc -> dc.mInsetsStateController != null)
-                .flatMap(dc -> dc.mInsetsStateController.mProviders.stream())
+                .filter(dc -> dc.mProviders != null)
+                .flatMap(dc -> dc.mProviders.stream())
                 .filter(provider -> (provider.mSource.is(WindowInsets.Type.navigationBars())))
                 .map(provider -> getWindowStateForAppToken(provider.mIdentifier.mAppToken))
                 .filter(Objects::nonNull)
@@ -1063,9 +1060,11 @@ public class WindowManagerState {
     List<WindowState> getNavBarWindowsOnDisplay(int displayId) {
         return mDisplays.stream()
                 .filter(dc -> dc.mId == displayId)
-                .filter(dc -> dc.mInsetsStateController != null)
-                .flatMap(dc -> dc.mInsetsStateController.mProviders.stream())
-                .filter(provider -> (provider.mSource.is(WindowInsets.Type.navigationBars())))
+                .filter(dc -> dc.mProviders != null)
+                .flatMap(dc -> dc.mProviders.stream())
+                .filter(
+                        provider ->
+                                (provider.mSource.is(WindowInsets.Type.navigationBars())))
                 .map(provider -> getWindowStateForAppToken(provider.mIdentifier.mAppToken))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
@@ -1228,7 +1227,7 @@ public class WindowManagerState {
         private int mLastOrientation;
         private boolean mIsFixedToUserRotation;
         private List<Rect> mKeepClearRects;
-        private InsetsStateController mInsetsStateController;
+        private List<InsetsSourceProvider> mProviders;
 
         DisplayContent(DisplayContentProto proto) {
             super(proto.getRootDisplayArea());
@@ -1279,9 +1278,10 @@ public class WindowManagerState {
                 RectProto r = proto.getKeepClearAreas(i);
                 mKeepClearRects.add(new Rect(r.getLeft(), r.getTop(), r.getRight(), r.getBottom()));
             }
-            if (proto.hasInsetsStateController()) {
-                mInsetsStateController = new InsetsStateController(
-                        proto.getInsetsStateController());
+            mProviders = new ArrayList<>();
+            for (int i = 0; i < proto.getInsetsSourceProvidersCount(); ++i) {
+                InsetsSourceProviderProto provider = proto.getInsetsSourceProviders(i);
+                mProviders.add(new InsetsSourceProvider(provider));
             }
         }
 
@@ -1338,8 +1338,10 @@ public class WindowManagerState {
             for (android.graphics.nano.RectProto r : proto.keepClearAreas) {
                 mKeepClearRects.add(new Rect(r.left, r.top, r.right, r.bottom));
             }
-            if (proto.insetsStateController != null) {
-                mInsetsStateController = new InsetsStateController(proto.insetsStateController);
+            mProviders = new ArrayList<>();
+            for (com.android.server.wm.nano.InsetsSourceProviderProto provider :
+                    proto.insetsSourceProviders) {
+                mProviders.add(new InsetsSourceProvider(provider));
             }
         }
 
@@ -3015,145 +3017,6 @@ public class WindowManagerState {
             return "InsetsSourceProvider: mSource=" + mSource + " mWindowState=" + mWindowState;
         }
 
-    }
-
-    public static class DisplayCutout {
-        private Rect mSafeInsets;
-        private Rect mBoundLeft;
-        private Rect mBoundRight;
-        private Rect mBoundTop;
-        private Rect mBoundBottom;
-        private Rect mWaterfallInsets;
-        private int[] mSideOverrides;
-
-        DisplayCutout(DisplayCutoutProto proto) {
-            if (proto.hasInsets()) {
-                mSafeInsets = extract(proto.getInsets());
-            }
-            if (proto.hasBoundLeft()) {
-                mBoundLeft = extract(proto.getBoundLeft());
-            }
-            if (proto.hasBoundRight()) {
-                mBoundRight = extract(proto.getBoundRight());
-            }
-            if (proto.hasBoundTop()) {
-                mBoundTop = extract(proto.getBoundTop());
-            }
-            if (proto.hasBoundBottom()) {
-                mBoundBottom = extract(proto.getBoundBottom());
-            }
-            if (proto.hasWaterfallInsets()) {
-                mWaterfallInsets = extract(proto.getWaterfallInsets());
-            }
-            mSideOverrides = proto.getSideOverridesList().stream()
-                    .mapToInt(Integer::intValue)
-                    .toArray();
-
-        }
-
-        DisplayCutout(android.view.nano.DisplayCutoutProto proto) {
-            if (proto.insets != null) {
-                mSafeInsets = extract(proto.insets);
-            }
-            if (proto.boundLeft != null) {
-                mBoundLeft = extract(proto.boundLeft);
-            }
-            if (proto.boundRight != null) {
-                mBoundRight = extract(proto.boundRight);
-            }
-            if (proto.boundTop != null) {
-                mBoundTop = extract(proto.boundTop);
-            }
-            if (proto.boundBottom != null) {
-                mBoundBottom = extract(proto.boundBottom);
-            }
-            if (proto.waterfallInsets != null) {
-                mWaterfallInsets = extract(proto.waterfallInsets);
-            }
-            if (proto.sideOverrides != null) {
-                mSideOverrides = Arrays.copyOf(proto.sideOverrides, proto.sideOverrides.length);
-            }
-        }
-
-        @Override
-        public String toString() {
-            return "DisplayCutout: mSafeInsets=" + mSafeInsets + " mBoundLeft=" + mBoundLeft
-                    + " mBoundRight=" + mBoundRight + " mBoundTop=" + mBoundTop + " mBoundBottom="
-                    + mBoundBottom + " mWaterfallInsets=" + mWaterfallInsets + " mSideOverrides="
-                    + Arrays.toString(mSideOverrides);
-        }
-    }
-
-    public static class InsetsState {
-        private final ArrayList<InsetsSource> mSources = new ArrayList<>();
-        private Rect mDisplayFrame;
-        private DisplayCutout mDisplayCutout;
-
-        InsetsState(InsetsStateProto proto) {
-            final List<InsetsSourceProto> sourcesProto = proto.getSourcesList();
-            for (int i = 0; i < sourcesProto.size(); i++) {
-                mSources.add(new InsetsSource(sourcesProto.get(i)));
-            }
-            if (proto.hasDisplayFrame()) {
-                mDisplayFrame = extract(proto.getDisplayFrame());
-            }
-            if (proto.hasDisplayCutout()) {
-                mDisplayCutout = new DisplayCutout(proto.getDisplayCutout());
-            }
-        }
-
-        InsetsState(android.view.nano.InsetsStateProto proto) {
-            final android.view.nano.InsetsSourceProto[] sourcesProto = proto.sources;
-            for (int i = 0; i < sourcesProto.length; i++) {
-                if (sourcesProto[i] != null) {
-                    mSources.add(new InsetsSource(sourcesProto[i]));
-                }
-            }
-            if (proto.displayFrame != null) {
-                mDisplayFrame = extract(proto.displayFrame);
-            }
-            if (proto.displayCutout != null) {
-                mDisplayCutout = new DisplayCutout(proto.displayCutout);
-            }
-        }
-
-        @Override
-        public String toString() {
-            return "InsetsState: mSources=" + mSources + " mDisplayFrame=" + mDisplayFrame
-                    + " mDisplayCutout=" + mDisplayCutout;
-        }
-    }
-
-    public static class InsetsStateController {
-        private InsetsState mState;
-        private final ArrayList<InsetsSourceProvider> mProviders = new ArrayList<>();
-
-        InsetsStateController(InsetsStateControllerProto proto) {
-            if (proto.hasInsetsState()) {
-                mState = new InsetsState(proto.getInsetsState());
-            }
-            final List<InsetsSourceProviderProto> providersProto =
-                    proto.getInsetsSourceProvidersList();
-            for (int i = 0; i < providersProto.size(); i++) {
-                mProviders.add(new InsetsSourceProvider(providersProto.get(i)));
-            }
-        }
-
-        InsetsStateController(com.android.server.wm.nano.InsetsStateControllerProto proto) {
-            if (proto.insetsState != null) {
-                mState = new InsetsState(proto.insetsState);
-            }
-            final com.android.server.wm.nano.InsetsSourceProviderProto[] providersProto =
-                    proto.insetsSourceProviders;
-            for (int i = 0; i < providersProto.length; i++) {
-                mProviders.add(new InsetsSourceProvider(providersProto[i]));
-            }
-        }
-
-        @Override
-        public String toString() {
-            return "InsetsStateController: mState=" + mState + " mProviders=" + mProviders;
-        }
     }
 
     public static class Identifier {
