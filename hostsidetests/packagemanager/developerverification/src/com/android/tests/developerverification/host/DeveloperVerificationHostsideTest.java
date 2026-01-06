@@ -57,7 +57,7 @@ public class DeveloperVerificationHostsideTest extends BaseHostJUnit4Test
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice, this.getClass());
 
     private static final String TAG = "DeveloperVerificationHostsideTest";
     private static final String TEST_BASE = "DeveloperVerificationHostsideTest";

@@ -80,4 +80,5 @@ java_test_host {
         "cts-statsd-atom-host-test-utils",
         "flag-junit-host",
     ],
+    enable_static_aconfig_pb: true,
 }

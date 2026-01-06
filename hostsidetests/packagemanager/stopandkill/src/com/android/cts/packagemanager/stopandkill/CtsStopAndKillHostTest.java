@@ -80,7 +80,7 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice, this.getClass());
 
     @Before
     public void setUp() throws Exception {

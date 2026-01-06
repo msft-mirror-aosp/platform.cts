@@ -42,7 +42,7 @@ class AppMetadataTest : BaseHostJUnit4Test() {
     @Rule
     @JvmField
     val mCheckFlagsRule: CheckFlagsRule =
-        HostFlagsValueProvider.createCheckFlagsRule { this.device }
+        HostFlagsValueProvider.createCheckFlagsRule({ this.device }, this.javaClass)
 
     @Before
     fun uninstallEmptyTestApp() {
