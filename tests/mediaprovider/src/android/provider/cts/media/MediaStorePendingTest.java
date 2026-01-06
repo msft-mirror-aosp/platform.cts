@@ -30,6 +30,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static src.android.provider.cts.media.modern.MediaStoreBaseTestRule.getExternalStorageDir;
+import static src.android.provider.cts.media.modern.MediaStoreBaseTestRule.pollForCondition;
+
 import android.content.ContentProviderOperation;
 import android.content.ContentResolver;
 import android.content.ContentUris;
@@ -52,11 +55,14 @@ import androidx.test.filters.SdkSuppress;
 import com.google.common.base.Objects;
 
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
+
+import src.android.provider.cts.media.modern.MediaStoreBaseTestRule;
 
 import java.io.File;
 import java.io.InputStream;
@@ -70,6 +76,10 @@ import java.util.Set;
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.R)
 @RunWith(Parameterized.class)
 public class MediaStorePendingTest {
+
+    @ClassRule
+    public static MediaStoreBaseTestRule sMediaStoreBaseTest = new MediaStoreBaseTestRule();
+
     private Context mContext;
     private ContentResolver mResolver;
 
@@ -92,6 +102,11 @@ public class MediaStorePendingTest {
         mResolver = mContext.getContentResolver();
 
         Log.d(TAG, "Using volume " + mVolumeName);
+        pollForCondition(
+                () ->
+                        Environment.getExternalStorageState(getExternalStorageDir(mVolumeName))
+                                .equals(Environment.MEDIA_MOUNTED),
+                "Timed out while waiting for ExternalStorageState to be MEDIA_MOUNTED");
         mExternalAudio = MediaStore.Audio.Media.getContentUri(mVolumeName);
         mExternalVideo = MediaStore.Video.Media.getContentUri(mVolumeName);
         mExternalImages = MediaStore.Images.Media.getContentUri(mVolumeName);

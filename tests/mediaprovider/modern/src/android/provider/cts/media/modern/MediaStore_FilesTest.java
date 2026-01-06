@@ -29,6 +29,9 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
+import static src.android.provider.cts.media.modern.MediaStoreBaseTestRule.getExternalStorageDir;
+import static src.android.provider.cts.media.modern.MediaStoreBaseTestRule.pollForCondition;
+
 import android.content.ContentProviderOperation;
 import android.content.ContentProviderResult;
 import android.content.ContentResolver;
@@ -57,6 +60,7 @@ import com.android.providers.media.flags.Flags;
 import com.google.common.truth.Truth;
 
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -64,6 +68,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
+
+import src.android.provider.cts.media.modern.MediaStoreBaseTestRule;
 
 import java.io.File;
 import java.io.IOException;
@@ -75,6 +81,10 @@ import java.util.Map;
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.R)
 @RunWith(Parameterized.class)
 public class MediaStore_FilesTest {
+
+    @ClassRule
+    public static MediaStoreBaseTestRule sMediaStoreBaseTest = new MediaStoreBaseTestRule();
+
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
     private Context mContext;
@@ -98,10 +108,16 @@ public class MediaStore_FilesTest {
         mResolver = mContext.getContentResolver();
 
         Log.d(TAG, "Using volume " + mVolumeName);
+        pollForCondition(
+                () ->
+                        Environment.getExternalStorageState(getExternalStorageDir(mVolumeName))
+                                .equals(Environment.MEDIA_MOUNTED),
+                "Timed out while waiting for ExternalStorageState to be MEDIA_MOUNTED");
         mExternalAudio = MediaStore.Audio.Media.getContentUri(mVolumeName);
         mExternalImages = MediaStore.Images.Media.getContentUri(mVolumeName);
         mExternalFiles = MediaStore.Files.getContentUri(mVolumeName);
     }
+
 
     @Test
     @Ignore("b/369795989")

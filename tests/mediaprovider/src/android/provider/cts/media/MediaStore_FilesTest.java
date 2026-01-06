@@ -17,8 +17,8 @@
 package android.provider.cts.media;
 
 import static android.provider.cts.media.MediaProviderTestUtils.containsId;
-import static android.provider.cts.media.MediaProviderTestUtils.resolveVolumeName;
 import static android.provider.cts.media.MediaProviderTestUtils.createMediaInDownloads;
+import static android.provider.cts.media.MediaProviderTestUtils.resolveVolumeName;
 import static android.provider.cts.media.MediaStoreTest.TAG;
 
 import static org.junit.Assert.assertEquals;
@@ -28,6 +28,9 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
+
+import static src.android.provider.cts.media.modern.MediaStoreBaseTestRule.getExternalStorageDir;
+import static src.android.provider.cts.media.modern.MediaStoreBaseTestRule.pollForCondition;
 
 import android.content.ContentProviderOperation;
 import android.content.ContentProviderResult;
@@ -55,13 +58,15 @@ import androidx.test.filters.SdkSuppress;
 import com.android.providers.media.flags.Flags;
 
 import org.junit.Before;
-import org.junit.Ignore;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
+
+import src.android.provider.cts.media.modern.MediaStoreBaseTestRule;
 
 import java.io.File;
 import java.io.IOException;
@@ -73,6 +78,10 @@ import java.util.Arrays;
 public class MediaStore_FilesTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @ClassRule
+    public static MediaStoreBaseTestRule sMediaStoreBaseTest = new MediaStoreBaseTestRule();
+
     private Context mContext;
     private ContentResolver mResolver;
 
@@ -94,6 +103,11 @@ public class MediaStore_FilesTest {
         mResolver = mContext.getContentResolver();
 
         Log.d(TAG, "Using volume " + mVolumeName);
+        pollForCondition(
+                () ->
+                        Environment.getExternalStorageState(getExternalStorageDir(mVolumeName))
+                                .equals(Environment.MEDIA_MOUNTED),
+                "Timed out while waiting for ExternalStorageState to be MEDIA_MOUNTED");
         mExternalAudio = MediaStore.Audio.Media.getContentUri(mVolumeName);
         mExternalImages = MediaStore.Images.Media.getContentUri(mVolumeName);
         mExternalFiles = MediaStore.Files.getContentUri(mVolumeName);

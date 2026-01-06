@@ -25,6 +25,9 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static src.android.provider.cts.media.modern.MediaStoreBaseTestRule.getExternalStorageDir;
+import static src.android.provider.cts.media.modern.MediaStoreBaseTestRule.pollForCondition;
+
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -33,6 +36,7 @@ import android.database.Cursor;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.provider.MediaStore.Audio.Albums;
 import android.provider.MediaStore.Audio.Media;
@@ -45,11 +49,14 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SdkSuppress;
 
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
+
+import src.android.provider.cts.media.modern.MediaStoreBaseTestRule;
 
 import java.io.File;
 import java.io.IOException;
@@ -57,6 +64,10 @@ import java.io.IOException;
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.R)
 @RunWith(Parameterized.class)
 public class MediaStore_Audio_AlbumsTest {
+
+    @ClassRule
+    public static MediaStoreBaseTestRule sMediaStoreBaseTest = new MediaStoreBaseTestRule();
+
     private Context mContext;
     private ContentResolver mContentResolver;
 
@@ -74,6 +85,11 @@ public class MediaStore_Audio_AlbumsTest {
         mContentResolver = mContext.getContentResolver();
 
         Log.d(TAG, "Using volume " + mVolumeName);
+        pollForCondition(
+                () ->
+                        Environment.getExternalStorageState(getExternalStorageDir(mVolumeName))
+                                .equals(Environment.MEDIA_MOUNTED),
+                "Timed out while waiting for ExternalStorageState to be MEDIA_MOUNTED");
     }
 
     @Test
