@@ -24,6 +24,7 @@ import android.hardware.radio.data.DataProfileInfo;
 import android.hardware.radio.data.IRadioData;
 import android.hardware.radio.data.IRadioDataIndication;
 import android.hardware.radio.data.IRadioDataResponse;
+import android.hardware.radio.data.ImsDataNetworkInfo;
 import android.hardware.radio.data.KeepaliveRequest;
 import android.hardware.radio.data.LinkAddress;
 import android.hardware.radio.data.SetupDataCallResult;
@@ -357,12 +358,7 @@ public class IRadioDataImpl extends IRadioData.Stub {
     }
 
     @Override
-    public void notifyImsDataNetwork(
-            int serial,
-            int accessNetwork,
-            int dataNetworkState,
-            int physicalTransportType,
-            int physicalNetworkModemId) {
+    public void notifyImsDataNetwork(int serial, ImsDataNetworkInfo info) {
         Log.d(mTag, "notifyImsDataNetwork");
         mMockDataService.setImsDataNetworkNotified(true);
         RadioResponseInfo rsp = mService.makeSolRsp(serial, RadioError.REQUEST_NOT_SUPPORTED);
