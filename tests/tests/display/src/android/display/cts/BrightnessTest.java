@@ -19,7 +19,6 @@ package android.display.cts;
 import static android.hardware.display.BrightnessCorrection.createScaleAndTranslateLog;
 
 import static com.android.server.display.feature.flags.Flags.FLAG_DISPLAY_LISTENER_PERFORMANCE_IMPROVEMENTS;
-import static com.android.server.display.feature.flags.Flags.FLAG_SET_BRIGHTNESS_BY_UNIT;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -431,7 +430,6 @@ public class BrightnessTest extends TestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_SET_BRIGHTNESS_BY_UNIT)
     @Parameters({"0", "13.1", "39", "54.32", "80", "97.87", "100"})
     public void testSetBrightness_unitPercentage(float brightness) throws Exception {
         try (var brtCloseable = new BrightnessCloseable()) {
@@ -445,10 +443,7 @@ public class BrightnessTest extends TestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled({
-        FLAG_SET_BRIGHTNESS_BY_UNIT,
-        FLAG_DISPLAY_LISTENER_PERFORMANCE_IMPROVEMENTS
-    })
+    @RequiresFlagsEnabled(FLAG_DISPLAY_LISTENER_PERFORMANCE_IMPROVEMENTS)
     public void testBrightnessChangeListener() throws Exception {
         try (var brtCloseable = new BrightnessCloseable()) {
             float brightness = 33.7f;
