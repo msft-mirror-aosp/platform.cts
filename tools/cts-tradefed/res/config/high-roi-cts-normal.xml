@@ -6326,4 +6326,8 @@
     <option name="compatibility:exclude-filter" value="CtsWidgetTestCases[instant] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize[isProtoTest=false]"/>
     <option name="compatibility:exclude-filter" value="CtsWidgetTestCases[instant] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize[isProtoTest=true]"/>
     <option name="compatibility:exclude-filter" value="CtsWidgetTestCases[instant] android.widget.cts.TabWidgetTest#testStripDrawables"/>
+    <!-- Exclude the failing tests in MicrodroidTestApp.CTS -->
+    <option name="compatibility:exclude-filter" value="MicrodroidTestApp.CTS com.android.microdroid.test.MicrodroidTests#addingMoretenantsIsSupported[protectedVm=true,os=microdroid]"/>
+    <option name="compatibility:exclude-filter" value="MicrodroidTestApp.CTS com.android.microdroid.test.MicrodroidTests#multiTenantEncryptedStoragePath[protectedVm=true,os=microdroid]"/>
+    <option name="compatibility:exclude-filter" value="MicrodroidTestApp.CTS com.android.microdroid.test.MicrodroidTests#testEncryptedStorageIsPersistentOnAddTenant[protectedVm=true,os=microdroid]"/>
 </configuration>
