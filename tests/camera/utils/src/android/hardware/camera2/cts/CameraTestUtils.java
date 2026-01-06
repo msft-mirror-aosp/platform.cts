@@ -66,7 +66,6 @@ import android.os.Build;
 import android.os.ConditionVariable;
 import android.os.Handler;
 import android.os.Looper;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 import android.util.Pair;
 import android.util.Range;
@@ -82,7 +81,6 @@ import com.android.ex.camera2.blocking.BlockingCameraManager.BlockingOpenExcepti
 import com.android.ex.camera2.blocking.BlockingSessionCallback;
 import com.android.ex.camera2.blocking.BlockingStateCallback;
 import com.android.ex.camera2.exceptions.TimeoutRuntimeException;
-import com.android.internal.camera.flags.Flags;
 
 import junit.framework.Assert;
 
@@ -4943,10 +4941,7 @@ public class CameraTestUtils extends Assert {
             Size[] heicSizes = sm.getAvailableSizesForFormatChecked(ImageFormat.HEIC,
                     StaticMetadata.StreamDirection.Output, /*fastSizes*/true, /*slowSizes*/false);
 
-            Size maxPreviewSize =
-                    Flags.capMandatoryPreviewSizeToAllDisplays()
-                            ? getMaxPreviewSizeForAllDisplayModes(context, cameraId)
-                            : getMaxPreviewSize(context, cameraId);
+            Size maxPreviewSize = getMaxPreviewSizeForAllDisplayModes(context, cameraId);
 
             StreamConfigurationMap configs = sm.getCharacteristics().get(
                     CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
@@ -5588,40 +5583,6 @@ public class CameraTestUtils extends Assert {
             }
         } catch (Exception e) {
             Log.e(TAG, "getMaxPreviewSizeForAllDisplayModes Failed. " + e);
-        }
-        return PREVIEW_SIZE_BOUND;
-    }
-
-    private static Size getMaxPreviewSize(Context context, String cameraId) {
-        try {
-            WindowManager windowManager = context.getSystemService(WindowManager.class);
-            assertNotNull("Could not find WindowManager service.", windowManager);
-
-            WindowMetrics windowMetrics = windowManager.getCurrentWindowMetrics();
-            Rect windowBounds = windowMetrics.getBounds();
-
-            int width = windowBounds.width();
-            int height = windowBounds.height();
-
-            if (height > width) {
-                height = width;
-                width = windowBounds.height();
-            }
-
-            CameraManager camMgr = context.getSystemService(CameraManager.class);
-            List<Size> orderedPreviewSizes = CameraTestUtils.getSupportedPreviewSizes(
-                    cameraId, camMgr, PREVIEW_SIZE_BOUND);
-
-            if (orderedPreviewSizes != null) {
-                for (Size size : orderedPreviewSizes) {
-                    if (width >= size.getWidth()
-                            && height >= size.getHeight()) {
-                        return size;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "getMaxPreviewSize Failed. " + e);
         }
         return PREVIEW_SIZE_BOUND;
     }
