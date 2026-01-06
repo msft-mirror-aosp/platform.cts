@@ -162,12 +162,6 @@
     <option name="compatibility:exclude-filter" value="CtsViewTestCases android.view.cts.ASurfaceControlTest#testSurfaceTransaction_setFrameTimeline_preferredIndex" />
     <option name="compatibility:exclude-filter" value="CtsViewTestCases android.view.cts.ASurfaceControlTest#testSurfaceTransaction_setFrameTimeline_notPreferredIndex" />
 
-    <!-- b/298915013 Remove CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest from cts-on-gsi -->
-    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.AttestKeyTest#testEcAttestKey_StrongBox" />
-    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.AttestKeyTest#testRsaAttestKey_StrongBox" />
-    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testAttestationKmVersionMatchesFeatureVersionStrongBox" />
-    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.DeviceOwnerKeyManagementTest#testAllVariationsOfDeviceIdAttestationUsingStrongBox" />
-
     <!-- b/318588433 Remove CtsAppTestCases android.app.cts.SystemFeaturesTest#testNfcFeatures from cts-on-gsi -->
     <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.SystemFeaturesTest#testNfcFeatures" />
 
@@ -187,12 +181,6 @@
     <!-- b/339130891 Test removed due to flakiness -->
     <option name="compatibility:exclude-filter" value="CtsDynamicMimePreferredActivitiesHostTestCases android.dynamicmime.cts.PreferredActivitiesTestCases#testModifyGroupWithoutActualIntentFilterChanges" />
     <option name="compatibility:exclude-filter" value="CtsDynamicMimePreferredActivitiesHostTestCases android.dynamicmime.cts.PreferredActivitiesTestCases#testModifyGroupWithoutActualGroupChanges" />
-
-    <!-- b/349776686 -->
-    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testAttestedRoTAcrossKeymints" />
-    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testEcAttestation_StrongBox" />
-    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testEcAttestation_UniqueIdWorksWithCorrectPermission_StrongBox" />
-    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testRsaAttestation_StrongBox" />
 
     <!-- b/349072303 -->
     <option name="compatibility:exclude-filter" value="CtsHardwareTestCases android.hardware.cts.LowRamDeviceTest#testMinDataPartitionSize" />
@@ -218,23 +206,6 @@
 
     <!-- b/393656726 Remove CtsAppTestCases android.app.cts.SystemFeaturesTest#testLocationFeatures from cts-on-gsi -->
     <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.SystemFeaturesTest#testLocationFeatures" />
-
-    <!-- b/410503137 -->
-    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest" />
-    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.AttestKeyTest#testEcAttestKey" />
-    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.AttestKeyTest#testRsaAttestKey" />
-    <option name="compatibility:exclude-filter" value="CtsKeystorePerformanceTestCases android.keystore.cts.performance.AttestationPerformanceTest#testEcKeyAttestation" />
-    <option name="compatibility:exclude-filter" value="CtsKeystorePerformanceTestCases android.keystore.cts.performance.AttestationPerformanceTest#testRsaKeyAttestation" />
-    <!-- b/424151228 Exclude the tests to run on GSI since `remote_provisioning.hostname` is unset on GSI -->
-    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.DeviceOwnerKeyManagementTest#testAllVariationsOfDeviceIdAttestation" />
-    <option name="compatibility:exclude-filter" value="CtsIdentityTestCases android.security.identity.cts.AttestationTest" />
-    <option name="compatibility:exclude-filter" value="CtsIdentityTestCases android.security.identity.cts.DynamicAuthTest" />
-    <option name="compatibility:exclude-filter" value="CtsIdentityTestCases android.security.identity.cts.EphemeralKeyTest" />
-    <option name="compatibility:exclude-filter" value="CtsIdentityTestCases android.security.identity.cts.ProvisioningTest" />
-    <option name="compatibility:exclude-filter" value="CtsIdentityTestCases android.security.identity.cts.ReaderAuthTest" />
-    <option name="compatibility:exclude-filter" value="CtsIdentityTestCases android.security.identity.cts.UserAuthTest" />
-    <option name="compatibility:exclude-filter" value="CtsIdentityTestCases android.security.identity.cts.MultiDocumentPresentationTest#multipleDocuments" />
-    <option name="compatibility:exclude-filter" value="CtsIdentityTestCases android.security.identity.cts.NoSessionEncryptionTest" />
 
     <!-- b/212223944 placeholder to avoid automerging the test exclusioin from android15-tests-dev -->
 
