@@ -20,6 +20,7 @@ import static android.media.cts.MediaMetricsTestConstants.LOG_SESSION_ID_KEY;
 import static android.os.statsd.media.MediaEditingExtensionAtoms.MEDIA_EDITING_ENDED_REPORTED_FIELD_NUMBER;
 
 import static com.android.media.editing.flags.Flags.FLAG_ADD_UID_TO_MEDIA_METRICS_EDITING;
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -68,7 +69,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice, this.getClass());
 
     private static final String TEST_RUNNER = "androidx.test.runner.AndroidJUnitRunner";
     private static final String TAG = "MediaMetricsAtomTests";
