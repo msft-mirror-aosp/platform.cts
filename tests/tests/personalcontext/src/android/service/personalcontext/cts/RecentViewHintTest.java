@@ -18,6 +18,7 @@ package android.service.personalcontext.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.content.ComponentName;
 import android.graphics.Rect;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -47,8 +48,10 @@ public class RecentViewHintTest {
     @ApiTest(
             apis = {
                 "android.service.personalcontext.hint.RecentViewHint.Builder#build",
+                "android.service.personalcontext.hint.RecentViewHint.Builder#setSourceAppActivityComponentName",
                 "android.service.personalcontext.hint.RecentViewHint#getCapturedTexts",
                 "android.service.personalcontext.hint.RecentViewHint#getLocusId",
+                "android.service.personalcontext.hint.RecentViewHint#getSourceAppActivityComponentName",
                 "android.service.personalcontext.hint.ContextHint#createHintFromBundle",
                 "android.service.personalcontext.hint.RecentViewHint#toBundle"
             })
@@ -63,10 +66,12 @@ public class RecentViewHintTest {
                         .setResourceId("resourceId")
                         .setViewNodeLastUpdated(Instant.ofEpochMilli(12345L))
                         .build();
+        final ComponentName componentName = new ComponentName("packageName", "activityName");
         final RecentViewHint hint =
                 new RecentViewHint.Builder()
                         .addCapturedText(capturedText)
                         .setLocusId("locusId")
+                        .setSourceAppActivityComponentName(componentName)
                         .build();
 
         final ContextHint outputHint = bundleUnbundle(hint);
@@ -74,6 +79,7 @@ public class RecentViewHintTest {
         final RecentViewHint outputRecentViewHint = (RecentViewHint) outputHint;
         assertThat(outputRecentViewHint.getCapturedTexts()).containsExactly(capturedText);
         assertThat(outputRecentViewHint.getLocusId()).isEqualTo("locusId");
+        assertThat(outputRecentViewHint.getSourceAppActivityComponentName()).isEqualTo(componentName);
         assertThat(outputRecentViewHint.getCapturedTexts().get(0).getViewNodeLastSeen()).isNull();
         assertThat(outputRecentViewHint).isEqualTo(hint);
     }
@@ -152,10 +158,12 @@ public class RecentViewHintTest {
                         .setResourceId("resourceId")
                         .setViewNodeLastUpdated(Instant.ofEpochMilli(12345L))
                         .build();
+        final ComponentName componentName = new ComponentName("packageName", "activityName");
         final RecentViewHint hint =
                 new RecentViewHint.Builder()
                         .addCapturedText(capturedText)
                         .setLocusId("locusId")
+                        .setSourceAppActivityComponentName(componentName)
                         .build();
 
         final RecentViewHint unbundledHint = (RecentViewHint) bundleUnbundle(hint);
@@ -167,6 +175,7 @@ public class RecentViewHintTest {
                 new RecentViewHint.Builder()
                         .addCapturedText(capturedText)
                         .setLocusId("different locusId")
+                        .setSourceAppActivityComponentName(componentName)
                         .build();
         assertThat(hint).isNotEqualTo(differentHint);
     }
