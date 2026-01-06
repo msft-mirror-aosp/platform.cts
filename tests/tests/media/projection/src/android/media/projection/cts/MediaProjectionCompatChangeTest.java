@@ -18,7 +18,6 @@ package android.media.projection.cts;
 
 import static android.media.cts.MediaProjectionActivity.ENTIRE_SCREEN_STRING_RES_NAME;
 import static android.media.cts.MediaProjectionActivity.SCREEN_SHARE_OPTIONS_RES_PATTERN;
-import static android.media.cts.MediaProjectionActivity.SHARE_TAB_TEST_TAG;
 import static android.media.cts.MediaProjectionActivity.SINGLE_APP_STRING_RES_NAME;
 import static android.media.cts.MediaProjectionActivity.getResourceString;
 import static android.media.projection.MediaProjectionConfig.createConfigForDefaultDisplay;
@@ -33,6 +32,7 @@ import static org.junit.Assume.assumeTrue;
 import android.compat.testing.PlatformCompatChangeRule;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.media.cts.MediaProjectionActivity;
 import android.media.cts.MediaProjectionRule;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionConfig;
@@ -152,7 +152,7 @@ public class MediaProjectionCompatChangeTest {
         // TODO(b/468405990) Add tests for the new Compose MediaProjection UI.
         // This test currently targets only the old UI. Early return if the new Compose UI
         // is detected.
-        assumeFalse(isComposeUI());
+        assumeFalse(MediaProjectionActivity.isComposeUI(sDevice));
 
         // check if we can find a view which has the expected default option
         boolean foundOptionString =
@@ -165,10 +165,6 @@ public class MediaProjectionCompatChangeTest {
         sDevice.pressBack();
 
         return foundOptionString;
-    }
-
-    private boolean isComposeUI() {
-        return sDevice.hasObject(By.res(SHARE_TAB_TEST_TAG));
     }
 
     private void initializePartialScreenshareSupport() throws Exception {
