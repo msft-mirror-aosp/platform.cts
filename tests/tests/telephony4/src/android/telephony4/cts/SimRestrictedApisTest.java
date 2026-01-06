@@ -27,6 +27,7 @@ import android.os.AsyncTask;
 import android.telephony.SmsManager;
 import android.telephony.TelephonyManager;
 import android.telephony.data.NetworkSlicingConfig;
+import android.util.Log;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -47,8 +48,20 @@ public class SimRestrictedApisTest {
     }
 
     private boolean isSimCardPresent() {
-        return mTelephonyManager.getPhoneType() != TelephonyManager.PHONE_TYPE_NONE &&
-                mTelephonyManager.getSimState() != TelephonyManager.SIM_STATE_ABSENT;
+        Log.i(
+                "SimRestrictedApiTest",
+                "PhoneType = "
+                        + mTelephonyManager.getPhoneType()
+                        + " SimState = "
+                        + mTelephonyManager.getSimState());
+        if (mTelephonyManager.getPhoneType() != TelephonyManager.PHONE_TYPE_NONE
+                && mTelephonyManager.getSimState() == TelephonyManager.SIM_STATE_READY) {
+            return true;
+        }
+        fail(
+                "The test case requires a valid SIM card, please use the valid SIM card to perform "
+                        + "the tests");
+        return false;
     }
 
     /**
