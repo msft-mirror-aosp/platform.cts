@@ -212,6 +212,8 @@ public class AttestKeyTest {
             TestUtils.assumeStrongBox();
         }
 
+        TestUtils.assumeVendorMaySetRkpProperties();
+
         final String attestKeyAlias = "attestKey";
 
         Certificate attestKeyCertChain[] = generateKeyPair(KEY_ALGORITHM_EC,
@@ -228,6 +230,8 @@ public class AttestKeyTest {
         if (useStrongBox) {
             TestUtils.assumeStrongBox();
         }
+
+        TestUtils.assumeVendorMaySetRkpProperties();
 
         final String attestKeyAlias = "attestKey";
 
