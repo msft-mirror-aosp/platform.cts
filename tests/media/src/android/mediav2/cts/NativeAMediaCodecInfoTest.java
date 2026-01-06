@@ -351,7 +351,8 @@ public class NativeAMediaCodecInfoTest {
                 "ACodecVideoCapabilities_getHeightAlignment",
                 "ACodecEncoderCapabilities_isBitrateModeSupported",
                 "ACodecEncoderCapabilities_getComplexityRange",
-                "ACodecEncoderCapabilities_getQualityRange"
+                "ACodecEncoderCapabilities_getQualityRange",
+                "ACodecEncoderCapabilities_getSupportedLayeringSchemas"
             })
     @SmallTest
     @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
@@ -397,6 +398,7 @@ public class NativeAMediaCodecInfoTest {
                             encCaps.getQualityRange().getLower(),
                             encCaps.getQualityRange().getUpper(),
                             bitrateModeSupportMap,
+                            encCaps.getSupportedLayeringSchemas(),
                             mTestResults);
             Assert.assertTrue(mTestResults.toString(), isPass);
         }
@@ -423,6 +425,7 @@ public class NativeAMediaCodecInfoTest {
             int qualityRangeLower,
             int qualityRangeUpper,
             int bitrateModeSupportMap,
+            String[] layeringSchemas,
             StringBuilder retMsg);
 
     @ApiTest(
@@ -583,7 +586,8 @@ public class NativeAMediaCodecInfoTest {
                 "ACodecAudioCapabilities_getInputChannelCountRanges",
                 "ACodecEncoderCapabilities_isBitrateModeSupported",
                 "ACodecEncoderCapabilities_getComplexityRange",
-                "ACodecEncoderCapabilities_getQualityRange"
+                "ACodecEncoderCapabilities_getQualityRange",
+                "ACodecEncoderCapabilities_getSupportedLayeringSchemas"
             })
     @SmallTest
     @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
@@ -650,6 +654,7 @@ public class NativeAMediaCodecInfoTest {
                             encCaps.getQualityRange().getLower(),
                             encCaps.getQualityRange().getUpper(),
                             bitrateModeSupportMap,
+                            encCaps.getSupportedLayeringSchemas(),
                             mTestResults);
             Assert.assertTrue(mTestResults.toString(), isPass);
         }

@@ -188,6 +188,7 @@ public:
     bool validateEncoderComplexityRange(int lower, int higher);
     bool validateEncoderQualityRange(int lower, int higher);
     bool validateEncoderIsBitrateModeSupported(int bitrateMode, int isSupported);
+    bool validateEncoderLayeringSchemas(const char** schemas, size_t count);
 
     std::string getErrorMsg() { return mErrorLogs; };
 };
@@ -793,6 +794,18 @@ bool NativeAMediaCodecInfoUnitTest::validateEncoderQualityRange(int lower, int h
     return false;
 }
 
+bool NativeAMediaCodecInfoUnitTest::validateEncoderLayeringSchemas(const char** schemas,
+                                                                   size_t count) {
+    if (__builtin_available(android 37, *)) {
+        return validateGetCodecMetadataArgsArray<
+                ACodecEncoderCapabilities,
+                const char*>(mEncoderCaps, ACodecEncoderCapabilities_getSupportedLayeringSchemas,
+                             schemas, count,
+                             "ACodecEncoderCapabilities_getSupportedLayeringSchemas");
+    }
+    return false;
+}
+
 template <typename T, typename U>
 bool NativeAMediaCodecInfoUnitTest::validateGetCodecMetadataIntRangeFor(
         const T* obj, media_status_t (*func)(const T* obj, U input, AIntRange* outRange), U input,
@@ -1368,9 +1381,13 @@ CleanUp:
 jboolean nativeTestAMediaCodecInfoGetEncoderCapabilities(
         JNIEnv* env, jobject, jstring jCodecName, jint jComplexityRangeLower,
         jint jComplexityRangeUpper, jint jQualityRangeLower, jint jQualityRangeUpper,
-        jint jBitrateModeSupportMap, jobject jRetMsg) {
+        jint jBitrateModeSupportMap, jobjectArray jLayeringSchemasArray, jobject jRetMsg) {
     const char* codecName = env->GetStringUTFChars(jCodecName, nullptr);
     auto testUtil = new NativeAMediaCodecInfoUnitTest(codecName);
+    jsize schemaCount = 0;
+    if (jLayeringSchemasArray) {
+        schemaCount = env->GetArrayLength(jLayeringSchemasArray);
+    }
     bool isPass;
     CLEANUP_IF_FALSE(
             testUtil->validateEncoderComplexityRange(jComplexityRangeLower, jComplexityRangeUpper))
@@ -1379,6 +1396,21 @@ jboolean nativeTestAMediaCodecInfoGetEncoderCapabilities(
         CLEANUP_IF_FALSE(
                 testUtil->validateEncoderIsBitrateModeSupported(i, jBitrateModeSupportMap & 1))
         jBitrateModeSupportMap >>= 1;
+    }
+    if (schemaCount > 0) {
+        std::vector<std::string> schemas;
+        for (size_t i = 0; i < schemaCount; i++) {
+            jstring jSchema = (jstring)env->GetObjectArrayElement(jLayeringSchemasArray, i);
+            const char* s = env->GetStringUTFChars(jSchema, nullptr);
+            schemas.push_back(std::string(s));
+            env->ReleaseStringUTFChars(jSchema, s);
+        }
+        std::vector<const char*> schemaPointerArray;
+        for (const std::string& s : schemas) {
+            schemaPointerArray.push_back(s.c_str());
+        }
+        CLEANUP_IF_FALSE(
+                testUtil->validateEncoderLayeringSchemas(schemaPointerArray.data(), schemaCount));
     }
 CleanUp:
     std::string msg = isPass ? std::string{} : testUtil->getErrorMsg();
@@ -1665,7 +1697,7 @@ int registerAndroidMediaV2CtsNativeMediaCodecInfoUnitTest(JNIEnv* env) {
              "(Ljava/lang/String;IIII[I[I[I[IILjava/lang/StringBuilder;)Z",
              (void*)nativeTestAMediaCodecInfoGetAudioCapabilities},
             {"nativeTestAMediaCodecInfoGetEncoderCapabilities",
-             "(Ljava/lang/String;IIIIILjava/lang/StringBuilder;)Z",
+             "(Ljava/lang/String;IIIII[Ljava/lang/String;Ljava/lang/StringBuilder;)Z",
              (void*)nativeTestAMediaCodecInfoGetEncoderCapabilities},
     };
     jclass c = env->FindClass("android/mediav2/cts/NativeAMediaCodecInfoTest");

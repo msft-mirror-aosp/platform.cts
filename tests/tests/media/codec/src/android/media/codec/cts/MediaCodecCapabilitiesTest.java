@@ -955,4 +955,37 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
             }
         }
     }
+
+    @ApiTest(
+            apis = {
+                "android.media.MediaCodecInfo.CodecCapabilities#getEncoderCapabilities",
+                "android.media.MediaCodecInfo.EncoderCapabilities#getSupportedLayeringSchemas"
+            })
+    @Test
+    public void testGetSupportedLayeringSchemas() throws IOException {
+        for (MediaCodecInfo info : mAllInfos) {
+            boolean isEncoder = info.isEncoder();
+            if (!isEncoder) {
+                continue;
+            }
+            for (String mime : info.getSupportedTypes()) {
+                if (!isVideoMime(mime)) {
+                    continue;
+                }
+                String[] schemas =
+                        info.getCapabilitiesForType(mime)
+                                .getEncoderCapabilities()
+                                .getSupportedLayeringSchemas();
+                assertTrue("getSupportedLayeringSchemas() must not return null", schemas != null);
+                Log.d(
+                        TAG,
+                        info.getName()
+                                + "("
+                                + mime
+                                + "): supported layering schemas: \""
+                                + java.util.Arrays.toString(schemas)
+                                + "\"");
+            }
+        }
+    }
 }
