@@ -25,6 +25,8 @@ import static org.junit.Assert.fail;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.systemui.dump.nano.SystemUIProtoDump;
@@ -96,6 +98,9 @@ public class MotionCuesTest {
 
         mClientServiceComponent = new ComponentName(mContext, TestMotionCuesService.class);
         TestMotionCuesService.reset();
+
+        // Ensure we're in the primary user.
+        TestApis.users().primary().switchTo();
     }
 
     @After
@@ -322,6 +327,59 @@ public class MotionCuesTest {
         } finally {
             // Re-enable the service so other tests are not affected.
             setServiceEnabled(true);
+        }
+    }
+
+    @Test
+    @ApiTest(apis = {"android.app.StatusBarManager#startMotionCuesSession"})
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_MOTION_CUES)
+    @EnsureHasPermission(Manifest.permission.DRAW_MOTION_CUES)
+    public void testSessionEnds_onUserSwitchFromPrimary() throws Exception {
+        // Start a session as the primary user
+        startSessionAndAwait();
+        PollingCheck.waitFor(TIMEOUT_MS, () -> getMotionCuesState().isStarted);
+        assertThat(getMotionCuesState().isStarted).isTrue();
+
+        // Create and switch to a secondary user
+        UserReference secondaryUser = TestApis.users().createUser().createAndStart();
+        try {
+            secondaryUser.switchTo();
+
+            // Verify the session has ended
+            PollingCheck.waitFor(TIMEOUT_MS, () -> !getMotionCuesState().isStarted);
+            MotionCueState finalState = getMotionCuesState();
+            assertThat(finalState.isStarted).isFalse();
+            assertThat(finalState.clientPackageName).isEmpty();
+        } finally {
+            TestApis.users().initial().switchTo();
+            PollingCheck.waitFor(TIMEOUT_MS,
+                    () -> TestApis.users().current().id() == TestApis.users().initial().id());
+            secondaryUser.close();
+        }
+    }
+
+    @Test
+    @ApiTest(apis = {"android.app.StatusBarManager#startMotionCuesSession"})
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_MOTION_CUES)
+    @EnsureHasPermission(Manifest.permission.DRAW_MOTION_CUES)
+    public void testSessionEnds_onUserSwitchToPrimary() throws Exception {
+        // Create and switch to a secondary user
+        try (UserReference secondaryUser = TestApis.users().createUser().createAndStart()) {
+            secondaryUser.switchTo();
+
+            // Start a session as the secondary user
+            startSessionAndAwait();
+            PollingCheck.waitFor(TIMEOUT_MS, () -> getMotionCuesState().isStarted);
+            assertThat(getMotionCuesState().isStarted).isTrue();
+
+            // Switch back to the primary user
+            TestApis.users().initial().switchTo();
+
+            // Verify the session has ended
+            PollingCheck.waitFor(TIMEOUT_MS, () -> !getMotionCuesState().isStarted);
+            MotionCueState finalState = getMotionCuesState();
+            assertThat(finalState.isStarted).isFalse();
+            assertThat(finalState.clientPackageName).isEmpty();
         }
     }
 
