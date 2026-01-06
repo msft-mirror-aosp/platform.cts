@@ -20,6 +20,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Point
 import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
@@ -33,6 +34,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.regex.Pattern
 import junit.framework.Assert.assertNotNull
 import junit.framework.Assert.assertTrue
+import junit.framework.Assert.fail
 import org.junit.Assume
 import org.junit.rules.TestRule
 import org.junit.runner.Description
@@ -381,7 +383,42 @@ class PhotoPickerTestRule(private val context: Context) : TestRule {
             items.size > index,
         )
 
-        items[index].click()
+        // Calculate an "inset" to avoid clicking the exact pixel edge. Use 15% of the dimensions or
+        // at least 5 pixels.
+        val bounds = items[index].visibleBounds
+        val dx = (bounds.width() * 0.15).toInt().coerceAtLeast(5)
+        val dy = (bounds.height() * 0.15).toInt().coerceAtLeast(5)
+
+        // Setup a list of points to attempt to click. The selection bar is smaller than the image
+        // dimensions so at least 1 corner should be clickable.
+        val candidates =
+            sequenceOf(
+                Point(bounds.centerX(), bounds.centerY()),
+                Point(bounds.left + dx, bounds.top + dy),
+                Point(bounds.right - dx, bounds.top + dy),
+                Point(bounds.right - dx, bounds.bottom - dy),
+                Point(bounds.left + dx, bounds.bottom - dy),
+            )
+
+        val selectionBarSelector =
+            when (getActivePhotoPickerVersion()) {
+                PhotoPickerVersion.LEGACY -> By.text("View selected")
+                PhotoPickerVersion.MODERN -> By.descEndsWith("photos or videos selected")
+            }
+
+        // Both the modern and legacy By selectors are descendants of the containers that represent
+        // the whole selection bar. Get the parent object as this represents the container that has
+        // the most occlusion area.
+        val selectionBarBounds = device.findObject(selectionBarSelector)?.parent?.visibleBounds
+
+        // Find first point NOT contained in selection bar (works if selectionBarBounds is null)
+        val point = candidates.firstOrNull { selectionBarBounds?.contains(it.x, it.y) != true }
+        if (point == null) {
+            fail("Item at index $index is totally occluded by selection bar or not visible.")
+            return
+        }
+
+        device.click(point.x, point.y)
         device.waitForIdle()
     }
 
