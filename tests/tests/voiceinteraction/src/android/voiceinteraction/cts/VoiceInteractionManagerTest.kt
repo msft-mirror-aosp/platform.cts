@@ -35,7 +35,6 @@ import androidx.test.rule.ActivityTestRule
 import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.SettingsStateKeeperRule
 import com.android.compatibility.common.util.SettingsStateManager
-import com.android.compatibility.common.util.SystemUtil.eventually
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
@@ -230,34 +229,34 @@ class VoiceInteractionManagerTest {
         // Mode Allowed
         setAppOpMode(AppOpsManager.MODE_ALLOWED)
         assertCanReadScreenContext(true)
-        eventually {
-            assertThat(assistStructureEnabledManager.get()).isEqualTo("1")
-            assertThat(assistScreenshotEnabledManager.get()).isEqualTo("1")
-        }
+        assertAssistSettingState(
+            expectedAssistStructureSecureSettingEnabled = "1",
+            expectedAssistScreenshotSecureSettingEnabled = "1"
+        )
 
         // Mode ignored
         setAppOpMode(AppOpsManager.MODE_IGNORED)
         assertCanReadScreenContext(false)
-        eventually {
-            assertThat(assistStructureEnabledManager.get()).isEqualTo("0")
-            assertThat(assistScreenshotEnabledManager.get()).isEqualTo("0")
-        }
+        assertAssistSettingState(
+            expectedAssistStructureSecureSettingEnabled = "0",
+            expectedAssistScreenshotSecureSettingEnabled = "0"
+        )
 
         // Mode default
         setAppOpMode(AppOpsManager.MODE_DEFAULT)
         assertCanReadScreenContext(true)
-        eventually {
-            assertThat(assistStructureEnabledManager.get()).isEqualTo("1")
-            assertThat(assistScreenshotEnabledManager.get()).isEqualTo("1")
-        }
+        assertAssistSettingState(
+            expectedAssistStructureSecureSettingEnabled = "1",
+            expectedAssistScreenshotSecureSettingEnabled = "1"
+        )
 
         // Mode errored
         setAppOpMode(AppOpsManager.MODE_ERRORED)
         assertCanReadScreenContext(false)
-        eventually {
-            assertThat(assistStructureEnabledManager.get()).isEqualTo("0")
-            assertThat(assistScreenshotEnabledManager.get()).isEqualTo("0")
-        }
+        assertAssistSettingState(
+            expectedAssistStructureSecureSettingEnabled = "0",
+            expectedAssistScreenshotSecureSettingEnabled = "0"
+        )
     }
 
     @Test
@@ -265,7 +264,8 @@ class VoiceInteractionManagerTest {
         apis = ["android.app.voiceinteraction.VoiceInteractionManager#canReadScreenContext"]
     )
     fun testCanReadAssistStructure_nonRoleHolder() {
-        Helper.removeAssistRoleHolder(ASSISTANT_ROLE_HOLDER_PACKAGE, context, roleManager)
+        assertThat(Helper.getAssistRoleHolders(roleManager))
+            .doesNotContain(ASSISTANT_ROLE_HOLDER_PACKAGE)
 
         val initialAssistStructureSecureSettings =
             assistStructureEnabledManager.get() ?: "0"
@@ -275,34 +275,34 @@ class VoiceInteractionManagerTest {
         // Mode Allowed
         setAppOpMode(AppOpsManager.MODE_ALLOWED)
         assertCanReadScreenContext(false)
-        assertThat(assistStructureEnabledManager.get())
-            .isEqualTo(initialAssistStructureSecureSettings)
-        assertThat(assistScreenshotEnabledManager.get())
-            .isEqualTo(initialAssistScreenshotSecureSettings)
+        assertAssistSettingState(
+            initialAssistStructureSecureSettings,
+            initialAssistScreenshotSecureSettings,
+        )
 
         // Mode ignored
         setAppOpMode(AppOpsManager.MODE_IGNORED)
         assertCanReadScreenContext(false)
-        assertThat(assistStructureEnabledManager.get())
-            .isEqualTo(initialAssistStructureSecureSettings)
-        assertThat(assistScreenshotEnabledManager.get())
-            .isEqualTo(initialAssistScreenshotSecureSettings)
+        assertAssistSettingState(
+            initialAssistStructureSecureSettings,
+            initialAssistScreenshotSecureSettings,
+        )
 
         // Mode default
         setAppOpMode(AppOpsManager.MODE_DEFAULT)
         assertCanReadScreenContext(false)
-        assertThat(assistStructureEnabledManager.get())
-            .isEqualTo(initialAssistStructureSecureSettings)
-        assertThat(assistScreenshotEnabledManager.get())
-            .isEqualTo(initialAssistScreenshotSecureSettings)
+        assertAssistSettingState(
+            initialAssistStructureSecureSettings,
+            initialAssistScreenshotSecureSettings,
+        )
 
         // Mode errored
         setAppOpMode(AppOpsManager.MODE_ERRORED)
         assertCanReadScreenContext(false)
-        assertThat(assistStructureEnabledManager.get())
-            .isEqualTo(initialAssistStructureSecureSettings)
-        assertThat(assistScreenshotEnabledManager.get())
-            .isEqualTo(initialAssistScreenshotSecureSettings)
+        assertAssistSettingState(
+            initialAssistStructureSecureSettings,
+            initialAssistScreenshotSecureSettings,
+        )
     }
 
     @ApiTest(
@@ -407,6 +407,22 @@ class VoiceInteractionManagerTest {
             !isReadable
         ))
             .isEqualTo(isReadable)
+    }
+
+    private fun assertAssistSettingState(
+        expectedAssistStructureSecureSettingEnabled: String,
+        expectedAssistScreenshotSecureSettingEnabled: String,
+    ) {
+        assertWithMessage(
+            "Expected $ASSIST_STRUCTURE_ENABLED to be $expectedAssistStructureSecureSettingEnabled"
+        )
+            .that(assistStructureEnabledManager.get())
+            .isEqualTo(expectedAssistStructureSecureSettingEnabled)
+        assertWithMessage(
+            "Expected $ASSIST_SCREENSHOT_ENABLED to be $expectedAssistScreenshotSecureSettingEnabled"
+        )
+            .that(assistScreenshotEnabledManager.get())
+            .isEqualTo(expectedAssistScreenshotSecureSettingEnabled)
     }
 
     private companion object {
