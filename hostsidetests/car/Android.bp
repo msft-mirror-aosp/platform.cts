@@ -58,4 +58,5 @@ java_test_host {
         ":CtsCarWatchdogSecondSharedApp",
         ":CtsCarWatchdogDeviceTestApp",
     ],
+    enable_static_aconfig_pb: true,
 }

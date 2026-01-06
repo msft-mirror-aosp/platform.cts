@@ -57,7 +57,7 @@ public final class CarWifiHostTest extends CarHostJUnit4TestCase {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice, this.getClass());
 
     /**
      * Prepares the device to restore back to original state post-test.
