@@ -26,52 +26,46 @@ import android.view.Surface;
 import java.nio.ByteBuffer;
 
 /**
- * This interface exposes the minimum set of {@link MediaCodec} APIs tested in {@link EncodeDecodeTest}
- * and {@link VpxEncoderTest}.
+ * This interface exposes the minimum set of {@link MediaCodec} APIs tested in {@link
+ * EncodeDecodeTest} and {@link VpxEncoderTest}.
  */
 public interface MediaCodecWrapper {
 
-  void release();
+    void release();
 
-  void configure(MediaFormat format, int flags);
+    void configure(MediaFormat format, int flags);
 
-  void configure(MediaFormat format, int flags, Surface surface);
+    void configure(MediaFormat format, int flags, Surface surface);
 
-  void setInputSurface(InputSurfaceInterface inputSurface);
+    void setInputSurface(InputSurfaceInterface inputSurface);
 
-  InputSurfaceInterface createInputSurface();
+    InputSurfaceInterface createInputSurface();
 
-  void start();
+    void start();
 
-  void stop();
+    void stop();
 
-  int dequeueOutputBuffer(BufferInfo info, long timeoutUs);
+    int dequeueOutputBuffer(BufferInfo info, long timeoutUs);
 
-  void releaseOutputBuffer(int index, boolean render);
+    void releaseOutputBuffer(int index, boolean render);
 
-  void signalEndOfInputStream();
+    void signalEndOfInputStream();
 
-  String getOutputFormatString();
+    String getOutputFormatString();
 
-  ByteBuffer getOutputBuffer(int index);
+    ByteBuffer getOutputBuffer(int index);
 
-  ByteBuffer[] getOutputBuffers();
+    ByteBuffer[] getOutputBuffers();
 
-  ByteBuffer getInputBuffer(int index);
+    ByteBuffer getInputBuffer(int index);
 
-  ByteBuffer[] getInputBuffers();
+    ByteBuffer[] getInputBuffers();
 
-  void queueInputBuffer(
-          int index,
-          int offset,
-          int size,
-          long presentationTimeUs,
-          int flags);
+    void queueInputBuffer(int index, int offset, int size, long presentationTimeUs, int flags);
 
-  int dequeueInputBuffer(long timeoutUs);
+    int dequeueInputBuffer(long timeoutUs);
 
-  void setParameters(Bundle params);
+    void setParameters(Bundle params);
 
-  void setCallback(Callback mCallback);
-
+    void setCallback(Callback mCallback);
 }

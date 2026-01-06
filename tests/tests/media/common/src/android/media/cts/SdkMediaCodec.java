@@ -107,7 +107,7 @@ public class SdkMediaCodec implements MediaCodecWrapper {
 
     @Override
     public ByteBuffer getOutputBuffer(int index) {
-        return mAsync? mCodec.getOutputBuffer(index) : mOutputBuffers[index];
+        return mAsync ? mCodec.getOutputBuffer(index) : mOutputBuffers[index];
     }
 
     @Override
@@ -117,16 +117,12 @@ public class SdkMediaCodec implements MediaCodecWrapper {
 
     @Override
     public ByteBuffer getInputBuffer(int index) {
-        return mAsync? mCodec.getInputBuffer(index) : mInputBuffers[index];
+        return mAsync ? mCodec.getInputBuffer(index) : mInputBuffers[index];
     }
 
     @Override
     public void queueInputBuffer(
-            int index,
-            int offset,
-            int size,
-            long presentationTimeUs,
-            int flags) {
+            int index, int offset, int size, long presentationTimeUs, int flags) {
         mCodec.queueInputBuffer(index, offset, size, presentationTimeUs, flags);
     }
 
@@ -144,5 +140,4 @@ public class SdkMediaCodec implements MediaCodecWrapper {
     public void setCallback(Callback mCallback) {
         mCodec.setCallback(mCallback);
     }
-
 }

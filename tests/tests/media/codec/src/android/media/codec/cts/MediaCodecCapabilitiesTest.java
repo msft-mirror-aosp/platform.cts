@@ -64,9 +64,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
-/**
- * Basic validation test of data returned by MediaCodeCapabilities.
- */
+/** Basic validation test of data returned by MediaCodeCapabilities. */
 @AppModeFull(reason = "Instant apps cannot access the SD card")
 @RunWith(AndroidJUnit4.class)
 public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
@@ -74,13 +72,11 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
     private static final String TAG = "MediaCodecCapabilitiesTest";
     private static final String MEDIA_DIR = WorkDir.getMediaDirString();
     private static final int PLAY_TIME_MS = 20000;
-    private static final int TIMEOUT_US = 1000000;  // 1 sec
-    private static final int IFRAME_INTERVAL = 10;          // 10 seconds between I-frames
+    private static final int TIMEOUT_US = 1000000; // 1 sec
+    private static final int IFRAME_INTERVAL = 10; // 10 seconds between I-frames
 
-    private final MediaCodecList mAllCodecs =
-            new MediaCodecList(MediaCodecList.ALL_CODECS);
-    private final MediaCodecInfo[] mAllInfos =
-            mAllCodecs.getCodecInfos();
+    private final MediaCodecList mAllCodecs = new MediaCodecList(MediaCodecList.ALL_CODECS);
+    private final MediaCodecInfo[] mAllInfos = mAllCodecs.getCodecInfos();
 
     @Before
     @Override
@@ -209,14 +205,22 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
     @CddTest(requirements = {"5.3.7/T-1-1", "5.3.7/T-2-1"})
     @Test
     public void testVp9DecoderCapabilitiesOnTv() throws Exception {
-        if (isTv() && MediaUtils.hasHardwareCodec(MIMETYPE_VIDEO_VP9, /* encode = */ false)) {
+        if (isTv() && MediaUtils.hasHardwareCodec(MIMETYPE_VIDEO_VP9, /* encode= */ false)) {
             // CDD [5.3.7.4/T-1-1]
-            assertTrue(MediaUtils.canDecodeVideo(MIMETYPE_VIDEO_VP9, 1920, 1080, 60 /* fps */,
-                    VP9Profile0, null, null));
+            assertTrue(
+                    MediaUtils.canDecodeVideo(
+                            MIMETYPE_VIDEO_VP9, 1920, 1080, 60 /* fps */, VP9Profile0, null, null));
             if (MediaUtils.canDecodeVideo(MIMETYPE_VIDEO_VP9, 3840, 2160, 60 /* fps */)) {
                 // CDD [5.3.7.5/T-2-1]
-                assertTrue(MediaUtils.canDecodeVideo(MIMETYPE_VIDEO_VP9, 3840, 2160, 60 /* fps */,
-                        VP9Profile0, null, null));
+                assertTrue(
+                        MediaUtils.canDecodeVideo(
+                                MIMETYPE_VIDEO_VP9,
+                                3840,
+                                2160,
+                                60 /* fps */,
+                                VP9Profile0,
+                                null,
+                                null));
             }
         }
     }
@@ -240,8 +244,12 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         }
 
         if (checkDecodeWithDefaultPlayer(MIMETYPE_VIDEO_AVC, AVCProfileBaseline, AVCLevel12)) {
-            String urlString = Uri.fromFile(new File(MEDIA_DIR,
-                    "media_codec_capabilities_test_avc_baseline12.mp4")).toString();
+            String urlString =
+                    Uri.fromFile(
+                                    new File(
+                                            MEDIA_DIR,
+                                            "media_codec_capabilities_test_avc_baseline12.mp4"))
+                            .toString();
             playVideoWithRetries(urlString, 256, 144, PLAY_TIME_MS);
         }
     }
@@ -254,8 +262,12 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         }
 
         if (checkDecodeWithDefaultPlayer(MIMETYPE_VIDEO_AVC, AVCProfileBaseline, AVCLevel3)) {
-            String urlString = Uri.fromFile(new File(MEDIA_DIR,
-                    "media_codec_capabilities_test_avc_baseline30.mp4")).toString();
+            String urlString =
+                    Uri.fromFile(
+                                    new File(
+                                            MEDIA_DIR,
+                                            "media_codec_capabilities_test_avc_baseline30.mp4"))
+                            .toString();
             playVideoWithRetries(urlString, 640, 360, PLAY_TIME_MS);
         }
     }
@@ -289,8 +301,12 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         assumeTrue(mustSupportAvcHeight(720));
 
         if (checkDecodeWithDefaultPlayer(MIMETYPE_VIDEO_AVC, AVCProfileHigh, AVCLevel31)) {
-            String urlString = Uri.fromFile(new File(MEDIA_DIR,
-                    "media_codec_capabilities_test_avc_high31.mp4")).toString();
+            String urlString =
+                    Uri.fromFile(
+                                    new File(
+                                            MEDIA_DIR,
+                                            "media_codec_capabilities_test_avc_high31.mp4"))
+                            .toString();
             playVideoWithRetries(urlString, 1280, 720, PLAY_TIME_MS);
         }
     }
@@ -309,8 +325,12 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         assumeTrue(mustSupportAvcHeight(1080));
 
         if (checkDecodeWithDefaultPlayer(MIMETYPE_VIDEO_AVC, AVCProfileHigh, AVCLevel4)) {
-            String urlString = Uri.fromFile(new File(MEDIA_DIR,
-                    "media_codec_capabilities_test_avc_high40.mp4")).toString();
+            String urlString =
+                    Uri.fromFile(
+                                    new File(
+                                            MEDIA_DIR,
+                                            "media_codec_capabilities_test_avc_high40.mp4"))
+                            .toString();
             playVideoWithRetries(urlString, 1920, 1080, PLAY_TIME_MS);
         }
     }
@@ -416,8 +436,8 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
 
     private boolean checkDecoder(String mime, int profile, int level) {
         if (!hasDecoder(mime, profile, level)) {
-            MediaUtils.skipTest(TAG, "no " + mime + " decoder for profile "
-                    + profile + " and level " + level);
+            MediaUtils.skipTest(
+                    TAG, "no " + mime + " decoder for profile " + profile + " and level " + level);
             return false;
         }
         return true;
@@ -442,8 +462,7 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
     }
 
     private boolean supports(
-            String mime, boolean isEncoder, int profile, int level,
-            boolean defaultOnly) {
+            String mime, boolean isEncoder, int profile, int level, boolean defaultOnly) {
         MediaCodecList mcl = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
         for (MediaCodecInfo info : mcl.getCodecInfos()) {
             if (isEncoder != info.isEncoder()) {
@@ -522,8 +541,7 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
             MediaFormat format = MediaFormat.createVideoFormat(mime, 176, 144);
             format.setFeatureEnabled(CodecCapabilities.FEATURE_AdaptivePlayback, true);
             String codec = mAllCodecs.findDecoderForFormat(format);
-            assertTrue(
-                    "could not find adaptive decoder for " + mime, codec != null);
+            assertTrue("could not find adaptive decoder for " + mime, codec != null);
         }
         if (skipped) {
             MediaUtils.skipTest("no video decoders that are required to be adaptive found");
@@ -548,8 +566,8 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
                 skipped = false;
                 CodecCapabilities caps = info.getCapabilitiesForType(mime);
                 assertTrue(
-                    info.getName() + " is not adaptive for " + mime,
-                    caps.isFeatureSupported(CodecCapabilities.FEATURE_AdaptivePlayback));
+                        info.getName() + " is not adaptive for " + mime,
+                        caps.isFeatureSupported(CodecCapabilities.FEATURE_AdaptivePlayback));
             }
         }
         if (skipped) {
@@ -566,11 +584,28 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
             int maxWidth = vidCaps.getSupportedWidths().getUpper();
             int maxHeight = vidCaps.getSupportedHeightsFor(width).getUpper();
             int maxRate = vidCaps.getSupportedFrameRatesFor(width, height).getUpper().intValue();
-            int bitrate = vidCaps.getBitrateRange().clamp(
-                    (int)(vidCaps.getBitrateRange().getUpper()
-                            / Math.sqrt((double)maxWidth * maxHeight / width / height)));
-            Log.i(TAG, "reasonable bitrate for " + width + "x" + height + "@" + maxRate
-                    + " " + mime + " = " + bitrate);
+            int bitrate =
+                    vidCaps.getBitrateRange()
+                            .clamp(
+                                    (int)
+                                            (vidCaps.getBitrateRange().getUpper()
+                                                    / Math.sqrt(
+                                                            (double) maxWidth
+                                                                    * maxHeight
+                                                                    / width
+                                                                    / height)));
+            Log.i(
+                    TAG,
+                    "reasonable bitrate for "
+                            + width
+                            + "x"
+                            + height
+                            + "@"
+                            + maxRate
+                            + " "
+                            + mime
+                            + " = "
+                            + bitrate);
             format.setInteger(format.KEY_BIT_RATE, bitrate);
             format.setInteger(format.KEY_FRAME_RATE, maxRate);
             format.setInteger(format.KEY_I_FRAME_INTERVAL, IFRAME_INTERVAL);
@@ -578,8 +613,11 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         return format;
     }
 
-    @ApiTest(apis = {"android.media.MediaCodec#getName",
-            "android.media.MediaCodecInfo.CodecCapabilities#FEATURE_SecurePlayback"})
+    @ApiTest(
+            apis = {
+                "android.media.MediaCodec#getName",
+                "android.media.MediaCodecInfo.CodecCapabilities#FEATURE_SecurePlayback"
+            })
     @Test
     public void testSecureCodecsAdvertiseSecurePlayback() throws IOException {
         boolean skipped = true;
@@ -605,7 +643,7 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
     }
 
     private Size getVideoSizeForTest(VideoCapabilities vidCaps) {
-        Size size = new Size(176, 144);  // Use QCIF by default.
+        Size size = new Size(176, 144); // Use QCIF by default.
         if (vidCaps != null && !vidCaps.isSizeSupported(size.getWidth(), size.getHeight())) {
             int minWidth = vidCaps.getSupportedWidths().getLower();
             int minHeight = vidCaps.getSupportedHeightsFor(minWidth).getLower();
@@ -614,8 +652,8 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         return size;
     }
 
-    private MediaFormat createVideoFormatForBitrateMode(String mime, int width, int height,
-            int bitrateMode, CodecCapabilities caps) {
+    private MediaFormat createVideoFormatForBitrateMode(
+            String mime, int width, int height, int bitrateMode, CodecCapabilities caps) {
         MediaCodecInfo.EncoderCapabilities encoderCaps = caps.getEncoderCapabilities();
         if (!encoderCaps.isBitrateModeSupported(bitrateMode)) {
             return null;
@@ -631,21 +669,50 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         format.setInteger(MediaFormat.KEY_BITRATE_MODE, bitrateMode);
         if (bitrateMode == MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ) {
             int quality = encoderCaps.getQualityRange().getLower();
-            Log.i(TAG, "reasonable quality for " + width + "x" + height + "@" + maxRate
-                    + " " + mime + " = " + quality);
+            Log.i(
+                    TAG,
+                    "reasonable quality for "
+                            + width
+                            + "x"
+                            + height
+                            + "@"
+                            + maxRate
+                            + " "
+                            + mime
+                            + " = "
+                            + quality);
             format.setInteger(MediaFormat.KEY_QUALITY, quality);
         } else {
-            int bitrate = vidCaps.getBitrateRange().clamp(
-                    (int)(vidCaps.getBitrateRange().getUpper()
-                            / Math.sqrt((double)maxWidth * maxHeight / width / height)));
-            Log.i(TAG, "reasonable bitrate for " + width + "x" + height + "@" + maxRate
-                    + " " + mime + " = " + bitrate + " mode " + bitrateMode);
+            int bitrate =
+                    vidCaps.getBitrateRange()
+                            .clamp(
+                                    (int)
+                                            (vidCaps.getBitrateRange().getUpper()
+                                                    / Math.sqrt(
+                                                            (double) maxWidth
+                                                                    * maxHeight
+                                                                    / width
+                                                                    / height)));
+            Log.i(
+                    TAG,
+                    "reasonable bitrate for "
+                            + width
+                            + "x"
+                            + height
+                            + "@"
+                            + maxRate
+                            + " "
+                            + mime
+                            + " = "
+                            + bitrate
+                            + " mode "
+                            + bitrateMode);
             format.setInteger(MediaFormat.KEY_BIT_RATE, bitrate);
         }
         format.setInteger(MediaFormat.KEY_FRAME_RATE, maxRate);
         format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, IFRAME_INTERVAL);
-        format.setInteger(MediaFormat.KEY_COLOR_FORMAT,
-                CodecCapabilities.COLOR_FormatYUV420Flexible);
+        format.setInteger(
+                MediaFormat.KEY_COLOR_FORMAT, CodecCapabilities.COLOR_FormatYUV420Flexible);
 
         return format;
     }
@@ -655,16 +722,16 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
     public void testAllAdvertisedVideoEncoderBitrateModes() throws IOException {
         boolean skipped = true;
         final int[] modes = {
-                MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ,
-                MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR,
-                MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR
+            MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ,
+            MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR,
+            MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR
         };
         for (MediaCodecInfo info : mAllInfos) {
             if (!info.isEncoder()) {
                 continue;
             }
 
-            for (String mime: info.getSupportedTypes()) {
+            for (String mime : info.getSupportedTypes()) {
                 boolean isVideo = isVideoMime(mime);
                 if (!isVideo) {
                     continue;
@@ -675,15 +742,19 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
 
                 int numSupportedModes = 0;
                 for (int mode : modes) {
-                    MediaFormat format = createVideoFormatForBitrateMode(
-                            mime, size.getWidth(), size.getHeight(), mode, caps);
+                    MediaFormat format =
+                            createVideoFormatForBitrateMode(
+                                    mime, size.getWidth(), size.getHeight(), mode, caps);
                     if (format == null) {
                         continue;
                     }
                     MediaCodec codec = null;
                     try {
                         codec = MediaCodec.createByCodecName(info.getName());
-                        codec.configure(format, null /* surface */, null /* crypto */,
+                        codec.configure(
+                                format,
+                                null /* surface */,
+                                null /* crypto */,
                                 MediaCodec.CONFIGURE_FLAG_ENCODE);
                     } finally {
                         if (codec != null) {
@@ -692,8 +763,8 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
                     }
                     numSupportedModes++;
                 }
-                assertTrue(info.getName() + " has no supported bitrate mode",
-                        numSupportedModes > 0);
+                assertTrue(
+                        info.getName() + " has no supported bitrate mode", numSupportedModes > 0);
             }
         }
         if (skipped) {
@@ -707,7 +778,7 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         boolean skipped = true;
         for (MediaCodecInfo info : mAllInfos) {
             boolean isEncoder = info.isEncoder();
-            for (String mime: info.getSupportedTypes()) {
+            for (String mime : info.getSupportedTypes()) {
                 if (!isVideoMime(mime)) {
                     continue;
                 }
@@ -725,26 +796,30 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
                     }
                 }
                 assertTrue(
-                    info.getName() + " does not advertise COLOR_FormatYUV420Flexible",
-                    found);
+                        info.getName() + " does not advertise COLOR_FormatYUV420Flexible", found);
 
                 MediaCodec codec = null;
                 MediaFormat format = null;
                 try {
                     Size size = getVideoSizeForTest(caps.getVideoCapabilities());
                     codec = MediaCodec.createByCodecName(info.getName());
-                    format = createReasonableVideoFormat(
-                            caps, mime, isEncoder, size.getWidth(), size.getHeight());
+                    format =
+                            createReasonableVideoFormat(
+                                    caps, mime, isEncoder, size.getWidth(), size.getHeight());
                     format.setInteger(
-                            MediaFormat.KEY_COLOR_FORMAT,
-                            caps.COLOR_FormatYUV420Flexible);
+                            MediaFormat.KEY_COLOR_FORMAT, caps.COLOR_FormatYUV420Flexible);
 
-                    codec.configure(format, null /* surface */, null /* crypto */,
+                    codec.configure(
+                            format,
+                            null /* surface */,
+                            null /* crypto */,
                             isEncoder ? codec.CONFIGURE_FLAG_ENCODE : 0);
                     MediaFormat configuredFormat =
                             isEncoder ? codec.getInputFormat() : codec.getOutputFormat();
-                    Log.d(TAG, "color format is " + configuredFormat.getInteger(
-                            MediaFormat.KEY_COLOR_FORMAT));
+                    Log.d(
+                            TAG,
+                            "color format is "
+                                    + configuredFormat.getInteger(MediaFormat.KEY_COLOR_FORMAT));
                     if (isEncoder) {
                         codec.start();
                         int ix = codec.dequeueInputBuffer(TIMEOUT_US);
@@ -766,13 +841,17 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         }
     }
 
-    @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#getVideoCapabilities",
-            "android.media.MediaCodecInfo.VideoCapabilities#getSupportedFrameRates"})
+    @ApiTest(
+            apis = {
+                "android.media.MediaCodecInfo.CodecCapabilities#getVideoCapabilities",
+                "android.media.MediaCodecInfo.VideoCapabilities#getSupportedFrameRates"
+            })
     @Test
     public void testGetSupportedFrameRates() throws IOException {
         // Chose MediaFormat.MIMETYPE_VIDEO_H263 randomly
-        CodecCapabilities codecCap = CodecCapabilities.createFromProfileLevel(
-                MediaFormat.MIMETYPE_VIDEO_H263, H263ProfileBaseline, H263Level45);
+        CodecCapabilities codecCap =
+                CodecCapabilities.createFromProfileLevel(
+                        MediaFormat.MIMETYPE_VIDEO_H263, H263ProfileBaseline, H263Level45);
         Range<Integer> supportedFrameRates =
                 codecCap.getVideoCapabilities().getSupportedFrameRates();
         Log.d(TAG, "Supported Frame Rates : " + supportedFrameRates.toString());
@@ -783,8 +862,11 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         assertTrue("Invalid framerate range", Range.create(1, 15).equals(supportedFrameRates));
     }
 
-    @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#getAudioCapabilities",
-            "android.media.MediaCodecInfo.AudioCapabilities#isSampleRateSupported"})
+    @ApiTest(
+            apis = {
+                "android.media.MediaCodecInfo.CodecCapabilities#getAudioCapabilities",
+                "android.media.MediaCodecInfo.AudioCapabilities#isSampleRateSupported"
+            })
     @Test
     public void testIsSampleRateSupported() throws IOException {
         if (!MediaUtils.checkDecoder(MediaFormat.MIMETYPE_AUDIO_AAC)) {
@@ -792,26 +874,33 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         }
         // Chose AAC Decoder/MediaFormat.MIMETYPE_AUDIO_AAC randomly
         MediaCodec codec = MediaCodec.createDecoderByType(MediaFormat.MIMETYPE_AUDIO_AAC);
-        MediaCodecInfo.AudioCapabilities audioCap = codec.getCodecInfo()
-                    .getCapabilitiesForType(MediaFormat.MIMETYPE_AUDIO_AAC).getAudioCapabilities();
+        MediaCodecInfo.AudioCapabilities audioCap =
+                codec.getCodecInfo()
+                        .getCapabilitiesForType(MediaFormat.MIMETYPE_AUDIO_AAC)
+                        .getAudioCapabilities();
         final int[] validSampleRates = {8000, 16000, 22050, 44100};
-        for(int sampleRate : validSampleRates) {
+        for (int sampleRate : validSampleRates) {
             Log.d(TAG, "SampleRate = " + sampleRate);
-            assertTrue("Expected True for isSampleRateSupported",
-                audioCap.isSampleRateSupported(sampleRate));
+            assertTrue(
+                    "Expected True for isSampleRateSupported",
+                    audioCap.isSampleRateSupported(sampleRate));
         }
         final int[] invalidSampleRates = {-1, 0, 1, Integer.MAX_VALUE};
-        for(int sampleRate : invalidSampleRates) {
+        for (int sampleRate : invalidSampleRates) {
             Log.d(TAG, "SampleRate = " + sampleRate);
-            assertFalse("Expected False for isSampleRateSupported",
-                audioCap.isSampleRateSupported(sampleRate));
+            assertFalse(
+                    "Expected False for isSampleRateSupported",
+                    audioCap.isSampleRateSupported(sampleRate));
         }
         codec.release();
     }
 
     // API test coverage for MediaCodecInfo.EncoderCapabilities.getComplexityRange()
-    @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#getEncoderCapabilities",
-            "android.media.MediaCodecInfo.EncoderCapabilities#getComplexityRange"})
+    @ApiTest(
+            apis = {
+                "android.media.MediaCodecInfo.CodecCapabilities#getEncoderCapabilities",
+                "android.media.MediaCodecInfo.EncoderCapabilities#getComplexityRange"
+            })
     @Test
     public void testGetComplexityRange() throws IOException {
         boolean skipTest = true;
@@ -856,9 +945,12 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
                 CodecCapabilities caps = info.getCapabilitiesForType(type);
                 if (caps.isFeatureSupported(CodecCapabilities.FEATURE_LowLatency)) {
                     assertFalse(
-                        info.getName() + "(" + type + ") "
-                            + " supports low latency, but low latency shall not be required",
-                        caps.isFeatureRequired(CodecCapabilities.FEATURE_LowLatency));
+                            info.getName()
+                                    + "("
+                                    + type
+                                    + ")  supports low latency, but low latency shall not be"
+                                    + " required",
+                            caps.isFeatureRequired(CodecCapabilities.FEATURE_LowLatency));
                 }
             }
         }

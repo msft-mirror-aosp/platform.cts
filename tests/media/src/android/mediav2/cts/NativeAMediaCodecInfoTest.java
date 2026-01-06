@@ -127,11 +127,32 @@ public class NativeAMediaCodecInfoTest {
     private static final Size UHD = new Size(3840, 2160);
     private static final Size DC4K = new Size(4096, 2160);
     private static final Size UHD8K = new Size(7680, 4320);
-    private final double[] STANDARD_FPS =
-            {12.0, 15.0, 23.976, 24.0, 25.0, 29.97, 30.0, 48.0, 50.0, 59.94, 60.0};
-    private final Size[] STANDARD_RES =
-            {SUBQCIF, QCIF, SD144P, CIFNTSC, CIF, QVGA, SD240P, SD360P, VGA, SDNTSC, SDPAL, WVGA,
-                    SD480P, HD, HDPAL, FULLHD, FULLHD_ALT, UHD1440P, UHD, DC4K, UHD8K};
+    private final double[] STANDARD_FPS = {
+        12.0, 15.0, 23.976, 24.0, 25.0, 29.97, 30.0, 48.0, 50.0, 59.94, 60.0
+    };
+    private final Size[] STANDARD_RES = {
+        SUBQCIF,
+        QCIF,
+        SD144P,
+        CIFNTSC,
+        CIF,
+        QVGA,
+        SD240P,
+        SD360P,
+        VGA,
+        SDNTSC,
+        SDPAL,
+        WVGA,
+        SD480P,
+        HD,
+        HDPAL,
+        FULLHD,
+        FULLHD_ALT,
+        UHD1440P,
+        UHD,
+        DC4K,
+        UHD8K
+    };
     private final Range<Integer> UNSUPPORTED_SIZE = Range.create(-1, -1);
     private final Range<Double> UNSUPPORTED_RATE = Range.create(-1.0, -1.0);
     private final Range<Double> UNKNOWN_RATE = Range.create(-2.0, -2.0);
@@ -169,7 +190,7 @@ public class NativeAMediaCodecInfoTest {
                         || (testMediaTypes != null && !testMediaTypes.contains(type))) {
                     continue;
                 }
-                argsList.add(new Object[]{codecName, type});
+                argsList.add(new Object[] {codecName, type});
             }
         }
         return argsList;
@@ -194,8 +215,8 @@ public class NativeAMediaCodecInfoTest {
         return isEncoder ? MEDIACODEC_KIND_ENCODER : MEDIACODEC_KIND_DECODER;
     }
 
-    private Range<Integer> getSupportedWidthsForNoExcep(MediaCodecInfo.VideoCapabilities videoCaps,
-            int height) {
+    private Range<Integer> getSupportedWidthsForNoExcep(
+            MediaCodecInfo.VideoCapabilities videoCaps, int height) {
         try {
             return videoCaps.getSupportedWidthsFor(height);
         } catch (IllegalArgumentException ignored) {
@@ -203,8 +224,8 @@ public class NativeAMediaCodecInfoTest {
         }
     }
 
-    private Range<Integer> getSupportedHeightsForNoExcep(MediaCodecInfo.VideoCapabilities videoCaps,
-            int width) {
+    private Range<Integer> getSupportedHeightsForNoExcep(
+            MediaCodecInfo.VideoCapabilities videoCaps, int width) {
         try {
             return videoCaps.getSupportedHeightsFor(width);
         } catch (IllegalArgumentException ignored) {
@@ -231,12 +252,21 @@ public class NativeAMediaCodecInfoTest {
         }
     }
 
-    @ApiTest(apis = {"AMediaCodecInfo_getKind", "AMediaCodecInfo_isVendor",
-            "AMediaCodecInfo_getCanonicalName", "AMediaCodecInfo_getMaxSupportedInstances",
-            "AMediaCodecInfo_getMediaCodecInfoType", "AMediaCodecInfo_getMediaType",
-            "AMediaCodecInfo_isFeatureSupported", "AMediaCodecInfo_isFeatureRequired",
-            "AMediaCodecInfo_isFormatSupported", "AMediaCodecInfo_getAudioCapabilities",
-            "AMediaCodecInfo_getVideoCapabilities", "AMediaCodecInfo_getEncoderCapabilities"})
+    @ApiTest(
+            apis = {
+                "AMediaCodecInfo_getKind",
+                "AMediaCodecInfo_isVendor",
+                "AMediaCodecInfo_getCanonicalName",
+                "AMediaCodecInfo_getMaxSupportedInstances",
+                "AMediaCodecInfo_getMediaCodecInfoType",
+                "AMediaCodecInfo_getMediaType",
+                "AMediaCodecInfo_isFeatureSupported",
+                "AMediaCodecInfo_isFeatureRequired",
+                "AMediaCodecInfo_isFormatSupported",
+                "AMediaCodecInfo_getAudioCapabilities",
+                "AMediaCodecInfo_getVideoCapabilities",
+                "AMediaCodecInfo_getEncoderCapabilities"
+            })
     @SmallTest
     @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
     public void testAMediaCodecInfoNative() throws IOException {
@@ -257,16 +287,17 @@ public class NativeAMediaCodecInfoTest {
         ArrayList<String> fileList = new ArrayList<>();
         ArrayList<MediaFormat> formatList = new ArrayList<>();
         try (Stream<Path> paths = Files.walk(Paths.get(MEDIA_DIR))) {
-            paths.forEach(path -> {
-                if (Files.isRegularFile(path)) {
-                    try {
-                        MediaFormat format = getFormatInStream(mMediaType, path.toString());
-                        fileList.add(path.toString());
-                        formatList.add(format);
-                    } catch (IOException | IllegalArgumentException ignored) {
-                    }
-                }
-            });
+            paths.forEach(
+                    path -> {
+                        if (Files.isRegularFile(path)) {
+                            try {
+                                MediaFormat format = getFormatInStream(mMediaType, path.toString());
+                                fileList.add(path.toString());
+                                formatList.add(format);
+                            } catch (IOException | IllegalArgumentException ignored) {
+                            }
+                        }
+                    });
         }
         String[] files = fileList.toArray(new String[0]);
         boolean[] isFormatSupportedArray = new boolean[formatList.size()];
@@ -274,51 +305,80 @@ public class NativeAMediaCodecInfoTest {
             isFormatSupportedArray[i] =
                     isFormatSupported(mCodecName, mMediaType, formatList.get(i));
         }
-        boolean isPass = nativeTestAMediaCodecInfo(mCodecName, codecInfo.isEncoder(), expectedKind,
-                codecInfo.isVendor(), codecInfo.getCanonicalName(),
-                getMaxSupportedInstances(mCodecName, mMediaType), getExpectedCodecType(mCodecName),
-                mMediaType, FEATURES, featureSupportMap, featureRequiredMap, files,
-                isFormatSupportedArray, mTestResults);
+        boolean isPass =
+                nativeTestAMediaCodecInfo(
+                        mCodecName,
+                        codecInfo.isEncoder(),
+                        expectedKind,
+                        codecInfo.isVendor(),
+                        codecInfo.getCanonicalName(),
+                        getMaxSupportedInstances(mCodecName, mMediaType),
+                        getExpectedCodecType(mCodecName),
+                        mMediaType,
+                        FEATURES,
+                        featureSupportMap,
+                        featureRequiredMap,
+                        files,
+                        isFormatSupportedArray,
+                        mTestResults);
         Assert.assertTrue(mTestResults.toString(), isPass);
     }
 
-    private native boolean nativeTestAMediaCodecInfo(String codecName, boolean isEncoder,
-            int codecKind, boolean isVendor, String canonicalName, int maxSupportedInstances,
-            int codecType, String mediaType, String[] features, int featureSupportMap,
-            int featureRequiredMap, String[] files, boolean[] isFormatSupported,
+    private native boolean nativeTestAMediaCodecInfo(
+            String codecName,
+            boolean isEncoder,
+            int codecKind,
+            boolean isVendor,
+            String canonicalName,
+            int maxSupportedInstances,
+            int codecType,
+            String mediaType,
+            String[] features,
+            int featureSupportMap,
+            int featureRequiredMap,
+            String[] files,
+            boolean[] isFormatSupported,
             StringBuilder retMsg);
 
-    @ApiTest(apis = {"AMediaCodecInfo_getVideoCapabilities",
-            "ACodecVideoCapabilities_getBitrateRange",
-            "ACodecVideoCapabilities_getSupportedWidths",
-            "ACodecVideoCapabilities_getSupportedHeights",
-            "ACodecVideoCapabilities_getSupportedFrameRates",
-            "ACodecVideoCapabilities_getWidthAlignment",
-            "ACodecVideoCapabilities_getHeightAlignment",
-            "ACodecEncoderCapabilities_isBitrateModeSupported",
-            "ACodecEncoderCapabilities_getComplexityRange",
-            "ACodecEncoderCapabilities_getQualityRange"})
+    @ApiTest(
+            apis = {
+                "AMediaCodecInfo_getVideoCapabilities",
+                "ACodecVideoCapabilities_getBitrateRange",
+                "ACodecVideoCapabilities_getSupportedWidths",
+                "ACodecVideoCapabilities_getSupportedHeights",
+                "ACodecVideoCapabilities_getSupportedFrameRates",
+                "ACodecVideoCapabilities_getWidthAlignment",
+                "ACodecVideoCapabilities_getHeightAlignment",
+                "ACodecEncoderCapabilities_isBitrateModeSupported",
+                "ACodecEncoderCapabilities_getComplexityRange",
+                "ACodecEncoderCapabilities_getQualityRange"
+            })
     @SmallTest
     @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
     public void testAMediaCodecInfoGetVideoCapabilitiesNative() {
-        Assume.assumeTrue("Test is applicable for video codecs",
-                mMediaType.startsWith("video/") || mMediaType.equalsIgnoreCase(
-                        MediaFormat.MIMETYPE_IMAGE_ANDROID_HEIC));
+        Assume.assumeTrue(
+                "Test is applicable for video codecs",
+                mMediaType.startsWith("video/")
+                        || mMediaType.equalsIgnoreCase(MediaFormat.MIMETYPE_IMAGE_ANDROID_HEIC));
         MediaCodecInfo codecInfo = getCodecInfo(mCodecName);
         Assert.assertNotNull("received null codecInfo for component: " + mCodecName, codecInfo);
         MediaCodecInfo.CodecCapabilities caps = codecInfo.getCapabilitiesForType(mMediaType);
         MediaCodecInfo.VideoCapabilities videoCaps = caps.getVideoCapabilities();
         Assert.assertNotNull("received null for video capabilities", videoCaps);
-        boolean isPass = nativeTestAMediaCodecInfoVideoCaps(mCodecName,
-                videoCaps.getBitrateRange().getLower(), videoCaps.getBitrateRange().getUpper(),
-                videoCaps.getSupportedWidths().getLower(),
-                videoCaps.getSupportedWidths().getUpper(),
-                videoCaps.getSupportedHeights().getLower(),
-                videoCaps.getSupportedHeights().getUpper(),
-                videoCaps.getSupportedFrameRates().getLower(),
-                videoCaps.getSupportedFrameRates().getUpper(), videoCaps.getWidthAlignment(),
-                videoCaps.getHeightAlignment(),
-                mTestResults);
+        boolean isPass =
+                nativeTestAMediaCodecInfoVideoCaps(
+                        mCodecName,
+                        videoCaps.getBitrateRange().getLower(),
+                        videoCaps.getBitrateRange().getUpper(),
+                        videoCaps.getSupportedWidths().getLower(),
+                        videoCaps.getSupportedWidths().getUpper(),
+                        videoCaps.getSupportedHeights().getLower(),
+                        videoCaps.getSupportedHeights().getUpper(),
+                        videoCaps.getSupportedFrameRates().getLower(),
+                        videoCaps.getSupportedFrameRates().getUpper(),
+                        videoCaps.getWidthAlignment(),
+                        videoCaps.getHeightAlignment(),
+                        mTestResults);
         Assert.assertTrue(mTestResults.toString(), isPass);
         MediaCodecInfo.EncoderCapabilities encCaps = caps.getEncoderCapabilities();
         if (codecInfo.isEncoder()) {
@@ -329,38 +389,58 @@ public class NativeAMediaCodecInfoTest {
                     bitrateModeSupportMap |= (1 << i);
                 }
             }
-            isPass = nativeTestAMediaCodecInfoGetEncoderCapabilities(mCodecName,
-                    encCaps.getComplexityRange().getLower(),
-                    encCaps.getComplexityRange().getUpper(),
-                    encCaps.getQualityRange().getLower(), encCaps.getQualityRange().getUpper(),
-                    bitrateModeSupportMap,
-                    mTestResults);
+            isPass =
+                    nativeTestAMediaCodecInfoGetEncoderCapabilities(
+                            mCodecName,
+                            encCaps.getComplexityRange().getLower(),
+                            encCaps.getComplexityRange().getUpper(),
+                            encCaps.getQualityRange().getLower(),
+                            encCaps.getQualityRange().getUpper(),
+                            bitrateModeSupportMap,
+                            mTestResults);
             Assert.assertTrue(mTestResults.toString(), isPass);
         }
     }
 
-    private native boolean nativeTestAMediaCodecInfoVideoCaps(String codecName,
-            int bitRateRangeLower, int bitRateRangeUpper, int supportedWidthLower,
-            int supportedWidthUpper, int supportHeightLower, int supportedHeightUpper,
-            int supportedFrameRateLower, int supportedFrameRateUpper, int widthAlignment,
-            int heightAlignment, StringBuilder retMsg);
+    private native boolean nativeTestAMediaCodecInfoVideoCaps(
+            String codecName,
+            int bitRateRangeLower,
+            int bitRateRangeUpper,
+            int supportedWidthLower,
+            int supportedWidthUpper,
+            int supportHeightLower,
+            int supportedHeightUpper,
+            int supportedFrameRateLower,
+            int supportedFrameRateUpper,
+            int widthAlignment,
+            int heightAlignment,
+            StringBuilder retMsg);
 
-    private native boolean nativeTestAMediaCodecInfoGetEncoderCapabilities(String codecName,
-            int complexityRangeLower, int complexityRangeUpper, int qualityRangeLower,
-            int qualityRangeUpper, int bitrateModeSupportMap, StringBuilder retMsg);
+    private native boolean nativeTestAMediaCodecInfoGetEncoderCapabilities(
+            String codecName,
+            int complexityRangeLower,
+            int complexityRangeUpper,
+            int qualityRangeLower,
+            int qualityRangeUpper,
+            int bitrateModeSupportMap,
+            StringBuilder retMsg);
 
-    @ApiTest(apis = {"ACodecVideoCapabilities_getSupportedWidthsFor",
-            "ACodecVideoCapabilities_getSupportedHeightsFor",
-            "ACodecVideoCapabilities_getSupportedFrameRatesFor",
-            "ACodecVideoCapabilities_getAchievableFrameRatesFor",
-            "ACodecVideoCapabilities_areSizeAndRateSupported",
-            "ACodecVideoCapabilities_isSizeSupported"})
+    @ApiTest(
+            apis = {
+                "ACodecVideoCapabilities_getSupportedWidthsFor",
+                "ACodecVideoCapabilities_getSupportedHeightsFor",
+                "ACodecVideoCapabilities_getSupportedFrameRatesFor",
+                "ACodecVideoCapabilities_getAchievableFrameRatesFor",
+                "ACodecVideoCapabilities_areSizeAndRateSupported",
+                "ACodecVideoCapabilities_isSizeSupported"
+            })
     @SmallTest
     @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
     public void testAMediaCodecInfoGetVideoCapsGetSupportForNative() {
-        Assume.assumeTrue("Test is applicable for video codecs",
-                mMediaType.startsWith("video/") || mMediaType.equalsIgnoreCase(
-                        MediaFormat.MIMETYPE_IMAGE_ANDROID_HEIC));
+        Assume.assumeTrue(
+                "Test is applicable for video codecs",
+                mMediaType.startsWith("video/")
+                        || mMediaType.equalsIgnoreCase(MediaFormat.MIMETYPE_IMAGE_ANDROID_HEIC));
         MediaCodecInfo codecInfo = getCodecInfo(mCodecName);
         Assert.assertNotNull("received null codecInfo for component: " + mCodecName, codecInfo);
         MediaCodecInfo.CodecCapabilities caps = codecInfo.getCapabilitiesForType(mMediaType);
@@ -368,7 +448,7 @@ public class NativeAMediaCodecInfoTest {
         Assert.assertNotNull("received null for video capabilities", videoCaps);
         for (double frameRate : STANDARD_FPS) {
             for (Size res : STANDARD_RES) {
-                for (boolean isLandscape : new boolean[]{true, false}) {
+                for (boolean isLandscape : new boolean[] {true, false}) {
                     int width = isLandscape ? res.getWidth() : res.getHeight();
                     int height = isLandscape ? res.getHeight() : res.getWidth();
                     Range<Integer> widths = getSupportedWidthsForNoExcep(videoCaps, height);
@@ -378,11 +458,19 @@ public class NativeAMediaCodecInfoTest {
                     Range<Double> achievableRates =
                             getAchievableFrameRatesForNoExcep(videoCaps, width, height);
                     boolean isPass =
-                            nativeTestAMediaCodecInfoVideoCapsGetSupportFor(mCodecName, width,
-                                    height, frameRate, widths.getLower(), widths.getUpper(),
-                                    heights.getLower(), heights.getUpper(),
-                                    supportedRates.getLower(), supportedRates.getUpper(),
-                                    achievableRates.getLower(), achievableRates.getUpper(),
+                            nativeTestAMediaCodecInfoVideoCapsGetSupportFor(
+                                    mCodecName,
+                                    width,
+                                    height,
+                                    frameRate,
+                                    widths.getLower(),
+                                    widths.getUpper(),
+                                    heights.getLower(),
+                                    heights.getUpper(),
+                                    supportedRates.getLower(),
+                                    supportedRates.getUpper(),
+                                    achievableRates.getLower(),
+                                    achievableRates.getUpper(),
                                     videoCaps.isSizeSupported(width, height),
                                     videoCaps.areSizeAndRateSupported(width, height, frameRate),
                                     mTestResults);
@@ -392,24 +480,37 @@ public class NativeAMediaCodecInfoTest {
         }
     }
 
-    private native boolean nativeTestAMediaCodecInfoVideoCapsGetSupportFor(String codecName,
-            int testWidth, int testHeight, double frameRate, int supportedWidthLowerForHeight,
-            int supportedWidthUpperForHeight, int supportedHeightLowerForWidth,
-            int supportedHeightUpperForWidth, double supportedFrameRateLower,
-            double supportedFrameRateUpper, double achievedFrameRateLower,
-            double achievedFrameRateUpper, boolean isSizeSupported, boolean areSizeAndRateSupported,
+    private native boolean nativeTestAMediaCodecInfoVideoCapsGetSupportFor(
+            String codecName,
+            int testWidth,
+            int testHeight,
+            double frameRate,
+            int supportedWidthLowerForHeight,
+            int supportedWidthUpperForHeight,
+            int supportedHeightLowerForWidth,
+            int supportedHeightUpperForWidth,
+            double supportedFrameRateLower,
+            double supportedFrameRateUpper,
+            double achievedFrameRateLower,
+            double achievedFrameRateUpper,
+            boolean isSizeSupported,
+            boolean areSizeAndRateSupported,
             StringBuilder retMsg);
 
-    @ApiTest(apis = {"ACodecPerformancePoint_create",
-            "ACodecPerformancePoint_coversFormat",
-            "ACodecPerformancePoint_covers",
-            "ACodecPerformancePoint_equals"})
+    @ApiTest(
+            apis = {
+                "ACodecPerformancePoint_create",
+                "ACodecPerformancePoint_coversFormat",
+                "ACodecPerformancePoint_covers",
+                "ACodecPerformancePoint_equals"
+            })
     @SmallTest
     @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
     public void testAMediaCodecInfoGetPerformancePointNative() {
-        Assume.assumeTrue("Test is applicable for video codecs",
-                mMediaType.startsWith("video/") || mMediaType.equalsIgnoreCase(
-                        MediaFormat.MIMETYPE_IMAGE_ANDROID_HEIC));
+        Assume.assumeTrue(
+                "Test is applicable for video codecs",
+                mMediaType.startsWith("video/")
+                        || mMediaType.equalsIgnoreCase(MediaFormat.MIMETYPE_IMAGE_ANDROID_HEIC));
         MediaCodecInfo codecInfo = getCodecInfo(mCodecName);
         Assert.assertNotNull("received null codecInfo for component: " + mCodecName, codecInfo);
         MediaCodecInfo.CodecCapabilities caps = codecInfo.getCapabilitiesForType(mMediaType);
@@ -429,8 +530,8 @@ public class NativeAMediaCodecInfoTest {
                     MediaFormat format = MediaFormat.createVideoFormat(mMediaType, width, height);
                     format.setFloat(MediaFormat.KEY_FRAME_RATE, (float) frameRate);
                     MediaCodecInfo.VideoCapabilities.PerformancePoint point =
-                            new MediaCodecInfo.VideoCapabilities.PerformancePoint(width, height,
-                                    (int) frameRate);
+                            new MediaCodecInfo.VideoCapabilities.PerformancePoint(
+                                    width, height, (int) frameRate);
                     for (int i = 0; i < listSize; i++) {
                         MediaCodecInfo.VideoCapabilities.PerformancePoint pp = ppList.get(i);
                         if (pp.covers(format)) {
@@ -445,27 +546,45 @@ public class NativeAMediaCodecInfoTest {
                     }
                 }
                 boolean isPass =
-                        nativeTestACodecPerformancePoint(mCodecName, width, height, frameRate,
-                                coversFormat, coversPoint, equalsPoint, listSize, mTestResults);
+                        nativeTestACodecPerformancePoint(
+                                mCodecName,
+                                width,
+                                height,
+                                frameRate,
+                                coversFormat,
+                                coversPoint,
+                                equalsPoint,
+                                listSize,
+                                mTestResults);
                 Assert.assertTrue(mTestResults.toString(), isPass);
                 if (listSize == 0) return;
             }
         }
     }
 
-    private native boolean nativeTestACodecPerformancePoint(String codecName, int width, int height,
-            double frameRate, int coversFormat, int coversPoint, int equalsPoint, int ppSize,
+    private native boolean nativeTestACodecPerformancePoint(
+            String codecName,
+            int width,
+            int height,
+            double frameRate,
+            int coversFormat,
+            int coversPoint,
+            int equalsPoint,
+            int ppSize,
             StringBuilder retMsg);
 
-    @ApiTest(apis = {"ACodecAudioCapabilities_getBitrateRange",
-            "ACodecAudioCapabilities_getMaxInputChannelCount",
-            "ACodecAudioCapabilities_getMinInputChannelCount",
-            "ACodecAudioCapabilities_getSupportedSampleRates",
-            "ACodecAudioCapabilities_getSupportedSampleRateRanges",
-            "ACodecAudioCapabilities_getInputChannelCountRanges",
-            "ACodecEncoderCapabilities_isBitrateModeSupported",
-            "ACodecEncoderCapabilities_getComplexityRange",
-            "ACodecEncoderCapabilities_getQualityRange"})
+    @ApiTest(
+            apis = {
+                "ACodecAudioCapabilities_getBitrateRange",
+                "ACodecAudioCapabilities_getMaxInputChannelCount",
+                "ACodecAudioCapabilities_getMinInputChannelCount",
+                "ACodecAudioCapabilities_getSupportedSampleRates",
+                "ACodecAudioCapabilities_getSupportedSampleRateRanges",
+                "ACodecAudioCapabilities_getInputChannelCountRanges",
+                "ACodecEncoderCapabilities_isBitrateModeSupported",
+                "ACodecEncoderCapabilities_getComplexityRange",
+                "ACodecEncoderCapabilities_getQualityRange"
+            })
     @SmallTest
     @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
     public void testAMediaCodecInfoGetAudioCapabilitiesNative() {
@@ -490,19 +609,28 @@ public class NativeAMediaCodecInfoTest {
             inputChannelRanges[j++] = range.getUpper();
         }
         int[] standardSampleRates =
-                new int[]{8000, 11025, 12000, 16000, 22050, 24000, 44100, 48000, 88200, 96000,
-                        192000};
+                new int[] {
+                    8000, 11025, 12000, 16000, 22050, 24000, 44100, 48000, 88200, 96000, 192000
+                };
         int standardSampleRatesSupportMap = 0;
         for (i = 0; i < standardSampleRates.length; i++) {
             if (audioCaps.isSampleRateSupported(standardSampleRates[i])) {
                 standardSampleRatesSupportMap |= (1 << i);
             }
         }
-        boolean isPass = nativeTestAMediaCodecInfoGetAudioCapabilities(mCodecName,
-                audioCaps.getBitrateRange().getLower(), audioCaps.getBitrateRange().getUpper(),
-                audioCaps.getMaxInputChannelCount(), audioCaps.getMinInputChannelCount(),
-                sampleRates, sampleRateRanges, inputChannelRanges, standardSampleRates,
-                standardSampleRatesSupportMap, mTestResults);
+        boolean isPass =
+                nativeTestAMediaCodecInfoGetAudioCapabilities(
+                        mCodecName,
+                        audioCaps.getBitrateRange().getLower(),
+                        audioCaps.getBitrateRange().getUpper(),
+                        audioCaps.getMaxInputChannelCount(),
+                        audioCaps.getMinInputChannelCount(),
+                        sampleRates,
+                        sampleRateRanges,
+                        inputChannelRanges,
+                        standardSampleRates,
+                        standardSampleRatesSupportMap,
+                        mTestResults);
         Assert.assertTrue(mTestResults.toString(), isPass);
 
         MediaCodecInfo.EncoderCapabilities encCaps = caps.getEncoderCapabilities();
@@ -514,18 +642,29 @@ public class NativeAMediaCodecInfoTest {
                     bitrateModeSupportMap |= (1 << i);
                 }
             }
-            isPass = nativeTestAMediaCodecInfoGetEncoderCapabilities(mCodecName,
-                    encCaps.getComplexityRange().getLower(),
-                    encCaps.getComplexityRange().getUpper(),
-                    encCaps.getQualityRange().getLower(), encCaps.getQualityRange().getUpper(),
-                    bitrateModeSupportMap,
-                    mTestResults);
+            isPass =
+                    nativeTestAMediaCodecInfoGetEncoderCapabilities(
+                            mCodecName,
+                            encCaps.getComplexityRange().getLower(),
+                            encCaps.getComplexityRange().getUpper(),
+                            encCaps.getQualityRange().getLower(),
+                            encCaps.getQualityRange().getUpper(),
+                            bitrateModeSupportMap,
+                            mTestResults);
             Assert.assertTrue(mTestResults.toString(), isPass);
         }
     }
 
-    private native boolean nativeTestAMediaCodecInfoGetAudioCapabilities(String codecName,
-            int mLower, int mUpper, int maxInputChannelCount, int minInputChannelCount,
-            int[] sampleRates, int[] sampleRateRanges, int[] inputChannelRanges,
-            int[] standardSampleRates, int standardSampleRatesSupportMap, StringBuilder retMsg);
+    private native boolean nativeTestAMediaCodecInfoGetAudioCapabilities(
+            String codecName,
+            int mLower,
+            int mUpper,
+            int maxInputChannelCount,
+            int minInputChannelCount,
+            int[] sampleRates,
+            int[] sampleRateRanges,
+            int[] inputChannelRanges,
+            int[] standardSampleRates,
+            int standardSampleRatesSupportMap,
+            StringBuilder retMsg);
 }
