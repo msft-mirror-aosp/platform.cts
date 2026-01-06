@@ -45,6 +45,7 @@ java_test_host {
         ":PccHostTestApp",
         ":NonPccHostTestApp",
     ],
+    enable_static_aconfig_pb: true,
 }
 
 android_test_helper_app {
