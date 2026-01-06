@@ -88,20 +88,28 @@ object AppFunctionUtils {
         )
     }
 
-    /** Grants app function access to a target package. */
-    fun grantAppFunctionAccess(agentPackage: String, targetPackage: String) {
-        ShellCommand.builder("cmd app_function grant-app-function-access")
-            .addOption("--agent-package", agentPackage)
-            .addOption("--target-package", targetPackage)
-            .execute()
-    }
+    /** Sets [functionId] from [targetPackage] to [state]. */
+    fun setAppFunctionEnabledRemote(
+        targetPackage: String,
+        functionId: String,
+        @EnabledState state: Int,
+    ) {
+        val enableStateString =
+            when (state) {
+                AppFunctionManager.APP_FUNCTION_STATE_DEFAULT -> "default"
+                AppFunctionManager.APP_FUNCTION_STATE_ENABLED -> "enable"
+                AppFunctionManager.APP_FUNCTION_STATE_DISABLED -> "disable"
+                else -> throw IllegalArgumentException("Unknown state of $state")
+            }
 
-    /** Revokes app function access to a target package. */
-    fun revokeAppFunctionAccess(agentPackage: String, targetPackage: String) {
-        ShellCommand.builder("cmd app_function revoke-app-function-access")
-            .addOption("--agent-package", agentPackage)
-            .addOption("--target-package", targetPackage)
-            .execute()
+        assertThat(
+                ShellCommand.builder("cmd app_function set-enabled")
+                    .addOption("--package", targetPackage)
+                    .addOption("--function", functionId)
+                    .addOption("--state", enableStateString)
+                    .execute()
+            )
+            .isEqualTo("App function enabled state updated successfully.\n")
     }
 
     /** Install package to the user */

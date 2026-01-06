@@ -16,35 +16,38 @@
 package android.app.appfunctions.cts
 
 import android.Manifest
-import android.app.UiAutomation
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.AppFunctionMetadata
 import android.app.appfunctions.AppFunctionName
 import android.app.appfunctions.AppFunctionPackageMetadata
 import android.app.appfunctions.AppFunctionSchemaMetadata
 import android.app.appfunctions.AppFunctionSearchSpec
-import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.Companion.CURRENT_PKG
-import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.Companion.TEST_HELPER_DYNAMIC_SCHEMA_PKG
-import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.Companion.TEST_HELPER_PKG
-import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.FunctionMetadata
-import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.FunctionName
-import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.FunctionName.HELPER_PACKAGE_FUNCTIONS
+import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.CtsApp
+import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.DynamicSchemaHelperApp
+import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.LegacySchemaHelperApp
 import android.app.appfunctions.cts.AppFunctionUtils.getAllRuntimeMetadataPackages
 import android.app.appfunctions.cts.AppFunctionUtils.getAllStaticMetadataPackages
 import android.app.appfunctions.cts.AppFunctionUtils.installExistingPackageAsUser
-import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabled
+import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabledRemote
 import android.app.appfunctions.cts.AppFunctionUtils.uninstallPackageAsUser
 import android.app.appfunctions.cts.AppSearchUtils.sanitizeGenericDocument
 import android.app.appfunctions.flags.Flags
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
 import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
+import android.app.appfunctions.testutils.FunctionType
+import android.app.appfunctions.testutils.ITestAppFunctionRegistrationService
+import android.app.appfunctions.testutils.TestAppFunctionRegistrationService
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.os.IBinder
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.core.os.asOutcomeReceiver
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.rule.ServiceTestRule
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnPrimaryUser
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSecondaryUser
@@ -78,13 +81,12 @@ import org.junit.runner.RunWith
 class SearchAppFunctionsTest {
     @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
+    @get:Rule val serviceTestRule = ServiceTestRule()
+
     private val context: Context
         get() = InstrumentationRegistry.getInstrumentation().targetContext
 
-    private val uiAutomation: UiAutomation
-        get() = InstrumentationRegistry.getInstrumentation().uiAutomation
-
-    private lateinit var mManager: AppFunctionManager
+    private lateinit var manager: AppFunctionManager
 
     @Before
     fun setup() = doBlocking {
@@ -95,16 +97,16 @@ class SearchAppFunctionsTest {
         TestAppFunctionServiceLifecycleReceiver.reset()
         val manager = context.getSystemService(AppFunctionManager::class.java)
         assumeNotNull(manager)
-        mManager = manager
+        this@SearchAppFunctionsTest.manager = manager
 
         // Doing containsAtLeast instead of containsExactly here in case there are preloaded
         // apps having app functions.
         assertThat(getAllStaticMetadataPackages())
-            .containsAtLeast(CURRENT_PKG, TEST_HELPER_DYNAMIC_SCHEMA_PKG)
+            .containsAtLeast(CtsApp.PACKAGE_NAME, DynamicSchemaHelperApp.PACKAGE_NAME)
         // required permission because runtime metadata is only visible to owner package
         runWithShellPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS) {
             assertThat(getAllRuntimeMetadataPackages())
-                .containsAtLeast(CURRENT_PKG, TEST_HELPER_DYNAMIC_SCHEMA_PKG)
+                .containsAtLeast(CtsApp.PACKAGE_NAME, DynamicSchemaHelperApp.PACKAGE_NAME)
         }
     }
 
@@ -136,21 +138,21 @@ class SearchAppFunctionsTest {
 
             assertThat(resultAppFunctionsByName.keys)
                 .containsExactly(
-                    FunctionName.SAME_PACKAGE_THROW_EXCEPTION,
-                    FunctionName.SAME_PACKAGE_UNCAUGHT_CLIENT_EXCEPTION,
-                    FunctionName.SAME_PACKAGE_ADD_INVOKE_CALLBACK_TWICE,
-                    FunctionName.SAME_PACKAGE_DYNAMIC_CONCAT_STRINGS,
-                    FunctionName.SAME_PACKAGE_DYNAMIC_LONG_RUNNING,
-                    FunctionName.SAME_PACKAGE_ADD_ASYNC,
-                    FunctionName.SAME_PACKAGE_NOT_INVOKE_CALLBACK,
-                    FunctionName.SAME_PACKAGE_RUN_FOREVER,
-                    FunctionName.SAME_PACKAGE_ADD,
-                    FunctionName.SAME_PACKAGE_ADD_DISABLED_BY_DEFAULT,
-                    FunctionName.SAME_PACKAGE_NO_OP,
-                    FunctionName.SAME_PACKAGE_KILL,
-                    FunctionName.SAME_PACKAGE_LONG_RUNNING_FUNCTION,
-                    FunctionName.SAME_PACKAGE_NO_SCHEMA,
-                    FunctionName.SAME_PACKAGE_CONTEXT,
+                    CtsApp.FunctionNames.THROW_EXCEPTION,
+                    CtsApp.FunctionNames.UNCAUGHT_CLIENT_EXCEPTION,
+                    CtsApp.FunctionNames.ADD_INVOKE_CALLBACK_TWICE,
+                    CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS,
+                    CtsApp.FunctionNames.DYNAMIC_LONG_RUNNING,
+                    CtsApp.FunctionNames.ADD_ASYNC,
+                    CtsApp.FunctionNames.NOT_INVOKE_CALLBACK,
+                    CtsApp.FunctionNames.RUN_FOREVER,
+                    CtsApp.FunctionNames.ADD,
+                    CtsApp.FunctionNames.ADD_DISABLED_BY_DEFAULT,
+                    CtsApp.FunctionNames.NO_OP,
+                    CtsApp.FunctionNames.KILL,
+                    CtsApp.FunctionNames.LONG_RUNNING_FUNCTION,
+                    CtsApp.FunctionNames.NO_SCHEMA,
+                    CtsApp.FunctionNames.CONTEXT,
                 )
         } finally {
             uninstallPackage(TEST_APP_A_PKG)
@@ -179,21 +181,21 @@ class SearchAppFunctionsTest {
 
                 assertThat(resultAppFunctionsByName.keys)
                     .containsExactly(
-                        FunctionName.SAME_PACKAGE_THROW_EXCEPTION,
-                        FunctionName.SAME_PACKAGE_UNCAUGHT_CLIENT_EXCEPTION,
-                        FunctionName.SAME_PACKAGE_ADD_INVOKE_CALLBACK_TWICE,
-                        FunctionName.SAME_PACKAGE_DYNAMIC_LONG_RUNNING,
-                        FunctionName.SAME_PACKAGE_ADD_ASYNC,
-                        FunctionName.SAME_PACKAGE_NOT_INVOKE_CALLBACK,
-                        FunctionName.SAME_PACKAGE_DYNAMIC_CONCAT_STRINGS,
-                        FunctionName.SAME_PACKAGE_RUN_FOREVER,
-                        FunctionName.SAME_PACKAGE_ADD,
-                        FunctionName.SAME_PACKAGE_ADD_DISABLED_BY_DEFAULT,
-                        FunctionName.SAME_PACKAGE_NO_OP,
-                        FunctionName.SAME_PACKAGE_KILL,
-                        FunctionName.SAME_PACKAGE_LONG_RUNNING_FUNCTION,
-                        FunctionName.SAME_PACKAGE_NO_SCHEMA,
-                        FunctionName.SAME_PACKAGE_CONTEXT,
+                        CtsApp.FunctionNames.THROW_EXCEPTION,
+                        CtsApp.FunctionNames.UNCAUGHT_CLIENT_EXCEPTION,
+                        CtsApp.FunctionNames.ADD_INVOKE_CALLBACK_TWICE,
+                        CtsApp.FunctionNames.DYNAMIC_LONG_RUNNING,
+                        CtsApp.FunctionNames.ADD_ASYNC,
+                        CtsApp.FunctionNames.NOT_INVOKE_CALLBACK,
+                        CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS,
+                        CtsApp.FunctionNames.RUN_FOREVER,
+                        CtsApp.FunctionNames.ADD,
+                        CtsApp.FunctionNames.ADD_DISABLED_BY_DEFAULT,
+                        CtsApp.FunctionNames.NO_OP,
+                        CtsApp.FunctionNames.KILL,
+                        CtsApp.FunctionNames.LONG_RUNNING_FUNCTION,
+                        CtsApp.FunctionNames.NO_SCHEMA,
+                        CtsApp.FunctionNames.CONTEXT,
                     )
             } finally {
                 uninstallPackage(TEST_APP_A_PKG)
@@ -218,7 +220,7 @@ class SearchAppFunctionsTest {
         try {
             val searchSpec =
                 AppFunctionSearchSpec.Builder()
-                    .setPackageNames(listOf(TEST_HELPER_DYNAMIC_SCHEMA_PKG))
+                    .setPackageNames(listOf(DynamicSchemaHelperApp.PACKAGE_NAME))
                     .build()
 
             val resultAppFunctions = searchAppFunctions(searchSpec)
@@ -248,7 +250,9 @@ class SearchAppFunctionsTest {
             try {
                 val searchSpec =
                     AppFunctionSearchSpec.Builder()
-                        .setFunctionNames(listOf(FunctionName.ENABLED_BY_DEFAULT))
+                        .setFunctionNames(
+                            listOf(DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT)
+                        )
                         .build()
 
                 val resultAppFunctions = searchAppFunctions(searchSpec)
@@ -300,12 +304,84 @@ class SearchAppFunctionsTest {
             val searchSpec = AppFunctionSearchSpec.Builder().build()
 
             val results: List<AppFunctionMetadata> = searchAppFunctions(searchSpec)
-            val functionsGroupByPackage = results.associateBy { it.packageMetadata.packageName }
+            val functionsGroupByPackage = results.groupBy { it.packageMetadata.packageName }
 
             assertThat(functionsGroupByPackage.keys).containsAnyIn(getVisiblePackages())
+            assertThat(
+                    functionsGroupByPackage[LegacySchemaHelperApp.PACKAGE_NAME]!!.map { it.name }
+                )
+                .containsExactlyElementsIn(LegacySchemaHelperApp.FunctionNames.ALL_FUNCTIONS)
+            assertThat(
+                    functionsGroupByPackage[DynamicSchemaHelperApp.PACKAGE_NAME]!!.map { it.name }
+                )
+                .containsExactlyElementsIn(DynamicSchemaHelperApp.FunctionNames.ALL_FUNCTIONS)
         } finally {
             uninstallPackage(TEST_APP_A_PKG)
         }
+    }
+
+    @Test
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#searchAppFunctions"])
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    @EnsureHasPermission(
+        Manifest.permission.QUERY_ALL_PACKAGES,
+        Manifest.permission.EXECUTE_APP_FUNCTIONS,
+    )
+    fun searchAppFunctionsFromLegacySchema_shouldSucceedWithPermission() = doBlocking {
+        val searchSpec =
+            AppFunctionSearchSpec.Builder()
+                .setPackageNames(listOf(LegacySchemaHelperApp.PACKAGE_NAME))
+                .build()
+
+        val resultAppFunctionsByName: Map<AppFunctionName, AppFunctionMetadata> =
+            searchAppFunctions(searchSpec).associateBy { it.name }
+
+        assertThat(resultAppFunctionsByName.keys)
+            .containsExactly(
+                LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT,
+                LegacySchemaHelperApp.FunctionNames.ADD_DISABLED_BY_DEFAULT,
+                LegacySchemaHelperApp.FunctionNames.NO_OP,
+                LegacySchemaHelperApp.FunctionNames.RESTRICT_CALLER_FALSE,
+                LegacySchemaHelperApp.FunctionNames.RESTRICT_CALLER_TRUE,
+                LegacySchemaHelperApp.FunctionNames.GET_URIS,
+                LegacySchemaHelperApp.FunctionNames.ECHO_BYTES,
+            )
+    }
+
+    @Test
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#searchAppFunctions"])
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    @EnsureHasPermission(
+        Manifest.permission.QUERY_ALL_PACKAGES,
+        Manifest.permission.EXECUTE_APP_FUNCTIONS,
+    )
+    fun searchAppFunctionsFromLegacySchema_shouldReturnCorrectMetadata() = doBlocking {
+        val searchSpec =
+            AppFunctionSearchSpec.Builder()
+                .setPackageNames(listOf(LegacySchemaHelperApp.PACKAGE_NAME))
+                .setFunctionNames(
+                    listOf(
+                        LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT,
+                        LegacySchemaHelperApp.FunctionNames.ADD_DISABLED_BY_DEFAULT,
+                    )
+                )
+                .build()
+
+        val resultAppFunctionsByName: Map<AppFunctionName, AppFunctionMetadata> =
+            searchAppFunctions(searchSpec).associateBy { it.name }
+
+        assertAppFunctionMetadataEquals(
+            resultAppFunctionsByName[LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT]!!,
+            LegacySchemaHelperApp.FunctionMetadata.ADD_ENABLED_BY_DEFAULT,
+        )
+        assertAppFunctionMetadataEquals(
+            resultAppFunctionsByName[LegacySchemaHelperApp.FunctionNames.ADD_DISABLED_BY_DEFAULT]!!,
+            LegacySchemaHelperApp.FunctionMetadata.ADD_DISABLED_BY_DEFAULT,
+        )
     }
 
     @Test
@@ -318,8 +394,8 @@ class SearchAppFunctionsTest {
         val schemaMetadata = AppFunctionSchemaMetadata("myUtils", "testSchema", 1)
         val searchSpec =
             AppFunctionSearchSpec.Builder()
-                .setPackageNames(listOf(TEST_HELPER_DYNAMIC_SCHEMA_PKG))
-                .setFunctionNames(listOf(FunctionName.ENABLED_BY_DEFAULT))
+                .setPackageNames(listOf(DynamicSchemaHelperApp.PACKAGE_NAME))
+                .setFunctionNames(listOf(DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT))
                 .setSchemaCategory(schemaMetadata.category)
                 .setSchemaName(schemaMetadata.name)
                 .setMinSchemaVersion(schemaMetadata.version)
@@ -329,7 +405,10 @@ class SearchAppFunctionsTest {
 
         assertThat(resultList).hasSize(1)
         val resultMetadata = resultList[0]
-        assertAppFunctionMetadataEquals(resultMetadata, FunctionMetadata.ENABLED_BY_DEFAULT)
+        assertAppFunctionMetadataEquals(
+            resultMetadata,
+            DynamicSchemaHelperApp.FunctionMetadata.ENABLED_BY_DEFAULT,
+        )
     }
 
     @Test
@@ -341,9 +420,12 @@ class SearchAppFunctionsTest {
     fun searchAppFunctions_functionNamesStricterThanPackages_noSchema_succeeds() = doBlocking {
         val searchSpec =
             AppFunctionSearchSpec.Builder()
-                .setPackageNames(listOf(CURRENT_PKG, TEST_HELPER_DYNAMIC_SCHEMA_PKG))
+                .setPackageNames(listOf(CtsApp.PACKAGE_NAME, DynamicSchemaHelperApp.PACKAGE_NAME))
                 .setFunctionNames(
-                    listOf(FunctionName.ENABLED_BY_DEFAULT, FunctionName.DISABLED_BY_DEFAULT)
+                    listOf(
+                        DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT,
+                        DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT,
+                    )
                 )
                 .build()
 
@@ -351,14 +433,17 @@ class SearchAppFunctionsTest {
             searchAppFunctions(searchSpec).associateBy { it.name }
 
         assertThat(resultAppFunctionsByName.keys)
-            .containsExactly(FunctionName.ENABLED_BY_DEFAULT, FunctionName.DISABLED_BY_DEFAULT)
+            .containsExactly(
+                DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT,
+                DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT,
+            )
         assertAppFunctionMetadataEquals(
-            resultAppFunctionsByName[FunctionName.DISABLED_BY_DEFAULT]!!,
-            FunctionMetadata.DISABLED_BY_DEFAULT_NO_SCHEMA,
+            resultAppFunctionsByName[DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT]!!,
+            DynamicSchemaHelperApp.FunctionMetadata.DISABLED_BY_DEFAULT_NO_SCHEMA,
         )
         assertAppFunctionMetadataEquals(
-            resultAppFunctionsByName[FunctionName.ENABLED_BY_DEFAULT]!!,
-            FunctionMetadata.ENABLED_BY_DEFAULT,
+            resultAppFunctionsByName[DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT]!!,
+            DynamicSchemaHelperApp.FunctionMetadata.ENABLED_BY_DEFAULT,
         )
     }
 
@@ -371,19 +456,22 @@ class SearchAppFunctionsTest {
     fun searchAppFunctions_packagesStricterThanFunctionNames_noSchema_succeeds() = doBlocking {
         val searchSpec =
             AppFunctionSearchSpec.Builder()
-                .setPackageNames(listOf(CURRENT_PKG))
+                .setPackageNames(listOf(CtsApp.PACKAGE_NAME))
                 .setFunctionNames(
-                    listOf(FunctionName.SAME_PACKAGE_ADD, FunctionName.ENABLED_BY_DEFAULT)
+                    listOf(
+                        CtsApp.FunctionNames.ADD,
+                        DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT,
+                    )
                 )
                 .build()
 
         val resultAppFunctionsByName: Map<AppFunctionName, AppFunctionMetadata> =
             searchAppFunctions(searchSpec).associateBy { it.name }
 
-        assertThat(resultAppFunctionsByName.keys).containsExactly(FunctionName.SAME_PACKAGE_ADD)
+        assertThat(resultAppFunctionsByName.keys).containsExactly(CtsApp.FunctionNames.ADD)
         assertAppFunctionMetadataEquals(
-            resultAppFunctionsByName[FunctionName.SAME_PACKAGE_ADD]!!,
-            FunctionMetadata.SAME_PACKAGE_ENABLED_BY_DEFAULT,
+            resultAppFunctionsByName[CtsApp.FunctionNames.ADD]!!,
+            CtsApp.FunctionMetadata.ENABLED_BY_DEFAULT,
         )
     }
 
@@ -396,10 +484,13 @@ class SearchAppFunctionsTest {
     fun searchAppFunctions_disjointFunctionNamesAndPackageNames_noResult() = doBlocking {
         val searchSpec =
             AppFunctionSearchSpec.Builder()
-                .setPackageNames(listOf(CURRENT_PKG))
+                .setPackageNames(listOf(CtsApp.PACKAGE_NAME))
                 .setFunctionNames(
                     // Both functions belongs to a different package
-                    listOf(FunctionName.ENABLED_BY_DEFAULT, FunctionName.DISABLED_BY_DEFAULT)
+                    listOf(
+                        DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT,
+                        DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT,
+                    )
                 )
                 .build()
 
@@ -421,14 +512,17 @@ class SearchAppFunctionsTest {
             searchAppFunctions(searchSpec).associateBy { it.name }
 
         assertThat(resultAppFunctionsByName.keys)
-            .containsExactly(FunctionName.ENABLED_BY_DEFAULT, FunctionName.HIGH_SCHEMA_VERSION)
+            .containsExactly(
+                DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT,
+                DynamicSchemaHelperApp.FunctionNames.HIGH_SCHEMA_VERSION,
+            )
         assertAppFunctionMetadataEquals(
-            resultAppFunctionsByName[FunctionName.HIGH_SCHEMA_VERSION]!!,
-            FunctionMetadata.HIGH_SCHEMA_VERSION,
+            resultAppFunctionsByName[DynamicSchemaHelperApp.FunctionNames.HIGH_SCHEMA_VERSION]!!,
+            DynamicSchemaHelperApp.FunctionMetadata.HIGH_SCHEMA_VERSION,
         )
         assertAppFunctionMetadataEquals(
-            resultAppFunctionsByName[FunctionName.ENABLED_BY_DEFAULT]!!,
-            FunctionMetadata.ENABLED_BY_DEFAULT,
+            resultAppFunctionsByName[DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT]!!,
+            DynamicSchemaHelperApp.FunctionMetadata.ENABLED_BY_DEFAULT,
         )
     }
 
@@ -445,14 +539,17 @@ class SearchAppFunctionsTest {
             searchAppFunctions(searchSpec).associateBy { it.name }
 
         assertThat(resultAppFunctionsByName.keys)
-            .containsExactly(FunctionName.ENABLED_BY_DEFAULT, FunctionName.HIGH_SCHEMA_VERSION)
+            .containsExactly(
+                DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT,
+                DynamicSchemaHelperApp.FunctionNames.HIGH_SCHEMA_VERSION,
+            )
         assertAppFunctionMetadataEquals(
-            resultAppFunctionsByName[FunctionName.HIGH_SCHEMA_VERSION]!!,
-            FunctionMetadata.HIGH_SCHEMA_VERSION,
+            resultAppFunctionsByName[DynamicSchemaHelperApp.FunctionNames.HIGH_SCHEMA_VERSION]!!,
+            DynamicSchemaHelperApp.FunctionMetadata.HIGH_SCHEMA_VERSION,
         )
         assertAppFunctionMetadataEquals(
-            resultAppFunctionsByName[FunctionName.ENABLED_BY_DEFAULT]!!,
-            FunctionMetadata.ENABLED_BY_DEFAULT,
+            resultAppFunctionsByName[DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT]!!,
+            DynamicSchemaHelperApp.FunctionMetadata.ENABLED_BY_DEFAULT,
         )
     }
 
@@ -468,10 +565,11 @@ class SearchAppFunctionsTest {
         val resultAppFunctionsByName: Map<AppFunctionName, AppFunctionMetadata> =
             searchAppFunctions(searchSpec).associateBy { it.name }
 
-        assertThat(resultAppFunctionsByName.keys).containsExactly(FunctionName.HIGH_SCHEMA_VERSION)
+        assertThat(resultAppFunctionsByName.keys)
+            .containsExactly(DynamicSchemaHelperApp.FunctionNames.HIGH_SCHEMA_VERSION)
         assertAppFunctionMetadataEquals(
-            resultAppFunctionsByName[FunctionName.HIGH_SCHEMA_VERSION]!!,
-            FunctionMetadata.HIGH_SCHEMA_VERSION,
+            resultAppFunctionsByName[DynamicSchemaHelperApp.FunctionNames.HIGH_SCHEMA_VERSION]!!,
+            DynamicSchemaHelperApp.FunctionMetadata.HIGH_SCHEMA_VERSION,
         )
     }
 
@@ -484,25 +582,25 @@ class SearchAppFunctionsTest {
     fun searchAppFunctions_packageNamesSpecified_noFunctionNames_succeeds() = doBlocking {
         val searchSpec =
             AppFunctionSearchSpec.Builder()
-                .setPackageNames(listOf(TEST_HELPER_DYNAMIC_SCHEMA_PKG))
+                .setPackageNames(listOf(DynamicSchemaHelperApp.PACKAGE_NAME))
                 .build()
 
         val resultAppFunctionsByName: Map<AppFunctionName, AppFunctionMetadata> =
             searchAppFunctions(searchSpec).associateBy { it.name }
 
         assertThat(resultAppFunctionsByName.keys)
-            .containsExactlyElementsIn(HELPER_PACKAGE_FUNCTIONS)
+            .containsExactlyElementsIn(DynamicSchemaHelperApp.FunctionNames.ALL_FUNCTIONS)
         assertAppFunctionMetadataEquals(
-            resultAppFunctionsByName[FunctionName.DISABLED_BY_DEFAULT]!!,
-            FunctionMetadata.DISABLED_BY_DEFAULT_NO_SCHEMA,
+            resultAppFunctionsByName[DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT]!!,
+            DynamicSchemaHelperApp.FunctionMetadata.DISABLED_BY_DEFAULT_NO_SCHEMA,
         )
         assertAppFunctionMetadataEquals(
-            resultAppFunctionsByName[FunctionName.ENABLED_BY_DEFAULT]!!,
-            FunctionMetadata.ENABLED_BY_DEFAULT,
+            resultAppFunctionsByName[DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT]!!,
+            DynamicSchemaHelperApp.FunctionMetadata.ENABLED_BY_DEFAULT,
         )
         assertAppFunctionMetadataEquals(
-            resultAppFunctionsByName[FunctionName.HIGH_SCHEMA_VERSION]!!,
-            FunctionMetadata.HIGH_SCHEMA_VERSION,
+            resultAppFunctionsByName[DynamicSchemaHelperApp.FunctionNames.HIGH_SCHEMA_VERSION]!!,
+            DynamicSchemaHelperApp.FunctionMetadata.HIGH_SCHEMA_VERSION,
         )
     }
 
@@ -516,7 +614,10 @@ class SearchAppFunctionsTest {
         val searchSpec =
             AppFunctionSearchSpec.Builder()
                 .setFunctionNames(
-                    listOf(FunctionName.ENABLED_BY_DEFAULT, FunctionName.SAME_PACKAGE_ADD)
+                    listOf(
+                        DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT,
+                        CtsApp.FunctionNames.ADD,
+                    )
                 )
                 .build()
 
@@ -524,14 +625,17 @@ class SearchAppFunctionsTest {
             searchAppFunctions(searchSpec).associateBy { it.name }
 
         assertThat(resultAppFunctionsByName.keys)
-            .containsExactly(FunctionName.ENABLED_BY_DEFAULT, FunctionName.SAME_PACKAGE_ADD)
+            .containsExactly(
+                DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT,
+                CtsApp.FunctionNames.ADD,
+            )
         assertAppFunctionMetadataEquals(
-            resultAppFunctionsByName[FunctionName.SAME_PACKAGE_ADD]!!,
-            FunctionMetadata.SAME_PACKAGE_ENABLED_BY_DEFAULT,
+            resultAppFunctionsByName[CtsApp.FunctionNames.ADD]!!,
+            CtsApp.FunctionMetadata.ENABLED_BY_DEFAULT,
         )
         assertAppFunctionMetadataEquals(
-            resultAppFunctionsByName[FunctionName.ENABLED_BY_DEFAULT]!!,
-            FunctionMetadata.ENABLED_BY_DEFAULT,
+            resultAppFunctionsByName[DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT]!!,
+            DynamicSchemaHelperApp.FunctionMetadata.ENABLED_BY_DEFAULT,
         )
     }
 
@@ -541,55 +645,207 @@ class SearchAppFunctionsTest {
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
-    fun searchAppFunctions_changeEnabledState_reflectsInSearchResult() = doBlocking {
+    fun searchAppFunctions_changeStaticFunctionEnabledState_reflectsInSearchResult() = doBlocking {
         val searchSpec =
             AppFunctionSearchSpec.Builder()
                 .setFunctionNames(
                     listOf(
-                        FunctionName.SAME_PACKAGE_ADD_DISABLED_BY_DEFAULT,
-                        FunctionName.SAME_PACKAGE_ADD,
+                        DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT,
+                        DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT,
                     )
                 )
                 .build()
         var resultsByFunctionName = searchAppFunctions(searchSpec).associateBy { it.name }
         assertThat(
-                resultsByFunctionName[FunctionName.SAME_PACKAGE_ADD_DISABLED_BY_DEFAULT]!!.isEnabled
+                resultsByFunctionName[DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT]!!
+                    .isEnabled
+            )
+            .isTrue()
+        assertThat(
+                resultsByFunctionName[DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT]!!
+                    .isEnabled
             )
             .isFalse()
-        assertThat(resultsByFunctionName[FunctionName.SAME_PACKAGE_ADD]!!.isEnabled).isTrue()
 
         try {
-            setAppFunctionEnabled(
-                mManager,
-                FunctionName.SAME_PACKAGE_ADD_DISABLED_BY_DEFAULT.functionId,
-                AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
-            )
-            setAppFunctionEnabled(
-                mManager,
-                FunctionName.SAME_PACKAGE_ADD.functionId,
+            setAppFunctionEnabledRemote(
+                DynamicSchemaHelperApp.PACKAGE_NAME,
+                DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT.functionId,
                 AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
+            )
+            setAppFunctionEnabledRemote(
+                DynamicSchemaHelperApp.PACKAGE_NAME,
+                DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT.functionId,
+                AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
             )
 
             resultsByFunctionName = searchAppFunctions(searchSpec).associateBy { it.name }
             assertThat(
-                    resultsByFunctionName[FunctionName.SAME_PACKAGE_ADD_DISABLED_BY_DEFAULT]!!
+                    resultsByFunctionName[DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT]!!
+                        .isEnabled
+                )
+                .isFalse()
+            assertThat(
+                    resultsByFunctionName[
+                            DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT]!!
                         .isEnabled
                 )
                 .isTrue()
-            assertThat(resultsByFunctionName[FunctionName.SAME_PACKAGE_ADD]!!.isEnabled).isFalse()
         } finally {
             // Reset back to default
-            setAppFunctionEnabled(
-                mManager,
-                FunctionName.SAME_PACKAGE_ADD_DISABLED_BY_DEFAULT.functionId,
+            setAppFunctionEnabledRemote(
+                DynamicSchemaHelperApp.PACKAGE_NAME,
+                DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT.functionId,
                 AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
             )
-            setAppFunctionEnabled(
-                mManager,
-                FunctionName.SAME_PACKAGE_ADD.functionId,
+            setAppFunctionEnabledRemote(
+                DynamicSchemaHelperApp.PACKAGE_NAME,
+                DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT.functionId,
                 AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
             )
         }
+    }
+
+    @Test
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#searchAppFunctions"])
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
+    fun searchAppFunctions_resetStaticFunctionEnabledStateBack_reflectsInSearchResult() =
+        doBlocking {
+            try {
+                // Flip to enable and disable
+                setAppFunctionEnabledRemote(
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT.functionId,
+                    AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
+                )
+                setAppFunctionEnabledRemote(
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT.functionId,
+                    AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
+                )
+                // Reset back to default
+                setAppFunctionEnabledRemote(
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT.functionId,
+                    AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
+                )
+                setAppFunctionEnabledRemote(
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT.functionId,
+                    AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
+                )
+
+                val resultsByFunctionName =
+                    searchAppFunctions(
+                            AppFunctionSearchSpec.Builder()
+                                .setFunctionNames(
+                                    listOf(
+                                        DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT,
+                                        DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT,
+                                    )
+                                )
+                                .build()
+                        )
+                        .associateBy { it.name }
+                assertThat(
+                        resultsByFunctionName[
+                                DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT]!!
+                            .isEnabled
+                    )
+                    .isTrue()
+                assertThat(
+                        resultsByFunctionName[
+                                DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT]!!
+                            .isEnabled
+                    )
+                    .isFalse()
+            } finally {
+                // Reset back to default
+                setAppFunctionEnabledRemote(
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT.functionId,
+                    AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
+                )
+                setAppFunctionEnabledRemote(
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT.functionId,
+                    AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
+                )
+            }
+        }
+
+    @Test
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#searchAppFunctions"])
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
+    fun searchAppFunctions_changeDynamicFunctionEnabledState_reflectsInSearchResult() = doBlocking {
+        val searchSpec =
+            AppFunctionSearchSpec.Builder()
+                .setFunctionNames(
+                    listOf(DynamicSchemaHelperApp.FunctionNames.DYNAMIC_CONCAT_STRINGS)
+                )
+                .build()
+        var resultsByFunctionName = searchAppFunctions(searchSpec).associateBy { it.name }
+        assertThat(
+                resultsByFunctionName[DynamicSchemaHelperApp.FunctionNames.DYNAMIC_CONCAT_STRINGS]!!
+                    .isEnabled
+            )
+            .isFalse()
+
+        val registrationService = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
+        try {
+            assertThat(
+                    registrationService.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())
+                )
+                .isTrue()
+
+            resultsByFunctionName = searchAppFunctions(searchSpec).associateBy { it.name }
+            assertThat(
+                    resultsByFunctionName[
+                            DynamicSchemaHelperApp.FunctionNames.DYNAMIC_CONCAT_STRINGS]!!
+                        .isEnabled
+                )
+                .isTrue()
+        } finally {
+            registrationService.unregisterAppFunction(FunctionType.CONCAT_STRINGS.toString())
+        }
+    }
+
+    @Test
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#searchAppFunctions"])
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
+    fun searchAppFunctions_unregisterDynamicFunction_reflectsInSearchResult() = doBlocking {
+        val registrationService = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
+        assertThat(registrationService.registerAppFunction(FunctionType.CONCAT_STRINGS.toString()))
+            .isTrue()
+        assertThat(
+                registrationService.unregisterAppFunction(FunctionType.CONCAT_STRINGS.toString())
+            )
+            .isTrue()
+
+        val resultsByFunctionName =
+            searchAppFunctions(
+                    AppFunctionSearchSpec.Builder()
+                        .setFunctionNames(
+                            listOf(DynamicSchemaHelperApp.FunctionNames.DYNAMIC_CONCAT_STRINGS)
+                        )
+                        .build()
+                )
+                .associateBy { it.name }
+
+        assertThat(
+                resultsByFunctionName[DynamicSchemaHelperApp.FunctionNames.DYNAMIC_CONCAT_STRINGS]!!
+                    .isEnabled
+            )
+            .isFalse()
     }
 
     @Test
@@ -621,8 +877,8 @@ class SearchAppFunctionsTest {
             "Test requires an additional user different from the primary user.",
             secondaryUser != TestApis.users().instrumented(),
         )
-        installExistingPackageAsUser(CURRENT_PKG, secondaryUser)
-        installExistingPackageAsUser(TEST_HELPER_DYNAMIC_SCHEMA_PKG, secondaryUser)
+        installExistingPackageAsUser(CtsApp.PACKAGE_NAME, secondaryUser)
+        installExistingPackageAsUser(DynamicSchemaHelperApp.PACKAGE_NAME, secondaryUser)
         retryAssert {
             runWithShellPermission(Manifest.permission.INTERACT_ACROSS_USERS_FULL) {
                 assertThat(
@@ -630,17 +886,17 @@ class SearchAppFunctionsTest {
                             context.createContextAsUser(secondaryUser.userHandle(), 0)
                         )
                     )
-                    .contains(TEST_HELPER_DYNAMIC_SCHEMA_PKG)
+                    .contains(DynamicSchemaHelperApp.PACKAGE_NAME)
                 assertThat(
                         getAllRuntimeMetadataPackages(
                             context.createContextAsUser(secondaryUser.userHandle(), 0)
                         )
                     )
-                    .contains(TEST_HELPER_DYNAMIC_SCHEMA_PKG)
+                    .contains(DynamicSchemaHelperApp.PACKAGE_NAME)
             }
         }
         runWithShellPermission(Manifest.permission.INTERACT_ACROSS_USERS_FULL) {
-            mManager =
+            manager =
                 context
                     .createContextAsUser(secondaryUser.userHandle(), 0)
                     .getSystemService(AppFunctionManager::class.java)
@@ -672,9 +928,9 @@ class SearchAppFunctionsTest {
             "Test requires an additional user different from the primary user.",
             secondaryUser != TestApis.users().instrumented(),
         )
-        uninstallPackageAsUser(TEST_HELPER_PKG, secondaryUser)
-        installExistingPackageAsUser(CURRENT_PKG, secondaryUser)
-        installExistingPackageAsUser(TEST_HELPER_DYNAMIC_SCHEMA_PKG, secondaryUser)
+        uninstallPackageAsUser(LegacySchemaHelperApp.PACKAGE_NAME, secondaryUser)
+        installExistingPackageAsUser(CtsApp.PACKAGE_NAME, secondaryUser)
+        installExistingPackageAsUser(DynamicSchemaHelperApp.PACKAGE_NAME, secondaryUser)
         retryAssert {
             assertThat(
                     context
@@ -683,21 +939,21 @@ class SearchAppFunctionsTest {
                         .getInstalledPackages(0)
                         .map { it.packageName }
                 )
-                .doesNotContain(TEST_HELPER_PKG)
+                .doesNotContain(LegacySchemaHelperApp.PACKAGE_NAME)
             assertThat(
                     getAllStaticMetadataPackages(
                         context.createContextAsUser(secondaryUser.userHandle(), 0)
                     )
                 )
-                .contains(TEST_HELPER_DYNAMIC_SCHEMA_PKG)
+                .contains(DynamicSchemaHelperApp.PACKAGE_NAME)
             assertThat(
                     getAllRuntimeMetadataPackages(
                         context.createContextAsUser(secondaryUser.userHandle(), 0)
                     )
                 )
-                .contains(TEST_HELPER_DYNAMIC_SCHEMA_PKG)
+                .contains(DynamicSchemaHelperApp.PACKAGE_NAME)
         }
-        mManager =
+        manager =
             context
                 .createContextAsUser(secondaryUser.userHandle(), 0)
                 .getSystemService(AppFunctionManager::class.java)
@@ -707,26 +963,28 @@ class SearchAppFunctionsTest {
                     AppFunctionSearchSpec.Builder()
                         .setPackageNames(
                             listOf(
-                                TEST_HELPER_PKG, // Does not installed on secondary user
-                                TEST_HELPER_DYNAMIC_SCHEMA_PKG,
+                                LegacySchemaHelperApp
+                                    .PACKAGE_NAME, // Does not installed on secondary user
+                                DynamicSchemaHelperApp.PACKAGE_NAME,
                             )
                         )
                         .build()
                 )
                 .associateBy { it.name }
 
-        assertThat(result.keys).containsExactlyElementsIn(HELPER_PACKAGE_FUNCTIONS)
+        assertThat(result.keys)
+            .containsExactlyElementsIn(DynamicSchemaHelperApp.FunctionNames.ALL_FUNCTIONS)
         assertAppFunctionMetadataEquals(
-            result[FunctionName.ENABLED_BY_DEFAULT]!!,
-            FunctionMetadata.ENABLED_BY_DEFAULT,
+            result[DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT]!!,
+            DynamicSchemaHelperApp.FunctionMetadata.ENABLED_BY_DEFAULT,
         )
         assertAppFunctionMetadataEquals(
-            result[FunctionName.DISABLED_BY_DEFAULT]!!,
-            FunctionMetadata.DISABLED_BY_DEFAULT_NO_SCHEMA,
+            result[DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT]!!,
+            DynamicSchemaHelperApp.FunctionMetadata.DISABLED_BY_DEFAULT_NO_SCHEMA,
         )
         assertAppFunctionMetadataEquals(
-            result[FunctionName.HIGH_SCHEMA_VERSION]!!,
-            FunctionMetadata.HIGH_SCHEMA_VERSION,
+            result[DynamicSchemaHelperApp.FunctionNames.HIGH_SCHEMA_VERSION]!!,
+            DynamicSchemaHelperApp.FunctionMetadata.HIGH_SCHEMA_VERSION,
         )
     }
 
@@ -776,7 +1034,7 @@ class SearchAppFunctionsTest {
     private suspend fun searchAppFunctions(
         searchSpec: AppFunctionSearchSpec
     ): List<AppFunctionMetadata> = suspendCancellableCoroutine { continuation ->
-        mManager.searchAppFunctions(
+        manager.searchAppFunctions(
             searchSpec,
             context.mainExecutor,
             continuation.asOutcomeReceiver(),
@@ -820,6 +1078,25 @@ class SearchAppFunctionsTest {
 
     private fun resetTestPageSize() {
         ShellCommand.builder("cmd app_function reset-test-page-size").execute()
+    }
+
+    private fun bindToRegistrationService(
+        packageName: String
+    ): ITestAppFunctionRegistrationService {
+        val serviceIntent =
+            if (packageName == CtsApp.PACKAGE_NAME) {
+                Intent(context, TestAppFunctionRegistrationService::class.java)
+            } else {
+                Intent().apply {
+                    component =
+                        ComponentName(
+                            packageName,
+                            "android.app.appfunctions.testutils.TestAppFunctionRegistrationService",
+                        )
+                }
+            }
+        val binder: IBinder = serviceTestRule.bindService(serviceIntent)
+        return ITestAppFunctionRegistrationService.Stub.asInterface(binder)
     }
 
     private companion object {
