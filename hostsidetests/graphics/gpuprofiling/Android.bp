@@ -21,14 +21,21 @@ java_library_host {
     name: "GpuProfilingDataUtils",
     defaults: ["cts_defaults"],
 
+    libs: [
+        "tradefed",
+    ],
+
     static_libs: [
+        "hamcrest-library",
         "perfetto_config-full",
         "perfetto_trace-full",
     ],
 
     srcs: [
+        "src/**/RenderStagesChecks.kt",
         "src/**/ClockUtils.kt",
         "src/**/ProfilingDataUtils.kt",
+        "src/**/RenderStagesData.kt",
     ],
 }
 
@@ -69,6 +76,8 @@ java_test_host {
     srcs: [
         "src/**/ClockUtilsTest.kt",
         "src/**/ProfilingDataUtilsTest.kt",
+        "src/**/RenderStagesChecksTest.kt",
+        "src/**/RenderStagesDataTest.kt",
     ],
     static_libs: [
         "GpuProfilingDataUtils",
