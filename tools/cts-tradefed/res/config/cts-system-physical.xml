@@ -338,8 +338,6 @@
   <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.TouchExplorerTest#testSecondFingerDoubleTapNotTouchExploring_performsClick"/>
   <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.TouchExplorerTest#testSecondFingerDoubleTapTouchExploring_performsClick"/>
   <option name="compatibility:include-filter" value="CtsActivityRecognitionTestCases android.activityrecognition.cts.RenouncedPermissionsTest#testActivityRecognitionAttributionTagBlaming"/>
-  <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsDebuggableTest#testFledgeAuctionSelectionFlow_overall_Success"/>
-  <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.GetAdSelectionDataShellCommandCtsTest#testRunSeller_withCustomAudiencesAndSignals_happyPath"/>
   <option name="compatibility:include-filter" value="CtsAlarmManagerTestCases android.alarmmanager.cts.AppStandbyTests#testFrequentQuota"/>
   <option name="compatibility:include-filter" value="CtsAlarmManagerTestCases android.alarmmanager.cts.AppStandbyTests#testNeverQuota"/>
   <option name="compatibility:include-filter" value="CtsAlarmManagerTestCases android.alarmmanager.cts.AppStandbyTests#testRareQuota"/>

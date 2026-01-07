@@ -24,7 +24,6 @@
     <option name="compatibility:include-filter" value="CtsAccelerationTestCases" />
     <option name="compatibility:include-filter" value="CtsAccountManagerTestCases" />
     <option name="compatibility:include-filter" value="CtsActivityRecognitionTestCases" />
-    <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases" />
     <option name="compatibility:include-filter" value="CtsAdServicesTopicsConnectionTests" />
     <option name="compatibility:include-filter" value="CtsAlarmManagerTestCases" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases" />
