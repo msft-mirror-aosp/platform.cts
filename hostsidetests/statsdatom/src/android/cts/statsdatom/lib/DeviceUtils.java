@@ -609,7 +609,7 @@ public final class DeviceUtils {
     }
 
     public static void rebootDeviceAndWaitUntilReady(ITestDevice device) throws Exception {
-        device.rebootUntilOnline();
+        device.reboot();
         // Wait for 5 mins.
         assertWithMessage("Device failed to boot")
                 .that(device.waitForBootComplete(300_000))

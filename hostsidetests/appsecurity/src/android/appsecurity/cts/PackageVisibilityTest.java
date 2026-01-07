@@ -135,8 +135,7 @@ public final class PackageVisibilityTest extends BaseAppSecurityTest {
 
         // Uninstall with keep data and reboot
         uninstallWithKeepDataForUser(TINY_PKG, userId);
-        getDevice().rebootUntilOnline();
-        getDevice().waitForDeviceAvailable();
+        getDevice().reboot();
         waitForBootCompleted();
         getDevice().startUser(userId, /* waitFlag= */ true);
 
