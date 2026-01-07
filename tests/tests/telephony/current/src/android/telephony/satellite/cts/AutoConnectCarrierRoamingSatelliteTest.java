@@ -17,17 +17,24 @@
 package android.telephony.satellite.cts;
 
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_CHT;
+import static android.telephony.satellite.cts.ManualConnectCarrierRoamingSatelliteTest.createSendPendingIntent;
+import static android.telephony.satellite.cts.ManualConnectCarrierRoamingSatelliteTest.registerSmsMmsBroadcastReceiver;
 
 import static junit.framework.Assert.assertEquals;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.Manifest;
+import android.app.Activity;
+import android.app.PendingIntent;
 import android.os.PersistableBundle;
+import android.os.SystemClock;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.provider.Telephony;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.CarrierConfigManager;
 import android.telephony.NetworkRegistrationInfo;
@@ -42,6 +49,9 @@ import android.telephony.satellite.SatelliteManager;
 import androidx.annotation.RequiresPermission;
 
 import com.android.internal.telephony.flags.Flags;
+import com.android.internal.telephony.nano.PersistAtomsProto;
+import com.android.internal.telephony.nano.PersistAtomsProto.IncomingSms;
+import com.android.internal.telephony.nano.PersistAtomsProto.OutgoingSms;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -67,6 +77,9 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String TAG = "AutoConnectCarrierRoamingSatelliteTest";
+    private static final String SMS_SEND_ACTION = "CTS_SMS_SEND_ACTION";
+    private static final String TEST_DEST_ADDR = "1234567890";
+    private static final String SATELLITE_PLMN = "46692";
 
     /**
      * Setup before all tests.
@@ -215,6 +228,127 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
         if (!shouldTestSatelliteWithMockService()) return;
         testNoSatelliteConstrainedNetworkConnection_WithBandwidthNotConstrainedCapability(
                 SLOT_ID_0);
+    }
+
+    private void sendSmsAutoConnect(String destAddr, int resultCode) throws Exception {
+        logd(TAG, "sendSmsAutoConnect destAddr:" + destAddr + ", resultCode:" + resultCode);
+
+        CarrierRoamingNtnListenerTest ntnListener = new CarrierRoamingNtnListenerTest();
+        ntnListener.clearModeChanges();
+
+        adoptShellIdentity();
+        sTelephonyManager.registerTelephonyCallback(getContext().getMainExecutor(), ntnListener);
+
+        try {
+            assertTrue(ntnListener.waitForModeChanged(1));
+            assertTrue(ntnListener.getNtnMode());
+            ntnListener.clearModeChanges();
+
+            SmsMmsBroadcastReceiver sendReceiver = registerSmsMmsBroadcastReceiver(SMS_SEND_ACTION);
+            PendingIntent sendPendingIntent = createSendPendingIntent();
+
+            try {
+                // Send SMS
+                getSmsManager()
+                        .sendTextMessage(
+                                destAddr,
+                                null,
+                                String.valueOf(SystemClock.elapsedRealtimeNanos()),
+                                sendPendingIntent,
+                                null);
+
+                assertTrue(sendReceiver.waitForBroadcast(1));
+                Assert.assertEquals(resultCode, sendReceiver.getResultCode());
+
+            } finally {
+                getContext().unregisterReceiver(sendReceiver);
+            }
+
+        } finally {
+            sTelephonyManager.unregisterTelephonyCallback(ntnListener);
+            dropShellIdentity();
+        }
+    }
+
+    private void receiveSmsAutoConnect() throws Exception {
+        logd(TAG, "receiveSmsAutoConnect");
+
+        CarrierRoamingNtnListenerTest ntnListener = new CarrierRoamingNtnListenerTest();
+        ntnListener.clearModeChanges();
+
+        adoptShellIdentity();
+        sTelephonyManager.registerTelephonyCallback(getContext().getMainExecutor(), ntnListener);
+
+        try {
+            assertTrue(ntnListener.waitForModeChanged(1));
+            assertTrue(ntnListener.getNtnMode());
+            ntnListener.clearModeChanges();
+
+            SmsMmsBroadcastReceiver receiveReceiver =
+                    registerSmsMmsBroadcastReceiver(Telephony.Sms.Intents.SMS_RECEIVED_ACTION);
+
+            try {
+                // Trigger Incoming SMS
+                assertTrue(
+                        "Failed to trigger incoming SMS",
+                        sMockModemManager.triggerIncomingSms(SLOT_ID_0));
+
+                assertTrue(receiveReceiver.waitForBroadcast(1));
+
+            } finally {
+                getContext().unregisterReceiver(receiveReceiver);
+            }
+
+        } finally {
+            // Unregister listener and restore connectivity
+            sTelephonyManager.unregisterTelephonyCallback(ntnListener);
+            dropShellIdentity();
+        }
+    }
+
+    @Test
+    public void testSmsAtomCheckPlmn_AutoConnect() throws Exception {
+        logd(TAG, "testSmsAtomCheckPlmn_AutoConnect");
+        if (!shouldTestSatelliteWithMockService()) return;
+
+        // Clear existing atoms
+        sMockSatelliteServiceManager.executeTelephonyDebugServiceDumpsys(
+                "--clearatoms", "--saveFileImmediately");
+
+        // Send SMS
+        sendSmsAutoConnect(TEST_DEST_ADDR, Activity.RESULT_OK);
+
+        // Receive SMS
+        receiveSmsAutoConnect();
+
+        // Verify Atoms (Same as before)
+        PersistAtomsProto.PersistAtoms atoms =
+                sMockSatelliteServiceManager.pullMetricsAtomsViaDumpsys(false);
+        assertNotNull("PersistAtoms should not be null", atoms);
+
+        boolean outgoingSmsFound = false;
+        if (atoms.outgoingSms != null) {
+            for (OutgoingSms atom : atoms.outgoingSms) {
+                if (atom.isNtn || atom.isNbIotNtn) {
+                    logd(TAG, "Found OutgoingSms atom. PLMN: " + atom.plmn);
+                    assertEquals("Outgoing SMS PLMN should match", SATELLITE_PLMN, atom.plmn);
+                    outgoingSmsFound = true;
+                }
+            }
+        }
+        assertTrue("Did not find NTN OutgoingSms atom with correct PLMN", outgoingSmsFound);
+
+        boolean incomingSmsFound = false;
+        if (atoms.incomingSms != null) {
+            for (IncomingSms atom : atoms.incomingSms) {
+                if (atom.isNtn || atom.isNbIotNtn) {
+                    logd(TAG, "Found IncomingSms atom. PLMN: " + atom.plmn);
+                    assertEquals("Incoming SMS PLMN should match", SATELLITE_PLMN, atom.plmn);
+                    incomingSmsFound = true;
+                }
+            }
+        }
+        assertTrue("Did not find NTN IncomingSms atom with correct PLMN", incomingSmsFound);
     }
 
     @Test
