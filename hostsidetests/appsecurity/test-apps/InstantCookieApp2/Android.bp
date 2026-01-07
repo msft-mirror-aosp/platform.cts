@@ -26,7 +26,6 @@ android_test_helper_app {
     static_libs: ["androidx.test.rules"],
     sdk_version: "current",
     test_suites: [
-        "cts",
         "general-tests",
     ],
     certificate: ":cts-keyset-test-b",

@@ -26,7 +26,6 @@ android_test_helper_app {
     resource_dirs: ["res"],
     sdk_version: "current",
     test_suites: [
-        "cts",
         "general-tests",
     ],
     libs: ["CtsNoRestartBase"],

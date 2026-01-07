@@ -25,7 +25,6 @@ android_test_helper_app {
     libs: ["android.test.base.stubs.test"],
     srcs: ["src/**/*.java"],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     manifest: "AndroidManifestA.xml",
@@ -42,7 +41,6 @@ android_test_helper_app {
     libs: ["android.test.base.stubs.test"],
     srcs: ["src/**/*.java"],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     manifest: "AndroidManifestB.xml",
@@ -59,7 +57,6 @@ android_test_helper_app {
     libs: ["android.test.base.stubs.test"],
     srcs: ["src/**/*.java"],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     manifest: "AndroidManifestC.xml",

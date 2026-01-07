@@ -45,7 +45,6 @@ android_test_helper_app {
         "--package-id 0x80",
     ],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     lint: {
@@ -68,7 +67,6 @@ android_test_helper_app {
         "--package-id 0x80",
     ],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     lint: {
@@ -102,7 +100,6 @@ android_test_helper_app {
         "--auto-add-overlay",
     ],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     lint: {

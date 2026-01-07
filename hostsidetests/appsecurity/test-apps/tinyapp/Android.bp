@@ -26,7 +26,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
@@ -39,7 +38,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
@@ -61,7 +59,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "30",
@@ -76,7 +73,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
@@ -92,7 +88,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
@@ -109,7 +104,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
@@ -127,7 +121,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
@@ -150,7 +143,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
@@ -168,7 +160,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
@@ -188,7 +179,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
@@ -208,7 +198,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
@@ -226,7 +215,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
@@ -244,7 +232,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
@@ -267,7 +254,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
@@ -284,7 +270,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
@@ -299,7 +284,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
@@ -317,7 +301,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
@@ -335,7 +318,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
@@ -355,7 +337,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
@@ -376,7 +357,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
@@ -398,7 +378,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
@@ -415,7 +394,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
@@ -431,7 +409,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
@@ -449,7 +426,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
@@ -465,7 +441,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
@@ -481,7 +456,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
@@ -498,7 +472,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
@@ -515,7 +488,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
@@ -539,7 +511,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     // resource_dirs is the default value: ["res"]
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "current",
