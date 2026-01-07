@@ -50,6 +50,7 @@ android_test {
     srcs: [
         "src/**/*.java",
         "src/**/*.kt",
+	"FgsTestHelper/src/android/app/fgstesthelper/FgsTestHelper.java",
     ],
     // Tag this module as a cts test artifact
     test_suites: [
