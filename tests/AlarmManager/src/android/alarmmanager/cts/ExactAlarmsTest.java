@@ -37,6 +37,7 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.AlarmManager;
 import android.app.AppOpsManager;
+import android.app.Flags;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -49,6 +50,9 @@ import android.os.Process;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.util.Log;
 
@@ -136,6 +140,9 @@ public class ExactAlarmsTest {
             AlarmReceiver.dumpState();
         }
     };
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void updateAlarmManagerConstants() {
@@ -401,6 +408,7 @@ public class ExactAlarmsTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ALLOW_LISTENERS_WHILE_IDLE)
     public void setExactAwiCallbackQuota() throws Exception {
         assumeTrue(isDeviceIdleEnabled());
         putDeviceToIdle();
@@ -410,9 +418,13 @@ public class ExactAlarmsTest {
         int alarmId;
         for (int i = 0; i < ALLOW_WHILE_IDLE_COMPAT_QUOTA; i++) {
             final long trigger = SystemClock.elapsedRealtime() + 500;
-            mAlarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, trigger,
-                    "test-tag", Runnable::run, null,
-                    AlarmReceiver.createListener(alarmId = mIdGenerator.nextInt(), true));
+            alarmId = mIdGenerator.nextInt();
+            mAlarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                    trigger,
+                    "test-tag",
+                    Runnable::run,
+                    AlarmReceiver.createListener(alarmId, true));
             Thread.sleep(500);
             assertTrue("Alarm " + alarmId + " not received",
                     AlarmReceiver.waitForAlarm(alarmId, DEFAULT_WAIT_FOR_SUCCESS));
@@ -422,9 +434,13 @@ public class ExactAlarmsTest {
         final long nextTrigger = getNextEligibleAwiCompatTime(1);
         assertTrue("Not enough margin to test reliably", nextTrigger > nextSet + 5000);
 
-        mAlarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, nextSet,
-                "test-tag", Runnable::run, null,
-                AlarmReceiver.createListener(alarmId = mIdGenerator.nextInt(), true));
+        alarmId = mIdGenerator.nextInt();
+        mAlarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                nextSet,
+                "test-tag",
+                Runnable::run,
+                AlarmReceiver.createListener(alarmId, true));
         assertFalse("Alarm received when no quota", AlarmReceiver.waitForAlarm(alarmId, 5000));
 
         sleepUninterruptiblyUntil(nextTrigger);
