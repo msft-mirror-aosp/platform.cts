@@ -23,6 +23,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static src.android.provider.cts.media.modern.MediaStoreBaseTestRule.getExternalStorageDir;
+import static src.android.provider.cts.media.modern.MediaStoreBaseTestRule.pollForCondition;
+
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -30,6 +33,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.provider.MediaStore.Audio.Genres;
 import android.provider.MediaStore.Audio.Genres.Members;
@@ -43,6 +47,7 @@ import androidx.test.filters.SdkSuppress;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,9 +55,15 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+import src.android.provider.cts.media.modern.MediaStoreBaseTestRule;
+
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.R)
 @RunWith(Parameterized.class)
 public class MediaStore_Audio_Genres_MembersTest {
+
+    @ClassRule
+    public static MediaStoreBaseTestRule sMediaStoreBaseTest = new MediaStoreBaseTestRule();
+
     private Context mContext;
     private ContentResolver mContentResolver;
 
@@ -74,6 +85,11 @@ public class MediaStore_Audio_Genres_MembersTest {
         mContentResolver = mContext.getContentResolver();
 
         Log.d(TAG, "Using volume " + mVolumeName);
+        pollForCondition(
+                () ->
+                        Environment.getExternalStorageState(getExternalStorageDir(mVolumeName))
+                                .equals(Environment.MEDIA_MOUNTED),
+                "Timed out while waiting for ExternalStorageState to be MEDIA_MOUNTED");
 
         Uri uri = Audio1.getInstance().insert(mContentResolver, mVolumeName);
         Cursor c = mContentResolver.query(uri, null, null, null, null);
