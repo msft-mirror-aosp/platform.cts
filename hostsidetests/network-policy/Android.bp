@@ -45,6 +45,7 @@ java_test_host {
         ":CtsHostsideNetworkPolicyTestsApp2",
     ],
     per_testcase_directory: true,
+    enable_static_aconfig_pb: true,
 }
 
 test_module_config_host {

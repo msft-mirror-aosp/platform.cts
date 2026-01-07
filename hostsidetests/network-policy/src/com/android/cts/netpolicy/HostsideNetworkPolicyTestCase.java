@@ -59,7 +59,7 @@ abstract class HostsideNetworkPolicyTestCase extends BaseHostJUnit4Test {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice, this.getClass());
 
     @BeforeClassWithInfo
     public static void setUpOnceBase(TestInformation testInfo) throws Exception {
