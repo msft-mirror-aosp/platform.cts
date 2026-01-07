@@ -74,8 +74,8 @@ public class MotionCuesTest {
     private static final MotionCuesSettings DEFAULT_MOTION_CUES_SETTINGS = new MotionCuesSettings.Builder()
             .setHorizontalSpacingDp(60)
             .setVerticalSpacingDp(140)
-            .setMarginSize(20)
-            .setRadius(15)
+            .setMarginSizeDp(20)
+            .setRadiusDp(15)
             .build();
     private Context mContext;
     private StatusBarManager mStatusBarManager;
@@ -150,8 +150,8 @@ public class MotionCuesTest {
                 DEFAULT_MOTION_CUES_SETTINGS.getHorizontalSpacingDp());
         assertThat(state.verticalSpacingDp).isEqualTo(
                 DEFAULT_MOTION_CUES_SETTINGS.getVerticalSpacingDp());
-        assertThat(state.marginSize).isEqualTo(DEFAULT_MOTION_CUES_SETTINGS.getMarginSize());
-        assertThat(state.radius).isEqualTo(DEFAULT_MOTION_CUES_SETTINGS.getRadius());
+        assertThat(state.marginSizeDp).isEqualTo(DEFAULT_MOTION_CUES_SETTINGS.getMarginSizeDp());
+        assertThat(state.radiusDp).isEqualTo(DEFAULT_MOTION_CUES_SETTINGS.getRadiusDp());
         assertThat(state.motionBubbles).isNotEmpty();
     }
 
@@ -250,11 +250,11 @@ public class MotionCuesTest {
         startSessionAndAwait();
         MotionCueState initialState = getMotionCuesState();
         assertThat(initialState.isStarted).isTrue();
-        assertThat(initialState.radius).isEqualTo(DEFAULT_MOTION_CUES_SETTINGS.getRadius());
+        assertThat(initialState.radiusDp).isEqualTo(DEFAULT_MOTION_CUES_SETTINGS.getRadiusDp());
 
         // Attempt to start another session with different settings.
         MotionCuesSettings differentSettings = new MotionCuesSettings.Builder()
-                .setRadius(99)
+                .setRadiusDp(99)
                 .build();
         mStatusBarManager.startMotionCuesSession(mClientServiceComponent, differentSettings);
 
@@ -262,8 +262,8 @@ public class MotionCuesTest {
         // proving that the second start call was ignored.
         MotionCueState stateAfterSecondCall = getMotionCuesState();
         assertThat(stateAfterSecondCall.isStarted).isTrue();
-        assertThat(stateAfterSecondCall.radius).isEqualTo(initialState.radius);
-        assertThat(stateAfterSecondCall.radius).isNotEqualTo(differentSettings.getRadius());
+        assertThat(stateAfterSecondCall.radiusDp).isEqualTo(initialState.radiusDp);
+        assertThat(stateAfterSecondCall.radiusDp).isNotEqualTo(differentSettings.getRadiusDp());
     }
 
     @Test
