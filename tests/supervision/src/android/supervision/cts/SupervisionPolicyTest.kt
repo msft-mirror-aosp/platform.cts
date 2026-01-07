@@ -34,6 +34,7 @@ import com.android.compatibility.common.util.ApiTest
 import com.android.eventlib.EventLogs
 import com.android.eventlib.truth.EventLogsSubject.assertThat
 import com.google.common.truth.Truth.assertThat
+import java.time.Duration
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.junit.Before
@@ -42,8 +43,9 @@ import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
 @RequireFlagsEnabled(
-    Flags.FLAG_ENABLE_SUPERVISION_MANAGER_POLICY_APIS,
     Flags.FLAG_ENABLE_APP_SERVICE_CONNECTION_CALLBACKS,
+    Flags.FLAG_ENABLE_SUPERVISION_APP_SERVICE,
+    Flags.FLAG_ENABLE_SUPERVISION_MANAGER_POLICY_APIS,
 )
 class SupervisionPolicyTest : BaseSupervisionTest() {
 
@@ -56,11 +58,13 @@ class SupervisionPolicyTest : BaseSupervisionTest() {
     @ApiTest(
         apis =
             [
-                "android.app.supervision.SupervisionManager#setPolicy",
                 "android.app.supervision.PackageUsagePolicy.Builder#setPackageName",
                 "android.app.supervision.PackageUsagePolicy.Builder#setType",
-                "android.app.supervision.Policy.Builder#setVersion",
                 "android.app.supervision.Policy.Builder#build",
+                "android.app.supervision.Policy.Builder#setVersion",
+                "android.app.supervision.SupervisionAppService#onPolicyChanged",
+                "android.app.supervision.SupervisionManager#getPolicies",
+                "android.app.supervision.SupervisionManager#setPolicy",
             ]
     )
     fun setPolicy_packagePolicy_blocked_successfullyHidesApp() {
@@ -71,11 +75,13 @@ class SupervisionPolicyTest : BaseSupervisionTest() {
     @ApiTest(
         apis =
             [
-                "android.app.supervision.SupervisionManager#setPolicy",
                 "android.app.supervision.PackageUsagePolicy.Builder#setPackageName",
                 "android.app.supervision.PackageUsagePolicy.Builder#setType",
-                "android.app.supervision.Policy.Builder#setVersion",
                 "android.app.supervision.Policy.Builder#build",
+                "android.app.supervision.Policy.Builder#setVersion",
+                "android.app.supervision.SupervisionAppService#onPolicyChanged",
+                "android.app.supervision.SupervisionManager#getPolicies",
+                "android.app.supervision.SupervisionManager#setPolicy",
             ]
     )
     fun setPolicy_packagePolicy_allowed_successfullyUnhidesApp() {
@@ -86,13 +92,15 @@ class SupervisionPolicyTest : BaseSupervisionTest() {
     @ApiTest(
         apis =
             [
-                "android.app.supervision.SupervisionManager#setPolicy",
                 "android.app.supervision.PackageUsagePolicy.Builder#setPackageName",
                 "android.app.supervision.PackageUsagePolicy.Builder#setType",
                 "android.app.supervision.PackageUsagePolicy#getPackageName",
                 "android.app.supervision.PackageUsagePolicy#getType",
-                "android.app.supervision.Policy.Builder#setVersion",
                 "android.app.supervision.Policy.Builder#build",
+                "android.app.supervision.Policy.Builder#setVersion",
+                "android.app.supervision.SupervisionAppService#onPolicyChanged",
+                "android.app.supervision.SupervisionManager#getPolicies",
+                "android.app.supervision.SupervisionManager#setPolicy",
             ]
     )
     fun setPolicy_multiplePolicies_successfullyApplied() {
@@ -162,9 +170,10 @@ class SupervisionPolicyTest : BaseSupervisionTest() {
                 PackageUsagePolicy.TYPE_BLOCKED -> false
                 else -> throw IllegalArgumentException("Unsupported policy type: ${policy.type}")
             }
-
         // If the app is already in the expected state, then no broadcast will be sent.
         val expectBroadcast = getApplicationEnabledState(policy.packageName) != expectedEnabledState
+        val expectedPolicy =
+            PackageUsagePolicy.Builder(policy).setVersion(policy.version + 1).build()
 
         // Set up a broadcast receiver to wait for the broadcast.
         val latch = CountDownLatch(1)
@@ -178,6 +187,10 @@ class SupervisionPolicyTest : BaseSupervisionTest() {
         try {
             supervisionApp.supervisionManager().setPolicy(policy)
             assertThat(latch.await(TIMEOUT, TimeUnit.SECONDS)).isEqualTo(expectBroadcast)
+            // Verify that the onPolicyChanged event is logged with the correct policy.
+            val onPolicyChangedEvent =
+                supervisionApp.events().policyChanged().wherePolicy().isEqualTo(expectedPolicy)
+            assertThat(onPolicyChangedEvent).eventOccurredWithin(Duration.ofSeconds(TIMEOUT))
         } finally {
             context.unregisterReceiver(broadcastReceiver)
         }
