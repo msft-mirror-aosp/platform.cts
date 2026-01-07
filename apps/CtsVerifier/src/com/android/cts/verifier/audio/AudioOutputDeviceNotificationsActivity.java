@@ -24,14 +24,23 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
 
-import com.android.cts.verifier.R;
+import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
+import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
 import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
+import com.android.compatibility.common.util.ResultType;
+import com.android.compatibility.common.util.ResultUnit;
+import com.android.cts.verifier.CtsVerifierReportLog;
+import com.android.cts.verifier.PassFailButtons;
+import com.android.cts.verifier.R;
 
 /**
  * Tests Audio Device Connection events for output devices by prompting the user to
  * insert/remove a wired headset and noting the presence (or absence) of notifications.
  */
 public class AudioOutputDeviceNotificationsActivity extends AudioWiredDeviceBaseActivity {
+    private static final String TAG = AudioOutputDeviceNotificationsActivity.class.getSimpleName();
+    private static final String SECTION_AUDIO_OUTPUT_DEVICE_NOTIFICATIONS = "audio_output_device_notifications_test";
+
     private Context mContext;
 
     private AudioManager mAudioManager;
@@ -45,6 +54,9 @@ public class AudioOutputDeviceNotificationsActivity extends AudioWiredDeviceBase
     private boolean mConnectReceived = false;
     private boolean mDisconnectReceived = false;
 
+    private static final String KEY_NOTIFICATION_RECEIVED_FOR_CONNECT = "notification_received_for_connect";
+    private static final String KEY_NOTIFICATION_RECEIVED_FOR_DISCONNECT = "notification_received_for_disconnect";
+
     private class TestAudioDeviceCallback extends AudioDeviceCallback {
         public void onAudioDevicesAdded(AudioDeviceInfo[] addedDevices) {
             // we will get this message when we setup the handler, so ignore the first one.
@@ -54,6 +66,7 @@ public class AudioOutputDeviceNotificationsActivity extends AudioWiredDeviceBase
             }
             if (addedDevices.length != 0) {
                 AudioDeviceInfo devInfo = addedDevices[addedDevices.length - 1];
+                mConnectedPeripheralName = AudioDeviceUtils.formatDeviceName(devInfo);
                 mConnectView.setText(
                         mContext.getResources().getString(
                                 R.string.audio_dev_notification_connectMsg,
@@ -136,4 +149,33 @@ public class AudioOutputDeviceNotificationsActivity extends AudioWiredDeviceBase
         getPassButton().setEnabled(!mSupportsWiredPeripheral
                 || (mConnectReceived && mDisconnectReceived));
     }
+
+
+    @Override
+    public final String getReportSectionName() {
+        return setTestNameSuffix(sCurrentDisplayMode, SECTION_AUDIO_OUTPUT_DEVICE_NOTIFICATIONS);
+    }
+
+    @Override
+    public void recordTestResults(){
+        super.recordTestResults();
+        CtsVerifierReportLog reportLog = getReportLog();
+        reportLog.addValue(
+                KEY_NOTIFICATION_RECEIVED_FOR_CONNECT,
+                mConnectReceived,
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+        reportLog.addValue(
+                KEY_NOTIFICATION_RECEIVED_FOR_DISCONNECT,
+                mDisconnectReceived,
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+        reportLog.addValue(
+                KEY_CONNECTED_PERIPHERAL,
+                mConnectedPeripheralName,
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+        reportLog.submit();
+    }
+
 }
