@@ -18,9 +18,6 @@ package android.provider.cts.media.modern;
 
 import static android.provider.cts.media.modern.MediaStoreTest.TAG;
 
-import static src.android.provider.cts.media.modern.MediaStoreBaseTestRule.getExternalStorageDir;
-import static src.android.provider.cts.media.modern.MediaStoreBaseTestRule.pollForCondition;
-
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -29,7 +26,6 @@ import android.database.ContentObserver;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.provider.MediaStore;
@@ -39,14 +35,11 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SdkSuppress;
 
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
-
-import src.android.provider.cts.media.modern.MediaStoreBaseTestRule;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -54,10 +47,6 @@ import java.util.concurrent.TimeUnit;
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.R)
 @RunWith(Parameterized.class)
 public class MediaStoreNotificationTest {
-
-    @ClassRule
-    public static MediaStoreBaseTestRule sMediaStoreBaseTest = new MediaStoreBaseTestRule();
-
     private Context mContext;
     private ContentResolver mResolver;
 
@@ -80,11 +69,6 @@ public class MediaStoreNotificationTest {
         mResolver = mContext.getContentResolver();
 
         Log.d(TAG, "Using volume " + mVolumeName);
-        pollForCondition(
-                () ->
-                        Environment.getExternalStorageState(getExternalStorageDir(mVolumeName))
-                                .equals(Environment.MEDIA_MOUNTED),
-                "Timed out while waiting for ExternalStorageState to be MEDIA_MOUNTED");
         mSpecificImages = MediaStore.Images.Media.getContentUri(mVolumeName);
         mSpecificFiles = MediaStore.Files.getContentUri(mVolumeName);
         mGenericImages = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL);
