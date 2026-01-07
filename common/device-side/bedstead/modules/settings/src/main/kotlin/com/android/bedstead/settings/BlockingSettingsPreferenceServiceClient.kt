@@ -29,7 +29,9 @@ import android.service.settings.preferences.SettingsPreferenceValue
 import android.util.Log
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.TestApis.permissions
+import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.utils.BlockingCallback.DefaultBlockingCallback
+import com.android.bedstead.nene.utils.Poll
 import java.util.concurrent.TimeUnit
 
 /**
@@ -84,7 +86,7 @@ class BlockingSettingsPreferenceServiceClient(val packageName: String) {
     /**
      * A blocking wrapper of [SettingsPreferenceServiceClient.getPreferenceValue]
      */
-    internal fun getValueResult(
+    fun getValueResult(
         metadata: SettingsPreferenceMetadata,
         grantRequiredPermissions: Boolean = true
     ): GetValueResult {
@@ -117,7 +119,7 @@ class BlockingSettingsPreferenceServiceClient(val packageName: String) {
     /**
      * A blocking wrapper of [SettingsPreferenceServiceClient.setPreferenceValue]
      */
-    internal fun setValueResult(
+    fun setValueResult(
         metadata: SettingsPreferenceMetadata,
         settingsPreferenceValue: SettingsPreferenceValue,
         grantRequiredPermissions: Boolean = true
@@ -126,11 +128,43 @@ class BlockingSettingsPreferenceServiceClient(val packageName: String) {
             permissions().withPermission(
                 *READ_AND_WRITE_SYSTEM_PREFERENCES_PERMISSIONS.plus(metadata.writePermissions)
             ).use {
-                return setValueResultInternal(metadata, settingsPreferenceValue)
+                return setValueResultInternalWithRetryingMechanism(
+                    metadata,
+                    settingsPreferenceValue
+                )
             }
         } else {
-            return setValueResultInternal(metadata, settingsPreferenceValue)
+            return setValueResultInternalWithRetryingMechanism(metadata, settingsPreferenceValue)
         }
+    }
+
+    /**
+     * This function is a workaround for b/444408146
+     * Remove it when the bug is resolved and replace it with setValueResultInternal()
+     */
+    private fun setValueResultInternalWithRetryingMechanism(
+        metadata: SettingsPreferenceMetadata,
+        settingsPreferenceValue: SettingsPreferenceValue
+    ): SetValueResult {
+        repeat(5) {
+            val result = setValueResultInternal(metadata, settingsPreferenceValue)
+            if (result.resultCode == SetValueResult.RESULT_OK) {
+                Thread.sleep(RETRYING_INTERVAL_MILLISECONDS)
+                val getResult = Poll.forValue { getValueResult(metadata).value }
+                    .toMeet { settingsPreferenceValue.isEqualTo(it) }
+                    .interval(RETRYING_INTERVAL_MILLISECONDS)
+                    .timeout(java.time.Duration.ofSeconds(3))
+                    .await()
+                if (getResult != null) {
+                    return result
+                }
+            } else {
+                return result
+            }
+        }
+        throw NeneException(
+            "unable to execute setPreferenceValue() effectively across 5 trials"
+        )
     }
 
     private fun setValueResultInternal(
@@ -156,6 +190,7 @@ class BlockingSettingsPreferenceServiceClient(val packageName: String) {
         private const val LOG_TAG = "bedstead-settings"
         private const val SHORT_TIMEOUT_SECONDS = 1L
         private const val TIMEOUT_SECONDS = 10L
+        private const val RETRYING_INTERVAL_MILLISECONDS = 100L
         private val READ_AND_WRITE_SYSTEM_PREFERENCES_PERMISSIONS = arrayOf(
             READ_SYSTEM_PREFERENCES,
             WRITE_SYSTEM_PREFERENCES
