@@ -46,6 +46,7 @@ import com.android.cts.verifier.audio.audiolib.WaveScopeView;
 import com.android.cts.verifier.libs.ui.HtmlFormatter;
 import com.android.cts.verifier.libs.ui.PlainTextFormatter;
 import com.android.cts.verifier.libs.ui.TextFormatter;
+import com.android.cts.verifier.audio.reportlog.TestStatus;
 
 import org.hyphonate.megaaudio.common.BuilderBase;
 import org.hyphonate.megaaudio.common.Globals;
@@ -80,6 +81,7 @@ public abstract class AudioDataPathsBaseActivity
 
     // ReportLog Schema
     private static final String KEY_DATAPATHS = "data_paths";
+    private static final String KEY_STATUS = "status";
 
     public static final int TYPICAL_SAMPLE_RATE = 48000;
     public static final int TYPICAL_CHANNEL_COUNT = 2;
@@ -1772,6 +1774,20 @@ public abstract class AudioDataPathsBaseActivity
         return mTestManagers.stream().anyMatch(TestManager::calculatePass);
     }
 
+    protected TestStatus getStatus() {
+        if (calculatePass()) {
+            return TestStatus.TEST_STATUS_PASSED;
+        } else if (!mIsHandheld || !hasPeripheralSupport() || mIsEmulator) {
+            return TestStatus.TEST_STATUS_SKIPPED_UNSUPPORTED_DEVICE;
+        } else if (hasRun() && grantAutoPass()) {
+            return TestStatus.TEST_STATUS_PASSED_ON_COMPLETION;
+        } else if (hasRun()) {
+            return TestStatus.TEST_STATUS_FAILED;
+        } else {
+            return TestStatus.TEST_STATUS_NOT_RUN;
+        }
+    }
+
     private boolean hasRun() {
         return mTestManagers.stream().anyMatch(TestManager::hasRun);
     }
@@ -1840,6 +1856,11 @@ public abstract class AudioDataPathsBaseActivity
                 }
             }
             reportLog.addValues(KEY_DATAPATHS, tests);
+            reportLog.addValue(
+                    KEY_STATUS,
+                    getStatus().name(),
+                    ResultType.NEUTRAL,
+                    ResultUnit.NONE);
         } catch (JSONException e) {
             Log.e(TAG, "Failed to generate JSON report.", e);
         }
