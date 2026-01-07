@@ -39,6 +39,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.android.server.biometrics.nano.BiometricServiceStateProto;
+import com.android.server.biometrics.nano.SensorStateProto;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
@@ -448,5 +449,42 @@ public class Utils {
     public static boolean shouldShowBpWithoutIconForCredential(
             boolean isVerticalContentView, boolean isBiometricAllowed) {
         return !isBiometricAllowed && isVerticalContentView;
+    }
+
+    /**
+     * Converts an internal sensor modality constant to a public-facing biometric type.
+     *
+     * @param sensorModality The internal sensor modality as defined in {@link SensorStateProto}.
+     * @return The corresponding public biometric type defined in {@link BiometricManager}. Returns
+     *     0 if the modality is unknown.
+     */
+    public static int convertSensorModalityToPublicType(int sensorModality) {
+        return switch (sensorModality) {
+            case SensorStateProto.FINGERPRINT -> BiometricManager.TYPE_FINGERPRINT;
+            case SensorStateProto.FACE -> BiometricManager.TYPE_FACE;
+            default -> {
+                Log.w(TAG, String.format("Unknown sensor modality %s.", sensorModality));
+                yield 0;
+            }
+        };
+    }
+
+    /**
+     * Converts raw biometric sensor strength bitmasks for public API exposure.
+     *
+     * @param sensorStrength The raw sensor strength representation (e.g., {@link
+     *     BiometricManager.Authenticators#BIOMETRIC_STRONG}).
+     * @return The equivalent public constant, or {@link
+     *     BiometricManager.Authenticators#AUTHENTICATOR_STRENGTH_UNKNOWN} if the raw value is
+     *     unknown or should be obscured.
+     */
+    public static int convertSensorStrengthForPublicApi(int sensorStrength) {
+        return switch (sensorStrength) {
+            // Class-3 sensor strength.
+            case BiometricManager.Authenticators.BIOMETRIC_STRONG ->
+                    BiometricManager.Authenticators.BIOMETRIC_STRONG;
+            // Unknown or obscured sensor strengths.
+            default -> BiometricManager.Authenticators.AUTHENTICATOR_STRENGTH_UNKNOWN;
+        };
     }
 }

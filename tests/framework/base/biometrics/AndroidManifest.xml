@@ -18,6 +18,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="android.server.biometrics.cts">
 
+    <!-- Required to see the helper app package -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+
     <application
         android:label="CtsBiometricsTestCases">
         <uses-library android:name="android.test.runner" />
