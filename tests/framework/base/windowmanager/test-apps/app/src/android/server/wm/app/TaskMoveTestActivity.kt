@@ -19,7 +19,6 @@ package android.server.wm.app
 import android.app.Activity
 import android.app.ActivityManager
 import android.app.ActivityOptions
-import android.app.TaskDisplayPolicyState
 import android.app.TaskLocation
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -28,26 +27,18 @@ import android.content.IntentFilter
 import android.graphics.Rect
 import android.os.OutcomeReceiver
 import android.server.wm.app.Components.TaskMoveTestActivity.ACTION_CHECK_IS_TASK_MOVE_ALLOWED
-import android.server.wm.app.Components.TaskMoveTestActivity.ACTION_NOTIFY_LISTENER_CALLED
 import android.server.wm.app.Components.TaskMoveTestActivity.ACTION_NOTIFY_START_ACTIVITY_WITH_MOVABLE_FLAG_RESULT
 import android.server.wm.app.Components.TaskMoveTestActivity.ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT
 import android.server.wm.app.Components.TaskMoveTestActivity.ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT
-import android.server.wm.app.Components.TaskMoveTestActivity.ACTION_REGISTER_LISTENER
-import android.server.wm.app.Components.TaskMoveTestActivity.ACTION_REGISTER_LISTENER_ACK
 import android.server.wm.app.Components.TaskMoveTestActivity.ACTION_REQUEST_TASK_MOVE
 import android.server.wm.app.Components.TaskMoveTestActivity.ACTION_START_ACTIVITY_WITH_MOVABLE_FLAG
-import android.server.wm.app.Components.TaskMoveTestActivity.ACTION_UNREGISTER_LISTENER
-import android.server.wm.app.Components.TaskMoveTestActivity.ACTION_UNREGISTER_LISTENER_ACK
 import android.server.wm.app.Components.TaskMoveTestActivity.EXTRA_BOUNDS_KEY
 import android.server.wm.app.Components.TaskMoveTestActivity.EXTRA_DISPLAY_ID_KEY
 import android.server.wm.app.Components.TaskMoveTestActivity.EXTRA_EXCEPTION_KEY
 import android.server.wm.app.Components.TaskMoveTestActivity.EXTRA_SYNC_EXCEPTION_KEY
 import android.server.wm.app.Components.TaskMoveTestActivity.EXTRA_TASK_MOVE_ALLOWED_RESULT
-import android.server.wm.app.Components.TaskMoveTestActivity.EXTRA_TMA_KEYS_ARRAY_KEY
-import android.server.wm.app.Components.TaskMoveTestActivity.EXTRA_TMA_VALUES_ARRAY_KEY
 import android.view.Display
 import java.lang.IllegalStateException
-import java.util.function.Consumer
 
 class TaskMoveTestActivity : Activity() {
 
@@ -62,18 +53,6 @@ class TaskMoveTestActivity : Activity() {
                 val displayId = intent.getIntExtra(EXTRA_DISPLAY_ID_KEY, getDisplayId())
                 sendIsTaskMoveAllowed(displayId)
             }
-            ACTION_REGISTER_LISTENER -> {
-                getSystemService(
-                    ActivityManager::class.java
-                ).registerTaskDisplayPolicyStateListener(Runnable::run, mListener)
-                sendBroadcast(Intent(ACTION_REGISTER_LISTENER_ACK))
-            }
-            ACTION_UNREGISTER_LISTENER -> {
-                getSystemService(
-                    ActivityManager::class.java
-                ).unregisterTaskDisplayPolicyStateListener(mListener)
-                sendBroadcast(Intent(ACTION_UNREGISTER_LISTENER_ACK))
-            }
             ACTION_REQUEST_TASK_MOVE -> {
                 val displayId = intent.getIntExtra(EXTRA_DISPLAY_ID_KEY, Display.INVALID_DISPLAY)
                 val bounds: Rect? = intent.getParcelableExtra(EXTRA_BOUNDS_KEY, Rect::class.java)
@@ -85,29 +64,12 @@ class TaskMoveTestActivity : Activity() {
         }
     }
 
-    private val mListener = Consumer<List<TaskDisplayPolicyState>> { displayPolicyStates ->
-        val size = displayPolicyStates.size
-        val keys = IntArray(size)
-        val values = BooleanArray(size)
-        displayPolicyStates.forEachIndexed { i, state ->
-            keys[i] = state.displayId
-            values[i] = state.taskMoveState == TaskDisplayPolicyState.TASK_MOVE_ALLOWED
-        }
-
-        sendBroadcast(Intent(ACTION_NOTIFY_LISTENER_CALLED).apply {
-            putExtra(EXTRA_TMA_KEYS_ARRAY_KEY, keys)
-            putExtra(EXTRA_TMA_VALUES_ARRAY_KEY, values)
-        })
-    }
-
     override fun onStart() {
         super.onStart()
         val intentFilter = IntentFilter().apply {
             addAction(ACTION_CHECK_IS_TASK_MOVE_ALLOWED)
             addAction(ACTION_START_ACTIVITY_WITH_MOVABLE_FLAG)
-            addAction(ACTION_REGISTER_LISTENER)
             addAction(ACTION_REQUEST_TASK_MOVE)
-            addAction(ACTION_UNREGISTER_LISTENER)
         }
         registerReceiver(mReceiver, intentFilter, RECEIVER_EXPORTED)
     }
