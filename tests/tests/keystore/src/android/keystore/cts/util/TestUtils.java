@@ -27,6 +27,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
@@ -282,6 +283,16 @@ public class TestUtils {
     }
 
     /**
+     * Skips the test if ML-DSA is not supported. Support is expected for TEE KeyMint v5+. Support
+     * is not expected for any StrongBox KeyMint version.
+     */
+    public static void assumeMlDsaSupported(boolean useStrongBox) {
+        assumeFalse("Only TEE KeyMint supports ML-DSA", useStrongBox);
+        assumeTrue("Only test when TEE KeyMint on DUT supports ML-DSA",
+                getFeatureVersionKeystore(getContext()) >= 500);
+    }
+
+    /**
      * Returns VSR API level.
      */
     public static int getVendorApiLevel() {
@@ -354,8 +365,11 @@ public class TestUtils {
             assertFalse("XDH private key must not be instanceof ECKey: "
                             + privateKey.getClass().getName(),
                     privateKey instanceof ECKey);
+        } else if ("ML-DSA".equalsIgnoreCase(keyAlgorithm)) {
+            // JEP 497 doesn't introduce any new ML-DSA classes or interfaces, so there are neither
+            // inheritance checks nor algorithm-specific parameter comparisons to do.
         } else {
-            fail("Unsuported key algorithm: " + keyAlgorithm);
+            fail("Unsupported key algorithm: " + keyAlgorithm);
         }
     }
 
@@ -381,7 +395,18 @@ public class TestUtils {
     public static void assertKeyStoreKeyPair(KeyStore keyStore, String alias, KeyPair keyPair) {
         assertKeyMaterialExportable(keyPair.getPublic());
         assertKeyMaterialNotExportable(keyPair.getPrivate());
-        assertTransparentKey(keyPair.getPublic());
+
+        PublicKey publicKey = keyPair.getPublic();
+        if (publicKey.getAlgorithm().equals("ML-DSA")) {
+            // There are no JCA classes or interfaces for ML-DSA keys, meaning there's no way for an
+            // ML-DSA (public or private) key object to expose any information that would enable
+            // reconstruction of its key material. As a result, both public and private ML-DSA keys
+            // are expected to be opaque.
+            assertOpaqueKey(publicKey);
+        } else {
+            assertTransparentKey(publicKey);
+        }
+
         assertOpaqueKey(keyPair.getPrivate());
 
         KeyStore.Entry entry;
@@ -719,10 +744,20 @@ public class TestUtils {
     public static ImportedKey importIntoAndroidKeyStore(
             String alias, Context context, int privateResId, int certResId, KeyProtection params)
                     throws Exception {
-        Certificate originalCert = TestUtils.getRawResX509Certificate(context, certResId);
-        PublicKey originalPublicKey = originalCert.getPublicKey();
-        PrivateKey originalPrivateKey = TestUtils.getRawResPrivateKey(context, privateResId);
+        Certificate cert = TestUtils.getRawResX509Certificate(context, certResId);
+        PublicKey publicKey = cert.getPublicKey();
+        PrivateKey privateKey = TestUtils.getRawResPrivateKey(context, privateResId);
+        return importIntoAndroidKeyStore(alias, cert, publicKey, privateKey, params);
+    }
 
+    // TODO(b/395069350): Collapse into importIntoAndroidKeyStore variant above that takes the
+    // resource IDs as input once ML-DSA test resources work.
+    public static ImportedKey importIntoAndroidKeyStore(
+            String alias,
+            Certificate originalCert,
+            PublicKey originalPublicKey,
+            PrivateKey originalPrivateKey,
+            KeyProtection params) throws Exception {
         // Check that the domain parameters match between the private key and the public key. This
         // is to catch accidental errors where a test provides the wrong resource ID as one of the
         // parameters.
@@ -1038,6 +1073,10 @@ public class TestUtils {
 
     public static String getSignatureAlgorithmDigest(String algorithm) {
         String algorithmUpperCase = algorithm.toUpperCase(Locale.US);
+        if (algorithmUpperCase.startsWith("ML-DSA")) {
+            return KeyProperties.DIGEST_NONE;
+        }
+
         int withIndex = algorithmUpperCase.indexOf("WITH");
         if (withIndex == -1) {
             throw new IllegalArgumentException("Unsupported algorithm: " + algorithm);
@@ -1051,7 +1090,7 @@ public class TestUtils {
 
     public static String getSignatureAlgorithmPadding(String algorithm) {
         String algorithmUpperCase = algorithm.toUpperCase(Locale.US);
-        if (algorithmUpperCase.endsWith("WITHECDSA")) {
+        if (algorithmUpperCase.endsWith("WITHECDSA") || algorithmUpperCase.startsWith("ML-DSA")) {
             return null;
         } else if (algorithmUpperCase.endsWith("WITHRSA")) {
             return KeyProperties.SIGNATURE_PADDING_RSA_PKCS1;
@@ -1069,6 +1108,9 @@ public class TestUtils {
         } else if ((algorithmUpperCase.endsWith("WITHRSA"))
                 || (algorithmUpperCase.endsWith("WITHRSA/PSS"))) {
             return KeyProperties.KEY_ALGORITHM_RSA;
+        } else if (algorithmUpperCase.startsWith("ML-DSA")) {
+            // Don't strip away information about the parameter set.
+            return algorithmUpperCase;
         } else {
             throw new IllegalArgumentException("Unsupported algorithm: " + algorithm);
         }
@@ -1076,8 +1118,8 @@ public class TestUtils {
 
     public static boolean isKeyLongEnoughForSignatureAlgorithm(String algorithm, int keySizeBits) {
         String keyAlgorithm = getSignatureAlgorithmKeyAlgorithm(algorithm);
-        if (KeyProperties.KEY_ALGORITHM_EC.equalsIgnoreCase(keyAlgorithm)) {
-            // No length restrictions for ECDSA
+        if (KeyProperties.KEY_ALGORITHM_EC.equalsIgnoreCase(keyAlgorithm)
+                || KeyProperties.KEY_ALGORITHM_ML_DSA.equalsIgnoreCase(keyAlgorithm)) {
             return true;
         } else if (KeyProperties.KEY_ALGORITHM_RSA.equalsIgnoreCase(keyAlgorithm)) {
             String digest = getSignatureAlgorithmDigest(algorithm);
@@ -1198,17 +1240,20 @@ public class TestUtils {
     public static KeyProtection getMinimalWorkingImportParametersForSigningingWith(
             String signatureAlgorithm) {
         String keyAlgorithm = getSignatureAlgorithmKeyAlgorithm(signatureAlgorithm);
-        String digest = getSignatureAlgorithmDigest(signatureAlgorithm);
         if (KeyProperties.KEY_ALGORITHM_EC.equalsIgnoreCase(keyAlgorithm)) {
+            String digest = getSignatureAlgorithmDigest(signatureAlgorithm);
             return new KeyProtection.Builder(KeyProperties.PURPOSE_SIGN)
                     .setDigests(digest)
                     .build();
         } else if (KeyProperties.KEY_ALGORITHM_RSA.equalsIgnoreCase(keyAlgorithm)) {
+            String digest = getSignatureAlgorithmDigest(signatureAlgorithm);
             String padding = getSignatureAlgorithmPadding(signatureAlgorithm);
             return new KeyProtection.Builder(KeyProperties.PURPOSE_SIGN)
                     .setDigests(digest)
                     .setSignaturePaddings(padding)
                     .build();
+        } else if (KeyProperties.KEY_ALGORITHM_ML_DSA.equalsIgnoreCase(keyAlgorithm)) {
+            return new KeyProtection.Builder(KeyProperties.PURPOSE_SIGN).build();
         } else {
             throw new IllegalArgumentException(
                     "Unsupported signature algorithm: " + signatureAlgorithm);
@@ -1218,17 +1263,22 @@ public class TestUtils {
     public static KeyProtection getMinimalWorkingImportParametersWithLimitedUsageForSigningingWith(
             String signatureAlgorithm, int maxUsageCount) {
         String keyAlgorithm = getSignatureAlgorithmKeyAlgorithm(signatureAlgorithm);
-        String digest = getSignatureAlgorithmDigest(signatureAlgorithm);
         if (KeyProperties.KEY_ALGORITHM_EC.equalsIgnoreCase(keyAlgorithm)) {
+            String digest = getSignatureAlgorithmDigest(signatureAlgorithm);
             return new KeyProtection.Builder(KeyProperties.PURPOSE_SIGN)
                     .setDigests(digest)
                     .setMaxUsageCount(maxUsageCount)
                     .build();
         } else if (KeyProperties.KEY_ALGORITHM_RSA.equalsIgnoreCase(keyAlgorithm)) {
             String padding = getSignatureAlgorithmPadding(signatureAlgorithm);
+            String digest = getSignatureAlgorithmDigest(signatureAlgorithm);
             return new KeyProtection.Builder(KeyProperties.PURPOSE_SIGN)
                     .setDigests(digest)
                     .setSignaturePaddings(padding)
+                    .setMaxUsageCount(maxUsageCount)
+                    .build();
+        } else if (KeyProperties.KEY_ALGORITHM_ML_DSA.equalsIgnoreCase(keyAlgorithm)) {
+            return new KeyProtection.Builder(KeyProperties.PURPOSE_SIGN)
                     .setMaxUsageCount(maxUsageCount)
                     .build();
         } else {
