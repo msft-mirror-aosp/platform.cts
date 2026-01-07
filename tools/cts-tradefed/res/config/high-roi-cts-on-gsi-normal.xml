@@ -2669,13 +2669,13 @@
     <!-- CtsPersonalContextTestCases -->
     <option name="compatibility:include-filter" value="CtsPersonalContextTestCases android.service.personalcontext.cts.hint.CallHintTest#testPhoneCallHint_modality"/>
     <option name="compatibility:include-filter" value="CtsPersonalContextTestCases android.service.personalcontext.cts.hint.CallHintTest#testPhoneCallHint_participants"/>
-    <option name="compatibility:include-filter" value="CtsPersonalContextTestCases android.service.personalcontext.cts.refiner.HintFilterTest#testHintFilterAllowMany"/>
-    <option name="compatibility:include-filter" value="CtsPersonalContextTestCases android.service.personalcontext.cts.refiner.HintFilterTest#testHintFilterAllowOne"/>
-    <option name="compatibility:include-filter" value="CtsPersonalContextTestCases android.service.personalcontext.cts.refiner.HintFilterTest#testHintFilterAllowSome"/>
-    <option name="compatibility:include-filter" value="CtsPersonalContextTestCases android.service.personalcontext.cts.refiner.HintFilterTest#testHintFilterRequireAll"/>
-    <option name="compatibility:include-filter" value="CtsPersonalContextTestCases android.service.personalcontext.cts.refiner.HintFilterTest#testHintFilterRequireMissingSome"/>
-    <option name="compatibility:include-filter" value="CtsPersonalContextTestCases android.service.personalcontext.cts.refiner.HintFilterTest#testHintFilterRequireNone"/>
-    <option name="compatibility:include-filter" value="CtsPersonalContextTestCases android.service.personalcontext.cts.refiner.HintFilterTest#testHintFilterRequireSome"/>
+    <option name="compatibility:include-filter" value="CtsPersonalContextTestCases android.service.personalcontext.cts.hint.HintFilterTest#testHintFilterAllowMany"/>
+    <option name="compatibility:include-filter" value="CtsPersonalContextTestCases android.service.personalcontext.cts.hint.HintFilterTest#testHintFilterAllowOne"/>
+    <option name="compatibility:include-filter" value="CtsPersonalContextTestCases android.service.personalcontext.cts.hint.HintFilterTest#testHintFilterAllowSome"/>
+    <option name="compatibility:include-filter" value="CtsPersonalContextTestCases android.service.personalcontext.cts.hint.HintFilterTest#testHintFilterRequireAll"/>
+    <option name="compatibility:include-filter" value="CtsPersonalContextTestCases android.service.personalcontext.cts.hint.HintFilterTest#testHintFilterRequireMissingSome"/>
+    <option name="compatibility:include-filter" value="CtsPersonalContextTestCases android.service.personalcontext.cts.hint.HintFilterTest#testHintFilterRequireNone"/>
+    <option name="compatibility:include-filter" value="CtsPersonalContextTestCases android.service.personalcontext.cts.hint.HintFilterTest#testHintFilterRequireSome"/>
     <!-- CtsPhotoPickerTest -->
     <option name="compatibility:include-filter" value="CtsPhotoPickerTest android.photopicker.cts.ActionGetContentOnlyTest#testBrowse_multiSelect"/>
     <option name="compatibility:include-filter" value="CtsPhotoPickerTest android.photopicker.cts.ActionGetContentOnlyTest#testBrowse_singleSelect"/>
