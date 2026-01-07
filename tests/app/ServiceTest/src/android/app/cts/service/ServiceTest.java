@@ -1733,7 +1733,7 @@ public final class ServiceTest {
     /** Verify that many isolated services can be bound concurrently. */
     @MediumTest
     @Test
-    @RequiresFlagsEnabled(com.android.server.am.Flags.FLAG_USE_SAFESETID_UID_POLICY)
+    @RequiresFlagsEnabled(com.android.server.am.Flags.FLAG_USE_SAFESETID_UID_POLICY2)
     public void testBindIsolatedServiceLimit() throws Exception {
         final int maxServiceCount = 200;
         final CountDownLatch latch = new CountDownLatch(maxServiceCount);
