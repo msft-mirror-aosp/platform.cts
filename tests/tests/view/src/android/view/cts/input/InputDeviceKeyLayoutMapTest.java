@@ -118,47 +118,49 @@ public class InputDeviceKeyLayoutMapTest {
                             // List of 26Q2 flagged keys.
                             "ACCESSIBILITY"));
 
-    private static final Set<String> EXCLUDED_KEYS = new HashSet<>(Arrays.asList(
-            // Meta control keys.
-            "META_LEFT",
-            "META_RIGHT",
-            // KeyEvents not delivered to apps.
-            "APP_SWITCH",
-            "ASSIST",
-            "BACK",
-            "BRIGHTNESS_DOWN",
-            "BRIGHTNESS_UP",
-            "HOME",
-            "KEYBOARD_BACKLIGHT_DOWN",
-            "KEYBOARD_BACKLIGHT_TOGGLE",
-            "KEYBOARD_BACKLIGHT_UP",
-            "LANGUAGE_SWITCH",
-            "MACRO_1",
-            "MACRO_2",
-            "MACRO_3",
-            "MACRO_4",
-            "MUTE",
-            "NOTIFICATION",
-            "POWER",
-            "RECENT_APPS",
-            "SCREENSHOT",
-            "SEARCH",
-            "SLEEP",
-            "SOFT_SLEEP",
-            "STYLUS_BUTTON_TERTIARY",
-            "STYLUS_BUTTON_PRIMARY",
-            "STYLUS_BUTTON_SECONDARY",
-            "SYSRQ",
-            "WAKEUP",
-            "VOICE_ASSIST",
-            // Keys that cause the test activity to lose focus
-            "CALCULATOR",
-            "CALENDAR",
-            "CONTACTS",
-            "ENVELOPE",
-            "EXPLORER",
-            "MUSIC"
-    ));
+    private static final Set<String> EXCLUDED_KEYS =
+            new HashSet<>(
+                    Arrays.asList(
+                            // Meta control keys.
+                            "META_LEFT",
+                            "META_RIGHT",
+                            // KeyEvents not delivered to apps.
+                            "ACCESSIBILITY",
+                            "APP_SWITCH",
+                            "ASSIST",
+                            "BACK",
+                            "BRIGHTNESS_DOWN",
+                            "BRIGHTNESS_UP",
+                            "HOME",
+                            "KEYBOARD_BACKLIGHT_DOWN",
+                            "KEYBOARD_BACKLIGHT_TOGGLE",
+                            "KEYBOARD_BACKLIGHT_UP",
+                            "LANGUAGE_SWITCH",
+                            "MACRO_1",
+                            "MACRO_2",
+                            "MACRO_3",
+                            "MACRO_4",
+                            "MUTE",
+                            "NOTIFICATION",
+                            "POWER",
+                            "RECENT_APPS",
+                            "SCREENSHOT",
+                            "SEARCH",
+                            "SLEEP",
+                            "SOFT_SLEEP",
+                            "STYLUS_BUTTON_TERTIARY",
+                            "STYLUS_BUTTON_PRIMARY",
+                            "STYLUS_BUTTON_SECONDARY",
+                            "SYSRQ",
+                            "WAKEUP",
+                            "VOICE_ASSIST",
+                            // Keys that cause the test activity to lose focus
+                            "CALCULATOR",
+                            "CALENDAR",
+                            "CONTACTS",
+                            "ENVELOPE",
+                            "EXPLORER",
+                            "MUSIC"));
 
     // List of key codes that are not supported for visible background users by PhoneWindowManager.
     private static final Set<String> KEYS_UNSUPPORTED_FOR_VISIBLE_BACKGROUND_USERS =
@@ -332,7 +334,9 @@ public class InputDeviceKeyLayoutMapTest {
             final int evKey = entry.getValue();
             final int keyCode = KeyEvent.keyCodeFromString(label);
 
-            if (!isForwardedToApps(keyCode) || keyCode == KeyEvent.KEYCODE_LOCK
+            if (!isForwardedToApps(keyCode)
+                    || keyCode == KeyEvent.KEYCODE_LOCK
+                    || keyCode == KeyEvent.KEYCODE_ACCESSIBILITY
                     || keyCode == KeyEvent.KEYCODE_FULLSCREEN
                     || keyCode == KeyEvent.KEYCODE_DO_NOT_DISTURB) {
                 continue;
