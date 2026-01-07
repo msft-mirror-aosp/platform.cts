@@ -16,7 +16,6 @@
 
 package android.display.cts;
 
-import static com.android.server.display.feature.flags.Flags.FLAG_DISPLAY_TOPOLOGY;
 import static com.android.server.display.feature.flags.Flags.FLAG_DISPLAY_TOPOLOGY_API;
 import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT;
 
@@ -231,7 +230,6 @@ public class TopologyUpdateDeliveryTest extends EventDeliveryTestBase {
 
     @Test
     @RequiresFlagsEnabled({
-        FLAG_DISPLAY_TOPOLOGY,
         FLAG_DISPLAY_TOPOLOGY_API,
         FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT
     })
@@ -245,7 +243,6 @@ public class TopologyUpdateDeliveryTest extends EventDeliveryTestBase {
      */
     @Test
     @RequiresFlagsEnabled({
-        FLAG_DISPLAY_TOPOLOGY,
         FLAG_DISPLAY_TOPOLOGY_API,
         FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT
     })
