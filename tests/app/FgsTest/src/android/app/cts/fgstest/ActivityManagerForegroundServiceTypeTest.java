@@ -20,7 +20,6 @@ import static android.app.fgstesthelper.LocalForegroundServiceBase.RESULT_INVALI
 import static android.app.fgstesthelper.LocalForegroundServiceBase.RESULT_MISSING_TYPE_EXCEPTION;
 import static android.app.fgstesthelper.LocalForegroundServiceBase.RESULT_OK;
 import static android.app.fgstesthelper.LocalForegroundServiceBase.RESULT_SECURITY_EXCEPTION;
-import static android.health.connect.HealthPermissions.READ_HEART_RATE;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -662,10 +661,6 @@ public final class ActivityManagerForegroundServiceTypeTest {
                 .toArray(String[]::new);
         if (!ArrayUtils.isEmpty(regularPermissions)) {
             mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(regularPermissions);
-            // b/470606448, explicitly grant heart rate because body sensors is system fixed
-            if (Arrays.asList(regularPermissions).contains(READ_HEART_RATE)) {
-                executeShellCommand("pm grant " + SHELL_PKG_NAME + " " + READ_HEART_RATE);
-            }
         }
         if (!ArrayUtils.isEmpty(appops)) {
             for (String appop : appops) {
@@ -689,8 +684,6 @@ public final class ActivityManagerForegroundServiceTypeTest {
 
     private void resetPermissions(TestPermissionInfo[] permissions, String packageName)
             throws Exception {
-        executeShellCommand(
-                "pm revoke " + SHELL_PKG_NAME + " " + READ_HEART_RATE);
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
         executeShellCommand("appops reset --user " + UserHandle.myUserId()
                 + " " + SHELL_PKG_NAME);
