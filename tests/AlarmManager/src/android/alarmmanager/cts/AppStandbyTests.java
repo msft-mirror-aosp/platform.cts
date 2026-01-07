@@ -48,14 +48,15 @@ import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.AppStandbyUtils;
 import com.android.compatibility.common.util.SystemUtil;
 
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -89,7 +90,7 @@ public class AppStandbyTests {
     };
 
     private static final long APP_STANDBY_WINDOW = 10_000;
-    private static final long MIN_WINDOW = 100;
+    private static final long MIN_WINDOW = 50;
     private static final String[] APP_BUCKET_QUOTA_KEYS = {
             "standby_quota_working",
             "standby_quota_frequent",
@@ -100,6 +101,29 @@ public class AppStandbyTests {
             3,  // Frequent
             1,  // Rare
     };
+
+    @Rule
+    public DumpLoggerRule mFailLoggerRule =
+            new DumpLoggerRule(TAG) {
+                @Override
+                protected void failed(Throwable e, Description description) {
+                    super.failed(e, description);
+                    Log.d(TAG, "onFailure: Recorded alarm history: " + sAlarmHistory);
+                }
+
+                @Override
+                protected void finished(Description description) {
+                    try {
+                        // Explicit tearDown() after failed() to allow for logs to capture
+                        // the most relevant state. It is important to NOT have this annotated with
+                        // @After to avoid errors.
+                        onFinish();
+                    } catch (Throwable e) {
+                        // Not throwing here to avoid overwriting any exception from the test.
+                        Log.e(TAG, "Teardown failed with exception: " + e.getMessage(), e);
+                    }
+                }
+            };
 
     // Save the state before running tests to restore it after we finish testing.
     private static boolean sOrigAppStandbyEnabled;
@@ -124,14 +148,14 @@ public class AppStandbyTests {
     };
 
     @BeforeClass
-    public static void setUpTests() throws Exception {
+    public static void setUpTests() {
         sAlarmHistory = new TestAlarmHistory();
         sOrigAppStandbyEnabled = AppStandbyUtils.isAppStandbyEnabledAtRuntime();
         if (!sOrigAppStandbyEnabled) {
             AppStandbyUtils.setAppStandbyEnabledAtRuntime(true);
 
             // Give system sometime to initialize itself.
-            Thread.sleep(100);
+            SystemClock.sleep(100);
         }
     }
 
@@ -173,42 +197,51 @@ public class AppStandbyTests {
         // Duration between start timestamp and the first scheduled alarm.
         final int startToFirstDelta = 4_000;
 
-        // Futurity to use for scheduling alarms in the next test.
-        final int minFuturityHere = 500;
+        // Futurity to use for scheduling subsequent alarms in each iteration.
+        final long minFuturityHere = 400;
 
         setTestAppStandbyBucket(APP_BUCKET_TAGS[bucketIndex]);
         final int quota = APP_STANDBY_QUOTAS[bucketIndex];
 
         long startElapsed = SystemClock.elapsedRealtime();
-        final long freshWindowPoint = sAlarmHistory.getLast(1) + APP_STANDBY_WINDOW;
+        final long freshWindowPoint = sAlarmHistory.getLastOrDefault(startElapsed)
+                + APP_STANDBY_WINDOW;
         if (freshWindowPoint > startElapsed) {
-            Thread.sleep(freshWindowPoint - startElapsed);
+            SystemClock.sleep(freshWindowPoint - startElapsed);
             startElapsed = freshWindowPoint;
             // Now we should have no alarms in the past APP_STANDBY_WINDOW
         }
-        final long desiredTrigger = startElapsed + APP_STANDBY_WINDOW;
+        final long desiredOutOfQuotaTrigger = startElapsed + APP_STANDBY_WINDOW;
         final long firstTrigger = startElapsed + startToFirstDelta;
         assertTrue("Quota too large for test",
-                firstTrigger + ((quota - 1) * minFuturityHere) < desiredTrigger);
+                firstTrigger + ((quota - 1) * minFuturityHere) < desiredOutOfQuotaTrigger);
         for (int i = 0; i < quota; i++) {
-            final long trigger = firstTrigger + (i * minFuturityHere);
+            final long nowElapsed = SystemClock.elapsedRealtime();
+            final long trigger;
+            if (i == 0) {
+                // A little paranoia to make sure we haven't spent startToFirstDelta seconds since
+                // startElapsed was initialized.
+                assertTrue(firstTrigger >= nowElapsed);
+                trigger = firstTrigger;
+            } else {
+                trigger = nowElapsed + minFuturityHere;
+            }
             scheduleAlarm(trigger, 0);
-            long nowElapsed = SystemClock.elapsedRealtime();
-            assertTrue(trigger >= nowElapsed);
-            Thread.sleep(trigger - nowElapsed);
+            SystemClock.sleep(trigger - nowElapsed);
             assertTrue("Alarm within quota not firing as expected", waitForAlarm());
         }
-
         // Now quota is reached, any subsequent alarm should get deferred.
-        scheduleAlarm(desiredTrigger, 0);
+        scheduleAlarm(desiredOutOfQuotaTrigger, 0);
         long nowElapsed = SystemClock.elapsedRealtime();
-        assertTrue(desiredTrigger >= nowElapsed);
-        Thread.sleep(desiredTrigger - nowElapsed);
+        // Ensure we are not too late for a reliable test because of delayed alarms.
+        assertTrue("Alarms within quota consumed the full window",
+                desiredOutOfQuotaTrigger >= nowElapsed);
+        SystemClock.sleep(desiredOutOfQuotaTrigger - nowElapsed);
         assertFalse("Alarm exceeding quota not deferred", waitForAlarm());
         final long minTrigger = firstTrigger + APP_STANDBY_WINDOW;
         nowElapsed = SystemClock.elapsedRealtime();
         assertTrue(minTrigger >= nowElapsed);
-        Thread.sleep(minTrigger - nowElapsed);
+        SystemClock.sleep(minTrigger - nowElapsed);
         assertTrue("Alarm exceeding quota not delivered after expected delay", waitForAlarm());
     }
 
@@ -218,7 +251,7 @@ public class AppStandbyTests {
         long nextTrigger = SystemClock.elapsedRealtime() + MIN_FUTURITY;
         for (int i = 0; i < 3; i++) {
             scheduleAlarm(nextTrigger, 0);
-            Thread.sleep(MIN_FUTURITY);
+            SystemClock.sleep(MIN_FUTURITY);
             assertTrue("Alarm not received as expected when app is in active", waitForAlarm());
             nextTrigger += MIN_FUTURITY;
         }
@@ -244,7 +277,7 @@ public class AppStandbyTests {
         setTestAppStandbyBucket("never");
         final long expectedTrigger = SystemClock.elapsedRealtime() + MIN_FUTURITY;
         scheduleAlarm(expectedTrigger, 0);
-        Thread.sleep(10_000);
+        SystemClock.sleep(10_000);
         assertFalse("Alarm received when app was in never bucket", waitForAlarm());
     }
 
@@ -254,13 +287,18 @@ public class AppStandbyTests {
         setPowerAllowlisted(true);
         final long triggerTime = SystemClock.elapsedRealtime() + MIN_FUTURITY;
         scheduleAlarm(triggerTime, 0);
-        Thread.sleep(MIN_FUTURITY);
+        SystemClock.sleep(MIN_FUTURITY);
         assertTrue("Alarm did not go off for whitelisted app in rare bucket", waitForAlarm());
         setPowerAllowlisted(false);
     }
 
-    @After
-    public void tearDown() throws Exception {
+    /**
+     * Similar to tearDown() but deliberately not annotated with {@link org.junit.After}. This is
+     * instead explicitly called by {@link #mFailLoggerRule} in
+     * {@code TestWatcher.finished(Description)} to allow for most useful logs when tests fail.
+     * The name has been chosen to emphasize this distinction.
+     */
+    public void onFinish() throws Exception {
         if (!AppStandbyUtils.isAppStandbyEnabled()) {
             return;
         }
@@ -271,12 +309,10 @@ public class AppStandbyTests {
         cancelAlarmsIntent.setComponent(mAlarmScheduler);
         sContext.sendBroadcast(cancelAlarmsIntent);
         sContext.unregisterReceiver(mAlarmStateReceiver);
-        // Broadcast unregister may race with the next register in setUp
-        Thread.sleep(500);
     }
 
     @AfterClass
-    public static void tearDownTests() throws Exception {
+    public static void tearDownTests() {
         if (!sOrigAppStandbyEnabled) {
             AppStandbyUtils.setAppStandbyEnabledAtRuntime(sOrigAppStandbyEnabled);
         }
@@ -292,18 +328,18 @@ public class AppStandbyTests {
         mConfigHelper.commitAndAwaitPropagation();
     }
 
-    private void setPowerAllowlisted(boolean whitelist) throws IOException {
+    private void setPowerAllowlisted(boolean whitelist) {
         final StringBuffer cmd = new StringBuffer("cmd deviceidle whitelist ");
         cmd.append(whitelist ? "+" : "-");
         cmd.append(TEST_APP_PACKAGE);
         executeAndLog(cmd.toString());
     }
 
-    static void setTestAppStandbyBucket(String bucket) throws IOException {
+    static void setTestAppStandbyBucket(String bucket) {
         executeAndLog("am set-standby-bucket " + TEST_APP_PACKAGE + " " + bucket);
     }
 
-    private void setBatteryCharging(final boolean charging) throws Exception {
+    private void setBatteryCharging(final boolean charging) {
         final BatteryManager bm = sContext.getSystemService(BatteryManager.class);
         if (charging) {
             executeAndLog("dumpsys battery reset");
@@ -315,22 +351,22 @@ public class AppStandbyTests {
         }
     }
 
-    private static String executeAndLog(String cmd) throws IOException {
+    private static String executeAndLog(String cmd) {
         final String output = SystemUtil.runShellCommand(cmd).trim();
         Log.d(TAG, "command: [" + cmd + "], output: [" + output + "]");
         return output;
     }
 
-    private boolean waitForAlarm() throws InterruptedException {
+    private boolean waitForAlarm() {
         final boolean success = waitUntil(() -> (mAlarmCount.get() == 1), DEFAULT_WAIT);
         mAlarmCount.set(0);
         return success;
     }
 
-    private boolean waitUntil(BooleanSupplier condition, long timeout) throws InterruptedException {
+    private boolean waitUntil(BooleanSupplier condition, long timeout) {
         final long deadLine = SystemClock.uptimeMillis() + timeout;
         while (!condition.getAsBoolean() && SystemClock.uptimeMillis() < deadLine) {
-            Thread.sleep(POLL_INTERVAL);
+            SystemClock.sleep(POLL_INTERVAL);
         }
         return condition.getAsBoolean();
     }
@@ -343,13 +379,19 @@ public class AppStandbyTests {
         }
 
         /**
-         * Get the xth alarm time from the end.
+         * Gets the last alarm time recorded.
+         * Returns the default value provided when there is no recorded value.
          */
-        private synchronized long getLast(int x) {
-            if (x == 0 || x > mHistory.size()) {
-                return 0;
+        private synchronized long getLastOrDefault(long defaultValue) {
+            if (mHistory.size() == 0) {
+                return defaultValue;
             }
-            return mHistory.get(mHistory.size() - x);
+            return mHistory.get(mHistory.size() - 1);
+        }
+
+        @Override
+        public String toString() {
+            return "TestAlarmHistory{mHistory=" + Arrays.toString(mHistory.toArray()) + '}';
         }
     }
 }
