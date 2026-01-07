@@ -29,7 +29,6 @@ import junitparams.Parameters
 import org.junit.Test
 import org.junit.runner.RunWith
 
-@RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_ROTARY)
 @SmallTest
 @RunWith(JUnitParamsRunner::class)
 class VirtualRotaryEncoderTest : VirtualDeviceTestCase() {
@@ -42,7 +41,6 @@ class VirtualRotaryEncoderTest : VirtualDeviceTestCase() {
         ).device
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_ROTARY)
     @RequiresFlagsDisabled(Flags.FLAG_HIGH_RESOLUTION_SCROLL)
     @Test
     @Parameters(method = "allScrollValues")
@@ -50,7 +48,7 @@ class VirtualRotaryEncoderTest : VirtualDeviceTestCase() {
         verifyScrollEvent(scrollAmount)
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_ROTARY, Flags.FLAG_HIGH_RESOLUTION_SCROLL)
+    @RequiresFlagsEnabled(Flags.FLAG_HIGH_RESOLUTION_SCROLL)
     @Test
     @Parameters(method = "allHighResScrollValues")
     fun sendHighResScrollEvent(scrollAmount: Float) {

@@ -15,7 +15,6 @@
  */
 package android.hardware.input.cts.tests.virtualdevices
 
-import android.companion.virtualdevice.flags.Flags
 import android.hardware.input.VirtualDpadConfig
 import android.hardware.input.VirtualKeyboardConfig
 import android.hardware.input.VirtualMouseConfig
@@ -25,7 +24,6 @@ import android.hardware.input.VirtualStylusConfig
 import android.hardware.input.VirtualTouchscreenConfig
 import android.os.Parcel
 import android.platform.test.annotations.RequiresFlagsDisabled
-import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -268,7 +266,6 @@ class VirtualInputDeviceConfigTest {
         Truth.assertThat(configFromParcel.height).isEqualTo(config.height)
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_ROTARY)
     @Test
     fun testConstructorAndGetters_virtualRotaryConfig() {
         val config: VirtualRotaryEncoderConfig = createVirtualRotaryEncoderConfig()
@@ -278,7 +275,6 @@ class VirtualInputDeviceConfigTest {
         Truth.assertThat(config.associatedDisplayId).isEqualTo(DISPLAY_ID)
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_ROTARY)
     @Test
     fun testParcel_virtualRotaryConfig() {
         val config: VirtualRotaryEncoderConfig = createVirtualRotaryEncoderConfig()
@@ -615,7 +611,6 @@ class VirtualInputDeviceConfigTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_ROTARY)
     @Test
     fun virtualRotaryConfig_missingName_throwsException() {
         assertThrows(NullPointerException::class.java) {
@@ -627,7 +622,6 @@ class VirtualInputDeviceConfigTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_ROTARY)
     @Test
     fun virtualRotaryConfig_nameLengthExceedsLimit_throwsException() {
         assertThrows(IllegalArgumentException::class.java) {
@@ -648,7 +642,6 @@ class VirtualInputDeviceConfigTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_ROTARY)
     @Test
     fun virtualRotaryConfig_missingDisplayId_throwsException() {
         assertThrows(IllegalArgumentException::class.java) {
