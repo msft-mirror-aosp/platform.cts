@@ -46,7 +46,7 @@ import java.util.regex.Pattern;
 public class SupervisionAppBindingHostTest extends BaseHostJUnit4Test implements IBuildReceiver {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice, this.getClass());
 
     private static final boolean SKIP_UNINSTALL = false;
     private static final String APK_SUP1 = "CtsAppBindingServiceSupervision1.apk";

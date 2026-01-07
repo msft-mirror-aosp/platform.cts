@@ -16,6 +16,8 @@
 
 package android.media.session.cts;
 
+import static com.android.compatibility.common.util.ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn;
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -30,7 +32,6 @@ import android.content.pm.PackageManager;
 import android.hardware.hdmi.HdmiControlManager;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
-import android.media.cts.Utils;
 import android.media.session.MediaSession;
 import android.os.ConditionVariable;
 import android.os.Handler;
@@ -315,14 +316,8 @@ public class MediaActivityTest {
 
     private void changeRingerMode(int ringerMode) throws IOException {
         if (mAudioManager != null && mAudioManager.getRingerMode() != ringerMode) {
-            try {
-                Utils.toggleNotificationPolicyAccess(
-                        mContext.getPackageName(), mInstrumentation, true);
-                mAudioManager.setRingerMode(ringerMode);
-            } finally {
-                Utils.toggleNotificationPolicyAccess(
-                        mContext.getPackageName(), mInstrumentation, false);
-            }
+            invokeMethodWithShellPermissionsNoReturn(
+                    mAudioManager, am -> am.setRingerMode(ringerMode));
         }
     }
 

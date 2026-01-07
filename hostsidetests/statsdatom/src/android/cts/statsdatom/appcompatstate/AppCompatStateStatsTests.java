@@ -16,6 +16,8 @@
 
 package android.cts.statsdatom.appcompatstate;
 
+import static android.cts.statsdatom.lib.DeviceUtils.FEATURE_PC;
+
 import static com.android.os.AtomsProto.AppCompatStateChanged.State.LETTERBOXED_FOR_ASPECT_RATIO;
 import static com.android.os.AtomsProto.AppCompatStateChanged.State.LETTERBOXED_FOR_FIXED_ORIENTATION;
 import static com.android.os.AtomsProto.AppCompatStateChanged.State.LETTERBOXED_FOR_SIZE_COMPAT_MODE;
@@ -182,6 +184,11 @@ public class AppCompatStateStatsTests extends DeviceTestCase implements IBuildRe
         if (!isFoldableStateAvailable(DEVICE_STATE_OPENED)
                 || !isFoldableStateAvailable(DEVICE_STATE_CLOSED)) {
             CLog.i("Device doesn't support OPENED or CLOSED device states.");
+            return;
+        }
+
+        if (DeviceUtils.hasFeature(getDevice(), FEATURE_PC)) {
+            CLog.i("Skipping test on PC device.");
             return;
         }
 

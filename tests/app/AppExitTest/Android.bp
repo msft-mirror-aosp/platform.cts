@@ -36,6 +36,7 @@ android_test {
     ],
     srcs: [
         ":libtombstone_proto-src",
+        ":AnrWarningListenerService",
         "src/**/*.java",
         "src/**/*.aidl",
     ],

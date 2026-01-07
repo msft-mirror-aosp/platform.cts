@@ -143,7 +143,7 @@ def get_brightness_variation(
 
   Returns:
     mean_delta_ab_diff: mean delta ab diff between default and jca rounded
-      upto 2 places
+      up to 2 places
   """
   default_brightness = np.mean(default_brightness_values)
   jca_brightness = np.mean(jca_brightness_values)

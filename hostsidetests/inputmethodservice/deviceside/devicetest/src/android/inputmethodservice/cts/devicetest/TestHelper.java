@@ -117,6 +117,9 @@ final class TestHelper {
                 .addCategory(Intent.CATEGORY_DEFAULT)
                 .setData(Uri.parse(uri))
                 .setClassName(packageName, className)
+                // The intent may contain a web URI but we want to ensure an app is launched rather
+                // than a browser.
+                .addFlags(Intent.FLAG_ACTIVITY_REQUIRE_NON_BROWSER)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
         InstrumentationRegistry.getInstrumentation().getContext().startActivity(intent);

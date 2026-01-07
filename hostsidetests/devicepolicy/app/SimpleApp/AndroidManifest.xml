@@ -104,6 +104,14 @@
             </intent-filter>
         </service>
 
+        <service android:name=".AnrWarningListenerService"
+             android:exported="true">
+             <intent-filter>
+                 <action android:name="com.android.cts.launchertests.simpleapp.EXIT_ACTION"/>
+                 <category android:name="android.intent.category.DEFAULT"/>
+             </intent-filter>
+        </service>
+
         <receiver android:name=".SimpleReceiverStartService"
              android:exported="true">
         </receiver>

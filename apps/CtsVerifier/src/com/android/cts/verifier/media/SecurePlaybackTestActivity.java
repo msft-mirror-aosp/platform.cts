@@ -180,12 +180,6 @@ public class SecurePlaybackTestActivity extends PassFailButtons.Activity {
         setPassFailButtonClickListeners();
         passFailButtons = findViewById(R.id.pass_fail_buttons);
 
-        if (!isL1()) {
-            Log.d(TAG, "Device is not L1, skipping test");
-            setTestResultAndFinish(true);
-            return;
-        }
-
         this.getPassButton().setEnabled(true);
 
         instructions = findViewById(R.id.instructions);
@@ -204,6 +198,12 @@ public class SecurePlaybackTestActivity extends PassFailButtons.Activity {
 
         if (reportLog == null) {
             reportLog = new CtsVerifierReportLog(REPORT_LOG_NAME, "media_secureplayback_results");
+        }
+
+        if (!isL1()) {
+            Log.d(TAG, "Device is not L1, skipping test");
+            setTestResultAndFinish(true);
+            return;
         }
     }
 

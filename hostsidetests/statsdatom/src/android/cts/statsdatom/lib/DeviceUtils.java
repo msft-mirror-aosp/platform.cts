@@ -69,6 +69,8 @@ public final class DeviceUtils {
 
     public static final String FEATURE_AUTOMOTIVE = "android.hardware.type.automotive";
 
+    public static final String FEATURE_PC = "android.hardware.type.pc";
+
     public static final String DUMP_BATTERY_CMD = "dumpsys battery";
 
     /**

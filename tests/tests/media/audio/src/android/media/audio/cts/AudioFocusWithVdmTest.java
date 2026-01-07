@@ -78,23 +78,24 @@ public class AudioFocusWithVdmTest {
      */
     @Test
     public void testAudioFocusRequestOnVdmContextWithCustomDevicePolicy() {
-        Context defaultContext = getApplicationContext();
-        PlaybackHelperForTest defaultDevicePlayback = new PlaybackHelperForTest(defaultContext);
+        final Context defaultContext = getApplicationContext();
+        final VirtualDevice vd =
+                mVirtualDeviceRule.createManagedVirtualDevice(VIRTUAL_DEVICE_PARAMS_CUSTOM_POLICY);
+        try (PlaybackHelperForTest defaultDevicePlayback =
+                        new PlaybackHelperForTest(defaultContext);
+                PlaybackHelperForTest vdmDevicePlayback =
+                        new PlaybackHelperForTest(vd.createContext())) {
+            // Audio playing within default context starts first, focus should be granted.
+            int defaultFocusRequestResult = defaultDevicePlayback.requestFocus();
+            assertThat(defaultFocusRequestResult).isEqualTo(AUDIOFOCUS_REQUEST_GRANTED);
+            defaultDevicePlayback.startPlayback();
 
-        VirtualDevice vd = mVirtualDeviceRule.createManagedVirtualDevice(
-                VIRTUAL_DEVICE_PARAMS_CUSTOM_POLICY);
-        PlaybackHelperForTest vdmDevicePlayback = new PlaybackHelperForTest(vd.createContext());
-
-        // Audio playing within default context starts first, focus should be granted.
-        int defaultFocusRequestResult = defaultDevicePlayback.requestFocus();
-        assertThat(defaultFocusRequestResult).isEqualTo(AUDIOFOCUS_REQUEST_GRANTED);
-        defaultDevicePlayback.startPlayback();
-
-        int vdmFocusRequestResult = vdmDevicePlayback.requestFocus();
-        assertThat(vdmFocusRequestResult).isEqualTo(AUDIOFOCUS_REQUEST_GRANTED);
-        // None of the players should loose focus.
-        assertThat(defaultDevicePlayback.getLastFocusChange().isEmpty()).isTrue();
-        assertThat(vdmDevicePlayback.getLastFocusChange().isEmpty()).isTrue();
+            int vdmFocusRequestResult = vdmDevicePlayback.requestFocus();
+            assertThat(vdmFocusRequestResult).isEqualTo(AUDIOFOCUS_REQUEST_GRANTED);
+            // None of the players should loose focus.
+            assertThat(defaultDevicePlayback.getLastFocusChange().isEmpty()).isTrue();
+            assertThat(vdmDevicePlayback.getLastFocusChange().isEmpty()).isTrue();
+        }
     }
 
     /**
@@ -110,31 +111,34 @@ public class AudioFocusWithVdmTest {
      */
     @Test
     public void testAudioFocusRequestOnVdmContextWithDefaultDevicePolicy() {
-        Context defaultContext = getApplicationContext();
-        PlaybackHelperForTest defaultDevicePlayback = new PlaybackHelperForTest(defaultContext);
+        final Context defaultContext = getApplicationContext();
+        final VirtualDevice vd = mVirtualDeviceRule.createManagedVirtualDevice();
+        try (PlaybackHelperForTest defaultDevicePlayback =
+                        new PlaybackHelperForTest(defaultContext);
+                PlaybackHelperForTest vdmDevicePlayback =
+                        new PlaybackHelperForTest(vd.createContext())) {
 
-        VirtualDevice vd = mVirtualDeviceRule.createManagedVirtualDevice();
-        PlaybackHelperForTest vdmDevicePlayback = new PlaybackHelperForTest(vd.createContext());
+            // Audio playing within default context starts first, focus should be granted.
+            int defaultFocusRequestResult = defaultDevicePlayback.requestFocus();
+            assertThat(defaultFocusRequestResult).isEqualTo(AUDIOFOCUS_REQUEST_GRANTED);
+            defaultDevicePlayback.startPlayback();
 
-        // Audio playing within default context starts first, focus should be granted.
-        int defaultFocusRequestResult = defaultDevicePlayback.requestFocus();
-        assertThat(defaultFocusRequestResult).isEqualTo(AUDIOFOCUS_REQUEST_GRANTED);
-        defaultDevicePlayback.startPlayback();
+            int vdmFocusRequestResult = vdmDevicePlayback.requestFocus();
+            assertThat(vdmFocusRequestResult).isEqualTo(AUDIOFOCUS_REQUEST_GRANTED);
 
-        int vdmFocusRequestResult = vdmDevicePlayback.requestFocus();
-        assertThat(vdmFocusRequestResult).isEqualTo(AUDIOFOCUS_REQUEST_GRANTED);
+            // Since the mVirtualDeviceManager is configured with default device policy
+            // expect focus lost if multi focus is not enabled
+            AudioManager audioManager = defaultContext.getSystemService(AudioManager.class);
+            assumeNotNull(audioManager);
+            boolean expectedFocusLost = !audioManager.isMultiAudioFocusEnabled();
 
-        // Since the mVirtualDeviceManager is configured with default device policy
-        // expect focus lost if multi focus is not enabled
-        AudioManager audioManager = defaultContext.getSystemService(AudioManager.class);
-        assumeNotNull(audioManager);
-        boolean expectedFocusLost = !audioManager.isMultiAudioFocusEnabled();
-
-        if (expectedFocusLost) {
-            assertThat(defaultDevicePlayback.getLastFocusChange().isPresent()).isTrue();
-            assertThat(defaultDevicePlayback.getLastFocusChange().get()).isEqualTo(AUDIOFOCUS_LOSS);
+            if (expectedFocusLost) {
+                assertThat(defaultDevicePlayback.getLastFocusChange().isPresent()).isTrue();
+                assertThat(defaultDevicePlayback.getLastFocusChange().get())
+                        .isEqualTo(AUDIOFOCUS_LOSS);
+            }
+            assertThat(vdmDevicePlayback.getLastFocusChange().isEmpty()).isTrue();
         }
-        assertThat(vdmDevicePlayback.getLastFocusChange().isEmpty()).isTrue();
     }
 
     /**

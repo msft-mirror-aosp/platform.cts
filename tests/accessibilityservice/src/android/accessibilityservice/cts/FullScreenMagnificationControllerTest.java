@@ -50,7 +50,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
-import com.android.compatibility.common.util.DeviceConfigStateChangerRule;
 import com.android.compatibility.common.util.TestUtils;
 import com.android.compatibility.common.util.UserSettings;
 
@@ -80,9 +79,6 @@ public class FullScreenMagnificationControllerTest {
 
     private static final int BOUNDS_TOLERANCE = 1;
 
-    private static final String DEVICE_CONFIG_NAMESPACE_WM = "window_manager";
-    private static final String DEVICE_CONFIG_KEY_ALWAYS_ON_MAGNIFIER =
-            "AlwaysOnMagnifier__enable_always_on_magnifier";
     private static final String SETTING_KEY_MAGNIFICATION_ALWAYS_ON =
             "accessibility_magnification_always_on_enabled";
 
@@ -97,19 +93,9 @@ public class FullScreenMagnificationControllerTest {
                     new InstrumentedAccessibilityServiceTestRule<>(
                             StubMagnificationAccessibilityService.class, false);
 
-    // StateChangerRules starts UiAutomation without FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES.
-    // They have to be outer rule than other accessibility related rules.
-    private final DeviceConfigStateChangerRule mDeviceConfigStateChangerRule =
-            new DeviceConfigStateChangerRule(
-                    sInstrumentation.getContext(),
-                    DEVICE_CONFIG_NAMESPACE_WM,
-                    DEVICE_CONFIG_KEY_ALWAYS_ON_MAGNIFIER,
-                    "true");
-
     @Rule
     public final RuleChain mRuleChain =
-            RuleChain.outerRule(mDeviceConfigStateChangerRule)
-                    .around(mMagnificationAccessibilityServiceRule)
+            RuleChain.outerRule(mMagnificationAccessibilityServiceRule)
                     .around(new AccessibilityDumpOnFailureRule());
 
     @BeforeClass

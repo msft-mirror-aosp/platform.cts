@@ -28,13 +28,18 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
 import static java.lang.Math.abs;
 import static java.util.Collections.emptySet;
 
+import com.android.tradefed.log.Log;
 import com.android.tradefed.log.LogUtil.CLog;
+import com.android.tradefed.result.FileInputStreamSource;
+import com.android.tradefed.result.LogDataType;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
+import com.android.tradefed.testtype.DeviceJUnit4ClassRunner.TestLogData;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.CommandResult;
 import com.android.tradefed.util.CommandStatus;
@@ -48,6 +53,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ErrorCollector;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 
 import perfetto.protos.PerfettoConfig.DataSourceDescriptor;
@@ -69,6 +76,7 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashSet;
@@ -113,7 +121,7 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
     private static final String DEBUG_PROPERTY = "debug.graphics.gpu.profiler.perfetto";
     private static final Duration TRACE_COUNTER_PERIOD_1MS = Duration.ofMillis(1);
     private static final Duration TRACE_COUNTER_PERIOD_5MS = Duration.ofMillis(5);
-    private static final String TRACE_FILE_PATH = "/data/misc/perfetto-traces/cts-trace";
+    private static final String TRACE_FILE_PREFIX = "/data/misc/perfetto-traces/";
 
     // Copied from PackageManager
     private static final String FEATURE_AUTOMOTIVE = "android.hardware.type.automotive";
@@ -126,7 +134,39 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
     private String initialDebugPropertyValue = null;
     private boolean mHasGpuCountersCapability = false;
 
+    private final List<File> mTraceFiles = new ArrayList<>();
+
     @Rule public ErrorCollector errorCollector = new ErrorCollector();
+
+    @Rule public TestLogData testLogData = new TestLogData();
+
+    @Rule
+    public TestWatcher testWatcher =
+            new TestWatcher() {
+
+                @Override
+                protected void failed(Throwable e, Description description) {
+                    for (File file : mTraceFiles) {
+                        CLog.logAndDisplay(
+                                Log.LogLevel.INFO, "Trace files kept: " + file.getName());
+                        testLogData.addTestLog(
+                                file.getName(),
+                                LogDataType.PERFETTO,
+                                new FileInputStreamSource(file));
+                        file.delete();
+                    }
+                    fail("TEST FAILED; trace files saved: " + mTraceFiles + ".");
+                }
+
+                @Override
+                protected void succeeded(Description description) {
+                    CLog.logAndDisplay(
+                            Log.LogLevel.INFO, "TEST SUCCEEDED; cleaning up trace files.");
+                    for (File file : mTraceFiles) {
+                        file.delete();
+                    }
+                }
+            };
 
     private class ShellThread extends Thread {
 
@@ -290,7 +330,9 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
         }
 
         Trace traceFrequencyRenderStagesDefaultCounters5Ms =
-                captureTrace(buildConfig(defaultCounterIds, TRACE_COUNTER_PERIOD_5MS, true));
+                captureTrace(
+                        buildConfig(defaultCounterIds, TRACE_COUNTER_PERIOD_5MS, true),
+                        "cts-trace-default-frequency-render-stages-5ms");
 
         errorCollector.checkThat(
                 "Trace does not contain valid GPU render stages.",
@@ -348,9 +390,8 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                         new GpuCounters(
                                 captureTrace(
                                         buildConfig(
-                                                defaultCounterIds,
-                                                TRACE_COUNTER_PERIOD_1MS,
-                                                true)));
+                                                defaultCounterIds, TRACE_COUNTER_PERIOD_1MS, true),
+                                        "cts-trace-default-1ms"));
 
                 checkSamplingRate(
                         errorCollector,
@@ -360,7 +401,9 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
 
             // Additionally try enabling *all* counters, and make sure descriptions are present.
             Trace traceAllCounters5Ms =
-                    captureTrace(buildConfig(allCounterIds, TRACE_COUNTER_PERIOD_5MS, false));
+                    captureTrace(
+                            buildConfig(allCounterIds, TRACE_COUNTER_PERIOD_5MS, false),
+                            "cts-trace-all-counters-5ms");
             GpuCounters gpuCountersAllIds5Ms = new GpuCounters(traceAllCounters5Ms);
 
             errorCollector.checkThat(
@@ -498,26 +541,26 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
         return rayTracingSupportFromTrace;
     }
 
-    private Trace captureTrace(TraceConfig traceConfig) throws Exception {
+    private Trace captureTrace(TraceConfig traceConfig, String traceFileName) throws Exception {
         File configFile = File.createTempFile("perfetto", ".cfg");
+        String traceFilePath = TRACE_FILE_PREFIX + traceFileName;
         try (OutputStream out = new FileOutputStream(configFile)) {
             traceConfig.writeTo(out);
         }
         CommandResult queryStatus =
-                getDevice()
-                        .executeShellV2Command("perfetto -c - -o " + TRACE_FILE_PATH, configFile);
+                getDevice().executeShellV2Command("perfetto -c - -o " + traceFilePath, configFile);
         Assert.assertEquals(CommandStatus.SUCCESS, queryStatus.getStatus());
 
-        File traceResult = getDevice().pullFile(TRACE_FILE_PATH);
+        File traceResult = getDevice().pullFile(traceFilePath);
         Trace trace;
         try (InputStream in = new FileInputStream(traceResult)) {
             trace = Trace.parseFrom(CodedInputStream.newInstance(in));
         }
-        traceResult.delete();
+        mTraceFiles.add(traceResult);
         configFile.delete();
 
         CommandResult deleteTraceStatus =
-                getDevice().executeShellV2Command("rm -f " + TRACE_FILE_PATH);
+                getDevice().executeShellV2Command("rm -f " + traceFilePath);
         Assert.assertEquals(CommandStatus.SUCCESS, deleteTraceStatus.getStatus());
 
         return trace;

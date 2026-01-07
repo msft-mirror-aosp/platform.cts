@@ -91,6 +91,7 @@
             value="CtsAllowComponentAccessClientNoTag.apk->/data/local/tmp/cts/content/CtsAllowComponentAccessClientNoTag.apk" />
         <option name="push"
             value="CtsAllowComponentAccessServer.apk->/data/local/tmp/cts/content/CtsAllowComponentAccessServer.apk" />
+        <option name="push" value="CtsOnlyForLocationButtonApp.apk->/data/local/tmp/cts/content/CtsOnlyForLocationButtonApp.apk" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.PushFilePreparer">

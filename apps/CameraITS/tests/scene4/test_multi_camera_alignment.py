@@ -98,6 +98,7 @@ def select_ids_to_test(ids, props, chart_distance):
   """
   chart_distance = abs(chart_distance)*100  # convert M to CM
   test_ids = []
+  has_super_tele = False
   for i in ids:
     sensor_size = props[i]['android.sensor.info.physicalSize']
     focal_l = props[i]['android.lens.info.availableFocalLengths'][0]
@@ -113,6 +114,7 @@ def select_ids_to_test(ids, props, chart_distance):
       logging.debug(
           'Skipping camera %s. FoV < %s is too small for testing.',
           i, opencv_processing_utils.FOV_THRESH_TELE40)
+      has_super_tele = True
       continue  # super-TELE camera
     elif (fov <= opencv_processing_utils.FOV_THRESH_TELE and
           math.isclose(chart_distance,
@@ -128,6 +130,9 @@ def select_ids_to_test(ids, props, chart_distance):
       logging.debug('Skipping camera %s. Not appropriate for test rig.', i)
 
   if len(test_ids) < 2:
+    if len(ids) == 2 and has_super_tele and len(test_ids) == 1:
+      logging.debug('Found 2 cameras, 1 is super-tele. Skipping test.')
+      camera_properties_utils.skip_unless(False)
     raise AssertionError('Error: started with 2+ cameras, reduced to <2 based '
                          f'on FoVs. Wrong test rig? test_ids: {test_ids}')
   return test_ids[0:2]
@@ -336,7 +341,7 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
       android.lens.poseReference
       android.lens.poseTranslation
       android.lens.poseRotation
-      android.lens.instrinsicCalibration
+      android.lens.intrinsicCalibration
       android.lens.distortion (if available)
   project the circle center to the world coordinates for each camera.
   Compare the difference between the two cameras' circle centers in

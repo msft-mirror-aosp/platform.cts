@@ -161,7 +161,7 @@ def calc_expected_circle_image_ratio(ref_fov, img_w, img_h):
   """Determine the circle image area ratio in percentage for a given image size.
 
   Cropping happens either horizontally or vertically. In both cases crop results
-  in the visble area reduced by a ratio r (r < 1) and the circle will in turn
+  in the visible area reduced by a ratio r (r < 1) and the circle will in turn
   occupy ref_pct/r (percent) on the target image size.
 
   Args:

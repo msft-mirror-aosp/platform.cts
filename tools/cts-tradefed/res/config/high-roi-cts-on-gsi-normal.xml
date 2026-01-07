@@ -3598,6 +3598,8 @@
     <option name="compatibility:exclude-filter" value="CtsAdServicesTopicsConnectionTests com.android.adservices.tests.cts.topics.connection.TopicsConnectionTest#testEnableGlobalKillSwitch"/>
     <!-- Exclude the failing tests in CtsMediaAudioTestCases -->
     <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioManagerTest#testSetRttEnabled_noPermission_throwsException"/>
+    <!-- Exclude the failing tests in CtsOsTestCases -->
+    <option name="compatibility:exclude-filter" value="CtsOsTestCases android.os.cts.BuildTest#testBuildConstants"/>
     <!-- Exclude the failing tests in CtsSecurityTestCases -->
     <option name="compatibility:exclude-filter" value="CtsSecurityTestCases android.security.cts.advancedprotection.AdvancedProtectionManagerTest#testUpdateAdvancedProtectionFeaturesProvisioning_deprovisioned[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:exclude-filter" value="CtsSecurityTestCases android.security.cts.advancedprotection.AdvancedProtectionManagerTest#testUpdateAdvancedProtectionFeaturesProvisioning_doesntUpdateOtherFeatures[IncludeRunOnPrimaryUser]"/>

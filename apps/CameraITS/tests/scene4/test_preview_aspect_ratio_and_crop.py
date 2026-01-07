@@ -116,7 +116,7 @@ class PreviewAspectRatioAndCropTest(its_base_test.ItsBaseTest):
     1. Aspect ratio: images are not stretched
     2. Crop: center of images is not shifted
     3. FOV: images cropped to keep maximum possible FOV with only 1 dimension
-       (horizontal or veritical) cropped.
+       (horizontal or vertical) cropped.
 
 
 

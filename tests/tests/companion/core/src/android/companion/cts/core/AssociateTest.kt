@@ -21,7 +21,7 @@ import android.companion.AssociationRequest
 import android.companion.AssociationRequest.DEVICE_PROFILE_COMPUTER
 import android.companion.AssociationRequest.PERMISSION_GROUP_NEARBY
 import android.companion.CompanionDeviceManager.FLAG_CALL_METADATA
-import android.companion.CompanionDeviceManager.FLAG_UNIVERSAL_MODES
+import android.companion.CompanionDeviceManager.FLAG_UNIVERSAL_CLIPBOARD
 import android.companion.DeviceId
 import android.companion.cts.common.CUSTOM_ID_A
 import android.companion.cts.common.CUSTOM_ID_B
@@ -108,37 +108,37 @@ class AssociateTest : CoreTestBase() {
         // REQUEST_COMPANION_SELF_MANAGED permission should lead to a
         // SecurityException being thrown.
         assertFailsWith(SecurityException::class) {
-            cdm.enableSystemDataSyncForTypes(association().id, FLAG_UNIVERSAL_MODES)
+            cdm.enableSystemDataSyncForTypes(association().id, FLAG_UNIVERSAL_CLIPBOARD)
         }
         assertEquals(
             0,
-            association().systemDataSyncFlags and FLAG_UNIVERSAL_MODES
+            association().systemDataSyncFlags and FLAG_UNIVERSAL_CLIPBOARD
         )
 
         // Same call with the REQUEST_COMPANION_SELF_MANAGED permissions should succeed.
         withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
-            cdm.enableSystemDataSyncForTypes(association().id, FLAG_UNIVERSAL_MODES)
+            cdm.enableSystemDataSyncForTypes(association().id, FLAG_UNIVERSAL_CLIPBOARD)
         }
         assertEquals(
-            FLAG_UNIVERSAL_MODES,
-            association().systemDataSyncFlags and FLAG_UNIVERSAL_MODES
+            FLAG_UNIVERSAL_CLIPBOARD,
+            association().systemDataSyncFlags and FLAG_UNIVERSAL_CLIPBOARD
         )
 
         // Repeat for disabling the restricted flag.
         assertFailsWith(SecurityException::class) {
-            cdm.disableSystemDataSyncForTypes(association().id, FLAG_UNIVERSAL_MODES)
+            cdm.disableSystemDataSyncForTypes(association().id, FLAG_UNIVERSAL_CLIPBOARD)
         }
         assertEquals(
-            FLAG_UNIVERSAL_MODES,
-            association().systemDataSyncFlags and FLAG_UNIVERSAL_MODES
+            FLAG_UNIVERSAL_CLIPBOARD,
+            association().systemDataSyncFlags and FLAG_UNIVERSAL_CLIPBOARD
         )
 
         withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
-            cdm.disableSystemDataSyncForTypes(association().id, FLAG_UNIVERSAL_MODES)
+            cdm.disableSystemDataSyncForTypes(association().id, FLAG_UNIVERSAL_CLIPBOARD)
         }
         assertEquals(
             0,
-            association().systemDataSyncFlags and FLAG_UNIVERSAL_MODES
+            association().systemDataSyncFlags and FLAG_UNIVERSAL_CLIPBOARD
         )
     }
 

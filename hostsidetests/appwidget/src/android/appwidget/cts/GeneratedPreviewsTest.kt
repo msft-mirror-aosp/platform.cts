@@ -37,7 +37,7 @@ class GeneratedPreviewsTest : BaseHostJUnit4Test() {
     }
 
     @get:Rule
-    val checkFlagsRule = HostFlagsValueProvider.createCheckFlagsRule { device }
+    val checkFlagsRule = HostFlagsValueProvider.createCheckFlagsRule({ device }, this.javaClass)
 
     var user = 0
 

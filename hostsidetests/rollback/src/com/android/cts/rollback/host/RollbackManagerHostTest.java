@@ -73,7 +73,7 @@ public class RollbackManagerHostTest extends BaseHostJUnit4Test {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice, this.getClass());
 
     /**
      * Uninstalls any version greater than 1 of shim apex and reboots the device if necessary

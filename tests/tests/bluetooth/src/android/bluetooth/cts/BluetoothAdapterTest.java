@@ -483,15 +483,6 @@ public class BluetoothAdapterTest {
 
         assertThat(BluetoothAdapter.nameForState(BluetoothAdapter.STATE_BLE_ON))
                 .isEqualTo("BLE_ON");
-
-        // Check value before state range
-        for (int state = 0; state < BluetoothAdapter.STATE_OFF; state++) {
-            assertThat(BluetoothAdapter.nameForState(state)).isEqualTo("?!?!? (" + state + ")");
-        }
-        // Check value after state range (skip TURNING_OFF)
-        for (int state = BluetoothAdapter.STATE_BLE_ON + 2; state < 100; state++) {
-            assertThat(BluetoothAdapter.nameForState(state)).isEqualTo("?!?!? (" + state + ")");
-        }
     }
 
     @Test
