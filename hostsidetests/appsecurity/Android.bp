@@ -495,6 +495,16 @@ java_test_host {
     srcs: [
         "src/**/*Adoptable*.java",
     ],
+    device_common_data: [
+        ":CtsSplitApp",
+        ":CtsSplitApp_arm64-v8a",
+        ":CtsSplitApp_armeabi",
+        ":CtsSplitApp_armeabi-v7a",
+        ":CtsSplitApp_mips",
+        ":CtsSplitApp_mips64",
+        ":CtsSplitApp_x86",
+        ":CtsSplitApp_x86_64",
+    ],
     test_config: "AdoptableTests.xml",
 }
 
