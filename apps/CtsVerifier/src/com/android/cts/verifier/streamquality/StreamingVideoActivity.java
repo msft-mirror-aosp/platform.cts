@@ -163,7 +163,7 @@ public class StreamingVideoActivity extends PassFailButtons.TestListActivity {
 
         // TODO(b/161675976): Re-enable RTSP tests once they can be served reliably.
         /*
-        adapter.add(TestListItem.newCategory("RTSP"));
+        adapter.add(TestListItem.newBuilder("RTSP").build());
         addRtspStreamToTest(
                 adapter, "H263 Video, AMR Audio", "rtsp_h263_amr", 13, ITAG_13_SIGNATURE);
         addRtspStreamToTest(
@@ -172,7 +172,7 @@ public class StreamingVideoActivity extends PassFailButtons.TestListActivity {
                 adapter, "H264 Base Video, AAC Audio", "rtsp_h264_aac", 18, ITAG_18_SIGNATURE);
         */
 
-        adapter.add(TestListItem.newCategory("HTTP Progressive"));
+        adapter.add(TestListItem.newBuilder("HTTP Progressive").build());
         for (Stream stream : HTTP_STREAMS) {
             addStreamToTests(adapter, stream);
         }
@@ -200,8 +200,11 @@ public class StreamingVideoActivity extends PassFailButtons.TestListActivity {
     private void addStreamToTests(ArrayTestListAdapter streams, Stream stream) {
         Intent i = new Intent(StreamingVideoActivity.this, PlayVideoActivity.class);
         i.putExtra(PlayVideoActivity.EXTRA_STREAM, stream);
-        streams.add(TestListItem.newTest(stream.name, PlayVideoActivity.getTestId(stream.code),
-                i, null));
+        streams.add(
+                TestListItem.newBuilder(stream.name)
+                        .setTestName(PlayVideoActivity.getTestId(stream.code))
+                        .setIntent(i)
+                        .build());
     }
 
     /** @returns the appropriate RTSP url, or null in case of failure */

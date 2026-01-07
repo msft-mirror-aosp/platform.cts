@@ -43,21 +43,23 @@ public class HceFEmulatorTestActivity extends PassFailButtons.TestListActivity {
         CardEmulation cardEmulation = CardEmulation.getInstance(nfcAdapter);
         if (getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_NFC_HOST_CARD_EMULATION_NFCF)) {
-            adapter.add(TestListItem.newCategory(this, R.string.nfc_hce_f_emulator_tests));
+            adapter.add(TestListItem.newBuilder(this, R.string.nfc_hce_f_emulator_tests).build());
 
-            adapter.add(TestListItem.newTest(this, R.string.nfc_hce_f_emulator,
-                    HceFEmulatorActivity.class.getName(),
-                    new Intent(this, HceFEmulatorActivity.class), null));
+            adapter.add(
+                    TestListItem.newBuilder(this, R.string.nfc_hce_f_emulator)
+                            .setTestName(HceFEmulatorActivity.class.getName())
+                            .setIntent(new Intent(this, HceFEmulatorActivity.class))
+                            .build());
             if (nfcAdapter.isObserveModeSupported()
                     && !getPackageManager().hasSystemFeature(
                         PackageManager.FEATURE_WATCH)) {
                 adapter.add(
-                        TestListItem.newTest(
-                                this,
-                                R.string.nfc_hce_f_emulator_observe_mode_tests,
-                                NfcFObserveModeEmulatorTestActivity.class.getName(),
-                                new Intent(this, NfcFObserveModeEmulatorTestActivity.class),
-                                null));
+                        TestListItem.newBuilder(
+                                        this, R.string.nfc_hce_f_emulator_observe_mode_tests)
+                                .setTestName(NfcFObserveModeEmulatorTestActivity.class.getName())
+                                .setIntent(
+                                        new Intent(this, NfcFObserveModeEmulatorTestActivity.class))
+                                .build());
             }
         }
 

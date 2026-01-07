@@ -82,7 +82,7 @@ public class ManagedUserPositiveTestActivity extends PassFailButtons.TestListAct
         setPassFailButtonClickListeners();
 
         final ArrayTestListAdapter adapter = new ArrayTestListAdapter(this);
-        adapter.add(TestListItem.newCategory(this, R.string.managed_user_positive_category));
+        adapter.add(TestListItem.newBuilder(this, R.string.managed_user_positive_category).build());
 
         addTestsToAdapter(adapter);
 
@@ -204,7 +204,10 @@ public class ManagedUserPositiveTestActivity extends PassFailButtons.TestListAct
     static TestListItem createTestItem(Activity activity, String id, int titleRes,
             Intent intent) {
         intent.putExtra(EXTRA_TEST_ID, id);
-        return TestListItem.newTest(activity, titleRes, id, intent, null);
+        return TestListItem.newBuilder(activity, titleRes)
+                .setTestName(id)
+                .setIntent(intent)
+                .build();
     }
 
     private boolean isStatusBarEnabled() {

@@ -81,7 +81,7 @@ public class HostTestListActivity extends PassFailButtons.TestListActivity {
             }
         }
         for (String className : testsByClass.keySet()) {
-            testListAdapter.add(TestListAdapter.TestListItem.newCategory(className));
+            testListAdapter.add(TestListAdapter.TestListItem.newBuilder(className).build());
             testListAdapter.addAll(testsByClass.get(className));
         }
         setTestListAdapter(testListAdapter);

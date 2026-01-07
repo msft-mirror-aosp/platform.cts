@@ -263,7 +263,7 @@ public class ManifestTestListAdapter extends TestListAdapter {
         for (String testCategory : testCategories) {
             List<TestListItem> tests = filterTests(testsByCategory.get(testCategory), mode);
             if (!tests.isEmpty()) {
-                allRows.add(TestListItem.newCategory(testCategory));
+                allRows.add(TestListItem.newBuilder(testCategory).build());
                 Collections.sort(tests, Comparator.comparing(item -> item.title));
                 allRows.addAll(tests);
             }
@@ -315,22 +315,23 @@ public class ManifestTestListAdapter extends TestListAdapter {
             String[] applicableFeatures = getApplicableFeatures(info.activityInfo.metaData);
             String displayMode = getDisplayMode(info.activityInfo.metaData);
             boolean passInEitherMode = getTestPassMode(info.activityInfo.metaData, displayMode);
+            String testCategory = getTestCategory(mContext, info.activityInfo.metaData);
 
             TestListItem item =
-                    TestListItem.newTest(
-                            title,
-                            testName,
-                            intent,
-                            requiredFeatures,
-                            requiredConfigs,
-                            requiredActions,
-                            excludedFeatures,
-                            applicableFeatures,
-                            excludedUserTypes,
-                            displayMode,
-                            passInEitherMode);
+                    TestListItem.newBuilder(title)
+                            .setTestName(testName)
+                            .setIntent(intent)
+                            .setRequiredFeatures(requiredFeatures)
+                            .setRequiredConfigs(requiredConfigs)
+                            .setRequiredActions(requiredActions)
+                            .setExcludedFeatures(excludedFeatures)
+                            .setApplicableFeatures(applicableFeatures)
+                            .setExcludedUserTypes(excludedUserTypes)
+                            .setDisplayMode(displayMode)
+                            .setPassInEitherMode(passInEitherMode)
+                            .setCategory(testCategory)
+                            .build();
 
-            String testCategory = getTestCategory(mContext, info.activityInfo.metaData);
             addTestToCategory(testsByCategory, testCategory, item);
         }
 

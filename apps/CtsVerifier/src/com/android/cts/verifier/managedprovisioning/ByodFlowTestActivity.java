@@ -329,10 +329,11 @@ public class ByodFlowTestActivity extends DialogTestListActivity {
                 workStatusToast);
         */
 
-        mNonMarketAppsTest = TestListItem.newTest(this,
-                R.string.provisioning_byod_non_market_apps,
-                NonMarketAppsActivity.class.getName(),
-                new Intent(this, NonMarketAppsActivity.class), null);
+        mNonMarketAppsTest =
+                TestListItem.newBuilder(this, R.string.provisioning_byod_non_market_apps)
+                        .setTestName(NonMarketAppsActivity.class.getName())
+                        .setIntent(new Intent(this, NonMarketAppsActivity.class))
+                        .build();
 
         mUserSettingsVisibleTest = new DialogTestListItem(this,
             R.string.provisioning_byod_user_settings,
@@ -400,33 +401,41 @@ public class ByodFlowTestActivity extends DialogTestListActivity {
                 new Intent(ByodHelperActivity.ACTION_TEST_APP_LINKING_DIALOG));
         */
 
-        mKeyguardDisabledFeaturesTest = TestListItem.newTest(this,
-                R.string.provisioning_byod_keyguard_disabled_features,
-                KeyguardDisabledFeaturesActivity.class.getName(),
-                new Intent(this, KeyguardDisabledFeaturesActivity.class), null);
+        mKeyguardDisabledFeaturesTest =
+                TestListItem.newBuilder(this, R.string.provisioning_byod_keyguard_disabled_features)
+                        .setTestName(KeyguardDisabledFeaturesActivity.class.getName())
+                        .setIntent(new Intent(this, KeyguardDisabledFeaturesActivity.class))
+                        .build();
 
-        mAuthenticationBoundKeyTest = TestListItem.newTest(this,
-                R.string.provisioning_byod_auth_bound_key,
-                AuthenticationBoundKeyTestActivity.class.getName(),
-                new Intent(AuthenticationBoundKeyTestActivity.ACTION_AUTH_BOUND_KEY_TEST),
-                null);
+        mAuthenticationBoundKeyTest =
+                TestListItem.newBuilder(this, R.string.provisioning_byod_auth_bound_key)
+                        .setTestName(AuthenticationBoundKeyTestActivity.class.getName())
+                        .setIntent(
+                                new Intent(
+                                        AuthenticationBoundKeyTestActivity
+                                                .ACTION_AUTH_BOUND_KEY_TEST))
+                        .build();
 
-        mVpnTest = TestListItem.newTest(this,
-                R.string.provisioning_byod_vpn,
-                VpnTestActivity.class.getName(),
-                new Intent(VpnTestActivity.ACTION_VPN),
-                null);
+        mVpnTest =
+                TestListItem.newBuilder(this, R.string.provisioning_byod_vpn)
+                        .setTestName(VpnTestActivity.class.getName())
+                        .setIntent(new Intent(VpnTestActivity.ACTION_VPN))
+                        .build();
 
-        mAlwaysOnVpnSettingsTest = TestListItem.newTest(this,
-                R.string.provisioning_byod_always_on_vpn,
-                AlwaysOnVpnSettingsTestActivity.class.getName(),
-                new Intent(AlwaysOnVpnSettingsTestActivity.ACTION_ALWAYS_ON_VPN_SETTINGS_TEST),
-                null);
+        mAlwaysOnVpnSettingsTest =
+                TestListItem.newBuilder(this, R.string.provisioning_byod_always_on_vpn)
+                        .setTestName(AlwaysOnVpnSettingsTestActivity.class.getName())
+                        .setIntent(
+                                new Intent(
+                                        AlwaysOnVpnSettingsTestActivity
+                                                .ACTION_ALWAYS_ON_VPN_SETTINGS_TEST))
+                        .build();
 
-        mDisallowAppsControlTest = TestListItem.newTest(this,
-                R.string.provisioning_byod_disallow_apps_control,
-                DisallowAppsControlActivity.class.getName(),
-                new Intent(this, DisallowAppsControlActivity.class), null);
+        mDisallowAppsControlTest =
+                TestListItem.newBuilder(this, R.string.provisioning_byod_disallow_apps_control)
+                        .setTestName(DisallowAppsControlActivity.class.getName())
+                        .setIntent(new Intent(this, DisallowAppsControlActivity.class))
+                        .build();
 
         // Test for checking if the required intent filters are set during managed provisioning.
         mIntentFiltersTest = new DialogTestListItem(this,
@@ -438,17 +447,20 @@ public class ByodFlowTestActivity extends DialogTestListActivity {
             }
         };
 
-        mCrossProfilePermissionControl = TestListItem.newTest(this,
-                R.string.provisioning_byod_cross_profile_permission_control,
-                CrossProfilePermissionControlActivity.class.getName(),
-                new Intent(
-                        CrossProfilePermissionControlActivity.ACTION_CROSS_PROFILE_PERMISSION_CONTROL),
-                        null);
-
-        mTurnOffWorkFeaturesTest = TestListItem.newTest(this,
-                R.string.provisioning_byod_turn_off_work,
-                TurnOffWorkActivity.class.getName(),
-                new Intent(this, TurnOffWorkActivity.class), null);
+        mCrossProfilePermissionControl =
+                TestListItem.newBuilder(
+                                this, R.string.provisioning_byod_cross_profile_permission_control)
+                        .setTestName(CrossProfilePermissionControlActivity.class.getName())
+                        .setIntent(
+                                new Intent(
+                                        CrossProfilePermissionControlActivity
+                                                .ACTION_CROSS_PROFILE_PERMISSION_CONTROL))
+                        .build();
+        mTurnOffWorkFeaturesTest =
+                TestListItem.newBuilder(this, R.string.provisioning_byod_turn_off_work)
+                        .setTestName(TurnOffWorkActivity.class.getName())
+                        .setIntent(new Intent(this, TurnOffWorkActivity.class))
+                        .build();
 
         Intent permissionCheckIntent = new Intent(
                 PermissionLockdownTestActivity.ACTION_MANAGED_PROFILE_CHECK_PERMISSION_LOCKDOWN);
@@ -464,24 +476,25 @@ public class ByodFlowTestActivity extends DialogTestListActivity {
                 R.string.provisioning_byod_select_work_challenge_description,
                 new Intent(ByodHelperActivity.ACTION_TEST_SELECT_WORK_CHALLENGE));
 
-        mRecentsTest = TestListItem.newTest(this,
-                R.string.provisioning_byod_recents,
-                RecentsRedactionActivity.class.getName(),
-                new Intent(RecentsRedactionActivity.ACTION_RECENTS).setFlags(
-                        FLAG_ACTIVITY_NEW_TASK),
-                null);
+        mRecentsTest =
+                TestListItem.newBuilder(this, R.string.provisioning_byod_recents)
+                        .setTestName(RecentsRedactionActivity.class.getName())
+                        .setIntent(
+                                new Intent(RecentsRedactionActivity.ACTION_RECENTS)
+                                        .setFlags(FLAG_ACTIVITY_NEW_TASK))
+                        .build();
 
-        mOrganizationInfoTest = TestListItem.newTest(this,
-                R.string.provisioning_byod_organization_info,
-                OrganizationInfoTestActivity.class.getName(),
-                new Intent(this, OrganizationInfoTestActivity.class),
-                null);
+        mOrganizationInfoTest =
+                TestListItem.newBuilder(this, R.string.provisioning_byod_organization_info)
+                        .setTestName(OrganizationInfoTestActivity.class.getName())
+                        .setIntent(new Intent(this, OrganizationInfoTestActivity.class))
+                        .build();
 
-        mKeyChainTest = TestListItem.newTest(this,
-                R.string.provisioning_byod_keychain,
-                KeyChainTestActivity.class.getName(),
-                new Intent(KeyChainTestActivity.ACTION_KEYCHAIN),
-                null);
+        mKeyChainTest =
+                TestListItem.newBuilder(this, R.string.provisioning_byod_keychain)
+                        .setTestName(KeyChainTestActivity.class.getName())
+                        .setIntent(new Intent(KeyChainTestActivity.ACTION_KEYCHAIN))
+                        .build();
 
         mParentProfilePassword = new DialogTestListItem(this,
                 R.string.provisioning_byod_parent_profile_password,
@@ -495,11 +508,11 @@ public class ByodFlowTestActivity extends DialogTestListActivity {
                 R.string.provisioning_byod_personal_ringtones_instruction,
                 new Intent(Settings.ACTION_SOUND_SETTINGS));
 
-        mScreenshotTest = TestListItem.newTest(/* context= */ this,
-                R.string.provisioning_byod_screenshot,
-                ScreenshotTestActivity.class.getName(),
-                new Intent(ScreenshotTestActivity.ACTION_SCREENSHOT_TEST),
-                /* requiredFeatures= */ null);
+        mScreenshotTest =
+                TestListItem.newBuilder(this, R.string.provisioning_byod_screenshot)
+                        .setTestName(ScreenshotTestActivity.class.getName())
+                        .setIntent(new Intent(ScreenshotTestActivity.ACTION_SCREENSHOT_TEST))
+                        .build();
 
         final Intent policyTransparencyTestIntent = new Intent(this,
                 PolicyTransparencyTestListActivity.class);
@@ -508,10 +521,12 @@ public class ByodFlowTestActivity extends DialogTestListActivity {
                 PolicyTransparencyTestListActivity.MODE_MANAGED_PROFILE);
         policyTransparencyTestIntent.putExtra(
                 PolicyTransparencyTestActivity.EXTRA_TEST_ID, "BYOD_PolicyTransparency");
-        mPolicyTransparencyTest = TestListItem.newTest(this,
-                R.string.device_profile_owner_policy_transparency_test,
-                "BYOD_PolicyTransparency",
-                policyTransparencyTestIntent, null);
+        mPolicyTransparencyTest =
+                TestListItem.newBuilder(
+                                this, R.string.device_profile_owner_policy_transparency_test)
+                        .setTestName("BYOD_PolicyTransparency")
+                        .setIntent(policyTransparencyTestIntent)
+                        .build();
 
         adapter.add(mProfileOwnerInstalled);
         adapter.add(mDiskEncryptionTest);
@@ -658,26 +673,39 @@ public class ByodFlowTestActivity extends DialogTestListActivity {
         }
 
         if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_LOCATION_GPS)) {
-            mEnableLocationModeTest = TestListItem.newTest(this,
-                    R.string.provisioning_byod_location_mode_enable,
-                    LocationTestActivity.TEST_ID_LOCATION_ENABLED,
-                    new Intent(LocationTestActivity.ACTION_TEST_LOCATION_ENABLED),
-                    null);
-            mDisableLocationModeThroughMainSwitchTest = TestListItem.newTest(this,
-                    R.string.provisioning_byod_location_mode_disable,
-                    LocationTestActivity.TEST_ID_LOCATION_DISABLED,
-                    new Intent(LocationTestActivity.ACTION_TEST_LOCATION_DISABLED),
-                    null);
-            mDisableLocationModeThroughWorkSwitchTest = TestListItem.newTest(this,
-                    R.string.provisioning_byod_work_location_mode_disable,
-                    LocationTestActivity.TEST_ID_WORK_LOCATION_DISABLED,
-                    new Intent(LocationTestActivity.ACTION_TEST_WORK_LOCATION_DISABLED),
-                    null);
-            mPrimaryLocationWhenWorkDisabledTest = TestListItem.newTest(this,
-                    R.string.provisioning_byod_primary_location_when_work_disabled,
-                    LocationTestActivity.TEST_ID_WORK_LOCATION_DISABLED_PRIMARY,
-                    new Intent(LocationTestActivity.ACTION_TEST_WORK_LOCATION_DISABLED_PRIMARY),
-                    null);
+            mEnableLocationModeTest =
+                    TestListItem.newBuilder(
+                                    getString(R.string.provisioning_byod_location_mode_enable))
+                            .setTestName(LocationTestActivity.TEST_ID_LOCATION_ENABLED)
+                            .setIntent(
+                                    new Intent(LocationTestActivity.ACTION_TEST_LOCATION_ENABLED))
+                            .build();
+            mDisableLocationModeThroughMainSwitchTest =
+                    TestListItem.newBuilder(this, R.string.provisioning_byod_location_mode_disable)
+                            .setTestName(LocationTestActivity.TEST_ID_LOCATION_DISABLED)
+                            .setIntent(
+                                    new Intent(LocationTestActivity.ACTION_TEST_LOCATION_DISABLED))
+                            .build();
+            mDisableLocationModeThroughWorkSwitchTest =
+                    TestListItem.newBuilder(
+                                    this, R.string.provisioning_byod_work_location_mode_disable)
+                            .setTestName(LocationTestActivity.TEST_ID_WORK_LOCATION_DISABLED)
+                            .setIntent(
+                                    new Intent(
+                                            LocationTestActivity
+                                                    .ACTION_TEST_WORK_LOCATION_DISABLED))
+                            .build();
+            mPrimaryLocationWhenWorkDisabledTest =
+                    TestListItem.newBuilder(
+                                    this,
+                                    R.string.provisioning_byod_primary_location_when_work_disabled)
+                            .setTestName(
+                                    LocationTestActivity.TEST_ID_WORK_LOCATION_DISABLED_PRIMARY)
+                            .setIntent(
+                                    new Intent(
+                                            LocationTestActivity
+                                                    .ACTION_TEST_WORK_LOCATION_DISABLED_PRIMARY))
+                            .build();
             adapter.add(mEnableLocationModeTest);
             adapter.add(mDisableLocationModeThroughMainSwitchTest);
             adapter.add(mDisableLocationModeThroughWorkSwitchTest);
@@ -690,11 +718,15 @@ public class ByodFlowTestActivity extends DialogTestListActivity {
         }
 
         if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_APP_WIDGETS)) {
-            mWidgetTest = TestListItem.newTest(this,
-                    R.string.provisioning_byod_work_profile_widget,
-                    WorkProfileWidgetActivity.class.getName(),
-                    new Intent(WorkProfileWidgetActivity.ACTION_TEST_WORK_PROFILE_WIDGET),
-                    new String[]{PackageManager.FEATURE_APP_WIDGETS});
+            mWidgetTest =
+                    TestListItem.newBuilder(this, R.string.provisioning_byod_work_profile_widget)
+                            .setTestName(WorkProfileWidgetActivity.class.getName())
+                            .setIntent(
+                                    new Intent(
+                                            WorkProfileWidgetActivity
+                                                    .ACTION_TEST_WORK_PROFILE_WIDGET))
+                            .setRequiredFeatures(new String[] {PackageManager.FEATURE_APP_WIDGETS})
+                            .build();
             adapter.add(mWidgetTest);
         }
 

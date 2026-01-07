@@ -162,7 +162,7 @@ public class DeviceOwnerPositiveTestActivity extends PassFailButtons.TestListAct
         setPassFailButtonClickListeners();
 
         final ArrayTestListAdapter adapter = new ArrayTestListAdapter(this);
-        adapter.add(TestListItem.newCategory(this, R.string.device_owner_positive_category));
+        adapter.add(TestListItem.newBuilder(this, R.string.device_owner_positive_category).build());
 
         addTestsToAdapter(adapter);
 
@@ -315,11 +315,11 @@ public class DeviceOwnerPositiveTestActivity extends PassFailButtons.TestListAct
                                     new Intent(Settings.ACTION_WIFI_SETTINGS))}));
 
             // WIFI_SSID_RESTRICTION
-            adapter.add(TestListItem.newTest(this,
-                    R.string.device_owner_ssid_restriction,
-                    SsidRestrictionTestActivity.class.getName(),
-                    new Intent(this, SsidRestrictionTestActivity.class),
-                    /* requiredFeatures */ null));
+            adapter.add(
+                    TestListItem.newBuilder(this, R.string.device_owner_ssid_restriction)
+                            .setTestName(SsidRestrictionTestActivity.class.getName())
+                            .setIntent(new Intent(this, SsidRestrictionTestActivity.class))
+                            .build());
         }
 
         // DISALLOW_AMBIENT_DISPLAY.
@@ -641,11 +641,12 @@ public class DeviceOwnerPositiveTestActivity extends PassFailButtons.TestListAct
         if (FeatureUtil.isSwipeToUnlockSupported(this)
                 && FeatureUtil.isCustomizeLockScreenMessageSupported(this)
                 && Utils.isLockscreenSupported(this)) {
-            adapter.add(TestListItem.newTest(this,
-                    R.string.device_owner_customize_lockscreen_message,
-                    LockscreenMessageTestActivity.class.getName(),
-                    new Intent(this, LockscreenMessageTestActivity.class),
-                    /* requiredFeatures */ null));
+            adapter.add(
+                    TestListItem.newBuilder(
+                                    this, R.string.device_owner_customize_lockscreen_message)
+                            .setTestName(LockscreenMessageTestActivity.class.getName())
+                            .setIntent(new Intent(this, LockscreenMessageTestActivity.class))
+                            .build());
         }
 
         // setUsbDataSignalingEnabled
@@ -715,7 +716,10 @@ public class DeviceOwnerPositiveTestActivity extends PassFailButtons.TestListAct
     static TestListItem createTestItem(Activity activity, String id, int titleRes,
             Intent intent) {
         intent.putExtra(EXTRA_TEST_ID, id);
-        return TestListItem.newTest(activity, titleRes, id, intent, null);
+        return TestListItem.newBuilder(activity, titleRes)
+                .setTestName(id)
+                .setIntent(intent)
+                .build();
     }
 
     private Intent createTearDownIntent() {

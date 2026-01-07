@@ -139,10 +139,10 @@ public class DeskClockTestsActivity extends PassFailButtons.TestListActivity {
 
         final ArrayTestListAdapter adapter = new ArrayTestListAdapter(this);
 
-        adapter.add(TestListItem.newCategory(this, R.string.deskclock_group_alarms));
+        adapter.add(TestListItem.newBuilder(this, R.string.deskclock_group_alarms).build());
         addTests(adapter, ALARM_TESTS);
 
-        adapter.add(TestListItem.newCategory(this, R.string.deskclock_group_timers));
+        adapter.add(TestListItem.newBuilder(this, R.string.deskclock_group_timers).build());
         addTests(adapter, TIMER_TESTS);
 
         adapter.registerDataSetObserver(new DataSetObserver() {
@@ -175,8 +175,11 @@ public class DeskClockTestsActivity extends PassFailButtons.TestListActivity {
             Intent intent = IntentDrivenTestActivity.newIntent(this, testId, title,
                     info.getInfoText(), info.getButtons());
             Log.d(TAG, "Adding test with " + IntentDrivenTestActivity.toString(this, intent));
-            adapter.add(TestListItem.newTest(this, title, testId, intent,
-                    /* applicableFeatures= */ null));
+            adapter.add(
+                    TestListItem.newBuilder(this, title)
+                            .setTestName(testId)
+                            .setIntent(intent)
+                            .build());
         }
     }
 

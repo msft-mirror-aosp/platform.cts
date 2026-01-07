@@ -278,11 +278,11 @@ public abstract class DialogTestListActivity extends PassFailButtons.TestListAct
         private String mManualInstruction;
 
         public DialogTestListItem(Context context, String nameId, String testId) {
-            super(nameId, testId, null, null, null, null);
+            super(TestListAdapter.TestListItem.newBuilder(nameId).setTestName(testId));
         }
 
         public DialogTestListItem(Context context, int nameResId, String testId) {
-            super(context.getString(nameResId), testId, null, null, null, null);
+            super(TestListAdapter.TestListItem.newBuilder(context, nameResId).setTestName(testId));
         }
 
         public DialogTestListItem(Context context, int nameResId, String testId,
@@ -292,7 +292,10 @@ public abstract class DialogTestListActivity extends PassFailButtons.TestListAct
 
         public DialogTestListItem(Context context, int nameResId, String testId,
                 int testInstructionResId, Intent testIntent) {
-            super(context.getString(nameResId), testId, testIntent, null, null, null);
+            super(
+                    TestListAdapter.TestListItem.newBuilder(context, nameResId)
+                            .setTestName(testId)
+                            .setIntent(testIntent));
             mManualInstruction = context.getString(testInstructionResId);
         }
 

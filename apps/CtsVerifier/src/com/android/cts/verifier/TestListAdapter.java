@@ -141,280 +141,115 @@ public abstract class TestListAdapter extends BaseAdapter {
         /** Configs test pass mode to record the test result. */
         public final boolean passInEitherMode;
 
-        // TODO: refactor to use a Builder approach instead
+        /** Category of the test. */
+        public final String category;
 
-        /**
-         * Creates a new test item with given required, excluded and applicable features, the
-         * context and the resource ID of the title.
-         */
-        public static TestListItem newTest(
-                Context context,
-                int titleResId,
-                String testName,
-                Intent intent,
-                String[] requiredFeatures,
-                String[] excludedFeatures,
-                String[] applicableFeatures) {
-            return newTest(
-                    context.getString(titleResId),
-                    testName,
-                    intent,
-                    requiredFeatures,
-                    excludedFeatures,
-                    applicableFeatures);
-        }
-
-        /**
-         * Creates a new test item with given required and excluded features, the context and the
-         * resource ID of the title.
-         */
-        public static TestListItem newTest(
-                Context context,
-                int titleResId,
-                String testName,
-                Intent intent,
-                String[] requiredFeatures,
-                String[] excludedFeatures) {
-            return newTest(
-                    context.getString(titleResId),
-                    testName,
-                    intent,
-                    requiredFeatures,
-                    excludedFeatures,
-                    /* applicableFeatures= */ null);
-        }
-
-        /**
-         * Creates a new test item with given required features, the context and the resource ID of
-         * the title.
-         */
-        public static TestListItem newTest(
-                Context context,
-                int titleResId,
-                String testName,
-                Intent intent,
-                String[] requiredFeatures) {
-            return newTest(
-                    context.getString(titleResId),
-                    testName,
-                    intent,
-                    requiredFeatures,
-                    /* excludedFeatures= */ null,
-                    /* applicableFeatures= */ null);
-        }
-
-        /**
-         * Creates a new test item with given display mode, the required, excluded, applicable
-         * features and required configureations and actions.
-         */
-        public static TestListItem newTest(
-                String title,
-                String testName,
-                Intent intent,
-                String[] requiredFeatures,
-                String[] requiredConfigs,
-                String[] requiredActions,
-                String[] excludedFeatures,
-                String[] applicableFeatures,
-                String[] excludedUserTypes,
-                String displayMode,
-                boolean passInEitherMode) {
-            return new TestListItem(
-                    title,
-                    testName,
-                    intent,
-                    requiredFeatures,
-                    requiredConfigs,
-                    requiredActions,
-                    excludedFeatures,
-                    applicableFeatures,
-                    excludedUserTypes,
-                    displayMode,
-                    passInEitherMode);
-        }
-
-        /**
-         * Creates a new test item with given display mode, the required, excluded, applicable
-         * features, required configurations and actions and test pass mode.
-         */
-        public static TestListItem newTest(
-                String title,
-                String testName,
-                Intent intent,
-                String[] requiredFeatures,
-                String[] requiredConfigs,
-                String[] requiredActions,
-                String[] excludedFeatures,
-                String[] applicableFeatures,
-                String[] excludedUserTypes,
-                String displayMode) {
-            return new TestListItem(
-                    title,
-                    testName,
-                    intent,
-                    requiredFeatures,
-                    requiredConfigs,
-                    requiredActions,
-                    excludedFeatures,
-                    applicableFeatures,
-                    excludedUserTypes,
-                    displayMode,
-                    /* passInEitherMode= */ false);
-        }
-
-        /**
-         * Creates a new test item with given required, excluded, applicable features and required
-         * configureations.
-         */
-        public static TestListItem newTest(
-                String title,
-                String testName,
-                Intent intent,
-                String[] requiredFeatures,
-                String[] requiredConfigs,
-                String[] excludedFeatures,
-                String[] applicableFeatures) {
-            return new TestListItem(
-                    title,
-                    testName,
-                    intent,
-                    requiredFeatures,
-                    requiredConfigs,
-                    /* requiredActions= */ null,
-                    excludedFeatures,
-                    applicableFeatures,
-                    /* excludedUserTypes= */ null,
-                    /* displayMode= */ null,
-                    /* passInEitherMode= */ false);
-        }
-
-        /** Creates a new test item with given required, excluded and applicable features. */
-        public static TestListItem newTest(
-                String title,
-                String testName,
-                Intent intent,
-                String[] requiredFeatures,
-                String[] excludedFeatures,
-                String[] applicableFeatures) {
-            return new TestListItem(
-                    title,
-                    testName,
-                    intent,
-                    requiredFeatures,
-                    /* requiredConfigs= */ null,
-                    /* requiredActions= */ null,
-                    excludedFeatures,
-                    applicableFeatures,
-                    /* excludedUserTypes= */ null,
-                    /* displayMode= */ null,
-                    /* passInEitherMode= */ false);
-        }
-
-        /** Creates a new test item with given required and excluded features. */
-        public static TestListItem newTest(
-                String title,
-                String testName,
-                Intent intent,
-                String[] requiredFeatures,
-                String[] excludedFeatures) {
-            return new TestListItem(
-                    title,
-                    testName,
-                    intent,
-                    requiredFeatures,
-                    /* requiredConfigs= */ null,
-                    /* requiredActions= */ null,
-                    excludedFeatures,
-                    /* applicableFeatures= */ null,
-                    /* excludedUserTypes= */ null,
-                    /* displayMode= */ null,
-                    /* passInEitherMode= */ false);
-        }
-
-        /** Creates a new test item with given required features. */
-        public static TestListItem newTest(
-                String title, String testName, Intent intent, String[] requiredFeatures) {
-            return new TestListItem(
-                    title,
-                    testName,
-                    intent,
-                    requiredFeatures,
-                    /* requiredConfigs= */ null,
-                    /* requiredActions= */ null,
-                    /* excludedFeatures= */ null,
-                    /* applicableFeatures= */ null,
-                    /* excludedUserTypes= */ null,
-                    /* displayMode= */ null,
-                    /* passInEitherMode= */ false);
-        }
-
-        public static TestListItem newCategory(Context context, int titleResId) {
-            return newCategory(context.getString(titleResId));
-        }
-
-        public static TestListItem newCategory(String title) {
-            return new TestListItem(
-                    title,
-                    /* testName= */ null,
-                    /* intent= */ null,
-                    /* requiredFeatures= */ null,
-                    /* requiredConfigs= */ null,
-                    /* requiredActions= */ null,
-                    /* excludedFeatures= */ null,
-                    /* applicableFeatures= */ null,
-                    /* excludedUserTypes= */ null,
-                    /* displayMode= */ null,
-                    /* passInEitherMode= */ false);
-        }
-
-        protected TestListItem(
-                String title,
-                String testName,
-                Intent intent,
-                String[] requiredFeatures,
-                String[] excludedFeatures,
-                String[] applicableFeatures) {
-            this(
-                    title,
-                    testName,
-                    intent,
-                    requiredFeatures,
-                    /* requiredConfigs= */ null,
-                    /* requiredActions= */ null,
-                    excludedFeatures,
-                    applicableFeatures,
-                    /* excludedUserTypes= */ null,
-                    /* displayMode= */ null,
-                    /* passInEitherMode= */ false);
-        }
-
-        protected TestListItem(
-                String title,
-                String testName,
-                Intent intent,
-                String[] requiredFeatures,
-                String[] requiredConfigs,
-                String[] requiredActions,
-                String[] excludedFeatures,
-                String[] applicableFeatures,
-                String[] excludedUserTypes,
-                String displayMode,
-                boolean passInEitherMode) {
-            this.title = title;
-            this.testName = setTestNameSuffix(sCurrentDisplayMode, testName);
-            this.intent = intent;
-            this.requiredActions = requiredActions;
-            this.requiredFeatures = requiredFeatures;
-            this.requiredConfigs = requiredConfigs;
-            this.excludedFeatures = excludedFeatures;
-            this.applicableFeatures = applicableFeatures;
-            this.excludedUserTypes = excludedUserTypes;
-            this.displayMode = displayMode;
-            this.passInEitherMode = passInEitherMode;
+        protected TestListItem(Builder builder) {
+            this.title = builder.mTitle;
+            this.testName = setTestNameSuffix(sCurrentDisplayMode, builder.mTestName);
+            this.intent = builder.mIntent;
+            this.requiredFeatures = builder.mRequiredFeatures;
+            this.requiredConfigs = builder.mRequiredConfigs;
+            this.requiredActions = builder.mRequiredActions;
+            this.excludedFeatures = builder.mExcludedFeatures;
+            this.excludedUserTypes = builder.mExcludedUserTypes;
+            this.applicableFeatures = builder.mApplicableFeatures;
+            this.displayMode = builder.mDisplayMode;
+            this.passInEitherMode = builder.mPassInEitherMode;
+            this.category = builder.mCategory;
         }
 
         boolean isTest() {
             return intent != null;
+        }
+
+        /** Returns a new {@link Builder} for creating a {@link TestListItem}. */
+        public static Builder newBuilder(String title) {
+            return new Builder(title);
+        }
+
+        /** Returns a new {@link Builder} for creating a {@link TestListItem}. */
+        public static Builder newBuilder(Context context, int titleResId) {
+            return new Builder(context.getString(titleResId));
+        }
+
+        /** Builder for creating a {@link TestListItem}. */
+        public static class Builder {
+            private final String mTitle;
+            private String mTestName;
+            private Intent mIntent;
+            private String[] mRequiredFeatures;
+            private String[] mRequiredConfigs;
+            private String[] mRequiredActions;
+            private String[] mExcludedFeatures;
+            private String[] mExcludedUserTypes;
+            private String[] mApplicableFeatures;
+            private String mDisplayMode;
+            private boolean mPassInEitherMode;
+            private String mCategory;
+
+            protected Builder(String title) {
+                this.mTitle = title;
+            }
+
+            public Builder setTestName(String testName) {
+                this.mTestName = testName;
+                return this;
+            }
+
+            public Builder setIntent(Intent intent) {
+                this.mIntent = intent;
+                return this;
+            }
+
+            public Builder setRequiredFeatures(String[] requiredFeatures) {
+                this.mRequiredFeatures = requiredFeatures;
+                return this;
+            }
+
+            public Builder setRequiredConfigs(String[] requiredConfigs) {
+                this.mRequiredConfigs = requiredConfigs;
+                return this;
+            }
+
+            public Builder setRequiredActions(String[] requiredActions) {
+                this.mRequiredActions = requiredActions;
+                return this;
+            }
+
+            public Builder setExcludedFeatures(String[] excludedFeatures) {
+                this.mExcludedFeatures = excludedFeatures;
+                return this;
+            }
+
+            public Builder setExcludedUserTypes(String[] excludedUserTypes) {
+                this.mExcludedUserTypes = excludedUserTypes;
+                return this;
+            }
+
+            public Builder setApplicableFeatures(String[] applicableFeatures) {
+                this.mApplicableFeatures = applicableFeatures;
+                return this;
+            }
+
+            public Builder setDisplayMode(String displayMode) {
+                this.mDisplayMode = displayMode;
+                return this;
+            }
+
+            public Builder setPassInEitherMode(boolean passInEitherMode) {
+                this.mPassInEitherMode = passInEitherMode;
+                return this;
+            }
+
+            public Builder setCategory(String category) {
+                this.mCategory = category;
+                return this;
+            }
+
+            public TestListItem build() {
+                return new TestListItem(this);
+            }
         }
     }
 

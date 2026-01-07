@@ -41,27 +41,23 @@ public class HceFReaderTestActivity extends PassFailButtons.TestListActivity {
 
         if (getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_NFC_HOST_CARD_EMULATION_NFCF)) {
-            adapter.add(TestListItem.newCategory(this, R.string.nfc_hce_f_reader_tests));
+            adapter.add(TestListItem.newBuilder(this, R.string.nfc_hce_f_reader_tests).build());
 
             adapter.add(
-                    TestListItem.newTest(
-                            this,
-                            R.string.nfc_hce_f_reader,
-                            HceFReaderActivity.TEST_NAME,
-                            new Intent(this, HceFReaderActivity.class),
-                            null));
+                    TestListItem.newBuilder(this, R.string.nfc_hce_f_reader)
+                            .setTestName(HceFReaderActivity.TEST_NAME)
+                            .setIntent(new Intent(this, HceFReaderActivity.class))
+                            .build());
             NfcAdapter nfcAdapter = NfcAdapter.getDefaultAdapter(this);
             if (nfcAdapter != null && nfcAdapter.isObserveModeSupported()) {
                 Intent observeModeIntent = new Intent(this, HceFReaderActivity.class);
                 observeModeIntent.putExtra(
                         TEST_NAME_EXTRA, getString(R.string.nfc_hce_f_reader_observe_mode_tests));
                 adapter.add(
-                        TestListItem.newTest(
-                                this,
-                                R.string.nfc_hce_f_reader_observe_mode_tests,
-                                HceFReaderActivity.OBSERVE_MODE_TEST_NAME,
-                                observeModeIntent,
-                                null));
+                        TestListItem.newBuilder(this, R.string.nfc_hce_f_reader_observe_mode_tests)
+                                .setTestName(HceFReaderActivity.OBSERVE_MODE_TEST_NAME)
+                                .setIntent(observeModeIntent)
+                                .build());
             }
         }
 
