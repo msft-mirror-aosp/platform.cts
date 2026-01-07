@@ -555,142 +555,6 @@ public class VibrationEffectTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_NORMALIZED_PWLE_EFFECTS, Flags.FLAG_COMPOSITION_PWLE_APIS})
-    @ApiTest(apis = {"android.os.VibrationEffect.Composition#addEnvelope"})
-    public void testComposedWithEnvelopes() {
-        VibrationEffect.WaveformEnvelopeBuilder waveformEnvelopeBuilder =
-                new VibrationEffect.WaveformEnvelopeBuilder()
-                        .addControlPoint(1.0f, 150f, 100)
-                        .addControlPoint(0.5f, 100f, 100);
-        VibrationEffect.BasicEnvelopeBuilder basicEnvelopeBuilder =
-                new VibrationEffect.BasicEnvelopeBuilder()
-                        .addControlPoint(1.0f, 1.0f, 100)
-                        .addControlPoint(0.0f, 0.5f, 100);
-
-        VibrationEffect effect = VibrationEffect.startComposition()
-                .addEnvelope(waveformEnvelopeBuilder)
-                .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 1f, 210,
-                        VibrationEffect.Composition.DELAY_TYPE_RELATIVE_START_OFFSET)
-                .addEnvelope(basicEnvelopeBuilder)
-                .compose();
-
-        assertThat(((VibrationEffect.Composed) effect).getSegments()).hasSize(5);
-
-        // From waveformEnvelope
-        assertPwleSegment(effect, 0);
-        assertPwleSegment(effect, 1);
-        // From addPrimitive
-        assertPrimitiveId(VibrationEffect.Composition.PRIMITIVE_CLICK, effect, 2);
-        // From basicEnvelope
-        assertBasicPwleSegment(effect, 3);
-        assertBasicPwleSegment(effect, 4);
-    }
-
-    @Test
-    @RequiresFlagsEnabled({Flags.FLAG_NORMALIZED_PWLE_EFFECTS, Flags.FLAG_COMPOSITION_PWLE_APIS})
-    @ApiTest(apis = {"android.os.VibrationEffect.Composition#addEnvelope"})
-    public void testComposedWithEnvelopesEquals() {
-        VibrationEffect effect = VibrationEffect.startComposition()
-                .addEnvelope(getTestWaveformEnvelopeBuilder())
-                .addEnvelope(getTestBasicEnvelopeBuilder())
-                .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 1f, 210,
-                        VibrationEffect.Composition.DELAY_TYPE_RELATIVE_START_OFFSET)
-                .compose();
-
-        VibrationEffect otherEffect = VibrationEffect.startComposition()
-                .addEnvelope(getTestWaveformEnvelopeBuilder())
-                .addEnvelope(getTestBasicEnvelopeBuilder())
-                .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 1f, 210,
-                        VibrationEffect.Composition.DELAY_TYPE_RELATIVE_START_OFFSET)
-                .compose();
-        assertThat(effect).isEqualTo(otherEffect);
-        assertThat(effect.hashCode()).isEqualTo(otherEffect.hashCode());
-    }
-
-    @Test
-    @RequiresFlagsEnabled({Flags.FLAG_NORMALIZED_PWLE_EFFECTS, Flags.FLAG_COMPOSITION_PWLE_APIS})
-    @ApiTest(apis = {"android.os.VibrationEffect.Composition#addEnvelope"})
-    public void testComposedWithEnvelopesNotEquals() {
-        VibrationEffect effect = VibrationEffect.startComposition()
-                .addEnvelope(getTestWaveformEnvelopeBuilder())
-                .addEnvelope(getTestBasicEnvelopeBuilder())
-                .compose();
-
-        VibrationEffect differentOrder = VibrationEffect.startComposition()
-                .addEnvelope(getTestBasicEnvelopeBuilder())
-                .addEnvelope(getTestWaveformEnvelopeBuilder())
-                .compose();
-        assertThat(effect).isNotEqualTo(differentOrder);
-
-        VibrationEffect differentWaveform =
-                VibrationEffect.startComposition()
-                        .addEnvelope(
-                                getTestWaveformEnvelopeBuilder().addControlPoint(0.5f, 100f, 100))
-                        .addEnvelope(getTestBasicEnvelopeBuilder())
-                        .compose();
-        assertThat(effect).isNotEqualTo(differentWaveform);
-
-        VibrationEffect differentBasic =
-                VibrationEffect.startComposition()
-                        .addEnvelope(getTestWaveformEnvelopeBuilder())
-                        .addEnvelope(getTestBasicEnvelopeBuilder().addControlPoint(0.5f, 0.5f, 100))
-                        .compose();
-        assertThat(effect).isNotEqualTo(differentBasic);
-    }
-
-    @Test
-    @RequiresFlagsEnabled({Flags.FLAG_NORMALIZED_PWLE_EFFECTS, Flags.FLAG_COMPOSITION_PWLE_APIS})
-    @ApiTest(apis = {"android.os.VibrationEffect.Composition#addEnvelope"})
-    public void testComposedWithEnvelopesDuration() {
-        VibrationEffect effect =
-                VibrationEffect.startComposition()
-                        .addEnvelope(
-                                new VibrationEffect.WaveformEnvelopeBuilder()
-                                        .addControlPoint(0.0f, 60f, 20)
-                                        .addControlPoint(0.3f, 100f, 50))
-                        .addEnvelope(
-                                new VibrationEffect.BasicEnvelopeBuilder()
-                                        .addControlPoint(0.5f, 0.5f, 100)
-                                        .addControlPoint(0.5f, 0.5f, 100))
-                        .compose();
-        // 20 + 50 + 100 + 100 = 270
-        assertThat(effect.getDuration()).isEqualTo(270);
-
-        effect =
-                VibrationEffect.startComposition()
-                        .addEnvelope(
-                                new VibrationEffect.WaveformEnvelopeBuilder()
-                                        .addControlPoint(0.0f, 60f, 20)
-                                        .addControlPoint(0.3f, 100f, 50))
-                        .addEnvelope(
-                                new VibrationEffect.BasicEnvelopeBuilder()
-                                        .addControlPoint(0.5f, 0.5f, 100)
-                                        .addControlPoint(0.5f, 0.5f, 100))
-                        .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK)
-                        .compose();
-        // -1 because the primitive duration is unknown.
-        assertThat(effect.getDuration()).isEqualTo(-1);
-    }
-
-    @Test(expected = IllegalStateException.class)
-    @RequiresFlagsEnabled({Flags.FLAG_NORMALIZED_PWLE_EFFECTS, Flags.FLAG_COMPOSITION_PWLE_APIS})
-    @ApiTest(apis = {"android.os.VibrationEffect.Composition#addEnvelope"})
-    public void testComposeWithEmptyPwleEnvelopeFails() {
-        VibrationEffect.startComposition()
-                .addEnvelope(new VibrationEffect.WaveformEnvelopeBuilder())
-                .compose();
-    }
-
-    @Test(expected = IllegalStateException.class)
-    @RequiresFlagsEnabled({Flags.FLAG_NORMALIZED_PWLE_EFFECTS, Flags.FLAG_COMPOSITION_PWLE_APIS})
-    @ApiTest(apis = {"android.os.VibrationEffect.Composition#addEnvelope"})
-    public void testComposeWithEmptyBasicPwleEnvelopeFails() {
-        VibrationEffect.startComposition()
-                .addEnvelope(new VibrationEffect.BasicEnvelopeBuilder())
-                .compose();
-    }
-
-    @Test
     @RequiresFlagsEnabled(Flags.FLAG_NORMALIZED_PWLE_EFFECTS)
     @ApiTest(apis = {"VibrationEffect#createRepeatingEffect"})
     public void testCreateRepeatingEffect() {
@@ -1497,13 +1361,6 @@ public class VibrationEffectTest {
         assertThat(composed.getSegments().get(index)).isInstanceOf(PwleSegment.class);
     }
 
-    private void assertBasicPwleSegment(VibrationEffect effect, int index) {
-        assertThat(effect).isInstanceOf(VibrationEffect.Composed.class);
-        VibrationEffect.Composed composed = (VibrationEffect.Composed) effect;
-        assertThat(index).isLessThan(composed.getSegments().size());
-        assertThat(composed.getSegments().get(index)).isInstanceOf(BasicPwleSegment.class);
-    }
-
     private void assertPwleAmplitude(float expectedStartAmplitude, float expectedEndAmplitude,
             VibrationEffect effect, int index) {
         assertThat(effect).isInstanceOf(VibrationEffect.Composed.class);
@@ -1637,30 +1494,20 @@ public class VibrationEffectTest {
     }
 
     private static VibrationEffect getTestWaveformEnvelope() {
-        return getTestWaveformEnvelopeBuilder().build();
+        return new VibrationEffect.WaveformEnvelopeBuilder()
+                .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 60f, /*durationMillis=*/ 20)
+                .addControlPoint(/*amplitude=*/ 0.3f, /*frequencyHz=*/ 100f, /*durationMillis=*/ 50)
+                .addControlPoint(/*amplitude=*/ 0.4f, /*frequencyHz=*/ 120f, /*durationMillis=*/ 80)
+                .addControlPoint(/*amplitude=*/ 0.0f, /*frequencyHz=*/ 120f, /*durationMillis=*/ 40)
+                .build();
     }
 
     private static VibrationEffect getTestBasicEnvelope() {
-        return getTestBasicEnvelopeBuilder().build();
-    }
-
-    private static VibrationEffect.WaveformEnvelopeBuilder getTestWaveformEnvelopeBuilder() {
-        return new VibrationEffect.WaveformEnvelopeBuilder()
-                .addControlPoint(
-                        /* amplitude= */ 0.0f, /* frequencyHz= */ 60f, /* durationMillis= */ 20)
-                .addControlPoint(
-                        /* amplitude= */ 0.3f, /* frequencyHz= */ 100f, /* durationMillis= */ 50)
-                .addControlPoint(
-                        /* amplitude= */ 0.4f, /* frequencyHz= */ 120f, /* durationMillis= */ 80)
-                .addControlPoint(
-                        /* amplitude= */ 0.0f, /* frequencyHz= */ 120f, /* durationMillis= */ 40);
-    }
-
-    private static VibrationEffect.BasicEnvelopeBuilder getTestBasicEnvelopeBuilder() {
         return new VibrationEffect.BasicEnvelopeBuilder()
                 .addControlPoint(/*intensity=*/ 0.1f, /*sharpness=*/ 0.2f, /*durationMillis=*/ 20)
                 .addControlPoint(/*intensity=*/ 0.3f, /*sharpness=*/ 0.4f, /*durationMillis=*/ 50)
                 .addControlPoint(/*intensity=*/ 0.4f, /*sharpness=*/ 0.4f, /*durationMillis=*/ 80)
-                .addControlPoint(/*intensity=*/ 0.0f, /*sharpness=*/ 0.4f, /*durationMillis=*/ 40);
+                .addControlPoint(/*intensity=*/ 0.0f, /*sharpness=*/ 0.4f, /*durationMillis=*/ 40)
+                .build();
     }
 }
