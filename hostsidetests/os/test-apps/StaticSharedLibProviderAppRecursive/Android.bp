@@ -24,7 +24,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     certificate: ":cts-keyset-test-b",
     test_suites: [
-        "cts",
         "general-tests",
     ],
     optimize: {

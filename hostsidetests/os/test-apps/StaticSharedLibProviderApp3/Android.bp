@@ -23,7 +23,6 @@ android_test_helper_app {
     sdk_version: "current",
     certificate: ":cts-keyset-test-b",
     test_suites: [
-        "cts",
         "general-tests",
     ],
     aaptflags: ["--shared-lib"],

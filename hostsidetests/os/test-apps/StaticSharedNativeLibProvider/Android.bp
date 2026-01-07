@@ -24,7 +24,6 @@ android_test_helper_app {
     jni_libs: ["libstaticsharednativelibprovider"],
     sdk_version: "current",
     test_suites: [
-        "cts",
         "general-tests",
     ],
     optimize: {
