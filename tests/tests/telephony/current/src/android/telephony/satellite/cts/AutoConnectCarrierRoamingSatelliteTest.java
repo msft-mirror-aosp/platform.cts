@@ -191,6 +191,23 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
     }
 
     @Test
+    @RequiresPermission(Manifest.permission.SATELLITE_COMMUNICATION)
+    public void testNotifyEntitlementStatusChanged() throws Exception {
+        logd(TAG, "testNotifyEntitlementStatusChanged");
+        if (!shouldTestSatelliteWithMockService()) return;
+        testNotifyEntitlementStatusChanged(SLOT_ID_0);
+    }
+
+    @Test
+    @RequiresPermission(Manifest.permission.SATELLITE_COMMUNICATION)
+    public void testNotifyEntitlementStatusChanged_NoPermission_ThrowsSecurityException()
+            throws Exception {
+        logd(TAG, "testNotifyEntitlementStatusChanged_NoPermission_ThrowsSecurityException");
+        if (!shouldTestSatelliteWithMockService()) return;
+        testNotifyEntitlementStatusChanged_NoPermission_ThrowsSecurityException(SLOT_ID_0);
+    }
+
+    @Test
     @Ignore("b/438236293 - Need to fix and re-enable this test.")
     public void testSatelliteConstrainedNetwork() throws Exception {
         logd(TAG, "testSatelliteConstrainedNetwork");

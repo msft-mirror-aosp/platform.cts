@@ -67,6 +67,7 @@ android_test {
         "telecom_module_flags-java",
         "androidx.test.rules",
         "bedstead-enterprise",
+        "service-entitlement",
     ],
     srcs: [
         "src/**/*.java",
