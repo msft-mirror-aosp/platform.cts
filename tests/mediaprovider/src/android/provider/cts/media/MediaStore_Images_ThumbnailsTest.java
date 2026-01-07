@@ -27,9 +27,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import static src.android.provider.cts.media.modern.MediaStoreBaseTestRule.getExternalStorageDir;
-import static src.android.provider.cts.media.modern.MediaStoreBaseTestRule.pollForCondition;
-
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -63,14 +60,11 @@ import junit.framework.AssertionFailedError;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
-
-import src.android.provider.cts.media.modern.MediaStoreBaseTestRule;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -80,10 +74,6 @@ import java.util.ArrayList;
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.R)
 @RunWith(Parameterized.class)
 public class MediaStore_Images_ThumbnailsTest {
-
-    @ClassRule
-    public static MediaStoreBaseTestRule sMediaStoreBaseTest = new MediaStoreBaseTestRule();
-
     private ArrayList<Uri> mRowsAdded;
 
     private Context mContext;
@@ -124,11 +114,6 @@ public class MediaStore_Images_ThumbnailsTest {
         mRowsAdded = new ArrayList<Uri>();
 
         Log.d(TAG, "Using volume " + mVolumeName + " for user " + mContext.getUserId());
-        pollForCondition(
-                () ->
-                        Environment.getExternalStorageState(getExternalStorageDir(mVolumeName))
-                                .equals(Environment.MEDIA_MOUNTED),
-                "Timed out while waiting for ExternalStorageState to be MEDIA_MOUNTED");
         mExternalImages = MediaStore.Images.Media.getContentUri(mVolumeName);
 
         final DisplayMetrics metrics = mContext.getResources().getDisplayMetrics();

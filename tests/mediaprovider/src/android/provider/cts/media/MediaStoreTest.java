@@ -26,9 +26,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import static src.android.provider.cts.media.modern.MediaStoreBaseTestRule.getExternalStorageDir;
-import static src.android.provider.cts.media.modern.MediaStoreBaseTestRule.pollForCondition;
-
 import android.Manifest;
 import android.app.AppOpsManager;
 import android.content.ContentResolver;
@@ -41,7 +38,6 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.CancellationSignal;
-import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.os.Process;
 import android.os.storage.StorageManager;
@@ -64,15 +60,12 @@ import com.android.providers.media.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
-
-import src.android.provider.cts.media.modern.MediaStoreBaseTestRule;
 
 import java.util.Set;
 
@@ -82,9 +75,6 @@ public class MediaStoreTest {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
-    @ClassRule
-    public static MediaStoreBaseTestRule sMediaStoreBaseTest = new MediaStoreBaseTestRule();
 
     static final String TAG = "MediaStoreTest";
 
@@ -115,11 +105,6 @@ public class MediaStoreTest {
         mContentResolver = mContext.getContentResolver();
 
         Log.d(TAG, "Using volume " + mVolumeName + " for user " + mContext.getUserId());
-        pollForCondition(
-                () ->
-                        Environment.getExternalStorageState(getExternalStorageDir(mVolumeName))
-                                .equals(Environment.MEDIA_MOUNTED),
-                "Timed out while waiting for ExternalStorageState to be MEDIA_MOUNTED");
         mExternalImages = MediaStore.Images.Media.getContentUri(mVolumeName);
     }
 
