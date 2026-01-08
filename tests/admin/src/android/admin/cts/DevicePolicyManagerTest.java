@@ -95,7 +95,8 @@ public class DevicePolicyManagerTest extends AndroidTestCase {
     }
 
     static ComponentName getProfileOwnerComponent() {
-        return new ComponentName("android.admin.app", "android.admin.app.CtsDeviceAdminProfileOwner");
+        return new ComponentName(
+                "android.admin.app", "android.admin.app.CtsDeviceAdminProfileOwner");
     }
 
     @Override
@@ -355,9 +356,11 @@ public class DevicePolicyManagerTest extends AndroidTestCase {
 
     private void assertDeviceOwnerMessage(String message) {
         Log.d(TAG, "assertDeviceOwnerMessage(): " + message);
-        boolean ok = message.contains("does not own the device")
-                || message.contains("can only be called by the device owner")
-                || message.contains("Calling identity is not authorized");
+        boolean ok =
+                message.contains("does not own the device")
+                        || message.contains("can only be called by the device owner")
+                        || message.contains("Caller does not have the required permissions")
+                        || message.contains("Calling identity is not authorized");
         if (!ok && UserManager.isHeadlessSystemUserMode() && !mUser.isSystem()) {
             ok = message.contains("was called from non-system user");
         }
