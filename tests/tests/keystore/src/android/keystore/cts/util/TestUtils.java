@@ -1237,7 +1237,7 @@ public class TestUtils {
         return result;
     }
 
-    public static KeyProtection getMinimalWorkingImportParametersForSigningingWith(
+    public static KeyProtection getMinimalWorkingImportParametersForSigningWith(
             String signatureAlgorithm) {
         String keyAlgorithm = getSignatureAlgorithmKeyAlgorithm(signatureAlgorithm);
         if (KeyProperties.KEY_ALGORITHM_EC.equalsIgnoreCase(keyAlgorithm)) {

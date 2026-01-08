@@ -2587,7 +2587,7 @@ public class AndroidKeyStoreTest {
     public void testKeyStore_ImportSupportedSizes_EC() throws Exception {
         mKeyStore.load(null);
         KeyProtection params =
-                TestUtils.getMinimalWorkingImportParametersForSigningingWith("SHA256withECDSA");
+                TestUtils.getMinimalWorkingImportParametersForSigningWith("SHA256withECDSA");
         checkKeyPairImportSucceeds(
                 "secp224r1", R.raw.ec_key3_secp224r1_pkcs8, R.raw.ec_key3_secp224r1_cert, params);
         checkKeyPairImportSucceeds(
@@ -2602,7 +2602,7 @@ public class AndroidKeyStoreTest {
     public void testKeyStore_ImportSupportedSizes_RSA() throws Exception {
         mKeyStore.load(null);
         KeyProtection params =
-                TestUtils.getMinimalWorkingImportParametersForSigningingWith("SHA256withRSA");
+                TestUtils.getMinimalWorkingImportParametersForSigningWith("SHA256withRSA");
         checkKeyPairImportSucceeds(
                 "512", R.raw.rsa_key5_512_pkcs8, R.raw.rsa_key5_512_cert, params);
         checkKeyPairImportSucceeds(
