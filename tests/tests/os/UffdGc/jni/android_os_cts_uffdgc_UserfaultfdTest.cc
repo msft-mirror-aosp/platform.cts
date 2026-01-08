@@ -33,6 +33,8 @@
 #include <sys/xattr.h>
 #include <unistd.h>
 
+#include <meminfo/kernel_page_size.h>
+
 #define SELINUX_CTXT_LEN 255
 
 static void* userfault_handler_thread(void* arg) {
@@ -274,6 +276,11 @@ JNIEXPORT jint JNICALL Java_android_os_cts_uffdgc_UserfaultfdTest_performMinorUf
   close(uffd);
 out:
   return ret;
+}
+
+extern "C"
+JNIEXPORT bool JNICALL Java_android_os_cts_uffdgc_UserfaultfdTest_isPageSizeEmulated(JNIEnv*) {
+  return getpagesize() != ::android::meminfo::kernel_page_size();
 }
 
 extern "C"
