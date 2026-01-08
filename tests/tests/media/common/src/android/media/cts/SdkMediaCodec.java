@@ -106,6 +106,11 @@ public class SdkMediaCodec implements MediaCodecWrapper {
     }
 
     @Override
+    public final MediaFormat getOutputFormat(int index) {
+        return mCodec.getOutputFormat(index);
+    }
+
+    @Override
     public ByteBuffer getOutputBuffer(int index) {
         return mAsync ? mCodec.getOutputBuffer(index) : mOutputBuffers[index];
     }

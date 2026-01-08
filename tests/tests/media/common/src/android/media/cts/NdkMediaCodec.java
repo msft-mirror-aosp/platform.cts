@@ -53,6 +53,9 @@ public class NdkMediaCodec implements MediaCodecWrapper {
 
     private static native String AMediaCodecGetOutputFormatString(long ndkMediaCodec);
 
+    private static native int AMediaCodecGetOutputFormatInt(
+            long ndkMediaCodec, int index, String key);
+
     private static native boolean AMediaCodecSetInputSurface(long ndkMediaCodec, Surface surface);
 
     private static native boolean AMediaCodecSetNativeInputSurface(
@@ -75,8 +78,12 @@ public class NdkMediaCodec implements MediaCodecWrapper {
 
     private static native int AMediaCodecDequeueInputBuffer(long ndkMediaCodec, long timeoutUs);
 
-    private static native boolean AMediaCodecSetParameter(
-            long ndkMediaCodec, String key, int value);
+    private static native boolean AMediaCodecSetParameters(
+            long ndkMediaCodec,
+            String[] intKeys,
+            int[] intValues,
+            String[] stringKeys,
+            String[] stringValues);
 
     private static native boolean AMediaCodecConfigure(
             long ndkMediaCodec,
@@ -94,7 +101,10 @@ public class NdkMediaCodec implements MediaCodecWrapper {
             Surface surface,
             int range,
             int standard,
-            int transfer);
+            int transfer,
+            String temporalLayering,
+            String videoBitrateLayering,
+            int temporalLayerId);
 
     private static native boolean AMediaCodecQueueInputBuffer(
             long ndkMediaCodec,
@@ -189,7 +199,10 @@ public class NdkMediaCodec implements MediaCodecWrapper {
                 surface,
                 range,
                 standard,
-                transfer);
+                transfer,
+                format.getString(MediaFormat.KEY_TEMPORAL_LAYERING),
+                format.getString(MediaFormat.KEY_VIDEO_BITRATE_LAYERING),
+                format.getInteger(MediaFormat.KEY_TEMPORAL_LAYER_ID, -1));
     }
 
     @Override
@@ -247,6 +260,18 @@ public class NdkMediaCodec implements MediaCodecWrapper {
     }
 
     @Override
+    public MediaFormat getOutputFormat(int index) {
+        MediaFormat mediaFormat = new MediaFormat();
+        int temporalLayerIndex =
+                AMediaCodecGetOutputFormatInt(
+                        mNdkMediaCodec, index, MediaFormat.KEY_TEMPORAL_LAYER_ID);
+        if (temporalLayerIndex >= 0) {
+            mediaFormat.setInteger(MediaFormat.KEY_TEMPORAL_LAYER_ID, temporalLayerIndex);
+        }
+        return mediaFormat;
+    }
+
+    @Override
     public ByteBuffer[] getOutputBuffers() {
         return null;
     }
@@ -275,19 +300,47 @@ public class NdkMediaCodec implements MediaCodecWrapper {
 
     @Override
     public void setParameters(Bundle params) {
-
-        String keys[] =
+        String[] intKeysToCheck =
                 new String[] {
                     MediaCodec.PARAMETER_KEY_REQUEST_SYNC_FRAME,
-                    MediaCodec.PARAMETER_KEY_VIDEO_BITRATE
+                    MediaCodec.PARAMETER_KEY_VIDEO_BITRATE,
+                    MediaFormat.KEY_TEMPORAL_LAYER_ID,
                 };
 
-        for (String key : keys) {
+        String[] stringKeysToCheck =
+                new String[] {
+                    MediaFormat.KEY_TEMPORAL_LAYERING, "video-bitrate-layering",
+                };
+
+        java.util.ArrayList<String> intKeys = new java.util.ArrayList<>();
+        java.util.ArrayList<Integer> intValues = new java.util.ArrayList<>();
+        for (String key : intKeysToCheck) {
             if (params.containsKey(key)) {
-                int value = params.getInt(key);
-                AMediaCodecSetParameter(mNdkMediaCodec, key, value);
+                intKeys.add(key);
+                intValues.add(params.getInt(key));
             }
         }
+
+        java.util.ArrayList<String> stringKeys = new java.util.ArrayList<>();
+        java.util.ArrayList<String> stringValues = new java.util.ArrayList<>();
+        for (String key : stringKeysToCheck) {
+            if (params.containsKey(key)) {
+                stringKeys.add(key);
+                stringValues.add(params.getString(key));
+            }
+        }
+
+        int[] intValuesArray = new int[intValues.size()];
+        for (int i = 0; i < intValues.size(); i++) {
+            intValuesArray[i] = intValues.get(i);
+        }
+
+        AMediaCodecSetParameters(
+                mNdkMediaCodec,
+                intKeys.toArray(new String[0]),
+                intValuesArray,
+                stringKeys.toArray(new String[0]),
+                stringValues.toArray(new String[0]));
     }
 
     @Override

@@ -53,6 +53,8 @@ public interface MediaCodecWrapper {
 
     String getOutputFormatString();
 
+    MediaFormat getOutputFormat(int index);
+
     ByteBuffer getOutputBuffer(int index);
 
     ByteBuffer[] getOutputBuffers();
