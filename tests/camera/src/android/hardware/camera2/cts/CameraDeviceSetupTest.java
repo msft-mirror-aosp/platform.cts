@@ -658,7 +658,8 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
                 };
         for (Class<?> outputClass : classes) {
             OutputConfiguration config = new OutputConfiguration(size, outputClass);
-            verifyOutputConfiguration(ImageFormat.PRIVATE, size, config);
+            verifyOutputConfiguration(
+                    ImageFormat.PRIVATE, size, getUsageFromClass(outputClass), config);
         }
 
         int[] formats = {
@@ -691,7 +692,9 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
         // OutputConfiguration(format, size)
         for (int format : formats) {
             OutputConfiguration config = new OutputConfiguration(format, size);
-            verifyOutputConfiguration(format, size, config);
+            long expectedUsage =
+                    (format == ImageFormat.PRIVATE ? 0 : HardwareBuffer.USAGE_CPU_READ_OFTEN);
+            verifyOutputConfiguration(format, size, expectedUsage, config);
         }
 
         // OutputConfiguration(Surface surface)
@@ -712,9 +715,30 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
             // For RGB formats, if a hardware usage flag is specified, the image format is
             // overridden to PRIVATE.
             int returnedFormat = isRgb ? ImageFormat.PRIVATE : format;
-            verifyOutputConfiguration(returnedFormat, size, config);
+            long expectedUsage =
+                    isRgb
+                            ? HardwareBuffer.USAGE_COMPOSER_OVERLAY
+                            : (format == ImageFormat.PRIVATE
+                                    ? 0
+                                    : HardwareBuffer.USAGE_CPU_READ_OFTEN);
+            verifyOutputConfiguration(returnedFormat, size, expectedUsage, config);
             reader.close();
         }
+    }
+
+    private <T> long getUsageFromClass(Class<T> klass) {
+        if (klass == SurfaceHolder.class) {
+            return (HardwareBuffer.USAGE_COMPOSER_OVERLAY | HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE);
+        }
+        if (klass == SurfaceTexture.class) {
+            return HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE;
+        }
+        if (klass == MediaRecorder.class || klass == MediaCodec.class) {
+            return HardwareBuffer.USAGE_VIDEO_ENCODE;
+        }
+
+        fail("Unknown class " + klass);
+        return 0;
     }
 
     /**
@@ -797,7 +821,8 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
         public final long mDynamicProfile;
     }
 
-    private void verifyOutputConfiguration(int format, Size size, OutputConfiguration config) {
+    private void verifyOutputConfiguration(
+            int format, Size size, long expectedUsage, OutputConfiguration config) {
         Size configuredSize = config.getConfiguredSize();
         int configuredFormat = config.getConfiguredFormat();
         mCollector.expectEquals(
@@ -814,6 +839,18 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
                         + configuredFormat,
                 format,
                 configuredFormat);
+        if (Flags.outputConfigurationGetUsage()) {
+            long usage = config.getUsage();
+            mCollector.expectEquals(
+                    "Format "
+                            + format
+                            + ", OutputConfiguration usage "
+                            + Long.toHexString(expectedUsage)
+                            + ", but getUsage returns "
+                            + Long.toHexString(usage),
+                    expectedUsage,
+                    usage);
+        }
     }
 
     private long setupConfigurations(StaticMetadata staticInfo, int[] configs,
