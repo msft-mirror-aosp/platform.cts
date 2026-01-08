@@ -348,9 +348,11 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
      * state is saved during an update and restored in the new version.
      */
     @Test
-    @RequiresFlagsEnabled(
-            com.android.internal.pm.pkg.component.flags.Flags
-                    .FLAG_ENABLE_ACTIVITY_ALIAS_PERSISTABLE_MODE_BUGFIX)
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ENABLE_APP_RESTART_AFTER_UPDATE,
+        com.android.internal.pm.pkg.component.flags.Flags
+                .FLAG_ENABLE_ACTIVITY_ALIAS_PERSISTABLE_MODE_BUGFIX
+    })
     public void testUpdate_activityAlias_stopsAppOnPackageUpdate() throws Exception {
         mApp1.installPackage();
         launchActivityAndAssertResumed(mApp1.aliasActivity);
@@ -369,6 +371,7 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
      * persistable activity alias is running.
      */
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_RESTART_AFTER_UPDATE)
     @RequiresFlagsDisabled(
             com.android.internal.pm.pkg.component.flags.Flags
                     .FLAG_ENABLE_ACTIVITY_ALIAS_PERSISTABLE_MODE_BUGFIX)
