@@ -22,11 +22,8 @@
 #include <dlfcn.h>
 #include <inttypes.h>
 #include <log/log.h>
-#include <unistd.h>
 
 #include <map>
-
-#include "PreloadedLibrary.h"
 
 #define ASSERT(a, ret)                                             \
     do {                                                           \
@@ -73,16 +70,6 @@ ndk::ScopedAStatus NativeServiceWrapper::registerListener(
     std::lock_guard<std::mutex> lock(mutex_);
     listeners_.insert(listener);
     listener->onRegister();
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus NativeServiceWrapper::isLibraryMarkedPreloaded(bool* result) {
-    *result = isMarkedPreloaded();
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus NativeServiceWrapper::getParentPid(int* result) {
-    *result = getppid();
     return ndk::ScopedAStatus::ok();
 }
 
