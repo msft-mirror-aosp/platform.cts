@@ -16,6 +16,9 @@
 
 package com.android.cts.verifier.audio;
 
+import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
+import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
+
 import android.media.midi.MidiDevice;
 import android.media.midi.MidiDeviceInfo;
 import android.media.midi.MidiManager;
@@ -61,6 +64,9 @@ public class MidiNativeTestActivity extends MidiTestActivityBase {
     private static final String TAG = "MidiNativeTestActivity";
     private static final boolean DEBUG = false;
 
+    // ReportLog Schema
+    private static final String SECTION_MIDI_NATIVE = "midi_native";
+
     public MidiNativeTestActivity() {
         super();
         initTestModules(new NativeMidiTestModule(MidiDeviceInfo.TYPE_USB),
@@ -98,6 +104,11 @@ public class MidiNativeTestActivity extends MidiTestActivityBase {
         if (DEBUG) {
             Log.i(TAG, "---- Stop Service: " + isFound);
         }
+    }
+
+    @Override
+    public final String getReportSectionName() {
+        return setTestNameSuffix(sCurrentDisplayMode, SECTION_MIDI_NATIVE);
     }
 
     /**
