@@ -37,22 +37,6 @@ aidl_interface {
 }
 
 cc_library_shared {
-    name: "libctssamplepreloadedlibrary",
-    srcs: [
-        "lib/PreloadedLibrary.cpp",
-    ],
-    cflags: [
-        "-Wall",
-        "-Werror",
-        "-Wextra",
-        "-Wno-missing-field-initializers",
-        "-Wno-unused-variable",
-    ],
-    sdk_version: "current",
-    stl: "c++_shared",
-}
-
-cc_library_shared {
     name: "libctssamplenativeservice",
     srcs: [
         "lib/NativeService.cpp",
@@ -68,7 +52,6 @@ cc_library_shared {
         "libandroid",
         "libbinder_ndk",
         "liblog",
-        "libctssamplepreloadedlibrary",
     ],
     header_libs: [
         "liblog_headers",

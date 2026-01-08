@@ -17,9 +17,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="android.nativeservice.test">
     <uses-sdk android:minSdkVersion="37" android:targetSdkVersion="37" />
-    <application
-        android:zygotePreloadNativeLib="libctssamplepreloadedlibrary.so"
-        android:zygotePreloadNativeFunc="markPreloaded">
+    <application>
         <uses-library android:name="android.test.runner" />
         <service android:name=".NativeService"
             android:exported="false"
@@ -31,38 +29,6 @@
           <property android:name="android.app.PROPERTY_NATIVE_SERVICE_FUNCTION_NAME"
                      android:value="native_service_createService" />
         </service>
-
-        <service android:name=".NativeAppZygoteService"
-            android:exported="false"
-            android:process=":NTS_native_process"
-            android:nativeService="true"
-            android:isolatedProcess="true"
-            android:useAppZygote="true">
-          <property android:name="android.app.PROPERTY_NATIVE_SERVICE_LIBRARY_NAME"
-                     android:value="libctssamplenativeservice.so" />
-          <property android:name="android.app.PROPERTY_NATIVE_SERVICE_FUNCTION_NAME"
-                     android:value="native_service_createService" />
-        </service>
-
-        <service android:name=".NativeAppZygoteService2"
-            android:exported="false"
-            android:process=":NTS_native_process"
-            android:nativeService="true"
-            android:isolatedProcess="true"
-            android:useAppZygote="true">
-          <property android:name="android.app.PROPERTY_NATIVE_SERVICE_LIBRARY_NAME"
-                     android:value="libctssamplenativeservice.so" />
-          <property android:name="android.app.PROPERTY_NATIVE_SERVICE_FUNCTION_NAME"
-                     android:value="native_service_createService" />
-        </service>
-
-        <!-- We declare a managed service using App Zygote here to test if the service with Native
-             App Zygote work in a mixed setup, where native services and managed services are both
-             in the same app. -->
-        <service android:name=".ManagedAppZygoteService"
-            android:isolatedProcess="true"
-            android:useAppZygote="true">
-        </service>
     </application>
 
     <instrumentation
@@ -71,3 +37,4 @@
         android:label="Integration tests for native services" />
 
 </manifest>
+

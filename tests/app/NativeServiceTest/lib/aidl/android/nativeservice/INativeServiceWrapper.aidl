@@ -19,12 +19,7 @@ package android.nativeservice;
 import android.nativeservice.INativeServiceListener;
 
 // An interface defining methods provided by the native service used for test.
-// This interface is not oneway to support synchronous calls that return values.
-interface INativeServiceWrapper {
+oneway interface INativeServiceWrapper {
     // Register a listener to this service. Usually a listener corresponds to a service connection.
-    oneway void registerListener(in INativeServiceListener listener);
-    // Check if the preloaded library is loaded.
-    boolean isLibraryMarkedPreloaded();
-    // get the parent pid
-    int getParentPid();
+    void registerListener(in INativeServiceListener listener);
 }
