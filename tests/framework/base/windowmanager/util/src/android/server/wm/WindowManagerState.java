@@ -55,9 +55,11 @@ import androidx.annotation.Nullable;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 
+import perfetto.protos.Displaycutout.DisplayCutoutProto;
 import perfetto.protos.Displayinfo.DisplayInfoProto;
 import perfetto.protos.Insets.InsetsProto;
 import perfetto.protos.Insetssource.InsetsSourceProto;
+import perfetto.protos.Insetsstate.InsetsStateProto;
 import perfetto.protos.Rect.RectProto;
 import perfetto.protos.Windowmanagerservice.ActivityRecordProto;
 import perfetto.protos.Windowmanagerservice.AppTransitionProto;
@@ -69,6 +71,7 @@ import perfetto.protos.Windowmanagerservice.DisplayFramesProto;
 import perfetto.protos.Windowmanagerservice.DisplayRotationProto;
 import perfetto.protos.Windowmanagerservice.IdentifierProto;
 import perfetto.protos.Windowmanagerservice.InsetsSourceProviderProto;
+import perfetto.protos.Windowmanagerservice.InsetsStateControllerProto;
 import perfetto.protos.Windowmanagerservice.KeyguardControllerProto;
 import perfetto.protos.Windowmanagerservice.KeyguardServiceDelegateProto;
 import perfetto.protos.Windowmanagerservice.PinnedTaskControllerProto;
@@ -991,8 +994,8 @@ public class WindowManagerState {
 
     public List<WindowState> getAllNavigationBarStates() {
         return mDisplays.stream()
-                .filter(dc -> dc.mProviders != null)
-                .flatMap(dc -> dc.mProviders.stream())
+                .filter(dc -> dc.mInsetsStateController != null)
+                .flatMap(dc -> dc.mInsetsStateController.mProviders.stream())
                 .filter(provider -> (provider.mSource.is(WindowInsets.Type.navigationBars())))
                 .map(provider -> getWindowStateForAppToken(provider.mIdentifier.mAppToken))
                 .filter(Objects::nonNull)
@@ -1003,11 +1006,9 @@ public class WindowManagerState {
     List<WindowState> getNavBarWindowsOnDisplay(int displayId) {
         return mDisplays.stream()
                 .filter(dc -> dc.mId == displayId)
-                .filter(dc -> dc.mProviders != null)
-                .flatMap(dc -> dc.mProviders.stream())
-                .filter(
-                        provider ->
-                                (provider.mSource.is(WindowInsets.Type.navigationBars())))
+                .filter(dc -> dc.mInsetsStateController != null)
+                .flatMap(dc -> dc.mInsetsStateController.mProviders.stream())
+                .filter(provider -> (provider.mSource.is(WindowInsets.Type.navigationBars())))
                 .map(provider -> getWindowStateForAppToken(provider.mIdentifier.mAppToken))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
@@ -1170,7 +1171,7 @@ public class WindowManagerState {
         private int mLastOrientation;
         private boolean mIsFixedToUserRotation;
         private List<Rect> mKeepClearRects;
-        private List<InsetsSourceProvider> mProviders;
+        private InsetsStateController mInsetsStateController;
 
         DisplayContent(DisplayContentProto proto) {
             super(proto.getRootDisplayArea());
@@ -1221,10 +1222,9 @@ public class WindowManagerState {
                 RectProto r = proto.getKeepClearAreas(i);
                 mKeepClearRects.add(new Rect(r.getLeft(), r.getTop(), r.getRight(), r.getBottom()));
             }
-            mProviders = new ArrayList<>();
-            for (int i = 0; i < proto.getInsetsSourceProvidersCount(); ++i) {
-                InsetsSourceProviderProto provider = proto.getInsetsSourceProviders(i);
-                mProviders.add(new InsetsSourceProvider(provider));
+            if (proto.hasInsetsStateController()) {
+                mInsetsStateController = new InsetsStateController(
+                        proto.getInsetsStateController());
             }
         }
 
@@ -2610,6 +2610,95 @@ public class WindowManagerState {
             return "InsetsSourceProvider: mSource=" + mSource + " mWindowState=" + mWindowState;
         }
 
+    }
+
+    public static class DisplayCutout {
+        private Rect mSafeInsets;
+        private Rect mBoundLeft;
+        private Rect mBoundRight;
+        private Rect mBoundTop;
+        private Rect mBoundBottom;
+        private Rect mWaterfallInsets;
+        private int[] mSideOverrides;
+
+        DisplayCutout(DisplayCutoutProto proto) {
+            if (proto.hasInsets()) {
+                mSafeInsets = extract(proto.getInsets());
+            }
+            if (proto.hasBoundLeft()) {
+                mBoundLeft = extract(proto.getBoundLeft());
+            }
+            if (proto.hasBoundRight()) {
+                mBoundRight = extract(proto.getBoundRight());
+            }
+            if (proto.hasBoundTop()) {
+                mBoundTop = extract(proto.getBoundTop());
+            }
+            if (proto.hasBoundBottom()) {
+                mBoundBottom = extract(proto.getBoundBottom());
+            }
+            if (proto.hasWaterfallInsets()) {
+                mWaterfallInsets = extract(proto.getWaterfallInsets());
+            }
+            mSideOverrides = proto.getSideOverridesList().stream()
+                    .mapToInt(Integer::intValue)
+                    .toArray();
+
+        }
+
+        @Override
+        public String toString() {
+            return "DisplayCutout: mSafeInsets=" + mSafeInsets + " mBoundLeft=" + mBoundLeft
+                    + " mBoundRight=" + mBoundRight + " mBoundTop=" + mBoundTop + " mBoundBottom="
+                    + mBoundBottom + " mWaterfallInsets=" + mWaterfallInsets + " mSideOverrides="
+                    + Arrays.toString(mSideOverrides);
+        }
+    }
+
+    public static class InsetsState {
+        private final ArrayList<InsetsSource> mSources = new ArrayList<>();
+        private Rect mDisplayFrame;
+        private DisplayCutout mDisplayCutout;
+
+        InsetsState(InsetsStateProto proto) {
+            final List<InsetsSourceProto> sourcesProto = proto.getSourcesList();
+            for (int i = 0; i < sourcesProto.size(); i++) {
+                mSources.add(new InsetsSource(sourcesProto.get(i)));
+            }
+            if (proto.hasDisplayFrame()) {
+                mDisplayFrame = extract(proto.getDisplayFrame());
+            }
+            if (proto.hasDisplayCutout()) {
+                mDisplayCutout = new DisplayCutout(proto.getDisplayCutout());
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "InsetsState: mSources=" + mSources + " mDisplayFrame=" + mDisplayFrame
+                    + " mDisplayCutout=" + mDisplayCutout;
+        }
+    }
+
+    public static class InsetsStateController {
+        private InsetsState mState;
+        private final ArrayList<InsetsSourceProvider> mProviders = new ArrayList<>();
+
+        InsetsStateController(InsetsStateControllerProto proto) {
+            if (proto.hasInsetsState()) {
+                mState = new InsetsState(proto.getInsetsState());
+            }
+            final List<InsetsSourceProviderProto> providersProto =
+                    proto.getInsetsSourceProvidersList();
+            for (int i = 0; i < providersProto.size(); i++) {
+                mProviders.add(new InsetsSourceProvider(providersProto.get(i)));
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "InsetsStateController: mState=" + mState + " mProviders=" + mProviders;
+        }
     }
 
     public static class Identifier {
