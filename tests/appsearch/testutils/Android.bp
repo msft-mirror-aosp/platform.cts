@@ -20,6 +20,7 @@ java_library {
     name: "CtsAppSearchTestUtils",
     srcs: ["src/**/*.java"],
     static_libs: [
+        "android.app.appfunctions.exported-flags-aconfig-java",
         "appsearch_flags_java_lib",
         "compatibility-device-util-axt",
         "flag-junit",
@@ -34,6 +35,7 @@ java_library {
         "truth",
     ],
     platform_apis: true,
+    jarjar_rules: "jarjar-rules.txt",
     visibility: [
         "//cts/hostsidetests/appsearch",
         "//cts/tests:__subpackages__",
