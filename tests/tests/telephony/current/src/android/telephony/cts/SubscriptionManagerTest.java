@@ -1236,7 +1236,15 @@ public class SubscriptionManagerTest {
             mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_CARRIER);
             mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
             if (Flags.getPhoneNumberTs43Api()) {
-                mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+                getPhoneNumberViaShell(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+                try {
+                    mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+                    fail(
+                            "Accessing TS.43 source should throw SecurityException "
+                                    + "for unprivileged apps.");
+                } catch (SecurityException expected) {
+                    // Test passes: The system correctly restricted access based on the calling UID.
+                }
             }
         } finally {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
@@ -1252,7 +1260,15 @@ public class SubscriptionManagerTest {
             mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_CARRIER);
             mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
             if (Flags.getPhoneNumberTs43Api()) {
-                mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+                getPhoneNumberViaShell(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+                try {
+                    mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+                    fail(
+                            "Accessing TS.43 source should throw SecurityException "
+                                    + "for unprivileged apps.");
+                } catch (SecurityException expected) {
+                    // Test passes: The system correctly restricted access based on the calling UID.
+                }
             }
         } finally {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
@@ -1269,7 +1285,15 @@ public class SubscriptionManagerTest {
                     mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_UICC);
                     mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
                     if (Flags.getPhoneNumberTs43Api()) {
-                        mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+                        getPhoneNumberViaShell(
+                                mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+                        try {
+                            mSm.getPhoneNumber(
+                                    mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+                            fail("Expect SecurityException from getPhoneNumber()");
+                        } catch (SecurityException e) {
+                            // expected
+                        }
                     }
 
                     String originalPhoneNumber =
@@ -1325,6 +1349,11 @@ public class SubscriptionManagerTest {
         }
     }
 
+    private String getPhoneNumberViaShell(int subId, int source) throws Exception {
+        String cmd = "cmd phone get-phone-number " + subId + " " + source;
+        return SystemUtil.runShellCommand(InstrumentationRegistry.getInstrumentation(), cmd).trim();
+    }
+
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_GET_PHONE_NUMBER_TS43_API)
     public void testSetTs43PhoneNumber() throws Exception {
@@ -1340,12 +1369,12 @@ public class SubscriptionManagerTest {
         String originalPhoneNumber = null;
         try {
             originalPhoneNumber =
-                    mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+                    getPhoneNumberViaShell(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
             final String testNumber = "1234567890";
             mSm.setTs43PhoneNumber(mSubId, testNumber);
 
             String retrievedNumber =
-                    mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+                    getPhoneNumberViaShell(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
             assertEquals(
                     "The retrieved phone number should match the one that was set.",
                     testNumber,
