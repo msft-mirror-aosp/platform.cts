@@ -29,7 +29,6 @@ android_test_helper_app {
     sdk_version: "test_current",
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
         "mts-permission",
     ],
@@ -49,7 +48,6 @@ android_test_helper_app {
     sdk_version: "test_current",
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
         "mts-permission",
     ],
@@ -69,7 +67,6 @@ android_test_helper_app {
     sdk_version: "test_current",
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
         "mts-permission",
     ],
@@ -89,7 +86,6 @@ android_test_helper_app {
     sdk_version: "test_current",
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
         "mts-permission",
     ],
@@ -109,7 +105,6 @@ android_test_helper_app {
     sdk_version: "test_current",
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
         "mts-permission",
     ],
