@@ -15,17 +15,6 @@
 -->
 <configuration description="Run high ROI CTS-ON-GSI normal tests.">
     <include name="cts-on-gsi"/>
-    <!-- CtsAdServicesDebuggableDeviceTestCases -->
-    <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionMediationTest#testValidTestCaseFixtures"/>
-    <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionReportingTest#testAdSelection_withDataVersionHeader"/>
-    <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionReportingTest#testAdSelection_withDataVersionHeader_skipsBuyerExceeds8Bits"/>
-    <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionReportingTest#testAdSelection_withDataVersionHeader_skipsSellerExceeds8Bits"/>
-    <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionReportingTest#testAdSelection_withDataVersionHeader_unifiedTable"/>
-    <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsDebuggableTest#testFledgeAuctionAppFilteringFlow_overall_AppInstallFailure"/>
-    <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.GetAdSelectionDataShellCommandCtsTest#testRunBuyer_withCustomAudiencesAndSignals_happyPath"/>
-    <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.GetAdSelectionDataShellCommandCtsTest#testRunSeller_withCustomAudiencesAndSignals_happyPath"/>
-    <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.SignalsCtsDebuggableTest#testUpdateSignals_badUri_failure"/>
-    <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.SignalsCtsDebuggableTest#testValidTestCaseFixtures"/>
     <!-- CtsAdServicesEndToEndTests -->
     <option name="compatibility:include-filter" value="CtsAdServicesEndToEndTests com.android.adservices.tests.cts.topics.PreviewApiTest#testTopicsApiNoOpImplementatio"/>
     <option name="compatibility:include-filter" value="CtsAdServicesEndToEndTests com.android.adservices.tests.cts.topics.TopicsManagerTest#testTopicsManager_shouldThrowDeprecatedException"/>
@@ -3615,4 +3604,12 @@
     <option name="compatibility:exclude-filter" value="CtsWidgetTestCases android.widget.cts.TextViewWithTransformationHandwritingTest#pointerBasedGesture_scaleX"/>
     <option name="compatibility:exclude-filter" value="CtsWidgetTestCases android.widget.cts.TextViewWithTransformationHandwritingTest#pointerBasedGesture_scaleXAndY"/>
     <option name="compatibility:exclude-filter" value="CtsWidgetTestCases android.widget.cts.TextViewWithTransformationHandwritingTest#pointerBasedGesture_scaleY"/>
+    <!-- Exclude the failing tests in MicrodroidTestApp.CTS -->
+    <option name="compatibility:exclude-filter" value="MicrodroidTestApp.CTS com.android.microdroid.test.MicrodroidTests#addingMoretenantsIsSupported[protectedVm=false,os=microdroid]"/>
+    <option name="compatibility:exclude-filter" value="MicrodroidTestApp.CTS com.android.microdroid.test.MicrodroidTests#addingMoretenantsIsSupported[protectedVm=true,os=microdroid]"/>
+    <option name="compatibility:exclude-filter" value="MicrodroidTestApp.CTS com.android.microdroid.test.MicrodroidTests#multiTenantEncryptedStoragePath[protectedVm=false,os=microdroid]"/>
+    <option name="compatibility:exclude-filter" value="MicrodroidTestApp.CTS com.android.microdroid.test.MicrodroidTests#multiTenantEncryptedStoragePath[protectedVm=true,os=microdroid]"/>
+    <option name="compatibility:exclude-filter" value="MicrodroidTestApp.CTS com.android.microdroid.test.MicrodroidTests#multipleTenantServices[protectedVm=false,os=microdroid]"/>
+    <option name="compatibility:exclude-filter" value="MicrodroidTestApp.CTS com.android.microdroid.test.MicrodroidTests#testEncryptedStorageIsPersistentOnAddTenant[protectedVm=false,os=microdroid]"/>
+    <option name="compatibility:exclude-filter" value="MicrodroidTestApp.CTS com.android.microdroid.test.MicrodroidTests#testEncryptedStorageIsPersistentOnAddTenant[protectedVm=true,os=microdroid]"/>
 </configuration>

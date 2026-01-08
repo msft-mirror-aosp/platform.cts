@@ -116,6 +116,8 @@ import com.android.eventlib.events.services.ServiceTaskRemovedEvent.ServiceTaskR
 import com.android.eventlib.events.services.ServiceUnboundEvent
 import com.android.eventlib.events.services.ServiceUnboundEvent.ServiceUnboundEventQuery
 import com.android.eventlib.events.supervisionappservice.SupervisionAppServiceEvents
+import com.android.eventlib.events.supervisionappservice.SupervisionAppServiceOnPolicyChangedEvent
+import com.android.eventlib.events.supervisionappservice.SupervisionAppServiceOnPolicyChangedEvent.SupervisionAppServiceOnPolicyChangedEventQuery
 import com.android.eventlib.events.supervisionappservice.SupervisionAppServiceOnSupervisionDisabledEvent
 import com.android.eventlib.events.supervisionappservice.SupervisionAppServiceOnSupervisionDisabledEvent.SupervisionAppServiceOnSupervisionDisabledEventQuery
 import com.android.eventlib.events.supervisionappservice.SupervisionAppServiceOnSupervisionEnabledEvent
@@ -280,4 +282,7 @@ class TestAppEvents constructor(private val mTestApp: TestAppInstance) : Activit
 
     override fun supervisionDisabled(): SupervisionAppServiceOnSupervisionDisabledEventQuery =
         SupervisionAppServiceOnSupervisionDisabledEvent.queryPackage(mTestApp.testApp().packageName()).onUser(mTestApp.user())
+
+    override fun policyChanged(): SupervisionAppServiceOnPolicyChangedEventQuery =
+        SupervisionAppServiceOnPolicyChangedEvent.queryPackage(mTestApp.testApp().packageName()).onUser(mTestApp.user())
 }

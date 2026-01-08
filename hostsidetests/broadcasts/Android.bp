@@ -45,6 +45,7 @@ java_test_host {
         ":CtsBroadcastTestReceiver",
     ],
     per_testcase_directory: true,
+    enable_static_aconfig_pb: true,
 }
 
 android_test_helper_app {

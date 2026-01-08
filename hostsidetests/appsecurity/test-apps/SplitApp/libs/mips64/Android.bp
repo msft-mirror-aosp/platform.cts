@@ -29,7 +29,6 @@ android_test_helper_app {
     java_resource_dirs: ["raw"],
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
     ],
     certificate: ":cts-testkey1",
@@ -46,7 +45,6 @@ android_test_helper_app {
     java_resource_dirs: ["raw_revision"],
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
     ],
     certificate: ":cts-testkey1",

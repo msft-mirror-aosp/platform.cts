@@ -23,6 +23,11 @@ import static android.graphics.gpuprofiling.cts.ProfilingDataUtilsKt.buildConfig
 import static android.graphics.gpuprofiling.cts.ProfilingDataUtilsKt.calculateMostCommonIntervalNs;
 import static android.graphics.gpuprofiling.cts.ProfilingDataUtilsKt.counterMatchesGpuUtilisation;
 import static android.graphics.gpuprofiling.cts.ProfilingDataUtilsKt.getGpuUsageTimeline;
+import static android.graphics.gpuprofiling.cts.RenderStagesChecksKt.checkQueueSubmitsNotEmpty;
+import static android.graphics.gpuprofiling.cts.RenderStagesChecksKt.checkQueueSubmitsStrictlyMonotonicallyIncreasing;
+import static android.graphics.gpuprofiling.cts.RenderStagesChecksKt.checkRenderStagesMatchQueueSubmits;
+import static android.graphics.gpuprofiling.cts.RenderStagesChecksKt.checkRenderStagesNotEmpty;
+import static android.graphics.gpuprofiling.cts.RenderStagesChecksKt.checkRenderStagesValidity;
 
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
@@ -66,7 +71,6 @@ import perfetto.protos.PerfettoConfig.TracingServiceState.DataSource;
 import perfetto.protos.PerfettoTrace.FtraceEvent;
 import perfetto.protos.PerfettoTrace.FtraceEventBundle;
 import perfetto.protos.PerfettoTrace.GpuCounterDescriptor;
-import perfetto.protos.PerfettoTrace.GpuRenderStageEvent;
 import perfetto.protos.PerfettoTrace.Trace;
 import perfetto.protos.PerfettoTrace.TracePacket;
 
@@ -116,6 +120,10 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
             "graphics.gpu.profiler.support.gpu_counters.zeroes_optimization";
     private static final String GPU_COUNTERS_SAMPLING_PERIOD_PROPERTY =
             "graphics.gpu.profiler.support.gpu_counters.period";
+    private static final String GPU_RENDER_STAGES_PROPERTY =
+            "graphics.gpu.profiler.support.render_stages";
+    private static final String GPU_RENDER_STAGES_QUEUE_SUBMIT_PROPERTY =
+            "graphics.gpu.profiler.support.render_stages.queue_submit";
     private static final String LAYER_PACKAGE_PROPERTY = "graphics.gpu.profiler.vulkan_layer_apk";
     private static final String LAYER_NAME = "VkRenderStagesProducer";
     private static final String DEBUG_PROPERTY = "debug.graphics.gpu.profiler.perfetto";
@@ -334,10 +342,23 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                         buildConfig(defaultCounterIds, TRACE_COUNTER_PERIOD_5MS, true),
                         "cts-trace-default-frequency-render-stages-5ms");
 
-        errorCollector.checkThat(
-                "Trace does not contain valid GPU render stages.",
-                containsValidRenderStageEvent(traceFrequencyRenderStagesDefaultCounters5Ms),
-                is(true));
+        if (getProperty(GPU_RENDER_STAGES_PROPERTY)) {
+            RenderStagesData renderStagesData =
+                    new RenderStagesData(traceFrequencyRenderStagesDefaultCounters5Ms);
+            List<RenderStageEvent> renderStages = renderStagesData.getRenderStages();
+
+            checkRenderStagesNotEmpty(errorCollector, renderStages);
+            checkRenderStagesValidity(errorCollector, renderStages);
+
+            if (getProperty(GPU_RENDER_STAGES_QUEUE_SUBMIT_PROPERTY)) {
+                List<QueueSubmitEvent> queueSubmits = renderStagesData.getQueueSubmits();
+
+                checkQueueSubmitsNotEmpty(errorCollector, queueSubmits);
+                checkQueueSubmitsStrictlyMonotonicallyIncreasing(errorCollector, queueSubmits);
+
+                checkRenderStagesMatchQueueSubmits(errorCollector, renderStagesData);
+            }
+        }
 
         if (getProperty(GPU_FREQUENCY_CAPABILITY_PROPERTY)) {
             errorCollector.checkThat(
@@ -486,22 +507,6 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                         && event.getGpuFrequency().getState() > 0) {
                     return true;
                 }
-            }
-        }
-        return false;
-    }
-
-    private static boolean containsValidRenderStageEvent(Trace trace) {
-        for (TracePacket packet : trace.getPacketList()) {
-            if (!packet.hasGpuRenderStageEvent()) continue;
-
-            GpuRenderStageEvent gpuRenderStageEvent = packet.getGpuRenderStageEvent();
-            if (gpuRenderStageEvent.hasEventId()
-                    && ((gpuRenderStageEvent.hasHwQueueIid() && gpuRenderStageEvent.hasStageIid())
-                            || (gpuRenderStageEvent.hasHwQueueId()
-                                    && gpuRenderStageEvent.hasStageId()))
-                    && gpuRenderStageEvent.hasContext()) {
-                return true;
             }
         }
         return false;

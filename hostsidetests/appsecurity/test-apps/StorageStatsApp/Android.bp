@@ -34,7 +34,6 @@ android_test_helper_app {
         "src/**/*.java",
     ],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     dex_preopt: {

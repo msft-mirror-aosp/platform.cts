@@ -38,7 +38,6 @@ android_test_helper_app {
     target_sdk_version: "29",
     test_suites: [
         "general-tests",
-        "cts",
         "sts",
     ],
     sdk_version: "test_current",

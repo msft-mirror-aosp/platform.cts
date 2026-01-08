@@ -31,7 +31,6 @@ android_test_helper_app {
         "--replace-version",
     ],
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -51,7 +50,6 @@ android_test_helper_app {
         "--replace-version",
     ],
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -71,7 +69,6 @@ android_test_helper_app {
         "--replace-version",
     ],
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }

@@ -16,16 +16,14 @@
 
 package com.android.cts.verifier.nfc.offhost;
 
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Bundle;
+
 import com.android.cts.verifier.ArrayTestListAdapter;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.TestListAdapter.TestListItem;
-
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.nfc.NfcAdapter;
-import android.nfc.cardemulation.CardEmulation;
-import android.os.Bundle;
 
 /** Activity that lists all the NFC Offhost-UICC emulator tests. */
 public class OffhostUiccEmulatorTestActivity extends PassFailButtons.TestListActivity {
@@ -38,21 +36,35 @@ public class OffhostUiccEmulatorTestActivity extends PassFailButtons.TestListAct
 
         ArrayTestListAdapter adapter = new ArrayTestListAdapter(this);
 
-        if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC_OFF_HOST_CARD_EMULATION_UICC)) {
-            adapter.add(TestListItem.newCategory(this, R.string.nfc_offhost_uicc_emulator_tests));
+        if (getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_NFC_OFF_HOST_CARD_EMULATION_UICC)) {
+            adapter.add(
+                    TestListItem.newBuilder(this, R.string.nfc_offhost_uicc_emulator_tests)
+                            .build());
 
-            adapter.add(TestListItem.newTest(this, R.string.nfc_offhost_uicc_transaction_event1_emulator,
-                    UiccTransactionEvent1EmulatorActivity.class.getName(),
-                    new Intent(this, UiccTransactionEvent1EmulatorActivity.class), null));
+            adapter.add(
+                    TestListItem.newBuilder(
+                                    this, R.string.nfc_offhost_uicc_transaction_event1_emulator)
+                            .setTestName(UiccTransactionEvent1EmulatorActivity.class.getName())
+                            .setIntent(
+                                    new Intent(this, UiccTransactionEvent1EmulatorActivity.class))
+                            .build());
 
-            adapter.add(TestListItem.newTest(this, R.string.nfc_offhost_uicc_transaction_event2_emulator,
-                    UiccTransactionEvent2EmulatorActivity.class.getName(),
-                    new Intent(this, UiccTransactionEvent2EmulatorActivity.class), null));
+            adapter.add(
+                    TestListItem.newBuilder(
+                                    this, R.string.nfc_offhost_uicc_transaction_event2_emulator)
+                            .setTestName(UiccTransactionEvent2EmulatorActivity.class.getName())
+                            .setIntent(
+                                    new Intent(this, UiccTransactionEvent2EmulatorActivity.class))
+                            .build());
 
-            adapter.add(TestListItem.newTest(this, R.string.nfc_offhost_uicc_transaction_event3_emulator,
-                    UiccTransactionEvent3EmulatorActivity.class.getName(),
-                    new Intent(this, UiccTransactionEvent3EmulatorActivity.class), null));
-
+            adapter.add(
+                    TestListItem.newBuilder(
+                                    this, R.string.nfc_offhost_uicc_transaction_event3_emulator)
+                            .setTestName(UiccTransactionEvent3EmulatorActivity.class.getName())
+                            .setIntent(
+                                    new Intent(this, UiccTransactionEvent3EmulatorActivity.class))
+                            .build());
         }
 
         setTestListAdapter(adapter);

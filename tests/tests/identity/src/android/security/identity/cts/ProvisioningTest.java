@@ -44,6 +44,7 @@ import android.security.identity.SessionTranscriptMismatchException;
 import androidx.test.InstrumentationRegistry;
 import com.android.security.identity.internal.Util;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -83,6 +84,11 @@ public class ProvisioningTest {
     // An implementation must support challenges at least this big
     // for IdentityCredential.delete().
     private static final int DELETE_MINIMUM_SUPPORTED_CHALLENGE_SIZE = 32;
+
+    @Before
+    public void setUp() throws Exception {
+        TestUtil.assumeVendorMaySetRkpProperties();
+    }
 
     private static byte[] getExampleDrivingPrivilegesCbor() {
         // As per 7.4.4 of ISO 18013-5, driving privileges are defined with the following CDDL:

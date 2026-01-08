@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 
 import com.android.security.identity.internal.Util;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -30,6 +31,12 @@ import java.util.Map;
 import co.nstant.in.cbor.CborException;
 
 public class CreateItemsRequestTest {
+
+    @Before
+    public void setUp() throws Exception {
+        TestUtil.assumeVendorMaySetRkpProperties();
+    }
+
     @Test
     public void basicRequest() throws CborException {
         Map<String, Collection<String>> entriesToRequest = new LinkedHashMap<>();

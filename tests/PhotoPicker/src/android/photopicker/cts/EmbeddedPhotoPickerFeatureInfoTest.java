@@ -296,7 +296,7 @@ public class EmbeddedPhotoPickerFeatureInfoTest {
                         .setRequestLocationMetadata(true)
                         .build();
 
-        assertWithMessage("Expected highlight media query should be equal to input query")
+        assertWithMessage("Expected location metadata request to be set to true")
                 .that(info.isLocationMetadataRequested())
                 .isTrue();
     }

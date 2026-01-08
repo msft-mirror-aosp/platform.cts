@@ -52,43 +52,31 @@ class AppFunctionServiceTest {
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @RequireFlagsDisabled(Flags.FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
     @Test
-    fun callDeprecatedAppFunctionService_hasAccessToCallingPackage() = doBlocking {
-        val request =
-            ExecuteAppFunctionRequest.Builder(DEPRECATED_TEST_PACKAGE_NAME, TEST_FUNCTION_ID)
-                .build()
-
-        val response = executeAppFunctionAndWait(manager, request)
-
-        assertThat(response.exceptionOrNull()).isNull()
-        assertThat(response.getOrNull()!!.resultDocument.getPropertyString("callingPackageName"))
-            .isEqualTo(CURR_PACKAGE_NAME)
-    }
-
-    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
-    @RequireFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
-    @Test
-    fun callDeprecatedAppFunctionService_doesNotHaveAccessToCallingPackage() = doBlocking {
-        val request =
-            ExecuteAppFunctionRequest.Builder(DEPRECATED_TEST_PACKAGE_NAME, TEST_FUNCTION_ID)
-                .build()
-
-        val response = executeAppFunctionAndWait(manager, request)
-
-        assertThat(response.exceptionOrNull()).isNull()
-        assertThat(response.getOrNull()!!.resultDocument.getPropertyString("callingPackageName"))
-            .isEqualTo("")
-    }
-
-    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
-    @RequireFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
-    @Test
-    fun callAppFunctionService_shouldUseNewImplementation_whenBothAreOverride() = doBlocking {
+    fun callAppFunctionService_hasAccessToCallingPackageInfo() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder(TEST_PACKAGE_NAME, TEST_FUNCTION_ID).build()
 
         val response = executeAppFunctionAndWait(manager, request)
 
         assertThat(response.exceptionOrNull()).isNull()
-        assertThat(response.getOrNull()!!.resultDocument.getPropertyBoolean("isDeprecated"))
+        val result = response.getOrNull()
+        assertThat(result!!.resultDocument.getPropertyString("callingPackage"))
+            .isEqualTo(CURR_PACKAGE_NAME)
+        assertThat(result.resultDocument.getPropertyBoolean("hasCallingPackageSigningInfo"))
+            .isTrue()
+    }
+
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
+    @RequireFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
+    @Test
+    fun callAppFunctionService_doesNotHaveAccessToCallingPackage() = doBlocking {
+        val request = ExecuteAppFunctionRequest.Builder(TEST_PACKAGE_NAME, TEST_FUNCTION_ID).build()
+
+        val response = executeAppFunctionAndWait(manager, request)
+
+        assertThat(response.exceptionOrNull()).isNull()
+        val result = response.getOrNull()
+        assertThat(result!!.resultDocument.getPropertyString("callingPackage")).isEqualTo("")
+        assertThat(result.resultDocument.getPropertyBoolean("hasCallingPackageSigningInfo"))
             .isFalse()
     }
 
@@ -98,8 +86,6 @@ class AppFunctionServiceTest {
         @JvmField @ClassRule @Rule val sDeviceState: DeviceState = DeviceState()
 
         const val CURR_PACKAGE_NAME = "android.app.appfunctions.cts"
-        const val DEPRECATED_TEST_PACKAGE_NAME =
-            "android.app.appfunctions.cts.deprecated.service.helper"
         const val TEST_PACKAGE_NAME = "android.app.appfunctions.cts.service.helper"
         const val TEST_FUNCTION_ID = "test"
     }

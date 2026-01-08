@@ -20,8 +20,7 @@ import android.keystore.cts.performance.PerformanceTestBase.AndroidKeystoreKeyGe
 import android.keystore.cts.util.TestUtils;
 import android.security.keystore.KeyProperties;
 
-import java.security.spec.ECGenParameterSpec;
-
+import org.junit.Before;
 import org.junit.Test;
 
 public class AttestationPerformanceTest extends PerformanceTestBase {
@@ -34,6 +33,11 @@ public class AttestationPerformanceTest extends PerformanceTestBase {
         "challenge".getBytes(), // short challenge
         new byte[128], // long challenge
     };
+
+    @Before
+    public void setUp() throws Exception {
+        TestUtils.assumeVendorMaySetRkpProperties();
+    }
 
     @Test
     public void testRsaKeyAttestation() throws Exception {

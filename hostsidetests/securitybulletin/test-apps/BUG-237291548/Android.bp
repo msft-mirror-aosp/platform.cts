@@ -22,7 +22,6 @@ android_test_helper_app {
     defaults: ["cts_support_defaults"],
     srcs: ["src/**/*.java"],
     test_suites: [
-        "cts",
         "vts10",
         "sts",
     ],
@@ -41,7 +40,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     manifest: ":BUG-237291548-BAD-MANIFEST",
     test_suites: [
-        "cts",
         "vts10",
         "sts",
     ],

@@ -121,13 +121,7 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
          * @param testId ID of the test to record its result in test report
          */
         public HostTestListItem(String testName, String testId) {
-            super(
-                    testName,
-                    testId,
-                    /* intent= */ null,
-                    /* requiredFeatures= */ null,
-                    /* excludedFeatures= */ null,
-                    /* applicableFeatures= */ null);
+            super(TestListItem.newBuilder(testName).setTestName(testId));
         }
 
         @Override
@@ -161,7 +155,7 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
         /** Generates a list of {@link TestListItem}s to render this test category in the UI. */
         public List<TestListItem> generateTestListItems() {
             List<TestListItem> testListItems = new ArrayList<>();
-            testListItems.add(TestListItem.newCategory(mTitle));
+            testListItems.add(TestListItem.newBuilder(mTitle).build());
             for (Map.Entry<String, String> entry : mTests.entrySet()) {
                 testListItems.add(new HostTestListItem(entry.getKey(), entry.getValue()));
             }

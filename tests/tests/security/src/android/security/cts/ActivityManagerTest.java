@@ -65,13 +65,6 @@ import java.util.concurrent.Callable;
 public class ActivityManagerTest extends StsExtraBusinessLogicTestCase {
 
     private boolean canSupportSecondaryUsers() {
-        if (!android.multiuser.Flags.consistentMaxUsers()) {
-            String output = ShellUtils.runShellCommand("pm get-max-users");
-            if (output.contains("Maximum supported users:")) {
-                return Integer.parseInt(output.split(": ", 2)[1].trim()) > 1;
-            }
-            return false;
-        }
         String output = ShellUtils.runShellCommand(
                 "pm get-max-users --user-type android.os.usertype.full.SECONDARY");
         if (output.contains("Maximum supported users")) {

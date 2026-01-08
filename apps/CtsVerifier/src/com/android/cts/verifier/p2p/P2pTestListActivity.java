@@ -70,65 +70,85 @@ public class P2pTestListActivity extends PassFailButtons.TestListActivity {
 
         // TODO(b/184183917): Remove check for automotive once this issues is resolved.
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
-            adapter.add(TestListItem.newCategory(this, R.string.p2p_group_formation));
-            adapter.add(TestListItem.newTest(this,
-                    R.string.p2p_go_neg_responder_test,
-                    GoNegResponderTestActivity.class.getName(),
-                    new Intent(this, GoNegResponderTestActivity.class), null));
-            adapter.add(TestListItem.newTest(this,
-                    R.string.p2p_go_neg_requester_test,
-                    GoNegRequesterTestListActivity.class.getName(),
-                    new Intent(this, GoNegRequesterTestListActivity.class), null));
+            adapter.add(TestListItem.newBuilder(this, R.string.p2p_group_formation).build());
+            adapter.add(
+                    TestListItem.newBuilder(this, R.string.p2p_go_neg_responder_test)
+                            .setTestName(GoNegResponderTestActivity.class.getName())
+                            .setIntent(new Intent(this, GoNegResponderTestActivity.class))
+                            .build());
+            adapter.add(
+                    TestListItem.newBuilder(this, R.string.p2p_go_neg_requester_test)
+                            .setTestName(GoNegRequesterTestListActivity.class.getName())
+                            .setIntent(new Intent(this, GoNegRequesterTestListActivity.class))
+                            .build());
         }
 
-        adapter.add(TestListItem.newCategory(this, R.string.p2p_join));
-        adapter.add(TestListItem.newTest(this,
-                R.string.p2p_group_owner_test,
-                GoTestActivity.class.getName(),
-                new Intent(this, GoTestActivity.class), null));
-        adapter.add(TestListItem.newTest(this,
-                R.string.p2p_group_client_test,
-                P2pClientTestListActivity.class.getName(),
-                new Intent(this, P2pClientTestListActivity.class), null));
+        adapter.add(TestListItem.newBuilder(this, R.string.p2p_join).build());
+        adapter.add(
+                TestListItem.newBuilder(this, R.string.p2p_group_owner_test)
+                        .setTestName(GoTestActivity.class.getName())
+                        .setIntent(new Intent(this, GoTestActivity.class))
+                        .build());
+        adapter.add(
+                TestListItem.newBuilder(this, R.string.p2p_group_client_test)
+                        .setTestName(P2pClientTestListActivity.class.getName())
+                        .setIntent(new Intent(this, P2pClientTestListActivity.class))
+                        .build());
 
-        adapter.add(TestListItem.newCategory(this, R.string.p2p_join_with_config));
-        adapter.add(TestListItem.newTest(this,
-                R.string.p2p_group_owner_with_config_test,
-                GoWithConfigTestActivity.class.getName(),
-                new Intent(this, GoWithConfigTestActivity.class), null));
-        adapter.add(TestListItem.newTest(this,
-                R.string.p2p_group_client_with_config_test,
-                P2pClientWithConfigTestListActivity.class.getName(),
-                new Intent(this, P2pClientWithConfigTestListActivity.class), null));
-        adapter.add(TestListItem.newCategory(this, R.string.p2p_join_with_config_2g_band));
-        adapter.add(TestListItem.newTest(this,
-                R.string.p2p_group_owner_with_config_2g_band_test,
-                GoWithConfig2gBandTestActivity.class.getName(),
-                new Intent(this, GoWithConfig2gBandTestActivity.class), null));
-        adapter.add(TestListItem.newTest(this,
-                R.string.p2p_group_client_with_config_2g_band_test,
-                P2pClientWithConfig2gBandTestListActivity.class.getName(),
-                new Intent(this, P2pClientWithConfig2gBandTestListActivity.class), null));
-        adapter.add(TestListItem.newCategory(this, R.string.p2p_join_with_config_fixed_frequency));
-        adapter.add(TestListItem.newTest(this,
-                R.string.p2p_group_owner_with_config_fixed_frequency_test,
-                GoWithConfigFixedFrequencyTestActivity.class.getName(),
-                new Intent(this, GoWithConfigFixedFrequencyTestActivity.class), null));
-        adapter.add(TestListItem.newTest(this,
-                R.string.p2p_group_client_with_config_fixed_frequency_test,
-                P2pClientWithConfigFixedFrequencyTestListActivity.class.getName(),
-                new Intent(this, P2pClientWithConfigFixedFrequencyTestListActivity.class), null));
+        adapter.add(TestListItem.newBuilder(this, R.string.p2p_join_with_config).build());
+        adapter.add(
+                TestListItem.newBuilder(this, R.string.p2p_group_owner_with_config_test)
+                        .setTestName(GoWithConfigTestActivity.class.getName())
+                        .setIntent(new Intent(this, GoWithConfigTestActivity.class))
+                        .build());
+        adapter.add(
+                TestListItem.newBuilder(this, R.string.p2p_group_client_with_config_test)
+                        .setTestName(P2pClientWithConfigTestListActivity.class.getName())
+                        .setIntent(new Intent(this, P2pClientWithConfigTestListActivity.class))
+                        .build());
+        adapter.add(TestListItem.newBuilder(this, R.string.p2p_join_with_config_2g_band).build());
+        adapter.add(
+                TestListItem.newBuilder(this, R.string.p2p_group_owner_with_config_2g_band_test)
+                        .setTestName(GoWithConfig2gBandTestActivity.class.getName())
+                        .setIntent(new Intent(this, GoWithConfig2gBandTestActivity.class))
+                        .build());
+        adapter.add(
+                TestListItem.newBuilder(this, R.string.p2p_group_client_with_config_2g_band_test)
+                        .setTestName(P2pClientWithConfig2gBandTestListActivity.class.getName())
+                        .setIntent(
+                                new Intent(this, P2pClientWithConfig2gBandTestListActivity.class))
+                        .build());
+        adapter.add(
+                TestListItem.newBuilder(this, R.string.p2p_join_with_config_fixed_frequency)
+                        .build());
+        adapter.add(
+                TestListItem.newBuilder(
+                                this, R.string.p2p_group_owner_with_config_fixed_frequency_test)
+                        .setTestName(GoWithConfigFixedFrequencyTestActivity.class.getName())
+                        .setIntent(new Intent(this, GoWithConfigFixedFrequencyTestActivity.class))
+                        .build());
+        adapter.add(
+                TestListItem.newBuilder(
+                                this, R.string.p2p_group_client_with_config_fixed_frequency_test)
+                        .setTestName(
+                                P2pClientWithConfigFixedFrequencyTestListActivity.class.getName())
+                        .setIntent(
+                                new Intent(
+                                        this,
+                                        P2pClientWithConfigFixedFrequencyTestListActivity.class))
+                        .build());
 
-        adapter.add(TestListItem.newCategory(this, R.string.p2p_service_discovery));
-        adapter.add(TestListItem.newTest(this,
-                R.string.p2p_service_discovery_responder_test,
-                ServiceResponderTestActivity.class.getName(),
-                new Intent(this, ServiceResponderTestActivity.class), null));
-        adapter.add(TestListItem.newTest(this,
-                R.string.p2p_service_discovery_requester_test,
-                ServiceRequesterTestListActivity.class.getName(),
-                new Intent(this, ServiceRequesterTestListActivity.class), null));
-
+        adapter.add(TestListItem.newBuilder(this, R.string.p2p_service_discovery).build());
+        adapter.add(
+                TestListItem.newBuilder(this, R.string.p2p_service_discovery_responder_test)
+                        .setTestName(ServiceResponderTestActivity.class.getName())
+                        .setIntent(new Intent(this, ServiceResponderTestActivity.class))
+                        .build());
+        adapter.add(
+                TestListItem.newBuilder(this, R.string.p2p_service_discovery_requester_test)
+                        .setTestName(ServiceRequesterTestListActivity.class.getName())
+                        .setIntent(new Intent(this, ServiceRequesterTestListActivity.class))
+                        .build());
 
         adapter.registerDataSetObserver(new DataSetObserver() {
             @Override

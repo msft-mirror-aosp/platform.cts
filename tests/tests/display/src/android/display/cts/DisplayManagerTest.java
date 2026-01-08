@@ -255,7 +255,7 @@ public class DisplayManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_DISPLAY_TOPOLOGY, Flags.FLAG_DISPLAY_TOPOLOGY_API})
+    @RequiresFlagsEnabled({Flags.FLAG_DISPLAY_TOPOLOGY_API})
     public void testGetDisplayTopology() {
         DisplayManager displayManager =
                 Objects.requireNonNull(mActivity.getSystemService(DisplayManager.class));

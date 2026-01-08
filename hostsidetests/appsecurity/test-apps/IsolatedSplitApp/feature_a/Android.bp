@@ -24,7 +24,6 @@ android_test_helper_app {
     defaults: ["cts_support_defaults"],
     sdk_version: "current",
     test_suites: [
-        "cts",
         "general-tests",
     ],
     // Feature splits are dependent on this split, so it must be exported.
@@ -51,7 +50,6 @@ android_test_helper_app {
     defaults: ["cts_support_defaults"],
     sdk_version: "current",
     test_suites: [
-        "cts",
         "general-tests",
     ],
     // Feature splits are dependent on this split, so it must be exported.

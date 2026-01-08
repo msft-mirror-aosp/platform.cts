@@ -206,8 +206,11 @@ public class CaptureContentForNotesVerifierActivity extends PassFailButtons.Test
             Intent intent = IntentDrivenTestActivity.newIntent(this, testId, title,
                     info.getInfoText(), info.getButtons());
             Log.d(TAG, "Adding test with " + IntentDrivenTestActivity.toString(this, intent));
-            adapter.add(TestListAdapter.TestListItem.newTest(this, title, testId, intent,
-                    /* applicableFeatures= */ null));
+            adapter.add(
+                    TestListAdapter.TestListItem.newBuilder(this, title)
+                            .setTestName(testId)
+                            .setIntent(intent)
+                            .build());
         }
     }
 }

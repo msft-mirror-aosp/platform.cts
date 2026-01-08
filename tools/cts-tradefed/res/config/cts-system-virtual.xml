@@ -70,7 +70,6 @@
   <option name="compatibility:include-filter" value="CtsProviderTestCases"/>
   <option name="compatibility:include-filter" value="CtsAppSearchHostTestCases"/>
   <option name="compatibility:include-filter" value="CtsPerfettoTestCases"/>
-  <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases"/>
   <option name="compatibility:include-filter" value="CtsWindowManagerBackgroundActivityTestCases"/>
   <option name="compatibility:include-filter" value="CtsSimpleperfTestCases"/>
   <option name="compatibility:include-filter" value="CtsAppExitTestCases"/>
@@ -488,8 +487,6 @@
   <option name="compatibility:exclude-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.TouchExplorerTest#testSecondFingerDoubleTapNotTouchExploring_performsClick"/>
   <option name="compatibility:exclude-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.TouchExplorerTest#testSecondFingerDoubleTapTouchExploring_performsClick"/>
   <option name="compatibility:exclude-filter" value="CtsActivityRecognitionTestCases android.activityrecognition.cts.RenouncedPermissionsTest#testActivityRecognitionAttributionTagBlaming"/>
-  <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsDebuggableTest#testFledgeAuctionSelectionFlow_overall_Success"/>
-  <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.GetAdSelectionDataShellCommandCtsTest#testRunSeller_withCustomAudiencesAndSignals_happyPath"/>
   <option name="compatibility:exclude-filter" value="CtsAlarmManagerTestCases android.alarmmanager.cts.AppStandbyTests#testFrequentQuota"/>
   <option name="compatibility:exclude-filter" value="CtsAlarmManagerTestCases android.alarmmanager.cts.AppStandbyTests#testNeverQuota"/>
   <option name="compatibility:exclude-filter" value="CtsAlarmManagerTestCases android.alarmmanager.cts.AppStandbyTests#testRareQuota"/>

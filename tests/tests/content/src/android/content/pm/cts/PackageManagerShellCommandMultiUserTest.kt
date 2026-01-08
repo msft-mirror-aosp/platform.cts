@@ -1345,7 +1345,6 @@ class PackageManagerShellCommandMultiUserTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.multiuser.Flags.FLAG_CONSISTENT_MAX_USERS)
     fun testGetMaxUsers() {
         val userManager = context.getSystemService(UserManager::class.java)!!
 
@@ -1367,7 +1366,6 @@ class PackageManagerShellCommandMultiUserTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.multiuser.Flags.FLAG_CONSISTENT_MAX_USERS)
     fun testGetRemainingUserCount() {
         val userManager = context.getSystemService(UserManager::class.java)!!
 

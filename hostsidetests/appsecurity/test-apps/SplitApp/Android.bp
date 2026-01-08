@@ -62,7 +62,6 @@ android_test_helper_app {
     // Feature splits are dependent on this base, so it must be exported.
     export_package_resources: true,
     test_suites: [
-        "cts",
         "general-tests",
         "mts-mainline-infra",
     ],
@@ -84,7 +83,6 @@ android_test_helper_app {
         "--replace-version",
     ],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     lint: {
@@ -104,7 +102,6 @@ android_test_helper_app {
         "--replace-version",
     ],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     lint: {
@@ -124,7 +121,6 @@ android_test_helper_app {
         "--replace-version",
     ],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     lint: {
@@ -145,7 +141,6 @@ android_test_helper_app {
         "--replace-version",
     ],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     lint: {
@@ -176,7 +171,6 @@ android_test_helper_app {
         "--replace-version",
     ],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     lint: {
@@ -197,7 +191,6 @@ android_test_helper_app {
         "--replace-version",
     ],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     lint: {

@@ -16,6 +16,7 @@
 package com.android.eventlib.events.supervisionappservice
 
 import com.android.eventlib.events.services.ServiceEvents
+import com.android.eventlib.events.supervisionappservice.SupervisionAppServiceOnPolicyChangedEvent.SupervisionAppServiceOnPolicyChangedEventQuery
 import com.android.eventlib.events.supervisionappservice.SupervisionAppServiceOnSupervisionDisabledEvent.SupervisionAppServiceOnSupervisionDisabledEventQuery
 import com.android.eventlib.events.supervisionappservice.SupervisionAppServiceOnSupervisionEnabledEvent.SupervisionAppServiceOnSupervisionEnabledEventQuery
 
@@ -38,4 +39,13 @@ interface SupervisionAppServiceEvents : ServiceEvents {
      * `#poll` can be used to fetch results, and the result can be asserted on.
      */
     fun supervisionDisabled(): SupervisionAppServiceOnSupervisionDisabledEventQuery
+
+    /**
+     * Query for when the policy is changed.
+     *
+     * Additional filters can be added to the returned object.
+     *
+     * `#poll` can be used to fetch results, and the result can be asserted on.
+     */
+    fun policyChanged(): SupervisionAppServiceOnPolicyChangedEventQuery
 }

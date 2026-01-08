@@ -52,6 +52,7 @@ import com.android.compatibility.common.util.ApiTest;
 
 import com.google.android.attestation.ParsedAttestationRecord;
 
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -101,6 +102,11 @@ public class DeviceOwnerKeyManagementTest {
                             KeyProperties.SIGNATURE_PADDING_RSA_PKCS1}),
             new SupportedKeyAlgorithm(KeyProperties.KEY_ALGORITHM_EC, "SHA256withECDSA", null)
         };
+
+    @Before
+    public void setUp() throws Exception {
+        TestUtils.assumeVendorMaySetRkpProperties();
+    }
 
     byte[] signDataWithKey(String algoIdentifier, PrivateKey privateKey) throws Exception {
         byte[] data = new String("hello").getBytes();
