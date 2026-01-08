@@ -51,6 +51,8 @@ public class MediaProjectionTests {
     private static final String CANCEL_RESOURCE_ID = "android:id/button2";
     private static final String MEDIA_PROJECTION_CONSENT_DIALOG =
             SYSTEM_UI_PACKAGE + ":id/screen_share_permission_dialog";
+    private static final String SHARE_TAB_TEST_TAG = "ShareTabOption";
+    private static final String SHARE_APP_WINDOW_TEST_TAG = "ShareAppWindowOption";
 
     // Builds from 24Q3 and earlier will have screen_share_mode_spinner, while builds from
     // 24Q4 onwards will have screen_share_mode_options, so need to check both options here
@@ -67,6 +69,9 @@ public class MediaProjectionTests {
         @Override
         protected void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
+            if (savedInstanceState != null) {
+                return;
+            }
             MediaProjectionManager service = getSystemService(MediaProjectionManager.class);
             startActivityForResult(service.createScreenCaptureIntent(), 0);
         }
@@ -120,6 +125,44 @@ public class MediaProjectionTests {
 
         mActivityRule.launchActivity(null);
         mDevice.waitForIdle();
+
+        // Check for the new Large Screen UI (ShareTabOption)
+        boolean isLargeScreenUi =
+                mDevice.wait(Until.hasObject(By.res(SHARE_TAB_TEST_TAG)), TIMEOUT);
+        if (isLargeScreenUi) {
+            Log.d(TAG, "Compose permission UI detected via testTag: " + SHARE_TAB_TEST_TAG);
+            UiObject2 appWindowOption =
+                    mDevice.wait(
+                            Until.findObject(By.res(SHARE_APP_WINDOW_TEST_TAG).clickable(true)),
+                            TIMEOUT);
+
+            if (appWindowOption == null) {
+                Log.e(
+                        TAG,
+                        "Could not find 'App Window' option with testTag: "
+                                + SHARE_APP_WINDOW_TEST_TAG);
+                return;
+            }
+
+            if (appWindowOption.isChecked()) {
+                Log.d(TAG, "ShareAppWindowOption is already checked. Success.");
+                return;
+            }
+
+            Log.d(TAG, "Found ShareAppWindowOption, clicking it.");
+
+            appWindowOption.click();
+            mDevice.waitForIdle();
+
+            if (mDevice.wait(
+                    Until.hasObject(By.res(SHARE_APP_WINDOW_TEST_TAG).checked(true)), TIMEOUT)) {
+                Log.d(TAG, "ShareAppWindowOption is checked. Success.");
+
+            } else {
+                Log.w(TAG, "Failed to select ShareAppWindowOption within timeout.");
+            }
+            return;
+        }
 
         // OEMs aren't guaranteed to support partial screenshare, so we only attempt
         // to reach the app selector if possible, and end the test prematurely if it isn't
