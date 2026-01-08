@@ -118,7 +118,7 @@ public class ConnOnActivityStartTest extends AbstractRestrictBackgroundNetworkTe
                 onBeginIteration.run();
             }
             Log.i(TAG, testName + " start #" + i);
-            launchComponentAndAssertNetworkAccess(TYPE_COMPONENT_ACTIVTIY);
+            launchComponentAndAssertNetworkAccess(TYPE_COMPONENT_ACTIVITY);
             getUiDevice().pressHome();
             /*
              * On desktop form factor devices, pressing home button sends app to
