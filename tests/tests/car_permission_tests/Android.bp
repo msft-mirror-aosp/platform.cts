@@ -50,13 +50,15 @@ android_test {
         "flag-junit",
     ],
 
+    sdk_version: "test_current",
     platform_apis: true,
 
-    certificate: "platform",
+    certificate: ":cts-testkey1",
 
     min_sdk_version: "33",
 
     test_suites: [
+        "cts",
         "automotive-tests",
         "automotive-general-tests",
         "general-tests",
