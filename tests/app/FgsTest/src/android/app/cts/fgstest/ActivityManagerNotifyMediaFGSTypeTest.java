@@ -25,12 +25,12 @@ import static com.android.server.am.ActiveServices.MEDIA_FGS_STATE_TRANSITION;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.Manifest;
-import android.accessibilityservice.AccessibilityService;
 import android.app.ActivityManager;
 import android.app.Instrumentation;
 import android.app.compat.CompatChanges;
 import android.app.compat.PackageOverride;
 import android.app.cts.CtsAppTestUtils;
+import android.app.fgstesthelper.FgsTestHelper;
 import android.app.stubs.shared.CommandReceiver;
 import android.app.stubs.shared.LocalForegroundServiceMedia;
 import android.app.tools.WaitForBroadcast;
@@ -52,6 +52,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.DeviceConfigStateHelper;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 import com.android.media.flags.Flags;
 
 import org.junit.After;
@@ -97,6 +98,8 @@ public final class ActivityManagerNotifyMediaFGSTypeTest {
             new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_MEDIA);
     private final DeviceConfigStateHelper mActivityManagerDeviceConfig =
             new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER);
+
+    private final UserHelper mUserHelper = new UserHelper();
 
     @Before
     public void setUp() throws Exception {
@@ -154,10 +157,8 @@ public final class ActivityManagerNotifyMediaFGSTypeTest {
                     CompatChanges.removePackageOverrides(
                             PACKAGE_NAME_APP1, Set.of(MEDIA_FGS_STATE_TRANSITION));
                 });
-        // Make sure we are in Home screen.
-        mInstrumentation
-                .getUiAutomation()
-                .performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME);
+        // Make sure we are in Home screen
+        FgsTestHelper.navigateToHome(mContext, mUserHelper.getMainDisplayId());
     }
 
     private int setupMediaForegroundService() throws Exception {
@@ -548,9 +549,7 @@ public final class ActivityManagerNotifyMediaFGSTypeTest {
                 extras);
 
         // Make sure we are in Home screen.
-        mInstrumentation
-                .getUiAutomation()
-                .performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME);
+        FgsTestHelper.navigateToHome(mContext, mUserHelper.getMainDisplayId());
 
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
     }
@@ -581,9 +580,7 @@ public final class ActivityManagerNotifyMediaFGSTypeTest {
         controller.getTransportControls().play();
         sleep(PLAY_TIMEOUT_MS);
         // Make sure we are in Home screen.
-        mInstrumentation
-                .getUiAutomation()
-                .performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME);
+        FgsTestHelper.navigateToHome(mContext, mUserHelper.getMainDisplayId());
 
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
     }
@@ -645,9 +642,7 @@ public final class ActivityManagerNotifyMediaFGSTypeTest {
                 extras);
 
         // Make sure we are in Home screen.
-        mInstrumentation
-                .getUiAutomation()
-                .performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME);
+        FgsTestHelper.navigateToHome(mContext, mUserHelper.getMainDisplayId());
 
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
     }
@@ -694,9 +689,7 @@ public final class ActivityManagerNotifyMediaFGSTypeTest {
         controller.getTransportControls().stop();
 
         // Make sure we are in Home screen.
-        mInstrumentation
-                .getUiAutomation()
-                .performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME);
+        FgsTestHelper.navigateToHome(mContext, mUserHelper.getMainDisplayId());
 
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
     }
@@ -960,9 +953,7 @@ public final class ActivityManagerNotifyMediaFGSTypeTest {
                 extras);
 
         // Make sure we are in Home screen.
-        mInstrumentation
-                .getUiAutomation()
-                .performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME);
+        FgsTestHelper.navigateToHome(mContext, mUserHelper.getMainDisplayId());
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
 
         // Play media to allow media session service to make fgs active again.
