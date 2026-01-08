@@ -1109,7 +1109,7 @@ public class DisplayTest extends TestBase {
                             DataSpace.DATASPACE_SRGB, HardwareBuffer.RGBA_8888));
         if (android.hardware.flags.Flags.lutsApi()) {
             LutProperties[] lutProperties = overlayProperties.getLutProperties();
-            assertEquals(lutProperties, dest.getLutProperties());
+            assertArrayEquals(lutProperties, dest.getLutProperties());
             if (lutProperties != null) {
                 for (LutProperties properties : lutProperties) {
                     assertTrue(
