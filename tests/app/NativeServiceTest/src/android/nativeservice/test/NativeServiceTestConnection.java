@@ -86,4 +86,8 @@ public final class NativeServiceTestConnection implements ServiceConnection {
     public void onServiceDisconnected(ComponentName componentName) {
         Log.i(TAG, "onServiceDisconnected");
     }
+
+    public INativeServiceWrapper getService() {
+        return mService;
+    }
 }
