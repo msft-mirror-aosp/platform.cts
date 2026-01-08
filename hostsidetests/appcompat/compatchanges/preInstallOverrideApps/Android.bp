@@ -33,7 +33,6 @@ android_test_helper_app {
     manifest: "AndroidManifest_versioncode1_debuggable.xml",
     // Tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "vts10",
         "general-tests",
     ],
@@ -47,7 +46,6 @@ android_test_helper_app {
     manifest: "AndroidManifest_versioncode2_debuggable.xml",
     // Tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "vts10",
         "general-tests",
     ],
@@ -61,7 +59,6 @@ android_test_helper_app {
     manifest: "AndroidManifest_versioncode1_release.xml",
     // Tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "vts10",
         "general-tests",
     ],
@@ -75,7 +72,6 @@ android_test_helper_app {
     manifest: "AndroidManifest_versioncode2_release.xml",
     // Tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "vts10",
         "general-tests",
     ],
@@ -89,7 +85,6 @@ android_test_helper_app {
     manifest: "AndroidManifest_2_versioncode1_release.xml",
     // Tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "vts10",
         "general-tests",
     ],
