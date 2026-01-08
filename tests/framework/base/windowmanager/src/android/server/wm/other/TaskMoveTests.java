@@ -28,6 +28,7 @@ import static android.server.wm.app.Components.TaskMoveTestActivity.EXTRA_SYNC_E
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -404,6 +405,107 @@ public class TaskMoveTests extends TaskMoveTestBase {
         sendTaskMoveRequest(displayId, requestedBounds);
         assertTaskMoveRequestReportedError(SecurityException.class);
         assertExactTaskLocation(TEST_ACTIVITY, displayId, initialBounds);
+    }
+
+    /**
+     * Tests that a {@link android.app.ActivityManager.AppTask#moveTaskTo} call throws an {@link
+     * IllegalArgumentException} when the {@link TaskLocation} provided does not include a valid
+     * display ID.
+     */
+    @ApiTest(
+            apis = {
+                "android.app.ActivityManager.AppTask#moveTaskTo",
+                "android.app.ActivityOptions#setMovableTaskRequired"
+            })
+    @Test
+    public void testMoveTaskTo_wrongDisplayId() {
+        final int displayId = getMainDisplayId();
+        final int fakeDisplayId = -15;
+        launchMovableActivityOnDisplay(TEST_ACTIVITY, displayId);
+        mWmState.computeState(TEST_ACTIVITY);
+
+        final Rect initialBounds = mWmState.getTaskByActivity(TEST_ACTIVITY).getBounds();
+        final Rect requestedBounds = new Rect(initialBounds);
+        requestedBounds.offset(10, 0);
+
+        sendTaskMoveRequest(fakeDisplayId, requestedBounds);
+        assertTaskMoveRequestReportedError(IllegalArgumentException.class);
+        assertExactTaskLocation(TEST_ACTIVITY, displayId, initialBounds);
+    }
+
+    /**
+     * Tests that a {@link android.app.ActivityManager.AppTask#moveTaskTo} call throws a {@link
+     * SecurityException} when the display ID of the {@link TaskLocation} provided is of a display
+     * not capable of hosting tasks due to policy reasons.
+     */
+    @ApiTest(
+            apis = {
+                "android.app.ActivityManager.AppTask#moveTaskTo",
+                "android.app.ActivityOptions#setMovableTaskRequired"
+            })
+    @Test
+    public void testMoveTaskTo_privateTargetDisplay() {
+        assumeTrue("Only test on device with multi-display support", supportsMultiDisplay());
+        final int targetDisplayId =
+                createManagedVirtualDisplaySession()
+                        .setSimulateDisplay(false)
+                        .setPublicDisplay(false)
+                        .createDisplay()
+                        .mId;
+
+        final int sourceDisplayId = getMainDisplayId();
+        launchMovableActivityOnDisplay(TEST_ACTIVITY, sourceDisplayId);
+        mWmState.computeState(TEST_ACTIVITY);
+        final Rect initialBounds = mWmState.getTaskByActivity(TEST_ACTIVITY).getBounds();
+        final Rect requestedBounds = new Rect(100, 100, 600, 600);
+
+        sendTaskMoveRequest(targetDisplayId, requestedBounds);
+        assertTaskMoveRequestReportedError(SecurityException.class);
+        assertExactTaskLocation(TEST_ACTIVITY, sourceDisplayId, initialBounds);
+    }
+
+    /**
+     * Tests that a {@link android.app.ActivityManager.AppTask#moveTaskTo} call either throws a
+     * {@link IllegalStateException} or succeeds, if there is no guarantee about task movability.
+     */
+    @ApiTest(apis = {"android.app.ActivityManager.AppTask#moveTaskTo"})
+    @Test
+    public void testMoveTaskTo_immovableTask() {
+        final int displayId = getMainDisplayId();
+        launchActivityOnDisplay(TEST_ACTIVITY, displayId);
+        mWmState.computeState(TEST_ACTIVITY);
+
+        final Rect initialBounds = mWmState.getTaskByActivity(TEST_ACTIVITY).getBounds();
+        final Rect requestedBounds = new Rect(initialBounds);
+
+        sendTaskMoveRequest(displayId, requestedBounds);
+
+        final boolean notified = awaitBroadcast(ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT);
+        final Intent intent = getIntentOfBroadcast(ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT);
+
+        if (!notified || intent == null) {
+            fail("The activity has not notified about the moveTaskTo request result.");
+        }
+
+        final boolean reportedSyncException = intent.hasExtra(EXTRA_SYNC_EXCEPTION_KEY);
+        assertFalse(reportedSyncException);
+
+        final boolean reportedException = intent.hasExtra(EXTRA_EXCEPTION_KEY);
+        final boolean reportedNewTaskLocation =
+                intent.hasExtra(EXTRA_DISPLAY_ID_KEY) && intent.hasExtra(EXTRA_BOUNDS_KEY);
+
+        // Exactly one boolean should be true.
+        assertTrue(reportedException != reportedNewTaskLocation);
+
+        if (reportedException) {
+            assertNotNull(
+                    intent.getParcelableExtra(EXTRA_EXCEPTION_KEY, IllegalStateException.class));
+        }
+
+        if (reportedNewTaskLocation) {
+            assertEquals(displayId, intent.getIntExtra(EXTRA_DISPLAY_ID_KEY, -1));
+            assertEquals(requestedBounds, intent.getParcelableExtra(EXTRA_BOUNDS_KEY));
+        }
     }
 
     /**
