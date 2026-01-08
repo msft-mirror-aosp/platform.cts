@@ -66,7 +66,7 @@ public abstract class AudioNotificationsBaseActivity extends PassFailButtons.Act
 
     // ReportLog schema
     private static final String KEY_WIRED_PORT_SUPPORTED = "wired_port_supported";
-    protected static final String KEY_ROUTING_RECEIVED = "routing_received";
+    protected static final String KEY_ROUTING_RECEIVED = "routing_notification_received";
     protected static final String KEY_CONNECTED_PERIPHERAL = "routing_connected_peripheral";
 
     protected AudioNotificationsBaseActivity(int role) {
@@ -83,6 +83,14 @@ public abstract class AudioNotificationsBaseActivity extends PassFailButtons.Act
         mAnalogHeadsetSupport = AudioDeviceUtils.supportsAnalogHeadset(mContext);
         mUsbHeadsetSupport = AudioDeviceUtils.supportsUsbHeadset(mContext);
         mUsbInterfaceSupport = AudioDeviceUtils.supportsUsbAudioInterface(mContext);
+
+        if (mAnalogHeadsetSupport == AudioDeviceUtils.SUPPORTSDEVICE_YES
+                || mUsbHeadsetSupport == AudioDeviceUtils.SUPPORTSDEVICE_YES
+                || mUsbInterfaceSupport == AudioDeviceUtils.SUPPORTSDEVICE_YES) {
+            mSupportsWiredPeripheral = true;
+        }else {
+            mSupportsWiredPeripheral = false;
+        }
 
         scanConnectedDevices();
 
@@ -243,7 +251,7 @@ public abstract class AudioNotificationsBaseActivity extends PassFailButtons.Act
         CtsVerifierReportLog reportLog = getReportLog();
         reportLog.addValue(
                 KEY_WIRED_PORT_SUPPORTED,
-                mSupportsWiredPeripheral ? 1 : 0,
+                mSupportsWiredPeripheral,
                 ResultType.NEUTRAL,
                 ResultUnit.NONE);
 
@@ -255,7 +263,7 @@ public abstract class AudioNotificationsBaseActivity extends PassFailButtons.Act
 
         reportLog.addValue(
                 KEY_ROUTING_RECEIVED,
-                mRoutingNotificationReceived ? 1 : 0,
+                mRoutingNotificationReceived,
                 ResultType.NEUTRAL,
                 ResultUnit.NONE);
     }

@@ -57,8 +57,7 @@ abstract class AudioWiredDeviceBaseActivity extends PassFailButtons.Activity {
     // ReportLog schema
     private static final String KEY_WIRED_PORT_SUPPORTED = "wired_port_supported";
     protected static final String KEY_SUPPORTS_PERIPHERALS = "supports_wired_peripherals";
-    protected static final String KEY_ROUTING_RECEIVED = "routing_received";
-    protected static final String KEY_CONNECTED_PERIPHERAL = "routing_connected_peripheral";
+    protected static final String KEY_CONNECTED_PERIPHERAL = "connected_peripheral";
 
     AudioWiredDeviceBaseActivity() {
     }
@@ -161,7 +160,7 @@ abstract class AudioWiredDeviceBaseActivity extends PassFailButtons.Activity {
         CtsVerifierReportLog reportLog = getReportLog();
         reportLog.addValue(
                 KEY_WIRED_PORT_SUPPORTED,
-                mSupportsWiredPeripheral ? 1 : 0,
+                mSupportsWiredPeripheral,
                 ResultType.NEUTRAL,
                 ResultUnit.NONE);
 
