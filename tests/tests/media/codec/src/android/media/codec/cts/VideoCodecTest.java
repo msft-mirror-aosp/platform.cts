@@ -17,18 +17,22 @@
 package android.media.codec.cts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 
 import android.media.MediaCodec;
+import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.media.cts.MediaHeavyPresubmitTest;
 import android.media.cts.TestArgs;
 import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
+import android.util.Pair;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.MediaUtils;
 
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -371,6 +375,327 @@ public class VideoCodecTest extends VideoCodecTestBase {
                 || (FPS - statistics.mMinimumKeyFrameInterval > MAX_KEYFRAME_INTERVAL_VARIATION)) {
             throw new RuntimeException(
                     "Key frame intervals are different from the expected " + FPS);
+        }
+    }
+
+    private String[] getSupportedLayeringSchemas(String codecName, String codecMimeType) {
+        String[] schemas = new String[0];
+        MediaCodecList mcl = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
+        for (MediaCodecInfo codecInfo : mcl.getCodecInfos()) {
+            if (!codecInfo.isEncoder()) {
+                continue;
+            }
+            if (!codecInfo.getName().equals(codecName)) {
+                continue;
+            }
+
+            schemas =
+                    codecInfo
+                            .getCapabilitiesForType(codecMimeType)
+                            .getEncoderCapabilities()
+                            .getSupportedLayeringSchemas();
+            break;
+        }
+
+        Log.d(
+                TAG,
+                codecName
+                        + " ("
+                        + codecMimeType
+                        + ") supported layering schemas: "
+                        + java.util.Arrays.toString(schemas));
+        return schemas;
+    }
+
+    private static class BitrateStats {
+        public final long totalFileBitrate;
+        public final long firstHalfPayloadBitrate;
+        public final long secondHalfPayloadBitrate;
+
+        BitrateStats(long total, long first, long second) {
+            this.totalFileBitrate = total;
+            this.firstHalfPayloadBitrate = first;
+            this.secondHalfPayloadBitrate = second;
+        }
+    }
+
+    private BitrateStats computeBitrateStats(String filename, int encodeSeconds) {
+        File f = new File(filename);
+        long totalFileBitrate = f.length() * 8 / encodeSeconds;
+        long firstHalfPayloadBitrate = 0;
+        long secondHalfPayloadBitrate = 0;
+
+        try {
+            IvfReader reader = new IvfReader(filename);
+            int frameCount = reader.getFrameCount();
+            int halfCount = frameCount / 2;
+            long bytesFirstHalf = 0;
+            long bytesSecondHalf = 0;
+            for (int i = 0; i < frameCount; i++) {
+                byte[] frame = reader.readFrame(i);
+                if (frame != null) {
+                    if (i < halfCount) {
+                        bytesFirstHalf += frame.length;
+                    } else {
+                        bytesSecondHalf += frame.length;
+                    }
+                }
+            }
+            reader.close();
+            double durationHalf = encodeSeconds / 2.0;
+            firstHalfPayloadBitrate = (long) (bytesFirstHalf * 8 / durationHalf);
+            secondHalfPayloadBitrate = (long) (bytesSecondHalf * 8 / durationHalf);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to compute split bitrate for: " + filename, e);
+        }
+        return new BitrateStats(
+                totalFileBitrate, firstHalfPayloadBitrate, secondHalfPayloadBitrate);
+    }
+
+    private void internalTestTemporalLayerEncode(
+            String codecName,
+            String codecMimeType,
+            int bitRateMode,
+            boolean dynamicBitrateLayeringChange,
+            boolean useNdk)
+            throws Exception {
+        int encodeSeconds = dynamicBitrateLayeringChange ? 30 : 15;
+        String[] layeringSchemas = getSupportedLayeringSchemas(codecName, codecMimeType);
+        assumeTrue("Temporal layer encoding may not be supported", layeringSchemas.length > 0);
+        for (String schema : layeringSchemas) {
+            int temporalLayers = 0;
+            if (schema.contains("android.generic.2") || schema.contains("webrtc.svc.l1t2")) {
+                temporalLayers = 2;
+            } else if (schema.contains("android.generic.3") || schema.contains("webrtc.svc.l1t3")) {
+                temporalLayers = 3;
+            } else {
+                continue;
+            }
+
+            Log.i(TAG, "Testing testTemporalLayerEncode(): " + schema);
+            EncoderOutputStreamParameters params =
+                    getDefaultEncodingParameters(
+                            INPUT_YUV,
+                            ENCODED_IVF_BASE,
+                            codecName,
+                            codecMimeType,
+                            encodeSeconds,
+                            WIDTH,
+                            HEIGHT,
+                            FPS,
+                            bitRateMode,
+                            // Use 500kbps for temporal layer encoding tests to compare against the
+                            // reference.
+                            500000,
+                            true);
+            params.useNdk = useNdk;
+            params.temporalLayers = temporalLayers;
+            params.layeringSchema = schema;
+
+            params.bitrateLayeringRatios =
+                    (temporalLayers == 2) ? BITRATE_LAYERING_2_LAYERS : BITRATE_LAYERING_3_LAYERS;
+            params.dynamicBitrateLayeringRatios =
+                    (temporalLayers == 2)
+                            ? BITRATE_LAYERING_2_LAYERS_DYNAMIC
+                            : BITRATE_LAYERING_3_LAYERS_DYNAMIC;
+            params.dynamicBitrateUpdateFrameIndex =
+                    dynamicBitrateLayeringChange ? FPS * encodeSeconds / 2 : -1;
+
+            // We should increase the sync frame interval for temporal layer encoding tests to get a
+            // more
+            // accurate bitrate distribution statistics.
+            params.syncFrameInterval = 100;
+
+            String logStr =
+                    String.format(
+                            "Encoding params: Bitrate: %d, Mode: %d, Layers: %d, Schema:"
+                                    + " %s, SyncInterval: %d, DynRatios: %s, UpdateIndex: %d",
+                            params.bitrateSet[0],
+                            bitRateMode,
+                            temporalLayers,
+                            schema,
+                            params.syncFrameInterval,
+                            params.dynamicBitrateLayeringRatios,
+                            params.dynamicBitrateUpdateFrameIndex);
+            Log.d(TAG, logStr);
+
+            ArrayList<ByteBuffer> codecConfigs = new ArrayList<>();
+            VideoEncodeOutput videoEncodeOutput = encode(params, codecConfigs);
+            decode(params.outputIvfFilename, null, codecMimeType, FPS, codecConfigs);
+
+            List<Pair<String, String>> layers =
+                    validateTemporalLayerSubstreams(
+                            params.outputIvfFilename,
+                            params.inputYuvFilename,
+                            params.inputResource,
+                            codecMimeType,
+                            WIDTH,
+                            HEIGHT,
+                            temporalLayers,
+                            0,
+                            videoEncodeOutput.bufferInfo,
+                            videoEncodeOutput.temporalLayerIds);
+
+            double[] targetLayerRatios;
+            if (dynamicBitrateLayeringChange) {
+                targetLayerRatios =
+                        (temporalLayers == 2)
+                                ? BITRATE_RATIOS_2_LAYERS_DYNAMIC
+                                : BITRATE_RATIOS_3_LAYERS_DYNAMIC;
+            } else {
+                targetLayerRatios =
+                        (temporalLayers == 2) ? BITRATE_RATIOS_2_LAYERS : BITRATE_RATIOS_3_LAYERS;
+            }
+
+            // Index 1 corresponds to 500000 bps
+            double allowedVariation =
+                    (bitRateMode == VIDEO_ControlRateConstant)
+                            ? MAX_CBR_BITRATE_VARIATIONS[1]
+                            : MAX_VBR_BITRATE_VARIATIONS[1];
+            int totalTargetBitrate = 500000;
+
+            BitrateStats totalStats = computeBitrateStats(params.outputIvfFilename, encodeSeconds);
+
+            // Verify total bitrate of the full stream is within the limit
+            double differenceTotal = Math.abs(totalStats.totalFileBitrate - totalTargetBitrate);
+            double percentageDifferenceTotal = differenceTotal / totalTargetBitrate;
+            Log.d(
+                    TAG,
+                    String.format(
+                            "Total bitrate: %d vs target: %d mode: %d diff: %.2f%% allowed: %.2f%%",
+                            totalStats.totalFileBitrate,
+                            totalTargetBitrate,
+                            bitRateMode,
+                            percentageDifferenceTotal * 100,
+                            allowedVariation * 100));
+
+            Assert.assertTrue(
+                    "Total Bitrate variation "
+                            + (percentageDifferenceTotal * 100)
+                            + "% exceeds allowed "
+                            + (allowedVariation * 100)
+                            + "%",
+                    percentageDifferenceTotal <= allowedVariation);
+
+            // Verify each of the layers follow the expected bitrate ratios, and produces acceptable
+            // PSNR..
+            for (int i = 0; i < layers.size(); i++) {
+                Pair<String, String> layer = layers.get(i);
+                String filename = layer.first;
+                String refYuv = layer.second;
+
+                BitrateStats layerStats = computeBitrateStats(filename, encodeSeconds);
+
+                if (dynamicBitrateLayeringChange) {
+                    double[] targetRatiosFirst =
+                            (temporalLayers == 2)
+                                    ? BITRATE_RATIOS_2_LAYERS
+                                    : BITRATE_RATIOS_3_LAYERS;
+                    double[] targetRatiosSecond =
+                            (temporalLayers == 2)
+                                    ? BITRATE_RATIOS_2_LAYERS_DYNAMIC
+                                    : BITRATE_RATIOS_3_LAYERS_DYNAMIC;
+
+                    // First Half, before dynamic bitrate ratio change.
+                    long expectedBitrateFirst =
+                            (long) (totalStats.firstHalfPayloadBitrate * targetRatiosFirst[i]);
+                    double differenceFirst =
+                            Math.abs(layerStats.firstHalfPayloadBitrate - expectedBitrateFirst);
+                    double percentageDifferenceFirst = differenceFirst / expectedBitrateFirst;
+
+                    Log.d(
+                            TAG,
+                            String.format(
+                                    "Decoding first half substream: %s bitrate: %d vs"
+                                            + " target: %d mode: %d diff: %.2f%% allowed: %.2f%%",
+                                    filename,
+                                    layerStats.firstHalfPayloadBitrate,
+                                    expectedBitrateFirst,
+                                    bitRateMode,
+                                    percentageDifferenceFirst * 100,
+                                    allowedVariation * 100));
+
+                    Assert.assertTrue(
+                            "First Half Bitrate variation "
+                                    + (percentageDifferenceFirst * 100)
+                                    + "% exceeds allowed "
+                                    + (allowedVariation * 100)
+                                    + "%",
+                            percentageDifferenceFirst <= allowedVariation);
+
+                    // Second Half, after dynamic bitrate ratio change.
+                    long expectedBitrateSecond =
+                            (long) (totalStats.secondHalfPayloadBitrate * targetRatiosSecond[i]);
+                    double differenceSecond =
+                            Math.abs(layerStats.secondHalfPayloadBitrate - expectedBitrateSecond);
+                    double percentageDifferenceSecond = differenceSecond / expectedBitrateSecond;
+
+                    Log.d(
+                            TAG,
+                            String.format(
+                                    "Decoding second half substream: %s bitrate: %d vs"
+                                            + " target: %d mode: %d diff: %.2f%% allowed: %.2f%%",
+                                    filename,
+                                    layerStats.secondHalfPayloadBitrate,
+                                    expectedBitrateSecond,
+                                    bitRateMode,
+                                    percentageDifferenceSecond * 100,
+                                    allowedVariation * 100));
+
+                    Assert.assertTrue(
+                            "Second Half Bitrate variation "
+                                    + (percentageDifferenceSecond * 100)
+                                    + "% exceeds allowed "
+                                    + (allowedVariation * 100)
+                                    + "%",
+                            percentageDifferenceSecond <= allowedVariation);
+                } else {
+                    double targetLayerBitrate = totalStats.totalFileBitrate * targetLayerRatios[i];
+                    double difference = Math.abs(layerStats.totalFileBitrate - targetLayerBitrate);
+                    double percentageDifference = difference / targetLayerBitrate;
+
+                    Log.d(
+                            TAG,
+                            String.format(
+                                    "Decoding substream: %s bitrate: %d vs target:"
+                                            + " %.0f mode: %d diff: %.2f%% allowed: %.2f%%",
+                                    filename,
+                                    layerStats.totalFileBitrate,
+                                    targetLayerBitrate,
+                                    bitRateMode,
+                                    percentageDifference * 100,
+                                    allowedVariation * 100));
+
+                    Assert.assertTrue(
+                            "Bitrate variation "
+                                    + (percentageDifference * 100)
+                                    + "% exceeds allowed "
+                                    + (allowedVariation * 100)
+                                    + "%",
+                            percentageDifference <= allowedVariation);
+                }
+
+                String decodedYuv = filename.replace(".ivf", "_decoded.yuv");
+                decode(filename, decodedYuv, codecMimeType, FPS, codecConfigs);
+
+                VideoDecodingStatistics stats =
+                        computeDecodingStatistics(refYuv, null, decodedYuv, WIDTH, HEIGHT);
+                // Index 1 corresponds to 500000 bps
+                double referencePsnr = REFERENCE_AVERAGE_PSNR[1];
+                Log.d(
+                        TAG,
+                        "Layer "
+                                + i
+                                + " "
+                                + filename
+                                + " PSNR: "
+                                + stats.mAveragePSNR
+                                + " vs Reference PSNR: "
+                                + referencePsnr);
+                Assert.assertTrue(
+                        "Low layer PSNR: " + stats.mAveragePSNR + " expected: " + referencePsnr,
+                        stats.mAveragePSNR >= referencePsnr - MAX_AVERAGE_PSNR_DIFFERENCE);
+            }
         }
     }
 
@@ -790,5 +1115,49 @@ public class VideoCodecTest extends VideoCodecTestBase {
                 "Parallel Encode Decode test is run only for VBR mode",
                 mBitRateMode == VIDEO_ControlRateVariable);
         internalTestParallelEncodingAndDecoding(mCodecName, mCodecMimeType);
+    }
+
+    @ApiTest(
+            apis = {
+                "android.media.MediaFormat#KEY_VIDEO_BITRATE_LAYERING",
+                "android.media.MediaFormat#KEY_TEMPORAL_LAYERING",
+                "android.media.MediaFormat#KEY_TEMPORAL_LAYER_ID"
+            })
+    @Test
+    public void testTemporalLayerEncode() throws Exception {
+        internalTestTemporalLayerEncode(mCodecName, mCodecMimeType, mBitRateMode, false, false);
+    }
+
+    @ApiTest(
+            apis = {
+                "android.media.MediaFormat#KEY_VIDEO_BITRATE_LAYERING",
+                "android.media.MediaFormat#KEY_TEMPORAL_LAYERING",
+                "android.media.MediaFormat#KEY_TEMPORAL_LAYER_ID"
+            })
+    @Test
+    public void testTemporalLayerEncodeNdk() throws Exception {
+        internalTestTemporalLayerEncode(mCodecName, mCodecMimeType, mBitRateMode, false, true);
+    }
+
+    @ApiTest(
+            apis = {
+                "android.media.MediaFormat#KEY_VIDEO_BITRATE_LAYERING",
+                "android.media.MediaFormat#KEY_TEMPORAL_LAYERING",
+                "android.media.MediaFormat#KEY_TEMPORAL_LAYER_ID"
+            })
+    @Test
+    public void testDynamicBitrateLayeringChange() throws Exception {
+        internalTestTemporalLayerEncode(mCodecName, mCodecMimeType, mBitRateMode, true, false);
+    }
+
+    @ApiTest(
+            apis = {
+                "android.media.MediaFormat#KEY_VIDEO_BITRATE_LAYERING",
+                "android.media.MediaFormat#KEY_TEMPORAL_LAYERING",
+                "android.media.MediaFormat#KEY_TEMPORAL_LAYER_ID"
+            })
+    @Test
+    public void testDynamicBitrateLayeringChangeNdk() throws Exception {
+        internalTestTemporalLayerEncode(mCodecName, mCodecMimeType, mBitRateMode, true, true);
     }
 }
