@@ -34,9 +34,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.os.SystemClock;
 import android.server.wm.backgroundactivity.common.TestService;
 import android.util.Log;
+
+import androidx.annotation.Nullable;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -116,8 +119,9 @@ public class ForegroundActivity extends Activity {
     };
 
     @Override
-    public void onCreate(Bundle bundle) {
-        super.onCreate(bundle);
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        StrictMode.enableDefaults();
         mAppPackageName = getApplicationContext().getPackageName();
         mActionLaunchBackgroundActivities =
                 buildFullActionName(mAppPackageName, ACTION_LAUNCH_BACKGROUND_ACTIVITIES_SUFFIX);

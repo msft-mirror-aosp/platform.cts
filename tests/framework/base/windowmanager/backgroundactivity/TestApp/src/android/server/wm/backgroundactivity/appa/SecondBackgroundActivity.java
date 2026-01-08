@@ -17,10 +17,19 @@
 package android.server.wm.backgroundactivity.appa;
 
 import android.app.Activity;
+import android.os.Bundle;
+import android.os.StrictMode;
+
+import androidx.annotation.Nullable;
 
 /**
  * A distinct background activity for testing which of two activity starts succeeds.
  */
 public class SecondBackgroundActivity extends Activity {
 
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        StrictMode.enableDefaults();
+    }
 }
