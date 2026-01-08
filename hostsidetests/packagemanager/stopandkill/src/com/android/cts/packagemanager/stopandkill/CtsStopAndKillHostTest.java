@@ -350,7 +350,7 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
     @Test
     @RequiresFlagsEnabled(
             com.android.internal.pm.pkg.component.flags.Flags
-                    .FLAG_ENABLE_ACTIVITY_ALIAS_PERSISTABLE_MODE)
+                    .FLAG_ENABLE_ACTIVITY_ALIAS_PERSISTABLE_MODE_BUGFIX)
     public void testUpdate_activityAlias_stopsAppOnPackageUpdate() throws Exception {
         mApp1.installPackage();
         launchActivityAndAssertResumed(mApp1.aliasActivity);
@@ -371,7 +371,7 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
     @Test
     @RequiresFlagsDisabled(
             com.android.internal.pm.pkg.component.flags.Flags
-                    .FLAG_ENABLE_ACTIVITY_ALIAS_PERSISTABLE_MODE)
+                    .FLAG_ENABLE_ACTIVITY_ALIAS_PERSISTABLE_MODE_BUGFIX)
     public void testUpdate_activityAlias_flagDisabled_doesNotStopApp() throws Exception {
         mApp1.installPackage();
         launchActivityAndAssertResumed(mApp1.aliasActivity);
