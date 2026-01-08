@@ -69,6 +69,7 @@ public class MediaProjectionTests {
         @Override
         protected void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
+            // Avoid re-launching the intent to prevent duplicate logs (b/469848466).
             if (savedInstanceState != null) {
                 return;
             }
