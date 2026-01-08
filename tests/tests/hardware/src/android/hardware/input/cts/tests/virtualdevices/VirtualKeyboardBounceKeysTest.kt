@@ -28,8 +28,6 @@ import android.view.KeyEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
-import com.android.compatibility.common.util.UserHelper
-import org.junit.Assume.assumeFalse
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -46,14 +44,6 @@ class VirtualKeyboardBounceKeysTest : VirtualDeviceSettingTestCase() {
     private lateinit var virtualKeyboard: VirtualKeyboard
 
     override fun onSetupSetting() {
-        // TODO(b/454344508): Consider making InputManagerService multi-user aware.
-        assumeFalse(
-            "InputManagerService only tracks the current user. " +
-                    "Settings changes for non-current users are not applied, causing tests " +
-                    "to fail for visible background users.",
-            UserHelper().isVisibleBackgroundUser()
-        )
-
         mRule.runWithTemporaryPermission({
             existingBounceKeysThreshold = InputSettings.getAccessibilityBounceKeysThreshold(context)
             InputSettings.setAccessibilityBounceKeysThreshold(context, BOUNCE_KEYS_THRESHOLD)
