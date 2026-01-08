@@ -18,16 +18,15 @@
 
 package com.android.compatibility.common.deviceinfo;
 
-import com.android.compatibility.common.deviceinfo.DeviceInfo;
-import com.android.compatibility.common.util.DeviceInfoStore;
 import static com.android.compatibility.common.deviceinfo.VulkanDeviceInfoUtils.*;
 
-import java.io.IOException;
+import com.android.compatibility.common.util.DeviceInfoStore;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.HashMap;
+import java.io.IOException;
 
 /**
  * Vulkan info collector.
@@ -75,7 +74,6 @@ import java.util.HashMap;
  *   naming convention. So VkJSON fields named like "sparseProperties" will be converted to names
  *   like "sparse_properties".
  */
-
 public final class VulkanDeviceInfo extends DeviceInfo {
 
     static {
@@ -174,10 +172,22 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                         emitLong(store, limits, KEY_MAX_VERTEX_OUTPUT_COMPONENTS);
                         emitLong(store, limits, KEY_MAX_TESSELLATION_GENERATION_LEVEL);
                         emitLong(store, limits, KEY_MAX_TESSELLATION_PATCH_SIZE);
-                        emitLong(store, limits, KEY_MAX_TESSELLATION_CONTROL_PER_VERTEX_INPUT_COMPONENTS);
-                        emitLong(store, limits, KEY_MAX_TESSELLATION_CONTROL_PER_VERTEX_OUTPUT_COMPONENTS);
-                        emitLong(store, limits, KEY_MAX_TESSELLATION_CONTROL_PER_PATCH_OUTPUT_COMPONENTS);
-                        emitLong(store, limits, KEY_MAX_TESSELLATION_CONTROL_TOTAL_OUTPUT_COMPONENTS);
+                        emitLong(
+                                store,
+                                limits,
+                                KEY_MAX_TESSELLATION_CONTROL_PER_VERTEX_INPUT_COMPONENTS);
+                        emitLong(
+                                store,
+                                limits,
+                                KEY_MAX_TESSELLATION_CONTROL_PER_VERTEX_OUTPUT_COMPONENTS);
+                        emitLong(
+                                store,
+                                limits,
+                                KEY_MAX_TESSELLATION_CONTROL_PER_PATCH_OUTPUT_COMPONENTS);
+                        emitLong(
+                                store,
+                                limits,
+                                KEY_MAX_TESSELLATION_CONTROL_TOTAL_OUTPUT_COMPONENTS);
                         emitLong(store, limits, KEY_MAX_TESSELLATION_EVALUATION_INPUT_COMPONENTS);
                         emitLong(store, limits, KEY_MAX_TESSELLATION_EVALUATION_OUTPUT_COMPONENTS);
                         emitLong(store, limits, KEY_MAX_GEOMETRY_SHADER_INVOCATIONS);
@@ -250,13 +260,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     store.startGroup(getConvertedName(KEY_SPARSE_PROPERTIES));
                     {
                         emitBoolean(store, sparseProperties, KEY_RESIDENCY_STANDARD_2D_BLOCK_SHAPE);
-                        emitBoolean(store, sparseProperties, KEY_RESIDENCY_STANDARD_2D_MULTISAMPLE_BLOCK_SHAPE);
+                        emitBoolean(
+                                store,
+                                sparseProperties,
+                                KEY_RESIDENCY_STANDARD_2D_MULTISAMPLE_BLOCK_SHAPE);
                         emitBoolean(store, sparseProperties, KEY_RESIDENCY_STANDARD_3D_BLOCK_SHAPE);
                         emitBoolean(store, sparseProperties, KEY_RESIDENCY_ALIGNED_MIP_SIZE);
                         emitBoolean(store, sparseProperties, KEY_RESIDENCY_NON_RESIDENT_STRICT);
                     }
                     store.endGroup();
-
 
                     if (properties.getLong(KEY_API_VERSION) >= VK_API_VERSION_1_2) {
 
@@ -272,7 +284,10 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                             emitLong(store, vulkan11Properties, KEY_SUBGROUP_SIZE);
                             emitLong(store, vulkan11Properties, KEY_SUBGROUP_SUPPORTED_STAGES);
                             emitLong(store, vulkan11Properties, KEY_SUBGROUP_SUPPORTED_OPERATIONS);
-                            emitBoolean(store, vulkan11Properties, KEY_SUBGROUP_QUAD_OPERATIONS_IN_ALL_STAGES);
+                            emitBoolean(
+                                    store,
+                                    vulkan11Properties,
+                                    KEY_SUBGROUP_QUAD_OPERATIONS_IN_ALL_STAGES);
                             emitLong(store, vulkan11Properties, KEY_POINT_CLIPPING_BEHAVIOR);
                             emitLong(store, vulkan11Properties, KEY_MAX_MULTIVIEW_VIEW_COUNT);
                             emitLong(store, vulkan11Properties, KEY_MAX_MULTIVIEW_INSTANCE_INDEX);
@@ -289,7 +304,8 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                             emitLong(store, vulkan12Properties, KEY_DRIVER_ID);
                             emitString(store, vulkan12Properties, KEY_DRIVER_NAME);
                             emitString(store, vulkan12Properties, KEY_DRIVER_INFO);
-                            JSONObject conformanceVersion = vulkan12Properties.getJSONObject(KEY_CONFORMANCE_VERSION);
+                            JSONObject conformanceVersion =
+                                    vulkan12Properties.getJSONObject(KEY_CONFORMANCE_VERSION);
                             store.startGroup(getConvertedName(KEY_CONFORMANCE_VERSION));
                             {
                                 emitLong(store, conformanceVersion, KEY_MAJOR);
@@ -300,56 +316,173 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                             store.endGroup();
                             emitLong(store, vulkan12Properties, KEY_DENORM_BEHAVIOR_INDEPENDENCE);
                             emitLong(store, vulkan12Properties, KEY_ROUNDING_MODE_INDEPENDENCE);
-                            emitBoolean(store, vulkan12Properties, KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT16);
-                            emitBoolean(store, vulkan12Properties, KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT32);
-                            emitBoolean(store, vulkan12Properties, KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT64);
-                            emitBoolean(store, vulkan12Properties, KEY_SHADER_DENORM_PRESERVE_FLOAT16);
-                            emitBoolean(store, vulkan12Properties, KEY_SHADER_DENORM_PRESERVE_FLOAT32);
-                            emitBoolean(store, vulkan12Properties, KEY_SHADER_DENORM_PRESERVE_FLOAT64);
-                            emitBoolean(store, vulkan12Properties, KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT16);
-                            emitBoolean(store, vulkan12Properties, KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT32);
-                            emitBoolean(store, vulkan12Properties, KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT64);
-                            emitBoolean(store, vulkan12Properties, KEY_SHADER_ROUNDING_MODE_RTE_FLOAT16);
-                            emitBoolean(store, vulkan12Properties, KEY_SHADER_ROUNDING_MODE_RTE_FLOAT32);
-                            emitBoolean(store, vulkan12Properties, KEY_SHADER_ROUNDING_MODE_RTE_FLOAT64);
-                            emitBoolean(store, vulkan12Properties, KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT16);
-                            emitBoolean(store, vulkan12Properties, KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT32);
-                            emitBoolean(store, vulkan12Properties, KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT64);
-                            emitLong(store, vulkan12Properties, KEY_MAX_UPDATE_AFTER_BIND_DESCRIPTORS_IN_ALL_POOLS);
-                            emitBoolean(store, vulkan12Properties, KEY_SHADER_UNIFORM_BUFFER_ARRAY_NONUNIFORM_INDEXING_NATIVE);
-                            emitBoolean(store, vulkan12Properties, KEY_SHADER_SAMPLED_IMAGE_ARRAY_NONUNIFORM_INDEXING_NATIVE);
-                            emitBoolean(store, vulkan12Properties, KEY_SHADER_STORAGE_BUFFER_ARRAY_NONUNIFORM_INDEXING_NATIVE);
-                            emitBoolean(store, vulkan12Properties, KEY_SHADER_STORAGE_IMAGE_ARRAY_NONUNIFORM_INDEXING_NATIVE);
-                            emitBoolean(store, vulkan12Properties, KEY_SHADER_INPUT_ATTACHMENT_ARRAY_NONUNIFORM_INDEXING_NATIVE);
-                            emitBoolean(store, vulkan12Properties, KEY_ROBUST_BUFFER_ACCESS_UPDATE_AFTER_BIND);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT16);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT32);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT64);
+                            emitBoolean(
+                                    store, vulkan12Properties, KEY_SHADER_DENORM_PRESERVE_FLOAT16);
+                            emitBoolean(
+                                    store, vulkan12Properties, KEY_SHADER_DENORM_PRESERVE_FLOAT32);
+                            emitBoolean(
+                                    store, vulkan12Properties, KEY_SHADER_DENORM_PRESERVE_FLOAT64);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT16);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT32);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT64);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_SHADER_ROUNDING_MODE_RTE_FLOAT16);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_SHADER_ROUNDING_MODE_RTE_FLOAT32);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_SHADER_ROUNDING_MODE_RTE_FLOAT64);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT16);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT32);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT64);
+                            emitLong(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_MAX_UPDATE_AFTER_BIND_DESCRIPTORS_IN_ALL_POOLS);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_SHADER_UNIFORM_BUFFER_ARRAY_NONUNIFORM_INDEXING_NATIVE);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_SHADER_SAMPLED_IMAGE_ARRAY_NONUNIFORM_INDEXING_NATIVE);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_SHADER_STORAGE_BUFFER_ARRAY_NONUNIFORM_INDEXING_NATIVE);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_SHADER_STORAGE_IMAGE_ARRAY_NONUNIFORM_INDEXING_NATIVE);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_SHADER_INPUT_ATTACHMENT_ARRAY_NONUNIFORM_INDEXING_NATIVE);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_ROBUST_BUFFER_ACCESS_UPDATE_AFTER_BIND);
                             emitBoolean(store, vulkan12Properties, KEY_QUAD_DIVERGENT_IMPLICIT_LOD);
-                            emitLong(store, vulkan12Properties, KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_SAMPLERS);
-                            emitLong(store, vulkan12Properties, KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_UNIFORM_BUFFERS);
-                            emitLong(store, vulkan12Properties, KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_STORAGE_BUFFERS);
-                            emitLong(store, vulkan12Properties, KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_SAMPLED_IMAGES);
-                            emitLong(store, vulkan12Properties, KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_STORAGE_IMAGES);
-                            emitLong(store, vulkan12Properties, KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_INPUT_ATTACHMENTS);
-                            emitLong(store, vulkan12Properties, KEY_MAX_PER_STAGE_UPDATE_AFTER_BIND_RESOURCES);
-                            emitLong(store, vulkan12Properties, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_SAMPLERS);
-                            emitLong(store, vulkan12Properties, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_UNIFORM_BUFFERS);
-                            emitLong(store, vulkan12Properties, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_UNIFORM_BUFFERS_DYNAMIC);
-                            emitLong(store, vulkan12Properties, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_STORAGE_BUFFERS);
-                            emitLong(store, vulkan12Properties, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_STORAGE_BUFFERS_DYNAMIC);
-                            emitLong(store, vulkan12Properties, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_SAMPLED_IMAGES);
-                            emitLong(store, vulkan12Properties, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_STORAGE_IMAGES);
-                            emitLong(store, vulkan12Properties, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_INPUT_ATTACHMENTS);
+                            emitLong(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_SAMPLERS);
+                            emitLong(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_UNIFORM_BUFFERS);
+                            emitLong(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_STORAGE_BUFFERS);
+                            emitLong(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_SAMPLED_IMAGES);
+                            emitLong(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_STORAGE_IMAGES);
+                            emitLong(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_INPUT_ATTACHMENTS);
+                            emitLong(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_MAX_PER_STAGE_UPDATE_AFTER_BIND_RESOURCES);
+                            emitLong(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_SAMPLERS);
+                            emitLong(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_UNIFORM_BUFFERS);
+                            emitLong(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_UNIFORM_BUFFERS_DYNAMIC);
+                            emitLong(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_STORAGE_BUFFERS);
+                            emitLong(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_STORAGE_BUFFERS_DYNAMIC);
+                            emitLong(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_SAMPLED_IMAGES);
+                            emitLong(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_STORAGE_IMAGES);
+                            emitLong(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_INPUT_ATTACHMENTS);
                             emitLong(store, vulkan12Properties, KEY_SUPPORTED_DEPTH_RESOLVE_MODES);
-                            emitLong(store, vulkan12Properties, KEY_SUPPORTED_STENCIL_RESOLVE_MODES);
+                            emitLong(
+                                    store, vulkan12Properties, KEY_SUPPORTED_STENCIL_RESOLVE_MODES);
                             emitBoolean(store, vulkan12Properties, KEY_INDEPENDENT_RESOLVE_NONE);
                             emitBoolean(store, vulkan12Properties, KEY_INDEPENDENT_RESOLVE);
-                            emitBoolean(store, vulkan12Properties, KEY_FILTER_MINMAX_SINGLE_COMPONENT_FORMATS);
-                            emitBoolean(store, vulkan12Properties, KEY_FILTER_MINMAX_IMAGE_COMPONENT_MAPPING);
-                            emitString(store, vulkan12Properties, KEY_MAX_TIMELINE_SEMAPHORE_VALUE_DIFFERENCE);
-                            emitLong(store, vulkan12Properties, KEY_FRAMEBUFFER_INTEGER_COLOR_SAMPLE_COUNTS);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_FILTER_MINMAX_SINGLE_COMPONENT_FORMATS);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_FILTER_MINMAX_IMAGE_COMPONENT_MAPPING);
+                            emitString(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_MAX_TIMELINE_SEMAPHORE_VALUE_DIFFERENCE);
+                            emitLong(
+                                    store,
+                                    vulkan12Properties,
+                                    KEY_FRAMEBUFFER_INTEGER_COLOR_SAMPLE_COUNTS);
                         }
                         store.endGroup();
                     }
-
 
                     if (properties.getLong(KEY_API_VERSION) >= VK_API_VERSION_1_3) {
 
@@ -359,53 +492,167 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                         {
                             emitLong(store, vulkan13Properties, KEY_MIN_SUBGROUP_SIZE);
                             emitLong(store, vulkan13Properties, KEY_MAX_SUBGROUP_SIZE);
-                            emitLong(store, vulkan13Properties, KEY_MAX_COMPUTE_WORKGROUP_SUBGROUPS);
+                            emitLong(
+                                    store, vulkan13Properties, KEY_MAX_COMPUTE_WORKGROUP_SUBGROUPS);
                             emitLong(store, vulkan13Properties, KEY_REQUIRED_SUBGROUP_SIZE_STAGES);
                             emitLong(store, vulkan13Properties, KEY_MAX_INLINE_UNIFORM_BLOCK_SIZE);
-                            emitLong(store, vulkan13Properties, KEY_MAX_PER_STAGE_DESCRIPTOR_INLINE_UNIFORM_BLOCKS);
-                            emitLong(store, vulkan13Properties, KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_INLINE_UNIFORM_BLOCKS);
-                            emitLong(store, vulkan13Properties, KEY_MAX_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCKS);
-                            emitLong(store, vulkan13Properties, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_INLINE_UNIFORM_BLOCKS);
+                            emitLong(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_MAX_PER_STAGE_DESCRIPTOR_INLINE_UNIFORM_BLOCKS);
+                            emitLong(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_INLINE_UNIFORM_BLOCKS);
+                            emitLong(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_MAX_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCKS);
+                            emitLong(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_INLINE_UNIFORM_BLOCKS);
                             emitLong(store, vulkan13Properties, KEY_MAX_INLINE_UNIFORM_TOTAL_SIZE);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_8BIT_UNSIGNED_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_8BIT_SIGNED_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_8BIT_MIXED_SIGNEDNESS_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_4X8BIT_PACKED_UNSIGNED_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_4X8BIT_PACKED_SIGNED_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_4X8BIT_PACKED_MIXED_SIGNEDNESS_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_16BIT_UNSIGNED_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_16BIT_SIGNED_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_16BIT_MIXED_SIGNEDNESS_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_32BIT_UNSIGNED_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_32BIT_SIGNED_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_32BIT_MIXED_SIGNEDNESS_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_64BIT_UNSIGNED_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_64BIT_SIGNED_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_64BIT_MIXED_SIGNEDNESS_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_8BIT_UNSIGNED_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_8BIT_SIGNED_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_8BIT_MIXED_SIGNEDNESS_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_4X8BIT_PACKED_UNSIGNED_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_4X8BIT_PACKED_SIGNED_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_4X8BIT_PACKED_MIXED_SIGNEDNESS_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_16BIT_UNSIGNED_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_16BIT_SIGNED_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_16BIT_MIXED_SIGNEDNESS_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_32BIT_UNSIGNED_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_32BIT_SIGNED_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_32BIT_MIXED_SIGNEDNESS_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_UNSIGNED_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_SIGNED_ACCELERATED);
-                            emitBoolean(store, vulkan13Properties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_MIXED_SIGNEDNESS_ACCELERATED);
-                            emitString(store, vulkan13Properties, KEY_STORAGE_TEXEL_BUFFER_OFFSET_ALIGNMENT_BYTES);
-                            emitBoolean(store, vulkan13Properties, KEY_STORAGE_TEXEL_BUFFER_OFFSET_SINGLE_TEXEL_ALIGNMENT);
-                            emitString(store, vulkan13Properties, KEY_UNIFORM_TEXEL_BUFFER_OFFSET_ALIGNMENT_BYTES);
-                            emitBoolean(store, vulkan13Properties, KEY_UNIFORM_TEXEL_BUFFER_OFFSET_SINGLE_TEXEL_ALIGNMENT);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_8BIT_UNSIGNED_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_8BIT_SIGNED_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_8BIT_MIXED_SIGNEDNESS_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_4X8BIT_PACKED_UNSIGNED_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_4X8BIT_PACKED_SIGNED_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_4X8BIT_PACKED_MIXED_SIGNEDNESS_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_16BIT_UNSIGNED_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_16BIT_SIGNED_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_16BIT_MIXED_SIGNEDNESS_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_32BIT_UNSIGNED_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_32BIT_SIGNED_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_32BIT_MIXED_SIGNEDNESS_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_64BIT_UNSIGNED_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_64BIT_SIGNED_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_64BIT_MIXED_SIGNEDNESS_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_8BIT_UNSIGNED_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_8BIT_SIGNED_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_8BIT_MIXED_SIGNEDNESS_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_4X8BIT_PACKED_UNSIGNED_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_4X8BIT_PACKED_SIGNED_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_4X8BIT_PACKED_MIXED_SIGNEDNESS_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_16BIT_UNSIGNED_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_16BIT_SIGNED_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_16BIT_MIXED_SIGNEDNESS_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_32BIT_UNSIGNED_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_32BIT_SIGNED_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_32BIT_MIXED_SIGNEDNESS_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_UNSIGNED_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_SIGNED_ACCELERATED);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_MIXED_SIGNEDNESS_ACCELERATED);
+                            emitString(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_STORAGE_TEXEL_BUFFER_OFFSET_ALIGNMENT_BYTES);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_STORAGE_TEXEL_BUFFER_OFFSET_SINGLE_TEXEL_ALIGNMENT);
+                            emitString(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_UNIFORM_TEXEL_BUFFER_OFFSET_ALIGNMENT_BYTES);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Properties,
+                                    KEY_UNIFORM_TEXEL_BUFFER_OFFSET_SINGLE_TEXEL_ALIGNMENT);
                             emitString(store, vulkan13Properties, KEY_MAX_BUFFER_SIZE);
                         }
                         store.endGroup();
                     }
-
 
                     if (properties.getLong(KEY_API_VERSION) >= VK_API_VERSION_1_4) {
 
@@ -415,29 +662,75 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                         {
                             emitLong(store, vulkan14Properties, KEY_LINE_SUB_PIXEL_PRECISION_BITS);
                             emitLong(store, vulkan14Properties, KEY_MAX_VERTEX_ATTRIB_DIVISOR);
-                            emitBoolean(store, vulkan14Properties, KEY_SUPPORTS_NON_ZERO_FIRST_INSTANCE);
+                            emitBoolean(
+                                    store,
+                                    vulkan14Properties,
+                                    KEY_SUPPORTS_NON_ZERO_FIRST_INSTANCE);
                             emitLong(store, vulkan14Properties, KEY_MAX_PUSH_DESCRIPTORS);
-                            emitBoolean(store, vulkan14Properties, KEY_DYNAMIC_RENDERING_LOCAL_READ_DEPTH_STENCIL_ATTACHMENTS);
-                            emitBoolean(store, vulkan14Properties, KEY_DYNAMIC_RENDERING_LOCAL_READ_MULTISAMPLED_ATTACHMENTS);
-                            emitBoolean(store, vulkan14Properties, KEY_EARLY_FRAGMENT_MULTISAMPLE_COVERAGE_AFTER_SAMPLE_COUNTING);
-                            emitBoolean(store, vulkan14Properties, KEY_EARLY_FRAGMENT_SAMPLE_MASK_TEST_BEFORE_SAMPLE_COUNTING);
-                            emitBoolean(store, vulkan14Properties, KEY_DEPTH_STENCIL_SWIZZLE_ONE_SUPPORT);
+                            emitBoolean(
+                                    store,
+                                    vulkan14Properties,
+                                    KEY_DYNAMIC_RENDERING_LOCAL_READ_DEPTH_STENCIL_ATTACHMENTS);
+                            emitBoolean(
+                                    store,
+                                    vulkan14Properties,
+                                    KEY_DYNAMIC_RENDERING_LOCAL_READ_MULTISAMPLED_ATTACHMENTS);
+                            emitBoolean(
+                                    store,
+                                    vulkan14Properties,
+                                    KEY_EARLY_FRAGMENT_MULTISAMPLE_COVERAGE_AFTER_SAMPLE_COUNTING);
+                            emitBoolean(
+                                    store,
+                                    vulkan14Properties,
+                                    KEY_EARLY_FRAGMENT_SAMPLE_MASK_TEST_BEFORE_SAMPLE_COUNTING);
+                            emitBoolean(
+                                    store,
+                                    vulkan14Properties,
+                                    KEY_DEPTH_STENCIL_SWIZZLE_ONE_SUPPORT);
                             emitBoolean(store, vulkan14Properties, KEY_POLYGON_MODE_POINT_SIZE);
-                            emitBoolean(store, vulkan14Properties, KEY_NON_STRICT_SINGLE_PIXEL_WIDE_LINES_USE_PARALLELOGRAM);
-                            emitBoolean(store, vulkan14Properties, KEY_NON_STRICT_WIDE_LINES_USE_PARALLELOGRAM);
-                            emitBoolean(store, vulkan14Properties, KEY_BLOCK_TEXEL_VIEW_COMPATIBLE_MULTIPLE_LAYERS);
-                            emitLong(store, vulkan14Properties, KEY_MAX_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_COUNT);
-                            emitBoolean(store, vulkan14Properties, KEY_FRAGMENT_SHADING_RATE_CLAMP_COMBINER_INPUTS);
-                            emitLong(store, vulkan14Properties, KEY_DEFAULT_ROBUSTNESS_STORAGE_BUFFERS);
-                            emitLong(store, vulkan14Properties, KEY_DEFAULT_ROBUSTNESS_UNIFORM_BUFFERS);
-                            emitLong(store, vulkan14Properties, KEY_DEFAULT_ROBUSTNESS_VERTEX_INPUTS);
+                            emitBoolean(
+                                    store,
+                                    vulkan14Properties,
+                                    KEY_NON_STRICT_SINGLE_PIXEL_WIDE_LINES_USE_PARALLELOGRAM);
+                            emitBoolean(
+                                    store,
+                                    vulkan14Properties,
+                                    KEY_NON_STRICT_WIDE_LINES_USE_PARALLELOGRAM);
+                            emitBoolean(
+                                    store,
+                                    vulkan14Properties,
+                                    KEY_BLOCK_TEXEL_VIEW_COMPATIBLE_MULTIPLE_LAYERS);
+                            emitLong(
+                                    store,
+                                    vulkan14Properties,
+                                    KEY_MAX_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_COUNT);
+                            emitBoolean(
+                                    store,
+                                    vulkan14Properties,
+                                    KEY_FRAGMENT_SHADING_RATE_CLAMP_COMBINER_INPUTS);
+                            emitLong(
+                                    store,
+                                    vulkan14Properties,
+                                    KEY_DEFAULT_ROBUSTNESS_STORAGE_BUFFERS);
+                            emitLong(
+                                    store,
+                                    vulkan14Properties,
+                                    KEY_DEFAULT_ROBUSTNESS_UNIFORM_BUFFERS);
+                            emitLong(
+                                    store,
+                                    vulkan14Properties,
+                                    KEY_DEFAULT_ROBUSTNESS_VERTEX_INPUTS);
                             emitLong(store, vulkan14Properties, KEY_DEFAULT_ROBUSTNESS_IMAGES);
                             emitLong(store, vulkan14Properties, KEY_COPY_SRC_LAYOUT_COUNT);
                             emitLongArray(store, vulkan14Properties, KEY_P_COPY_SRC_LAYOUTS);
                             emitLong(store, vulkan14Properties, KEY_COPY_DST_LAYOUT_COUNT);
                             emitLongArray(store, vulkan14Properties, KEY_P_COPY_DST_LAYOUTS);
-                            emitLongArray(store, vulkan14Properties, KEY_OPTIMAL_TILING_LAYOUT_UUID);
-                            emitBoolean(store, vulkan14Properties, KEY_IDENTICAL_MEMORY_TYPE_REQUIREMENTS);
+                            emitLongArray(
+                                    store, vulkan14Properties, KEY_OPTIMAL_TILING_LAYOUT_UUID);
+                            emitBoolean(
+                                    store,
+                                    vulkan14Properties,
+                                    KEY_IDENTICAL_MEMORY_TYPE_REQUIREMENTS);
                         }
                         store.endGroup();
                     }
@@ -503,7 +796,6 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     emitBoolean(store, features, KEY_VARIABLE_MULTISAMPLE_RATE);
                     emitBoolean(store, features, KEY_INHERITED_QUERIES);
 
-
                     if (properties.getLong(KEY_API_VERSION) >= VK_API_VERSION_1_2) {
 
                         JSONObject core11 = device.getJSONObject(KEY_CORE11);
@@ -511,13 +803,17 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                         store.startGroup(getConvertedName(KEY_VULKAN_11_FEATURES));
                         {
                             emitBoolean(store, vulkan11Features, KEY_STORAGE_BUFFER_16BIT_ACCESS);
-                            emitBoolean(store, vulkan11Features, KEY_UNIFORM_AND_STORAGE_BUFFER_16BIT_ACCESS);
+                            emitBoolean(
+                                    store,
+                                    vulkan11Features,
+                                    KEY_UNIFORM_AND_STORAGE_BUFFER_16BIT_ACCESS);
                             emitBoolean(store, vulkan11Features, KEY_STORAGE_PUSH_CONSTANT_16);
                             emitBoolean(store, vulkan11Features, KEY_STORAGE_INPUT_OUTPUT_16);
                             emitBoolean(store, vulkan11Features, KEY_MULTIVIEW);
                             emitBoolean(store, vulkan11Features, KEY_MULTIVIEW_GEOMETRY_SHADER);
                             emitBoolean(store, vulkan11Features, KEY_MULTIVIEW_TESSELLATION_SHADER);
-                            emitBoolean(store, vulkan11Features, KEY_VARIABLE_POINTERS_STORAGE_BUFFER);
+                            emitBoolean(
+                                    store, vulkan11Features, KEY_VARIABLE_POINTERS_STORAGE_BUFFER);
                             emitBoolean(store, vulkan11Features, KEY_VARIABLE_POINTERS);
                             emitBoolean(store, vulkan11Features, KEY_PROTECTED_MEMORY);
                             emitBoolean(store, vulkan11Features, KEY_SAMPLER_YCBCR_CONVERSION);
@@ -532,58 +828,133 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                             emitBoolean(store, vulkan12Features, KEY_SAMPLER_MIRROR_CLAMP_TO_EDGE);
                             emitBoolean(store, vulkan12Features, KEY_DRAW_INDIRECT_COUNT);
                             emitBoolean(store, vulkan12Features, KEY_STORAGE_BUFFER_8BIT_ACCESS);
-                            emitBoolean(store, vulkan12Features, KEY_UNIFORM_AND_STORAGE_BUFFER_8BIT_ACCESS);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Features,
+                                    KEY_UNIFORM_AND_STORAGE_BUFFER_8BIT_ACCESS);
                             emitBoolean(store, vulkan12Features, KEY_STORAGE_PUSH_CONSTANT8);
                             emitBoolean(store, vulkan12Features, KEY_SHADER_BUFFER_INT64_ATOMICS);
                             emitBoolean(store, vulkan12Features, KEY_SHADER_SHARED_INT64_ATOMICS);
                             emitBoolean(store, vulkan12Features, KEY_SHADER_FLOAT16);
                             emitBoolean(store, vulkan12Features, KEY_SHADER_INT8);
                             emitBoolean(store, vulkan12Features, KEY_DESCRIPTOR_INDEXING);
-                            emitBoolean(store, vulkan12Features, KEY_SHADER_INPUT_ATTACHMENT_ARRAY_DYNAMIC_INDEXING);
-                            emitBoolean(store, vulkan12Features, KEY_SHADER_UNIFORM_TEXEL_BUFFER_ARRAY_DYNAMIC_INDEXING);
-                            emitBoolean(store, vulkan12Features, KEY_SHADER_STORAGE_TEXEL_BUFFER_ARRAY_DYNAMIC_INDEXING);
-                            emitBoolean(store, vulkan12Features, KEY_SHADER_UNIFORM_BUFFER_ARRAY_NON_UNIFORM_INDEXING);
-                            emitBoolean(store, vulkan12Features, KEY_SHADER_SAMPLED_IMAGE_ARRAY_NON_UNIFORM_INDEXING);
-                            emitBoolean(store, vulkan12Features, KEY_SHADER_STORAGE_BUFFER_ARRAY_NON_UNIFORM_INDEXING);
-                            emitBoolean(store, vulkan12Features, KEY_SHADER_STORAGE_IMAGE_ARRAY_NON_UNIFORM_INDEXING);
-                            emitBoolean(store, vulkan12Features, KEY_SHADER_INPUT_ATTACHMENT_ARRAY_NON_UNIFORM_INDEXING);
-                            emitBoolean(store, vulkan12Features, KEY_SHADER_UNIFORM_TEXEL_BUFFER_ARRAY_NON_UNIFORM_INDEXING);
-                            emitBoolean(store, vulkan12Features, KEY_SHADER_STORAGE_TEXEL_BUFFER_ARRAY_NON_UNIFORM_INDEXING);
-                            emitBoolean(store, vulkan12Features, KEY_DESCRIPTOR_BINDING_UNIFORM_BUFFER_UPDATE_AFTER_BIND);
-                            emitBoolean(store, vulkan12Features, KEY_DESCRIPTOR_BINDING_SAMPLED_IMAGE_UPDATE_AFTER_BIND);
-                            emitBoolean(store, vulkan12Features, KEY_DESCRIPTOR_BINDING_STORAGE_IMAGE_UPDATE_AFTER_BIND);
-                            emitBoolean(store, vulkan12Features, KEY_DESCRIPTOR_BINDING_STORAGE_BUFFER_UPDATE_AFTER_BIND);
-                            emitBoolean(store, vulkan12Features, KEY_DESCRIPTOR_BINDING_UNIFORM_TEXEL_BUFFER_UPDATE_AFTER_BIND);
-                            emitBoolean(store, vulkan12Features, KEY_DESCRIPTOR_BINDING_STORAGE_TEXEL_BUFFER_UPDATE_AFTER_BIND);
-                            emitBoolean(store, vulkan12Features, KEY_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING);
-                            emitBoolean(store, vulkan12Features, KEY_DESCRIPTOR_BINDING_PARTIALLY_BOUND);
-                            emitBoolean(store, vulkan12Features, KEY_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Features,
+                                    KEY_SHADER_INPUT_ATTACHMENT_ARRAY_DYNAMIC_INDEXING);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Features,
+                                    KEY_SHADER_UNIFORM_TEXEL_BUFFER_ARRAY_DYNAMIC_INDEXING);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Features,
+                                    KEY_SHADER_STORAGE_TEXEL_BUFFER_ARRAY_DYNAMIC_INDEXING);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Features,
+                                    KEY_SHADER_UNIFORM_BUFFER_ARRAY_NON_UNIFORM_INDEXING);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Features,
+                                    KEY_SHADER_SAMPLED_IMAGE_ARRAY_NON_UNIFORM_INDEXING);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Features,
+                                    KEY_SHADER_STORAGE_BUFFER_ARRAY_NON_UNIFORM_INDEXING);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Features,
+                                    KEY_SHADER_STORAGE_IMAGE_ARRAY_NON_UNIFORM_INDEXING);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Features,
+                                    KEY_SHADER_INPUT_ATTACHMENT_ARRAY_NON_UNIFORM_INDEXING);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Features,
+                                    KEY_SHADER_UNIFORM_TEXEL_BUFFER_ARRAY_NON_UNIFORM_INDEXING);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Features,
+                                    KEY_SHADER_STORAGE_TEXEL_BUFFER_ARRAY_NON_UNIFORM_INDEXING);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Features,
+                                    KEY_DESCRIPTOR_BINDING_UNIFORM_BUFFER_UPDATE_AFTER_BIND);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Features,
+                                    KEY_DESCRIPTOR_BINDING_SAMPLED_IMAGE_UPDATE_AFTER_BIND);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Features,
+                                    KEY_DESCRIPTOR_BINDING_STORAGE_IMAGE_UPDATE_AFTER_BIND);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Features,
+                                    KEY_DESCRIPTOR_BINDING_STORAGE_BUFFER_UPDATE_AFTER_BIND);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Features,
+                                    KEY_DESCRIPTOR_BINDING_UNIFORM_TEXEL_BUFFER_UPDATE_AFTER_BIND);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Features,
+                                    KEY_DESCRIPTOR_BINDING_STORAGE_TEXEL_BUFFER_UPDATE_AFTER_BIND);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Features,
+                                    KEY_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Features,
+                                    KEY_DESCRIPTOR_BINDING_PARTIALLY_BOUND);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Features,
+                                    KEY_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT);
                             emitBoolean(store, vulkan12Features, KEY_RUNTIME_DESCRIPTOR_ARRAY);
                             emitBoolean(store, vulkan12Features, KEY_SAMPLER_FILTER_MINMAX);
                             emitBoolean(store, vulkan12Features, KEY_SCALAR_BLOCK_LAYOUT);
                             emitBoolean(store, vulkan12Features, KEY_IMAGELESS_FRAMEBUFFER);
-                            emitBoolean(store, vulkan12Features, KEY_UNIFORM_BUFFER_STANDARD_LAYOUT);
-                            emitBoolean(store, vulkan12Features, KEY_SHADER_SUBGROUP_EXTENDED_TYPES);
-                            emitBoolean(store, vulkan12Features, KEY_SEPARATE_DEPTH_STENCIL_LAYOUTS);
+                            emitBoolean(
+                                    store, vulkan12Features, KEY_UNIFORM_BUFFER_STANDARD_LAYOUT);
+                            emitBoolean(
+                                    store, vulkan12Features, KEY_SHADER_SUBGROUP_EXTENDED_TYPES);
+                            emitBoolean(
+                                    store, vulkan12Features, KEY_SEPARATE_DEPTH_STENCIL_LAYOUTS);
                             emitBoolean(store, vulkan12Features, KEY_HOST_QUERY_RESET);
                             emitBoolean(store, vulkan12Features, KEY_TIMELINE_SEMAPHORE);
                             emitBoolean(store, vulkan12Features, KEY_BUFFER_DEVICE_ADDRESS);
-                            emitBoolean(store, vulkan12Features, KEY_BUFFER_DEVICE_ADDRESS_CAPTURE_REPLAY);
-                            emitBoolean(store, vulkan12Features, KEY_BUFFER_DEVICE_ADDRESS_MULTI_DEVICE);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Features,
+                                    KEY_BUFFER_DEVICE_ADDRESS_CAPTURE_REPLAY);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Features,
+                                    KEY_BUFFER_DEVICE_ADDRESS_MULTI_DEVICE);
                             emitBoolean(store, vulkan12Features, KEY_VULKAN_MEMORY_MODEL);
-                            emitBoolean(store, vulkan12Features, KEY_VULKAN_MEMORY_MODEL_DEVICE_SCOPE);
-                            emitBoolean(store, vulkan12Features, KEY_VULKAN_MEMORY_MODEL_AVAILABILITY_VISIBILITY_CHAINS);
+                            emitBoolean(
+                                    store, vulkan12Features, KEY_VULKAN_MEMORY_MODEL_DEVICE_SCOPE);
+                            emitBoolean(
+                                    store,
+                                    vulkan12Features,
+                                    KEY_VULKAN_MEMORY_MODEL_AVAILABILITY_VISIBILITY_CHAINS);
                             emitBoolean(store, vulkan12Features, KEY_SHADER_OUTPUT_VIEWPORT_INDEX);
                             emitBoolean(store, vulkan12Features, KEY_SHADER_OUTPUT_LAYER);
-                            // subgroupBroadcastDynamicId was erroneously left out of vkjson reporting in Android T
-                            //   and later added in U, so we need to explicitly check if the feature is reported
+                            // subgroupBroadcastDynamicId was erroneously left out of vkjson
+                            // reporting in Android T
+                            //   and later added in U, so we need to explicitly check if the feature
+                            // is reported
                             if (vulkan12Features.has(KEY_SUBGROUP_BROADCAST_DYNAMIC_ID)) {
-                                emitBoolean(store, vulkan12Features, KEY_SUBGROUP_BROADCAST_DYNAMIC_ID);
+                                emitBoolean(
+                                        store, vulkan12Features, KEY_SUBGROUP_BROADCAST_DYNAMIC_ID);
                             }
                         }
                         store.endGroup();
                     }
-
 
                     if (properties.getLong(KEY_API_VERSION) >= VK_API_VERSION_1_3) {
 
@@ -593,23 +964,32 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                         {
                             emitBoolean(store, vulkan13Features, KEY_ROBUST_IMAGE_ACCESS);
                             emitBoolean(store, vulkan13Features, KEY_INLINE_UNIFORM_BLOCK);
-                            emitBoolean(store, vulkan13Features, KEY_DESCRIPTOR_BINDING_INLINE_UNIFORM_BLOCK_UPDATE_AFTER_BIND);
-                            emitBoolean(store, vulkan13Features, KEY_PIPELINE_CREATION_CACHE_CONTROL);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Features,
+                                    KEY_DESCRIPTOR_BINDING_INLINE_UNIFORM_BLOCK_UPDATE_AFTER_BIND);
+                            emitBoolean(
+                                    store, vulkan13Features, KEY_PIPELINE_CREATION_CACHE_CONTROL);
                             emitBoolean(store, vulkan13Features, KEY_PRIVATE_DATA);
-                            emitBoolean(store, vulkan13Features, KEY_SHADER_DEMOTE_TO_HELPER_INVOCATION);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Features,
+                                    KEY_SHADER_DEMOTE_TO_HELPER_INVOCATION);
                             emitBoolean(store, vulkan13Features, KEY_SHADER_TERMINATE_INVOCATION);
                             emitBoolean(store, vulkan13Features, KEY_SUBGROUP_SIZE_CONTROL);
                             emitBoolean(store, vulkan13Features, KEY_COMPUTE_FULL_SUBGROUPS);
                             emitBoolean(store, vulkan13Features, KEY_SYNCHRONIZATION2);
                             emitBoolean(store, vulkan13Features, KEY_TEXTURE_COMPRESSION_ASTC_HDR);
-                            emitBoolean(store, vulkan13Features, KEY_SHADER_ZERO_INITIALIZE_WORKGROUP_MEMORY);
+                            emitBoolean(
+                                    store,
+                                    vulkan13Features,
+                                    KEY_SHADER_ZERO_INITIALIZE_WORKGROUP_MEMORY);
                             emitBoolean(store, vulkan13Features, KEY_DYNAMIC_RENDERING);
                             emitBoolean(store, vulkan13Features, KEY_SHADER_INTEGER_DOT_PRODUCT);
                             emitBoolean(store, vulkan13Features, KEY_MAINTENANCE4);
                         }
                         store.endGroup();
                     }
-
 
                     if (properties.getLong(KEY_API_VERSION) >= VK_API_VERSION_1_4) {
 
@@ -619,7 +999,8 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                         {
                             emitBoolean(store, vulkan14Features, KEY_GLOBAL_PRIORITY_QUERY);
                             emitBoolean(store, vulkan14Features, KEY_SHADER_SUBGROUP_ROTATE);
-                            emitBoolean(store, vulkan14Features, KEY_SHADER_SUBGROUP_ROTATE_CLUSTERED);
+                            emitBoolean(
+                                    store, vulkan14Features, KEY_SHADER_SUBGROUP_ROTATE_CLUSTERED);
                             emitBoolean(store, vulkan14Features, KEY_SHADER_FLOAT_CONTROLS2);
                             emitBoolean(store, vulkan14Features, KEY_SHADER_EXPECT_ASSUME);
                             emitBoolean(store, vulkan14Features, KEY_RECTANGULAR_LINES);
@@ -628,8 +1009,14 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                             emitBoolean(store, vulkan14Features, KEY_STIPPLED_RECTANGULAR_LINES);
                             emitBoolean(store, vulkan14Features, KEY_STIPPLED_BRESENHAM_LINES);
                             emitBoolean(store, vulkan14Features, KEY_STIPPLED_SMOOTH_LINES);
-                            emitBoolean(store, vulkan14Features, KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_DIVISOR);
-                            emitBoolean(store, vulkan14Features, KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_ZERO_DIVISOR);
+                            emitBoolean(
+                                    store,
+                                    vulkan14Features,
+                                    KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_DIVISOR);
+                            emitBoolean(
+                                    store,
+                                    vulkan14Features,
+                                    KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_ZERO_DIVISOR);
                             emitBoolean(store, vulkan14Features, KEY_INDEX_TYPE_UINT8);
                             emitBoolean(store, vulkan14Features, KEY_DYNAMIC_RENDERING_LOCAL_READ);
                             emitBoolean(store, vulkan14Features, KEY_MAINTENANCE5);
@@ -650,7 +1037,8 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     emitLong(store, memory, KEY_MEMORY_TYPE_COUNT);
                     JSONArray memoryTypes = memory.getJSONArray(KEY_MEMORY_TYPES);
                     store.startArray(getConvertedName(KEY_MEMORY_TYPES));
-                    for (int memoryTypeIdx = 0; memoryTypeIdx < memoryTypes.length();
+                    for (int memoryTypeIdx = 0;
+                            memoryTypeIdx < memoryTypes.length();
                             memoryTypeIdx++) {
                         JSONObject memoryType = memoryTypes.getJSONObject(memoryTypeIdx);
                         store.startGroup();
@@ -665,7 +1053,8 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     emitLong(store, memory, KEY_MEMORY_HEAP_COUNT);
                     JSONArray memoryHeaps = memory.getJSONArray(KEY_MEMORY_HEAPS);
                     store.startArray(getConvertedName(KEY_MEMORY_HEAPS));
-                    for (int memoryHeapIdx = 0; memoryHeapIdx < memoryHeaps.length();
+                    for (int memoryHeapIdx = 0;
+                            memoryHeapIdx < memoryHeaps.length();
                             memoryHeapIdx++) {
                         JSONObject memoryHeap = memoryHeaps.getJSONObject(memoryHeapIdx);
                         store.startGroup();
@@ -718,7 +1107,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     JSONObject formatProperties = formatPair.getJSONObject(1);
                     store.startGroup();
                     {
-                        store.addResult(KEY_FORMAT, (long)formatPair.getInt(0));
+                        store.addResult(KEY_FORMAT, (long) formatPair.getInt(0));
                         emitLong(store, formatProperties, KEY_LINEAR_TILING_FEATURES);
                         emitLong(store, formatProperties, KEY_OPTIMAL_TILING_FEATURES);
                         emitLong(store, formatProperties, KEY_BUFFER_FEATURES);
@@ -728,16 +1117,19 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                 store.endArray();
 
                 if (properties.getLong(KEY_API_VERSION) >= VK_API_VERSION_1_1) {
-                    JSONObject bit16StorageFeatures = device.getJSONObject(KEY_BIT16_STORAGE_FEATURES);
+                    JSONObject bit16StorageFeatures =
+                            device.getJSONObject(KEY_BIT16_STORAGE_FEATURES);
                     store.startGroup(getConvertedName(KEY_BIT16_STORAGE_FEATURES));
                     {
                         emitBoolean(store, bit16StorageFeatures, KEY_STORAGE_BUFFER_16BIT_ACCESS);
-                        emitBoolean(store, bit16StorageFeatures, KEY_UNIFORM_AND_STORAGE_BUFFER_16BIT_ACCESS);
+                        emitBoolean(
+                                store,
+                                bit16StorageFeatures,
+                                KEY_UNIFORM_AND_STORAGE_BUFFER_16BIT_ACCESS);
                         emitBoolean(store, bit16StorageFeatures, KEY_STORAGE_PUSH_CONSTANT_16);
                         emitBoolean(store, bit16StorageFeatures, KEY_STORAGE_INPUT_OUTPUT_16);
                     }
                     store.endGroup();
-
 
                     JSONObject idProperties = device.getJSONObject(KEY_ID_PROPERTIES);
                     store.startGroup(getConvertedName(KEY_ID_PROPERTIES));
@@ -750,15 +1142,14 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     }
                     store.endGroup();
 
-
-                    JSONObject maintenance3Properties = device.getJSONObject(KEY_MAINTENANCE_3_PROPERTIES);
+                    JSONObject maintenance3Properties =
+                            device.getJSONObject(KEY_MAINTENANCE_3_PROPERTIES);
                     store.startGroup(getConvertedName(KEY_MAINTENANCE_3_PROPERTIES));
                     {
                         emitLong(store, maintenance3Properties, KEY_MAX_PER_SET_DESCRIPTORS);
                         emitString(store, maintenance3Properties, KEY_MAX_MEMORY_ALLOCATION_SIZE);
                     }
                     store.endGroup();
-
 
                     JSONObject multiviewFeatures = device.getJSONObject(KEY_MULTIVIEW_FEATURES);
                     store.startGroup(getConvertedName(KEY_MULTIVIEW_FEATURES));
@@ -769,7 +1160,6 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     }
                     store.endGroup();
 
-
                     JSONObject multiviewProperties = device.getJSONObject(KEY_MULTIVIEW_PROPERTIES);
                     store.startGroup(getConvertedName(KEY_MULTIVIEW_PROPERTIES));
                     {
@@ -778,54 +1168,57 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     }
                     store.endGroup();
 
-
-                    JSONObject pointClippingProperties = device.getJSONObject(KEY_POINT_CLIPPING_PROPERTIES);
+                    JSONObject pointClippingProperties =
+                            device.getJSONObject(KEY_POINT_CLIPPING_PROPERTIES);
                     store.startGroup(getConvertedName(KEY_POINT_CLIPPING_PROPERTIES));
                     {
                         emitLong(store, pointClippingProperties, KEY_POINT_CLIPPING_BEHAVIOR);
                     }
                     store.endGroup();
 
-
-                    JSONObject protectedMemoryFeatures = device.getJSONObject(KEY_PROTECTED_MEMORY_FEATURES);
+                    JSONObject protectedMemoryFeatures =
+                            device.getJSONObject(KEY_PROTECTED_MEMORY_FEATURES);
                     store.startGroup(getConvertedName(KEY_PROTECTED_MEMORY_FEATURES));
                     {
                         emitBoolean(store, protectedMemoryFeatures, KEY_PROTECTED_MEMORY);
                     }
                     store.endGroup();
 
-
-                    JSONObject protectedMemoryProperties = device.getJSONObject(KEY_PROTECTED_MEMORY_PROPERTIES);
+                    JSONObject protectedMemoryProperties =
+                            device.getJSONObject(KEY_PROTECTED_MEMORY_PROPERTIES);
                     store.startGroup(getConvertedName(KEY_PROTECTED_MEMORY_PROPERTIES));
                     {
                         emitBoolean(store, protectedMemoryProperties, KEY_PROTECTED_NO_FAULT);
                     }
                     store.endGroup();
 
-
-                    JSONObject samplerYcbcrConversionFeatures = device.getJSONObject(KEY_SAMPLER_YCBCR_CONVERSION_FEATURES);
+                    JSONObject samplerYcbcrConversionFeatures =
+                            device.getJSONObject(KEY_SAMPLER_YCBCR_CONVERSION_FEATURES);
                     store.startGroup(getConvertedName(KEY_SAMPLER_YCBCR_CONVERSION_FEATURES));
                     {
-                        emitBoolean(store, samplerYcbcrConversionFeatures, KEY_SAMPLER_YCBCR_CONVERSION);
+                        emitBoolean(
+                                store,
+                                samplerYcbcrConversionFeatures,
+                                KEY_SAMPLER_YCBCR_CONVERSION);
                     }
                     store.endGroup();
 
-
-                    JSONObject shaderDrawParameterFeatures = device.getJSONObject(KEY_SHADER_DRAW_PARAMETER_FEATURES);
+                    JSONObject shaderDrawParameterFeatures =
+                            device.getJSONObject(KEY_SHADER_DRAW_PARAMETER_FEATURES);
                     store.startGroup(getConvertedName(KEY_SHADER_DRAW_PARAMETER_FEATURES));
                     {
                         emitBoolean(store, shaderDrawParameterFeatures, KEY_SHADER_DRAW_PARAMETERS);
                     }
                     store.endGroup();
 
-
-                    JSONObject shaderDrawParametersFeatures = device.getJSONObject(KEY_SHADER_DRAW_PARAMETERS_FEATURES);
+                    JSONObject shaderDrawParametersFeatures =
+                            device.getJSONObject(KEY_SHADER_DRAW_PARAMETERS_FEATURES);
                     store.startGroup(getConvertedName(KEY_SHADER_DRAW_PARAMETERS_FEATURES));
                     {
-                        emitBoolean(store, shaderDrawParametersFeatures, KEY_SHADER_DRAW_PARAMETERS);
+                        emitBoolean(
+                                store, shaderDrawParametersFeatures, KEY_SHADER_DRAW_PARAMETERS);
                     }
                     store.endGroup();
-
 
                     JSONObject subgroupProperties = device.getJSONObject(KEY_SUBGROUP_PROPERTIES);
                     store.startGroup(getConvertedName(KEY_SUBGROUP_PROPERTIES));
@@ -837,25 +1230,29 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     }
                     store.endGroup();
 
-
-                    JSONObject variablePointerFeatures = device.getJSONObject(KEY_VARIABLE_POINTER_FEATURES);
+                    JSONObject variablePointerFeatures =
+                            device.getJSONObject(KEY_VARIABLE_POINTER_FEATURES);
                     store.startGroup(getConvertedName(KEY_VARIABLE_POINTER_FEATURES));
                     {
-                        emitBoolean(store, variablePointerFeatures, KEY_VARIABLE_POINTERS_STORAGE_BUFFER);
+                        emitBoolean(
+                                store,
+                                variablePointerFeatures,
+                                KEY_VARIABLE_POINTERS_STORAGE_BUFFER);
                         emitBoolean(store, variablePointerFeatures, KEY_VARIABLE_POINTERS);
                     }
                     store.endGroup();
 
-
-                    JSONObject variablePointersFeatures = device.getJSONObject(KEY_VARIABLE_POINTERS_FEATURES);
+                    JSONObject variablePointersFeatures =
+                            device.getJSONObject(KEY_VARIABLE_POINTERS_FEATURES);
                     store.startGroup(getConvertedName(KEY_VARIABLE_POINTERS_FEATURES));
                     {
-                        emitBoolean(store, variablePointersFeatures, KEY_VARIABLE_POINTERS_STORAGE_BUFFER);
+                        emitBoolean(
+                                store,
+                                variablePointersFeatures,
+                                KEY_VARIABLE_POINTERS_STORAGE_BUFFER);
                         emitBoolean(store, variablePointersFeatures, KEY_VARIABLE_POINTERS);
                     }
                     store.endGroup();
-
-
 
                     JSONArray externalFences = device.getJSONArray(KEY_EXTERNAL_FENCE_PROPERTIES);
                     store.startArray(getConvertedName(KEY_EXTERNAL_FENCE_PROPERTIES));
@@ -865,7 +1262,10 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                         store.startGroup();
                         {
                             store.addResult(KEY_HANDLE_TYPE, externalFencePair.getLong(0));
-                            emitLong(store, externalFenceProperties, KEY_EXPORT_FROM_IMPORTED_HANDLE_TYPES);
+                            emitLong(
+                                    store,
+                                    externalFenceProperties,
+                                    KEY_EXPORT_FROM_IMPORTED_HANDLE_TYPES);
                             emitLong(store, externalFenceProperties, KEY_COMPATIBLE_HANDLE_TYPES);
                             emitLong(store, externalFenceProperties, KEY_EXTERNAL_FENCE_FEATURES);
                         }
@@ -873,111 +1273,264 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     }
                     store.endArray();
 
-                    JSONArray externalSemaphores = device.getJSONArray(KEY_EXTERNAL_SEMAPHORE_PROPERTIES);
+                    JSONArray externalSemaphores =
+                            device.getJSONArray(KEY_EXTERNAL_SEMAPHORE_PROPERTIES);
                     store.startArray(getConvertedName(KEY_EXTERNAL_SEMAPHORE_PROPERTIES));
                     for (int idx = 0; idx < externalSemaphores.length(); ++idx) {
                         JSONArray externalSemaphorePair = externalSemaphores.getJSONArray(idx);
-                        JSONObject externalSemaphoreProperties = externalSemaphorePair.getJSONObject(1);
+                        JSONObject externalSemaphoreProperties =
+                                externalSemaphorePair.getJSONObject(1);
                         store.startGroup();
                         {
                             store.addResult(KEY_HANDLE_TYPE, externalSemaphorePair.getLong(0));
-                            emitLong(store, externalSemaphoreProperties, KEY_EXPORT_FROM_IMPORTED_HANDLE_TYPES);
-                            emitLong(store, externalSemaphoreProperties, KEY_COMPATIBLE_HANDLE_TYPES);
-                            emitLong(store, externalSemaphoreProperties, KEY_EXTERNAL_SEMAPHORE_FEATURES);
+                            emitLong(
+                                    store,
+                                    externalSemaphoreProperties,
+                                    KEY_EXPORT_FROM_IMPORTED_HANDLE_TYPES);
+                            emitLong(
+                                    store,
+                                    externalSemaphoreProperties,
+                                    KEY_COMPATIBLE_HANDLE_TYPES);
+                            emitLong(
+                                    store,
+                                    externalSemaphoreProperties,
+                                    KEY_EXTERNAL_SEMAPHORE_FEATURES);
                         }
                         store.endGroup();
                     }
                     store.endArray();
-
                 }
                 if (properties.getLong(KEY_API_VERSION) >= VK_API_VERSION_1_2) {
-                    JSONObject bit8StorageFeatures = device.getJSONObject(KEY_BIT8_STORAGE_FEATURES);
+                    JSONObject bit8StorageFeatures =
+                            device.getJSONObject(KEY_BIT8_STORAGE_FEATURES);
                     store.startGroup(getConvertedName(KEY_BIT8_STORAGE_FEATURES));
                     {
                         emitBoolean(store, bit8StorageFeatures, KEY_STORAGE_BUFFER_8BIT_ACCESS);
-                        emitBoolean(store, bit8StorageFeatures, KEY_UNIFORM_AND_STORAGE_BUFFER_8BIT_ACCESS);
+                        emitBoolean(
+                                store,
+                                bit8StorageFeatures,
+                                KEY_UNIFORM_AND_STORAGE_BUFFER_8BIT_ACCESS);
                         emitBoolean(store, bit8StorageFeatures, KEY_STORAGE_PUSH_CONSTANT8);
                     }
                     store.endGroup();
 
-
-                    JSONObject bufferDeviceAddressFeatures = device.getJSONObject(KEY_BUFFER_DEVICE_ADDRESS_FEATURES);
+                    JSONObject bufferDeviceAddressFeatures =
+                            device.getJSONObject(KEY_BUFFER_DEVICE_ADDRESS_FEATURES);
                     store.startGroup(getConvertedName(KEY_BUFFER_DEVICE_ADDRESS_FEATURES));
                     {
                         emitBoolean(store, bufferDeviceAddressFeatures, KEY_BUFFER_DEVICE_ADDRESS);
-                        emitBoolean(store, bufferDeviceAddressFeatures, KEY_BUFFER_DEVICE_ADDRESS_CAPTURE_REPLAY);
-                        emitBoolean(store, bufferDeviceAddressFeatures, KEY_BUFFER_DEVICE_ADDRESS_MULTI_DEVICE);
+                        emitBoolean(
+                                store,
+                                bufferDeviceAddressFeatures,
+                                KEY_BUFFER_DEVICE_ADDRESS_CAPTURE_REPLAY);
+                        emitBoolean(
+                                store,
+                                bufferDeviceAddressFeatures,
+                                KEY_BUFFER_DEVICE_ADDRESS_MULTI_DEVICE);
                     }
                     store.endGroup();
 
-
-                    JSONObject depthStencilResolveProperties = device.getJSONObject(KEY_DEPTH_STENCIL_RESOLVE_PROPERTIES);
+                    JSONObject depthStencilResolveProperties =
+                            device.getJSONObject(KEY_DEPTH_STENCIL_RESOLVE_PROPERTIES);
                     store.startGroup(getConvertedName(KEY_DEPTH_STENCIL_RESOLVE_PROPERTIES));
                     {
-                        emitLong(store, depthStencilResolveProperties, KEY_SUPPORTED_DEPTH_RESOLVE_MODES);
-                        emitLong(store, depthStencilResolveProperties, KEY_SUPPORTED_STENCIL_RESOLVE_MODES);
-                        emitBoolean(store, depthStencilResolveProperties, KEY_INDEPENDENT_RESOLVE_NONE);
+                        emitLong(
+                                store,
+                                depthStencilResolveProperties,
+                                KEY_SUPPORTED_DEPTH_RESOLVE_MODES);
+                        emitLong(
+                                store,
+                                depthStencilResolveProperties,
+                                KEY_SUPPORTED_STENCIL_RESOLVE_MODES);
+                        emitBoolean(
+                                store, depthStencilResolveProperties, KEY_INDEPENDENT_RESOLVE_NONE);
                         emitBoolean(store, depthStencilResolveProperties, KEY_INDEPENDENT_RESOLVE);
                     }
                     store.endGroup();
 
-
-                    JSONObject descriptorIndexingFeatures = device.getJSONObject(KEY_DESCRIPTOR_INDEXING_FEATURES);
+                    JSONObject descriptorIndexingFeatures =
+                            device.getJSONObject(KEY_DESCRIPTOR_INDEXING_FEATURES);
                     store.startGroup(getConvertedName(KEY_DESCRIPTOR_INDEXING_FEATURES));
                     {
-                        emitBoolean(store, descriptorIndexingFeatures, KEY_SHADER_INPUT_ATTACHMENT_ARRAY_DYNAMIC_INDEXING);
-                        emitBoolean(store, descriptorIndexingFeatures, KEY_SHADER_UNIFORM_TEXEL_BUFFER_ARRAY_DYNAMIC_INDEXING);
-                        emitBoolean(store, descriptorIndexingFeatures, KEY_SHADER_STORAGE_TEXEL_BUFFER_ARRAY_DYNAMIC_INDEXING);
-                        emitBoolean(store, descriptorIndexingFeatures, KEY_SHADER_UNIFORM_BUFFER_ARRAY_NON_UNIFORM_INDEXING);
-                        emitBoolean(store, descriptorIndexingFeatures, KEY_SHADER_SAMPLED_IMAGE_ARRAY_NON_UNIFORM_INDEXING);
-                        emitBoolean(store, descriptorIndexingFeatures, KEY_SHADER_STORAGE_BUFFER_ARRAY_NON_UNIFORM_INDEXING);
-                        emitBoolean(store, descriptorIndexingFeatures, KEY_SHADER_STORAGE_IMAGE_ARRAY_NON_UNIFORM_INDEXING);
-                        emitBoolean(store, descriptorIndexingFeatures, KEY_SHADER_INPUT_ATTACHMENT_ARRAY_NON_UNIFORM_INDEXING);
-                        emitBoolean(store, descriptorIndexingFeatures, KEY_SHADER_UNIFORM_TEXEL_BUFFER_ARRAY_NON_UNIFORM_INDEXING);
-                        emitBoolean(store, descriptorIndexingFeatures, KEY_SHADER_STORAGE_TEXEL_BUFFER_ARRAY_NON_UNIFORM_INDEXING);
-                        emitBoolean(store, descriptorIndexingFeatures, KEY_DESCRIPTOR_BINDING_UNIFORM_BUFFER_UPDATE_AFTER_BIND);
-                        emitBoolean(store, descriptorIndexingFeatures, KEY_DESCRIPTOR_BINDING_SAMPLED_IMAGE_UPDATE_AFTER_BIND);
-                        emitBoolean(store, descriptorIndexingFeatures, KEY_DESCRIPTOR_BINDING_STORAGE_IMAGE_UPDATE_AFTER_BIND);
-                        emitBoolean(store, descriptorIndexingFeatures, KEY_DESCRIPTOR_BINDING_STORAGE_BUFFER_UPDATE_AFTER_BIND);
-                        emitBoolean(store, descriptorIndexingFeatures, KEY_DESCRIPTOR_BINDING_UNIFORM_TEXEL_BUFFER_UPDATE_AFTER_BIND);
-                        emitBoolean(store, descriptorIndexingFeatures, KEY_DESCRIPTOR_BINDING_STORAGE_TEXEL_BUFFER_UPDATE_AFTER_BIND);
-                        emitBoolean(store, descriptorIndexingFeatures, KEY_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING);
-                        emitBoolean(store, descriptorIndexingFeatures, KEY_DESCRIPTOR_BINDING_PARTIALLY_BOUND);
-                        emitBoolean(store, descriptorIndexingFeatures, KEY_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT);
-                        emitBoolean(store, descriptorIndexingFeatures, KEY_RUNTIME_DESCRIPTOR_ARRAY);
+                        emitBoolean(
+                                store,
+                                descriptorIndexingFeatures,
+                                KEY_SHADER_INPUT_ATTACHMENT_ARRAY_DYNAMIC_INDEXING);
+                        emitBoolean(
+                                store,
+                                descriptorIndexingFeatures,
+                                KEY_SHADER_UNIFORM_TEXEL_BUFFER_ARRAY_DYNAMIC_INDEXING);
+                        emitBoolean(
+                                store,
+                                descriptorIndexingFeatures,
+                                KEY_SHADER_STORAGE_TEXEL_BUFFER_ARRAY_DYNAMIC_INDEXING);
+                        emitBoolean(
+                                store,
+                                descriptorIndexingFeatures,
+                                KEY_SHADER_UNIFORM_BUFFER_ARRAY_NON_UNIFORM_INDEXING);
+                        emitBoolean(
+                                store,
+                                descriptorIndexingFeatures,
+                                KEY_SHADER_SAMPLED_IMAGE_ARRAY_NON_UNIFORM_INDEXING);
+                        emitBoolean(
+                                store,
+                                descriptorIndexingFeatures,
+                                KEY_SHADER_STORAGE_BUFFER_ARRAY_NON_UNIFORM_INDEXING);
+                        emitBoolean(
+                                store,
+                                descriptorIndexingFeatures,
+                                KEY_SHADER_STORAGE_IMAGE_ARRAY_NON_UNIFORM_INDEXING);
+                        emitBoolean(
+                                store,
+                                descriptorIndexingFeatures,
+                                KEY_SHADER_INPUT_ATTACHMENT_ARRAY_NON_UNIFORM_INDEXING);
+                        emitBoolean(
+                                store,
+                                descriptorIndexingFeatures,
+                                KEY_SHADER_UNIFORM_TEXEL_BUFFER_ARRAY_NON_UNIFORM_INDEXING);
+                        emitBoolean(
+                                store,
+                                descriptorIndexingFeatures,
+                                KEY_SHADER_STORAGE_TEXEL_BUFFER_ARRAY_NON_UNIFORM_INDEXING);
+                        emitBoolean(
+                                store,
+                                descriptorIndexingFeatures,
+                                KEY_DESCRIPTOR_BINDING_UNIFORM_BUFFER_UPDATE_AFTER_BIND);
+                        emitBoolean(
+                                store,
+                                descriptorIndexingFeatures,
+                                KEY_DESCRIPTOR_BINDING_SAMPLED_IMAGE_UPDATE_AFTER_BIND);
+                        emitBoolean(
+                                store,
+                                descriptorIndexingFeatures,
+                                KEY_DESCRIPTOR_BINDING_STORAGE_IMAGE_UPDATE_AFTER_BIND);
+                        emitBoolean(
+                                store,
+                                descriptorIndexingFeatures,
+                                KEY_DESCRIPTOR_BINDING_STORAGE_BUFFER_UPDATE_AFTER_BIND);
+                        emitBoolean(
+                                store,
+                                descriptorIndexingFeatures,
+                                KEY_DESCRIPTOR_BINDING_UNIFORM_TEXEL_BUFFER_UPDATE_AFTER_BIND);
+                        emitBoolean(
+                                store,
+                                descriptorIndexingFeatures,
+                                KEY_DESCRIPTOR_BINDING_STORAGE_TEXEL_BUFFER_UPDATE_AFTER_BIND);
+                        emitBoolean(
+                                store,
+                                descriptorIndexingFeatures,
+                                KEY_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING);
+                        emitBoolean(
+                                store,
+                                descriptorIndexingFeatures,
+                                KEY_DESCRIPTOR_BINDING_PARTIALLY_BOUND);
+                        emitBoolean(
+                                store,
+                                descriptorIndexingFeatures,
+                                KEY_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT);
+                        emitBoolean(
+                                store, descriptorIndexingFeatures, KEY_RUNTIME_DESCRIPTOR_ARRAY);
                     }
                     store.endGroup();
 
-
-                    JSONObject descriptorIndexingProperties = device.getJSONObject(KEY_DESCRIPTOR_INDEXING_PROPERTIES);
+                    JSONObject descriptorIndexingProperties =
+                            device.getJSONObject(KEY_DESCRIPTOR_INDEXING_PROPERTIES);
                     store.startGroup(getConvertedName(KEY_DESCRIPTOR_INDEXING_PROPERTIES));
                     {
-                        emitLong(store, descriptorIndexingProperties, KEY_MAX_UPDATE_AFTER_BIND_DESCRIPTORS_IN_ALL_POOLS);
-                        emitBoolean(store, descriptorIndexingProperties, KEY_SHADER_UNIFORM_BUFFER_ARRAY_NONUNIFORM_INDEXING_NATIVE);
-                        emitBoolean(store, descriptorIndexingProperties, KEY_SHADER_SAMPLED_IMAGE_ARRAY_NONUNIFORM_INDEXING_NATIVE);
-                        emitBoolean(store, descriptorIndexingProperties, KEY_SHADER_STORAGE_BUFFER_ARRAY_NONUNIFORM_INDEXING_NATIVE);
-                        emitBoolean(store, descriptorIndexingProperties, KEY_SHADER_STORAGE_IMAGE_ARRAY_NONUNIFORM_INDEXING_NATIVE);
-                        emitBoolean(store, descriptorIndexingProperties, KEY_SHADER_INPUT_ATTACHMENT_ARRAY_NONUNIFORM_INDEXING_NATIVE);
-                        emitBoolean(store, descriptorIndexingProperties, KEY_ROBUST_BUFFER_ACCESS_UPDATE_AFTER_BIND);
-                        emitBoolean(store, descriptorIndexingProperties, KEY_QUAD_DIVERGENT_IMPLICIT_LOD);
-                        emitLong(store, descriptorIndexingProperties, KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_SAMPLERS);
-                        emitLong(store, descriptorIndexingProperties, KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_UNIFORM_BUFFERS);
-                        emitLong(store, descriptorIndexingProperties, KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_STORAGE_BUFFERS);
-                        emitLong(store, descriptorIndexingProperties, KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_SAMPLED_IMAGES);
-                        emitLong(store, descriptorIndexingProperties, KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_STORAGE_IMAGES);
-                        emitLong(store, descriptorIndexingProperties, KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_INPUT_ATTACHMENTS);
-                        emitLong(store, descriptorIndexingProperties, KEY_MAX_PER_STAGE_UPDATE_AFTER_BIND_RESOURCES);
-                        emitLong(store, descriptorIndexingProperties, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_SAMPLERS);
-                        emitLong(store, descriptorIndexingProperties, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_UNIFORM_BUFFERS);
-                        emitLong(store, descriptorIndexingProperties, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_UNIFORM_BUFFERS_DYNAMIC);
-                        emitLong(store, descriptorIndexingProperties, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_STORAGE_BUFFERS);
-                        emitLong(store, descriptorIndexingProperties, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_STORAGE_BUFFERS_DYNAMIC);
-                        emitLong(store, descriptorIndexingProperties, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_SAMPLED_IMAGES);
-                        emitLong(store, descriptorIndexingProperties, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_STORAGE_IMAGES);
-                        emitLong(store, descriptorIndexingProperties, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_INPUT_ATTACHMENTS);
+                        emitLong(
+                                store,
+                                descriptorIndexingProperties,
+                                KEY_MAX_UPDATE_AFTER_BIND_DESCRIPTORS_IN_ALL_POOLS);
+                        emitBoolean(
+                                store,
+                                descriptorIndexingProperties,
+                                KEY_SHADER_UNIFORM_BUFFER_ARRAY_NONUNIFORM_INDEXING_NATIVE);
+                        emitBoolean(
+                                store,
+                                descriptorIndexingProperties,
+                                KEY_SHADER_SAMPLED_IMAGE_ARRAY_NONUNIFORM_INDEXING_NATIVE);
+                        emitBoolean(
+                                store,
+                                descriptorIndexingProperties,
+                                KEY_SHADER_STORAGE_BUFFER_ARRAY_NONUNIFORM_INDEXING_NATIVE);
+                        emitBoolean(
+                                store,
+                                descriptorIndexingProperties,
+                                KEY_SHADER_STORAGE_IMAGE_ARRAY_NONUNIFORM_INDEXING_NATIVE);
+                        emitBoolean(
+                                store,
+                                descriptorIndexingProperties,
+                                KEY_SHADER_INPUT_ATTACHMENT_ARRAY_NONUNIFORM_INDEXING_NATIVE);
+                        emitBoolean(
+                                store,
+                                descriptorIndexingProperties,
+                                KEY_ROBUST_BUFFER_ACCESS_UPDATE_AFTER_BIND);
+                        emitBoolean(
+                                store,
+                                descriptorIndexingProperties,
+                                KEY_QUAD_DIVERGENT_IMPLICIT_LOD);
+                        emitLong(
+                                store,
+                                descriptorIndexingProperties,
+                                KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_SAMPLERS);
+                        emitLong(
+                                store,
+                                descriptorIndexingProperties,
+                                KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_UNIFORM_BUFFERS);
+                        emitLong(
+                                store,
+                                descriptorIndexingProperties,
+                                KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_STORAGE_BUFFERS);
+                        emitLong(
+                                store,
+                                descriptorIndexingProperties,
+                                KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_SAMPLED_IMAGES);
+                        emitLong(
+                                store,
+                                descriptorIndexingProperties,
+                                KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_STORAGE_IMAGES);
+                        emitLong(
+                                store,
+                                descriptorIndexingProperties,
+                                KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_INPUT_ATTACHMENTS);
+                        emitLong(
+                                store,
+                                descriptorIndexingProperties,
+                                KEY_MAX_PER_STAGE_UPDATE_AFTER_BIND_RESOURCES);
+                        emitLong(
+                                store,
+                                descriptorIndexingProperties,
+                                KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_SAMPLERS);
+                        emitLong(
+                                store,
+                                descriptorIndexingProperties,
+                                KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_UNIFORM_BUFFERS);
+                        emitLong(
+                                store,
+                                descriptorIndexingProperties,
+                                KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_UNIFORM_BUFFERS_DYNAMIC);
+                        emitLong(
+                                store,
+                                descriptorIndexingProperties,
+                                KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_STORAGE_BUFFERS);
+                        emitLong(
+                                store,
+                                descriptorIndexingProperties,
+                                KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_STORAGE_BUFFERS_DYNAMIC);
+                        emitLong(
+                                store,
+                                descriptorIndexingProperties,
+                                KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_SAMPLED_IMAGES);
+                        emitLong(
+                                store,
+                                descriptorIndexingProperties,
+                                KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_STORAGE_IMAGES);
+                        emitLong(
+                                store,
+                                descriptorIndexingProperties,
+                                KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_INPUT_ATTACHMENTS);
                     }
                     store.endGroup();
-
 
                     JSONObject driverProperties = device.getJSONObject(KEY_DRIVER_PROPERTIES);
                     store.startGroup(getConvertedName(KEY_DRIVER_PROPERTIES));
@@ -985,7 +1538,8 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                         emitLong(store, driverProperties, KEY_DRIVER_ID);
                         emitString(store, driverProperties, KEY_DRIVER_NAME);
                         emitString(store, driverProperties, KEY_DRIVER_INFO);
-                        JSONObject conformanceVersion = driverProperties.getJSONObject(KEY_CONFORMANCE_VERSION);
+                        JSONObject conformanceVersion =
+                                driverProperties.getJSONObject(KEY_CONFORMANCE_VERSION);
                         store.startGroup(getConvertedName(KEY_CONFORMANCE_VERSION));
                         {
                             emitLong(store, conformanceVersion, KEY_MAJOR);
@@ -997,82 +1551,132 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     }
                     store.endGroup();
 
-
-                    JSONObject floatControlsProperties = device.getJSONObject(KEY_FLOAT_CONTROLS_PROPERTIES);
+                    JSONObject floatControlsProperties =
+                            device.getJSONObject(KEY_FLOAT_CONTROLS_PROPERTIES);
                     store.startGroup(getConvertedName(KEY_FLOAT_CONTROLS_PROPERTIES));
                     {
                         emitLong(store, floatControlsProperties, KEY_DENORM_BEHAVIOR_INDEPENDENCE);
                         emitLong(store, floatControlsProperties, KEY_ROUNDING_MODE_INDEPENDENCE);
-                        emitBoolean(store, floatControlsProperties, KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT16);
-                        emitBoolean(store, floatControlsProperties, KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT32);
-                        emitBoolean(store, floatControlsProperties, KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT64);
-                        emitBoolean(store, floatControlsProperties, KEY_SHADER_DENORM_PRESERVE_FLOAT16);
-                        emitBoolean(store, floatControlsProperties, KEY_SHADER_DENORM_PRESERVE_FLOAT32);
-                        emitBoolean(store, floatControlsProperties, KEY_SHADER_DENORM_PRESERVE_FLOAT64);
-                        emitBoolean(store, floatControlsProperties, KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT16);
-                        emitBoolean(store, floatControlsProperties, KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT32);
-                        emitBoolean(store, floatControlsProperties, KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT64);
-                        emitBoolean(store, floatControlsProperties, KEY_SHADER_ROUNDING_MODE_RTE_FLOAT16);
-                        emitBoolean(store, floatControlsProperties, KEY_SHADER_ROUNDING_MODE_RTE_FLOAT32);
-                        emitBoolean(store, floatControlsProperties, KEY_SHADER_ROUNDING_MODE_RTE_FLOAT64);
-                        emitBoolean(store, floatControlsProperties, KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT16);
-                        emitBoolean(store, floatControlsProperties, KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT32);
-                        emitBoolean(store, floatControlsProperties, KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT64);
+                        emitBoolean(
+                                store,
+                                floatControlsProperties,
+                                KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT16);
+                        emitBoolean(
+                                store,
+                                floatControlsProperties,
+                                KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT32);
+                        emitBoolean(
+                                store,
+                                floatControlsProperties,
+                                KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT64);
+                        emitBoolean(
+                                store, floatControlsProperties, KEY_SHADER_DENORM_PRESERVE_FLOAT16);
+                        emitBoolean(
+                                store, floatControlsProperties, KEY_SHADER_DENORM_PRESERVE_FLOAT32);
+                        emitBoolean(
+                                store, floatControlsProperties, KEY_SHADER_DENORM_PRESERVE_FLOAT64);
+                        emitBoolean(
+                                store,
+                                floatControlsProperties,
+                                KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT16);
+                        emitBoolean(
+                                store,
+                                floatControlsProperties,
+                                KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT32);
+                        emitBoolean(
+                                store,
+                                floatControlsProperties,
+                                KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT64);
+                        emitBoolean(
+                                store,
+                                floatControlsProperties,
+                                KEY_SHADER_ROUNDING_MODE_RTE_FLOAT16);
+                        emitBoolean(
+                                store,
+                                floatControlsProperties,
+                                KEY_SHADER_ROUNDING_MODE_RTE_FLOAT32);
+                        emitBoolean(
+                                store,
+                                floatControlsProperties,
+                                KEY_SHADER_ROUNDING_MODE_RTE_FLOAT64);
+                        emitBoolean(
+                                store,
+                                floatControlsProperties,
+                                KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT16);
+                        emitBoolean(
+                                store,
+                                floatControlsProperties,
+                                KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT32);
+                        emitBoolean(
+                                store,
+                                floatControlsProperties,
+                                KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT64);
                     }
                     store.endGroup();
 
-
-                    JSONObject hostQueryResetFeatures = device.getJSONObject(KEY_HOST_QUERY_RESET_FEATURES);
+                    JSONObject hostQueryResetFeatures =
+                            device.getJSONObject(KEY_HOST_QUERY_RESET_FEATURES);
                     store.startGroup(getConvertedName(KEY_HOST_QUERY_RESET_FEATURES));
                     {
                         emitBoolean(store, hostQueryResetFeatures, KEY_HOST_QUERY_RESET);
                     }
                     store.endGroup();
 
-
-                    JSONObject imagelessFramebufferFeatures = device.getJSONObject(KEY_IMAGELESS_FRAMEBUFFER_FEATURES);
+                    JSONObject imagelessFramebufferFeatures =
+                            device.getJSONObject(KEY_IMAGELESS_FRAMEBUFFER_FEATURES);
                     store.startGroup(getConvertedName(KEY_IMAGELESS_FRAMEBUFFER_FEATURES));
                     {
                         emitBoolean(store, imagelessFramebufferFeatures, KEY_IMAGELESS_FRAMEBUFFER);
                     }
                     store.endGroup();
 
-
-                    JSONObject samplerFilterMinmaxProperties = device.getJSONObject(KEY_SAMPLER_FILTER_MINMAX_PROPERTIES);
+                    JSONObject samplerFilterMinmaxProperties =
+                            device.getJSONObject(KEY_SAMPLER_FILTER_MINMAX_PROPERTIES);
                     store.startGroup(getConvertedName(KEY_SAMPLER_FILTER_MINMAX_PROPERTIES));
                     {
-                        emitBoolean(store, samplerFilterMinmaxProperties, KEY_FILTER_MINMAX_SINGLE_COMPONENT_FORMATS);
-                        emitBoolean(store, samplerFilterMinmaxProperties, KEY_FILTER_MINMAX_IMAGE_COMPONENT_MAPPING);
+                        emitBoolean(
+                                store,
+                                samplerFilterMinmaxProperties,
+                                KEY_FILTER_MINMAX_SINGLE_COMPONENT_FORMATS);
+                        emitBoolean(
+                                store,
+                                samplerFilterMinmaxProperties,
+                                KEY_FILTER_MINMAX_IMAGE_COMPONENT_MAPPING);
                     }
                     store.endGroup();
 
-
-                    JSONObject scalarBlockLayoutFeatures = device.getJSONObject(KEY_SCALAR_BLOCK_LAYOUT_FEATURES);
+                    JSONObject scalarBlockLayoutFeatures =
+                            device.getJSONObject(KEY_SCALAR_BLOCK_LAYOUT_FEATURES);
                     store.startGroup(getConvertedName(KEY_SCALAR_BLOCK_LAYOUT_FEATURES));
                     {
                         emitBoolean(store, scalarBlockLayoutFeatures, KEY_SCALAR_BLOCK_LAYOUT);
                     }
                     store.endGroup();
 
-
-                    JSONObject separateDepthStencilLayoutsFeatures = device.getJSONObject(KEY_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES);
+                    JSONObject separateDepthStencilLayoutsFeatures =
+                            device.getJSONObject(KEY_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES);
                     store.startGroup(getConvertedName(KEY_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES));
                     {
-                        emitBoolean(store, separateDepthStencilLayoutsFeatures, KEY_SEPARATE_DEPTH_STENCIL_LAYOUTS);
+                        emitBoolean(
+                                store,
+                                separateDepthStencilLayoutsFeatures,
+                                KEY_SEPARATE_DEPTH_STENCIL_LAYOUTS);
                     }
                     store.endGroup();
 
-
-                    JSONObject shaderAtomicInt64Features = device.getJSONObject(KEY_SHADER_ATOMIC_INT_64_FEATURES);
+                    JSONObject shaderAtomicInt64Features =
+                            device.getJSONObject(KEY_SHADER_ATOMIC_INT_64_FEATURES);
                     store.startGroup(getConvertedName(KEY_SHADER_ATOMIC_INT_64_FEATURES));
                     {
-                        emitBoolean(store, shaderAtomicInt64Features, KEY_SHADER_BUFFER_INT64_ATOMICS);
-                        emitBoolean(store, shaderAtomicInt64Features, KEY_SHADER_SHARED_INT64_ATOMICS);
+                        emitBoolean(
+                                store, shaderAtomicInt64Features, KEY_SHADER_BUFFER_INT64_ATOMICS);
+                        emitBoolean(
+                                store, shaderAtomicInt64Features, KEY_SHADER_SHARED_INT64_ATOMICS);
                     }
                     store.endGroup();
 
-
-                    JSONObject shaderFloat16Int8Features = device.getJSONObject(KEY_SHADER_FLOAT_16_INT_8_FEATURES);
+                    JSONObject shaderFloat16Int8Features =
+                            device.getJSONObject(KEY_SHADER_FLOAT_16_INT_8_FEATURES);
                     store.startGroup(getConvertedName(KEY_SHADER_FLOAT_16_INT_8_FEATURES));
                     {
                         emitBoolean(store, shaderFloat16Int8Features, KEY_SHADER_FLOAT16);
@@ -1080,182 +1684,318 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     }
                     store.endGroup();
 
-
-                    JSONObject shaderSubgroupExtendedTypesFeatures = device.getJSONObject(KEY_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES);
+                    JSONObject shaderSubgroupExtendedTypesFeatures =
+                            device.getJSONObject(KEY_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES);
                     store.startGroup(getConvertedName(KEY_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES));
                     {
-                        emitBoolean(store, shaderSubgroupExtendedTypesFeatures, KEY_SHADER_SUBGROUP_EXTENDED_TYPES);
+                        emitBoolean(
+                                store,
+                                shaderSubgroupExtendedTypesFeatures,
+                                KEY_SHADER_SUBGROUP_EXTENDED_TYPES);
                     }
                     store.endGroup();
 
-
-                    JSONObject timelineSemaphoreFeatures = device.getJSONObject(KEY_TIMELINE_SEMAPHORE_FEATURES);
+                    JSONObject timelineSemaphoreFeatures =
+                            device.getJSONObject(KEY_TIMELINE_SEMAPHORE_FEATURES);
                     store.startGroup(getConvertedName(KEY_TIMELINE_SEMAPHORE_FEATURES));
                     {
                         emitBoolean(store, timelineSemaphoreFeatures, KEY_TIMELINE_SEMAPHORE);
                     }
                     store.endGroup();
 
-
-                    JSONObject timelineSemaphoreProperties = device.getJSONObject(KEY_TIMELINE_SEMAPHORE_PROPERTIES);
+                    JSONObject timelineSemaphoreProperties =
+                            device.getJSONObject(KEY_TIMELINE_SEMAPHORE_PROPERTIES);
                     store.startGroup(getConvertedName(KEY_TIMELINE_SEMAPHORE_PROPERTIES));
                     {
-                        emitString(store, timelineSemaphoreProperties, KEY_MAX_TIMELINE_SEMAPHORE_VALUE_DIFFERENCE);
+                        emitString(
+                                store,
+                                timelineSemaphoreProperties,
+                                KEY_MAX_TIMELINE_SEMAPHORE_VALUE_DIFFERENCE);
                     }
                     store.endGroup();
 
-
-                    JSONObject uniformBufferStandardLayoutFeatures = device.getJSONObject(KEY_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES);
+                    JSONObject uniformBufferStandardLayoutFeatures =
+                            device.getJSONObject(KEY_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES);
                     store.startGroup(getConvertedName(KEY_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES));
                     {
-                        emitBoolean(store, uniformBufferStandardLayoutFeatures, KEY_UNIFORM_BUFFER_STANDARD_LAYOUT);
+                        emitBoolean(
+                                store,
+                                uniformBufferStandardLayoutFeatures,
+                                KEY_UNIFORM_BUFFER_STANDARD_LAYOUT);
                     }
                     store.endGroup();
 
-
-                    JSONObject vulkanMemoryModelFeatures = device.getJSONObject(KEY_VULKAN_MEMORY_MODEL_FEATURES);
+                    JSONObject vulkanMemoryModelFeatures =
+                            device.getJSONObject(KEY_VULKAN_MEMORY_MODEL_FEATURES);
                     store.startGroup(getConvertedName(KEY_VULKAN_MEMORY_MODEL_FEATURES));
                     {
                         emitBoolean(store, vulkanMemoryModelFeatures, KEY_VULKAN_MEMORY_MODEL);
-                        emitBoolean(store, vulkanMemoryModelFeatures, KEY_VULKAN_MEMORY_MODEL_DEVICE_SCOPE);
-                        emitBoolean(store, vulkanMemoryModelFeatures, KEY_VULKAN_MEMORY_MODEL_AVAILABILITY_VISIBILITY_CHAINS);
+                        emitBoolean(
+                                store,
+                                vulkanMemoryModelFeatures,
+                                KEY_VULKAN_MEMORY_MODEL_DEVICE_SCOPE);
+                        emitBoolean(
+                                store,
+                                vulkanMemoryModelFeatures,
+                                KEY_VULKAN_MEMORY_MODEL_AVAILABILITY_VISIBILITY_CHAINS);
                     }
                     store.endGroup();
-
-
                 }
                 if (properties.getLong(KEY_API_VERSION) >= VK_API_VERSION_1_3) {
-                    JSONObject dynamicRenderingFeatures = device.getJSONObject(KEY_DYNAMIC_RENDERING_FEATURES);
+                    JSONObject dynamicRenderingFeatures =
+                            device.getJSONObject(KEY_DYNAMIC_RENDERING_FEATURES);
                     store.startGroup(getConvertedName(KEY_DYNAMIC_RENDERING_FEATURES));
                     {
                         emitBoolean(store, dynamicRenderingFeatures, KEY_DYNAMIC_RENDERING);
                     }
                     store.endGroup();
 
-
-                    JSONObject imageRobustnessFeatures = device.getJSONObject(KEY_IMAGE_ROBUSTNESS_FEATURES);
+                    JSONObject imageRobustnessFeatures =
+                            device.getJSONObject(KEY_IMAGE_ROBUSTNESS_FEATURES);
                     store.startGroup(getConvertedName(KEY_IMAGE_ROBUSTNESS_FEATURES));
                     {
                         emitBoolean(store, imageRobustnessFeatures, KEY_ROBUST_IMAGE_ACCESS);
                     }
                     store.endGroup();
 
-
-                    JSONObject inlineUniformBlockFeatures = device.getJSONObject(KEY_INLINE_UNIFORM_BLOCK_FEATURES);
+                    JSONObject inlineUniformBlockFeatures =
+                            device.getJSONObject(KEY_INLINE_UNIFORM_BLOCK_FEATURES);
                     store.startGroup(getConvertedName(KEY_INLINE_UNIFORM_BLOCK_FEATURES));
                     {
                         emitBoolean(store, inlineUniformBlockFeatures, KEY_INLINE_UNIFORM_BLOCK);
-                        emitBoolean(store, inlineUniformBlockFeatures, KEY_DESCRIPTOR_BINDING_INLINE_UNIFORM_BLOCK_UPDATE_AFTER_BIND);
+                        emitBoolean(
+                                store,
+                                inlineUniformBlockFeatures,
+                                KEY_DESCRIPTOR_BINDING_INLINE_UNIFORM_BLOCK_UPDATE_AFTER_BIND);
                     }
                     store.endGroup();
 
-
-                    JSONObject inlineUniformBlockProperties = device.getJSONObject(KEY_INLINE_UNIFORM_BLOCK_PROPERTIES);
+                    JSONObject inlineUniformBlockProperties =
+                            device.getJSONObject(KEY_INLINE_UNIFORM_BLOCK_PROPERTIES);
                     store.startGroup(getConvertedName(KEY_INLINE_UNIFORM_BLOCK_PROPERTIES));
                     {
-                        emitLong(store, inlineUniformBlockProperties, KEY_MAX_INLINE_UNIFORM_BLOCK_SIZE);
-                        emitLong(store, inlineUniformBlockProperties, KEY_MAX_PER_STAGE_DESCRIPTOR_INLINE_UNIFORM_BLOCKS);
-                        emitLong(store, inlineUniformBlockProperties, KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_INLINE_UNIFORM_BLOCKS);
-                        emitLong(store, inlineUniformBlockProperties, KEY_MAX_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCKS);
-                        emitLong(store, inlineUniformBlockProperties, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_INLINE_UNIFORM_BLOCKS);
+                        emitLong(
+                                store,
+                                inlineUniformBlockProperties,
+                                KEY_MAX_INLINE_UNIFORM_BLOCK_SIZE);
+                        emitLong(
+                                store,
+                                inlineUniformBlockProperties,
+                                KEY_MAX_PER_STAGE_DESCRIPTOR_INLINE_UNIFORM_BLOCKS);
+                        emitLong(
+                                store,
+                                inlineUniformBlockProperties,
+                                KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_INLINE_UNIFORM_BLOCKS);
+                        emitLong(
+                                store,
+                                inlineUniformBlockProperties,
+                                KEY_MAX_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCKS);
+                        emitLong(
+                                store,
+                                inlineUniformBlockProperties,
+                                KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_INLINE_UNIFORM_BLOCKS);
                     }
                     store.endGroup();
 
-
-                    JSONObject maintenance4Features = device.getJSONObject(KEY_MAINTENANCE_4_FEATURES);
+                    JSONObject maintenance4Features =
+                            device.getJSONObject(KEY_MAINTENANCE_4_FEATURES);
                     store.startGroup(getConvertedName(KEY_MAINTENANCE_4_FEATURES));
                     {
                         emitBoolean(store, maintenance4Features, KEY_MAINTENANCE4);
                     }
                     store.endGroup();
 
-
-                    JSONObject maintenance4Properties = device.getJSONObject(KEY_MAINTENANCE_4_PROPERTIES);
+                    JSONObject maintenance4Properties =
+                            device.getJSONObject(KEY_MAINTENANCE_4_PROPERTIES);
                     store.startGroup(getConvertedName(KEY_MAINTENANCE_4_PROPERTIES));
                     {
                         emitString(store, maintenance4Properties, KEY_MAX_BUFFER_SIZE);
                     }
                     store.endGroup();
 
-
-                    JSONObject pipelineCreationCacheControlFeatures = device.getJSONObject(KEY_PIPELINE_CREATION_CACHE_CONTROL_FEATURES);
-                    store.startGroup(getConvertedName(KEY_PIPELINE_CREATION_CACHE_CONTROL_FEATURES));
+                    JSONObject pipelineCreationCacheControlFeatures =
+                            device.getJSONObject(KEY_PIPELINE_CREATION_CACHE_CONTROL_FEATURES);
+                    store.startGroup(
+                            getConvertedName(KEY_PIPELINE_CREATION_CACHE_CONTROL_FEATURES));
                     {
-                        emitBoolean(store, pipelineCreationCacheControlFeatures, KEY_PIPELINE_CREATION_CACHE_CONTROL);
+                        emitBoolean(
+                                store,
+                                pipelineCreationCacheControlFeatures,
+                                KEY_PIPELINE_CREATION_CACHE_CONTROL);
                     }
                     store.endGroup();
 
-
-                    JSONObject privateDataFeatures = device.getJSONObject(KEY_PRIVATE_DATA_FEATURES);
+                    JSONObject privateDataFeatures =
+                            device.getJSONObject(KEY_PRIVATE_DATA_FEATURES);
                     store.startGroup(getConvertedName(KEY_PRIVATE_DATA_FEATURES));
                     {
                         emitBoolean(store, privateDataFeatures, KEY_PRIVATE_DATA);
                     }
                     store.endGroup();
 
-
-                    JSONObject shaderDemoteToHelperInvocationFeatures = device.getJSONObject(KEY_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES);
-                    store.startGroup(getConvertedName(KEY_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES));
+                    JSONObject shaderDemoteToHelperInvocationFeatures =
+                            device.getJSONObject(KEY_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES);
+                    store.startGroup(
+                            getConvertedName(KEY_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES));
                     {
-                        emitBoolean(store, shaderDemoteToHelperInvocationFeatures, KEY_SHADER_DEMOTE_TO_HELPER_INVOCATION);
+                        emitBoolean(
+                                store,
+                                shaderDemoteToHelperInvocationFeatures,
+                                KEY_SHADER_DEMOTE_TO_HELPER_INVOCATION);
                     }
                     store.endGroup();
 
-
-                    JSONObject shaderIntegerDotProductFeatures = device.getJSONObject(KEY_SHADER_INTEGER_DOT_PRODUCT_FEATURES);
+                    JSONObject shaderIntegerDotProductFeatures =
+                            device.getJSONObject(KEY_SHADER_INTEGER_DOT_PRODUCT_FEATURES);
                     store.startGroup(getConvertedName(KEY_SHADER_INTEGER_DOT_PRODUCT_FEATURES));
                     {
-                        emitBoolean(store, shaderIntegerDotProductFeatures, KEY_SHADER_INTEGER_DOT_PRODUCT);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductFeatures,
+                                KEY_SHADER_INTEGER_DOT_PRODUCT);
                     }
                     store.endGroup();
 
-
-                    JSONObject shaderIntegerDotProductProperties = device.getJSONObject(KEY_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES);
+                    JSONObject shaderIntegerDotProductProperties =
+                            device.getJSONObject(KEY_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES);
                     store.startGroup(getConvertedName(KEY_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES));
                     {
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_8BIT_UNSIGNED_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_8BIT_SIGNED_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_8BIT_MIXED_SIGNEDNESS_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_4X8BIT_PACKED_UNSIGNED_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_4X8BIT_PACKED_SIGNED_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_4X8BIT_PACKED_MIXED_SIGNEDNESS_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_16BIT_UNSIGNED_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_16BIT_SIGNED_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_16BIT_MIXED_SIGNEDNESS_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_32BIT_UNSIGNED_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_32BIT_SIGNED_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_32BIT_MIXED_SIGNEDNESS_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_64BIT_UNSIGNED_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_64BIT_SIGNED_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_64BIT_MIXED_SIGNEDNESS_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_8BIT_UNSIGNED_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_8BIT_SIGNED_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_8BIT_MIXED_SIGNEDNESS_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_4X8BIT_PACKED_UNSIGNED_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_4X8BIT_PACKED_SIGNED_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_4X8BIT_PACKED_MIXED_SIGNEDNESS_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_16BIT_UNSIGNED_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_16BIT_SIGNED_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_16BIT_MIXED_SIGNEDNESS_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_32BIT_UNSIGNED_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_32BIT_SIGNED_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_32BIT_MIXED_SIGNEDNESS_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_UNSIGNED_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_SIGNED_ACCELERATED);
-                        emitBoolean(store, shaderIntegerDotProductProperties, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_MIXED_SIGNEDNESS_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_8BIT_UNSIGNED_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_8BIT_SIGNED_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_8BIT_MIXED_SIGNEDNESS_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_4X8BIT_PACKED_UNSIGNED_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_4X8BIT_PACKED_SIGNED_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_4X8BIT_PACKED_MIXED_SIGNEDNESS_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_16BIT_UNSIGNED_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_16BIT_SIGNED_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_16BIT_MIXED_SIGNEDNESS_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_32BIT_UNSIGNED_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_32BIT_SIGNED_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_32BIT_MIXED_SIGNEDNESS_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_64BIT_UNSIGNED_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_64BIT_SIGNED_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_64BIT_MIXED_SIGNEDNESS_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_8BIT_UNSIGNED_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_8BIT_SIGNED_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_8BIT_MIXED_SIGNEDNESS_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_4X8BIT_PACKED_UNSIGNED_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_4X8BIT_PACKED_SIGNED_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_4X8BIT_PACKED_MIXED_SIGNEDNESS_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_16BIT_UNSIGNED_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_16BIT_SIGNED_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_16BIT_MIXED_SIGNEDNESS_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_32BIT_UNSIGNED_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_32BIT_SIGNED_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_32BIT_MIXED_SIGNEDNESS_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_UNSIGNED_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_SIGNED_ACCELERATED);
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductProperties,
+                                KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_MIXED_SIGNEDNESS_ACCELERATED);
                     }
                     store.endGroup();
 
-
-                    JSONObject shaderTerminateInvocationFeatures = device.getJSONObject(KEY_SHADER_TERMINATE_INVOCATION_FEATURES);
+                    JSONObject shaderTerminateInvocationFeatures =
+                            device.getJSONObject(KEY_SHADER_TERMINATE_INVOCATION_FEATURES);
                     store.startGroup(getConvertedName(KEY_SHADER_TERMINATE_INVOCATION_FEATURES));
                     {
-                        emitBoolean(store, shaderTerminateInvocationFeatures, KEY_SHADER_TERMINATE_INVOCATION);
+                        emitBoolean(
+                                store,
+                                shaderTerminateInvocationFeatures,
+                                KEY_SHADER_TERMINATE_INVOCATION);
                     }
                     store.endGroup();
 
-
-                    JSONObject subgroupSizeControlFeatures = device.getJSONObject(KEY_SUBGROUP_SIZE_CONTROL_FEATURES);
+                    JSONObject subgroupSizeControlFeatures =
+                            device.getJSONObject(KEY_SUBGROUP_SIZE_CONTROL_FEATURES);
                     store.startGroup(getConvertedName(KEY_SUBGROUP_SIZE_CONTROL_FEATURES));
                     {
                         emitBoolean(store, subgroupSizeControlFeatures, KEY_SUBGROUP_SIZE_CONTROL);
@@ -1263,238 +2003,325 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     }
                     store.endGroup();
 
-
-                    JSONObject subgroupSizeControlProperties = device.getJSONObject(KEY_SUBGROUP_SIZE_CONTROL_PROPERTIES);
+                    JSONObject subgroupSizeControlProperties =
+                            device.getJSONObject(KEY_SUBGROUP_SIZE_CONTROL_PROPERTIES);
                     store.startGroup(getConvertedName(KEY_SUBGROUP_SIZE_CONTROL_PROPERTIES));
                     {
                         emitLong(store, subgroupSizeControlProperties, KEY_MIN_SUBGROUP_SIZE);
                         emitLong(store, subgroupSizeControlProperties, KEY_MAX_SUBGROUP_SIZE);
-                        emitLong(store, subgroupSizeControlProperties, KEY_MAX_COMPUTE_WORKGROUP_SUBGROUPS);
-                        emitLong(store, subgroupSizeControlProperties, KEY_REQUIRED_SUBGROUP_SIZE_STAGES);
+                        emitLong(
+                                store,
+                                subgroupSizeControlProperties,
+                                KEY_MAX_COMPUTE_WORKGROUP_SUBGROUPS);
+                        emitLong(
+                                store,
+                                subgroupSizeControlProperties,
+                                KEY_REQUIRED_SUBGROUP_SIZE_STAGES);
                     }
                     store.endGroup();
 
-
-                    JSONObject synchronization2Features = device.getJSONObject(KEY_SYNCHRONIZATION_2_FEATURES);
+                    JSONObject synchronization2Features =
+                            device.getJSONObject(KEY_SYNCHRONIZATION_2_FEATURES);
                     store.startGroup(getConvertedName(KEY_SYNCHRONIZATION_2_FEATURES));
                     {
                         emitBoolean(store, synchronization2Features, KEY_SYNCHRONIZATION2);
                     }
                     store.endGroup();
 
-
-                    JSONObject texelBufferAlignmentProperties = device.getJSONObject(KEY_TEXEL_BUFFER_ALIGNMENT_PROPERTIES);
+                    JSONObject texelBufferAlignmentProperties =
+                            device.getJSONObject(KEY_TEXEL_BUFFER_ALIGNMENT_PROPERTIES);
                     store.startGroup(getConvertedName(KEY_TEXEL_BUFFER_ALIGNMENT_PROPERTIES));
                     {
-                        emitString(store, texelBufferAlignmentProperties, KEY_STORAGE_TEXEL_BUFFER_OFFSET_ALIGNMENT_BYTES);
-                        emitBoolean(store, texelBufferAlignmentProperties, KEY_STORAGE_TEXEL_BUFFER_OFFSET_SINGLE_TEXEL_ALIGNMENT);
-                        emitString(store, texelBufferAlignmentProperties, KEY_UNIFORM_TEXEL_BUFFER_OFFSET_ALIGNMENT_BYTES);
-                        emitBoolean(store, texelBufferAlignmentProperties, KEY_UNIFORM_TEXEL_BUFFER_OFFSET_SINGLE_TEXEL_ALIGNMENT);
+                        emitString(
+                                store,
+                                texelBufferAlignmentProperties,
+                                KEY_STORAGE_TEXEL_BUFFER_OFFSET_ALIGNMENT_BYTES);
+                        emitBoolean(
+                                store,
+                                texelBufferAlignmentProperties,
+                                KEY_STORAGE_TEXEL_BUFFER_OFFSET_SINGLE_TEXEL_ALIGNMENT);
+                        emitString(
+                                store,
+                                texelBufferAlignmentProperties,
+                                KEY_UNIFORM_TEXEL_BUFFER_OFFSET_ALIGNMENT_BYTES);
+                        emitBoolean(
+                                store,
+                                texelBufferAlignmentProperties,
+                                KEY_UNIFORM_TEXEL_BUFFER_OFFSET_SINGLE_TEXEL_ALIGNMENT);
                     }
                     store.endGroup();
 
-
-                    JSONObject textureCompressionAstchdrFeatures = device.getJSONObject(KEY_TEXTURE_COMPRESSION_ASTCHDR_FEATURES);
+                    JSONObject textureCompressionAstchdrFeatures =
+                            device.getJSONObject(KEY_TEXTURE_COMPRESSION_ASTCHDR_FEATURES);
                     store.startGroup(getConvertedName(KEY_TEXTURE_COMPRESSION_ASTCHDR_FEATURES));
                     {
-                        emitBoolean(store, textureCompressionAstchdrFeatures, KEY_TEXTURE_COMPRESSION_ASTC_HDR);
+                        emitBoolean(
+                                store,
+                                textureCompressionAstchdrFeatures,
+                                KEY_TEXTURE_COMPRESSION_ASTC_HDR);
                     }
                     store.endGroup();
 
-
-                    JSONObject zeroInitializeWorkgroupMemoryFeatures = device.getJSONObject(KEY_ZERO_INITIALIZE_WORKGROUP_MEMORY_FEATURES);
-                    store.startGroup(getConvertedName(KEY_ZERO_INITIALIZE_WORKGROUP_MEMORY_FEATURES));
+                    JSONObject zeroInitializeWorkgroupMemoryFeatures =
+                            device.getJSONObject(KEY_ZERO_INITIALIZE_WORKGROUP_MEMORY_FEATURES);
+                    store.startGroup(
+                            getConvertedName(KEY_ZERO_INITIALIZE_WORKGROUP_MEMORY_FEATURES));
                     {
-                        emitBoolean(store, zeroInitializeWorkgroupMemoryFeatures, KEY_SHADER_ZERO_INITIALIZE_WORKGROUP_MEMORY);
+                        emitBoolean(
+                                store,
+                                zeroInitializeWorkgroupMemoryFeatures,
+                                KEY_SHADER_ZERO_INITIALIZE_WORKGROUP_MEMORY);
                     }
                     store.endGroup();
-
-
                 }
                 if (properties.getLong(KEY_API_VERSION) >= VK_API_VERSION_1_4) {
-                    JSONObject dynamicRenderingLocalReadFeatures = device.getJSONObject(KEY_DYNAMIC_RENDERING_LOCAL_READ_FEATURES);
+                    JSONObject dynamicRenderingLocalReadFeatures =
+                            device.getJSONObject(KEY_DYNAMIC_RENDERING_LOCAL_READ_FEATURES);
                     store.startGroup(getConvertedName(KEY_DYNAMIC_RENDERING_LOCAL_READ_FEATURES));
                     {
-                        emitBoolean(store, dynamicRenderingLocalReadFeatures, KEY_DYNAMIC_RENDERING_LOCAL_READ);
+                        emitBoolean(
+                                store,
+                                dynamicRenderingLocalReadFeatures,
+                                KEY_DYNAMIC_RENDERING_LOCAL_READ);
                     }
                     store.endGroup();
 
-
-                    JSONObject globalPriorityQueryFeatures = device.getJSONObject(KEY_GLOBAL_PRIORITY_QUERY_FEATURES);
+                    JSONObject globalPriorityQueryFeatures =
+                            device.getJSONObject(KEY_GLOBAL_PRIORITY_QUERY_FEATURES);
                     store.startGroup(getConvertedName(KEY_GLOBAL_PRIORITY_QUERY_FEATURES));
                     {
                         emitBoolean(store, globalPriorityQueryFeatures, KEY_GLOBAL_PRIORITY_QUERY);
                     }
                     store.endGroup();
 
-
-                    JSONObject hostImageCopyFeatures = device.getJSONObject(KEY_HOST_IMAGE_COPY_FEATURES);
+                    JSONObject hostImageCopyFeatures =
+                            device.getJSONObject(KEY_HOST_IMAGE_COPY_FEATURES);
                     store.startGroup(getConvertedName(KEY_HOST_IMAGE_COPY_FEATURES));
                     {
                         emitBoolean(store, hostImageCopyFeatures, KEY_HOST_IMAGE_COPY);
                     }
                     store.endGroup();
 
-
-                    JSONObject hostImageCopyProperties = device.getJSONObject(KEY_HOST_IMAGE_COPY_PROPERTIES);
+                    JSONObject hostImageCopyProperties =
+                            device.getJSONObject(KEY_HOST_IMAGE_COPY_PROPERTIES);
                     store.startGroup(getConvertedName(KEY_HOST_IMAGE_COPY_PROPERTIES));
                     {
                         emitLong(store, hostImageCopyProperties, KEY_COPY_SRC_LAYOUT_COUNT);
                         emitLongArray(store, hostImageCopyProperties, KEY_P_COPY_SRC_LAYOUTS);
                         emitLong(store, hostImageCopyProperties, KEY_COPY_DST_LAYOUT_COUNT);
                         emitLongArray(store, hostImageCopyProperties, KEY_P_COPY_DST_LAYOUTS);
-                        emitLongArray(store, hostImageCopyProperties, KEY_OPTIMAL_TILING_LAYOUT_UUID);
-                        emitBoolean(store, hostImageCopyProperties, KEY_IDENTICAL_MEMORY_TYPE_REQUIREMENTS);
+                        emitLongArray(
+                                store, hostImageCopyProperties, KEY_OPTIMAL_TILING_LAYOUT_UUID);
+                        emitBoolean(
+                                store,
+                                hostImageCopyProperties,
+                                KEY_IDENTICAL_MEMORY_TYPE_REQUIREMENTS);
                     }
                     store.endGroup();
 
-
-                    JSONObject indexTypeUint8Features = device.getJSONObject(KEY_INDEX_TYPE_UINT_8_FEATURES);
+                    JSONObject indexTypeUint8Features =
+                            device.getJSONObject(KEY_INDEX_TYPE_UINT_8_FEATURES);
                     store.startGroup(getConvertedName(KEY_INDEX_TYPE_UINT_8_FEATURES));
                     {
                         emitBoolean(store, indexTypeUint8Features, KEY_INDEX_TYPE_UINT8);
                     }
                     store.endGroup();
 
-
-                    JSONObject lineRasterizationFeatures = device.getJSONObject(KEY_LINE_RASTERIZATION_FEATURES);
+                    JSONObject lineRasterizationFeatures =
+                            device.getJSONObject(KEY_LINE_RASTERIZATION_FEATURES);
                     store.startGroup(getConvertedName(KEY_LINE_RASTERIZATION_FEATURES));
                     {
                         emitBoolean(store, lineRasterizationFeatures, KEY_RECTANGULAR_LINES);
                         emitBoolean(store, lineRasterizationFeatures, KEY_BRESENHAM_LINES);
                         emitBoolean(store, lineRasterizationFeatures, KEY_SMOOTH_LINES);
-                        emitBoolean(store, lineRasterizationFeatures, KEY_STIPPLED_RECTANGULAR_LINES);
+                        emitBoolean(
+                                store, lineRasterizationFeatures, KEY_STIPPLED_RECTANGULAR_LINES);
                         emitBoolean(store, lineRasterizationFeatures, KEY_STIPPLED_BRESENHAM_LINES);
                         emitBoolean(store, lineRasterizationFeatures, KEY_STIPPLED_SMOOTH_LINES);
                     }
                     store.endGroup();
 
-
-                    JSONObject lineRasterizationProperties = device.getJSONObject(KEY_LINE_RASTERIZATION_PROPERTIES);
+                    JSONObject lineRasterizationProperties =
+                            device.getJSONObject(KEY_LINE_RASTERIZATION_PROPERTIES);
                     store.startGroup(getConvertedName(KEY_LINE_RASTERIZATION_PROPERTIES));
                     {
-                        emitLong(store, lineRasterizationProperties, KEY_LINE_SUB_PIXEL_PRECISION_BITS);
+                        emitLong(
+                                store,
+                                lineRasterizationProperties,
+                                KEY_LINE_SUB_PIXEL_PRECISION_BITS);
                     }
                     store.endGroup();
 
-
-                    JSONObject maintenance5Features = device.getJSONObject(KEY_MAINTENANCE_5_FEATURES);
+                    JSONObject maintenance5Features =
+                            device.getJSONObject(KEY_MAINTENANCE_5_FEATURES);
                     store.startGroup(getConvertedName(KEY_MAINTENANCE_5_FEATURES));
                     {
                         emitBoolean(store, maintenance5Features, KEY_MAINTENANCE5);
                     }
                     store.endGroup();
 
-
-                    JSONObject maintenance5Properties = device.getJSONObject(KEY_MAINTENANCE_5_PROPERTIES);
+                    JSONObject maintenance5Properties =
+                            device.getJSONObject(KEY_MAINTENANCE_5_PROPERTIES);
                     store.startGroup(getConvertedName(KEY_MAINTENANCE_5_PROPERTIES));
                     {
-                        emitBoolean(store, maintenance5Properties, KEY_EARLY_FRAGMENT_MULTISAMPLE_COVERAGE_AFTER_SAMPLE_COUNTING);
-                        emitBoolean(store, maintenance5Properties, KEY_EARLY_FRAGMENT_SAMPLE_MASK_TEST_BEFORE_SAMPLE_COUNTING);
-                        emitBoolean(store, maintenance5Properties, KEY_DEPTH_STENCIL_SWIZZLE_ONE_SUPPORT);
+                        emitBoolean(
+                                store,
+                                maintenance5Properties,
+                                KEY_EARLY_FRAGMENT_MULTISAMPLE_COVERAGE_AFTER_SAMPLE_COUNTING);
+                        emitBoolean(
+                                store,
+                                maintenance5Properties,
+                                KEY_EARLY_FRAGMENT_SAMPLE_MASK_TEST_BEFORE_SAMPLE_COUNTING);
+                        emitBoolean(
+                                store,
+                                maintenance5Properties,
+                                KEY_DEPTH_STENCIL_SWIZZLE_ONE_SUPPORT);
                         emitBoolean(store, maintenance5Properties, KEY_POLYGON_MODE_POINT_SIZE);
-                        emitBoolean(store, maintenance5Properties, KEY_NON_STRICT_SINGLE_PIXEL_WIDE_LINES_USE_PARALLELOGRAM);
-                        emitBoolean(store, maintenance5Properties, KEY_NON_STRICT_WIDE_LINES_USE_PARALLELOGRAM);
+                        emitBoolean(
+                                store,
+                                maintenance5Properties,
+                                KEY_NON_STRICT_SINGLE_PIXEL_WIDE_LINES_USE_PARALLELOGRAM);
+                        emitBoolean(
+                                store,
+                                maintenance5Properties,
+                                KEY_NON_STRICT_WIDE_LINES_USE_PARALLELOGRAM);
                     }
                     store.endGroup();
 
-
-                    JSONObject maintenance6Features = device.getJSONObject(KEY_MAINTENANCE_6_FEATURES);
+                    JSONObject maintenance6Features =
+                            device.getJSONObject(KEY_MAINTENANCE_6_FEATURES);
                     store.startGroup(getConvertedName(KEY_MAINTENANCE_6_FEATURES));
                     {
                         emitBoolean(store, maintenance6Features, KEY_MAINTENANCE6);
                     }
                     store.endGroup();
 
-
-                    JSONObject maintenance6Properties = device.getJSONObject(KEY_MAINTENANCE_6_PROPERTIES);
+                    JSONObject maintenance6Properties =
+                            device.getJSONObject(KEY_MAINTENANCE_6_PROPERTIES);
                     store.startGroup(getConvertedName(KEY_MAINTENANCE_6_PROPERTIES));
                     {
-                        emitBoolean(store, maintenance6Properties, KEY_BLOCK_TEXEL_VIEW_COMPATIBLE_MULTIPLE_LAYERS);
-                        emitLong(store, maintenance6Properties, KEY_MAX_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_COUNT);
-                        emitBoolean(store, maintenance6Properties, KEY_FRAGMENT_SHADING_RATE_CLAMP_COMBINER_INPUTS);
+                        emitBoolean(
+                                store,
+                                maintenance6Properties,
+                                KEY_BLOCK_TEXEL_VIEW_COMPATIBLE_MULTIPLE_LAYERS);
+                        emitLong(
+                                store,
+                                maintenance6Properties,
+                                KEY_MAX_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_COUNT);
+                        emitBoolean(
+                                store,
+                                maintenance6Properties,
+                                KEY_FRAGMENT_SHADING_RATE_CLAMP_COMBINER_INPUTS);
                     }
                     store.endGroup();
 
-
-                    JSONObject pipelineProtectedAccessFeatures = device.getJSONObject(KEY_PIPELINE_PROTECTED_ACCESS_FEATURES);
+                    JSONObject pipelineProtectedAccessFeatures =
+                            device.getJSONObject(KEY_PIPELINE_PROTECTED_ACCESS_FEATURES);
                     store.startGroup(getConvertedName(KEY_PIPELINE_PROTECTED_ACCESS_FEATURES));
                     {
-                        emitBoolean(store, pipelineProtectedAccessFeatures, KEY_PIPELINE_PROTECTED_ACCESS);
+                        emitBoolean(
+                                store,
+                                pipelineProtectedAccessFeatures,
+                                KEY_PIPELINE_PROTECTED_ACCESS);
                     }
                     store.endGroup();
 
-
-                    JSONObject pipelineRobustnessFeatures = device.getJSONObject(KEY_PIPELINE_ROBUSTNESS_FEATURES);
+                    JSONObject pipelineRobustnessFeatures =
+                            device.getJSONObject(KEY_PIPELINE_ROBUSTNESS_FEATURES);
                     store.startGroup(getConvertedName(KEY_PIPELINE_ROBUSTNESS_FEATURES));
                     {
                         emitBoolean(store, pipelineRobustnessFeatures, KEY_PIPELINE_ROBUSTNESS);
                     }
                     store.endGroup();
 
-
-                    JSONObject pipelineRobustnessProperties = device.getJSONObject(KEY_PIPELINE_ROBUSTNESS_PROPERTIES);
+                    JSONObject pipelineRobustnessProperties =
+                            device.getJSONObject(KEY_PIPELINE_ROBUSTNESS_PROPERTIES);
                     store.startGroup(getConvertedName(KEY_PIPELINE_ROBUSTNESS_PROPERTIES));
                     {
-                        emitLong(store, pipelineRobustnessProperties, KEY_DEFAULT_ROBUSTNESS_STORAGE_BUFFERS);
-                        emitLong(store, pipelineRobustnessProperties, KEY_DEFAULT_ROBUSTNESS_UNIFORM_BUFFERS);
-                        emitLong(store, pipelineRobustnessProperties, KEY_DEFAULT_ROBUSTNESS_VERTEX_INPUTS);
-                        emitLong(store, pipelineRobustnessProperties, KEY_DEFAULT_ROBUSTNESS_IMAGES);
+                        emitLong(
+                                store,
+                                pipelineRobustnessProperties,
+                                KEY_DEFAULT_ROBUSTNESS_STORAGE_BUFFERS);
+                        emitLong(
+                                store,
+                                pipelineRobustnessProperties,
+                                KEY_DEFAULT_ROBUSTNESS_UNIFORM_BUFFERS);
+                        emitLong(
+                                store,
+                                pipelineRobustnessProperties,
+                                KEY_DEFAULT_ROBUSTNESS_VERTEX_INPUTS);
+                        emitLong(
+                                store, pipelineRobustnessProperties, KEY_DEFAULT_ROBUSTNESS_IMAGES);
                     }
                     store.endGroup();
 
-
-                    JSONObject pushDescriptorProperties = device.getJSONObject(KEY_PUSH_DESCRIPTOR_PROPERTIES);
+                    JSONObject pushDescriptorProperties =
+                            device.getJSONObject(KEY_PUSH_DESCRIPTOR_PROPERTIES);
                     store.startGroup(getConvertedName(KEY_PUSH_DESCRIPTOR_PROPERTIES));
                     {
                         emitLong(store, pushDescriptorProperties, KEY_MAX_PUSH_DESCRIPTORS);
                     }
                     store.endGroup();
 
-
-                    JSONObject shaderExpectAssumeFeatures = device.getJSONObject(KEY_SHADER_EXPECT_ASSUME_FEATURES);
+                    JSONObject shaderExpectAssumeFeatures =
+                            device.getJSONObject(KEY_SHADER_EXPECT_ASSUME_FEATURES);
                     store.startGroup(getConvertedName(KEY_SHADER_EXPECT_ASSUME_FEATURES));
                     {
                         emitBoolean(store, shaderExpectAssumeFeatures, KEY_SHADER_EXPECT_ASSUME);
                     }
                     store.endGroup();
 
-
-                    JSONObject shaderFloatControls2Features = device.getJSONObject(KEY_SHADER_FLOAT_CONTROLS_2_FEATURES);
+                    JSONObject shaderFloatControls2Features =
+                            device.getJSONObject(KEY_SHADER_FLOAT_CONTROLS_2_FEATURES);
                     store.startGroup(getConvertedName(KEY_SHADER_FLOAT_CONTROLS_2_FEATURES));
                     {
-                        emitBoolean(store, shaderFloatControls2Features, KEY_SHADER_FLOAT_CONTROLS2);
+                        emitBoolean(
+                                store, shaderFloatControls2Features, KEY_SHADER_FLOAT_CONTROLS2);
                     }
                     store.endGroup();
 
-
-                    JSONObject shaderSubgroupRotateFeatures = device.getJSONObject(KEY_SHADER_SUBGROUP_ROTATE_FEATURES);
+                    JSONObject shaderSubgroupRotateFeatures =
+                            device.getJSONObject(KEY_SHADER_SUBGROUP_ROTATE_FEATURES);
                     store.startGroup(getConvertedName(KEY_SHADER_SUBGROUP_ROTATE_FEATURES));
                     {
-                        emitBoolean(store, shaderSubgroupRotateFeatures, KEY_SHADER_SUBGROUP_ROTATE);
-                        emitBoolean(store, shaderSubgroupRotateFeatures, KEY_SHADER_SUBGROUP_ROTATE_CLUSTERED);
+                        emitBoolean(
+                                store, shaderSubgroupRotateFeatures, KEY_SHADER_SUBGROUP_ROTATE);
+                        emitBoolean(
+                                store,
+                                shaderSubgroupRotateFeatures,
+                                KEY_SHADER_SUBGROUP_ROTATE_CLUSTERED);
                     }
                     store.endGroup();
 
-
-                    JSONObject vertexAttributeDivisorFeatures = device.getJSONObject(KEY_VERTEX_ATTRIBUTE_DIVISOR_FEATURES);
+                    JSONObject vertexAttributeDivisorFeatures =
+                            device.getJSONObject(KEY_VERTEX_ATTRIBUTE_DIVISOR_FEATURES);
                     store.startGroup(getConvertedName(KEY_VERTEX_ATTRIBUTE_DIVISOR_FEATURES));
                     {
-                        emitBoolean(store, vertexAttributeDivisorFeatures, KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_DIVISOR);
-                        emitBoolean(store, vertexAttributeDivisorFeatures, KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_ZERO_DIVISOR);
+                        emitBoolean(
+                                store,
+                                vertexAttributeDivisorFeatures,
+                                KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_DIVISOR);
+                        emitBoolean(
+                                store,
+                                vertexAttributeDivisorFeatures,
+                                KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_ZERO_DIVISOR);
                     }
                     store.endGroup();
 
-
-                    JSONObject vertexAttributeDivisorProperties = device.getJSONObject(KEY_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES);
+                    JSONObject vertexAttributeDivisorProperties =
+                            device.getJSONObject(KEY_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES);
                     store.startGroup(getConvertedName(KEY_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES));
                     {
-                        emitLong(store, vertexAttributeDivisorProperties, KEY_MAX_VERTEX_ATTRIB_DIVISOR);
-                        emitBoolean(store, vertexAttributeDivisorProperties, KEY_SUPPORTS_NON_ZERO_FIRST_INSTANCE);
+                        emitLong(
+                                store,
+                                vertexAttributeDivisorProperties,
+                                KEY_MAX_VERTEX_ATTRIB_DIVISOR);
+                        emitBoolean(
+                                store,
+                                vertexAttributeDivisorProperties,
+                                KEY_SUPPORTS_NON_ZERO_FIRST_INSTANCE);
                     }
                     store.endGroup();
-
-
                 }
             }
             store.endGroup();
@@ -1528,18 +2355,18 @@ public final class VulkanDeviceInfo extends DeviceInfo {
 
     private static void emitInstanceApiVersion(DeviceInfoStore store, JSONObject parent)
             throws IOException, JSONException {
-        store.addResult(getConvertedName(KEY_INSTANCE_API_VERSION), parent.getLong(KEY_API_VERSION));
+        store.addResult(
+                getConvertedName(KEY_INSTANCE_API_VERSION), parent.getLong(KEY_API_VERSION));
     }
 
-
     private static void emitVkAMDAntiLag(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject amdAntiLagFeatures = parent.optJSONObject(KEY_VK_AMD_ANTI_LAG);
         if (amdAntiLagFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_AMD_ANTI_LAG));
             {
-                JSONObject antiLagFeaturesAMD = amdAntiLagFeatures.getJSONObject(KEY_ANTI_LAG_FEATURES_AMD);
+                JSONObject antiLagFeaturesAMD =
+                        amdAntiLagFeatures.getJSONObject(KEY_ANTI_LAG_FEATURES_AMD);
                 store.startGroup(getConvertedName(KEY_ANTI_LAG_FEATURES_AMD));
                 {
                     emitBoolean(store, antiLagFeaturesAMD, KEY_ANTI_LAG);
@@ -1551,13 +2378,14 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkAMDDeviceCoherentMemory(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject amdCoherentMemoryFeatures = parent.optJSONObject(KEY_VK_AMD_DEVICE_COHERENT_MEMORY);
+            throws IOException, JSONException {
+        JSONObject amdCoherentMemoryFeatures =
+                parent.optJSONObject(KEY_VK_AMD_DEVICE_COHERENT_MEMORY);
         if (amdCoherentMemoryFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_AMD_DEVICE_COHERENT_MEMORY));
             {
-                JSONObject coherentMemoryFeaturesAMD = amdCoherentMemoryFeatures.getJSONObject(KEY_COHERENT_MEMORY_FEATURES_AMD);
+                JSONObject coherentMemoryFeaturesAMD =
+                        amdCoherentMemoryFeatures.getJSONObject(KEY_COHERENT_MEMORY_FEATURES_AMD);
                 store.startGroup(getConvertedName(KEY_COHERENT_MEMORY_FEATURES_AMD));
                 {
                     emitBoolean(store, coherentMemoryFeaturesAMD, KEY_DEVICE_COHERENT_MEMORY);
@@ -1569,13 +2397,14 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkAMDShaderCoreProperties(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject amdShaderCoreProperties = parent.optJSONObject(KEY_VK_AMD_SHADER_CORE_PROPERTIES);
+            throws IOException, JSONException {
+        JSONObject amdShaderCoreProperties =
+                parent.optJSONObject(KEY_VK_AMD_SHADER_CORE_PROPERTIES);
         if (amdShaderCoreProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_AMD_SHADER_CORE_PROPERTIES));
             {
-                JSONObject shaderCorePropertiesAMD = amdShaderCoreProperties.getJSONObject(KEY_SHADER_CORE_PROPERTIES_AMD);
+                JSONObject shaderCorePropertiesAMD =
+                        amdShaderCoreProperties.getJSONObject(KEY_SHADER_CORE_PROPERTIES_AMD);
                 store.startGroup(getConvertedName(KEY_SHADER_CORE_PROPERTIES_AMD));
                 {
                     emitLong(store, shaderCorePropertiesAMD, KEY_SHADER_ENGINE_COUNT);
@@ -1600,13 +2429,14 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkAMDShaderCoreProperties2(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject amdShaderCoreProperties2 = parent.optJSONObject(KEY_VK_AMD_SHADER_CORE_PROPERTIES2);
+            throws IOException, JSONException {
+        JSONObject amdShaderCoreProperties2 =
+                parent.optJSONObject(KEY_VK_AMD_SHADER_CORE_PROPERTIES2);
         if (amdShaderCoreProperties2 != null) {
             store.startGroup(getConvertedName(KEY_VK_AMD_SHADER_CORE_PROPERTIES2));
             {
-                JSONObject shaderCoreProperties2AMD = amdShaderCoreProperties2.getJSONObject(KEY_SHADER_CORE_PROPERTIES_2_AMD);
+                JSONObject shaderCoreProperties2AMD =
+                        amdShaderCoreProperties2.getJSONObject(KEY_SHADER_CORE_PROPERTIES_2_AMD);
                 store.startGroup(getConvertedName(KEY_SHADER_CORE_PROPERTIES_2_AMD));
                 {
                     emitLong(store, shaderCoreProperties2AMD, KEY_SHADER_CORE_FEATURES);
@@ -1618,17 +2448,23 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkAMDShaderEarlyAndLateFragmentTests(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject amdShaderEarlyAndLateFragmentTestsFeatures = parent.optJSONObject(KEY_VK_AMD_SHADER_EARLY_AND_LATE_FRAGMENT_TESTS);
+    private static void emitVkAMDShaderEarlyAndLateFragmentTests(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject amdShaderEarlyAndLateFragmentTestsFeatures =
+                parent.optJSONObject(KEY_VK_AMD_SHADER_EARLY_AND_LATE_FRAGMENT_TESTS);
         if (amdShaderEarlyAndLateFragmentTestsFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_AMD_SHADER_EARLY_AND_LATE_FRAGMENT_TESTS));
             {
-                JSONObject shaderEarlyAndLateFragmentTestsFeaturesAMD = amdShaderEarlyAndLateFragmentTestsFeatures.getJSONObject(KEY_SHADER_EARLY_AND_LATE_FRAGMENT_TESTS_FEATURES_AMD);
-                store.startGroup(getConvertedName(KEY_SHADER_EARLY_AND_LATE_FRAGMENT_TESTS_FEATURES_AMD));
+                JSONObject shaderEarlyAndLateFragmentTestsFeaturesAMD =
+                        amdShaderEarlyAndLateFragmentTestsFeatures.getJSONObject(
+                                KEY_SHADER_EARLY_AND_LATE_FRAGMENT_TESTS_FEATURES_AMD);
+                store.startGroup(
+                        getConvertedName(KEY_SHADER_EARLY_AND_LATE_FRAGMENT_TESTS_FEATURES_AMD));
                 {
-                    emitBoolean(store, shaderEarlyAndLateFragmentTestsFeaturesAMD, KEY_SHADER_EARLY_AND_LATE_FRAGMENT_TESTS);
+                    emitBoolean(
+                            store,
+                            shaderEarlyAndLateFragmentTestsFeaturesAMD,
+                            KEY_SHADER_EARLY_AND_LATE_FRAGMENT_TESTS);
                 }
                 store.endGroup();
             }
@@ -1637,24 +2473,40 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkANDROIDExternalFormatResolve(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject androidExternalFormatResolveFeatures = parent.optJSONObject(KEY_VK_ANDROID_EXTERNAL_FORMAT_RESOLVE);
+            throws IOException, JSONException {
+        JSONObject androidExternalFormatResolveFeatures =
+                parent.optJSONObject(KEY_VK_ANDROID_EXTERNAL_FORMAT_RESOLVE);
         if (androidExternalFormatResolveFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_ANDROID_EXTERNAL_FORMAT_RESOLVE));
             {
-                JSONObject externalFormatResolveFeaturesANDROID = androidExternalFormatResolveFeatures.getJSONObject(KEY_EXTERNAL_FORMAT_RESOLVE_FEATURES_ANDROID);
+                JSONObject externalFormatResolveFeaturesANDROID =
+                        androidExternalFormatResolveFeatures.getJSONObject(
+                                KEY_EXTERNAL_FORMAT_RESOLVE_FEATURES_ANDROID);
                 store.startGroup(getConvertedName(KEY_EXTERNAL_FORMAT_RESOLVE_FEATURES_ANDROID));
                 {
-                    emitBoolean(store, externalFormatResolveFeaturesANDROID, KEY_EXTERNAL_FORMAT_RESOLVE);
+                    emitBoolean(
+                            store,
+                            externalFormatResolveFeaturesANDROID,
+                            KEY_EXTERNAL_FORMAT_RESOLVE);
                 }
                 store.endGroup();
-                JSONObject externalFormatResolvePropertiesANDROID = androidExternalFormatResolveFeatures.getJSONObject(KEY_EXTERNAL_FORMAT_RESOLVE_PROPERTIES_ANDROID);
+                JSONObject externalFormatResolvePropertiesANDROID =
+                        androidExternalFormatResolveFeatures.getJSONObject(
+                                KEY_EXTERNAL_FORMAT_RESOLVE_PROPERTIES_ANDROID);
                 store.startGroup(getConvertedName(KEY_EXTERNAL_FORMAT_RESOLVE_PROPERTIES_ANDROID));
                 {
-                    emitBoolean(store, externalFormatResolvePropertiesANDROID, KEY_NULL_COLOR_ATTACHMENT_WITH_EXTERNAL_FORMAT_RESOLVE);
-                    emitLong(store, externalFormatResolvePropertiesANDROID, KEY_EXTERNAL_FORMAT_RESOLVE_CHROMA_OFFSET_X);
-                    emitLong(store, externalFormatResolvePropertiesANDROID, KEY_EXTERNAL_FORMAT_RESOLVE_CHROMA_OFFSET_Y);
+                    emitBoolean(
+                            store,
+                            externalFormatResolvePropertiesANDROID,
+                            KEY_NULL_COLOR_ATTACHMENT_WITH_EXTERNAL_FORMAT_RESOLVE);
+                    emitLong(
+                            store,
+                            externalFormatResolvePropertiesANDROID,
+                            KEY_EXTERNAL_FORMAT_RESOLVE_CHROMA_OFFSET_X);
+                    emitLong(
+                            store,
+                            externalFormatResolvePropertiesANDROID,
+                            KEY_EXTERNAL_FORMAT_RESOLVE_CHROMA_OFFSET_Y);
                 }
                 store.endGroup();
             }
@@ -1663,18 +2515,19 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkARMDataGraph(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject armDataGraphFeatures = parent.optJSONObject(KEY_VK_ARM_DATA_GRAPH);
         if (armDataGraphFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_ARM_DATA_GRAPH));
             {
-                JSONObject dataGraphFeaturesARM = armDataGraphFeatures.getJSONObject(KEY_DATA_GRAPH_FEATURES_ARM);
+                JSONObject dataGraphFeaturesARM =
+                        armDataGraphFeatures.getJSONObject(KEY_DATA_GRAPH_FEATURES_ARM);
                 store.startGroup(getConvertedName(KEY_DATA_GRAPH_FEATURES_ARM));
                 {
                     emitBoolean(store, dataGraphFeaturesARM, KEY_DATA_GRAPH);
                     emitBoolean(store, dataGraphFeaturesARM, KEY_DATA_GRAPH_UPDATE_AFTER_BIND);
-                    emitBoolean(store, dataGraphFeaturesARM, KEY_DATA_GRAPH_SPECIALIZATION_CONSTANTS);
+                    emitBoolean(
+                            store, dataGraphFeaturesARM, KEY_DATA_GRAPH_SPECIALIZATION_CONSTANTS);
                     emitBoolean(store, dataGraphFeaturesARM, KEY_DATA_GRAPH_DESCRIPTOR_BUFFER);
                     emitBoolean(store, dataGraphFeaturesARM, KEY_DATA_GRAPH_SHADER_MODULE);
                 }
@@ -1685,13 +2538,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkARMFormatPack(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject armFormatPackFeatures = parent.optJSONObject(KEY_VK_ARM_FORMAT_PACK);
         if (armFormatPackFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_ARM_FORMAT_PACK));
             {
-                JSONObject formatPackFeaturesARM = armFormatPackFeatures.getJSONObject(KEY_FORMAT_PACK_FEATURES_ARM);
+                JSONObject formatPackFeaturesARM =
+                        armFormatPackFeatures.getJSONObject(KEY_FORMAT_PACK_FEATURES_ARM);
                 store.startGroup(getConvertedName(KEY_FORMAT_PACK_FEATURES_ARM));
                 {
                     emitBoolean(store, formatPackFeaturesARM, KEY_FORMAT_PACK);
@@ -1702,33 +2555,52 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkARMPerformanceCountersByRegion(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject armPerformanceCountersByRegionFeatures = parent.optJSONObject(KEY_VK_ARM_PERFORMANCE_COUNTERS_BY_REGION);
+    private static void emitVkARMPerformanceCountersByRegion(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject armPerformanceCountersByRegionFeatures =
+                parent.optJSONObject(KEY_VK_ARM_PERFORMANCE_COUNTERS_BY_REGION);
         if (armPerformanceCountersByRegionFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_ARM_PERFORMANCE_COUNTERS_BY_REGION));
             {
-                JSONObject performanceCountersByRegionFeaturesARM = armPerformanceCountersByRegionFeatures.getJSONObject(KEY_PERFORMANCE_COUNTERS_BY_REGION_FEATURES_ARM);
+                JSONObject performanceCountersByRegionFeaturesARM =
+                        armPerformanceCountersByRegionFeatures.getJSONObject(
+                                KEY_PERFORMANCE_COUNTERS_BY_REGION_FEATURES_ARM);
                 store.startGroup(getConvertedName(KEY_PERFORMANCE_COUNTERS_BY_REGION_FEATURES_ARM));
                 {
-                    emitBoolean(store, performanceCountersByRegionFeaturesARM, KEY_PERFORMANCE_COUNTERS_BY_REGION);
+                    emitBoolean(
+                            store,
+                            performanceCountersByRegionFeaturesARM,
+                            KEY_PERFORMANCE_COUNTERS_BY_REGION);
                 }
                 store.endGroup();
-                JSONObject performanceCountersByRegionPropertiesARM = armPerformanceCountersByRegionFeatures.getJSONObject(KEY_PERFORMANCE_COUNTERS_BY_REGION_PROPERTIES_ARM);
-                store.startGroup(getConvertedName(KEY_PERFORMANCE_COUNTERS_BY_REGION_PROPERTIES_ARM));
+                JSONObject performanceCountersByRegionPropertiesARM =
+                        armPerformanceCountersByRegionFeatures.getJSONObject(
+                                KEY_PERFORMANCE_COUNTERS_BY_REGION_PROPERTIES_ARM);
+                store.startGroup(
+                        getConvertedName(KEY_PERFORMANCE_COUNTERS_BY_REGION_PROPERTIES_ARM));
                 {
-                    emitLong(store, performanceCountersByRegionPropertiesARM, KEY_MAX_PER_REGION_PERFORMANCE_COUNTERS);
-                    JSONObject performanceCounterRegionSize = performanceCountersByRegionPropertiesARM.getJSONObject(KEY_PERFORMANCE_COUNTER_REGION_SIZE);
+                    emitLong(
+                            store,
+                            performanceCountersByRegionPropertiesARM,
+                            KEY_MAX_PER_REGION_PERFORMANCE_COUNTERS);
+                    JSONObject performanceCounterRegionSize =
+                            performanceCountersByRegionPropertiesARM.getJSONObject(
+                                    KEY_PERFORMANCE_COUNTER_REGION_SIZE);
                     store.startGroup(getConvertedName(KEY_PERFORMANCE_COUNTER_REGION_SIZE));
                     {
                         emitLong(store, performanceCounterRegionSize, KEY_WIDTH);
                         emitLong(store, performanceCounterRegionSize, KEY_HEIGHT);
                     }
                     store.endGroup();
-                    emitLong(store, performanceCountersByRegionPropertiesARM, KEY_ROW_STRIDE_ALIGNMENT);
+                    emitLong(
+                            store,
+                            performanceCountersByRegionPropertiesARM,
+                            KEY_ROW_STRIDE_ALIGNMENT);
                     emitLong(store, performanceCountersByRegionPropertiesARM, KEY_REGION_ALIGNMENT);
-                    emitBoolean(store, performanceCountersByRegionPropertiesARM, KEY_IDENTITY_TRANSFORM_ORDER);
+                    emitBoolean(
+                            store,
+                            performanceCountersByRegionPropertiesARM,
+                            KEY_IDENTITY_TRANSFORM_ORDER);
                 }
                 store.endGroup();
             }
@@ -1737,16 +2609,21 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkARMPipelineOpacityMicromap(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject armPipelineOpacityMicromapFeatures = parent.optJSONObject(KEY_VK_ARM_PIPELINE_OPACITY_MICROMAP);
+            throws IOException, JSONException {
+        JSONObject armPipelineOpacityMicromapFeatures =
+                parent.optJSONObject(KEY_VK_ARM_PIPELINE_OPACITY_MICROMAP);
         if (armPipelineOpacityMicromapFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_ARM_PIPELINE_OPACITY_MICROMAP));
             {
-                JSONObject pipelineOpacityMicromapFeaturesARM = armPipelineOpacityMicromapFeatures.getJSONObject(KEY_PIPELINE_OPACITY_MICROMAP_FEATURES_ARM);
+                JSONObject pipelineOpacityMicromapFeaturesARM =
+                        armPipelineOpacityMicromapFeatures.getJSONObject(
+                                KEY_PIPELINE_OPACITY_MICROMAP_FEATURES_ARM);
                 store.startGroup(getConvertedName(KEY_PIPELINE_OPACITY_MICROMAP_FEATURES_ARM));
                 {
-                    emitBoolean(store, pipelineOpacityMicromapFeaturesARM, KEY_PIPELINE_OPACITY_MICROMAP);
+                    emitBoolean(
+                            store,
+                            pipelineOpacityMicromapFeaturesARM,
+                            KEY_PIPELINE_OPACITY_MICROMAP);
                 }
                 store.endGroup();
             }
@@ -1754,19 +2631,31 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkARMRasterizationOrderAttachmentAccess(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject armRasterizationOrderAttachmentAccessFeatures = parent.optJSONObject(KEY_VK_ARM_RASTERIZATION_ORDER_ATTACHMENT_ACCESS);
+    private static void emitVkARMRasterizationOrderAttachmentAccess(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject armRasterizationOrderAttachmentAccessFeatures =
+                parent.optJSONObject(KEY_VK_ARM_RASTERIZATION_ORDER_ATTACHMENT_ACCESS);
         if (armRasterizationOrderAttachmentAccessFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_ARM_RASTERIZATION_ORDER_ATTACHMENT_ACCESS));
             {
-                JSONObject rasterizationOrderAttachmentAccessFeaturesARM = armRasterizationOrderAttachmentAccessFeatures.getJSONObject(KEY_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_FEATURES_ARM);
-                store.startGroup(getConvertedName(KEY_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_FEATURES_ARM));
+                JSONObject rasterizationOrderAttachmentAccessFeaturesARM =
+                        armRasterizationOrderAttachmentAccessFeatures.getJSONObject(
+                                KEY_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_FEATURES_ARM);
+                store.startGroup(
+                        getConvertedName(KEY_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_FEATURES_ARM));
                 {
-                    emitBoolean(store, rasterizationOrderAttachmentAccessFeaturesARM, KEY_RASTERIZATION_ORDER_COLOR_ATTACHMENT_ACCESS);
-                    emitBoolean(store, rasterizationOrderAttachmentAccessFeaturesARM, KEY_RASTERIZATION_ORDER_DEPTH_ATTACHMENT_ACCESS);
-                    emitBoolean(store, rasterizationOrderAttachmentAccessFeaturesARM, KEY_RASTERIZATION_ORDER_STENCIL_ATTACHMENT_ACCESS);
+                    emitBoolean(
+                            store,
+                            rasterizationOrderAttachmentAccessFeaturesARM,
+                            KEY_RASTERIZATION_ORDER_COLOR_ATTACHMENT_ACCESS);
+                    emitBoolean(
+                            store,
+                            rasterizationOrderAttachmentAccessFeaturesARM,
+                            KEY_RASTERIZATION_ORDER_DEPTH_ATTACHMENT_ACCESS);
+                    emitBoolean(
+                            store,
+                            rasterizationOrderAttachmentAccessFeaturesARM,
+                            KEY_RASTERIZATION_ORDER_STENCIL_ATTACHMENT_ACCESS);
                 }
                 store.endGroup();
             }
@@ -1775,22 +2664,28 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkARMRenderPassStriped(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject armRenderPassStripedFeatures = parent.optJSONObject(KEY_VK_ARM_RENDER_PASS_STRIPED);
+            throws IOException, JSONException {
+        JSONObject armRenderPassStripedFeatures =
+                parent.optJSONObject(KEY_VK_ARM_RENDER_PASS_STRIPED);
         if (armRenderPassStripedFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_ARM_RENDER_PASS_STRIPED));
             {
-                JSONObject renderPassStripedFeaturesARM = armRenderPassStripedFeatures.getJSONObject(KEY_RENDER_PASS_STRIPED_FEATURES_ARM);
+                JSONObject renderPassStripedFeaturesARM =
+                        armRenderPassStripedFeatures.getJSONObject(
+                                KEY_RENDER_PASS_STRIPED_FEATURES_ARM);
                 store.startGroup(getConvertedName(KEY_RENDER_PASS_STRIPED_FEATURES_ARM));
                 {
                     emitBoolean(store, renderPassStripedFeaturesARM, KEY_RENDER_PASS_STRIPED);
                 }
                 store.endGroup();
-                JSONObject renderPassStripedPropertiesARM = armRenderPassStripedFeatures.getJSONObject(KEY_RENDER_PASS_STRIPED_PROPERTIES_ARM);
+                JSONObject renderPassStripedPropertiesARM =
+                        armRenderPassStripedFeatures.getJSONObject(
+                                KEY_RENDER_PASS_STRIPED_PROPERTIES_ARM);
                 store.startGroup(getConvertedName(KEY_RENDER_PASS_STRIPED_PROPERTIES_ARM));
                 {
-                    JSONObject renderPassStripeGranularity = renderPassStripedPropertiesARM.getJSONObject(KEY_RENDER_PASS_STRIPE_GRANULARITY);
+                    JSONObject renderPassStripeGranularity =
+                            renderPassStripedPropertiesARM.getJSONObject(
+                                    KEY_RENDER_PASS_STRIPE_GRANULARITY);
                     store.startGroup(getConvertedName(KEY_RENDER_PASS_STRIPE_GRANULARITY));
                     {
                         emitLong(store, renderPassStripeGranularity, KEY_WIDTH);
@@ -1806,22 +2701,27 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkARMSchedulingControls(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject armSchedulingControlsFeatures = parent.optJSONObject(KEY_VK_ARM_SCHEDULING_CONTROLS);
+            throws IOException, JSONException {
+        JSONObject armSchedulingControlsFeatures =
+                parent.optJSONObject(KEY_VK_ARM_SCHEDULING_CONTROLS);
         if (armSchedulingControlsFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_ARM_SCHEDULING_CONTROLS));
             {
-                JSONObject schedulingControlsFeaturesARM = armSchedulingControlsFeatures.getJSONObject(KEY_SCHEDULING_CONTROLS_FEATURES_ARM);
+                JSONObject schedulingControlsFeaturesARM =
+                        armSchedulingControlsFeatures.getJSONObject(
+                                KEY_SCHEDULING_CONTROLS_FEATURES_ARM);
                 store.startGroup(getConvertedName(KEY_SCHEDULING_CONTROLS_FEATURES_ARM));
                 {
                     emitBoolean(store, schedulingControlsFeaturesARM, KEY_SCHEDULING_CONTROLS);
                 }
                 store.endGroup();
-                JSONObject schedulingControlsPropertiesARM = armSchedulingControlsFeatures.getJSONObject(KEY_SCHEDULING_CONTROLS_PROPERTIES_ARM);
+                JSONObject schedulingControlsPropertiesARM =
+                        armSchedulingControlsFeatures.getJSONObject(
+                                KEY_SCHEDULING_CONTROLS_PROPERTIES_ARM);
                 store.startGroup(getConvertedName(KEY_SCHEDULING_CONTROLS_PROPERTIES_ARM));
                 {
-                    emitString(store, schedulingControlsPropertiesARM, KEY_SCHEDULING_CONTROLS_FLAGS);
+                    emitString(
+                            store, schedulingControlsPropertiesARM, KEY_SCHEDULING_CONTROLS_FLAGS);
                 }
                 store.endGroup();
             }
@@ -1830,19 +2730,23 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkARMShaderCoreBuiltins(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject armShaderCoreBuiltinsFeatures = parent.optJSONObject(KEY_VK_ARM_SHADER_CORE_BUILTINS);
+            throws IOException, JSONException {
+        JSONObject armShaderCoreBuiltinsFeatures =
+                parent.optJSONObject(KEY_VK_ARM_SHADER_CORE_BUILTINS);
         if (armShaderCoreBuiltinsFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_ARM_SHADER_CORE_BUILTINS));
             {
-                JSONObject shaderCoreBuiltinsFeaturesARM = armShaderCoreBuiltinsFeatures.getJSONObject(KEY_SHADER_CORE_BUILTINS_FEATURES_ARM);
+                JSONObject shaderCoreBuiltinsFeaturesARM =
+                        armShaderCoreBuiltinsFeatures.getJSONObject(
+                                KEY_SHADER_CORE_BUILTINS_FEATURES_ARM);
                 store.startGroup(getConvertedName(KEY_SHADER_CORE_BUILTINS_FEATURES_ARM));
                 {
                     emitBoolean(store, shaderCoreBuiltinsFeaturesARM, KEY_SHADER_CORE_BUILTINS);
                 }
                 store.endGroup();
-                JSONObject shaderCoreBuiltinsPropertiesARM = armShaderCoreBuiltinsFeatures.getJSONObject(KEY_SHADER_CORE_BUILTINS_PROPERTIES_ARM);
+                JSONObject shaderCoreBuiltinsPropertiesARM =
+                        armShaderCoreBuiltinsFeatures.getJSONObject(
+                                KEY_SHADER_CORE_BUILTINS_PROPERTIES_ARM);
                 store.startGroup(getConvertedName(KEY_SHADER_CORE_BUILTINS_PROPERTIES_ARM));
                 {
                     emitString(store, shaderCoreBuiltinsPropertiesARM, KEY_SHADER_CORE_MASK);
@@ -1856,13 +2760,14 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkARMShaderCoreProperties(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject armShaderCoreProperties = parent.optJSONObject(KEY_VK_ARM_SHADER_CORE_PROPERTIES);
+            throws IOException, JSONException {
+        JSONObject armShaderCoreProperties =
+                parent.optJSONObject(KEY_VK_ARM_SHADER_CORE_PROPERTIES);
         if (armShaderCoreProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_ARM_SHADER_CORE_PROPERTIES));
             {
-                JSONObject shaderCorePropertiesARM = armShaderCoreProperties.getJSONObject(KEY_SHADER_CORE_PROPERTIES_ARM);
+                JSONObject shaderCorePropertiesARM =
+                        armShaderCoreProperties.getJSONObject(KEY_SHADER_CORE_PROPERTIES_ARM);
                 store.startGroup(getConvertedName(KEY_SHADER_CORE_PROPERTIES_ARM));
                 {
                     emitLong(store, shaderCorePropertiesARM, KEY_PIXEL_RATE);
@@ -1876,13 +2781,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkARMTensors(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject armTensorProperties = parent.optJSONObject(KEY_VK_ARM_TENSORS);
         if (armTensorProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_ARM_TENSORS));
             {
-                JSONObject tensorPropertiesARM = armTensorProperties.getJSONObject(KEY_TENSOR_PROPERTIES_ARM);
+                JSONObject tensorPropertiesARM =
+                        armTensorProperties.getJSONObject(KEY_TENSOR_PROPERTIES_ARM);
                 store.startGroup(getConvertedName(KEY_TENSOR_PROPERTIES_ARM));
                 {
                     emitLong(store, tensorPropertiesARM, KEY_MAX_TENSOR_DIMENSION_COUNT);
@@ -1893,36 +2798,72 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     emitLong(store, tensorPropertiesARM, KEY_MAX_TENSOR_SHADER_ACCESS_ARRAY_LENGTH);
                     emitLong(store, tensorPropertiesARM, KEY_MAX_TENSOR_SHADER_ACCESS_SIZE);
                     emitLong(store, tensorPropertiesARM, KEY_MAX_DESCRIPTOR_SET_STORAGE_TENSORS);
-                    emitLong(store, tensorPropertiesARM, KEY_MAX_PER_STAGE_DESCRIPTOR_SET_STORAGE_TENSORS);
-                    emitLong(store, tensorPropertiesARM, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_STORAGE_TENSORS);
-                    emitLong(store, tensorPropertiesARM, KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_STORAGE_TENSORS);
-                    emitBoolean(store, tensorPropertiesARM, KEY_SHADER_STORAGE_TENSOR_ARRAY_NON_UNIFORM_INDEXING_NATIVE);
+                    emitLong(
+                            store,
+                            tensorPropertiesARM,
+                            KEY_MAX_PER_STAGE_DESCRIPTOR_SET_STORAGE_TENSORS);
+                    emitLong(
+                            store,
+                            tensorPropertiesARM,
+                            KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_STORAGE_TENSORS);
+                    emitLong(
+                            store,
+                            tensorPropertiesARM,
+                            KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_STORAGE_TENSORS);
+                    emitBoolean(
+                            store,
+                            tensorPropertiesARM,
+                            KEY_SHADER_STORAGE_TENSOR_ARRAY_NON_UNIFORM_INDEXING_NATIVE);
                     emitLong(store, tensorPropertiesARM, KEY_SHADER_TENSOR_SUPPORTED_STAGES);
                 }
                 store.endGroup();
-                JSONObject tensorFeaturesARM = armTensorProperties.getJSONObject(KEY_TENSOR_FEATURES_ARM);
+                JSONObject tensorFeaturesARM =
+                        armTensorProperties.getJSONObject(KEY_TENSOR_FEATURES_ARM);
                 store.startGroup(getConvertedName(KEY_TENSOR_FEATURES_ARM));
                 {
                     emitBoolean(store, tensorFeaturesARM, KEY_TENSOR_NON_PACKED);
                     emitBoolean(store, tensorFeaturesARM, KEY_SHADER_TENSOR_ACCESS);
-                    emitBoolean(store, tensorFeaturesARM, KEY_SHADER_STORAGE_TENSOR_ARRAY_DYNAMIC_INDEXING);
-                    emitBoolean(store, tensorFeaturesARM, KEY_SHADER_STORAGE_TENSOR_ARRAY_NON_UNIFORM_INDEXING);
-                    emitBoolean(store, tensorFeaturesARM, KEY_DESCRIPTOR_BINDING_STORAGE_TENSOR_UPDATE_AFTER_BIND);
+                    emitBoolean(
+                            store,
+                            tensorFeaturesARM,
+                            KEY_SHADER_STORAGE_TENSOR_ARRAY_DYNAMIC_INDEXING);
+                    emitBoolean(
+                            store,
+                            tensorFeaturesARM,
+                            KEY_SHADER_STORAGE_TENSOR_ARRAY_NON_UNIFORM_INDEXING);
+                    emitBoolean(
+                            store,
+                            tensorFeaturesARM,
+                            KEY_DESCRIPTOR_BINDING_STORAGE_TENSOR_UPDATE_AFTER_BIND);
                     emitBoolean(store, tensorFeaturesARM, KEY_TENSORS);
                 }
                 store.endGroup();
-                JSONObject descriptorBufferTensorFeaturesARM = armTensorProperties.getJSONObject(KEY_DESCRIPTOR_BUFFER_TENSOR_FEATURES_ARM);
+                JSONObject descriptorBufferTensorFeaturesARM =
+                        armTensorProperties.getJSONObject(
+                                KEY_DESCRIPTOR_BUFFER_TENSOR_FEATURES_ARM);
                 store.startGroup(getConvertedName(KEY_DESCRIPTOR_BUFFER_TENSOR_FEATURES_ARM));
                 {
-                    emitBoolean(store, descriptorBufferTensorFeaturesARM, KEY_DESCRIPTOR_BUFFER_TENSOR_DESCRIPTORS);
+                    emitBoolean(
+                            store,
+                            descriptorBufferTensorFeaturesARM,
+                            KEY_DESCRIPTOR_BUFFER_TENSOR_DESCRIPTORS);
                 }
                 store.endGroup();
-                JSONObject descriptorBufferTensorPropertiesARM = armTensorProperties.getJSONObject(KEY_DESCRIPTOR_BUFFER_TENSOR_PROPERTIES_ARM);
+                JSONObject descriptorBufferTensorPropertiesARM =
+                        armTensorProperties.getJSONObject(
+                                KEY_DESCRIPTOR_BUFFER_TENSOR_PROPERTIES_ARM);
                 store.startGroup(getConvertedName(KEY_DESCRIPTOR_BUFFER_TENSOR_PROPERTIES_ARM));
                 {
-                    emitString(store, descriptorBufferTensorPropertiesARM, KEY_TENSOR_CAPTURE_REPLAY_DESCRIPTOR_DATA_SIZE);
-                    emitString(store, descriptorBufferTensorPropertiesARM, KEY_TENSOR_VIEW_CAPTURE_REPLAY_DESCRIPTOR_DATA_SIZE);
-                    emitString(store, descriptorBufferTensorPropertiesARM, KEY_TENSOR_DESCRIPTOR_SIZE);
+                    emitString(
+                            store,
+                            descriptorBufferTensorPropertiesARM,
+                            KEY_TENSOR_CAPTURE_REPLAY_DESCRIPTOR_DATA_SIZE);
+                    emitString(
+                            store,
+                            descriptorBufferTensorPropertiesARM,
+                            KEY_TENSOR_VIEW_CAPTURE_REPLAY_DESCRIPTOR_DATA_SIZE);
+                    emitString(
+                            store, descriptorBufferTensorPropertiesARM, KEY_TENSOR_DESCRIPTOR_SIZE);
                 }
                 store.endGroup();
             }
@@ -1931,13 +2872,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXT4444Formats(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject ext4444FormatsFeatures = parent.optJSONObject(KEY_VK_EXT_4444_FORMATS);
         if (ext4444FormatsFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_4444_FORMATS));
             {
-                JSONObject formats4444FeaturesEXT = ext4444FormatsFeatures.getJSONObject(KEY_FORMATS_4444_FEATURES_EXT);
+                JSONObject formats4444FeaturesEXT =
+                        ext4444FormatsFeatures.getJSONObject(KEY_FORMATS_4444_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_FORMATS_4444_FEATURES_EXT));
                 {
                     emitBoolean(store, formats4444FeaturesEXT, KEY_FORMAT_A_4_R_4_G_4_B_4);
@@ -1950,13 +2891,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTAstcDecodeMode(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject extASTCDecodeFeatures = parent.optJSONObject(KEY_VK_EXT_ASTC_DECODE_MODE);
         if (extASTCDecodeFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_ASTC_DECODE_MODE));
             {
-                JSONObject astcDecodeFeaturesEXT = extASTCDecodeFeatures.getJSONObject(KEY_ASTC_DECODE_FEATURES_EXT);
+                JSONObject astcDecodeFeaturesEXT =
+                        extASTCDecodeFeatures.getJSONObject(KEY_ASTC_DECODE_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_ASTC_DECODE_FEATURES_EXT));
                 {
                     emitBoolean(store, astcDecodeFeaturesEXT, KEY_DECODE_MODE_SHARED_EXPONENT);
@@ -1967,17 +2908,23 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkEXTAttachmentFeedbackLoopDynamicState(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extAttachmentFeedbackLoopDynamicStateFeatures = parent.optJSONObject(KEY_VK_EXT_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE);
+    private static void emitVkEXTAttachmentFeedbackLoopDynamicState(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject extAttachmentFeedbackLoopDynamicStateFeatures =
+                parent.optJSONObject(KEY_VK_EXT_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE);
         if (extAttachmentFeedbackLoopDynamicStateFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE));
             {
-                JSONObject attachmentFeedbackLoopDynamicStateFeaturesEXT = extAttachmentFeedbackLoopDynamicStateFeatures.getJSONObject(KEY_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_FEATURES_EXT);
-                store.startGroup(getConvertedName(KEY_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_FEATURES_EXT));
+                JSONObject attachmentFeedbackLoopDynamicStateFeaturesEXT =
+                        extAttachmentFeedbackLoopDynamicStateFeatures.getJSONObject(
+                                KEY_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_FEATURES_EXT);
+                store.startGroup(
+                        getConvertedName(KEY_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_FEATURES_EXT));
                 {
-                    emitBoolean(store, attachmentFeedbackLoopDynamicStateFeaturesEXT, KEY_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE);
+                    emitBoolean(
+                            store,
+                            attachmentFeedbackLoopDynamicStateFeaturesEXT,
+                            KEY_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE);
                 }
                 store.endGroup();
             }
@@ -1985,17 +2932,23 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkEXTAttachmentFeedbackLoopLayout(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extAttachmentFeedbackLoopLayoutFeatures = parent.optJSONObject(KEY_VK_EXT_ATTACHMENT_FEEDBACK_LOOP_LAYOUT);
+    private static void emitVkEXTAttachmentFeedbackLoopLayout(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject extAttachmentFeedbackLoopLayoutFeatures =
+                parent.optJSONObject(KEY_VK_EXT_ATTACHMENT_FEEDBACK_LOOP_LAYOUT);
         if (extAttachmentFeedbackLoopLayoutFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_ATTACHMENT_FEEDBACK_LOOP_LAYOUT));
             {
-                JSONObject attachmentFeedbackLoopLayoutFeaturesEXT = extAttachmentFeedbackLoopLayoutFeatures.getJSONObject(KEY_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_FEATURES_EXT);
-                store.startGroup(getConvertedName(KEY_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_FEATURES_EXT));
+                JSONObject attachmentFeedbackLoopLayoutFeaturesEXT =
+                        extAttachmentFeedbackLoopLayoutFeatures.getJSONObject(
+                                KEY_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_FEATURES_EXT);
+                store.startGroup(
+                        getConvertedName(KEY_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_FEATURES_EXT));
                 {
-                    emitBoolean(store, attachmentFeedbackLoopLayoutFeaturesEXT, KEY_ATTACHMENT_FEEDBACK_LOOP_LAYOUT);
+                    emitBoolean(
+                            store,
+                            attachmentFeedbackLoopLayoutFeaturesEXT,
+                            KEY_ATTACHMENT_FEEDBACK_LOOP_LAYOUT);
                 }
                 store.endGroup();
             }
@@ -2004,27 +2957,52 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTBlendOperationAdvanced(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extBlendOperationAdvancedFeatures = parent.optJSONObject(KEY_VK_EXT_BLEND_OPERATION_ADVANCED);
+            throws IOException, JSONException {
+        JSONObject extBlendOperationAdvancedFeatures =
+                parent.optJSONObject(KEY_VK_EXT_BLEND_OPERATION_ADVANCED);
         if (extBlendOperationAdvancedFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_BLEND_OPERATION_ADVANCED));
             {
-                JSONObject blendOperationAdvancedFeaturesEXT = extBlendOperationAdvancedFeatures.getJSONObject(KEY_BLEND_OPERATION_ADVANCED_FEATURES_EXT);
+                JSONObject blendOperationAdvancedFeaturesEXT =
+                        extBlendOperationAdvancedFeatures.getJSONObject(
+                                KEY_BLEND_OPERATION_ADVANCED_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_BLEND_OPERATION_ADVANCED_FEATURES_EXT));
                 {
-                    emitBoolean(store, blendOperationAdvancedFeaturesEXT, KEY_ADVANCED_BLEND_COHERENT_OPERATIONS);
+                    emitBoolean(
+                            store,
+                            blendOperationAdvancedFeaturesEXT,
+                            KEY_ADVANCED_BLEND_COHERENT_OPERATIONS);
                 }
                 store.endGroup();
-                JSONObject blendOperationAdvancedPropertiesEXT = extBlendOperationAdvancedFeatures.getJSONObject(KEY_BLEND_OPERATION_ADVANCED_PROPERTIES_EXT);
+                JSONObject blendOperationAdvancedPropertiesEXT =
+                        extBlendOperationAdvancedFeatures.getJSONObject(
+                                KEY_BLEND_OPERATION_ADVANCED_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_BLEND_OPERATION_ADVANCED_PROPERTIES_EXT));
                 {
-                    emitLong(store, blendOperationAdvancedPropertiesEXT, KEY_ADVANCED_BLEND_MAX_COLOR_ATTACHMENTS);
-                    emitBoolean(store, blendOperationAdvancedPropertiesEXT, KEY_ADVANCED_BLEND_INDEPENDENT_BLEND);
-                    emitBoolean(store, blendOperationAdvancedPropertiesEXT, KEY_ADVANCED_BLEND_NON_PREMULTIPLIED_SRC_COLOR);
-                    emitBoolean(store, blendOperationAdvancedPropertiesEXT, KEY_ADVANCED_BLEND_NON_PREMULTIPLIED_DST_COLOR);
-                    emitBoolean(store, blendOperationAdvancedPropertiesEXT, KEY_ADVANCED_BLEND_CORRELATED_OVERLAP);
-                    emitBoolean(store, blendOperationAdvancedPropertiesEXT, KEY_ADVANCED_BLEND_ALL_OPERATIONS);
+                    emitLong(
+                            store,
+                            blendOperationAdvancedPropertiesEXT,
+                            KEY_ADVANCED_BLEND_MAX_COLOR_ATTACHMENTS);
+                    emitBoolean(
+                            store,
+                            blendOperationAdvancedPropertiesEXT,
+                            KEY_ADVANCED_BLEND_INDEPENDENT_BLEND);
+                    emitBoolean(
+                            store,
+                            blendOperationAdvancedPropertiesEXT,
+                            KEY_ADVANCED_BLEND_NON_PREMULTIPLIED_SRC_COLOR);
+                    emitBoolean(
+                            store,
+                            blendOperationAdvancedPropertiesEXT,
+                            KEY_ADVANCED_BLEND_NON_PREMULTIPLIED_DST_COLOR);
+                    emitBoolean(
+                            store,
+                            blendOperationAdvancedPropertiesEXT,
+                            KEY_ADVANCED_BLEND_CORRELATED_OVERLAP);
+                    emitBoolean(
+                            store,
+                            blendOperationAdvancedPropertiesEXT,
+                            KEY_ADVANCED_BLEND_ALL_OPERATIONS);
                 }
                 store.endGroup();
             }
@@ -2033,17 +3011,22 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTBorderColorSwizzle(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extBorderColorSwizzleFeatures = parent.optJSONObject(KEY_VK_EXT_BORDER_COLOR_SWIZZLE);
+            throws IOException, JSONException {
+        JSONObject extBorderColorSwizzleFeatures =
+                parent.optJSONObject(KEY_VK_EXT_BORDER_COLOR_SWIZZLE);
         if (extBorderColorSwizzleFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_BORDER_COLOR_SWIZZLE));
             {
-                JSONObject borderColorSwizzleFeaturesEXT = extBorderColorSwizzleFeatures.getJSONObject(KEY_BORDER_COLOR_SWIZZLE_FEATURES_EXT);
+                JSONObject borderColorSwizzleFeaturesEXT =
+                        extBorderColorSwizzleFeatures.getJSONObject(
+                                KEY_BORDER_COLOR_SWIZZLE_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_BORDER_COLOR_SWIZZLE_FEATURES_EXT));
                 {
                     emitBoolean(store, borderColorSwizzleFeaturesEXT, KEY_BORDER_COLOR_SWIZZLE);
-                    emitBoolean(store, borderColorSwizzleFeaturesEXT, KEY_BORDER_COLOR_SWIZZLE_FROM_IMAGE);
+                    emitBoolean(
+                            store,
+                            borderColorSwizzleFeaturesEXT,
+                            KEY_BORDER_COLOR_SWIZZLE_FROM_IMAGE);
                 }
                 store.endGroup();
             }
@@ -2052,26 +3035,42 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTBufferDeviceAddress(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extBufferDeviceAddressFeatures = parent.optJSONObject(KEY_VK_EXT_BUFFER_DEVICE_ADDRESS);
+            throws IOException, JSONException {
+        JSONObject extBufferDeviceAddressFeatures =
+                parent.optJSONObject(KEY_VK_EXT_BUFFER_DEVICE_ADDRESS);
         if (extBufferDeviceAddressFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_BUFFER_DEVICE_ADDRESS));
             {
-                JSONObject bufferAddressFeaturesEXT = extBufferDeviceAddressFeatures.getJSONObject(KEY_BUFFER_ADDRESS_FEATURES_EXT);
+                JSONObject bufferAddressFeaturesEXT =
+                        extBufferDeviceAddressFeatures.getJSONObject(
+                                KEY_BUFFER_ADDRESS_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_BUFFER_ADDRESS_FEATURES_EXT));
                 {
                     emitBoolean(store, bufferAddressFeaturesEXT, KEY_BUFFER_DEVICE_ADDRESS);
-                    emitBoolean(store, bufferAddressFeaturesEXT, KEY_BUFFER_DEVICE_ADDRESS_CAPTURE_REPLAY);
-                    emitBoolean(store, bufferAddressFeaturesEXT, KEY_BUFFER_DEVICE_ADDRESS_MULTI_DEVICE);
+                    emitBoolean(
+                            store,
+                            bufferAddressFeaturesEXT,
+                            KEY_BUFFER_DEVICE_ADDRESS_CAPTURE_REPLAY);
+                    emitBoolean(
+                            store,
+                            bufferAddressFeaturesEXT,
+                            KEY_BUFFER_DEVICE_ADDRESS_MULTI_DEVICE);
                 }
                 store.endGroup();
-                JSONObject bufferDeviceAddressFeaturesEXT = extBufferDeviceAddressFeatures.getJSONObject(KEY_BUFFER_DEVICE_ADDRESS_FEATURES_EXT);
+                JSONObject bufferDeviceAddressFeaturesEXT =
+                        extBufferDeviceAddressFeatures.getJSONObject(
+                                KEY_BUFFER_DEVICE_ADDRESS_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_BUFFER_DEVICE_ADDRESS_FEATURES_EXT));
                 {
                     emitBoolean(store, bufferDeviceAddressFeaturesEXT, KEY_BUFFER_DEVICE_ADDRESS);
-                    emitBoolean(store, bufferDeviceAddressFeaturesEXT, KEY_BUFFER_DEVICE_ADDRESS_CAPTURE_REPLAY);
-                    emitBoolean(store, bufferDeviceAddressFeaturesEXT, KEY_BUFFER_DEVICE_ADDRESS_MULTI_DEVICE);
+                    emitBoolean(
+                            store,
+                            bufferDeviceAddressFeaturesEXT,
+                            KEY_BUFFER_DEVICE_ADDRESS_CAPTURE_REPLAY);
+                    emitBoolean(
+                            store,
+                            bufferDeviceAddressFeaturesEXT,
+                            KEY_BUFFER_DEVICE_ADDRESS_MULTI_DEVICE);
                 }
                 store.endGroup();
             }
@@ -2080,13 +3079,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTColorWriteEnable(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extColorWriteEnableFeatures = parent.optJSONObject(KEY_VK_EXT_COLOR_WRITE_ENABLE);
+            throws IOException, JSONException {
+        JSONObject extColorWriteEnableFeatures =
+                parent.optJSONObject(KEY_VK_EXT_COLOR_WRITE_ENABLE);
         if (extColorWriteEnableFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_COLOR_WRITE_ENABLE));
             {
-                JSONObject colorWriteEnableFeaturesEXT = extColorWriteEnableFeatures.getJSONObject(KEY_COLOR_WRITE_ENABLE_FEATURES_EXT);
+                JSONObject colorWriteEnableFeaturesEXT =
+                        extColorWriteEnableFeatures.getJSONObject(
+                                KEY_COLOR_WRITE_ENABLE_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_COLOR_WRITE_ENABLE_FEATURES_EXT));
                 {
                     emitBoolean(store, colorWriteEnableFeaturesEXT, KEY_COLOR_WRITE_ENABLE);
@@ -2098,17 +3099,22 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTConditionalRendering(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extConditionalRenderingFeatures = parent.optJSONObject(KEY_VK_EXT_CONDITIONAL_RENDERING);
+            throws IOException, JSONException {
+        JSONObject extConditionalRenderingFeatures =
+                parent.optJSONObject(KEY_VK_EXT_CONDITIONAL_RENDERING);
         if (extConditionalRenderingFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_CONDITIONAL_RENDERING));
             {
-                JSONObject conditionalRenderingFeaturesEXT = extConditionalRenderingFeatures.getJSONObject(KEY_CONDITIONAL_RENDERING_FEATURES_EXT);
+                JSONObject conditionalRenderingFeaturesEXT =
+                        extConditionalRenderingFeatures.getJSONObject(
+                                KEY_CONDITIONAL_RENDERING_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_CONDITIONAL_RENDERING_FEATURES_EXT));
                 {
                     emitBoolean(store, conditionalRenderingFeaturesEXT, KEY_CONDITIONAL_RENDERING);
-                    emitBoolean(store, conditionalRenderingFeaturesEXT, KEY_INHERITED_CONDITIONAL_RENDERING);
+                    emitBoolean(
+                            store,
+                            conditionalRenderingFeaturesEXT,
+                            KEY_INHERITED_CONDITIONAL_RENDERING);
                 }
                 store.endGroup();
             }
@@ -2117,24 +3123,53 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTConservativeRasterization(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extConservativeRasterizationProperties = parent.optJSONObject(KEY_VK_EXT_CONSERVATIVE_RASTERIZATION);
+            throws IOException, JSONException {
+        JSONObject extConservativeRasterizationProperties =
+                parent.optJSONObject(KEY_VK_EXT_CONSERVATIVE_RASTERIZATION);
         if (extConservativeRasterizationProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_CONSERVATIVE_RASTERIZATION));
             {
-                JSONObject conservativeRasterizationPropertiesEXT = extConservativeRasterizationProperties.getJSONObject(KEY_CONSERVATIVE_RASTERIZATION_PROPERTIES_EXT);
+                JSONObject conservativeRasterizationPropertiesEXT =
+                        extConservativeRasterizationProperties.getJSONObject(
+                                KEY_CONSERVATIVE_RASTERIZATION_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_CONSERVATIVE_RASTERIZATION_PROPERTIES_EXT));
                 {
-                    emitDouble(store, conservativeRasterizationPropertiesEXT, KEY_PRIMITIVE_OVERESTIMATION_SIZE);
-                    emitDouble(store, conservativeRasterizationPropertiesEXT, KEY_MAX_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE);
-                    emitDouble(store, conservativeRasterizationPropertiesEXT, KEY_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE_GRANULARITY);
-                    emitBoolean(store, conservativeRasterizationPropertiesEXT, KEY_PRIMITIVE_UNDERESTIMATION);
-                    emitBoolean(store, conservativeRasterizationPropertiesEXT, KEY_CONSERVATIVE_POINT_AND_LINE_RASTERIZATION);
-                    emitBoolean(store, conservativeRasterizationPropertiesEXT, KEY_DEGENERATE_TRIANGLES_RASTERIZED);
-                    emitBoolean(store, conservativeRasterizationPropertiesEXT, KEY_DEGENERATE_LINES_RASTERIZED);
-                    emitBoolean(store, conservativeRasterizationPropertiesEXT, KEY_FULLY_COVERED_FRAGMENT_SHADER_INPUT_VARIABLE);
-                    emitBoolean(store, conservativeRasterizationPropertiesEXT, KEY_CONSERVATIVE_RASTERIZATION_POST_DEPTH_COVERAGE);
+                    emitDouble(
+                            store,
+                            conservativeRasterizationPropertiesEXT,
+                            KEY_PRIMITIVE_OVERESTIMATION_SIZE);
+                    emitDouble(
+                            store,
+                            conservativeRasterizationPropertiesEXT,
+                            KEY_MAX_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE);
+                    emitDouble(
+                            store,
+                            conservativeRasterizationPropertiesEXT,
+                            KEY_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE_GRANULARITY);
+                    emitBoolean(
+                            store,
+                            conservativeRasterizationPropertiesEXT,
+                            KEY_PRIMITIVE_UNDERESTIMATION);
+                    emitBoolean(
+                            store,
+                            conservativeRasterizationPropertiesEXT,
+                            KEY_CONSERVATIVE_POINT_AND_LINE_RASTERIZATION);
+                    emitBoolean(
+                            store,
+                            conservativeRasterizationPropertiesEXT,
+                            KEY_DEGENERATE_TRIANGLES_RASTERIZED);
+                    emitBoolean(
+                            store,
+                            conservativeRasterizationPropertiesEXT,
+                            KEY_DEGENERATE_LINES_RASTERIZED);
+                    emitBoolean(
+                            store,
+                            conservativeRasterizationPropertiesEXT,
+                            KEY_FULLY_COVERED_FRAGMENT_SHADER_INPUT_VARIABLE);
+                    emitBoolean(
+                            store,
+                            conservativeRasterizationPropertiesEXT,
+                            KEY_CONSERVATIVE_RASTERIZATION_POST_DEPTH_COVERAGE);
                 }
                 store.endGroup();
             }
@@ -2143,23 +3178,33 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTCustomBorderColor(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extCustomBorderColorProperties = parent.optJSONObject(KEY_VK_EXT_CUSTOM_BORDER_COLOR);
+            throws IOException, JSONException {
+        JSONObject extCustomBorderColorProperties =
+                parent.optJSONObject(KEY_VK_EXT_CUSTOM_BORDER_COLOR);
         if (extCustomBorderColorProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_CUSTOM_BORDER_COLOR));
             {
-                JSONObject customBorderColorPropertiesEXT = extCustomBorderColorProperties.getJSONObject(KEY_CUSTOM_BORDER_COLOR_PROPERTIES_EXT);
+                JSONObject customBorderColorPropertiesEXT =
+                        extCustomBorderColorProperties.getJSONObject(
+                                KEY_CUSTOM_BORDER_COLOR_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_CUSTOM_BORDER_COLOR_PROPERTIES_EXT));
                 {
-                    emitLong(store, customBorderColorPropertiesEXT, KEY_MAX_CUSTOM_BORDER_COLOR_SAMPLERS);
+                    emitLong(
+                            store,
+                            customBorderColorPropertiesEXT,
+                            KEY_MAX_CUSTOM_BORDER_COLOR_SAMPLERS);
                 }
                 store.endGroup();
-                JSONObject customBorderColorFeaturesEXT = extCustomBorderColorProperties.getJSONObject(KEY_CUSTOM_BORDER_COLOR_FEATURES_EXT);
+                JSONObject customBorderColorFeaturesEXT =
+                        extCustomBorderColorProperties.getJSONObject(
+                                KEY_CUSTOM_BORDER_COLOR_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_CUSTOM_BORDER_COLOR_FEATURES_EXT));
                 {
                     emitBoolean(store, customBorderColorFeaturesEXT, KEY_CUSTOM_BORDER_COLORS);
-                    emitBoolean(store, customBorderColorFeaturesEXT, KEY_CUSTOM_BORDER_COLOR_WITHOUT_FORMAT);
+                    emitBoolean(
+                            store,
+                            customBorderColorFeaturesEXT,
+                            KEY_CUSTOM_BORDER_COLOR_WITHOUT_FORMAT);
                 }
                 store.endGroup();
             }
@@ -2168,13 +3213,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTCustomResolve(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject extCustomResolveFeatures = parent.optJSONObject(KEY_VK_EXT_CUSTOM_RESOLVE);
         if (extCustomResolveFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_CUSTOM_RESOLVE));
             {
-                JSONObject customResolveFeaturesEXT = extCustomResolveFeatures.getJSONObject(KEY_CUSTOM_RESOLVE_FEATURES_EXT);
+                JSONObject customResolveFeaturesEXT =
+                        extCustomResolveFeatures.getJSONObject(KEY_CUSTOM_RESOLVE_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_CUSTOM_RESOLVE_FEATURES_EXT));
                 {
                     emitBoolean(store, customResolveFeaturesEXT, KEY_CUSTOM_RESOLVE);
@@ -2186,17 +3231,22 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTDepthBiasControl(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extDepthBiasControlFeatures = parent.optJSONObject(KEY_VK_EXT_DEPTH_BIAS_CONTROL);
+            throws IOException, JSONException {
+        JSONObject extDepthBiasControlFeatures =
+                parent.optJSONObject(KEY_VK_EXT_DEPTH_BIAS_CONTROL);
         if (extDepthBiasControlFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_DEPTH_BIAS_CONTROL));
             {
-                JSONObject depthBiasControlFeaturesEXT = extDepthBiasControlFeatures.getJSONObject(KEY_DEPTH_BIAS_CONTROL_FEATURES_EXT);
+                JSONObject depthBiasControlFeaturesEXT =
+                        extDepthBiasControlFeatures.getJSONObject(
+                                KEY_DEPTH_BIAS_CONTROL_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_DEPTH_BIAS_CONTROL_FEATURES_EXT));
                 {
                     emitBoolean(store, depthBiasControlFeaturesEXT, KEY_DEPTH_BIAS_CONTROL);
-                    emitBoolean(store, depthBiasControlFeaturesEXT, KEY_LEAST_REPRESENTABLE_VALUE_FORCE_UNORM_REPRESENTATION);
+                    emitBoolean(
+                            store,
+                            depthBiasControlFeaturesEXT,
+                            KEY_LEAST_REPRESENTABLE_VALUE_FORCE_UNORM_REPRESENTATION);
                     emitBoolean(store, depthBiasControlFeaturesEXT, KEY_FLOAT_REPRESENTATION);
                     emitBoolean(store, depthBiasControlFeaturesEXT, KEY_DEPTH_BIAS_EXACT);
                 }
@@ -2207,13 +3257,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTDepthClampControl(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extDepthClampControlFeatures = parent.optJSONObject(KEY_VK_EXT_DEPTH_CLAMP_CONTROL);
+            throws IOException, JSONException {
+        JSONObject extDepthClampControlFeatures =
+                parent.optJSONObject(KEY_VK_EXT_DEPTH_CLAMP_CONTROL);
         if (extDepthClampControlFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_DEPTH_CLAMP_CONTROL));
             {
-                JSONObject depthClampControlFeaturesEXT = extDepthClampControlFeatures.getJSONObject(KEY_DEPTH_CLAMP_CONTROL_FEATURES_EXT);
+                JSONObject depthClampControlFeaturesEXT =
+                        extDepthClampControlFeatures.getJSONObject(
+                                KEY_DEPTH_CLAMP_CONTROL_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_DEPTH_CLAMP_CONTROL_FEATURES_EXT));
                 {
                     emitBoolean(store, depthClampControlFeaturesEXT, KEY_DEPTH_CLAMP_CONTROL);
@@ -2225,13 +3277,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTDepthClipControl(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extDepthClipControlFeatures = parent.optJSONObject(KEY_VK_EXT_DEPTH_CLIP_CONTROL);
+            throws IOException, JSONException {
+        JSONObject extDepthClipControlFeatures =
+                parent.optJSONObject(KEY_VK_EXT_DEPTH_CLIP_CONTROL);
         if (extDepthClipControlFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_DEPTH_CLIP_CONTROL));
             {
-                JSONObject depthClipControlFeaturesEXT = extDepthClipControlFeatures.getJSONObject(KEY_DEPTH_CLIP_CONTROL_FEATURES_EXT);
+                JSONObject depthClipControlFeaturesEXT =
+                        extDepthClipControlFeatures.getJSONObject(
+                                KEY_DEPTH_CLIP_CONTROL_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_DEPTH_CLIP_CONTROL_FEATURES_EXT));
                 {
                     emitBoolean(store, depthClipControlFeaturesEXT, KEY_DEPTH_CLIP_CONTROL);
@@ -2243,13 +3297,14 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTDepthClipEnable(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject extDepthClipEnableFeatures = parent.optJSONObject(KEY_VK_EXT_DEPTH_CLIP_ENABLE);
         if (extDepthClipEnableFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_DEPTH_CLIP_ENABLE));
             {
-                JSONObject depthClipEnableFeaturesEXT = extDepthClipEnableFeatures.getJSONObject(KEY_DEPTH_CLIP_ENABLE_FEATURES_EXT);
+                JSONObject depthClipEnableFeaturesEXT =
+                        extDepthClipEnableFeatures.getJSONObject(
+                                KEY_DEPTH_CLIP_ENABLE_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_DEPTH_CLIP_ENABLE_FEATURES_EXT));
                 {
                     emitBoolean(store, depthClipEnableFeaturesEXT, KEY_DEPTH_CLIP_ENABLE);
@@ -2261,63 +3316,176 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTDescriptorBuffer(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extDescriptorBufferProperties = parent.optJSONObject(KEY_VK_EXT_DESCRIPTOR_BUFFER);
+            throws IOException, JSONException {
+        JSONObject extDescriptorBufferProperties =
+                parent.optJSONObject(KEY_VK_EXT_DESCRIPTOR_BUFFER);
         if (extDescriptorBufferProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_DESCRIPTOR_BUFFER));
             {
-                JSONObject descriptorBufferPropertiesEXT = extDescriptorBufferProperties.getJSONObject(KEY_DESCRIPTOR_BUFFER_PROPERTIES_EXT);
+                JSONObject descriptorBufferPropertiesEXT =
+                        extDescriptorBufferProperties.getJSONObject(
+                                KEY_DESCRIPTOR_BUFFER_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_DESCRIPTOR_BUFFER_PROPERTIES_EXT));
                 {
-                    emitBoolean(store, descriptorBufferPropertiesEXT, KEY_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_SINGLE_ARRAY);
-                    emitBoolean(store, descriptorBufferPropertiesEXT, KEY_BUFFERLESS_PUSH_DESCRIPTORS);
-                    emitBoolean(store, descriptorBufferPropertiesEXT, KEY_ALLOW_SAMPLER_IMAGE_VIEW_POST_SUBMIT_CREATION);
-                    emitString(store, descriptorBufferPropertiesEXT, KEY_DESCRIPTOR_BUFFER_OFFSET_ALIGNMENT);
-                    emitLong(store, descriptorBufferPropertiesEXT, KEY_MAX_DESCRIPTOR_BUFFER_BINDINGS);
-                    emitLong(store, descriptorBufferPropertiesEXT, KEY_MAX_RESOURCE_DESCRIPTOR_BUFFER_BINDINGS);
-                    emitLong(store, descriptorBufferPropertiesEXT, KEY_MAX_SAMPLER_DESCRIPTOR_BUFFER_BINDINGS);
-                    emitLong(store, descriptorBufferPropertiesEXT, KEY_MAX_EMBEDDED_IMMUTABLE_SAMPLER_BINDINGS);
-                    emitLong(store, descriptorBufferPropertiesEXT, KEY_MAX_EMBEDDED_IMMUTABLE_SAMPLERS);
-                    emitString(store, descriptorBufferPropertiesEXT, KEY_BUFFER_CAPTURE_REPLAY_DESCRIPTOR_DATA_SIZE);
-                    emitString(store, descriptorBufferPropertiesEXT, KEY_IMAGE_CAPTURE_REPLAY_DESCRIPTOR_DATA_SIZE);
-                    emitString(store, descriptorBufferPropertiesEXT, KEY_IMAGE_VIEW_CAPTURE_REPLAY_DESCRIPTOR_DATA_SIZE);
-                    emitString(store, descriptorBufferPropertiesEXT, KEY_SAMPLER_CAPTURE_REPLAY_DESCRIPTOR_DATA_SIZE);
-                    emitString(store, descriptorBufferPropertiesEXT, KEY_ACCELERATION_STRUCTURE_CAPTURE_REPLAY_DESCRIPTOR_DATA_SIZE);
+                    emitBoolean(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_SINGLE_ARRAY);
+                    emitBoolean(
+                            store, descriptorBufferPropertiesEXT, KEY_BUFFERLESS_PUSH_DESCRIPTORS);
+                    emitBoolean(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_ALLOW_SAMPLER_IMAGE_VIEW_POST_SUBMIT_CREATION);
+                    emitString(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_DESCRIPTOR_BUFFER_OFFSET_ALIGNMENT);
+                    emitLong(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_MAX_DESCRIPTOR_BUFFER_BINDINGS);
+                    emitLong(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_MAX_RESOURCE_DESCRIPTOR_BUFFER_BINDINGS);
+                    emitLong(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_MAX_SAMPLER_DESCRIPTOR_BUFFER_BINDINGS);
+                    emitLong(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_MAX_EMBEDDED_IMMUTABLE_SAMPLER_BINDINGS);
+                    emitLong(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_MAX_EMBEDDED_IMMUTABLE_SAMPLERS);
+                    emitString(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_BUFFER_CAPTURE_REPLAY_DESCRIPTOR_DATA_SIZE);
+                    emitString(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_IMAGE_CAPTURE_REPLAY_DESCRIPTOR_DATA_SIZE);
+                    emitString(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_IMAGE_VIEW_CAPTURE_REPLAY_DESCRIPTOR_DATA_SIZE);
+                    emitString(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_SAMPLER_CAPTURE_REPLAY_DESCRIPTOR_DATA_SIZE);
+                    emitString(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_ACCELERATION_STRUCTURE_CAPTURE_REPLAY_DESCRIPTOR_DATA_SIZE);
                     emitString(store, descriptorBufferPropertiesEXT, KEY_SAMPLER_DESCRIPTOR_SIZE);
-                    emitString(store, descriptorBufferPropertiesEXT, KEY_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_SIZE);
-                    emitString(store, descriptorBufferPropertiesEXT, KEY_SAMPLED_IMAGE_DESCRIPTOR_SIZE);
-                    emitString(store, descriptorBufferPropertiesEXT, KEY_STORAGE_IMAGE_DESCRIPTOR_SIZE);
-                    emitString(store, descriptorBufferPropertiesEXT, KEY_UNIFORM_TEXEL_BUFFER_DESCRIPTOR_SIZE);
-                    emitString(store, descriptorBufferPropertiesEXT, KEY_ROBUST_UNIFORM_TEXEL_BUFFER_DESCRIPTOR_SIZE);
-                    emitString(store, descriptorBufferPropertiesEXT, KEY_STORAGE_TEXEL_BUFFER_DESCRIPTOR_SIZE);
-                    emitString(store, descriptorBufferPropertiesEXT, KEY_ROBUST_STORAGE_TEXEL_BUFFER_DESCRIPTOR_SIZE);
-                    emitString(store, descriptorBufferPropertiesEXT, KEY_UNIFORM_BUFFER_DESCRIPTOR_SIZE);
-                    emitString(store, descriptorBufferPropertiesEXT, KEY_ROBUST_UNIFORM_BUFFER_DESCRIPTOR_SIZE);
-                    emitString(store, descriptorBufferPropertiesEXT, KEY_STORAGE_BUFFER_DESCRIPTOR_SIZE);
-                    emitString(store, descriptorBufferPropertiesEXT, KEY_ROBUST_STORAGE_BUFFER_DESCRIPTOR_SIZE);
-                    emitString(store, descriptorBufferPropertiesEXT, KEY_INPUT_ATTACHMENT_DESCRIPTOR_SIZE);
-                    emitString(store, descriptorBufferPropertiesEXT, KEY_ACCELERATION_STRUCTURE_DESCRIPTOR_SIZE);
-                    emitString(store, descriptorBufferPropertiesEXT, KEY_MAX_SAMPLER_DESCRIPTOR_BUFFER_RANGE);
-                    emitString(store, descriptorBufferPropertiesEXT, KEY_MAX_RESOURCE_DESCRIPTOR_BUFFER_RANGE);
-                    emitString(store, descriptorBufferPropertiesEXT, KEY_SAMPLER_DESCRIPTOR_BUFFER_ADDRESS_SPACE_SIZE);
-                    emitString(store, descriptorBufferPropertiesEXT, KEY_RESOURCE_DESCRIPTOR_BUFFER_ADDRESS_SPACE_SIZE);
-                    emitString(store, descriptorBufferPropertiesEXT, KEY_DESCRIPTOR_BUFFER_ADDRESS_SPACE_SIZE);
+                    emitString(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_SIZE);
+                    emitString(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_SAMPLED_IMAGE_DESCRIPTOR_SIZE);
+                    emitString(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_STORAGE_IMAGE_DESCRIPTOR_SIZE);
+                    emitString(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_UNIFORM_TEXEL_BUFFER_DESCRIPTOR_SIZE);
+                    emitString(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_ROBUST_UNIFORM_TEXEL_BUFFER_DESCRIPTOR_SIZE);
+                    emitString(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_STORAGE_TEXEL_BUFFER_DESCRIPTOR_SIZE);
+                    emitString(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_ROBUST_STORAGE_TEXEL_BUFFER_DESCRIPTOR_SIZE);
+                    emitString(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_UNIFORM_BUFFER_DESCRIPTOR_SIZE);
+                    emitString(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_ROBUST_UNIFORM_BUFFER_DESCRIPTOR_SIZE);
+                    emitString(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_STORAGE_BUFFER_DESCRIPTOR_SIZE);
+                    emitString(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_ROBUST_STORAGE_BUFFER_DESCRIPTOR_SIZE);
+                    emitString(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_INPUT_ATTACHMENT_DESCRIPTOR_SIZE);
+                    emitString(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_ACCELERATION_STRUCTURE_DESCRIPTOR_SIZE);
+                    emitString(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_MAX_SAMPLER_DESCRIPTOR_BUFFER_RANGE);
+                    emitString(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_MAX_RESOURCE_DESCRIPTOR_BUFFER_RANGE);
+                    emitString(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_SAMPLER_DESCRIPTOR_BUFFER_ADDRESS_SPACE_SIZE);
+                    emitString(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_RESOURCE_DESCRIPTOR_BUFFER_ADDRESS_SPACE_SIZE);
+                    emitString(
+                            store,
+                            descriptorBufferPropertiesEXT,
+                            KEY_DESCRIPTOR_BUFFER_ADDRESS_SPACE_SIZE);
                 }
                 store.endGroup();
-                JSONObject descriptorBufferDensityMapPropertiesEXT = extDescriptorBufferProperties.getJSONObject(KEY_DESCRIPTOR_BUFFER_DENSITY_MAP_PROPERTIES_EXT);
-                store.startGroup(getConvertedName(KEY_DESCRIPTOR_BUFFER_DENSITY_MAP_PROPERTIES_EXT));
+                JSONObject descriptorBufferDensityMapPropertiesEXT =
+                        extDescriptorBufferProperties.getJSONObject(
+                                KEY_DESCRIPTOR_BUFFER_DENSITY_MAP_PROPERTIES_EXT);
+                store.startGroup(
+                        getConvertedName(KEY_DESCRIPTOR_BUFFER_DENSITY_MAP_PROPERTIES_EXT));
                 {
-                    emitString(store, descriptorBufferDensityMapPropertiesEXT, KEY_COMBINED_IMAGE_SAMPLER_DENSITY_MAP_DESCRIPTOR_SIZE);
+                    emitString(
+                            store,
+                            descriptorBufferDensityMapPropertiesEXT,
+                            KEY_COMBINED_IMAGE_SAMPLER_DENSITY_MAP_DESCRIPTOR_SIZE);
                 }
                 store.endGroup();
-                JSONObject descriptorBufferFeaturesEXT = extDescriptorBufferProperties.getJSONObject(KEY_DESCRIPTOR_BUFFER_FEATURES_EXT);
+                JSONObject descriptorBufferFeaturesEXT =
+                        extDescriptorBufferProperties.getJSONObject(
+                                KEY_DESCRIPTOR_BUFFER_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_DESCRIPTOR_BUFFER_FEATURES_EXT));
                 {
                     emitBoolean(store, descriptorBufferFeaturesEXT, KEY_DESCRIPTOR_BUFFER);
-                    emitBoolean(store, descriptorBufferFeaturesEXT, KEY_DESCRIPTOR_BUFFER_CAPTURE_REPLAY);
-                    emitBoolean(store, descriptorBufferFeaturesEXT, KEY_DESCRIPTOR_BUFFER_IMAGE_LAYOUT_IGNORED);
-                    emitBoolean(store, descriptorBufferFeaturesEXT, KEY_DESCRIPTOR_BUFFER_PUSH_DESCRIPTORS);
+                    emitBoolean(
+                            store,
+                            descriptorBufferFeaturesEXT,
+                            KEY_DESCRIPTOR_BUFFER_CAPTURE_REPLAY);
+                    emitBoolean(
+                            store,
+                            descriptorBufferFeaturesEXT,
+                            KEY_DESCRIPTOR_BUFFER_IMAGE_LAYOUT_IGNORED);
+                    emitBoolean(
+                            store,
+                            descriptorBufferFeaturesEXT,
+                            KEY_DESCRIPTOR_BUFFER_PUSH_DESCRIPTORS);
                 }
                 store.endGroup();
             }
@@ -2326,63 +3494,193 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTDescriptorIndexing(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extDescriptorIndexingFeatures = parent.optJSONObject(KEY_VK_EXT_DESCRIPTOR_INDEXING);
+            throws IOException, JSONException {
+        JSONObject extDescriptorIndexingFeatures =
+                parent.optJSONObject(KEY_VK_EXT_DESCRIPTOR_INDEXING);
         if (extDescriptorIndexingFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_DESCRIPTOR_INDEXING));
             {
-                JSONObject descriptorIndexingFeaturesEXT = extDescriptorIndexingFeatures.getJSONObject(KEY_DESCRIPTOR_INDEXING_FEATURES_EXT);
+                JSONObject descriptorIndexingFeaturesEXT =
+                        extDescriptorIndexingFeatures.getJSONObject(
+                                KEY_DESCRIPTOR_INDEXING_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_DESCRIPTOR_INDEXING_FEATURES_EXT));
                 {
-                    emitBoolean(store, descriptorIndexingFeaturesEXT, KEY_SHADER_INPUT_ATTACHMENT_ARRAY_DYNAMIC_INDEXING);
-                    emitBoolean(store, descriptorIndexingFeaturesEXT, KEY_SHADER_UNIFORM_TEXEL_BUFFER_ARRAY_DYNAMIC_INDEXING);
-                    emitBoolean(store, descriptorIndexingFeaturesEXT, KEY_SHADER_STORAGE_TEXEL_BUFFER_ARRAY_DYNAMIC_INDEXING);
-                    emitBoolean(store, descriptorIndexingFeaturesEXT, KEY_SHADER_UNIFORM_BUFFER_ARRAY_NON_UNIFORM_INDEXING);
-                    emitBoolean(store, descriptorIndexingFeaturesEXT, KEY_SHADER_SAMPLED_IMAGE_ARRAY_NON_UNIFORM_INDEXING);
-                    emitBoolean(store, descriptorIndexingFeaturesEXT, KEY_SHADER_STORAGE_BUFFER_ARRAY_NON_UNIFORM_INDEXING);
-                    emitBoolean(store, descriptorIndexingFeaturesEXT, KEY_SHADER_STORAGE_IMAGE_ARRAY_NON_UNIFORM_INDEXING);
-                    emitBoolean(store, descriptorIndexingFeaturesEXT, KEY_SHADER_INPUT_ATTACHMENT_ARRAY_NON_UNIFORM_INDEXING);
-                    emitBoolean(store, descriptorIndexingFeaturesEXT, KEY_SHADER_UNIFORM_TEXEL_BUFFER_ARRAY_NON_UNIFORM_INDEXING);
-                    emitBoolean(store, descriptorIndexingFeaturesEXT, KEY_SHADER_STORAGE_TEXEL_BUFFER_ARRAY_NON_UNIFORM_INDEXING);
-                    emitBoolean(store, descriptorIndexingFeaturesEXT, KEY_DESCRIPTOR_BINDING_UNIFORM_BUFFER_UPDATE_AFTER_BIND);
-                    emitBoolean(store, descriptorIndexingFeaturesEXT, KEY_DESCRIPTOR_BINDING_SAMPLED_IMAGE_UPDATE_AFTER_BIND);
-                    emitBoolean(store, descriptorIndexingFeaturesEXT, KEY_DESCRIPTOR_BINDING_STORAGE_IMAGE_UPDATE_AFTER_BIND);
-                    emitBoolean(store, descriptorIndexingFeaturesEXT, KEY_DESCRIPTOR_BINDING_STORAGE_BUFFER_UPDATE_AFTER_BIND);
-                    emitBoolean(store, descriptorIndexingFeaturesEXT, KEY_DESCRIPTOR_BINDING_UNIFORM_TEXEL_BUFFER_UPDATE_AFTER_BIND);
-                    emitBoolean(store, descriptorIndexingFeaturesEXT, KEY_DESCRIPTOR_BINDING_STORAGE_TEXEL_BUFFER_UPDATE_AFTER_BIND);
-                    emitBoolean(store, descriptorIndexingFeaturesEXT, KEY_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING);
-                    emitBoolean(store, descriptorIndexingFeaturesEXT, KEY_DESCRIPTOR_BINDING_PARTIALLY_BOUND);
-                    emitBoolean(store, descriptorIndexingFeaturesEXT, KEY_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT);
+                    emitBoolean(
+                            store,
+                            descriptorIndexingFeaturesEXT,
+                            KEY_SHADER_INPUT_ATTACHMENT_ARRAY_DYNAMIC_INDEXING);
+                    emitBoolean(
+                            store,
+                            descriptorIndexingFeaturesEXT,
+                            KEY_SHADER_UNIFORM_TEXEL_BUFFER_ARRAY_DYNAMIC_INDEXING);
+                    emitBoolean(
+                            store,
+                            descriptorIndexingFeaturesEXT,
+                            KEY_SHADER_STORAGE_TEXEL_BUFFER_ARRAY_DYNAMIC_INDEXING);
+                    emitBoolean(
+                            store,
+                            descriptorIndexingFeaturesEXT,
+                            KEY_SHADER_UNIFORM_BUFFER_ARRAY_NON_UNIFORM_INDEXING);
+                    emitBoolean(
+                            store,
+                            descriptorIndexingFeaturesEXT,
+                            KEY_SHADER_SAMPLED_IMAGE_ARRAY_NON_UNIFORM_INDEXING);
+                    emitBoolean(
+                            store,
+                            descriptorIndexingFeaturesEXT,
+                            KEY_SHADER_STORAGE_BUFFER_ARRAY_NON_UNIFORM_INDEXING);
+                    emitBoolean(
+                            store,
+                            descriptorIndexingFeaturesEXT,
+                            KEY_SHADER_STORAGE_IMAGE_ARRAY_NON_UNIFORM_INDEXING);
+                    emitBoolean(
+                            store,
+                            descriptorIndexingFeaturesEXT,
+                            KEY_SHADER_INPUT_ATTACHMENT_ARRAY_NON_UNIFORM_INDEXING);
+                    emitBoolean(
+                            store,
+                            descriptorIndexingFeaturesEXT,
+                            KEY_SHADER_UNIFORM_TEXEL_BUFFER_ARRAY_NON_UNIFORM_INDEXING);
+                    emitBoolean(
+                            store,
+                            descriptorIndexingFeaturesEXT,
+                            KEY_SHADER_STORAGE_TEXEL_BUFFER_ARRAY_NON_UNIFORM_INDEXING);
+                    emitBoolean(
+                            store,
+                            descriptorIndexingFeaturesEXT,
+                            KEY_DESCRIPTOR_BINDING_UNIFORM_BUFFER_UPDATE_AFTER_BIND);
+                    emitBoolean(
+                            store,
+                            descriptorIndexingFeaturesEXT,
+                            KEY_DESCRIPTOR_BINDING_SAMPLED_IMAGE_UPDATE_AFTER_BIND);
+                    emitBoolean(
+                            store,
+                            descriptorIndexingFeaturesEXT,
+                            KEY_DESCRIPTOR_BINDING_STORAGE_IMAGE_UPDATE_AFTER_BIND);
+                    emitBoolean(
+                            store,
+                            descriptorIndexingFeaturesEXT,
+                            KEY_DESCRIPTOR_BINDING_STORAGE_BUFFER_UPDATE_AFTER_BIND);
+                    emitBoolean(
+                            store,
+                            descriptorIndexingFeaturesEXT,
+                            KEY_DESCRIPTOR_BINDING_UNIFORM_TEXEL_BUFFER_UPDATE_AFTER_BIND);
+                    emitBoolean(
+                            store,
+                            descriptorIndexingFeaturesEXT,
+                            KEY_DESCRIPTOR_BINDING_STORAGE_TEXEL_BUFFER_UPDATE_AFTER_BIND);
+                    emitBoolean(
+                            store,
+                            descriptorIndexingFeaturesEXT,
+                            KEY_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING);
+                    emitBoolean(
+                            store,
+                            descriptorIndexingFeaturesEXT,
+                            KEY_DESCRIPTOR_BINDING_PARTIALLY_BOUND);
+                    emitBoolean(
+                            store,
+                            descriptorIndexingFeaturesEXT,
+                            KEY_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT);
                     emitBoolean(store, descriptorIndexingFeaturesEXT, KEY_RUNTIME_DESCRIPTOR_ARRAY);
                 }
                 store.endGroup();
-                JSONObject descriptorIndexingPropertiesEXT = extDescriptorIndexingFeatures.getJSONObject(KEY_DESCRIPTOR_INDEXING_PROPERTIES_EXT);
+                JSONObject descriptorIndexingPropertiesEXT =
+                        extDescriptorIndexingFeatures.getJSONObject(
+                                KEY_DESCRIPTOR_INDEXING_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_DESCRIPTOR_INDEXING_PROPERTIES_EXT));
                 {
-                    emitLong(store, descriptorIndexingPropertiesEXT, KEY_MAX_UPDATE_AFTER_BIND_DESCRIPTORS_IN_ALL_POOLS);
-                    emitBoolean(store, descriptorIndexingPropertiesEXT, KEY_SHADER_UNIFORM_BUFFER_ARRAY_NONUNIFORM_INDEXING_NATIVE);
-                    emitBoolean(store, descriptorIndexingPropertiesEXT, KEY_SHADER_SAMPLED_IMAGE_ARRAY_NONUNIFORM_INDEXING_NATIVE);
-                    emitBoolean(store, descriptorIndexingPropertiesEXT, KEY_SHADER_STORAGE_BUFFER_ARRAY_NONUNIFORM_INDEXING_NATIVE);
-                    emitBoolean(store, descriptorIndexingPropertiesEXT, KEY_SHADER_STORAGE_IMAGE_ARRAY_NONUNIFORM_INDEXING_NATIVE);
-                    emitBoolean(store, descriptorIndexingPropertiesEXT, KEY_SHADER_INPUT_ATTACHMENT_ARRAY_NONUNIFORM_INDEXING_NATIVE);
-                    emitBoolean(store, descriptorIndexingPropertiesEXT, KEY_ROBUST_BUFFER_ACCESS_UPDATE_AFTER_BIND);
-                    emitBoolean(store, descriptorIndexingPropertiesEXT, KEY_QUAD_DIVERGENT_IMPLICIT_LOD);
-                    emitLong(store, descriptorIndexingPropertiesEXT, KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_SAMPLERS);
-                    emitLong(store, descriptorIndexingPropertiesEXT, KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_UNIFORM_BUFFERS);
-                    emitLong(store, descriptorIndexingPropertiesEXT, KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_STORAGE_BUFFERS);
-                    emitLong(store, descriptorIndexingPropertiesEXT, KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_SAMPLED_IMAGES);
-                    emitLong(store, descriptorIndexingPropertiesEXT, KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_STORAGE_IMAGES);
-                    emitLong(store, descriptorIndexingPropertiesEXT, KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_INPUT_ATTACHMENTS);
-                    emitLong(store, descriptorIndexingPropertiesEXT, KEY_MAX_PER_STAGE_UPDATE_AFTER_BIND_RESOURCES);
-                    emitLong(store, descriptorIndexingPropertiesEXT, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_SAMPLERS);
-                    emitLong(store, descriptorIndexingPropertiesEXT, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_UNIFORM_BUFFERS);
-                    emitLong(store, descriptorIndexingPropertiesEXT, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_UNIFORM_BUFFERS_DYNAMIC);
-                    emitLong(store, descriptorIndexingPropertiesEXT, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_STORAGE_BUFFERS);
-                    emitLong(store, descriptorIndexingPropertiesEXT, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_STORAGE_BUFFERS_DYNAMIC);
-                    emitLong(store, descriptorIndexingPropertiesEXT, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_SAMPLED_IMAGES);
-                    emitLong(store, descriptorIndexingPropertiesEXT, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_STORAGE_IMAGES);
-                    emitLong(store, descriptorIndexingPropertiesEXT, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_INPUT_ATTACHMENTS);
+                    emitLong(
+                            store,
+                            descriptorIndexingPropertiesEXT,
+                            KEY_MAX_UPDATE_AFTER_BIND_DESCRIPTORS_IN_ALL_POOLS);
+                    emitBoolean(
+                            store,
+                            descriptorIndexingPropertiesEXT,
+                            KEY_SHADER_UNIFORM_BUFFER_ARRAY_NONUNIFORM_INDEXING_NATIVE);
+                    emitBoolean(
+                            store,
+                            descriptorIndexingPropertiesEXT,
+                            KEY_SHADER_SAMPLED_IMAGE_ARRAY_NONUNIFORM_INDEXING_NATIVE);
+                    emitBoolean(
+                            store,
+                            descriptorIndexingPropertiesEXT,
+                            KEY_SHADER_STORAGE_BUFFER_ARRAY_NONUNIFORM_INDEXING_NATIVE);
+                    emitBoolean(
+                            store,
+                            descriptorIndexingPropertiesEXT,
+                            KEY_SHADER_STORAGE_IMAGE_ARRAY_NONUNIFORM_INDEXING_NATIVE);
+                    emitBoolean(
+                            store,
+                            descriptorIndexingPropertiesEXT,
+                            KEY_SHADER_INPUT_ATTACHMENT_ARRAY_NONUNIFORM_INDEXING_NATIVE);
+                    emitBoolean(
+                            store,
+                            descriptorIndexingPropertiesEXT,
+                            KEY_ROBUST_BUFFER_ACCESS_UPDATE_AFTER_BIND);
+                    emitBoolean(
+                            store,
+                            descriptorIndexingPropertiesEXT,
+                            KEY_QUAD_DIVERGENT_IMPLICIT_LOD);
+                    emitLong(
+                            store,
+                            descriptorIndexingPropertiesEXT,
+                            KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_SAMPLERS);
+                    emitLong(
+                            store,
+                            descriptorIndexingPropertiesEXT,
+                            KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_UNIFORM_BUFFERS);
+                    emitLong(
+                            store,
+                            descriptorIndexingPropertiesEXT,
+                            KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_STORAGE_BUFFERS);
+                    emitLong(
+                            store,
+                            descriptorIndexingPropertiesEXT,
+                            KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_SAMPLED_IMAGES);
+                    emitLong(
+                            store,
+                            descriptorIndexingPropertiesEXT,
+                            KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_STORAGE_IMAGES);
+                    emitLong(
+                            store,
+                            descriptorIndexingPropertiesEXT,
+                            KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_INPUT_ATTACHMENTS);
+                    emitLong(
+                            store,
+                            descriptorIndexingPropertiesEXT,
+                            KEY_MAX_PER_STAGE_UPDATE_AFTER_BIND_RESOURCES);
+                    emitLong(
+                            store,
+                            descriptorIndexingPropertiesEXT,
+                            KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_SAMPLERS);
+                    emitLong(
+                            store,
+                            descriptorIndexingPropertiesEXT,
+                            KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_UNIFORM_BUFFERS);
+                    emitLong(
+                            store,
+                            descriptorIndexingPropertiesEXT,
+                            KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_UNIFORM_BUFFERS_DYNAMIC);
+                    emitLong(
+                            store,
+                            descriptorIndexingPropertiesEXT,
+                            KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_STORAGE_BUFFERS);
+                    emitLong(
+                            store,
+                            descriptorIndexingPropertiesEXT,
+                            KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_STORAGE_BUFFERS_DYNAMIC);
+                    emitLong(
+                            store,
+                            descriptorIndexingPropertiesEXT,
+                            KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_SAMPLED_IMAGES);
+                    emitLong(
+                            store,
+                            descriptorIndexingPropertiesEXT,
+                            KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_STORAGE_IMAGES);
+                    emitLong(
+                            store,
+                            descriptorIndexingPropertiesEXT,
+                            KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_INPUT_ATTACHMENTS);
                 }
                 store.endGroup();
             }
@@ -2390,14 +3688,16 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkEXTDeviceAddressBindingReport(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extAddressBindingReportFeatures = parent.optJSONObject(KEY_VK_EXT_DEVICE_ADDRESS_BINDING_REPORT);
+    private static void emitVkEXTDeviceAddressBindingReport(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject extAddressBindingReportFeatures =
+                parent.optJSONObject(KEY_VK_EXT_DEVICE_ADDRESS_BINDING_REPORT);
         if (extAddressBindingReportFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_DEVICE_ADDRESS_BINDING_REPORT));
             {
-                JSONObject addressBindingReportFeaturesEXT = extAddressBindingReportFeatures.getJSONObject(KEY_ADDRESS_BINDING_REPORT_FEATURES_EXT);
+                JSONObject addressBindingReportFeaturesEXT =
+                        extAddressBindingReportFeatures.getJSONObject(
+                                KEY_ADDRESS_BINDING_REPORT_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_ADDRESS_BINDING_REPORT_FEATURES_EXT));
                 {
                     emitBoolean(store, addressBindingReportFeaturesEXT, KEY_REPORT_ADDRESS_BINDING);
@@ -2409,13 +3709,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTDeviceFault(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject extFaultFeatures = parent.optJSONObject(KEY_VK_EXT_DEVICE_FAULT);
         if (extFaultFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_DEVICE_FAULT));
             {
-                JSONObject faultFeaturesEXT = extFaultFeatures.getJSONObject(KEY_FAULT_FEATURES_EXT);
+                JSONObject faultFeaturesEXT =
+                        extFaultFeatures.getJSONObject(KEY_FAULT_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_FAULT_FEATURES_EXT));
                 {
                     emitBoolean(store, faultFeaturesEXT, KEY_DEVICE_FAULT);
@@ -2428,34 +3728,80 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTDeviceGeneratedCommands(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extDeviceGeneratedCommandsFeatures = parent.optJSONObject(KEY_VK_EXT_DEVICE_GENERATED_COMMANDS);
+            throws IOException, JSONException {
+        JSONObject extDeviceGeneratedCommandsFeatures =
+                parent.optJSONObject(KEY_VK_EXT_DEVICE_GENERATED_COMMANDS);
         if (extDeviceGeneratedCommandsFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_DEVICE_GENERATED_COMMANDS));
             {
-                JSONObject deviceGeneratedCommandsFeaturesEXT = extDeviceGeneratedCommandsFeatures.getJSONObject(KEY_DEVICE_GENERATED_COMMANDS_FEATURES_EXT);
+                JSONObject deviceGeneratedCommandsFeaturesEXT =
+                        extDeviceGeneratedCommandsFeatures.getJSONObject(
+                                KEY_DEVICE_GENERATED_COMMANDS_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_DEVICE_GENERATED_COMMANDS_FEATURES_EXT));
                 {
-                    emitBoolean(store, deviceGeneratedCommandsFeaturesEXT, KEY_DEVICE_GENERATED_COMMANDS);
-                    emitBoolean(store, deviceGeneratedCommandsFeaturesEXT, KEY_DYNAMIC_GENERATED_PIPELINE_LAYOUT);
+                    emitBoolean(
+                            store,
+                            deviceGeneratedCommandsFeaturesEXT,
+                            KEY_DEVICE_GENERATED_COMMANDS);
+                    emitBoolean(
+                            store,
+                            deviceGeneratedCommandsFeaturesEXT,
+                            KEY_DYNAMIC_GENERATED_PIPELINE_LAYOUT);
                 }
                 store.endGroup();
-                JSONObject deviceGeneratedCommandsPropertiesEXT = extDeviceGeneratedCommandsFeatures.getJSONObject(KEY_DEVICE_GENERATED_COMMANDS_PROPERTIES_EXT);
+                JSONObject deviceGeneratedCommandsPropertiesEXT =
+                        extDeviceGeneratedCommandsFeatures.getJSONObject(
+                                KEY_DEVICE_GENERATED_COMMANDS_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_DEVICE_GENERATED_COMMANDS_PROPERTIES_EXT));
                 {
-                    emitLong(store, deviceGeneratedCommandsPropertiesEXT, KEY_MAX_INDIRECT_PIPELINE_COUNT);
-                    emitLong(store, deviceGeneratedCommandsPropertiesEXT, KEY_MAX_INDIRECT_SHADER_OBJECT_COUNT);
-                    emitLong(store, deviceGeneratedCommandsPropertiesEXT, KEY_MAX_INDIRECT_SEQUENCE_COUNT);
-                    emitLong(store, deviceGeneratedCommandsPropertiesEXT, KEY_MAX_INDIRECT_COMMANDS_TOKEN_COUNT);
-                    emitLong(store, deviceGeneratedCommandsPropertiesEXT, KEY_MAX_INDIRECT_COMMANDS_TOKEN_OFFSET);
-                    emitLong(store, deviceGeneratedCommandsPropertiesEXT, KEY_MAX_INDIRECT_COMMANDS_INDIRECT_STRIDE);
-                    emitLong(store, deviceGeneratedCommandsPropertiesEXT, KEY_SUPPORTED_INDIRECT_COMMANDS_INPUT_MODES);
-                    emitLong(store, deviceGeneratedCommandsPropertiesEXT, KEY_SUPPORTED_INDIRECT_COMMANDS_SHADER_STAGES);
-                    emitLong(store, deviceGeneratedCommandsPropertiesEXT, KEY_SUPPORTED_INDIRECT_COMMANDS_SHADER_STAGES_PIPELINE_BINDING);
-                    emitLong(store, deviceGeneratedCommandsPropertiesEXT, KEY_SUPPORTED_INDIRECT_COMMANDS_SHADER_STAGES_SHADER_BINDING);
-                    emitBoolean(store, deviceGeneratedCommandsPropertiesEXT, KEY_DEVICE_GENERATED_COMMANDS_TRANSFORM_FEEDBACK);
-                    emitBoolean(store, deviceGeneratedCommandsPropertiesEXT, KEY_DEVICE_GENERATED_COMMANDS_MULTI_DRAW_INDIRECT_COUNT);
+                    emitLong(
+                            store,
+                            deviceGeneratedCommandsPropertiesEXT,
+                            KEY_MAX_INDIRECT_PIPELINE_COUNT);
+                    emitLong(
+                            store,
+                            deviceGeneratedCommandsPropertiesEXT,
+                            KEY_MAX_INDIRECT_SHADER_OBJECT_COUNT);
+                    emitLong(
+                            store,
+                            deviceGeneratedCommandsPropertiesEXT,
+                            KEY_MAX_INDIRECT_SEQUENCE_COUNT);
+                    emitLong(
+                            store,
+                            deviceGeneratedCommandsPropertiesEXT,
+                            KEY_MAX_INDIRECT_COMMANDS_TOKEN_COUNT);
+                    emitLong(
+                            store,
+                            deviceGeneratedCommandsPropertiesEXT,
+                            KEY_MAX_INDIRECT_COMMANDS_TOKEN_OFFSET);
+                    emitLong(
+                            store,
+                            deviceGeneratedCommandsPropertiesEXT,
+                            KEY_MAX_INDIRECT_COMMANDS_INDIRECT_STRIDE);
+                    emitLong(
+                            store,
+                            deviceGeneratedCommandsPropertiesEXT,
+                            KEY_SUPPORTED_INDIRECT_COMMANDS_INPUT_MODES);
+                    emitLong(
+                            store,
+                            deviceGeneratedCommandsPropertiesEXT,
+                            KEY_SUPPORTED_INDIRECT_COMMANDS_SHADER_STAGES);
+                    emitLong(
+                            store,
+                            deviceGeneratedCommandsPropertiesEXT,
+                            KEY_SUPPORTED_INDIRECT_COMMANDS_SHADER_STAGES_PIPELINE_BINDING);
+                    emitLong(
+                            store,
+                            deviceGeneratedCommandsPropertiesEXT,
+                            KEY_SUPPORTED_INDIRECT_COMMANDS_SHADER_STAGES_SHADER_BINDING);
+                    emitBoolean(
+                            store,
+                            deviceGeneratedCommandsPropertiesEXT,
+                            KEY_DEVICE_GENERATED_COMMANDS_TRANSFORM_FEEDBACK);
+                    emitBoolean(
+                            store,
+                            deviceGeneratedCommandsPropertiesEXT,
+                            KEY_DEVICE_GENERATED_COMMANDS_MULTI_DRAW_INDIRECT_COUNT);
                 }
                 store.endGroup();
             }
@@ -2464,13 +3810,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTDeviceMemoryReport(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extDeviceMemoryReportFeatures = parent.optJSONObject(KEY_VK_EXT_DEVICE_MEMORY_REPORT);
+            throws IOException, JSONException {
+        JSONObject extDeviceMemoryReportFeatures =
+                parent.optJSONObject(KEY_VK_EXT_DEVICE_MEMORY_REPORT);
         if (extDeviceMemoryReportFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_DEVICE_MEMORY_REPORT));
             {
-                JSONObject deviceMemoryReportFeaturesEXT = extDeviceMemoryReportFeatures.getJSONObject(KEY_DEVICE_MEMORY_REPORT_FEATURES_EXT);
+                JSONObject deviceMemoryReportFeaturesEXT =
+                        extDeviceMemoryReportFeatures.getJSONObject(
+                                KEY_DEVICE_MEMORY_REPORT_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_DEVICE_MEMORY_REPORT_FEATURES_EXT));
                 {
                     emitBoolean(store, deviceMemoryReportFeaturesEXT, KEY_DEVICE_MEMORY_REPORT);
@@ -2482,13 +3830,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTDiscardRectangles(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extDiscardRectangleProperties = parent.optJSONObject(KEY_VK_EXT_DISCARD_RECTANGLES);
+            throws IOException, JSONException {
+        JSONObject extDiscardRectangleProperties =
+                parent.optJSONObject(KEY_VK_EXT_DISCARD_RECTANGLES);
         if (extDiscardRectangleProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_DISCARD_RECTANGLES));
             {
-                JSONObject discardRectanglePropertiesEXT = extDiscardRectangleProperties.getJSONObject(KEY_DISCARD_RECTANGLE_PROPERTIES_EXT);
+                JSONObject discardRectanglePropertiesEXT =
+                        extDiscardRectangleProperties.getJSONObject(
+                                KEY_DISCARD_RECTANGLE_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_DISCARD_RECTANGLE_PROPERTIES_EXT));
                 {
                     emitLong(store, discardRectanglePropertiesEXT, KEY_MAX_DISCARD_RECTANGLES);
@@ -2499,17 +3849,23 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkEXTDynamicRenderingUnusedAttachments(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extDynamicRenderingUnusedAttachmentsFeatures = parent.optJSONObject(KEY_VK_EXT_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS);
+    private static void emitVkEXTDynamicRenderingUnusedAttachments(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject extDynamicRenderingUnusedAttachmentsFeatures =
+                parent.optJSONObject(KEY_VK_EXT_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS);
         if (extDynamicRenderingUnusedAttachmentsFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS));
             {
-                JSONObject dynamicRenderingUnusedAttachmentsFeaturesEXT = extDynamicRenderingUnusedAttachmentsFeatures.getJSONObject(KEY_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_FEATURES_EXT);
-                store.startGroup(getConvertedName(KEY_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_FEATURES_EXT));
+                JSONObject dynamicRenderingUnusedAttachmentsFeaturesEXT =
+                        extDynamicRenderingUnusedAttachmentsFeatures.getJSONObject(
+                                KEY_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_FEATURES_EXT);
+                store.startGroup(
+                        getConvertedName(KEY_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_FEATURES_EXT));
                 {
-                    emitBoolean(store, dynamicRenderingUnusedAttachmentsFeaturesEXT, KEY_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS);
+                    emitBoolean(
+                            store,
+                            dynamicRenderingUnusedAttachmentsFeaturesEXT,
+                            KEY_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS);
                 }
                 store.endGroup();
             }
@@ -2518,13 +3874,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTExtendedDynamicState(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extExtendedDynamicStateFeatures = parent.optJSONObject(KEY_VK_EXT_EXTENDED_DYNAMIC_STATE);
+            throws IOException, JSONException {
+        JSONObject extExtendedDynamicStateFeatures =
+                parent.optJSONObject(KEY_VK_EXT_EXTENDED_DYNAMIC_STATE);
         if (extExtendedDynamicStateFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_EXTENDED_DYNAMIC_STATE));
             {
-                JSONObject extendedDynamicStateFeaturesEXT = extExtendedDynamicStateFeatures.getJSONObject(KEY_EXTENDED_DYNAMIC_STATE_FEATURES_EXT);
+                JSONObject extendedDynamicStateFeaturesEXT =
+                        extExtendedDynamicStateFeatures.getJSONObject(
+                                KEY_EXTENDED_DYNAMIC_STATE_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_EXTENDED_DYNAMIC_STATE_FEATURES_EXT));
                 {
                     emitBoolean(store, extendedDynamicStateFeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE);
@@ -2536,18 +3894,27 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTExtendedDynamicState2(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extExtendedDynamicState2Features = parent.optJSONObject(KEY_VK_EXT_EXTENDED_DYNAMIC_STATE2);
+            throws IOException, JSONException {
+        JSONObject extExtendedDynamicState2Features =
+                parent.optJSONObject(KEY_VK_EXT_EXTENDED_DYNAMIC_STATE2);
         if (extExtendedDynamicState2Features != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_EXTENDED_DYNAMIC_STATE2));
             {
-                JSONObject extendedDynamicState2FeaturesEXT = extExtendedDynamicState2Features.getJSONObject(KEY_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT);
+                JSONObject extendedDynamicState2FeaturesEXT =
+                        extExtendedDynamicState2Features.getJSONObject(
+                                KEY_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_EXTENDED_DYNAMIC_STATE_2_FEATURES_EXT));
                 {
-                    emitBoolean(store, extendedDynamicState2FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_2);
-                    emitBoolean(store, extendedDynamicState2FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_2_LOGIC_OP);
-                    emitBoolean(store, extendedDynamicState2FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_2_PATCH_CONTROL_POINTS);
+                    emitBoolean(
+                            store, extendedDynamicState2FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_2);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState2FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_2_LOGIC_OP);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState2FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_2_PATCH_CONTROL_POINTS);
                 }
                 store.endGroup();
             }
@@ -2556,52 +3923,152 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTExtendedDynamicState3(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extExtendedDynamicState3Features = parent.optJSONObject(KEY_VK_EXT_EXTENDED_DYNAMIC_STATE3);
+            throws IOException, JSONException {
+        JSONObject extExtendedDynamicState3Features =
+                parent.optJSONObject(KEY_VK_EXT_EXTENDED_DYNAMIC_STATE3);
         if (extExtendedDynamicState3Features != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_EXTENDED_DYNAMIC_STATE3));
             {
-                JSONObject extendedDynamicState3FeaturesEXT = extExtendedDynamicState3Features.getJSONObject(KEY_EXTENDED_DYNAMIC_STATE_3_FEATURES_EXT);
+                JSONObject extendedDynamicState3FeaturesEXT =
+                        extExtendedDynamicState3Features.getJSONObject(
+                                KEY_EXTENDED_DYNAMIC_STATE_3_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_EXTENDED_DYNAMIC_STATE_3_FEATURES_EXT));
                 {
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_TESSELLATION_DOMAIN_ORIGIN);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_DEPTH_CLAMP_ENABLE);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_POLYGON_MODE);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_RASTERIZATION_SAMPLES);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_SAMPLE_MASK);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_ALPHA_TO_COVERAGE_ENABLE);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_ALPHA_TO_ONE_ENABLE);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_LOGIC_OP_ENABLE);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_COLOR_BLEND_ENABLE);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_COLOR_BLEND_EQUATION);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_COLOR_WRITE_MASK);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_RASTERIZATION_STREAM);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_CONSERVATIVE_RASTERIZATION_MODE);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_DEPTH_CLIP_ENABLE);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_SAMPLE_LOCATIONS_ENABLE);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_COLOR_BLEND_ADVANCED);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_PROVOKING_VERTEX_MODE);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_LINE_RASTERIZATION_MODE);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_LINE_STIPPLE_ENABLE);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_DEPTH_CLIP_NEGATIVE_ONE_TO_ONE);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_VIEWPORT_W_SCALING_ENABLE);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_VIEWPORT_SWIZZLE);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_COVERAGE_TO_COLOR_ENABLE);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_COVERAGE_TO_COLOR_LOCATION);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_COVERAGE_MODULATION_MODE);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_COVERAGE_MODULATION_TABLE_ENABLE);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_COVERAGE_MODULATION_TABLE);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_COVERAGE_REDUCTION_MODE);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_REPRESENTATIVE_FRAGMENT_TEST_ENABLE);
-                    emitBoolean(store, extendedDynamicState3FeaturesEXT, KEY_EXTENDED_DYNAMIC_STATE_3_SHADING_RATE_IMAGE_ENABLE);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_TESSELLATION_DOMAIN_ORIGIN);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_DEPTH_CLAMP_ENABLE);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_POLYGON_MODE);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_RASTERIZATION_SAMPLES);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_SAMPLE_MASK);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_ALPHA_TO_COVERAGE_ENABLE);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_ALPHA_TO_ONE_ENABLE);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_LOGIC_OP_ENABLE);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_COLOR_BLEND_ENABLE);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_COLOR_BLEND_EQUATION);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_COLOR_WRITE_MASK);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_RASTERIZATION_STREAM);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_CONSERVATIVE_RASTERIZATION_MODE);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_DEPTH_CLIP_ENABLE);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_SAMPLE_LOCATIONS_ENABLE);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_COLOR_BLEND_ADVANCED);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_PROVOKING_VERTEX_MODE);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_LINE_RASTERIZATION_MODE);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_LINE_STIPPLE_ENABLE);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_DEPTH_CLIP_NEGATIVE_ONE_TO_ONE);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_VIEWPORT_W_SCALING_ENABLE);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_VIEWPORT_SWIZZLE);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_COVERAGE_TO_COLOR_ENABLE);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_COVERAGE_TO_COLOR_LOCATION);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_COVERAGE_MODULATION_MODE);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_COVERAGE_MODULATION_TABLE_ENABLE);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_COVERAGE_MODULATION_TABLE);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_COVERAGE_REDUCTION_MODE);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_REPRESENTATIVE_FRAGMENT_TEST_ENABLE);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3FeaturesEXT,
+                            KEY_EXTENDED_DYNAMIC_STATE_3_SHADING_RATE_IMAGE_ENABLE);
                 }
                 store.endGroup();
-                JSONObject extendedDynamicState3PropertiesEXT = extExtendedDynamicState3Features.getJSONObject(KEY_EXTENDED_DYNAMIC_STATE_3_PROPERTIES_EXT);
+                JSONObject extendedDynamicState3PropertiesEXT =
+                        extExtendedDynamicState3Features.getJSONObject(
+                                KEY_EXTENDED_DYNAMIC_STATE_3_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_EXTENDED_DYNAMIC_STATE_3_PROPERTIES_EXT));
                 {
-                    emitBoolean(store, extendedDynamicState3PropertiesEXT, KEY_DYNAMIC_PRIMITIVE_TOPOLOGY_UNRESTRICTED);
+                    emitBoolean(
+                            store,
+                            extendedDynamicState3PropertiesEXT,
+                            KEY_DYNAMIC_PRIMITIVE_TOPOLOGY_UNRESTRICTED);
                 }
                 store.endGroup();
             }
@@ -2610,16 +4077,21 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTExternalMemoryHost(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extExternalMemoryHostProperties = parent.optJSONObject(KEY_VK_EXT_EXTERNAL_MEMORY_HOST);
+            throws IOException, JSONException {
+        JSONObject extExternalMemoryHostProperties =
+                parent.optJSONObject(KEY_VK_EXT_EXTERNAL_MEMORY_HOST);
         if (extExternalMemoryHostProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_EXTERNAL_MEMORY_HOST));
             {
-                JSONObject externalMemoryHostPropertiesEXT = extExternalMemoryHostProperties.getJSONObject(KEY_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT);
+                JSONObject externalMemoryHostPropertiesEXT =
+                        extExternalMemoryHostProperties.getJSONObject(
+                                KEY_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT));
                 {
-                    emitString(store, externalMemoryHostPropertiesEXT, KEY_MIN_IMPORTED_HOST_POINTER_ALIGNMENT);
+                    emitString(
+                            store,
+                            externalMemoryHostPropertiesEXT,
+                            KEY_MIN_IMPORTED_HOST_POINTER_ALIGNMENT);
                 }
                 store.endGroup();
             }
@@ -2628,38 +4100,53 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTFragmentDensityMap(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extFragmentDensityMapFeatures = parent.optJSONObject(KEY_VK_EXT_FRAGMENT_DENSITY_MAP);
+            throws IOException, JSONException {
+        JSONObject extFragmentDensityMapFeatures =
+                parent.optJSONObject(KEY_VK_EXT_FRAGMENT_DENSITY_MAP);
         if (extFragmentDensityMapFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_FRAGMENT_DENSITY_MAP));
             {
-                JSONObject fragmentDensityMapFeaturesEXT = extFragmentDensityMapFeatures.getJSONObject(KEY_FRAGMENT_DENSITY_MAP_FEATURES_EXT);
+                JSONObject fragmentDensityMapFeaturesEXT =
+                        extFragmentDensityMapFeatures.getJSONObject(
+                                KEY_FRAGMENT_DENSITY_MAP_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_FRAGMENT_DENSITY_MAP_FEATURES_EXT));
                 {
                     emitBoolean(store, fragmentDensityMapFeaturesEXT, KEY_FRAGMENT_DENSITY_MAP);
-                    emitBoolean(store, fragmentDensityMapFeaturesEXT, KEY_FRAGMENT_DENSITY_MAP_DYNAMIC);
-                    emitBoolean(store, fragmentDensityMapFeaturesEXT, KEY_FRAGMENT_DENSITY_MAP_NON_SUBSAMPLED_IMAGES);
+                    emitBoolean(
+                            store, fragmentDensityMapFeaturesEXT, KEY_FRAGMENT_DENSITY_MAP_DYNAMIC);
+                    emitBoolean(
+                            store,
+                            fragmentDensityMapFeaturesEXT,
+                            KEY_FRAGMENT_DENSITY_MAP_NON_SUBSAMPLED_IMAGES);
                 }
                 store.endGroup();
-                JSONObject fragmentDensityMapPropertiesEXT = extFragmentDensityMapFeatures.getJSONObject(KEY_FRAGMENT_DENSITY_MAP_PROPERTIES_EXT);
+                JSONObject fragmentDensityMapPropertiesEXT =
+                        extFragmentDensityMapFeatures.getJSONObject(
+                                KEY_FRAGMENT_DENSITY_MAP_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_FRAGMENT_DENSITY_MAP_PROPERTIES_EXT));
                 {
-                    JSONObject minFragmentDensityTexelSize = fragmentDensityMapPropertiesEXT.getJSONObject(KEY_MIN_FRAGMENT_DENSITY_TEXEL_SIZE);
+                    JSONObject minFragmentDensityTexelSize =
+                            fragmentDensityMapPropertiesEXT.getJSONObject(
+                                    KEY_MIN_FRAGMENT_DENSITY_TEXEL_SIZE);
                     store.startGroup(getConvertedName(KEY_MIN_FRAGMENT_DENSITY_TEXEL_SIZE));
                     {
                         emitLong(store, minFragmentDensityTexelSize, KEY_WIDTH);
                         emitLong(store, minFragmentDensityTexelSize, KEY_HEIGHT);
                     }
                     store.endGroup();
-                    JSONObject maxFragmentDensityTexelSize = fragmentDensityMapPropertiesEXT.getJSONObject(KEY_MAX_FRAGMENT_DENSITY_TEXEL_SIZE);
+                    JSONObject maxFragmentDensityTexelSize =
+                            fragmentDensityMapPropertiesEXT.getJSONObject(
+                                    KEY_MAX_FRAGMENT_DENSITY_TEXEL_SIZE);
                     store.startGroup(getConvertedName(KEY_MAX_FRAGMENT_DENSITY_TEXEL_SIZE));
                     {
                         emitLong(store, maxFragmentDensityTexelSize, KEY_WIDTH);
                         emitLong(store, maxFragmentDensityTexelSize, KEY_HEIGHT);
                     }
                     store.endGroup();
-                    emitBoolean(store, fragmentDensityMapPropertiesEXT, KEY_FRAGMENT_DENSITY_INVOCATIONS);
+                    emitBoolean(
+                            store,
+                            fragmentDensityMapPropertiesEXT,
+                            KEY_FRAGMENT_DENSITY_INVOCATIONS);
                 }
                 store.endGroup();
             }
@@ -2668,25 +4155,41 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTFragmentDensityMap2(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extFragmentDensityMap2Features = parent.optJSONObject(KEY_VK_EXT_FRAGMENT_DENSITY_MAP2);
+            throws IOException, JSONException {
+        JSONObject extFragmentDensityMap2Features =
+                parent.optJSONObject(KEY_VK_EXT_FRAGMENT_DENSITY_MAP2);
         if (extFragmentDensityMap2Features != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_FRAGMENT_DENSITY_MAP2));
             {
-                JSONObject fragmentDensityMap2FeaturesEXT = extFragmentDensityMap2Features.getJSONObject(KEY_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT);
+                JSONObject fragmentDensityMap2FeaturesEXT =
+                        extFragmentDensityMap2Features.getJSONObject(
+                                KEY_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT));
                 {
-                    emitBoolean(store, fragmentDensityMap2FeaturesEXT, KEY_FRAGMENT_DENSITY_MAP_DEFERRED);
+                    emitBoolean(
+                            store,
+                            fragmentDensityMap2FeaturesEXT,
+                            KEY_FRAGMENT_DENSITY_MAP_DEFERRED);
                 }
                 store.endGroup();
-                JSONObject fragmentDensityMap2PropertiesEXT = extFragmentDensityMap2Features.getJSONObject(KEY_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT);
+                JSONObject fragmentDensityMap2PropertiesEXT =
+                        extFragmentDensityMap2Features.getJSONObject(
+                                KEY_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT));
                 {
                     emitBoolean(store, fragmentDensityMap2PropertiesEXT, KEY_SUBSAMPLED_LOADS);
-                    emitBoolean(store, fragmentDensityMap2PropertiesEXT, KEY_SUBSAMPLED_COARSE_RECONSTRUCTION_EARLY_ACCESS);
-                    emitLong(store, fragmentDensityMap2PropertiesEXT, KEY_MAX_SUBSAMPLED_ARRAY_LAYERS);
-                    emitLong(store, fragmentDensityMap2PropertiesEXT, KEY_MAX_DESCRIPTOR_SET_SUBSAMPLED_SAMPLERS);
+                    emitBoolean(
+                            store,
+                            fragmentDensityMap2PropertiesEXT,
+                            KEY_SUBSAMPLED_COARSE_RECONSTRUCTION_EARLY_ACCESS);
+                    emitLong(
+                            store,
+                            fragmentDensityMap2PropertiesEXT,
+                            KEY_MAX_SUBSAMPLED_ARRAY_LAYERS);
+                    emitLong(
+                            store,
+                            fragmentDensityMap2PropertiesEXT,
+                            KEY_MAX_DESCRIPTOR_SET_SUBSAMPLED_SAMPLERS);
                 }
                 store.endGroup();
             }
@@ -2695,22 +4198,31 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTFragmentDensityMapOffset(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extFragmentDensityMapOffsetFeatures = parent.optJSONObject(KEY_VK_EXT_FRAGMENT_DENSITY_MAP_OFFSET);
+            throws IOException, JSONException {
+        JSONObject extFragmentDensityMapOffsetFeatures =
+                parent.optJSONObject(KEY_VK_EXT_FRAGMENT_DENSITY_MAP_OFFSET);
         if (extFragmentDensityMapOffsetFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_FRAGMENT_DENSITY_MAP_OFFSET));
             {
-                JSONObject fragmentDensityMapOffsetFeaturesEXT = extFragmentDensityMapOffsetFeatures.getJSONObject(KEY_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_EXT);
+                JSONObject fragmentDensityMapOffsetFeaturesEXT =
+                        extFragmentDensityMapOffsetFeatures.getJSONObject(
+                                KEY_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_EXT));
                 {
-                    emitBoolean(store, fragmentDensityMapOffsetFeaturesEXT, KEY_FRAGMENT_DENSITY_MAP_OFFSET);
+                    emitBoolean(
+                            store,
+                            fragmentDensityMapOffsetFeaturesEXT,
+                            KEY_FRAGMENT_DENSITY_MAP_OFFSET);
                 }
                 store.endGroup();
-                JSONObject fragmentDensityMapOffsetPropertiesEXT = extFragmentDensityMapOffsetFeatures.getJSONObject(KEY_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_EXT);
+                JSONObject fragmentDensityMapOffsetPropertiesEXT =
+                        extFragmentDensityMapOffsetFeatures.getJSONObject(
+                                KEY_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_EXT));
                 {
-                    JSONObject fragmentDensityOffsetGranularity = fragmentDensityMapOffsetPropertiesEXT.getJSONObject(KEY_FRAGMENT_DENSITY_OFFSET_GRANULARITY);
+                    JSONObject fragmentDensityOffsetGranularity =
+                            fragmentDensityMapOffsetPropertiesEXT.getJSONObject(
+                                    KEY_FRAGMENT_DENSITY_OFFSET_GRANULARITY);
                     store.startGroup(getConvertedName(KEY_FRAGMENT_DENSITY_OFFSET_GRANULARITY));
                     {
                         emitLong(store, fragmentDensityOffsetGranularity, KEY_WIDTH);
@@ -2725,18 +4237,29 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTFragmentShaderInterlock(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extFragmentShaderInterlockFeatures = parent.optJSONObject(KEY_VK_EXT_FRAGMENT_SHADER_INTERLOCK);
+            throws IOException, JSONException {
+        JSONObject extFragmentShaderInterlockFeatures =
+                parent.optJSONObject(KEY_VK_EXT_FRAGMENT_SHADER_INTERLOCK);
         if (extFragmentShaderInterlockFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_FRAGMENT_SHADER_INTERLOCK));
             {
-                JSONObject fragmentShaderInterlockFeaturesEXT = extFragmentShaderInterlockFeatures.getJSONObject(KEY_FRAGMENT_SHADER_INTERLOCK_FEATURES_EXT);
+                JSONObject fragmentShaderInterlockFeaturesEXT =
+                        extFragmentShaderInterlockFeatures.getJSONObject(
+                                KEY_FRAGMENT_SHADER_INTERLOCK_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_FRAGMENT_SHADER_INTERLOCK_FEATURES_EXT));
                 {
-                    emitBoolean(store, fragmentShaderInterlockFeaturesEXT, KEY_FRAGMENT_SHADER_SAMPLE_INTERLOCK);
-                    emitBoolean(store, fragmentShaderInterlockFeaturesEXT, KEY_FRAGMENT_SHADER_PIXEL_INTERLOCK);
-                    emitBoolean(store, fragmentShaderInterlockFeaturesEXT, KEY_FRAGMENT_SHADER_SHADING_RATE_INTERLOCK);
+                    emitBoolean(
+                            store,
+                            fragmentShaderInterlockFeaturesEXT,
+                            KEY_FRAGMENT_SHADER_SAMPLE_INTERLOCK);
+                    emitBoolean(
+                            store,
+                            fragmentShaderInterlockFeaturesEXT,
+                            KEY_FRAGMENT_SHADER_PIXEL_INTERLOCK);
+                    emitBoolean(
+                            store,
+                            fragmentShaderInterlockFeaturesEXT,
+                            KEY_FRAGMENT_SHADER_SHADING_RATE_INTERLOCK);
                 }
                 store.endGroup();
             }
@@ -2745,13 +4268,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTFrameBoundary(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject extFrameBoundaryFeatures = parent.optJSONObject(KEY_VK_EXT_FRAME_BOUNDARY);
         if (extFrameBoundaryFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_FRAME_BOUNDARY));
             {
-                JSONObject frameBoundaryFeaturesEXT = extFrameBoundaryFeatures.getJSONObject(KEY_FRAME_BOUNDARY_FEATURES_EXT);
+                JSONObject frameBoundaryFeaturesEXT =
+                        extFrameBoundaryFeatures.getJSONObject(KEY_FRAME_BOUNDARY_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_FRAME_BOUNDARY_FEATURES_EXT));
                 {
                     emitBoolean(store, frameBoundaryFeaturesEXT, KEY_FRAME_BOUNDARY);
@@ -2763,13 +4286,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTGlobalPriorityQuery(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extGlobalPriorityQueryFeatures = parent.optJSONObject(KEY_VK_EXT_GLOBAL_PRIORITY_QUERY);
+            throws IOException, JSONException {
+        JSONObject extGlobalPriorityQueryFeatures =
+                parent.optJSONObject(KEY_VK_EXT_GLOBAL_PRIORITY_QUERY);
         if (extGlobalPriorityQueryFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_GLOBAL_PRIORITY_QUERY));
             {
-                JSONObject globalPriorityQueryFeaturesEXT = extGlobalPriorityQueryFeatures.getJSONObject(KEY_GLOBAL_PRIORITY_QUERY_FEATURES_EXT);
+                JSONObject globalPriorityQueryFeaturesEXT =
+                        extGlobalPriorityQueryFeatures.getJSONObject(
+                                KEY_GLOBAL_PRIORITY_QUERY_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_GLOBAL_PRIORITY_QUERY_FEATURES_EXT));
                 {
                     emitBoolean(store, globalPriorityQueryFeaturesEXT, KEY_GLOBAL_PRIORITY_QUERY);
@@ -2781,23 +4306,36 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTGraphicsPipelineLibrary(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extGraphicsPipelineLibraryFeatures = parent.optJSONObject(KEY_VK_EXT_GRAPHICS_PIPELINE_LIBRARY);
+            throws IOException, JSONException {
+        JSONObject extGraphicsPipelineLibraryFeatures =
+                parent.optJSONObject(KEY_VK_EXT_GRAPHICS_PIPELINE_LIBRARY);
         if (extGraphicsPipelineLibraryFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_GRAPHICS_PIPELINE_LIBRARY));
             {
-                JSONObject graphicsPipelineLibraryFeaturesEXT = extGraphicsPipelineLibraryFeatures.getJSONObject(KEY_GRAPHICS_PIPELINE_LIBRARY_FEATURES_EXT);
+                JSONObject graphicsPipelineLibraryFeaturesEXT =
+                        extGraphicsPipelineLibraryFeatures.getJSONObject(
+                                KEY_GRAPHICS_PIPELINE_LIBRARY_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_GRAPHICS_PIPELINE_LIBRARY_FEATURES_EXT));
                 {
-                    emitBoolean(store, graphicsPipelineLibraryFeaturesEXT, KEY_GRAPHICS_PIPELINE_LIBRARY);
+                    emitBoolean(
+                            store,
+                            graphicsPipelineLibraryFeaturesEXT,
+                            KEY_GRAPHICS_PIPELINE_LIBRARY);
                 }
                 store.endGroup();
-                JSONObject graphicsPipelineLibraryPropertiesEXT = extGraphicsPipelineLibraryFeatures.getJSONObject(KEY_GRAPHICS_PIPELINE_LIBRARY_PROPERTIES_EXT);
+                JSONObject graphicsPipelineLibraryPropertiesEXT =
+                        extGraphicsPipelineLibraryFeatures.getJSONObject(
+                                KEY_GRAPHICS_PIPELINE_LIBRARY_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_GRAPHICS_PIPELINE_LIBRARY_PROPERTIES_EXT));
                 {
-                    emitBoolean(store, graphicsPipelineLibraryPropertiesEXT, KEY_GRAPHICS_PIPELINE_LIBRARY_FAST_LINKING);
-                    emitBoolean(store, graphicsPipelineLibraryPropertiesEXT, KEY_GRAPHICS_PIPELINE_LIBRARY_INDEPENDENT_INTERPOLATION_DECORATION);
+                    emitBoolean(
+                            store,
+                            graphicsPipelineLibraryPropertiesEXT,
+                            KEY_GRAPHICS_PIPELINE_LIBRARY_FAST_LINKING);
+                    emitBoolean(
+                            store,
+                            graphicsPipelineLibraryPropertiesEXT,
+                            KEY_GRAPHICS_PIPELINE_LIBRARY_INDEPENDENT_INTERPOLATION_DECORATION);
                 }
                 store.endGroup();
             }
@@ -2806,27 +4344,32 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTHostImageCopy(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject extHostImageCopyFeatures = parent.optJSONObject(KEY_VK_EXT_HOST_IMAGE_COPY);
         if (extHostImageCopyFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_HOST_IMAGE_COPY));
             {
-                JSONObject hostImageCopyFeaturesEXT = extHostImageCopyFeatures.getJSONObject(KEY_HOST_IMAGE_COPY_FEATURES_EXT);
+                JSONObject hostImageCopyFeaturesEXT =
+                        extHostImageCopyFeatures.getJSONObject(KEY_HOST_IMAGE_COPY_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_HOST_IMAGE_COPY_FEATURES_EXT));
                 {
                     emitBoolean(store, hostImageCopyFeaturesEXT, KEY_HOST_IMAGE_COPY);
                 }
                 store.endGroup();
-                JSONObject hostImageCopyPropertiesEXT = extHostImageCopyFeatures.getJSONObject(KEY_HOST_IMAGE_COPY_PROPERTIES_EXT);
+                JSONObject hostImageCopyPropertiesEXT =
+                        extHostImageCopyFeatures.getJSONObject(KEY_HOST_IMAGE_COPY_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_HOST_IMAGE_COPY_PROPERTIES_EXT));
                 {
                     emitLong(store, hostImageCopyPropertiesEXT, KEY_COPY_SRC_LAYOUT_COUNT);
                     emitLongArray(store, hostImageCopyPropertiesEXT, KEY_P_COPY_SRC_LAYOUTS);
                     emitLong(store, hostImageCopyPropertiesEXT, KEY_COPY_DST_LAYOUT_COUNT);
                     emitLongArray(store, hostImageCopyPropertiesEXT, KEY_P_COPY_DST_LAYOUTS);
-                    emitLongArray(store, hostImageCopyPropertiesEXT, KEY_OPTIMAL_TILING_LAYOUT_UUID);
-                    emitBoolean(store, hostImageCopyPropertiesEXT, KEY_IDENTICAL_MEMORY_TYPE_REQUIREMENTS);
+                    emitLongArray(
+                            store, hostImageCopyPropertiesEXT, KEY_OPTIMAL_TILING_LAYOUT_UUID);
+                    emitBoolean(
+                            store,
+                            hostImageCopyPropertiesEXT,
+                            KEY_IDENTICAL_MEMORY_TYPE_REQUIREMENTS);
                 }
                 store.endGroup();
             }
@@ -2835,13 +4378,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTHostQueryReset(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject extHostQueryResetFeatures = parent.optJSONObject(KEY_VK_EXT_HOST_QUERY_RESET);
         if (extHostQueryResetFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_HOST_QUERY_RESET));
             {
-                JSONObject hostQueryResetFeaturesEXT = extHostQueryResetFeatures.getJSONObject(KEY_HOST_QUERY_RESET_FEATURES_EXT);
+                JSONObject hostQueryResetFeaturesEXT =
+                        extHostQueryResetFeatures.getJSONObject(KEY_HOST_QUERY_RESET_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_HOST_QUERY_RESET_FEATURES_EXT));
                 {
                     emitBoolean(store, hostQueryResetFeaturesEXT, KEY_HOST_QUERY_RESET);
@@ -2853,13 +4396,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTImage2dViewOf3d(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extImage2DViewOf3DFeatures = parent.optJSONObject(KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D);
+            throws IOException, JSONException {
+        JSONObject extImage2DViewOf3DFeatures =
+                parent.optJSONObject(KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D);
         if (extImage2DViewOf3DFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D));
             {
-                JSONObject image2DViewOf3DFeaturesEXT = extImage2DViewOf3DFeatures.getJSONObject(KEY_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT);
+                JSONObject image2DViewOf3DFeaturesEXT =
+                        extImage2DViewOf3DFeatures.getJSONObject(
+                                KEY_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT));
                 {
                     emitBoolean(store, image2DViewOf3DFeaturesEXT, KEY_IMAGE_2D_VIEW_OF_3D);
@@ -2872,16 +4417,21 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTImageCompressionControl(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extImageCompressionControlFeatures = parent.optJSONObject(KEY_VK_EXT_IMAGE_COMPRESSION_CONTROL);
+            throws IOException, JSONException {
+        JSONObject extImageCompressionControlFeatures =
+                parent.optJSONObject(KEY_VK_EXT_IMAGE_COMPRESSION_CONTROL);
         if (extImageCompressionControlFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_IMAGE_COMPRESSION_CONTROL));
             {
-                JSONObject imageCompressionControlFeaturesEXT = extImageCompressionControlFeatures.getJSONObject(KEY_IMAGE_COMPRESSION_CONTROL_FEATURES_EXT);
+                JSONObject imageCompressionControlFeaturesEXT =
+                        extImageCompressionControlFeatures.getJSONObject(
+                                KEY_IMAGE_COMPRESSION_CONTROL_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_IMAGE_COMPRESSION_CONTROL_FEATURES_EXT));
                 {
-                    emitBoolean(store, imageCompressionControlFeaturesEXT, KEY_IMAGE_COMPRESSION_CONTROL);
+                    emitBoolean(
+                            store,
+                            imageCompressionControlFeaturesEXT,
+                            KEY_IMAGE_COMPRESSION_CONTROL);
                 }
                 store.endGroup();
             }
@@ -2889,17 +4439,23 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkEXTImageCompressionControlSwapchain(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extImageCompressionControlSwapchainFeatures = parent.optJSONObject(KEY_VK_EXT_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN);
+    private static void emitVkEXTImageCompressionControlSwapchain(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject extImageCompressionControlSwapchainFeatures =
+                parent.optJSONObject(KEY_VK_EXT_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN);
         if (extImageCompressionControlSwapchainFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN));
             {
-                JSONObject imageCompressionControlSwapchainFeaturesEXT = extImageCompressionControlSwapchainFeatures.getJSONObject(KEY_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_FEATURES_EXT);
-                store.startGroup(getConvertedName(KEY_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_FEATURES_EXT));
+                JSONObject imageCompressionControlSwapchainFeaturesEXT =
+                        extImageCompressionControlSwapchainFeatures.getJSONObject(
+                                KEY_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_FEATURES_EXT);
+                store.startGroup(
+                        getConvertedName(KEY_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN_FEATURES_EXT));
                 {
-                    emitBoolean(store, imageCompressionControlSwapchainFeaturesEXT, KEY_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN);
+                    emitBoolean(
+                            store,
+                            imageCompressionControlSwapchainFeaturesEXT,
+                            KEY_IMAGE_COMPRESSION_CONTROL_SWAPCHAIN);
                 }
                 store.endGroup();
             }
@@ -2908,13 +4464,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTImageRobustness(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject extImageRobustnessFeatures = parent.optJSONObject(KEY_VK_EXT_IMAGE_ROBUSTNESS);
         if (extImageRobustnessFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_IMAGE_ROBUSTNESS));
             {
-                JSONObject imageRobustnessFeaturesEXT = extImageRobustnessFeatures.getJSONObject(KEY_IMAGE_ROBUSTNESS_FEATURES_EXT);
+                JSONObject imageRobustnessFeaturesEXT =
+                        extImageRobustnessFeatures.getJSONObject(KEY_IMAGE_ROBUSTNESS_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_IMAGE_ROBUSTNESS_FEATURES_EXT));
                 {
                     emitBoolean(store, imageRobustnessFeaturesEXT, KEY_ROBUST_IMAGE_ACCESS);
@@ -2926,16 +4482,19 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTImageSlicedViewOf3d(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extImageSlicedViewOf3DFeatures = parent.optJSONObject(KEY_VK_EXT_IMAGE_SLICED_VIEW_OF_3D);
+            throws IOException, JSONException {
+        JSONObject extImageSlicedViewOf3DFeatures =
+                parent.optJSONObject(KEY_VK_EXT_IMAGE_SLICED_VIEW_OF_3D);
         if (extImageSlicedViewOf3DFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_IMAGE_SLICED_VIEW_OF_3D));
             {
-                JSONObject imageSlicedViewOf3DFeaturesEXT = extImageSlicedViewOf3DFeatures.getJSONObject(KEY_IMAGE_SLICED_VIEW_OF_3_D_FEATURES_EXT);
+                JSONObject imageSlicedViewOf3DFeaturesEXT =
+                        extImageSlicedViewOf3DFeatures.getJSONObject(
+                                KEY_IMAGE_SLICED_VIEW_OF_3_D_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_IMAGE_SLICED_VIEW_OF_3_D_FEATURES_EXT));
                 {
-                    emitBoolean(store, imageSlicedViewOf3DFeaturesEXT, KEY_IMAGE_SLICED_VIEW_OF_3_D);
+                    emitBoolean(
+                            store, imageSlicedViewOf3DFeaturesEXT, KEY_IMAGE_SLICED_VIEW_OF_3_D);
                 }
                 store.endGroup();
             }
@@ -2944,13 +4503,14 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTImageViewMinLod(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject extImageViewMinLodFeatures = parent.optJSONObject(KEY_VK_EXT_IMAGE_VIEW_MIN_LOD);
         if (extImageViewMinLodFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_IMAGE_VIEW_MIN_LOD));
             {
-                JSONObject imageViewMinLodFeaturesEXT = extImageViewMinLodFeatures.getJSONObject(KEY_IMAGE_VIEW_MIN_LOD_FEATURES_EXT);
+                JSONObject imageViewMinLodFeaturesEXT =
+                        extImageViewMinLodFeatures.getJSONObject(
+                                KEY_IMAGE_VIEW_MIN_LOD_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_IMAGE_VIEW_MIN_LOD_FEATURES_EXT));
                 {
                     emitBoolean(store, imageViewMinLodFeaturesEXT, KEY_MIN_LOD);
@@ -2962,13 +4522,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTIndexTypeUint8(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject extIndexTypeUint8Features = parent.optJSONObject(KEY_VK_EXT_INDEX_TYPE_UINT8);
         if (extIndexTypeUint8Features != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_INDEX_TYPE_UINT8));
             {
-                JSONObject indexTypeUint8FeaturesEXT = extIndexTypeUint8Features.getJSONObject(KEY_INDEX_TYPE_UINT8_FEATURES_EXT);
+                JSONObject indexTypeUint8FeaturesEXT =
+                        extIndexTypeUint8Features.getJSONObject(KEY_INDEX_TYPE_UINT8_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_INDEX_TYPE_UINT8_FEATURES_EXT));
                 {
                     emitBoolean(store, indexTypeUint8FeaturesEXT, KEY_INDEX_TYPE_UINT8);
@@ -2980,27 +4540,49 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTInlineUniformBlock(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extInlineUniformBlockFeatures = parent.optJSONObject(KEY_VK_EXT_INLINE_UNIFORM_BLOCK);
+            throws IOException, JSONException {
+        JSONObject extInlineUniformBlockFeatures =
+                parent.optJSONObject(KEY_VK_EXT_INLINE_UNIFORM_BLOCK);
         if (extInlineUniformBlockFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_INLINE_UNIFORM_BLOCK));
             {
-                JSONObject inlineUniformBlockFeaturesEXT = extInlineUniformBlockFeatures.getJSONObject(KEY_INLINE_UNIFORM_BLOCK_FEATURES_EXT);
+                JSONObject inlineUniformBlockFeaturesEXT =
+                        extInlineUniformBlockFeatures.getJSONObject(
+                                KEY_INLINE_UNIFORM_BLOCK_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_INLINE_UNIFORM_BLOCK_FEATURES_EXT));
                 {
                     emitBoolean(store, inlineUniformBlockFeaturesEXT, KEY_INLINE_UNIFORM_BLOCK);
-                    emitBoolean(store, inlineUniformBlockFeaturesEXT, KEY_DESCRIPTOR_BINDING_INLINE_UNIFORM_BLOCK_UPDATE_AFTER_BIND);
+                    emitBoolean(
+                            store,
+                            inlineUniformBlockFeaturesEXT,
+                            KEY_DESCRIPTOR_BINDING_INLINE_UNIFORM_BLOCK_UPDATE_AFTER_BIND);
                 }
                 store.endGroup();
-                JSONObject inlineUniformBlockPropertiesEXT = extInlineUniformBlockFeatures.getJSONObject(KEY_INLINE_UNIFORM_BLOCK_PROPERTIES_EXT);
+                JSONObject inlineUniformBlockPropertiesEXT =
+                        extInlineUniformBlockFeatures.getJSONObject(
+                                KEY_INLINE_UNIFORM_BLOCK_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_INLINE_UNIFORM_BLOCK_PROPERTIES_EXT));
                 {
-                    emitLong(store, inlineUniformBlockPropertiesEXT, KEY_MAX_INLINE_UNIFORM_BLOCK_SIZE);
-                    emitLong(store, inlineUniformBlockPropertiesEXT, KEY_MAX_PER_STAGE_DESCRIPTOR_INLINE_UNIFORM_BLOCKS);
-                    emitLong(store, inlineUniformBlockPropertiesEXT, KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_INLINE_UNIFORM_BLOCKS);
-                    emitLong(store, inlineUniformBlockPropertiesEXT, KEY_MAX_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCKS);
-                    emitLong(store, inlineUniformBlockPropertiesEXT, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_INLINE_UNIFORM_BLOCKS);
+                    emitLong(
+                            store,
+                            inlineUniformBlockPropertiesEXT,
+                            KEY_MAX_INLINE_UNIFORM_BLOCK_SIZE);
+                    emitLong(
+                            store,
+                            inlineUniformBlockPropertiesEXT,
+                            KEY_MAX_PER_STAGE_DESCRIPTOR_INLINE_UNIFORM_BLOCKS);
+                    emitLong(
+                            store,
+                            inlineUniformBlockPropertiesEXT,
+                            KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_INLINE_UNIFORM_BLOCKS);
+                    emitLong(
+                            store,
+                            inlineUniformBlockPropertiesEXT,
+                            KEY_MAX_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCKS);
+                    emitLong(
+                            store,
+                            inlineUniformBlockPropertiesEXT,
+                            KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_INLINE_UNIFORM_BLOCKS);
                 }
                 store.endGroup();
             }
@@ -3009,13 +4591,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTLegacyDithering(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject extLegacyDitheringFeatures = parent.optJSONObject(KEY_VK_EXT_LEGACY_DITHERING);
         if (extLegacyDitheringFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_LEGACY_DITHERING));
             {
-                JSONObject legacyDitheringFeaturesEXT = extLegacyDitheringFeatures.getJSONObject(KEY_LEGACY_DITHERING_FEATURES_EXT);
+                JSONObject legacyDitheringFeaturesEXT =
+                        extLegacyDitheringFeatures.getJSONObject(KEY_LEGACY_DITHERING_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_LEGACY_DITHERING_FEATURES_EXT));
                 {
                     emitBoolean(store, legacyDitheringFeaturesEXT, KEY_LEGACY_DITHERING);
@@ -3027,22 +4609,30 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTLegacyVertexAttributes(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extLegacyVertexAttributesFeatures = parent.optJSONObject(KEY_VK_EXT_LEGACY_VERTEX_ATTRIBUTES);
+            throws IOException, JSONException {
+        JSONObject extLegacyVertexAttributesFeatures =
+                parent.optJSONObject(KEY_VK_EXT_LEGACY_VERTEX_ATTRIBUTES);
         if (extLegacyVertexAttributesFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_LEGACY_VERTEX_ATTRIBUTES));
             {
-                JSONObject legacyVertexAttributesFeaturesEXT = extLegacyVertexAttributesFeatures.getJSONObject(KEY_LEGACY_VERTEX_ATTRIBUTES_FEATURES_EXT);
+                JSONObject legacyVertexAttributesFeaturesEXT =
+                        extLegacyVertexAttributesFeatures.getJSONObject(
+                                KEY_LEGACY_VERTEX_ATTRIBUTES_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_LEGACY_VERTEX_ATTRIBUTES_FEATURES_EXT));
                 {
-                    emitBoolean(store, legacyVertexAttributesFeaturesEXT, KEY_LEGACY_VERTEX_ATTRIBUTES);
+                    emitBoolean(
+                            store, legacyVertexAttributesFeaturesEXT, KEY_LEGACY_VERTEX_ATTRIBUTES);
                 }
                 store.endGroup();
-                JSONObject legacyVertexAttributesPropertiesEXT = extLegacyVertexAttributesFeatures.getJSONObject(KEY_LEGACY_VERTEX_ATTRIBUTES_PROPERTIES_EXT);
+                JSONObject legacyVertexAttributesPropertiesEXT =
+                        extLegacyVertexAttributesFeatures.getJSONObject(
+                                KEY_LEGACY_VERTEX_ATTRIBUTES_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_LEGACY_VERTEX_ATTRIBUTES_PROPERTIES_EXT));
                 {
-                    emitBoolean(store, legacyVertexAttributesPropertiesEXT, KEY_NATIVE_UNALIGNED_PERFORMANCE);
+                    emitBoolean(
+                            store,
+                            legacyVertexAttributesPropertiesEXT,
+                            KEY_NATIVE_UNALIGNED_PERFORMANCE);
                 }
                 store.endGroup();
             }
@@ -3051,27 +4641,35 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTLineRasterization(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extLineRasterizationFeatures = parent.optJSONObject(KEY_VK_EXT_LINE_RASTERIZATION);
+            throws IOException, JSONException {
+        JSONObject extLineRasterizationFeatures =
+                parent.optJSONObject(KEY_VK_EXT_LINE_RASTERIZATION);
         if (extLineRasterizationFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_LINE_RASTERIZATION));
             {
-                JSONObject lineRasterizationFeaturesEXT = extLineRasterizationFeatures.getJSONObject(KEY_LINE_RASTERIZATION_FEATURES_EXT);
+                JSONObject lineRasterizationFeaturesEXT =
+                        extLineRasterizationFeatures.getJSONObject(
+                                KEY_LINE_RASTERIZATION_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_LINE_RASTERIZATION_FEATURES_EXT));
                 {
                     emitBoolean(store, lineRasterizationFeaturesEXT, KEY_RECTANGULAR_LINES);
                     emitBoolean(store, lineRasterizationFeaturesEXT, KEY_BRESENHAM_LINES);
                     emitBoolean(store, lineRasterizationFeaturesEXT, KEY_SMOOTH_LINES);
-                    emitBoolean(store, lineRasterizationFeaturesEXT, KEY_STIPPLED_RECTANGULAR_LINES);
+                    emitBoolean(
+                            store, lineRasterizationFeaturesEXT, KEY_STIPPLED_RECTANGULAR_LINES);
                     emitBoolean(store, lineRasterizationFeaturesEXT, KEY_STIPPLED_BRESENHAM_LINES);
                     emitBoolean(store, lineRasterizationFeaturesEXT, KEY_STIPPLED_SMOOTH_LINES);
                 }
                 store.endGroup();
-                JSONObject lineRasterizationPropertiesEXT = extLineRasterizationFeatures.getJSONObject(KEY_LINE_RASTERIZATION_PROPERTIES_EXT);
+                JSONObject lineRasterizationPropertiesEXT =
+                        extLineRasterizationFeatures.getJSONObject(
+                                KEY_LINE_RASTERIZATION_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_LINE_RASTERIZATION_PROPERTIES_EXT));
                 {
-                    emitLong(store, lineRasterizationPropertiesEXT, KEY_LINE_SUB_PIXEL_PRECISION_BITS);
+                    emitLong(
+                            store,
+                            lineRasterizationPropertiesEXT,
+                            KEY_LINE_SUB_PIXEL_PRECISION_BITS);
                 }
                 store.endGroup();
             }
@@ -3080,13 +4678,14 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTMapMemoryPlaced(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject extMapMemoryPlacedFeatures = parent.optJSONObject(KEY_VK_EXT_MAP_MEMORY_PLACED);
         if (extMapMemoryPlacedFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_MAP_MEMORY_PLACED));
             {
-                JSONObject mapMemoryPlacedFeaturesEXT = extMapMemoryPlacedFeatures.getJSONObject(KEY_MAP_MEMORY_PLACED_FEATURES_EXT);
+                JSONObject mapMemoryPlacedFeaturesEXT =
+                        extMapMemoryPlacedFeatures.getJSONObject(
+                                KEY_MAP_MEMORY_PLACED_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_MAP_MEMORY_PLACED_FEATURES_EXT));
                 {
                     emitBoolean(store, mapMemoryPlacedFeaturesEXT, KEY_MEMORY_MAP_PLACED);
@@ -3094,10 +4693,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     emitBoolean(store, mapMemoryPlacedFeaturesEXT, KEY_MEMORY_UNMAP_RESERVE);
                 }
                 store.endGroup();
-                JSONObject mapMemoryPlacedPropertiesEXT = extMapMemoryPlacedFeatures.getJSONObject(KEY_MAP_MEMORY_PLACED_PROPERTIES_EXT);
+                JSONObject mapMemoryPlacedPropertiesEXT =
+                        extMapMemoryPlacedFeatures.getJSONObject(
+                                KEY_MAP_MEMORY_PLACED_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_MAP_MEMORY_PLACED_PROPERTIES_EXT));
                 {
-                    emitString(store, mapMemoryPlacedPropertiesEXT, KEY_MIN_PLACED_MEMORY_MAP_ALIGNMENT);
+                    emitString(
+                            store,
+                            mapMemoryPlacedPropertiesEXT,
+                            KEY_MIN_PLACED_MEMORY_MAP_ALIGNMENT);
                 }
                 store.endGroup();
             }
@@ -3106,23 +4710,30 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTMemoryDecompression(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extMemoryDecompressionFeatures = parent.optJSONObject(KEY_VK_EXT_MEMORY_DECOMPRESSION);
+            throws IOException, JSONException {
+        JSONObject extMemoryDecompressionFeatures =
+                parent.optJSONObject(KEY_VK_EXT_MEMORY_DECOMPRESSION);
         if (extMemoryDecompressionFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_MEMORY_DECOMPRESSION));
             {
-                JSONObject memoryDecompressionFeaturesEXT = extMemoryDecompressionFeatures.getJSONObject(KEY_MEMORY_DECOMPRESSION_FEATURES_EXT);
+                JSONObject memoryDecompressionFeaturesEXT =
+                        extMemoryDecompressionFeatures.getJSONObject(
+                                KEY_MEMORY_DECOMPRESSION_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_MEMORY_DECOMPRESSION_FEATURES_EXT));
                 {
                     emitBoolean(store, memoryDecompressionFeaturesEXT, KEY_MEMORY_DECOMPRESSION);
                 }
                 store.endGroup();
-                JSONObject memoryDecompressionPropertiesEXT = extMemoryDecompressionFeatures.getJSONObject(KEY_MEMORY_DECOMPRESSION_PROPERTIES_EXT);
+                JSONObject memoryDecompressionPropertiesEXT =
+                        extMemoryDecompressionFeatures.getJSONObject(
+                                KEY_MEMORY_DECOMPRESSION_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_MEMORY_DECOMPRESSION_PROPERTIES_EXT));
                 {
                     emitString(store, memoryDecompressionPropertiesEXT, KEY_DECOMPRESSION_METHODS);
-                    emitString(store, memoryDecompressionPropertiesEXT, KEY_MAX_DECOMPRESSION_INDIRECT_COUNT);
+                    emitString(
+                            store,
+                            memoryDecompressionPropertiesEXT,
+                            KEY_MAX_DECOMPRESSION_INDIRECT_COUNT);
                 }
                 store.endGroup();
             }
@@ -3131,13 +4742,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTMemoryPriority(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject extMemoryPriorityFeatures = parent.optJSONObject(KEY_VK_EXT_MEMORY_PRIORITY);
         if (extMemoryPriorityFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_MEMORY_PRIORITY));
             {
-                JSONObject memoryPriorityFeaturesEXT = extMemoryPriorityFeatures.getJSONObject(KEY_MEMORY_PRIORITY_FEATURES_EXT);
+                JSONObject memoryPriorityFeaturesEXT =
+                        extMemoryPriorityFeatures.getJSONObject(KEY_MEMORY_PRIORITY_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_MEMORY_PRIORITY_FEATURES_EXT));
                 {
                     emitBoolean(store, memoryPriorityFeaturesEXT, KEY_MEMORY_PRIORITY);
@@ -3149,23 +4760,27 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTMeshShader(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject extMeshShaderFeatures = parent.optJSONObject(KEY_VK_EXT_MESH_SHADER);
         if (extMeshShaderFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_MESH_SHADER));
             {
-                JSONObject meshShaderFeaturesEXT = extMeshShaderFeatures.getJSONObject(KEY_MESH_SHADER_FEATURES_EXT);
+                JSONObject meshShaderFeaturesEXT =
+                        extMeshShaderFeatures.getJSONObject(KEY_MESH_SHADER_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_MESH_SHADER_FEATURES_EXT));
                 {
                     emitBoolean(store, meshShaderFeaturesEXT, KEY_TASK_SHADER);
                     emitBoolean(store, meshShaderFeaturesEXT, KEY_MESH_SHADER);
                     emitBoolean(store, meshShaderFeaturesEXT, KEY_MULTIVIEW_MESH_SHADER);
-                    emitBoolean(store, meshShaderFeaturesEXT, KEY_PRIMITIVE_FRAGMENT_SHADING_RATE_MESH_SHADER);
+                    emitBoolean(
+                            store,
+                            meshShaderFeaturesEXT,
+                            KEY_PRIMITIVE_FRAGMENT_SHADING_RATE_MESH_SHADER);
                     emitBoolean(store, meshShaderFeaturesEXT, KEY_MESH_SHADER_QUERIES);
                 }
                 store.endGroup();
-                JSONObject meshShaderPropertiesEXT = extMeshShaderFeatures.getJSONObject(KEY_MESH_SHADER_PROPERTIES_EXT);
+                JSONObject meshShaderPropertiesEXT =
+                        extMeshShaderFeatures.getJSONObject(KEY_MESH_SHADER_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_MESH_SHADER_PROPERTIES_EXT));
                 {
                     emitLong(store, meshShaderPropertiesEXT, KEY_MAX_TASK_WORK_GROUP_TOTAL_COUNT);
@@ -3174,28 +4789,54 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     emitLongArray(store, meshShaderPropertiesEXT, KEY_MAX_TASK_WORK_GROUP_SIZE);
                     emitLong(store, meshShaderPropertiesEXT, KEY_MAX_TASK_PAYLOAD_SIZE);
                     emitLong(store, meshShaderPropertiesEXT, KEY_MAX_TASK_SHARED_MEMORY_SIZE);
-                    emitLong(store, meshShaderPropertiesEXT, KEY_MAX_TASK_PAYLOAD_AND_SHARED_MEMORY_SIZE);
+                    emitLong(
+                            store,
+                            meshShaderPropertiesEXT,
+                            KEY_MAX_TASK_PAYLOAD_AND_SHARED_MEMORY_SIZE);
                     emitLong(store, meshShaderPropertiesEXT, KEY_MAX_MESH_WORK_GROUP_TOTAL_COUNT);
                     emitLongArray(store, meshShaderPropertiesEXT, KEY_MAX_MESH_WORK_GROUP_COUNT);
                     emitLong(store, meshShaderPropertiesEXT, KEY_MAX_MESH_WORK_GROUP_INVOCATIONS);
                     emitLongArray(store, meshShaderPropertiesEXT, KEY_MAX_MESH_WORK_GROUP_SIZE);
                     emitLong(store, meshShaderPropertiesEXT, KEY_MAX_MESH_SHARED_MEMORY_SIZE);
-                    emitLong(store, meshShaderPropertiesEXT, KEY_MAX_MESH_PAYLOAD_AND_SHARED_MEMORY_SIZE);
+                    emitLong(
+                            store,
+                            meshShaderPropertiesEXT,
+                            KEY_MAX_MESH_PAYLOAD_AND_SHARED_MEMORY_SIZE);
                     emitLong(store, meshShaderPropertiesEXT, KEY_MAX_MESH_OUTPUT_MEMORY_SIZE);
-                    emitLong(store, meshShaderPropertiesEXT, KEY_MAX_MESH_PAYLOAD_AND_OUTPUT_MEMORY_SIZE);
+                    emitLong(
+                            store,
+                            meshShaderPropertiesEXT,
+                            KEY_MAX_MESH_PAYLOAD_AND_OUTPUT_MEMORY_SIZE);
                     emitLong(store, meshShaderPropertiesEXT, KEY_MAX_MESH_OUTPUT_COMPONENTS);
                     emitLong(store, meshShaderPropertiesEXT, KEY_MAX_MESH_OUTPUT_VERTICES);
                     emitLong(store, meshShaderPropertiesEXT, KEY_MAX_MESH_OUTPUT_PRIMITIVES);
                     emitLong(store, meshShaderPropertiesEXT, KEY_MAX_MESH_OUTPUT_LAYERS);
                     emitLong(store, meshShaderPropertiesEXT, KEY_MAX_MESH_MULTIVIEW_VIEW_COUNT);
-                    emitLong(store, meshShaderPropertiesEXT, KEY_MESH_OUTPUT_PER_VERTEX_GRANULARITY);
-                    emitLong(store, meshShaderPropertiesEXT, KEY_MESH_OUTPUT_PER_PRIMITIVE_GRANULARITY);
-                    emitLong(store, meshShaderPropertiesEXT, KEY_MAX_PREFERRED_TASK_WORK_GROUP_INVOCATIONS);
-                    emitLong(store, meshShaderPropertiesEXT, KEY_MAX_PREFERRED_MESH_WORK_GROUP_INVOCATIONS);
-                    emitBoolean(store, meshShaderPropertiesEXT, KEY_PREFERS_LOCAL_INVOCATION_VERTEX_OUTPUT);
-                    emitBoolean(store, meshShaderPropertiesEXT, KEY_PREFERS_LOCAL_INVOCATION_PRIMITIVE_OUTPUT);
+                    emitLong(
+                            store, meshShaderPropertiesEXT, KEY_MESH_OUTPUT_PER_VERTEX_GRANULARITY);
+                    emitLong(
+                            store,
+                            meshShaderPropertiesEXT,
+                            KEY_MESH_OUTPUT_PER_PRIMITIVE_GRANULARITY);
+                    emitLong(
+                            store,
+                            meshShaderPropertiesEXT,
+                            KEY_MAX_PREFERRED_TASK_WORK_GROUP_INVOCATIONS);
+                    emitLong(
+                            store,
+                            meshShaderPropertiesEXT,
+                            KEY_MAX_PREFERRED_MESH_WORK_GROUP_INVOCATIONS);
+                    emitBoolean(
+                            store,
+                            meshShaderPropertiesEXT,
+                            KEY_PREFERS_LOCAL_INVOCATION_VERTEX_OUTPUT);
+                    emitBoolean(
+                            store,
+                            meshShaderPropertiesEXT,
+                            KEY_PREFERS_LOCAL_INVOCATION_PRIMITIVE_OUTPUT);
                     emitBoolean(store, meshShaderPropertiesEXT, KEY_PREFERS_COMPACT_VERTEX_OUTPUT);
-                    emitBoolean(store, meshShaderPropertiesEXT, KEY_PREFERS_COMPACT_PRIMITIVE_OUTPUT);
+                    emitBoolean(
+                            store, meshShaderPropertiesEXT, KEY_PREFERS_COMPACT_PRIMITIVE_OUTPUT);
                 }
                 store.endGroup();
             }
@@ -3204,19 +4845,20 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTMultiDraw(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject extMultiDrawFeatures = parent.optJSONObject(KEY_VK_EXT_MULTI_DRAW);
         if (extMultiDrawFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_MULTI_DRAW));
             {
-                JSONObject multiDrawFeaturesEXT = extMultiDrawFeatures.getJSONObject(KEY_MULTI_DRAW_FEATURES_EXT);
+                JSONObject multiDrawFeaturesEXT =
+                        extMultiDrawFeatures.getJSONObject(KEY_MULTI_DRAW_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_MULTI_DRAW_FEATURES_EXT));
                 {
                     emitBoolean(store, multiDrawFeaturesEXT, KEY_MULTI_DRAW);
                 }
                 store.endGroup();
-                JSONObject multiDrawPropertiesEXT = extMultiDrawFeatures.getJSONObject(KEY_MULTI_DRAW_PROPERTIES_EXT);
+                JSONObject multiDrawPropertiesEXT =
+                        extMultiDrawFeatures.getJSONObject(KEY_MULTI_DRAW_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_MULTI_DRAW_PROPERTIES_EXT));
                 {
                     emitLong(store, multiDrawPropertiesEXT, KEY_MAX_MULTI_DRAW_COUNT);
@@ -3227,17 +4869,23 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkEXTMultisampledRenderToSingleSampled(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extMultisampledRenderToSingleSampledFeatures = parent.optJSONObject(KEY_VK_EXT_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED);
+    private static void emitVkEXTMultisampledRenderToSingleSampled(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject extMultisampledRenderToSingleSampledFeatures =
+                parent.optJSONObject(KEY_VK_EXT_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED);
         if (extMultisampledRenderToSingleSampledFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED));
             {
-                JSONObject multisampledRenderToSingleSampledFeaturesEXT = extMultisampledRenderToSingleSampledFeatures.getJSONObject(KEY_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_FEATURES_EXT);
-                store.startGroup(getConvertedName(KEY_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_FEATURES_EXT));
+                JSONObject multisampledRenderToSingleSampledFeaturesEXT =
+                        extMultisampledRenderToSingleSampledFeatures.getJSONObject(
+                                KEY_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_FEATURES_EXT);
+                store.startGroup(
+                        getConvertedName(KEY_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_FEATURES_EXT));
                 {
-                    emitBoolean(store, multisampledRenderToSingleSampledFeaturesEXT, KEY_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED);
+                    emitBoolean(
+                            store,
+                            multisampledRenderToSingleSampledFeaturesEXT,
+                            KEY_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED);
                 }
                 store.endGroup();
             }
@@ -3246,16 +4894,19 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTMutableDescriptorType(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extMutableDescriptorTypeFeatures = parent.optJSONObject(KEY_VK_EXT_MUTABLE_DESCRIPTOR_TYPE);
+            throws IOException, JSONException {
+        JSONObject extMutableDescriptorTypeFeatures =
+                parent.optJSONObject(KEY_VK_EXT_MUTABLE_DESCRIPTOR_TYPE);
         if (extMutableDescriptorTypeFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_MUTABLE_DESCRIPTOR_TYPE));
             {
-                JSONObject mutableDescriptorTypeFeaturesEXT = extMutableDescriptorTypeFeatures.getJSONObject(KEY_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT);
+                JSONObject mutableDescriptorTypeFeaturesEXT =
+                        extMutableDescriptorTypeFeatures.getJSONObject(
+                                KEY_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT));
                 {
-                    emitBoolean(store, mutableDescriptorTypeFeaturesEXT, KEY_MUTABLE_DESCRIPTOR_TYPE);
+                    emitBoolean(
+                            store, mutableDescriptorTypeFeaturesEXT, KEY_MUTABLE_DESCRIPTOR_TYPE);
                 }
                 store.endGroup();
             }
@@ -3264,24 +4915,37 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTNestedCommandBuffer(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extNestedCommandBufferFeatures = parent.optJSONObject(KEY_VK_EXT_NESTED_COMMAND_BUFFER);
+            throws IOException, JSONException {
+        JSONObject extNestedCommandBufferFeatures =
+                parent.optJSONObject(KEY_VK_EXT_NESTED_COMMAND_BUFFER);
         if (extNestedCommandBufferFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_NESTED_COMMAND_BUFFER));
             {
-                JSONObject nestedCommandBufferFeaturesEXT = extNestedCommandBufferFeatures.getJSONObject(KEY_NESTED_COMMAND_BUFFER_FEATURES_EXT);
+                JSONObject nestedCommandBufferFeaturesEXT =
+                        extNestedCommandBufferFeatures.getJSONObject(
+                                KEY_NESTED_COMMAND_BUFFER_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_NESTED_COMMAND_BUFFER_FEATURES_EXT));
                 {
                     emitBoolean(store, nestedCommandBufferFeaturesEXT, KEY_NESTED_COMMAND_BUFFER);
-                    emitBoolean(store, nestedCommandBufferFeaturesEXT, KEY_NESTED_COMMAND_BUFFER_RENDERING);
-                    emitBoolean(store, nestedCommandBufferFeaturesEXT, KEY_NESTED_COMMAND_BUFFER_SIMULTANEOUS_USE);
+                    emitBoolean(
+                            store,
+                            nestedCommandBufferFeaturesEXT,
+                            KEY_NESTED_COMMAND_BUFFER_RENDERING);
+                    emitBoolean(
+                            store,
+                            nestedCommandBufferFeaturesEXT,
+                            KEY_NESTED_COMMAND_BUFFER_SIMULTANEOUS_USE);
                 }
                 store.endGroup();
-                JSONObject nestedCommandBufferPropertiesEXT = extNestedCommandBufferFeatures.getJSONObject(KEY_NESTED_COMMAND_BUFFER_PROPERTIES_EXT);
+                JSONObject nestedCommandBufferPropertiesEXT =
+                        extNestedCommandBufferFeatures.getJSONObject(
+                                KEY_NESTED_COMMAND_BUFFER_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_NESTED_COMMAND_BUFFER_PROPERTIES_EXT));
                 {
-                    emitLong(store, nestedCommandBufferPropertiesEXT, KEY_MAX_COMMAND_BUFFER_NESTING_LEVEL);
+                    emitLong(
+                            store,
+                            nestedCommandBufferPropertiesEXT,
+                            KEY_MAX_COMMAND_BUFFER_NESTING_LEVEL);
                 }
                 store.endGroup();
             }
@@ -3290,13 +4954,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTNonSeamlessCubeMap(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extNonSeamlessCubeMapFeatures = parent.optJSONObject(KEY_VK_EXT_NON_SEAMLESS_CUBE_MAP);
+            throws IOException, JSONException {
+        JSONObject extNonSeamlessCubeMapFeatures =
+                parent.optJSONObject(KEY_VK_EXT_NON_SEAMLESS_CUBE_MAP);
         if (extNonSeamlessCubeMapFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_NON_SEAMLESS_CUBE_MAP));
             {
-                JSONObject nonSeamlessCubeMapFeaturesEXT = extNonSeamlessCubeMapFeatures.getJSONObject(KEY_NON_SEAMLESS_CUBE_MAP_FEATURES_EXT);
+                JSONObject nonSeamlessCubeMapFeaturesEXT =
+                        extNonSeamlessCubeMapFeatures.getJSONObject(
+                                KEY_NON_SEAMLESS_CUBE_MAP_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_NON_SEAMLESS_CUBE_MAP_FEATURES_EXT));
                 {
                     emitBoolean(store, nonSeamlessCubeMapFeaturesEXT, KEY_NON_SEAMLESS_CUBE_MAP);
@@ -3308,13 +4974,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTOpacityMicromap(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject extOpacityMicromapFeatures = parent.optJSONObject(KEY_VK_EXT_OPACITY_MICROMAP);
         if (extOpacityMicromapFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_OPACITY_MICROMAP));
             {
-                JSONObject opacityMicromapFeaturesEXT = extOpacityMicromapFeatures.getJSONObject(KEY_OPACITY_MICROMAP_FEATURES_EXT);
+                JSONObject opacityMicromapFeaturesEXT =
+                        extOpacityMicromapFeatures.getJSONObject(KEY_OPACITY_MICROMAP_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_OPACITY_MICROMAP_FEATURES_EXT));
                 {
                     emitBoolean(store, opacityMicromapFeaturesEXT, KEY_MICROMAP);
@@ -3322,11 +4988,19 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     emitBoolean(store, opacityMicromapFeaturesEXT, KEY_MICROMAP_HOST_COMMANDS);
                 }
                 store.endGroup();
-                JSONObject opacityMicromapPropertiesEXT = extOpacityMicromapFeatures.getJSONObject(KEY_OPACITY_MICROMAP_PROPERTIES_EXT);
+                JSONObject opacityMicromapPropertiesEXT =
+                        extOpacityMicromapFeatures.getJSONObject(
+                                KEY_OPACITY_MICROMAP_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_OPACITY_MICROMAP_PROPERTIES_EXT));
                 {
-                    emitLong(store, opacityMicromapPropertiesEXT, KEY_MAX_OPACITY_2_STATE_SUBDIVISION_LEVEL);
-                    emitLong(store, opacityMicromapPropertiesEXT, KEY_MAX_OPACITY_4_STATE_SUBDIVISION_LEVEL);
+                    emitLong(
+                            store,
+                            opacityMicromapPropertiesEXT,
+                            KEY_MAX_OPACITY_2_STATE_SUBDIVISION_LEVEL);
+                    emitLong(
+                            store,
+                            opacityMicromapPropertiesEXT,
+                            KEY_MAX_OPACITY_4_STATE_SUBDIVISION_LEVEL);
                 }
                 store.endGroup();
             }
@@ -3335,16 +5009,21 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTPageableDeviceLocalMemory(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extPageableDeviceLocalMemoryFeatures = parent.optJSONObject(KEY_VK_EXT_PAGEABLE_DEVICE_LOCAL_MEMORY);
+            throws IOException, JSONException {
+        JSONObject extPageableDeviceLocalMemoryFeatures =
+                parent.optJSONObject(KEY_VK_EXT_PAGEABLE_DEVICE_LOCAL_MEMORY);
         if (extPageableDeviceLocalMemoryFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_PAGEABLE_DEVICE_LOCAL_MEMORY));
             {
-                JSONObject pageableDeviceLocalMemoryFeaturesEXT = extPageableDeviceLocalMemoryFeatures.getJSONObject(KEY_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT);
+                JSONObject pageableDeviceLocalMemoryFeaturesEXT =
+                        extPageableDeviceLocalMemoryFeatures.getJSONObject(
+                                KEY_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT));
                 {
-                    emitBoolean(store, pageableDeviceLocalMemoryFeaturesEXT, KEY_PAGEABLE_DEVICE_LOCAL_MEMORY);
+                    emitBoolean(
+                            store,
+                            pageableDeviceLocalMemoryFeaturesEXT,
+                            KEY_PAGEABLE_DEVICE_LOCAL_MEMORY);
                 }
                 store.endGroup();
             }
@@ -3353,13 +5032,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTPciBusInfo(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject extPCIBusInfoProperties = parent.optJSONObject(KEY_VK_EXT_PCI_BUS_INFO);
         if (extPCIBusInfoProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_PCI_BUS_INFO));
             {
-                JSONObject pciBusInfoPropertiesEXT = extPCIBusInfoProperties.getJSONObject(KEY_PCI_BUS_INFO_PROPERTIES_EXT);
+                JSONObject pciBusInfoPropertiesEXT =
+                        extPCIBusInfoProperties.getJSONObject(KEY_PCI_BUS_INFO_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_PCI_BUS_INFO_PROPERTIES_EXT));
                 {
                     emitLong(store, pciBusInfoPropertiesEXT, KEY_PCI_DOMAIN);
@@ -3374,13 +5053,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTPhysicalDeviceDrm(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject extDrmProperties = parent.optJSONObject(KEY_VK_EXT_PHYSICAL_DEVICE_DRM);
         if (extDrmProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_PHYSICAL_DEVICE_DRM));
             {
-                JSONObject drmPropertiesEXT = extDrmProperties.getJSONObject(KEY_DRM_PROPERTIES_EXT);
+                JSONObject drmPropertiesEXT =
+                        extDrmProperties.getJSONObject(KEY_DRM_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_DRM_PROPERTIES_EXT));
                 {
                     emitBoolean(store, drmPropertiesEXT, KEY_HAS_PRIMARY);
@@ -3396,17 +5075,23 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkEXTPipelineCreationCacheControl(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extPipelineCreationCacheControlFeatures = parent.optJSONObject(KEY_VK_EXT_PIPELINE_CREATION_CACHE_CONTROL);
+    private static void emitVkEXTPipelineCreationCacheControl(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject extPipelineCreationCacheControlFeatures =
+                parent.optJSONObject(KEY_VK_EXT_PIPELINE_CREATION_CACHE_CONTROL);
         if (extPipelineCreationCacheControlFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_PIPELINE_CREATION_CACHE_CONTROL));
             {
-                JSONObject pipelineCreationCacheControlFeaturesEXT = extPipelineCreationCacheControlFeatures.getJSONObject(KEY_PIPELINE_CREATION_CACHE_CONTROL_FEATURES_EXT);
-                store.startGroup(getConvertedName(KEY_PIPELINE_CREATION_CACHE_CONTROL_FEATURES_EXT));
+                JSONObject pipelineCreationCacheControlFeaturesEXT =
+                        extPipelineCreationCacheControlFeatures.getJSONObject(
+                                KEY_PIPELINE_CREATION_CACHE_CONTROL_FEATURES_EXT);
+                store.startGroup(
+                        getConvertedName(KEY_PIPELINE_CREATION_CACHE_CONTROL_FEATURES_EXT));
                 {
-                    emitBoolean(store, pipelineCreationCacheControlFeaturesEXT, KEY_PIPELINE_CREATION_CACHE_CONTROL);
+                    emitBoolean(
+                            store,
+                            pipelineCreationCacheControlFeaturesEXT,
+                            KEY_PIPELINE_CREATION_CACHE_CONTROL);
                 }
                 store.endGroup();
             }
@@ -3414,17 +5099,22 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkEXTPipelineLibraryGroupHandles(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extPipelineLibraryGroupHandlesFeatures = parent.optJSONObject(KEY_VK_EXT_PIPELINE_LIBRARY_GROUP_HANDLES);
+    private static void emitVkEXTPipelineLibraryGroupHandles(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject extPipelineLibraryGroupHandlesFeatures =
+                parent.optJSONObject(KEY_VK_EXT_PIPELINE_LIBRARY_GROUP_HANDLES);
         if (extPipelineLibraryGroupHandlesFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_PIPELINE_LIBRARY_GROUP_HANDLES));
             {
-                JSONObject pipelineLibraryGroupHandlesFeaturesEXT = extPipelineLibraryGroupHandlesFeatures.getJSONObject(KEY_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT);
+                JSONObject pipelineLibraryGroupHandlesFeaturesEXT =
+                        extPipelineLibraryGroupHandlesFeatures.getJSONObject(
+                                KEY_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT));
                 {
-                    emitBoolean(store, pipelineLibraryGroupHandlesFeaturesEXT, KEY_PIPELINE_LIBRARY_GROUP_HANDLES);
+                    emitBoolean(
+                            store,
+                            pipelineLibraryGroupHandlesFeaturesEXT,
+                            KEY_PIPELINE_LIBRARY_GROUP_HANDLES);
                 }
                 store.endGroup();
             }
@@ -3433,16 +5123,21 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTPipelineProperties(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extPipelinePropertiesFeatures = parent.optJSONObject(KEY_VK_EXT_PIPELINE_PROPERTIES);
+            throws IOException, JSONException {
+        JSONObject extPipelinePropertiesFeatures =
+                parent.optJSONObject(KEY_VK_EXT_PIPELINE_PROPERTIES);
         if (extPipelinePropertiesFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_PIPELINE_PROPERTIES));
             {
-                JSONObject pipelinePropertiesFeaturesEXT = extPipelinePropertiesFeatures.getJSONObject(KEY_PIPELINE_PROPERTIES_FEATURES_EXT);
+                JSONObject pipelinePropertiesFeaturesEXT =
+                        extPipelinePropertiesFeatures.getJSONObject(
+                                KEY_PIPELINE_PROPERTIES_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_PIPELINE_PROPERTIES_FEATURES_EXT));
                 {
-                    emitBoolean(store, pipelinePropertiesFeaturesEXT, KEY_PIPELINE_PROPERTIES_IDENTIFIER);
+                    emitBoolean(
+                            store,
+                            pipelinePropertiesFeaturesEXT,
+                            KEY_PIPELINE_PROPERTIES_IDENTIFIER);
                 }
                 store.endGroup();
             }
@@ -3451,16 +5146,21 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTPipelineProtectedAccess(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extPipelineProtectedAccessFeatures = parent.optJSONObject(KEY_VK_EXT_PIPELINE_PROTECTED_ACCESS);
+            throws IOException, JSONException {
+        JSONObject extPipelineProtectedAccessFeatures =
+                parent.optJSONObject(KEY_VK_EXT_PIPELINE_PROTECTED_ACCESS);
         if (extPipelineProtectedAccessFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_PIPELINE_PROTECTED_ACCESS));
             {
-                JSONObject pipelineProtectedAccessFeaturesEXT = extPipelineProtectedAccessFeatures.getJSONObject(KEY_PIPELINE_PROTECTED_ACCESS_FEATURES_EXT);
+                JSONObject pipelineProtectedAccessFeaturesEXT =
+                        extPipelineProtectedAccessFeatures.getJSONObject(
+                                KEY_PIPELINE_PROTECTED_ACCESS_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_PIPELINE_PROTECTED_ACCESS_FEATURES_EXT));
                 {
-                    emitBoolean(store, pipelineProtectedAccessFeaturesEXT, KEY_PIPELINE_PROTECTED_ACCESS);
+                    emitBoolean(
+                            store,
+                            pipelineProtectedAccessFeaturesEXT,
+                            KEY_PIPELINE_PROTECTED_ACCESS);
                 }
                 store.endGroup();
             }
@@ -3469,24 +5169,37 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTPipelineRobustness(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extPipelineRobustnessFeatures = parent.optJSONObject(KEY_VK_EXT_PIPELINE_ROBUSTNESS);
+            throws IOException, JSONException {
+        JSONObject extPipelineRobustnessFeatures =
+                parent.optJSONObject(KEY_VK_EXT_PIPELINE_ROBUSTNESS);
         if (extPipelineRobustnessFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_PIPELINE_ROBUSTNESS));
             {
-                JSONObject pipelineRobustnessFeaturesEXT = extPipelineRobustnessFeatures.getJSONObject(KEY_PIPELINE_ROBUSTNESS_FEATURES_EXT);
+                JSONObject pipelineRobustnessFeaturesEXT =
+                        extPipelineRobustnessFeatures.getJSONObject(
+                                KEY_PIPELINE_ROBUSTNESS_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_PIPELINE_ROBUSTNESS_FEATURES_EXT));
                 {
                     emitBoolean(store, pipelineRobustnessFeaturesEXT, KEY_PIPELINE_ROBUSTNESS);
                 }
                 store.endGroup();
-                JSONObject pipelineRobustnessPropertiesEXT = extPipelineRobustnessFeatures.getJSONObject(KEY_PIPELINE_ROBUSTNESS_PROPERTIES_EXT);
+                JSONObject pipelineRobustnessPropertiesEXT =
+                        extPipelineRobustnessFeatures.getJSONObject(
+                                KEY_PIPELINE_ROBUSTNESS_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_PIPELINE_ROBUSTNESS_PROPERTIES_EXT));
                 {
-                    emitLong(store, pipelineRobustnessPropertiesEXT, KEY_DEFAULT_ROBUSTNESS_STORAGE_BUFFERS);
-                    emitLong(store, pipelineRobustnessPropertiesEXT, KEY_DEFAULT_ROBUSTNESS_UNIFORM_BUFFERS);
-                    emitLong(store, pipelineRobustnessPropertiesEXT, KEY_DEFAULT_ROBUSTNESS_VERTEX_INPUTS);
+                    emitLong(
+                            store,
+                            pipelineRobustnessPropertiesEXT,
+                            KEY_DEFAULT_ROBUSTNESS_STORAGE_BUFFERS);
+                    emitLong(
+                            store,
+                            pipelineRobustnessPropertiesEXT,
+                            KEY_DEFAULT_ROBUSTNESS_UNIFORM_BUFFERS);
+                    emitLong(
+                            store,
+                            pipelineRobustnessPropertiesEXT,
+                            KEY_DEFAULT_ROBUSTNESS_VERTEX_INPUTS);
                     emitLong(store, pipelineRobustnessPropertiesEXT, KEY_DEFAULT_ROBUSTNESS_IMAGES);
                 }
                 store.endGroup();
@@ -3496,13 +5209,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTPresentTiming(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject extPresentTimingFeatures = parent.optJSONObject(KEY_VK_EXT_PRESENT_TIMING);
         if (extPresentTimingFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_PRESENT_TIMING));
             {
-                JSONObject presentTimingFeaturesEXT = extPresentTimingFeatures.getJSONObject(KEY_PRESENT_TIMING_FEATURES_EXT);
+                JSONObject presentTimingFeaturesEXT =
+                        extPresentTimingFeatures.getJSONObject(KEY_PRESENT_TIMING_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_PRESENT_TIMING_FEATURES_EXT));
                 {
                     emitBoolean(store, presentTimingFeaturesEXT, KEY_PRESENT_TIMING);
@@ -3515,18 +5228,27 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkEXTPrimitiveTopologyListRestart(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extPrimitiveTopologyListRestartFeatures = parent.optJSONObject(KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
+    private static void emitVkEXTPrimitiveTopologyListRestart(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject extPrimitiveTopologyListRestartFeatures =
+                parent.optJSONObject(KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
         if (extPrimitiveTopologyListRestartFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART));
             {
-                JSONObject primitiveTopologyListRestartFeaturesEXT = extPrimitiveTopologyListRestartFeatures.getJSONObject(KEY_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT);
-                store.startGroup(getConvertedName(KEY_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT));
+                JSONObject primitiveTopologyListRestartFeaturesEXT =
+                        extPrimitiveTopologyListRestartFeatures.getJSONObject(
+                                KEY_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT);
+                store.startGroup(
+                        getConvertedName(KEY_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT));
                 {
-                    emitBoolean(store, primitiveTopologyListRestartFeaturesEXT, KEY_PRIMITIVE_TOPOLOGY_LIST_RESTART);
-                    emitBoolean(store, primitiveTopologyListRestartFeaturesEXT, KEY_PRIMITIVE_TOPOLOGY_PATCH_LIST_RESTART);
+                    emitBoolean(
+                            store,
+                            primitiveTopologyListRestartFeaturesEXT,
+                            KEY_PRIMITIVE_TOPOLOGY_LIST_RESTART);
+                    emitBoolean(
+                            store,
+                            primitiveTopologyListRestartFeaturesEXT,
+                            KEY_PRIMITIVE_TOPOLOGY_PATCH_LIST_RESTART);
                 }
                 store.endGroup();
             }
@@ -3535,18 +5257,29 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTPrimitivesGeneratedQuery(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extPrimitivesGeneratedQueryFeatures = parent.optJSONObject(KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY);
+            throws IOException, JSONException {
+        JSONObject extPrimitivesGeneratedQueryFeatures =
+                parent.optJSONObject(KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY);
         if (extPrimitivesGeneratedQueryFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY));
             {
-                JSONObject primitivesGeneratedQueryFeaturesEXT = extPrimitivesGeneratedQueryFeatures.getJSONObject(KEY_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT);
+                JSONObject primitivesGeneratedQueryFeaturesEXT =
+                        extPrimitivesGeneratedQueryFeatures.getJSONObject(
+                                KEY_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT));
                 {
-                    emitBoolean(store, primitivesGeneratedQueryFeaturesEXT, KEY_PRIMITIVES_GENERATED_QUERY);
-                    emitBoolean(store, primitivesGeneratedQueryFeaturesEXT, KEY_PRIMITIVES_GENERATED_QUERY_WITH_RASTERIZER_DISCARD);
-                    emitBoolean(store, primitivesGeneratedQueryFeaturesEXT, KEY_PRIMITIVES_GENERATED_QUERY_WITH_NON_ZERO_STREAMS);
+                    emitBoolean(
+                            store,
+                            primitivesGeneratedQueryFeaturesEXT,
+                            KEY_PRIMITIVES_GENERATED_QUERY);
+                    emitBoolean(
+                            store,
+                            primitivesGeneratedQueryFeaturesEXT,
+                            KEY_PRIMITIVES_GENERATED_QUERY_WITH_RASTERIZER_DISCARD);
+                    emitBoolean(
+                            store,
+                            primitivesGeneratedQueryFeaturesEXT,
+                            KEY_PRIMITIVES_GENERATED_QUERY_WITH_NON_ZERO_STREAMS);
                 }
                 store.endGroup();
             }
@@ -3555,13 +5288,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTPrivateData(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject extPrivateDataFeatures = parent.optJSONObject(KEY_VK_EXT_PRIVATE_DATA);
         if (extPrivateDataFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_PRIVATE_DATA));
             {
-                JSONObject privateDataFeaturesEXT = extPrivateDataFeatures.getJSONObject(KEY_PRIVATE_DATA_FEATURES_EXT);
+                JSONObject privateDataFeaturesEXT =
+                        extPrivateDataFeatures.getJSONObject(KEY_PRIVATE_DATA_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_PRIVATE_DATA_FEATURES_EXT));
                 {
                     emitBoolean(store, privateDataFeaturesEXT, KEY_PRIVATE_DATA);
@@ -3573,24 +5306,35 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTProvokingVertex(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject extProvokingVertexFeatures = parent.optJSONObject(KEY_VK_EXT_PROVOKING_VERTEX);
         if (extProvokingVertexFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_PROVOKING_VERTEX));
             {
-                JSONObject provokingVertexFeaturesEXT = extProvokingVertexFeatures.getJSONObject(KEY_PROVOKING_VERTEX_FEATURES_EXT);
+                JSONObject provokingVertexFeaturesEXT =
+                        extProvokingVertexFeatures.getJSONObject(KEY_PROVOKING_VERTEX_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_PROVOKING_VERTEX_FEATURES_EXT));
                 {
                     emitBoolean(store, provokingVertexFeaturesEXT, KEY_PROVOKING_VERTEX_LAST);
-                    emitBoolean(store, provokingVertexFeaturesEXT, KEY_TRANSFORM_FEEDBACK_PRESERVES_PROVOKING_VERTEX);
+                    emitBoolean(
+                            store,
+                            provokingVertexFeaturesEXT,
+                            KEY_TRANSFORM_FEEDBACK_PRESERVES_PROVOKING_VERTEX);
                 }
                 store.endGroup();
-                JSONObject provokingVertexPropertiesEXT = extProvokingVertexFeatures.getJSONObject(KEY_PROVOKING_VERTEX_PROPERTIES_EXT);
+                JSONObject provokingVertexPropertiesEXT =
+                        extProvokingVertexFeatures.getJSONObject(
+                                KEY_PROVOKING_VERTEX_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_PROVOKING_VERTEX_PROPERTIES_EXT));
                 {
-                    emitBoolean(store, provokingVertexPropertiesEXT, KEY_PROVOKING_VERTEX_MODE_PER_PIPELINE);
-                    emitBoolean(store, provokingVertexPropertiesEXT, KEY_TRANSFORM_FEEDBACK_PRESERVES_TRIANGLE_FAN_PROVOKING_VERTEX);
+                    emitBoolean(
+                            store,
+                            provokingVertexPropertiesEXT,
+                            KEY_PROVOKING_VERTEX_MODE_PER_PIPELINE);
+                    emitBoolean(
+                            store,
+                            provokingVertexPropertiesEXT,
+                            KEY_TRANSFORM_FEEDBACK_PRESERVES_TRIANGLE_FAN_PROVOKING_VERTEX);
                 }
                 store.endGroup();
             }
@@ -3598,19 +5342,31 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkEXTRasterizationOrderAttachmentAccess(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extRasterizationOrderAttachmentAccessFeatures = parent.optJSONObject(KEY_VK_EXT_RASTERIZATION_ORDER_ATTACHMENT_ACCESS);
+    private static void emitVkEXTRasterizationOrderAttachmentAccess(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject extRasterizationOrderAttachmentAccessFeatures =
+                parent.optJSONObject(KEY_VK_EXT_RASTERIZATION_ORDER_ATTACHMENT_ACCESS);
         if (extRasterizationOrderAttachmentAccessFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_RASTERIZATION_ORDER_ATTACHMENT_ACCESS));
             {
-                JSONObject rasterizationOrderAttachmentAccessFeaturesEXT = extRasterizationOrderAttachmentAccessFeatures.getJSONObject(KEY_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_FEATURES_EXT);
-                store.startGroup(getConvertedName(KEY_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_FEATURES_EXT));
+                JSONObject rasterizationOrderAttachmentAccessFeaturesEXT =
+                        extRasterizationOrderAttachmentAccessFeatures.getJSONObject(
+                                KEY_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_FEATURES_EXT);
+                store.startGroup(
+                        getConvertedName(KEY_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_FEATURES_EXT));
                 {
-                    emitBoolean(store, rasterizationOrderAttachmentAccessFeaturesEXT, KEY_RASTERIZATION_ORDER_COLOR_ATTACHMENT_ACCESS);
-                    emitBoolean(store, rasterizationOrderAttachmentAccessFeaturesEXT, KEY_RASTERIZATION_ORDER_DEPTH_ATTACHMENT_ACCESS);
-                    emitBoolean(store, rasterizationOrderAttachmentAccessFeaturesEXT, KEY_RASTERIZATION_ORDER_STENCIL_ATTACHMENT_ACCESS);
+                    emitBoolean(
+                            store,
+                            rasterizationOrderAttachmentAccessFeaturesEXT,
+                            KEY_RASTERIZATION_ORDER_COLOR_ATTACHMENT_ACCESS);
+                    emitBoolean(
+                            store,
+                            rasterizationOrderAttachmentAccessFeaturesEXT,
+                            KEY_RASTERIZATION_ORDER_DEPTH_ATTACHMENT_ACCESS);
+                    emitBoolean(
+                            store,
+                            rasterizationOrderAttachmentAccessFeaturesEXT,
+                            KEY_RASTERIZATION_ORDER_STENCIL_ATTACHMENT_ACCESS);
                 }
                 store.endGroup();
             }
@@ -3618,24 +5374,38 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkEXTRayTracingInvocationReorder(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extRayTracingInvocationReorderProperties = parent.optJSONObject(KEY_VK_EXT_RAY_TRACING_INVOCATION_REORDER);
+    private static void emitVkEXTRayTracingInvocationReorder(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject extRayTracingInvocationReorderProperties =
+                parent.optJSONObject(KEY_VK_EXT_RAY_TRACING_INVOCATION_REORDER);
         if (extRayTracingInvocationReorderProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_RAY_TRACING_INVOCATION_REORDER));
             {
-                JSONObject rayTracingInvocationReorderPropertiesEXT = extRayTracingInvocationReorderProperties.getJSONObject(KEY_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_EXT);
-                store.startGroup(getConvertedName(KEY_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_EXT));
+                JSONObject rayTracingInvocationReorderPropertiesEXT =
+                        extRayTracingInvocationReorderProperties.getJSONObject(
+                                KEY_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_EXT);
+                store.startGroup(
+                        getConvertedName(KEY_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_EXT));
                 {
-                    emitLong(store, rayTracingInvocationReorderPropertiesEXT, KEY_RAY_TRACING_INVOCATION_REORDER_REORDERING_HINT);
-                    emitLong(store, rayTracingInvocationReorderPropertiesEXT, KEY_MAX_SHADER_BINDING_TABLE_RECORD_INDEX);
+                    emitLong(
+                            store,
+                            rayTracingInvocationReorderPropertiesEXT,
+                            KEY_RAY_TRACING_INVOCATION_REORDER_REORDERING_HINT);
+                    emitLong(
+                            store,
+                            rayTracingInvocationReorderPropertiesEXT,
+                            KEY_MAX_SHADER_BINDING_TABLE_RECORD_INDEX);
                 }
                 store.endGroup();
-                JSONObject rayTracingInvocationReorderFeaturesEXT = extRayTracingInvocationReorderProperties.getJSONObject(KEY_RAY_TRACING_INVOCATION_REORDER_FEATURES_EXT);
+                JSONObject rayTracingInvocationReorderFeaturesEXT =
+                        extRayTracingInvocationReorderProperties.getJSONObject(
+                                KEY_RAY_TRACING_INVOCATION_REORDER_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_RAY_TRACING_INVOCATION_REORDER_FEATURES_EXT));
                 {
-                    emitBoolean(store, rayTracingInvocationReorderFeaturesEXT, KEY_RAY_TRACING_INVOCATION_REORDER);
+                    emitBoolean(
+                            store,
+                            rayTracingInvocationReorderFeaturesEXT,
+                            KEY_RAY_TRACING_INVOCATION_REORDER);
                 }
                 store.endGroup();
             }
@@ -3644,16 +5414,20 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTRgba10x6Formats(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject extRGBA10X6FormatsFeatures = parent.optJSONObject(KEY_VK_EXT_RGBA10X6_FORMATS);
         if (extRGBA10X6FormatsFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_RGBA10X6_FORMATS));
             {
-                JSONObject rgba10X6FormatsFeaturesEXT = extRGBA10X6FormatsFeatures.getJSONObject(KEY_RGBA_10_X_6_FORMATS_FEATURES_EXT);
+                JSONObject rgba10X6FormatsFeaturesEXT =
+                        extRGBA10X6FormatsFeatures.getJSONObject(
+                                KEY_RGBA_10_X_6_FORMATS_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_RGBA_10_X_6_FORMATS_FEATURES_EXT));
                 {
-                    emitBoolean(store, rgba10X6FormatsFeaturesEXT, KEY_FORMAT_RGBA_10_X_6_WITHOUT_Y_CB_CR_SAMPLER);
+                    emitBoolean(
+                            store,
+                            rgba10X6FormatsFeaturesEXT,
+                            KEY_FORMAT_RGBA_10_X_6_WITHOUT_Y_CB_CR_SAMPLER);
                 }
                 store.endGroup();
             }
@@ -3662,13 +5436,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTRobustness2(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject extRobustness2Features = parent.optJSONObject(KEY_VK_EXT_ROBUSTNESS2);
         if (extRobustness2Features != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_ROBUSTNESS2));
             {
-                JSONObject robustness2FeaturesEXT = extRobustness2Features.getJSONObject(KEY_ROBUSTNESS_2_FEATURES_EXT);
+                JSONObject robustness2FeaturesEXT =
+                        extRobustness2Features.getJSONObject(KEY_ROBUSTNESS_2_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_ROBUSTNESS_2_FEATURES_EXT));
                 {
                     emitBoolean(store, robustness2FeaturesEXT, KEY_ROBUST_BUFFER_ACCESS_2);
@@ -3676,11 +5450,18 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     emitBoolean(store, robustness2FeaturesEXT, KEY_NULL_DESCRIPTOR);
                 }
                 store.endGroup();
-                JSONObject robustness2PropertiesEXT = extRobustness2Features.getJSONObject(KEY_ROBUSTNESS_2_PROPERTIES_EXT);
+                JSONObject robustness2PropertiesEXT =
+                        extRobustness2Features.getJSONObject(KEY_ROBUSTNESS_2_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_ROBUSTNESS_2_PROPERTIES_EXT));
                 {
-                    emitString(store, robustness2PropertiesEXT, KEY_ROBUST_STORAGE_BUFFER_ACCESS_SIZE_ALIGNMENT);
-                    emitString(store, robustness2PropertiesEXT, KEY_ROBUST_UNIFORM_BUFFER_ACCESS_SIZE_ALIGNMENT);
+                    emitString(
+                            store,
+                            robustness2PropertiesEXT,
+                            KEY_ROBUST_STORAGE_BUFFER_ACCESS_SIZE_ALIGNMENT);
+                    emitString(
+                            store,
+                            robustness2PropertiesEXT,
+                            KEY_ROBUST_UNIFORM_BUFFER_ACCESS_SIZE_ALIGNMENT);
                 }
                 store.endGroup();
             }
@@ -3689,25 +5470,35 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTSampleLocations(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject extSampleLocationsProperties = parent.optJSONObject(KEY_VK_EXT_SAMPLE_LOCATIONS);
         if (extSampleLocationsProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_SAMPLE_LOCATIONS));
             {
-                JSONObject sampleLocationsPropertiesEXT = extSampleLocationsProperties.getJSONObject(KEY_SAMPLE_LOCATIONS_PROPERTIES_EXT);
+                JSONObject sampleLocationsPropertiesEXT =
+                        extSampleLocationsProperties.getJSONObject(
+                                KEY_SAMPLE_LOCATIONS_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_SAMPLE_LOCATIONS_PROPERTIES_EXT));
                 {
-                    emitLong(store, sampleLocationsPropertiesEXT, KEY_SAMPLE_LOCATION_SAMPLE_COUNTS);
-                    JSONObject maxSampleLocationGridSize = sampleLocationsPropertiesEXT.getJSONObject(KEY_MAX_SAMPLE_LOCATION_GRID_SIZE);
+                    emitLong(
+                            store, sampleLocationsPropertiesEXT, KEY_SAMPLE_LOCATION_SAMPLE_COUNTS);
+                    JSONObject maxSampleLocationGridSize =
+                            sampleLocationsPropertiesEXT.getJSONObject(
+                                    KEY_MAX_SAMPLE_LOCATION_GRID_SIZE);
                     store.startGroup(getConvertedName(KEY_MAX_SAMPLE_LOCATION_GRID_SIZE));
                     {
                         emitLong(store, maxSampleLocationGridSize, KEY_WIDTH);
                         emitLong(store, maxSampleLocationGridSize, KEY_HEIGHT);
                     }
                     store.endGroup();
-                    emitDoubleArray(store, sampleLocationsPropertiesEXT, KEY_SAMPLE_LOCATION_COORDINATE_RANGE);
-                    emitLong(store, sampleLocationsPropertiesEXT, KEY_SAMPLE_LOCATION_SUB_PIXEL_BITS);
+                    emitDoubleArray(
+                            store,
+                            sampleLocationsPropertiesEXT,
+                            KEY_SAMPLE_LOCATION_COORDINATE_RANGE);
+                    emitLong(
+                            store,
+                            sampleLocationsPropertiesEXT,
+                            KEY_SAMPLE_LOCATION_SUB_PIXEL_BITS);
                     emitBoolean(store, sampleLocationsPropertiesEXT, KEY_VARIABLE_SAMPLE_LOCATIONS);
                 }
                 store.endGroup();
@@ -3717,17 +5508,25 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTSamplerFilterMinmax(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extSamplerFilterMinmaxProperties = parent.optJSONObject(KEY_VK_EXT_SAMPLER_FILTER_MINMAX);
+            throws IOException, JSONException {
+        JSONObject extSamplerFilterMinmaxProperties =
+                parent.optJSONObject(KEY_VK_EXT_SAMPLER_FILTER_MINMAX);
         if (extSamplerFilterMinmaxProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_SAMPLER_FILTER_MINMAX));
             {
-                JSONObject samplerFilterMinmaxPropertiesEXT = extSamplerFilterMinmaxProperties.getJSONObject(KEY_SAMPLER_FILTER_MINMAX_PROPERTIES_EXT);
+                JSONObject samplerFilterMinmaxPropertiesEXT =
+                        extSamplerFilterMinmaxProperties.getJSONObject(
+                                KEY_SAMPLER_FILTER_MINMAX_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_SAMPLER_FILTER_MINMAX_PROPERTIES_EXT));
                 {
-                    emitBoolean(store, samplerFilterMinmaxPropertiesEXT, KEY_FILTER_MINMAX_SINGLE_COMPONENT_FORMATS);
-                    emitBoolean(store, samplerFilterMinmaxPropertiesEXT, KEY_FILTER_MINMAX_IMAGE_COMPONENT_MAPPING);
+                    emitBoolean(
+                            store,
+                            samplerFilterMinmaxPropertiesEXT,
+                            KEY_FILTER_MINMAX_SINGLE_COMPONENT_FORMATS);
+                    emitBoolean(
+                            store,
+                            samplerFilterMinmaxPropertiesEXT,
+                            KEY_FILTER_MINMAX_IMAGE_COMPONENT_MAPPING);
                 }
                 store.endGroup();
             }
@@ -3736,13 +5535,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTScalarBlockLayout(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extScalarBlockLayoutFeatures = parent.optJSONObject(KEY_VK_EXT_SCALAR_BLOCK_LAYOUT);
+            throws IOException, JSONException {
+        JSONObject extScalarBlockLayoutFeatures =
+                parent.optJSONObject(KEY_VK_EXT_SCALAR_BLOCK_LAYOUT);
         if (extScalarBlockLayoutFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_SCALAR_BLOCK_LAYOUT));
             {
-                JSONObject scalarBlockLayoutFeaturesEXT = extScalarBlockLayoutFeatures.getJSONObject(KEY_SCALAR_BLOCK_LAYOUT_FEATURES_EXT);
+                JSONObject scalarBlockLayoutFeaturesEXT =
+                        extScalarBlockLayoutFeatures.getJSONObject(
+                                KEY_SCALAR_BLOCK_LAYOUT_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_SCALAR_BLOCK_LAYOUT_FEATURES_EXT));
                 {
                     emitBoolean(store, scalarBlockLayoutFeaturesEXT, KEY_SCALAR_BLOCK_LAYOUT);
@@ -3754,13 +5555,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTShader64bitIndexing(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extShader64BitIndexingFeatures = parent.optJSONObject(KEY_VK_EXT_SHADER_64BIT_INDEXING);
+            throws IOException, JSONException {
+        JSONObject extShader64BitIndexingFeatures =
+                parent.optJSONObject(KEY_VK_EXT_SHADER_64BIT_INDEXING);
         if (extShader64BitIndexingFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_SHADER_64BIT_INDEXING));
             {
-                JSONObject shader64BitIndexingFeaturesEXT = extShader64BitIndexingFeatures.getJSONObject(KEY_SHADER_64_BIT_INDEXING_FEATURES_EXT);
+                JSONObject shader64BitIndexingFeaturesEXT =
+                        extShader64BitIndexingFeatures.getJSONObject(
+                                KEY_SHADER_64_BIT_INDEXING_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_SHADER_64_BIT_INDEXING_FEATURES_EXT));
                 {
                     emitBoolean(store, shader64BitIndexingFeaturesEXT, KEY_SHADER_64_BIT_INDEXING);
@@ -3772,27 +5575,61 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTShaderAtomicFloat(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extShaderAtomicFloatFeatures = parent.optJSONObject(KEY_VK_EXT_SHADER_ATOMIC_FLOAT);
+            throws IOException, JSONException {
+        JSONObject extShaderAtomicFloatFeatures =
+                parent.optJSONObject(KEY_VK_EXT_SHADER_ATOMIC_FLOAT);
         if (extShaderAtomicFloatFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_SHADER_ATOMIC_FLOAT));
             {
-                JSONObject shaderAtomicFloatFeaturesEXT = extShaderAtomicFloatFeatures.getJSONObject(KEY_SHADER_ATOMIC_FLOAT_FEATURES_EXT);
+                JSONObject shaderAtomicFloatFeaturesEXT =
+                        extShaderAtomicFloatFeatures.getJSONObject(
+                                KEY_SHADER_ATOMIC_FLOAT_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_SHADER_ATOMIC_FLOAT_FEATURES_EXT));
                 {
-                    emitBoolean(store, shaderAtomicFloatFeaturesEXT, KEY_SHADER_BUFFER_FLOAT_32_ATOMICS);
-                    emitBoolean(store, shaderAtomicFloatFeaturesEXT, KEY_SHADER_BUFFER_FLOAT_32_ATOMIC_ADD);
-                    emitBoolean(store, shaderAtomicFloatFeaturesEXT, KEY_SHADER_BUFFER_FLOAT_64_ATOMICS);
-                    emitBoolean(store, shaderAtomicFloatFeaturesEXT, KEY_SHADER_BUFFER_FLOAT_64_ATOMIC_ADD);
-                    emitBoolean(store, shaderAtomicFloatFeaturesEXT, KEY_SHADER_SHARED_FLOAT_32_ATOMICS);
-                    emitBoolean(store, shaderAtomicFloatFeaturesEXT, KEY_SHADER_SHARED_FLOAT_32_ATOMIC_ADD);
-                    emitBoolean(store, shaderAtomicFloatFeaturesEXT, KEY_SHADER_SHARED_FLOAT_64_ATOMICS);
-                    emitBoolean(store, shaderAtomicFloatFeaturesEXT, KEY_SHADER_SHARED_FLOAT_64_ATOMIC_ADD);
-                    emitBoolean(store, shaderAtomicFloatFeaturesEXT, KEY_SHADER_IMAGE_FLOAT_32_ATOMICS);
-                    emitBoolean(store, shaderAtomicFloatFeaturesEXT, KEY_SHADER_IMAGE_FLOAT_32_ATOMIC_ADD);
-                    emitBoolean(store, shaderAtomicFloatFeaturesEXT, KEY_SPARSE_IMAGE_FLOAT_32_ATOMICS);
-                    emitBoolean(store, shaderAtomicFloatFeaturesEXT, KEY_SPARSE_IMAGE_FLOAT_32_ATOMIC_ADD);
+                    emitBoolean(
+                            store,
+                            shaderAtomicFloatFeaturesEXT,
+                            KEY_SHADER_BUFFER_FLOAT_32_ATOMICS);
+                    emitBoolean(
+                            store,
+                            shaderAtomicFloatFeaturesEXT,
+                            KEY_SHADER_BUFFER_FLOAT_32_ATOMIC_ADD);
+                    emitBoolean(
+                            store,
+                            shaderAtomicFloatFeaturesEXT,
+                            KEY_SHADER_BUFFER_FLOAT_64_ATOMICS);
+                    emitBoolean(
+                            store,
+                            shaderAtomicFloatFeaturesEXT,
+                            KEY_SHADER_BUFFER_FLOAT_64_ATOMIC_ADD);
+                    emitBoolean(
+                            store,
+                            shaderAtomicFloatFeaturesEXT,
+                            KEY_SHADER_SHARED_FLOAT_32_ATOMICS);
+                    emitBoolean(
+                            store,
+                            shaderAtomicFloatFeaturesEXT,
+                            KEY_SHADER_SHARED_FLOAT_32_ATOMIC_ADD);
+                    emitBoolean(
+                            store,
+                            shaderAtomicFloatFeaturesEXT,
+                            KEY_SHADER_SHARED_FLOAT_64_ATOMICS);
+                    emitBoolean(
+                            store,
+                            shaderAtomicFloatFeaturesEXT,
+                            KEY_SHADER_SHARED_FLOAT_64_ATOMIC_ADD);
+                    emitBoolean(
+                            store, shaderAtomicFloatFeaturesEXT, KEY_SHADER_IMAGE_FLOAT_32_ATOMICS);
+                    emitBoolean(
+                            store,
+                            shaderAtomicFloatFeaturesEXT,
+                            KEY_SHADER_IMAGE_FLOAT_32_ATOMIC_ADD);
+                    emitBoolean(
+                            store, shaderAtomicFloatFeaturesEXT, KEY_SPARSE_IMAGE_FLOAT_32_ATOMICS);
+                    emitBoolean(
+                            store,
+                            shaderAtomicFloatFeaturesEXT,
+                            KEY_SPARSE_IMAGE_FLOAT_32_ATOMIC_ADD);
                 }
                 store.endGroup();
             }
@@ -3801,27 +5638,65 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTShaderAtomicFloat2(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extShaderAtomicFloat2Features = parent.optJSONObject(KEY_VK_EXT_SHADER_ATOMIC_FLOAT2);
+            throws IOException, JSONException {
+        JSONObject extShaderAtomicFloat2Features =
+                parent.optJSONObject(KEY_VK_EXT_SHADER_ATOMIC_FLOAT2);
         if (extShaderAtomicFloat2Features != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_SHADER_ATOMIC_FLOAT2));
             {
-                JSONObject shaderAtomicFloat2FeaturesEXT = extShaderAtomicFloat2Features.getJSONObject(KEY_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT);
+                JSONObject shaderAtomicFloat2FeaturesEXT =
+                        extShaderAtomicFloat2Features.getJSONObject(
+                                KEY_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT));
                 {
-                    emitBoolean(store, shaderAtomicFloat2FeaturesEXT, KEY_SHADER_BUFFER_FLOAT_16_ATOMICS);
-                    emitBoolean(store, shaderAtomicFloat2FeaturesEXT, KEY_SHADER_BUFFER_FLOAT_16_ATOMIC_ADD);
-                    emitBoolean(store, shaderAtomicFloat2FeaturesEXT, KEY_SHADER_BUFFER_FLOAT_16_ATOMIC_MIN_MAX);
-                    emitBoolean(store, shaderAtomicFloat2FeaturesEXT, KEY_SHADER_BUFFER_FLOAT_32_ATOMIC_MIN_MAX);
-                    emitBoolean(store, shaderAtomicFloat2FeaturesEXT, KEY_SHADER_BUFFER_FLOAT_64_ATOMIC_MIN_MAX);
-                    emitBoolean(store, shaderAtomicFloat2FeaturesEXT, KEY_SHADER_SHARED_FLOAT_16_ATOMICS);
-                    emitBoolean(store, shaderAtomicFloat2FeaturesEXT, KEY_SHADER_SHARED_FLOAT_16_ATOMIC_ADD);
-                    emitBoolean(store, shaderAtomicFloat2FeaturesEXT, KEY_SHADER_SHARED_FLOAT_16_ATOMIC_MIN_MAX);
-                    emitBoolean(store, shaderAtomicFloat2FeaturesEXT, KEY_SHADER_SHARED_FLOAT_32_ATOMIC_MIN_MAX);
-                    emitBoolean(store, shaderAtomicFloat2FeaturesEXT, KEY_SHADER_SHARED_FLOAT_64_ATOMIC_MIN_MAX);
-                    emitBoolean(store, shaderAtomicFloat2FeaturesEXT, KEY_SHADER_IMAGE_FLOAT_32_ATOMIC_MIN_MAX);
-                    emitBoolean(store, shaderAtomicFloat2FeaturesEXT, KEY_SPARSE_IMAGE_FLOAT_32_ATOMIC_MIN_MAX);
+                    emitBoolean(
+                            store,
+                            shaderAtomicFloat2FeaturesEXT,
+                            KEY_SHADER_BUFFER_FLOAT_16_ATOMICS);
+                    emitBoolean(
+                            store,
+                            shaderAtomicFloat2FeaturesEXT,
+                            KEY_SHADER_BUFFER_FLOAT_16_ATOMIC_ADD);
+                    emitBoolean(
+                            store,
+                            shaderAtomicFloat2FeaturesEXT,
+                            KEY_SHADER_BUFFER_FLOAT_16_ATOMIC_MIN_MAX);
+                    emitBoolean(
+                            store,
+                            shaderAtomicFloat2FeaturesEXT,
+                            KEY_SHADER_BUFFER_FLOAT_32_ATOMIC_MIN_MAX);
+                    emitBoolean(
+                            store,
+                            shaderAtomicFloat2FeaturesEXT,
+                            KEY_SHADER_BUFFER_FLOAT_64_ATOMIC_MIN_MAX);
+                    emitBoolean(
+                            store,
+                            shaderAtomicFloat2FeaturesEXT,
+                            KEY_SHADER_SHARED_FLOAT_16_ATOMICS);
+                    emitBoolean(
+                            store,
+                            shaderAtomicFloat2FeaturesEXT,
+                            KEY_SHADER_SHARED_FLOAT_16_ATOMIC_ADD);
+                    emitBoolean(
+                            store,
+                            shaderAtomicFloat2FeaturesEXT,
+                            KEY_SHADER_SHARED_FLOAT_16_ATOMIC_MIN_MAX);
+                    emitBoolean(
+                            store,
+                            shaderAtomicFloat2FeaturesEXT,
+                            KEY_SHADER_SHARED_FLOAT_32_ATOMIC_MIN_MAX);
+                    emitBoolean(
+                            store,
+                            shaderAtomicFloat2FeaturesEXT,
+                            KEY_SHADER_SHARED_FLOAT_64_ATOMIC_MIN_MAX);
+                    emitBoolean(
+                            store,
+                            shaderAtomicFloat2FeaturesEXT,
+                            KEY_SHADER_IMAGE_FLOAT_32_ATOMIC_MIN_MAX);
+                    emitBoolean(
+                            store,
+                            shaderAtomicFloat2FeaturesEXT,
+                            KEY_SPARSE_IMAGE_FLOAT_32_ATOMIC_MIN_MAX);
                 }
                 store.endGroup();
             }
@@ -3829,17 +5704,23 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkEXTShaderDemoteToHelperInvocation(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extShaderDemoteToHelperInvocationFeatures = parent.optJSONObject(KEY_VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION);
+    private static void emitVkEXTShaderDemoteToHelperInvocation(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject extShaderDemoteToHelperInvocationFeatures =
+                parent.optJSONObject(KEY_VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION);
         if (extShaderDemoteToHelperInvocationFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION));
             {
-                JSONObject shaderDemoteToHelperInvocationFeaturesEXT = extShaderDemoteToHelperInvocationFeatures.getJSONObject(KEY_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES_EXT);
-                store.startGroup(getConvertedName(KEY_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES_EXT));
+                JSONObject shaderDemoteToHelperInvocationFeaturesEXT =
+                        extShaderDemoteToHelperInvocationFeatures.getJSONObject(
+                                KEY_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES_EXT);
+                store.startGroup(
+                        getConvertedName(KEY_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES_EXT));
                 {
-                    emitBoolean(store, shaderDemoteToHelperInvocationFeaturesEXT, KEY_SHADER_DEMOTE_TO_HELPER_INVOCATION);
+                    emitBoolean(
+                            store,
+                            shaderDemoteToHelperInvocationFeaturesEXT,
+                            KEY_SHADER_DEMOTE_TO_HELPER_INVOCATION);
                 }
                 store.endGroup();
             }
@@ -3848,17 +5729,18 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTShaderFloat8(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject extShaderFloat8Features = parent.optJSONObject(KEY_VK_EXT_SHADER_FLOAT8);
         if (extShaderFloat8Features != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_SHADER_FLOAT8));
             {
-                JSONObject shaderFloat8FeaturesEXT = extShaderFloat8Features.getJSONObject(KEY_SHADER_FLOAT_8_FEATURES_EXT);
+                JSONObject shaderFloat8FeaturesEXT =
+                        extShaderFloat8Features.getJSONObject(KEY_SHADER_FLOAT_8_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_SHADER_FLOAT_8_FEATURES_EXT));
                 {
                     emitBoolean(store, shaderFloat8FeaturesEXT, KEY_SHADER_FLOAT_8);
-                    emitBoolean(store, shaderFloat8FeaturesEXT, KEY_SHADER_FLOAT_8_COOPERATIVE_MATRIX);
+                    emitBoolean(
+                            store, shaderFloat8FeaturesEXT, KEY_SHADER_FLOAT_8_COOPERATIVE_MATRIX);
                 }
                 store.endGroup();
             }
@@ -3867,17 +5749,25 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTShaderImageAtomicInt64(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extShaderImageAtomicInt64Features = parent.optJSONObject(KEY_VK_EXT_SHADER_IMAGE_ATOMIC_INT64);
+            throws IOException, JSONException {
+        JSONObject extShaderImageAtomicInt64Features =
+                parent.optJSONObject(KEY_VK_EXT_SHADER_IMAGE_ATOMIC_INT64);
         if (extShaderImageAtomicInt64Features != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_SHADER_IMAGE_ATOMIC_INT64));
             {
-                JSONObject shaderImageAtomicInt64FeaturesEXT = extShaderImageAtomicInt64Features.getJSONObject(KEY_SHADER_IMAGE_ATOMIC_INT_64_FEATURES_EXT);
+                JSONObject shaderImageAtomicInt64FeaturesEXT =
+                        extShaderImageAtomicInt64Features.getJSONObject(
+                                KEY_SHADER_IMAGE_ATOMIC_INT_64_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_SHADER_IMAGE_ATOMIC_INT_64_FEATURES_EXT));
                 {
-                    emitBoolean(store, shaderImageAtomicInt64FeaturesEXT, KEY_SHADER_IMAGE_INT_64_ATOMICS);
-                    emitBoolean(store, shaderImageAtomicInt64FeaturesEXT, KEY_SPARSE_IMAGE_INT_64_ATOMICS);
+                    emitBoolean(
+                            store,
+                            shaderImageAtomicInt64FeaturesEXT,
+                            KEY_SHADER_IMAGE_INT_64_ATOMICS);
+                    emitBoolean(
+                            store,
+                            shaderImageAtomicInt64FeaturesEXT,
+                            KEY_SPARSE_IMAGE_INT_64_ATOMICS);
                 }
                 store.endGroup();
             }
@@ -3886,22 +5776,30 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTShaderModuleIdentifier(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extShaderModuleIdentifierFeatures = parent.optJSONObject(KEY_VK_EXT_SHADER_MODULE_IDENTIFIER);
+            throws IOException, JSONException {
+        JSONObject extShaderModuleIdentifierFeatures =
+                parent.optJSONObject(KEY_VK_EXT_SHADER_MODULE_IDENTIFIER);
         if (extShaderModuleIdentifierFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_SHADER_MODULE_IDENTIFIER));
             {
-                JSONObject shaderModuleIdentifierFeaturesEXT = extShaderModuleIdentifierFeatures.getJSONObject(KEY_SHADER_MODULE_IDENTIFIER_FEATURES_EXT);
+                JSONObject shaderModuleIdentifierFeaturesEXT =
+                        extShaderModuleIdentifierFeatures.getJSONObject(
+                                KEY_SHADER_MODULE_IDENTIFIER_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_SHADER_MODULE_IDENTIFIER_FEATURES_EXT));
                 {
-                    emitBoolean(store, shaderModuleIdentifierFeaturesEXT, KEY_SHADER_MODULE_IDENTIFIER);
+                    emitBoolean(
+                            store, shaderModuleIdentifierFeaturesEXT, KEY_SHADER_MODULE_IDENTIFIER);
                 }
                 store.endGroup();
-                JSONObject shaderModuleIdentifierPropertiesEXT = extShaderModuleIdentifierFeatures.getJSONObject(KEY_SHADER_MODULE_IDENTIFIER_PROPERTIES_EXT);
+                JSONObject shaderModuleIdentifierPropertiesEXT =
+                        extShaderModuleIdentifierFeatures.getJSONObject(
+                                KEY_SHADER_MODULE_IDENTIFIER_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_SHADER_MODULE_IDENTIFIER_PROPERTIES_EXT));
                 {
-                    emitLongArray(store, shaderModuleIdentifierPropertiesEXT, KEY_SHADER_MODULE_IDENTIFIER_ALGORITHM_UUID);
+                    emitLongArray(
+                            store,
+                            shaderModuleIdentifierPropertiesEXT,
+                            KEY_SHADER_MODULE_IDENTIFIER_ALGORITHM_UUID);
                 }
                 store.endGroup();
             }
@@ -3910,19 +5808,20 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTShaderObject(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject extShaderObjectFeatures = parent.optJSONObject(KEY_VK_EXT_SHADER_OBJECT);
         if (extShaderObjectFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_SHADER_OBJECT));
             {
-                JSONObject shaderObjectFeaturesEXT = extShaderObjectFeatures.getJSONObject(KEY_SHADER_OBJECT_FEATURES_EXT);
+                JSONObject shaderObjectFeaturesEXT =
+                        extShaderObjectFeatures.getJSONObject(KEY_SHADER_OBJECT_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_SHADER_OBJECT_FEATURES_EXT));
                 {
                     emitBoolean(store, shaderObjectFeaturesEXT, KEY_SHADER_OBJECT);
                 }
                 store.endGroup();
-                JSONObject shaderObjectPropertiesEXT = extShaderObjectFeatures.getJSONObject(KEY_SHADER_OBJECT_PROPERTIES_EXT);
+                JSONObject shaderObjectPropertiesEXT =
+                        extShaderObjectFeatures.getJSONObject(KEY_SHADER_OBJECT_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_SHADER_OBJECT_PROPERTIES_EXT));
                 {
                     emitLongArray(store, shaderObjectPropertiesEXT, KEY_SHADER_BINARY_UUID);
@@ -3934,17 +5833,22 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkEXTShaderReplicatedComposites(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extShaderReplicatedCompositesFeatures = parent.optJSONObject(KEY_VK_EXT_SHADER_REPLICATED_COMPOSITES);
+    private static void emitVkEXTShaderReplicatedComposites(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject extShaderReplicatedCompositesFeatures =
+                parent.optJSONObject(KEY_VK_EXT_SHADER_REPLICATED_COMPOSITES);
         if (extShaderReplicatedCompositesFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_SHADER_REPLICATED_COMPOSITES));
             {
-                JSONObject shaderReplicatedCompositesFeaturesEXT = extShaderReplicatedCompositesFeatures.getJSONObject(KEY_SHADER_REPLICATED_COMPOSITES_FEATURES_EXT);
+                JSONObject shaderReplicatedCompositesFeaturesEXT =
+                        extShaderReplicatedCompositesFeatures.getJSONObject(
+                                KEY_SHADER_REPLICATED_COMPOSITES_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_SHADER_REPLICATED_COMPOSITES_FEATURES_EXT));
                 {
-                    emitBoolean(store, shaderReplicatedCompositesFeaturesEXT, KEY_SHADER_REPLICATED_COMPOSITES);
+                    emitBoolean(
+                            store,
+                            shaderReplicatedCompositesFeaturesEXT,
+                            KEY_SHADER_REPLICATED_COMPOSITES);
                 }
                 store.endGroup();
             }
@@ -3953,26 +5857,47 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTShaderTileImage(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject extShaderTileImageFeatures = parent.optJSONObject(KEY_VK_EXT_SHADER_TILE_IMAGE);
         if (extShaderTileImageFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_SHADER_TILE_IMAGE));
             {
-                JSONObject shaderTileImageFeaturesEXT = extShaderTileImageFeatures.getJSONObject(KEY_SHADER_TILE_IMAGE_FEATURES_EXT);
+                JSONObject shaderTileImageFeaturesEXT =
+                        extShaderTileImageFeatures.getJSONObject(
+                                KEY_SHADER_TILE_IMAGE_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_SHADER_TILE_IMAGE_FEATURES_EXT));
                 {
-                    emitBoolean(store, shaderTileImageFeaturesEXT, KEY_SHADER_TILE_IMAGE_COLOR_READ_ACCESS);
-                    emitBoolean(store, shaderTileImageFeaturesEXT, KEY_SHADER_TILE_IMAGE_DEPTH_READ_ACCESS);
-                    emitBoolean(store, shaderTileImageFeaturesEXT, KEY_SHADER_TILE_IMAGE_STENCIL_READ_ACCESS);
+                    emitBoolean(
+                            store,
+                            shaderTileImageFeaturesEXT,
+                            KEY_SHADER_TILE_IMAGE_COLOR_READ_ACCESS);
+                    emitBoolean(
+                            store,
+                            shaderTileImageFeaturesEXT,
+                            KEY_SHADER_TILE_IMAGE_DEPTH_READ_ACCESS);
+                    emitBoolean(
+                            store,
+                            shaderTileImageFeaturesEXT,
+                            KEY_SHADER_TILE_IMAGE_STENCIL_READ_ACCESS);
                 }
                 store.endGroup();
-                JSONObject shaderTileImagePropertiesEXT = extShaderTileImageFeatures.getJSONObject(KEY_SHADER_TILE_IMAGE_PROPERTIES_EXT);
+                JSONObject shaderTileImagePropertiesEXT =
+                        extShaderTileImageFeatures.getJSONObject(
+                                KEY_SHADER_TILE_IMAGE_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_SHADER_TILE_IMAGE_PROPERTIES_EXT));
                 {
-                    emitBoolean(store, shaderTileImagePropertiesEXT, KEY_SHADER_TILE_IMAGE_COHERENT_READ_ACCELERATED);
-                    emitBoolean(store, shaderTileImagePropertiesEXT, KEY_SHADER_TILE_IMAGE_READ_SAMPLE_FROM_PIXEL_RATE_INVOCATION);
-                    emitBoolean(store, shaderTileImagePropertiesEXT, KEY_SHADER_TILE_IMAGE_READ_FROM_HELPER_INVOCATION);
+                    emitBoolean(
+                            store,
+                            shaderTileImagePropertiesEXT,
+                            KEY_SHADER_TILE_IMAGE_COHERENT_READ_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderTileImagePropertiesEXT,
+                            KEY_SHADER_TILE_IMAGE_READ_SAMPLE_FROM_PIXEL_RATE_INVOCATION);
+                    emitBoolean(
+                            store,
+                            shaderTileImagePropertiesEXT,
+                            KEY_SHADER_TILE_IMAGE_READ_FROM_HELPER_INVOCATION);
                 }
                 store.endGroup();
             }
@@ -3980,17 +5905,23 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkEXTShaderUniformBufferUnsizedArray(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extShaderUniformBufferUnsizedArrayFeatures = parent.optJSONObject(KEY_VK_EXT_SHADER_UNIFORM_BUFFER_UNSIZED_ARRAY);
+    private static void emitVkEXTShaderUniformBufferUnsizedArray(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject extShaderUniformBufferUnsizedArrayFeatures =
+                parent.optJSONObject(KEY_VK_EXT_SHADER_UNIFORM_BUFFER_UNSIZED_ARRAY);
         if (extShaderUniformBufferUnsizedArrayFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_SHADER_UNIFORM_BUFFER_UNSIZED_ARRAY));
             {
-                JSONObject shaderUniformBufferUnsizedArrayFeaturesEXT = extShaderUniformBufferUnsizedArrayFeatures.getJSONObject(KEY_SHADER_UNIFORM_BUFFER_UNSIZED_ARRAY_FEATURES_EXT);
-                store.startGroup(getConvertedName(KEY_SHADER_UNIFORM_BUFFER_UNSIZED_ARRAY_FEATURES_EXT));
+                JSONObject shaderUniformBufferUnsizedArrayFeaturesEXT =
+                        extShaderUniformBufferUnsizedArrayFeatures.getJSONObject(
+                                KEY_SHADER_UNIFORM_BUFFER_UNSIZED_ARRAY_FEATURES_EXT);
+                store.startGroup(
+                        getConvertedName(KEY_SHADER_UNIFORM_BUFFER_UNSIZED_ARRAY_FEATURES_EXT));
                 {
-                    emitBoolean(store, shaderUniformBufferUnsizedArrayFeaturesEXT, KEY_SHADER_UNIFORM_BUFFER_UNSIZED_ARRAY);
+                    emitBoolean(
+                            store,
+                            shaderUniformBufferUnsizedArrayFeaturesEXT,
+                            KEY_SHADER_UNIFORM_BUFFER_UNSIZED_ARRAY);
                 }
                 store.endGroup();
             }
@@ -3999,26 +5930,36 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTSubgroupSizeControl(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extSubgroupSizeControlFeatures = parent.optJSONObject(KEY_VK_EXT_SUBGROUP_SIZE_CONTROL);
+            throws IOException, JSONException {
+        JSONObject extSubgroupSizeControlFeatures =
+                parent.optJSONObject(KEY_VK_EXT_SUBGROUP_SIZE_CONTROL);
         if (extSubgroupSizeControlFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_SUBGROUP_SIZE_CONTROL));
             {
-                JSONObject subgroupSizeControlFeaturesEXT = extSubgroupSizeControlFeatures.getJSONObject(KEY_SUBGROUP_SIZE_CONTROL_FEATURES_EXT);
+                JSONObject subgroupSizeControlFeaturesEXT =
+                        extSubgroupSizeControlFeatures.getJSONObject(
+                                KEY_SUBGROUP_SIZE_CONTROL_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_SUBGROUP_SIZE_CONTROL_FEATURES_EXT));
                 {
                     emitBoolean(store, subgroupSizeControlFeaturesEXT, KEY_SUBGROUP_SIZE_CONTROL);
                     emitBoolean(store, subgroupSizeControlFeaturesEXT, KEY_COMPUTE_FULL_SUBGROUPS);
                 }
                 store.endGroup();
-                JSONObject subgroupSizeControlPropertiesEXT = extSubgroupSizeControlFeatures.getJSONObject(KEY_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT);
+                JSONObject subgroupSizeControlPropertiesEXT =
+                        extSubgroupSizeControlFeatures.getJSONObject(
+                                KEY_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT));
                 {
                     emitLong(store, subgroupSizeControlPropertiesEXT, KEY_MIN_SUBGROUP_SIZE);
                     emitLong(store, subgroupSizeControlPropertiesEXT, KEY_MAX_SUBGROUP_SIZE);
-                    emitLong(store, subgroupSizeControlPropertiesEXT, KEY_MAX_COMPUTE_WORKGROUP_SUBGROUPS);
-                    emitLong(store, subgroupSizeControlPropertiesEXT, KEY_REQUIRED_SUBGROUP_SIZE_STAGES);
+                    emitLong(
+                            store,
+                            subgroupSizeControlPropertiesEXT,
+                            KEY_MAX_COMPUTE_WORKGROUP_SUBGROUPS);
+                    emitLong(
+                            store,
+                            subgroupSizeControlPropertiesEXT,
+                            KEY_REQUIRED_SUBGROUP_SIZE_STAGES);
                 }
                 store.endGroup();
             }
@@ -4027,13 +5968,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTSubpassMergeFeedback(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extSubpassMergeFeedbackFeatures = parent.optJSONObject(KEY_VK_EXT_SUBPASS_MERGE_FEEDBACK);
+            throws IOException, JSONException {
+        JSONObject extSubpassMergeFeedbackFeatures =
+                parent.optJSONObject(KEY_VK_EXT_SUBPASS_MERGE_FEEDBACK);
         if (extSubpassMergeFeedbackFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_SUBPASS_MERGE_FEEDBACK));
             {
-                JSONObject subpassMergeFeedbackFeaturesEXT = extSubpassMergeFeedbackFeatures.getJSONObject(KEY_SUBPASS_MERGE_FEEDBACK_FEATURES_EXT);
+                JSONObject subpassMergeFeedbackFeaturesEXT =
+                        extSubpassMergeFeedbackFeatures.getJSONObject(
+                                KEY_SUBPASS_MERGE_FEEDBACK_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_SUBPASS_MERGE_FEEDBACK_FEATURES_EXT));
                 {
                     emitBoolean(store, subpassMergeFeedbackFeaturesEXT, KEY_SUBPASS_MERGE_FEEDBACK);
@@ -4045,16 +5988,19 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTSwapchainMaintenance1(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extSwapchainMaintenance1Features = parent.optJSONObject(KEY_VK_EXT_SWAPCHAIN_MAINTENANCE1);
+            throws IOException, JSONException {
+        JSONObject extSwapchainMaintenance1Features =
+                parent.optJSONObject(KEY_VK_EXT_SWAPCHAIN_MAINTENANCE1);
         if (extSwapchainMaintenance1Features != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_SWAPCHAIN_MAINTENANCE1));
             {
-                JSONObject swapchainMaintenance1FeaturesEXT = extSwapchainMaintenance1Features.getJSONObject(KEY_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT);
+                JSONObject swapchainMaintenance1FeaturesEXT =
+                        extSwapchainMaintenance1Features.getJSONObject(
+                                KEY_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT));
                 {
-                    emitBoolean(store, swapchainMaintenance1FeaturesEXT, KEY_SWAPCHAIN_MAINTENANCE_1);
+                    emitBoolean(
+                            store, swapchainMaintenance1FeaturesEXT, KEY_SWAPCHAIN_MAINTENANCE_1);
                 }
                 store.endGroup();
             }
@@ -4063,25 +6009,41 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTTexelBufferAlignment(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extTexelBufferAlignmentFeatures = parent.optJSONObject(KEY_VK_EXT_TEXEL_BUFFER_ALIGNMENT);
+            throws IOException, JSONException {
+        JSONObject extTexelBufferAlignmentFeatures =
+                parent.optJSONObject(KEY_VK_EXT_TEXEL_BUFFER_ALIGNMENT);
         if (extTexelBufferAlignmentFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_TEXEL_BUFFER_ALIGNMENT));
             {
-                JSONObject texelBufferAlignmentFeaturesEXT = extTexelBufferAlignmentFeatures.getJSONObject(KEY_TEXEL_BUFFER_ALIGNMENT_FEATURES_EXT);
+                JSONObject texelBufferAlignmentFeaturesEXT =
+                        extTexelBufferAlignmentFeatures.getJSONObject(
+                                KEY_TEXEL_BUFFER_ALIGNMENT_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_TEXEL_BUFFER_ALIGNMENT_FEATURES_EXT));
                 {
                     emitBoolean(store, texelBufferAlignmentFeaturesEXT, KEY_TEXEL_BUFFER_ALIGNMENT);
                 }
                 store.endGroup();
-                JSONObject texelBufferAlignmentPropertiesEXT = extTexelBufferAlignmentFeatures.getJSONObject(KEY_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT);
+                JSONObject texelBufferAlignmentPropertiesEXT =
+                        extTexelBufferAlignmentFeatures.getJSONObject(
+                                KEY_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT));
                 {
-                    emitString(store, texelBufferAlignmentPropertiesEXT, KEY_STORAGE_TEXEL_BUFFER_OFFSET_ALIGNMENT_BYTES);
-                    emitBoolean(store, texelBufferAlignmentPropertiesEXT, KEY_STORAGE_TEXEL_BUFFER_OFFSET_SINGLE_TEXEL_ALIGNMENT);
-                    emitString(store, texelBufferAlignmentPropertiesEXT, KEY_UNIFORM_TEXEL_BUFFER_OFFSET_ALIGNMENT_BYTES);
-                    emitBoolean(store, texelBufferAlignmentPropertiesEXT, KEY_UNIFORM_TEXEL_BUFFER_OFFSET_SINGLE_TEXEL_ALIGNMENT);
+                    emitString(
+                            store,
+                            texelBufferAlignmentPropertiesEXT,
+                            KEY_STORAGE_TEXEL_BUFFER_OFFSET_ALIGNMENT_BYTES);
+                    emitBoolean(
+                            store,
+                            texelBufferAlignmentPropertiesEXT,
+                            KEY_STORAGE_TEXEL_BUFFER_OFFSET_SINGLE_TEXEL_ALIGNMENT);
+                    emitString(
+                            store,
+                            texelBufferAlignmentPropertiesEXT,
+                            KEY_UNIFORM_TEXEL_BUFFER_OFFSET_ALIGNMENT_BYTES);
+                    emitBoolean(
+                            store,
+                            texelBufferAlignmentPropertiesEXT,
+                            KEY_UNIFORM_TEXEL_BUFFER_OFFSET_SINGLE_TEXEL_ALIGNMENT);
                 }
                 store.endGroup();
             }
@@ -4090,16 +6052,21 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTTextureCompressionAstcHdr(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extTextureCompressionASTCHDRFeatures = parent.optJSONObject(KEY_VK_EXT_TEXTURE_COMPRESSION_ASTC_HDR);
+            throws IOException, JSONException {
+        JSONObject extTextureCompressionASTCHDRFeatures =
+                parent.optJSONObject(KEY_VK_EXT_TEXTURE_COMPRESSION_ASTC_HDR);
         if (extTextureCompressionASTCHDRFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_TEXTURE_COMPRESSION_ASTC_HDR));
             {
-                JSONObject textureCompressionAstchdrFeaturesEXT = extTextureCompressionASTCHDRFeatures.getJSONObject(KEY_TEXTURE_COMPRESSION_ASTCHDR_FEATURES_EXT);
+                JSONObject textureCompressionAstchdrFeaturesEXT =
+                        extTextureCompressionASTCHDRFeatures.getJSONObject(
+                                KEY_TEXTURE_COMPRESSION_ASTCHDR_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_TEXTURE_COMPRESSION_ASTCHDR_FEATURES_EXT));
                 {
-                    emitBoolean(store, textureCompressionAstchdrFeaturesEXT, KEY_TEXTURE_COMPRESSION_ASTC_HDR);
+                    emitBoolean(
+                            store,
+                            textureCompressionAstchdrFeaturesEXT,
+                            KEY_TEXTURE_COMPRESSION_ASTC_HDR);
                 }
                 store.endGroup();
             }
@@ -4108,31 +6075,60 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTTransformFeedback(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extTransformFeedbackFeatures = parent.optJSONObject(KEY_VK_EXT_TRANSFORM_FEEDBACK);
+            throws IOException, JSONException {
+        JSONObject extTransformFeedbackFeatures =
+                parent.optJSONObject(KEY_VK_EXT_TRANSFORM_FEEDBACK);
         if (extTransformFeedbackFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_TRANSFORM_FEEDBACK));
             {
-                JSONObject transformFeedbackFeaturesEXT = extTransformFeedbackFeatures.getJSONObject(KEY_TRANSFORM_FEEDBACK_FEATURES_EXT);
+                JSONObject transformFeedbackFeaturesEXT =
+                        extTransformFeedbackFeatures.getJSONObject(
+                                KEY_TRANSFORM_FEEDBACK_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_TRANSFORM_FEEDBACK_FEATURES_EXT));
                 {
                     emitBoolean(store, transformFeedbackFeaturesEXT, KEY_TRANSFORM_FEEDBACK);
                     emitBoolean(store, transformFeedbackFeaturesEXT, KEY_GEOMETRY_STREAMS);
                 }
                 store.endGroup();
-                JSONObject transformFeedbackPropertiesEXT = extTransformFeedbackFeatures.getJSONObject(KEY_TRANSFORM_FEEDBACK_PROPERTIES_EXT);
+                JSONObject transformFeedbackPropertiesEXT =
+                        extTransformFeedbackFeatures.getJSONObject(
+                                KEY_TRANSFORM_FEEDBACK_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_TRANSFORM_FEEDBACK_PROPERTIES_EXT));
                 {
-                    emitLong(store, transformFeedbackPropertiesEXT, KEY_MAX_TRANSFORM_FEEDBACK_STREAMS);
-                    emitLong(store, transformFeedbackPropertiesEXT, KEY_MAX_TRANSFORM_FEEDBACK_BUFFERS);
-                    emitString(store, transformFeedbackPropertiesEXT, KEY_MAX_TRANSFORM_FEEDBACK_BUFFER_SIZE);
-                    emitLong(store, transformFeedbackPropertiesEXT, KEY_MAX_TRANSFORM_FEEDBACK_STREAM_DATA_SIZE);
-                    emitLong(store, transformFeedbackPropertiesEXT, KEY_MAX_TRANSFORM_FEEDBACK_BUFFER_DATA_SIZE);
-                    emitLong(store, transformFeedbackPropertiesEXT, KEY_MAX_TRANSFORM_FEEDBACK_BUFFER_DATA_STRIDE);
-                    emitBoolean(store, transformFeedbackPropertiesEXT, KEY_TRANSFORM_FEEDBACK_QUERIES);
-                    emitBoolean(store, transformFeedbackPropertiesEXT, KEY_TRANSFORM_FEEDBACK_STREAMS_LINES_TRIANGLES);
-                    emitBoolean(store, transformFeedbackPropertiesEXT, KEY_TRANSFORM_FEEDBACK_RASTERIZATION_STREAM_SELECT);
+                    emitLong(
+                            store,
+                            transformFeedbackPropertiesEXT,
+                            KEY_MAX_TRANSFORM_FEEDBACK_STREAMS);
+                    emitLong(
+                            store,
+                            transformFeedbackPropertiesEXT,
+                            KEY_MAX_TRANSFORM_FEEDBACK_BUFFERS);
+                    emitString(
+                            store,
+                            transformFeedbackPropertiesEXT,
+                            KEY_MAX_TRANSFORM_FEEDBACK_BUFFER_SIZE);
+                    emitLong(
+                            store,
+                            transformFeedbackPropertiesEXT,
+                            KEY_MAX_TRANSFORM_FEEDBACK_STREAM_DATA_SIZE);
+                    emitLong(
+                            store,
+                            transformFeedbackPropertiesEXT,
+                            KEY_MAX_TRANSFORM_FEEDBACK_BUFFER_DATA_SIZE);
+                    emitLong(
+                            store,
+                            transformFeedbackPropertiesEXT,
+                            KEY_MAX_TRANSFORM_FEEDBACK_BUFFER_DATA_STRIDE);
+                    emitBoolean(
+                            store, transformFeedbackPropertiesEXT, KEY_TRANSFORM_FEEDBACK_QUERIES);
+                    emitBoolean(
+                            store,
+                            transformFeedbackPropertiesEXT,
+                            KEY_TRANSFORM_FEEDBACK_STREAMS_LINES_TRIANGLES);
+                    emitBoolean(
+                            store,
+                            transformFeedbackPropertiesEXT,
+                            KEY_TRANSFORM_FEEDBACK_RASTERIZATION_STREAM_SELECT);
                     emitBoolean(store, transformFeedbackPropertiesEXT, KEY_TRANSFORM_FEEDBACK_DRAW);
                 }
                 store.endGroup();
@@ -4142,23 +6138,36 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTVertexAttributeDivisor(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extVertexAttributeDivisorProperties = parent.optJSONObject(KEY_VK_EXT_VERTEX_ATTRIBUTE_DIVISOR);
+            throws IOException, JSONException {
+        JSONObject extVertexAttributeDivisorProperties =
+                parent.optJSONObject(KEY_VK_EXT_VERTEX_ATTRIBUTE_DIVISOR);
         if (extVertexAttributeDivisorProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_VERTEX_ATTRIBUTE_DIVISOR));
             {
-                JSONObject vertexAttributeDivisorPropertiesEXT = extVertexAttributeDivisorProperties.getJSONObject(KEY_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT);
+                JSONObject vertexAttributeDivisorPropertiesEXT =
+                        extVertexAttributeDivisorProperties.getJSONObject(
+                                KEY_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT);
                 store.startGroup(getConvertedName(KEY_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT));
                 {
-                    emitLong(store, vertexAttributeDivisorPropertiesEXT, KEY_MAX_VERTEX_ATTRIB_DIVISOR);
+                    emitLong(
+                            store,
+                            vertexAttributeDivisorPropertiesEXT,
+                            KEY_MAX_VERTEX_ATTRIB_DIVISOR);
                 }
                 store.endGroup();
-                JSONObject vertexAttributeDivisorFeaturesEXT = extVertexAttributeDivisorProperties.getJSONObject(KEY_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT);
+                JSONObject vertexAttributeDivisorFeaturesEXT =
+                        extVertexAttributeDivisorProperties.getJSONObject(
+                                KEY_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT));
                 {
-                    emitBoolean(store, vertexAttributeDivisorFeaturesEXT, KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_DIVISOR);
-                    emitBoolean(store, vertexAttributeDivisorFeaturesEXT, KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_ZERO_DIVISOR);
+                    emitBoolean(
+                            store,
+                            vertexAttributeDivisorFeaturesEXT,
+                            KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_DIVISOR);
+                    emitBoolean(
+                            store,
+                            vertexAttributeDivisorFeaturesEXT,
+                            KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_ZERO_DIVISOR);
                 }
                 store.endGroup();
             }
@@ -4167,16 +6176,21 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTVertexAttributeRobustness(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extVertexAttributeRobustnessFeatures = parent.optJSONObject(KEY_VK_EXT_VERTEX_ATTRIBUTE_ROBUSTNESS);
+            throws IOException, JSONException {
+        JSONObject extVertexAttributeRobustnessFeatures =
+                parent.optJSONObject(KEY_VK_EXT_VERTEX_ATTRIBUTE_ROBUSTNESS);
         if (extVertexAttributeRobustnessFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_VERTEX_ATTRIBUTE_ROBUSTNESS));
             {
-                JSONObject vertexAttributeRobustnessFeaturesEXT = extVertexAttributeRobustnessFeatures.getJSONObject(KEY_VERTEX_ATTRIBUTE_ROBUSTNESS_FEATURES_EXT);
+                JSONObject vertexAttributeRobustnessFeaturesEXT =
+                        extVertexAttributeRobustnessFeatures.getJSONObject(
+                                KEY_VERTEX_ATTRIBUTE_ROBUSTNESS_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_VERTEX_ATTRIBUTE_ROBUSTNESS_FEATURES_EXT));
                 {
-                    emitBoolean(store, vertexAttributeRobustnessFeaturesEXT, KEY_VERTEX_ATTRIBUTE_ROBUSTNESS);
+                    emitBoolean(
+                            store,
+                            vertexAttributeRobustnessFeaturesEXT,
+                            KEY_VERTEX_ATTRIBUTE_ROBUSTNESS);
                 }
                 store.endGroup();
             }
@@ -4185,16 +6199,21 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTVertexInputDynamicState(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extVertexInputDynamicStateFeatures = parent.optJSONObject(KEY_VK_EXT_VERTEX_INPUT_DYNAMIC_STATE);
+            throws IOException, JSONException {
+        JSONObject extVertexInputDynamicStateFeatures =
+                parent.optJSONObject(KEY_VK_EXT_VERTEX_INPUT_DYNAMIC_STATE);
         if (extVertexInputDynamicStateFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_VERTEX_INPUT_DYNAMIC_STATE));
             {
-                JSONObject vertexInputDynamicStateFeaturesEXT = extVertexInputDynamicStateFeatures.getJSONObject(KEY_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT);
+                JSONObject vertexInputDynamicStateFeaturesEXT =
+                        extVertexInputDynamicStateFeatures.getJSONObject(
+                                KEY_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT));
                 {
-                    emitBoolean(store, vertexInputDynamicStateFeaturesEXT, KEY_VERTEX_INPUT_DYNAMIC_STATE);
+                    emitBoolean(
+                            store,
+                            vertexInputDynamicStateFeaturesEXT,
+                            KEY_VERTEX_INPUT_DYNAMIC_STATE);
                 }
                 store.endGroup();
             }
@@ -4203,16 +6222,19 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTYcbcr2plane444Formats(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extYcbcr2Plane444FormatsFeatures = parent.optJSONObject(KEY_VK_EXT_YCBCR_2PLANE_444_FORMATS);
+            throws IOException, JSONException {
+        JSONObject extYcbcr2Plane444FormatsFeatures =
+                parent.optJSONObject(KEY_VK_EXT_YCBCR_2PLANE_444_FORMATS);
         if (extYcbcr2Plane444FormatsFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_YCBCR_2PLANE_444_FORMATS));
             {
-                JSONObject ycbcr2Plane444FormatsFeaturesEXT = extYcbcr2Plane444FormatsFeatures.getJSONObject(KEY_YCBCR_2_PLANE_444_FORMATS_FEATURES_EXT);
+                JSONObject ycbcr2Plane444FormatsFeaturesEXT =
+                        extYcbcr2Plane444FormatsFeatures.getJSONObject(
+                                KEY_YCBCR_2_PLANE_444_FORMATS_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_YCBCR_2_PLANE_444_FORMATS_FEATURES_EXT));
                 {
-                    emitBoolean(store, ycbcr2Plane444FormatsFeaturesEXT, KEY_YCBCR_2_PLANE_444_FORMATS);
+                    emitBoolean(
+                            store, ycbcr2Plane444FormatsFeaturesEXT, KEY_YCBCR_2_PLANE_444_FORMATS);
                 }
                 store.endGroup();
             }
@@ -4221,13 +6243,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkEXTYcbcrImageArrays(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extYcbcrImageArraysFeatures = parent.optJSONObject(KEY_VK_EXT_YCBCR_IMAGE_ARRAYS);
+            throws IOException, JSONException {
+        JSONObject extYcbcrImageArraysFeatures =
+                parent.optJSONObject(KEY_VK_EXT_YCBCR_IMAGE_ARRAYS);
         if (extYcbcrImageArraysFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_YCBCR_IMAGE_ARRAYS));
             {
-                JSONObject ycbcrImageArraysFeaturesEXT = extYcbcrImageArraysFeatures.getJSONObject(KEY_YCBCR_IMAGE_ARRAYS_FEATURES_EXT);
+                JSONObject ycbcrImageArraysFeaturesEXT =
+                        extYcbcrImageArraysFeatures.getJSONObject(
+                                KEY_YCBCR_IMAGE_ARRAYS_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_YCBCR_IMAGE_ARRAYS_FEATURES_EXT));
                 {
                     emitBoolean(store, ycbcrImageArraysFeaturesEXT, KEY_YCBCR_IMAGE_ARRAYS);
@@ -4238,17 +6262,22 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkEXTZeroInitializeDeviceMemory(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject extZeroInitializeDeviceMemoryFeatures = parent.optJSONObject(KEY_VK_EXT_ZERO_INITIALIZE_DEVICE_MEMORY);
+    private static void emitVkEXTZeroInitializeDeviceMemory(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject extZeroInitializeDeviceMemoryFeatures =
+                parent.optJSONObject(KEY_VK_EXT_ZERO_INITIALIZE_DEVICE_MEMORY);
         if (extZeroInitializeDeviceMemoryFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_EXT_ZERO_INITIALIZE_DEVICE_MEMORY));
             {
-                JSONObject zeroInitializeDeviceMemoryFeaturesEXT = extZeroInitializeDeviceMemoryFeatures.getJSONObject(KEY_ZERO_INITIALIZE_DEVICE_MEMORY_FEATURES_EXT);
+                JSONObject zeroInitializeDeviceMemoryFeaturesEXT =
+                        extZeroInitializeDeviceMemoryFeatures.getJSONObject(
+                                KEY_ZERO_INITIALIZE_DEVICE_MEMORY_FEATURES_EXT);
                 store.startGroup(getConvertedName(KEY_ZERO_INITIALIZE_DEVICE_MEMORY_FEATURES_EXT));
                 {
-                    emitBoolean(store, zeroInitializeDeviceMemoryFeaturesEXT, KEY_ZERO_INITIALIZE_DEVICE_MEMORY);
+                    emitBoolean(
+                            store,
+                            zeroInitializeDeviceMemoryFeaturesEXT,
+                            KEY_ZERO_INITIALIZE_DEVICE_MEMORY);
                 }
                 store.endGroup();
             }
@@ -4257,26 +6286,42 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkHUAWEIClusterCullingShader(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject huaweiClusterCullingShaderFeatures = parent.optJSONObject(KEY_VK_HUAWEI_CLUSTER_CULLING_SHADER);
+            throws IOException, JSONException {
+        JSONObject huaweiClusterCullingShaderFeatures =
+                parent.optJSONObject(KEY_VK_HUAWEI_CLUSTER_CULLING_SHADER);
         if (huaweiClusterCullingShaderFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_HUAWEI_CLUSTER_CULLING_SHADER));
             {
-                JSONObject clusterCullingShaderFeaturesHUAWEI = huaweiClusterCullingShaderFeatures.getJSONObject(KEY_CLUSTER_CULLING_SHADER_FEATURES_HUAWEI);
+                JSONObject clusterCullingShaderFeaturesHUAWEI =
+                        huaweiClusterCullingShaderFeatures.getJSONObject(
+                                KEY_CLUSTER_CULLING_SHADER_FEATURES_HUAWEI);
                 store.startGroup(getConvertedName(KEY_CLUSTER_CULLING_SHADER_FEATURES_HUAWEI));
                 {
-                    emitBoolean(store, clusterCullingShaderFeaturesHUAWEI, KEY_CLUSTERCULLING_SHADER);
-                    emitBoolean(store, clusterCullingShaderFeaturesHUAWEI, KEY_MULTIVIEW_CLUSTER_CULLING_SHADER);
+                    emitBoolean(
+                            store, clusterCullingShaderFeaturesHUAWEI, KEY_CLUSTERCULLING_SHADER);
+                    emitBoolean(
+                            store,
+                            clusterCullingShaderFeaturesHUAWEI,
+                            KEY_MULTIVIEW_CLUSTER_CULLING_SHADER);
                 }
                 store.endGroup();
-                JSONObject clusterCullingShaderPropertiesHUAWEI = huaweiClusterCullingShaderFeatures.getJSONObject(KEY_CLUSTER_CULLING_SHADER_PROPERTIES_HUAWEI);
+                JSONObject clusterCullingShaderPropertiesHUAWEI =
+                        huaweiClusterCullingShaderFeatures.getJSONObject(
+                                KEY_CLUSTER_CULLING_SHADER_PROPERTIES_HUAWEI);
                 store.startGroup(getConvertedName(KEY_CLUSTER_CULLING_SHADER_PROPERTIES_HUAWEI));
                 {
-                    emitLongArray(store, clusterCullingShaderPropertiesHUAWEI, KEY_MAX_WORK_GROUP_COUNT);
-                    emitLongArray(store, clusterCullingShaderPropertiesHUAWEI, KEY_MAX_WORK_GROUP_SIZE);
-                    emitLong(store, clusterCullingShaderPropertiesHUAWEI, KEY_MAX_OUTPUT_CLUSTER_COUNT);
-                    emitString(store, clusterCullingShaderPropertiesHUAWEI, KEY_INDIRECT_BUFFER_OFFSET_ALIGNMENT);
+                    emitLongArray(
+                            store, clusterCullingShaderPropertiesHUAWEI, KEY_MAX_WORK_GROUP_COUNT);
+                    emitLongArray(
+                            store, clusterCullingShaderPropertiesHUAWEI, KEY_MAX_WORK_GROUP_SIZE);
+                    emitLong(
+                            store,
+                            clusterCullingShaderPropertiesHUAWEI,
+                            KEY_MAX_OUTPUT_CLUSTER_COUNT);
+                    emitString(
+                            store,
+                            clusterCullingShaderPropertiesHUAWEI,
+                            KEY_INDIRECT_BUFFER_OFFSET_ALIGNMENT);
                 }
                 store.endGroup();
             }
@@ -4285,13 +6330,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkHUAWEIHdrVivid(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject huaweiHdrVividFeatures = parent.optJSONObject(KEY_VK_HUAWEI_HDR_VIVID);
         if (huaweiHdrVividFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_HUAWEI_HDR_VIVID));
             {
-                JSONObject hdrVividFeaturesHUAWEI = huaweiHdrVividFeatures.getJSONObject(KEY_HDR_VIVID_FEATURES_HUAWEI);
+                JSONObject hdrVividFeaturesHUAWEI =
+                        huaweiHdrVividFeatures.getJSONObject(KEY_HDR_VIVID_FEATURES_HUAWEI);
                 store.startGroup(getConvertedName(KEY_HDR_VIVID_FEATURES_HUAWEI));
                 {
                     emitBoolean(store, hdrVividFeaturesHUAWEI, KEY_HDR_VIVID);
@@ -4303,13 +6348,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkHUAWEIInvocationMask(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject huaweiInvocationMaskFeatures = parent.optJSONObject(KEY_VK_HUAWEI_INVOCATION_MASK);
+            throws IOException, JSONException {
+        JSONObject huaweiInvocationMaskFeatures =
+                parent.optJSONObject(KEY_VK_HUAWEI_INVOCATION_MASK);
         if (huaweiInvocationMaskFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_HUAWEI_INVOCATION_MASK));
             {
-                JSONObject invocationMaskFeaturesHUAWEI = huaweiInvocationMaskFeatures.getJSONObject(KEY_INVOCATION_MASK_FEATURES_HUAWEI);
+                JSONObject invocationMaskFeaturesHUAWEI =
+                        huaweiInvocationMaskFeatures.getJSONObject(
+                                KEY_INVOCATION_MASK_FEATURES_HUAWEI);
                 store.startGroup(getConvertedName(KEY_INVOCATION_MASK_FEATURES_HUAWEI));
                 {
                     emitBoolean(store, invocationMaskFeaturesHUAWEI, KEY_INVOCATION_MASK);
@@ -4321,22 +6368,29 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkHUAWEISubpassShading(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject huaweiSubpassShadingFeatures = parent.optJSONObject(KEY_VK_HUAWEI_SUBPASS_SHADING);
+            throws IOException, JSONException {
+        JSONObject huaweiSubpassShadingFeatures =
+                parent.optJSONObject(KEY_VK_HUAWEI_SUBPASS_SHADING);
         if (huaweiSubpassShadingFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_HUAWEI_SUBPASS_SHADING));
             {
-                JSONObject subpassShadingFeaturesHUAWEI = huaweiSubpassShadingFeatures.getJSONObject(KEY_SUBPASS_SHADING_FEATURES_HUAWEI);
+                JSONObject subpassShadingFeaturesHUAWEI =
+                        huaweiSubpassShadingFeatures.getJSONObject(
+                                KEY_SUBPASS_SHADING_FEATURES_HUAWEI);
                 store.startGroup(getConvertedName(KEY_SUBPASS_SHADING_FEATURES_HUAWEI));
                 {
                     emitBoolean(store, subpassShadingFeaturesHUAWEI, KEY_SUBPASS_SHADING);
                 }
                 store.endGroup();
-                JSONObject subpassShadingPropertiesHUAWEI = huaweiSubpassShadingFeatures.getJSONObject(KEY_SUBPASS_SHADING_PROPERTIES_HUAWEI);
+                JSONObject subpassShadingPropertiesHUAWEI =
+                        huaweiSubpassShadingFeatures.getJSONObject(
+                                KEY_SUBPASS_SHADING_PROPERTIES_HUAWEI);
                 store.startGroup(getConvertedName(KEY_SUBPASS_SHADING_PROPERTIES_HUAWEI));
                 {
-                    emitLong(store, subpassShadingPropertiesHUAWEI, KEY_MAX_SUBPASS_SHADING_WORKGROUP_SIZE_ASPECT_RATIO);
+                    emitLong(
+                            store,
+                            subpassShadingPropertiesHUAWEI,
+                            KEY_MAX_SUBPASS_SHADING_WORKGROUP_SIZE_ASPECT_RATIO);
                 }
                 store.endGroup();
             }
@@ -4345,16 +6399,21 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkIMGRelaxedLineRasterization(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject imgRelaxedLineRasterizationFeatures = parent.optJSONObject(KEY_VK_IMG_RELAXED_LINE_RASTERIZATION);
+            throws IOException, JSONException {
+        JSONObject imgRelaxedLineRasterizationFeatures =
+                parent.optJSONObject(KEY_VK_IMG_RELAXED_LINE_RASTERIZATION);
         if (imgRelaxedLineRasterizationFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_IMG_RELAXED_LINE_RASTERIZATION));
             {
-                JSONObject relaxedLineRasterizationFeaturesIMG = imgRelaxedLineRasterizationFeatures.getJSONObject(KEY_RELAXED_LINE_RASTERIZATION_FEATURES_IMG);
+                JSONObject relaxedLineRasterizationFeaturesIMG =
+                        imgRelaxedLineRasterizationFeatures.getJSONObject(
+                                KEY_RELAXED_LINE_RASTERIZATION_FEATURES_IMG);
                 store.startGroup(getConvertedName(KEY_RELAXED_LINE_RASTERIZATION_FEATURES_IMG));
                 {
-                    emitBoolean(store, relaxedLineRasterizationFeaturesIMG, KEY_RELAXED_LINE_RASTERIZATION);
+                    emitBoolean(
+                            store,
+                            relaxedLineRasterizationFeaturesIMG,
+                            KEY_RELAXED_LINE_RASTERIZATION);
                 }
                 store.endGroup();
             }
@@ -4363,16 +6422,21 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkINTELShaderIntegerFunctions2(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject intelShaderIntegerFunctions2Features = parent.optJSONObject(KEY_VK_INTEL_SHADER_INTEGER_FUNCTIONS2);
+            throws IOException, JSONException {
+        JSONObject intelShaderIntegerFunctions2Features =
+                parent.optJSONObject(KEY_VK_INTEL_SHADER_INTEGER_FUNCTIONS2);
         if (intelShaderIntegerFunctions2Features != null) {
             store.startGroup(getConvertedName(KEY_VK_INTEL_SHADER_INTEGER_FUNCTIONS2));
             {
-                JSONObject shaderIntegerFunctions2FeaturesINTEL = intelShaderIntegerFunctions2Features.getJSONObject(KEY_SHADER_INTEGER_FUNCTIONS_2_FEATURES_INTEL);
+                JSONObject shaderIntegerFunctions2FeaturesINTEL =
+                        intelShaderIntegerFunctions2Features.getJSONObject(
+                                KEY_SHADER_INTEGER_FUNCTIONS_2_FEATURES_INTEL);
                 store.startGroup(getConvertedName(KEY_SHADER_INTEGER_FUNCTIONS_2_FEATURES_INTEL));
                 {
-                    emitBoolean(store, shaderIntegerFunctions2FeaturesINTEL, KEY_SHADER_INTEGER_FUNCTIONS_2);
+                    emitBoolean(
+                            store,
+                            shaderIntegerFunctions2FeaturesINTEL,
+                            KEY_SHADER_INTEGER_FUNCTIONS_2);
                 }
                 store.endGroup();
             }
@@ -4381,17 +6445,20 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHR16bitStorage(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khr16BitStorageFeatures = parent.optJSONObject(KEY_VK_KHR_16BIT_STORAGE);
         if (khr16BitStorageFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_16BIT_STORAGE));
             {
-                JSONObject bit16StorageFeaturesKHR = khr16BitStorageFeatures.getJSONObject(KEY_BIT_16_STORAGE_FEATURES_KHR);
+                JSONObject bit16StorageFeaturesKHR =
+                        khr16BitStorageFeatures.getJSONObject(KEY_BIT_16_STORAGE_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_BIT_16_STORAGE_FEATURES_KHR));
                 {
                     emitBoolean(store, bit16StorageFeaturesKHR, KEY_STORAGE_BUFFER_16BIT_ACCESS);
-                    emitBoolean(store, bit16StorageFeaturesKHR, KEY_UNIFORM_AND_STORAGE_BUFFER_16BIT_ACCESS);
+                    emitBoolean(
+                            store,
+                            bit16StorageFeaturesKHR,
+                            KEY_UNIFORM_AND_STORAGE_BUFFER_16BIT_ACCESS);
                     emitBoolean(store, bit16StorageFeaturesKHR, KEY_STORAGE_PUSH_CONSTANT_16);
                     emitBoolean(store, bit16StorageFeaturesKHR, KEY_STORAGE_INPUT_OUTPUT_16);
                 }
@@ -4402,17 +6469,20 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHR8bitStorage(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khr8BitStorageFeatures = parent.optJSONObject(KEY_VK_KHR_8BIT_STORAGE);
         if (khr8BitStorageFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_8BIT_STORAGE));
             {
-                JSONObject bit8StorageFeaturesKHR = khr8BitStorageFeatures.getJSONObject(KEY_BIT8_STORAGE_FEATURES_KHR);
+                JSONObject bit8StorageFeaturesKHR =
+                        khr8BitStorageFeatures.getJSONObject(KEY_BIT8_STORAGE_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_BIT8_STORAGE_FEATURES_KHR));
                 {
                     emitBoolean(store, bit8StorageFeaturesKHR, KEY_STORAGE_BUFFER_8BIT_ACCESS);
-                    emitBoolean(store, bit8StorageFeaturesKHR, KEY_UNIFORM_AND_STORAGE_BUFFER_8BIT_ACCESS);
+                    emitBoolean(
+                            store,
+                            bit8StorageFeaturesKHR,
+                            KEY_UNIFORM_AND_STORAGE_BUFFER_8BIT_ACCESS);
                     emitBoolean(store, bit8StorageFeaturesKHR, KEY_STORAGE_PUSH_CONSTANT8);
                 }
                 store.endGroup();
@@ -4422,33 +6492,65 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRAccelerationStructure(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrAccelerationStructureFeatures = parent.optJSONObject(KEY_VK_KHR_ACCELERATION_STRUCTURE);
+            throws IOException, JSONException {
+        JSONObject khrAccelerationStructureFeatures =
+                parent.optJSONObject(KEY_VK_KHR_ACCELERATION_STRUCTURE);
         if (khrAccelerationStructureFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_ACCELERATION_STRUCTURE));
             {
-                JSONObject accelerationStructureFeaturesKHR = khrAccelerationStructureFeatures.getJSONObject(KEY_ACCELERATION_STRUCTURE_FEATURES_KHR);
+                JSONObject accelerationStructureFeaturesKHR =
+                        khrAccelerationStructureFeatures.getJSONObject(
+                                KEY_ACCELERATION_STRUCTURE_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_ACCELERATION_STRUCTURE_FEATURES_KHR));
                 {
-                    emitBoolean(store, accelerationStructureFeaturesKHR, KEY_ACCELERATION_STRUCTURE);
-                    emitBoolean(store, accelerationStructureFeaturesKHR, KEY_ACCELERATION_STRUCTURE_CAPTURE_REPLAY);
-                    emitBoolean(store, accelerationStructureFeaturesKHR, KEY_ACCELERATION_STRUCTURE_INDIRECT_BUILD);
-                    emitBoolean(store, accelerationStructureFeaturesKHR, KEY_ACCELERATION_STRUCTURE_HOST_COMMANDS);
-                    emitBoolean(store, accelerationStructureFeaturesKHR, KEY_DESCRIPTOR_BINDING_ACCELERATION_STRUCTURE_UPDATE_AFTER_BIND);
+                    emitBoolean(
+                            store, accelerationStructureFeaturesKHR, KEY_ACCELERATION_STRUCTURE);
+                    emitBoolean(
+                            store,
+                            accelerationStructureFeaturesKHR,
+                            KEY_ACCELERATION_STRUCTURE_CAPTURE_REPLAY);
+                    emitBoolean(
+                            store,
+                            accelerationStructureFeaturesKHR,
+                            KEY_ACCELERATION_STRUCTURE_INDIRECT_BUILD);
+                    emitBoolean(
+                            store,
+                            accelerationStructureFeaturesKHR,
+                            KEY_ACCELERATION_STRUCTURE_HOST_COMMANDS);
+                    emitBoolean(
+                            store,
+                            accelerationStructureFeaturesKHR,
+                            KEY_DESCRIPTOR_BINDING_ACCELERATION_STRUCTURE_UPDATE_AFTER_BIND);
                 }
                 store.endGroup();
-                JSONObject accelerationStructurePropertiesKHR = khrAccelerationStructureFeatures.getJSONObject(KEY_ACCELERATION_STRUCTURE_PROPERTIES_KHR);
+                JSONObject accelerationStructurePropertiesKHR =
+                        khrAccelerationStructureFeatures.getJSONObject(
+                                KEY_ACCELERATION_STRUCTURE_PROPERTIES_KHR);
                 store.startGroup(getConvertedName(KEY_ACCELERATION_STRUCTURE_PROPERTIES_KHR));
                 {
                     emitString(store, accelerationStructurePropertiesKHR, KEY_MAX_GEOMETRY_COUNT);
                     emitString(store, accelerationStructurePropertiesKHR, KEY_MAX_INSTANCE_COUNT);
                     emitString(store, accelerationStructurePropertiesKHR, KEY_MAX_PRIMITIVE_COUNT);
-                    emitLong(store, accelerationStructurePropertiesKHR, KEY_MAX_PER_STAGE_DESCRIPTOR_ACCELERATION_STRUCTURES);
-                    emitLong(store, accelerationStructurePropertiesKHR, KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_ACCELERATION_STRUCTURES);
-                    emitLong(store, accelerationStructurePropertiesKHR, KEY_MAX_DESCRIPTOR_SET_ACCELERATION_STRUCTURES);
-                    emitLong(store, accelerationStructurePropertiesKHR, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_ACCELERATION_STRUCTURES);
-                    emitLong(store, accelerationStructurePropertiesKHR, KEY_MIN_ACCELERATION_STRUCTURE_SCRATCH_OFFSET_ALIGNMENT);
+                    emitLong(
+                            store,
+                            accelerationStructurePropertiesKHR,
+                            KEY_MAX_PER_STAGE_DESCRIPTOR_ACCELERATION_STRUCTURES);
+                    emitLong(
+                            store,
+                            accelerationStructurePropertiesKHR,
+                            KEY_MAX_PER_STAGE_DESCRIPTOR_UPDATE_AFTER_BIND_ACCELERATION_STRUCTURES);
+                    emitLong(
+                            store,
+                            accelerationStructurePropertiesKHR,
+                            KEY_MAX_DESCRIPTOR_SET_ACCELERATION_STRUCTURES);
+                    emitLong(
+                            store,
+                            accelerationStructurePropertiesKHR,
+                            KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_ACCELERATION_STRUCTURES);
+                    emitLong(
+                            store,
+                            accelerationStructurePropertiesKHR,
+                            KEY_MIN_ACCELERATION_STRUCTURE_SCRATCH_OFFSET_ALIGNMENT);
                 }
                 store.endGroup();
             }
@@ -4457,18 +6559,26 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRBufferDeviceAddress(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrBufferDeviceAddressFeatures = parent.optJSONObject(KEY_VK_KHR_BUFFER_DEVICE_ADDRESS);
+            throws IOException, JSONException {
+        JSONObject khrBufferDeviceAddressFeatures =
+                parent.optJSONObject(KEY_VK_KHR_BUFFER_DEVICE_ADDRESS);
         if (khrBufferDeviceAddressFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_BUFFER_DEVICE_ADDRESS));
             {
-                JSONObject bufferDeviceAddressFeaturesKHR = khrBufferDeviceAddressFeatures.getJSONObject(KEY_BUFFER_DEVICE_ADDRESS_FEATURES_KHR);
+                JSONObject bufferDeviceAddressFeaturesKHR =
+                        khrBufferDeviceAddressFeatures.getJSONObject(
+                                KEY_BUFFER_DEVICE_ADDRESS_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_BUFFER_DEVICE_ADDRESS_FEATURES_KHR));
                 {
                     emitBoolean(store, bufferDeviceAddressFeaturesKHR, KEY_BUFFER_DEVICE_ADDRESS);
-                    emitBoolean(store, bufferDeviceAddressFeaturesKHR, KEY_BUFFER_DEVICE_ADDRESS_CAPTURE_REPLAY);
-                    emitBoolean(store, bufferDeviceAddressFeaturesKHR, KEY_BUFFER_DEVICE_ADDRESS_MULTI_DEVICE);
+                    emitBoolean(
+                            store,
+                            bufferDeviceAddressFeaturesKHR,
+                            KEY_BUFFER_DEVICE_ADDRESS_CAPTURE_REPLAY);
+                    emitBoolean(
+                            store,
+                            bufferDeviceAddressFeaturesKHR,
+                            KEY_BUFFER_DEVICE_ADDRESS_MULTI_DEVICE);
                 }
                 store.endGroup();
             }
@@ -4477,23 +6587,36 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRComputeShaderDerivatives(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrComputeShaderDerivativesFeatures = parent.optJSONObject(KEY_VK_KHR_COMPUTE_SHADER_DERIVATIVES);
+            throws IOException, JSONException {
+        JSONObject khrComputeShaderDerivativesFeatures =
+                parent.optJSONObject(KEY_VK_KHR_COMPUTE_SHADER_DERIVATIVES);
         if (khrComputeShaderDerivativesFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_COMPUTE_SHADER_DERIVATIVES));
             {
-                JSONObject computeShaderDerivativesFeaturesKHR = khrComputeShaderDerivativesFeatures.getJSONObject(KEY_COMPUTE_SHADER_DERIVATIVES_FEATURES_KHR);
+                JSONObject computeShaderDerivativesFeaturesKHR =
+                        khrComputeShaderDerivativesFeatures.getJSONObject(
+                                KEY_COMPUTE_SHADER_DERIVATIVES_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_COMPUTE_SHADER_DERIVATIVES_FEATURES_KHR));
                 {
-                    emitBoolean(store, computeShaderDerivativesFeaturesKHR, KEY_COMPUTE_DERIVATIVE_GROUP_QUADS);
-                    emitBoolean(store, computeShaderDerivativesFeaturesKHR, KEY_COMPUTE_DERIVATIVE_GROUP_LINEAR);
+                    emitBoolean(
+                            store,
+                            computeShaderDerivativesFeaturesKHR,
+                            KEY_COMPUTE_DERIVATIVE_GROUP_QUADS);
+                    emitBoolean(
+                            store,
+                            computeShaderDerivativesFeaturesKHR,
+                            KEY_COMPUTE_DERIVATIVE_GROUP_LINEAR);
                 }
                 store.endGroup();
-                JSONObject computeShaderDerivativesPropertiesKHR = khrComputeShaderDerivativesFeatures.getJSONObject(KEY_COMPUTE_SHADER_DERIVATIVES_PROPERTIES_KHR);
+                JSONObject computeShaderDerivativesPropertiesKHR =
+                        khrComputeShaderDerivativesFeatures.getJSONObject(
+                                KEY_COMPUTE_SHADER_DERIVATIVES_PROPERTIES_KHR);
                 store.startGroup(getConvertedName(KEY_COMPUTE_SHADER_DERIVATIVES_PROPERTIES_KHR));
                 {
-                    emitBoolean(store, computeShaderDerivativesPropertiesKHR, KEY_MESH_AND_TASK_SHADER_DERIVATIVES);
+                    emitBoolean(
+                            store,
+                            computeShaderDerivativesPropertiesKHR,
+                            KEY_MESH_AND_TASK_SHADER_DERIVATIVES);
                 }
                 store.endGroup();
             }
@@ -4502,23 +6625,33 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRCooperativeMatrix(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrCooperativeMatrixFeatures = parent.optJSONObject(KEY_VK_KHR_COOPERATIVE_MATRIX);
+            throws IOException, JSONException {
+        JSONObject khrCooperativeMatrixFeatures =
+                parent.optJSONObject(KEY_VK_KHR_COOPERATIVE_MATRIX);
         if (khrCooperativeMatrixFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_COOPERATIVE_MATRIX));
             {
-                JSONObject cooperativeMatrixFeaturesKHR = khrCooperativeMatrixFeatures.getJSONObject(KEY_COOPERATIVE_MATRIX_FEATURES_KHR);
+                JSONObject cooperativeMatrixFeaturesKHR =
+                        khrCooperativeMatrixFeatures.getJSONObject(
+                                KEY_COOPERATIVE_MATRIX_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_COOPERATIVE_MATRIX_FEATURES_KHR));
                 {
                     emitBoolean(store, cooperativeMatrixFeaturesKHR, KEY_COOPERATIVE_MATRIX);
-                    emitBoolean(store, cooperativeMatrixFeaturesKHR, KEY_COOPERATIVE_MATRIX_ROBUST_BUFFER_ACCESS);
+                    emitBoolean(
+                            store,
+                            cooperativeMatrixFeaturesKHR,
+                            KEY_COOPERATIVE_MATRIX_ROBUST_BUFFER_ACCESS);
                 }
                 store.endGroup();
-                JSONObject cooperativeMatrixPropertiesKHR = khrCooperativeMatrixFeatures.getJSONObject(KEY_COOPERATIVE_MATRIX_PROPERTIES_KHR);
+                JSONObject cooperativeMatrixPropertiesKHR =
+                        khrCooperativeMatrixFeatures.getJSONObject(
+                                KEY_COOPERATIVE_MATRIX_PROPERTIES_KHR);
                 store.startGroup(getConvertedName(KEY_COOPERATIVE_MATRIX_PROPERTIES_KHR));
                 {
-                    emitLong(store, cooperativeMatrixPropertiesKHR, KEY_COOPERATIVE_MATRIX_SUPPORTED_STAGES);
+                    emitLong(
+                            store,
+                            cooperativeMatrixPropertiesKHR,
+                            KEY_COOPERATIVE_MATRIX_SUPPORTED_STAGES);
                 }
                 store.endGroup();
             }
@@ -4527,20 +6660,27 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRCopyMemoryIndirect(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrCopyMemoryIndirectFeatures = parent.optJSONObject(KEY_VK_KHR_COPY_MEMORY_INDIRECT);
+            throws IOException, JSONException {
+        JSONObject khrCopyMemoryIndirectFeatures =
+                parent.optJSONObject(KEY_VK_KHR_COPY_MEMORY_INDIRECT);
         if (khrCopyMemoryIndirectFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_COPY_MEMORY_INDIRECT));
             {
-                JSONObject copyMemoryIndirectFeaturesKHR = khrCopyMemoryIndirectFeatures.getJSONObject(KEY_COPY_MEMORY_INDIRECT_FEATURES_KHR);
+                JSONObject copyMemoryIndirectFeaturesKHR =
+                        khrCopyMemoryIndirectFeatures.getJSONObject(
+                                KEY_COPY_MEMORY_INDIRECT_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_COPY_MEMORY_INDIRECT_FEATURES_KHR));
                 {
                     emitBoolean(store, copyMemoryIndirectFeaturesKHR, KEY_INDIRECT_MEMORY_COPY);
-                    emitBoolean(store, copyMemoryIndirectFeaturesKHR, KEY_INDIRECT_MEMORY_TO_IMAGE_COPY);
+                    emitBoolean(
+                            store,
+                            copyMemoryIndirectFeaturesKHR,
+                            KEY_INDIRECT_MEMORY_TO_IMAGE_COPY);
                 }
                 store.endGroup();
-                JSONObject copyMemoryIndirectPropertiesKHR = khrCopyMemoryIndirectFeatures.getJSONObject(KEY_COPY_MEMORY_INDIRECT_PROPERTIES_KHR);
+                JSONObject copyMemoryIndirectPropertiesKHR =
+                        khrCopyMemoryIndirectFeatures.getJSONObject(
+                                KEY_COPY_MEMORY_INDIRECT_PROPERTIES_KHR);
                 store.startGroup(getConvertedName(KEY_COPY_MEMORY_INDIRECT_PROPERTIES_KHR));
                 {
                     emitLong(store, copyMemoryIndirectPropertiesKHR, KEY_SUPPORTED_QUEUES);
@@ -4552,13 +6692,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRDepthClampZeroOne(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrDepthClampZeroOneFeatures = parent.optJSONObject(KEY_VK_KHR_DEPTH_CLAMP_ZERO_ONE);
+            throws IOException, JSONException {
+        JSONObject khrDepthClampZeroOneFeatures =
+                parent.optJSONObject(KEY_VK_KHR_DEPTH_CLAMP_ZERO_ONE);
         if (khrDepthClampZeroOneFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_DEPTH_CLAMP_ZERO_ONE));
             {
-                JSONObject depthClampZeroOneFeaturesKHR = khrDepthClampZeroOneFeatures.getJSONObject(KEY_DEPTH_CLAMP_ZERO_ONE_FEATURES_KHR);
+                JSONObject depthClampZeroOneFeaturesKHR =
+                        khrDepthClampZeroOneFeatures.getJSONObject(
+                                KEY_DEPTH_CLAMP_ZERO_ONE_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_DEPTH_CLAMP_ZERO_ONE_FEATURES_KHR));
                 {
                     emitBoolean(store, depthClampZeroOneFeaturesKHR, KEY_DEPTH_CLAMP_ZERO_ONE);
@@ -4570,18 +6712,27 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRDepthStencilResolve(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrDepthStencilResolveProperties = parent.optJSONObject(KEY_VK_KHR_DEPTH_STENCIL_RESOLVE);
+            throws IOException, JSONException {
+        JSONObject khrDepthStencilResolveProperties =
+                parent.optJSONObject(KEY_VK_KHR_DEPTH_STENCIL_RESOLVE);
         if (khrDepthStencilResolveProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_DEPTH_STENCIL_RESOLVE));
             {
-                JSONObject depthStencilResolvePropertiesKHR = khrDepthStencilResolveProperties.getJSONObject(KEY_DEPTH_STENCIL_RESOLVE_PROPERTIES_KHR);
+                JSONObject depthStencilResolvePropertiesKHR =
+                        khrDepthStencilResolveProperties.getJSONObject(
+                                KEY_DEPTH_STENCIL_RESOLVE_PROPERTIES_KHR);
                 store.startGroup(getConvertedName(KEY_DEPTH_STENCIL_RESOLVE_PROPERTIES_KHR));
                 {
-                    emitLong(store, depthStencilResolvePropertiesKHR, KEY_SUPPORTED_DEPTH_RESOLVE_MODES);
-                    emitLong(store, depthStencilResolvePropertiesKHR, KEY_SUPPORTED_STENCIL_RESOLVE_MODES);
-                    emitBoolean(store, depthStencilResolvePropertiesKHR, KEY_INDEPENDENT_RESOLVE_NONE);
+                    emitLong(
+                            store,
+                            depthStencilResolvePropertiesKHR,
+                            KEY_SUPPORTED_DEPTH_RESOLVE_MODES);
+                    emitLong(
+                            store,
+                            depthStencilResolvePropertiesKHR,
+                            KEY_SUPPORTED_STENCIL_RESOLVE_MODES);
+                    emitBoolean(
+                            store, depthStencilResolvePropertiesKHR, KEY_INDEPENDENT_RESOLVE_NONE);
                     emitBoolean(store, depthStencilResolvePropertiesKHR, KEY_INDEPENDENT_RESOLVE);
                 }
                 store.endGroup();
@@ -4591,19 +6742,20 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRDriverProperties(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrDriverProperties = parent.optJSONObject(KEY_VK_KHR_DRIVER_PROPERTIES);
         if (khrDriverProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_DRIVER_PROPERTIES));
             {
-                JSONObject driverPropertiesKHR = khrDriverProperties.getJSONObject(KEY_DRIVER_PROPERTIES_KHR);
+                JSONObject driverPropertiesKHR =
+                        khrDriverProperties.getJSONObject(KEY_DRIVER_PROPERTIES_KHR);
                 store.startGroup(getConvertedName(KEY_DRIVER_PROPERTIES_KHR));
                 {
                     emitLong(store, driverPropertiesKHR, KEY_DRIVER_ID);
                     emitString(store, driverPropertiesKHR, KEY_DRIVER_NAME);
                     emitString(store, driverPropertiesKHR, KEY_DRIVER_INFO);
-                    JSONObject conformanceVersion = driverPropertiesKHR.getJSONObject(KEY_CONFORMANCE_VERSION);
+                    JSONObject conformanceVersion =
+                            driverPropertiesKHR.getJSONObject(KEY_CONFORMANCE_VERSION);
                     store.startGroup(getConvertedName(KEY_CONFORMANCE_VERSION));
                     {
                         emitLong(store, conformanceVersion, KEY_MAJOR);
@@ -4620,13 +6772,14 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRDynamicRendering(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrDynamicRenderingFeatures = parent.optJSONObject(KEY_VK_KHR_DYNAMIC_RENDERING);
         if (khrDynamicRenderingFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_DYNAMIC_RENDERING));
             {
-                JSONObject dynamicRenderingFeaturesKHR = khrDynamicRenderingFeatures.getJSONObject(KEY_DYNAMIC_RENDERING_FEATURES_KHR);
+                JSONObject dynamicRenderingFeaturesKHR =
+                        khrDynamicRenderingFeatures.getJSONObject(
+                                KEY_DYNAMIC_RENDERING_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_DYNAMIC_RENDERING_FEATURES_KHR));
                 {
                     emitBoolean(store, dynamicRenderingFeaturesKHR, KEY_DYNAMIC_RENDERING);
@@ -4638,16 +6791,21 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRDynamicRenderingLocalRead(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrDynamicRenderingLocalReadFeatures = parent.optJSONObject(KEY_VK_KHR_DYNAMIC_RENDERING_LOCAL_READ);
+            throws IOException, JSONException {
+        JSONObject khrDynamicRenderingLocalReadFeatures =
+                parent.optJSONObject(KEY_VK_KHR_DYNAMIC_RENDERING_LOCAL_READ);
         if (khrDynamicRenderingLocalReadFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_DYNAMIC_RENDERING_LOCAL_READ));
             {
-                JSONObject dynamicRenderingLocalReadFeaturesKHR = khrDynamicRenderingLocalReadFeatures.getJSONObject(KEY_DYNAMIC_RENDERING_LOCAL_READ_FEATURES_KHR);
+                JSONObject dynamicRenderingLocalReadFeaturesKHR =
+                        khrDynamicRenderingLocalReadFeatures.getJSONObject(
+                                KEY_DYNAMIC_RENDERING_LOCAL_READ_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_DYNAMIC_RENDERING_LOCAL_READ_FEATURES_KHR));
                 {
-                    emitBoolean(store, dynamicRenderingLocalReadFeaturesKHR, KEY_DYNAMIC_RENDERING_LOCAL_READ);
+                    emitBoolean(
+                            store,
+                            dynamicRenderingLocalReadFeaturesKHR,
+                            KEY_DYNAMIC_RENDERING_LOCAL_READ);
                 }
                 store.endGroup();
             }
@@ -4656,8 +6814,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRExternalFenceCapabilities(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrIDProperties = parent.optJSONObject(KEY_VK_KHR_EXTERNAL_FENCE_CAPABILITIES);
         if (khrIDProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_EXTERNAL_FENCE_CAPABILITIES));
@@ -4677,9 +6834,8 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkKHRExternalMemoryCapabilities(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+    private static void emitVkKHRExternalMemoryCapabilities(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
         JSONObject khrIDProperties = parent.optJSONObject(KEY_VK_KHR_EXTERNAL_MEMORY_CAPABILITIES);
         if (khrIDProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_EXTERNAL_MEMORY_CAPABILITIES));
@@ -4699,10 +6855,10 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkKHRExternalSemaphoreCapabilities(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrIDProperties = parent.optJSONObject(KEY_VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES);
+    private static void emitVkKHRExternalSemaphoreCapabilities(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject khrIDProperties =
+                parent.optJSONObject(KEY_VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES);
         if (khrIDProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES));
             {
@@ -4722,22 +6878,32 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRFragmentShaderBarycentric(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrFragmentShaderBarycentricFeatures = parent.optJSONObject(KEY_VK_KHR_FRAGMENT_SHADER_BARYCENTRIC);
+            throws IOException, JSONException {
+        JSONObject khrFragmentShaderBarycentricFeatures =
+                parent.optJSONObject(KEY_VK_KHR_FRAGMENT_SHADER_BARYCENTRIC);
         if (khrFragmentShaderBarycentricFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_FRAGMENT_SHADER_BARYCENTRIC));
             {
-                JSONObject fragmentShaderBarycentricFeaturesKHR = khrFragmentShaderBarycentricFeatures.getJSONObject(KEY_FRAGMENT_SHADER_BARYCENTRIC_FEATURES_KHR);
+                JSONObject fragmentShaderBarycentricFeaturesKHR =
+                        khrFragmentShaderBarycentricFeatures.getJSONObject(
+                                KEY_FRAGMENT_SHADER_BARYCENTRIC_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_FRAGMENT_SHADER_BARYCENTRIC_FEATURES_KHR));
                 {
-                    emitBoolean(store, fragmentShaderBarycentricFeaturesKHR, KEY_FRAGMENT_SHADER_BARYCENTRIC);
+                    emitBoolean(
+                            store,
+                            fragmentShaderBarycentricFeaturesKHR,
+                            KEY_FRAGMENT_SHADER_BARYCENTRIC);
                 }
                 store.endGroup();
-                JSONObject fragmentShaderBarycentricPropertiesKHR = khrFragmentShaderBarycentricFeatures.getJSONObject(KEY_FRAGMENT_SHADER_BARYCENTRIC_PROPERTIES_KHR);
+                JSONObject fragmentShaderBarycentricPropertiesKHR =
+                        khrFragmentShaderBarycentricFeatures.getJSONObject(
+                                KEY_FRAGMENT_SHADER_BARYCENTRIC_PROPERTIES_KHR);
                 store.startGroup(getConvertedName(KEY_FRAGMENT_SHADER_BARYCENTRIC_PROPERTIES_KHR));
                 {
-                    emitBoolean(store, fragmentShaderBarycentricPropertiesKHR, KEY_TRI_STRIP_VERTEX_ORDER_INDEPENDENT_OF_PROVOKING_VERTEX);
+                    emitBoolean(
+                            store,
+                            fragmentShaderBarycentricPropertiesKHR,
+                            KEY_TRI_STRIP_VERTEX_ORDER_INDEPENDENT_OF_PROVOKING_VERTEX);
                 }
                 store.endGroup();
             }
@@ -4746,58 +6912,120 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRFragmentShadingRate(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrFragmentShadingRateFeatures = parent.optJSONObject(KEY_VK_KHR_FRAGMENT_SHADING_RATE);
+            throws IOException, JSONException {
+        JSONObject khrFragmentShadingRateFeatures =
+                parent.optJSONObject(KEY_VK_KHR_FRAGMENT_SHADING_RATE);
         if (khrFragmentShadingRateFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_FRAGMENT_SHADING_RATE));
             {
-                JSONObject fragmentShadingRateFeaturesKHR = khrFragmentShadingRateFeatures.getJSONObject(KEY_FRAGMENT_SHADING_RATE_FEATURES_KHR);
+                JSONObject fragmentShadingRateFeaturesKHR =
+                        khrFragmentShadingRateFeatures.getJSONObject(
+                                KEY_FRAGMENT_SHADING_RATE_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_FRAGMENT_SHADING_RATE_FEATURES_KHR));
                 {
-                    emitBoolean(store, fragmentShadingRateFeaturesKHR, KEY_PIPELINE_FRAGMENT_SHADING_RATE);
-                    emitBoolean(store, fragmentShadingRateFeaturesKHR, KEY_PRIMITIVE_FRAGMENT_SHADING_RATE);
-                    emitBoolean(store, fragmentShadingRateFeaturesKHR, KEY_ATTACHMENT_FRAGMENT_SHADING_RATE);
+                    emitBoolean(
+                            store,
+                            fragmentShadingRateFeaturesKHR,
+                            KEY_PIPELINE_FRAGMENT_SHADING_RATE);
+                    emitBoolean(
+                            store,
+                            fragmentShadingRateFeaturesKHR,
+                            KEY_PRIMITIVE_FRAGMENT_SHADING_RATE);
+                    emitBoolean(
+                            store,
+                            fragmentShadingRateFeaturesKHR,
+                            KEY_ATTACHMENT_FRAGMENT_SHADING_RATE);
                 }
                 store.endGroup();
-                JSONObject fragmentShadingRatePropertiesKHR = khrFragmentShadingRateFeatures.getJSONObject(KEY_FRAGMENT_SHADING_RATE_PROPERTIES_KHR);
+                JSONObject fragmentShadingRatePropertiesKHR =
+                        khrFragmentShadingRateFeatures.getJSONObject(
+                                KEY_FRAGMENT_SHADING_RATE_PROPERTIES_KHR);
                 store.startGroup(getConvertedName(KEY_FRAGMENT_SHADING_RATE_PROPERTIES_KHR));
                 {
-                    JSONObject minFragmentShadingRateAttachmentTexelSize = fragmentShadingRatePropertiesKHR.getJSONObject(KEY_MIN_FRAGMENT_SHADING_RATE_ATTACHMENT_TEXEL_SIZE);
-                    store.startGroup(getConvertedName(KEY_MIN_FRAGMENT_SHADING_RATE_ATTACHMENT_TEXEL_SIZE));
+                    JSONObject minFragmentShadingRateAttachmentTexelSize =
+                            fragmentShadingRatePropertiesKHR.getJSONObject(
+                                    KEY_MIN_FRAGMENT_SHADING_RATE_ATTACHMENT_TEXEL_SIZE);
+                    store.startGroup(
+                            getConvertedName(KEY_MIN_FRAGMENT_SHADING_RATE_ATTACHMENT_TEXEL_SIZE));
                     {
                         emitLong(store, minFragmentShadingRateAttachmentTexelSize, KEY_WIDTH);
                         emitLong(store, minFragmentShadingRateAttachmentTexelSize, KEY_HEIGHT);
                     }
                     store.endGroup();
-                    JSONObject maxFragmentShadingRateAttachmentTexelSize = fragmentShadingRatePropertiesKHR.getJSONObject(KEY_MAX_FRAGMENT_SHADING_RATE_ATTACHMENT_TEXEL_SIZE);
-                    store.startGroup(getConvertedName(KEY_MAX_FRAGMENT_SHADING_RATE_ATTACHMENT_TEXEL_SIZE));
+                    JSONObject maxFragmentShadingRateAttachmentTexelSize =
+                            fragmentShadingRatePropertiesKHR.getJSONObject(
+                                    KEY_MAX_FRAGMENT_SHADING_RATE_ATTACHMENT_TEXEL_SIZE);
+                    store.startGroup(
+                            getConvertedName(KEY_MAX_FRAGMENT_SHADING_RATE_ATTACHMENT_TEXEL_SIZE));
                     {
                         emitLong(store, maxFragmentShadingRateAttachmentTexelSize, KEY_WIDTH);
                         emitLong(store, maxFragmentShadingRateAttachmentTexelSize, KEY_HEIGHT);
                     }
                     store.endGroup();
-                    emitLong(store, fragmentShadingRatePropertiesKHR, KEY_MAX_FRAGMENT_SHADING_RATE_ATTACHMENT_TEXEL_SIZE_ASPECT_RATIO);
-                    emitBoolean(store, fragmentShadingRatePropertiesKHR, KEY_PRIMITIVE_FRAGMENT_SHADING_RATE_WITH_MULTIPLE_VIEWPORTS);
-                    emitBoolean(store, fragmentShadingRatePropertiesKHR, KEY_LAYERED_SHADING_RATE_ATTACHMENTS);
-                    emitBoolean(store, fragmentShadingRatePropertiesKHR, KEY_FRAGMENT_SHADING_RATE_NON_TRIVIAL_COMBINER_OPS);
-                    JSONObject maxFragmentSize = fragmentShadingRatePropertiesKHR.getJSONObject(KEY_MAX_FRAGMENT_SIZE);
+                    emitLong(
+                            store,
+                            fragmentShadingRatePropertiesKHR,
+                            KEY_MAX_FRAGMENT_SHADING_RATE_ATTACHMENT_TEXEL_SIZE_ASPECT_RATIO);
+                    emitBoolean(
+                            store,
+                            fragmentShadingRatePropertiesKHR,
+                            KEY_PRIMITIVE_FRAGMENT_SHADING_RATE_WITH_MULTIPLE_VIEWPORTS);
+                    emitBoolean(
+                            store,
+                            fragmentShadingRatePropertiesKHR,
+                            KEY_LAYERED_SHADING_RATE_ATTACHMENTS);
+                    emitBoolean(
+                            store,
+                            fragmentShadingRatePropertiesKHR,
+                            KEY_FRAGMENT_SHADING_RATE_NON_TRIVIAL_COMBINER_OPS);
+                    JSONObject maxFragmentSize =
+                            fragmentShadingRatePropertiesKHR.getJSONObject(KEY_MAX_FRAGMENT_SIZE);
                     store.startGroup(getConvertedName(KEY_MAX_FRAGMENT_SIZE));
                     {
                         emitLong(store, maxFragmentSize, KEY_WIDTH);
                         emitLong(store, maxFragmentSize, KEY_HEIGHT);
                     }
                     store.endGroup();
-                    emitLong(store, fragmentShadingRatePropertiesKHR, KEY_MAX_FRAGMENT_SIZE_ASPECT_RATIO);
-                    emitLong(store, fragmentShadingRatePropertiesKHR, KEY_MAX_FRAGMENT_SHADING_RATE_COVERAGE_SAMPLES);
-                    emitLong(store, fragmentShadingRatePropertiesKHR, KEY_MAX_FRAGMENT_SHADING_RATE_RASTERIZATION_SAMPLES);
-                    emitBoolean(store, fragmentShadingRatePropertiesKHR, KEY_FRAGMENT_SHADING_RATE_WITH_SHADER_DEPTH_STENCIL_WRITES);
-                    emitBoolean(store, fragmentShadingRatePropertiesKHR, KEY_FRAGMENT_SHADING_RATE_WITH_SAMPLE_MASK);
-                    emitBoolean(store, fragmentShadingRatePropertiesKHR, KEY_FRAGMENT_SHADING_RATE_WITH_SHADER_SAMPLE_MASK);
-                    emitBoolean(store, fragmentShadingRatePropertiesKHR, KEY_FRAGMENT_SHADING_RATE_WITH_CONSERVATIVE_RASTERIZATION);
-                    emitBoolean(store, fragmentShadingRatePropertiesKHR, KEY_FRAGMENT_SHADING_RATE_WITH_FRAGMENT_SHADER_INTERLOCK);
-                    emitBoolean(store, fragmentShadingRatePropertiesKHR, KEY_FRAGMENT_SHADING_RATE_WITH_CUSTOM_SAMPLE_LOCATIONS);
-                    emitBoolean(store, fragmentShadingRatePropertiesKHR, KEY_FRAGMENT_SHADING_RATE_STRICT_MULTIPLY_COMBINER);
+                    emitLong(
+                            store,
+                            fragmentShadingRatePropertiesKHR,
+                            KEY_MAX_FRAGMENT_SIZE_ASPECT_RATIO);
+                    emitLong(
+                            store,
+                            fragmentShadingRatePropertiesKHR,
+                            KEY_MAX_FRAGMENT_SHADING_RATE_COVERAGE_SAMPLES);
+                    emitLong(
+                            store,
+                            fragmentShadingRatePropertiesKHR,
+                            KEY_MAX_FRAGMENT_SHADING_RATE_RASTERIZATION_SAMPLES);
+                    emitBoolean(
+                            store,
+                            fragmentShadingRatePropertiesKHR,
+                            KEY_FRAGMENT_SHADING_RATE_WITH_SHADER_DEPTH_STENCIL_WRITES);
+                    emitBoolean(
+                            store,
+                            fragmentShadingRatePropertiesKHR,
+                            KEY_FRAGMENT_SHADING_RATE_WITH_SAMPLE_MASK);
+                    emitBoolean(
+                            store,
+                            fragmentShadingRatePropertiesKHR,
+                            KEY_FRAGMENT_SHADING_RATE_WITH_SHADER_SAMPLE_MASK);
+                    emitBoolean(
+                            store,
+                            fragmentShadingRatePropertiesKHR,
+                            KEY_FRAGMENT_SHADING_RATE_WITH_CONSERVATIVE_RASTERIZATION);
+                    emitBoolean(
+                            store,
+                            fragmentShadingRatePropertiesKHR,
+                            KEY_FRAGMENT_SHADING_RATE_WITH_FRAGMENT_SHADER_INTERLOCK);
+                    emitBoolean(
+                            store,
+                            fragmentShadingRatePropertiesKHR,
+                            KEY_FRAGMENT_SHADING_RATE_WITH_CUSTOM_SAMPLE_LOCATIONS);
+                    emitBoolean(
+                            store,
+                            fragmentShadingRatePropertiesKHR,
+                            KEY_FRAGMENT_SHADING_RATE_STRICT_MULTIPLY_COMBINER);
                 }
                 store.endGroup();
             }
@@ -4806,13 +7034,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRGlobalPriority(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrGlobalPriorityQueryFeatures = parent.optJSONObject(KEY_VK_KHR_GLOBAL_PRIORITY);
+            throws IOException, JSONException {
+        JSONObject khrGlobalPriorityQueryFeatures =
+                parent.optJSONObject(KEY_VK_KHR_GLOBAL_PRIORITY);
         if (khrGlobalPriorityQueryFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_GLOBAL_PRIORITY));
             {
-                JSONObject globalPriorityQueryFeaturesKHR = khrGlobalPriorityQueryFeatures.getJSONObject(KEY_GLOBAL_PRIORITY_QUERY_FEATURES_KHR);
+                JSONObject globalPriorityQueryFeaturesKHR =
+                        khrGlobalPriorityQueryFeatures.getJSONObject(
+                                KEY_GLOBAL_PRIORITY_QUERY_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_GLOBAL_PRIORITY_QUERY_FEATURES_KHR));
                 {
                     emitBoolean(store, globalPriorityQueryFeaturesKHR, KEY_GLOBAL_PRIORITY_QUERY);
@@ -4824,13 +7054,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRImagelessFramebuffer(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrImagelessFramebufferFeatures = parent.optJSONObject(KEY_VK_KHR_IMAGELESS_FRAMEBUFFER);
+            throws IOException, JSONException {
+        JSONObject khrImagelessFramebufferFeatures =
+                parent.optJSONObject(KEY_VK_KHR_IMAGELESS_FRAMEBUFFER);
         if (khrImagelessFramebufferFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_IMAGELESS_FRAMEBUFFER));
             {
-                JSONObject imagelessFramebufferFeaturesKHR = khrImagelessFramebufferFeatures.getJSONObject(KEY_IMAGELESS_FRAMEBUFFER_FEATURES_KHR);
+                JSONObject imagelessFramebufferFeaturesKHR =
+                        khrImagelessFramebufferFeatures.getJSONObject(
+                                KEY_IMAGELESS_FRAMEBUFFER_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_IMAGELESS_FRAMEBUFFER_FEATURES_KHR));
                 {
                     emitBoolean(store, imagelessFramebufferFeaturesKHR, KEY_IMAGELESS_FRAMEBUFFER);
@@ -4842,13 +7074,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRIndexTypeUint8(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrIndexTypeUint8Features = parent.optJSONObject(KEY_VK_KHR_INDEX_TYPE_UINT8);
         if (khrIndexTypeUint8Features != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_INDEX_TYPE_UINT8));
             {
-                JSONObject indexTypeUint8FeaturesKHR = khrIndexTypeUint8Features.getJSONObject(KEY_INDEX_TYPE_UINT8_FEATURES_KHR);
+                JSONObject indexTypeUint8FeaturesKHR =
+                        khrIndexTypeUint8Features.getJSONObject(KEY_INDEX_TYPE_UINT8_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_INDEX_TYPE_UINT8_FEATURES_KHR));
                 {
                     emitBoolean(store, indexTypeUint8FeaturesKHR, KEY_INDEX_TYPE_UINT8);
@@ -4860,27 +7092,35 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRLineRasterization(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrLineRasterizationFeatures = parent.optJSONObject(KEY_VK_KHR_LINE_RASTERIZATION);
+            throws IOException, JSONException {
+        JSONObject khrLineRasterizationFeatures =
+                parent.optJSONObject(KEY_VK_KHR_LINE_RASTERIZATION);
         if (khrLineRasterizationFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_LINE_RASTERIZATION));
             {
-                JSONObject lineRasterizationFeaturesKHR = khrLineRasterizationFeatures.getJSONObject(KEY_LINE_RASTERIZATION_FEATURES_KHR);
+                JSONObject lineRasterizationFeaturesKHR =
+                        khrLineRasterizationFeatures.getJSONObject(
+                                KEY_LINE_RASTERIZATION_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_LINE_RASTERIZATION_FEATURES_KHR));
                 {
                     emitBoolean(store, lineRasterizationFeaturesKHR, KEY_RECTANGULAR_LINES);
                     emitBoolean(store, lineRasterizationFeaturesKHR, KEY_BRESENHAM_LINES);
                     emitBoolean(store, lineRasterizationFeaturesKHR, KEY_SMOOTH_LINES);
-                    emitBoolean(store, lineRasterizationFeaturesKHR, KEY_STIPPLED_RECTANGULAR_LINES);
+                    emitBoolean(
+                            store, lineRasterizationFeaturesKHR, KEY_STIPPLED_RECTANGULAR_LINES);
                     emitBoolean(store, lineRasterizationFeaturesKHR, KEY_STIPPLED_BRESENHAM_LINES);
                     emitBoolean(store, lineRasterizationFeaturesKHR, KEY_STIPPLED_SMOOTH_LINES);
                 }
                 store.endGroup();
-                JSONObject lineRasterizationPropertiesKHR = khrLineRasterizationFeatures.getJSONObject(KEY_LINE_RASTERIZATION_PROPERTIES_KHR);
+                JSONObject lineRasterizationPropertiesKHR =
+                        khrLineRasterizationFeatures.getJSONObject(
+                                KEY_LINE_RASTERIZATION_PROPERTIES_KHR);
                 store.startGroup(getConvertedName(KEY_LINE_RASTERIZATION_PROPERTIES_KHR));
                 {
-                    emitLong(store, lineRasterizationPropertiesKHR, KEY_LINE_SUB_PIXEL_PRECISION_BITS);
+                    emitLong(
+                            store,
+                            lineRasterizationPropertiesKHR,
+                            KEY_LINE_SUB_PIXEL_PRECISION_BITS);
                 }
                 store.endGroup();
             }
@@ -4889,24 +7129,32 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRMaintenance10(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrMaintenance10Features = parent.optJSONObject(KEY_VK_KHR_MAINTENANCE10);
         if (khrMaintenance10Features != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_MAINTENANCE10));
             {
-                JSONObject maintenance10FeaturesKHR = khrMaintenance10Features.getJSONObject(KEY_MAINTENANCE_10_FEATURES_KHR);
+                JSONObject maintenance10FeaturesKHR =
+                        khrMaintenance10Features.getJSONObject(KEY_MAINTENANCE_10_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_MAINTENANCE_10_FEATURES_KHR));
                 {
                     emitBoolean(store, maintenance10FeaturesKHR, KEY_MAINTENANCE_10);
                 }
                 store.endGroup();
-                JSONObject maintenance10PropertiesKHR = khrMaintenance10Features.getJSONObject(KEY_MAINTENANCE_10_PROPERTIES_KHR);
+                JSONObject maintenance10PropertiesKHR =
+                        khrMaintenance10Features.getJSONObject(KEY_MAINTENANCE_10_PROPERTIES_KHR);
                 store.startGroup(getConvertedName(KEY_MAINTENANCE_10_PROPERTIES_KHR));
                 {
-                    emitBoolean(store, maintenance10PropertiesKHR, KEY_RGBA_4_OPAQUE_BLACK_SWIZZLED);
-                    emitBoolean(store, maintenance10PropertiesKHR, KEY_RESOLVE_SRGB_FORMAT_APPLIES_TRANSFER_FUNCTION);
-                    emitBoolean(store, maintenance10PropertiesKHR, KEY_RESOLVE_SRGB_FORMAT_SUPPORTS_TRANSFER_FUNCTION_CONTROL);
+                    emitBoolean(
+                            store, maintenance10PropertiesKHR, KEY_RGBA_4_OPAQUE_BLACK_SWIZZLED);
+                    emitBoolean(
+                            store,
+                            maintenance10PropertiesKHR,
+                            KEY_RESOLVE_SRGB_FORMAT_APPLIES_TRANSFER_FUNCTION);
+                    emitBoolean(
+                            store,
+                            maintenance10PropertiesKHR,
+                            KEY_RESOLVE_SRGB_FORMAT_SUPPORTS_TRANSFER_FUNCTION_CONTROL);
                 }
                 store.endGroup();
             }
@@ -4915,13 +7163,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRMaintenance2(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrPointClippingProperties = parent.optJSONObject(KEY_VK_KHR_MAINTENANCE2);
         if (khrPointClippingProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_MAINTENANCE2));
             {
-                JSONObject pointClippingPropertiesKHR = khrPointClippingProperties.getJSONObject(KEY_POINT_CLIPPING_PROPERTIES_KHR);
+                JSONObject pointClippingPropertiesKHR =
+                        khrPointClippingProperties.getJSONObject(KEY_POINT_CLIPPING_PROPERTIES_KHR);
                 store.startGroup(getConvertedName(KEY_POINT_CLIPPING_PROPERTIES_KHR));
                 {
                     emitLong(store, pointClippingPropertiesKHR, KEY_POINT_CLIPPING_BEHAVIOR);
@@ -4933,13 +7181,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRMaintenance3(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrMaintenance3Properties = parent.optJSONObject(KEY_VK_KHR_MAINTENANCE3);
         if (khrMaintenance3Properties != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_MAINTENANCE3));
             {
-                JSONObject maintenance3PropertiesKHR = khrMaintenance3Properties.getJSONObject(KEY_MAINTENANCE_3_PROPERTIES_KHR);
+                JSONObject maintenance3PropertiesKHR =
+                        khrMaintenance3Properties.getJSONObject(KEY_MAINTENANCE_3_PROPERTIES_KHR);
                 store.startGroup(getConvertedName(KEY_MAINTENANCE_3_PROPERTIES_KHR));
                 {
                     emitLong(store, maintenance3PropertiesKHR, KEY_MAX_PER_SET_DESCRIPTORS);
@@ -4952,19 +7200,20 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRMaintenance4(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrMaintenance4Features = parent.optJSONObject(KEY_VK_KHR_MAINTENANCE4);
         if (khrMaintenance4Features != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_MAINTENANCE4));
             {
-                JSONObject maintenance4FeaturesKHR = khrMaintenance4Features.getJSONObject(KEY_MAINTENANCE_4_FEATURES_KHR);
+                JSONObject maintenance4FeaturesKHR =
+                        khrMaintenance4Features.getJSONObject(KEY_MAINTENANCE_4_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_MAINTENANCE_4_FEATURES_KHR));
                 {
                     emitBoolean(store, maintenance4FeaturesKHR, KEY_MAINTENANCE4);
                 }
                 store.endGroup();
-                JSONObject maintenance4PropertiesKHR = khrMaintenance4Features.getJSONObject(KEY_MAINTENANCE_4_PROPERTIES_KHR);
+                JSONObject maintenance4PropertiesKHR =
+                        khrMaintenance4Features.getJSONObject(KEY_MAINTENANCE_4_PROPERTIES_KHR);
                 store.startGroup(getConvertedName(KEY_MAINTENANCE_4_PROPERTIES_KHR));
                 {
                     emitString(store, maintenance4PropertiesKHR, KEY_MAX_BUFFER_SIZE);
@@ -4976,27 +7225,43 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRMaintenance5(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrMaintenance5Features = parent.optJSONObject(KEY_VK_KHR_MAINTENANCE5);
         if (khrMaintenance5Features != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_MAINTENANCE5));
             {
-                JSONObject maintenance5FeaturesKHR = khrMaintenance5Features.getJSONObject(KEY_MAINTENANCE_5_FEATURES_KHR);
+                JSONObject maintenance5FeaturesKHR =
+                        khrMaintenance5Features.getJSONObject(KEY_MAINTENANCE_5_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_MAINTENANCE_5_FEATURES_KHR));
                 {
                     emitBoolean(store, maintenance5FeaturesKHR, KEY_MAINTENANCE5);
                 }
                 store.endGroup();
-                JSONObject maintenance5PropertiesKHR = khrMaintenance5Features.getJSONObject(KEY_MAINTENANCE_5_PROPERTIES_KHR);
+                JSONObject maintenance5PropertiesKHR =
+                        khrMaintenance5Features.getJSONObject(KEY_MAINTENANCE_5_PROPERTIES_KHR);
                 store.startGroup(getConvertedName(KEY_MAINTENANCE_5_PROPERTIES_KHR));
                 {
-                    emitBoolean(store, maintenance5PropertiesKHR, KEY_EARLY_FRAGMENT_MULTISAMPLE_COVERAGE_AFTER_SAMPLE_COUNTING);
-                    emitBoolean(store, maintenance5PropertiesKHR, KEY_EARLY_FRAGMENT_SAMPLE_MASK_TEST_BEFORE_SAMPLE_COUNTING);
-                    emitBoolean(store, maintenance5PropertiesKHR, KEY_DEPTH_STENCIL_SWIZZLE_ONE_SUPPORT);
+                    emitBoolean(
+                            store,
+                            maintenance5PropertiesKHR,
+                            KEY_EARLY_FRAGMENT_MULTISAMPLE_COVERAGE_AFTER_SAMPLE_COUNTING);
+                    emitBoolean(
+                            store,
+                            maintenance5PropertiesKHR,
+                            KEY_EARLY_FRAGMENT_SAMPLE_MASK_TEST_BEFORE_SAMPLE_COUNTING);
+                    emitBoolean(
+                            store,
+                            maintenance5PropertiesKHR,
+                            KEY_DEPTH_STENCIL_SWIZZLE_ONE_SUPPORT);
                     emitBoolean(store, maintenance5PropertiesKHR, KEY_POLYGON_MODE_POINT_SIZE);
-                    emitBoolean(store, maintenance5PropertiesKHR, KEY_NON_STRICT_SINGLE_PIXEL_WIDE_LINES_USE_PARALLELOGRAM);
-                    emitBoolean(store, maintenance5PropertiesKHR, KEY_NON_STRICT_WIDE_LINES_USE_PARALLELOGRAM);
+                    emitBoolean(
+                            store,
+                            maintenance5PropertiesKHR,
+                            KEY_NON_STRICT_SINGLE_PIXEL_WIDE_LINES_USE_PARALLELOGRAM);
+                    emitBoolean(
+                            store,
+                            maintenance5PropertiesKHR,
+                            KEY_NON_STRICT_WIDE_LINES_USE_PARALLELOGRAM);
                 }
                 store.endGroup();
             }
@@ -5005,24 +7270,34 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRMaintenance6(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrMaintenance6Features = parent.optJSONObject(KEY_VK_KHR_MAINTENANCE6);
         if (khrMaintenance6Features != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_MAINTENANCE6));
             {
-                JSONObject maintenance6FeaturesKHR = khrMaintenance6Features.getJSONObject(KEY_MAINTENANCE_6_FEATURES_KHR);
+                JSONObject maintenance6FeaturesKHR =
+                        khrMaintenance6Features.getJSONObject(KEY_MAINTENANCE_6_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_MAINTENANCE_6_FEATURES_KHR));
                 {
                     emitBoolean(store, maintenance6FeaturesKHR, KEY_MAINTENANCE6);
                 }
                 store.endGroup();
-                JSONObject maintenance6PropertiesKHR = khrMaintenance6Features.getJSONObject(KEY_MAINTENANCE_6_PROPERTIES_KHR);
+                JSONObject maintenance6PropertiesKHR =
+                        khrMaintenance6Features.getJSONObject(KEY_MAINTENANCE_6_PROPERTIES_KHR);
                 store.startGroup(getConvertedName(KEY_MAINTENANCE_6_PROPERTIES_KHR));
                 {
-                    emitBoolean(store, maintenance6PropertiesKHR, KEY_BLOCK_TEXEL_VIEW_COMPATIBLE_MULTIPLE_LAYERS);
-                    emitLong(store, maintenance6PropertiesKHR, KEY_MAX_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_COUNT);
-                    emitBoolean(store, maintenance6PropertiesKHR, KEY_FRAGMENT_SHADING_RATE_CLAMP_COMBINER_INPUTS);
+                    emitBoolean(
+                            store,
+                            maintenance6PropertiesKHR,
+                            KEY_BLOCK_TEXEL_VIEW_COMPATIBLE_MULTIPLE_LAYERS);
+                    emitLong(
+                            store,
+                            maintenance6PropertiesKHR,
+                            KEY_MAX_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_COUNT);
+                    emitBoolean(
+                            store,
+                            maintenance6PropertiesKHR,
+                            KEY_FRAGMENT_SHADING_RATE_CLAMP_COMBINER_INPUTS);
                 }
                 store.endGroup();
             }
@@ -5031,32 +7306,58 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRMaintenance7(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrMaintenance7Features = parent.optJSONObject(KEY_VK_KHR_MAINTENANCE7);
         if (khrMaintenance7Features != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_MAINTENANCE7));
             {
-                JSONObject maintenance7FeaturesKHR = khrMaintenance7Features.getJSONObject(KEY_MAINTENANCE_7_FEATURES_KHR);
+                JSONObject maintenance7FeaturesKHR =
+                        khrMaintenance7Features.getJSONObject(KEY_MAINTENANCE_7_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_MAINTENANCE_7_FEATURES_KHR));
                 {
                     emitBoolean(store, maintenance7FeaturesKHR, KEY_MAINTENANCE_7);
                 }
                 store.endGroup();
-                JSONObject maintenance7PropertiesKHR = khrMaintenance7Features.getJSONObject(KEY_MAINTENANCE_7_PROPERTIES_KHR);
+                JSONObject maintenance7PropertiesKHR =
+                        khrMaintenance7Features.getJSONObject(KEY_MAINTENANCE_7_PROPERTIES_KHR);
                 store.startGroup(getConvertedName(KEY_MAINTENANCE_7_PROPERTIES_KHR));
                 {
-                    emitBoolean(store, maintenance7PropertiesKHR, KEY_ROBUST_FRAGMENT_SHADING_RATE_ATTACHMENT_ACCESS);
-                    emitBoolean(store, maintenance7PropertiesKHR, KEY_SEPARATE_DEPTH_STENCIL_ATTACHMENT_ACCESS);
-                    emitLong(store, maintenance7PropertiesKHR, KEY_MAX_DESCRIPTOR_SET_TOTAL_UNIFORM_BUFFERS_DYNAMIC);
-                    emitLong(store, maintenance7PropertiesKHR, KEY_MAX_DESCRIPTOR_SET_TOTAL_STORAGE_BUFFERS_DYNAMIC);
-                    emitLong(store, maintenance7PropertiesKHR, KEY_MAX_DESCRIPTOR_SET_TOTAL_BUFFERS_DYNAMIC);
-                    emitLong(store, maintenance7PropertiesKHR, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_TOTAL_UNIFORM_BUFFERS_DYNAMIC);
-                    emitLong(store, maintenance7PropertiesKHR, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_TOTAL_STORAGE_BUFFERS_DYNAMIC);
-                    emitLong(store, maintenance7PropertiesKHR, KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_TOTAL_BUFFERS_DYNAMIC);
+                    emitBoolean(
+                            store,
+                            maintenance7PropertiesKHR,
+                            KEY_ROBUST_FRAGMENT_SHADING_RATE_ATTACHMENT_ACCESS);
+                    emitBoolean(
+                            store,
+                            maintenance7PropertiesKHR,
+                            KEY_SEPARATE_DEPTH_STENCIL_ATTACHMENT_ACCESS);
+                    emitLong(
+                            store,
+                            maintenance7PropertiesKHR,
+                            KEY_MAX_DESCRIPTOR_SET_TOTAL_UNIFORM_BUFFERS_DYNAMIC);
+                    emitLong(
+                            store,
+                            maintenance7PropertiesKHR,
+                            KEY_MAX_DESCRIPTOR_SET_TOTAL_STORAGE_BUFFERS_DYNAMIC);
+                    emitLong(
+                            store,
+                            maintenance7PropertiesKHR,
+                            KEY_MAX_DESCRIPTOR_SET_TOTAL_BUFFERS_DYNAMIC);
+                    emitLong(
+                            store,
+                            maintenance7PropertiesKHR,
+                            KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_TOTAL_UNIFORM_BUFFERS_DYNAMIC);
+                    emitLong(
+                            store,
+                            maintenance7PropertiesKHR,
+                            KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_TOTAL_STORAGE_BUFFERS_DYNAMIC);
+                    emitLong(
+                            store,
+                            maintenance7PropertiesKHR,
+                            KEY_MAX_DESCRIPTOR_SET_UPDATE_AFTER_BIND_TOTAL_BUFFERS_DYNAMIC);
                 }
                 store.endGroup();
-                JSONObject layeredApiPropertiesListKHR = khrMaintenance7Features.getJSONObject(KEY_LAYERED_API_PROPERTIES_LIST_KHR);
+                JSONObject layeredApiPropertiesListKHR =
+                        khrMaintenance7Features.getJSONObject(KEY_LAYERED_API_PROPERTIES_LIST_KHR);
                 store.startGroup(getConvertedName(KEY_LAYERED_API_PROPERTIES_LIST_KHR));
                 {
                     emitLong(store, layeredApiPropertiesListKHR, KEY_LAYERED_API_COUNT);
@@ -5069,13 +7370,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRMaintenance8(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrMaintenance8Features = parent.optJSONObject(KEY_VK_KHR_MAINTENANCE8);
         if (khrMaintenance8Features != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_MAINTENANCE8));
             {
-                JSONObject maintenance8FeaturesKHR = khrMaintenance8Features.getJSONObject(KEY_MAINTENANCE_8_FEATURES_KHR);
+                JSONObject maintenance8FeaturesKHR =
+                        khrMaintenance8Features.getJSONObject(KEY_MAINTENANCE_8_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_MAINTENANCE_8_FEATURES_KHR));
                 {
                     emitBoolean(store, maintenance8FeaturesKHR, KEY_MAINTENANCE_8);
@@ -5087,19 +7388,20 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRMaintenance9(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrMaintenance9Features = parent.optJSONObject(KEY_VK_KHR_MAINTENANCE9);
         if (khrMaintenance9Features != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_MAINTENANCE9));
             {
-                JSONObject maintenance9FeaturesKHR = khrMaintenance9Features.getJSONObject(KEY_MAINTENANCE_9_FEATURES_KHR);
+                JSONObject maintenance9FeaturesKHR =
+                        khrMaintenance9Features.getJSONObject(KEY_MAINTENANCE_9_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_MAINTENANCE_9_FEATURES_KHR));
                 {
                     emitBoolean(store, maintenance9FeaturesKHR, KEY_MAINTENANCE_9);
                 }
                 store.endGroup();
-                JSONObject maintenance9PropertiesKHR = khrMaintenance9Features.getJSONObject(KEY_MAINTENANCE_9_PROPERTIES_KHR);
+                JSONObject maintenance9PropertiesKHR =
+                        khrMaintenance9Features.getJSONObject(KEY_MAINTENANCE_9_PROPERTIES_KHR);
                 store.startGroup(getConvertedName(KEY_MAINTENANCE_9_PROPERTIES_KHR));
                 {
                     emitBoolean(store, maintenance9PropertiesKHR, KEY_IMAGE_2_D_VIEW_OF_3_D_SPARSE);
@@ -5112,13 +7414,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRMultiview(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrMultiviewFeatures = parent.optJSONObject(KEY_VK_KHR_MULTIVIEW);
         if (khrMultiviewFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_MULTIVIEW));
             {
-                JSONObject multiviewFeaturesKHR = khrMultiviewFeatures.getJSONObject(KEY_MULTIVIEW_FEATURES_KHR);
+                JSONObject multiviewFeaturesKHR =
+                        khrMultiviewFeatures.getJSONObject(KEY_MULTIVIEW_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_MULTIVIEW_FEATURES_KHR));
                 {
                     emitBoolean(store, multiviewFeaturesKHR, KEY_MULTIVIEW);
@@ -5126,7 +7428,8 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     emitBoolean(store, multiviewFeaturesKHR, KEY_MULTIVIEW_TESSELLATION_SHADER);
                 }
                 store.endGroup();
-                JSONObject multiviewPropertiesKHR = khrMultiviewFeatures.getJSONObject(KEY_MULTIVIEW_PROPERTIES_KHR);
+                JSONObject multiviewPropertiesKHR =
+                        khrMultiviewFeatures.getJSONObject(KEY_MULTIVIEW_PROPERTIES_KHR);
                 store.startGroup(getConvertedName(KEY_MULTIVIEW_PROPERTIES_KHR));
                 {
                     emitLong(store, multiviewPropertiesKHR, KEY_MAX_MULTIVIEW_VIEW_COUNT);
@@ -5139,23 +7442,35 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRPerformanceQuery(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrPerformanceQueryFeatures = parent.optJSONObject(KEY_VK_KHR_PERFORMANCE_QUERY);
         if (khrPerformanceQueryFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_PERFORMANCE_QUERY));
             {
-                JSONObject performanceQueryFeaturesKHR = khrPerformanceQueryFeatures.getJSONObject(KEY_PERFORMANCE_QUERY_FEATURES_KHR);
+                JSONObject performanceQueryFeaturesKHR =
+                        khrPerformanceQueryFeatures.getJSONObject(
+                                KEY_PERFORMANCE_QUERY_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_PERFORMANCE_QUERY_FEATURES_KHR));
                 {
-                    emitBoolean(store, performanceQueryFeaturesKHR, KEY_PERFORMANCE_COUNTER_QUERY_POOLS);
-                    emitBoolean(store, performanceQueryFeaturesKHR, KEY_PERFORMANCE_COUNTER_MULTIPLE_QUERY_POOLS);
+                    emitBoolean(
+                            store,
+                            performanceQueryFeaturesKHR,
+                            KEY_PERFORMANCE_COUNTER_QUERY_POOLS);
+                    emitBoolean(
+                            store,
+                            performanceQueryFeaturesKHR,
+                            KEY_PERFORMANCE_COUNTER_MULTIPLE_QUERY_POOLS);
                 }
                 store.endGroup();
-                JSONObject performanceQueryPropertiesKHR = khrPerformanceQueryFeatures.getJSONObject(KEY_PERFORMANCE_QUERY_PROPERTIES_KHR);
+                JSONObject performanceQueryPropertiesKHR =
+                        khrPerformanceQueryFeatures.getJSONObject(
+                                KEY_PERFORMANCE_QUERY_PROPERTIES_KHR);
                 store.startGroup(getConvertedName(KEY_PERFORMANCE_QUERY_PROPERTIES_KHR));
                 {
-                    emitBoolean(store, performanceQueryPropertiesKHR, KEY_ALLOW_COMMAND_BUFFER_QUERY_COPIES);
+                    emitBoolean(
+                            store,
+                            performanceQueryPropertiesKHR,
+                            KEY_ALLOW_COMMAND_BUFFER_QUERY_COPIES);
                 }
                 store.endGroup();
             }
@@ -5164,26 +7479,40 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRPipelineBinary(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrPipelineBinaryFeatures = parent.optJSONObject(KEY_VK_KHR_PIPELINE_BINARY);
         if (khrPipelineBinaryFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_PIPELINE_BINARY));
             {
-                JSONObject pipelineBinaryFeaturesKHR = khrPipelineBinaryFeatures.getJSONObject(KEY_PIPELINE_BINARY_FEATURES_KHR);
+                JSONObject pipelineBinaryFeaturesKHR =
+                        khrPipelineBinaryFeatures.getJSONObject(KEY_PIPELINE_BINARY_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_PIPELINE_BINARY_FEATURES_KHR));
                 {
                     emitBoolean(store, pipelineBinaryFeaturesKHR, KEY_PIPELINE_BINARIES);
                 }
                 store.endGroup();
-                JSONObject pipelineBinaryPropertiesKHR = khrPipelineBinaryFeatures.getJSONObject(KEY_PIPELINE_BINARY_PROPERTIES_KHR);
+                JSONObject pipelineBinaryPropertiesKHR =
+                        khrPipelineBinaryFeatures.getJSONObject(KEY_PIPELINE_BINARY_PROPERTIES_KHR);
                 store.startGroup(getConvertedName(KEY_PIPELINE_BINARY_PROPERTIES_KHR));
                 {
-                    emitBoolean(store, pipelineBinaryPropertiesKHR, KEY_PIPELINE_BINARY_INTERNAL_CACHE);
-                    emitBoolean(store, pipelineBinaryPropertiesKHR, KEY_PIPELINE_BINARY_INTERNAL_CACHE_CONTROL);
-                    emitBoolean(store, pipelineBinaryPropertiesKHR, KEY_PIPELINE_BINARY_PREFERS_INTERNAL_CACHE);
-                    emitBoolean(store, pipelineBinaryPropertiesKHR, KEY_PIPELINE_BINARY_PRECOMPILED_INTERNAL_CACHE);
-                    emitBoolean(store, pipelineBinaryPropertiesKHR, KEY_PIPELINE_BINARY_COMPRESSED_DATA);
+                    emitBoolean(
+                            store, pipelineBinaryPropertiesKHR, KEY_PIPELINE_BINARY_INTERNAL_CACHE);
+                    emitBoolean(
+                            store,
+                            pipelineBinaryPropertiesKHR,
+                            KEY_PIPELINE_BINARY_INTERNAL_CACHE_CONTROL);
+                    emitBoolean(
+                            store,
+                            pipelineBinaryPropertiesKHR,
+                            KEY_PIPELINE_BINARY_PREFERS_INTERNAL_CACHE);
+                    emitBoolean(
+                            store,
+                            pipelineBinaryPropertiesKHR,
+                            KEY_PIPELINE_BINARY_PRECOMPILED_INTERNAL_CACHE);
+                    emitBoolean(
+                            store,
+                            pipelineBinaryPropertiesKHR,
+                            KEY_PIPELINE_BINARY_COMPRESSED_DATA);
                 }
                 store.endGroup();
             }
@@ -5191,17 +7520,22 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkKHRPipelineExecutableProperties(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrPipelineExecutablePropertiesFeatures = parent.optJSONObject(KEY_VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES);
+    private static void emitVkKHRPipelineExecutableProperties(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject khrPipelineExecutablePropertiesFeatures =
+                parent.optJSONObject(KEY_VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES);
         if (khrPipelineExecutablePropertiesFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES));
             {
-                JSONObject pipelineExecutablePropertiesFeaturesKHR = khrPipelineExecutablePropertiesFeatures.getJSONObject(KEY_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR);
+                JSONObject pipelineExecutablePropertiesFeaturesKHR =
+                        khrPipelineExecutablePropertiesFeatures.getJSONObject(
+                                KEY_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR));
                 {
-                    emitBoolean(store, pipelineExecutablePropertiesFeaturesKHR, KEY_PIPELINE_EXECUTABLE_INFO);
+                    emitBoolean(
+                            store,
+                            pipelineExecutablePropertiesFeaturesKHR,
+                            KEY_PIPELINE_EXECUTABLE_INFO);
                 }
                 store.endGroup();
             }
@@ -5210,13 +7544,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRPresentId(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrPresentIdFeatures = parent.optJSONObject(KEY_VK_KHR_PRESENT_ID);
         if (khrPresentIdFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_PRESENT_ID));
             {
-                JSONObject presentIdFeaturesKHR = khrPresentIdFeatures.getJSONObject(KEY_PRESENT_ID_FEATURES_KHR);
+                JSONObject presentIdFeaturesKHR =
+                        khrPresentIdFeatures.getJSONObject(KEY_PRESENT_ID_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_PRESENT_ID_FEATURES_KHR));
                 {
                     emitBoolean(store, presentIdFeaturesKHR, KEY_PRESENT_ID);
@@ -5228,13 +7562,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRPresentId2(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrPresentId2Features = parent.optJSONObject(KEY_VK_KHR_PRESENT_ID2);
         if (khrPresentId2Features != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_PRESENT_ID2));
             {
-                JSONObject presentId2FeaturesKHR = khrPresentId2Features.getJSONObject(KEY_PRESENT_ID_2_FEATURES_KHR);
+                JSONObject presentId2FeaturesKHR =
+                        khrPresentId2Features.getJSONObject(KEY_PRESENT_ID_2_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_PRESENT_ID_2_FEATURES_KHR));
                 {
                     emitBoolean(store, presentId2FeaturesKHR, KEY_PRESENT_ID_2);
@@ -5245,17 +7579,22 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkKHRPresentModeFifoLatestReady(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrPresentModeFifoLatestReadyFeatures = parent.optJSONObject(KEY_VK_KHR_PRESENT_MODE_FIFO_LATEST_READY);
+    private static void emitVkKHRPresentModeFifoLatestReady(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject khrPresentModeFifoLatestReadyFeatures =
+                parent.optJSONObject(KEY_VK_KHR_PRESENT_MODE_FIFO_LATEST_READY);
         if (khrPresentModeFifoLatestReadyFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_PRESENT_MODE_FIFO_LATEST_READY));
             {
-                JSONObject presentModeFifoLatestReadyFeaturesKHR = khrPresentModeFifoLatestReadyFeatures.getJSONObject(KEY_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_KHR);
+                JSONObject presentModeFifoLatestReadyFeaturesKHR =
+                        khrPresentModeFifoLatestReadyFeatures.getJSONObject(
+                                KEY_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_KHR));
                 {
-                    emitBoolean(store, presentModeFifoLatestReadyFeaturesKHR, KEY_PRESENT_MODE_FIFO_LATEST_READY);
+                    emitBoolean(
+                            store,
+                            presentModeFifoLatestReadyFeaturesKHR,
+                            KEY_PRESENT_MODE_FIFO_LATEST_READY);
                 }
                 store.endGroup();
             }
@@ -5264,13 +7603,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRPresentWait(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrPresentWaitFeatures = parent.optJSONObject(KEY_VK_KHR_PRESENT_WAIT);
         if (khrPresentWaitFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_PRESENT_WAIT));
             {
-                JSONObject presentWaitFeaturesKHR = khrPresentWaitFeatures.getJSONObject(KEY_PRESENT_WAIT_FEATURES_KHR);
+                JSONObject presentWaitFeaturesKHR =
+                        khrPresentWaitFeatures.getJSONObject(KEY_PRESENT_WAIT_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_PRESENT_WAIT_FEATURES_KHR));
                 {
                     emitBoolean(store, presentWaitFeaturesKHR, KEY_PRESENT_WAIT);
@@ -5282,13 +7621,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRPresentWait2(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrPresentWait2Features = parent.optJSONObject(KEY_VK_KHR_PRESENT_WAIT2);
         if (khrPresentWait2Features != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_PRESENT_WAIT2));
             {
-                JSONObject presentWait2FeaturesKHR = khrPresentWait2Features.getJSONObject(KEY_PRESENT_WAIT_2_FEATURES_KHR);
+                JSONObject presentWait2FeaturesKHR =
+                        khrPresentWait2Features.getJSONObject(KEY_PRESENT_WAIT_2_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_PRESENT_WAIT_2_FEATURES_KHR));
                 {
                     emitBoolean(store, presentWait2FeaturesKHR, KEY_PRESENT_WAIT_2);
@@ -5300,13 +7639,14 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRPushDescriptor(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrPushDescriptorProperties = parent.optJSONObject(KEY_VK_KHR_PUSH_DESCRIPTOR);
         if (khrPushDescriptorProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_PUSH_DESCRIPTOR));
             {
-                JSONObject pushDescriptorPropertiesKHR = khrPushDescriptorProperties.getJSONObject(KEY_PUSH_DESCRIPTOR_PROPERTIES_KHR);
+                JSONObject pushDescriptorPropertiesKHR =
+                        khrPushDescriptorProperties.getJSONObject(
+                                KEY_PUSH_DESCRIPTOR_PROPERTIES_KHR);
                 store.startGroup(getConvertedName(KEY_PUSH_DESCRIPTOR_PROPERTIES_KHR));
                 {
                     emitLong(store, pushDescriptorPropertiesKHR, KEY_MAX_PUSH_DESCRIPTORS);
@@ -5318,13 +7658,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRRayQuery(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrRayQueryFeatures = parent.optJSONObject(KEY_VK_KHR_RAY_QUERY);
         if (khrRayQueryFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_RAY_QUERY));
             {
-                JSONObject rayQueryFeaturesKHR = khrRayQueryFeatures.getJSONObject(KEY_RAY_QUERY_FEATURES_KHR);
+                JSONObject rayQueryFeaturesKHR =
+                        khrRayQueryFeatures.getJSONObject(KEY_RAY_QUERY_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_RAY_QUERY_FEATURES_KHR));
                 {
                     emitBoolean(store, rayQueryFeaturesKHR, KEY_RAY_QUERY);
@@ -5336,17 +7676,25 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRRayTracingMaintenance1(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrRayTracingMaintenance1Features = parent.optJSONObject(KEY_VK_KHR_RAY_TRACING_MAINTENANCE1);
+            throws IOException, JSONException {
+        JSONObject khrRayTracingMaintenance1Features =
+                parent.optJSONObject(KEY_VK_KHR_RAY_TRACING_MAINTENANCE1);
         if (khrRayTracingMaintenance1Features != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_RAY_TRACING_MAINTENANCE1));
             {
-                JSONObject rayTracingMaintenance1FeaturesKHR = khrRayTracingMaintenance1Features.getJSONObject(KEY_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR);
+                JSONObject rayTracingMaintenance1FeaturesKHR =
+                        khrRayTracingMaintenance1Features.getJSONObject(
+                                KEY_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR));
                 {
-                    emitBoolean(store, rayTracingMaintenance1FeaturesKHR, KEY_RAY_TRACING_MAINTENANCE_1);
-                    emitBoolean(store, rayTracingMaintenance1FeaturesKHR, KEY_RAY_TRACING_PIPELINE_TRACE_RAYS_INDIRECT_2);
+                    emitBoolean(
+                            store,
+                            rayTracingMaintenance1FeaturesKHR,
+                            KEY_RAY_TRACING_MAINTENANCE_1);
+                    emitBoolean(
+                            store,
+                            rayTracingMaintenance1FeaturesKHR,
+                            KEY_RAY_TRACING_PIPELINE_TRACE_RAYS_INDIRECT_2);
                 }
                 store.endGroup();
             }
@@ -5355,33 +7703,62 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRRayTracingPipeline(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrRayTracingPipelineFeatures = parent.optJSONObject(KEY_VK_KHR_RAY_TRACING_PIPELINE);
+            throws IOException, JSONException {
+        JSONObject khrRayTracingPipelineFeatures =
+                parent.optJSONObject(KEY_VK_KHR_RAY_TRACING_PIPELINE);
         if (khrRayTracingPipelineFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_RAY_TRACING_PIPELINE));
             {
-                JSONObject rayTracingPipelineFeaturesKHR = khrRayTracingPipelineFeatures.getJSONObject(KEY_RAY_TRACING_PIPELINE_FEATURES_KHR);
+                JSONObject rayTracingPipelineFeaturesKHR =
+                        khrRayTracingPipelineFeatures.getJSONObject(
+                                KEY_RAY_TRACING_PIPELINE_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_RAY_TRACING_PIPELINE_FEATURES_KHR));
                 {
                     emitBoolean(store, rayTracingPipelineFeaturesKHR, KEY_RAY_TRACING_PIPELINE);
-                    emitBoolean(store, rayTracingPipelineFeaturesKHR, KEY_RAY_TRACING_PIPELINE_SHADER_GROUP_HANDLE_CAPTURE_REPLAY);
-                    emitBoolean(store, rayTracingPipelineFeaturesKHR, KEY_RAY_TRACING_PIPELINE_SHADER_GROUP_HANDLE_CAPTURE_REPLAY_MIXED);
-                    emitBoolean(store, rayTracingPipelineFeaturesKHR, KEY_RAY_TRACING_PIPELINE_TRACE_RAYS_INDIRECT);
-                    emitBoolean(store, rayTracingPipelineFeaturesKHR, KEY_RAY_TRAVERSAL_PRIMITIVE_CULLING);
+                    emitBoolean(
+                            store,
+                            rayTracingPipelineFeaturesKHR,
+                            KEY_RAY_TRACING_PIPELINE_SHADER_GROUP_HANDLE_CAPTURE_REPLAY);
+                    emitBoolean(
+                            store,
+                            rayTracingPipelineFeaturesKHR,
+                            KEY_RAY_TRACING_PIPELINE_SHADER_GROUP_HANDLE_CAPTURE_REPLAY_MIXED);
+                    emitBoolean(
+                            store,
+                            rayTracingPipelineFeaturesKHR,
+                            KEY_RAY_TRACING_PIPELINE_TRACE_RAYS_INDIRECT);
+                    emitBoolean(
+                            store,
+                            rayTracingPipelineFeaturesKHR,
+                            KEY_RAY_TRAVERSAL_PRIMITIVE_CULLING);
                 }
                 store.endGroup();
-                JSONObject rayTracingPipelinePropertiesKHR = khrRayTracingPipelineFeatures.getJSONObject(KEY_RAY_TRACING_PIPELINE_PROPERTIES_KHR);
+                JSONObject rayTracingPipelinePropertiesKHR =
+                        khrRayTracingPipelineFeatures.getJSONObject(
+                                KEY_RAY_TRACING_PIPELINE_PROPERTIES_KHR);
                 store.startGroup(getConvertedName(KEY_RAY_TRACING_PIPELINE_PROPERTIES_KHR));
                 {
                     emitLong(store, rayTracingPipelinePropertiesKHR, KEY_SHADER_GROUP_HANDLE_SIZE);
                     emitLong(store, rayTracingPipelinePropertiesKHR, KEY_MAX_RAY_RECURSION_DEPTH);
                     emitLong(store, rayTracingPipelinePropertiesKHR, KEY_MAX_SHADER_GROUP_STRIDE);
-                    emitLong(store, rayTracingPipelinePropertiesKHR, KEY_SHADER_GROUP_BASE_ALIGNMENT);
-                    emitLong(store, rayTracingPipelinePropertiesKHR, KEY_SHADER_GROUP_HANDLE_CAPTURE_REPLAY_SIZE);
-                    emitLong(store, rayTracingPipelinePropertiesKHR, KEY_MAX_RAY_DISPATCH_INVOCATION_COUNT);
-                    emitLong(store, rayTracingPipelinePropertiesKHR, KEY_SHADER_GROUP_HANDLE_ALIGNMENT);
-                    emitLong(store, rayTracingPipelinePropertiesKHR, KEY_MAX_RAY_HIT_ATTRIBUTE_SIZE);
+                    emitLong(
+                            store,
+                            rayTracingPipelinePropertiesKHR,
+                            KEY_SHADER_GROUP_BASE_ALIGNMENT);
+                    emitLong(
+                            store,
+                            rayTracingPipelinePropertiesKHR,
+                            KEY_SHADER_GROUP_HANDLE_CAPTURE_REPLAY_SIZE);
+                    emitLong(
+                            store,
+                            rayTracingPipelinePropertiesKHR,
+                            KEY_MAX_RAY_DISPATCH_INVOCATION_COUNT);
+                    emitLong(
+                            store,
+                            rayTracingPipelinePropertiesKHR,
+                            KEY_SHADER_GROUP_HANDLE_ALIGNMENT);
+                    emitLong(
+                            store, rayTracingPipelinePropertiesKHR, KEY_MAX_RAY_HIT_ATTRIBUTE_SIZE);
                 }
                 store.endGroup();
             }
@@ -5390,16 +7767,21 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRRayTracingPositionFetch(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrRayTracingPositionFetchFeatures = parent.optJSONObject(KEY_VK_KHR_RAY_TRACING_POSITION_FETCH);
+            throws IOException, JSONException {
+        JSONObject khrRayTracingPositionFetchFeatures =
+                parent.optJSONObject(KEY_VK_KHR_RAY_TRACING_POSITION_FETCH);
         if (khrRayTracingPositionFetchFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_RAY_TRACING_POSITION_FETCH));
             {
-                JSONObject rayTracingPositionFetchFeaturesKHR = khrRayTracingPositionFetchFeatures.getJSONObject(KEY_RAY_TRACING_POSITION_FETCH_FEATURES_KHR);
+                JSONObject rayTracingPositionFetchFeaturesKHR =
+                        khrRayTracingPositionFetchFeatures.getJSONObject(
+                                KEY_RAY_TRACING_POSITION_FETCH_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_RAY_TRACING_POSITION_FETCH_FEATURES_KHR));
                 {
-                    emitBoolean(store, rayTracingPositionFetchFeaturesKHR, KEY_RAY_TRACING_POSITION_FETCH);
+                    emitBoolean(
+                            store,
+                            rayTracingPositionFetchFeaturesKHR,
+                            KEY_RAY_TRACING_POSITION_FETCH);
                 }
                 store.endGroup();
             }
@@ -5408,13 +7790,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRRobustness2(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrRobustness2Features = parent.optJSONObject(KEY_VK_KHR_ROBUSTNESS2);
         if (khrRobustness2Features != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_ROBUSTNESS2));
             {
-                JSONObject robustness2FeaturesKHR = khrRobustness2Features.getJSONObject(KEY_ROBUSTNESS_2_FEATURES_KHR);
+                JSONObject robustness2FeaturesKHR =
+                        khrRobustness2Features.getJSONObject(KEY_ROBUSTNESS_2_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_ROBUSTNESS_2_FEATURES_KHR));
                 {
                     emitBoolean(store, robustness2FeaturesKHR, KEY_ROBUST_BUFFER_ACCESS_2);
@@ -5422,11 +7804,18 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     emitBoolean(store, robustness2FeaturesKHR, KEY_NULL_DESCRIPTOR);
                 }
                 store.endGroup();
-                JSONObject robustness2PropertiesKHR = khrRobustness2Features.getJSONObject(KEY_ROBUSTNESS_2_PROPERTIES_KHR);
+                JSONObject robustness2PropertiesKHR =
+                        khrRobustness2Features.getJSONObject(KEY_ROBUSTNESS_2_PROPERTIES_KHR);
                 store.startGroup(getConvertedName(KEY_ROBUSTNESS_2_PROPERTIES_KHR));
                 {
-                    emitString(store, robustness2PropertiesKHR, KEY_ROBUST_STORAGE_BUFFER_ACCESS_SIZE_ALIGNMENT);
-                    emitString(store, robustness2PropertiesKHR, KEY_ROBUST_UNIFORM_BUFFER_ACCESS_SIZE_ALIGNMENT);
+                    emitString(
+                            store,
+                            robustness2PropertiesKHR,
+                            KEY_ROBUST_STORAGE_BUFFER_ACCESS_SIZE_ALIGNMENT);
+                    emitString(
+                            store,
+                            robustness2PropertiesKHR,
+                            KEY_ROBUST_UNIFORM_BUFFER_ACCESS_SIZE_ALIGNMENT);
                 }
                 store.endGroup();
             }
@@ -5435,16 +7824,19 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRSamplerYcbcrConversion(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrSamplerYcbcrConversionFeatures = parent.optJSONObject(KEY_VK_KHR_SAMPLER_YCBCR_CONVERSION);
+            throws IOException, JSONException {
+        JSONObject khrSamplerYcbcrConversionFeatures =
+                parent.optJSONObject(KEY_VK_KHR_SAMPLER_YCBCR_CONVERSION);
         if (khrSamplerYcbcrConversionFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_SAMPLER_YCBCR_CONVERSION));
             {
-                JSONObject samplerYcbcrConversionFeaturesKHR = khrSamplerYcbcrConversionFeatures.getJSONObject(KEY_SAMPLER_YCBCR_CONVERSION_FEATURES_KHR);
+                JSONObject samplerYcbcrConversionFeaturesKHR =
+                        khrSamplerYcbcrConversionFeatures.getJSONObject(
+                                KEY_SAMPLER_YCBCR_CONVERSION_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_SAMPLER_YCBCR_CONVERSION_FEATURES_KHR));
                 {
-                    emitBoolean(store, samplerYcbcrConversionFeaturesKHR, KEY_SAMPLER_YCBCR_CONVERSION);
+                    emitBoolean(
+                            store, samplerYcbcrConversionFeaturesKHR, KEY_SAMPLER_YCBCR_CONVERSION);
                 }
                 store.endGroup();
             }
@@ -5452,17 +7844,22 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkKHRSeparateDepthStencilLayouts(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrSeparateDepthStencilLayoutsFeatures = parent.optJSONObject(KEY_VK_KHR_SEPARATE_DEPTH_STENCIL_LAYOUTS);
+    private static void emitVkKHRSeparateDepthStencilLayouts(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject khrSeparateDepthStencilLayoutsFeatures =
+                parent.optJSONObject(KEY_VK_KHR_SEPARATE_DEPTH_STENCIL_LAYOUTS);
         if (khrSeparateDepthStencilLayoutsFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_SEPARATE_DEPTH_STENCIL_LAYOUTS));
             {
-                JSONObject separateDepthStencilLayoutsFeaturesKHR = khrSeparateDepthStencilLayoutsFeatures.getJSONObject(KEY_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES_KHR);
+                JSONObject separateDepthStencilLayoutsFeaturesKHR =
+                        khrSeparateDepthStencilLayoutsFeatures.getJSONObject(
+                                KEY_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES_KHR));
                 {
-                    emitBoolean(store, separateDepthStencilLayoutsFeaturesKHR, KEY_SEPARATE_DEPTH_STENCIL_LAYOUTS);
+                    emitBoolean(
+                            store,
+                            separateDepthStencilLayoutsFeaturesKHR,
+                            KEY_SEPARATE_DEPTH_STENCIL_LAYOUTS);
                 }
                 store.endGroup();
             }
@@ -5471,17 +7868,21 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRShaderAtomicInt64(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrShaderAtomicInt64Features = parent.optJSONObject(KEY_VK_KHR_SHADER_ATOMIC_INT64);
+            throws IOException, JSONException {
+        JSONObject khrShaderAtomicInt64Features =
+                parent.optJSONObject(KEY_VK_KHR_SHADER_ATOMIC_INT64);
         if (khrShaderAtomicInt64Features != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_ATOMIC_INT64));
             {
-                JSONObject shaderAtomicInt64FeaturesKHR = khrShaderAtomicInt64Features.getJSONObject(KEY_SHADER_ATOMIC_INT_64_FEATURES_KHR);
+                JSONObject shaderAtomicInt64FeaturesKHR =
+                        khrShaderAtomicInt64Features.getJSONObject(
+                                KEY_SHADER_ATOMIC_INT_64_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_SHADER_ATOMIC_INT_64_FEATURES_KHR));
                 {
-                    emitBoolean(store, shaderAtomicInt64FeaturesKHR, KEY_SHADER_BUFFER_INT64_ATOMICS);
-                    emitBoolean(store, shaderAtomicInt64FeaturesKHR, KEY_SHADER_SHARED_INT64_ATOMICS);
+                    emitBoolean(
+                            store, shaderAtomicInt64FeaturesKHR, KEY_SHADER_BUFFER_INT64_ATOMICS);
+                    emitBoolean(
+                            store, shaderAtomicInt64FeaturesKHR, KEY_SHADER_SHARED_INT64_ATOMICS);
                 }
                 store.endGroup();
             }
@@ -5490,18 +7891,22 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRShaderBfloat16(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrShaderBfloat16Features = parent.optJSONObject(KEY_VK_KHR_SHADER_BFLOAT16);
         if (khrShaderBfloat16Features != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_BFLOAT16));
             {
-                JSONObject shaderBfloat16FeaturesKHR = khrShaderBfloat16Features.getJSONObject(KEY_SHADER_BFLOAT_16_FEATURES_KHR);
+                JSONObject shaderBfloat16FeaturesKHR =
+                        khrShaderBfloat16Features.getJSONObject(KEY_SHADER_BFLOAT_16_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_SHADER_BFLOAT_16_FEATURES_KHR));
                 {
                     emitBoolean(store, shaderBfloat16FeaturesKHR, KEY_SHADER_B_FLOAT_16_TYPE);
-                    emitBoolean(store, shaderBfloat16FeaturesKHR, KEY_SHADER_B_FLOAT_16_DOT_PRODUCT);
-                    emitBoolean(store, shaderBfloat16FeaturesKHR, KEY_SHADER_B_FLOAT_16_COOPERATIVE_MATRIX);
+                    emitBoolean(
+                            store, shaderBfloat16FeaturesKHR, KEY_SHADER_B_FLOAT_16_DOT_PRODUCT);
+                    emitBoolean(
+                            store,
+                            shaderBfloat16FeaturesKHR,
+                            KEY_SHADER_B_FLOAT_16_COOPERATIVE_MATRIX);
                 }
                 store.endGroup();
             }
@@ -5510,13 +7915,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRShaderClock(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrShaderClockFeatures = parent.optJSONObject(KEY_VK_KHR_SHADER_CLOCK);
         if (khrShaderClockFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_CLOCK));
             {
-                JSONObject shaderClockFeaturesKHR = khrShaderClockFeatures.getJSONObject(KEY_SHADER_CLOCK_FEATURES_KHR);
+                JSONObject shaderClockFeaturesKHR =
+                        khrShaderClockFeatures.getJSONObject(KEY_SHADER_CLOCK_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_SHADER_CLOCK_FEATURES_KHR));
                 {
                     emitBoolean(store, shaderClockFeaturesKHR, KEY_SHADER_SUBGROUP_CLOCK);
@@ -5529,13 +7934,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRShaderExpectAssume(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrShaderExpectAssumeFeatures = parent.optJSONObject(KEY_VK_KHR_SHADER_EXPECT_ASSUME);
+            throws IOException, JSONException {
+        JSONObject khrShaderExpectAssumeFeatures =
+                parent.optJSONObject(KEY_VK_KHR_SHADER_EXPECT_ASSUME);
         if (khrShaderExpectAssumeFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_EXPECT_ASSUME));
             {
-                JSONObject shaderExpectAssumeFeaturesKHR = khrShaderExpectAssumeFeatures.getJSONObject(KEY_SHADER_EXPECT_ASSUME_FEATURES_KHR);
+                JSONObject shaderExpectAssumeFeaturesKHR =
+                        khrShaderExpectAssumeFeatures.getJSONObject(
+                                KEY_SHADER_EXPECT_ASSUME_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_SHADER_EXPECT_ASSUME_FEATURES_KHR));
                 {
                     emitBoolean(store, shaderExpectAssumeFeaturesKHR, KEY_SHADER_EXPECT_ASSUME);
@@ -5547,20 +7954,23 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRShaderFloat16Int8(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrShaderFloat16Int8Features = parent.optJSONObject(KEY_VK_KHR_SHADER_FLOAT16_INT8);
+            throws IOException, JSONException {
+        JSONObject khrShaderFloat16Int8Features =
+                parent.optJSONObject(KEY_VK_KHR_SHADER_FLOAT16_INT8);
         if (khrShaderFloat16Int8Features != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_FLOAT16_INT8));
             {
-                JSONObject shaderFloat16Int8FeaturesKHR = khrShaderFloat16Int8Features.getJSONObject(KEY_SHADER_FLOAT16_INT8_FEATURES_KHR);
+                JSONObject shaderFloat16Int8FeaturesKHR =
+                        khrShaderFloat16Int8Features.getJSONObject(
+                                KEY_SHADER_FLOAT16_INT8_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_SHADER_FLOAT16_INT8_FEATURES_KHR));
                 {
                     emitBoolean(store, shaderFloat16Int8FeaturesKHR, KEY_SHADER_FLOAT16);
                     emitBoolean(store, shaderFloat16Int8FeaturesKHR, KEY_SHADER_INT8);
                 }
                 store.endGroup();
-                JSONObject float16Int8FeaturesKHR = khrShaderFloat16Int8Features.getJSONObject(KEY_FLOAT16_INT8_FEATURES_KHR);
+                JSONObject float16Int8FeaturesKHR =
+                        khrShaderFloat16Int8Features.getJSONObject(KEY_FLOAT16_INT8_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_FLOAT16_INT8_FEATURES_KHR));
                 {
                     emitBoolean(store, float16Int8FeaturesKHR, KEY_SHADER_FLOAT16);
@@ -5573,32 +7983,72 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRShaderFloatControls(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrFloatControlsProperties = parent.optJSONObject(KEY_VK_KHR_SHADER_FLOAT_CONTROLS);
+            throws IOException, JSONException {
+        JSONObject khrFloatControlsProperties =
+                parent.optJSONObject(KEY_VK_KHR_SHADER_FLOAT_CONTROLS);
         if (khrFloatControlsProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_FLOAT_CONTROLS));
             {
-                JSONObject floatControlsPropertiesKHR = khrFloatControlsProperties.getJSONObject(KEY_FLOAT_CONTROLS_PROPERTIES_KHR);
+                JSONObject floatControlsPropertiesKHR =
+                        khrFloatControlsProperties.getJSONObject(KEY_FLOAT_CONTROLS_PROPERTIES_KHR);
                 store.startGroup(getConvertedName(KEY_FLOAT_CONTROLS_PROPERTIES_KHR));
                 {
                     emitLong(store, floatControlsPropertiesKHR, KEY_DENORM_BEHAVIOR_INDEPENDENCE);
                     emitLong(store, floatControlsPropertiesKHR, KEY_ROUNDING_MODE_INDEPENDENCE);
-                    emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT16);
-                    emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT32);
-                    emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT64);
-                    emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_DENORM_PRESERVE_FLOAT16);
-                    emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_DENORM_PRESERVE_FLOAT32);
-                    emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_DENORM_PRESERVE_FLOAT64);
-                    emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT16);
-                    emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT32);
-                    emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT64);
-                    emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_ROUNDING_MODE_RTE_FLOAT16);
-                    emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_ROUNDING_MODE_RTE_FLOAT32);
-                    emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_ROUNDING_MODE_RTE_FLOAT64);
-                    emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT16);
-                    emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT32);
-                    emitBoolean(store, floatControlsPropertiesKHR, KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT64);
+                    emitBoolean(
+                            store,
+                            floatControlsPropertiesKHR,
+                            KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT16);
+                    emitBoolean(
+                            store,
+                            floatControlsPropertiesKHR,
+                            KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT32);
+                    emitBoolean(
+                            store,
+                            floatControlsPropertiesKHR,
+                            KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT64);
+                    emitBoolean(
+                            store, floatControlsPropertiesKHR, KEY_SHADER_DENORM_PRESERVE_FLOAT16);
+                    emitBoolean(
+                            store, floatControlsPropertiesKHR, KEY_SHADER_DENORM_PRESERVE_FLOAT32);
+                    emitBoolean(
+                            store, floatControlsPropertiesKHR, KEY_SHADER_DENORM_PRESERVE_FLOAT64);
+                    emitBoolean(
+                            store,
+                            floatControlsPropertiesKHR,
+                            KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT16);
+                    emitBoolean(
+                            store,
+                            floatControlsPropertiesKHR,
+                            KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT32);
+                    emitBoolean(
+                            store,
+                            floatControlsPropertiesKHR,
+                            KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT64);
+                    emitBoolean(
+                            store,
+                            floatControlsPropertiesKHR,
+                            KEY_SHADER_ROUNDING_MODE_RTE_FLOAT16);
+                    emitBoolean(
+                            store,
+                            floatControlsPropertiesKHR,
+                            KEY_SHADER_ROUNDING_MODE_RTE_FLOAT32);
+                    emitBoolean(
+                            store,
+                            floatControlsPropertiesKHR,
+                            KEY_SHADER_ROUNDING_MODE_RTE_FLOAT64);
+                    emitBoolean(
+                            store,
+                            floatControlsPropertiesKHR,
+                            KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT16);
+                    emitBoolean(
+                            store,
+                            floatControlsPropertiesKHR,
+                            KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT32);
+                    emitBoolean(
+                            store,
+                            floatControlsPropertiesKHR,
+                            KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT64);
                 }
                 store.endGroup();
             }
@@ -5607,13 +8057,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRShaderFloatControls2(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrShaderFloatControls2Features = parent.optJSONObject(KEY_VK_KHR_SHADER_FLOAT_CONTROLS2);
+            throws IOException, JSONException {
+        JSONObject khrShaderFloatControls2Features =
+                parent.optJSONObject(KEY_VK_KHR_SHADER_FLOAT_CONTROLS2);
         if (khrShaderFloatControls2Features != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_FLOAT_CONTROLS2));
             {
-                JSONObject shaderFloatControls2FeaturesKHR = khrShaderFloatControls2Features.getJSONObject(KEY_SHADER_FLOAT_CONTROLS_2_FEATURES_KHR);
+                JSONObject shaderFloatControls2FeaturesKHR =
+                        khrShaderFloatControls2Features.getJSONObject(
+                                KEY_SHADER_FLOAT_CONTROLS_2_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_SHADER_FLOAT_CONTROLS_2_FEATURES_KHR));
                 {
                     emitBoolean(store, shaderFloatControls2FeaturesKHR, KEY_SHADER_FLOAT_CONTROLS2);
@@ -5625,13 +8077,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRShaderFma(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrShaderFmaFeatures = parent.optJSONObject(KEY_VK_KHR_SHADER_FMA);
         if (khrShaderFmaFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_FMA));
             {
-                JSONObject shaderFmaFeaturesKHR = khrShaderFmaFeatures.getJSONObject(KEY_SHADER_FMA_FEATURES_KHR);
+                JSONObject shaderFmaFeaturesKHR =
+                        khrShaderFmaFeatures.getJSONObject(KEY_SHADER_FMA_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_SHADER_FMA_FEATURES_KHR));
                 {
                     emitBoolean(store, shaderFmaFeaturesKHR, KEY_SHADER_FMA_FLOAT_16);
@@ -5645,51 +8097,148 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRShaderIntegerDotProduct(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrShaderIntegerDotProductFeatures = parent.optJSONObject(KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT);
+            throws IOException, JSONException {
+        JSONObject khrShaderIntegerDotProductFeatures =
+                parent.optJSONObject(KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT);
         if (khrShaderIntegerDotProductFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT));
             {
-                JSONObject shaderIntegerDotProductFeaturesKHR = khrShaderIntegerDotProductFeatures.getJSONObject(KEY_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR);
+                JSONObject shaderIntegerDotProductFeaturesKHR =
+                        khrShaderIntegerDotProductFeatures.getJSONObject(
+                                KEY_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR));
                 {
-                    emitBoolean(store, shaderIntegerDotProductFeaturesKHR, KEY_SHADER_INTEGER_DOT_PRODUCT);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductFeaturesKHR,
+                            KEY_SHADER_INTEGER_DOT_PRODUCT);
                 }
                 store.endGroup();
-                JSONObject shaderIntegerDotProductPropertiesKHR = khrShaderIntegerDotProductFeatures.getJSONObject(KEY_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES_KHR);
+                JSONObject shaderIntegerDotProductPropertiesKHR =
+                        khrShaderIntegerDotProductFeatures.getJSONObject(
+                                KEY_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES_KHR);
                 store.startGroup(getConvertedName(KEY_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES_KHR));
                 {
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_8BIT_UNSIGNED_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_8BIT_SIGNED_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_8BIT_MIXED_SIGNEDNESS_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_4X8BIT_PACKED_UNSIGNED_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_4X8BIT_PACKED_SIGNED_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_4X8BIT_PACKED_MIXED_SIGNEDNESS_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_16BIT_UNSIGNED_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_16BIT_SIGNED_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_16BIT_MIXED_SIGNEDNESS_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_32BIT_UNSIGNED_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_32BIT_SIGNED_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_32BIT_MIXED_SIGNEDNESS_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_64BIT_UNSIGNED_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_64BIT_SIGNED_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_64BIT_MIXED_SIGNEDNESS_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_8BIT_UNSIGNED_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_8BIT_SIGNED_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_8BIT_MIXED_SIGNEDNESS_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_4X8BIT_PACKED_UNSIGNED_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_4X8BIT_PACKED_SIGNED_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_4X8BIT_PACKED_MIXED_SIGNEDNESS_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_16BIT_UNSIGNED_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_16BIT_SIGNED_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_16BIT_MIXED_SIGNEDNESS_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_32BIT_UNSIGNED_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_32BIT_SIGNED_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_32BIT_MIXED_SIGNEDNESS_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_UNSIGNED_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_SIGNED_ACCELERATED);
-                    emitBoolean(store, shaderIntegerDotProductPropertiesKHR, KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_MIXED_SIGNEDNESS_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_8BIT_UNSIGNED_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_8BIT_SIGNED_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_8BIT_MIXED_SIGNEDNESS_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_4X8BIT_PACKED_UNSIGNED_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_4X8BIT_PACKED_SIGNED_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_4X8BIT_PACKED_MIXED_SIGNEDNESS_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_16BIT_UNSIGNED_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_16BIT_SIGNED_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_16BIT_MIXED_SIGNEDNESS_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_32BIT_UNSIGNED_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_32BIT_SIGNED_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_32BIT_MIXED_SIGNEDNESS_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_64BIT_UNSIGNED_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_64BIT_SIGNED_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_64BIT_MIXED_SIGNEDNESS_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_8BIT_UNSIGNED_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_8BIT_SIGNED_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_8BIT_MIXED_SIGNEDNESS_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_4X8BIT_PACKED_UNSIGNED_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_4X8BIT_PACKED_SIGNED_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_4X8BIT_PACKED_MIXED_SIGNEDNESS_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_16BIT_UNSIGNED_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_16BIT_SIGNED_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_16BIT_MIXED_SIGNEDNESS_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_32BIT_UNSIGNED_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_32BIT_SIGNED_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_32BIT_MIXED_SIGNEDNESS_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_UNSIGNED_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_SIGNED_ACCELERATED);
+                    emitBoolean(
+                            store,
+                            shaderIntegerDotProductPropertiesKHR,
+                            KEY_INTEGER_DOT_PRODUCT_ACCUMULATING_SATURATING_64BIT_MIXED_SIGNEDNESS_ACCELERATED);
                 }
                 store.endGroup();
             }
@@ -5697,17 +8246,22 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkKHRShaderMaximalReconvergence(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrShaderMaximalReconvergenceFeatures = parent.optJSONObject(KEY_VK_KHR_SHADER_MAXIMAL_RECONVERGENCE);
+    private static void emitVkKHRShaderMaximalReconvergence(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject khrShaderMaximalReconvergenceFeatures =
+                parent.optJSONObject(KEY_VK_KHR_SHADER_MAXIMAL_RECONVERGENCE);
         if (khrShaderMaximalReconvergenceFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_MAXIMAL_RECONVERGENCE));
             {
-                JSONObject shaderMaximalReconvergenceFeaturesKHR = khrShaderMaximalReconvergenceFeatures.getJSONObject(KEY_SHADER_MAXIMAL_RECONVERGENCE_FEATURES_KHR);
+                JSONObject shaderMaximalReconvergenceFeaturesKHR =
+                        khrShaderMaximalReconvergenceFeatures.getJSONObject(
+                                KEY_SHADER_MAXIMAL_RECONVERGENCE_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_SHADER_MAXIMAL_RECONVERGENCE_FEATURES_KHR));
                 {
-                    emitBoolean(store, shaderMaximalReconvergenceFeaturesKHR, KEY_SHADER_MAXIMAL_RECONVERGENCE);
+                    emitBoolean(
+                            store,
+                            shaderMaximalReconvergenceFeaturesKHR,
+                            KEY_SHADER_MAXIMAL_RECONVERGENCE);
                 }
                 store.endGroup();
             }
@@ -5716,13 +8270,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRShaderQuadControl(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrShaderQuadControlFeatures = parent.optJSONObject(KEY_VK_KHR_SHADER_QUAD_CONTROL);
+            throws IOException, JSONException {
+        JSONObject khrShaderQuadControlFeatures =
+                parent.optJSONObject(KEY_VK_KHR_SHADER_QUAD_CONTROL);
         if (khrShaderQuadControlFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_QUAD_CONTROL));
             {
-                JSONObject shaderQuadControlFeaturesKHR = khrShaderQuadControlFeatures.getJSONObject(KEY_SHADER_QUAD_CONTROL_FEATURES_KHR);
+                JSONObject shaderQuadControlFeaturesKHR =
+                        khrShaderQuadControlFeatures.getJSONObject(
+                                KEY_SHADER_QUAD_CONTROL_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_SHADER_QUAD_CONTROL_FEATURES_KHR));
                 {
                     emitBoolean(store, shaderQuadControlFeaturesKHR, KEY_SHADER_QUAD_CONTROL);
@@ -5733,17 +8289,23 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkKHRShaderRelaxedExtendedInstruction(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrShaderRelaxedExtendedInstructionFeatures = parent.optJSONObject(KEY_VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION);
+    private static void emitVkKHRShaderRelaxedExtendedInstruction(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject khrShaderRelaxedExtendedInstructionFeatures =
+                parent.optJSONObject(KEY_VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION);
         if (khrShaderRelaxedExtendedInstructionFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION));
             {
-                JSONObject shaderRelaxedExtendedInstructionFeaturesKHR = khrShaderRelaxedExtendedInstructionFeatures.getJSONObject(KEY_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR);
-                store.startGroup(getConvertedName(KEY_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR));
+                JSONObject shaderRelaxedExtendedInstructionFeaturesKHR =
+                        khrShaderRelaxedExtendedInstructionFeatures.getJSONObject(
+                                KEY_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR);
+                store.startGroup(
+                        getConvertedName(KEY_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR));
                 {
-                    emitBoolean(store, shaderRelaxedExtendedInstructionFeaturesKHR, KEY_SHADER_RELAXED_EXTENDED_INSTRUCTION);
+                    emitBoolean(
+                            store,
+                            shaderRelaxedExtendedInstructionFeaturesKHR,
+                            KEY_SHADER_RELAXED_EXTENDED_INSTRUCTION);
                 }
                 store.endGroup();
             }
@@ -5751,17 +8313,22 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkKHRShaderSubgroupExtendedTypes(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrShaderSubgroupExtendedTypesFeatures = parent.optJSONObject(KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES);
+    private static void emitVkKHRShaderSubgroupExtendedTypes(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject khrShaderSubgroupExtendedTypesFeatures =
+                parent.optJSONObject(KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES);
         if (khrShaderSubgroupExtendedTypesFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES));
             {
-                JSONObject shaderSubgroupExtendedTypesFeaturesKHR = khrShaderSubgroupExtendedTypesFeatures.getJSONObject(KEY_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES_KHR);
+                JSONObject shaderSubgroupExtendedTypesFeaturesKHR =
+                        khrShaderSubgroupExtendedTypesFeatures.getJSONObject(
+                                KEY_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES_KHR));
                 {
-                    emitBoolean(store, shaderSubgroupExtendedTypesFeaturesKHR, KEY_SHADER_SUBGROUP_EXTENDED_TYPES);
+                    emitBoolean(
+                            store,
+                            shaderSubgroupExtendedTypesFeaturesKHR,
+                            KEY_SHADER_SUBGROUP_EXTENDED_TYPES);
                 }
                 store.endGroup();
             }
@@ -5770,17 +8337,22 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRShaderSubgroupRotate(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrShaderSubgroupRotateFeatures = parent.optJSONObject(KEY_VK_KHR_SHADER_SUBGROUP_ROTATE);
+            throws IOException, JSONException {
+        JSONObject khrShaderSubgroupRotateFeatures =
+                parent.optJSONObject(KEY_VK_KHR_SHADER_SUBGROUP_ROTATE);
         if (khrShaderSubgroupRotateFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_SUBGROUP_ROTATE));
             {
-                JSONObject shaderSubgroupRotateFeaturesKHR = khrShaderSubgroupRotateFeatures.getJSONObject(KEY_SHADER_SUBGROUP_ROTATE_FEATURES_KHR);
+                JSONObject shaderSubgroupRotateFeaturesKHR =
+                        khrShaderSubgroupRotateFeatures.getJSONObject(
+                                KEY_SHADER_SUBGROUP_ROTATE_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_SHADER_SUBGROUP_ROTATE_FEATURES_KHR));
                 {
                     emitBoolean(store, shaderSubgroupRotateFeaturesKHR, KEY_SHADER_SUBGROUP_ROTATE);
-                    emitBoolean(store, shaderSubgroupRotateFeaturesKHR, KEY_SHADER_SUBGROUP_ROTATE_CLUSTERED);
+                    emitBoolean(
+                            store,
+                            shaderSubgroupRotateFeaturesKHR,
+                            KEY_SHADER_SUBGROUP_ROTATE_CLUSTERED);
                 }
                 store.endGroup();
             }
@@ -5788,17 +8360,23 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkKHRShaderSubgroupUniformControlFlow(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrShaderSubgroupUniformControlFlowFeatures = parent.optJSONObject(KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW);
+    private static void emitVkKHRShaderSubgroupUniformControlFlow(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject khrShaderSubgroupUniformControlFlowFeatures =
+                parent.optJSONObject(KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW);
         if (khrShaderSubgroupUniformControlFlowFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW));
             {
-                JSONObject shaderSubgroupUniformControlFlowFeaturesKHR = khrShaderSubgroupUniformControlFlowFeatures.getJSONObject(KEY_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_FEATURES_KHR);
-                store.startGroup(getConvertedName(KEY_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_FEATURES_KHR));
+                JSONObject shaderSubgroupUniformControlFlowFeaturesKHR =
+                        khrShaderSubgroupUniformControlFlowFeatures.getJSONObject(
+                                KEY_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_FEATURES_KHR);
+                store.startGroup(
+                        getConvertedName(KEY_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_FEATURES_KHR));
                 {
-                    emitBoolean(store, shaderSubgroupUniformControlFlowFeaturesKHR, KEY_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW);
+                    emitBoolean(
+                            store,
+                            shaderSubgroupUniformControlFlowFeaturesKHR,
+                            KEY_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW);
                 }
                 store.endGroup();
             }
@@ -5807,16 +8385,21 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRShaderTerminateInvocation(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrShaderTerminateInvocationFeatures = parent.optJSONObject(KEY_VK_KHR_SHADER_TERMINATE_INVOCATION);
+            throws IOException, JSONException {
+        JSONObject khrShaderTerminateInvocationFeatures =
+                parent.optJSONObject(KEY_VK_KHR_SHADER_TERMINATE_INVOCATION);
         if (khrShaderTerminateInvocationFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_TERMINATE_INVOCATION));
             {
-                JSONObject shaderTerminateInvocationFeaturesKHR = khrShaderTerminateInvocationFeatures.getJSONObject(KEY_SHADER_TERMINATE_INVOCATION_FEATURES_KHR);
+                JSONObject shaderTerminateInvocationFeaturesKHR =
+                        khrShaderTerminateInvocationFeatures.getJSONObject(
+                                KEY_SHADER_TERMINATE_INVOCATION_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_SHADER_TERMINATE_INVOCATION_FEATURES_KHR));
                 {
-                    emitBoolean(store, shaderTerminateInvocationFeaturesKHR, KEY_SHADER_TERMINATE_INVOCATION);
+                    emitBoolean(
+                            store,
+                            shaderTerminateInvocationFeaturesKHR,
+                            KEY_SHADER_TERMINATE_INVOCATION);
                 }
                 store.endGroup();
             }
@@ -5825,16 +8408,19 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRShaderUntypedPointers(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrShaderUntypedPointersFeatures = parent.optJSONObject(KEY_VK_KHR_SHADER_UNTYPED_POINTERS);
+            throws IOException, JSONException {
+        JSONObject khrShaderUntypedPointersFeatures =
+                parent.optJSONObject(KEY_VK_KHR_SHADER_UNTYPED_POINTERS);
         if (khrShaderUntypedPointersFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_SHADER_UNTYPED_POINTERS));
             {
-                JSONObject shaderUntypedPointersFeaturesKHR = khrShaderUntypedPointersFeatures.getJSONObject(KEY_SHADER_UNTYPED_POINTERS_FEATURES_KHR);
+                JSONObject shaderUntypedPointersFeaturesKHR =
+                        khrShaderUntypedPointersFeatures.getJSONObject(
+                                KEY_SHADER_UNTYPED_POINTERS_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_SHADER_UNTYPED_POINTERS_FEATURES_KHR));
                 {
-                    emitBoolean(store, shaderUntypedPointersFeaturesKHR, KEY_SHADER_UNTYPED_POINTERS);
+                    emitBoolean(
+                            store, shaderUntypedPointersFeaturesKHR, KEY_SHADER_UNTYPED_POINTERS);
                 }
                 store.endGroup();
             }
@@ -5843,16 +8429,19 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRSwapchainMaintenance1(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrSwapchainMaintenance1Features = parent.optJSONObject(KEY_VK_KHR_SWAPCHAIN_MAINTENANCE1);
+            throws IOException, JSONException {
+        JSONObject khrSwapchainMaintenance1Features =
+                parent.optJSONObject(KEY_VK_KHR_SWAPCHAIN_MAINTENANCE1);
         if (khrSwapchainMaintenance1Features != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_SWAPCHAIN_MAINTENANCE1));
             {
-                JSONObject swapchainMaintenance1FeaturesKHR = khrSwapchainMaintenance1Features.getJSONObject(KEY_SWAPCHAIN_MAINTENANCE_1_FEATURES_KHR);
+                JSONObject swapchainMaintenance1FeaturesKHR =
+                        khrSwapchainMaintenance1Features.getJSONObject(
+                                KEY_SWAPCHAIN_MAINTENANCE_1_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_SWAPCHAIN_MAINTENANCE_1_FEATURES_KHR));
                 {
-                    emitBoolean(store, swapchainMaintenance1FeaturesKHR, KEY_SWAPCHAIN_MAINTENANCE_1);
+                    emitBoolean(
+                            store, swapchainMaintenance1FeaturesKHR, KEY_SWAPCHAIN_MAINTENANCE_1);
                 }
                 store.endGroup();
             }
@@ -5861,13 +8450,14 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRSynchronization2(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrSynchronization2Features = parent.optJSONObject(KEY_VK_KHR_SYNCHRONIZATION2);
         if (khrSynchronization2Features != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_SYNCHRONIZATION2));
             {
-                JSONObject synchronization2FeaturesKHR = khrSynchronization2Features.getJSONObject(KEY_SYNCHRONIZATION_2_FEATURES_KHR);
+                JSONObject synchronization2FeaturesKHR =
+                        khrSynchronization2Features.getJSONObject(
+                                KEY_SYNCHRONIZATION_2_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_SYNCHRONIZATION_2_FEATURES_KHR));
                 {
                     emitBoolean(store, synchronization2FeaturesKHR, KEY_SYNCHRONIZATION2);
@@ -5879,22 +8469,29 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRTimelineSemaphore(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrTimelineSemaphoreFeatures = parent.optJSONObject(KEY_VK_KHR_TIMELINE_SEMAPHORE);
+            throws IOException, JSONException {
+        JSONObject khrTimelineSemaphoreFeatures =
+                parent.optJSONObject(KEY_VK_KHR_TIMELINE_SEMAPHORE);
         if (khrTimelineSemaphoreFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_TIMELINE_SEMAPHORE));
             {
-                JSONObject timelineSemaphoreFeaturesKHR = khrTimelineSemaphoreFeatures.getJSONObject(KEY_TIMELINE_SEMAPHORE_FEATURES_KHR);
+                JSONObject timelineSemaphoreFeaturesKHR =
+                        khrTimelineSemaphoreFeatures.getJSONObject(
+                                KEY_TIMELINE_SEMAPHORE_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_TIMELINE_SEMAPHORE_FEATURES_KHR));
                 {
                     emitBoolean(store, timelineSemaphoreFeaturesKHR, KEY_TIMELINE_SEMAPHORE);
                 }
                 store.endGroup();
-                JSONObject timelineSemaphorePropertiesKHR = khrTimelineSemaphoreFeatures.getJSONObject(KEY_TIMELINE_SEMAPHORE_PROPERTIES_KHR);
+                JSONObject timelineSemaphorePropertiesKHR =
+                        khrTimelineSemaphoreFeatures.getJSONObject(
+                                KEY_TIMELINE_SEMAPHORE_PROPERTIES_KHR);
                 store.startGroup(getConvertedName(KEY_TIMELINE_SEMAPHORE_PROPERTIES_KHR));
                 {
-                    emitString(store, timelineSemaphorePropertiesKHR, KEY_MAX_TIMELINE_SEMAPHORE_VALUE_DIFFERENCE);
+                    emitString(
+                            store,
+                            timelineSemaphorePropertiesKHR,
+                            KEY_MAX_TIMELINE_SEMAPHORE_VALUE_DIFFERENCE);
                 }
                 store.endGroup();
             }
@@ -5903,17 +8500,20 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRUnifiedImageLayouts(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrUnifiedImageLayoutsFeatures = parent.optJSONObject(KEY_VK_KHR_UNIFIED_IMAGE_LAYOUTS);
+            throws IOException, JSONException {
+        JSONObject khrUnifiedImageLayoutsFeatures =
+                parent.optJSONObject(KEY_VK_KHR_UNIFIED_IMAGE_LAYOUTS);
         if (khrUnifiedImageLayoutsFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_UNIFIED_IMAGE_LAYOUTS));
             {
-                JSONObject unifiedImageLayoutsFeaturesKHR = khrUnifiedImageLayoutsFeatures.getJSONObject(KEY_UNIFIED_IMAGE_LAYOUTS_FEATURES_KHR);
+                JSONObject unifiedImageLayoutsFeaturesKHR =
+                        khrUnifiedImageLayoutsFeatures.getJSONObject(
+                                KEY_UNIFIED_IMAGE_LAYOUTS_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_UNIFIED_IMAGE_LAYOUTS_FEATURES_KHR));
                 {
                     emitBoolean(store, unifiedImageLayoutsFeaturesKHR, KEY_UNIFIED_IMAGE_LAYOUTS);
-                    emitBoolean(store, unifiedImageLayoutsFeaturesKHR, KEY_UNIFIED_IMAGE_LAYOUTS_VIDEO);
+                    emitBoolean(
+                            store, unifiedImageLayoutsFeaturesKHR, KEY_UNIFIED_IMAGE_LAYOUTS_VIDEO);
                 }
                 store.endGroup();
             }
@@ -5921,17 +8521,22 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkKHRUniformBufferStandardLayout(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrUniformBufferStandardLayoutFeatures = parent.optJSONObject(KEY_VK_KHR_UNIFORM_BUFFER_STANDARD_LAYOUT);
+    private static void emitVkKHRUniformBufferStandardLayout(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject khrUniformBufferStandardLayoutFeatures =
+                parent.optJSONObject(KEY_VK_KHR_UNIFORM_BUFFER_STANDARD_LAYOUT);
         if (khrUniformBufferStandardLayoutFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_UNIFORM_BUFFER_STANDARD_LAYOUT));
             {
-                JSONObject uniformBufferStandardLayoutFeaturesKHR = khrUniformBufferStandardLayoutFeatures.getJSONObject(KEY_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES_KHR);
+                JSONObject uniformBufferStandardLayoutFeaturesKHR =
+                        khrUniformBufferStandardLayoutFeatures.getJSONObject(
+                                KEY_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES_KHR));
                 {
-                    emitBoolean(store, uniformBufferStandardLayoutFeaturesKHR, KEY_UNIFORM_BUFFER_STANDARD_LAYOUT);
+                    emitBoolean(
+                            store,
+                            uniformBufferStandardLayoutFeaturesKHR,
+                            KEY_UNIFORM_BUFFER_STANDARD_LAYOUT);
                 }
                 store.endGroup();
             }
@@ -5940,23 +8545,32 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRVariablePointers(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrVariablePointersFeatures = parent.optJSONObject(KEY_VK_KHR_VARIABLE_POINTERS);
         if (khrVariablePointersFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_VARIABLE_POINTERS));
             {
-                JSONObject variablePointerFeaturesKHR = khrVariablePointersFeatures.getJSONObject(KEY_VARIABLE_POINTER_FEATURES_KHR);
+                JSONObject variablePointerFeaturesKHR =
+                        khrVariablePointersFeatures.getJSONObject(
+                                KEY_VARIABLE_POINTER_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_VARIABLE_POINTER_FEATURES_KHR));
                 {
-                    emitBoolean(store, variablePointerFeaturesKHR, KEY_VARIABLE_POINTERS_STORAGE_BUFFER);
+                    emitBoolean(
+                            store,
+                            variablePointerFeaturesKHR,
+                            KEY_VARIABLE_POINTERS_STORAGE_BUFFER);
                     emitBoolean(store, variablePointerFeaturesKHR, KEY_VARIABLE_POINTERS);
                 }
                 store.endGroup();
-                JSONObject variablePointersFeaturesKHR = khrVariablePointersFeatures.getJSONObject(KEY_VARIABLE_POINTERS_FEATURES_KHR);
+                JSONObject variablePointersFeaturesKHR =
+                        khrVariablePointersFeatures.getJSONObject(
+                                KEY_VARIABLE_POINTERS_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_VARIABLE_POINTERS_FEATURES_KHR));
                 {
-                    emitBoolean(store, variablePointersFeaturesKHR, KEY_VARIABLE_POINTERS_STORAGE_BUFFER);
+                    emitBoolean(
+                            store,
+                            variablePointersFeaturesKHR,
+                            KEY_VARIABLE_POINTERS_STORAGE_BUFFER);
                     emitBoolean(store, variablePointersFeaturesKHR, KEY_VARIABLE_POINTERS);
                 }
                 store.endGroup();
@@ -5966,24 +8580,40 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRVertexAttributeDivisor(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrVertexAttributeDivisorProperties = parent.optJSONObject(KEY_VK_KHR_VERTEX_ATTRIBUTE_DIVISOR);
+            throws IOException, JSONException {
+        JSONObject khrVertexAttributeDivisorProperties =
+                parent.optJSONObject(KEY_VK_KHR_VERTEX_ATTRIBUTE_DIVISOR);
         if (khrVertexAttributeDivisorProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_VERTEX_ATTRIBUTE_DIVISOR));
             {
-                JSONObject vertexAttributeDivisorPropertiesKHR = khrVertexAttributeDivisorProperties.getJSONObject(KEY_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_KHR);
+                JSONObject vertexAttributeDivisorPropertiesKHR =
+                        khrVertexAttributeDivisorProperties.getJSONObject(
+                                KEY_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_KHR);
                 store.startGroup(getConvertedName(KEY_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_KHR));
                 {
-                    emitLong(store, vertexAttributeDivisorPropertiesKHR, KEY_MAX_VERTEX_ATTRIB_DIVISOR);
-                    emitBoolean(store, vertexAttributeDivisorPropertiesKHR, KEY_SUPPORTS_NON_ZERO_FIRST_INSTANCE);
+                    emitLong(
+                            store,
+                            vertexAttributeDivisorPropertiesKHR,
+                            KEY_MAX_VERTEX_ATTRIB_DIVISOR);
+                    emitBoolean(
+                            store,
+                            vertexAttributeDivisorPropertiesKHR,
+                            KEY_SUPPORTS_NON_ZERO_FIRST_INSTANCE);
                 }
                 store.endGroup();
-                JSONObject vertexAttributeDivisorFeaturesKHR = khrVertexAttributeDivisorProperties.getJSONObject(KEY_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_KHR);
+                JSONObject vertexAttributeDivisorFeaturesKHR =
+                        khrVertexAttributeDivisorProperties.getJSONObject(
+                                KEY_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_KHR));
                 {
-                    emitBoolean(store, vertexAttributeDivisorFeaturesKHR, KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_DIVISOR);
-                    emitBoolean(store, vertexAttributeDivisorFeaturesKHR, KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_ZERO_DIVISOR);
+                    emitBoolean(
+                            store,
+                            vertexAttributeDivisorFeaturesKHR,
+                            KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_DIVISOR);
+                    emitBoolean(
+                            store,
+                            vertexAttributeDivisorFeaturesKHR,
+                            KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_ZERO_DIVISOR);
                 }
                 store.endGroup();
             }
@@ -5992,13 +8622,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRVideoDecodeVp9(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrVideoDecodeVP9Features = parent.optJSONObject(KEY_VK_KHR_VIDEO_DECODE_VP9);
         if (khrVideoDecodeVP9Features != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_VIDEO_DECODE_VP9));
             {
-                JSONObject videoDecodeVp9FeaturesKHR = khrVideoDecodeVP9Features.getJSONObject(KEY_VIDEO_DECODE_VP_9_FEATURES_KHR);
+                JSONObject videoDecodeVp9FeaturesKHR =
+                        khrVideoDecodeVP9Features.getJSONObject(KEY_VIDEO_DECODE_VP_9_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_VIDEO_DECODE_VP_9_FEATURES_KHR));
                 {
                     emitBoolean(store, videoDecodeVp9FeaturesKHR, KEY_VIDEO_DECODE_VP_9);
@@ -6010,13 +8640,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRVideoEncodeAv1(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject khrVideoEncodeAV1Features = parent.optJSONObject(KEY_VK_KHR_VIDEO_ENCODE_AV1);
         if (khrVideoEncodeAV1Features != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_VIDEO_ENCODE_AV1));
             {
-                JSONObject videoEncodeAv1FeaturesKHR = khrVideoEncodeAV1Features.getJSONObject(KEY_VIDEO_ENCODE_AV_1_FEATURES_KHR);
+                JSONObject videoEncodeAv1FeaturesKHR =
+                        khrVideoEncodeAV1Features.getJSONObject(KEY_VIDEO_ENCODE_AV_1_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_VIDEO_ENCODE_AV_1_FEATURES_KHR));
                 {
                     emitBoolean(store, videoEncodeAv1FeaturesKHR, KEY_VIDEO_ENCODE_AV_1);
@@ -6028,16 +8658,21 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRVideoEncodeIntraRefresh(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrVideoEncodeIntraRefreshFeatures = parent.optJSONObject(KEY_VK_KHR_VIDEO_ENCODE_INTRA_REFRESH);
+            throws IOException, JSONException {
+        JSONObject khrVideoEncodeIntraRefreshFeatures =
+                parent.optJSONObject(KEY_VK_KHR_VIDEO_ENCODE_INTRA_REFRESH);
         if (khrVideoEncodeIntraRefreshFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_VIDEO_ENCODE_INTRA_REFRESH));
             {
-                JSONObject videoEncodeIntraRefreshFeaturesKHR = khrVideoEncodeIntraRefreshFeatures.getJSONObject(KEY_VIDEO_ENCODE_INTRA_REFRESH_FEATURES_KHR);
+                JSONObject videoEncodeIntraRefreshFeaturesKHR =
+                        khrVideoEncodeIntraRefreshFeatures.getJSONObject(
+                                KEY_VIDEO_ENCODE_INTRA_REFRESH_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_VIDEO_ENCODE_INTRA_REFRESH_FEATURES_KHR));
                 {
-                    emitBoolean(store, videoEncodeIntraRefreshFeaturesKHR, KEY_VIDEO_ENCODE_INTRA_REFRESH);
+                    emitBoolean(
+                            store,
+                            videoEncodeIntraRefreshFeaturesKHR,
+                            KEY_VIDEO_ENCODE_INTRA_REFRESH);
                 }
                 store.endGroup();
             }
@@ -6045,17 +8680,22 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkKHRVideoEncodeQuantizationMap(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrVideoEncodeQuantizationMapFeatures = parent.optJSONObject(KEY_VK_KHR_VIDEO_ENCODE_QUANTIZATION_MAP);
+    private static void emitVkKHRVideoEncodeQuantizationMap(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject khrVideoEncodeQuantizationMapFeatures =
+                parent.optJSONObject(KEY_VK_KHR_VIDEO_ENCODE_QUANTIZATION_MAP);
         if (khrVideoEncodeQuantizationMapFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_VIDEO_ENCODE_QUANTIZATION_MAP));
             {
-                JSONObject videoEncodeQuantizationMapFeaturesKHR = khrVideoEncodeQuantizationMapFeatures.getJSONObject(KEY_VIDEO_ENCODE_QUANTIZATION_MAP_FEATURES_KHR);
+                JSONObject videoEncodeQuantizationMapFeaturesKHR =
+                        khrVideoEncodeQuantizationMapFeatures.getJSONObject(
+                                KEY_VIDEO_ENCODE_QUANTIZATION_MAP_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_VIDEO_ENCODE_QUANTIZATION_MAP_FEATURES_KHR));
                 {
-                    emitBoolean(store, videoEncodeQuantizationMapFeaturesKHR, KEY_VIDEO_ENCODE_QUANTIZATION_MAP);
+                    emitBoolean(
+                            store,
+                            videoEncodeQuantizationMapFeaturesKHR,
+                            KEY_VIDEO_ENCODE_QUANTIZATION_MAP);
                 }
                 store.endGroup();
             }
@@ -6064,13 +8704,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRVideoMaintenance1(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrVideoMaintenance1Features = parent.optJSONObject(KEY_VK_KHR_VIDEO_MAINTENANCE1);
+            throws IOException, JSONException {
+        JSONObject khrVideoMaintenance1Features =
+                parent.optJSONObject(KEY_VK_KHR_VIDEO_MAINTENANCE1);
         if (khrVideoMaintenance1Features != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_VIDEO_MAINTENANCE1));
             {
-                JSONObject videoMaintenance1FeaturesKHR = khrVideoMaintenance1Features.getJSONObject(KEY_VIDEO_MAINTENANCE_1_FEATURES_KHR);
+                JSONObject videoMaintenance1FeaturesKHR =
+                        khrVideoMaintenance1Features.getJSONObject(
+                                KEY_VIDEO_MAINTENANCE_1_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_VIDEO_MAINTENANCE_1_FEATURES_KHR));
                 {
                     emitBoolean(store, videoMaintenance1FeaturesKHR, KEY_VIDEO_MAINTENANCE_1);
@@ -6082,13 +8724,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRVideoMaintenance2(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrVideoMaintenance2Features = parent.optJSONObject(KEY_VK_KHR_VIDEO_MAINTENANCE2);
+            throws IOException, JSONException {
+        JSONObject khrVideoMaintenance2Features =
+                parent.optJSONObject(KEY_VK_KHR_VIDEO_MAINTENANCE2);
         if (khrVideoMaintenance2Features != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_VIDEO_MAINTENANCE2));
             {
-                JSONObject videoMaintenance2FeaturesKHR = khrVideoMaintenance2Features.getJSONObject(KEY_VIDEO_MAINTENANCE_2_FEATURES_KHR);
+                JSONObject videoMaintenance2FeaturesKHR =
+                        khrVideoMaintenance2Features.getJSONObject(
+                                KEY_VIDEO_MAINTENANCE_2_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_VIDEO_MAINTENANCE_2_FEATURES_KHR));
                 {
                     emitBoolean(store, videoMaintenance2FeaturesKHR, KEY_VIDEO_MAINTENANCE_2);
@@ -6100,18 +8744,26 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkKHRVulkanMemoryModel(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrVulkanMemoryModelFeatures = parent.optJSONObject(KEY_VK_KHR_VULKAN_MEMORY_MODEL);
+            throws IOException, JSONException {
+        JSONObject khrVulkanMemoryModelFeatures =
+                parent.optJSONObject(KEY_VK_KHR_VULKAN_MEMORY_MODEL);
         if (khrVulkanMemoryModelFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_VULKAN_MEMORY_MODEL));
             {
-                JSONObject vulkanMemoryModelFeaturesKHR = khrVulkanMemoryModelFeatures.getJSONObject(KEY_VULKAN_MEMORY_MODEL_FEATURES_KHR);
+                JSONObject vulkanMemoryModelFeaturesKHR =
+                        khrVulkanMemoryModelFeatures.getJSONObject(
+                                KEY_VULKAN_MEMORY_MODEL_FEATURES_KHR);
                 store.startGroup(getConvertedName(KEY_VULKAN_MEMORY_MODEL_FEATURES_KHR));
                 {
                     emitBoolean(store, vulkanMemoryModelFeaturesKHR, KEY_VULKAN_MEMORY_MODEL);
-                    emitBoolean(store, vulkanMemoryModelFeaturesKHR, KEY_VULKAN_MEMORY_MODEL_DEVICE_SCOPE);
-                    emitBoolean(store, vulkanMemoryModelFeaturesKHR, KEY_VULKAN_MEMORY_MODEL_AVAILABILITY_VISIBILITY_CHAINS);
+                    emitBoolean(
+                            store,
+                            vulkanMemoryModelFeaturesKHR,
+                            KEY_VULKAN_MEMORY_MODEL_DEVICE_SCOPE);
+                    emitBoolean(
+                            store,
+                            vulkanMemoryModelFeaturesKHR,
+                            KEY_VULKAN_MEMORY_MODEL_AVAILABILITY_VISIBILITY_CHAINS);
                 }
                 store.endGroup();
             }
@@ -6119,20 +8771,35 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkKHRWorkgroupMemoryExplicitLayout(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrWorkgroupMemoryExplicitLayoutFeatures = parent.optJSONObject(KEY_VK_KHR_WORKGROUP_MEMORY_EXPLICIT_LAYOUT);
+    private static void emitVkKHRWorkgroupMemoryExplicitLayout(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject khrWorkgroupMemoryExplicitLayoutFeatures =
+                parent.optJSONObject(KEY_VK_KHR_WORKGROUP_MEMORY_EXPLICIT_LAYOUT);
         if (khrWorkgroupMemoryExplicitLayoutFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_WORKGROUP_MEMORY_EXPLICIT_LAYOUT));
             {
-                JSONObject workgroupMemoryExplicitLayoutFeaturesKHR = khrWorkgroupMemoryExplicitLayoutFeatures.getJSONObject(KEY_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_FEATURES_KHR);
-                store.startGroup(getConvertedName(KEY_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_FEATURES_KHR));
+                JSONObject workgroupMemoryExplicitLayoutFeaturesKHR =
+                        khrWorkgroupMemoryExplicitLayoutFeatures.getJSONObject(
+                                KEY_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_FEATURES_KHR);
+                store.startGroup(
+                        getConvertedName(KEY_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_FEATURES_KHR));
                 {
-                    emitBoolean(store, workgroupMemoryExplicitLayoutFeaturesKHR, KEY_WORKGROUP_MEMORY_EXPLICIT_LAYOUT);
-                    emitBoolean(store, workgroupMemoryExplicitLayoutFeaturesKHR, KEY_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_SCALAR_BLOCK_LAYOUT);
-                    emitBoolean(store, workgroupMemoryExplicitLayoutFeaturesKHR, KEY_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_8_BIT_ACCESS);
-                    emitBoolean(store, workgroupMemoryExplicitLayoutFeaturesKHR, KEY_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_16_BIT_ACCESS);
+                    emitBoolean(
+                            store,
+                            workgroupMemoryExplicitLayoutFeaturesKHR,
+                            KEY_WORKGROUP_MEMORY_EXPLICIT_LAYOUT);
+                    emitBoolean(
+                            store,
+                            workgroupMemoryExplicitLayoutFeaturesKHR,
+                            KEY_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_SCALAR_BLOCK_LAYOUT);
+                    emitBoolean(
+                            store,
+                            workgroupMemoryExplicitLayoutFeaturesKHR,
+                            KEY_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_8_BIT_ACCESS);
+                    emitBoolean(
+                            store,
+                            workgroupMemoryExplicitLayoutFeaturesKHR,
+                            KEY_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_16_BIT_ACCESS);
                 }
                 store.endGroup();
             }
@@ -6140,17 +8807,23 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkKHRZeroInitializeWorkgroupMemory(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject khrZeroInitializeWorkgroupMemoryFeatures = parent.optJSONObject(KEY_VK_KHR_ZERO_INITIALIZE_WORKGROUP_MEMORY);
+    private static void emitVkKHRZeroInitializeWorkgroupMemory(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject khrZeroInitializeWorkgroupMemoryFeatures =
+                parent.optJSONObject(KEY_VK_KHR_ZERO_INITIALIZE_WORKGROUP_MEMORY);
         if (khrZeroInitializeWorkgroupMemoryFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_KHR_ZERO_INITIALIZE_WORKGROUP_MEMORY));
             {
-                JSONObject zeroInitializeWorkgroupMemoryFeaturesKHR = khrZeroInitializeWorkgroupMemoryFeatures.getJSONObject(KEY_ZERO_INITIALIZE_WORKGROUP_MEMORY_FEATURES_KHR);
-                store.startGroup(getConvertedName(KEY_ZERO_INITIALIZE_WORKGROUP_MEMORY_FEATURES_KHR));
+                JSONObject zeroInitializeWorkgroupMemoryFeaturesKHR =
+                        khrZeroInitializeWorkgroupMemoryFeatures.getJSONObject(
+                                KEY_ZERO_INITIALIZE_WORKGROUP_MEMORY_FEATURES_KHR);
+                store.startGroup(
+                        getConvertedName(KEY_ZERO_INITIALIZE_WORKGROUP_MEMORY_FEATURES_KHR));
                 {
-                    emitBoolean(store, zeroInitializeWorkgroupMemoryFeaturesKHR, KEY_SHADER_ZERO_INITIALIZE_WORKGROUP_MEMORY);
+                    emitBoolean(
+                            store,
+                            zeroInitializeWorkgroupMemoryFeaturesKHR,
+                            KEY_SHADER_ZERO_INITIALIZE_WORKGROUP_MEMORY);
                 }
                 store.endGroup();
             }
@@ -6159,22 +8832,30 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkMESAImageAlignmentControl(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject mesaImageAlignmentControlFeatures = parent.optJSONObject(KEY_VK_MESA_IMAGE_ALIGNMENT_CONTROL);
+            throws IOException, JSONException {
+        JSONObject mesaImageAlignmentControlFeatures =
+                parent.optJSONObject(KEY_VK_MESA_IMAGE_ALIGNMENT_CONTROL);
         if (mesaImageAlignmentControlFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_MESA_IMAGE_ALIGNMENT_CONTROL));
             {
-                JSONObject imageAlignmentControlFeaturesMESA = mesaImageAlignmentControlFeatures.getJSONObject(KEY_IMAGE_ALIGNMENT_CONTROL_FEATURES_MESA);
+                JSONObject imageAlignmentControlFeaturesMESA =
+                        mesaImageAlignmentControlFeatures.getJSONObject(
+                                KEY_IMAGE_ALIGNMENT_CONTROL_FEATURES_MESA);
                 store.startGroup(getConvertedName(KEY_IMAGE_ALIGNMENT_CONTROL_FEATURES_MESA));
                 {
-                    emitBoolean(store, imageAlignmentControlFeaturesMESA, KEY_IMAGE_ALIGNMENT_CONTROL);
+                    emitBoolean(
+                            store, imageAlignmentControlFeaturesMESA, KEY_IMAGE_ALIGNMENT_CONTROL);
                 }
                 store.endGroup();
-                JSONObject imageAlignmentControlPropertiesMESA = mesaImageAlignmentControlFeatures.getJSONObject(KEY_IMAGE_ALIGNMENT_CONTROL_PROPERTIES_MESA);
+                JSONObject imageAlignmentControlPropertiesMESA =
+                        mesaImageAlignmentControlFeatures.getJSONObject(
+                                KEY_IMAGE_ALIGNMENT_CONTROL_PROPERTIES_MESA);
                 store.startGroup(getConvertedName(KEY_IMAGE_ALIGNMENT_CONTROL_PROPERTIES_MESA));
                 {
-                    emitLong(store, imageAlignmentControlPropertiesMESA, KEY_SUPPORTED_IMAGE_ALIGNMENT_MASK);
+                    emitLong(
+                            store,
+                            imageAlignmentControlPropertiesMESA,
+                            KEY_SUPPORTED_IMAGE_ALIGNMENT_MASK);
                 }
                 store.endGroup();
             }
@@ -6183,13 +8864,14 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkMSFTLayeredDriver(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject msftLayeredDriverProperties = parent.optJSONObject(KEY_VK_MSFT_LAYERED_DRIVER);
         if (msftLayeredDriverProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_MSFT_LAYERED_DRIVER));
             {
-                JSONObject layeredDriverPropertiesMSFT = msftLayeredDriverProperties.getJSONObject(KEY_LAYERED_DRIVER_PROPERTIES_MSFT);
+                JSONObject layeredDriverPropertiesMSFT =
+                        msftLayeredDriverProperties.getJSONObject(
+                                KEY_LAYERED_DRIVER_PROPERTIES_MSFT);
                 store.startGroup(getConvertedName(KEY_LAYERED_DRIVER_PROPERTIES_MSFT));
                 {
                     emitLong(store, layeredDriverPropertiesMSFT, KEY_UNDERLYING_API);
@@ -6200,17 +8882,23 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkNVXMultiviewPerViewAttributes(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvxMultiviewPerViewAttributesProperties = parent.optJSONObject(KEY_VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES);
+    private static void emitVkNVXMultiviewPerViewAttributes(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject nvxMultiviewPerViewAttributesProperties =
+                parent.optJSONObject(KEY_VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES);
         if (nvxMultiviewPerViewAttributesProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_NVX_MULTIVIEW_PER_VIEW_ATTRIBUTES));
             {
-                JSONObject multiviewPerViewAttributesPropertiesNVX = nvxMultiviewPerViewAttributesProperties.getJSONObject(KEY_MULTIVIEW_PER_VIEW_ATTRIBUTES_PROPERTIES_NVX);
-                store.startGroup(getConvertedName(KEY_MULTIVIEW_PER_VIEW_ATTRIBUTES_PROPERTIES_NVX));
+                JSONObject multiviewPerViewAttributesPropertiesNVX =
+                        nvxMultiviewPerViewAttributesProperties.getJSONObject(
+                                KEY_MULTIVIEW_PER_VIEW_ATTRIBUTES_PROPERTIES_NVX);
+                store.startGroup(
+                        getConvertedName(KEY_MULTIVIEW_PER_VIEW_ATTRIBUTES_PROPERTIES_NVX));
                 {
-                    emitBoolean(store, multiviewPerViewAttributesPropertiesNVX, KEY_PER_VIEW_POSITION_ALL_COMPONENTS);
+                    emitBoolean(
+                            store,
+                            multiviewPerViewAttributesPropertiesNVX,
+                            KEY_PER_VIEW_POSITION_ALL_COMPONENTS);
                 }
                 store.endGroup();
             }
@@ -6218,30 +8906,62 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkNVClusterAccelerationStructure(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvClusterAccelerationStructureFeatures = parent.optJSONObject(KEY_VK_NV_CLUSTER_ACCELERATION_STRUCTURE);
+    private static void emitVkNVClusterAccelerationStructure(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject nvClusterAccelerationStructureFeatures =
+                parent.optJSONObject(KEY_VK_NV_CLUSTER_ACCELERATION_STRUCTURE);
         if (nvClusterAccelerationStructureFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_CLUSTER_ACCELERATION_STRUCTURE));
             {
-                JSONObject clusterAccelerationStructureFeaturesNV = nvClusterAccelerationStructureFeatures.getJSONObject(KEY_CLUSTER_ACCELERATION_STRUCTURE_FEATURES_NV);
+                JSONObject clusterAccelerationStructureFeaturesNV =
+                        nvClusterAccelerationStructureFeatures.getJSONObject(
+                                KEY_CLUSTER_ACCELERATION_STRUCTURE_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_CLUSTER_ACCELERATION_STRUCTURE_FEATURES_NV));
                 {
-                    emitBoolean(store, clusterAccelerationStructureFeaturesNV, KEY_CLUSTER_ACCELERATION_STRUCTURE);
+                    emitBoolean(
+                            store,
+                            clusterAccelerationStructureFeaturesNV,
+                            KEY_CLUSTER_ACCELERATION_STRUCTURE);
                 }
                 store.endGroup();
-                JSONObject clusterAccelerationStructurePropertiesNV = nvClusterAccelerationStructureFeatures.getJSONObject(KEY_CLUSTER_ACCELERATION_STRUCTURE_PROPERTIES_NV);
-                store.startGroup(getConvertedName(KEY_CLUSTER_ACCELERATION_STRUCTURE_PROPERTIES_NV));
+                JSONObject clusterAccelerationStructurePropertiesNV =
+                        nvClusterAccelerationStructureFeatures.getJSONObject(
+                                KEY_CLUSTER_ACCELERATION_STRUCTURE_PROPERTIES_NV);
+                store.startGroup(
+                        getConvertedName(KEY_CLUSTER_ACCELERATION_STRUCTURE_PROPERTIES_NV));
                 {
-                    emitLong(store, clusterAccelerationStructurePropertiesNV, KEY_MAX_VERTICES_PER_CLUSTER);
-                    emitLong(store, clusterAccelerationStructurePropertiesNV, KEY_MAX_TRIANGLES_PER_CLUSTER);
-                    emitLong(store, clusterAccelerationStructurePropertiesNV, KEY_CLUSTER_SCRATCH_BYTE_ALIGNMENT);
-                    emitLong(store, clusterAccelerationStructurePropertiesNV, KEY_CLUSTER_BYTE_ALIGNMENT);
-                    emitLong(store, clusterAccelerationStructurePropertiesNV, KEY_CLUSTER_TEMPLATE_BYTE_ALIGNMENT);
-                    emitLong(store, clusterAccelerationStructurePropertiesNV, KEY_CLUSTER_BOTTOM_LEVEL_BYTE_ALIGNMENT);
-                    emitLong(store, clusterAccelerationStructurePropertiesNV, KEY_CLUSTER_TEMPLATE_BOUNDS_BYTE_ALIGNMENT);
-                    emitLong(store, clusterAccelerationStructurePropertiesNV, KEY_MAX_CLUSTER_GEOMETRY_INDEX);
+                    emitLong(
+                            store,
+                            clusterAccelerationStructurePropertiesNV,
+                            KEY_MAX_VERTICES_PER_CLUSTER);
+                    emitLong(
+                            store,
+                            clusterAccelerationStructurePropertiesNV,
+                            KEY_MAX_TRIANGLES_PER_CLUSTER);
+                    emitLong(
+                            store,
+                            clusterAccelerationStructurePropertiesNV,
+                            KEY_CLUSTER_SCRATCH_BYTE_ALIGNMENT);
+                    emitLong(
+                            store,
+                            clusterAccelerationStructurePropertiesNV,
+                            KEY_CLUSTER_BYTE_ALIGNMENT);
+                    emitLong(
+                            store,
+                            clusterAccelerationStructurePropertiesNV,
+                            KEY_CLUSTER_TEMPLATE_BYTE_ALIGNMENT);
+                    emitLong(
+                            store,
+                            clusterAccelerationStructurePropertiesNV,
+                            KEY_CLUSTER_BOTTOM_LEVEL_BYTE_ALIGNMENT);
+                    emitLong(
+                            store,
+                            clusterAccelerationStructurePropertiesNV,
+                            KEY_CLUSTER_TEMPLATE_BOUNDS_BYTE_ALIGNMENT);
+                    emitLong(
+                            store,
+                            clusterAccelerationStructurePropertiesNV,
+                            KEY_MAX_CLUSTER_GEOMETRY_INDEX);
                 }
                 store.endGroup();
             }
@@ -6250,16 +8970,21 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVCommandBufferInheritance(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvCommandBufferInheritanceFeatures = parent.optJSONObject(KEY_VK_NV_COMMAND_BUFFER_INHERITANCE);
+            throws IOException, JSONException {
+        JSONObject nvCommandBufferInheritanceFeatures =
+                parent.optJSONObject(KEY_VK_NV_COMMAND_BUFFER_INHERITANCE);
         if (nvCommandBufferInheritanceFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_COMMAND_BUFFER_INHERITANCE));
             {
-                JSONObject commandBufferInheritanceFeaturesNV = nvCommandBufferInheritanceFeatures.getJSONObject(KEY_COMMAND_BUFFER_INHERITANCE_FEATURES_NV);
+                JSONObject commandBufferInheritanceFeaturesNV =
+                        nvCommandBufferInheritanceFeatures.getJSONObject(
+                                KEY_COMMAND_BUFFER_INHERITANCE_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_COMMAND_BUFFER_INHERITANCE_FEATURES_NV));
                 {
-                    emitBoolean(store, commandBufferInheritanceFeaturesNV, KEY_COMMAND_BUFFER_INHERITANCE);
+                    emitBoolean(
+                            store,
+                            commandBufferInheritanceFeaturesNV,
+                            KEY_COMMAND_BUFFER_INHERITANCE);
                 }
                 store.endGroup();
             }
@@ -6268,17 +8993,25 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVComputeShaderDerivatives(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvComputeShaderDerivativesFeatures = parent.optJSONObject(KEY_VK_NV_COMPUTE_SHADER_DERIVATIVES);
+            throws IOException, JSONException {
+        JSONObject nvComputeShaderDerivativesFeatures =
+                parent.optJSONObject(KEY_VK_NV_COMPUTE_SHADER_DERIVATIVES);
         if (nvComputeShaderDerivativesFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_COMPUTE_SHADER_DERIVATIVES));
             {
-                JSONObject computeShaderDerivativesFeaturesNV = nvComputeShaderDerivativesFeatures.getJSONObject(KEY_COMPUTE_SHADER_DERIVATIVES_FEATURES_NV);
+                JSONObject computeShaderDerivativesFeaturesNV =
+                        nvComputeShaderDerivativesFeatures.getJSONObject(
+                                KEY_COMPUTE_SHADER_DERIVATIVES_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_COMPUTE_SHADER_DERIVATIVES_FEATURES_NV));
                 {
-                    emitBoolean(store, computeShaderDerivativesFeaturesNV, KEY_COMPUTE_DERIVATIVE_GROUP_QUADS);
-                    emitBoolean(store, computeShaderDerivativesFeaturesNV, KEY_COMPUTE_DERIVATIVE_GROUP_LINEAR);
+                    emitBoolean(
+                            store,
+                            computeShaderDerivativesFeaturesNV,
+                            KEY_COMPUTE_DERIVATIVE_GROUP_QUADS);
+                    emitBoolean(
+                            store,
+                            computeShaderDerivativesFeaturesNV,
+                            KEY_COMPUTE_DERIVATIVE_GROUP_LINEAR);
                 }
                 store.endGroup();
             }
@@ -6287,23 +9020,32 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVCooperativeMatrix(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject nvCooperativeMatrixFeatures = parent.optJSONObject(KEY_VK_NV_COOPERATIVE_MATRIX);
         if (nvCooperativeMatrixFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_COOPERATIVE_MATRIX));
             {
-                JSONObject cooperativeMatrixFeaturesNV = nvCooperativeMatrixFeatures.getJSONObject(KEY_COOPERATIVE_MATRIX_FEATURES_NV);
+                JSONObject cooperativeMatrixFeaturesNV =
+                        nvCooperativeMatrixFeatures.getJSONObject(
+                                KEY_COOPERATIVE_MATRIX_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_COOPERATIVE_MATRIX_FEATURES_NV));
                 {
                     emitBoolean(store, cooperativeMatrixFeaturesNV, KEY_COOPERATIVE_MATRIX);
-                    emitBoolean(store, cooperativeMatrixFeaturesNV, KEY_COOPERATIVE_MATRIX_ROBUST_BUFFER_ACCESS);
+                    emitBoolean(
+                            store,
+                            cooperativeMatrixFeaturesNV,
+                            KEY_COOPERATIVE_MATRIX_ROBUST_BUFFER_ACCESS);
                 }
                 store.endGroup();
-                JSONObject cooperativeMatrixPropertiesNV = nvCooperativeMatrixFeatures.getJSONObject(KEY_COOPERATIVE_MATRIX_PROPERTIES_NV);
+                JSONObject cooperativeMatrixPropertiesNV =
+                        nvCooperativeMatrixFeatures.getJSONObject(
+                                KEY_COOPERATIVE_MATRIX_PROPERTIES_NV);
                 store.startGroup(getConvertedName(KEY_COOPERATIVE_MATRIX_PROPERTIES_NV));
                 {
-                    emitLong(store, cooperativeMatrixPropertiesNV, KEY_COOPERATIVE_MATRIX_SUPPORTED_STAGES);
+                    emitLong(
+                            store,
+                            cooperativeMatrixPropertiesNV,
+                            KEY_COOPERATIVE_MATRIX_SUPPORTED_STAGES);
                 }
                 store.endGroup();
             }
@@ -6312,30 +9054,62 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVCooperativeMatrix2(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvCooperativeMatrix2Features = parent.optJSONObject(KEY_VK_NV_COOPERATIVE_MATRIX2);
+            throws IOException, JSONException {
+        JSONObject nvCooperativeMatrix2Features =
+                parent.optJSONObject(KEY_VK_NV_COOPERATIVE_MATRIX2);
         if (nvCooperativeMatrix2Features != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_COOPERATIVE_MATRIX2));
             {
-                JSONObject cooperativeMatrix2FeaturesNV = nvCooperativeMatrix2Features.getJSONObject(KEY_COOPERATIVE_MATRIX_2_FEATURES_NV);
+                JSONObject cooperativeMatrix2FeaturesNV =
+                        nvCooperativeMatrix2Features.getJSONObject(
+                                KEY_COOPERATIVE_MATRIX_2_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_COOPERATIVE_MATRIX_2_FEATURES_NV));
                 {
-                    emitBoolean(store, cooperativeMatrix2FeaturesNV, KEY_COOPERATIVE_MATRIX_WORKGROUP_SCOPE);
-                    emitBoolean(store, cooperativeMatrix2FeaturesNV, KEY_COOPERATIVE_MATRIX_FLEXIBLE_DIMENSIONS);
-                    emitBoolean(store, cooperativeMatrix2FeaturesNV, KEY_COOPERATIVE_MATRIX_REDUCTIONS);
-                    emitBoolean(store, cooperativeMatrix2FeaturesNV, KEY_COOPERATIVE_MATRIX_CONVERSIONS);
-                    emitBoolean(store, cooperativeMatrix2FeaturesNV, KEY_COOPERATIVE_MATRIX_PER_ELEMENT_OPERATIONS);
-                    emitBoolean(store, cooperativeMatrix2FeaturesNV, KEY_COOPERATIVE_MATRIX_TENSOR_ADDRESSING);
-                    emitBoolean(store, cooperativeMatrix2FeaturesNV, KEY_COOPERATIVE_MATRIX_BLOCK_LOADS);
+                    emitBoolean(
+                            store,
+                            cooperativeMatrix2FeaturesNV,
+                            KEY_COOPERATIVE_MATRIX_WORKGROUP_SCOPE);
+                    emitBoolean(
+                            store,
+                            cooperativeMatrix2FeaturesNV,
+                            KEY_COOPERATIVE_MATRIX_FLEXIBLE_DIMENSIONS);
+                    emitBoolean(
+                            store, cooperativeMatrix2FeaturesNV, KEY_COOPERATIVE_MATRIX_REDUCTIONS);
+                    emitBoolean(
+                            store,
+                            cooperativeMatrix2FeaturesNV,
+                            KEY_COOPERATIVE_MATRIX_CONVERSIONS);
+                    emitBoolean(
+                            store,
+                            cooperativeMatrix2FeaturesNV,
+                            KEY_COOPERATIVE_MATRIX_PER_ELEMENT_OPERATIONS);
+                    emitBoolean(
+                            store,
+                            cooperativeMatrix2FeaturesNV,
+                            KEY_COOPERATIVE_MATRIX_TENSOR_ADDRESSING);
+                    emitBoolean(
+                            store,
+                            cooperativeMatrix2FeaturesNV,
+                            KEY_COOPERATIVE_MATRIX_BLOCK_LOADS);
                 }
                 store.endGroup();
-                JSONObject cooperativeMatrix2PropertiesNV = nvCooperativeMatrix2Features.getJSONObject(KEY_COOPERATIVE_MATRIX_2_PROPERTIES_NV);
+                JSONObject cooperativeMatrix2PropertiesNV =
+                        nvCooperativeMatrix2Features.getJSONObject(
+                                KEY_COOPERATIVE_MATRIX_2_PROPERTIES_NV);
                 store.startGroup(getConvertedName(KEY_COOPERATIVE_MATRIX_2_PROPERTIES_NV));
                 {
-                    emitLong(store, cooperativeMatrix2PropertiesNV, KEY_COOPERATIVE_MATRIX_WORKGROUP_SCOPE_MAX_WORKGROUP_SIZE);
-                    emitLong(store, cooperativeMatrix2PropertiesNV, KEY_COOPERATIVE_MATRIX_FLEXIBLE_DIMENSIONS_MAX_DIMENSION);
-                    emitLong(store, cooperativeMatrix2PropertiesNV, KEY_COOPERATIVE_MATRIX_WORKGROUP_SCOPE_RESERVED_SHARED_MEMORY);
+                    emitLong(
+                            store,
+                            cooperativeMatrix2PropertiesNV,
+                            KEY_COOPERATIVE_MATRIX_WORKGROUP_SCOPE_MAX_WORKGROUP_SIZE);
+                    emitLong(
+                            store,
+                            cooperativeMatrix2PropertiesNV,
+                            KEY_COOPERATIVE_MATRIX_FLEXIBLE_DIMENSIONS_MAX_DIMENSION);
+                    emitLong(
+                            store,
+                            cooperativeMatrix2PropertiesNV,
+                            KEY_COOPERATIVE_MATRIX_WORKGROUP_SCOPE_RESERVED_SHARED_MEMORY);
                 }
                 store.endGroup();
             }
@@ -6344,26 +9118,43 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVCooperativeVector(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvCooperativeVectorProperties = parent.optJSONObject(KEY_VK_NV_COOPERATIVE_VECTOR);
+            throws IOException, JSONException {
+        JSONObject nvCooperativeVectorProperties =
+                parent.optJSONObject(KEY_VK_NV_COOPERATIVE_VECTOR);
         if (nvCooperativeVectorProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_COOPERATIVE_VECTOR));
             {
-                JSONObject cooperativeVectorPropertiesNV = nvCooperativeVectorProperties.getJSONObject(KEY_COOPERATIVE_VECTOR_PROPERTIES_NV);
+                JSONObject cooperativeVectorPropertiesNV =
+                        nvCooperativeVectorProperties.getJSONObject(
+                                KEY_COOPERATIVE_VECTOR_PROPERTIES_NV);
                 store.startGroup(getConvertedName(KEY_COOPERATIVE_VECTOR_PROPERTIES_NV));
                 {
-                    emitLong(store, cooperativeVectorPropertiesNV, KEY_COOPERATIVE_VECTOR_SUPPORTED_STAGES);
-                    emitBoolean(store, cooperativeVectorPropertiesNV, KEY_COOPERATIVE_VECTOR_TRAINING_FLOAT_16_ACCUMULATION);
-                    emitBoolean(store, cooperativeVectorPropertiesNV, KEY_COOPERATIVE_VECTOR_TRAINING_FLOAT_32_ACCUMULATION);
-                    emitLong(store, cooperativeVectorPropertiesNV, KEY_MAX_COOPERATIVE_VECTOR_COMPONENTS);
+                    emitLong(
+                            store,
+                            cooperativeVectorPropertiesNV,
+                            KEY_COOPERATIVE_VECTOR_SUPPORTED_STAGES);
+                    emitBoolean(
+                            store,
+                            cooperativeVectorPropertiesNV,
+                            KEY_COOPERATIVE_VECTOR_TRAINING_FLOAT_16_ACCUMULATION);
+                    emitBoolean(
+                            store,
+                            cooperativeVectorPropertiesNV,
+                            KEY_COOPERATIVE_VECTOR_TRAINING_FLOAT_32_ACCUMULATION);
+                    emitLong(
+                            store,
+                            cooperativeVectorPropertiesNV,
+                            KEY_MAX_COOPERATIVE_VECTOR_COMPONENTS);
                 }
                 store.endGroup();
-                JSONObject cooperativeVectorFeaturesNV = nvCooperativeVectorProperties.getJSONObject(KEY_COOPERATIVE_VECTOR_FEATURES_NV);
+                JSONObject cooperativeVectorFeaturesNV =
+                        nvCooperativeVectorProperties.getJSONObject(
+                                KEY_COOPERATIVE_VECTOR_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_COOPERATIVE_VECTOR_FEATURES_NV));
                 {
                     emitBoolean(store, cooperativeVectorFeaturesNV, KEY_COOPERATIVE_VECTOR);
-                    emitBoolean(store, cooperativeVectorFeaturesNV, KEY_COOPERATIVE_VECTOR_TRAINING);
+                    emitBoolean(
+                            store, cooperativeVectorFeaturesNV, KEY_COOPERATIVE_VECTOR_TRAINING);
                 }
                 store.endGroup();
             }
@@ -6372,19 +9163,23 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVCopyMemoryIndirect(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvCopyMemoryIndirectFeatures = parent.optJSONObject(KEY_VK_NV_COPY_MEMORY_INDIRECT);
+            throws IOException, JSONException {
+        JSONObject nvCopyMemoryIndirectFeatures =
+                parent.optJSONObject(KEY_VK_NV_COPY_MEMORY_INDIRECT);
         if (nvCopyMemoryIndirectFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_COPY_MEMORY_INDIRECT));
             {
-                JSONObject copyMemoryIndirectFeaturesNV = nvCopyMemoryIndirectFeatures.getJSONObject(KEY_COPY_MEMORY_INDIRECT_FEATURES_NV);
+                JSONObject copyMemoryIndirectFeaturesNV =
+                        nvCopyMemoryIndirectFeatures.getJSONObject(
+                                KEY_COPY_MEMORY_INDIRECT_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_COPY_MEMORY_INDIRECT_FEATURES_NV));
                 {
                     emitBoolean(store, copyMemoryIndirectFeaturesNV, KEY_INDIRECT_COPY);
                 }
                 store.endGroup();
-                JSONObject copyMemoryIndirectPropertiesNV = nvCopyMemoryIndirectFeatures.getJSONObject(KEY_COPY_MEMORY_INDIRECT_PROPERTIES_NV);
+                JSONObject copyMemoryIndirectPropertiesNV =
+                        nvCopyMemoryIndirectFeatures.getJSONObject(
+                                KEY_COPY_MEMORY_INDIRECT_PROPERTIES_NV);
                 store.startGroup(getConvertedName(KEY_COPY_MEMORY_INDIRECT_PROPERTIES_NV));
                 {
                     emitLong(store, copyMemoryIndirectPropertiesNV, KEY_SUPPORTED_QUEUES);
@@ -6396,13 +9191,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVCornerSampledImage(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvCornerSampledImageFeatures = parent.optJSONObject(KEY_VK_NV_CORNER_SAMPLED_IMAGE);
+            throws IOException, JSONException {
+        JSONObject nvCornerSampledImageFeatures =
+                parent.optJSONObject(KEY_VK_NV_CORNER_SAMPLED_IMAGE);
         if (nvCornerSampledImageFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_CORNER_SAMPLED_IMAGE));
             {
-                JSONObject cornerSampledImageFeaturesNV = nvCornerSampledImageFeatures.getJSONObject(KEY_CORNER_SAMPLED_IMAGE_FEATURES_NV);
+                JSONObject cornerSampledImageFeaturesNV =
+                        nvCornerSampledImageFeatures.getJSONObject(
+                                KEY_CORNER_SAMPLED_IMAGE_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_CORNER_SAMPLED_IMAGE_FEATURES_NV));
                 {
                     emitBoolean(store, cornerSampledImageFeaturesNV, KEY_CORNER_SAMPLED_IMAGE);
@@ -6414,16 +9211,19 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVCoverageReductionMode(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvCoverageReductionModeFeatures = parent.optJSONObject(KEY_VK_NV_COVERAGE_REDUCTION_MODE);
+            throws IOException, JSONException {
+        JSONObject nvCoverageReductionModeFeatures =
+                parent.optJSONObject(KEY_VK_NV_COVERAGE_REDUCTION_MODE);
         if (nvCoverageReductionModeFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_COVERAGE_REDUCTION_MODE));
             {
-                JSONObject coverageReductionModeFeaturesNV = nvCoverageReductionModeFeatures.getJSONObject(KEY_COVERAGE_REDUCTION_MODE_FEATURES_NV);
+                JSONObject coverageReductionModeFeaturesNV =
+                        nvCoverageReductionModeFeatures.getJSONObject(
+                                KEY_COVERAGE_REDUCTION_MODE_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_COVERAGE_REDUCTION_MODE_FEATURES_NV));
                 {
-                    emitBoolean(store, coverageReductionModeFeaturesNV, KEY_COVERAGE_REDUCTION_MODE);
+                    emitBoolean(
+                            store, coverageReductionModeFeaturesNV, KEY_COVERAGE_REDUCTION_MODE);
                 }
                 store.endGroup();
             }
@@ -6431,17 +9231,23 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkNVDedicatedAllocationImageAliasing(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvDedicatedAllocationImageAliasingFeatures = parent.optJSONObject(KEY_VK_NV_DEDICATED_ALLOCATION_IMAGE_ALIASING);
+    private static void emitVkNVDedicatedAllocationImageAliasing(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject nvDedicatedAllocationImageAliasingFeatures =
+                parent.optJSONObject(KEY_VK_NV_DEDICATED_ALLOCATION_IMAGE_ALIASING);
         if (nvDedicatedAllocationImageAliasingFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_DEDICATED_ALLOCATION_IMAGE_ALIASING));
             {
-                JSONObject dedicatedAllocationImageAliasingFeaturesNV = nvDedicatedAllocationImageAliasingFeatures.getJSONObject(KEY_DEDICATED_ALLOCATION_IMAGE_ALIASING_FEATURES_NV);
-                store.startGroup(getConvertedName(KEY_DEDICATED_ALLOCATION_IMAGE_ALIASING_FEATURES_NV));
+                JSONObject dedicatedAllocationImageAliasingFeaturesNV =
+                        nvDedicatedAllocationImageAliasingFeatures.getJSONObject(
+                                KEY_DEDICATED_ALLOCATION_IMAGE_ALIASING_FEATURES_NV);
+                store.startGroup(
+                        getConvertedName(KEY_DEDICATED_ALLOCATION_IMAGE_ALIASING_FEATURES_NV));
                 {
-                    emitBoolean(store, dedicatedAllocationImageAliasingFeaturesNV, KEY_DEDICATED_ALLOCATION_IMAGE_ALIASING);
+                    emitBoolean(
+                            store,
+                            dedicatedAllocationImageAliasingFeaturesNV,
+                            KEY_DEDICATED_ALLOCATION_IMAGE_ALIASING);
                 }
                 store.endGroup();
             }
@@ -6449,17 +9255,22 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkNVDescriptorPoolOverallocation(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvDescriptorPoolOverallocationFeatures = parent.optJSONObject(KEY_VK_NV_DESCRIPTOR_POOL_OVERALLOCATION);
+    private static void emitVkNVDescriptorPoolOverallocation(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject nvDescriptorPoolOverallocationFeatures =
+                parent.optJSONObject(KEY_VK_NV_DESCRIPTOR_POOL_OVERALLOCATION);
         if (nvDescriptorPoolOverallocationFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_DESCRIPTOR_POOL_OVERALLOCATION));
             {
-                JSONObject descriptorPoolOverallocationFeaturesNV = nvDescriptorPoolOverallocationFeatures.getJSONObject(KEY_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV);
+                JSONObject descriptorPoolOverallocationFeaturesNV =
+                        nvDescriptorPoolOverallocationFeatures.getJSONObject(
+                                KEY_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_DESCRIPTOR_POOL_OVERALLOCATION_FEATURES_NV));
                 {
-                    emitBoolean(store, descriptorPoolOverallocationFeaturesNV, KEY_DESCRIPTOR_POOL_OVERALLOCATION);
+                    emitBoolean(
+                            store,
+                            descriptorPoolOverallocationFeaturesNV,
+                            KEY_DESCRIPTOR_POOL_OVERALLOCATION);
                 }
                 store.endGroup();
             }
@@ -6468,13 +9279,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVDeviceDiagnosticsConfig(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvDiagnosticsConfigFeatures = parent.optJSONObject(KEY_VK_NV_DEVICE_DIAGNOSTICS_CONFIG);
+            throws IOException, JSONException {
+        JSONObject nvDiagnosticsConfigFeatures =
+                parent.optJSONObject(KEY_VK_NV_DEVICE_DIAGNOSTICS_CONFIG);
         if (nvDiagnosticsConfigFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_DEVICE_DIAGNOSTICS_CONFIG));
             {
-                JSONObject diagnosticsConfigFeaturesNV = nvDiagnosticsConfigFeatures.getJSONObject(KEY_DIAGNOSTICS_CONFIG_FEATURES_NV);
+                JSONObject diagnosticsConfigFeaturesNV =
+                        nvDiagnosticsConfigFeatures.getJSONObject(
+                                KEY_DIAGNOSTICS_CONFIG_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_DIAGNOSTICS_CONFIG_FEATURES_NV));
                 {
                     emitBoolean(store, diagnosticsConfigFeaturesNV, KEY_DIAGNOSTICS_CONFIG);
@@ -6486,30 +9299,64 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVDeviceGeneratedCommands(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvDeviceGeneratedCommandsProperties = parent.optJSONObject(KEY_VK_NV_DEVICE_GENERATED_COMMANDS);
+            throws IOException, JSONException {
+        JSONObject nvDeviceGeneratedCommandsProperties =
+                parent.optJSONObject(KEY_VK_NV_DEVICE_GENERATED_COMMANDS);
         if (nvDeviceGeneratedCommandsProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_DEVICE_GENERATED_COMMANDS));
             {
-                JSONObject deviceGeneratedCommandsPropertiesNV = nvDeviceGeneratedCommandsProperties.getJSONObject(KEY_DEVICE_GENERATED_COMMANDS_PROPERTIES_NV);
+                JSONObject deviceGeneratedCommandsPropertiesNV =
+                        nvDeviceGeneratedCommandsProperties.getJSONObject(
+                                KEY_DEVICE_GENERATED_COMMANDS_PROPERTIES_NV);
                 store.startGroup(getConvertedName(KEY_DEVICE_GENERATED_COMMANDS_PROPERTIES_NV));
                 {
-                    emitLong(store, deviceGeneratedCommandsPropertiesNV, KEY_MAX_GRAPHICS_SHADER_GROUP_COUNT);
-                    emitLong(store, deviceGeneratedCommandsPropertiesNV, KEY_MAX_INDIRECT_SEQUENCE_COUNT);
-                    emitLong(store, deviceGeneratedCommandsPropertiesNV, KEY_MAX_INDIRECT_COMMANDS_TOKEN_COUNT);
-                    emitLong(store, deviceGeneratedCommandsPropertiesNV, KEY_MAX_INDIRECT_COMMANDS_STREAM_COUNT);
-                    emitLong(store, deviceGeneratedCommandsPropertiesNV, KEY_MAX_INDIRECT_COMMANDS_TOKEN_OFFSET);
-                    emitLong(store, deviceGeneratedCommandsPropertiesNV, KEY_MAX_INDIRECT_COMMANDS_STREAM_STRIDE);
-                    emitLong(store, deviceGeneratedCommandsPropertiesNV, KEY_MIN_SEQUENCES_COUNT_BUFFER_OFFSET_ALIGNMENT);
-                    emitLong(store, deviceGeneratedCommandsPropertiesNV, KEY_MIN_SEQUENCES_INDEX_BUFFER_OFFSET_ALIGNMENT);
-                    emitLong(store, deviceGeneratedCommandsPropertiesNV, KEY_MIN_INDIRECT_COMMANDS_BUFFER_OFFSET_ALIGNMENT);
+                    emitLong(
+                            store,
+                            deviceGeneratedCommandsPropertiesNV,
+                            KEY_MAX_GRAPHICS_SHADER_GROUP_COUNT);
+                    emitLong(
+                            store,
+                            deviceGeneratedCommandsPropertiesNV,
+                            KEY_MAX_INDIRECT_SEQUENCE_COUNT);
+                    emitLong(
+                            store,
+                            deviceGeneratedCommandsPropertiesNV,
+                            KEY_MAX_INDIRECT_COMMANDS_TOKEN_COUNT);
+                    emitLong(
+                            store,
+                            deviceGeneratedCommandsPropertiesNV,
+                            KEY_MAX_INDIRECT_COMMANDS_STREAM_COUNT);
+                    emitLong(
+                            store,
+                            deviceGeneratedCommandsPropertiesNV,
+                            KEY_MAX_INDIRECT_COMMANDS_TOKEN_OFFSET);
+                    emitLong(
+                            store,
+                            deviceGeneratedCommandsPropertiesNV,
+                            KEY_MAX_INDIRECT_COMMANDS_STREAM_STRIDE);
+                    emitLong(
+                            store,
+                            deviceGeneratedCommandsPropertiesNV,
+                            KEY_MIN_SEQUENCES_COUNT_BUFFER_OFFSET_ALIGNMENT);
+                    emitLong(
+                            store,
+                            deviceGeneratedCommandsPropertiesNV,
+                            KEY_MIN_SEQUENCES_INDEX_BUFFER_OFFSET_ALIGNMENT);
+                    emitLong(
+                            store,
+                            deviceGeneratedCommandsPropertiesNV,
+                            KEY_MIN_INDIRECT_COMMANDS_BUFFER_OFFSET_ALIGNMENT);
                 }
                 store.endGroup();
-                JSONObject deviceGeneratedCommandsFeaturesNV = nvDeviceGeneratedCommandsProperties.getJSONObject(KEY_DEVICE_GENERATED_COMMANDS_FEATURES_NV);
+                JSONObject deviceGeneratedCommandsFeaturesNV =
+                        nvDeviceGeneratedCommandsProperties.getJSONObject(
+                                KEY_DEVICE_GENERATED_COMMANDS_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_DEVICE_GENERATED_COMMANDS_FEATURES_NV));
                 {
-                    emitBoolean(store, deviceGeneratedCommandsFeaturesNV, KEY_DEVICE_GENERATED_COMMANDS);
+                    emitBoolean(
+                            store,
+                            deviceGeneratedCommandsFeaturesNV,
+                            KEY_DEVICE_GENERATED_COMMANDS);
                 }
                 store.endGroup();
             }
@@ -6517,19 +9364,31 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkNVDeviceGeneratedCommandsCompute(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvDeviceGeneratedCommandsComputeFeatures = parent.optJSONObject(KEY_VK_NV_DEVICE_GENERATED_COMMANDS_COMPUTE);
+    private static void emitVkNVDeviceGeneratedCommandsCompute(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject nvDeviceGeneratedCommandsComputeFeatures =
+                parent.optJSONObject(KEY_VK_NV_DEVICE_GENERATED_COMMANDS_COMPUTE);
         if (nvDeviceGeneratedCommandsComputeFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_DEVICE_GENERATED_COMMANDS_COMPUTE));
             {
-                JSONObject deviceGeneratedCommandsComputeFeaturesNV = nvDeviceGeneratedCommandsComputeFeatures.getJSONObject(KEY_DEVICE_GENERATED_COMMANDS_COMPUTE_FEATURES_NV);
-                store.startGroup(getConvertedName(KEY_DEVICE_GENERATED_COMMANDS_COMPUTE_FEATURES_NV));
+                JSONObject deviceGeneratedCommandsComputeFeaturesNV =
+                        nvDeviceGeneratedCommandsComputeFeatures.getJSONObject(
+                                KEY_DEVICE_GENERATED_COMMANDS_COMPUTE_FEATURES_NV);
+                store.startGroup(
+                        getConvertedName(KEY_DEVICE_GENERATED_COMMANDS_COMPUTE_FEATURES_NV));
                 {
-                    emitBoolean(store, deviceGeneratedCommandsComputeFeaturesNV, KEY_DEVICE_GENERATED_COMPUTE);
-                    emitBoolean(store, deviceGeneratedCommandsComputeFeaturesNV, KEY_DEVICE_GENERATED_COMPUTE_PIPELINES);
-                    emitBoolean(store, deviceGeneratedCommandsComputeFeaturesNV, KEY_DEVICE_GENERATED_COMPUTE_CAPTURE_REPLAY);
+                    emitBoolean(
+                            store,
+                            deviceGeneratedCommandsComputeFeaturesNV,
+                            KEY_DEVICE_GENERATED_COMPUTE);
+                    emitBoolean(
+                            store,
+                            deviceGeneratedCommandsComputeFeaturesNV,
+                            KEY_DEVICE_GENERATED_COMPUTE_PIPELINES);
+                    emitBoolean(
+                            store,
+                            deviceGeneratedCommandsComputeFeaturesNV,
+                            KEY_DEVICE_GENERATED_COMPUTE_CAPTURE_REPLAY);
                 }
                 store.endGroup();
             }
@@ -6538,24 +9397,40 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVExtendedSparseAddressSpace(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvExtendedSparseAddressSpaceFeatures = parent.optJSONObject(KEY_VK_NV_EXTENDED_SPARSE_ADDRESS_SPACE);
+            throws IOException, JSONException {
+        JSONObject nvExtendedSparseAddressSpaceFeatures =
+                parent.optJSONObject(KEY_VK_NV_EXTENDED_SPARSE_ADDRESS_SPACE);
         if (nvExtendedSparseAddressSpaceFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_EXTENDED_SPARSE_ADDRESS_SPACE));
             {
-                JSONObject extendedSparseAddressSpaceFeaturesNV = nvExtendedSparseAddressSpaceFeatures.getJSONObject(KEY_EXTENDED_SPARSE_ADDRESS_SPACE_FEATURES_NV);
+                JSONObject extendedSparseAddressSpaceFeaturesNV =
+                        nvExtendedSparseAddressSpaceFeatures.getJSONObject(
+                                KEY_EXTENDED_SPARSE_ADDRESS_SPACE_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_EXTENDED_SPARSE_ADDRESS_SPACE_FEATURES_NV));
                 {
-                    emitBoolean(store, extendedSparseAddressSpaceFeaturesNV, KEY_EXTENDED_SPARSE_ADDRESS_SPACE);
+                    emitBoolean(
+                            store,
+                            extendedSparseAddressSpaceFeaturesNV,
+                            KEY_EXTENDED_SPARSE_ADDRESS_SPACE);
                 }
                 store.endGroup();
-                JSONObject extendedSparseAddressSpacePropertiesNV = nvExtendedSparseAddressSpaceFeatures.getJSONObject(KEY_EXTENDED_SPARSE_ADDRESS_SPACE_PROPERTIES_NV);
+                JSONObject extendedSparseAddressSpacePropertiesNV =
+                        nvExtendedSparseAddressSpaceFeatures.getJSONObject(
+                                KEY_EXTENDED_SPARSE_ADDRESS_SPACE_PROPERTIES_NV);
                 store.startGroup(getConvertedName(KEY_EXTENDED_SPARSE_ADDRESS_SPACE_PROPERTIES_NV));
                 {
-                    emitString(store, extendedSparseAddressSpacePropertiesNV, KEY_EXTENDED_SPARSE_ADDRESS_SPACE_SIZE);
-                    emitLong(store, extendedSparseAddressSpacePropertiesNV, KEY_EXTENDED_SPARSE_IMAGE_USAGE_FLAGS);
-                    emitLong(store, extendedSparseAddressSpacePropertiesNV, KEY_EXTENDED_SPARSE_BUFFER_USAGE_FLAGS);
+                    emitString(
+                            store,
+                            extendedSparseAddressSpacePropertiesNV,
+                            KEY_EXTENDED_SPARSE_ADDRESS_SPACE_SIZE);
+                    emitLong(
+                            store,
+                            extendedSparseAddressSpacePropertiesNV,
+                            KEY_EXTENDED_SPARSE_IMAGE_USAGE_FLAGS);
+                    emitLong(
+                            store,
+                            extendedSparseAddressSpacePropertiesNV,
+                            KEY_EXTENDED_SPARSE_BUFFER_USAGE_FLAGS);
                 }
                 store.endGroup();
             }
@@ -6564,13 +9439,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVExternalComputeQueue(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvExternalComputeQueueProperties = parent.optJSONObject(KEY_VK_NV_EXTERNAL_COMPUTE_QUEUE);
+            throws IOException, JSONException {
+        JSONObject nvExternalComputeQueueProperties =
+                parent.optJSONObject(KEY_VK_NV_EXTERNAL_COMPUTE_QUEUE);
         if (nvExternalComputeQueueProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_EXTERNAL_COMPUTE_QUEUE));
             {
-                JSONObject externalComputeQueuePropertiesNV = nvExternalComputeQueueProperties.getJSONObject(KEY_EXTERNAL_COMPUTE_QUEUE_PROPERTIES_NV);
+                JSONObject externalComputeQueuePropertiesNV =
+                        nvExternalComputeQueueProperties.getJSONObject(
+                                KEY_EXTERNAL_COMPUTE_QUEUE_PROPERTIES_NV);
                 store.startGroup(getConvertedName(KEY_EXTERNAL_COMPUTE_QUEUE_PROPERTIES_NV));
                 {
                     emitLong(store, externalComputeQueuePropertiesNV, KEY_EXTERNAL_DATA_SIZE);
@@ -6583,13 +9460,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVExternalMemoryRdma(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvExternalMemoryRDMAFeatures = parent.optJSONObject(KEY_VK_NV_EXTERNAL_MEMORY_RDMA);
+            throws IOException, JSONException {
+        JSONObject nvExternalMemoryRDMAFeatures =
+                parent.optJSONObject(KEY_VK_NV_EXTERNAL_MEMORY_RDMA);
         if (nvExternalMemoryRDMAFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_EXTERNAL_MEMORY_RDMA));
             {
-                JSONObject externalMemoryRdmaFeaturesNV = nvExternalMemoryRDMAFeatures.getJSONObject(KEY_EXTERNAL_MEMORY_RDMA_FEATURES_NV);
+                JSONObject externalMemoryRdmaFeaturesNV =
+                        nvExternalMemoryRDMAFeatures.getJSONObject(
+                                KEY_EXTERNAL_MEMORY_RDMA_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_EXTERNAL_MEMORY_RDMA_FEATURES_NV));
                 {
                     emitBoolean(store, externalMemoryRdmaFeaturesNV, KEY_EXTERNAL_MEMORY_RDMA);
@@ -6601,24 +9480,40 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVFragmentShadingRateEnums(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvFragmentShadingRateEnumsFeatures = parent.optJSONObject(KEY_VK_NV_FRAGMENT_SHADING_RATE_ENUMS);
+            throws IOException, JSONException {
+        JSONObject nvFragmentShadingRateEnumsFeatures =
+                parent.optJSONObject(KEY_VK_NV_FRAGMENT_SHADING_RATE_ENUMS);
         if (nvFragmentShadingRateEnumsFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_FRAGMENT_SHADING_RATE_ENUMS));
             {
-                JSONObject fragmentShadingRateEnumsFeaturesNV = nvFragmentShadingRateEnumsFeatures.getJSONObject(KEY_FRAGMENT_SHADING_RATE_ENUMS_FEATURES_NV);
+                JSONObject fragmentShadingRateEnumsFeaturesNV =
+                        nvFragmentShadingRateEnumsFeatures.getJSONObject(
+                                KEY_FRAGMENT_SHADING_RATE_ENUMS_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_FRAGMENT_SHADING_RATE_ENUMS_FEATURES_NV));
                 {
-                    emitBoolean(store, fragmentShadingRateEnumsFeaturesNV, KEY_FRAGMENT_SHADING_RATE_ENUMS);
-                    emitBoolean(store, fragmentShadingRateEnumsFeaturesNV, KEY_SUPERSAMPLE_FRAGMENT_SHADING_RATES);
-                    emitBoolean(store, fragmentShadingRateEnumsFeaturesNV, KEY_NO_INVOCATION_FRAGMENT_SHADING_RATES);
+                    emitBoolean(
+                            store,
+                            fragmentShadingRateEnumsFeaturesNV,
+                            KEY_FRAGMENT_SHADING_RATE_ENUMS);
+                    emitBoolean(
+                            store,
+                            fragmentShadingRateEnumsFeaturesNV,
+                            KEY_SUPERSAMPLE_FRAGMENT_SHADING_RATES);
+                    emitBoolean(
+                            store,
+                            fragmentShadingRateEnumsFeaturesNV,
+                            KEY_NO_INVOCATION_FRAGMENT_SHADING_RATES);
                 }
                 store.endGroup();
-                JSONObject fragmentShadingRateEnumsPropertiesNV = nvFragmentShadingRateEnumsFeatures.getJSONObject(KEY_FRAGMENT_SHADING_RATE_ENUMS_PROPERTIES_NV);
+                JSONObject fragmentShadingRateEnumsPropertiesNV =
+                        nvFragmentShadingRateEnumsFeatures.getJSONObject(
+                                KEY_FRAGMENT_SHADING_RATE_ENUMS_PROPERTIES_NV);
                 store.startGroup(getConvertedName(KEY_FRAGMENT_SHADING_RATE_ENUMS_PROPERTIES_NV));
                 {
-                    emitLong(store, fragmentShadingRateEnumsPropertiesNV, KEY_MAX_FRAGMENT_SHADING_RATE_INVOCATION_COUNT);
+                    emitLong(
+                            store,
+                            fragmentShadingRateEnumsPropertiesNV,
+                            KEY_MAX_FRAGMENT_SHADING_RATE_INVOCATION_COUNT);
                 }
                 store.endGroup();
             }
@@ -6627,16 +9522,21 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVInheritedViewportScissor(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvInheritedViewportScissorFeatures = parent.optJSONObject(KEY_VK_NV_INHERITED_VIEWPORT_SCISSOR);
+            throws IOException, JSONException {
+        JSONObject nvInheritedViewportScissorFeatures =
+                parent.optJSONObject(KEY_VK_NV_INHERITED_VIEWPORT_SCISSOR);
         if (nvInheritedViewportScissorFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_INHERITED_VIEWPORT_SCISSOR));
             {
-                JSONObject inheritedViewportScissorFeaturesNV = nvInheritedViewportScissorFeatures.getJSONObject(KEY_INHERITED_VIEWPORT_SCISSOR_FEATURES_NV);
+                JSONObject inheritedViewportScissorFeaturesNV =
+                        nvInheritedViewportScissorFeatures.getJSONObject(
+                                KEY_INHERITED_VIEWPORT_SCISSOR_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_INHERITED_VIEWPORT_SCISSOR_FEATURES_NV));
                 {
-                    emitBoolean(store, inheritedViewportScissorFeaturesNV, KEY_INHERITED_VIEWPORT_SCISSOR_2_D);
+                    emitBoolean(
+                            store,
+                            inheritedViewportScissorFeaturesNV,
+                            KEY_INHERITED_VIEWPORT_SCISSOR_2_D);
                 }
                 store.endGroup();
             }
@@ -6645,16 +9545,19 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVLinearColorAttachment(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvLinearColorAttachmentFeatures = parent.optJSONObject(KEY_VK_NV_LINEAR_COLOR_ATTACHMENT);
+            throws IOException, JSONException {
+        JSONObject nvLinearColorAttachmentFeatures =
+                parent.optJSONObject(KEY_VK_NV_LINEAR_COLOR_ATTACHMENT);
         if (nvLinearColorAttachmentFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_LINEAR_COLOR_ATTACHMENT));
             {
-                JSONObject linearColorAttachmentFeaturesNV = nvLinearColorAttachmentFeatures.getJSONObject(KEY_LINEAR_COLOR_ATTACHMENT_FEATURES_NV);
+                JSONObject linearColorAttachmentFeaturesNV =
+                        nvLinearColorAttachmentFeatures.getJSONObject(
+                                KEY_LINEAR_COLOR_ATTACHMENT_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_LINEAR_COLOR_ATTACHMENT_FEATURES_NV));
                 {
-                    emitBoolean(store, linearColorAttachmentFeaturesNV, KEY_LINEAR_COLOR_ATTACHMENT);
+                    emitBoolean(
+                            store, linearColorAttachmentFeaturesNV, KEY_LINEAR_COLOR_ATTACHMENT);
                 }
                 store.endGroup();
             }
@@ -6663,23 +9566,30 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVMemoryDecompression(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvMemoryDecompressionFeatures = parent.optJSONObject(KEY_VK_NV_MEMORY_DECOMPRESSION);
+            throws IOException, JSONException {
+        JSONObject nvMemoryDecompressionFeatures =
+                parent.optJSONObject(KEY_VK_NV_MEMORY_DECOMPRESSION);
         if (nvMemoryDecompressionFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_MEMORY_DECOMPRESSION));
             {
-                JSONObject memoryDecompressionFeaturesNV = nvMemoryDecompressionFeatures.getJSONObject(KEY_MEMORY_DECOMPRESSION_FEATURES_NV);
+                JSONObject memoryDecompressionFeaturesNV =
+                        nvMemoryDecompressionFeatures.getJSONObject(
+                                KEY_MEMORY_DECOMPRESSION_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_MEMORY_DECOMPRESSION_FEATURES_NV));
                 {
                     emitBoolean(store, memoryDecompressionFeaturesNV, KEY_MEMORY_DECOMPRESSION);
                 }
                 store.endGroup();
-                JSONObject memoryDecompressionPropertiesNV = nvMemoryDecompressionFeatures.getJSONObject(KEY_MEMORY_DECOMPRESSION_PROPERTIES_NV);
+                JSONObject memoryDecompressionPropertiesNV =
+                        nvMemoryDecompressionFeatures.getJSONObject(
+                                KEY_MEMORY_DECOMPRESSION_PROPERTIES_NV);
                 store.startGroup(getConvertedName(KEY_MEMORY_DECOMPRESSION_PROPERTIES_NV));
                 {
                     emitString(store, memoryDecompressionPropertiesNV, KEY_DECOMPRESSION_METHODS);
-                    emitString(store, memoryDecompressionPropertiesNV, KEY_MAX_DECOMPRESSION_INDIRECT_COUNT);
+                    emitString(
+                            store,
+                            memoryDecompressionPropertiesNV,
+                            KEY_MAX_DECOMPRESSION_INDIRECT_COUNT);
                 }
                 store.endGroup();
             }
@@ -6688,20 +9598,21 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVMeshShader(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject nvMeshShaderFeatures = parent.optJSONObject(KEY_VK_NV_MESH_SHADER);
         if (nvMeshShaderFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_MESH_SHADER));
             {
-                JSONObject meshShaderFeaturesNV = nvMeshShaderFeatures.getJSONObject(KEY_MESH_SHADER_FEATURES_NV);
+                JSONObject meshShaderFeaturesNV =
+                        nvMeshShaderFeatures.getJSONObject(KEY_MESH_SHADER_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_MESH_SHADER_FEATURES_NV));
                 {
                     emitBoolean(store, meshShaderFeaturesNV, KEY_TASK_SHADER);
                     emitBoolean(store, meshShaderFeaturesNV, KEY_MESH_SHADER);
                 }
                 store.endGroup();
-                JSONObject meshShaderPropertiesNV = nvMeshShaderFeatures.getJSONObject(KEY_MESH_SHADER_PROPERTIES_NV);
+                JSONObject meshShaderPropertiesNV =
+                        nvMeshShaderFeatures.getJSONObject(KEY_MESH_SHADER_PROPERTIES_NV);
                 store.startGroup(getConvertedName(KEY_MESH_SHADER_PROPERTIES_NV));
                 {
                     emitLong(store, meshShaderPropertiesNV, KEY_MAX_DRAW_MESH_TASKS_COUNT);
@@ -6716,7 +9627,10 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     emitLong(store, meshShaderPropertiesNV, KEY_MAX_MESH_OUTPUT_PRIMITIVES);
                     emitLong(store, meshShaderPropertiesNV, KEY_MAX_MESH_MULTIVIEW_VIEW_COUNT);
                     emitLong(store, meshShaderPropertiesNV, KEY_MESH_OUTPUT_PER_VERTEX_GRANULARITY);
-                    emitLong(store, meshShaderPropertiesNV, KEY_MESH_OUTPUT_PER_PRIMITIVE_GRANULARITY);
+                    emitLong(
+                            store,
+                            meshShaderPropertiesNV,
+                            KEY_MESH_OUTPUT_PER_PRIMITIVE_GRANULARITY);
                 }
                 store.endGroup();
             }
@@ -6725,19 +9639,20 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVOpticalFlow(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject nvOpticalFlowFeatures = parent.optJSONObject(KEY_VK_NV_OPTICAL_FLOW);
         if (nvOpticalFlowFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_OPTICAL_FLOW));
             {
-                JSONObject opticalFlowFeaturesNV = nvOpticalFlowFeatures.getJSONObject(KEY_OPTICAL_FLOW_FEATURES_NV);
+                JSONObject opticalFlowFeaturesNV =
+                        nvOpticalFlowFeatures.getJSONObject(KEY_OPTICAL_FLOW_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_OPTICAL_FLOW_FEATURES_NV));
                 {
                     emitBoolean(store, opticalFlowFeaturesNV, KEY_OPTICAL_FLOW);
                 }
                 store.endGroup();
-                JSONObject opticalFlowPropertiesNV = nvOpticalFlowFeatures.getJSONObject(KEY_OPTICAL_FLOW_PROPERTIES_NV);
+                JSONObject opticalFlowPropertiesNV =
+                        nvOpticalFlowFeatures.getJSONObject(KEY_OPTICAL_FLOW_PROPERTIES_NV);
                 store.startGroup(getConvertedName(KEY_OPTICAL_FLOW_PROPERTIES_NV));
                 {
                     emitLong(store, opticalFlowPropertiesNV, KEY_SUPPORTED_OUTPUT_GRID_SIZES);
@@ -6758,23 +9673,35 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkNVPartitionedAccelerationStructure(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvPartitionedAccelerationStructureFeatures = parent.optJSONObject(KEY_VK_NV_PARTITIONED_ACCELERATION_STRUCTURE);
+    private static void emitVkNVPartitionedAccelerationStructure(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject nvPartitionedAccelerationStructureFeatures =
+                parent.optJSONObject(KEY_VK_NV_PARTITIONED_ACCELERATION_STRUCTURE);
         if (nvPartitionedAccelerationStructureFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_PARTITIONED_ACCELERATION_STRUCTURE));
             {
-                JSONObject partitionedAccelerationStructureFeaturesNV = nvPartitionedAccelerationStructureFeatures.getJSONObject(KEY_PARTITIONED_ACCELERATION_STRUCTURE_FEATURES_NV);
-                store.startGroup(getConvertedName(KEY_PARTITIONED_ACCELERATION_STRUCTURE_FEATURES_NV));
+                JSONObject partitionedAccelerationStructureFeaturesNV =
+                        nvPartitionedAccelerationStructureFeatures.getJSONObject(
+                                KEY_PARTITIONED_ACCELERATION_STRUCTURE_FEATURES_NV);
+                store.startGroup(
+                        getConvertedName(KEY_PARTITIONED_ACCELERATION_STRUCTURE_FEATURES_NV));
                 {
-                    emitBoolean(store, partitionedAccelerationStructureFeaturesNV, KEY_PARTITIONED_ACCELERATION_STRUCTURE);
+                    emitBoolean(
+                            store,
+                            partitionedAccelerationStructureFeaturesNV,
+                            KEY_PARTITIONED_ACCELERATION_STRUCTURE);
                 }
                 store.endGroup();
-                JSONObject partitionedAccelerationStructurePropertiesNV = nvPartitionedAccelerationStructureFeatures.getJSONObject(KEY_PARTITIONED_ACCELERATION_STRUCTURE_PROPERTIES_NV);
-                store.startGroup(getConvertedName(KEY_PARTITIONED_ACCELERATION_STRUCTURE_PROPERTIES_NV));
+                JSONObject partitionedAccelerationStructurePropertiesNV =
+                        nvPartitionedAccelerationStructureFeatures.getJSONObject(
+                                KEY_PARTITIONED_ACCELERATION_STRUCTURE_PROPERTIES_NV);
+                store.startGroup(
+                        getConvertedName(KEY_PARTITIONED_ACCELERATION_STRUCTURE_PROPERTIES_NV));
                 {
-                    emitLong(store, partitionedAccelerationStructurePropertiesNV, KEY_MAX_PARTITION_COUNT);
+                    emitLong(
+                            store,
+                            partitionedAccelerationStructurePropertiesNV,
+                            KEY_MAX_PARTITION_COUNT);
                 }
                 store.endGroup();
             }
@@ -6783,17 +9710,21 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVPerStageDescriptorSet(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvPerStageDescriptorSetFeatures = parent.optJSONObject(KEY_VK_NV_PER_STAGE_DESCRIPTOR_SET);
+            throws IOException, JSONException {
+        JSONObject nvPerStageDescriptorSetFeatures =
+                parent.optJSONObject(KEY_VK_NV_PER_STAGE_DESCRIPTOR_SET);
         if (nvPerStageDescriptorSetFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_PER_STAGE_DESCRIPTOR_SET));
             {
-                JSONObject perStageDescriptorSetFeaturesNV = nvPerStageDescriptorSetFeatures.getJSONObject(KEY_PER_STAGE_DESCRIPTOR_SET_FEATURES_NV);
+                JSONObject perStageDescriptorSetFeaturesNV =
+                        nvPerStageDescriptorSetFeatures.getJSONObject(
+                                KEY_PER_STAGE_DESCRIPTOR_SET_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_PER_STAGE_DESCRIPTOR_SET_FEATURES_NV));
                 {
-                    emitBoolean(store, perStageDescriptorSetFeaturesNV, KEY_PER_STAGE_DESCRIPTOR_SET);
-                    emitBoolean(store, perStageDescriptorSetFeaturesNV, KEY_DYNAMIC_PIPELINE_LAYOUT);
+                    emitBoolean(
+                            store, perStageDescriptorSetFeaturesNV, KEY_PER_STAGE_DESCRIPTOR_SET);
+                    emitBoolean(
+                            store, perStageDescriptorSetFeaturesNV, KEY_DYNAMIC_PIPELINE_LAYOUT);
                 }
                 store.endGroup();
             }
@@ -6802,13 +9733,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVPresentBarrier(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject nvPresentBarrierFeatures = parent.optJSONObject(KEY_VK_NV_PRESENT_BARRIER);
         if (nvPresentBarrierFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_PRESENT_BARRIER));
             {
-                JSONObject presentBarrierFeaturesNV = nvPresentBarrierFeatures.getJSONObject(KEY_PRESENT_BARRIER_FEATURES_NV);
+                JSONObject presentBarrierFeaturesNV =
+                        nvPresentBarrierFeatures.getJSONObject(KEY_PRESENT_BARRIER_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_PRESENT_BARRIER_FEATURES_NV));
                 {
                     emitBoolean(store, presentBarrierFeaturesNV, KEY_PRESENT_BARRIER);
@@ -6820,13 +9751,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVRawAccessChains(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject nvRawAccessChainsFeatures = parent.optJSONObject(KEY_VK_NV_RAW_ACCESS_CHAINS);
         if (nvRawAccessChainsFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_RAW_ACCESS_CHAINS));
             {
-                JSONObject rawAccessChainsFeaturesNV = nvRawAccessChainsFeatures.getJSONObject(KEY_RAW_ACCESS_CHAINS_FEATURES_NV);
+                JSONObject rawAccessChainsFeaturesNV =
+                        nvRawAccessChainsFeatures.getJSONObject(KEY_RAW_ACCESS_CHAINS_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_RAW_ACCESS_CHAINS_FEATURES_NV));
                 {
                     emitBoolean(store, rawAccessChainsFeaturesNV, KEY_SHADER_RAW_ACCESS_CHAINS);
@@ -6838,13 +9769,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVRayTracing(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject nvRayTracingProperties = parent.optJSONObject(KEY_VK_NV_RAY_TRACING);
         if (nvRayTracingProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_RAY_TRACING));
             {
-                JSONObject rayTracingPropertiesNV = nvRayTracingProperties.getJSONObject(KEY_RAY_TRACING_PROPERTIES_NV);
+                JSONObject rayTracingPropertiesNV =
+                        nvRayTracingProperties.getJSONObject(KEY_RAY_TRACING_PROPERTIES_NV);
                 store.startGroup(getConvertedName(KEY_RAY_TRACING_PROPERTIES_NV));
                 {
                     emitLong(store, rayTracingPropertiesNV, KEY_SHADER_GROUP_HANDLE_SIZE);
@@ -6854,7 +9785,10 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     emitString(store, rayTracingPropertiesNV, KEY_MAX_GEOMETRY_COUNT);
                     emitString(store, rayTracingPropertiesNV, KEY_MAX_INSTANCE_COUNT);
                     emitString(store, rayTracingPropertiesNV, KEY_MAX_TRIANGLE_COUNT);
-                    emitLong(store, rayTracingPropertiesNV, KEY_MAX_DESCRIPTOR_SET_ACCELERATION_STRUCTURES);
+                    emitLong(
+                            store,
+                            rayTracingPropertiesNV,
+                            KEY_MAX_DESCRIPTOR_SET_ACCELERATION_STRUCTURES);
                 }
                 store.endGroup();
             }
@@ -6862,23 +9796,34 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkNVRayTracingInvocationReorder(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvRayTracingInvocationReorderProperties = parent.optJSONObject(KEY_VK_NV_RAY_TRACING_INVOCATION_REORDER);
+    private static void emitVkNVRayTracingInvocationReorder(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject nvRayTracingInvocationReorderProperties =
+                parent.optJSONObject(KEY_VK_NV_RAY_TRACING_INVOCATION_REORDER);
         if (nvRayTracingInvocationReorderProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_RAY_TRACING_INVOCATION_REORDER));
             {
-                JSONObject rayTracingInvocationReorderPropertiesNV = nvRayTracingInvocationReorderProperties.getJSONObject(KEY_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_NV);
-                store.startGroup(getConvertedName(KEY_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_NV));
+                JSONObject rayTracingInvocationReorderPropertiesNV =
+                        nvRayTracingInvocationReorderProperties.getJSONObject(
+                                KEY_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_NV);
+                store.startGroup(
+                        getConvertedName(KEY_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_NV));
                 {
-                    emitLong(store, rayTracingInvocationReorderPropertiesNV, KEY_RAY_TRACING_INVOCATION_REORDER_REORDERING_HINT);
+                    emitLong(
+                            store,
+                            rayTracingInvocationReorderPropertiesNV,
+                            KEY_RAY_TRACING_INVOCATION_REORDER_REORDERING_HINT);
                 }
                 store.endGroup();
-                JSONObject rayTracingInvocationReorderFeaturesNV = nvRayTracingInvocationReorderProperties.getJSONObject(KEY_RAY_TRACING_INVOCATION_REORDER_FEATURES_NV);
+                JSONObject rayTracingInvocationReorderFeaturesNV =
+                        nvRayTracingInvocationReorderProperties.getJSONObject(
+                                KEY_RAY_TRACING_INVOCATION_REORDER_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_RAY_TRACING_INVOCATION_REORDER_FEATURES_NV));
                 {
-                    emitBoolean(store, rayTracingInvocationReorderFeaturesNV, KEY_RAY_TRACING_INVOCATION_REORDER);
+                    emitBoolean(
+                            store,
+                            rayTracingInvocationReorderFeaturesNV,
+                            KEY_RAY_TRACING_INVOCATION_REORDER);
                 }
                 store.endGroup();
             }
@@ -6886,18 +9831,24 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkNVRayTracingLinearSweptSpheres(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvRayTracingLinearSweptSpheresFeatures = parent.optJSONObject(KEY_VK_NV_RAY_TRACING_LINEAR_SWEPT_SPHERES);
+    private static void emitVkNVRayTracingLinearSweptSpheres(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject nvRayTracingLinearSweptSpheresFeatures =
+                parent.optJSONObject(KEY_VK_NV_RAY_TRACING_LINEAR_SWEPT_SPHERES);
         if (nvRayTracingLinearSweptSpheresFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_RAY_TRACING_LINEAR_SWEPT_SPHERES));
             {
-                JSONObject rayTracingLinearSweptSpheresFeaturesNV = nvRayTracingLinearSweptSpheresFeatures.getJSONObject(KEY_RAY_TRACING_LINEAR_SWEPT_SPHERES_FEATURES_NV);
-                store.startGroup(getConvertedName(KEY_RAY_TRACING_LINEAR_SWEPT_SPHERES_FEATURES_NV));
+                JSONObject rayTracingLinearSweptSpheresFeaturesNV =
+                        nvRayTracingLinearSweptSpheresFeatures.getJSONObject(
+                                KEY_RAY_TRACING_LINEAR_SWEPT_SPHERES_FEATURES_NV);
+                store.startGroup(
+                        getConvertedName(KEY_RAY_TRACING_LINEAR_SWEPT_SPHERES_FEATURES_NV));
                 {
                     emitBoolean(store, rayTracingLinearSweptSpheresFeaturesNV, KEY_SPHERES);
-                    emitBoolean(store, rayTracingLinearSweptSpheresFeaturesNV, KEY_LINEAR_SWEPT_SPHERES);
+                    emitBoolean(
+                            store,
+                            rayTracingLinearSweptSpheresFeaturesNV,
+                            KEY_LINEAR_SWEPT_SPHERES);
                 }
                 store.endGroup();
             }
@@ -6906,17 +9857,22 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVRayTracingMotionBlur(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvRayTracingMotionBlurFeatures = parent.optJSONObject(KEY_VK_NV_RAY_TRACING_MOTION_BLUR);
+            throws IOException, JSONException {
+        JSONObject nvRayTracingMotionBlurFeatures =
+                parent.optJSONObject(KEY_VK_NV_RAY_TRACING_MOTION_BLUR);
         if (nvRayTracingMotionBlurFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_RAY_TRACING_MOTION_BLUR));
             {
-                JSONObject rayTracingMotionBlurFeaturesNV = nvRayTracingMotionBlurFeatures.getJSONObject(KEY_RAY_TRACING_MOTION_BLUR_FEATURES_NV);
+                JSONObject rayTracingMotionBlurFeaturesNV =
+                        nvRayTracingMotionBlurFeatures.getJSONObject(
+                                KEY_RAY_TRACING_MOTION_BLUR_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_RAY_TRACING_MOTION_BLUR_FEATURES_NV));
                 {
                     emitBoolean(store, rayTracingMotionBlurFeaturesNV, KEY_RAY_TRACING_MOTION_BLUR);
-                    emitBoolean(store, rayTracingMotionBlurFeaturesNV, KEY_RAY_TRACING_MOTION_BLUR_PIPELINE_TRACE_RAYS_INDIRECT);
+                    emitBoolean(
+                            store,
+                            rayTracingMotionBlurFeaturesNV,
+                            KEY_RAY_TRACING_MOTION_BLUR_PIPELINE_TRACE_RAYS_INDIRECT);
                 }
                 store.endGroup();
             }
@@ -6925,13 +9881,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVRayTracingValidation(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvRayTracingValidationFeatures = parent.optJSONObject(KEY_VK_NV_RAY_TRACING_VALIDATION);
+            throws IOException, JSONException {
+        JSONObject nvRayTracingValidationFeatures =
+                parent.optJSONObject(KEY_VK_NV_RAY_TRACING_VALIDATION);
         if (nvRayTracingValidationFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_RAY_TRACING_VALIDATION));
             {
-                JSONObject rayTracingValidationFeaturesNV = nvRayTracingValidationFeatures.getJSONObject(KEY_RAY_TRACING_VALIDATION_FEATURES_NV);
+                JSONObject rayTracingValidationFeaturesNV =
+                        nvRayTracingValidationFeatures.getJSONObject(
+                                KEY_RAY_TRACING_VALIDATION_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_RAY_TRACING_VALIDATION_FEATURES_NV));
                 {
                     emitBoolean(store, rayTracingValidationFeaturesNV, KEY_RAY_TRACING_VALIDATION);
@@ -6943,16 +9901,21 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVRepresentativeFragmentTest(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvRepresentativeFragmentTestFeatures = parent.optJSONObject(KEY_VK_NV_REPRESENTATIVE_FRAGMENT_TEST);
+            throws IOException, JSONException {
+        JSONObject nvRepresentativeFragmentTestFeatures =
+                parent.optJSONObject(KEY_VK_NV_REPRESENTATIVE_FRAGMENT_TEST);
         if (nvRepresentativeFragmentTestFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_REPRESENTATIVE_FRAGMENT_TEST));
             {
-                JSONObject representativeFragmentTestFeaturesNV = nvRepresentativeFragmentTestFeatures.getJSONObject(KEY_REPRESENTATIVE_FRAGMENT_TEST_FEATURES_NV);
+                JSONObject representativeFragmentTestFeaturesNV =
+                        nvRepresentativeFragmentTestFeatures.getJSONObject(
+                                KEY_REPRESENTATIVE_FRAGMENT_TEST_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_REPRESENTATIVE_FRAGMENT_TEST_FEATURES_NV));
                 {
-                    emitBoolean(store, representativeFragmentTestFeaturesNV, KEY_REPRESENTATIVE_FRAGMENT_TEST);
+                    emitBoolean(
+                            store,
+                            representativeFragmentTestFeaturesNV,
+                            KEY_REPRESENTATIVE_FRAGMENT_TEST);
                 }
                 store.endGroup();
             }
@@ -6961,13 +9924,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVScissorExclusive(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject nvExclusiveScissorFeatures = parent.optJSONObject(KEY_VK_NV_SCISSOR_EXCLUSIVE);
         if (nvExclusiveScissorFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_SCISSOR_EXCLUSIVE));
             {
-                JSONObject exclusiveScissorFeaturesNV = nvExclusiveScissorFeatures.getJSONObject(KEY_EXCLUSIVE_SCISSOR_FEATURES_NV);
+                JSONObject exclusiveScissorFeaturesNV =
+                        nvExclusiveScissorFeatures.getJSONObject(KEY_EXCLUSIVE_SCISSOR_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_EXCLUSIVE_SCISSOR_FEATURES_NV));
                 {
                     emitBoolean(store, exclusiveScissorFeaturesNV, KEY_EXCLUSIVE_SCISSOR);
@@ -6979,16 +9942,21 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVShaderAtomicFloat16Vector(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvShaderAtomicFloat16VectorFeatures = parent.optJSONObject(KEY_VK_NV_SHADER_ATOMIC_FLOAT16_VECTOR);
+            throws IOException, JSONException {
+        JSONObject nvShaderAtomicFloat16VectorFeatures =
+                parent.optJSONObject(KEY_VK_NV_SHADER_ATOMIC_FLOAT16_VECTOR);
         if (nvShaderAtomicFloat16VectorFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_SHADER_ATOMIC_FLOAT16_VECTOR));
             {
-                JSONObject shaderAtomicFloat16VectorFeaturesNV = nvShaderAtomicFloat16VectorFeatures.getJSONObject(KEY_SHADER_ATOMIC_FLOAT_16_VECTOR_FEATURES_NV);
+                JSONObject shaderAtomicFloat16VectorFeaturesNV =
+                        nvShaderAtomicFloat16VectorFeatures.getJSONObject(
+                                KEY_SHADER_ATOMIC_FLOAT_16_VECTOR_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_SHADER_ATOMIC_FLOAT_16_VECTOR_FEATURES_NV));
                 {
-                    emitBoolean(store, shaderAtomicFloat16VectorFeaturesNV, KEY_SHADER_FLOAT_16_VECTOR_ATOMICS);
+                    emitBoolean(
+                            store,
+                            shaderAtomicFloat16VectorFeaturesNV,
+                            KEY_SHADER_FLOAT_16_VECTOR_ATOMICS);
                 }
                 store.endGroup();
             }
@@ -6997,13 +9965,15 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVShaderImageFootprint(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvShaderImageFootprintFeatures = parent.optJSONObject(KEY_VK_NV_SHADER_IMAGE_FOOTPRINT);
+            throws IOException, JSONException {
+        JSONObject nvShaderImageFootprintFeatures =
+                parent.optJSONObject(KEY_VK_NV_SHADER_IMAGE_FOOTPRINT);
         if (nvShaderImageFootprintFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_SHADER_IMAGE_FOOTPRINT));
             {
-                JSONObject shaderImageFootprintFeaturesNV = nvShaderImageFootprintFeatures.getJSONObject(KEY_SHADER_IMAGE_FOOTPRINT_FEATURES_NV);
+                JSONObject shaderImageFootprintFeaturesNV =
+                        nvShaderImageFootprintFeatures.getJSONObject(
+                                KEY_SHADER_IMAGE_FOOTPRINT_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_SHADER_IMAGE_FOOTPRINT_FEATURES_NV));
                 {
                     emitBoolean(store, shaderImageFootprintFeaturesNV, KEY_IMAGE_FOOTPRINT);
@@ -7015,20 +9985,24 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVShaderSmBuiltins(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject nvShaderSMBuiltinsProperties = parent.optJSONObject(KEY_VK_NV_SHADER_SM_BUILTINS);
+            throws IOException, JSONException {
+        JSONObject nvShaderSMBuiltinsProperties =
+                parent.optJSONObject(KEY_VK_NV_SHADER_SM_BUILTINS);
         if (nvShaderSMBuiltinsProperties != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_SHADER_SM_BUILTINS));
             {
-                JSONObject shaderSmBuiltinsPropertiesNV = nvShaderSMBuiltinsProperties.getJSONObject(KEY_SHADER_SM_BUILTINS_PROPERTIES_NV);
+                JSONObject shaderSmBuiltinsPropertiesNV =
+                        nvShaderSMBuiltinsProperties.getJSONObject(
+                                KEY_SHADER_SM_BUILTINS_PROPERTIES_NV);
                 store.startGroup(getConvertedName(KEY_SHADER_SM_BUILTINS_PROPERTIES_NV));
                 {
                     emitLong(store, shaderSmBuiltinsPropertiesNV, KEY_SHADER_SM_COUNT);
                     emitLong(store, shaderSmBuiltinsPropertiesNV, KEY_SHADER_WARPS_PER_SM);
                 }
                 store.endGroup();
-                JSONObject shaderSmBuiltinsFeaturesNV = nvShaderSMBuiltinsProperties.getJSONObject(KEY_SHADER_SM_BUILTINS_FEATURES_NV);
+                JSONObject shaderSmBuiltinsFeaturesNV =
+                        nvShaderSMBuiltinsProperties.getJSONObject(
+                                KEY_SHADER_SM_BUILTINS_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_SHADER_SM_BUILTINS_FEATURES_NV));
                 {
                     emitBoolean(store, shaderSmBuiltinsFeaturesNV, KEY_SHADER_SM_BUILTINS);
@@ -7040,23 +10014,30 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkNVShadingRateImage(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject nvShadingRateImageFeatures = parent.optJSONObject(KEY_VK_NV_SHADING_RATE_IMAGE);
         if (nvShadingRateImageFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_NV_SHADING_RATE_IMAGE));
             {
-                JSONObject shadingRateImageFeaturesNV = nvShadingRateImageFeatures.getJSONObject(KEY_SHADING_RATE_IMAGE_FEATURES_NV);
+                JSONObject shadingRateImageFeaturesNV =
+                        nvShadingRateImageFeatures.getJSONObject(
+                                KEY_SHADING_RATE_IMAGE_FEATURES_NV);
                 store.startGroup(getConvertedName(KEY_SHADING_RATE_IMAGE_FEATURES_NV));
                 {
                     emitBoolean(store, shadingRateImageFeaturesNV, KEY_SHADING_RATE_IMAGE);
-                    emitBoolean(store, shadingRateImageFeaturesNV, KEY_SHADING_RATE_COARSE_SAMPLE_ORDER);
+                    emitBoolean(
+                            store,
+                            shadingRateImageFeaturesNV,
+                            KEY_SHADING_RATE_COARSE_SAMPLE_ORDER);
                 }
                 store.endGroup();
-                JSONObject shadingRateImagePropertiesNV = nvShadingRateImageFeatures.getJSONObject(KEY_SHADING_RATE_IMAGE_PROPERTIES_NV);
+                JSONObject shadingRateImagePropertiesNV =
+                        nvShadingRateImageFeatures.getJSONObject(
+                                KEY_SHADING_RATE_IMAGE_PROPERTIES_NV);
                 store.startGroup(getConvertedName(KEY_SHADING_RATE_IMAGE_PROPERTIES_NV));
                 {
-                    JSONObject shadingRateTexelSize = shadingRateImagePropertiesNV.getJSONObject(KEY_SHADING_RATE_TEXEL_SIZE);
+                    JSONObject shadingRateTexelSize =
+                            shadingRateImagePropertiesNV.getJSONObject(KEY_SHADING_RATE_TEXEL_SIZE);
                     store.startGroup(getConvertedName(KEY_SHADING_RATE_TEXEL_SIZE));
                     {
                         emitLong(store, shadingRateTexelSize, KEY_WIDTH);
@@ -7064,7 +10045,10 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     }
                     store.endGroup();
                     emitLong(store, shadingRateImagePropertiesNV, KEY_SHADING_RATE_PALETTE_SIZE);
-                    emitLong(store, shadingRateImagePropertiesNV, KEY_SHADING_RATE_MAX_COARSE_SAMPLES);
+                    emitLong(
+                            store,
+                            shadingRateImagePropertiesNV,
+                            KEY_SHADING_RATE_MAX_COARSE_SAMPLES);
                 }
                 store.endGroup();
             }
@@ -7073,13 +10057,14 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkQCOMDataGraphModel(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject qcomDataGraphModelFeatures = parent.optJSONObject(KEY_VK_QCOM_DATA_GRAPH_MODEL);
         if (qcomDataGraphModelFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_QCOM_DATA_GRAPH_MODEL));
             {
-                JSONObject dataGraphModelFeaturesQCOM = qcomDataGraphModelFeatures.getJSONObject(KEY_DATA_GRAPH_MODEL_FEATURES_QCOM);
+                JSONObject dataGraphModelFeaturesQCOM =
+                        qcomDataGraphModelFeatures.getJSONObject(
+                                KEY_DATA_GRAPH_MODEL_FEATURES_QCOM);
                 store.startGroup(getConvertedName(KEY_DATA_GRAPH_MODEL_FEATURES_QCOM));
                 {
                     emitBoolean(store, dataGraphModelFeaturesQCOM, KEY_DATA_GRAPH_MODEL);
@@ -7091,13 +10076,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkQCOMFilterCubicClamp(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject qcomCubicClampFeatures = parent.optJSONObject(KEY_VK_QCOM_FILTER_CUBIC_CLAMP);
         if (qcomCubicClampFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_QCOM_FILTER_CUBIC_CLAMP));
             {
-                JSONObject cubicClampFeaturesQCOM = qcomCubicClampFeatures.getJSONObject(KEY_CUBIC_CLAMP_FEATURES_QCOM);
+                JSONObject cubicClampFeaturesQCOM =
+                        qcomCubicClampFeatures.getJSONObject(KEY_CUBIC_CLAMP_FEATURES_QCOM);
                 store.startGroup(getConvertedName(KEY_CUBIC_CLAMP_FEATURES_QCOM));
                 {
                     emitBoolean(store, cubicClampFeaturesQCOM, KEY_CUBIC_RANGE_CLAMP);
@@ -7109,13 +10094,14 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkQCOMFilterCubicWeights(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject qcomCubicWeightsFeatures = parent.optJSONObject(KEY_VK_QCOM_FILTER_CUBIC_WEIGHTS);
+            throws IOException, JSONException {
+        JSONObject qcomCubicWeightsFeatures =
+                parent.optJSONObject(KEY_VK_QCOM_FILTER_CUBIC_WEIGHTS);
         if (qcomCubicWeightsFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_QCOM_FILTER_CUBIC_WEIGHTS));
             {
-                JSONObject cubicWeightsFeaturesQCOM = qcomCubicWeightsFeatures.getJSONObject(KEY_CUBIC_WEIGHTS_FEATURES_QCOM);
+                JSONObject cubicWeightsFeaturesQCOM =
+                        qcomCubicWeightsFeatures.getJSONObject(KEY_CUBIC_WEIGHTS_FEATURES_QCOM);
                 store.startGroup(getConvertedName(KEY_CUBIC_WEIGHTS_FEATURES_QCOM));
                 {
                     emitBoolean(store, cubicWeightsFeaturesQCOM, KEY_SELECTABLE_CUBIC_WEIGHTS);
@@ -7127,22 +10113,31 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkQCOMFragmentDensityMapOffset(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject qcomFragmentDensityMapOffsetFeatures = parent.optJSONObject(KEY_VK_QCOM_FRAGMENT_DENSITY_MAP_OFFSET);
+            throws IOException, JSONException {
+        JSONObject qcomFragmentDensityMapOffsetFeatures =
+                parent.optJSONObject(KEY_VK_QCOM_FRAGMENT_DENSITY_MAP_OFFSET);
         if (qcomFragmentDensityMapOffsetFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_QCOM_FRAGMENT_DENSITY_MAP_OFFSET));
             {
-                JSONObject fragmentDensityMapOffsetFeaturesQCOM = qcomFragmentDensityMapOffsetFeatures.getJSONObject(KEY_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_QCOM);
+                JSONObject fragmentDensityMapOffsetFeaturesQCOM =
+                        qcomFragmentDensityMapOffsetFeatures.getJSONObject(
+                                KEY_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_QCOM);
                 store.startGroup(getConvertedName(KEY_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_QCOM));
                 {
-                    emitBoolean(store, fragmentDensityMapOffsetFeaturesQCOM, KEY_FRAGMENT_DENSITY_MAP_OFFSET);
+                    emitBoolean(
+                            store,
+                            fragmentDensityMapOffsetFeaturesQCOM,
+                            KEY_FRAGMENT_DENSITY_MAP_OFFSET);
                 }
                 store.endGroup();
-                JSONObject fragmentDensityMapOffsetPropertiesQCOM = qcomFragmentDensityMapOffsetFeatures.getJSONObject(KEY_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_QCOM);
+                JSONObject fragmentDensityMapOffsetPropertiesQCOM =
+                        qcomFragmentDensityMapOffsetFeatures.getJSONObject(
+                                KEY_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_QCOM);
                 store.startGroup(getConvertedName(KEY_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_QCOM));
                 {
-                    JSONObject fragmentDensityOffsetGranularity = fragmentDensityMapOffsetPropertiesQCOM.getJSONObject(KEY_FRAGMENT_DENSITY_OFFSET_GRANULARITY);
+                    JSONObject fragmentDensityOffsetGranularity =
+                            fragmentDensityMapOffsetPropertiesQCOM.getJSONObject(
+                                    KEY_FRAGMENT_DENSITY_OFFSET_GRANULARITY);
                     store.startGroup(getConvertedName(KEY_FRAGMENT_DENSITY_OFFSET_GRANULARITY));
                     {
                         emitLong(store, fragmentDensityOffsetGranularity, KEY_WIDTH);
@@ -7157,13 +10152,14 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkQCOMImageProcessing(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject qcomImageProcessingFeatures = parent.optJSONObject(KEY_VK_QCOM_IMAGE_PROCESSING);
         if (qcomImageProcessingFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_QCOM_IMAGE_PROCESSING));
             {
-                JSONObject imageProcessingFeaturesQCOM = qcomImageProcessingFeatures.getJSONObject(KEY_IMAGE_PROCESSING_FEATURES_QCOM);
+                JSONObject imageProcessingFeaturesQCOM =
+                        qcomImageProcessingFeatures.getJSONObject(
+                                KEY_IMAGE_PROCESSING_FEATURES_QCOM);
                 store.startGroup(getConvertedName(KEY_IMAGE_PROCESSING_FEATURES_QCOM));
                 {
                     emitBoolean(store, imageProcessingFeaturesQCOM, KEY_TEXTURE_SAMPLE_WEIGHTED);
@@ -7171,25 +10167,32 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     emitBoolean(store, imageProcessingFeaturesQCOM, KEY_TEXTURE_BLOCK_MATCH);
                 }
                 store.endGroup();
-                JSONObject imageProcessingPropertiesQCOM = qcomImageProcessingFeatures.getJSONObject(KEY_IMAGE_PROCESSING_PROPERTIES_QCOM);
+                JSONObject imageProcessingPropertiesQCOM =
+                        qcomImageProcessingFeatures.getJSONObject(
+                                KEY_IMAGE_PROCESSING_PROPERTIES_QCOM);
                 store.startGroup(getConvertedName(KEY_IMAGE_PROCESSING_PROPERTIES_QCOM));
                 {
                     emitLong(store, imageProcessingPropertiesQCOM, KEY_MAX_WEIGHT_FILTER_PHASES);
-                    JSONObject maxWeightFilterDimension = imageProcessingPropertiesQCOM.getJSONObject(KEY_MAX_WEIGHT_FILTER_DIMENSION);
+                    JSONObject maxWeightFilterDimension =
+                            imageProcessingPropertiesQCOM.getJSONObject(
+                                    KEY_MAX_WEIGHT_FILTER_DIMENSION);
                     store.startGroup(getConvertedName(KEY_MAX_WEIGHT_FILTER_DIMENSION));
                     {
                         emitLong(store, maxWeightFilterDimension, KEY_WIDTH);
                         emitLong(store, maxWeightFilterDimension, KEY_HEIGHT);
                     }
                     store.endGroup();
-                    JSONObject maxBlockMatchRegion = imageProcessingPropertiesQCOM.getJSONObject(KEY_MAX_BLOCK_MATCH_REGION);
+                    JSONObject maxBlockMatchRegion =
+                            imageProcessingPropertiesQCOM.getJSONObject(KEY_MAX_BLOCK_MATCH_REGION);
                     store.startGroup(getConvertedName(KEY_MAX_BLOCK_MATCH_REGION));
                     {
                         emitLong(store, maxBlockMatchRegion, KEY_WIDTH);
                         emitLong(store, maxBlockMatchRegion, KEY_HEIGHT);
                     }
                     store.endGroup();
-                    JSONObject maxBoxFilterBlockSize = imageProcessingPropertiesQCOM.getJSONObject(KEY_MAX_BOX_FILTER_BLOCK_SIZE);
+                    JSONObject maxBoxFilterBlockSize =
+                            imageProcessingPropertiesQCOM.getJSONObject(
+                                    KEY_MAX_BOX_FILTER_BLOCK_SIZE);
                     store.startGroup(getConvertedName(KEY_MAX_BOX_FILTER_BLOCK_SIZE));
                     {
                         emitLong(store, maxBoxFilterBlockSize, KEY_WIDTH);
@@ -7204,22 +10207,28 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkQCOMImageProcessing2(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject qcomImageProcessing2Features = parent.optJSONObject(KEY_VK_QCOM_IMAGE_PROCESSING2);
+            throws IOException, JSONException {
+        JSONObject qcomImageProcessing2Features =
+                parent.optJSONObject(KEY_VK_QCOM_IMAGE_PROCESSING2);
         if (qcomImageProcessing2Features != null) {
             store.startGroup(getConvertedName(KEY_VK_QCOM_IMAGE_PROCESSING2));
             {
-                JSONObject imageProcessing2FeaturesQCOM = qcomImageProcessing2Features.getJSONObject(KEY_IMAGE_PROCESSING_2_FEATURES_QCOM);
+                JSONObject imageProcessing2FeaturesQCOM =
+                        qcomImageProcessing2Features.getJSONObject(
+                                KEY_IMAGE_PROCESSING_2_FEATURES_QCOM);
                 store.startGroup(getConvertedName(KEY_IMAGE_PROCESSING_2_FEATURES_QCOM));
                 {
                     emitBoolean(store, imageProcessing2FeaturesQCOM, KEY_TEXTURE_BLOCK_MATCH_2);
                 }
                 store.endGroup();
-                JSONObject imageProcessing2PropertiesQCOM = qcomImageProcessing2Features.getJSONObject(KEY_IMAGE_PROCESSING_2_PROPERTIES_QCOM);
+                JSONObject imageProcessing2PropertiesQCOM =
+                        qcomImageProcessing2Features.getJSONObject(
+                                KEY_IMAGE_PROCESSING_2_PROPERTIES_QCOM);
                 store.startGroup(getConvertedName(KEY_IMAGE_PROCESSING_2_PROPERTIES_QCOM));
                 {
-                    JSONObject maxBlockMatchWindow = imageProcessing2PropertiesQCOM.getJSONObject(KEY_MAX_BLOCK_MATCH_WINDOW);
+                    JSONObject maxBlockMatchWindow =
+                            imageProcessing2PropertiesQCOM.getJSONObject(
+                                    KEY_MAX_BLOCK_MATCH_WINDOW);
                     store.startGroup(getConvertedName(KEY_MAX_BLOCK_MATCH_WINDOW));
                     {
                         emitLong(store, maxBlockMatchWindow, KEY_WIDTH);
@@ -7233,17 +10242,23 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkQCOMMultiviewPerViewRenderAreas(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject qcomMultiviewPerViewRenderAreasFeatures = parent.optJSONObject(KEY_VK_QCOM_MULTIVIEW_PER_VIEW_RENDER_AREAS);
+    private static void emitVkQCOMMultiviewPerViewRenderAreas(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject qcomMultiviewPerViewRenderAreasFeatures =
+                parent.optJSONObject(KEY_VK_QCOM_MULTIVIEW_PER_VIEW_RENDER_AREAS);
         if (qcomMultiviewPerViewRenderAreasFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_QCOM_MULTIVIEW_PER_VIEW_RENDER_AREAS));
             {
-                JSONObject multiviewPerViewRenderAreasFeaturesQCOM = qcomMultiviewPerViewRenderAreasFeatures.getJSONObject(KEY_MULTIVIEW_PER_VIEW_RENDER_AREAS_FEATURES_QCOM);
-                store.startGroup(getConvertedName(KEY_MULTIVIEW_PER_VIEW_RENDER_AREAS_FEATURES_QCOM));
+                JSONObject multiviewPerViewRenderAreasFeaturesQCOM =
+                        qcomMultiviewPerViewRenderAreasFeatures.getJSONObject(
+                                KEY_MULTIVIEW_PER_VIEW_RENDER_AREAS_FEATURES_QCOM);
+                store.startGroup(
+                        getConvertedName(KEY_MULTIVIEW_PER_VIEW_RENDER_AREAS_FEATURES_QCOM));
                 {
-                    emitBoolean(store, multiviewPerViewRenderAreasFeaturesQCOM, KEY_MULTIVIEW_PER_VIEW_RENDER_AREAS);
+                    emitBoolean(
+                            store,
+                            multiviewPerViewRenderAreasFeaturesQCOM,
+                            KEY_MULTIVIEW_PER_VIEW_RENDER_AREAS);
                 }
                 store.endGroup();
             }
@@ -7251,17 +10266,22 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkQCOMMultiviewPerViewViewports(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject qcomMultiviewPerViewViewportsFeatures = parent.optJSONObject(KEY_VK_QCOM_MULTIVIEW_PER_VIEW_VIEWPORTS);
+    private static void emitVkQCOMMultiviewPerViewViewports(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject qcomMultiviewPerViewViewportsFeatures =
+                parent.optJSONObject(KEY_VK_QCOM_MULTIVIEW_PER_VIEW_VIEWPORTS);
         if (qcomMultiviewPerViewViewportsFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_QCOM_MULTIVIEW_PER_VIEW_VIEWPORTS));
             {
-                JSONObject multiviewPerViewViewportsFeaturesQCOM = qcomMultiviewPerViewViewportsFeatures.getJSONObject(KEY_MULTIVIEW_PER_VIEW_VIEWPORTS_FEATURES_QCOM);
+                JSONObject multiviewPerViewViewportsFeaturesQCOM =
+                        qcomMultiviewPerViewViewportsFeatures.getJSONObject(
+                                KEY_MULTIVIEW_PER_VIEW_VIEWPORTS_FEATURES_QCOM);
                 store.startGroup(getConvertedName(KEY_MULTIVIEW_PER_VIEW_VIEWPORTS_FEATURES_QCOM));
                 {
-                    emitBoolean(store, multiviewPerViewViewportsFeaturesQCOM, KEY_MULTIVIEW_PER_VIEW_VIEWPORTS);
+                    emitBoolean(
+                            store,
+                            multiviewPerViewViewportsFeaturesQCOM,
+                            KEY_MULTIVIEW_PER_VIEW_VIEWPORTS);
                 }
                 store.endGroup();
             }
@@ -7270,19 +10290,22 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkQCOMTileMemoryHeap(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject qcomTileMemoryHeapFeatures = parent.optJSONObject(KEY_VK_QCOM_TILE_MEMORY_HEAP);
         if (qcomTileMemoryHeapFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_QCOM_TILE_MEMORY_HEAP));
             {
-                JSONObject tileMemoryHeapFeaturesQCOM = qcomTileMemoryHeapFeatures.getJSONObject(KEY_TILE_MEMORY_HEAP_FEATURES_QCOM);
+                JSONObject tileMemoryHeapFeaturesQCOM =
+                        qcomTileMemoryHeapFeatures.getJSONObject(
+                                KEY_TILE_MEMORY_HEAP_FEATURES_QCOM);
                 store.startGroup(getConvertedName(KEY_TILE_MEMORY_HEAP_FEATURES_QCOM));
                 {
                     emitBoolean(store, tileMemoryHeapFeaturesQCOM, KEY_TILE_MEMORY_HEAP);
                 }
                 store.endGroup();
-                JSONObject tileMemoryHeapPropertiesQCOM = qcomTileMemoryHeapFeatures.getJSONObject(KEY_TILE_MEMORY_HEAP_PROPERTIES_QCOM);
+                JSONObject tileMemoryHeapPropertiesQCOM =
+                        qcomTileMemoryHeapFeatures.getJSONObject(
+                                KEY_TILE_MEMORY_HEAP_PROPERTIES_QCOM);
                 store.startGroup(getConvertedName(KEY_TILE_MEMORY_HEAP_PROPERTIES_QCOM));
                 {
                     emitBoolean(store, tileMemoryHeapPropertiesQCOM, KEY_QUEUE_SUBMIT_BOUNDARY);
@@ -7295,13 +10318,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkQCOMTileProperties(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject qcomTilePropertiesFeatures = parent.optJSONObject(KEY_VK_QCOM_TILE_PROPERTIES);
         if (qcomTilePropertiesFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_QCOM_TILE_PROPERTIES));
             {
-                JSONObject tilePropertiesFeaturesQCOM = qcomTilePropertiesFeatures.getJSONObject(KEY_TILE_PROPERTIES_FEATURES_QCOM);
+                JSONObject tilePropertiesFeaturesQCOM =
+                        qcomTilePropertiesFeatures.getJSONObject(KEY_TILE_PROPERTIES_FEATURES_QCOM);
                 store.startGroup(getConvertedName(KEY_TILE_PROPERTIES_FEATURES_QCOM));
                 {
                     emitBoolean(store, tilePropertiesFeaturesQCOM, KEY_TILE_PROPERTIES);
@@ -7313,22 +10336,24 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkQCOMTileShading(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject qcomTileShadingFeatures = parent.optJSONObject(KEY_VK_QCOM_TILE_SHADING);
         if (qcomTileShadingFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_QCOM_TILE_SHADING));
             {
-                JSONObject tileShadingFeaturesQCOM = qcomTileShadingFeatures.getJSONObject(KEY_TILE_SHADING_FEATURES_QCOM);
+                JSONObject tileShadingFeaturesQCOM =
+                        qcomTileShadingFeatures.getJSONObject(KEY_TILE_SHADING_FEATURES_QCOM);
                 store.startGroup(getConvertedName(KEY_TILE_SHADING_FEATURES_QCOM));
                 {
                     emitBoolean(store, tileShadingFeaturesQCOM, KEY_TILE_SHADING);
                     emitBoolean(store, tileShadingFeaturesQCOM, KEY_TILE_SHADING_FRAGMENT_STAGE);
                     emitBoolean(store, tileShadingFeaturesQCOM, KEY_TILE_SHADING_COLOR_ATTACHMENTS);
                     emitBoolean(store, tileShadingFeaturesQCOM, KEY_TILE_SHADING_DEPTH_ATTACHMENTS);
-                    emitBoolean(store, tileShadingFeaturesQCOM, KEY_TILE_SHADING_STENCIL_ATTACHMENTS);
+                    emitBoolean(
+                            store, tileShadingFeaturesQCOM, KEY_TILE_SHADING_STENCIL_ATTACHMENTS);
                     emitBoolean(store, tileShadingFeaturesQCOM, KEY_TILE_SHADING_INPUT_ATTACHMENTS);
-                    emitBoolean(store, tileShadingFeaturesQCOM, KEY_TILE_SHADING_SAMPLED_ATTACHMENTS);
+                    emitBoolean(
+                            store, tileShadingFeaturesQCOM, KEY_TILE_SHADING_SAMPLED_ATTACHMENTS);
                     emitBoolean(store, tileShadingFeaturesQCOM, KEY_TILE_SHADING_PER_TILE_DRAW);
                     emitBoolean(store, tileShadingFeaturesQCOM, KEY_TILE_SHADING_PER_TILE_DISPATCH);
                     emitBoolean(store, tileShadingFeaturesQCOM, KEY_TILE_SHADING_DISPATCH_TILE);
@@ -7338,19 +10363,22 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     emitBoolean(store, tileShadingFeaturesQCOM, KEY_TILE_SHADING_IMAGE_PROCESSING);
                 }
                 store.endGroup();
-                JSONObject tileShadingPropertiesQCOM = qcomTileShadingFeatures.getJSONObject(KEY_TILE_SHADING_PROPERTIES_QCOM);
+                JSONObject tileShadingPropertiesQCOM =
+                        qcomTileShadingFeatures.getJSONObject(KEY_TILE_SHADING_PROPERTIES_QCOM);
                 store.startGroup(getConvertedName(KEY_TILE_SHADING_PROPERTIES_QCOM));
                 {
                     emitLong(store, tileShadingPropertiesQCOM, KEY_MAX_APRON_SIZE);
                     emitBoolean(store, tileShadingPropertiesQCOM, KEY_PREFER_NON_COHERENT);
-                    JSONObject tileGranularity = tileShadingPropertiesQCOM.getJSONObject(KEY_TILE_GRANULARITY);
+                    JSONObject tileGranularity =
+                            tileShadingPropertiesQCOM.getJSONObject(KEY_TILE_GRANULARITY);
                     store.startGroup(getConvertedName(KEY_TILE_GRANULARITY));
                     {
                         emitLong(store, tileGranularity, KEY_WIDTH);
                         emitLong(store, tileGranularity, KEY_HEIGHT);
                     }
                     store.endGroup();
-                    JSONObject maxTileShadingRate = tileShadingPropertiesQCOM.getJSONObject(KEY_MAX_TILE_SHADING_RATE);
+                    JSONObject maxTileShadingRate =
+                            tileShadingPropertiesQCOM.getJSONObject(KEY_MAX_TILE_SHADING_RATE);
                     store.startGroup(getConvertedName(KEY_MAX_TILE_SHADING_RATE));
                     {
                         emitLong(store, maxTileShadingRate, KEY_WIDTH);
@@ -7365,13 +10393,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkQCOMYcbcrDegamma(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject qcomYcbcrDegammaFeatures = parent.optJSONObject(KEY_VK_QCOM_YCBCR_DEGAMMA);
         if (qcomYcbcrDegammaFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_QCOM_YCBCR_DEGAMMA));
             {
-                JSONObject ycbcrDegammaFeaturesQCOM = qcomYcbcrDegammaFeatures.getJSONObject(KEY_YCBCR_DEGAMMA_FEATURES_QCOM);
+                JSONObject ycbcrDegammaFeaturesQCOM =
+                        qcomYcbcrDegammaFeatures.getJSONObject(KEY_YCBCR_DEGAMMA_FEATURES_QCOM);
                 store.startGroup(getConvertedName(KEY_YCBCR_DEGAMMA_FEATURES_QCOM));
                 {
                     emitBoolean(store, ycbcrDegammaFeaturesQCOM, KEY_YCBCR_DEGAMMA);
@@ -7383,13 +10411,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkSECAmigoProfiling(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
+            throws IOException, JSONException {
         JSONObject secAmigoProfilingFeatures = parent.optJSONObject(KEY_VK_SEC_AMIGO_PROFILING);
         if (secAmigoProfilingFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_SEC_AMIGO_PROFILING));
             {
-                JSONObject amigoProfilingFeaturesSEC = secAmigoProfilingFeatures.getJSONObject(KEY_AMIGO_PROFILING_FEATURES_SEC);
+                JSONObject amigoProfilingFeaturesSEC =
+                        secAmigoProfilingFeatures.getJSONObject(KEY_AMIGO_PROFILING_FEATURES_SEC);
                 store.startGroup(getConvertedName(KEY_AMIGO_PROFILING_FEATURES_SEC));
                 {
                     emitBoolean(store, amigoProfilingFeaturesSEC, KEY_AMIGO_PROFILING);
@@ -7400,17 +10428,23 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkSECPipelineCacheIncrementalMode(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject secPipelineCacheIncrementalModeFeatures = parent.optJSONObject(KEY_VK_SEC_PIPELINE_CACHE_INCREMENTAL_MODE);
+    private static void emitVkSECPipelineCacheIncrementalMode(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject secPipelineCacheIncrementalModeFeatures =
+                parent.optJSONObject(KEY_VK_SEC_PIPELINE_CACHE_INCREMENTAL_MODE);
         if (secPipelineCacheIncrementalModeFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_SEC_PIPELINE_CACHE_INCREMENTAL_MODE));
             {
-                JSONObject pipelineCacheIncrementalModeFeaturesSEC = secPipelineCacheIncrementalModeFeatures.getJSONObject(KEY_PIPELINE_CACHE_INCREMENTAL_MODE_FEATURES_SEC);
-                store.startGroup(getConvertedName(KEY_PIPELINE_CACHE_INCREMENTAL_MODE_FEATURES_SEC));
+                JSONObject pipelineCacheIncrementalModeFeaturesSEC =
+                        secPipelineCacheIncrementalModeFeatures.getJSONObject(
+                                KEY_PIPELINE_CACHE_INCREMENTAL_MODE_FEATURES_SEC);
+                store.startGroup(
+                        getConvertedName(KEY_PIPELINE_CACHE_INCREMENTAL_MODE_FEATURES_SEC));
                 {
-                    emitBoolean(store, pipelineCacheIncrementalModeFeaturesSEC, KEY_PIPELINE_CACHE_INCREMENTAL_MODE);
+                    emitBoolean(
+                            store,
+                            pipelineCacheIncrementalModeFeaturesSEC,
+                            KEY_PIPELINE_CACHE_INCREMENTAL_MODE);
                 }
                 store.endGroup();
             }
@@ -7418,17 +10452,22 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkVALVEDescriptorSetHostMapping(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject valveDescriptorSetHostMappingFeatures = parent.optJSONObject(KEY_VK_VALVE_DESCRIPTOR_SET_HOST_MAPPING);
+    private static void emitVkVALVEDescriptorSetHostMapping(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject valveDescriptorSetHostMappingFeatures =
+                parent.optJSONObject(KEY_VK_VALVE_DESCRIPTOR_SET_HOST_MAPPING);
         if (valveDescriptorSetHostMappingFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_VALVE_DESCRIPTOR_SET_HOST_MAPPING));
             {
-                JSONObject descriptorSetHostMappingFeaturesVALVE = valveDescriptorSetHostMappingFeatures.getJSONObject(KEY_DESCRIPTOR_SET_HOST_MAPPING_FEATURES_VALVE);
+                JSONObject descriptorSetHostMappingFeaturesVALVE =
+                        valveDescriptorSetHostMappingFeatures.getJSONObject(
+                                KEY_DESCRIPTOR_SET_HOST_MAPPING_FEATURES_VALVE);
                 store.startGroup(getConvertedName(KEY_DESCRIPTOR_SET_HOST_MAPPING_FEATURES_VALVE));
                 {
-                    emitBoolean(store, descriptorSetHostMappingFeaturesVALVE, KEY_DESCRIPTOR_SET_HOST_MAPPING);
+                    emitBoolean(
+                            store,
+                            descriptorSetHostMappingFeaturesVALVE,
+                            KEY_DESCRIPTOR_SET_HOST_MAPPING);
                 }
                 store.endGroup();
             }
@@ -7436,23 +10475,34 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkVALVEFragmentDensityMapLayered(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject valveFragmentDensityMapLayeredFeatures = parent.optJSONObject(KEY_VK_VALVE_FRAGMENT_DENSITY_MAP_LAYERED);
+    private static void emitVkVALVEFragmentDensityMapLayered(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject valveFragmentDensityMapLayeredFeatures =
+                parent.optJSONObject(KEY_VK_VALVE_FRAGMENT_DENSITY_MAP_LAYERED);
         if (valveFragmentDensityMapLayeredFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_VALVE_FRAGMENT_DENSITY_MAP_LAYERED));
             {
-                JSONObject fragmentDensityMapLayeredFeaturesVALVE = valveFragmentDensityMapLayeredFeatures.getJSONObject(KEY_FRAGMENT_DENSITY_MAP_LAYERED_FEATURES_VALVE);
+                JSONObject fragmentDensityMapLayeredFeaturesVALVE =
+                        valveFragmentDensityMapLayeredFeatures.getJSONObject(
+                                KEY_FRAGMENT_DENSITY_MAP_LAYERED_FEATURES_VALVE);
                 store.startGroup(getConvertedName(KEY_FRAGMENT_DENSITY_MAP_LAYERED_FEATURES_VALVE));
                 {
-                    emitBoolean(store, fragmentDensityMapLayeredFeaturesVALVE, KEY_FRAGMENT_DENSITY_MAP_LAYERED);
+                    emitBoolean(
+                            store,
+                            fragmentDensityMapLayeredFeaturesVALVE,
+                            KEY_FRAGMENT_DENSITY_MAP_LAYERED);
                 }
                 store.endGroup();
-                JSONObject fragmentDensityMapLayeredPropertiesVALVE = valveFragmentDensityMapLayeredFeatures.getJSONObject(KEY_FRAGMENT_DENSITY_MAP_LAYERED_PROPERTIES_VALVE);
-                store.startGroup(getConvertedName(KEY_FRAGMENT_DENSITY_MAP_LAYERED_PROPERTIES_VALVE));
+                JSONObject fragmentDensityMapLayeredPropertiesVALVE =
+                        valveFragmentDensityMapLayeredFeatures.getJSONObject(
+                                KEY_FRAGMENT_DENSITY_MAP_LAYERED_PROPERTIES_VALVE);
+                store.startGroup(
+                        getConvertedName(KEY_FRAGMENT_DENSITY_MAP_LAYERED_PROPERTIES_VALVE));
                 {
-                    emitLong(store, fragmentDensityMapLayeredPropertiesVALVE, KEY_MAX_FRAGMENT_DENSITY_MAP_LAYERS);
+                    emitLong(
+                            store,
+                            fragmentDensityMapLayeredPropertiesVALVE,
+                            KEY_MAX_FRAGMENT_DENSITY_MAP_LAYERS);
                 }
                 store.endGroup();
             }
@@ -7461,16 +10511,19 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static void emitVkVALVEMutableDescriptorType(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject valveMutableDescriptorTypeFeatures = parent.optJSONObject(KEY_VK_VALVE_MUTABLE_DESCRIPTOR_TYPE);
+            throws IOException, JSONException {
+        JSONObject valveMutableDescriptorTypeFeatures =
+                parent.optJSONObject(KEY_VK_VALVE_MUTABLE_DESCRIPTOR_TYPE);
         if (valveMutableDescriptorTypeFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_VALVE_MUTABLE_DESCRIPTOR_TYPE));
             {
-                JSONObject mutableDescriptorTypeFeaturesVALVE = valveMutableDescriptorTypeFeatures.getJSONObject(KEY_MUTABLE_DESCRIPTOR_TYPE_FEATURES_VALVE);
+                JSONObject mutableDescriptorTypeFeaturesVALVE =
+                        valveMutableDescriptorTypeFeatures.getJSONObject(
+                                KEY_MUTABLE_DESCRIPTOR_TYPE_FEATURES_VALVE);
                 store.startGroup(getConvertedName(KEY_MUTABLE_DESCRIPTOR_TYPE_FEATURES_VALVE));
                 {
-                    emitBoolean(store, mutableDescriptorTypeFeaturesVALVE, KEY_MUTABLE_DESCRIPTOR_TYPE);
+                    emitBoolean(
+                            store, mutableDescriptorTypeFeaturesVALVE, KEY_MUTABLE_DESCRIPTOR_TYPE);
                 }
                 store.endGroup();
             }
@@ -7478,29 +10531,32 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
-    private static void emitVkVALVEVideoEncodeRgbConversion(DeviceInfoStore store, JSONObject parent)
-
-                throws IOException, JSONException {
-        JSONObject valveVideoEncodeRgbConversionFeatures = parent.optJSONObject(KEY_VK_VALVE_VIDEO_ENCODE_RGB_CONVERSION);
+    private static void emitVkVALVEVideoEncodeRgbConversion(
+            DeviceInfoStore store, JSONObject parent) throws IOException, JSONException {
+        JSONObject valveVideoEncodeRgbConversionFeatures =
+                parent.optJSONObject(KEY_VK_VALVE_VIDEO_ENCODE_RGB_CONVERSION);
         if (valveVideoEncodeRgbConversionFeatures != null) {
             store.startGroup(getConvertedName(KEY_VK_VALVE_VIDEO_ENCODE_RGB_CONVERSION));
             {
-                JSONObject videoEncodeRgbConversionFeaturesVALVE = valveVideoEncodeRgbConversionFeatures.getJSONObject(KEY_VIDEO_ENCODE_RGB_CONVERSION_FEATURES_VALVE);
+                JSONObject videoEncodeRgbConversionFeaturesVALVE =
+                        valveVideoEncodeRgbConversionFeatures.getJSONObject(
+                                KEY_VIDEO_ENCODE_RGB_CONVERSION_FEATURES_VALVE);
                 store.startGroup(getConvertedName(KEY_VIDEO_ENCODE_RGB_CONVERSION_FEATURES_VALVE));
                 {
-                    emitBoolean(store, videoEncodeRgbConversionFeaturesVALVE, KEY_VIDEO_ENCODE_RGB_CONVERSION);
+                    emitBoolean(
+                            store,
+                            videoEncodeRgbConversionFeaturesVALVE,
+                            KEY_VIDEO_ENCODE_RGB_CONVERSION);
                 }
                 store.endGroup();
             }
             store.endGroup();
         }
     }
-
 
     private static void emitExtension(String key, DeviceInfoStore store, JSONObject parent)
             throws IOException, JSONException {
         switch (key) {
-
             case KEY_VK_AMD_ANTI_LAG:
                 emitVkAMDAntiLag(store, parent);
                 break;
@@ -8287,7 +11343,6 @@ public final class VulkanDeviceInfo extends DeviceInfo {
             case KEY_VK_VALVE_VIDEO_ENCODE_RGB_CONVERSION:
                 emitVkVALVEVideoEncodeRgbConversion(store, parent);
                 break;
-
         }
     }
 
@@ -8354,6 +11409,4 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     }
 
     private static native String nativeGetVkJSON();
-
 }
-
