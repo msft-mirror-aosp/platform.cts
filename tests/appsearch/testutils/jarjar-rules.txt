@@ -1,0 +1,10 @@
+# Repackage the flags classes to match the prefixed versions used in the platform bootclasspath.
+# This is necessary because the platform jarjars these flags to prevent them from being
+# part of the stable API surface, but the test utility is compiled against platform APIs
+# that expect this specific prefixed name.
+
+# Repackage generated flag classes.
+# Rename the class names but not literals.
+rule android.app.appfunctions.flags.*FeatureFlags* com.android.internal.hidden_from_bootclasspath.android.app.appfunctions.flags.@1FeatureFlags@2
+rule android.app.appfunctions.flags.FeatureFlags* com.android.internal.hidden_from_bootclasspath.android.app.appfunctions.flags.FeatureFlags@1
+rule android.app.appfunctions.flags.Flags com.android.internal.hidden_from_bootclasspath.android.app.appfunctions.flags.Flags
