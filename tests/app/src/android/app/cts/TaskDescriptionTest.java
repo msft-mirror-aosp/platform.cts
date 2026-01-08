@@ -20,21 +20,28 @@ import static android.content.Context.ACTIVITY_SERVICE;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RecentTaskInfo;
 import android.app.ActivityManager.TaskDescription;
+import android.app.Flags;
 import android.app.stubs.MockActivity;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.drawable.Icon;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.ApiTest;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -55,6 +62,10 @@ public class TaskDescriptionTest {
     private static final int NULL_COLOR = 0;
     private static final int WAIT_TIMEOUT_MS = 1000;
     private static final int WAIT_RETRIES = 5;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Rule
     public ActivityTestRule<MockActivity> mTaskDescriptionActivity =
@@ -109,17 +120,99 @@ public class TaskDescriptionTest {
                 .setNavigationBarColor(TEST_COLOR)
                 .build();
         activity.setTaskDescription(td);
-        assertTaskDescription(activity, TEST_LABEL, TEST_RES_DATA, null, TEST_COLOR, TEST_COLOR,
-                TEST_COLOR, TEST_COLOR);
+        assertTaskDescription(
+                activity,
+                TEST_LABEL,
+                TEST_RES_DATA,
+                null,
+                TEST_NO_DATA,
+                TEST_COLOR,
+                TEST_COLOR,
+                TEST_COLOR,
+                TEST_COLOR);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DYNAMIC_ICONS_AND_BADGING)
+    @ApiTest(apis = {"android.app.ActivityManager.TaskDescription.Builder#setIcon"})
+    public void testIconBuilder() {
+        final Activity activity = mTaskDescriptionActivity.launchActivity(null);
+        final Icon icon = Icon.createWithResource(activity, TEST_RES_DATA);
+        final TaskDescription td = new TaskDescription.Builder()
+                .setLabel(TEST_LABEL)
+                .setIcon(icon)
+                .setPrimaryColor(TEST_COLOR)
+                .setBackgroundColor(TEST_COLOR)
+                .setStatusBarColor(TEST_COLOR)
+                .setNavigationBarColor(TEST_COLOR)
+                .build();
+        activity.setTaskDescription(td);
+        assertTaskDescription(
+                activity,
+                TEST_LABEL,
+                TEST_RES_DATA,
+                null,
+                TEST_NO_DATA,
+                TEST_COLOR,
+                TEST_COLOR,
+                TEST_COLOR,
+                TEST_COLOR);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DYNAMIC_ICONS_AND_BADGING)
+    @ApiTest(
+            apis = {
+                "android.app.ActivityManager.TaskDescription.Builder#setBadge",
+                "android.app.ActivityManager.TaskDescription#getBadge"
+            })
+    public void testBadgeBuilder() {
+        final Activity activity = mTaskDescriptionActivity.launchActivity(null);
+        final Icon icon = Icon.createWithResource(activity, TEST_RES_DATA);
+        final TaskDescription td = new TaskDescription.Builder()
+                .setLabel(TEST_LABEL)
+                .setBadge(icon)
+                .setPrimaryColor(TEST_COLOR)
+                .setBackgroundColor(TEST_COLOR)
+                .setStatusBarColor(TEST_COLOR)
+                .setNavigationBarColor(TEST_COLOR)
+                .build();
+        activity.setTaskDescription(td);
+        assertTaskDescription(
+                activity,
+                TEST_LABEL,
+                TEST_NO_DATA,
+                null,
+                TEST_RES_DATA,
+                TEST_COLOR,
+                TEST_COLOR,
+                TEST_COLOR,
+                TEST_COLOR);
     }
 
     private void assertTaskDescription(Activity activity, String label, int resId, Bitmap bitmap) {
-        assertTaskDescription(activity, label, resId, bitmap, NULL_COLOR, NULL_COLOR, NULL_COLOR,
+        assertTaskDescription(
+                activity,
+                label,
+                resId,
+                bitmap,
+                TEST_NO_DATA,
+                NULL_COLOR,
+                NULL_COLOR,
+                NULL_COLOR,
                 NULL_COLOR);
     }
 
-    private void assertTaskDescription(Activity activity, String label, int resId, Bitmap bitmap,
-            int primaryColor, int backgroundColor, int statusBarColor, int navigationBarColor) {
+    private void assertTaskDescription(
+            Activity activity,
+            String label,
+            int resId,
+            Bitmap bitmap,
+            int badgeResId,
+            int primaryColor,
+            int backgroundColor,
+            int statusBarColor,
+            int navigationBarColor) {
         final ActivityManager am = (ActivityManager) activity.getSystemService(ACTIVITY_SERVICE);
         List<RecentTaskInfo> recentsTasks = am.getRecentTasks(1 /* maxNum */, 0 /* flags */);
         if (!recentsTasks.isEmpty()) {
@@ -137,6 +230,12 @@ public class TaskDescriptionTest {
                     waitFor("TaskDescription's icon is not null", () -> td.getIcon() == null);
                     waitFor("TaskDescription's icon filename is not null",
                             () -> td.getIconFilename() == null);
+                }
+
+                if (badgeResId != TEST_NO_DATA) {
+                    final Icon badge = td.getBadge();
+                    assertNotNull(badge);
+                    assertEquals(badgeResId, badge.getResId());
                 }
 
                 assertEquals(resId, td.getIconResource());
