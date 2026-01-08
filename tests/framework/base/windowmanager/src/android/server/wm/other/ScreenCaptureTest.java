@@ -31,6 +31,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
+import android.app.ActivityOptions;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -45,7 +46,6 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.DumpOnFailure;
 import android.server.wm.WindowManagerTestBase;
-import android.view.Display;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowInsets;
@@ -91,7 +91,7 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                 () -> {
                     launchActivity(false /*secure*/, contentBounds);
                     ScreenCaptureParams params =
-                            new ScreenCaptureParams.Builder(Display.DEFAULT_DISPLAY).build();
+                            new ScreenCaptureParams.Builder(getMainDisplayId()).build();
                     Executor executor = runnable -> runnable.run();
                     SynchronousReceiver receiver = new SynchronousReceiver();
                     ScreenCapture.capture(params, executor, receiver);
@@ -110,8 +110,7 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
             })
     @Test
     public void capture_requiresReadFrameBufferPermission() throws Exception {
-        ScreenCaptureParams params =
-                new ScreenCaptureParams.Builder(Display.DEFAULT_DISPLAY).build();
+        ScreenCaptureParams params = new ScreenCaptureParams.Builder(getMainDisplayId()).build();
         Executor executor = runnable -> runnable.run();
         SynchronousReceiver receiver = new SynchronousReceiver();
 
@@ -139,7 +138,7 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                 () -> {
                     launchActivity(false /*secure*/, contentBounds);
                     ScreenCaptureParams params =
-                            new ScreenCaptureParams.Builder(Display.DEFAULT_DISPLAY)
+                            new ScreenCaptureParams.Builder(getMainDisplayId())
                                     .setCaptureMode(
                                             ScreenCaptureParams.CAPTURE_MODE_REQUIRE_OPTIMIZED)
                                     .setPixelFormat(0) // Any pixel format.
@@ -170,7 +169,7 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                     launchActivity(true /*secure*/, null /*contentBounds*/);
 
                     ScreenCaptureParams params =
-                            new ScreenCaptureParams.Builder(Display.DEFAULT_DISPLAY)
+                            new ScreenCaptureParams.Builder(getMainDisplayId())
                                     .setCaptureMode(
                                             ScreenCaptureParams.CAPTURE_MODE_REQUIRE_OPTIMIZED)
                                     .build();
@@ -202,7 +201,7 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                     launchActivity(true /*secure*/, null /*contentBounds*/);
 
                     ScreenCaptureParams params =
-                            new ScreenCaptureParams.Builder(Display.DEFAULT_DISPLAY)
+                            new ScreenCaptureParams.Builder(getMainDisplayId())
                                     .setCaptureMode(
                                             ScreenCaptureParams.CAPTURE_MODE_REQUIRE_OPTIMIZED)
                                     .setPixelFormat(unsupportedPixelFormat)
@@ -231,7 +230,7 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                 () -> {
                     launchActivity(true /*secure*/, contentBounds);
                     ScreenCaptureParams params =
-                            new ScreenCaptureParams.Builder(Display.DEFAULT_DISPLAY).build();
+                            new ScreenCaptureParams.Builder(getMainDisplayId()).build();
                     Executor executor = runnable -> runnable.run();
                     SynchronousReceiver receiver = new SynchronousReceiver();
                     ScreenCapture.capture(params, executor, receiver);
@@ -257,7 +256,7 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
                     ScreenCaptureParams params =
-                            new ScreenCaptureParams.Builder(Display.DEFAULT_DISPLAY)
+                            new ScreenCaptureParams.Builder(getMainDisplayId())
                                     .setPixelFormat(pixelFormat)
                                     .build();
                     Executor executor = runnable -> runnable.run();
@@ -278,7 +277,7 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
             })
     @Test
     public void screenCaptureParamGetters() {
-        int displayId = Display.DEFAULT_DISPLAY;
+        int displayId = getMainDisplayId();
         int captureMode = ScreenCaptureParams.CAPTURE_MODE_REQUIRE_OPTIMIZED;
         int pixelFormat = HardwareBuffer.RGB_565;
 
@@ -314,6 +313,8 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
     void launchActivity(boolean secure, @Nullable Rect outContentBounds)
             throws InterruptedException {
         Class<?> activityClass = secure ? SecureTestActivity.class : TestActivity.class;
+        ActivityOptions options = ActivityOptions.makeBasic();
+        options.setLaunchDisplayId(getMainDisplayId());
         Intent intent =
                 new Intent(
                                 InstrumentationRegistry.getInstrumentation().getTargetContext(),
@@ -321,7 +322,8 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         TestActivity activity =
                 (TestActivity)
-                        InstrumentationRegistry.getInstrumentation().startActivitySync(intent);
+                        InstrumentationRegistry.getInstrumentation()
+                                .startActivitySync(intent, options.toBundle());
         activity.waitAndAssertWindowFocusState(true /*hasFocus*/);
         assertTrue(
                 "Failed to wait for activity to be on top",
