@@ -46,7 +46,7 @@ public class FrameRateVelocityPointTest {
     public void testConstructorAndGetters() {
         FrameRateVelocityPoint point = new FrameRateVelocityPoint(60.0f, 100.0f);
         assertEquals(60.0f, point.getFramePerSecond(), 0.0f);
-        assertEquals(100.0f, point.getPixelPerSecond(), 0.0f);
+        assertEquals(100.0f, point.getDpPerSecond(), 0.0f);
     }
 
     @Test
