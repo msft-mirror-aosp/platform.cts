@@ -28,6 +28,10 @@ import android.app.appfunctions.cts.AppFunctionUtils.getAllRuntimeMetadataPackag
 import android.app.appfunctions.cts.AppFunctionUtils.getAllStaticMetadataPackages
 import android.app.appfunctions.cts.AppFunctionUtils.installExistingPackageAsUser
 import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabled
+import android.app.appfunctions.testutils.CtsTestUtil.assertReadAccessible
+import android.app.appfunctions.testutils.CtsTestUtil.assertReadInaccessible
+import android.app.appfunctions.testutils.CtsTestUtil.assertWriteAccessible
+import android.app.appfunctions.testutils.CtsTestUtil.assertWriteInaccessible
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
 import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver
@@ -35,15 +39,11 @@ import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceive
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForServiceOnCreate
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForServiceOnDestroy
 import android.app.appsearch.GenericDocument
-import android.content.ContentValues
+import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
-import android.os.Bundle
 import android.os.CancellationSignal
 import android.os.UserHandle
-import android.permission.flags.Flags.FLAG_APP_FUNCTION_ACCESS_API_ENABLED
-import android.permission.flags.Flags.FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED
-import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -88,10 +88,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
-@RequiresFlagsDisabled(
-    FLAG_APP_FUNCTION_ACCESS_API_ENABLED,
-    FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED,
-)
 class AppFunctionManagerTest {
     @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
@@ -106,6 +102,9 @@ class AppFunctionManagerTest {
 
     private val context: Context
         get() = ApplicationProvider.getApplicationContext()
+
+    private val contentResolver: ContentResolver
+        get() = context.contentResolver
 
     private lateinit var mManager: AppFunctionManager
 
@@ -1243,12 +1242,12 @@ class AppFunctionManagerTest {
             val response = executeAppFunctionAndWait(mManager, request)
 
             assertThat(response.getOrThrow()).isNotNull()
-            assertReadAccessible(readOnlyUri)
-            assertReadAccessible(readWriteUri)
-            assertReadInaccessible(writeOnlyUri)
-            assertWriteAccessible(writeOnlyUri)
-            assertWriteAccessible(readWriteUri)
-            assertWriteInaccessible(readOnlyUri)
+            assertReadAccessible(contentResolver, readOnlyUri)
+            assertReadAccessible(contentResolver, readWriteUri)
+            assertReadInaccessible(contentResolver, writeOnlyUri)
+            assertWriteAccessible(contentResolver, writeOnlyUri)
+            assertWriteAccessible(contentResolver, readWriteUri)
+            assertWriteInaccessible(contentResolver, readOnlyUri)
         }
     }
 
@@ -1314,58 +1313,6 @@ class AppFunctionManagerTest {
             "Cannot find android.app.appfunctions.cts:appfunctions/u${UserHandle.myUserId()}" +
                 " from dumpsys activity lru"
         )
-    }
-
-    private fun assertReadAccessible(uri: Uri) {
-        val contentResolver = context.getContentResolver()
-        try {
-            contentResolver.openAssetFile(uri, "r", null).use { fd ->
-                if (fd != null) {
-                    return
-                }
-            }
-        } catch (e: Exception) {}
-        fail("Uri $uri is not read accessible")
-    }
-
-    private fun assertReadInaccessible(uri: Uri) {
-        val contentResolver = context.getContentResolver()
-        try {
-            contentResolver.openAssetFile(uri, "r", null).use { fd -> }
-        } catch (e: SecurityException) {
-            return
-        }
-        fail("Uri $uri is still read accessible")
-    }
-
-    private fun assertWriteAccessible(uri: Uri) {
-        val contentResolver = context.getContentResolver()
-        try {
-            val result =
-                contentResolver.update(
-                    uri,
-                    ContentValues().apply { put("echo_value", 100) },
-                    Bundle.EMPTY,
-                )
-            if (result == 100) {
-                return
-            }
-        } catch (e: Exception) {}
-        fail("Uri $uri is not write accessible")
-    }
-
-    private fun assertWriteInaccessible(uri: Uri) {
-        val contentResolver = context.getContentResolver()
-        try {
-            contentResolver.update(
-                uri,
-                ContentValues().apply { put("echo_value", 100) },
-                Bundle.EMPTY,
-            )
-        } catch (e: Exception) {
-            return
-        }
-        fail("Uri $uri is still write accessible")
     }
 
     private companion object {

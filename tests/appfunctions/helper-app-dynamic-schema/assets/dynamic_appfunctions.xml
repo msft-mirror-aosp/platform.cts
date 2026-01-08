@@ -45,4 +45,9 @@
         <function_id>contextStopProcess</function_id>
         <enabled_by_default>true</enabled_by_default>
     </appfunction>
+    <appfunction>
+        <id>contextGetUris</id>
+        <function_id>contextGetUris</function_id>
+        <enabled_by_default>true</enabled_by_default>
+    </appfunction>
 </appfunctions>

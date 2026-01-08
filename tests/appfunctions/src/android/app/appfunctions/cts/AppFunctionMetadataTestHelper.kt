@@ -54,6 +54,8 @@ class AppFunctionMetadataTestHelper {
 
         val DYNAMIC_STOP_PROCESS =
             AppFunctionName(TEST_HELPER_DYNAMIC_SCHEMA_PKG, "contextStopProcess")
+        val DYNAMIC_GET_URIS =
+            AppFunctionName(TEST_HELPER_DYNAMIC_SCHEMA_PKG, "contextGetUris")
         val SAME_PACKAGE_THROW_EXCEPTION = AppFunctionName(CURRENT_PKG, "throwException")
         val SAME_PACKAGE_UNCAUGHT_CLIENT_EXCEPTION =
             AppFunctionName(CURRENT_PKG, "uncaughtClientException")
@@ -82,6 +84,7 @@ class AppFunctionMetadataTestHelper {
                 DYNAMIC_THROW_UNKNOWN_EXCEPTION,
                 DYNAMIC_THROW_INVALID_ARGUMENT,
                 DYNAMIC_STOP_PROCESS,
+                DYNAMIC_GET_URIS,
             )
 
         val HELPER_PACKAGE_SERVICE_LEVEL_FUNCTIONS: Set<AppFunctionName> =
