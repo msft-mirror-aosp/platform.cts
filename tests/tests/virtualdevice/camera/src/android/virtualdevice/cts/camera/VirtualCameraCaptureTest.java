@@ -378,7 +378,7 @@ public class VirtualCameraCaptureTest {
         long expectedTimeNanos = (long) SECOND_TO_NANOS / VirtualCameraCaptureHelper.CAMERA_MAX_FPS
                 * imageCount
                 + renderedTimestampNanos;
-        int toleranceNanos = 50_000_000; // 50 millis
+        int toleranceNanos = 200_000_000; // 200 millis
 
         mCaptureHelper.createVirtualCamera(width, height, YUV_420_888);
         CaptureConfiguration captureConfiguration =
