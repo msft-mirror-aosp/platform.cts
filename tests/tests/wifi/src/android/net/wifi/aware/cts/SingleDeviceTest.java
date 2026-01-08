@@ -2552,8 +2552,9 @@ public class SingleDeviceTest extends WifiJUnit4TestBase {
         Map<String, String> txtRecord = new HashMap<>();
         txtRecord.put("key1", "value1");
         txtRecord.put("key2", "value2");
-        byte[] txtRecordTlvBuffer = WifiAwareManager.getTxtRecordTlvBuffer(txtRecord);
-        Map<String, String> rereadTxtRecord = WifiAwareManager.getTxtRecordMap(txtRecordTlvBuffer);
+        byte[] txtRecordTlvBuffer = WifiAwareManager.createTxtRecordTlvBuffer(txtRecord);
+        Map<String, String> rereadTxtRecord = WifiAwareManager
+                .createTxtRecordMap(txtRecordTlvBuffer);
         assertEquals(txtRecord.size(), rereadTxtRecord.size());
         assertEquals(txtRecord, rereadTxtRecord);
     }
