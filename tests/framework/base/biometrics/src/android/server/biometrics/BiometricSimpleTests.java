@@ -20,8 +20,6 @@ import static android.hardware.biometrics.BiometricManager.Authenticators.BIOMET
 import static android.hardware.biometrics.BiometricManager.Authenticators.BIOMETRIC_WEAK;
 import static android.hardware.biometrics.BiometricManager.Authenticators.DEVICE_CREDENTIAL;
 import static android.hardware.biometrics.BiometricManager.Authenticators.IDENTITY_CHECK;
-import static android.hardware.biometrics.BiometricManager.TYPE_FACE;
-import static android.hardware.biometrics.BiometricManager.TYPE_FINGERPRINT;
 import static android.hardware.biometrics.SensorProperties.STRENGTH_STRONG;
 import static android.hardware.biometrics.SensorProperties.STRENGTH_WEAK;
 
@@ -33,6 +31,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
@@ -44,6 +43,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import android.app.role.RoleManager;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.biometrics.BiometricEnrollmentStatus;
 import android.hardware.biometrics.BiometricManager;
@@ -61,7 +64,9 @@ import android.server.biometrics.util.BiometricServiceState;
 import android.server.biometrics.util.SensorStates;
 import android.server.biometrics.util.TestSessionList;
 import android.server.biometrics.util.Utils;
+import android.server.biometrics.util.WalletTestHelperConstants;
 import android.util.Log;
+import android.util.Pair;
 
 import androidx.test.uiautomator.UiObject2;
 
@@ -73,9 +78,13 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -131,16 +140,8 @@ public class BiometricSimpleTests extends BiometricTestBase {
             final SensorStates.SensorState currentSensor =
                     getCurrentState().mSensorStates.sensorStates.get(sensorId);
             final int sensorModality = currentSensor.getModality();
+            final int expectedModality = Utils.convertSensorModalityToPublicType(sensorModality);
             final int sensorStrength = currentSensor.getCurrentStrength();
-
-            int enrolledModality = 0;
-
-            if (sensorModality == SensorStateProto.FINGERPRINT) {
-                enrolledModality = TYPE_FINGERPRINT;
-            } else if (sensorModality == SensorStateProto.FACE) {
-                enrolledModality = TYPE_FACE;
-            }
-            final int expectedModality = enrolledModality;
 
             try (BiometricTestSession session = mBiometricManager.createTestSession(sensorId)) {
                 enrollForSensor(session, sensorId);
@@ -173,6 +174,282 @@ public class BiometricSimpleTests extends BiometricTestBase {
         SecurityException e =
                 assertThrows(SecurityException.class, mBiometricManager::getEnrollmentStatus);
         assertThat(e).hasMessageThat().contains("SET_BIOMETRIC_DIALOG_ADVANCED");
+    }
+
+    /**
+     * Tests whether {@link BiometricManager#getBiometricSensorStrengths} returns correct mappings
+     * from biometric modality to sensor security strength when the caller is an allowed wallet role
+     * holder.
+     *
+     * <p>Note that just like {@link BiometricManager#getEnrollmentStatus}, {@link
+     * BiometricManager#getBiometricSensorStrengths} does not consider the uncommon cases where
+     * there are multiple sensors with different sensor strengths for a single biometric modality.
+     * Thus, this test does not assert that {@link #mSensorProperties} has a 1:1 information match
+     * with {@link BiometricManager#getBiometricSensorStrengths} regarding the mapping from modality
+     * to sensor strength, but only asserts that no biometric modalities are missing and that there
+     * exists at least one correct mapping for each biometric modality on the device.
+     */
+    @ApiTest(apis = {"android.hardware.biometrics.BiometricManager#getBiometricSensorStrengths"})
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_GET_BIOMETRIC_SENSOR_STRENGTHS)
+    public void testGetBiometricSensorStrengths_allowedWalletRoleHolder() throws Exception {
+        assumeTrue(Utils.isFirstApiLevel29orGreater());
+
+        Map<Integer, List<Integer>> expectedSensorStrengths = getExpectedSensorStrengths(true);
+        final Pair<LinkedBlockingQueue<Intent>, BroadcastReceiver> receiverRegistration =
+                registerBroadcastReceiver(WalletTestHelperConstants.INTENT_RESULT);
+        final LinkedBlockingQueue<Intent> broadcastQueue = receiverRegistration.first;
+        final BroadcastReceiver broadcastReceiver = receiverRegistration.second;
+
+        try {
+            // Grant wallet role to the wallet test helper app.
+            boolean setWalletRoleResult =
+                    setRoleHolder(WalletTestHelperConstants.PACKAGE_NAME, RoleManager.ROLE_WALLET);
+            assertTrue(
+                    String.format(
+                            "Failed to grant %s to %s.",
+                            RoleManager.ROLE_WALLET, WalletTestHelperConstants.PACKAGE_NAME),
+                    setWalletRoleResult);
+
+            // Launch the wallet test helper activity and wait for the broadcast result intent.
+            launchActivity(
+                    new ComponentName(
+                            WalletTestHelperConstants.PACKAGE_NAME,
+                            WalletTestHelperConstants.ACTIVITY_NAME));
+            Intent resultIntent = broadcastQueue.poll(2, TimeUnit.SECONDS);
+            assertNotNull(
+                    String.format(
+                            "Timed out waiting for result from test helper app %s.",
+                            WalletTestHelperConstants.PACKAGE_NAME),
+                    resultIntent);
+            assertFalse(
+                    String.format(
+                            "Test helper app %s encountered an exception.",
+                            WalletTestHelperConstants.PACKAGE_NAME),
+                    resultIntent.hasExtra(WalletTestHelperConstants.INTENT_EXTRA_EXCEPTION));
+
+            // Reconstruct the received biometric sensor strengths.
+            int[] modalities =
+                    resultIntent.getIntArrayExtra(
+                            WalletTestHelperConstants.INTENT_EXTRA_MODALITIES);
+            int[] strengths =
+                    resultIntent.getIntArrayExtra(WalletTestHelperConstants.INTENT_EXTRA_STRENGTHS);
+            Map<Integer, Integer> actualSensorStrengths = new HashMap<>();
+            for (int i = 0; i < modalities.length; i++) {
+                actualSensorStrengths.put(modalities[i], strengths[i]);
+            }
+
+            // Assert that no modalities are missing and the retrieved biometric sensor strengths
+            // for each modality truly exist.
+            assertEquals(expectedSensorStrengths.size(), actualSensorStrengths.size());
+            actualSensorStrengths.forEach(
+                    (modality, strength) -> {
+                        assertTrue(expectedSensorStrengths.get(modality).contains(strength));
+                    });
+        } finally {
+            mContext.unregisterReceiver(broadcastReceiver);
+            clearRoleHolders(RoleManager.ROLE_WALLET);
+        }
+    }
+
+    /**
+     * Tests whether {@link BiometricManager#getBiometricSensorStrengths} throws a security
+     * exception when the caller does not hold any of the required Android roles (e.g., the wallet
+     * role).
+     */
+    @ApiTest(apis = {"android.hardware.biometrics.BiometricManager#getBiometricSensorStrengths"})
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_GET_BIOMETRIC_SENSOR_STRENGTHS)
+    public void testGetBiometricSensorStrengths_nonRoleHolder_throwsSecurityException()
+            throws Exception {
+        assumeTrue(Utils.isFirstApiLevel29orGreater());
+
+        final Pair<LinkedBlockingQueue<Intent>, BroadcastReceiver> receiverRegistration =
+                registerBroadcastReceiver(WalletTestHelperConstants.INTENT_RESULT);
+        final LinkedBlockingQueue<Intent> broadcastQueue = receiverRegistration.first;
+        final BroadcastReceiver broadcastReceiver = receiverRegistration.second;
+
+        try {
+            // Not granting the wallet role to the wallet test helper app. Directly launch the
+            // activity and wait for the broadcast result intent.
+            launchActivity(
+                    new ComponentName(
+                            WalletTestHelperConstants.PACKAGE_NAME,
+                            WalletTestHelperConstants.ACTIVITY_NAME));
+            Intent resultIntent = broadcastQueue.poll(2, TimeUnit.SECONDS);
+            assertNotNull(
+                    String.format(
+                            "Timed out waiting for result from test helper app %s.",
+                            WalletTestHelperConstants.PACKAGE_NAME),
+                    resultIntent);
+
+            // Assert that a security exception is thrown.
+            Exception e =
+                    resultIntent.getSerializableExtra(
+                            WalletTestHelperConstants.INTENT_EXTRA_EXCEPTION, Exception.class);
+            assertThat(e).isInstanceOf(SecurityException.class);
+        } finally {
+            mContext.unregisterReceiver(broadcastReceiver);
+        }
+    }
+
+    /**
+     * Tests whether {@link BiometricManager#getBiometricSensorStrengths} throws a security
+     * exception when the caller does not declare the {@link
+     * android.Manifest.permission#ACCESS_BIOMETRIC_SENSOR_STRENGTHS} permission.
+     */
+    @ApiTest(apis = {"android.hardware.biometrics.BiometricManager#getBiometricSensorStrengths"})
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_GET_BIOMETRIC_SENSOR_STRENGTHS)
+    public void testGetBiometricSensorStrengths_withoutApiPermission_throwsSecurityException()
+            throws Exception {
+        assumeTrue(Utils.isFirstApiLevel29orGreater());
+
+        final Pair<LinkedBlockingQueue<Intent>, BroadcastReceiver> receiverRegistration =
+                registerBroadcastReceiver(WalletTestHelperConstants.INTENT_RESULT);
+        final LinkedBlockingQueue<Intent> broadcastQueue = receiverRegistration.first;
+        final BroadcastReceiver broadcastReceiver = receiverRegistration.second;
+
+        try {
+            // Grant wallet role to the no API permission wallet test helper app.
+            boolean setWalletRoleResult =
+                    setRoleHolder(
+                            WalletTestHelperConstants.NO_API_PERMISSION_PACKAGE_NAME,
+                            RoleManager.ROLE_WALLET);
+            assertTrue(
+                    String.format(
+                            "Failed to grant %s to %s.",
+                            RoleManager.ROLE_WALLET,
+                            WalletTestHelperConstants.NO_API_PERMISSION_PACKAGE_NAME),
+                    setWalletRoleResult);
+
+            // Launch the wallet test helper activity and wait for the broadcast result intent.
+            launchActivity(
+                    new ComponentName(
+                            WalletTestHelperConstants.NO_API_PERMISSION_PACKAGE_NAME,
+                            WalletTestHelperConstants.ACTIVITY_NAME));
+            Intent resultIntent = broadcastQueue.poll(2, TimeUnit.SECONDS);
+            assertNotNull(
+                    String.format(
+                            "Timed out waiting for result from test helper app %s.",
+                            WalletTestHelperConstants.NO_API_PERMISSION_PACKAGE_NAME),
+                    resultIntent);
+
+            // Assert that a security exception is thrown.
+            Exception e =
+                    resultIntent.getSerializableExtra(
+                            WalletTestHelperConstants.INTENT_EXTRA_EXCEPTION, Exception.class);
+            assertThat(e).isInstanceOf(SecurityException.class);
+        } finally {
+            mContext.unregisterReceiver(broadcastReceiver);
+            clearRoleHolders(RoleManager.ROLE_WALLET);
+        }
+    }
+
+    /**
+     * Tests whether {@link BiometricManager#getBiometricSensorStrengths} throws a security
+     * exception when the caller does not declare the {@link
+     * android.Manifest.permission#USE_BIOMETRIC} permission.
+     */
+    @ApiTest(apis = {"android.hardware.biometrics.BiometricManager#getBiometricSensorStrengths"})
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_GET_BIOMETRIC_SENSOR_STRENGTHS)
+    public void testGetBiometricSensorStrengths_withoutBioPermission_throwsSecurityException()
+            throws Exception {
+        assumeTrue(Utils.isFirstApiLevel29orGreater());
+
+        final Pair<LinkedBlockingQueue<Intent>, BroadcastReceiver> receiverRegistration =
+                registerBroadcastReceiver(WalletTestHelperConstants.INTENT_RESULT);
+        final LinkedBlockingQueue<Intent> broadcastQueue = receiverRegistration.first;
+        final BroadcastReceiver broadcastReceiver = receiverRegistration.second;
+
+        try {
+            // Grant wallet role to the no biometric permission wallet test helper app.
+            boolean setWalletRoleResult =
+                    setRoleHolder(
+                            WalletTestHelperConstants.NO_BIO_PERMISSION_PACKAGE_NAME,
+                            RoleManager.ROLE_WALLET);
+            assertTrue(
+                    String.format(
+                            "Failed to grant %s to %s.",
+                            RoleManager.ROLE_WALLET,
+                            WalletTestHelperConstants.NO_BIO_PERMISSION_PACKAGE_NAME),
+                    setWalletRoleResult);
+
+            // Launch the wallet test helper activity and wait for the broadcast result intent.
+            launchActivity(
+                    new ComponentName(
+                            WalletTestHelperConstants.NO_BIO_PERMISSION_PACKAGE_NAME,
+                            WalletTestHelperConstants.ACTIVITY_NAME));
+            Intent resultIntent = broadcastQueue.poll(2, TimeUnit.SECONDS);
+            assertNotNull(
+                    String.format(
+                            "Timed out waiting for result from test helper app %s.",
+                            WalletTestHelperConstants.NO_BIO_PERMISSION_PACKAGE_NAME),
+                    resultIntent);
+
+            // Assert that a security exception is thrown.
+            Exception e =
+                    resultIntent.getSerializableExtra(
+                            WalletTestHelperConstants.INTENT_EXTRA_EXCEPTION, Exception.class);
+            assertThat(e).isInstanceOf(SecurityException.class);
+        } finally {
+            mContext.unregisterReceiver(broadcastReceiver);
+            clearRoleHolders(RoleManager.ROLE_WALLET);
+        }
+    }
+
+    /**
+     * Tests whether {@link BiometricManager#getBiometricSensorStrengths} throws a security
+     * exception when the caller is in the background.
+     */
+    @ApiTest(apis = {"android.hardware.biometrics.BiometricManager#getBiometricSensorStrengths"})
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_GET_BIOMETRIC_SENSOR_STRENGTHS)
+    public void testGetBiometricSensorStrengths_backgroundCaller_throwsSecurityException()
+            throws Exception {
+        assumeTrue(Utils.isFirstApiLevel29orGreater());
+
+        final Pair<LinkedBlockingQueue<Intent>, BroadcastReceiver> receiverRegistration =
+                registerBroadcastReceiver(WalletTestHelperConstants.BACKGROUND_INTENT_RESULT);
+        final LinkedBlockingQueue<Intent> broadcastQueue = receiverRegistration.first;
+        final BroadcastReceiver broadcastReceiver = receiverRegistration.second;
+
+        try {
+            // Grant wallet role to the wallet test helper app.
+            boolean setWalletRoleResult =
+                    setRoleHolder(WalletTestHelperConstants.PACKAGE_NAME, RoleManager.ROLE_WALLET);
+            assertTrue(
+                    String.format(
+                            "Failed to grant %s to %s.",
+                            RoleManager.ROLE_WALLET, WalletTestHelperConstants.PACKAGE_NAME),
+                    setWalletRoleResult);
+
+            // Send a broadcast intent to trigger the background thread and wait for the
+            // broadcast result intent. Note that initially the app is in a stopped state, so an
+            // extra intent flag needs to be added to reach the test helper broadcast receiver.
+            Intent triggerIntent = new Intent(WalletTestHelperConstants.BACKGROUND_INTENT_TRIGGER);
+            triggerIntent.setPackage(WalletTestHelperConstants.PACKAGE_NAME);
+            triggerIntent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+            mContext.sendBroadcast(triggerIntent);
+            Intent resultIntent = broadcastQueue.poll(2, TimeUnit.SECONDS);
+            assertNotNull(
+                    String.format(
+                            "Timed out waiting for result from background thread of test helper app"
+                                    + " %s.",
+                            WalletTestHelperConstants.PACKAGE_NAME),
+                    resultIntent);
+
+            // Assert that a security exception is thrown.
+            Exception e =
+                    resultIntent.getSerializableExtra(
+                            WalletTestHelperConstants.BACKGROUND_INTENT_EXTRA_EXCEPTION,
+                            Exception.class);
+            assertThat(e).isInstanceOf(SecurityException.class);
+        } finally {
+            mContext.unregisterReceiver(broadcastReceiver);
+            clearRoleHolders(RoleManager.ROLE_WALLET);
+        }
     }
 
     /**
