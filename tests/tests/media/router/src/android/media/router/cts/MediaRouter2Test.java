@@ -36,7 +36,6 @@ import static android.media.router.cts.StubMediaRoute2ProviderService.STATIC_GRO
 
 import static androidx.test.ext.truth.os.BundleSubject.assertThat;
 
-import static com.android.media.flags.Flags.FLAG_ENABLE_BUILT_IN_SPEAKER_ROUTE_SUITABILITY_STATUSES;
 import static com.android.media.flags.Flags.FLAG_ENABLE_GET_TRANSFERABLE_ROUTES;
 import static com.android.media.flags.Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL;
 import static com.android.media.flags.Flags.FLAG_ENABLE_SUGGESTED_DEVICE_API;
@@ -1892,7 +1891,6 @@ public class MediaRouter2Test {
     }
 
     @RequiresFlagsEnabled({
-        FLAG_ENABLE_BUILT_IN_SPEAKER_ROUTE_SUITABILITY_STATUSES,
         FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL
     })
     @Test

@@ -34,8 +34,6 @@ import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_ID_V
 import static android.media.router.cts.StubMediaRoute2ProviderService.ROUTE_NAME2;
 import static android.media.router.cts.StubMediaRoute2ProviderService.STATIC_GROUP_SELECTED_ROUTES_IDS;
 
-import static com.android.media.flags.Flags.FLAG_ENABLE_BUILT_IN_SPEAKER_ROUTE_SUITABILITY_STATUSES;
-
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
@@ -1376,7 +1374,6 @@ public class SystemMediaRouter2Test {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_BUILT_IN_SPEAKER_ROUTE_SUITABILITY_STATUSES)
     public void testBuiltinSpeakerSuitabilityStatusReflectsXmlConfigValue() {
         int builtInSpeakerSuitabilityResourceId =
                 Resources.getSystem()
@@ -1398,7 +1395,6 @@ public class SystemMediaRouter2Test {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_BUILT_IN_SPEAKER_ROUTE_SUITABILITY_STATUSES)
     public void testLocalRouterTransferChangesTransferReasonToTransferredFromApp()
             throws InterruptedException {
         clearTransferReasonAndInitiator();
@@ -1435,7 +1431,6 @@ public class SystemMediaRouter2Test {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_BUILT_IN_SPEAKER_ROUTE_SUITABILITY_STATUSES)
     public void testProxyRouterTransferChangesTransferReasonToTransferredAsSystemRequest()
             throws InterruptedException {
         clearTransferReasonAndInitiator();
