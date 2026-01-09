@@ -42,6 +42,7 @@ import android.app.admin.ProvisioningException;
 import android.app.role.RoleManager;
 import android.content.ComponentName;
 import android.content.Context;
+import android.devicepolicy.cts.utils.DevicePolicyManagementRoleUtils;
 import android.os.UserHandle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -417,9 +418,10 @@ public class DevicePolicyManagementRoleHolderTest {
     @Test
     @EnsureHasNoDpc
     @EnsureHasNoAccounts
-    @EnsureHasPermission(android.Manifest.permission.MANAGE_ROLE_HOLDERS)
+    @EnsureHasPermission(CommonPermissions.MANAGE_ROLE_HOLDERS)
     @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING)
     public void nonTestOnlyDeviceOwner_shouldAllowBypassing_false() {
+        DevicePolicyManagementRoleUtils.removeNonDefaultRoleHolders(sContext);
         TestApp dpc = getDeviceAdminTestApp(/* isTestOnly */ false);
         ComponentName adminComponent = getDeviceAdminComponentName(dpc);
         try (TestAppInstance ignored = dpc.install(TestApis.users().instrumented());
