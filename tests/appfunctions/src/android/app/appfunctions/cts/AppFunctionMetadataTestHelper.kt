@@ -15,252 +15,335 @@
  */
 package android.app.appfunctions.cts
 
-import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.AppFunctionMetadata
 import android.app.appfunctions.AppFunctionMetadata.PROPERTY_SCHEMA_CATEGORY
 import android.app.appfunctions.AppFunctionMetadata.PROPERTY_SCHEMA_NAME
 import android.app.appfunctions.AppFunctionMetadata.PROPERTY_SCHEMA_VERSION
 import android.app.appfunctions.AppFunctionName
 import android.app.appfunctions.AppFunctionPackageMetadata
-import android.app.appfunctions.AppFunctionRuntimeMetadata
-import android.app.appfunctions.AppFunctionRuntimeMetadata.PROPERTY_PACKAGE_NAME
 import android.app.appfunctions.AppFunctionStaticMetadataHelper
 import android.app.appsearch.GenericDocument
 
 class AppFunctionMetadataTestHelper {
+    object LegacySchemaHelperApp {
+        const val PACKAGE_NAME = "android.app.appfunctions.cts.helper"
 
-    object FunctionName {
-        val ENABLED_BY_DEFAULT =
-            AppFunctionName(TEST_HELPER_DYNAMIC_SCHEMA_PKG, "appFunctionEnabledByDefault")
-        val DISABLED_BY_DEFAULT =
-            AppFunctionName(TEST_HELPER_DYNAMIC_SCHEMA_PKG, "appFunctionDisabledByDefault_noSchema")
-        val HIGH_SCHEMA_VERSION =
-            AppFunctionName(TEST_HELPER_DYNAMIC_SCHEMA_PKG, "appFunctionWithHighSchemaVersion")
+        object FunctionNames {
+            val ADD_ENABLED_BY_DEFAULT = AppFunctionName(PACKAGE_NAME, "add")
+            val ADD_DISABLED_BY_DEFAULT = AppFunctionName(PACKAGE_NAME, "add_disabledByDefault")
+            val NO_OP = AppFunctionName(PACKAGE_NAME, "noOp")
+            val RESTRICT_CALLER_FALSE =
+                AppFunctionName(PACKAGE_NAME, "addWithRestrictCallersWithExecuteAppFunctionsFalse")
+            val RESTRICT_CALLER_TRUE =
+                AppFunctionName(PACKAGE_NAME, "addWithRestrictCallersWithExecuteAppFunctionsTrue")
+            val GET_URIS = AppFunctionName(PACKAGE_NAME, "getUris")
+            val ECHO_BYTES = AppFunctionName(PACKAGE_NAME, "echoBytes")
 
-        val DYNAMIC_CONCAT_STRINGS =
-            AppFunctionName(TEST_HELPER_DYNAMIC_SCHEMA_PKG, "contextConcatStrings")
-
-        val DYNAMIC_LONG_RUNNING =
-            AppFunctionName(TEST_HELPER_DYNAMIC_SCHEMA_PKG, "contextLongRunning")
-
-        val DYNAMIC_OUTPUT_INVALID_ARGUMENT =
-            AppFunctionName(TEST_HELPER_DYNAMIC_SCHEMA_PKG, "contextOutputInvalidArgument")
-
-        val DYNAMIC_THROW_UNKNOWN_EXCEPTION =
-            AppFunctionName(TEST_HELPER_DYNAMIC_SCHEMA_PKG, "contextThrowUnknownException")
-
-        val DYNAMIC_THROW_INVALID_ARGUMENT =
-            AppFunctionName(TEST_HELPER_DYNAMIC_SCHEMA_PKG, "contextThrowInvalidArgument")
-
-        val DYNAMIC_STOP_PROCESS =
-            AppFunctionName(TEST_HELPER_DYNAMIC_SCHEMA_PKG, "contextStopProcess")
-        val DYNAMIC_GET_URIS =
-            AppFunctionName(TEST_HELPER_DYNAMIC_SCHEMA_PKG, "contextGetUris")
-        val SAME_PACKAGE_THROW_EXCEPTION = AppFunctionName(CURRENT_PKG, "throwException")
-        val SAME_PACKAGE_UNCAUGHT_CLIENT_EXCEPTION =
-            AppFunctionName(CURRENT_PKG, "uncaughtClientException")
-        val SAME_PACKAGE_ADD_INVOKE_CALLBACK_TWICE =
-            AppFunctionName(CURRENT_PKG, "add_invokeCallbackTwice")
-        val SAME_PACKAGE_DYNAMIC_LONG_RUNNING = AppFunctionName(CURRENT_PKG, "contextLongRunning")
-        val SAME_PACKAGE_ADD_ASYNC = AppFunctionName(CURRENT_PKG, "addAsync")
-        val SAME_PACKAGE_NOT_INVOKE_CALLBACK = AppFunctionName(CURRENT_PKG, "notInvokeCallback")
-        val SAME_PACKAGE_DYNAMIC_CONCAT_STRINGS =
-            AppFunctionName(CURRENT_PKG, "contextConcatStrings")
-        val SAME_PACKAGE_RUN_FOREVER = AppFunctionName(CURRENT_PKG, "runForever")
-        val SAME_PACKAGE_ADD = AppFunctionName(CURRENT_PKG, "add")
-        val SAME_PACKAGE_ADD_DISABLED_BY_DEFAULT =
-            AppFunctionName(CURRENT_PKG, "add_disabledByDefault")
-        val SAME_PACKAGE_NO_OP = AppFunctionName(CURRENT_PKG, "noOp")
-        val SAME_PACKAGE_KILL = AppFunctionName(CURRENT_PKG, "kill")
-        val SAME_PACKAGE_LONG_RUNNING_FUNCTION = AppFunctionName(CURRENT_PKG, "longRunningFunction")
-        val SAME_PACKAGE_NO_SCHEMA = AppFunctionName(CURRENT_PKG, "noSchema")
-        val SAME_PACKAGE_CONTEXT = AppFunctionName(CURRENT_PKG, "contextDisabledByDefault")
-
-        val HELPER_PACKAGE_APP_LEVEL_FUNCTIONS: Set<AppFunctionName> =
-            setOf(
-                DYNAMIC_CONCAT_STRINGS,
-                DYNAMIC_LONG_RUNNING,
-                DYNAMIC_OUTPUT_INVALID_ARGUMENT,
-                DYNAMIC_THROW_UNKNOWN_EXCEPTION,
-                DYNAMIC_THROW_INVALID_ARGUMENT,
-                DYNAMIC_STOP_PROCESS,
-                DYNAMIC_GET_URIS,
-            )
-
-        val HELPER_PACKAGE_SERVICE_LEVEL_FUNCTIONS: Set<AppFunctionName> =
-            setOf(HIGH_SCHEMA_VERSION, ENABLED_BY_DEFAULT, DISABLED_BY_DEFAULT)
-
-        val HELPER_PACKAGE_FUNCTIONS =
-            HELPER_PACKAGE_APP_LEVEL_FUNCTIONS + HELPER_PACKAGE_SERVICE_LEVEL_FUNCTIONS
-    }
-
-    object PackageMetadata {
-        val DYNAMIC_SCHEMA_PACKAGE_METADATA =
-            AppFunctionPackageMetadata.create(
-                TEST_HELPER_DYNAMIC_SCHEMA_PKG,
-                listOf(Components.TOP_LEVEL_COMPONENT_1, Components.TOP_LEVEL_COMPONENT_2),
-            )
-        val CURRENT_PACKAGE_METADATA = AppFunctionPackageMetadata.create(CURRENT_PKG, listOf())
-    }
-
-    object FunctionMetadata {
-        val RUNTIME_METADATA =
-            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                .setPropertyString(PROPERTY_PACKAGE_NAME, TEST_HELPER_DYNAMIC_SCHEMA_PKG)
-                .setPropertyLong(
-                    AppFunctionRuntimeMetadata.PROPERTY_ENABLED,
-                    AppFunctionManager.APP_FUNCTION_STATE_DEFAULT.toLong(),
+            val ALL_FUNCTIONS =
+                setOf(
+                    ADD_ENABLED_BY_DEFAULT,
+                    ADD_DISABLED_BY_DEFAULT,
+                    NO_OP,
+                    RESTRICT_CALLER_FALSE,
+                    RESTRICT_CALLER_TRUE,
+                    GET_URIS,
+                    ECHO_BYTES,
                 )
-                .build()
+        }
 
-        val ENABLED_BY_DEFAULT =
-            AppFunctionMetadata.create(
+        object FunctionMetadata {
+            val ADD_ENABLED_BY_DEFAULT =
+                AppFunctionMetadata.Builder(
+                        GenericDocument.Builder<GenericDocument.Builder<*>>(
+                                "app_functions",
+                                "$PACKAGE_NAME/add",
+                                "AppFunctionStaticMetadata-$PACKAGE_NAME",
+                            )
+                            .setPropertyString("packageName", PACKAGE_NAME)
+                            .setPropertyString("functionId", "add")
+                            .setPropertyBoolean(
+                                AppFunctionStaticMetadataHelper.STATIC_PROPERTY_ENABLED_BY_DEFAULT,
+                                true,
+                            )
+                            .setPropertyString(PROPERTY_SCHEMA_CATEGORY, "utils")
+                            .setPropertyString(
+                                PROPERTY_SCHEMA_NAME,
+                                "AppFunctionStaticMetadata-android.app.appfunctions.cts.helper",
+                            )
+                            .setPropertyLong(PROPERTY_SCHEMA_VERSION, 1L)
+                            .setPropertyLong("displayNameStringRes", 10)
+                            .setPropertyBoolean("restrictCallersWithExecuteAppFunctions", true)
+                            .setPropertyString("serviceName", TEST_SERVICE_NAME)
+                            .build(),
+                        AppFunctionPackageMetadata.create(PACKAGE_NAME, listOf()),
+                    )
+                    .setEnabled(true)
+                    .build()
+
+            val ADD_DISABLED_BY_DEFAULT =
+                AppFunctionMetadata.Builder(
+                        GenericDocument.Builder<GenericDocument.Builder<*>>(
+                                "app_functions",
+                                "$PACKAGE_NAME/add_disabledByDefault",
+                                "AppFunctionStaticMetadata-$PACKAGE_NAME",
+                            )
+                            .setPropertyString("packageName", PACKAGE_NAME)
+                            .setPropertyString("functionId", "add_disabledByDefault")
+                            .setPropertyBoolean(
+                                AppFunctionStaticMetadataHelper.STATIC_PROPERTY_ENABLED_BY_DEFAULT,
+                                false,
+                            )
+                            .setPropertyString(PROPERTY_SCHEMA_CATEGORY, "utils")
+                            .setPropertyString(
+                                PROPERTY_SCHEMA_NAME,
+                                "AppFunctionStaticMetadata-android.app.appfunctions.cts.helper",
+                            )
+                            .setPropertyLong(PROPERTY_SCHEMA_VERSION, 1L)
+                            .setPropertyLong("displayNameStringRes", 10)
+                            .setPropertyBoolean("restrictCallersWithExecuteAppFunctions", true)
+                            .setPropertyString("serviceName", TEST_SERVICE_NAME)
+                            .build(),
+                        AppFunctionPackageMetadata.create(PACKAGE_NAME, listOf()),
+                    )
+                    .setEnabled(false)
+                    .build()
+        }
+    }
+
+    object DynamicSchemaHelperApp {
+        const val PACKAGE_NAME = "android.app.appfunctions.cts.dynamic.schema"
+
+        object FunctionNames {
+            val ENABLED_BY_DEFAULT = AppFunctionName(PACKAGE_NAME, "appFunctionEnabledByDefault")
+            val DISABLED_BY_DEFAULT =
+                AppFunctionName(PACKAGE_NAME, "appFunctionDisabledByDefault_noSchema")
+            val HIGH_SCHEMA_VERSION =
+                AppFunctionName(PACKAGE_NAME, "appFunctionWithHighSchemaVersion")
+
+            val DYNAMIC_CONCAT_STRINGS = AppFunctionName(PACKAGE_NAME, "contextConcatStrings")
+
+            val DYNAMIC_LONG_RUNNING = AppFunctionName(PACKAGE_NAME, "contextLongRunning")
+
+            val DYNAMIC_OUTPUT_INVALID_ARGUMENT =
+                AppFunctionName(PACKAGE_NAME, "contextOutputInvalidArgument")
+
+            val DYNAMIC_THROW_UNKNOWN_EXCEPTION =
+                AppFunctionName(PACKAGE_NAME, "contextThrowUnknownException")
+
+            val DYNAMIC_THROW_INVALID_ARGUMENT =
+                AppFunctionName(PACKAGE_NAME, "contextThrowInvalidArgument")
+
+            val DYNAMIC_STOP_PROCESS = AppFunctionName(PACKAGE_NAME, "contextStopProcess")
+            val DYNAMIC_GET_URIS = AppFunctionName(PACKAGE_NAME, "contextGetUris")
+
+            val APP_LEVEL_FUNCTIONS: Set<AppFunctionName> =
+                setOf(
+                    DYNAMIC_CONCAT_STRINGS,
+                    DYNAMIC_LONG_RUNNING,
+                    DYNAMIC_OUTPUT_INVALID_ARGUMENT,
+                    DYNAMIC_THROW_UNKNOWN_EXCEPTION,
+                    DYNAMIC_THROW_INVALID_ARGUMENT,
+                    DYNAMIC_STOP_PROCESS,
+                    DYNAMIC_STOP_PROCESS,
+                    DYNAMIC_GET_URIS,
+                )
+
+            val SERVICE_LEVEL_FUNCTIONS: Set<AppFunctionName> =
+                setOf(HIGH_SCHEMA_VERSION, ENABLED_BY_DEFAULT, DISABLED_BY_DEFAULT)
+
+            val ALL_FUNCTIONS = APP_LEVEL_FUNCTIONS + SERVICE_LEVEL_FUNCTIONS
+        }
+
+        object Components {
+            val TOP_LEVEL_COMPONENT_1 =
                 GenericDocument.Builder<GenericDocument.Builder<*>>(
                         "app_functions",
-                        "$TEST_HELPER_DYNAMIC_SCHEMA_PKG/appFunctionEnabledByDefault",
-                        "AppFunctionStaticMetadata-android.app.appfunctions.cts.dynamic.schema",
+                        "$PACKAGE_NAME/testTopLevelComponentId",
+                        "",
                     )
-                    .setPropertyString("packageName", "android.app.appfunctions.cts.dynamic.schema")
-                    .setPropertyString("functionId", "appFunctionEnabledByDefault")
-                    .setPropertyBoolean(
-                        AppFunctionStaticMetadataHelper.STATIC_PROPERTY_ENABLED_BY_DEFAULT,
-                        true,
+                    .setPropertyString("customStringProperty", "testValue")
+                    .build()
+            val TOP_LEVEL_COMPONENT_2 =
+                GenericDocument.Builder<GenericDocument.Builder<*>>(
+                        "app_functions",
+                        "$PACKAGE_NAME/testTopLevelComponentId2",
+                        "",
                     )
-                    .setPropertyString(PROPERTY_SCHEMA_CATEGORY, "myUtils")
-                    .setPropertyString(PROPERTY_SCHEMA_NAME, "testSchema")
-                    .setPropertyLong(PROPERTY_SCHEMA_VERSION, 1L)
-                    .setPropertyLong("customIntProperty", 255L)
                     .setPropertyDocument(
                         "nestedDocumentProperty",
                         GenericDocument.Builder<GenericDocument.Builder<*>>(
-                                "app_functions",
-                                "android.app.appfunctions.cts.dynamic.schema/" +
-                                    "appFunctionEnabledByDefault/" +
-                                    "nestedDocumentProperty",
-                                "NestedDocument-android.app.appfunctions.cts.dynamic.schema",
+                                "",
+                                "$PACKAGE_NAME/" +
+                                    "testTopLevelComponentId2/nestedDocumentProperty",
+                                "",
                             )
+                            .setPropertyLong("nestedIntProperty", 333L)
                             .setPropertyString("nestedRepeatedString", "value 1", "value 2")
                             .build(),
                     )
-                    .setPropertyString("serviceName", TEST_SERVICE_NAME)
-                    .build(),
-                RUNTIME_METADATA,
-                PackageMetadata.DYNAMIC_SCHEMA_PACKAGE_METADATA,
-            )
+                    .build()
+        }
 
-        val DISABLED_BY_DEFAULT_NO_SCHEMA =
-            AppFunctionMetadata.create(
-                GenericDocument.Builder<GenericDocument.Builder<*>>(
-                        "app_functions",
-                        "$TEST_HELPER_DYNAMIC_SCHEMA_PKG/" +
-                            "appFunctionDisabledByDefault_noSchema",
-                        "AppFunctionStaticMetadata-android.app.appfunctions.cts.dynamic.schema",
+        object FunctionMetadata {
+            val ENABLED_BY_DEFAULT =
+                android.app.appfunctions.AppFunctionMetadata.Builder(
+                        GenericDocument.Builder<GenericDocument.Builder<*>>(
+                                "app_functions",
+                                "$PACKAGE_NAME/appFunctionEnabledByDefault",
+                                "AppFunctionStaticMetadata-android.app.appfunctions.cts.dynamic.schema",
+                            )
+                            .setPropertyString(
+                                "packageName",
+                                "android.app.appfunctions.cts.dynamic.schema",
+                            )
+                            .setPropertyString("functionId", "appFunctionEnabledByDefault")
+                            .setPropertyBoolean(
+                                AppFunctionStaticMetadataHelper.STATIC_PROPERTY_ENABLED_BY_DEFAULT,
+                                true,
+                            )
+                            .setPropertyString(PROPERTY_SCHEMA_CATEGORY, "myUtils")
+                            .setPropertyString(PROPERTY_SCHEMA_NAME, "testSchema")
+                            .setPropertyLong(PROPERTY_SCHEMA_VERSION, 1L)
+                            .setPropertyLong("customIntProperty", 255L)
+                            .setPropertyDocument(
+                                "nestedDocumentProperty",
+                                GenericDocument.Builder<GenericDocument.Builder<*>>(
+                                        "app_functions",
+                                        "android.app.appfunctions.cts.dynamic.schema/" +
+                                            "appFunctionEnabledByDefault/" +
+                                            "nestedDocumentProperty",
+                                        "NestedDocument-android.app.appfunctions.cts.dynamic.schema",
+                                    )
+                                    .setPropertyString("nestedRepeatedString", "value 1", "value 2")
+                                    .build(),
+                            )
+                            .setPropertyString("serviceName", TEST_SERVICE_NAME)
+                            .build(),
+                        PackageMetadata.DYNAMIC_SCHEMA_PACKAGE_METADATA,
                     )
-                    .setPropertyBoolean(
-                        AppFunctionStaticMetadataHelper.STATIC_PROPERTY_ENABLED_BY_DEFAULT,
-                        false,
-                    )
-                    .setPropertyString("functionId", "appFunctionDisabledByDefault_noSchema")
-                    .setPropertyString("packageName", "android.app.appfunctions.cts.dynamic.schema")
-                    .setPropertyString("serviceName", TEST_SERVICE_NAME)
-                    .build(),
-                RUNTIME_METADATA,
-                PackageMetadata.DYNAMIC_SCHEMA_PACKAGE_METADATA,
-            )
+                    .setEnabled(true)
+                    .build()
 
-        val HIGH_SCHEMA_VERSION =
-            AppFunctionMetadata.create(
-                GenericDocument.Builder<GenericDocument.Builder<*>>(
-                        "app_functions",
-                        "$TEST_HELPER_DYNAMIC_SCHEMA_PKG/appFunctionWithHighSchemaVersion",
-                        "AppFunctionStaticMetadata-android.app.appfunctions.cts.dynamic.schema",
+            val DISABLED_BY_DEFAULT_NO_SCHEMA =
+                android.app.appfunctions.AppFunctionMetadata.Builder(
+                        GenericDocument.Builder<GenericDocument.Builder<*>>(
+                                "app_functions",
+                                "$PACKAGE_NAME/" + "appFunctionDisabledByDefault_noSchema",
+                                "AppFunctionStaticMetadata-android.app.appfunctions.cts.dynamic.schema",
+                            )
+                            .setPropertyBoolean(
+                                AppFunctionStaticMetadataHelper.STATIC_PROPERTY_ENABLED_BY_DEFAULT,
+                                false,
+                            )
+                            .setPropertyString(
+                                "functionId",
+                                "appFunctionDisabledByDefault_noSchema",
+                            )
+                            .setPropertyString(
+                                "packageName",
+                                "android.app.appfunctions.cts.dynamic.schema",
+                            )
+                            .setPropertyString("serviceName", TEST_SERVICE_NAME)
+                            .build(),
+                        PackageMetadata.DYNAMIC_SCHEMA_PACKAGE_METADATA,
                     )
-                    .setPropertyString("functionId", "appFunctionWithHighSchemaVersion")
-                    .setPropertyString("packageName", "android.app.appfunctions.cts.dynamic.schema")
-                    .setPropertyBoolean(
-                        AppFunctionStaticMetadataHelper.STATIC_PROPERTY_ENABLED_BY_DEFAULT,
-                        true,
-                    )
-                    .setPropertyString(PROPERTY_SCHEMA_CATEGORY, "myUtils")
-                    .setPropertyString(PROPERTY_SCHEMA_NAME, "testSchema")
-                    .setPropertyLong(PROPERTY_SCHEMA_VERSION, 7L)
-                    .setPropertyString("serviceName", TEST_SERVICE_NAME)
-                    .build(),
-                RUNTIME_METADATA,
-                PackageMetadata.DYNAMIC_SCHEMA_PACKAGE_METADATA,
-            )
+                    .setEnabled(false)
+                    .build()
 
-        val SAME_PACKAGE_ENABLED_BY_DEFAULT =
-            AppFunctionMetadata.create(
-                GenericDocument.Builder<GenericDocument.Builder<*>>(
-                        "app_functions",
-                        "$CURRENT_PKG/add",
-                        "AppFunctionStaticMetadata-android.app.appfunctions.cts",
+            val HIGH_SCHEMA_VERSION =
+                android.app.appfunctions.AppFunctionMetadata.Builder(
+                        GenericDocument.Builder<GenericDocument.Builder<*>>(
+                                "app_functions",
+                                "$PACKAGE_NAME/appFunctionWithHighSchemaVersion",
+                                "AppFunctionStaticMetadata-android.app.appfunctions.cts.dynamic.schema",
+                            )
+                            .setPropertyString("functionId", "appFunctionWithHighSchemaVersion")
+                            .setPropertyString(
+                                "packageName",
+                                "android.app.appfunctions.cts.dynamic.schema",
+                            )
+                            .setPropertyBoolean(
+                                AppFunctionStaticMetadataHelper.STATIC_PROPERTY_ENABLED_BY_DEFAULT,
+                                true,
+                            )
+                            .setPropertyString(PROPERTY_SCHEMA_CATEGORY, "myUtils")
+                            .setPropertyString(PROPERTY_SCHEMA_NAME, "testSchema")
+                            .setPropertyLong(PROPERTY_SCHEMA_VERSION, 7L)
+                            .setPropertyString("serviceName", TEST_SERVICE_NAME)
+                            .build(),
+                        PackageMetadata.DYNAMIC_SCHEMA_PACKAGE_METADATA,
                     )
-                    .setPropertyString("functionId", "add")
-                    .setPropertyString("packageName", "android.app.appfunctions.cts")
-                    .setPropertyBoolean(
-                        AppFunctionStaticMetadataHelper.STATIC_PROPERTY_ENABLED_BY_DEFAULT,
-                        true,
-                    )
-                    .setPropertyString(PROPERTY_SCHEMA_CATEGORY, "utils")
-                    .setPropertyString(
-                        PROPERTY_SCHEMA_NAME,
-                        "AppFunctionStaticMetadata-android.app.appfunctions.cts",
-                    )
-                    .setPropertyLong(PROPERTY_SCHEMA_VERSION, 1L)
-                    .setPropertyLong("displayNameStringRes", 10)
-                    .setPropertyBoolean("restrictCallersWithExecuteAppFunctions", true)
-                    .setPropertyString("serviceName", TEST_SERVICE_NAME)
-                    .build(),
-                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                    .setPropertyString(PROPERTY_PACKAGE_NAME, CURRENT_PKG)
-                    .setPropertyLong(
-                        AppFunctionRuntimeMetadata.PROPERTY_ENABLED,
-                        AppFunctionManager.APP_FUNCTION_STATE_DEFAULT.toLong(),
-                    )
-                    .build(),
-                PackageMetadata.CURRENT_PACKAGE_METADATA,
-            )
+                    .setEnabled(true)
+                    .build()
+        }
 
-        private const val TEST_SERVICE_NAME =
-            "android.app.appfunctions.testutils.TestAppFunctionService"
+        object PackageMetadata {
+            val DYNAMIC_SCHEMA_PACKAGE_METADATA =
+                AppFunctionPackageMetadata.create(
+                    PACKAGE_NAME,
+                    listOf(Components.TOP_LEVEL_COMPONENT_1, Components.TOP_LEVEL_COMPONENT_2),
+                )
+        }
     }
 
-    object Components {
-        val TOP_LEVEL_COMPONENT_1 =
-            GenericDocument.Builder<GenericDocument.Builder<*>>(
-                    "app_functions",
-                    "$TEST_HELPER_DYNAMIC_SCHEMA_PKG/testTopLevelComponentId",
-                    "",
-                )
-                .setPropertyString("customStringProperty", "testValue")
-                .build()
-        val TOP_LEVEL_COMPONENT_2 =
-            GenericDocument.Builder<GenericDocument.Builder<*>>(
-                    "app_functions",
-                    "$TEST_HELPER_DYNAMIC_SCHEMA_PKG/testTopLevelComponentId2",
-                    "",
-                )
-                .setPropertyDocument(
-                    "nestedDocumentProperty",
-                    GenericDocument.Builder<GenericDocument.Builder<*>>(
-                            "",
-                            "$TEST_HELPER_DYNAMIC_SCHEMA_PKG/" +
-                                "testTopLevelComponentId2/nestedDocumentProperty",
-                            "",
-                        )
-                        .setPropertyLong("nestedIntProperty", 333L)
-                        .setPropertyString("nestedRepeatedString", "value 1", "value 2")
-                        .build(),
-                )
-                .build()
+    object CtsApp {
+        const val PACKAGE_NAME = "android.app.appfunctions.cts"
+
+        object FunctionNames {
+            val THROW_EXCEPTION = AppFunctionName(PACKAGE_NAME, "throwException")
+            val UNCAUGHT_CLIENT_EXCEPTION = AppFunctionName(PACKAGE_NAME, "uncaughtClientException")
+            val ADD_INVOKE_CALLBACK_TWICE = AppFunctionName(PACKAGE_NAME, "add_invokeCallbackTwice")
+            val DYNAMIC_LONG_RUNNING = AppFunctionName(PACKAGE_NAME, "contextLongRunning")
+            val ADD_ASYNC = AppFunctionName(PACKAGE_NAME, "addAsync")
+            val NOT_INVOKE_CALLBACK = AppFunctionName(PACKAGE_NAME, "notInvokeCallback")
+            val DYNAMIC_CONCAT_STRINGS = AppFunctionName(PACKAGE_NAME, "contextConcatStrings")
+            val RUN_FOREVER = AppFunctionName(PACKAGE_NAME, "runForever")
+            val ADD = AppFunctionName(PACKAGE_NAME, "add")
+            val ADD_DISABLED_BY_DEFAULT = AppFunctionName(PACKAGE_NAME, "add_disabledByDefault")
+            val NO_OP = AppFunctionName(PACKAGE_NAME, "noOp")
+            val KILL = AppFunctionName(PACKAGE_NAME, "kill")
+            val LONG_RUNNING_FUNCTION = AppFunctionName(PACKAGE_NAME, "longRunningFunction")
+            val NO_SCHEMA = AppFunctionName(PACKAGE_NAME, "noSchema")
+            val CONTEXT = AppFunctionName(PACKAGE_NAME, "contextDisabledByDefault")
+        }
+
+        object FunctionMetadata {
+            val ENABLED_BY_DEFAULT =
+                AppFunctionMetadata.Builder(
+                        GenericDocument.Builder<GenericDocument.Builder<*>>(
+                                "app_functions",
+                                "$PACKAGE_NAME/add",
+                                "AppFunctionStaticMetadata-android.app.appfunctions.cts",
+                            )
+                            .setPropertyString("functionId", "add")
+                            .setPropertyString("packageName", "android.app.appfunctions.cts")
+                            .setPropertyBoolean(
+                                AppFunctionStaticMetadataHelper.STATIC_PROPERTY_ENABLED_BY_DEFAULT,
+                                true,
+                            )
+                            .setPropertyString(PROPERTY_SCHEMA_CATEGORY, "utils")
+                            .setPropertyString(
+                                PROPERTY_SCHEMA_NAME,
+                                "AppFunctionStaticMetadata-android.app.appfunctions.cts",
+                            )
+                            .setPropertyLong(PROPERTY_SCHEMA_VERSION, 1L)
+                            .setPropertyLong("displayNameStringRes", 10)
+                            .setPropertyBoolean("restrictCallersWithExecuteAppFunctions", true)
+                            .setPropertyString("serviceName", TEST_SERVICE_NAME)
+                            .build(),
+                        PackageMetadata.PACKAGE_METADATA,
+                    )
+                    .setEnabled(true)
+                    .build()
+        }
+
+        object PackageMetadata {
+            val PACKAGE_METADATA = AppFunctionPackageMetadata.create(PACKAGE_NAME, listOf())
+        }
     }
 
     companion object {
-        const val TEST_HELPER_DYNAMIC_SCHEMA_PKG: String =
-            "android.app.appfunctions.cts.dynamic.schema"
-        const val CURRENT_PKG: String = "android.app.appfunctions.cts"
-        const val TEST_HELPER_PKG: String = "android.app.appfunctions.cts.helper"
+        private const val TEST_SERVICE_NAME =
+            "android.app.appfunctions.testutils.TestAppFunctionService"
     }
 }
