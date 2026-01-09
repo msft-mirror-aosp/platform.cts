@@ -39,7 +39,6 @@ android_test_helper_app {
     name: "CtsMediaMetricsHostTestApp",
     defaults: ["cts_defaults"],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     srcs: [
