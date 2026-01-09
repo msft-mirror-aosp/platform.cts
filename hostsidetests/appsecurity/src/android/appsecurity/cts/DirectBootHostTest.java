@@ -126,7 +126,7 @@ public class DirectBootHostTest extends BaseHostJUnit4Test {
             RunUtil.getDefault().sleep(15000);
 
             // Reboot system into known state with keys ejected
-            getDevice().reboot();
+            getDevice().rebootUntilOnline();
             waitForBootCompleted(getDevice());
 
             if (fbeEnabled) {
@@ -143,7 +143,8 @@ public class DirectBootHostTest extends BaseHostJUnit4Test {
                 getDevice().uninstallPackage(PKG);
 
                 // Get ourselves back into a known-good state
-                getDevice().reboot();
+                getDevice().rebootUntilOnline();
+                getDevice().waitForDeviceAvailable();
             }
         }
     }
