@@ -24,6 +24,12 @@
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user"/>
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
 
+    <!-- Run the test only on automotive devices. -->
+    <object class="com.android.tradefed.testtype.suite.module.DeviceFeatureModuleController"
+            type="module_controller">
+        <option name="required-feature" value="android.hardware.type.automotive" />
+    </object>
+
     <!-- Disable package verification since we're using an older target sdk. -->
     <target_preparer class="com.android.tradefed.targetprep.DeviceSetup">
         <option name="set-global-setting" key="verifier_verify_adb_installs" value="0" />
