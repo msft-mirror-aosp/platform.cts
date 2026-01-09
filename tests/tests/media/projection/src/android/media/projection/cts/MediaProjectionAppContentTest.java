@@ -73,7 +73,8 @@ import java.util.concurrent.atomic.AtomicReference;
 @RequiresFlagsEnabled(Flags.FLAG_APP_CONTENT_SHARING)
 public class MediaProjectionAppContentTest {
 
-    private static final int THUMBNAIL_SIZE = 5;
+    private static final int THUMBNAIL_SIZE = 10;
+    private static final int ICON_SIZE = 5;
     private static final int TIMEOUT_MILLIS = 5000;
 
     @Rule
@@ -139,7 +140,7 @@ public class MediaProjectionAppContentTest {
                 true /* grantPermission */,
                 contentProjectionCallback -> {
                     contentProjectionCallback.onContentRequest(
-                            contentConsumer, THUMBNAIL_SIZE, THUMBNAIL_SIZE);
+                            contentConsumer, THUMBNAIL_SIZE, THUMBNAIL_SIZE, ICON_SIZE, ICON_SIZE);
                 });
         MediaProjectionAppContent[] appContents = appContentsRef.waitAndGet();
         assertThat(appContents).isNotNull();
@@ -167,12 +168,14 @@ public class MediaProjectionAppContentTest {
                 true /* grantPermission */,
                 contentProjectionCallback -> {
                     contentProjectionCallback.onContentRequest(
-                            contentConsumer, THUMBNAIL_SIZE, THUMBNAIL_SIZE);
+                            contentConsumer, THUMBNAIL_SIZE, THUMBNAIL_SIZE, ICON_SIZE, ICON_SIZE);
                 });
         appContentsRef.waitAndGet();
         assertThat(MediaProjectionAppContentService.sLastAppContentRequest).isNotNull();
         assertThat(MediaProjectionAppContentService.sLastAppContentRequest.getThumbnailSize())
                 .isEqualTo(new Size(THUMBNAIL_SIZE, THUMBNAIL_SIZE));
+        assertThat(MediaProjectionAppContentService.sLastAppContentRequest.getIconSize())
+                .isEqualTo(new Size(ICON_SIZE, ICON_SIZE));
     }
 
     @Test
@@ -232,7 +235,7 @@ public class MediaProjectionAppContentTest {
                             SecurityException.class,
                             () ->
                                     contentProjectionCallback.onContentRequest(
-                                            new RemoteCallback(result -> {}), 0, 0));
+                                            new RemoteCallback(result -> {}), 0, 0, 0, 0));
                     Assert.expectThrows(
                             SecurityException.class,
                             () ->
