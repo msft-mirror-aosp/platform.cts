@@ -483,6 +483,8 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
             MultiResOutputSurfacesListener surfacesListener = new MultiResOutputSurfacesListener();
             mMultiResolutionImageReader.setOnActiveOutputSurfacesListener(
                     new HandlerExecutor(mHandler), surfacesListener);
+            assertEquals(surfacesListener,
+                    mMultiResolutionImageReader.getOnActiveOutputSurfacesListener());
 
             Collection<OutputConfiguration> outputConfigs =
                     OutputConfiguration.createInstancesForMultiResolutionOutput(
