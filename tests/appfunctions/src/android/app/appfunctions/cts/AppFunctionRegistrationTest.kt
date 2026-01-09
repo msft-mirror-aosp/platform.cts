@@ -640,6 +640,7 @@ class AppFunctionRegistrationTest {
     @Test
     @IncludeRunOnPrimaryUser
     @IncludeRunOnSecondaryUser
+    @RequiresFlagsEnabled(android.app.appfunctions.flags.Flags.FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
     fun execute_getUrisFunction_hasAccessToReturnedUris() = doBlocking {
         val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
         service.registerAppFunction(FunctionType.GET_URIS.toString())
