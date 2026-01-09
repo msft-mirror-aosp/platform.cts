@@ -61,14 +61,17 @@ public class HceReaderPollingLoopTestActivity extends PassFailButtons.Activity
     private void setUpReaderMode() {
         mAdapter.disableReaderMode(this);
         Bundle extras = new Bundle();
+        // For Android 17+ devices, if there is no annotation specified, we use the default
+        // annotation. So, we need to explicitly send an empty annotation in the
+        // API to indicate that we don't want to send any annotation.
         extras.putByteArray(
                 NfcAdapter.EXTRA_READER_TECH_A_POLLING_LOOP_ANNOTATION,
-                HexFormat.of().parseHex("DEADBEEF"));
+                mTestingAnnotation ? HexFormat.of().parseHex("DEADBEEF") : new byte[0]);
         mAdapter.enableReaderMode(
                 this,
                 this,
                 NfcAdapter.FLAG_READER_NFC_A | NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK,
-                mTestingAnnotation ? extras : null);
+                extras);
     }
 
     @Override
