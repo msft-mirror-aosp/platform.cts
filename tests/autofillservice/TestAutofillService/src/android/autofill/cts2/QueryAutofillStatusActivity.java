@@ -29,7 +29,7 @@ import android.view.autofill.AutofillManager;
  */
 public class QueryAutofillStatusActivity extends Activity {
 
-    private static final String TAG = "QueryAutofillServiceStatusActivity";
+    private static final String TAG = "QueryAutofillStatusActivity";
 
     // Autofill enable status, the value should be the same with AutofillManagerTest in
     // CtsAutofillServiceTestCases.
@@ -37,12 +37,22 @@ public class QueryAutofillStatusActivity extends Activity {
     private static final int AUTOFILL_DISABLE = 2;
 
     private PendingIntent mPendingIntent;
+    private PendingIntent mDestroyedPendingIntent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.i(TAG, "instanceId=" + hashCode() + ": onCreate");
         final Intent intent = getIntent();
-        mPendingIntent = intent.getParcelableExtra("finishBroadcast");
+        mPendingIntent = intent.getParcelableExtra("finishBroadcast", PendingIntent.class);
+        if (mPendingIntent == null) {
+            Log.w(TAG, "finishBroadcast pending intent is null");
+        }
+        mDestroyedPendingIntent =
+                intent.getParcelableExtra("activityDestroyedBroadcast", PendingIntent.class);
+        if (mDestroyedPendingIntent == null) {
+            Log.w(TAG, "activityDestroyedBroadcast is null");
+        }
     }
 
     @Override
@@ -55,16 +65,32 @@ public class QueryAutofillStatusActivity extends Activity {
         // Check if the calling application provides a AutofillService that is enabled
         final AutofillManager afm = getSystemService(AutofillManager.class);
         final boolean enabled = afm.hasEnabledAutofillServices();
-        Log.w(TAG, "hasEnabledAutofillServices()= " + enabled);
+        Log.i(TAG, "hasEnabledAutofillServices()= " + enabled);
 
         if (mPendingIntent != null) {
             try {
                 final int resultCode = enabled ? AUTOFILL_ENABLE : AUTOFILL_DISABLE;
                 mPendingIntent.send(resultCode);
+                Log.i(TAG, "finished sending result through pending intent");
             } catch (CanceledException e) {
                 Log.w(TAG, "Pending intent " + mPendingIntent + " canceled");
             }
+        } else {
+            Log.w(TAG, "finishBroadcast pending intent is null");
         }
         finish();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.i(TAG, "instanceId=" + hashCode() + ": onDestroy");
+        if (mDestroyedPendingIntent != null) {
+            try {
+                mDestroyedPendingIntent.send();
+            } catch (CanceledException e) {
+                Log.w(TAG, "Pending intent " + mDestroyedPendingIntent + " canceled");
+            }
+        }
     }
 }

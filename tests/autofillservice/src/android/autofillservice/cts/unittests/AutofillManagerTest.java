@@ -15,6 +15,7 @@
  */
 package android.autofillservice.cts.unittests;
 
+import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
 import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
@@ -124,21 +125,37 @@ public class AutofillManagerTest {
     private void runQueryAutofillStatusActivityAndVerifyResult(int expectedStatus) {
         final String actionAutofillStatusActivityFinish =
                 "ACTION_AUTOFILL_STATUS_ACTIVITY_FINISH_" + SystemClock.uptimeMillis();
+        final String actionAutofillStatusActivityDestroyed =
+                "ACTION_AUTOFILL_STATUS_ACTIVITY_DESTROYED_" + SystemClock.uptimeMillis();
 
-        // register a activity finish receiver
-        final BlockingBroadcastReceiver receiver = new BlockingBroadcastReceiver(sContext,
-                actionAutofillStatusActivityFinish);
+        // register an activity finish receiver
+        final BlockingBroadcastReceiver receiver =
+                new BlockingBroadcastReceiver(sContext, actionAutofillStatusActivityFinish);
         receiver.register();
+
+        // register an activity destroyed receiver
+        final BlockingBroadcastReceiver destroyedReceiver =
+                new BlockingBroadcastReceiver(sContext, actionAutofillStatusActivityDestroyed);
+        destroyedReceiver.register();
 
         // Start an Activity from another package
         final Intent outsideActivity = new Intent();
         outsideActivity.setComponent(new ComponentName("android.autofill.cts2",
                 "android.autofill.cts2.QueryAutofillStatusActivity"));
-        outsideActivity.setFlags(FLAG_ACTIVITY_NEW_TASK);
+        outsideActivity.setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TASK);
+
         final Intent broadcastIntent = new Intent(actionAutofillStatusActivityFinish);
         final PendingIntent pendingIntent = PendingIntent.getBroadcast(sContext, 0, broadcastIntent,
                 PendingIntent.FLAG_IMMUTABLE);
+
+        final Intent destroyedIntent = new Intent(actionAutofillStatusActivityDestroyed);
+        final PendingIntent destroyedPendingIntent =
+                PendingIntent.getBroadcast(
+                        sContext, 0, destroyedIntent, PendingIntent.FLAG_IMMUTABLE);
+
+        Log.i(TAG, "Putting finishBroadcast extra " + pendingIntent + " into intent");
         outsideActivity.putExtra("finishBroadcast", pendingIntent);
+        outsideActivity.putExtra("activityDestroyedBroadcast", destroyedPendingIntent);
         sContext.startActivity(outsideActivity);
 
         // Verify the finish broadcast is received.
@@ -151,5 +168,10 @@ public class AutofillManagerTest {
 
         // unregister receiver
         receiver.unregisterQuietly();
+
+        // Verify the activity is destroyed before running next text step to prevent race condition
+        final Intent destroyedReceivedIntent = destroyedReceiver.awaitForBroadcast();
+        assertThat(destroyedReceivedIntent).isNotNull();
+        destroyedReceiver.unregisterQuietly();
     }
 }
