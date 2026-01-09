@@ -171,6 +171,7 @@ WAIT_INTERVAL_FIVE_SECONDS = datetime.timedelta(seconds=5)
 WATCH_WAIT_TIME_SECONDS = 2
 ZOOM_RATIO_STR = 'zoomRatio'
 MORE_BUTTON_TXT = 'More'
+JCA_HIDE_COMPONENTS_RES_ID = 'btn_debug_hide_components'
 
 
 @dataclasses.dataclass(frozen=True)
@@ -968,8 +969,12 @@ def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
         timeout=WAIT_INTERVAL_FIVE_SECONDS
     ):
       if take_preview_snap:
+        logging.debug('Taking preview snapshot before taking the capture')
+        dut.ui(res=JCA_HIDE_COMPONENTS_RES_ID).click.wait()
         time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
         jca_screenshot = dut.take_screenshot(log_path, prefix='jca_preview_snapshot')
+        # Click on the hide components button again to show the capture button
+        dut.ui(res=JCA_HIDE_COMPONENTS_RES_ID).click.wait()
       dut.ui(res=CAPTURE_BUTTON_RESOURCE_ID).click.wait()
     time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
     stop_cameraservice_watch(watch_process)
