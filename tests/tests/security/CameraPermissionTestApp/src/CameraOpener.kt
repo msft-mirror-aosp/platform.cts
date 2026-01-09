@@ -46,6 +46,8 @@ import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 
+import java.util.concurrent.atomic.AtomicBoolean
+
 class CameraOpener(
     private val context: Context,
     private val keys: IntentKeys,
@@ -125,7 +127,8 @@ class CameraOpener(
       attributionSource: AttributionSource? = null,
   ): Intent = suspendCancellableCoroutine { continuation ->
     val result = Intent().apply { putExtra(keys.attributionSource, attributionSource.toString()) }
-    continuation.tryOrResume(keys, result, "openCamera2Async") {
+    val hasResumed = AtomicBoolean(false)
+    continuation.tryOrResume(keys, result, "openCamera2Async", hasResumed) {
       var customContext = context
       attributionSource?.let {
         val contextParams = ContextParams.Builder().setNextAttributionSource(it).build()
@@ -133,7 +136,8 @@ class CameraOpener(
       }
       cameraManager = customContext.getSystemService(Context.CAMERA_SERVICE) as CameraManager
       if (cameraManager.getCameraIdList().isEmpty()) {
-        continuation.resume(result.apply { putExtra(keys.noCamera, true) })
+        continuation.resumeIfActive(result.apply { putExtra(keys.noCamera, true) },
+            hasResumed)
       }
 
       val cameraId = cameraManager.getCameraIdList()[0]
@@ -146,18 +150,19 @@ class CameraOpener(
 
               result.putExtra(keys.cameraOpened2, true)
               if (shouldStream) {
-                continuation.tryOrResume(keys, result, "openCamera2Async/onOpened") {
-                  openCamera2Stream(cameraDevice, result, continuation, shouldRepeat)
+                continuation.tryOrResume(keys, result, "openCamera2Async/onOpened", hasResumed) {
+                  openCamera2Stream(cameraDevice, result, continuation, shouldRepeat, hasResumed)
                 }
               } else {
                 cameraDevice.close()
-                continuation.resume(result)
+                continuation.resumeIfActive(result, hasResumed)
               }
             }
 
             override fun onDisconnected(cameraDevice: CameraDevice) {
               Log.v(TAG, "onDisconnected")
-              continuation.tryOrResume(keys, result, "openCamera2Async/onDisconnected") {
+              continuation.tryOrResume(keys, result, "openCamera2Async/onDisconnected",
+                      hasResumed) {
                 cameraDevice.close()
               }
             }
@@ -174,9 +179,8 @@ class CameraOpener(
                 result.putException(keys, e)
               }
 
-              if (continuation.isActive) { // continuation may already have been resumed
-                continuation.resume(result.apply { putExtra(keys.error, error) })
-              }
+              continuation.resumeIfActive(result.apply { putExtra(keys.error, error) },
+                      hasResumed)
             }
           })
     }
@@ -190,36 +194,36 @@ class CameraOpener(
     Log.v(TAG, "openCameraNdkAsync: shouldStream ${shouldStream} shouldRepeat ${shouldRepeat}")
     var result = Intent().apply { putExtra(keys.attributionSource, attributionSource.toString()) }
 
+    val hasResumed = AtomicBoolean(false)
     // Avoid blocking the main thread
     cameraExecutor.execute {
       nativeInit()
 
       if (!nativeHasCamera()) {
-        continuation.resume(result.apply { putExtra(keys.noCamera, true) })
+        continuation.resumeIfActive(result.apply { putExtra(keys.noCamera, true) }, hasResumed)
         return@execute
       }
 
       val openCameraResult = nativeOpenCamera()
       if (openCameraResult != 0) {
         Log.e(TAG, "Failed to open camera: ${openCameraResult}")
-        continuation.resume(result.apply { putExtra(keys.error, openCameraResult) })
+        continuation.resumeIfActive(result.apply { putExtra(keys.error, openCameraResult) },
+            hasResumed)
         return@execute
       }
 
       result.putExtra(keys.cameraOpenedNdk, true)
       if (shouldStream) {
-        openCameraNdkStream(result, continuation, shouldRepeat)
+        openCameraNdkStream(result, continuation, shouldRepeat, hasResumed)
       } else {
-        continuation.resume(result)
+        continuation.resumeIfActive(result, hasResumed)
       }
     }
 
     // Run cleanup sequentially after the above
     cameraExecutor.execute {
       nativeCleanup()
-      if (continuation.isActive) {
-        continuation.resume(result)
-      }
+      continuation.resumeIfActive(result, hasResumed)
     }
   }
 
@@ -237,12 +241,13 @@ class CameraOpener(
     params.setPreviewSize(previewSize.width, previewSize.height)
     camera.setParameters(params)
 
+    val hasResumed = AtomicBoolean(false)
     if (textureView?.surfaceTexture != null) {
       surfaceTexture = textureView.surfaceTexture
     }
 
     if (surfaceTexture != null) {
-      captureCamera1(camera, result, continuation, shouldRepeat)
+      captureCamera1(camera, result, continuation, shouldRepeat, hasResumed)
     } else if (textureView != null) {
       textureView.setSurfaceTextureListener(
           object : TextureView.SurfaceTextureListener {
@@ -253,7 +258,7 @@ class CameraOpener(
             ) {
               surfaceTexture.let {
                 this@CameraOpener.surfaceTexture = it
-                captureCamera1(camera, result, continuation, shouldRepeat)
+                captureCamera1(camera, result, continuation, shouldRepeat, hasResumed)
               }
             }
 
@@ -278,12 +283,13 @@ class CameraOpener(
       result: Intent,
       continuation: CancellableContinuation<Intent>,
       shouldRepeat: Boolean,
+      hasResumed: AtomicBoolean,
   ) {
     camera.setPreviewTexture(surfaceTexture)
 
     val cleanup: () -> Unit = {
       Log.v(TAG, "captureCamera1/cleanup")
-      continuation.tryOrResume(keys, result, "captureCamera1/cleanup") {
+      continuation.tryOrResume(keys, result, "captureCamera1/cleanup", hasResumed) {
         camera.stopPreview()
         camera.setPreviewTexture(null)
         camera.release()
@@ -302,9 +308,8 @@ class CameraOpener(
               result.putException(keys, e)
             }
 
-            if (continuation.isActive) { // continuation may already have been resumed
-              continuation.resume(result.apply { putExtra(keys.error, error) })
-            }
+            continuation.resumeIfActive(result.apply { putExtra(keys.error, error) },
+                    hasResumed)
           }
         })
 
@@ -319,9 +324,9 @@ class CameraOpener(
                 Log.v(TAG, "onStopRepeating")
                 cleanup()
 
-                if (continuation.isActive) {
-                  continuation.resume(result.apply { putExtra(keys.stoppedRepeating, true) })
-                }
+                continuation.resumeIfActive(
+                        result.apply { putExtra(keys.stoppedRepeating, true) },
+                        hasResumed)
               }
 
               signalStreamOpened(true, result)
@@ -329,7 +334,7 @@ class CameraOpener(
 
               if (!shouldRepeat) {
                 cleanup()
-                continuation.resume(result)
+                continuation.resumeIfActive(result, hasResumed)
               }
             } else {
               Log.v(TAG, "Camera.PreviewCallback.onPreviewFrame()")
@@ -344,7 +349,8 @@ class CameraOpener(
       cameraDevice: CameraDevice,
       result: Intent,
       continuation: CancellableContinuation<Intent>,
-      shouldRepeat: Boolean
+      shouldRepeat: Boolean,
+      hasResumed: AtomicBoolean,
   ) {
     handlerThread = HandlerThread("${context.packageName}.CAPTURE").apply { start() }
     val captureHandler = Handler(handlerThread!!.getLooper())
@@ -371,7 +377,8 @@ class CameraOpener(
             object : CameraCaptureSession.StateCallback() {
               override fun onConfigured(session: CameraCaptureSession) {
                 Log.v(TAG, "CaptureCaptureSession.StateCallback.onConfigured()")
-                continuation.tryOrResume(keys, result, "openCamera2Stream/onConfigured") {
+                continuation.tryOrResume(keys, result, "openCamera2Stream/onConfigured",
+                    hasResumed) {
                   captureCamera2(
                       cameraDevice,
                       session,
@@ -379,7 +386,8 @@ class CameraOpener(
                       continuation,
                       imageReader.surface,
                       shouldRepeat,
-                      captureHandler)
+                      captureHandler,
+                      hasResumed)
                 }
               }
 
@@ -387,7 +395,7 @@ class CameraOpener(
                 Log.v(TAG, "CaptureCaptureSession.StateCallback.onConfigureFailed()")
                 session.close()
                 cameraDevice.close()
-                continuation.resume(signalStreamOpened(false, result))
+                continuation.resumeIfActive(signalStreamOpened(false, result), hasResumed)
               }
 
               override fun onReady(session: CameraCaptureSession) {
@@ -404,11 +412,12 @@ class CameraOpener(
       continuation: CancellableContinuation<Intent>,
       target: Surface,
       shouldRepeat: Boolean,
-      captureHandler: Handler
+      captureHandler: Handler,
+      hasResumed: AtomicBoolean,
   ) {
     val cleanup: () -> Unit = {
       Log.v(TAG, "captureCamera2/cleanup")
-      continuation.tryOrResume(keys, result, "captureCamera2/cleanup") {
+      continuation.tryOrResume(keys, result, "captureCamera2/cleanup", hasResumed) {
         session.stopRepeating()
         session.close()
         cameraDevice.close()
@@ -436,10 +445,10 @@ class CameraOpener(
                 Log.v(TAG, "onStopRepeating")
                 cleanup()
 
-                if (continuation.isActive) {
-                  continuation.resume(result.apply { putExtra(keys.stoppedRepeating, true) })
+                continuation.resumeIfActive(
+                        result.apply { putExtra(keys.stoppedRepeating, true) },
+                        hasResumed)
                 }
-              }
 
               signalStreamOpened(true, result)
               firstCaptureCompleted = true
@@ -449,7 +458,7 @@ class CameraOpener(
 
             if (!shouldRepeat) {
               cleanup()
-              continuation.resume(result)
+              continuation.resumeIfActive(result, hasResumed)
             }
           }
 
@@ -474,14 +483,17 @@ class CameraOpener(
   private fun openCameraNdkStream(
       result: Intent,
       continuation: CancellableContinuation<Intent>,
-      shouldRepeat: Boolean
+      shouldRepeat: Boolean,
+      hasResumed: AtomicBoolean,
   ) {
     Log.v(TAG, "openCameraNdkStream: shouldRepeat ${shouldRepeat}")
     val openCameraStreamResult = nativeOpenCameraStream(shouldRepeat)
     if (openCameraStreamResult != 0) {
       signalStreamOpened(false, result)
       Log.e(TAG, "Failed to open camera stream: ${openCameraStreamResult}")
-      continuation.resume(result.apply { putExtra(keys.error, openCameraStreamResult) })
+      continuation.resumeIfActive(
+            result.apply { putExtra(keys.error, openCameraStreamResult) },
+            hasResumed)
       return
     }
 
@@ -496,7 +508,7 @@ class CameraOpener(
       val stopRepeatingResult = nativeWaitStopRepeating()
       result.putExtra(keys.error, stopRepeatingResult)
     }
-    continuation.resume(result)
+    continuation.resumeIfActive(result, hasResumed)
   }
 
   private fun signalStreamOpened(streamOpened: Boolean, result: Intent): Intent {

@@ -22,22 +22,58 @@ import android.util.Log
 import kotlin.coroutines.resume
 import kotlinx.coroutines.CancellableContinuation
 
+import java.util.concurrent.atomic.AtomicBoolean
+
 private val TAG = OpenCameraActivity::class.java.simpleName
+
+fun CancellableContinuation<Intent>.resumeIfActive(value: Intent,
+        hasResumed: AtomicBoolean,
+        tag: String = "") {
+    if (hasResumed.compareAndSet(false, true)) {
+        if (this.isActive) {
+            Log.v(TAG, "Resuming $tag")
+            this.resume(value)
+        } else {
+            Log.w(TAG, "Continuation not active, not resuming $tag")
+        }
+    } else {
+        Log.d(TAG, "Already resumed, ignoring $tag")
+    }
+}
+
+fun CancellableContinuation<Intent>.resumeIfActiveWithException(
+    hasResumed: AtomicBoolean,
+    e: Exception,
+    keys: IntentKeys,
+    result: Intent,
+    tag: String = ""
+) {
+    if (hasResumed.compareAndSet(false, true)) {
+        if (this.isActive) {
+            Log.e(TAG, "Resuming with exception $tag: ${e.exceptionString}")
+            result.putException(keys, e)
+            this.resume(result)
+        } else {
+            Log.w(TAG, "Continuation not active, " +
+                    " not resuming with exception $tag: ${e.exceptionString}")
+        }
+    } else {
+        Log.d(TAG, "Already resumed, ignoring exception $tag: ${e.exceptionString}")
+    }
+}
 
 fun CancellableContinuation<Intent>.tryOrResume(
     keys: IntentKeys,
     result: Intent,
-    method: String,
+    tag: String,
+    hasResumed: AtomicBoolean,
     callback: () -> Unit
 ) {
-  try {
-    callback()
-  } catch (e: Exception) {
-    Log.e(TAG, "${method}: Received exception: ${e.exceptionString}")
-    if (isActive) {
-      resume(result.apply { putException(keys, e) })
+    try {
+        callback()
+    } catch (e: Exception) {
+        this.resumeIfActiveWithException(hasResumed, e, keys, result, tag)
     }
-  }
 }
 
 fun Intent.putException(keys: IntentKeys, e: Exception) {

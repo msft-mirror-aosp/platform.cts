@@ -31,7 +31,13 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-
+        <!-- Add your BroadcastReceiver declaration -->
+        <receiver android:name="android.security.cts.camera.open.BackgroundBroadcastReceiver" android:exported="true">
+            <intent-filter>
+                <!-- Received to start camera operations in the background -->
+                <action android:name="android.security.cts.camera.open.START_IN_BACKGROUND" />
+            </intent-filter>
+        </receiver>
         <service
             android:name=".CameraOpenerService"
             android:exported="true" />
