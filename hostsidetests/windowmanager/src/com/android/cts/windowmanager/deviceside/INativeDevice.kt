@@ -16,7 +16,6 @@
 
 package com.android.cts.windowmanager.deviceside
 
-import com.android.tradefed.device.DeviceUnresponsiveException
 import com.android.tradefed.device.IManagedTestDevice
 import com.android.tradefed.device.INativeDevice
 import com.android.tradefed.log.LogUtil.CLog
@@ -29,30 +28,19 @@ const val DEVICE_NOT_AVAILABLE_TIMEOUT = 20000L
  * without the root access. It is critical to the proper shutdown sequence in system services.
  */
 fun INativeDevice.frameworkReboot() {
-    try {
-        val rebootResult =
-            executeAdbV2Command(*"shell svc power reboot".split(" ").toTypedArray())
-        assertEquals(
-            "Failed to framework reboot device: ${rebootResult.stderr}",
-            "",
-            rebootResult.stderr
-        )
-    } catch (e: DeviceUnresponsiveException) {
-        // Tradefed throws IOException if an ADB shell command fails. This particular command is
-        // written not to return until the system server process dies. Therefore it is possible that
-        // the device still reboots when the command itself fails. When all retry attempts are
-        // exhausted, Tradefed throws a DeviceUnresponsiveException. See b/472678103.
-        CLog.w(
-            "Reboot adb command failed, but the device may still reboot. If someone suspects any " +
-                    "issues, please check logcat."
-        )
-        CLog.w(e)
-    }
+    val rebootResult =
+        executeAdbV2Command(*"shell svc power reboot".split(" ").toTypedArray())
+    assertEquals("Failed to framework reboot device", 0, rebootResult.exitCode)
+    assertEquals(
+        "Failed to framework reboot device: ${rebootResult.stderr}",
+        "",
+        rebootResult.stderr
+    )
     if (this is IManagedTestDevice) {
         if (!monitor.waitForDeviceNotAvailable(DEVICE_NOT_AVAILABLE_TIMEOUT)) {
             CLog.w(
                 "Didn't detect device %s becoming unavailable after framework reboot within " +
-                    "%dms",
+                    "%lms",
                 serialNumber,
                 DEVICE_NOT_AVAILABLE_TIMEOUT
             )
