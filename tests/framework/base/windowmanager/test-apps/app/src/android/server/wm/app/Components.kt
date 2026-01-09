@@ -660,27 +660,20 @@ object Components : ComponentsProvider() {
 
     object TaskMoveTestActivity {
         const val ACTION_CHECK_IS_TASK_MOVE_ALLOWED = "action_check_is_task_move_allowed"
-        const val ACTION_NOTIFY_LISTENER_CALLED = "action_notify_listener_called"
         const val ACTION_NOTIFY_TASK_MOVE_ALLOWED_RESULT =
                 "action_notify_task_move_allowed_result"
         const val ACTION_NOTIFY_TASK_MOVE_REQUEST_RESULT =
                 "action_notify_task_move_request_result"
         const val ACTION_NOTIFY_START_ACTIVITY_WITH_MOVABLE_FLAG_RESULT =
                 "action_notify_start_activity_with_movable_flag_result"
-        const val ACTION_REGISTER_LISTENER = "action_register_listener"
-        const val ACTION_REGISTER_LISTENER_ACK = "action_register_listener_ack"
         const val ACTION_REQUEST_TASK_MOVE = "action_request_task_move"
         const val ACTION_START_ACTIVITY_WITH_MOVABLE_FLAG =
                 "action_start_activity_with_movable_flag"
-        const val ACTION_UNREGISTER_LISTENER = "action_unregister_listener"
-        const val ACTION_UNREGISTER_LISTENER_ACK = "action_unregister_listener_ack"
         const val EXTRA_BOUNDS_KEY = "extra_bounds_key"
         const val EXTRA_DISPLAY_ID_KEY = "extra_display_id_key"
         const val EXTRA_EXCEPTION_KEY = "extra_exception_key"
         const val EXTRA_SYNC_EXCEPTION_KEY = "extra_sync_exception_key"
         const val EXTRA_TASK_MOVE_ALLOWED_RESULT = "extra_task_move_allowed_result"
-        const val EXTRA_TMA_KEYS_ARRAY_KEY = "extra_tma_keys_array_key"
-        const val EXTRA_TMA_VALUES_ARRAY_KEY = "extra_tma_values_array_key"
     }
 
     @JvmStatic fun getPackageName() = packageName

@@ -16,6 +16,9 @@
 
 package com.android.cts.verifier.audio;
 
+import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
+import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
+
 import android.content.Context;
 import android.graphics.Color;
 import android.media.AudioDeviceCallback;
@@ -28,6 +31,10 @@ import android.view.View;
 import android.widget.RadioButton;
 import android.widget.TextView;
 
+import com.android.compatibility.common.util.ResultType;
+import com.android.compatibility.common.util.ResultUnit;
+import com.android.cts.verifier.CtsVerifierReportLog;
+import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.analyzers.BaseSineAnalyzer;
 import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
@@ -47,6 +54,9 @@ import org.hyphonate.megaaudio.player.sources.SparseChannelAudioSourceProvider;
 import org.hyphonate.megaaudio.recorder.AudioSinkProvider;
 import org.hyphonate.megaaudio.recorder.sinks.AppCallback;
 import org.hyphonate.megaaudio.recorder.sinks.AppCallbackAudioSinkProvider;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Locale;
@@ -60,6 +70,24 @@ public class AudioMultichannelMixdownActivity
         extends AudioMultiApiActivity
         implements View.OnClickListener, AppCallback {
     private static final String TAG = "AudioMultichannelMixdownActivity";
+
+    // ReportLog schema
+    private static final String SECTION_AUDIO_MULTI_CHANNEL_MIXDOWN = "audio_multi_channel_mixdown";
+    private static final String KEY_TEST_PHASES = "test_phases";
+    private static final String KEY_PHASE_INDEX = "phase_index";
+    private static final String KEY_DESCRIPTION = "description";
+    private static final String KEY_OUTPUT_MASK = "output_mask";
+    private static final String KEY_OUTPUT_CHANNEL = "output_channel";
+    private static final String KEY_PASS_TEST = "pass_test";
+    private static final String KEY_LEFT_MAGNITUDE = "left_magnitude";
+    private static final String KEY_RIGHT_MAGNITUDE = "right_magnitude";
+    private static final String KEY_LEFT_JITTER = "left_jitter";
+    private static final String KEY_RIGHT_JITTER = "right_jitter";
+
+    private static final String KEY_SPEAKERMIC_RUN = "speakermic_run";
+    private static final String KEY_ANALOGJACK_RUN = "analogjack_run";
+    private static final String KEY_USBINTERFACE_RUN = "usbinterface_run";
+    private static final String KEY_USBHEADSET_RUN = "usbheadset_run";
 
     private Context mContext;
     protected AudioManager mAudioManager;
@@ -648,6 +676,8 @@ public class AudioMultichannelMixdownActivity
 
         super.onCreate(savedInstanceState);
 
+        mRequireReportLogToPass = true;
+
         mContext = this;
 
         mTestManager.initializeTests();
@@ -1172,5 +1202,55 @@ public class AudioMultichannelMixdownActivity
         public void onAudioDevicesRemoved(AudioDeviceInfo[] removedDevices) {
             recalcIODevices();
         }
+    }
+
+    @Override
+    public boolean requiresReportLog() {
+        return true;
+    }
+
+    @Override
+    public String getReportFileName() {
+        return PassFailButtons.AUDIO_TESTS_REPORT_LOG_NAME;
+    }
+
+    @Override
+    public void recordTestResults() {
+        CtsVerifierReportLog reportLog = getReportLog();
+
+        reportLog.addValue(KEY_SPEAKERMIC_RUN, mSpeakerMicRun, ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.addValue(KEY_ANALOGJACK_RUN, mAnalogJackRun, ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.addValue(
+                KEY_USBINTERFACE_RUN, mUsbInterfaceRun, ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.addValue(KEY_USBHEADSET_RUN, mUsbHeadsetRun, ResultType.NEUTRAL, ResultUnit.NONE);
+
+        JSONArray phasesJson = new JSONArray();
+        for (TestPhase testPhase : mTestManager.mTestModules) {
+            if (testPhase.mState == TestPhase.STATUS_COMPLETE) {
+                JSONObject phaseJson = new JSONObject();
+                try {
+                    phaseJson.put(KEY_PHASE_INDEX, testPhase.getPhaseIndex());
+                    phaseJson.put(KEY_DESCRIPTION, testPhase.getSummary());
+                    phaseJson.put(KEY_OUTPUT_MASK, testPhase.mOutputMask);
+                    phaseJson.put(KEY_OUTPUT_CHANNEL, testPhase.mOutputChannel);
+                    phaseJson.put(KEY_PASS_TEST, testPhase.mPass);
+                    phaseJson.put(KEY_LEFT_MAGNITUDE, testPhase.mMagnitude[IN_CHANNEL_LEFT]);
+                    phaseJson.put(KEY_RIGHT_MAGNITUDE, testPhase.mMagnitude[IN_CHANNEL_RIGHT]);
+                    phaseJson.put(KEY_LEFT_JITTER, testPhase.mPhaseJitter[IN_CHANNEL_LEFT]);
+                    phaseJson.put(KEY_RIGHT_JITTER, testPhase.mPhaseJitter[IN_CHANNEL_RIGHT]);
+                    phasesJson.put(phaseJson);
+                } catch (JSONException e) {
+                    Log.e(TAG, "Error creating JSON for test phase.", e);
+                }
+            }
+        }
+        reportLog.addValues(KEY_TEST_PHASES, phasesJson);
+
+        reportLog.submit();
+    }
+
+    @Override
+    public final String getReportSectionName() {
+        return setTestNameSuffix(sCurrentDisplayMode, SECTION_AUDIO_MULTI_CHANNEL_MIXDOWN);
     }
 }

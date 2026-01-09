@@ -16,6 +16,9 @@
 
 package com.android.cts.verifier.audio;
 
+import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
+import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -26,12 +29,12 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
 import com.android.cts.verifier.audio.audiolib.DisplayUtils;
 
-// MegaAudio
 import org.hyphonate.megaaudio.common.BuilderBase;
 import org.hyphonate.megaaudio.common.Globals;
 import org.hyphonate.megaaudio.common.StreamBase;
@@ -44,6 +47,9 @@ import org.hyphonate.megaaudio.recorder.AudioSinkProvider;
 import org.hyphonate.megaaudio.recorder.OboeRecorder;
 import org.hyphonate.megaaudio.recorder.RecorderBuilder;
 import org.hyphonate.megaaudio.recorder.sinks.NopAudioSinkProvider;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 
@@ -57,6 +63,22 @@ public class AudioDisconnectActivity
         implements View.OnClickListener {
     private static final String TAG = AudioDisconnectActivity.class.getSimpleName();
     private static final boolean LOG = true;
+
+    // ReportLog Schema
+    private static final String SECTION_AUDIO_DISCONNECT_ACTIVITY = "audio_disconnect_activity";
+    private static final String KEY_TEST_CONFIGURATIONS = "test_configurations";
+    private static final String KEY_CONFIG_NAME = "config_name";
+    private static final String KEY_START_RESULT = "start_result";
+    private static final String KEY_INSERT_PLUG_RESULT = "insert_plug_result";
+    private static final String KEY_INSERT_STREAM_DISCONNECT_RESULT =
+            "insert_stream_disconnect_result";
+    private static final String KEY_INSERT_STREAM_OBOE_DISCONNECT_RESULT =
+            "insert_stream_oboe_disconnect_result";
+    private static final String KEY_REMOVAL_PLUG_RESULT = "removal_plug_result";
+    private static final String KEY_REMOVAL_STREAM_DISCONNECT_RESULT =
+            "removal_stream_disconnect_result";
+    private static final String KEY_REMOVAL_STREAM_OBOE_DISCONNECT_RESULT =
+            "removal_stream_oboe_disconnect_result";
 
     private BroadcastReceiver mPluginReceiver = new PluginBroadcastReceiver();
 
@@ -104,6 +126,8 @@ public class AudioDisconnectActivity
         static final int OPTION_EXCLUSIVE = 0x00000002;
         static final int OPTION_MMAP = 0x00000004;
         int mOptions;
+        String mConfigSuffix;
+        String mConfigName;
 
         static final int RESULT_DETECTED = 0; // i.e. the disconnect notification was received
         static final int RESULT_NOTTESTED = -1;
@@ -148,13 +172,15 @@ public class AudioDisconnectActivity
         int mRemovalStreamOboeDisconnectResult;
         int mRemovalStreamOboeDisconnectCode;
 
-        TestConfiguration(int direction, int sampleRate, int numChannels, int options) {
+        TestConfiguration(
+                int direction, int sampleRate, int numChannels, int options, String configName) {
             mDirection = direction;
 
             mSampleRate = sampleRate;
             mNumChannels = numChannels;
 
             mOptions = options;
+            mConfigName = configName;
 
             mStreamStartResult = RESULT_NOTTESTED;
             mInsertPlugResult = RESULT_NOTTESTED;
@@ -305,51 +331,81 @@ public class AudioDisconnectActivity
     private ArrayList<TestConfiguration> mTestConfigs = new ArrayList<TestConfiguration>();
 
     void setTestConfigs() {
-//        This logic will cover the four main data paths.
-//        if (isMMapSupported) {
-//            LOWLATENCY + MMAP + EXCLUSIVE
-//            LOWLATENCY + MMAP // shared
-//        }
-//        LOWLATENCY // legacy
-//        NONE
+        //        This logic will cover the four main data paths.
+        //        if (isMMapSupported) {
+        //            LOWLATENCY + MMAP + EXCLUSIVE
+        //            LOWLATENCY + MMAP // shared
+        //        }
+        //        LOWLATENCY // legacy
+        //        NONE
 
         // Player
-        mTestConfigs.add(new TestConfiguration(TestConfiguration.IO_OUTPUT,
-                mSystemSampleRate, 2,
-                TestConfiguration.OPTION_LOWLATENCY));
+        mTestConfigs.add(
+                new TestConfiguration(
+                        TestConfiguration.IO_OUTPUT,
+                        mSystemSampleRate,
+                        2,
+                        TestConfiguration.OPTION_LOWLATENCY,
+                        "out_lowlatency"));
         if (Globals.isMMapSupported()) {
-            mTestConfigs.add(new TestConfiguration(TestConfiguration.IO_OUTPUT,
-                    mSystemSampleRate, 2,
-                    TestConfiguration.OPTION_LOWLATENCY
-                            | TestConfiguration.OPTION_MMAP));
-            mTestConfigs.add(new TestConfiguration(TestConfiguration.IO_OUTPUT,
-                    mSystemSampleRate, 2,
-                    TestConfiguration.OPTION_LOWLATENCY
-                            | TestConfiguration.OPTION_MMAP
-                            | TestConfiguration.OPTION_EXCLUSIVE));
+            mTestConfigs.add(
+                    new TestConfiguration(
+                            TestConfiguration.IO_OUTPUT,
+                            mSystemSampleRate,
+                            2,
+                            TestConfiguration.OPTION_LOWLATENCY | TestConfiguration.OPTION_MMAP,
+                            "out_lowlatency_mmap"));
+            mTestConfigs.add(
+                    new TestConfiguration(
+                            TestConfiguration.IO_OUTPUT,
+                            mSystemSampleRate,
+                            2,
+                            TestConfiguration.OPTION_LOWLATENCY
+                                    | TestConfiguration.OPTION_MMAP
+                                    | TestConfiguration.OPTION_EXCLUSIVE,
+                            "out_lowlatency_mmap_exclusive"));
         }
-        mTestConfigs.add(new TestConfiguration(TestConfiguration.IO_OUTPUT,
-                mSystemSampleRate, 2,
-                TestConfiguration.OPTION_NONE));
+        mTestConfigs.add(
+                new TestConfiguration(
+                        TestConfiguration.IO_OUTPUT,
+                        mSystemSampleRate,
+                        2,
+                        TestConfiguration.OPTION_NONE,
+                        "out_none"));
 
         // Recorder
-        mTestConfigs.add(new TestConfiguration(TestConfiguration.IO_INPUT,
-                mSystemSampleRate, 1,
-                TestConfiguration.OPTION_LOWLATENCY));
+        mTestConfigs.add(
+                new TestConfiguration(
+                        TestConfiguration.IO_INPUT,
+                        mSystemSampleRate,
+                        1,
+                        TestConfiguration.OPTION_LOWLATENCY,
+                        "in_lowlatency"));
         if (Globals.isMMapSupported()) {
-            mTestConfigs.add(new TestConfiguration(TestConfiguration.IO_INPUT,
-                    mSystemSampleRate, 1,
-                    TestConfiguration.OPTION_LOWLATENCY
-                            | TestConfiguration.OPTION_MMAP));
-            mTestConfigs.add(new TestConfiguration(TestConfiguration.IO_INPUT,
-                    mSystemSampleRate, 1,
-                    TestConfiguration.OPTION_LOWLATENCY
-                            | TestConfiguration.OPTION_MMAP
-                            | TestConfiguration.OPTION_EXCLUSIVE));
+            mTestConfigs.add(
+                    new TestConfiguration(
+                            TestConfiguration.IO_INPUT,
+                            mSystemSampleRate,
+                            1,
+                            TestConfiguration.OPTION_LOWLATENCY | TestConfiguration.OPTION_MMAP,
+                            "in_lowlatency_mmap"));
+            mTestConfigs.add(
+                    new TestConfiguration(
+                            TestConfiguration.IO_INPUT,
+                            mSystemSampleRate,
+                            1,
+                            TestConfiguration.OPTION_LOWLATENCY
+                                    | TestConfiguration.OPTION_MMAP
+                                    | TestConfiguration.OPTION_EXCLUSIVE,
+                            "in_lowlatency_mmap_exclusive"));
         }
-        mTestConfigs.add(new TestConfiguration(TestConfiguration.IO_INPUT,
-                mSystemSampleRate, 1,
-                TestConfiguration.OPTION_NONE));
+        mTestConfigs.add(
+                new TestConfiguration(
+                        TestConfiguration.IO_INPUT,
+                        mSystemSampleRate,
+                        1,
+                        TestConfiguration.OPTION_NONE,
+                        "in_none"));
     }
 
     void resetTestConfigs() {
@@ -833,6 +889,69 @@ public class AudioDisconnectActivity
 
         this.unregisterReceiver(mPluginReceiver);
         super.onPause();
+    }
+
+    @Override
+    public String getTestId() {
+        return setTestNameSuffix(sCurrentDisplayMode, getClass().getName());
+    }
+
+    @Override
+    public boolean requiresReportLog() {
+        return true;
+    }
+
+    @Override
+    public String getReportFileName() {
+        return PassFailButtons.AUDIO_TESTS_REPORT_LOG_NAME;
+    }
+
+    @Override
+    public final String getReportSectionName() {
+        return setTestNameSuffix(sCurrentDisplayMode, SECTION_AUDIO_DISCONNECT_ACTIVITY);
+    }
+
+    @Override
+    public void recordTestResults() {
+        CtsVerifierReportLog reportLog = getReportLog();
+        JSONArray testConfigsJson = new JSONArray();
+
+        for (TestConfiguration config : mTestConfigs) {
+            testConfigsJson.put(convertConfigToJson(config));
+        }
+
+        reportLog.addValues(KEY_TEST_CONFIGURATIONS, testConfigsJson);
+        reportLog.submit();
+    }
+
+    private JSONObject convertConfigToJson(TestConfiguration config) {
+        JSONObject configJson = new JSONObject();
+        try {
+            configJson.put(KEY_CONFIG_NAME, config.mConfigName);
+            configJson.put(
+                    KEY_START_RESULT, TestConfiguration.resultToString(config.mStreamStartResult));
+            configJson.put(
+                    KEY_INSERT_PLUG_RESULT,
+                    TestConfiguration.resultToString(config.mInsertPlugResult));
+            configJson.put(
+                    KEY_INSERT_STREAM_DISCONNECT_RESULT,
+                    TestConfiguration.resultToString(config.mInsertStreamDisconnectResult));
+            configJson.put(
+                    KEY_INSERT_STREAM_OBOE_DISCONNECT_RESULT,
+                    TestConfiguration.resultToString(config.mInsertStreamOboeDisconnectResult));
+            configJson.put(
+                    KEY_REMOVAL_PLUG_RESULT,
+                    TestConfiguration.resultToString(config.mRemovalPlugResult));
+            configJson.put(
+                    KEY_REMOVAL_STREAM_DISCONNECT_RESULT,
+                    TestConfiguration.resultToString(config.mRemovalStreamDisconnectResult));
+            configJson.put(
+                    KEY_REMOVAL_STREAM_OBOE_DISCONNECT_RESULT,
+                    TestConfiguration.resultToString(config.mRemovalStreamOboeDisconnectResult));
+        } catch (JSONException e) {
+            Log.e(TAG, "Failed to create test config JSON object.", e);
+        }
+        return configJson;
     }
 
     //

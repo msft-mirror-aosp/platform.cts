@@ -34,6 +34,8 @@ public:
 
     ndk::ScopedAStatus registerListener(
             const std::shared_ptr<INativeServiceListener>& listener) override;
+    ndk::ScopedAStatus isLibraryMarkedPreloaded(bool* result) override;
+    ndk::ScopedAStatus getParentPid(int* result) override;
 
     void doUnbind();
     void doRebind();

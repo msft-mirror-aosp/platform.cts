@@ -30,6 +30,9 @@ import static android.media.AudioManager.VIBRATE_SETTING_ONLY_SILENT;
 import static android.media.AudioManager.VIBRATE_TYPE_NOTIFICATION;
 import static android.media.AudioManager.VIBRATE_TYPE_RINGER;
 
+import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
+import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -49,6 +52,10 @@ import android.view.SoundEffectConstants;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.android.compatibility.common.util.ResultType;
+import com.android.compatibility.common.util.ResultUnit;
+import com.android.cts.verifier.CtsVerifierReportLog;
+import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.notifications.InteractiveVerifierActivity;
 
@@ -63,6 +70,17 @@ import java.util.List;
  */
 public class RingerModeActivity extends InteractiveVerifierActivity {
     private static final String TAG = "RingerModeActivity";
+
+    // ReportLog Schema
+    private static final String SECTION_RINGER_MODE = "ringer_mode_activity";
+    private static final String KEY_HAS_VIBRATOR = "has_vibrator";
+    private static final String KEY_USE_FIXED_VOLUME = "use_fixed_volume";
+    private static final String KEY_IS_TELEVISION = "is_television";
+    private static final String KEY_IS_SINGLE_VOLUME = "is_single_volume";
+    private static final String KEY_IS_WATCH = "is_watch";
+    private static final String KEY_SKIP_RINGER_TESTS = "skip_ringer_tests";
+    private static final String KEY_SKIP_TOUCH_SOUND_TESTS = "skip_touch_sound_tests";
+    private static final String KEY_IS_MUSIC_PLAYING_BEFORE_TEST = "is_music_playing_before_test";
 
     private final static String PKG = "com.android.cts.verifier";
     private final static long TIME_TO_PLAY = 2000;
@@ -153,7 +171,8 @@ public class RingerModeActivity extends InteractiveVerifierActivity {
         if (stream == AudioManager.STREAM_VOICE_CALL) {
             // Voice call requires MODIFY_PHONE_STATE, so we should not be able to mute
             mAudioManager.adjustStreamVolume(stream, AudioManager.ADJUST_MUTE, 0);
-            assertFalse("Muting stream " + stream + " should require MODIFY_PHONE_STATE permission.",
+            assertFalse(
+                    "Muting stream " + stream + " should require MODIFY_PHONE_STATE permission.",
                     mAudioManager.isStreamMute(stream));
         } else {
             mAudioManager.adjustStreamVolume(stream, AudioManager.ADJUST_MUTE, 0);
@@ -1201,8 +1220,12 @@ public class RingerModeActivity extends InteractiveVerifierActivity {
                     if (stream == AudioManager.STREAM_VOICE_CALL) {
                         // Voice call requires MODIFY_PHONE_STATE, so we should not be able to mute
                         mAudioManager.adjustStreamVolume(stream, AudioManager.ADJUST_MUTE, 0);
-                        assertFalse("Voice call stream (" + stream + ") should require MODIFY_PHONE_STATE "
-                                + "to mute.", mAudioManager.isStreamMute(stream));
+                        assertFalse(
+                                "Voice call stream ("
+                                        + stream
+                                        + ") should require MODIFY_PHONE_STATE "
+                                        + "to mute.",
+                                mAudioManager.isStreamMute(stream));
                     } else {
                         mAudioManager.adjustStreamVolume(stream, AudioManager.ADJUST_MUTE, 0);
                         assertFalse("Stream " + stream + " should not be affected by mute.",
@@ -1248,5 +1271,49 @@ public class RingerModeActivity extends InteractiveVerifierActivity {
 
             status = PASS;
         }
+    }
+
+    //
+    // ReportLog
+    //
+    @Override
+    public final String getReportSectionName() {
+        return setTestNameSuffix(sCurrentDisplayMode, SECTION_RINGER_MODE);
+    }
+
+    @Override
+    public boolean requiresReportLog() {
+        return true;
+    }
+
+    @Override
+    public String getReportFileName() {
+        return PassFailButtons.AUDIO_TESTS_REPORT_LOG_NAME;
+    }
+
+    @Override
+    public void recordTestResults() {
+        CtsVerifierReportLog reportLog = getReportLog();
+        reportLog.addValue(KEY_HAS_VIBRATOR, mHasVibrator, ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.addValue(
+                KEY_USE_FIXED_VOLUME, mUseFixedVolume, ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.addValue(KEY_IS_TELEVISION, mIsTelevision, ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.addValue(
+                KEY_IS_SINGLE_VOLUME, mIsSingleVolume, ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.addValue(KEY_IS_WATCH, mIsWatch, ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.addValue(
+                KEY_SKIP_RINGER_TESTS, mSkipRingerTests, ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.addValue(
+                KEY_SKIP_TOUCH_SOUND_TESTS,
+                mSkipTouchSoundTests,
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+        reportLog.addValue(
+                KEY_IS_MUSIC_PLAYING_BEFORE_TEST,
+                mIsMusicPlayingBeforeTest,
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+
+        reportLog.submit();
     }
 }

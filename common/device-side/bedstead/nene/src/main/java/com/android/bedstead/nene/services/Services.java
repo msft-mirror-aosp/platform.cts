@@ -114,9 +114,6 @@ public final class Services {
                             "android.companion.virtual.VirtualDeviceManager"),
                     entry(Context.CONSUMER_IR_SERVICE, "android.hardware.ConsumerIrManager"),
                     entry(
-                            Context.FINGERPRINT_SERVICE,
-                            "android.hardware.fingerprint.FingerprintManager"),
-                    entry(
                             Context.BIOMETRIC_SERVICE,
                             "android.hardware.biometrics.BiometricManager"),
                     entry(

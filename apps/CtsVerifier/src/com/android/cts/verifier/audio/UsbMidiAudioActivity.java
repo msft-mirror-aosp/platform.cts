@@ -28,10 +28,15 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
+import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
 import com.android.compatibility.common.util.CddTest;
+import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.midilib.JavaMidiTestModule;
 import com.android.cts.verifier.audio.midilib.MidiTestModule;
+import com.android.compatibility.common.util.ResultType;
+import com.android.compatibility.common.util.ResultUnit;
 
 import java.util.Collection;
 import java.util.concurrent.Executor;
@@ -43,6 +48,8 @@ import java.util.concurrent.Executor;
 public class UsbMidiAudioActivity extends USBAudioPeripheralPlayerActivity {
 
     private static final String TAG = "UsbMidiAudioActivity";
+    private static final String SECTION_USB_MIDI_AUDIO = "usb_midi_audio_test";
+
     private static final boolean DEBUG = true;
 
     private MidiManager mMidiManager;
@@ -65,6 +72,15 @@ public class UsbMidiAudioActivity extends USBAudioPeripheralPlayerActivity {
     private LocalClickListener mButtonClickListener = new LocalClickListener();
 
     private boolean mHasAudioFinishedPlaying;
+
+
+    private static final String KEY_HAS_MIDI = "has_midi";
+    private static final String KEY_CLAIMS_HOST = "claims_host_mode";
+    private static final String KEY_USB_MIDI_LOOPBACK_INPUT = "usb_midi_loopback_input";
+    private static final String KEY_USB_MIDI_LOOPBACK_OUTPUT = "usb_midi_loopback_output";
+    private static final String KEY_HAS_AUDIO_FINISHED_PLAYING = "has_audio_finished_playing";
+    private static final String KEY_USB_AUDIO_OUTPUT_PERIPHERAL = "usb_audio_playback_peripheral";
+    private static final String KEY_USB_AUDIO_OUTPUT_PERIPHERAL_PROFILE = "usb_audio_playback_peripheral_profile";
 
     public UsbMidiAudioActivity() {
         super(false); // Mandated peripheral is NOT required
@@ -187,6 +203,53 @@ public class UsbMidiAudioActivity extends USBAudioPeripheralPlayerActivity {
 
         getPassButton().setEnabled(hasPassed);
         return hasPassed;
+    }
+
+    @Override
+    public final String getReportSectionName() {
+        return setTestNameSuffix(sCurrentDisplayMode, SECTION_USB_MIDI_AUDIO);
+    }
+
+    @Override
+    public void recordTestResults() {
+        super.recordTestResults();
+        CtsVerifierReportLog reportLog = getReportLog();
+        reportLog.addValue(
+                KEY_HAS_MIDI,
+                mHasMIDI,
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+        reportLog.addValue(
+                KEY_CLAIMS_HOST,
+                mHasHostMode,
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+        reportLog.addValue(
+                KEY_HAS_AUDIO_FINISHED_PLAYING,
+                mHasAudioFinishedPlaying,
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+        reportLog.addValue(
+                KEY_USB_MIDI_LOOPBACK_INPUT,
+                mUsbMidiTestModule.getInputName(),
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+        reportLog.addValue(
+                KEY_USB_MIDI_LOOPBACK_OUTPUT,
+                mUsbMidiTestModule.getOutputName(),
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+        reportLog.addValue(
+                KEY_USB_AUDIO_OUTPUT_PERIPHERAL,
+                mSelectedProfile.getName(),
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+        reportLog.addValue(
+                KEY_USB_AUDIO_OUTPUT_PERIPHERAL_PROFILE,
+                mSelectedProfile.getDescription(),
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+        reportLog.submit();
     }
 
     void scanMidiDevices() {

@@ -49,4 +49,5 @@ cc_test_library {
     srcs: ["jni/android_os_cts_uffdgc_UserfaultfdTest.cc"],
     stl: "c++_static",
     sdk_version: "current",
+    header_libs: ["libmeminfo_headers"],
 }

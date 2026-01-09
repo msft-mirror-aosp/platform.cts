@@ -27,6 +27,7 @@ import android.os.Handler;
 import android.util.Log;
 import android.widget.TextView;
 
+import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
 
@@ -55,7 +56,7 @@ public class AudioInputRoutingNotificationsActivity extends AudioNotificationsBa
     private static final int NUM_IGNORE_MESSAGES = 0; // 2;
 
     // ReportLog schema
-    protected static final String SECTION_INPUT_ROUTING = "audio_in_routing_notifications";
+    protected static final String SECTION_INPUT_ROUTING = "audio_input_device_routing_notifications_test";
 
     public AudioInputRoutingNotificationsActivity() {
         super(AudioManager.GET_DEVICES_INPUTS);
@@ -164,5 +165,12 @@ public class AudioInputRoutingNotificationsActivity extends AudioNotificationsBa
     @Override
     public final String getReportSectionName() {
         return setTestNameSuffix(sCurrentDisplayMode, SECTION_INPUT_ROUTING);
+    }
+
+    @Override
+    public void recordTestResults(){
+        super.recordTestResults();
+        CtsVerifierReportLog reportLog = getReportLog();
+        reportLog.submit();
     }
 }

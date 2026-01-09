@@ -504,6 +504,13 @@ public class SurfaceViewPreviewTest extends Camera2SurfaceViewTestCase {
             assertEquals(surfaceViewOutput.getConfiguredSize(), maxPreviewSize);
             assertEquals(surfaceTextureOutput.getConfiguredSize(), maxPreviewSize);
         }
+        if (Flags.outputConfigurationGetUsage()) {
+            assertEquals(
+                    surfaceViewOutput.getUsage(),
+                    (HardwareBuffer.USAGE_COMPOSER_OVERLAY
+                            | HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE));
+            assertEquals(surfaceTextureOutput.getUsage(), HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE);
+        }
 
         List<OutputConfiguration> outputSurfaces = new ArrayList<>();
         outputSurfaces.add(surfaceViewOutput);
@@ -756,8 +763,13 @@ public class SurfaceViewPreviewTest extends Camera2SurfaceViewTestCase {
             boolean findDuration = mCollector.expectTrue("Unable to find minFrameDuration for size "
                     + previewSz.toString(), minFrameDuration != null);
             if (findDuration) {
-                mCollector.expectTrue("Frame duration " + frameDuration + " must be no smaller than"
-                        + " minFrameDuration " + minFrameDuration, frameDuration >= minFrameDuration);
+                mCollector.expectTrue(
+                        "Frame duration "
+                                + frameDuration
+                                + " must be no smaller than"
+                                + " minFrameDuration "
+                                + minFrameDuration,
+                        frameDuration >= minFrameDuration);
             }
         } else {
             Log.i(TAG, "verifyPreviewTargetFpsRange - MANUAL_SENSOR control is not supported," +

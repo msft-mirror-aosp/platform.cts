@@ -126,6 +126,7 @@ sealed class CompanionService<T : CompanionService<T>>(
         associationInfo: AssociationInfo,
         request: ActionRequest,
     ) {
+        super.onActionRequested(associationInfo, request)
         Log.i(
             TAG,
             "$this.onActionRequested() associationId=${associationInfo.id}, request=$request"
