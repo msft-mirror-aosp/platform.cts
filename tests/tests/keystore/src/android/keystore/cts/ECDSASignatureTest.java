@@ -269,7 +269,7 @@ public class ECDSASignatureTest {
     private Collection<ImportedKey> importKatKeyPairs(String signatureAlgorithm)
             throws Exception {
         KeyProtection params =
-                TestUtils.getMinimalWorkingImportParametersForSigningingWith(signatureAlgorithm);
+                TestUtils.getMinimalWorkingImportParametersForSigningWith(signatureAlgorithm);
         return importKatKeyPairs(getContext(), params);
     }
 
