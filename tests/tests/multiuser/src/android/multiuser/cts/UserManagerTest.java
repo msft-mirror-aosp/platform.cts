@@ -475,7 +475,6 @@ public final class UserManagerTest {
 
     @Test
     @ApiTest(apis = {"android.os.UserManager#USER_TYPE_PROFILE_SUPERVISING"})
-    @RequiresFlagsEnabled(android.multiuser.Flags.FLAG_ALLOW_SUPERVISING_PROFILE)
     @EnsureHasPermission({QUERY_USERS, CREATE_USERS, INTERACT_ACROSS_USERS})
     public void testSupervisingProfile() throws Exception {
         UserInfo userInfo = null;
