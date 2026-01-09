@@ -37,4 +37,13 @@
     <!-- Exclude CtsJvmtiRunTest912HostTestCases because of changes to java.lang aosp/3367837
          b/383994773 -->
     <option name="compatibility:exclude-filter" value="CtsJvmtiRunTest912HostTestCases" />
+
+    <!-- Multidevice tests are deprecated in cts-multidevice for cts-v-host.
+         Modules in cts-multidevice that have also been added to the cts-v-host
+         plan will be excluded here to avoid duplicate testing.
+         TODO(b/399690519): Drop these modules from CTS package entirely once
+         dependencies to them in CI are cleaned up. -->
+    <option name="compatibility:exclude-filter" value="CtsCompanionDeviceManagerMultiDeviceTests" />
+    <option name="compatibility:exclude-filter" value="CtsUwbMultiDeviceTestCase_FiraRangingTests" />
+    <option name="compatibility:exclude-filter" value="CtsUwbMultiDeviceTestCase_UwbManagerTests" />
 </configuration>

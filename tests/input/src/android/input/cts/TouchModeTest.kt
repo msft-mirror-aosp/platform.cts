@@ -30,6 +30,7 @@ import android.media.ImageReader
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.os.UserManager
 import android.server.wm.WindowManagerStateHelper
 import android.support.test.uiautomator.UiDevice
 import android.view.Display
@@ -72,6 +73,7 @@ class TouchModeTest {
     private val uiDevice: UiDevice = UiDevice.getInstance(instrumentation)
     private var virtualDisplay: VirtualDisplay? = null
     private var imageReader: ImageReader? = null
+    private var externalDisplayId = Display.INVALID_DISPLAY
 
     // Use a VDM role to get the ADD_TRUSTED_DISPLAY permission.
     @get:Rule
@@ -83,6 +85,7 @@ class TouchModeTest {
     private lateinit var targetContext: Context
     private lateinit var displayManager: DisplayManager
     private lateinit var userHelper: UserHelper
+    private lateinit var userManager: UserManager
     private var secondScenario: ActivityScenario<Activity>? = null
 
     @Before
@@ -96,6 +99,7 @@ class TouchModeTest {
         // MAIN_DISPLAY.
         assumeFalse(userHelper.isVisibleBackgroundUser)
         displayManager = targetContext.getSystemService(DisplayManager::class.java)
+        userManager = targetContext.getSystemService(UserManager::class.java)
         activityRule.scenario.onActivity {
             activity = it
         }
@@ -105,6 +109,11 @@ class TouchModeTest {
 
     @After
     fun tearDown() {
+        if (externalDisplayId != Display.INVALID_DISPLAY) {
+            unassignUserToExtraDisplay(userHelper.getUserId(), externalDisplayId)
+            externalDisplayId = Display.INVALID_DISPLAY
+        }
+
         val scenario = secondScenario
         if (scenario != null) {
             scenario.close()
@@ -289,8 +298,25 @@ class TouchModeTest {
         }.findFirst()
         if (display.isEmpty) {
             return createVirtualDisplay(flags = 0)
+        } else if (userManager.isVisibleBackgroundUsersSupported()) {
+            // On MUMD devices, a display must be assigned to a user, in order for the user to be
+            // able to have access to the display.
+            externalDisplayId = display.get().displayId
+            assignUserToExtraDisplay(userHelper.getUserId(), externalDisplayId)
         }
         return display.get().displayId
+    }
+
+    private fun assignUserToExtraDisplay(userId: Int, displayId: Int) {
+        instrumentation.uiAutomation.executeShellCommand(
+            "cmd car_service assign-extra-display $userId $displayId"
+        )
+    }
+
+    private fun unassignUserToExtraDisplay(userId: Int, displayId: Int) {
+        instrumentation.uiAutomation.executeShellCommand(
+            "cmd car_service unassign-extra-display $userId $displayId"
+        )
     }
 
     private fun assertSecondaryDisplayTouchModeState(
