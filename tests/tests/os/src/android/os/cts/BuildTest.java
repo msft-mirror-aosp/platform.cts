@@ -280,28 +280,6 @@ public class BuildTest {
 
         assertTrue(TAGS_PATTERN.matcher(Build.TAGS).matches());
 
-        if (android.os.Flags.strongboxPropertiesApi()) {
-            boolean supportsStrongbox =
-                    getApplicationContext()
-                            .getPackageManager()
-                            .hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE);
-            if (supportsStrongbox) {
-                assertEquals(Build.STRONGBOX_MANUFACTURER, Build.STRONGBOX_MANUFACTURER.trim());
-                assertTrue(
-                        STRONGBOX_MANUFACTURER_PATTERN
-                                .matcher(Build.STRONGBOX_MANUFACTURER)
-                                .matches());
-                assertNotEquals(Build.STRONGBOX_MANUFACTURER, DEFAULT_STRONGBOX_PROP_VALUE);
-
-                assertEquals(Build.STRONGBOX_MODEL, Build.STRONGBOX_MODEL.trim());
-                assertTrue(STRONGBOX_MODEL_PATTERN.matcher(Build.STRONGBOX_MODEL).matches());
-                assertNotEquals(Build.STRONGBOX_MODEL, DEFAULT_STRONGBOX_PROP_VALUE);
-            } else {
-                assertEquals(Build.STRONGBOX_MANUFACTURER, DEFAULT_STRONGBOX_PROP_VALUE);
-                assertEquals(Build.STRONGBOX_MODEL, DEFAULT_STRONGBOX_PROP_VALUE);
-            }
-        }
-
         // No format requirements stated in CDD for Build.TIME
 
         assertTrue(TYPE_PATTERN.matcher(Build.TYPE).matches());
@@ -331,6 +309,28 @@ public class BuildTest {
                             + " must be at least first SDK version "
                             + Build.VERSION.DEVICE_INITIAL_SDK_INT,
                     Build.VERSION.SDK_INT >= Build.VERSION.DEVICE_INITIAL_SDK_INT);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.os.Flags.FLAG_STRONGBOX_PROPERTIES_API)
+    public void testStrongboxConstants() {
+        boolean supportsStrongbox =
+                getApplicationContext()
+                        .getPackageManager()
+                        .hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE);
+        if (supportsStrongbox) {
+            assertEquals(Build.STRONGBOX_MANUFACTURER, Build.STRONGBOX_MANUFACTURER.trim());
+            assertTrue(
+                    STRONGBOX_MANUFACTURER_PATTERN.matcher(Build.STRONGBOX_MANUFACTURER).matches());
+            assertNotEquals(Build.STRONGBOX_MANUFACTURER, DEFAULT_STRONGBOX_PROP_VALUE);
+
+            assertEquals(Build.STRONGBOX_MODEL, Build.STRONGBOX_MODEL.trim());
+            assertTrue(STRONGBOX_MODEL_PATTERN.matcher(Build.STRONGBOX_MODEL).matches());
+            assertNotEquals(Build.STRONGBOX_MODEL, DEFAULT_STRONGBOX_PROP_VALUE);
+        } else {
+            assertEquals(Build.STRONGBOX_MANUFACTURER, DEFAULT_STRONGBOX_PROP_VALUE);
+            assertEquals(Build.STRONGBOX_MODEL, DEFAULT_STRONGBOX_PROP_VALUE);
         }
     }
 
