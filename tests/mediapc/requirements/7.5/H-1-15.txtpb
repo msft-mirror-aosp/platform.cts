@@ -54,7 +54,9 @@ specs {
   key: 35
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
-    specification: "same"
+    specification:
+      "MUST support Night mode extensions via both CameraX and Camera2 "
+      "extensions for primary cameras."
     required_values {
       key: "front_camera2_extension_night_supported"
       value {
@@ -85,7 +87,9 @@ specs {
   key: 37
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
-    specification: "same"
+    specification:
+      "MUST support Night mode extensions via both CameraX and Camera2 "
+      "extensions for primary cameras."
     required_values {
       key: "front_camera2_extension_night_supported"
       value {

@@ -97,7 +97,7 @@ specs {
   key: 37
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
-    specification: "same"
+    specification: "MUST have screen resolution of at least 1080p."
     required_values {
       key: "long_resolution_pixels"
       value {

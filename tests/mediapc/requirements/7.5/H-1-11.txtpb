@@ -34,7 +34,7 @@ specs {
   key: 34
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_14
-    specification: "same"
+    specification: "MUST implement concurrent front-back streaming on primary cameras."
     required_values {
       key: "rear_front_concurrent_camera"
       value {
@@ -47,7 +47,7 @@ specs {
   key: 35
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
-    specification: "same"
+    specification: "MUST implement concurrent front-back streaming on primary cameras."
     required_values {
       key: "rear_front_concurrent_camera"
       value {
@@ -60,7 +60,7 @@ specs {
   key: 37
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
-    specification: "same"
+    specification: "MUST implement concurrent front-back streaming on primary cameras."
     required_values {
       key: "rear_front_concurrent_camera"
       value {

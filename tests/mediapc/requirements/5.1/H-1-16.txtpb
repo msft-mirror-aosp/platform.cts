@@ -60,7 +60,7 @@ specs {
   key: 37
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
-    specification: "same"
+    specification: "MUST have at least 1 hardware video encoder supporting 4K60."
     required_values {
       key: "number_4k_hw_encoders"
       value {

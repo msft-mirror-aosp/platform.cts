@@ -167,7 +167,9 @@ specs {
   key: 37
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
-    specification: "same"
+    specification:
+      "MUST NOT drop more than 1 frame in 10 seconds (i.e., less than 0.167 "
+      "percent frame drop) for a 4K 60 fps video session under load."
     required_values {
       key: "frame_drops_per_30sec"
       value {
