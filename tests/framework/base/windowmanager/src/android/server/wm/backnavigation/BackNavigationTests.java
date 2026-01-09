@@ -16,7 +16,6 @@
 package android.server.wm.backnavigation;
 
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
-import static android.view.Display.DEFAULT_DISPLAY;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -161,7 +160,7 @@ public class BackNavigationTests extends ActivityManagerTestBase {
 
     private void launchTestActivity() {
         mActivitySession.launchTestActivityOnDisplaySync(
-                BackNavigationActivity.class, DEFAULT_DISPLAY);
+                BackNavigationActivity.class, getMainDisplayId());
         mActivity = mActivitySession.getActivity();
     }
 
