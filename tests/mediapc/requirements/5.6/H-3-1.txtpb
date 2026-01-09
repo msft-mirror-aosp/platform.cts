@@ -17,33 +17,35 @@
 id: "5.6/H-3-1"
 name: "Audio CPU Workload"
 description: "Test the ability to switch audio loads without glitching."
-is_non_cts_test: true
-test_configs: {
-  key: ""
-  value: {
-    description: "Default test config"
-    proto_field_number: 86
-  }
-}
-measurements: {
-  key: "underrun_count"
-  value: {
-    description: "The count of audio underruns."
-    measurement_type: MEASUREMENT_TYPE_INT
-    comparison: COMPARISON_LESS_THAN_OR_EQUAL
-    proto_field_number: 3
-  }
-}
 specs {
   key: 37
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
-    specification: "MUST be able to handle switching from playing 1 sine wave to 50 sine waves with no underrun of audio buffers."
+    specification:
+      "MUST be able to handle switching from playing 1 sine wave to 50 sine "
+      "waves with no underrun of audio buffers."
     required_values {
       key: "underrun_count"
       value {
         int_value: 0
       }
     }
+  }
+}
+measurements {
+  key: "underrun_count"
+  value {
+    description: "The count of audio underruns."
+    measurement_type: MEASUREMENT_TYPE_INT
+    comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    proto_field_number: 3
+  }
+}
+is_non_cts_test: true
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 86
   }
 }
