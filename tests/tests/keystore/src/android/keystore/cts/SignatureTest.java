@@ -29,6 +29,10 @@ import android.keystore.cts.util.EmptyArray;
 import android.keystore.cts.util.ImportedKey;
 import android.keystore.cts.util.StrictModeDetector;
 import android.keystore.cts.util.TestUtils;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.security.keystore.KeyInfo;
 import android.security.keystore.KeyPermanentlyInvalidatedException;
 import android.security.keystore.KeyProperties;
@@ -37,6 +41,9 @@ import android.security.keystore.KeyProtection;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.CddTest;
+
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -351,8 +358,26 @@ public class SignatureTest {
         return InstrumentationRegistry.getInstrumentation().getTargetContext();
     }
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Test
-    public void testAlgorithmList() {
+    @CddTest(requirement = "9.11/C-1-2")
+    @RequiresFlagsEnabled(android.security.keystore2.Flags.FLAG_MLDSA_SUPPORT)
+    public void testAlgorithmList_withMlDsa() {
+        TestUtils.assumeMlDsaSupported(/* useStrongBox= */ false);
+        testAlgorithmList(/* expectMlDsa= */ true);
+    }
+
+    @Test
+    @CddTest(requirement = "9.11/C-1-2")
+    @RequiresFlagsDisabled(android.security.keystore2.Flags.FLAG_MLDSA_SUPPORT)
+    public void testAlgorithmList_withoutMlDsa() {
+        testAlgorithmList(/* expectMlDsa= */ false);
+    }
+
+    private void testAlgorithmList(boolean expectMlDsa) {
         // Assert that Android Keystore Provider exposes exactly the expected signature algorithms.
         // We don't care whether the algorithms are exposed via aliases, as long as the canonical
         // names of algorithms are accepted.
@@ -365,9 +390,19 @@ public class SignatureTest {
         Set<String> actualSigAlgsLowerCase = new HashSet<String>();
         Set<String> expectedSigAlgsLowerCase = new HashSet<String>(
                 Arrays.asList(TestUtils.toLowerCase(EXPECTED_SIGNATURE_ALGORITHMS)));
+
         //TODO(b/233037333): Move this value to the EXPECTED_SIGNATURE_ALGORITHMS array, once
         //we have confirmed key import is working for Ed25519 and have a key to import.
         expectedSigAlgsLowerCase.add("ed25519");
+
+        if (expectMlDsa) {
+            // TODO(b/395069350): Move these values to EXPECTED_SIGNATURE_ALGORITHMS once the
+            // remaining tests in this file are updated to handle ML-DSA.
+            expectedSigAlgsLowerCase.add("ml-dsa");
+            expectedSigAlgsLowerCase.add("ml-dsa-65");
+            expectedSigAlgsLowerCase.add("ml-dsa-87");
+        }
+
         for (Service service : services) {
             if ("Signature".equalsIgnoreCase(service.getType())) {
                 String algLowerCase = service.getAlgorithm().toLowerCase(Locale.US);
