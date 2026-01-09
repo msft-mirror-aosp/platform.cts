@@ -17,22 +17,17 @@
 package android.mediav2.cts;
 
 import static android.media.codec.Flags.apvSupport;
+import static android.media.codec.Flags.vvcSupport;
 
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableVvc;
 
 import android.media.MediaFormat;
 import android.mediav2.common.cts.HDRDecoderTestBase;
 import android.os.Build;
-
 import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
-
 import com.android.compatibility.common.util.CddTest;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,6 +35,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  * HDR Metadata is an aid for a display device to show the content in an optimal manner. It
@@ -162,6 +160,15 @@ public class DecoderHDRInfoTest extends HDRDecoderTestBase {
                         "pattern_hdr10plus_1280x720_30fps_30mbps_apv_10bit.mp4",
                         null, null, HDR_DYNAMIC_INFO_APV, null}
             }));
+        }
+
+        if (IS_AFTER_B) {
+            if (vvcSupport() && extractorMp4EnableVvc()) {
+                exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
+                    {MediaFormat.MIMETYPE_VIDEO_VVC, "bbb_320x180_hdr10_only_stream_vvc.mp4",
+                        HDR_STATIC_INFO, null, null, null}
+                }));
+            }
         }
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, false);
     }
