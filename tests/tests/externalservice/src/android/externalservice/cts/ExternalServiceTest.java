@@ -16,6 +16,15 @@
 
 package android.externalservice.cts;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -30,111 +39,153 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.Process;
 import android.os.RemoteException;
-import android.test.AndroidTestCase;
 import android.util.Log;
 
-public class ExternalServiceTest extends AndroidTestCase {
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+@RunWith(AndroidJUnit4.class)
+public class ExternalServiceTest {
     private static final String TAG = "ExternalServiceTest";
 
-    static final String sServicePackage = "android.externalservice.service";
+    private static final String SERVICE_PACKAGE = "android.externalservice.service";
 
-    private Connection mConnection = new Connection();
+    private final Connection mConnection = new Connection();
 
-    private ConditionVariable mCondition = new ConditionVariable(false);
+    private final ConditionVariable mCondition = new ConditionVariable(false);
 
-    static final int CONDITION_TIMEOUT = 10 * 1000 /* 10 seconds */;
+    private static final int CONDITION_TIMEOUT = 10 * 1000; // 10 seconds
+    private Context mContext;
 
+    @Before
+    public void setUp() {
+        mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+    }
+
+    @After
     public void tearDown() {
-        if (mConnection.service != null)
-            getContext().unbindService(mConnection);
+        if (mConnection.service != null) {
+            mContext.unbindService(mConnection);
+        }
     }
 
     /** Tests that an isolatedProcess service cannot be bound to by an external package. */
+    @Test
     public void testFailBindIsolated() {
         Intent intent = new Intent();
-        intent.setComponent(new ComponentName(sServicePackage, sServicePackage+".IsolatedService"));
-        try {
-            getContext().bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
-            fail("Should not be able to bind to non-exported, non-external service");
-        } catch (SecurityException e) {
-        }
+        intent.setComponent(
+                new ComponentName(SERVICE_PACKAGE, SERVICE_PACKAGE + ".IsolatedService"));
+        assertThrows(
+                "Should not be able to bind to non-exported, non-external service",
+                SecurityException.class,
+                () -> mContext.bindService(intent, mConnection, Context.BIND_AUTO_CREATE));
     }
 
     /** Tests that BIND_EXTERNAL_SERVICE does not work with plain isolatedProcess services. */
+    @Test
     public void testFailBindExternalIsolated() {
         Intent intent = new Intent();
-        intent.setComponent(new ComponentName(sServicePackage, sServicePackage+".IsolatedService"));
-        try {
-            getContext().bindService(intent, mConnection,
-                    Context.BIND_AUTO_CREATE | Context.BIND_EXTERNAL_SERVICE);
-            fail("Should not be able to BIND_EXTERNAL_SERVICE to non-exported, non-external service");
-        } catch (SecurityException e) {
-        }
+        intent.setComponent(
+                new ComponentName(SERVICE_PACKAGE, SERVICE_PACKAGE + ".IsolatedService"));
+        assertThrows(
+                "Should not be able to BIND_EXTERNAL_SERVICE to non-exported, non-external service",
+                SecurityException.class,
+                () ->
+                        mContext.bindService(
+                                intent,
+                                mConnection,
+                                Context.BIND_AUTO_CREATE | Context.BIND_EXTERNAL_SERVICE));
     }
 
-    /** Tests that BIND_EXTERNAL_SERVICE does not work with exported, isolatedProcess services (
-     * requires externalService as well). */
+    /**
+     * Tests that BIND_EXTERNAL_SERVICE does not work with exported, isolatedProcess services (
+     * requires externalService as well).
+     */
+    @Test
     public void testFailBindExternalExported() {
         Intent intent = new Intent();
-        intent.setComponent(new ComponentName(sServicePackage, sServicePackage+".ExportedService"));
-        try {
-            getContext().bindService(intent, mConnection,
-                    Context.BIND_AUTO_CREATE | Context.BIND_EXTERNAL_SERVICE);
-            fail("Should not be able to BIND_EXTERNAL_SERVICE to non-external service");
-        } catch (SecurityException e) {
-        }
+        intent.setComponent(
+                new ComponentName(SERVICE_PACKAGE, SERVICE_PACKAGE + ".ExportedService"));
+        assertThrows(
+                "Should not be able to BIND_EXTERNAL_SERVICE to non-external service",
+                SecurityException.class,
+                () ->
+                        mContext.bindService(
+                                intent,
+                                mConnection,
+                                Context.BIND_AUTO_CREATE | Context.BIND_EXTERNAL_SERVICE));
     }
 
     /** Tests that BIND_EXTERNAL_SERVICE requires that an externalService be exported. */
+    @Test
     public void testFailBindExternalNonExported() {
         Intent intent = new Intent();
         intent.setComponent(
-                new ComponentName(sServicePackage, sServicePackage+".ExternalNonExportedService"));
-        try {
-            getContext().bindService(intent, mConnection,
-                    Context.BIND_AUTO_CREATE | Context.BIND_EXTERNAL_SERVICE);
-            fail("Should not be able to BIND_EXTERNAL_SERVICE to non-exported service");
-        } catch (SecurityException e) {
-        }
+                new ComponentName(
+                        SERVICE_PACKAGE, SERVICE_PACKAGE + ".ExternalNonExportedService"));
+        assertThrows(
+                "Should not be able to BIND_EXTERNAL_SERVICE to non-exported service",
+                SecurityException.class,
+                () ->
+                        mContext.bindService(
+                                intent,
+                                mConnection,
+                                Context.BIND_AUTO_CREATE | Context.BIND_EXTERNAL_SERVICE));
     }
 
     /** Tests that BIND_EXTERNAL_SERVICE requires the service be an isolatedProcess. */
+    @Test
     public void testFailBindExternalNonIsolated() {
         Intent intent = new Intent();
         intent.setComponent(
-                new ComponentName(sServicePackage, sServicePackage+".ExternalNonIsolatedService"));
-        try {
-            getContext().bindService(intent, mConnection,
-                    Context.BIND_AUTO_CREATE | Context.BIND_EXTERNAL_SERVICE);
-            fail("Should not be able to BIND_EXTERNAL_SERVICE to non-isolated service");
-        } catch (SecurityException e) {
-        }
+                new ComponentName(
+                        SERVICE_PACKAGE, SERVICE_PACKAGE + ".ExternalNonIsolatedService"));
+        assertThrows(
+                "Should not be able to BIND_EXTERNAL_SERVICE to non-isolated service",
+                SecurityException.class,
+                () ->
+                        mContext.bindService(
+                                intent,
+                                mConnection,
+                                Context.BIND_AUTO_CREATE | Context.BIND_EXTERNAL_SERVICE));
     }
 
     /** Tests that an externalService can only be bound with BIND_EXTERNAL_SERVICE. */
+    @Test
     public void testFailBindWithoutBindExternal() {
         Intent intent = new Intent();
-        intent.setComponent(new ComponentName(sServicePackage, sServicePackage+".ExternalService"));
-        try {
-            getContext().bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
-            fail("Should not be able to bind to an external service without BIND_EXTERNAL_SERVICE");
-        } catch (SecurityException e) {
-        }
+        intent.setComponent(
+                new ComponentName(SERVICE_PACKAGE, SERVICE_PACKAGE + ".ExternalService"));
+        assertThrows(
+                "Should not be able to bind to an external service without BIND_EXTERNAL_SERVICE",
+                SecurityException.class,
+                () -> mContext.bindService(intent, mConnection, Context.BIND_AUTO_CREATE));
     }
 
     /** Tests that an external service can be bound, and that it runs as a different principal. */
+    @Test
     public void testBindExternalService() {
         // Start the service and wait for connection.
         Intent intent = new Intent();
-        intent.setComponent(new ComponentName(sServicePackage, sServicePackage+".ExternalService"));
+        intent.setComponent(
+                new ComponentName(SERVICE_PACKAGE, SERVICE_PACKAGE + ".ExternalService"));
 
         mCondition.close();
-        assertTrue(getContext().bindService(intent, mConnection,
-                    Context.BIND_AUTO_CREATE | Context.BIND_EXTERNAL_SERVICE));
+        assertTrue(
+                mContext.bindService(
+                        intent,
+                        mConnection,
+                        Context.BIND_AUTO_CREATE | Context.BIND_EXTERNAL_SERVICE));
 
         assertTrue(mCondition.block(CONDITION_TIMEOUT));
-        assertEquals(getContext().getPackageName(), mConnection.name.getPackageName());
-        assertNotSame(sServicePackage, mConnection.name.getPackageName());
+        assertEquals(mContext.getPackageName(), mConnection.name.getPackageName());
+        assertNotSame(SERVICE_PACKAGE, mConnection.name.getPackageName());
 
         // Check the identity of the service.
         Messenger remote = new Messenger(mConnection.service);
@@ -144,20 +195,24 @@ public class ExternalServiceTest extends AndroidTestCase {
         assertFalse(id.uid == 0 || id.pid == 0);
         assertNotEquals(Process.myUid(), id.uid);
         assertNotEquals(Process.myPid(), id.pid);
-        assertEquals(getContext().getPackageName(), id.packageName);
+        assertEquals(mContext.getPackageName(), id.packageName);
         assertEquals(-1, id.zygotePid);
     }
 
-    /** Tests that the APK providing the externalService can bind the service itself, and that
-     * other APKs bind to a different instance of it. */
+    /**
+     * Tests that the APK providing the externalService can bind the service itself, and that other
+     * APKs bind to a different instance of it.
+     */
+    @Test
     public void testBindExternalServiceWithRunningOwn() {
         // Start the service that will create the externalService.
         final Connection creatorConnection = new Connection();
         Intent intent = new Intent();
-        intent.setComponent(new ComponentName(sServicePackage, sServicePackage+".ServiceCreator"));
+        intent.setComponent(
+                new ComponentName(SERVICE_PACKAGE, SERVICE_PACKAGE + ".ServiceCreator"));
 
         mCondition.close();
-        assertTrue(getContext().bindService(intent, creatorConnection, Context.BIND_AUTO_CREATE));
+        assertTrue(mContext.bindService(intent, creatorConnection, Context.BIND_AUTO_CREATE));
         assertTrue(mCondition.block(CONDITION_TIMEOUT));
 
         // Get the identity of the creator.
@@ -169,19 +224,18 @@ public class ExternalServiceTest extends AndroidTestCase {
         // Have the creator actually start its service.
         final Message creatorMsg =
                 Message.obtain(null, ServiceMessages.MSG_CREATE_EXTERNAL_SERVICE);
-        Handler creatorHandler = new Handler(Looper.getMainLooper()) {
-            @Override
-            public void handleMessage(Message msg) {
-                Log.d(TAG, "Received message: " + msg);
-                switch (msg.what) {
-                    case ServiceMessages.MSG_CREATE_EXTERNAL_SERVICE_RESPONSE:
-                        creatorMsg.copyFrom(msg);
-                        mCondition.open();
-                        break;
-                }
-                super.handleMessage(msg);
-            }
-        };
+        Handler creatorHandler =
+                new Handler(Looper.getMainLooper()) {
+                    @Override
+                    public void handleMessage(Message msg) {
+                        Log.d(TAG, "Received message: " + msg);
+                        if (msg.what == ServiceMessages.MSG_CREATE_EXTERNAL_SERVICE_RESPONSE) {
+                            creatorMsg.copyFrom(msg);
+                            mCondition.open();
+                        }
+                        super.handleMessage(msg);
+                    }
+                };
         Messenger localCreator = new Messenger(creatorHandler);
         creatorMsg.replyTo = localCreator;
         try {
@@ -202,11 +256,15 @@ public class ExternalServiceTest extends AndroidTestCase {
 
         // Create an external service from this (the test) process.
         intent = new Intent();
-        intent.setComponent(new ComponentName(sServicePackage, sServicePackage+".ExternalService"));
+        intent.setComponent(
+                new ComponentName(SERVICE_PACKAGE, SERVICE_PACKAGE + ".ExternalService"));
 
         mCondition.close();
-        assertTrue(getContext().bindService(intent, mConnection,
-                    Context.BIND_AUTO_CREATE | Context.BIND_EXTERNAL_SERVICE));
+        assertTrue(
+                mContext.bindService(
+                        intent,
+                        mConnection,
+                        Context.BIND_AUTO_CREATE | Context.BIND_EXTERNAL_SERVICE));
         assertTrue(mCondition.block(CONDITION_TIMEOUT));
         RunningServiceInfo serviceId = identifyService(new Messenger(mConnection.service));
         assertNotNull(serviceId);
@@ -215,7 +273,7 @@ public class ExternalServiceTest extends AndroidTestCase {
         // Make sure that all the processes are unique.
         int myUid = Process.myUid();
         int myPid = Process.myPid();
-        String myPkg = getContext().getPackageName();
+        String myPkg = mContext.getPackageName();
 
         assertNotEquals(myUid, creatorId.uid);
         assertNotEquals(myUid, creatorServiceId.uid);
@@ -242,19 +300,24 @@ public class ExternalServiceTest extends AndroidTestCase {
         assertEquals(creatorId.packageName, creatorServiceId.packageName);
         assertEquals(myPkg, serviceId.packageName);
 
-        getContext().unbindService(creatorConnection);
+        mContext.unbindService(creatorConnection);
     }
 
     /** Tests that the binding to an externalService can be changed. */
+    @Test
     public void testBindExternalAboveClient() {
         // Start the service and wait for connection.
         Intent intent = new Intent();
-        intent.setComponent(new ComponentName(sServicePackage, sServicePackage+".ExternalService"));
+        intent.setComponent(
+                new ComponentName(SERVICE_PACKAGE, SERVICE_PACKAGE + ".ExternalService"));
 
         mCondition.close();
         Connection initialConn = new Connection();
-        assertTrue(getContext().bindService(intent, initialConn,
-                    Context.BIND_AUTO_CREATE | Context.BIND_EXTERNAL_SERVICE));
+        assertTrue(
+                mContext.bindService(
+                        intent,
+                        initialConn,
+                        Context.BIND_AUTO_CREATE | Context.BIND_EXTERNAL_SERVICE));
 
         assertTrue(mCondition.block(CONDITION_TIMEOUT));
 
@@ -265,9 +328,13 @@ public class ExternalServiceTest extends AndroidTestCase {
         // Bind the service with a different priority.
         mCondition.close();
         Connection prioConn = new Connection();
-        assertTrue(getContext().bindService(intent, prioConn,
-                    Context.BIND_AUTO_CREATE | Context.BIND_EXTERNAL_SERVICE |
-                            Context.BIND_ABOVE_CLIENT));
+        assertTrue(
+                mContext.bindService(
+                        intent,
+                        prioConn,
+                        Context.BIND_AUTO_CREATE
+                                | Context.BIND_EXTERNAL_SERVICE
+                                | Context.BIND_ABOVE_CLIENT));
 
         assertTrue(mCondition.block(CONDITION_TIMEOUT));
 
@@ -280,26 +347,30 @@ public class ExternalServiceTest extends AndroidTestCase {
         assertEquals(idOne.packageName, idTwo.packageName);
         assertNotEquals(Process.myUid(), idOne.uid);
         assertNotEquals(Process.myPid(), idOne.pid);
-        assertEquals(getContext().getPackageName(), idOne.packageName);
+        assertEquals(mContext.getPackageName(), idOne.packageName);
 
-        getContext().unbindService(prioConn);
-        getContext().unbindService(initialConn);
+        mContext.unbindService(prioConn);
+        mContext.unbindService(initialConn);
     }
 
     /** Tests binding an externalService that is started by an app zygote. */
+    @Test
     public void testBindExternalServiceWithZygote() {
         // Start the service and wait for connection.
         Intent intent = new Intent();
         intent.setComponent(
-                new ComponentName(sServicePackage, sServicePackage+".ExternalServiceWithZygote"));
+                new ComponentName(SERVICE_PACKAGE, SERVICE_PACKAGE + ".ExternalServiceWithZygote"));
 
         mCondition.close();
-        assertTrue(getContext().bindService(intent, mConnection,
-                    Context.BIND_AUTO_CREATE | Context.BIND_EXTERNAL_SERVICE));
+        assertTrue(
+                mContext.bindService(
+                        intent,
+                        mConnection,
+                        Context.BIND_AUTO_CREATE | Context.BIND_EXTERNAL_SERVICE));
 
         assertTrue(mCondition.block(CONDITION_TIMEOUT));
-        assertEquals(getContext().getPackageName(), mConnection.name.getPackageName());
-        assertNotSame(sServicePackage, mConnection.name.getPackageName());
+        assertEquals(mContext.getPackageName(), mConnection.name.getPackageName());
+        assertNotSame(SERVICE_PACKAGE, mConnection.name.getPackageName());
 
         // Check the identity of the service.
         Messenger remote = new Messenger(mConnection.service);
@@ -309,42 +380,45 @@ public class ExternalServiceTest extends AndroidTestCase {
         assertFalse(id.uid == 0 || id.pid == 0);
         assertNotEquals(Process.myUid(), id.uid);
         assertNotEquals(Process.myPid(), id.pid);
-        assertEquals(getContext().getPackageName(), id.packageName);
+        assertEquals(mContext.getPackageName(), id.packageName);
         assertNotEquals(id.pid, id.zygotePid);
         assertNotEquals(Process.myPid(), id.zygotePid);
         assertNotEquals(-1, id.zygotePid);
-        assertEquals(sServicePackage, id.zygotePackage);
+        assertEquals(SERVICE_PACKAGE, id.zygotePackage);
     }
 
-    /** Tests that an externalService that also is also useAppZygote=true shares the same
-     * zygote, even when bound by different packages.. */
+    /**
+     * Tests that an externalService that also is also useAppZygote=true shares the same zygote,
+     * even when bound by different packages..
+     */
+    @Test
     public void testBindExternalServiceWithZygoteWithRunningOwn() {
         // Start the service that will create the externalService.
         final Connection creatorConnection = new Connection();
         Intent intent = new Intent();
-        intent.setComponent(new ComponentName(sServicePackage, sServicePackage+".ServiceCreator"));
+        intent.setComponent(
+                new ComponentName(SERVICE_PACKAGE, SERVICE_PACKAGE + ".ServiceCreator"));
 
         mCondition.close();
-        assertTrue(getContext().bindService(intent, creatorConnection, Context.BIND_AUTO_CREATE));
+        assertTrue(mContext.bindService(intent, creatorConnection, Context.BIND_AUTO_CREATE));
         assertTrue(mCondition.block(CONDITION_TIMEOUT));
 
         // Have the creator actually start its service.
         Messenger remoteCreator = new Messenger(creatorConnection.service);
         final Message creatorMsg = Message.obtain(null, ServiceMessages.MSG_CREATE_EXTERNAL_SERVICE,
                         /* use zygote */ 1, 0);
-        Handler creatorHandler = new Handler(Looper.getMainLooper()) {
-            @Override
-            public void handleMessage(Message msg) {
-                Log.d(TAG, "Received message: " + msg);
-                switch (msg.what) {
-                    case ServiceMessages.MSG_CREATE_EXTERNAL_SERVICE_RESPONSE:
-                        creatorMsg.copyFrom(msg);
-                        mCondition.open();
-                        break;
-                }
-                super.handleMessage(msg);
-            }
-        };
+        Handler creatorHandler =
+                new Handler(Looper.getMainLooper()) {
+                    @Override
+                    public void handleMessage(Message msg) {
+                        Log.d(TAG, "Received message: " + msg);
+                        if (msg.what == ServiceMessages.MSG_CREATE_EXTERNAL_SERVICE_RESPONSE) {
+                            creatorMsg.copyFrom(msg);
+                            mCondition.open();
+                        }
+                        super.handleMessage(msg);
+                    }
+                };
         Messenger localCreator = new Messenger(creatorHandler);
         creatorMsg.replyTo = localCreator;
         try {
@@ -361,16 +435,19 @@ public class ExternalServiceTest extends AndroidTestCase {
         Messenger remoteCreatorService = (Messenger) creatorMsg.obj;
         RunningServiceInfo creatorServiceId = identifyService(remoteCreatorService);
         assertNotNull(creatorServiceId);
-        assertFalse(creatorServiceId.uid == 0);
+        Assert.assertNotEquals(0, creatorServiceId.uid);
 
         // Create an external service from this (the test) process.
         intent = new Intent();
         intent.setComponent(
-                new ComponentName(sServicePackage, sServicePackage+".ExternalServiceWithZygote"));
+                new ComponentName(SERVICE_PACKAGE, SERVICE_PACKAGE + ".ExternalServiceWithZygote"));
 
         mCondition.close();
-        assertTrue(getContext().bindService(intent, mConnection,
-                    Context.BIND_AUTO_CREATE | Context.BIND_EXTERNAL_SERVICE));
+        assertTrue(
+                mContext.bindService(
+                        intent,
+                        mConnection,
+                        Context.BIND_AUTO_CREATE | Context.BIND_EXTERNAL_SERVICE));
         assertTrue(mCondition.block(CONDITION_TIMEOUT));
         RunningServiceInfo serviceId = identifyService(new Messenger(mConnection.service));
         assertNotNull(serviceId);
@@ -381,13 +458,13 @@ public class ExternalServiceTest extends AndroidTestCase {
         assertNotEquals(-1, serviceId.zygotePid);
         assertNotEquals(creatorServiceId.pid, creatorServiceId.zygotePid);
         assertNotEquals(serviceId.pid, serviceId.zygotePid);
-        assertEquals(sServicePackage, creatorServiceId.zygotePackage);
-        assertEquals(sServicePackage, serviceId.zygotePackage);
+        assertEquals(SERVICE_PACKAGE, creatorServiceId.zygotePackage);
+        assertEquals(SERVICE_PACKAGE, serviceId.zygotePackage);
         assertEquals(creatorServiceId.zygotePid, serviceId.zygotePid);
 
         int myUid = Process.myUid();
         int myPid = Process.myPid();
-        String myPkg = getContext().getPackageName();
+        String myPkg = mContext.getPackageName();
 
         assertNotEquals(myUid, creatorServiceId.uid);
         assertNotEquals(myUid, serviceId.uid);
@@ -400,51 +477,58 @@ public class ExternalServiceTest extends AndroidTestCase {
         assertNotEquals(myPkg, creatorServiceId.packageName);
         assertEquals(myPkg, serviceId.packageName);
 
-        getContext().unbindService(creatorConnection);
+        mContext.unbindService(creatorConnection);
     }
 
     /**
-     * Test when the flag BIND_EXTERNAL_SERVICE(0x80000000) is set in 64 bits long flags,
-     * an IllegalArgumentException is thrown. The reason is that integer 0x80000000 is
-     * automatically converted to long 0xffff_ffff_8000_000, it is not a correct flag any more.
-     * In 64 bits long flags, use BIND_EXTERNAL_SERVICE_LONG(0x4000_0000_0000_0000L) instead.
+     * Test when the flag BIND_EXTERNAL_SERVICE(0x80000000) is set in 64 bits long flags, an
+     * IllegalArgumentException is thrown. The reason is that integer 0x80000000 is automatically
+     * converted to long 0xffff_ffff_8000_000, it is not a correct flag any more. In 64 bits long
+     * flags, use BIND_EXTERNAL_SERVICE_LONG(0x4000_0000_0000_0000L) instead.
      */
+    @Test
     public void testFailBindExternalServiceLongFlags() {
         // Start the service and wait for connection.
         Intent intent = new Intent();
-        intent.setComponent(new ComponentName(sServicePackage, sServicePackage+".ExternalService"));
+        intent.setComponent(
+                new ComponentName(SERVICE_PACKAGE, SERVICE_PACKAGE + ".ExternalService"));
 
         mCondition.close();
 
         long longFlags = Context.BIND_EXTERNAL_SERVICE | Context.BIND_AUTO_CREATE;
-        try {
-            getContext().bindService(intent, mConnection,
-                    Context.BindServiceFlags.of(longFlags)/* 64 bits long flag */);
-            fail("Context.BIND_EXTERNAL_SERVICE can not be used in 64 bits bindService() flags");
-        } catch (IllegalArgumentException e) {
-            // expect an IllegalArgumentException when BIND_EXTERNAL_SERVICE is used in 64 bits
-            // flags.
-        }
+        assertThrows(
+                "Context.BIND_EXTERNAL_SERVICE can not be used in 64 bits bindService() flags",
+                IllegalArgumentException.class,
+                () ->
+                        mContext.bindService(
+                                intent,
+                                mConnection,
+                                Context.BindServiceFlags.of(longFlags) /* 64 bits long flag */));
     }
 
     /**
-     * Test 64 bits long flag BIND_EXTERNAL_SERVICE_LONG(0x4000_0000_0000_0000L), it deprecates
-     * 32 bits flag BIND_EXTERNAL_SERVICE(0x80000000) when 64 bits long flags is used.
+     * Test 64 bits long flag BIND_EXTERNAL_SERVICE_LONG(0x4000_0000_0000_0000L), it deprecates 32
+     * bits flag BIND_EXTERNAL_SERVICE(0x80000000) when 64 bits long flags is used.
      */
+    @Test
     public void testBindExternalServiceLongFlags() {
         // Start the service and wait for connection.
         Intent intent = new Intent();
-        intent.setComponent(new ComponentName(sServicePackage, sServicePackage+".ExternalService"));
+        intent.setComponent(
+                new ComponentName(SERVICE_PACKAGE, SERVICE_PACKAGE + ".ExternalService"));
 
         mCondition.close();
 
         long longFlags = Context.BIND_EXTERNAL_SERVICE_LONG | Context.BIND_AUTO_CREATE;
 
-        assertTrue(getContext().bindService(intent, mConnection,
-                Context.BindServiceFlags.of(longFlags)/* 64 bits long flag */));
+        assertTrue(
+                mContext.bindService(
+                        intent,
+                        mConnection,
+                        Context.BindServiceFlags.of(longFlags) /* 64 bits long flag */));
         assertTrue(mCondition.block(CONDITION_TIMEOUT));
-        assertEquals(getContext().getPackageName(), mConnection.name.getPackageName());
-        assertNotSame(sServicePackage, mConnection.name.getPackageName());
+        assertEquals(mContext.getPackageName(), mConnection.name.getPackageName());
+        assertNotSame(SERVICE_PACKAGE, mConnection.name.getPackageName());
     }
 
     /** Given a Messenger, this will message the service to retrieve its UID, PID, and package name.
@@ -461,7 +545,6 @@ public class ExternalServiceTest extends AndroidTestCase {
     private class Connection implements ServiceConnection {
         IBinder service = null;
         ComponentName name = null;
-        boolean disconnected = false;
 
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
@@ -478,7 +561,9 @@ public class ExternalServiceTest extends AndroidTestCase {
     }
 
     private <T> void assertNotEquals(T expected, T actual) {
-        assertFalse("Expected <" + expected + "> should not be equal to actual <" + actual + ">",
-                expected.equals(actual));
+        Assert.assertNotEquals(
+                "Expected <" + expected + "> should not be equal to actual <" + actual + ">",
+                expected,
+                actual);
     }
 }
