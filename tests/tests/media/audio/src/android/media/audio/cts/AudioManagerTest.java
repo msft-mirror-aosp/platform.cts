@@ -103,6 +103,7 @@ import android.os.HandlerThread;
 import android.os.SystemClock;
 import android.os.Vibrator;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -514,7 +515,8 @@ public class AudioManagerTest {
                 getInstrumentation()
                         .getUiAutomation()
                         .adoptShellPermissionIdentity(
-                                Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED);
+                                Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED,
+                                Manifest.permission.MANAGE_ASSISTANT_AUDIO);
                 mAudioManager.setMode(MODE_ASSISTANT_CONVERSATION);
 
                 assertEquals(MODE_ASSISTANT_CONVERSATION, mAudioManager.getMode());
@@ -1232,19 +1234,31 @@ public class AudioManagerTest {
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ASSISTANT_VOLUME_CONTROL)
+    @RequiresFlagsDisabled(Flags.FLAG_MANAGE_ASSISTANT_AUDIO_PERMISSION)
     @Test
-    public void testAssistantVolume() throws Exception {
+    public void testAssistantVolume_withModifyAudioSettings() throws Exception {
+        testAssistantVolume(
+                Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED,
+                Manifest.permission.MODIFY_AUDIO_ROUTING);
+    }
+
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ASSISTANT_VOLUME_CONTROL,
+        Flags.FLAG_MANAGE_ASSISTANT_AUDIO_PERMISSION
+    })
+    @Test
+    public void testAssistantVolume_withManageAssistantAudio() throws Exception {
+        testAssistantVolume(Manifest.permission.MANAGE_ASSISTANT_AUDIO);
+    }
+
+    private void testAssistantVolume(String... permissions) throws Exception {
         assumeFalse(
                 "AudioManagerTest testAssistantVolume() skipped: fixed volume", mUseFixedVolume);
         assumeFalse(
                 "AudioManagerTest testAssistantVolume() skipping volume test on automotive",
                 mSkipAutoVolumeTests);
 
-        try (PermissionContext ignored =
-                TestApis.permissions()
-                        .withPermission(
-                                Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED,
-                                Manifest.permission.MODIFY_AUDIO_ROUTING)) {
+        try (PermissionContext ignored = TestApis.permissions().withPermission(permissions)) {
             int originalAssistantVolume = mAudioManager.getStreamVolume(STREAM_ASSISTANT);
             mAudioManager.setStreamVolume(
                     STREAM_ASSISTANT, mAudioManager.getStreamMaxVolume(STREAM_ASSISTANT), 0);
