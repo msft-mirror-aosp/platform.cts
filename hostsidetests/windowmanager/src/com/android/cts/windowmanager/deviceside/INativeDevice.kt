@@ -29,7 +29,7 @@ const val DEVICE_NOT_AVAILABLE_TIMEOUT = 20000L
  */
 fun INativeDevice.frameworkReboot() {
     val rebootResult =
-        executeAdbV2Command(*"shell svc power reboot".split(" ").toTypedArray())
+        executeAdbV2Command(*"shell svc power reboot --no-wait".split(" ").toTypedArray())
     assertEquals("Failed to framework reboot device", 0, rebootResult.exitCode)
     assertEquals(
         "Failed to framework reboot device: ${rebootResult.stderr}",
