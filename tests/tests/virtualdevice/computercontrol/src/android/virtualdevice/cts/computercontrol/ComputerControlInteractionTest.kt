@@ -35,7 +35,7 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_COMPUTER_CONTROL_ACCESS)
-class ComputerControlTest {
+class ComputerControlInteractionTest {
 
     @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
@@ -147,6 +147,38 @@ class ComputerControlTest {
         Log.d(TAG, "Screen size from OS: ${bounds.width()}x${bounds.height()}")
         assertThat(screenSize.getWidth()).isEqualTo(bounds.width())
         assertThat(screenSize.getHeight()).isEqualTo(bounds.height())
+    }
+
+    @Test
+    fun testTap_edge() {
+        testAppAgent = launchTestApp()
+        val width = bounds.width()
+        val height = bounds.height()
+
+        // Test tapping at the corners and edges of the screen.
+        val testCases =
+            listOf(
+                Pair(0, 0), // Top-left
+                Pair(width - 1, 0), // Top-right
+                Pair(0, height - 1), // Bottom-left
+                Pair(width - 1, height - 1), // Bottom-right
+                Pair(width / 2, 0), // Top-middle
+                Pair(width / 2, height - 1), // Bottom-middle
+                Pair(0, height / 2), // Left-middle
+                Pair(width - 1, height / 2) // Right-middle
+            )
+
+        for ((x, y) in testCases) {
+            testAppAgent!!.tap(x, y)
+            Log.d(TAG, "Tapped at edge: ($x, $y)")
+
+            val tap = testAppAgent!!.nextAction(Action.Tap::class.java)
+            assertThat(tap).isNotNull()
+            tap!!
+            Log.d(TAG, "Tap from TestApp: (${tap.x}, ${tap.y})")
+            assertThat(tap.x).isEqualTo(x)
+            assertThat(tap.y).isEqualTo(y)
+        }
     }
 
     @Test

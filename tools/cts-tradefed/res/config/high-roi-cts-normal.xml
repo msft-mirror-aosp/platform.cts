@@ -4897,11 +4897,11 @@
     <option name="compatibility:include-filter" value="CtsVirtualDevicesCameraTestCases android.virtualdevice.cts.camera.VirtualCameraTest#virtualCamera_withPerFrameMetadataDisabled_canNotSendCaptureResults"/>
     <option name="compatibility:include-filter" value="CtsVirtualDevicesCameraTestCases android.virtualdevice.cts.camera.VirtualCameraTest#virtualCamera_withPerFrameMetadataEnabled_canSendCaptureResults"/>
     <!-- CtsVirtualDevicesComputerControlTests -->
-    <option name="compatibility:include-filter" value="CtsVirtualDevicesComputerControlTests android.virtualdevice.cts.computercontrol.ComputerControlTest#testGetDisplaySize"/>
-    <option name="compatibility:include-filter" value="CtsVirtualDevicesComputerControlTests android.virtualdevice.cts.computercontrol.ComputerControlTest#testGetScreenshot"/>
-    <option name="compatibility:include-filter" value="CtsVirtualDevicesComputerControlTests android.virtualdevice.cts.computercontrol.ComputerControlTest#testInsertText"/>
-    <option name="compatibility:include-filter" value="CtsVirtualDevicesComputerControlTests android.virtualdevice.cts.computercontrol.ComputerControlTest#testLongPress"/>
-    <option name="compatibility:include-filter" value="CtsVirtualDevicesComputerControlTests android.virtualdevice.cts.computercontrol.ComputerControlTest#testPerformAction_GoBack"/>
+    <option name="compatibility:include-filter" value="CtsVirtualDevicesComputerControlTests android.virtualdevice.cts.computercontrol.ComputerControlInteractionTest#testGetDisplaySize"/>
+    <option name="compatibility:include-filter" value="CtsVirtualDevicesComputerControlTests android.virtualdevice.cts.computercontrol.ComputerControlInteractionTest#testGetScreenshot"/>
+    <option name="compatibility:include-filter" value="CtsVirtualDevicesComputerControlTests android.virtualdevice.cts.computercontrol.ComputerControlInteractionTest#testInsertText"/>
+    <option name="compatibility:include-filter" value="CtsVirtualDevicesComputerControlTests android.virtualdevice.cts.computercontrol.ComputerControlInteractionTest#testLongPress"/>
+    <option name="compatibility:include-filter" value="CtsVirtualDevicesComputerControlTests android.virtualdevice.cts.computercontrol.ComputerControlInteractionTest#testPerformAction_GoBack"/>
     <!-- CtsVirtualDevicesSensorTestCases -->
     <option name="compatibility:include-filter" value="CtsVirtualDevicesSensorTestCases android.virtualdevice.cts.sensor.VirtualSensorTest#directConnection_hardwareBuffer_throwsException"/>
     <option name="compatibility:include-filter" value="CtsVirtualDevicesSensorTestCases android.virtualdevice.cts.sensor.VirtualSensorTest#sendEvent_reachesRegisteredListeners"/>
