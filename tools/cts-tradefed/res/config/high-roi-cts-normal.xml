@@ -86,10 +86,6 @@
     <option name="compatibility:include-filter" value="CtsActivityRecognitionTestCases android.activityrecognition.cts.RenouncedPermissionsTest#testActivityRecognitionAttributionTagBlaming"/>
     <!-- CtsAdServicesExtDataStorageServiceTest -->
     <option name="compatibility:include-filter" value="CtsAdServicesExtDataStorageServiceTest com.android.adservices.tests.extdata.AdServicesExtDataServiceCtsTest#testAdServicesExtDataStorageService"/>
-    <!-- CtsAdServicesNotInAllowListEndToEndTests -->
-    <option name="compatibility:include-filter" value="CtsAdServicesNotInAllowListEndToEndTests com.android.adservices.tests.permissions.NotInAllowListTest#testNotInAllowList_fledgeLeaveCustomAudience"/>
-    <!-- CtsAdServicesPermissionsNoPermEndToEndTests -->
-    <option name="compatibility:include-filter" value="CtsAdServicesPermissionsNoPermEndToEndTests com.android.adservices.tests.permissions.PermissionsNoPermTest#testPermissionNotRequested_updateAdCounterHistogram"/>
     <!-- CtsAdServicesTopicsAppUpdateTests -->
     <option name="compatibility:include-filter" value="CtsAdServicesTopicsAppUpdateTests com.android.adservices.tests.cts.topics.appupdate.AppUpdateTest#testAppUpdate"/>
     <!-- CtsAdServicesTopicsConnectionTests -->

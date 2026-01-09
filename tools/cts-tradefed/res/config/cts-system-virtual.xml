@@ -463,7 +463,6 @@
   <option name="compatibility:include-filter" value="CtsProtoTestCases"/>
   <option name="compatibility:include-filter" value="CtsAppSetIdEndToEndTest"/>
   <option name="compatibility:include-filter" value="CtsSettingsTestCases"/>
-  <option name="compatibility:include-filter" value="CtsAdServicesPermissionsNoPermEndToEndTests"/>
   <option name="compatibility:include-filter" value="CtsNetSecConfigPrePCleartextTrafficTestCases"/>
   <option name="compatibility:include-filter" value="CtsInstantAppTests"/>
   <option name="compatibility:include-filter" value="ResourceObserverNativeTest"/>
