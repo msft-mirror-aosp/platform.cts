@@ -30,7 +30,6 @@ import static android.media.cts.MediaRouterTestConstants.PROXY_MEDIA_ROUTER_WITH
 import static android.media.cts.MediaRouterTestConstants.PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_TEST_CLASS;
 import static android.media.cts.MediaRouterTestConstants.TARGET_USER_ID_KEY;
 
-import static com.android.media.flags.Flags.FLAG_ENABLE_BUILT_IN_SPEAKER_ROUTE_SUITABILITY_STATUSES;
 import static com.android.media.flags.Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -364,7 +363,6 @@ public class ProxyMediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest 
     @Test
     @AppModeFull
     @RequiresDevice
-    @RequiresFlagsEnabled(FLAG_ENABLE_BUILT_IN_SPEAKER_ROUTE_SUITABILITY_STATUSES)
     public void getTransferReason_afterAppRestart_returnsPreviouslySelectedTransferReason()
             throws DeviceNotAvailableException {
         runDeviceTests(

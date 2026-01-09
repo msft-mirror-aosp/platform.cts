@@ -28,7 +28,6 @@ import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_VISIBILITY_RES
 import static android.media.cts.app.common.MediaRouter2TestUtils.fetchRoutes;
 import static android.media.cts.app.common.MediaRouter2TestUtils.waitForAndGetRoutes;
 
-import static com.android.media.flags.Flags.FLAG_ENABLE_BUILT_IN_SPEAKER_ROUTE_SUITABILITY_STATUSES;
 import static com.android.media.flags.Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -342,7 +341,6 @@ public class MediaRouter2DeviceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_BUILT_IN_SPEAKER_ROUTE_SUITABILITY_STATUSES)
     public void transferToSelectedSystemRoute_updatesTransferReason()
             throws Exception {
         mInstrumentation
@@ -426,7 +424,6 @@ public class MediaRouter2DeviceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_BUILT_IN_SPEAKER_ROUTE_SUITABILITY_STATUSES)
     public void getTransferReason_afterAppRestart_returnsPreviouslySelectedTransferReason() {
         mInstrumentation
                 .getUiAutomation()
