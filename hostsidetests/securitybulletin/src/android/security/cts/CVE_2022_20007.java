@@ -22,7 +22,6 @@ import static org.junit.Assume.assumeNoException;
 import android.platform.test.annotations.AsbSecurityTest;
 
 import com.android.sts.common.tradefed.testtype.NonRootSecurityTestCase;
-import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
@@ -38,8 +37,11 @@ public class CVE_2022_20007 extends NonRootSecurityTestCase {
             assumeFalse(
                     "Test skipped from XR for different UI policy",
                     getDevice().hasFeature("feature:android.software.xr.api.spatial"));
-        } catch (DeviceNotAvailableException DnfException) {
-            assumeNoException(DnfException);
+            assumeFalse(
+                    "Test skipped on PC devices because it has default-freeform policy",
+                    getDevice().hasFeature("feature:android.hardware.type.pc"));
+        } catch (Exception exception) {
+            assumeNoException(exception);
         }
         final String testPkg = "android.security.cts.CVE_2022_20007";
         final String testClass = testPkg + "." + "DeviceTest";
