@@ -18,4 +18,7 @@
     android:sessionService="noExistingSessionService"
     android:recognitionService="android.voiceinteraction.cts.services.MainRecognitionService"
     android:settingsActivity="android.voiceinteraction.cts.activities.SettingsActivity"
-    android:supportsAssist="false" />
+    android:supportsAssist="false"
+    android:usesAssistData="true"
+    android:usesAssistScreenshots="true"
+    android:usesAssistStructureScreenContent="true" />
