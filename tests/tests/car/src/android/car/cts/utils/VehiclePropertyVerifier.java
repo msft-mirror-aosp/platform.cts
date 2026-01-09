@@ -927,7 +927,6 @@ public class VehiclePropertyVerifier<T> {
         }
     }
 
-
     private void verifyIntegerPropertySetter() {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
         for (int areaId : carPropertyConfig.getAreaIds()) {
@@ -940,14 +939,18 @@ public class VehiclePropertyVerifier<T> {
                 for (T valueToSet : (List<T>) areaIdConfig.getSupportedEnumValues()) {
                     if (!mAllPossibleUnwritableValues.isEmpty()
                             && mAllPossibleUnwritableValues.contains(valueToSet)) {
-                        assertThrows("Trying to set an unwritable value: " + valueToSet
-                                + " to property: " + mPropertyId + " should throw an "
-                                + "IllegalArgumentException",
+                        assertThrows(
+                                "Trying to set an unwritable value: "
+                                        + valueToSet
+                                        + " to property: "
+                                        + mPropertyId
+                                        + " should throw an "
+                                        + "IllegalArgumentException",
                                 IllegalArgumentException.class,
-                                () -> setPropertyAndWaitForChange(
-                                        mCarPropertyManager, mPropertyId,
-                                        carPropertyConfig.getPropertyType(),
-                                        areaIdConfig.getAreaId(), valueToSet));
+                                () ->
+                                        mCarPropertyManager.setProperty(
+                                                carPropertyConfig.getPropertyType(), mPropertyId,
+                                                areaIdConfig.getAreaId(), valueToSet));
                     }
                 }
             }
