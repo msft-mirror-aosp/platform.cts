@@ -40,11 +40,13 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningAppProcessInfo;
+import android.app.ActivityOptions;
 import android.app.AnrTypes;
 import android.app.ApplicationExitInfo;
 import android.app.ApplicationExitInfo.AnrInfo;
 import android.app.Flags;
 import android.app.Instrumentation;
+import android.app.WindowConfiguration;
 import android.app.stubs.shared.IHeartbeat;
 import android.app.tools.WatchUidRunner;
 import android.content.BroadcastReceiver;
@@ -2316,7 +2318,9 @@ public final class ActivityManagerAppExitInfoTest {
         clientIntent.putExtra(HEARTBEAT_COUNTDOWN_NAME, HEARTBEAT_COUNTDOWN);
         clientIntent.putExtra(HEARTBEAT_INTERVAL_NAME, HEARTBEAT_INTERVAL);
         clientIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        mContext.startActivity(clientIntent);
+        ActivityOptions options = ActivityOptions.makeBasic();
+        options.setLaunchWindowingMode(WindowConfiguration.WINDOWING_MODE_FULLSCREEN);
+        mContext.startActivity(clientIntent, options.toBundle());
         sleep(1000);
 
         // Launch another app to bring the HeartbeatActivity to background
