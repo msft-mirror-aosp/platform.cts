@@ -57,7 +57,8 @@
         </activity>
         <activity android:name=".WaitForResultActivity"
                   android:label="Wait For Result Activity"
-                  android:exported="true"/>
+                  android:exported="true"
+                  android:configChanges="resourcesUnused"/>
         <!-- VoiceInteractionService -->
         <service android:name=".services.CtsBasicVoiceInteractionService"
                  android:label="CTS test Basic voice interaction service"
