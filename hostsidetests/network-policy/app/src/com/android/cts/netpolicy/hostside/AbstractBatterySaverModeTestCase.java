@@ -57,7 +57,7 @@ abstract class AbstractBatterySaverModeTestCase extends AbstractRestrictBackgrou
 
         // Make sure foreground app doesn't lose access upon Battery Saver.
         setBatterySaverMode(false);
-        launchComponentAndAssertNetworkAccess(TYPE_COMPONENT_ACTIVTIY);
+        launchComponentAndAssertNetworkAccess(TYPE_COMPONENT_ACTIVITY);
         setBatterySaverMode(true);
         assertTopNetworkAccess(true);
 

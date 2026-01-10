@@ -40,7 +40,7 @@ import org.junit.runner.RunWith;
 @RequiresFlagsEnabled({
     com.android.server.am.Flags.FLAG_ENABLE_ACTIVITY_MANAGER_STRUCTURED_SERVICE,
     android.os.Flags.FLAG_NATIVE_FRAMEWORK_PROTOTYPE,
-    android.os.Flags.FLAG_NATIVE_APP_ZYGOTE,
+    android.os.Flags.FLAG_NATIVE_APP_ZYGOTE
 })
 public final class NativeAppZygoteServiceTest extends NativeServiceTestBase {
     private final String mNativeServiceClassName2;
@@ -53,13 +53,15 @@ public final class NativeAppZygoteServiceTest extends NativeServiceTestBase {
     }
 
     @Before
-    public void setup() {
+    public void setup() throws RemoteException {
         // Isolated processes get killed aggressively by AMS if there's no connecton.
         // Create a connection to keep the process alive.
         Intent intent = new Intent(TEST_ACTION_KEEPALIVE);
         intent.setComponent(new ComponentName(TARGET_PACKAGE, mNativeServiceClassName2));
-        mConnKeepAlive2 = new NativeServiceTestConnection(/* listener= */ null, /* id= */ 0);
+        INativeServiceListener listener = mock(INativeServiceListener.class);
+        mConnKeepAlive2 = new NativeServiceTestConnection(listener, 0);
         assertTrue(mContext.bindService(intent, mConnKeepAlive2, Context.BIND_AUTO_CREATE));
+        verify(listener, timeout(TIMEOUT_MS)).onRegister();
     }
 
     @After
@@ -86,11 +88,10 @@ public final class NativeAppZygoteServiceTest extends NativeServiceTestBase {
         assertSameParentPid(conn1, conn2);
 
         mContext.unbindService(conn1);
-        verify(mockListener1, never()).onUnbind();
+        verify(mockListener1, timeout(TIMEOUT_MS)).onUnbind();
         verify(mockListener2, never()).onUnbind();
 
         mContext.unbindService(conn2);
-        verify(mockListener1, timeout(TIMEOUT_MS)).onUnbind();
         verify(mockListener2, timeout(TIMEOUT_MS)).onUnbind();
     }
 }

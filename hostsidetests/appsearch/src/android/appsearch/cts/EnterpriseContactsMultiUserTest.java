@@ -114,6 +114,17 @@ public final class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase
         return profileId;
     }
 
+    /**
+     * Starts the secondary user. Calling this before executing commands as the secondary user is
+     * necessary on devices with a low multi-user configuration.
+     */
+    private static void startSecondaryUser()
+            throws DeviceNotAvailableException {
+        assertWithMessage("Started user %s", sSecondaryUserId)
+                .that(sDevice.startUser(sSecondaryUserId, /* waitFlag= */ true))
+                .isTrue();
+    }
+
     /** Gets or creates an enterprise profile and sets the {@link #sEnterpriseUserId user id } */
     private static void setUpEnterpriseProfile(ITestDevice device)
             throws DeviceNotAvailableException {
@@ -150,6 +161,10 @@ public final class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase
         sIsTemporaryEnterpriseUser = true;
     }
 
+    /**
+     * Starts the enterprise user. Calling this before executing commands as the enterprise user is
+     * necessary on devices with a low multi-user configuration.
+     */
     private static void startEnterpriseProfile(ITestDevice device)
             throws DeviceNotAvailableException {
         assertWithMessage("Started user %s", sEnterpriseUserId)
@@ -173,6 +188,7 @@ public final class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase
      * overwrite the same contacts.
      */
     private void setUpEnterpriseContacts() throws Exception {
+        startEnterpriseProfile(sDevice);
         runEnterpriseContactsDeviceTestAsUserInPkgA("setUpEnterpriseContacts",
                 sEnterpriseUserId,
                 Collections.emptyMap());
@@ -260,6 +276,7 @@ public final class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase
     @Test
     public void testSecondaryUser_doesNotHaveEnterpriseAccess() throws Exception {
         setUpEnterpriseContacts();
+        startSecondaryUser();
         runEnterpriseContactsDeviceTestAsUserInPkgA("testDoesNotHaveEnterpriseAccess",
                 sSecondaryUserId,
                 Collections.emptyMap());

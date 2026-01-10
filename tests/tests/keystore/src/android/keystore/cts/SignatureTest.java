@@ -1214,7 +1214,7 @@ public class SignatureTest {
     private ImportedKey importDefaultKatKeyPair(String signatureAlgorithm) throws Exception {
         String keyAlgorithm = TestUtils.getSignatureAlgorithmKeyAlgorithm(signatureAlgorithm);
         KeyProtection importParams =
-                TestUtils.getMinimalWorkingImportParametersForSigningingWith(signatureAlgorithm);
+                TestUtils.getMinimalWorkingImportParametersForSigningWith(signatureAlgorithm);
         if (KeyProperties.KEY_ALGORITHM_EC.equalsIgnoreCase(keyAlgorithm)) {
             return TestUtils.importIntoAndroidKeyStore(
                     "testEc",
@@ -1345,7 +1345,7 @@ public class SignatureTest {
     }
 
     private static KeyProtection getMinimalWorkingImportParamsForSigning(String algorithm) {
-        return TestUtils.getMinimalWorkingImportParametersForSigningingWith(algorithm);
+        return TestUtils.getMinimalWorkingImportParametersForSigningWith(algorithm);
     }
 
     private static KeyProtection getMinimalWorkingImportParamsForVerifying(
@@ -1359,7 +1359,7 @@ public class SignatureTest {
             Context context, String signatureAlgorithm) throws Exception {
         String keyAlgorithm = TestUtils.getSignatureAlgorithmKeyAlgorithm(signatureAlgorithm);
         KeyProtection importParams =
-                TestUtils.getMinimalWorkingImportParametersForSigningingWith(signatureAlgorithm);
+                TestUtils.getMinimalWorkingImportParametersForSigningWith(signatureAlgorithm);
         if (KeyProperties.KEY_ALGORITHM_EC.equalsIgnoreCase(keyAlgorithm)) {
             return ECDSASignatureTest.importKatKeyPairs(context, importParams);
         } else if (KeyProperties.KEY_ALGORITHM_RSA.equalsIgnoreCase(keyAlgorithm)) {

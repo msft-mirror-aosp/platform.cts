@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit
 /**
  * A CDM message wrapper.
  */
-data class CdmMessage(val type: Int, val payload: ByteArray) {
+data class CdmMessage(val type: Int, val sequence: Int, val payload: ByteArray) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -49,17 +49,27 @@ data class CdmMessage(val type: Int, val payload: ByteArray) {
     }
 
     override fun toString(): String {
-        return "CdmMessage(type=0x${Integer.toHexString(type)}, payload=${Base64.encodeToString(payload, Base64.DEFAULT)})"
+        return "CdmMessage(type=0x${Integer.toHexString(
+            type
+        )}, payload=${Base64.encodeToString(payload, Base64.DEFAULT)})"
+    }
+
+    fun success(): CdmMessage {
+        return CdmMessage(MESSAGE_RESPONSE_SUCCESS, sequence, byteArrayOf())
+    }
+
+    fun failure(): CdmMessage {
+        return CdmMessage(MESSAGE_RESPONSE_FAILURE, sequence, byteArrayOf())
     }
 
     companion object {
+        const val MESSAGE_RESPONSE_SUCCESS = 0x33838567
+        const val MESSAGE_RESPONSE_FAILURE = 0x33706573
+
         fun forMetadataUpdate(metadata: PersistableBundle): CdmMessage {
             val bytes = ByteArrayOutputStream()
             metadata.writeToStream(bytes)
-            return CdmMessage(
-                    MESSAGE_REQUEST_METADATA_UPDATE,
-                    bytes.toByteArray()
-            )
+            return CdmMessage(MESSAGE_REQUEST_METADATA_UPDATE, -1, bytes.toByteArray())
         }
     }
 }
@@ -71,21 +81,20 @@ class MessageFeeder : InputStream() {
 
     private val messageQueue = LinkedBlockingQueue<ByteArray>()
     private var currentMessage: ByteBuffer? = null
-    private var currentSequence = 1
 
     fun feedMessage(message: CdmMessage) {
-        feedMessage(message.type, message.payload)
-    }
-
-    fun feedMessage(messageType: Int, payload: ByteArray) {
-        val message = ByteBuffer.allocate(12 + payload.size)
-            .putInt(messageType)
-            .putInt(currentSequence++)
-            .putInt(payload.size)
-            .put(payload)
+        val message = ByteBuffer.allocate(12 + message.payload.size)
+            .putInt(message.type)
+            .putInt(message.sequence)
+            .putInt(message.payload.size)
+            .put(message.payload)
             .array()
 
         messageQueue.offer(message)
+    }
+
+    fun feedMessage(messageType: Int, payload: ByteArray) {
+        feedMessage(CdmMessage(messageType, -1, payload))
     }
 
     fun feedMessages(payloads: Collection<CdmMessage>) {
@@ -163,7 +172,8 @@ class MessageDemuxer(
             outputBuffer.clear()
 
             val newBuffer = ByteBuffer.allocate(
-                    maxOf(outputBuffer.capacity() * 2, currentPosition + len))
+                    maxOf(outputBuffer.capacity() * 2, currentPosition + len)
+            )
             newBuffer.order(outputBuffer.order())
             newBuffer.put(temp)
             newBuffer.put(b, off, len)
@@ -185,12 +195,12 @@ class MessageDemuxer(
             outputBuffer.get(headerBuffer)
             val headerReader = ByteBuffer.wrap(headerBuffer)
             val messageType = headerReader.getInt()
-            headerReader.getInt() // Ignore message sequence for now
+            val sequence = headerReader.getInt()
             val payloadLength = headerReader.getInt()
 
             if (outputBuffer.remaining() >= payloadLength) {
                 val payload = ByteArray(payloadLength)
-                val message = CdmMessage(messageType, payload)
+                val message = CdmMessage(messageType, sequence, payload)
                 outputBuffer.get(payload)
                 messageCallback(message)
                 outputMessages.offer(message)

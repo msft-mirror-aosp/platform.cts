@@ -66,7 +66,7 @@ abstract class AbstractAppIdleTestCase extends AbstractRestrictBackgroundNetwork
 
         // Make sure foreground app doesn't lose access upon enabling it.
         setAppIdle(true);
-        launchComponentAndAssertNetworkAccess(TYPE_COMPONENT_ACTIVTIY);
+        launchComponentAndAssertNetworkAccess(TYPE_COMPONENT_ACTIVITY);
         finishActivity();
         assertAppIdle(false); // verify - not idle anymore, since activity was launched...
         assertBackgroundNetworkAccess(true);

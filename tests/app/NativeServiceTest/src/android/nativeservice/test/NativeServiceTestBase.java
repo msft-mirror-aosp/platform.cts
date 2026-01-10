@@ -61,7 +61,7 @@ public abstract class NativeServiceTestBase {
     private NativeServiceTestConnection mConnKeepAlive;
 
     @Before
-    public void baseSetup() {
+    public void baseSetup() throws RemoteException {
         mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         mData = TEST_DATA.buildUpon().appendPath(TEST_DATA_UTF8_PART).build();
 
@@ -69,8 +69,10 @@ public abstract class NativeServiceTestBase {
         // Create a connection to keep the process alive.
         Intent intent = new Intent(TEST_ACTION_KEEPALIVE);
         intent.setComponent(new ComponentName(TARGET_PACKAGE, mNativeServiceClassName));
-        mConnKeepAlive = new NativeServiceTestConnection(/* listener= */ null, /* id= */ 0);
+        INativeServiceListener listener = mock(INativeServiceListener.class);
+        mConnKeepAlive = new NativeServiceTestConnection(listener, 0);
         assertTrue(mContext.bindService(intent, mConnKeepAlive, Context.BIND_AUTO_CREATE));
+        verify(listener, timeout(TIMEOUT_MS)).onRegister();
     }
 
     @After

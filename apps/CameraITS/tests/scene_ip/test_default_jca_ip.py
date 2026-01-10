@@ -312,6 +312,7 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
           self.dut, its_device_utils.CTS_VERIFIER_PKG
       )
       time.sleep(_CLOSE_CAMERA_WAIT_TIME_SECONDS)
+      cam.sock = None  # stop socket commands after CTS Verifier is closed
 
       jca_capture_path, _ = ui_interaction_utils.launch_jca_and_capture(
           self.dut,

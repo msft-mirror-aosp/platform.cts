@@ -47,6 +47,7 @@ android_test {
         "androidx.test.uiautomator_uiautomator",
         "android.hardware.biometrics.flags-aconfig-java",
         "flag-junit",
+        "bedstead",
     ],
 
     srcs: [
@@ -56,6 +57,9 @@ android_test {
     data: [
         ":CtsBiometricServiceTestApp",
         ":CtsBiometricServiceUtilTestApp",
+        ":CtsBiometricServiceWalletTestApp",
+        ":CtsBiometricServiceNoApiPermissionWalletTestApp",
+        ":CtsBiometricServiceNoBioPermissionWalletTestApp",
     ],
 
     sdk_version: "test_current",

@@ -63,7 +63,7 @@ abstract class AbstractDefaultRestrictionsTest extends AbstractRestrictBackgroun
         SystemClock.sleep(mProcessStateTransitionShortDelayMs);
         assertNetworkAccess(false, null);
 
-        launchComponentAndAssertNetworkAccess(TYPE_COMPONENT_ACTIVTIY);
+        launchComponentAndAssertNetworkAccess(TYPE_COMPONENT_ACTIVITY);
     }
 
     @Test

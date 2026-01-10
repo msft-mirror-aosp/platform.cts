@@ -16,23 +16,32 @@
 
 package android.net.cts.legacy.api22.permission;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+
 import android.content.Context;
 import android.net.ConnectivityManager;
-import android.test.AndroidTestCase;
 
-import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.runner.AndroidJUnit4;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * Verify ConnectivityManager related methods without specific network state permissions.
  */
-public class NoNetworkStatePermissionTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public class NoNetworkStatePermissionTest {
     private ConnectivityManager mConnectivityManager;
     private static final int TEST_NETWORK_TYPE = ConnectivityManager.TYPE_MOBILE;
     private static final String TEST_FEATURE = "enableHIPRI";
+    private Context mContext;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUp() throws Exception {
+        mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         mConnectivityManager = (ConnectivityManager) mContext.getSystemService(
                 Context.CONNECTIVITY_SERVICE);
         assertNotNull(mConnectivityManager);
@@ -43,7 +52,7 @@ public class NoNetworkStatePermissionTest extends AndroidTestCase {
      * <p>Requires Permission:
      *   {@link android.Manifest.permission#CHANGE_NETWORK_STATE}.
      */
-    @SmallTest
+    @Test
     public void testStartUsingNetworkFeature() {
         try {
             mConnectivityManager.startUsingNetworkFeature(TEST_NETWORK_TYPE, TEST_FEATURE);
@@ -59,7 +68,7 @@ public class NoNetworkStatePermissionTest extends AndroidTestCase {
      * <p>Requires Permission:
      *   {@link android.Manifest.permission#CHANGE_NETWORK_STATE}.
      */
-    @SmallTest
+    @Test
     public void testRequestRouteToHost() {
         try {
             mConnectivityManager.requestRouteToHost(TEST_NETWORK_TYPE, 0xffffffff);

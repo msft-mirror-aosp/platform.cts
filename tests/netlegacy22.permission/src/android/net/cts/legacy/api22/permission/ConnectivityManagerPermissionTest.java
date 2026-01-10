@@ -16,24 +16,34 @@
 
 package android.net.cts.legacy.api22.permission;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+
 import android.content.Context;
 import android.net.ConnectivityManager;
-import android.test.AndroidTestCase;
 
-import androidx.test.filters.SmallTest;
+import androidx.test.InstrumentationRegistry;
+import androidx.test.runner.AndroidJUnit4;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
-* Test that protected android.net.ConnectivityManager methods cannot be called without
-* permissions
-*/
-public class ConnectivityManagerPermissionTest extends AndroidTestCase {
+ * Test that protected android.net.ConnectivityManager methods cannot be called without
+ * permissions
+ */
+@RunWith(AndroidJUnit4.class)
+public class ConnectivityManagerPermissionTest {
 
-    private ConnectivityManager mConnectivityManager = null;
+    private ConnectivityManager mConnectivityManager;
+    private Context mContext;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        mConnectivityManager = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+    @Before
+    public void setUp() throws Exception {
+        mContext = InstrumentationRegistry.getContext();
+        mConnectivityManager =
+               (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
         assertNotNull(mConnectivityManager);
     }
 
@@ -43,7 +53,7 @@ public class ConnectivityManagerPermissionTest extends AndroidTestCase {
      * <p>Tests Permission:
      *   {@link android.Manifest.permission#CHANGE_NETWORK_STATE}.
      */
-    @SmallTest
+    @Test
     public void testRequestRouteToHost() {
         try {
             mConnectivityManager.requestRouteToHost(ConnectivityManager.TYPE_MOBILE, 1);

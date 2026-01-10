@@ -37,6 +37,7 @@ android_test {
         "android.test.base.stubs.test",
         "android.test.mock.stubs.test",
         "android.test.runner.stubs.test",
+        "framework-mediaprovider.impl",
     ],
     data: [
         ":CtsProviderGalleryTestApp",
@@ -44,6 +45,7 @@ android_test {
         ":CtsMediaProviderTestAppB",
         ":CtsMediaProviderTestAppC",
     ],
+    platform_apis: true,
     java_resources: [
         ":CtsMediaProviderTestAppA",
         ":CtsMediaProviderTestAppB",

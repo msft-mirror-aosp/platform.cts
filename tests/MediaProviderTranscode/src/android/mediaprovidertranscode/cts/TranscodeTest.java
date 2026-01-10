@@ -34,6 +34,8 @@ import static org.junit.Assert.assertTrue;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.media.ApplicationMediaCapabilities;
+import android.media.MediaCodecInfo;
+import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.net.Uri;
 import android.os.Bundle;
@@ -43,6 +45,7 @@ import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
+import android.provider.DeviceConfig;
 import android.provider.MediaStore;
 
 import androidx.test.InstrumentationRegistry;
@@ -95,10 +98,11 @@ public class TranscodeTest {
             "android.mediaprovidertranscode.cts.testapp.sm", 1, false,
             "CtsTranscodeTestAppSupportsSlowMotion.apk");
 
+    private static final boolean TRANSCODING_ENABLED = isTranscodingEnabled();
+
     @Before
     public void setUp() throws Exception {
-        Assume.assumeTrue("Media transcoding disabled",
-                SystemProperties.getBoolean("sys.fuse.transcode_enabled", false));
+        Assume.assumeTrue("Media transcoding disabled", TRANSCODING_ENABLED);
         // TODO(b/182846329): GSI doesn't support transcoding yet
         Assume.assumeFalse(
                 "Using GSI", SystemProperties.get("ro.build.product").contains("generic"));
@@ -115,6 +119,39 @@ public class TranscodeTest {
         TranscodeTestUtils.grantPermission(getContext().getPackageName(),
                 Manifest.permission.READ_EXTERNAL_STORAGE);
         TranscodeTestUtils.pollForPermission(Manifest.permission.READ_EXTERNAL_STORAGE, true);
+    }
+
+    private static boolean isTranscodingEnabled() {
+        boolean transcodeEnabled = false;
+        boolean defaultValue = isHevcDecoderSupported();
+        if (SystemProperties.getBoolean("persist.sys.fuse.transcode_user_control", false)) {
+            transcodeEnabled =
+                    SystemProperties.getBoolean("persist.sys.fuse.transcode_enabled", defaultValue);
+        } else {
+            transcodeEnabled =
+                    DeviceConfig.getBoolean(
+                            DeviceConfig.NAMESPACE_STORAGE_NATIVE_BOOT,
+                            "transcode_enabled",
+                            defaultValue);
+        }
+        return transcodeEnabled;
+    }
+
+    private static boolean isHevcDecoderSupported() {
+        MediaCodecList codecList = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
+        MediaCodecInfo[] codecInfos = codecList.getCodecInfos();
+        for (MediaCodecInfo codecInfo : codecInfos) {
+            if (codecInfo.isEncoder()) {
+                continue;
+            }
+            String[] supportedTypes = codecInfo.getSupportedTypes();
+            for (String type : supportedTypes) {
+                if (type.equalsIgnoreCase(MediaFormat.MIMETYPE_VIDEO_HEVC)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @After

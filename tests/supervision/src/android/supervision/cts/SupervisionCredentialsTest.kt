@@ -35,10 +35,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
-@RequireFlagsEnabled(
-    Flags.FLAG_SUPERVISION_MANAGER_APIS,
-    android.multiuser.Flags.FLAG_ALLOW_SUPERVISING_PROFILE,
-)
+@RequireFlagsEnabled(Flags.FLAG_SUPERVISION_MANAGER_APIS)
 @RequireNotAutomotive(reason = "Supervision credentials are only supported on phones and tablets")
 @RequireNotWatch(reason = "Supervision credentials are only supported on phones and tablets")
 @RequireNotTv(reason = "Supervision credentials are only supported on phones and tablets")

@@ -23,7 +23,6 @@ import android.os.UserHandle
 import android.os.UserManager
 import android.os.UserManager.USER_TYPE_FULL_SECONDARY
 import android.util.Log
-import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.xts.root.annotations.RequireRootInstrumentation
@@ -37,9 +36,6 @@ class SupervisingProfileTest : BaseSupervisionTest() {
     @Test
     @EnsureHasPermission(MANAGE_USERS, CREATE_USERS, QUERY_USERS)
     @RequireRootInstrumentation(reason = "Use of MANAGE_USERS")
-    @RequireFlagsEnabled(
-        android.multiuser.Flags.FLAG_ALLOW_SUPERVISING_PROFILE,
-    )
     fun canCreateSupervisingProfile_atMaxSecondaryUsers() {
         withMaxSwitchableUsers { withSupervisingUser {} }
     }

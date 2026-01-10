@@ -30,6 +30,7 @@ import android.content.res.AssetFileDescriptor;
 import android.media.ApplicationMediaCapabilities;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
+import android.media.MediaCodecList;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.MediaTranscodingManager;
@@ -43,6 +44,7 @@ import android.os.ParcelFileDescriptor;
 import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresDevice;
+import android.provider.DeviceConfig;
 import android.util.Log;
 
 import androidx.test.filters.SdkSuppress;
@@ -102,6 +104,7 @@ public class MediaTranscodingManagerTest {
 
     // Threshold for the psnr to make sure the transcoded video is valid.
     private static final int PSNR_THRESHOLD = 20;
+    private static final boolean TRANSCODING_ENABLED = isTranscodingEnabled();
 
     // Copy the resource to cache.
     private Uri resourceToUri(int resId, String name) throws IOException {
@@ -162,8 +165,7 @@ public class MediaTranscodingManagerTest {
     public void setUp() throws Exception {
         Log.d(TAG, "setUp");
 
-        Assume.assumeTrue("Media transcoding disabled",
-                SystemProperties.getBoolean("sys.fuse.transcode_enabled", false));
+        Assume.assumeTrue("Media transcoding disabled", TRANSCODING_ENABLED);
 
         PackageManager pm =
                 InstrumentationRegistry.getInstrumentation().getTargetContext().getPackageManager();
@@ -192,6 +194,39 @@ public class MediaTranscodingManagerTest {
 
         // Setup destination file.
         mDestinationUri = generateNewUri(mContext, "transcoded.mp4");
+    }
+
+    private static boolean isTranscodingEnabled() {
+        boolean transcodeEnabled = false;
+        boolean defaultValue = isHevcDecoderSupported();
+        if (SystemProperties.getBoolean("persist.sys.fuse.transcode_user_control", false)) {
+            transcodeEnabled =
+                    SystemProperties.getBoolean("persist.sys.fuse.transcode_enabled", defaultValue);
+        } else {
+            transcodeEnabled =
+                    DeviceConfig.getBoolean(
+                            DeviceConfig.NAMESPACE_STORAGE_NATIVE_BOOT,
+                            "transcode_enabled",
+                            defaultValue);
+        }
+        return transcodeEnabled;
+    }
+
+    private static boolean isHevcDecoderSupported() {
+        MediaCodecList codecList = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
+        MediaCodecInfo[] codecInfos = codecList.getCodecInfos();
+        for (MediaCodecInfo codecInfo : codecInfos) {
+            if (codecInfo.isEncoder()) {
+                continue;
+            }
+            String[] supportedTypes = codecInfo.getSupportedTypes();
+            for (String type : supportedTypes) {
+                if (type.equalsIgnoreCase(MediaFormat.MIMETYPE_VIDEO_HEVC)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @After

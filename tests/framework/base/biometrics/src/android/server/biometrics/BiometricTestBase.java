@@ -16,6 +16,9 @@
 
 package android.server.biometrics;
 
+import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
+import static android.Manifest.permission.MANAGE_DEFAULT_APPLICATIONS;
+import static android.Manifest.permission.MANAGE_ROLE_HOLDERS;
 import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
 import static android.content.pm.PackageManager.FEATURE_WATCH;
 import static android.os.PowerManager.FULL_WAKE_LOCK;
@@ -42,8 +45,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import android.app.Instrumentation;
+import android.app.role.RoleManager;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.hardware.biometrics.BiometricManager;
@@ -71,6 +78,7 @@ import android.server.wm.UiDeviceUtils;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerStateHelper;
 import android.util.Log;
+import android.util.Pair;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -80,6 +88,7 @@ import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 
+import com.android.bedstead.nene.TestApis;
 import com.android.server.biometrics.nano.BiometricServiceStateProto;
 
 import org.junit.After;
@@ -89,8 +98,14 @@ import org.mockito.ArgumentCaptor;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
 /**
@@ -137,6 +152,7 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
     protected static final String KEY_ENTER = "key_enter";
     protected static final String WEAR_KEYPAD_ID_PREFIX = "key_";
     protected static final int VIEW_WAIT_TIME_MS = 10000;
+
     @NonNull
     protected final Instrumentation mInstrumentation = getInstrumentation();
     @NonNull
@@ -146,6 +162,7 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
     @NonNull
     protected final BiometricManager mBiometricManager =
             mContext.getSystemService(BiometricManager.class);
+
     @NonNull protected List<SensorProperties> mSensorProperties;
     @Nullable private PowerManager.WakeLock mWakeLock;
     @NonNull protected UiDevice mDevice;
@@ -247,6 +264,7 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
         Log.d(TAG, "Waiting & clicking button: " + id);
         button.click();
     }
+
     protected void findAndPressButton(String id) {
         final UiObject2 button = findView(id);
         assertNotNull(button);
@@ -742,5 +760,135 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
     private UiObject2 findViewByTextInternal(String text) {
         Log.d(TAG, "Finding view by text internally: " + text);
         return mDevice.findObject(By.text(text));
+    }
+
+    /**
+     * Sets a specific package as the holder of a given Android role.
+     *
+     * @param packageName The package name to be assigned the role.
+     * @param roleName The name of the role (e.g., {@link RoleManager#ROLE_WALLET}).
+     * @return {@code true} if the role was successfully assigned, {@code false} if the RoleManager
+     *     is unavailable, the role is not supported, or the assignment failed.
+     */
+    protected boolean setRoleHolder(String packageName, String roleName) throws Exception {
+        try (var ignored =
+                TestApis.permissions()
+                        .withPermission(
+                                MANAGE_DEFAULT_APPLICATIONS,
+                                INTERACT_ACROSS_USERS_FULL,
+                                MANAGE_ROLE_HOLDERS)) {
+            RoleManager roleManager = mContext.getSystemService(RoleManager.class);
+            if (roleManager == null || !roleManager.isRoleAvailable(roleName)) {
+                return false;
+            }
+            roleManager.setRoleFallbackEnabled(roleName, false);
+            CountDownLatch latch = new CountDownLatch(1);
+            AtomicReference<Boolean> result = new AtomicReference<>(false);
+            roleManager.setDefaultApplication(
+                    roleName,
+                    packageName,
+                    0, // flags
+                    mContext.getMainExecutor(),
+                    success -> {
+                        result.set(success);
+                        latch.countDown();
+                    });
+            latch.await(2, TimeUnit.SECONDS);
+            return result.get();
+        }
+    }
+
+    /**
+     * Clears all holders of a specific Android role.
+     *
+     * @param roleName The name of the role (e.g., {@link RoleManager#ROLE_WALLET}).
+     * @return {@code true} if the role was successfully cleared, {@code false} otherwise.
+     */
+    protected boolean clearRoleHolders(String roleName) throws Exception {
+        try (var ignored =
+                TestApis.permissions()
+                        .withPermission(
+                                MANAGE_DEFAULT_APPLICATIONS,
+                                INTERACT_ACROSS_USERS_FULL,
+                                MANAGE_ROLE_HOLDERS)) {
+            RoleManager roleManager = mContext.getSystemService(RoleManager.class);
+            if (roleManager == null || !roleManager.isRoleAvailable(roleName)) {
+                return false;
+            }
+            CountDownLatch latch = new CountDownLatch(1);
+            AtomicReference<Boolean> result = new AtomicReference<>(false);
+            roleManager.clearRoleHoldersAsUser(
+                    roleName,
+                    0, // flags
+                    Process.myUserHandle(),
+                    mContext.getMainExecutor(),
+                    success -> {
+                        result.set(success);
+                        latch.countDown();
+                    });
+            latch.await(2, TimeUnit.SECONDS);
+            return result.get();
+        }
+    }
+
+    /**
+     * Retrieves the security strengths of all on-device sensors, grouped by their biometric
+     * modality.
+     *
+     * @param shouldObscure If true, the raw sensor strength values are converted to public-facing
+     *     values.
+     * @return A map where:
+     *     <ul>
+     *       <li><b>Key:</b> The biometric modality bitmask (defined in {@link
+     *           BiometricManager.Authenticators}).
+     *       <li><b>Value:</b> A list of integers representing the security strengths of all sensors
+     *           belonging to that modality.
+     *     </ul>
+     */
+    protected Map<Integer, List<Integer>> getExpectedSensorStrengths(boolean shouldObscure)
+            throws Exception {
+        final Map<Integer, List<Integer>> sensorStrengths = new HashMap<>();
+        for (SensorProperties prop : mSensorProperties) {
+            final SensorStates.SensorState sensorState =
+                    getCurrentState().mSensorStates.sensorStates.get(prop.getSensorId());
+            final int modality = Utils.convertSensorModalityToPublicType(sensorState.getModality());
+            int strength = sensorState.getCurrentStrength();
+            if (shouldObscure) {
+                strength = Utils.convertSensorStrengthForPublicApi(strength);
+            }
+            sensorStrengths.computeIfAbsent(modality, k -> new ArrayList<>()).add(strength);
+        }
+        return sensorStrengths;
+    }
+
+    /**
+     * Registers a {@link BroadcastReceiver} for a specific action and pipes received {@link
+     * Intent}s into a thread-safe {@link LinkedBlockingQueue}.
+     *
+     * <p>Note: This method registers the receiver with {@link Context#RECEIVER_EXPORTED}. You must
+     * eventually unregister the returned {@link BroadcastReceiver} via {@link
+     * Context#unregisterReceiver} to prevent memory leaks and unexpected behavior.
+     *
+     * @param action The broadcast intent action to filter for.
+     * @return A {@link Pair} where:
+     *     <ul>
+     *       <li>{@link Pair#first} is the {@link LinkedBlockingQueue} that will be populated with
+     *           {@link Intent} objects whenever the broadcast is received.
+     *       <li>{@link Pair#second} is the {@link BroadcastReceiver} instance created for this
+     *           registration.
+     *     </ul>
+     */
+    protected Pair<LinkedBlockingQueue<Intent>, BroadcastReceiver> registerBroadcastReceiver(
+            String action) {
+        final LinkedBlockingQueue<Intent> queue = new LinkedBlockingQueue<>();
+        BroadcastReceiver receiver =
+                new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        queue.offer(intent);
+                    }
+                };
+        mContext.registerReceiver(receiver, new IntentFilter(action), Context.RECEIVER_EXPORTED);
+        return new Pair<>(queue, receiver);
     }
 }

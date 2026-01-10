@@ -22,7 +22,8 @@ import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.AppFunctionRegistration
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
-import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.Companion.TEST_HELPER_DYNAMIC_SCHEMA_PKG
+import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.CtsApp
+import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.DynamicSchemaHelperApp
 import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunctionAndWait
 import android.app.appfunctions.cts.AppFunctionUtils.getAllRuntimeMetadataPackages
 import android.app.appfunctions.cts.AppFunctionUtils.getAllStaticMetadataPackages
@@ -39,7 +40,6 @@ import android.app.appfunctions.testutils.DisabledByDefault
 import android.app.appfunctions.testutils.DisabledByDefault.Companion.DISABLED_BY_DEFAULT_FUNCTION_ID
 import android.app.appfunctions.testutils.FunctionType
 import android.app.appfunctions.testutils.GetUris.Companion.GET_URIS_FUNCTION_ID
-import android.app.appfunctions.testutils.GetUris.Companion.URIS_FOLDER_PATH
 import android.app.appfunctions.testutils.ITestAppFunctionRegistrationService
 import android.app.appfunctions.testutils.LongRunning
 import android.app.appfunctions.testutils.LongRunning.Companion.LONG_RUNNING_FUNCTION_ID
@@ -58,7 +58,6 @@ import android.content.ComponentName
 import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.CancellationSignal
 import android.os.IBinder
 import android.os.OutcomeReceiver
@@ -171,10 +170,7 @@ class AppFunctionRegistrationTest {
     @Throws(Exception::class)
     fun register_serviceLevelFunction_reportsInvalidArgumentError() {
         assertFailsWith<IllegalArgumentException>() {
-            registerAppFunction(
-                AppFunctionMetadataTestHelper.FunctionName.SAME_PACKAGE_ADD.functionId,
-                ConcatStrings(),
-            )
+            registerAppFunction(CtsApp.FunctionNames.ADD.functionId, ConcatStrings())
         }
     }
 
@@ -215,11 +211,7 @@ class AppFunctionRegistrationTest {
     @Throws(Exception::class)
     fun register_rightAfterIndexedFunctionsDuringUpdate_success() = doBlocking {
         try {
-            installPackage(
-                TEST_APP_A_PATH_NO_FUNCTIONS,
-                TEST_APP_A_PKG,
-                checkIndexation = false,
-            )
+            installPackage(TEST_APP_A_PATH_NO_FUNCTIONS, TEST_APP_A_PKG, checkIndexation = false)
             installPackage(
                 TEST_APP_A_PATH_DYNAMIC_ONLY_FUNCTIONS,
                 TEST_APP_A_PKG,
@@ -355,11 +347,12 @@ class AppFunctionRegistrationTest {
     @IncludeRunOnSecondaryUser
     @Throws(Exception::class)
     fun execute_functionFromDifferentPackage_success() = doBlocking {
-        val service = bindToRegistrationService(TEST_HELPER_DYNAMIC_SCHEMA_PKG)
+        val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
         service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())
 
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-            val request = createConcatStringsRequest(targetPackage = TEST_HELPER_DYNAMIC_SCHEMA_PKG)
+            val request =
+                createConcatStringsRequest(targetPackage = DynamicSchemaHelperApp.PACKAGE_NAME)
 
             val response = executeAppFunctionAndWait(manager, request)
             assertConcatStringsResponseCorrect(response)
@@ -371,12 +364,12 @@ class AppFunctionRegistrationTest {
     @IncludeRunOnSecondaryUser
     @Throws(Exception::class)
     fun execute_outputsInvalidArgumentException_propagatesToCaller() = doBlocking {
-        val service = bindToRegistrationService(TEST_HELPER_DYNAMIC_SCHEMA_PKG)
+        val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
         service.registerAppFunction(FunctionType.OUTPUT_INVALID_ARGUMENT_EXCEPTION.toString())
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val request =
                 ExecuteAppFunctionRequest.Builder(
-                        TEST_HELPER_DYNAMIC_SCHEMA_PKG,
+                        DynamicSchemaHelperApp.PACKAGE_NAME,
                         OUTPUT_INVALID_ARGUMENT_EXCEPTION_FUNCTION_ID,
                     )
                     .build()
@@ -395,11 +388,11 @@ class AppFunctionRegistrationTest {
     @IncludeRunOnSecondaryUser
     @Throws(Exception::class)
     fun execute_throwsUnknownException_reportsAppError() = doBlocking {
-        val service = bindToRegistrationService(TEST_HELPER_DYNAMIC_SCHEMA_PKG)
+        val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
         service.registerAppFunction(FunctionType.THROW_UNKNOWN_EXCEPTION.toString())
         val request =
             ExecuteAppFunctionRequest.Builder(
-                    TEST_HELPER_DYNAMIC_SCHEMA_PKG,
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
                     THROW_UNKNOWN_EXCEPTION_FUNCTION_ID,
                 )
                 .build()
@@ -420,11 +413,11 @@ class AppFunctionRegistrationTest {
     @IncludeRunOnSecondaryUser
     @Throws(Exception::class)
     fun execute_throwsInvalidArgument_convertsToAppFunctionException() = doBlocking {
-        val service = bindToRegistrationService(TEST_HELPER_DYNAMIC_SCHEMA_PKG)
+        val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
         service.registerAppFunction(FunctionType.THROW_INVALID_ARGUMENT_EXCEPTION.toString())
         val request =
             ExecuteAppFunctionRequest.Builder(
-                    TEST_HELPER_DYNAMIC_SCHEMA_PKG,
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
                     THROW_INVALID_ARGUMENT_FUNCTION_ID,
                 )
                 .build()
@@ -603,13 +596,14 @@ class AppFunctionRegistrationTest {
     @IncludeRunOnSecondaryUser
     @Throws(Exception::class)
     fun register_registrationProcessDied_functionIsDisabled() = doBlocking {
-        val service = bindToRegistrationService(TEST_HELPER_DYNAMIC_SCHEMA_PKG)
+        val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
         service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())
 
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-            val request = createConcatStringsRequest(targetPackage = TEST_HELPER_DYNAMIC_SCHEMA_PKG)
+            val request =
+                createConcatStringsRequest(targetPackage = DynamicSchemaHelperApp.PACKAGE_NAME)
             serviceTestRule.unbindService()
-            ShellCommand.builder("am force-stop $TEST_HELPER_DYNAMIC_SCHEMA_PKG").execute()
+            ShellCommand.builder("am force-stop $DynamicSchemaHelperApp.PACKAGE_NAME").execute()
 
             val response = executeAppFunctionAndWait(manager, request)
 
@@ -624,13 +618,13 @@ class AppFunctionRegistrationTest {
     @IncludeRunOnSecondaryUser
     @Throws(Exception::class)
     fun execute_toolProviderProcessStopped_reportsAppError() = doBlocking {
-        val service = bindToRegistrationService(TEST_HELPER_DYNAMIC_SCHEMA_PKG)
+        val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
         service.registerAppFunction(FunctionType.STOP_PROCESS.toString())
 
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val request =
                 ExecuteAppFunctionRequest.Builder(
-                        TEST_HELPER_DYNAMIC_SCHEMA_PKG,
+                        DynamicSchemaHelperApp.PACKAGE_NAME,
                         STOP_PROCESS_FUNCTION_ID,
                     )
                     .build()
@@ -647,14 +641,14 @@ class AppFunctionRegistrationTest {
     @IncludeRunOnPrimaryUser
     @IncludeRunOnSecondaryUser
     fun execute_getUrisFunction_hasAccessToReturnedUris() = doBlocking {
-        val service = bindToRegistrationService(TEST_HELPER_DYNAMIC_SCHEMA_PKG)
+        val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
         service.registerAppFunction(FunctionType.GET_URIS.toString())
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val request =
                 ExecuteAppFunctionRequest.Builder(
-                    TEST_HELPER_DYNAMIC_SCHEMA_PKG,
-                    GET_URIS_FUNCTION_ID,
-                )
+                        DynamicSchemaHelperApp.PACKAGE_NAME,
+                        GET_URIS_FUNCTION_ID,
+                    )
                     .build()
 
             val response = executeAppFunctionAndWait(manager, request)

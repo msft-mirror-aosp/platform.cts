@@ -130,12 +130,10 @@ class AppFunctionMetadataTest {
 
         retryAssert {
             val afStaticMetadataGd = queryAppFunctionStaticMetadata(packageName, functionId)
-            val afRuntimeMetadataGd =
-                queryAppFunctionRuntimeMetadata(packageName).single { it ->
-                    it.id == String.format("%s/%s", packageName, functionId)
-                }
             val appFunctionMetadata =
-                AppFunctionMetadata.create(afStaticMetadataGd, afRuntimeMetadataGd, packageMetadata)
+                AppFunctionMetadata.Builder(afStaticMetadataGd, packageMetadata)
+                    .setEnabled(false)
+                    .build()
 
             assertThat(appFunctionMetadata.name).isEqualTo(AppFunctionName(packageName, functionId))
             assertThat(appFunctionMetadata.schemaMetadata)
@@ -161,32 +159,24 @@ class AppFunctionMetadataTest {
                     GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
                         .setPropertyString("exampleProperty", "exampleValue")
                         .build()
-                )
+                ),
             )
 
         retryAssert {
             val afStaticMetadataGd = queryAppFunctionStaticMetadata(packageName, functionId)
-            val afRuntimeMetadataGd =
-                queryAppFunctionRuntimeMetadata(packageName).single {
-                    it.id == String.format("%s/%s", packageName, functionId)
-                }
             val originalMetadata =
-                AppFunctionMetadata.create(
-                    afStaticMetadataGd,
-                    afRuntimeMetadataGd,
-                    packageMetadata
-                )
+                AppFunctionMetadata.Builder(afStaticMetadataGd, packageMetadata)
+                    .setEnabled(true)
+                    .build()
 
             val restoredMetadata = parcelAndUnparcelAppFunctionMetadata(originalMetadata)
 
             assertThat(restoredMetadata.name).isEqualTo(originalMetadata.name)
-            assertThat(restoredMetadata.schemaMetadata)
-                .isEqualTo(originalMetadata.schemaMetadata)
+            assertThat(restoredMetadata.schemaMetadata).isEqualTo(originalMetadata.schemaMetadata)
             assertThat(restoredMetadata.isEnabled).isEqualTo(originalMetadata.isEnabled)
             assertThat(restoredMetadata.metadataDocument)
                 .isEqualTo(originalMetadata.metadataDocument)
-            assertThat(restoredMetadata.packageMetadata)
-                .isEqualTo(originalMetadata.packageMetadata)
+            assertThat(restoredMetadata.packageMetadata).isEqualTo(originalMetadata.packageMetadata)
         }
     }
 
@@ -197,24 +187,14 @@ class AppFunctionMetadataTest {
     fun parcelAndUnparcelMetadata_nullSchema() = doBlocking {
         val packageName = "android.app.appfunctions.cts"
         val functionId = "noSchema"
-        val packageMetadata =
-            AppFunctionPackageMetadata.create(
-                packageName,
-                listOf()
-            )
+        val packageMetadata = AppFunctionPackageMetadata.create(packageName, listOf())
 
         retryAssert {
             val afStaticMetadataGd = queryAppFunctionStaticMetadata(packageName, functionId)
-            val afRuntimeMetadataGd =
-                queryAppFunctionRuntimeMetadata(packageName).single {
-                    it.id == String.format("%s/%s", packageName, functionId)
-                }
             val originalMetadata =
-                AppFunctionMetadata.create(
-                    afStaticMetadataGd,
-                    afRuntimeMetadataGd,
-                    packageMetadata
-                )
+                AppFunctionMetadata.Builder(afStaticMetadataGd, packageMetadata)
+                    .setEnabled(true)
+                    .build()
             val restoredMetadata = parcelAndUnparcelAppFunctionMetadata(originalMetadata)
 
             assertThat(restoredMetadata.name).isEqualTo(originalMetadata.name)
@@ -222,8 +202,7 @@ class AppFunctionMetadataTest {
             assertThat(restoredMetadata.isEnabled).isEqualTo(originalMetadata.isEnabled)
             assertThat(restoredMetadata.metadataDocument)
                 .isEqualTo(originalMetadata.metadataDocument)
-            assertThat(restoredMetadata.packageMetadata)
-                .isEqualTo(originalMetadata.packageMetadata)
+            assertThat(restoredMetadata.packageMetadata).isEqualTo(originalMetadata.packageMetadata)
         }
     }
 
@@ -374,7 +353,7 @@ class AppFunctionMetadataTest {
 
     private fun queryAppFunctionStaticMetadata(
         packageName: String,
-        functionId: String
+        functionId: String,
     ): GenericDocument {
         val globalSearchSession: GlobalSearchSessionShim =
             GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync().get()
@@ -386,7 +365,7 @@ class AppFunctionMetadataTest {
                     PROPERTY_PACKAGE_NAME,
                     packageName,
                     PROPERTY_FUNCTION_ID,
-                    functionId
+                    functionId,
                 ),
                 SearchSpec.Builder()
                     .addFilterNamespaces(
@@ -450,8 +429,9 @@ class AppFunctionMetadataTest {
 
     private fun doBlocking(block: suspend CoroutineScope.() -> Unit) = runBlocking(block = block)
 
-    private fun parcelAndUnparcelAppFunctionMetadata(original: AppFunctionMetadata):
-            AppFunctionMetadata {
+    private fun parcelAndUnparcelAppFunctionMetadata(
+        original: AppFunctionMetadata
+    ): AppFunctionMetadata {
         val parcel = Parcel.obtain()
         try {
             original.writeToParcel(parcel, 0)

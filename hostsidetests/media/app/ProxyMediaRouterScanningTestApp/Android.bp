@@ -20,7 +20,6 @@ android_test_helper_app {
     name: "CtsMediaRouterHostSideTestProxyScanningTestApp",
     defaults: ["cts_defaults"],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     srcs: [

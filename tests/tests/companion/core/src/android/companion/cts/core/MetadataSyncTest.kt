@@ -33,13 +33,11 @@ import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
 import kotlin.time.Duration.Companion.seconds
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Rule
 import org.junit.Test
@@ -48,7 +46,7 @@ import org.junit.runner.RunWith
 @AppModeFull(reason = "CompanionDeviceManager APIs are not available to the instant apps.")
 @RunWith(AndroidJUnit4::class)
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DATA_SYNC)
-class MetadataSyncTest : CoreTestBase()  {
+class MetadataSyncTest : CoreTestBase() {
     @get:Rule
     val checkFlagsRule: CheckFlagsRule? = DeviceFlagsValueProvider.createCheckFlagsRule()
 
@@ -87,7 +85,7 @@ class MetadataSyncTest : CoreTestBase()  {
             val metadata = PersistableBundle.readFromStream(ByteArrayInputStream(it.payload))
             assertNotNull("Metadata must not be null", metadata)
 
-            val featureMetadata = metadata?.getPersistableBundle(FEATURE_TEST)
+            val featureMetadata = metadata.getPersistableBundle(FEATURE_TEST)
             assertNotNull("Feature-specific metadata not found", featureMetadata)
 
             val modeSyncVersion = featureMetadata?.getInt("version")
@@ -142,7 +140,7 @@ class MetadataSyncTest : CoreTestBase()  {
             })
         }
         input.feedMessage(CdmMessage.forMetadataUpdate(metadata))
-        output.getNextMessage(MESSAGE_RESPONSE_SUCCESS) ?: {
+        output.getNextMessage(CdmMessage.MESSAGE_RESPONSE_SUCCESS) ?: {
             fail("Metadata update was not acknowledged")
         }
 
@@ -166,13 +164,16 @@ class MetadataSyncTest : CoreTestBase()  {
         val output = MessageDemuxer {}
         cdm.attachSystemDataTransport(associationId, input, output)
         output.getNextMessage(MESSAGE_REQUEST_METADATA_UPDATE)?.also {
-            input.feedMessage(MESSAGE_RESPONSE_SUCCESS, byteArrayOf())
+            input.feedMessage(it.success())
             sleepFor(1.seconds) // Wait for the timestamp to be updated
         }
 
         // Assert local metadata distribution timestamp is updated
-        assertNotEquals("Outbound metadata timestamp was not updated",
-                0L, cdm.myAssociations[0].metadataSentTimestamp)
+        assertNotEquals(
+                "Outbound metadata timestamp was not updated",
+                0L,
+                cdm.myAssociations[0].metadataSentTimestamp
+        )
     }
 
     @Test
@@ -189,11 +190,14 @@ class MetadataSyncTest : CoreTestBase()  {
             putPersistableBundle(FEATURE_TEST, PersistableBundle())
         }
         input.feedMessage(CdmMessage.forMetadataUpdate(metadata))
-        output.getNextMessage(MESSAGE_RESPONSE_SUCCESS)
+        output.getNextMessage(CdmMessage.MESSAGE_RESPONSE_SUCCESS)
 
         // Assert remote metadata timestamp is updated
-        assertNotEquals("Inbound metadata timestamp was not updated",
-                0L, cdm.myAssociations[0].metadataTimestamp)
+        assertNotEquals(
+                "Inbound metadata timestamp was not updated",
+                0L,
+                cdm.myAssociations[0].metadataTimestamp
+        )
     }
 
     @Test
@@ -219,7 +223,7 @@ class MetadataSyncTest : CoreTestBase()  {
             val metadata = PersistableBundle.readFromStream(ByteArrayInputStream(it.payload))
             assertNotNull("Metadata must not be null", metadata)
 
-            val featureMetadata = metadata?.getPersistableBundle(FEATURE_TEST)
+            val featureMetadata = metadata.getPersistableBundle(FEATURE_TEST)
             assertNotNull("Feature-specific metadata not found", featureMetadata)
 
             val modeSyncEnabled = featureMetadata?.getBoolean("mode_sync_enabled")
@@ -230,7 +234,8 @@ class MetadataSyncTest : CoreTestBase()  {
     }
 
     @Test
-    fun test_getLocalMetadata_mergesWithGlobal() = withShellPermissionIdentity(MANAGE_COMPANION_DEVICES) {
+    fun test_getLocalMetadata_mergesWithGlobal() =
+            withShellPermissionIdentity(MANAGE_COMPANION_DEVICES) {
         // Set global local metadata
         cdm.setLocalMetadata(UserHandle.USER_ALL, FEATURE_TEST, PersistableBundle().apply {
             putBoolean("enabled", true)
@@ -250,14 +255,14 @@ class MetadataSyncTest : CoreTestBase()  {
         assertEquals("override", metadata?.getString("tag"))
 
         // Assert global metadata is not modified
-        val globalMetadata = cdm.getLocalMetadata(UserHandle.USER_ALL).getPersistableBundle(FEATURE_TEST)
+        val globalMetadata = cdm.getLocalMetadata(UserHandle.USER_ALL)
+                .getPersistableBundle(FEATURE_TEST)
         assertEquals(true, globalMetadata?.getBoolean("enabled"))
         assertEquals(1, globalMetadata?.getInt("version"))
         assertNull(globalMetadata?.getString("tag"))
     }
 
     companion object {
-        const val MESSAGE_RESPONSE_SUCCESS = 0x33838567 // CDM ACK response
         const val FEATURE_TEST = "test_feature"
     }
 }

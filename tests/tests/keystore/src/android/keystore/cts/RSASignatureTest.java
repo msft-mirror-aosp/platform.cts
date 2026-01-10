@@ -143,7 +143,7 @@ public class RSASignatureTest {
                         getContext(),
                         R.raw.rsa_key5_512_pkcs8,
                         R.raw.rsa_key5_512_cert,
-                        TestUtils.getMinimalWorkingImportParametersForSigningingWith(algorithm))
+                        TestUtils.getMinimalWorkingImportParametersForSigningWith(algorithm))
                         .getKeystoreBackedKeyPair();
                 assertEquals(512, ((RSAKey) keyPair.getPrivate()).getModulus().bitLength());
                 assertEquals(512, ((RSAKey) keyPair.getPublic()).getModulus().bitLength());
@@ -168,7 +168,7 @@ public class RSASignatureTest {
     private Collection<ImportedKey> importKatKeyPairs(String signatureAlgorithm)
             throws Exception {
         KeyProtection params =
-                TestUtils.getMinimalWorkingImportParametersForSigningingWith(signatureAlgorithm);
+                TestUtils.getMinimalWorkingImportParametersForSigningWith(signatureAlgorithm);
         return importKatKeyPairs(getContext(), params);
     }
 
