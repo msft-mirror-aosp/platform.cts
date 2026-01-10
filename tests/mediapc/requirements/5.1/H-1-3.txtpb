@@ -197,7 +197,11 @@ specs {
   key: 37
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
-    specification: "same"
+    specification:
+      "MUST advertise the maximum number of hardware video encoder sessions "
+      "that can be run concurrently in any codec combination via the "
+      "`CodecCapabilities.getMaxSupportedInstances()` and "
+      "`VideoCapabilities.getSupportedPerformancePoints()` methods."
     required_values {
       key: "concurrent_sessions"
       value {

@@ -17,12 +17,15 @@
 #define LOG_NDEBUG 0
 #define LOG_TAG "AAudioTest"
 
-#include <atomic>
-#include <tuple>
-
 #include <aaudio/AAudio.h>
 #include <android/log.h>
 #include <gtest/gtest.h>
+
+#include <atomic>
+#include <chrono>
+#include <future>
+#include <set>
+#include <tuple>
 
 #include "test_aaudio.h"
 #include "utils.h"
@@ -118,6 +121,7 @@ class AAudioStreamCallbackTest : public AAudioCtsBase,
         std::atomic<int32_t> framesProcessed;
         std::atomic<bool> returnStop;
         int32_t callbackCount;
+        std::promise<std::set<int32_t>> routedDevicesIds;
 
         AAudioCallbackTestData() {
             reset(0);
@@ -131,6 +135,7 @@ class AAudioStreamCallbackTest : public AAudioCtsBase,
             framesProcessed = 0;
             returnStop = false;
             callbackCount = 0;
+            routedDevicesIds = std::promise<std::set<int32_t>>();
         }
         void updateFrameCount(int32_t numFrames) {
             if (numFrames != expectedFramesPerCallback) {
@@ -171,6 +176,19 @@ class AAudioStreamCallbackTest : public AAudioCtsBase,
             }
             return false;
         }
+        void setRoutedDeviceIds(const int32_t* deviceIds, int32_t numDevices) {
+            std::set<int32_t> devices(deviceIds, deviceIds + numDevices);
+            routedDevicesIds.set_value(std::move(devices));
+        }
+        std::set<int32_t> waitAndGetRoutedDeviceIds() {
+            constexpr int kWaitTimeMs = 50;
+            auto routedDeviceIdsFromCallback = routedDevicesIds.get_future();
+            routedDeviceIdsFromCallback.wait_for(std::chrono::milliseconds(kWaitTimeMs));
+            if (routedDeviceIdsFromCallback.valid()) {
+                return routedDeviceIdsFromCallback.get();
+            }
+            return {};
+        }
     };
 
     void createAndVerifyHonoringMMap() {
@@ -197,9 +215,26 @@ class AAudioStreamCallbackTest : public AAudioCtsBase,
 
     static void MyErrorCallbackProc(AAudioStream *stream, void *userData, aaudio_result_t error);
 
+    static void MyRoutingChangedCallbackProc(AAudioStream* /*stream*/, void* userData,
+                                             const int32_t* deviceIds, int32_t numDeviceIds) {
+        AAudioCallbackTestData* myData = static_cast<AAudioCallbackTestData*>(userData);
+        myData->setRoutedDeviceIds(deviceIds, numDeviceIds);
+    }
+
     AAudioStreamBuilder* builder() const { return mHelper->builder(); }
     AAudioStream* stream() const { return mHelper->stream(); }
     const StreamBuilderHelper::Parameters& actual() const { return mHelper->actual(); }
+
+    void verifyRoutedDeviceIdsFromCallback() {
+        const auto routedDeviceIdsFromCb = mCbData->waitAndGetRoutedDeviceIds();
+        int32_t numRoutedDevice = 32;
+        int32_t routedDevicesIds[numRoutedDevice];
+        ASSERT_EQ(AAUDIO_OK,
+                  AAudioStream_getDeviceIds(stream(), routedDevicesIds, &numRoutedDevice));
+        std::set<int32_t> routedDeviceIdsFromApi(routedDevicesIds,
+                                                 routedDevicesIds + numRoutedDevice);
+        ASSERT_EQ(routedDeviceIdsFromCb, routedDeviceIdsFromApi);
+    }
 
     std::unique_ptr<T> mHelper;
     bool mSetupSuccessful = false;
@@ -212,7 +247,6 @@ void AAudioStreamCallbackTest<T>::MyErrorCallbackProc(
     AAudioCallbackTestData *myData = static_cast<AAudioCallbackTestData*>(userData);
     myData->callbackError = error;
 }
-
 
 class AAudioInputStreamCallbackTest : public AAudioStreamCallbackTest<InputStreamBuilderHelper> {
   protected:
@@ -265,6 +299,8 @@ void AAudioInputStreamCallbackTest::SetUp() {
 
     mCbData.reset(new AAudioCallbackTestData());
     AAudioStreamBuilder_setErrorCallback(builder(), &MyErrorCallbackProc, mCbData.get());
+    AAudioStreamBuilder_setRoutingChangedCallback(builder(), &MyRoutingChangedCallbackProc,
+                                                  mCbData.get());
     const int32_t framesPerDataCallback = std::get<PARAM_FRAMES_PER_CB>(GetParam());
     if (framesPerDataCallback != AAUDIO_UNSPECIFIED) {
         AAudioStreamBuilder_setFramesPerDataCallback(builder(), framesPerDataCallback);
@@ -303,6 +339,8 @@ void AAudioInputStreamCallbackTest::runTest() {
         ASSERT_GE(mCbData->framesProcessed, framesToProcess);
 
         ASSERT_LE(AAudioStream_getXRunCount(stream()), kMaxXRunCount);
+
+        ASSERT_NO_FATAL_FAILURE(verifyRoutedDeviceIdsFromCallback());
 
         switch (loopIndex % kNumMethods) {
             case 0:
@@ -484,6 +522,8 @@ void AAudioOutputStreamCallbackTest::SetUp() {
 
     mCbData.reset(new AAudioCallbackTestData());
     AAudioStreamBuilder_setErrorCallback(builder(), &MyErrorCallbackProc, mCbData.get());
+    AAudioStreamBuilder_setRoutingChangedCallback(builder(), &MyRoutingChangedCallbackProc,
+                                                  mCbData.get());
     const int32_t framesPerDataCallback = std::get<PARAM_FRAMES_PER_CB>(GetParam());
     if (framesPerDataCallback != AAUDIO_UNSPECIFIED) {
         AAudioStreamBuilder_setFramesPerDataCallback(builder(), framesPerDataCallback);
@@ -527,6 +567,8 @@ void AAudioOutputStreamCallbackTest::runTest() {
         ASSERT_GE(mCbData->framesProcessed, framesToProcess);
 
         ASSERT_LE(AAudioStream_getXRunCount(stream()), kMaxXRunCount);
+
+        ASSERT_NO_FATAL_FAILURE(verifyRoutedDeviceIdsFromCallback());
 
         switch (loopIndex % kNumMethods) {
             case 0:

@@ -6305,8 +6305,6 @@ public class ImsServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(
-            Flags.FLAG_CLEAR_CACHED_IMS_PHONE_NUMBER_WHEN_DEVICE_LOST_IMS_REGISTRATION)
     public void testClearImsPhoneNumberWithImsAssociatedUri() throws Exception {
         if (!ImsUtils.shouldTestImsService()) {
             return;

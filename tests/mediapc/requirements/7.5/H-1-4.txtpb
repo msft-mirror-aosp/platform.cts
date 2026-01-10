@@ -84,7 +84,9 @@ specs {
   key: 34
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_14
-    specification: "same"
+    specification:
+      "MUST support `CameraMetadata.SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME` for "
+      "both primary cameras."
     required_values {
       key: "front_primary_camera_timestamp_source"
       value {
@@ -103,7 +105,9 @@ specs {
   key: 35
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
-    specification: "same"
+    specification:
+      "MUST support `CameraMetadata.SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME` for "
+      "both primary cameras."
     required_values {
       key: "front_primary_camera_timestamp_source"
       value {
@@ -122,7 +126,9 @@ specs {
   key: 37
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
-    specification: "same"
+    specification:
+      "MUST support `CameraMetadata.SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME` for "
+      "both primary cameras."
     required_values {
       key: "front_primary_camera_timestamp_source"
       value {

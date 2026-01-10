@@ -475,8 +475,8 @@ public class Utils {
      * @param sensorStrength The raw sensor strength representation (e.g., {@link
      *     BiometricManager.Authenticators#BIOMETRIC_STRONG}).
      * @return The equivalent public constant, or {@link
-     *     BiometricManager.Authenticators#AUTHENTICATOR_STRENGTH_UNKNOWN} if the raw value is
-     *     unknown or should be obscured.
+     *     BiometricManager.Authenticators#LESS_THAN_STRONG} if the raw value is unknown or should
+     *     be obscured.
      */
     public static int convertSensorStrengthForPublicApi(int sensorStrength) {
         return switch (sensorStrength) {
@@ -484,7 +484,7 @@ public class Utils {
             case BiometricManager.Authenticators.BIOMETRIC_STRONG ->
                     BiometricManager.Authenticators.BIOMETRIC_STRONG;
             // Unknown or obscured sensor strengths.
-            default -> BiometricManager.Authenticators.AUTHENTICATOR_STRENGTH_UNKNOWN;
+            default -> BiometricManager.Authenticators.LESS_THAN_STRONG;
         };
     }
 }

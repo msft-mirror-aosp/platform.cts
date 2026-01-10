@@ -75,7 +75,9 @@ specs {
   key: 37
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
-    specification: "same"
+    specification:
+      "MUST support AV1 encoder which can encode up to 480p resolution at "
+      "30fps and 1Mbps."
     required_values {
       key: "av1_encoder_bitrate"
       value {

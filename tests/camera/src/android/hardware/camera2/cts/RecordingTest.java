@@ -817,7 +817,8 @@ public class RecordingTest extends Camera2SurfaceViewTestCase {
                     recordingRequest = recordingRequestBuilder.build();
 
                     // Enable video recording
-                    session.setRepeatingRequest(recordingRequest, recordingCallback, mHandler);
+                    int seqId = session.setRepeatingRequest(recordingRequest, recordingCallback,
+                            mHandler);
                     mediaCodec.start();
 
                     SystemClock.sleep(RECORDING_DURATION_MS);
@@ -825,6 +826,8 @@ public class RecordingTest extends Camera2SurfaceViewTestCase {
                     session.stopRepeating();
 
                     mediaCodec.signalEndOfInputStream();
+                    recordingCallback.getCaptureSequenceLastFrameNumber(seqId,
+                            CAPTURE_RESULT_TIMEOUT_MS);
                     mediaCodec.stop();
                     muxer.stop();
 

@@ -43,7 +43,10 @@ specs {
   key: 35
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_15
-    specification: "same"
+    specification:
+      "MUST support face detection capability "
+      "(STATISTICS_FACE_DETECT_MODE_SIMPLE or "
+      "STATISTICS_FACE_DETECT_MODE_FULL) for the primary cameras."
     required_values {
       key: "front_camera_face_detection_supported"
       value {
@@ -62,7 +65,10 @@ specs {
   key: 37
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
-    specification: "same"
+    specification:
+      "MUST support face detection capability "
+      "(STATISTICS_FACE_DETECT_MODE_SIMPLE or "
+      "STATISTICS_FACE_DETECT_MODE_FULL) for the primary cameras."
     required_values {
       key: "front_camera_face_detection_supported"
       value {

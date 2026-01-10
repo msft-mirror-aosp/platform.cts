@@ -37,6 +37,8 @@ specs {
   key: 37
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
-    specification: "same"
+    specification:
+      "Are Strongly Recommended to support support the `Feature_HdrEditing` "
+      "feature for all hardware AV1 and HEVC encoders present on the device."
   }
 }

@@ -34,13 +34,14 @@ import com.android.systemui.motioncues.nano.MotionCueState;
 import com.android.systemui.motioncues.nano.MotionBubble;
 
 import android.Manifest;
+import android.app.Flags;
 import android.app.StatusBarManager;
 import android.app.UiAutomation;
 import android.app.motioncues.MotionCuesData;
 import android.app.motioncues.MotionCuesSettings;
 import android.content.ComponentName;
 import android.content.Context;
-import android.app.Flags;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.AppModeFull;
@@ -48,7 +49,6 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
-
 
 import androidx.annotation.RequiresPermission;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -58,6 +58,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -70,7 +71,7 @@ import java.util.Random;
 @AppModeFull
 public class MotionCuesTest {
     private static final String TAG = "MotionCuesTest";
-    private static final int TIMEOUT_MS = 10000;
+    private static final int TIMEOUT_MS = 15000;
     private static final MotionCuesSettings DEFAULT_MOTION_CUES_SETTINGS = new MotionCuesSettings.Builder()
             .setHorizontalSpacingDp(60)
             .setVerticalSpacingDp(140)
@@ -88,9 +89,20 @@ public class MotionCuesTest {
     @ClassRule @Rule
     public static final DeviceState sDeviceState = new DeviceState();
 
+    private boolean isAutomotive() {
+        return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+    }
+
+    private boolean isWatch() {
+        return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
+    }
+
     @Before
     public void setUp() {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
+        // Motion cues is not supported on automotive or watch.
+        Assume.assumeFalse(isAutomotive() || isWatch());
+
         mStatusBarManager = mContext.getSystemService(StatusBarManager.class);
         assertThat(mStatusBarManager).isNotNull();
 

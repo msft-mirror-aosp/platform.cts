@@ -51,7 +51,9 @@ specs {
   key: 37
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_17
-    specification: "same"
+    specification:
+      "MUST have at least 1 hardware image decoder supporting AVIF Baseline "
+      "Profile."
     required_values {
       key: "avif_image_decoder_boolean"
       value {

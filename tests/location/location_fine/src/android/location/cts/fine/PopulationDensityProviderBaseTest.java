@@ -30,9 +30,6 @@ import android.location.provider.IS2CellIdsCallback;
 import android.location.provider.IS2LevelCallback;
 import android.location.provider.PopulationDensityProviderBase;
 import android.os.OutcomeReceiver;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -40,12 +37,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
-@RequiresFlagsEnabled(Flags.FLAG_POPULATION_DENSITY_PROVIDER)
 public class PopulationDensityProviderBaseTest {
 
     private static final String TAG = "PopulationDensityProviderBaseTest";
@@ -54,9 +49,6 @@ public class PopulationDensityProviderBaseTest {
     private static final int TEST_NUM_ADDITIONAL_CELLS = 1;
     private static final long[] TEST_S2_CELL_IDS_RESULT = {1000, 1001};
     private static final Integer TEST_S2_LEVEL_RESULT = 12;
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Context mContext;
 
