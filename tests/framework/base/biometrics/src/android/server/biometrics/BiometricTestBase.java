@@ -149,6 +149,7 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
     protected static final String DESCRIPTION_VIEW = "description";
 
     protected static final String VIEW_ID_PASSWORD_FIELD = "lockPassword";
+    protected static final String VIEW_ID_PIN_PAD = "cred_pin_pad";
     protected static final String KEY_ENTER = "key_enter";
     protected static final String WEAR_KEYPAD_ID_PREFIX = "key_";
     protected static final int VIEW_WAIT_TIME_MS = 10000;
@@ -391,20 +392,10 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
         Thread.sleep(1000);
 
         final UiObject2 passwordField = findView(VIEW_ID_PASSWORD_FIELD);
-        // Watch hides the password field, showing a custom view instead
-        if (isWatch() && passwordField == null) {
-            Log.d(TAG, "Entering pin digits");
-            for (int i = 0; i < LOCK_CREDENTIAL.length(); i++) {
-                char c = LOCK_CREDENTIAL.charAt(i);
-                final String keyId = WEAR_KEYPAD_ID_PREFIX + c;
-                final UiObject2 key = findView(keyId);
-                assertNotNull("Could not find PIN pad key: " + keyId, key);
-                key.click();
-            }
-        } else {
+        final UiObject2 credentialPinPad = findView(VIEW_ID_PIN_PAD);
+        if (passwordField != null) {
             // Enter credential. AuthSession done, authentication callback received
             Log.d(TAG, "Focusing, entering, submitting credential");
-            assertNotNull("Could not find password field", passwordField);
             passwordField.click();
             passwordField.setText(LOCK_CREDENTIAL);
             if (isCar()) {
@@ -413,11 +404,44 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
             } else {
                 mDevice.pressEnter();
             }
+        } else if (isWatch()) {
+            // Watch hides the password field, showing a custom view instead
+            Log.d(TAG, "Entering pin digits");
+            for (int i = 0; i < LOCK_CREDENTIAL.length(); i++) {
+                char c = LOCK_CREDENTIAL.charAt(i);
+                final String keyId = WEAR_KEYPAD_ID_PREFIX + c;
+                final UiObject2 key = findView(keyId);
+                assertNotNull("Could not find PIN pad key: " + keyId, key);
+                key.click();
+            }
+        } else if (credentialPinPad != null) {
+            Log.d(TAG, "Injecting credential keys");
+            injectCredentialKeys();
+        } else {
+            fail("Could not find password field or credential pin pad");
         }
         waitForState(STATE_AUTH_IDLE);
 
         state = getCurrentState();
         assertEquals(state.toString(), STATE_AUTH_IDLE, state.mState);
+    }
+
+    private void injectCredentialKeys() {
+        for (int i = 0; i < LOCK_CREDENTIAL.length(); i++) {
+            char c = LOCK_CREDENTIAL.charAt(i);
+            int keyCode = Character.getNumericValue(c) + android.view.KeyEvent.KEYCODE_0;
+
+            if (keyCode < android.view.KeyEvent.KEYCODE_0
+                    || keyCode > android.view.KeyEvent.KEYCODE_9) {
+                throw new IllegalStateException(
+                        "Attempting to inject non-numeric PIN via keyboard: " + c);
+            }
+
+            mDevice.pressKeyCode(keyCode);
+        }
+
+        mDevice.waitForIdle();
+        mDevice.pressEnter();
     }
 
     protected void cancelAuthentication(@NonNull CancellationSignal cancel) throws Exception {
