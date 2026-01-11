@@ -22,6 +22,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.os.Binder;
 import android.os.IBinder;
@@ -52,6 +53,7 @@ public class WindowManager_LayoutParamsTest {
     private static final float VERTICAL_MARGIN = 3.0f;
     private static final float ALPHA = 1.0f;
     private static final float DIM_AMOUNT = 1.0f;
+    private static final long DIM_COLOR = Color.pack(0xFF00FF00);
     private static final float HORIZONTAL_WEIGHT = 1.0f;
     private static final float MARGIN = 1.0f;
     private static final float VERTICAL_WEIGHT = 1.0f;
@@ -133,6 +135,7 @@ public class WindowManager_LayoutParamsTest {
         params.alpha = ALPHA - 0.5f;
         params.windowAnimations = WINDOW_ANIMATIONS;
         params.dimAmount = DIM_AMOUNT - 1.0f;
+        params.dimColor = DIM_COLOR;
         mLayoutParams = new WindowManager.LayoutParams();
         assertEquals(WindowManager.LayoutParams.TITLE_CHANGED
                 | WindowManager.LayoutParams.ALPHA_CHANGED
@@ -143,6 +146,9 @@ public class WindowManager_LayoutParamsTest {
         assertEquals(params.getTitle(), mLayoutParams.getTitle());
         assertEquals(params.alpha, mLayoutParams.alpha, 0.0f);
         assertEquals(params.dimAmount, mLayoutParams.dimAmount, 0.0f);
+        if (com.android.window.flags.Flags.supportCustomDimColor()) {
+            assertEquals(params.dimColor, mLayoutParams.dimColor);
+        }
 
         params = new WindowManager.LayoutParams();
         params.gravity = Gravity.TOP;
@@ -237,6 +243,7 @@ public class WindowManager_LayoutParamsTest {
         mLayoutParams.packageName = PACKAGE_NAME;
         mLayoutParams.setTitle(PARAMS_TITLE);
         mLayoutParams.setWindowContextToken(binder);
+        mLayoutParams.dimColor = DIM_COLOR;
         Parcel parcel = Parcel.obtain();
 
         mLayoutParams.writeToParcel(parcel, 0);
@@ -245,6 +252,9 @@ public class WindowManager_LayoutParamsTest {
             WindowManager.LayoutParams.CREATOR.createFromParcel(parcel);
         assertEquals(0, out.copyFrom(mLayoutParams));
         assertEquals(binder, out.getWindowContextToken());
+        if (com.android.window.flags.Flags.supportCustomDimColor()) {
+            assertEquals(mLayoutParams.dimColor, out.dimColor);
+        }
 
         try {
             mLayoutParams.writeToParcel(null, 0);
