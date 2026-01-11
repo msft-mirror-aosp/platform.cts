@@ -57,7 +57,7 @@ class VirtualKeyboardSlowKeysTest : VirtualDeviceSettingTestCase() {
 
         mRule.runWithTemporaryPermission({
             existingSlowKeysThreshold = InputSettings.getAccessibilitySlowKeysThreshold(context)
-            InputSettings.setAccessibilitySlowKeysThreshold(context, Slow_KEYS_THRESHOLD)
+            InputSettings.setAccessibilitySlowKeysThreshold(context, SLOW_KEYS_THRESHOLD)
         }, Manifest.permission.INTERACT_ACROSS_USERS_FULL)
     }
 
@@ -75,7 +75,7 @@ class VirtualKeyboardSlowKeysTest : VirtualDeviceSettingTestCase() {
     }
 
     @Test
-    fun virtualKeyboard_shouldNotApplyBounceKeysFilter() {
+    fun virtualKeyboard_shouldNotApplySlowKeysFilter() {
         virtualKeyboard.sendKeyEvent(
             VirtualKeyEvent.Builder()
                 .setKeyCode(KeyEvent.KEYCODE_A)
@@ -104,6 +104,6 @@ class VirtualKeyboardSlowKeysTest : VirtualDeviceSettingTestCase() {
 
     companion object {
         private const val DEVICE_NAME = "CtsVirtualKeyboardTestDevice"
-        private const val Slow_KEYS_THRESHOLD = 5000
+        private const val SLOW_KEYS_THRESHOLD = 5000
     }
 }
