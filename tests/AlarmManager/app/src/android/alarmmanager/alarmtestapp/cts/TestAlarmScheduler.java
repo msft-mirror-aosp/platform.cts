@@ -34,7 +34,11 @@ public class TestAlarmScheduler extends BroadcastReceiver {
     private static final String PACKAGE_NAME = "android.alarmmanager.alarmtestapp.cts";
 
     public static final String ACTION_SET_ALARM = PACKAGE_NAME + ".action.SET_ALARM";
+
+    public static final String ACTION_SET_EXACT_AND_AWI_CALLBACK_ALARM =
+            PACKAGE_NAME + ".action.SET_EXACT_AND_AWI_CALLBACK_ALARM";
     public static final String EXTRA_TRIGGER_TIME = PACKAGE_NAME + ".extra.TRIGGER_TIME";
+    public static final String EXTRA_ALARM_ID = PACKAGE_NAME + ".extra.ALARM_ID";
     public static final String EXTRA_REPEAT_INTERVAL = PACKAGE_NAME + ".extra.REPEAT_INTERVAL";
     public static final String EXTRA_WINDOW_LENGTH = PACKAGE_NAME + ".extra.WINDOW_LENGTH";
     public static final String EXTRA_TYPE = PACKAGE_NAME + ".extra.TYPE";
@@ -49,8 +53,8 @@ public class TestAlarmScheduler extends BroadcastReceiver {
         final Intent receiverIntent = new Intent(context, TestAlarmReceiver.class);
         receiverIntent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
         final long id = SystemClock.elapsedRealtime();
-        receiverIntent.putExtra(TestAlarmReceiver.EXTRA_ID, id);
         receiverIntent.putExtra(EXTRA_TEST_FGS, intent.getBooleanExtra(EXTRA_TEST_FGS, false));
+        receiverIntent.putExtra(EXTRA_ALARM_ID, intent.getLongExtra(EXTRA_ALARM_ID, -1L));
         final PendingIntent alarmClockSender = PendingIntent.getBroadcast(context, 0,
                 receiverIntent, PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         final PendingIntent alarmSender = PendingIntent.getBroadcast(context, 1, receiverIntent,
@@ -86,6 +90,22 @@ public class TestAlarmScheduler extends BroadcastReceiver {
                 }
                 setResult(Activity.RESULT_OK, null, null);
                 break;
+            case ACTION_SET_EXACT_AND_AWI_CALLBACK_ALARM:
+                if (!intent.hasExtra(EXTRA_ALARM_ID) || !intent.hasExtra(EXTRA_TRIGGER_TIME)) {
+                    Log.e(TAG, "Alarm id or trigger time not supplied");
+                    break;
+                }
+
+                final long trigger = intent.getLongExtra(EXTRA_TRIGGER_TIME, 0);
+                final long alarmId = intent.getLongExtra(EXTRA_ALARM_ID, -1L);
+                am.setExactAndAllowWhileIdle(
+                        AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                        trigger,
+                        "test-tag",
+                        Runnable::run,
+                        TestAlarmReceiver.createListener(alarmId, context));
+                setResult(Activity.RESULT_OK, null, null);
+                break;
             case ACTION_CANCEL_ALL_ALARMS:
                 Log.d(TAG, "Cancelling all alarms");
                 am.cancel(alarmClockSender);
@@ -94,7 +114,8 @@ public class TestAlarmScheduler extends BroadcastReceiver {
                 break;
             default:
                 Log.e(TAG, "Unspecified action " + intent.getAction());
-                setResult(Activity.RESULT_CANCELED, null, null);
+                // Activity.RESULT_CANCELED is the default result set by the caller for this
+                // ordered broadcast
                 break;
         }
     }
