@@ -30,6 +30,7 @@
 
     <uses-permission android:name="android.permission.TV_IMPLICIT_ENTER_PIP" />
     <uses-permission android:name="android.permission.REPOSITION_SELF_WINDOWS" />
+    <uses-permission android:name="android.permission.USE_PINNED_WINDOWING_LAYER" />
 
     <queries>
         <package android:name="android.server.wm.cts" />
@@ -180,6 +181,10 @@
              android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout"
              android:exported="true"
              android:taskAffinity="nobody.but.PipActivity"/>
+        <activity android:name=".PinnedWindowingLayerActivity"
+             android:resizeableActivity="true"
+             android:taskAffinity="nobody.but.PinnedWindowingLayerActivity"
+             android:exported="true"/>
         <activity android:name=".FreeformActivity"
              android:resizeableActivity="true"
              android:taskAffinity="nobody.but.FreeformActivity"

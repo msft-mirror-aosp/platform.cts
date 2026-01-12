@@ -266,6 +266,7 @@ filegroup {
     name: "CtsWindowManagerDeviceOther-src",
     srcs: [
         "src/**/other/*.java",
+        "src/**/other/*.kt",
         "src/**/server/wm/*.java",
     ],
 }
