@@ -37,7 +37,7 @@ import android.Manifest;
 import android.app.Flags;
 import android.app.StatusBarManager;
 import android.app.UiAutomation;
-import android.app.motioncues.MotionCuesData;
+import android.app.motioncues.MotionCuesVisualStyle;
 import android.app.motioncues.MotionCuesSettings;
 import android.content.ComponentName;
 import android.content.Context;
@@ -191,14 +191,14 @@ public class MotionCuesTest {
     }
 
     @Test
-    @ApiTest(apis = {"android.app.motioncues.MotionCuesClient#updateMotionCuesData"})
+    @ApiTest(apis = {"android.app.motioncues.MotionCuesClient#updateMotionCuesVisualStyle"})
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_MOTION_CUES)
     @EnsureHasPermission(Manifest.permission.DRAW_MOTION_CUES)
     public void testDataUpdate_updatesColorAndShape() throws Exception {
         TestMotionCuesService service = startSessionAndAwait();
 
-        MotionCuesData data = new MotionCuesData(Color.BLUE, R.drawable.ic_test);
-        service.updateMotionCuesData(data);
+        MotionCuesVisualStyle data = new MotionCuesVisualStyle(Color.BLUE, R.drawable.ic_test);
+        service.updateMotionCuesVisualStyle(data);
 
         MotionCueState state = getMotionCuesState();
         assertThat(state.paintColor).isEqualTo(String.format("#%08X", Color.BLUE));
@@ -206,15 +206,15 @@ public class MotionCuesTest {
     }
 
     @Test
-    @ApiTest(apis = {"android.app.motioncues.MotionCuesClient#updateMotionCuesData"})
+    @ApiTest(apis = {"android.app.motioncues.MotionCuesClient#updateMotionCuesVisualStyle"})
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_MOTION_CUES)
     @EnsureHasPermission(Manifest.permission.DRAW_MOTION_CUES)
     public void testDataUpdate_withInvalidShape_fallsBackToDefault() throws Exception {
         TestMotionCuesService service = startSessionAndAwait();
         assertThat(getMotionCuesState().bubbleShapeResId).isEqualTo(0);
 
-        MotionCuesData invalidDrawableData = new MotionCuesData(Color.RED, -1);
-        service.updateMotionCuesData(invalidDrawableData);
+        MotionCuesVisualStyle invalidDrawableData = new MotionCuesVisualStyle(Color.RED, -1);
+        service.updateMotionCuesVisualStyle(invalidDrawableData);
 
         assertThat(getMotionCuesState().bubbleShapeResId).isEqualTo(0);
     }
@@ -284,7 +284,7 @@ public class MotionCuesTest {
     @EnsureHasPermission(Manifest.permission.DRAW_MOTION_CUES)
     public void testSession_withContinuousPositionUpdates() throws Exception {
         TestMotionCuesService service = startSessionAndAwait();
-        service.updateMotionCuesData(new MotionCuesData(Color.GREEN, R.drawable.ic_test));
+        service.updateMotionCuesVisualStyle(new MotionCuesVisualStyle(Color.GREEN, R.drawable.ic_test));
 
         long startTime = System.currentTimeMillis();
         long duration = 10000;
