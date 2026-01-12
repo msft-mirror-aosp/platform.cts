@@ -21,9 +21,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.testng.Assert.assertThrows;
 
 import android.os.Process;
 import android.security.Flags;
@@ -74,7 +74,7 @@ public class KeyGenParameterSpecTest {
         } catch (IllegalStateException expected) {}
         if (Flags.mgf1DigestSetterV2()) {
             assertFalse(spec.isMgf1DigestsSpecified());
-            assertThrows(IllegalStateException.class, spec::getMgf1Digests);
+            assertThrows(IllegalStateException.class, () -> spec.getMgf1Digests());
         }
         MoreAsserts.assertEmpty(Arrays.asList(spec.getEncryptionPaddings()));
         assertEquals(-1, spec.getKeySize());
@@ -215,30 +215,48 @@ public class KeyGenParameterSpecTest {
     @Test
     public void testSetUserAuthenticationValidityDurationSecondsValidityCheck() {
         KeyGenParameterSpec.Builder builder = new KeyGenParameterSpec.Builder("alias", 0);
-        try {
-            builder.setUserAuthenticationValidityDurationSeconds(-2);
-            fail();
-        } catch (IllegalArgumentException expected) {}
 
-        try {
-            builder.setUserAuthenticationValidityDurationSeconds(-100);
-            fail();
-        } catch (IllegalArgumentException expected) {}
+        int[] validTimeouts = new int[] {-1, 0, 1, 100, Integer.MAX_VALUE};
+        for (int timeout : validTimeouts) {
+            builder.setUserAuthenticationValidityDurationSeconds(timeout);
+        }
 
-        try {
-            builder.setUserAuthenticationValidityDurationSeconds(Integer.MIN_VALUE);
-            fail();
-        } catch (IllegalArgumentException expected) {}
+        int[] invalidTimeouts = new int[] {-2, -100, Integer.MIN_VALUE};
+        for (int timeout : invalidTimeouts) {
+            assertThrows(
+                    "Expected IllegalArgumentException for timeout=" + timeout,
+                    IllegalArgumentException.class,
+                    () -> builder.setUserAuthenticationValidityDurationSeconds(timeout));
+        }
+    }
 
-        builder.setUserAuthenticationValidityDurationSeconds(-1);
-        builder.setUserAuthenticationValidityDurationSeconds(0);
-        builder.setUserAuthenticationValidityDurationSeconds(1);
-        builder.setUserAuthenticationValidityDurationSeconds(Integer.MAX_VALUE);
+    @Test
+    public void testSetUserAuthenticationParametersValidityCheck() {
+        KeyGenParameterSpec.Builder builder = new KeyGenParameterSpec.Builder("alias", 0);
+        int[] authTypes =
+                new int[] {
+                    KeyProperties.AUTH_DEVICE_CREDENTIAL, KeyProperties.AUTH_BIOMETRIC_STRONG
+                };
 
-        try {
-            builder.setUserAuthenticationValidityDurationSeconds(-2);
-            fail();
-        } catch (IllegalArgumentException expected) {}
+        int[] validTimeouts = new int[] {0, 1, 100, Integer.MAX_VALUE};
+        for (int timeout : validTimeouts) {
+            for (int authType : authTypes) {
+                builder.setUserAuthenticationParameters(timeout, authType);
+            }
+        }
+
+        int[] invalidTimeouts = new int[] {-1, -100, Integer.MIN_VALUE};
+        for (int timeout : invalidTimeouts) {
+            for (int authType : authTypes) {
+                assertThrows(
+                        "Expected IllegalArgumentException for timeout="
+                                + timeout
+                                + " and authType="
+                                + authType,
+                        IllegalArgumentException.class,
+                        () -> builder.setUserAuthenticationParameters(timeout, authType));
+            }
+        }
     }
 
     @Test
@@ -420,7 +438,7 @@ public class KeyGenParameterSpecTest {
                 new KeyGenParameterSpec.Builder("alias", KeyProperties.PURPOSE_SIGN)
                         .setUid(Process.WIFI_UID)
                         .build());
-        assertThrows(ProviderException.class, keyGenerator::generateKey);
+        assertThrows(ProviderException.class, () -> keyGenerator.generateKey());
     }
 
     @Test
