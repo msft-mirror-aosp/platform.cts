@@ -67,6 +67,7 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule;
+import com.android.compatibility.common.util.FeatureUtil;
 
 import org.junit.After;
 import org.junit.Before;
@@ -136,6 +137,8 @@ public class WearableSensingManagerIsolatedServiceTest {
         assumeFalse(isWatch(mContext));  // WearableSensingManagerService is not supported on WearOS
         // For an unknown reason, the CDM onTransportsChanged listener is not called on TV builds
         assumeFalse(isTelevision(mContext));
+        // This test requires CompanionDeviceManager which can be disabled on some devices
+        assumeTrue(FeatureUtil.hasSystemFeature(PackageManager.FEATURE_COMPANION_DEVICE_SETUP));
         // Sleep for 2 seconds to avoid flakiness until b/326256152 is fixed. The bug can cause
         // CDM to reuse the same associationId previously assigned to WearableSensingSecureChannel
         // after the previous association is disassociation. If async clean up of the CDM
