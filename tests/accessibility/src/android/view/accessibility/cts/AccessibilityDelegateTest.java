@@ -24,10 +24,14 @@ import static org.mockito.Mockito.verify;
 
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
 import android.os.Bundle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.View;
 import android.view.View.AccessibilityDelegate;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.accessibility.Flags;
 import android.widget.LinearLayout;
 
 import androidx.lifecycle.Lifecycle;
@@ -60,6 +64,9 @@ public class AccessibilityDelegateTest {
             .outerRule(mActivityRule)
             // Inner rule capture failure and dump data before finishing activity
             .around(mDumpOnFailureRule);
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -120,5 +127,20 @@ public class AccessibilityDelegateTest {
                 AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, bundle);
         verify(mockDelegate).performAccessibilityAction(
                 mParentView, AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, bundle);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_FIX_ADD_EXTRA_DATA_TO_ACCESSIBILITY_NODE_INFO_DELEGATION)
+    public void testAddExtraDataToAccessibilityNodeInfo_delegatesToAccessibilityDelegate() {
+        AccessibilityDelegate mockDelegate = mock(AccessibilityDelegate.class);
+        mParentView.setAccessibilityDelegate(mockDelegate);
+        final AccessibilityNodeInfo info = AccessibilityNodeInfo.obtain();
+        final String extraDataKey = "TEST_KEY";
+        final Bundle bundle = new Bundle();
+
+        mParentView.addExtraDataToAccessibilityNodeInfo(info, extraDataKey, bundle);
+
+        verify(mockDelegate)
+                .addExtraDataToAccessibilityNodeInfo(mParentView, info, extraDataKey, bundle);
     }
 }
