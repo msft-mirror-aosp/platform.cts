@@ -39,7 +39,6 @@ import android.os.CancellationSignal;
 import android.os.Handler;
 import android.os.Looper;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.server.biometrics.util.Utils;
 import android.util.Log;
 
@@ -47,7 +46,6 @@ import androidx.test.uiautomator.UiObject2;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
-import com.android.systemui.Flags;
 
 import org.junit.Test;
 
@@ -70,30 +68,33 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
     /**
      * Tests that the values specified through the public APIs are shown on the BiometricPrompt UI
      * when biometric auth is requested. When {@link BiometricPrompt.Builder#setContentView} is
-     * called with {@link PromptContentViewWithMoreOptionsButton}, {@link
-     * BiometricPrompt.Builder#setDescription} is overridden.
+     * called with {@link PromptContentViewWithMoreOptionsButton},
+     * {@link BiometricPrompt.Builder#setDescription} is overridden.
      *
-     * <p>Upon successful authentication, checks that the result is {@link
-     * BiometricPrompt#AUTHENTICATION_RESULT_TYPE_BIOMETRIC}
+     * Upon successful authentication, checks that the result is
+     * {@link BiometricPrompt#AUTHENTICATION_RESULT_TYPE_BIOMETRIC}
      */
     @CddTest(requirements = {"7.3.10/C-4-2", "7.3.10/C-4-4"})
-    @ApiTest(
-            apis = {
-                "android.hardware.biometrics." + "BiometricManager#canAuthenticate",
-                "android.hardware.biometrics." + "BiometricPrompt.Builder#setTitle",
-                "android.hardware.biometrics." + "BiometricPrompt.Builder#setSubtitle",
-                "android.hardware.biometrics." + "BiometricPrompt.Builder#setContentView",
-                "android.hardware.biometrics." + "BiometricPrompt.Builder#setNegativeButton",
-                "android.hardware.biometrics." + "BiometricPrompt#authenticate",
-                "android.hardware.biometrics."
-                        + "BiometricPrompt.AuthenticationCallback#onAuthenticationSucceeded",
-                "android.hardware.biometrics."
-                        + "PromptContentViewWithMoreOptionsButton.Builder#setDescription",
-                "android.hardware.biometrics.PromptContentViewWithMoreOptionsButton"
-                        + ".Builder#setMoreOptionsButtonListener"
-            })
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricManager#canAuthenticate",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setTitle",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setSubtitle",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setContentView",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setNegativeButton",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.AuthenticationCallback#onAuthenticationSucceeded",
+            "android.hardware.biometrics."
+                    + "PromptContentViewWithMoreOptionsButton.Builder#setDescription",
+            "android.hardware.biometrics.PromptContentViewWithMoreOptionsButton"
+                    + ".Builder#setMoreOptionsButtonListener"})
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_LARGE_SCREEN_BP)
     public void testMoreOptionsButton_simpleBiometricAuth() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
         for (SensorProperties props : mSensorProperties) {
@@ -288,13 +289,10 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
      * the only available authenticator, the values specified through the public APIs are shown on
      * the BiometricPrompt UI, and "More Options" button click should dismiss the UI.
      */
-    @ApiTest(
-            apis = {
-                "android.hardware.biometrics.PromptContentViewWithMoreOptionsButton"
-                        + ".Builder#setMoreOptionsButtonListener"
-            })
+    @ApiTest(apis = {
+            "android.hardware.biometrics.PromptContentViewWithMoreOptionsButton"
+                    + ".Builder#setMoreOptionsButtonListener"})
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_LARGE_SCREEN_BP)
     public void testMoreOptionsButton_onlyCredential_clickButton() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
         //TODO: b/331955301 need to update Auto biometric UI
@@ -431,19 +429,20 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
      * available authenticator, two-step ui (biometric prompt without sensor and credential view)
      * should show.
      *
-     * <p>Upon successful authentication, checks that the result is {@link
-     * BiometricPrompt#AUTHENTICATION_RESULT_TYPE_BIOMETRIC}
+     * Upon successful authentication, checks that the result is
+     * {@link BiometricPrompt#AUTHENTICATION_RESULT_TYPE_BIOMETRIC}
      */
     @CddTest(requirements = {"7.3.10/C-4-2", "7.3.10/C-4-4"})
-    @ApiTest(
-            apis = {
-                "android.hardware.biometrics." + "BiometricManager#canAuthenticate",
-                "android.hardware.biometrics." + "BiometricPrompt#authenticate",
-                "android.hardware.biometrics." + "BiometricPrompt.Builder#setContentView",
-                "android.hardware.biometrics." + "PromptVerticalListContentView.Builder#addListItem"
-            })
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricManager#canAuthenticate",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setContentView",
+            "android.hardware.biometrics."
+                    + "PromptVerticalListContentView.Builder#addListItem"})
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_LARGE_SCREEN_BP)
     public void testVerticalList_onlyCredential_showsTwoStep() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
         // TODO: b/331955301 need to update Auto biometric UI
@@ -472,9 +471,9 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                     true /* shouldShow */, randomTitle, randomSubtitle, randomDescription,
                     new PromptVerticalListContentView.Builder().build());
 
-            final UiObject2 actualTitle = waitForView(TITLE_VIEW);
-            final UiObject2 actualSubtitle = waitForView(SUBTITLE_VIEW);
-            final UiObject2 actualDescription = waitForView(DESCRIPTION_VIEW);
+            final UiObject2 actualTitle = findView(TITLE_VIEW);
+            final UiObject2 actualSubtitle = findView(SUBTITLE_VIEW);
+            final UiObject2 actualDescription = findView(DESCRIPTION_VIEW);
             assertThat(actualTitle.getText()).isEqualTo(randomTitle);
             assertWithMessage(
                     "Subtitle should be hidden on credential view with vertical list content set"
