@@ -1444,7 +1444,7 @@ public class DisplayTest extends TestBase {
             var mapping = display.getFrameRateVelocityMapping();
             for (var point : mapping) {
                 assertTrue(point.getFramePerSecond() > 0);
-                assertTrue(point.getPixelPerSecond() >= 0);
+                assertTrue(point.getDpPerSecond() >= 0);
             }
         }
     }
