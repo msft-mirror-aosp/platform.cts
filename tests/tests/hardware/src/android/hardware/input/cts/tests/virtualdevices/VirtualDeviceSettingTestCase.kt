@@ -15,17 +15,30 @@
  */
 package android.hardware.input.cts.tests.virtualdevices
 
+import com.android.compatibility.common.util.UserHelper
+import org.junit.Assume.assumeFalse
+
 abstract class VirtualDeviceSettingTestCase : VirtualDeviceTestCase() {
 
     abstract fun onSetupSetting()
     abstract fun onTearDownSetting()
 
     override fun onSetUp() {
+        // TODO(b/454344508): Consider making InputManagerService multi-user aware.
+        assumeFalse(
+            "InputManagerService only tracks the current user. " +
+                    "Settings changes for non-current users are not applied, causing tests " +
+                    "to fail for visible background users.",
+            UserHelper().isVisibleBackgroundUser()
+        )
         onSetupSetting()
         super.onSetUp()
     }
 
     override fun onTearDown() {
+        if (UserHelper().isVisibleBackgroundUser()) {
+            return
+        }
         onTearDownSetting()
         super.onTearDown()
     }
