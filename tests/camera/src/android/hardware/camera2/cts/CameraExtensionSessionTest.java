@@ -21,6 +21,7 @@ import static android.hardware.camera2.cts.ImageReaderTest.validateDynamicDepthN
 import static android.hardware.camera2.cts.helpers.AssertHelpers.assertArrayContains;
 import static android.hardware.cts.helpers.CameraUtils.*;
 
+import static org.mockito.AdditionalMatchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -1671,6 +1672,9 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                     verify(captureCallback, timeout(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS).times(1))
                             .onCaptureSequenceCompleted(extensionSession,
                                     captureSequenceId);
+                    verify(captureCallback, times(0))
+                            .onCaptureSequenceCompleted(any(CameraExtensionSession.class),
+                                    not(eq(captureSequenceId)));
                     verify(captureCallback, times(0))
                             .onCaptureSequenceAborted(any(CameraExtensionSession.class),
                                     anyInt());
