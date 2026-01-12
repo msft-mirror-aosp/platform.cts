@@ -39,6 +39,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ImageButton;
 import android.widget.Toast;
+import android.webkit.WebView;
 
 import com.android.compatibility.common.util.ReportLog;
 
@@ -71,6 +72,7 @@ public class PassFailButtons {
     private static final String INFO_DIALOG_VIEW_ID = "infoDialogViewId";
     private static final String INFO_DIALOG_TITLE_ID = "infoDialogTitleId";
     private static final String INFO_DIALOG_MESSAGE_ID = "infoDialogMessageId";
+    private static final String INFO_DIALOG_HTML_URL = "infoDialogHtmlUrl";
 
     // ReportLog file for CTS-Verifier. The "stream" name gets mapped to the test class name.
     public static final String GENERAL_TESTS_REPORT_LOG_NAME = "CtsVerifierGeneralTestCases";
@@ -99,6 +101,23 @@ public class PassFailButtons {
          * @param messageId for the text shown in the dialog's body area
          */
         void setInfoResources(int titleId, int messageId, int viewId);
+
+        /**
+         * Adds an initial informational dialog that appears when entering the test activity for the
+         * first time. Also enables the visibility of an "Info" button between the "Pass" and "Fail"
+         * buttons that can be clicked to show the information dialog again.
+         *
+         * <p>The content of the dialog is loaded from an HTML url from assets if WebView is
+         * supported. Otherwise, it falls back to the provided viewId or messageId.
+         *
+         * <p>Call from {@link Activity#onCreate} after {@link Activity #setContentView(int)}.
+         *
+         * @param titleId for the text shown in the dialog title area.
+         * @param messageId for the text shown in the dialog's body as a fallback.
+         * @param viewId for the layout resource id to be shown in the dialog as a fallback.
+         * @param htmlUrl for the html url to be shown in the dialog's body area.
+         */
+        void setInfoResources(int titleId, int messageId, int viewId, String htmlUrl);
 
         View getPassButton();
 
@@ -236,7 +255,12 @@ public class PassFailButtons {
 
         @Override
         public void setInfoResources(int titleId, int messageId, int viewId) {
-            setInfo(this, titleId, messageId, viewId);
+            setInfo(this, titleId, messageId, viewId, null);
+        }
+
+        @Override
+        public void setInfoResources(int titleId, int messageId, int viewId, String htmlUrl) {
+            setInfo(this, titleId, messageId, viewId, htmlUrl);
         }
 
         @Override
@@ -353,7 +377,12 @@ public class PassFailButtons {
 
         @Override
         public void setInfoResources(int titleId, int messageId, int viewId) {
-            setInfo(this, titleId, messageId, viewId);
+            setInfo(this, titleId, messageId, viewId, null);
+        }
+
+        @Override
+        public void setInfoResources(int titleId, int messageId, int viewId, String htmlUrl) {
+            setInfo(this, titleId, messageId, viewId, htmlUrl);
         }
 
         @Override
@@ -451,7 +480,12 @@ public class PassFailButtons {
 
         @Override
         public void setInfoResources(int titleId, int messageId, int viewId) {
-            setInfo(this, titleId, messageId, viewId);
+            setInfo(this, titleId, messageId, viewId, null);
+        }
+
+        @Override
+        public void setInfoResources(int titleId, int messageId, int viewId, String htmlUrl) {
+            setInfo(this, titleId, messageId, viewId, htmlUrl);
         }
 
         @Override
@@ -576,15 +610,19 @@ public class PassFailButtons {
         });
     } // class PassFailButtons.<T extends android.app.Activity & PassFailActivity>
 
-    protected static void setInfo(final android.app.Activity activity, final int titleId,
-            final int messageId, final int viewId) {
+    protected static void setInfo(
+            final android.app.Activity activity,
+            final int titleId,
+            final int messageId,
+            final int viewId,
+            final String htmlUrl) {
         // Show the middle "info" button and make it show the info dialog when clicked.
         View infoButton = activity.findViewById(R.id.info_button);
         infoButton.setVisibility(View.VISIBLE);
         infoButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
-                showInfoDialog(activity, titleId, messageId, viewId);
+                showInfoDialog(activity, titleId, messageId, viewId, htmlUrl);
             }
         });
         infoButton.setOnLongClickListener(new View.OnLongClickListener() {
@@ -597,7 +635,7 @@ public class PassFailButtons {
 
         // Show the info dialog if the user has never seen it before.
         if (!hasSeenInfoDialog(activity)) {
-            showInfoDialog(activity, titleId, messageId, viewId);
+            showInfoDialog(activity, titleId, messageId, viewId, htmlUrl);
         }
     }
 
@@ -617,10 +655,16 @@ public class PassFailButtons {
 
     protected static void showInfoDialog(final android.app.Activity activity, int titleId,
             int messageId, int viewId) {
+        showInfoDialog(activity, titleId, messageId, viewId, null);
+    }
+
+    protected static void showInfoDialog(final android.app.Activity activity, int titleId,
+            int messageId, int viewId, String htmlUrl) {
         Bundle args = new Bundle();
         args.putInt(INFO_DIALOG_TITLE_ID, titleId);
         args.putInt(INFO_DIALOG_MESSAGE_ID, messageId);
         args.putInt(INFO_DIALOG_VIEW_ID, viewId);
+        args.putString(INFO_DIALOG_HTML_URL, htmlUrl);
         activity.showDialog(INFO_DIALOG_ID, args);
     }
 
@@ -647,10 +691,17 @@ public class PassFailButtons {
         int viewId = args.getInt(INFO_DIALOG_VIEW_ID);
         int titleId = args.getInt(INFO_DIALOG_TITLE_ID);
         int messageId = args.getInt(INFO_DIALOG_MESSAGE_ID);
+        String htmlUrl = args.getString(INFO_DIALOG_HTML_URL);
+        boolean webViewSupported =
+                activity.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WEBVIEW);
 
         AlertDialog.Builder builder = new AlertDialog.Builder(activity).setIcon(
                 android.R.drawable.ic_dialog_info).setTitle(titleId);
-        if (viewId > 0) {
+        if (htmlUrl != null && webViewSupported) {
+            WebView webView = new WebView(activity);
+            webView.loadUrl(htmlUrl);
+            builder.setView(webView);
+        } else if (viewId > 0) {
             LayoutInflater inflater = (LayoutInflater) activity
                     .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             builder.setView(inflater.inflate(viewId, null));
