@@ -2257,7 +2257,9 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         TestLocalOnlyHotspotCallback callback = null;
         boolean isLohsDisabled = true;
         try {
-            uiAutomation.adoptShellPermissionIdentity();
+            if (testSystemApi) {
+                uiAutomation.adoptShellPermissionIdentity();
+            }
             verifyLohsRegisterSoftApCallback(executor, lohsSoftApCallback);
             SoftApConfiguration.Builder customConfigBuilder =
                     generateSoftApConfigBuilderWithSsid(TEST_SSID_UNQUOTED)
@@ -2306,10 +2308,8 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                     sWifiManager.startLocalOnlyHotspot(
                             customConfigBuilder.build(), executor, callback);
                 } else {
-                    uiAutomation.dropShellPermissionIdentity();
                     sWifiManager.startLocalOnlyHotspotWithConfiguration(
                             customConfigBuilder.build(), executor, callback);
-                    uiAutomation.adoptShellPermissionIdentity();
                 }
                 isLohsDisabled = false;
                 // now wait for callback
@@ -2345,7 +2345,9 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 stopLocalOnlyHotspot(callback, wifiEnabled);
             }
             sWifiManager.unregisterSoftApCallback(lohsSoftApCallback);
-            uiAutomation.dropShellPermissionIdentity();
+            if (testSystemApi) {
+                uiAutomation.dropShellPermissionIdentity();
+            }
         }
     }
 
