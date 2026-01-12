@@ -44,15 +44,15 @@ public final class AppUsageObserverTest {
 
     @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
 
-    private static final Context sContext = TestApis.context().instrumentedContext();
-    private static final UsageStatsManager sUsageStatsManager =
-            sContext.getSystemService(UsageStatsManager.class);
+    private final Context mContext = TestApis.context().instrumentedContext();
+    private final UsageStatsManager mUsageStatsManager =
+            mContext.getSystemService(UsageStatsManager.class);
 
-    private static final Intent sIntent =
-            new Intent(Intent.ACTION_MAIN).setPackage(sContext.getPackageName());
-    private static final PendingIntent sPendingIntent =
+    private final Intent mIntent =
+            new Intent(Intent.ACTION_MAIN).setPackage(mContext.getPackageName());
+    private final PendingIntent mPendingIntent =
             PendingIntent.getActivity(
-                    sContext, /* requestCode= */ 1, sIntent, PendingIntent.FLAG_MUTABLE);
+                    mContext, /* requestCode= */ 1, mIntent, PendingIntent.FLAG_MUTABLE);
     private static final Duration DURATION_TEN_SECS = Duration.ofSeconds(10);
     private static final Duration DURATION_FIFTY_NINE_SECS = Duration.ofSeconds(59);
     private static final Duration DURATION_SIXTY_SECS = Duration.ofSeconds(60);
@@ -70,11 +70,14 @@ public final class AppUsageObserverTest {
             assertThrows(
                     IllegalArgumentException.class,
                     () ->
-                            sUsageStatsManager.registerAppUsageObserver(
-                                    OBSERVER_ID, sPackages, 59, TimeUnit.SECONDS, sPendingIntent));
+                            mUsageStatsManager.registerAppUsageObserver(
+                                    OBSERVER_ID,
+                                    sPackages,
+                                    DURATION_FIFTY_NINE_SECS.toSeconds(),
+                                    TimeUnit.SECONDS,
+                                    mPendingIntent));
         } finally {
-            // we clean up in case the exception is not thrown.
-            sUsageStatsManager.unregisterAppUsageObserver(OBSERVER_ID);
+            mUsageStatsManager.unregisterAppUsageObserver(OBSERVER_ID);
         }
     }
 
@@ -87,16 +90,15 @@ public final class AppUsageObserverTest {
             assertThrows(
                     IllegalArgumentException.class,
                     () ->
-                            sUsageStatsManager.registerUsageSessionObserver(
+                            mUsageStatsManager.registerUsageSessionObserver(
                                     OBSERVER_ID,
                                     sPackages,
                                     DURATION_FIFTY_NINE_SECS,
                                     DURATION_TEN_SECS,
-                                    sPendingIntent,
+                                    mPendingIntent,
                                     /* sessionEndCallbackIntent= */ null));
         } finally {
-            // we clean up in case the exception is not thrown.
-            sUsageStatsManager.unregisterUsageSessionObserver(OBSERVER_ID);
+            mUsageStatsManager.unregisterUsageSessionObserver(OBSERVER_ID);
         }
     }
 
@@ -107,22 +109,22 @@ public final class AppUsageObserverTest {
     public void registerAppUsageObserver_exceedsObserversLimit_throwsException() {
         try {
             for (int observerId = 0; observerId < OBSERVER_LIMIT; observerId++) {
-                sUsageStatsManager.registerAppUsageObserver(
-                        observerId, sPackages, 60, TimeUnit.SECONDS, sPendingIntent);
+                mUsageStatsManager.registerAppUsageObserver(
+                        observerId, sPackages, 60, TimeUnit.SECONDS, mPendingIntent);
             }
 
             assertThrows(
                     IllegalStateException.class,
                     () ->
-                            sUsageStatsManager.registerAppUsageObserver(
+                            mUsageStatsManager.registerAppUsageObserver(
                                     OBSERVER_LIMIT,
                                     sPackages,
                                     60,
                                     TimeUnit.SECONDS,
-                                    sPendingIntent));
+                                    mPendingIntent));
         } finally {
             for (int observerId = 0; observerId < OBSERVER_LIMIT; observerId++) {
-                sUsageStatsManager.unregisterAppUsageObserver(observerId);
+                mUsageStatsManager.unregisterAppUsageObserver(observerId);
             }
         }
     }
@@ -134,28 +136,28 @@ public final class AppUsageObserverTest {
     public void registerUsageSessionObserver_exceedsObserversLimit_throwsException() {
         try {
             for (int observerId = 0; observerId < OBSERVER_LIMIT; observerId++) {
-                sUsageStatsManager.registerUsageSessionObserver(
+                mUsageStatsManager.registerUsageSessionObserver(
                         observerId,
                         sPackages,
                         DURATION_SIXTY_SECS,
                         DURATION_TEN_SECS,
-                        sPendingIntent,
+                        mPendingIntent,
                         /* sessionEndCallbackIntent= */ null);
             }
 
             assertThrows(
                     IllegalStateException.class,
                     () ->
-                            sUsageStatsManager.registerUsageSessionObserver(
+                            mUsageStatsManager.registerUsageSessionObserver(
                                     OBSERVER_LIMIT,
                                     sPackages,
                                     DURATION_SIXTY_SECS,
                                     DURATION_TEN_SECS,
-                                    sPendingIntent,
+                                    mPendingIntent,
                                     /* sessionEndCallbackIntent= */ null));
         } finally {
             for (int observerId = 0; observerId < OBSERVER_LIMIT; observerId++) {
-                sUsageStatsManager.unregisterUsageSessionObserver(OBSERVER_ID);
+                mUsageStatsManager.unregisterUsageSessionObserver(observerId);
             }
         }
     }
