@@ -44,6 +44,7 @@ import android.hardware.biometrics.SensorProperties;
 import android.os.CancellationSignal;
 import android.os.Handler;
 import android.os.Looper;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.biometrics.util.Utils;
 import android.util.Log;
@@ -113,7 +114,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
                 createAndShowPrompt(BIOMETRIC_WEAK, builder, mCallback, executor);
 
                 // Find cancel button
-                final UiObject2 cancelButton = findView(BUTTON_ID_CANCEL);
+                final UiObject2 cancelButton = waitForView(BUTTON_ID_CANCEL);
                 assertThat(cancelButton).isNotNull();
                 assertThat(cancelButton.getVisibleBounds()).isNotNull();
 
@@ -157,13 +158,12 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
                         DEVICE_CREDENTIAL | BIOMETRIC_WEAK, builder, mCallback, executor);
 
                 // Find fallback page button
-                final UiObject2 fallbackPageButton = findView(BUTTON_ID_FALLBACK);
+                final UiObject2 fallbackPageButton = waitForView(BUTTON_ID_FALLBACK);
                 assertThat(fallbackPageButton).isNotNull();
                 assertThat(fallbackPageButton.getVisibleBounds()).isNotNull();
 
                 // Click fallback page button
                 fallbackPageButton.click();
-                mDevice.waitForIdle();
 
                 // Wait for transition between pages
                 UiObject2 credentialButton = waitForView(FALLBACK_PAGE_CREDENTIAL_BUTTON);
@@ -213,7 +213,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
                 createAndShowPrompt(BIOMETRIC_WEAK, builder, mCallback, executor);
 
                 // Find fallback as negative button
-                final UiObject2 negativeButton = findView(BUTTON_ID_NEGATIVE);
+                final UiObject2 negativeButton = waitForView(BUTTON_ID_NEGATIVE);
                 assertThat(negativeButton).isNotNull();
                 assertThat(negativeButton.getText()).isEqualTo(fallbackText);
 
@@ -264,10 +264,9 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
                         DEVICE_CREDENTIAL | BIOMETRIC_WEAK, builder, mCallback, executor);
 
                 // Find fallback page button
-                final UiObject2 fallbackPageButton = findView(BUTTON_ID_FALLBACK);
+                final UiObject2 fallbackPageButton = waitForView(BUTTON_ID_FALLBACK);
                 assertThat(fallbackPageButton).isNotNull();
                 fallbackPageButton.click();
-                mDevice.waitForIdle();
 
                 // Find fallback button
                 final Pattern fallbackPattern =
@@ -330,13 +329,13 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
                         DEVICE_CREDENTIAL | BIOMETRIC_WEAK, builder, mCallback, executor);
 
                 // Find fallback page button
-                final UiObject2 fallbackPageButton = findView(BUTTON_ID_FALLBACK);
+                final UiObject2 fallbackPageButton = waitForView(BUTTON_ID_FALLBACK);
                 assertThat(fallbackPageButton).isNotNull();
                 fallbackPageButton.click();
-                mDevice.waitForIdle();
 
                 // Find fallback button
-                final UiObject2 manageIdentityCheckButton = findView(MANAGE_IDENTITY_CHECK_BUTTON);
+                final UiObject2 manageIdentityCheckButton =
+                        waitForView(MANAGE_IDENTITY_CHECK_BUTTON);
                 assertThat(manageIdentityCheckButton).isNull();
             }
         }
@@ -384,15 +383,12 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
                             DEVICE_CREDENTIAL | BIOMETRIC_WEAK, builder, mCallback, executor);
 
                     // Find fallback page button
-                    final UiObject2 fallbackPageButton = findView(BUTTON_ID_FALLBACK);
+                    final UiObject2 fallbackPageButton = waitForView(BUTTON_ID_FALLBACK);
                     assertThat(fallbackPageButton).isNotNull();
                     fallbackPageButton.click();
-                    mDevice.waitForIdle();
 
                     // Test each fallback button
-                    final BySelector fallbackSelector = By.text(fallbackTexts[i]);
-                    mDevice.wait(Until.hasObject(fallbackSelector), VIEW_WAIT_TIME_MS);
-                    final UiObject2 fallbackButton = mDevice.findObject(fallbackSelector);
+                    final UiObject2 fallbackButton = findViewByText(fallbackTexts[i]);
                     assertThat(fallbackButton).isNotNull();
                     fallbackButton.click();
                     mInstrumentation.waitForIdleSync();
@@ -441,7 +437,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
                         DEVICE_CREDENTIAL | BIOMETRIC_WEAK, builder, mCallback, executor);
 
                 // Find negative button and verify it is the custom set
-                final UiObject2 negativeButton = findView(BUTTON_ID_NEGATIVE);
+                final UiObject2 negativeButton = waitForView(BUTTON_ID_NEGATIVE);
                 assertThat(negativeButton).isNotNull();
                 assertThat(negativeButton.getText()).isEqualTo(negativeText);
 
@@ -458,6 +454,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
 
     @ApiTest(apis = {"android.hardware.biometrics.BiometricPrompt.Builder#addFallbackOption"})
     @RequiresFlagsEnabled({Flags.FLAG_ADD_FALLBACK})
+    @RequiresFlagsDisabled(com.android.systemui.Flags.FLAG_LARGE_SCREEN_BP)
     @Test
     public void testCredentialOnly_singleFallback() throws Exception {
         try (CredentialSession credentialSession = new CredentialSession()) {
@@ -498,6 +495,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
 
     @ApiTest(apis = {"android.hardware.biometrics.BiometricPrompt.Builder#addFallbackOption"})
     @RequiresFlagsEnabled({Flags.FLAG_ADD_FALLBACK})
+    @RequiresFlagsDisabled(com.android.systemui.Flags.FLAG_LARGE_SCREEN_BP)
     @Test
     public void testCredentialOnly_multipleFallbacks() throws Exception {
         try (CredentialSession credentialSession = new CredentialSession()) {
@@ -521,10 +519,9 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
             createAndShowPrompt(DEVICE_CREDENTIAL, builder, mCallback, executor);
 
             // Find fallback page button on credential
-            final UiObject2 credentialFallbackButton = findView(CREDENTIAL_FALLBACK_BUTTON);
+            final UiObject2 credentialFallbackButton = waitForView(CREDENTIAL_FALLBACK_BUTTON);
             assertThat(credentialFallbackButton).isNotNull();
             credentialFallbackButton.click();
-            mDevice.waitForIdle();
 
             // Find first fallback
             final BySelector fallbackSelector = By.text(fallbackTexts[0]);
@@ -592,7 +589,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
                 continue;
             }
 
-            Log.d(TAG, "testFallbackOptions_fourFallbacks, sensor: " + props.getSensorId());
+            Log.d(TAG, "testFallbackOptions_exceedsMaxOptions, sensor: " + props.getSensorId());
 
             try (BiometricTestSession session =
                     mBiometricManager.createTestSession(props.getSensorId())) {
