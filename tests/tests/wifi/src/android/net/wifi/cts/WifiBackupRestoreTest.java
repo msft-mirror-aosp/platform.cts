@@ -44,6 +44,8 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerExecutor;
 import android.os.HandlerThread;
+import android.os.Process;
+import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -59,6 +61,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.compatibility.common.util.ThrowingRunnable;
+import com.android.wifi.flags.FeatureFlags;
 import com.android.wifi.flags.Flags;
 
 import org.junit.AfterClass;
@@ -134,6 +137,11 @@ public class WifiBackupRestoreTest extends WifiJUnit4TestBase {
     private static UiDevice sUiDevice;
     private static boolean sWasVerboseLoggingEnabled;
     private static boolean sShouldRunTest = false;
+    private static FeatureFlags sFeatureFlags;
+    private static int sTestUid;
+    // Expectations on whether the restored networks are shared. On shared devices when flag and sdk
+    // enable multi-user feature, shared networks will be converted to private networks on restore.
+    private static boolean sExpectedShared;
 
     private static final int DURATION = 10_000;
     private static final int DURATION_SCREEN_TOGGLE = 2000;
@@ -158,6 +166,16 @@ public class WifiBackupRestoreTest extends WifiJUnit4TestBase {
 
         sWifiManager = sContext.getSystemService(WifiManager.class);
         assertThat(sWifiManager).isNotNull();
+        sFeatureFlags = new com.android.wifi.flags.FeatureFlagsImpl();
+
+        final UserManager userManager = sContext.getSystemService(UserManager.class);
+        assertThat(userManager).isNotNull();
+        final boolean sharedDevice =
+                ShellIdentityUtils.invokeWithShellPermissions(userManager::getUserCount) > 1;
+        sExpectedShared =
+                !(sFeatureFlags.multiUserWifiEnhancement() && WifiBuildCompat.isAtLeastC())
+                        || !sharedDevice;
+        sTestUid = Process.myUid();
 
         // turn on verbose logging for tests
         sWasVerboseLoggingEnabled = ShellIdentityUtils.invokeWithShellPermissions(
@@ -521,15 +539,21 @@ public class WifiBackupRestoreTest extends WifiJUnit4TestBase {
         List<WifiConfiguration> expectedConfigurations = new ArrayList<>();
         WifiConfiguration wepNetwork = createExpectedLegacyWepWifiConfiguration();
         wepNetwork.setIpConfiguration(createExpectedLegacyDHCPIpConfigurationWithPacProxy());
+        wepNetwork.shared = sExpectedShared;
+        wepNetwork.creatorUid = sTestUid;
         expectedConfigurations.add(wepNetwork);
 
         WifiConfiguration pskNetwork = createExpectedLegacyPskWifiConfiguration();
         pskNetwork.setIpConfiguration(createExpectedLegacyStaticIpConfigurationWithPacProxy());
+        pskNetwork.shared = sExpectedShared;
+        pskNetwork.creatorUid = sTestUid;
         expectedConfigurations.add(pskNetwork);
 
         WifiConfiguration openNetwork = createExpectedLegacyOpenWifiConfiguration();
         openNetwork.setIpConfiguration(
                 createExpectedLegacyStaticIpConfigurationWithStaticProxy());
+        openNetwork.shared = sExpectedShared;
+        openNetwork.creatorUid = sTestUid;
         expectedConfigurations.add(openNetwork);
         return expectedConfigurations;
     }
@@ -551,15 +575,21 @@ public class WifiBackupRestoreTest extends WifiJUnit4TestBase {
         List<WifiConfiguration> expectedConfigurations = new ArrayList<>();
         WifiConfiguration wepNetwork = createExpectedLegacyWepWifiConfiguration();
         wepNetwork.setIpConfiguration(createExpectedLegacyDHCPIpConfigurationWithPacProxy());
+        wepNetwork.shared = sExpectedShared;
+        wepNetwork.creatorUid = sTestUid;
         expectedConfigurations.add(wepNetwork);
 
         WifiConfiguration pskNetwork = createExpectedLegacyPskWifiConfiguration();
         pskNetwork.setIpConfiguration(createExpectedLegacyStaticIpConfigurationWithPacProxy());
+        pskNetwork.shared = sExpectedShared;
+        pskNetwork.creatorUid = sTestUid;
         expectedConfigurations.add(pskNetwork);
 
         WifiConfiguration openNetwork = createExpectedLegacyOpenWifiConfiguration();
         openNetwork.setIpConfiguration(
                 createExpectedLegacyStaticIpConfigurationWithStaticProxy());
+        openNetwork.shared = sExpectedShared;
+        openNetwork.creatorUid = sTestUid;
         expectedConfigurations.add(openNetwork);
         return expectedConfigurations;
     }
@@ -578,17 +608,23 @@ public class WifiBackupRestoreTest extends WifiJUnit4TestBase {
         WifiConfiguration wepNetwork = createExpectedLegacyWepWifiConfiguration();
         wepNetwork.setIpConfiguration(createExpectedLegacyDHCPIpConfigurationWithPacProxy());
         wepNetwork.meteredOverride = METERED_OVERRIDE_METERED;
+        wepNetwork.shared = sExpectedShared;
+        wepNetwork.creatorUid = sTestUid;
         expectedConfigurations.add(wepNetwork);
 
         WifiConfiguration pskNetwork = createExpectedLegacyPskWifiConfiguration();
         pskNetwork.setIpConfiguration(createExpectedLegacyStaticIpConfigurationWithPacProxy());
         pskNetwork.meteredOverride = METERED_OVERRIDE_NONE;
+        pskNetwork.shared = sExpectedShared;
+        pskNetwork.creatorUid = sTestUid;
         expectedConfigurations.add(pskNetwork);
 
         WifiConfiguration openNetwork = createExpectedLegacyOpenWifiConfiguration();
         openNetwork.setIpConfiguration(
                 createExpectedLegacyStaticIpConfigurationWithStaticProxy());
         openNetwork.meteredOverride = METERED_OVERRIDE_NOT_METERED;
+        openNetwork.shared = sExpectedShared;
+        openNetwork.creatorUid = sTestUid;
         expectedConfigurations.add(openNetwork);
         return expectedConfigurations;
     }
@@ -608,12 +644,16 @@ public class WifiBackupRestoreTest extends WifiJUnit4TestBase {
         wepNetwork.setIpConfiguration(createExpectedLegacyDHCPIpConfigurationWithPacProxy());
         wepNetwork.meteredOverride = METERED_OVERRIDE_METERED;
         wepNetwork.allowAutojoin = true;
+        wepNetwork.shared = sExpectedShared;
+        wepNetwork.creatorUid = sTestUid;
         expectedConfigurations.add(wepNetwork);
 
         WifiConfiguration pskNetwork = createExpectedLegacyPskWifiConfiguration();
         pskNetwork.setIpConfiguration(createExpectedLegacyStaticIpConfigurationWithPacProxy());
         pskNetwork.meteredOverride = METERED_OVERRIDE_NONE;
         pskNetwork.allowAutojoin = false;
+        pskNetwork.shared = sExpectedShared;
+        pskNetwork.creatorUid = sTestUid;
         expectedConfigurations.add(pskNetwork);
 
         WifiConfiguration openNetwork = createExpectedLegacyOpenWifiConfiguration();
@@ -621,6 +661,8 @@ public class WifiBackupRestoreTest extends WifiJUnit4TestBase {
                 createExpectedLegacyStaticIpConfigurationWithStaticProxy());
         openNetwork.meteredOverride = METERED_OVERRIDE_NOT_METERED;
         openNetwork.allowAutojoin = false;
+        openNetwork.shared = sExpectedShared;
+        openNetwork.creatorUid = sTestUid;
         expectedConfigurations.add(openNetwork);
         return expectedConfigurations;
     }
