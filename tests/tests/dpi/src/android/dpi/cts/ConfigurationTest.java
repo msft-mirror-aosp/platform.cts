@@ -22,6 +22,7 @@ import android.platform.test.annotations.Presubmit;
 import android.test.AndroidTestCase;
 import android.util.DisplayMetrics;
 import android.view.Display;
+import android.view.Display.Mode;
 import android.view.WindowManager;
 
 import com.android.compatibility.common.util.CddTest;
@@ -37,6 +38,7 @@ import java.util.Set;
 public class ConfigurationTest extends AndroidTestCase {
 
     private DisplayMetrics mMetrics;
+    private Mode mMode;
 
     @Override
     protected void setUp() throws Exception {
@@ -46,13 +48,14 @@ public class ConfigurationTest extends AndroidTestCase {
         Display display = windowManager.getDefaultDisplay();
         mMetrics = new DisplayMetrics();
         display.getRealMetrics(mMetrics);
+        mMode = display.getMode();
     }
 
     @CddTest(requirement = "2.2.1")
     @Presubmit
     public void testScreenConfiguration() {
-        double xInches = (double) mMetrics.widthPixels / mMetrics.xdpi;
-        double yInches = (double) mMetrics.heightPixels / mMetrics.ydpi;
+        double xInches = (double) mMode.getPhysicalWidth() / mMetrics.xdpi;
+        double yInches = (double) mMode.getPhysicalHeight() / mMetrics.ydpi;
         double diagonalInches = Math.sqrt(Math.pow(xInches, 2) + Math.pow(yInches, 2));
         double minSize = 2.5d;
         double minShortEdgeInches = 0.0d;
