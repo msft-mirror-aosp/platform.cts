@@ -30,7 +30,6 @@ android_test_helper_app {
     ],
     test_suites: [
         "mts",
-        "cts",
         "general-tests",
     ],
     optimize: {
