@@ -55,6 +55,9 @@ import android.text.TextUtils;
 import android.util.Pair;
 
 import com.android.internal.telephony.RILConstants;
+import com.android.internal.telephony.nano.PersistAtomsProto;
+import com.android.internal.telephony.nano.PersistAtomsProto.IncomingSms;
+import com.android.internal.telephony.nano.PersistAtomsProto.OutgoingSms;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -82,6 +85,7 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
     private static final int ESOS_CARRIER_ID = 1884;
     private static final String SMS_SEND_ACTION = "CTS_SMS_SEND_ACTION";
     private static final String TEST_DEST_ADDR = "1234567890";
+    private static final String SATELLITE_PLMN = "46692";
 
     /**
      * Setup before all tests.
@@ -258,6 +262,70 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
             sMockModemManager.setSendSmsErrorCode(
                 ESOS_SLOT_ID, RadioError.NONE, RILConstants.SUCCESS);
         }
+    }
+
+    @Test
+    public void testSmsAtomCheckPlmn_ManualConnect() throws Exception {
+        logd(TAG, "testSmsAtomCheckPlmn_ManualConnect");
+        if (!shouldTestManualConnectCarrierRoaming()) return;
+
+        // Clear existing atoms to ensure we verify only fresh events.
+        // --saveFileImmediately forces the clear to persist immediately.
+        sMockSatelliteServiceManager.executeTelephonyDebugServiceDumpsys(
+                "--clearatoms", "--saveFileImmediately");
+
+        // Send an SMS (Outgoing)
+        // This sends a text message while in satellite mode.
+        sendSms(TEST_DEST_ADDR, Activity.RESULT_OK);
+
+        // Receive an SMS (Incoming)
+        // This triggers an incoming SMS from the mock modem.
+        receiveSmsSuccessfully();
+
+        // Pull the generated metrics atoms
+        PersistAtomsProto.PersistAtoms atoms =
+                sMockSatelliteServiceManager.pullMetricsAtomsViaDumpsys(false);
+        assertNotNull("PersistAtoms should not be null", atoms);
+
+        // Verify the OutgoingSms atom
+        boolean outgoingSmsFound = false;
+        if (atoms.outgoingSms != null) {
+            for (OutgoingSms atom : atoms.outgoingSms) {
+                // Check if the atom is marked as NTN (Non-Terrestrial Network) or NB-IoT NTN
+                if (atom.isNtn || atom.isNbIotNtn) {
+                    logd(TAG, "Found OutgoingSms atom. PLMN: " + atom.plmn);
+
+                    // Assert the PLMN matches the expected satellite network value
+                    assertEquals(
+                            "Outgoing SMS PLMN should match the satellite network",
+                            SATELLITE_PLMN,
+                            atom.plmn);
+
+                    outgoingSmsFound = true;
+                }
+            }
+        }
+        assertTrue("Did not find NTN OutgoingSms atom with correct PLMN", outgoingSmsFound);
+
+        // Verify the IncomingSms atom
+        boolean incomingSmsFound = false;
+        if (atoms.incomingSms != null) {
+            for (IncomingSms atom : atoms.incomingSms) {
+                // Check if the atom is marked as NTN or NB-IoT NTN
+                if (atom.isNtn || atom.isNbIotNtn) {
+                    logd(TAG, "Found IncomingSms atom. PLMN: " + atom.plmn);
+
+                    // Assert the PLMN matches the expected satellite network value
+                    assertEquals(
+                            "Incoming SMS PLMN should match the satellite network",
+                            SATELLITE_PLMN,
+                            atom.plmn);
+
+                    incomingSmsFound = true;
+                }
+            }
+        }
+        assertTrue("Did not find NTN IncomingSms atom with correct PLMN", incomingSmsFound);
     }
 
     @Test
@@ -700,7 +768,7 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
         }
     }
 
-    private static SmsMmsBroadcastReceiver registerSmsMmsBroadcastReceiver(String action) {
+    protected static SmsMmsBroadcastReceiver registerSmsMmsBroadcastReceiver(String action) {
         SmsMmsBroadcastReceiver smsReceiver = new SmsMmsBroadcastReceiver();
         smsReceiver.setAction(action);
         getContext().registerReceiver(smsReceiver, new IntentFilter(smsReceiver.getAction()),
@@ -708,7 +776,7 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
         return smsReceiver;
     }
 
-    private static PendingIntent createSendPendingIntent() {
+    protected static PendingIntent createSendPendingIntent() {
         Intent sendIntent = new Intent(SMS_SEND_ACTION).setPackage(getContext().getPackageName());
         return PendingIntent.getBroadcast(getContext(), 0,
                 sendIntent, PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_MUTABLE);
