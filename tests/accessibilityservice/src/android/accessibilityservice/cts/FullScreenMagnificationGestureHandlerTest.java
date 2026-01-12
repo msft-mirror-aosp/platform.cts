@@ -117,6 +117,9 @@ public class FullScreenMagnificationGestureHandlerTest {
 
     private static final String SETTING_KEY_MAGNIFICATION_ALWAYS_ON =
             "accessibility_magnification_always_on_enabled";
+
+    private static final String CONFIG_KEY_MAGNIFICATION_ALWAYS_ON_SUPPORTED =
+            "config_magnification_always_on_enabled";
     private static final String CONFIG_KEY_MAGNIFICATION_KEEP_MAGNIFIED =
             "config_magnification_keep_zoom_level_when_context_changed";
 
@@ -399,6 +402,7 @@ public class FullScreenMagnificationGestureHandlerTest {
             throws Exception {
         // Only test when device is in gesture navigation mode.
         assumeTrue(mIsGestureNavigationMode);
+        assumeTrue(isAlwaysOnSupported());
         assumeFalse(isKeepMagnifiedEnabled());
 
         try (var session = getAlwaysOnSettingsSession(true)) {
@@ -421,6 +425,7 @@ public class FullScreenMagnificationGestureHandlerTest {
             throws Exception {
         // Only test when device is in gesture navigation mode.
         assumeTrue(mIsGestureNavigationMode);
+        assumeTrue(isAlwaysOnSupported());
         assumeTrue(isKeepMagnifiedEnabled());
 
         try (var session = getAlwaysOnSettingsSession(true)) {
@@ -521,6 +526,22 @@ public class FullScreenMagnificationGestureHandlerTest {
 
     public void dispatch(GestureDescription gesture) {
         await(dispatchGesture(mService, gesture));
+    }
+
+    private boolean isAlwaysOnSupported() {
+        try {
+            return mInstrumentation
+                    .getTargetContext()
+                    .getResources()
+                    .getBoolean(
+                            Resources.getSystem()
+                                    .getIdentifier(
+                                            CONFIG_KEY_MAGNIFICATION_ALWAYS_ON_SUPPORTED,
+                                            "bool",
+                                            "android"));
+        } catch (Resources.NotFoundException ignore) {
+            return false;
+        }
     }
 
     private boolean isKeepMagnifiedEnabled() {
