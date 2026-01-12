@@ -37,7 +37,6 @@ import kotlin.annotation.AnnotationTarget.PROPERTY_SETTER
  */
 @Target(FUNCTION, PROPERTY_GETTER, PROPERTY_SETTER, ANNOTATION_CLASS, CLASS)
 @Retention(RUNTIME)
-// TODO(b/206441366): Add instant app support
 @RequireNotInstantApp(reason = "Instant Apps cannot run Enterprise Tests")
 // TODO(276740719): Support custom queries
 @UsesAnnotationExecutor(UsesAnnotationExecutor.ENTERPRISE)
