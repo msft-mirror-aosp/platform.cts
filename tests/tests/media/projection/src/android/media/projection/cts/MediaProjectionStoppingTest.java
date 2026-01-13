@@ -31,7 +31,6 @@ import android.media.cts.MediaProjectionRule;
 import android.media.projection.MediaProjection;
 import android.os.HandlerThread;
 import android.os.UserHandle;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.LockScreenSession;
@@ -121,8 +120,7 @@ public class MediaProjectionStoppingTest {
             assertWithMessage("MediaProjection not stopped in " + mTimeoutMs + "ms")
                     .that(latch.await(mTimeoutMs, TimeUnit.MILLISECONDS)).isTrue();
         } finally {
-            mLockScreenSession.wakeUpDevice();
-            mLockScreenSession.unlockDevice();
+            mLockScreenSession.unlock();
         }
     }
 
@@ -148,8 +146,7 @@ public class MediaProjectionStoppingTest {
             assertWithMessage("MediaProjection was stopped unexpectedly")
                     .that(latch.await(mTimeoutMs, TimeUnit.MILLISECONDS)).isFalse();
         } finally {
-            mLockScreenSession.wakeUpDevice();
-            mLockScreenSession.unlockDevice();
+            mLockScreenSession.unlock();
         }
     }
 
@@ -184,8 +181,7 @@ public class MediaProjectionStoppingTest {
                     .that(latch.await(mTimeoutMs, TimeUnit.MILLISECONDS))
                     .isTrue();
         } finally {
-            mLockScreenSession.wakeUpDevice();
-            mLockScreenSession.unlockDevice();
+            mLockScreenSession.unlock();
             handlerThread.quit();
         }
     }
@@ -223,8 +219,7 @@ public class MediaProjectionStoppingTest {
                     .that(isStopped.get())
                     .isFalse();
         } finally {
-            mLockScreenSession.wakeUpDevice();
-            mLockScreenSession.unlockDevice();
+            mLockScreenSession.unlock();
             handlerThread.quit();
         }
     }

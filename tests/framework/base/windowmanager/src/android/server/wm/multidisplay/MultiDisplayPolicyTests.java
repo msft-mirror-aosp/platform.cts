@@ -20,7 +20,6 @@ import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.app.WindowConfiguration.WINDOWING_MODE_MULTI_WINDOW;
 import static android.server.wm.ComponentNameUtils.getWindowName;
-import static android.server.wm.ShellCommandHelper.executeShellCommand;
 import static android.server.wm.StateLogger.logE;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
 import static android.server.wm.WindowManagerState.STATE_STOPPED;
@@ -585,13 +584,7 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
         mBroadcastActionTrigger.finishBroadcastReceiverActivity();
 
         if (lockScreenSession != null) {
-            final LockScreenSession wakenUpSession = lockScreenSession.wakeUpDevice();
-
-            // Show the bouncer before entering the credential.
-            executeShellCommand("wm dismiss-keyguard");
-
-            // Unlock and check if the focus is switched back to primary display.
-            wakenUpSession.enterAndConfirmLockCredential();
+            lockScreenSession.unlock();
         }
 
         waitAndAssertResumedAndFocusedActivityOnDisplay(
@@ -643,7 +636,7 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
     @Test
     public void testStackFocusSwitchOnTouchEventAfterKeyguard() {
         assumeFalse(perDisplayFocusEnabled());
-        assumeTrue(supportsSecureLock());
+        assumeTrue(supportsLockScreen());
 
         final int mainDisplayId = getMainDisplayId();
 
@@ -668,8 +661,7 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
 
         launchActivityOnDisplay(TEST_ACTIVITY, newDisplay.mId);
 
-        // Unlock the device and tap on the middle of the primary display
-        lockScreenSession.wakeUpDevice().unlockDevice().enterAndConfirmLockCredential();
+        lockScreenSession.unlock();
         mWmState.waitAndAssertKeyguardGone();
         mWmState.waitForValidState(RESIZEABLE_ACTIVITY, TEST_ACTIVITY);
 

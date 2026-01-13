@@ -18,32 +18,30 @@ package android.security.identity.cts;
 
 import static android.security.identity.IdentityCredentialStore.CIPHERSUITE_ECDHE_HKDF_ECDSA_WITH_AES_256_GCM_SHA256;
 
-import android.security.identity.AccessControlProfile;
-import android.security.identity.AccessControlProfileId;
-import android.security.identity.PersonalizationData;
-import android.security.identity.IdentityCredential;
-import android.security.identity.IdentityCredentialStore;
-import android.security.identity.WritableIdentityCredential;
-import android.security.identity.ResultData;
-
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
-import com.android.security.identity.internal.Util;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
+import android.app.KeyguardManager;
 import android.content.Context;
 import android.os.SystemClock;
+import android.security.identity.AccessControlProfile;
+import android.security.identity.AccessControlProfileId;
+import android.security.identity.IdentityCredential;
+import android.security.identity.IdentityCredentialStore;
+import android.security.identity.PersonalizationData;
+import android.security.identity.ResultData;
+import android.security.identity.WritableIdentityCredential;
+import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.LockScreenSession;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
 
-import android.app.KeyguardManager;
-import android.server.wm.ActivityManagerTestBase;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
+import com.android.security.identity.internal.Util;
 
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -51,8 +49,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.security.cert.X509Certificate;
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -94,8 +92,7 @@ public class UserAuthTest {
         }
 
         public void performDeviceUnlock() throws Exception {
-            mLockCredential.gotoKeyguard();
-            mLockCredential.enterAndConfirmLockCredential();
+            mLockCredential.unlock();
             launchHomeActivity();
             Context appContext = InstrumentationRegistry.getTargetContext();
             KeyguardManager keyguardManager = (KeyguardManager)appContext.
@@ -107,7 +104,7 @@ public class UserAuthTest {
                     break;
                 }
                 Log.w(TAG, "Device was still locked, sleeping and retrying...");
-                mLockCredential.enterAndConfirmLockCredential();
+                mLockCredential.unlock();
             } while (waitCount-- >= 0);
         }
 

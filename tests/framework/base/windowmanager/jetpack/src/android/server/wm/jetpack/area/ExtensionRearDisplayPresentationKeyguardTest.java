@@ -31,7 +31,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
-import android.app.KeyguardManager;
 import android.content.Context;
 import android.hardware.devicestate.DeviceState;
 import android.hardware.devicestate.DeviceStateManager;
@@ -375,9 +374,7 @@ public class ExtensionRearDisplayPresentationKeyguardTest
 
         mWmState.waitAndAssertKeyguardGoneOnSecondaryDisplay(presentationDisplayId);
 
-        KeyguardManager kgm = activitySession.getActivity().getSystemService(KeyguardManager.class);
-        kgm.requestDismissKeyguard(activitySession.getActivity(), null /* callback */);
-        lockScreenSession.enterAndConfirmLockCredential();
+        lockScreenSession.unlock();
         mWmState.waitAndAssertKeyguardGone();
         assertEquals(SESSION_STATE_CONTENT_VISIBLE, mWindowAreaSessionState);
     }
