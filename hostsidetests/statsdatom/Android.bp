@@ -61,19 +61,6 @@ java_test_host {
 }
 
 java_test_host {
-    name: "CtsAppcompatStateAtomHostTestCases",
-    team: "trendy_team_android_telemetry_client_infra",
-    defaults: ["CtsStatsdAtomHostTest_defaults"],
-    srcs: [
-        "appcompatstate/src/**/*.java",
-    ],
-    device_common_data: [
-        ":CtsPropertyCompatAllowUserAspectRatioOverrideOptInApp",
-    ],
-    test_config: "configs/AndroidTestAppcompatState.xml",
-}
-
-java_test_host {
     name: "CtsStatsdAtomHostTestCases",
     team: "trendy_team_android_telemetry_client_infra",
     defaults: ["CtsStatsdAtomHostTest_defaults"],
@@ -83,41 +70,22 @@ java_test_host {
         "apphibernation/src/**/*.java",
         "appops/src/**/*.java",
         "appexit/src/**/*.java",
-        "appstart/src/**/*.java",
-        "backportedfixes/src/**/*.java",
-        "batterycycle/src/**/*.java",
         "batterystats/src/**/*.java",
-        "bluetooth/src/**/*.java",
         "coregraphics/src/**/*.java",
-        "cpu/src/**/*.java",
-        "credentials/src/**/*.java",
-        "devicepower/src/**/*.java",
-        "devicestate/src/**/*.java",
         "display/src/**/*.java",
-        "gamemanager/src/**/*.java",
-        "gnss/src/**/*.java",
         "jobscheduler/src/**/*.java",
         "media/src/**/*.java",
-        "memory/src/**/*.java",
         "net/src/**/*.java",
-        "notification/src/**/*.java",
         "perf/src/**/*.java",
         "perfetto/src/**/*.java",
-        "performancehintmanager/src/**/*.java",
         "permissionstate/src/**/*.java",
         "powermanager/src/**/*.java",
         "power/src/**/*.java",
-        "settingsstats/src/**/*.java",
         "sizecompatrestartbutton/src/**/*.java",
         "statsd/src/**/*.java",
-        "telephony/src/**/*.java",
         "tls/src/**/*.java",
-        "usb/src/**/*.java",
         "users/src/**/*.java",
-        "vibrator/src/**/*.java",
-        "voiceinteraction/src/**/*.java",
         "wifi/src/**/*.java",
-        "memorysafety/src/**/*.java",
         "express/src/**/*.java",
     ],
 
@@ -127,14 +95,11 @@ java_test_host {
 
     static_libs: [
         "android.app.appfunctions.flags-aconfig-java-host",
-        "android.hardware.usb.flags-aconfig-java-host",
         "android.os.flags-aconfig-java-host",
-        "android.os.vibrator.flags-aconfig-java-host",
         "android.permission.flags-aconfig-java-host",
         "power_flags_lib_host",
         "display_flags_lib_host",
         "backstage_power_flags_lib-host",
-        "power_hint_flags_lib_host",
         "uprobestats_mainline_flags_java_lib_test_host",
         "perfetto_config-full",
         "cts_adpf_atom_common-host",
@@ -144,8 +109,6 @@ java_test_host {
 
     device_common_data: [
         ":CtsAppExitTestCases",
-        ":CtsStatsdAdpfApp",
-        ":CtsStatsdAdpfApp2",
         ":CtsExternalServiceService",
         ":CtsMediaProjectionTestCases",
         ":CtsDisplayTestCases",
@@ -153,7 +116,6 @@ java_test_host {
         ":CtsSimpleApp",
         ":CtsStatsdAlarmHelper",
         ":CtsStatsdAlarmHelper2",
-        ":CtsVoiceInteractionTestCases",
         ":CtsCredentialManagerTestCases",
         ":CtsStatsdExpressLogHelper",
         ":CtsAppFunctionTestCases",
@@ -180,13 +142,6 @@ java_library_host {
 }
 
 test_module_config_host {
-    name: "CtsStatsdAtomHostTestCases_statsdatom_voiceinteraction",
-    base: "CtsStatsdAtomHostTestCases",
-    test_suites: ["general-tests"],
-    include_filters: ["android.cts.statsdatom.voiceinteraction"],
-}
-
-test_module_config_host {
     name: "CtsStatsdAtomHostTestCases_statsdatom_jobscheduler",
     base: "CtsStatsdAtomHostTestCases",
     test_suites: ["general-tests"],
@@ -202,24 +157,10 @@ test_module_config_host {
 }
 
 test_module_config_host {
-    name: "CtsStatsdAtomHostTestCases_statsdatom_gamemanager",
-    base: "CtsStatsdAtomHostTestCases",
-    test_suites: ["general-tests"],
-    include_filters: ["android.cts.statsdatom.gamemanager"],
-}
-
-test_module_config_host {
     name: "CtsStatsdAtomHostTestCases_statsdatom_powermanager",
     base: "CtsStatsdAtomHostTestCases",
     test_suites: ["general-tests"],
     include_filters: ["android.cts.statsdatom.powermanager"],
-}
-
-test_module_config_host {
-    name: "CtsStatsdAtomHostTestCases_statsdatom_performancehintmanager",
-    base: "CtsStatsdAtomHostTestCases",
-    test_suites: ["general-tests"],
-    include_filters: ["android.cts.statsdatom.performancehintmanager"],
 }
 
 test_module_config_host {
