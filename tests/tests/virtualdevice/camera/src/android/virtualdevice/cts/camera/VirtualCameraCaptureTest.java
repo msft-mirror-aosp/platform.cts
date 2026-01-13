@@ -838,11 +838,6 @@ public class VirtualCameraCaptureTest {
 
     @SuppressWarnings("unused") // Parameter for parametrized tests
     private static List<Integer> getAllLensFacingDirections() {
-        List<Integer> lensFacingDirections = new ArrayList<>(
-                List.of(LENS_FACING_BACK, LENS_FACING_FRONT));
-        if (Flags.externalVirtualCameras()) {
-            lensFacingDirections.add(LENS_FACING_EXTERNAL);
-        }
-        return lensFacingDirections;
+        return List.of(LENS_FACING_BACK, LENS_FACING_FRONT, LENS_FACING_EXTERNAL);
     }
 }
