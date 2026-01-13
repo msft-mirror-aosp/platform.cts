@@ -59,6 +59,8 @@ public class TestUsbTest extends DeviceTestCase implements IAbiReceiver, IBuildR
     private static final String DUMMY_ACTIVITY = PACKAGE_NAME + ".DummyActivity";
     private static final long CONN_TIMEOUT_MS = 15000;
     private static final long SLEEP_MS = 300;
+    private static final long STABILITY_SLEEP_MS = 2500;
+    private static final long STABILITY_ITERATIONS = 3;
     private static final String FEATURE_MIDI = "android.software.midi";
     private static final String MIDI_DEVICE_NAME = "Android USB Peripheral Port";
 
@@ -278,6 +280,35 @@ public class TestUsbTest extends DeviceTestCase implements IAbiReceiver, IBuildR
         String midiDevices = mDevice.executeShellCommand("dumpsys midi");
         CLog.i(midiDevices);
         assertTrue("Midi device not found", midiDevices.contains(MIDI_DEVICE_NAME));
+    }
+
+    public void testUsbStability() throws Exception {
+        clearLogCat();
+        CLog.i("Switching to root.");
+        mDevice.enableAdbRoot();
+
+        // We run multiple iterations as sometimes USB stack set up after adb root takes time
+        for (int i = 0; i < STABILITY_ITERATIONS; i++) {
+            CLog.i("Stop/Start loop iteration: " + i);
+
+            CLog.i("Running Stop");
+            String output = mDevice.executeShellCommand("stop");
+            CLog.i("Output: [" + output + "]");
+            assertEquals("", output);
+
+            mDevice.waitForDeviceOnline(CONN_TIMEOUT_MS);
+
+            CLog.i("Sleeping.");
+            RunUtil.getDefault().sleep(STABILITY_SLEEP_MS);
+
+            CLog.i("Running Start");
+            output = mDevice.executeShellCommand("start");
+            CLog.i("Output: [" + output + "]");
+            assertEquals("", output);
+
+            CLog.i("Sleeping.");
+            RunUtil.getDefault().sleep(STABILITY_SLEEP_MS);
+        }
     }
 
     private void clearLogCat() throws DeviceNotAvailableException {
