@@ -217,6 +217,9 @@ public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
 
     @AfterClass
     public static void afterAllTests() throws Exception {
+        if (sInitError != null) {
+            return;
+        }
         MockModemTestBase.afterAllTestsBase();
     }
 
