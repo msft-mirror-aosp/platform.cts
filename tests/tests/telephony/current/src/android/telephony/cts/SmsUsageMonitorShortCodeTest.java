@@ -911,8 +911,10 @@ public class SmsUsageMonitorShortCodeTest {
     @Before
     public void setUp() throws Exception {
         mContext = getInstrumentation().getTargetContext();
-        assumeTrue(mContext.getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_TELEPHONY_MESSAGING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_MESSAGING",
+                mContext.getPackageManager()
+                        .hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));
     }
 
     private static int expectedReturnCode(String address) {

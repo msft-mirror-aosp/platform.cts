@@ -46,7 +46,7 @@ public final class GetDefaultDownloadableSubscriptionListResultTest {
 
     @Before
     public void setUp() {
-        assumeTrue(EuiccUtil.hasEuiccFeature());
+        assumeTrue("Device does not have Euicc feature", EuiccUtil.hasEuiccFeature());
 
         mDefaultSubListResult =
                 new GetDefaultDownloadableSubscriptionListResult(

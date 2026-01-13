@@ -361,8 +361,8 @@ public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
             })
     public void testNetworkValidated() throws Throwable {
         Log.d(TAG, "ConnectivityManagerTestOnMockModem#testNetworkValidated");
-        assumeTrue(hasApns(MCC_MNC_TWN_CHT));
-        assumeTrue(isSimHotSwapCapable());
+        assumeTrue("Device does not have APNs for CHT", hasApns(MCC_MNC_TWN_CHT));
+        assumeTrue("Device does not support SIM hot-swap", isSimHotSwapCapable());
 
         int slotId = 0;
 
@@ -434,8 +434,8 @@ public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
     public void testDDSChange() throws Throwable {
         Log.d(TAG, "ConnectivityManagerTestOnMockModem#testDDSChange");
         assumeTrue("Skip test: Not test on single SIM device", sIsMultiSimDevice);
-        assumeTrue(hasApns(MCC_MNC_TWN_CHT));
-        assumeTrue(hasApns(MCC_MNC_TWN_FET));
+        assumeTrue("Device does not have APNs for CHT", hasApns(MCC_MNC_TWN_CHT));
+        assumeTrue("Device does not have APNs for FET", hasApns(MCC_MNC_TWN_FET));
 
         int slotId_0 = 0;
         int slotId_1 = 1;
@@ -496,7 +496,7 @@ public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
     @Test
     public void testExplicitDisconnect() throws Throwable {
         int slotId_0 = 0;
-        assumeTrue(hasApns(MCC_MNC_TWN_CHT));
+        assumeTrue("Device does not have APNs for CHT", hasApns(MCC_MNC_TWN_CHT));
         try {
             mPreciseDataConnectionStateCallback = new PreciseDataConnectionStateListener();
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
@@ -557,7 +557,7 @@ public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
     @Test
     public void testExplicitDisconnectWithOldHAL() throws Throwable {
         int slotId_0 = 0;
-        assumeTrue(hasApns(MCC_MNC_TWN_CHT));
+        assumeTrue("Device does not have APNs for CHT", hasApns(MCC_MNC_TWN_CHT));
         try {
             mPreciseDataConnectionStateCallback = new PreciseDataConnectionStateListener();
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(

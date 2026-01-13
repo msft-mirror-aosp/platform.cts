@@ -20,9 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.pm.PackageManager;
-
 import android.telephony.CellSignalStrength;
-import android.telephony.SignalStrength;
 
 import androidx.test.InstrumentationRegistry;
 
@@ -38,8 +36,11 @@ public class CellSignalStrengthTest {
 
     @Before
     public void setUp() throws Exception {
-        assumeTrue(InstrumentationRegistry.getContext().getPackageManager()
-                .hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY",
+                InstrumentationRegistry.getContext()
+                        .getPackageManager()
+                        .hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
     }
 
     /** Check whether NUM_SIGNAL_STRENGTH_BINS holds value 5 as required by

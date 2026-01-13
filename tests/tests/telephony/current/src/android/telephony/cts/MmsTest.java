@@ -246,8 +246,11 @@ public class MmsTest {
         mRandom = new Random();
         mTelephonyManager =
                 (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
-        assumeTrue(getContext().getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_TELEPHONY_MESSAGING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_MESSAGING",
+                getContext()
+                        .getPackageManager()
+                        .hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));
         mOriginalDefaultSmsApp = DefaultSmsAppHelper.getDefaultSmsApp(getContext());
         DefaultSmsAppHelper.stopBeingDefaultSmsApp();
     }

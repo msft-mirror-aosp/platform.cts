@@ -97,7 +97,7 @@ public final class GbaServiceTest {
 
     @Before
     public void setUp() throws Exception {
-        assumeTrue(isFeatureSupported());
+        assumeTrue("Device should have FEATURE_TELEPHONY_SUBSCRIPTION", isFeatureSupported());
 
         setService(SERVICE_PACKAGE);
         setReleaseTime(RELEASE_DEFAULT);

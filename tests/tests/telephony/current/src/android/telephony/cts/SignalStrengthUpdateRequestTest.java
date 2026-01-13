@@ -56,8 +56,11 @@ public class SignalStrengthUpdateRequestTest {
 
     @Before
     public void setUp() throws Exception {
-        assumeTrue(InstrumentationRegistry.getContext().getPackageManager()
-                .hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY",
+                InstrumentationRegistry.getContext()
+                        .getPackageManager()
+                        .hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
     }
 
     @Test

@@ -234,7 +234,7 @@ public class SubscriptionManagerTest {
     @Before
     public void setUp() throws Exception {
         if (sInitError != null) throw sInitError;
-        assumeTrue(isSupported());
+        assumeTrue("Device does not support telephony subscription", isSupported());
 
         mSm = InstrumentationRegistry.getContext().getSystemService(SubscriptionManager.class);
         mSubId = SubscriptionManager.getDefaultDataSubscriptionId();
@@ -525,7 +525,7 @@ public class SubscriptionManagerTest {
         // Only make sense to set default sub if the device supports more than 1 modem.
         final TelephonyManager tm = InstrumentationRegistry.getContext()
                 .getSystemService(TelephonyManager.class).createForSubscriptionId(mSubId);
-        assumeTrue(tm.getActiveModemCount() > 1);
+        assumeTrue("Device does not support more than 1 modem", tm.getActiveModemCount() > 1);
 
         int oldSubId = SubscriptionManager.getDefaultVoiceSubscriptionId();
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
@@ -1080,7 +1080,9 @@ public class SubscriptionManagerTest {
         bundle.putBoolean(CarrierConfigManager.KEY_HIDE_ENHANCED_4G_LTE_BOOL, false);
 
         final PackageManager pm = InstrumentationRegistry.getContext().getPackageManager();
-        assumeTrue(pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_IMS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_IMS",
+                pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_IMS));
 
         overrideCarrierConfig(bundle, activeDataSubId);
         try {

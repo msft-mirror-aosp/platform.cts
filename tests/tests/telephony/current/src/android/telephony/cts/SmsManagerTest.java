@@ -213,7 +213,9 @@ public class SmsManagerTest {
     public void setUp() throws Exception {
         mContext = getContext();
         mPackageManager = mContext.getPackageManager();
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_MESSAGING",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));
         mSelfPackageName = mContext.getPackageName();
         mTelephonyManager = mContext.getSystemService(TelephonyManager.class);
         mSubscriptionManager = mContext.getSystemService(SubscriptionManager.class);
@@ -1222,7 +1224,9 @@ public class SmsManagerTest {
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
     @EnsureHasNoDeviceOwner
     public void testGetSmsOtpTrustedAppIds_carrierPrivilegedAppTrusted() throws Exception {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         CarrierPrivilegeUtils.withCarrierPrivileges(
                 getContext(),
                 SubscriptionManager.getDefaultSubscriptionId(),
@@ -1358,7 +1362,9 @@ public class SmsManagerTest {
     @RequiresFlagsEnabled({FLAG_REDACT_OTP_SMS_API})
     @EnsureHasNoDeviceOwner
     public void testIsAppTrustedForSmsOtp_carrierPrivilegedAppTrusted() throws Exception {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         CarrierPrivilegeUtils.withCarrierPrivileges(
                 getContext(),
                 SubscriptionManager.getDefaultSubscriptionId(),

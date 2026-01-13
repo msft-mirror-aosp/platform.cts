@@ -19,17 +19,14 @@ package android.telephony.satellite.cts;
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_CHT;
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_FET;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.telephony.CarrierConfigManager;
 import android.telephony.SubscriptionManager;
 import android.telephony.satellite.SatelliteManager;
 import android.util.Pair;
@@ -38,10 +35,8 @@ import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -97,7 +92,9 @@ public class MultiProviderCoexistSatelliteTest extends CarrierRoamingSatelliteTe
    @Before
    public void setUp() throws Exception {
        logd(TAG, "setUp()");
-       assumeTrue(shouldTestSatelliteWithMockService());
+        assumeTrue(
+                "Device does not support satellite with mock service",
+                shouldTestSatelliteWithMockService());
    }
 
     @After
@@ -109,7 +106,9 @@ public class MultiProviderCoexistSatelliteTest extends CarrierRoamingSatelliteTe
     public void testSelectBindingSatelliteSubscription_ntnOnly_manualConnect()
         throws Exception {
         logd(TAG, "testSelectBindingSatelliteSubscription_ntnOnly_manualConnect");
-        assumeTrue(shouldTestSatelliteWithMockService());
+        assumeTrue(
+                "Device does not support satellite with mock service",
+                shouldTestSatelliteWithMockService());
         assumeTrue("Skip test on single SIM device", sIsMultiSimDevice);
         assertEquals(getNumberOfActiveSubscriptions(), 0L);
 
@@ -170,8 +169,10 @@ public class MultiProviderCoexistSatelliteTest extends CarrierRoamingSatelliteTe
             selectedNbIotSatelliteSubscriptionCallbackTest.drainPermits();
 
             // Move the device to out of the geofence region of the manual-connect subscription
-            logd(TAG, "testSelectBindingSatelliteSubscription_ntnOnly_manualConnect: "
-                + "move the device to out of the geofence region of the manual-connect subscription");
+            logd(
+                    TAG,
+                    "testSelectBindingSatelliteSubscription_ntnOnly_manualConnect: move the device"
+                            + " to out of the geofence region of the manual-connect subscription");
             assertTrue(sMockSatelliteServiceManager.setSatelliteAccessAllowedForSubscriptions(
                 false, null));
 
@@ -195,7 +196,9 @@ public class MultiProviderCoexistSatelliteTest extends CarrierRoamingSatelliteTe
     @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_CARRIER_IDS_IN_GEOFENCE)
     public void testSelectBindingSatelliteSubscription_useCarrierIdInGeofence() throws Exception {
         logd(TAG, "testSelectBindingSatelliteSubscription_useCarrierIdInGeofence");
-        assumeTrue(shouldTestSatelliteWithMockService());
+        assumeTrue(
+                "Device does not support satellite with mock service",
+                shouldTestSatelliteWithMockService());
         assertEquals(getNumberOfActiveSubscriptions(), 0L);
 
         grantSatellitePermission();
@@ -237,8 +240,10 @@ public class MultiProviderCoexistSatelliteTest extends CarrierRoamingSatelliteTe
             selectedNbIotSatelliteSubscriptionCallbackTest.drainPermits();
 
             // Move the device to out of the geofence region of the manual-connect subscription
-            logd(TAG, "testSelectBindingSatelliteSubscription_useCarrierIdInGeofence: "
-                + "move the device to out of the geofence region of the manual-connect subscription");
+            logd(
+                    TAG,
+                    "testSelectBindingSatelliteSubscription_useCarrierIdInGeofence: move the device"
+                            + " to out of the geofence region of the manual-connect subscription");
             assertTrue(sMockSatelliteServiceManager.setSatelliteAccessAllowedForSubscriptions(
                 false, null));
 
@@ -266,14 +271,16 @@ public class MultiProviderCoexistSatelliteTest extends CarrierRoamingSatelliteTe
                 SATELLITE_S2_FILE_WITH_CONFIG_ID, TimeUnit.MINUTES.toNanos(10), "US",
                 SATELLITE_ACCESS_CONFIGURATION_FILE));
 
-            logd("testSelectBindingSatelliteSubscription_useCarrierIdInGeofence: Set current location "
-                    + "to Google Bangalore office where not support Satellite to clean up "
-                    + "SatelliteController's mCurrentLocationCarrierIds cache");
+            logd(
+                    "testSelectBindingSatelliteSubscription_useCarrierIdInGeofence: Set current"
+                            + " location to Google Bangalore office where not support Satellite to"
+                            + " clean up SatelliteController's mCurrentLocationCarrierIds cache");
             setTestProviderLocation(12.994021769576554, 12.994021769576554);
             verifyIsSatelliteAllowed(false);
 
-            logd("testSelectBindingSatelliteSubscription_useCarrierIdInGeofence: Set current location to"
-                     + " Google San Diego office");
+            logd(
+                    "testSelectBindingSatelliteSubscription_useCarrierIdInGeofence: Set current"
+                            + " location to Google San Diego office");
             setTestProviderLocation(32.909808231041644, -117.18185788819781);
             verifyIsSatelliteAllowed(true);
 

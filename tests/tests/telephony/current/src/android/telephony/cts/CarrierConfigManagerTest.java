@@ -144,8 +144,10 @@ public class CarrierConfigManagerTest {
 
     @Before
     public void setUp() throws Exception {
-        assumeTrue(getContext().getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                getContext().getPackageManager().hasSystemFeature(
+                        PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         mTelephonyManager = (TelephonyManager)
                 getContext().getSystemService(Context.TELEPHONY_SERVICE);
         mConfigManager = (CarrierConfigManager)

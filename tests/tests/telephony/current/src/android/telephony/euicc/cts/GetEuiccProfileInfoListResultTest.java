@@ -47,7 +47,7 @@ public final class GetEuiccProfileInfoListResultTest {
 
     @Before
     public void setUp() {
-        assumeTrue(EuiccUtil.hasEuiccFeature());
+        assumeTrue("Device does not have Euicc feature", EuiccUtil.hasEuiccFeature());
 
         mProfileListResult =
                 new GetEuiccProfileInfoListResult(

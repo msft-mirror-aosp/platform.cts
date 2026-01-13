@@ -84,6 +84,7 @@ public class CarrierMessagingServiceWrapperTest {
     @Before
     public void setUp() throws Exception {
         assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_MESSAGING",
                 getContext()
                         .getPackageManager()
                         .hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));

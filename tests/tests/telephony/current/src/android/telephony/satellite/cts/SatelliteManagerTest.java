@@ -194,7 +194,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         logd("setUp");
 
         if (!shouldTestSatellite()) return;
-        assumeTrue(sSatelliteManager != null);
+        assumeTrue("sSatelliteManager is null", sSatelliteManager != null);
     }
 
     @After
