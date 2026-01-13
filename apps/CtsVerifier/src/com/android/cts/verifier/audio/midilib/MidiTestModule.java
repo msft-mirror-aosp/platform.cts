@@ -17,6 +17,12 @@
 package com.android.cts.verifier.audio.midilib;
 
 import android.media.midi.MidiDeviceInfo;
+import android.util.Log;
+
+import com.android.cts.verifier.audio.MidiTestActivityBase;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.Collection;
 import java.util.Timer;
@@ -131,5 +137,59 @@ public abstract class MidiTestModule {
             }
         };
         mTimeoutTimer.schedule(task, TEST_TIMEOUT_MS);
+    }
+
+    /** Returns the test results as a JSON object */
+    public JSONObject getTestResultsAsJsonObject() {
+        JSONObject testResultsJson = new JSONObject();
+        try {
+            testResultsJson.put(
+                    MidiTestActivityBase.KEY_DEVICE_TYPE, getDeviceTypeString(mDeviceType));
+            testResultsJson.put(
+                    MidiTestActivityBase.KEY_TEST_STATUS, getTestStatusString(getTestStatus()));
+            testResultsJson.put(MidiTestActivityBase.KEY_INPUT_NAME, getInputName());
+            testResultsJson.put(MidiTestActivityBase.KEY_OUTPUT_NAME, getOutputName());
+        } catch (JSONException e) {
+            Log.e(TAG, "Failed to create test data JSON object", e);
+        }
+        return testResultsJson;
+    }
+
+    protected String getDeviceTypeString(int deviceType) {
+        switch (deviceType) {
+            case MidiDeviceInfo.TYPE_USB:
+                return "USB";
+            case MidiDeviceInfo.TYPE_VIRTUAL:
+                return "Virtual";
+            case MidiDeviceInfo.TYPE_BLUETOOTH:
+                return "Bluetooth";
+            default:
+                return "Unknown";
+        }
+    }
+
+    protected String getTestStatusString(int status) {
+        switch (status) {
+            case TESTSTATUS_NOTRUN:
+                return "Not Run";
+            case TESTSTATUS_PASSED:
+                return "Passed";
+            case TESTSTATUS_FAILED_MISMATCH:
+                return "Failed Mismatch";
+            case TESTSTATUS_FAILED_TIMEOUT:
+                return "Failed Timeout";
+            case TESTSTATUS_FAILED_OVERRUN:
+                return "Failed Overrun";
+            case TESTSTATUS_FAILED_DEVICE:
+                return "Failed Device";
+            case TESTSTATUS_FAILED_JNI:
+                return "Failed JNI";
+            case TESTSTATUS_FAILED_SETUP:
+                return "Failed Setup";
+            case TESTSTATUS_FAILED_SEND:
+                return "Failed Send";
+            default:
+                return "Unknown";
+        }
     }
 }

@@ -16,6 +16,9 @@
 
 package com.android.cts.verifier.audio;
 
+import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
+import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
+
 import android.media.midi.MidiDevice;
 import android.media.midi.MidiDeviceInfo;
 import android.media.midi.MidiManager;
@@ -60,6 +63,9 @@ public class MidiJavaTestActivity extends MidiTestActivityBase {
     private static final String TAG = "MidiJavaTestActivity";
     private static final boolean DEBUG = true;
 
+    // ReportLog Schema
+    private static final String SECTION_MIDI_JAVA = "midi_java";
+
     public MidiJavaTestActivity() {
         super();
         initTestModules(new JavaMidiTestActivityModule(MidiDeviceInfo.TYPE_USB),
@@ -77,10 +83,17 @@ public class MidiJavaTestActivity extends MidiTestActivityBase {
 
         super.onCreate(savedInstanceState);
 
+        mRequireReportLogToPass = true;
+
         startMidiEchoServer();
         scanMidiDevices();
 
         connectDeviceListener();
+    }
+
+    @Override
+    public final String getReportSectionName() {
+        return setTestNameSuffix(sCurrentDisplayMode, SECTION_MIDI_JAVA);
     }
 
     /**
