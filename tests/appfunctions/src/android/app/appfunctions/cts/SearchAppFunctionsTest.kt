@@ -1061,10 +1061,9 @@ class SearchAppFunctionsTest {
         expected: AppFunctionPackageMetadata,
     ) {
         assertThat(actual.packageName).isEqualTo(expected.packageName)
-        // TODO(b/446132791): Enable GD comparison once the top-level documents were included
-        //        val clearedActualGd = sanitizeGenericDocument(actual.metadataDocument)
-        //        val expectedGd = sanitizeGenericDocument(expected.metadataDocument)
-        //        assertThat(clearedActualGd).isEqualTo(expectedGd)
+        val clearedActualGd = sanitizeGenericDocument(actual.metadataDocument)
+        val expectedGd = sanitizeGenericDocument(expected.metadataDocument)
+        assertThat(clearedActualGd).isEqualTo(expectedGd)
     }
 
     private fun setTestPageSize(pageSize: Int) {
