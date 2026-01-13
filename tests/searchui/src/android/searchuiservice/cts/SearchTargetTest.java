@@ -15,11 +15,13 @@
  */
 package android.searchuiservice.cts;
 
-import static com.google.common.truth.Truth.assertThat;
 import static androidx.test.InstrumentationRegistry.getContext;
+
+import static com.google.common.truth.Truth.assertThat;
 
 import android.app.search.SearchAction;
 import android.app.search.SearchTarget;
+import android.app.search.flags.Flags;
 import android.appwidget.AppWidgetProviderInfo;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -28,10 +30,15 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.os.UserHandle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.widget.RemoteViews;
 
 import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -42,6 +49,9 @@ import org.junit.runner.RunWith;
  */
 @RunWith(AndroidJUnit4.class)
 public class SearchTargetTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String ID = "ID";
     private static final String ID2 = "ID2";
     private static final String PARENTID = "PARENTID";
@@ -56,6 +66,7 @@ public class SearchTargetTest {
             .setIntent(new Intent())
             .build();
     private static final Uri SLICE_URI = Uri.EMPTY;
+    private static final int REMOTE_LAYOUT_ID = 0;
 
     SearchTarget.Builder mBuilderAction = new SearchTarget.Builder(RESULT_CORPUS, LAYOUT_TYPE, ID)
             .setPackageName(PACKAGE_NAME)
@@ -123,6 +134,19 @@ public class SearchTargetTest {
                 .setAppWidgetProviderInfo(info)
                 .build();
         assertThat(target.getAppWidgetProviderInfo()).isEqualTo(info);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_REMOTE_VIEWS)
+    @Test
+    public void testBuilderRemoteViews() {
+        RemoteViews remoteViews = new RemoteViews(PACKAGE_NAME, REMOTE_LAYOUT_ID);
+        SearchTarget target =
+                new SearchTarget.Builder(RESULT_CORPUS, LAYOUT_TYPE, ID)
+                        .setPackageName(PACKAGE_NAME)
+                        .setUserHandle(UserHandle.CURRENT)
+                        .setRemoteViews(remoteViews)
+                        .build();
+        assertThat(target.getRemoteViews()).isEqualTo(remoteViews);
     }
 
     private SearchTarget cloneThroughParcel(@NonNull SearchTarget target) {
