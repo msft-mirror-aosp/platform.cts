@@ -31,6 +31,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.externalservice.common.RunningServiceInfo;
 import android.externalservice.common.ServiceMessages;
+import android.nativeservice.simple.ISimpleNativeService;
 import android.os.ConditionVariable;
 import android.os.Handler;
 import android.os.IBinder;
@@ -39,6 +40,9 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.Process;
 import android.os.RemoteException;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -47,6 +51,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -62,6 +67,9 @@ public class ExternalServiceTest {
 
     private static final int CONDITION_TIMEOUT = 10 * 1000; // 10 seconds
     private Context mContext;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() {
@@ -385,6 +393,43 @@ public class ExternalServiceTest {
         assertNotEquals(Process.myPid(), id.zygotePid);
         assertNotEquals(-1, id.zygotePid);
         assertEquals(SERVICE_PACKAGE, id.zygotePackage);
+    }
+
+    /** Tests binding an externalService that is started by the native zygote. */
+    @Test
+    @RequiresFlagsEnabled(android.os.Flags.FLAG_NATIVE_FRAMEWORK_PROTOTYPE)
+    public void testBindExternalNativeService() {
+        // Start the service and wait for connection.
+        Intent intent = new Intent();
+        intent.setComponent(
+                new ComponentName(SERVICE_PACKAGE, SERVICE_PACKAGE + ".ExternalNativeService"));
+
+        mCondition.close();
+        assertTrue(
+                mContext.bindService(
+                        intent,
+                        mConnection,
+                        Context.BIND_AUTO_CREATE | Context.BIND_EXTERNAL_SERVICE));
+
+        assertTrue(mCondition.block(CONDITION_TIMEOUT));
+        assertEquals(mContext.getPackageName(), mConnection.name.getPackageName());
+        assertNotSame(SERVICE_PACKAGE, mConnection.name.getPackageName());
+
+        // Check the identity of the service.
+        final ISimpleNativeService service =
+                ISimpleNativeService.Stub.asInterface(mConnection.service);
+        int pid = 0;
+        int uid = 0;
+        try {
+            pid = service.getPid();
+            uid = service.getUid();
+        } catch (RemoteException e) {
+            fail("Unexpected remote exception" + e);
+        }
+
+        assertFalse(uid == 0 || pid == 0);
+        assertNotEquals(Process.myUid(), uid);
+        assertNotEquals(Process.myPid(), pid);
     }
 
     /**
