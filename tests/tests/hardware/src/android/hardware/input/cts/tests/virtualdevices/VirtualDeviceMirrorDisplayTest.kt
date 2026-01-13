@@ -16,7 +16,6 @@
 package android.hardware.input.cts.tests.virtualdevices
 
 import android.companion.virtual.VirtualDeviceManager
-import android.companion.virtualdevice.flags.Flags
 import android.graphics.Point
 import android.graphics.PointF
 import android.hardware.display.DisplayManager
@@ -38,7 +37,6 @@ import android.hardware.input.VirtualTouchscreen
 import android.hardware.input.cts.tests.InputTestCase
 import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator
 import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator
-import android.platform.test.annotations.RequiresFlagsEnabled
 import android.server.wm.WindowManagerStateHelper
 import android.util.DisplayMetrics
 import android.view.InputDevice
@@ -617,7 +615,6 @@ class VirtualDeviceMirrorDisplayTest : InputTestCase() {
         verifyEvents(expectedEvents)
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_ROTARY)
     @Test
     fun virtualRotary_scrollEvent() {
         val rotary: VirtualRotaryEncoder = VirtualInputDeviceCreator.createAndPrepareRotary(

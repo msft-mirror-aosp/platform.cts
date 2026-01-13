@@ -64,7 +64,6 @@ android_test_helper_app {
     sdk_version: "current",
     srcs: ["src/**/*.java"],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     use_embedded_native_libs: false,
@@ -77,7 +76,6 @@ android_test_helper_app {
     sdk_version: "current",
     srcs: ["src/**/*.java"],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     use_embedded_native_libs: false,
@@ -90,7 +88,6 @@ android_test_helper_app {
     sdk_version: "current",
     srcs: ["src/**/*.java"],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     use_embedded_native_libs: false,
@@ -104,7 +101,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     manifest: "AndroidManifest33.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
     use_embedded_native_libs: false,
@@ -118,7 +114,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     manifest: "AndroidManifest33.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
     use_embedded_native_libs: false,
@@ -132,7 +127,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     manifest: "AndroidManifest33.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
     use_embedded_native_libs: false,
@@ -145,7 +139,6 @@ android_test_helper_app {
     sdk_version: "current",
     srcs: ["src/**/*.java"],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     use_embedded_native_libs: false,
@@ -158,7 +151,6 @@ android_test_helper_app {
     sdk_version: "current",
     srcs: ["src/**/*.java"],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     use_embedded_native_libs: false,
@@ -171,7 +163,6 @@ android_test_helper_app {
     sdk_version: "current",
     srcs: ["src/**/*.java"],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     use_embedded_native_libs: false,
@@ -185,7 +176,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     manifest: "AndroidManifest33.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
     use_embedded_native_libs: false,
@@ -199,7 +189,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     manifest: "AndroidManifest33.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
     use_embedded_native_libs: false,
@@ -213,7 +202,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     manifest: "AndroidManifest33.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
     use_embedded_native_libs: false,

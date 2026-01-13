@@ -82,6 +82,11 @@ public class FullScreenMagnificationControllerTest {
     private static final String SETTING_KEY_MAGNIFICATION_ALWAYS_ON =
             "accessibility_magnification_always_on_enabled";
 
+    private static final String CONFIG_KEY_MAGNIFICATION_ALWAYS_ON_SUPPORTED =
+            "config_magnification_always_on_enabled";
+    private static final String CONFIG_KEY_MAGNIFICATION_KEEP_MAGNIFIED =
+            "config_magnification_keep_zoom_level_when_context_changed";
+
     private static Instrumentation sInstrumentation;
     private static UiAutomation sUiAutomation;
     private StubMagnificationAccessibilityService mService;
@@ -143,7 +148,8 @@ public class FullScreenMagnificationControllerTest {
     @Test
     public void testActivityTransitions_alwaysOnEnabled_keepMagnifiedDisabled_zoomOut()
             throws Exception {
-        assumeFalse(isKeepMagnifiedOnContextChangeEnabled());
+        assumeTrue(isAlwaysOnSupported());
+        assumeFalse(isKeepMagnifiedEnabled());
 
         try (var session = getAlwaysOnSettingsSession(true)) {
             mActivityScenario = launchActivityAndWait();
@@ -160,7 +166,8 @@ public class FullScreenMagnificationControllerTest {
     @Test
     public void testActivityTransitions_alwaysOnEnabled_keepMagnifiedEnabled_keepZoom()
             throws Exception {
-        assumeTrue(isKeepMagnifiedOnContextChangeEnabled());
+        assumeTrue(isAlwaysOnSupported());
+        assumeTrue(isKeepMagnifiedEnabled());
 
         try (var session = getAlwaysOnSettingsSession(true)) {
             mActivityScenario = launchActivityAndWait();
@@ -263,12 +270,33 @@ public class FullScreenMagnificationControllerTest {
                 });
     }
 
-    private boolean isKeepMagnifiedOnContextChangeEnabled() {
+    private boolean isAlwaysOnSupported() {
         try {
-            return sInstrumentation.getTargetContext().getResources().getBoolean(
-                    Resources.getSystem().getIdentifier(
-                            "config_magnification_keep_zoom_level_when_context_changed", "bool",
-                            "android"));
+            return sInstrumentation
+                    .getTargetContext()
+                    .getResources()
+                    .getBoolean(
+                            Resources.getSystem()
+                                    .getIdentifier(
+                                            CONFIG_KEY_MAGNIFICATION_ALWAYS_ON_SUPPORTED,
+                                            "bool",
+                                            "android"));
+        } catch (Resources.NotFoundException ignore) {
+            return false;
+        }
+    }
+
+    private boolean isKeepMagnifiedEnabled() {
+        try {
+            return sInstrumentation
+                    .getTargetContext()
+                    .getResources()
+                    .getBoolean(
+                            Resources.getSystem()
+                                    .getIdentifier(
+                                            CONFIG_KEY_MAGNIFICATION_KEEP_MAGNIFIED,
+                                            "bool",
+                                            "android"));
         } catch (Resources.NotFoundException ignore) {
             return false;
         }

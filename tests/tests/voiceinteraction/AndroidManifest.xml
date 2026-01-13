@@ -58,7 +58,8 @@
         <activity android:name=".WaitForResultActivity"
                   android:label="Wait For Result Activity"
                   android:exported="true"
-                  android:configChanges="resourcesUnused"/>
+                  android:configChanges="resourcesUnused|orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|uiMode|density">
+        </activity>
         <!-- VoiceInteractionService -->
         <service android:name=".services.CtsBasicVoiceInteractionService"
                  android:label="CTS test Basic voice interaction service"

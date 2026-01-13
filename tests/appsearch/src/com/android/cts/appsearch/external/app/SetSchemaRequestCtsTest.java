@@ -1024,6 +1024,24 @@ public class SetSchemaRequestCtsTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PRIVATE_COMPUTE_CORE_UID_ACCESS)
+    public void testSetSchema_privateComputeCoreUidAccess() {
+        SetSchemaRequest request =
+                new SetSchemaRequest.Builder()
+                        .addSchemas(AppSearchEmail.SCHEMA)
+                        .addRequiredPermissionsForSchemaTypeVisibility(
+                                AppSearchEmail.SCHEMA_TYPE,
+                                ImmutableSet.of(SetSchemaRequest.PRIVATE_COMPUTE_CORE_UID_ACCESS))
+                        .build();
+
+        assertThat(request.getRequiredPermissionsForSchemaTypeVisibility())
+                .containsEntry(
+                        AppSearchEmail.SCHEMA_TYPE,
+                        ImmutableSet.of(
+                                ImmutableSet.of(SetSchemaRequest.PRIVATE_COMPUTE_CORE_UID_ACCESS)));
+    }
+
+    @Test
     public void testSetSchemaEquals() {
         AppSearchSchema schema1 = new AppSearchSchema.Builder("type1").build();
         Migrator migrator = new NoOpMigrator();

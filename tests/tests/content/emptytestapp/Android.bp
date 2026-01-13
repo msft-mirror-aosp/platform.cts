@@ -24,7 +24,6 @@ android_test_helper_app {
     // tag this module as a cts test artifact
     test_suites: [
         "mts",
-        "cts",
         "general-tests",
     ],
     min_sdk_version: "29",
@@ -38,7 +37,6 @@ android_test_helper_app {
     // tag this module as a cts test artifact
     test_suites: [
         "mts",
-        "cts",
         "general-tests",
     ],
     aaptflags: ["--warn-manifest-validation"],
@@ -52,7 +50,6 @@ android_test_helper_app {
     // tag this module as a cts test artifact
     test_suites: [
         "mts",
-        "cts",
         "general-tests",
     ],
     aaptflags: ["--warn-manifest-validation"],
@@ -66,7 +63,6 @@ android_test_helper_app {
     // tag this module as a cts test artifact
     test_suites: [
         "mts",
-        "cts",
         "general-tests",
     ],
 }
@@ -79,7 +75,6 @@ android_test_helper_app {
     // tag this module as a cts test artifact
     test_suites: [
         "mts",
-        "cts",
         "general-tests",
     ],
 }
@@ -91,7 +86,6 @@ android_test_helper_app {
     manifest: "AndroidManifestLongLabelName.xml",
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
     ],
     min_sdk_version: "29",
@@ -104,7 +98,6 @@ android_test_helper_app {
     manifest: "AndroidManifestEmpty.xml",
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
     ],
     // using 22 (< 23) to avoid soong adds application tag with attr extract-native-libs
@@ -120,7 +113,6 @@ android_test_helper_app {
     manifest: "AndroidManifestLongUsesPermissionName.xml",
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -133,7 +125,6 @@ android_test_helper_app {
     certificate: "platform",
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -145,7 +136,6 @@ android_test_helper_app {
     manifest: "AndroidManifestSdk23.xml",
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -157,7 +147,6 @@ android_test_helper_app {
     manifest: "AndroidManifestSdk24.xml",
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -169,7 +158,6 @@ android_test_helper_app {
     manifest: "AndroidManifestDeclaringLibrary.xml",
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -181,7 +169,6 @@ android_test_helper_app {
     manifest: "AndroidManifestDeclaringStaticLibrary.xml",
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -193,7 +180,6 @@ android_test_helper_app {
     manifest: "AndroidManifestDeclaringSdkLibrary.xml",
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }

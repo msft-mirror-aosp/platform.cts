@@ -155,6 +155,8 @@ public final class ConcurrentMultiUserTest {
                 final ImeEventStream passengerStream = passengerImeSession.openEventStream();
                 final ImeEventStream driverStream = driverImeSession.openEventStream();
 
+                passengerStream.skipAll();
+
                 showDriverImeAndAssert(driverStream);
 
                 // Assertion needed to make sure passenger MockIme not affected
@@ -176,6 +178,8 @@ public final class ConcurrentMultiUserTest {
                     MockImeSession.create(mContext, mUiAutomation, mDriverImeSettings)) {
                 final ImeEventStream driverStream = driverImeSession.openEventStream();
                 final ImeEventStream passengerStream = passengerImeSession.openEventStream();
+
+                driverStream.skipAll();
 
                 showPassengerImeAndAssert(passengerStream);
 
@@ -200,6 +204,9 @@ public final class ConcurrentMultiUserTest {
 
                 showPassengerImeAndAssert(passengerStream);
                 showDriverImeAndAssert(driverStream);
+
+                passengerStream.skipAll();
+
                 hideDriverImeAndAssert(driverStream);
 
                 // Assertion needed to make sure passenger MockIme not affected
@@ -225,6 +232,9 @@ public final class ConcurrentMultiUserTest {
 
                 showPassengerImeAndAssert(passengerStream);
                 showDriverImeAndAssert(driverStream);
+
+                driverStream.skipAll();
+
                 hidePassengerImeAndAssert(passengerStream);
 
                 // Assertion needed to make sure driver MockIme not affected

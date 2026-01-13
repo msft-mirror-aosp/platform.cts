@@ -15,27 +15,18 @@
  */
 package android.hardware.input.cts.tests.virtualdevices
 
-import android.companion.virtualdevice.flags.Flags
 import android.hardware.input.VirtualRotaryEncoderScrollEvent
 import android.os.Parcel
-import android.platform.test.annotations.RequiresFlagsEnabled
-import android.platform.test.flag.junit.CheckFlagsRule
-import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import com.google.common.truth.Truth.assertWithMessage
 import org.junit.Assert.assertThrows
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-@RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_ROTARY)
 @SmallTest
 @RunWith(AndroidJUnit4::class)
 class VirtualRotaryEncoderScrollEventTest {
-    @get:Rule
-    val mCheckFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
-
     @Test
     fun parcelAndUnparcel_matches() {
         val scrollAmount = 0.5f

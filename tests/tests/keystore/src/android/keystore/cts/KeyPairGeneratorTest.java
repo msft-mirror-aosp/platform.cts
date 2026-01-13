@@ -31,6 +31,10 @@ import static org.junit.Assume.assumeTrue;
 import android.content.Context;
 import android.keystore.cts.util.StrictModeDetector;
 import android.keystore.cts.util.TestUtils;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.security.KeyPairGeneratorSpec;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyInfo;
@@ -42,6 +46,7 @@ import android.util.Pair;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.CddTest;
 import com.android.internal.util.HexDump;
 
 import junitparams.JUnitParamsRunner;
@@ -53,6 +58,7 @@ import libcore.javax.net.ssl.TestKeyManager;
 import libcore.javax.net.ssl.TestSSLContext;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -178,6 +184,10 @@ public class KeyPairGeneratorTest {
         return InstrumentationRegistry.getInstrumentation().getTargetContext();
     }
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Before
     public void setUp() throws Exception {
         mRng = new CountingSecureRandom();
@@ -186,7 +196,21 @@ public class KeyPairGeneratorTest {
     }
 
     @Test
-    public void testAlgorithmList() {
+    @CddTest(requirement = "9.11/C-1-2")
+    @RequiresFlagsEnabled(android.security.keystore2.Flags.FLAG_MLDSA_SUPPORT)
+    public void testAlgorithmList_withMlDsa() {
+        TestUtils.assumeMlDsaSupported(/* useStrongBox= */ false);
+        testAlgorithmList(/* expectMlDsa= */ true);
+    }
+
+    @Test
+    @CddTest(requirement = "9.11/C-1-2")
+    @RequiresFlagsDisabled(android.security.keystore2.Flags.FLAG_MLDSA_SUPPORT)
+    public void testAlgorithmList_withoutMlDsa() {
+        testAlgorithmList(/* expectMlDsa= */ false);
+    }
+
+    private void testAlgorithmList(boolean expectMlDsa) {
         // Assert that Android Keystore Provider exposes exactly the expected KeyPairGenerator
         // algorithms. We don't care whether the algorithms are exposed via aliases, as long as
         // canonical names of algorithms are accepted. If the Provider exposes extraneous
@@ -205,6 +229,14 @@ public class KeyPairGeneratorTest {
         if (TestUtils.isEd25519AlgorithmExpectedToSupport()) {
             // AndroidKeyStore supports key generation of curve Ed25519 from Android V preview
             expectedAlgsLowerCase.add("ed25519");
+        }
+
+        if (expectMlDsa) {
+            // TODO(b/395069350): Move these values to EXPECTED_ALGORITHMS once the remaining tests
+            // in this file are updated to handle ML-DSA.
+            expectedAlgsLowerCase.add("ml-dsa");
+            expectedAlgsLowerCase.add("ml-dsa-65");
+            expectedAlgsLowerCase.add("ml-dsa-87");
         }
 
         for (Service service : services) {

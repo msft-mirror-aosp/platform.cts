@@ -218,7 +218,7 @@ public class AppDataIsolationTests extends BaseAppSecurityTest {
             RunUtil.getDefault().sleep(15000);
 
             // Follow DirectBootHostTest, reboot system into known state with keys ejected
-            getDevice().reboot();
+            getDevice().rebootUntilOnline();
             waitForBootCompleted(getDevice());
 
             // Verify DE data is still readable and writeable, while CE and external data are not
@@ -257,7 +257,8 @@ public class AppDataIsolationTests extends BaseAppSecurityTest {
                 getDevice().executeShellCommand("locksettings set-disabled true");
             } finally {
                 // Get ourselves back into a known-good state
-                getDevice().reboot();
+                getDevice().rebootUntilOnline();
+                getDevice().waitForDeviceAvailable();
             }
         }
     }
