@@ -31,6 +31,7 @@ import android.view.View;
 import java.util.Arrays;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -49,6 +50,8 @@ import org.json.JSONObject;
 
 /**
  * Tests Audio Device roundtrip latency by using a loopback plug.
+ * See https://source.android.com/docs/core/audio/latency/loopback for more details.
+ * Note that the audio loopback dongle is expected to have about 20dB reduction in the audio level.
  */
 public class AudioFrequencyLineActivity extends AudioFrequencyActivity implements Runnable,
     AudioRecord.OnRecordPositionUpdateListener {
@@ -57,7 +60,8 @@ public class AudioFrequencyLineActivity extends AudioFrequencyActivity implement
     static final int TEST_STARTED = 900;
     static final int TEST_ENDED = 901;
     static final int TEST_MESSAGE = 902;
-    static final double MIN_ENERGY_BAND_1 = -20.0;
+    static final double MIN_ENERGY_BAND_1 = -50.0;                    // dB Full Scale
+    static final double AUDIO_LOOPBACK_DONGLE_REDUCTION = 20.0;
     static final double MIN_FRACTION_POINTS_IN_BAND = 0.3;
 
     OnBtnClickListener mBtnClickListener = new OnBtnClickListener();
@@ -69,6 +73,7 @@ public class AudioFrequencyLineActivity extends AudioFrequencyActivity implement
     Button mTestButton;
     TextView mResultText;
     ProgressBar mProgressBar;
+    CheckBox mAudioLoopbackCheckbox;
     //recording
     private boolean mIsRecording = false;
     private final Object mRecordingLock = new Object();
@@ -148,6 +153,7 @@ public class AudioFrequencyLineActivity extends AudioFrequencyActivity implement
         mTestButton.setOnClickListener(mBtnClickListener);
         mResultText = (TextView)findViewById(R.id.audio_frequency_line_results_text);
         mProgressBar = (ProgressBar)findViewById(R.id.audio_frequency_line_progress_bar);
+        mAudioLoopbackCheckbox = (CheckBox) findViewById(R.id.audio_loopback_checkbox);
         showWait(false);
         enableLayout(R.id.audio_frequency_line_layout, false);         //disabled all content
 
@@ -328,10 +334,11 @@ public class AudioFrequencyLineActivity extends AudioFrequencyActivity implement
         }
 
         public boolean testLevel() {
-            if (mAverageEnergyPerBand[1] >= MIN_ENERGY_BAND_1) {
-                return true;
+            double threshold = MIN_ENERGY_BAND_1;
+            if (mAudioLoopbackCheckbox.isChecked()) {
+                threshold -= AUDIO_LOOPBACK_DONGLE_REDUCTION;
             }
-            return false;
+            return mAverageEnergyPerBand[1] >= threshold;
         }
 
         public boolean testInBand(int b) {

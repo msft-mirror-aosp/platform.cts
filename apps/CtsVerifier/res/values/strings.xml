@@ -6031,6 +6031,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_loopback_instructions">
           Please connect a "Loopback Plug" and press "Loopback Plug Ready".
     </string>
+    <string name="audio_loopback_checkbox_text">"Audio loopback dongle is used."</string>
     <string name="audio_loopback_plug_ready_btn">Loopback Plug Ready</string>
 
     <string name="audio_loopback_calibrate_button">Calibrate Audio</string>
