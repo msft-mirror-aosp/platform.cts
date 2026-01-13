@@ -32,6 +32,7 @@ import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import org.junit.After
 import org.junit.Assert.assertThrows
 import org.junit.Assume.assumeNotNull
 import org.junit.Before
@@ -84,11 +85,17 @@ class ComputerControlExtensionsTest {
 
     private val context = getInstrumentation().context
     private var extension: ComputerControlExtensions? = null
+    private var session: ComputerControlSession? = null
 
     @Before
     fun setUp() {
         extension = ComputerControlExtensions.getInstance(context)
         assumeNotNull(extension)
+    }
+
+    @After
+    fun tearDown() {
+        session?.close()
     }
 
     @Test
@@ -120,7 +127,7 @@ class ComputerControlExtensionsTest {
                 .build()
         val callback1 = ComputerControlSessionCallbackImpl()
         extension!!.requestSession(params, Executors.newSingleThreadExecutor(), callback1)
-        val session = callback1.waitForSession()
+        session = callback1.waitForSession()
         assertThat(session).isNotNull()
 
         // Request a session with the same name again.
@@ -132,32 +139,6 @@ class ComputerControlExtensionsTest {
     }
 
     @Test
-    fun testRequestSession_multipleLiveSessionDifferentNames() {
-        val params1 =
-            ComputerControlSession.Params.Builder(context)
-                .setName("${testName.methodName}")
-                .setTargetPackageNames(listOf(TEST_APP_PACKAGE_NAME))
-                .build()
-        val callback1 = ComputerControlSessionCallbackImpl()
-        extension!!.requestSession(params1, Executors.newSingleThreadExecutor(), callback1)
-        val session1 = callback1.waitForSession()
-        assertThat(session1).isNotNull()
-
-        // Request a session with the different name.
-        val params2 =
-            ComputerControlSession.Params.Builder(context)
-                .setName("${testName.methodName}2")
-                .setTargetPackageNames(listOf(TEST_APP_PACKAGE_NAME))
-                .build()
-        val callback2 = ComputerControlSessionCallbackImpl()
-        extension!!.requestSession(params2, Executors.newSingleThreadExecutor(), callback2)
-        val session2 = callback2.waitForSession()
-        assertThat(session2).isNotNull()
-        session1!!.close()
-        session2!!.close()
-    }
-
-    @Test
     fun testRequestSession_closeAndReopenSessionWithSameName() {
         val params =
             ComputerControlSession.Params.Builder(context)
@@ -166,7 +147,7 @@ class ComputerControlExtensionsTest {
                 .build()
         val callback1 = ComputerControlSessionCallbackImpl()
         extension!!.requestSession(params, Executors.newSingleThreadExecutor(), callback1)
-        var session = callback1.waitForSession()
+        session = callback1.waitForSession()
         assertThat(session).isNotNull()
         session!!.close()
 
@@ -218,6 +199,33 @@ class ComputerControlExtensionsTest {
     }
 
     @Test
+    fun testRequestSession_failWithSessionLimitReached() {
+        val params1 =
+            ComputerControlSession.Params.Builder(context)
+                .setName("${testName.methodName}")
+                .setTargetPackageNames(listOf(TEST_APP_PACKAGE_NAME))
+                .build()
+        val callback1 = ComputerControlSessionCallbackImpl()
+        extension!!.requestSession(params1, Executors.newSingleThreadExecutor(), callback1)
+        session = callback1.waitForSession()
+        assertThat(session).isNotNull()
+
+        // Request a session with the different name. It should only create one
+        // session at the same time. So the second request should fail.
+        val params2 =
+            ComputerControlSession.Params.Builder(context)
+                .setName("${testName.methodName}2")
+                .setTargetPackageNames(listOf(TEST_APP_PACKAGE_NAME))
+                .build()
+        val callback2 = ComputerControlSessionCallbackImpl()
+        extension!!.requestSession(params2, Executors.newSingleThreadExecutor(), callback2)
+        val session2 = callback2.waitForSession()
+        assertThat(session2).isNull()
+        assertThat(callback2.getErrorCode()).isEqualTo(ERROR_CODE_SESSION_LIMIT_REACHED)
+        session!!.close()
+    }
+
+    @Test
     fun testRequestSession_failWithDeviceLocked() {
         val keyguardManager = context.getSystemService(KeyguardManager::class.java)
         try {
@@ -232,7 +240,7 @@ class ComputerControlExtensionsTest {
                     .build()
             val callback = ComputerControlSessionCallbackImpl()
             extension!!.requestSession(params, Executors.newSingleThreadExecutor(), callback)
-            val session = callback.waitForSession()
+            session = callback.waitForSession()
             assertThat(session).isNull()
             assertThat(callback.getErrorCode()).isEqualTo(ERROR_CODE_DEVICE_LOCKED)
         } finally {
@@ -253,7 +261,7 @@ class ComputerControlExtensionsTest {
                     .build()
             val callback = ComputerControlSessionCallbackImpl()
             extension!!.requestSession(params, Executors.newSingleThreadExecutor(), callback)
-            val session = callback.waitForSession()
+            session = callback.waitForSession()
             assertThat(session).isNull()
             assertThat(callback.getErrorCode()).isEqualTo(ERROR_CODE_PERMISSION_DENIED)
         } finally {
@@ -268,6 +276,8 @@ class ComputerControlExtensionsTest {
 
         // List of ComputerControlSession error codes.
         private const val ERROR_CODE_UNSET = -1
+        // The error code is ComputerControlSession.ERROR_SESSION_LIMIT_REACHED.
+        private const val ERROR_CODE_SESSION_LIMIT_REACHED = 1
         // The error code is ComputerControlSession.ERROR_DEVICE_LOCKED.
         private const val ERROR_CODE_DEVICE_LOCKED = 2
         // The error code is ComputerControlSession.ERROR_PERMISSION_DENIED.
