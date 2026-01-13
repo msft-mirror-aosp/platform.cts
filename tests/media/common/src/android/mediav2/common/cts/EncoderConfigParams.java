@@ -66,6 +66,8 @@ public class EncoderConfigParams {
     // common params
     public final int mProfile;
     public final int mBitRate;
+    public final int mPriority;
+    public final int mOperatingRate;
 
     Builder mBuilder;
     MediaFormat mFormat;
@@ -203,6 +205,8 @@ public class EncoderConfigParams {
             mCompressionLevel = 5;
             mPcmEncoding = AudioFormat.ENCODING_INVALID;
         }
+        mPriority = cfg.mPriority;
+        mOperatingRate = cfg.mOperatingRate;
         mFeatures = cfg.mFeatures;
         mBuilder = cfg;
     }
@@ -244,6 +248,8 @@ public class EncoderConfigParams {
             if (mStandard >= 0) mFormat.setInteger(MediaFormat.KEY_COLOR_STANDARD, mStandard);
             if (mTransfer >= 0) mFormat.setInteger(MediaFormat.KEY_COLOR_TRANSFER, mTransfer);
         }
+        if (mPriority >= 0) mFormat.setInteger(MediaFormat.KEY_PRIORITY, mPriority);
+        if (mOperatingRate >= 0) mFormat.setInteger(MediaFormat.KEY_OPERATING_RATE, mOperatingRate);
         for (Map.Entry<String, Boolean> entry : mFeatures.entrySet()) {
             mFormat.setFeatureEnabled(entry.getKey(), entry.getValue());
         }
@@ -314,6 +320,8 @@ public class EncoderConfigParams {
             if (mStandard >= 0) mMsg.append(String.format("color standard : %d, ", mStandard));
             if (mTransfer >= 0) mMsg.append(String.format("color transfer : %d, ", mTransfer));
         }
+        if (mPriority >= 0) mMsg.append(String.format("priority : %d", mPriority));
+        if (mOperatingRate >= 0) mMsg.append(String.format("operating rate : %d", mOperatingRate));
         if (!mFeatures.isEmpty()) {
             mMsg.append(String.format("features : { "));
             for (Map.Entry<String, Boolean> entry : mFeatures.entrySet()) {
@@ -354,6 +362,8 @@ public class EncoderConfigParams {
         // common params
         public int mProfile = -1;
         public int mBitRate = 256000;
+        public int mPriority = -1;
+        public int mOperatingRate = -1;
 
         public Builder(String mediaType) {
             mMediaType = mediaType;
@@ -452,6 +462,16 @@ public class EncoderConfigParams {
 
         public Builder setBitRate(int bitRate) {
             this.mBitRate = bitRate;
+            return this;
+        }
+
+        public Builder setPriority(int priority) {
+            this.mPriority = priority;
+            return this;
+        }
+
+        public Builder setOperatingRate(int operatingRate) {
+            this.mOperatingRate = operatingRate;
             return this;
         }
 

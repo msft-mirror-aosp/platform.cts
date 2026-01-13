@@ -18,18 +18,22 @@ package android.mediav2.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
 import static android.media.codec.Flags.FLAG_CODEC_AVAILABILITY;
+import static android.media.codec.Flags.FLAG_DYNAMIC_OPERATING_MODE_SWITCH;
 import static android.media.codec.Flags.codecAvailability;
 import static android.media.codec.Flags.codecAvailabilitySupport;
 import static android.mediav2.cts.CodecResourceUtils.CodecState;
 import static android.mediav2.cts.CodecResourceUtils.LHS_RESOURCE_GE;
+import static android.mediav2.cts.CodecResourceUtils.RESOURCE_EQ;
 import static android.mediav2.cts.CodecResourceUtils.RHS_RESOURCE_GE;
 import static android.mediav2.cts.CodecResourceUtils.compareResources;
 import static android.mediav2.cts.CodecResourceUtils.computeConsumption;
+import static android.mediav2.cts.CodecResourceUtils.getCodecRequiredResources;
 import static android.mediav2.cts.CodecResourceUtils.getCurrentGlobalCodecResources;
 import static android.mediav2.cts.CodecResourceUtils.validateGetCodecResources;
 import static android.mediav2.cts.VideoDecoderAvailabilityTest.MIN_UTILIZATION_THRESHOLD;
 import static android.mediav2.cts.VideoDecoderAvailabilityTest.estimateVideoSizeFromPerformancePoint;
 import static android.mediav2.cts.VideoDecoderAvailabilityTest.getMaxPixelsProcessedPerSec;
+import static android.mediav2.cts.VideoDecoderAvailabilityTest.updateOperatingMode;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -279,9 +283,12 @@ class CodecEncoderGLSurface extends CodecTestBase {
         mCodec = MediaCodec.createByCodecName(mCodecName);
         mOutputBuff = new OutputManager();
         MediaFormat format = mEncCfgParams.getFormat();
-        format.setInteger(MediaFormat.KEY_PRIORITY, 0);
         configureCodec(format, true, false, true, MediaCodec.CONFIGURE_FLAG_ENCODE);
         mCodec.start();
+    }
+
+    public void updateOpMode(int priority, int operatingRate) {
+        updateOperatingMode(mCodec, priority, operatingRate);
     }
 
     public void stopInstance() {
@@ -326,22 +333,23 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
     }
 
     private static EncoderConfigParams getVideoEncoderCfgParam(String mediaType, int width,
-            int height, int frameRate, int bitRate) {
+            int height, int frameRate, int bitRate, int priority, int operatingRate) {
         return new EncoderConfigParams.Builder(mediaType).setWidth(width).setHeight(height)
                 .setFrameRate(frameRate).setBitRate(bitRate).setColorFormat(COLOR_FormatSurface)
-                .build();
+                .setPriority(priority).setOperatingRate(operatingRate).build();
     }
 
     private static EncoderConfigParams getH263CfgParams() {
-        return getVideoEncoderCfgParam(MediaFormat.MIMETYPE_VIDEO_H263, 176, 144, 12, 64000);
+        return getVideoEncoderCfgParam(MediaFormat.MIMETYPE_VIDEO_H263, 176, 144, 12, 64000, 0, -1);
     }
 
     private static EncoderConfigParams getMpeg4CfgParams() {
-        return getVideoEncoderCfgParam(MediaFormat.MIMETYPE_VIDEO_MPEG4, 176, 144, 12, 64000);
+        return getVideoEncoderCfgParam(
+                MediaFormat.MIMETYPE_VIDEO_MPEG4, 176, 144, 12, 64000, 0, -1);
     }
 
     private static EncoderConfigParams getCif30fps1MbpsCfgParams(String mediaType) {
-        return getVideoEncoderCfgParam(mediaType, 352, 288, 30, 1000000);
+        return getVideoEncoderCfgParam(mediaType, 352, 288, 30, 1000000, 0, -1);
     }
 
     private static EncoderConfigParams getAvcCfgParams() {
@@ -482,7 +490,14 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
                         config.mMaxFrameRate));
     }
 
-    private void validateMaxInstances(String codecName, String mediaType) {
+    private void validateMaxInstances(String codecName, String mediaType, boolean testRTMode,
+            boolean testOperatingModeSwitch) throws CloneNotSupportedException {
+        // if multiple instances are started in nrt mode until resource exhaustion, switching a
+        // codec to rt mode may or may not succeed due to lack of resources. In this scenario,
+        // should an nrt resource be auto released so that it can make way for rt?
+        if (testOperatingModeSwitch && !testRTMode) {
+            Assert.fail("Update test to handle this scenario");
+        }
         List<List<EncoderConfigParams>> testableParams =
                 getCodecTestFormatList(codecName, mediaType);
         if (testableParams == null) {
@@ -507,6 +522,11 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
                 try {
                     EncoderConfigParams configParam =
                             numInstances < params.size() ? params.get(numInstances) : params.get(0);
+                    configParam = configParam.getBuilder()
+                                          .clone()
+                                          .setPriority(testRTMode ? 0 : 1)
+                                          .setOperatingRate(testRTMode ? configParam.mFrameRate : 0)
+                                          .build();
                     codec = new CodecEncoderGLSurface(codecName, mediaType, configParam,
                             mAllTestParams);
                     codec.launchInstance();
@@ -543,6 +563,19 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
                         codec.releaseInstance();
                         codec = null;
                     }
+                }
+            }
+            if (testOperatingModeSwitch) {
+                for (int i = 0; i < codecs.size(); ++i) {
+                    Log.d(LOG_TAG, "switching to non-real time, codec #" + i);
+                    lastGlobalResources = getCurrentGlobalCodecResources();
+                    codecs.get(i).updateOpMode(1, 0); // switch to non-real time
+                    List<CodecResource> currGlobalResources = getCurrentGlobalCodecResources();
+                    int result =
+                            compareResources(lastGlobalResources, currGlobalResources, testLogs);
+                    Assert.assertEquals("switching a codec instance from rt to nrt did not increase"
+                                    + " resources available \n" + testLogs + mTestEnv + mTestConfig,
+                            RHS_RESOURCE_GE, result);
                 }
             }
             for (int i = 0; i < codecs.size(); ++i) {
@@ -586,8 +619,9 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
     @RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
     @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
             "android.media.MediaCodec#getRequiredResources"})
-    public void testConcurrentMaxInstances() {
-        validateMaxInstances(mCodecName, mMediaType);
+    public void testConcurrentMaxInstances() throws CloneNotSupportedException {
+        validateMaxInstances(mCodecName, mMediaType, true, false);
+        if (BOARD_SDK_IS_AFTER_202504) validateMaxInstances(mCodecName, mMediaType, false, false);
     }
 
     /**
@@ -640,5 +674,109 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
                         + relativeThreshold + "% but got " + consumption + "%");
             }
         }
+    }
+
+    /**
+     * For a given media codec and media format, the current test verifies if the resources needed
+     * by media codec to process media format in realtime is larger than the resources required for
+     * non-realtime processing. The test also verifies, if the codec is switched from realtime to
+     * non-realtime or vice versa in running state, the resources consumed is updated dynamically.
+     */
+    @LargeTest
+    @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
+    @RequiresFlagsEnabled({FLAG_CODEC_AVAILABILITY, FLAG_DYNAMIC_OPERATING_MODE_SWITCH})
+    @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
+             "android.media.MediaCodec#getRequiredResources",
+             "android.media.MediaCodec.Callback#onRequiredResourcesChanged",
+             "android.media.MediaFormat#KEY_PRIORITY"})
+    public void testResourceConsumptionForOperatingMode() throws IOException, InterruptedException {
+        Assume.assumeTrue("Skip tests on devices with vendor partitions 202504 and below",
+                BOARD_SDK_IS_AFTER_202504);
+        MediaFormat format = mEncCfgParams.getFormat();
+        List<MediaFormat> formats = new ArrayList<>();
+        formats.add(format);
+        Assume.assumeTrue("Codec: " + mCodecName + " doesn't support format: " + format,
+                areFormatsSupported(mCodecName, mMediaType, formats));
+        mCodec = MediaCodec.createByCodecName(mCodecName);
+        CodecAsyncHandlerResource asyncHandleResource = new CodecAsyncHandlerResource();
+        mAsyncHandle = asyncHandleResource;
+        mOutputBuff = new OutputManager();
+        final int OPERATING_RATE = mEncCfgParams.mFrameRate;
+        // get real time resource requirements
+        format.setInteger(MediaFormat.KEY_PRIORITY, 0);
+        format.setInteger(MediaFormat.KEY_OPERATING_RATE, OPERATING_RATE);
+        configureCodec(format, true, false, true, MediaCodec.CONFIGURE_FLAG_ENCODE);
+        List<CodecResource> rtResources = getCodecRequiredResources(mCodec);
+        mCodec.reset();
+        // get non real time resource requirements
+        format.setInteger(MediaFormat.KEY_PRIORITY, 1);
+        format.setInteger(MediaFormat.KEY_OPERATING_RATE, 0);
+        configureCodec(format, true, false, true, MediaCodec.CONFIGURE_FLAG_ENCODE);
+        List<CodecResource> nrtResources = getCodecRequiredResources(mCodec);
+        StringBuilder testLogs = new StringBuilder();
+        int result = compareResources(rtResources, nrtResources, testLogs);
+        Assert.assertEquals("required resources for media codec to operate in real time must be "
+                        + "greater than non-real time \n" + testLogs + mTestEnv + mTestConfig,
+                LHS_RESOURCE_GE, result);
+        mCodec.start();
+        doWork(10);
+        int currResourceChangeCbCount = asyncHandleResource.getResourceChangeCbCount();
+        updateOperatingMode(mCodec, 0, OPERATING_RATE); // switch to real time
+        asyncHandleResource.waitOnResourceChange(currResourceChangeCbCount);
+        Assert.assertEquals("taking too long to receive onRequiredResourcesChanged callback\n"
+                        + mTestEnv + mTestConfig,
+                asyncHandleResource.getResourceChangeCbCount(), currResourceChangeCbCount + 1);
+        List<CodecResource> resources = getCodecRequiredResources(mCodec);
+        result = compareResources(resources, rtResources, testLogs);
+        Assert.assertEquals(
+                "current resources of media codec to is not matching real-time resources \n"
+                        + testLogs + mTestEnv + mTestConfig,
+                RESOURCE_EQ, result);
+        doWork(10);
+        currResourceChangeCbCount = asyncHandleResource.getResourceChangeCbCount();
+        updateOperatingMode(mCodec, 0, OPERATING_RATE); // switch to real time
+        asyncHandleResource.waitOnResourceChange(currResourceChangeCbCount);
+        Assert.assertEquals(
+                "unexpected onRequiredResourcesChanged callback\n" + mTestEnv + mTestConfig,
+                asyncHandleResource.getResourceChangeCbCount(), currResourceChangeCbCount);
+        doWork(10);
+        updateOperatingMode(mCodec, 1, 0); // switch to non-real time
+        asyncHandleResource.waitOnResourceChange(currResourceChangeCbCount);
+        Assert.assertEquals("taking too long to receive onRequiredResourcesChanged callback\n"
+                        + mTestEnv + mTestConfig,
+                asyncHandleResource.getResourceChangeCbCount(), currResourceChangeCbCount + 1);
+        resources = getCodecRequiredResources(mCodec);
+        result = compareResources(resources, nrtResources, testLogs);
+        Assert.assertEquals(
+                "current resources of media codec to is not matching non real-time resources \n"
+                        + testLogs + mTestEnv + mTestConfig,
+                RESOURCE_EQ, result);
+        doWork(10);
+        currResourceChangeCbCount = asyncHandleResource.getResourceChangeCbCount();
+        updateOperatingMode(mCodec, 1, 0); // switch to non-real time
+        asyncHandleResource.waitOnResourceChange(currResourceChangeCbCount);
+        Assert.assertEquals(
+                "unexpected onRequiredResourcesChanged callback\n" + mTestEnv + mTestConfig,
+                asyncHandleResource.getResourceChangeCbCount(), currResourceChangeCbCount);
+        queueEOS();
+        waitForAllOutputs();
+        mCodec.stop();
+        mCodec.release();
+    }
+
+    /**
+     * Test is similar to {@link #testConcurrentMaxInstances()}. Additionally, this test verifies
+     * if the globally available resources are updated when the component operating mode is switched
+     * from real time to non-real time.
+     */
+    @LargeTest
+    @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
+    @RequiresFlagsEnabled({FLAG_CODEC_AVAILABILITY, FLAG_DYNAMIC_OPERATING_MODE_SWITCH})
+    @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
+            "android.media.MediaCodec#getRequiredResources"})
+    public void testConcurrentMaxInstancesDynamic() throws CloneNotSupportedException {
+        Assume.assumeTrue("Skip tests on devices with vendor partitions 202504 and below",
+                BOARD_SDK_IS_AFTER_202504);
+        validateMaxInstances(mCodecName, mMediaType, true, true);
     }
 }
