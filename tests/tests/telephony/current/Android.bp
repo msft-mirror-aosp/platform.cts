@@ -83,6 +83,7 @@ android_test {
         "TestExternalImsServiceApp/**/*.java",
         "TestExternalImsServiceApp/**/I*.aidl",
         "src/android/telephony/satellite/cts/I*.aidl",
+        "MessageUpgradeTestApp/**/*.java",
     ],
     aidl: {
         local_include_dirs: [
@@ -119,6 +120,7 @@ android_test {
         ":TestSmsApp",
         ":TestExternalImsServiceApp",
         ":EmbmsMiddlewareCtsTestApp",
+        ":MessageUpgradeTestApp",
     ],
     per_testcase_directory: true,
 }
