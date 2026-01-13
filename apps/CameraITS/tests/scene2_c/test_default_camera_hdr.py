@@ -113,7 +113,7 @@ class DefaultCapturePerfClassTest(its_base_test.ItsBaseTest):
       print(f'has_gainmap:{gainmap_present}')
 
       # Assert gainmap_present if device claims performance class
-      if (cam.is_vic_performance_class and not gainmap_present):
+      if cam.is_vic_performance_class() and gainmap_present == 'false':
         raise AssertionError(f'has_gainmap: {gainmap_present}')
 
 if __name__ == '__main__':
