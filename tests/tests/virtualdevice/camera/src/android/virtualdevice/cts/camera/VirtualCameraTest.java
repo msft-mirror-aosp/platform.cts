@@ -1114,6 +1114,23 @@ public class VirtualCameraTest {
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_STREAM_CLOSE_DEVICE_CLOSE)
+    public void createSession_calledTwice_fails() throws CameraAccessException {
+        mCameraManager.openCamera(FRONT_CAMERA_ID, mExecutor, mCameraStateCallback);
+        verify(mCameraStateCallback, timeout(TIMEOUT_MILLIS))
+                .onOpened(mCameraDeviceCaptor.capture());
+
+        CameraDevice cameraDevice = mCameraDeviceCaptor.getValue();
+
+        try (ImageReader reader = createImageReader(YUV_420_888)) {
+            cameraDevice.createCaptureSession(createSessionConfig(reader));
+            cameraDevice.createCaptureSession(createSessionConfig(reader));
+
+            verify(mSessionStateCallback, timeout(TIMEOUT_MILLIS)).onConfigureFailed(any());
+        }
+    }
+
     private VirtualCamera createDefaultCameraWithMetadata(boolean perFrameMetadata) {
         VirtualCameraConfig config =
                 new VirtualCameraConfig.Builder("DefaultMetadataCamera")

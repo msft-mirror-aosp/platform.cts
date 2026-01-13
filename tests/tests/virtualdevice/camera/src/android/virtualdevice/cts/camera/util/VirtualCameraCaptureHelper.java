@@ -410,6 +410,7 @@ public class VirtualCameraCaptureHelper {
         return mVirtualCameraCallback.mConfiguredStreams.values().iterator().next();
     }
 
+    /** Create a new capture session with the provided ImageReader as output targets. */
     public CameraCaptureSession createCaptureSession(Collection<ImageReader> readers)
             throws CameraAccessException {
         CameraDevice cameraDevice = getOrOpenCameraDevice();
@@ -807,7 +808,7 @@ public class VirtualCameraCaptureHelper {
         @Override
         public void onStreamClosed(int streamId) {
             Log.d(TAG, "onStreamClosed() called with: streamId = [" + streamId + "]");
-            mConfiguredStreams.remove(streamId);
+            Surface surface = mConfiguredStreams.remove(streamId);
             mCallbackDelegate.onStreamClosed(streamId);
         }
 
@@ -896,6 +897,7 @@ public class VirtualCameraCaptureHelper {
 
         /** Returns the number of stream configured */
         public int getConfiguredStreamCount() {
+            Log.w(TAG, "mConfiguredStream=" + mConfiguredStreams.size());
             return mConfiguredStreams.size();
         }
 
