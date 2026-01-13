@@ -48,8 +48,8 @@ package android.telecom {
 
   public final class Call {
     method @Deprecated public void addListener(android.telecom.Call.Listener);
-    method @Deprecated @FlaggedApi("com.android.server.telecom.flags.enable_audio_processing_use_case") public void enterBackgroundAudioProcessing();
-    method @FlaggedApi("com.android.server.telecom.flags.enable_audio_processing_use_case") @RequiresPermission(allOf={android.Manifest.permission.CAPTURE_AUDIO_OUTPUT, android.Manifest.permission.MODIFY_AUDIO_ROUTING}) public void enterBackgroundAudioProcessing(int);
+    method @Deprecated @FlaggedApi("android.telecom.flags.enable_audio_processing_use_case") public void enterBackgroundAudioProcessing();
+    method @FlaggedApi("android.telecom.flags.enable_audio_processing_use_case") @RequiresPermission(allOf={android.Manifest.permission.CAPTURE_AUDIO_OUTPUT, android.Manifest.permission.MODIFY_AUDIO_ROUTING}) public void enterBackgroundAudioProcessing(int);
     method public void exitBackgroundAudioProcessing(boolean);
     method @Deprecated public void removeListener(android.telecom.Call.Listener);
     field @Deprecated public static final int STATE_PRE_DIAL_WAIT = 8; // 0x8
@@ -91,11 +91,6 @@ package android.telecom {
     field public static final int MESSAGE_DEVICE_NETWORK_COVERAGE = 4; // 0x4
   }
 
-  public abstract class CallScreeningService extends android.app.Service {
-    method @FlaggedApi("android.telecom.flags.enable_oem_outgoing_call_screening") public void onScreenOutgoingCall(@NonNull android.telecom.Call.Details);
-    field @FlaggedApi("android.telecom.flags.enable_oem_outgoing_call_screening") public static final String METADATA_SCREEN_OUTGOING_CALLS = "android.telecom.METADATA_SCREEN_OUTGOING_CALLS";
-  }
-
   public static class CallScreeningService.CallResponse.Builder {
     method @NonNull @RequiresPermission(android.Manifest.permission.CAPTURE_AUDIO_OUTPUT) public android.telecom.CallScreeningService.CallResponse.Builder setShouldScreenCallViaAudioProcessing(boolean);
   }
@@ -118,8 +113,10 @@ package android.telecom {
     method @Deprecated public final long getConnectTimeMillis();
     method public android.telecom.Connection getPrimaryConnection();
     method @NonNull public final String getTelecomCallId();
+    method @FlaggedApi("android.telecom.flags.telecom_mainline_api") public boolean isConferenceState();
     method @Deprecated public void onAudioStateChanged(android.telecom.AudioState);
     method @RequiresPermission(android.Manifest.permission.MODIFY_PHONE_STATE) public final void setAddress(@NonNull android.net.Uri, int);
+    method @FlaggedApi("android.telecom.flags.telecom_mainline_api") @RequiresPermission(android.Manifest.permission.MODIFY_PHONE_STATE) public final void setCallDirection(int);
     method public final void setCallerDisplayName(@NonNull String, int);
     method @RequiresPermission(android.Manifest.permission.MODIFY_PHONE_STATE) public void setConferenceState(boolean);
     method @Deprecated public final void setConnectTimeMillis(long);
@@ -171,6 +168,7 @@ package android.telecom {
 
   public abstract class ConnectionService extends android.app.Service {
     method public final void addExistingConnection(@NonNull android.telecom.PhoneAccountHandle, @NonNull android.telecom.Connection, @NonNull android.telecom.Conference);
+    method @FlaggedApi("android.telecom.flags.telecom_mainline_api") public void onBindClient(@Nullable android.content.Intent);
   }
 
   public final class DisconnectCause implements android.os.Parcelable {
@@ -476,6 +474,7 @@ package android.telecom {
     field public static final String EXTRA_IS_USER_INTENT_EMERGENCY_CALL = "android.telecom.extra.IS_USER_INTENT_EMERGENCY_CALL";
     field public static final String EXTRA_TTY_PREFERRED_MODE = "android.telecom.extra.TTY_PREFERRED_MODE";
     field public static final String EXTRA_UNKNOWN_CALL_HANDLE = "android.telecom.extra.UNKNOWN_CALL_HANDLE";
+    field @FlaggedApi("android.telecom.flags.telecom_mainline_api") public static final String PERMISSION_TELECOM_UI_ACCESS = "com.android.telephonycore.permission.TELECOM_UI_ACCESS";
     field @Deprecated @FlaggedApi("android.telecom.flags.move_get_tty_mode_to_telephony_manager") public static final int TTY_MODE_FULL = 1; // 0x1
     field @Deprecated @FlaggedApi("android.telecom.flags.move_get_tty_mode_to_telephony_manager") public static final int TTY_MODE_HCO = 2; // 0x2
     field @Deprecated @FlaggedApi("android.telecom.flags.move_get_tty_mode_to_telephony_manager") public static final int TTY_MODE_OFF = 0; // 0x0
