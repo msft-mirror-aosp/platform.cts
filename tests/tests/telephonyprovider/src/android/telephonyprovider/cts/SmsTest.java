@@ -32,6 +32,7 @@ import static com.android.compatibility.common.util.SystemUtil.runWithShellPermi
 import static com.android.internal.telephony.flags.Flags.FLAG_LIMIT_RAW_TABLE_VISIBILITY;
 import static com.android.internal.telephony.flags.Flags.FLAG_REDACT_OTP_SMS;
 import static com.android.internal.telephony.flags.Flags.FLAG_REDACT_OTP_SMS_API;
+import static com.android.internal.telephony.flags.Flags.FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -64,6 +65,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Telephony;
+import android.provider.Telephony.ReadRestriction;
 import android.telephony.SmsManager;
 import android.telephony.SubscriptionManager;
 import android.telephony.cts.util.DefaultSmsAppHelper;
@@ -826,6 +828,87 @@ public class SmsTest {
     public void testOtpSms_otpFalsePositive() {
         Uri inserted = mSmsTestHelper.insertTestSms(TEST_ADDRESS, TEST_NOT_OTP_SMS_BODY);
         SystemUtil.eventually(() -> assertSmsOtpColumn(inserted, OTP_TYPE_NONE));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
+    public void insertUnrestrictedSms_verifyReadRestrictionUnset() {
+        Uri inserted = mSmsTestHelper.insertTestSmsWithThread(TEST_ADDRESS, TEST_SMS_BODY,
+                TEST_THREAD_ID_1, /* isRestricted= */ false);
+
+        mSmsTestHelper.assertSmsColumnEquals(ReadRestriction.READ_RESTRICTION_COLUMN_NAME, inserted,
+                String.valueOf(0));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
+    public void insertRestrictedSms_verifyReadRestrictionSet() {
+        Uri inserted = mSmsTestHelper.insertTestSmsWithThread(TEST_ADDRESS, TEST_SMS_BODY,
+                TEST_THREAD_ID_1, /* isRestricted= */ true);
+
+        mSmsTestHelper.assertSmsColumnEquals(ReadRestriction.READ_RESTRICTION_COLUMN_NAME, inserted,
+                String.valueOf(ReadRestriction.ReadRestrictionValues.READ_RESTRICTION_RESTRICTED));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
+    public void updateRestrictedSms_toUnrestricted_verifyReadRestrictionUnset() {
+        Uri inserted = mSmsTestHelper.insertTestSmsWithThread(TEST_ADDRESS, TEST_SMS_BODY,
+                TEST_THREAD_ID_1, /* isRestricted= */ true);
+
+        ContentValues values = new ContentValues();
+        values.put(ReadRestriction.RESTRICTED, false);
+        mContentResolver.update(inserted, values, null, null);
+
+        mSmsTestHelper.assertSmsColumnEquals(ReadRestriction.READ_RESTRICTION_COLUMN_NAME, inserted,
+                String.valueOf(0));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
+    public void updateUnRestrictedSms_toRestricted_failsWithUnsupportedOperation() {
+        Uri inserted = mSmsTestHelper.insertTestSmsWithThread(TEST_ADDRESS, TEST_SMS_BODY,
+                TEST_THREAD_ID_1, /* isRestricted= */ false);
+
+        ContentValues values = new ContentValues();
+        values.put(ReadRestriction.RESTRICTED, true);
+
+        assertThrows(UnsupportedOperationException.class, () -> mContentResolver.update(
+                inserted, values, null, null));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
+    public void insertSms_messageRestricted_verifyReadRestrictionSet() {
+        Uri inserted = mSmsTestHelper.insertTestSmsWithThread(TEST_ADDRESS, TEST_SMS_BODY,
+                TEST_THREAD_ID_1, /* isRestricted= */ true);
+
+        mSmsTestHelper.assertSmsColumnEquals(ReadRestriction.READ_RESTRICTION_COLUMN_NAME, inserted,
+                String.valueOf(ReadRestriction.ReadRestrictionValues.READ_RESTRICTION_RESTRICTED));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
+    public void queryRestrictedSms_byNonDefaultSmsApp_returnsEmptyCursor() {
+        Uri inserted = mSmsTestHelper.insertTestSmsWithThread(TEST_ADDRESS, TEST_SMS_BODY,
+                TEST_THREAD_ID_1, /* isRestricted= */ true);
+
+        try {
+            stopBeingDefaultSmsApp();
+            assertSmsPresence(inserted, TEST_SMS_BODY, /* canRead= */ false);
+        } finally {
+            ensureDefaultSmsApp();
+        }
+    }
+
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
+    public void queryRestrictedSms_byDefaultSmsApp_returnsTheMessage() {
+        Uri inserted = mSmsTestHelper.insertTestSmsWithThread(TEST_ADDRESS, TEST_SMS_BODY,
+                TEST_THREAD_ID_1, /* isRestricted= */ true);
+
+        assertSmsPresence(inserted, TEST_SMS_BODY, /* canRead= */ true);
     }
 
     // Gets the retriever hash belong to itself

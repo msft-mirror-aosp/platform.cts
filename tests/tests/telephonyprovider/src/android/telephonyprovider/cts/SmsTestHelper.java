@@ -28,6 +28,7 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.Telephony;
+import android.provider.Telephony.ReadRestriction;
 
 import com.android.compatibility.common.util.SystemUtil;
 
@@ -86,6 +87,16 @@ class SmsTestHelper {
         ContentValues smsRow = new ContentValues();
         smsRow.put(Telephony.Sms.BODY, messageBody);
         return smsRow;
+    }
+
+    public Uri insertTestSmsWithThread(String testAddress, String testSmsBody, int threadId,
+            boolean isRestricted) {
+        mContentValues.put(Telephony.Sms.ADDRESS, testAddress);
+        mContentValues.put(Telephony.Sms.BODY, testSmsBody);
+        mContentValues.put(Telephony.Sms.THREAD_ID, threadId);
+        mContentValues.put(Telephony.ReadRestriction.RESTRICTED, isRestricted);
+
+        return mContentResolver.insert(Telephony.Sms.CONTENT_URI, mContentValues);
     }
 
     public Uri insertTestSmsWithThread(String testAddress, String testSmsBody, int threadId) {
