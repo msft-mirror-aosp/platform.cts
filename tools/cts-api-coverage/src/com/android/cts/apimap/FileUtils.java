@@ -23,36 +23,49 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-/** A class for collecting jar files. */
+/** A utility class for handling file operations, specifically for locating jar files. */
 public final class FileUtils {
 
-    private static final List<String> JAR_DIRS =
-            new ArrayList<>(List.of("withres", "combined", "javac", "jarjar"));
+    /** Priority list of directories to search for jar files. */
+    private static final List<String> JAR_DIRS = List.of("withres", "combined", "javac", "jarjar");
+
+    /** The directory name used by Soong's sandbox environment. */
+    private static final String SBOX_DIR = "/out/soong/.temp/sbox";
+
+    private FileUtils() {}
 
     /**
-     * Returns a jar file based on the given file path. Returns null if the jar file doesn't exist.
+     * Resolves the path to a jar file based on the given input file path.
+     *
+     * <p>If the input is a jar file (but not a dex jar), it is returned if it exists. If the input
+     * is an APK or a dex jar, this method attempts to find the corresponding source jar file in the
+     * {@code android_common} intermediate directories.
+     *
+     * @param inputFile The path to the input file (jar or apk).
+     * @return The {@link Path} to the resolved jar file, or {@code null} if not found.
      */
     public static Path getJarFile(String inputFile) {
-        Path filePath = Paths.get(inputFile);
-        boolean isJarFile = inputFile.endsWith(".jar");
-        boolean isDexJarFile = isJarFile && inputFile.contains("/android_common/dex/");
+        String absolutePath = getAbsoluteFilePath(inputFile);
+        boolean isJarFile = absolutePath.endsWith(".jar");
+        boolean isDexJarFile = isJarFile && absolutePath.contains("/android_common/dex/");
+
         if (isJarFile && !isDexJarFile) {
-            if (Files.exists(filePath)) {
-                return filePath;
-            }
-            return null;
-        } else if (inputFile.endsWith(".apk") || isDexJarFile) {
+            Path path = Paths.get(absolutePath);
+            return Files.exists(path) ? path : null;
+        }
+
+        if (absolutePath.endsWith(".apk") || isDexJarFile) {
             // Search for the corresponding jar file for the given apk file or dex jar file. This
             // only works for apk packages or dex jar packages installed under
             // out/soong/.intermediate. For example, if the apk file path is
             // out/soong/.intermediate/.../Module/android_common/Module.apk, then search for the jar
             // file under
             // out/soong/.intermediate/.../Module/android_common/withres(combines, javac, jarjar)/.
-            int moduleDirEndPos = inputFile.indexOf("android_common");
+            int moduleDirEndPos = absolutePath.indexOf("android_common");
             if (moduleDirEndPos < 0) {
                 return null;
             }
-            String moduleDir = inputFile.substring(0, moduleDirEndPos - 1);
+            String moduleDir = absolutePath.substring(0, moduleDirEndPos - 1);
             String moduleName = moduleDir.substring(moduleDir.lastIndexOf('/') + 1);
             // Search for the jar file under withres, combined, javac, jarjar directories in order.
             for (String jarDir : JAR_DIRS) {
@@ -90,5 +103,21 @@ public final class FileUtils {
             }
         }
         return jarFiles;
+    }
+
+    /**
+     * Converts a relative file path to an absolute path, accounting for the Soong sandbox
+     * environment.
+     *
+     * @param filePath The relative file path.
+     * @return The absolute file path string.
+     */
+    private static String getAbsoluteFilePath(String filePath) {
+        String dir = Paths.get("").toAbsolutePath().toString();
+        // If running inside sbox, strip the sbox suffix to get the project root
+        if (dir.contains(SBOX_DIR)) {
+            dir = dir.substring(0, dir.indexOf(SBOX_DIR));
+        }
+        return Paths.get(dir, filePath).toString();
     }
 }
