@@ -24,7 +24,6 @@ android_test_helper_app {
         "mts-target-sdk-version-current",
     ],
     test_suites: [
-        "cts",
         "general-tests",
         "mts",
     ],
