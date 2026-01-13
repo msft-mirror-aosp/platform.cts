@@ -26,8 +26,8 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
 import android.content.Context;
-import android.graphics.PixelFormat;
 import android.graphics.Color;
+import android.graphics.PixelFormat;
 import android.hardware.tv.mediaquality.IMediaQuality;
 import android.media.quality.ActiveProcessingPicture;
 import android.media.quality.AmbientBacklightEvent;
@@ -562,6 +562,46 @@ public class MediaQualityTest {
         Assert.assertEquals(1, ppHandle.size());
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW_C)
+    @Test
+    public void testGetPictureProfileHandleList() throws InterruptedException {
+        PictureProfile profile = getTestPictureProfile("testGetPictureProfileHandleList");
+
+        mManager.createPictureProfile(profile);
+        boolean created =
+                waitForCondition(
+                        () ->
+                                mManager.getPictureProfile(
+                                                profile.getProfileType(),
+                                                profile.getName(),
+                                                includeParams(false))
+                                        != null);
+        Assert.assertTrue("Profile was not created within the timeout for handle test.", created);
+        PictureProfile createdProfile =
+                mManager.getPictureProfile(
+                        profile.getProfileType(), profile.getName(), includeParams(false));
+        Assert.assertNotNull(createdProfile);
+        String[] ids = {createdProfile.getProfileId()};
+        List<PictureProfileHandle> ppHandle = new ArrayList<>();
+        boolean handleRetrieved =
+                waitForCondition(
+                        () -> {
+                            List<PictureProfileHandle> handles =
+                                    mManager.getPictureProfileHandleList(ids);
+                            if (handles != null && !handles.isEmpty()) {
+                                ppHandle.clear();
+                                ppHandle.addAll(handles);
+                                return true;
+                            }
+                            return false;
+                        });
+        Assert.assertTrue(
+                "PictureProfileHandle was not retrieved within the timeout.", handleRetrieved);
+
+        Assert.assertNotNull(ppHandle);
+        Assert.assertEquals(1, ppHandle.size());
+    }
+
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
     public void testGetSoundProfileHandle() throws InterruptedException {
@@ -584,8 +624,8 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
-    public void testSetDefaultPictureProfile() throws InterruptedException {
-        PictureProfile toCreate = getTestPictureProfile("testSetDefaultPictureProfile");
+    public void testSetAndGetDefaultPictureProfile() throws InterruptedException {
+        PictureProfile toCreate = getTestPictureProfile("testSetAndGetDefaultPictureProfile");
         mManager.createPictureProfile(toCreate);
 
         Thread.sleep(500);
@@ -595,12 +635,16 @@ public class MediaQualityTest {
 
         Thread.sleep(500);
         mManager.setDefaultPictureProfile(created.getProfileId());
+        Thread.sleep(500);
+        PictureProfile defaultProfile = mManager.getDefaultPictureProfile();
+        assertNotNull(defaultProfile);
+        assertEquals(toCreate.getName(), defaultProfile.getName());
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
-    public void testSetDefaultSoundProfile() throws InterruptedException {
-        SoundProfile toCreate = getTestSoundProfile("testSetDefaultSoundProfile");
+    public void testSetAndGetDefaultSoundProfile() throws InterruptedException {
+        SoundProfile toCreate = getTestSoundProfile("testSetAndGetDefaultSoundProfile");
         mManager.createSoundProfile(toCreate);
 
         Thread.sleep(500);
@@ -610,6 +654,10 @@ public class MediaQualityTest {
         Thread.sleep(500);
 
         mManager.setDefaultSoundProfile(created.getProfileId());
+        Thread.sleep(500);
+        SoundProfile defaultSoundProfile = mManager.getDefaultSoundProfile();
+        assertNotNull(defaultSoundProfile);
+        assertEquals(toCreate.getName(), defaultSoundProfile.getName());
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
@@ -680,6 +728,41 @@ public class MediaQualityTest {
         when(mMediaQuality.isAutoAqSupported()).thenReturn(true);
         when(mMediaQuality.getAutoAqEnabled()).thenReturn(false);
         assertFalse(mManager.isAutoSoundQualityEnabled());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW_C)
+    @Test
+    public void testGetCurrentPictureProfileHandleForTvInput() {
+        // TODO: add more test cases
+        String dummyInputId = "com.example.tvinput/HDMI_DOES_NOT_EXIST";
+        PictureProfileHandle handle =
+                mManager.getCurrentPictureProfileHandleForTvInput(dummyInputId);
+
+        Assert.assertEquals(
+                "Should return PictureProfileHandle.NONE for invalid input",
+                PictureProfileHandle.NONE,
+                handle);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW_C)
+    @Test
+    public void testGetAllPictureProfilesForTvInput() {
+        // TODO: add more test cases
+        String dummyInputId = "com.example.tvinput/HDMI1";
+
+        List<PictureProfile> profiles = mManager.getAllPictureProfilesForTvInput(dummyInputId);
+        Assert.assertNotNull("Resulting list should not be null", profiles);
+        Assert.assertTrue("List should be empty for dummy input", profiles.isEmpty());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW_C)
+    @Test
+    public void testGetCurrentPictureProfileForTvInput() {
+        String dummyInputId = "com.example.tvinput/HDMI1";
+
+        PictureProfile profile = mManager.getCurrentPictureProfileForTvInput(dummyInputId);
+
+        Assert.assertNull("Should be null for dummy input", profile);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
