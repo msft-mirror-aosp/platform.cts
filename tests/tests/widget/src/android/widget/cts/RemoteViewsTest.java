@@ -311,6 +311,11 @@ public class RemoteViewsTest {
         );
         assertEquals(expectedTextSizePx, textView.getTextSize(), 0.001f);
 
+        mRemoteViews.setTextViewTextSize(R.id.remoteView_text, TypedValue.COMPLEX_UNIT_PX, 0);
+        reapplyRemoteViews();
+        expectedTextSizePx = 0;
+        assertEquals(expectedTextSizePx, textView.getTextSize(), 0.001f);
+
         mRemoteViews.setTextViewTextSize(R.id.remoteView_absolute, TypedValue.COMPLEX_UNIT_SP, 20);
         assertThrowsOnReapply(Throwable.class);
     }
@@ -1403,6 +1408,10 @@ public class RemoteViewsTest {
         reapplyRemoteViews();
         assertEquals(base2, chronometer.getBase());
 
+        mRemoteViews.setLong(R.id.remoteView_chronometer, "setBase", 0L);
+        reapplyRemoteViews();
+        assertEquals(0L, chronometer.getBase());
+
         mRemoteViews.setLong(R.id.remoteView_absolute, "setBase", base1);
         assertThrowsOnReapply(ActionException.class);
     }
@@ -1415,6 +1424,10 @@ public class RemoteViewsTest {
         mRemoteViews.setFloat(R.id.remoteView_linear, "setWeightSum", 0.5f);
         reapplyRemoteViews();
         assertEquals(0.5f, linearLayout.getWeightSum(), 0.001f);
+
+        mRemoteViews.setFloat(R.id.remoteView_linear, "setWeightSum", 0f);
+        reapplyRemoteViews();
+        assertEquals(0f, linearLayout.getWeightSum(), 0.001f);
 
         mRemoteViews.setFloat(R.id.remoteView_absolute, "setWeightSum", 1.0f);
         assertThrowsOnReapply(ActionException.class);
@@ -1430,6 +1443,10 @@ public class RemoteViewsTest {
         reapplyRemoteViews();
         assertEquals(b, customView.getByteField());
 
+        mRemoteViews.setByte(R.id.remoteView_custom, "setByteField", (byte) 0);
+        reapplyRemoteViews();
+        assertEquals((byte) 0, customView.getByteField());
+
         mRemoteViews.setByte(R.id.remoteView_absolute, "setByteField", b);
         assertThrowsOnReapply(ActionException.class);
     }
@@ -1442,6 +1459,10 @@ public class RemoteViewsTest {
         mRemoteViews.setChar(R.id.remoteView_custom, "setCharField", 'q');
         reapplyRemoteViews();
         assertEquals('q', customView.getCharField());
+
+        mRemoteViews.setChar(R.id.remoteView_custom, "setCharField", (char) 0);
+        reapplyRemoteViews();
+        assertEquals((char) 0, customView.getCharField());
 
         mRemoteViews.setChar(R.id.remoteView_absolute, "setCharField", 'w');
         assertThrowsOnReapply(ActionException.class);
@@ -1456,6 +1477,10 @@ public class RemoteViewsTest {
         reapplyRemoteViews();
         assertEquals(0.5, customView.getDoubleField(), 0.001f);
 
+        mRemoteViews.setDouble(R.id.remoteView_custom, "setDoubleField", 0D);
+        reapplyRemoteViews();
+        assertEquals(0D, customView.getDoubleField(), 0.001f);
+
         mRemoteViews.setDouble(R.id.remoteView_absolute, "setDoubleField", 1.0);
         assertThrowsOnReapply(ActionException.class);
     }
@@ -1469,6 +1494,10 @@ public class RemoteViewsTest {
         mRemoteViews.setShort(R.id.remoteView_custom, "setShortField", s);
         reapplyRemoteViews();
         assertEquals(s, customView.getShortField());
+
+        mRemoteViews.setShort(R.id.remoteView_custom, "setShortField", (short) 0);
+        reapplyRemoteViews();
+        assertEquals((short) 0, customView.getShortField());
 
         mRemoteViews.setShort(R.id.remoteView_absolute, "setShortField", s);
         assertThrowsOnReapply(ActionException.class);
@@ -1614,6 +1643,9 @@ public class RemoteViewsTest {
         mRemoteViews.setViewPadding(R.id.remoteView_text, 40, 30, 20, 10);
         reapplyRemoteViews();
         assertPadding(textView, 40, 30, 20, 10);
+        mRemoteViews.setViewPadding(R.id.remoteView_text, 0, 0, 0, 0);
+        reapplyRemoteViews();
+        assertPadding(textView, 0, 0, 0, 0);
     }
 
     @Test
@@ -2169,6 +2201,12 @@ public class RemoteViewsTest {
                 textView.getCompoundDrawablePadding());
 
         mRemoteViews.setIntDimen(R.id.remoteView_text, "setCompoundDrawablePadding",
+                0f, TypedValue.COMPLEX_UNIT_PX);
+        reapplyRemoteViews();
+        assertEquals(resolveDimenSize(0f, TypedValue.COMPLEX_UNIT_PX, displayMetrics),
+                textView.getCompoundDrawablePadding());
+
+        mRemoteViews.setIntDimen(R.id.remoteView_text, "setCompoundDrawablePadding",
                 12f, 123456);
         assertThrowsOnReapply(ActionException.class);
     }
@@ -2251,6 +2289,11 @@ public class RemoteViewsTest {
         assertEquals(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PX, 3.5f, displayMetrics),
                 textView.getTextScaleX(), 1e-4f);
 
+        mRemoteViews.setFloatDimen(R.id.remoteView_text, "setTextScaleX",
+                0f, TypedValue.COMPLEX_UNIT_PX);
+        reapplyRemoteViews();
+        assertEquals(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PX, 0f, displayMetrics),
+                textView.getTextScaleX(), 1e-4f);
         mRemoteViews.setFloatDimen(R.id.remoteView_text, "setTextScaleX",
                 3.5f, 123456);
         assertThrowsOnReapply(ActionException.class);
@@ -2469,10 +2512,10 @@ public class RemoteViewsTest {
                 0.1 /* delta */);
 
         mRemoteViews.setViewOutlinePreferredRadius(
-                R.id.remoteViews_good, 16, COMPLEX_UNIT_PX);
+                R.id.remoteViews_good, 16.5f, COMPLEX_UNIT_PX);
         reapplyRemoteViews();
         assertEquals(
-                16,
+                16.5f,
                 ((RemoteViews.RemoteViewOutlineProvider) root.getOutlineProvider()).getRadius(),
                 0.1 /* delta */);
     }
