@@ -18,7 +18,11 @@ package android.service.personalcontext.cts.insight;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.mockito.Mockito.mock;
+
 import android.os.Bundle;
+import android.os.IBinder;
+import android.os.ParcelUuid;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -29,6 +33,7 @@ import android.service.personalcontext.hint.BundleHint;
 import android.service.personalcontext.hint.ContextHintWithSignature;
 import android.service.personalcontext.insight.BundleInsight;
 import android.service.personalcontext.insight.ContextInsight;
+import android.service.personalcontext.understander.ContextUnderstanderService;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -39,9 +44,11 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Answers;
 
 import java.security.GeneralSecurityException;
 import java.util.Random;
+import java.util.UUID;
 
 import javax.crypto.spec.SecretKeySpec;
 
@@ -60,6 +67,8 @@ public class ContextInsightTest {
     }
 
     private PersonalContextManager mPersonalContextManager;
+    private UUID mComponentId;
+    private ContextUnderstanderService mUnderstander;
 
     @Before
     public void setUp() throws Exception {
@@ -67,6 +76,15 @@ public class ContextInsightTest {
                 InstrumentationRegistry.getInstrumentation()
                         .getTargetContext()
                         .getSystemService(PersonalContextManager.class);
+
+        mComponentId = UUID.randomUUID();
+        mUnderstander = mock(ContextUnderstanderService.class, Answers.CALLS_REAL_METHODS);
+
+        // Configure the understander using reflection.
+        final IBinder binder = mUnderstander.onBind(null);
+        binder.getClass()
+                .getMethod("configure", ParcelUuid.class)
+                .invoke(binder, new ParcelUuid(mComponentId));
     }
 
     // Tests bundling and unbundling fields on the base ContextInsight.
@@ -90,6 +108,7 @@ public class ContextInsightTest {
 
         final BundleInsight insight =
                 new BundleInsight.Builder()
+                        .setOriginatingComponentId(mUnderstander.getComponentIdProvider())
                         .addOriginHint(signedHint)
                         .addToken(tokenA)
                         .addToken(tokenB)
@@ -120,7 +139,11 @@ public class ContextInsightTest {
         final Bundle data = new Bundle();
         data.putInt(dataKey, inputValue);
 
-        final BundleInsight insight = new BundleInsight.Builder().setDataBundle(data).build();
+        final BundleInsight insight =
+                new BundleInsight.Builder()
+                        .setOriginatingComponentId(mUnderstander.getComponentIdProvider())
+                        .setDataBundle(data)
+                        .build();
 
         ContextInsight outputInsight = bundleUnbundle(insight);
         assertThat(outputInsight).isInstanceOf(BundleInsight.class);
