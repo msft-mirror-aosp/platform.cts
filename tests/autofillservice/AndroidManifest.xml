@@ -66,6 +66,7 @@
         <activity android:name=".activities.LoginImportantForCredentialManagerActivity"/>
         <activity android:name=".activities.LoginMixedImportantForCredentialManagerActivity"/>
         <activity android:name=".activities.LoginCredentialMixedActivity"/>
+        <activity android:name=".activities.CustomPasswordViewLoginActivity"/>
         <activity android:name=".activities.WelcomeActivity"
              android:taskAffinity=".WelcomeActivity"/>
         <activity android:name=".activities.ViewActionActivity"
