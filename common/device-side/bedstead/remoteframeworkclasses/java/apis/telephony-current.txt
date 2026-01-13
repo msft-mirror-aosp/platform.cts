@@ -7,7 +7,7 @@ package android.telecom {
     method public void conference(android.telecom.Call);
     method public void deflect(android.net.Uri);
     method public void disconnect();
-    method @FlaggedApi("com.android.server.telecom.flags.enable_audio_processing_use_case") public int getAudioProcessingUseCase();
+    method @FlaggedApi("android.telecom.flags.enable_audio_processing_use_case") public int getAudioProcessingUseCase();
     method public java.util.List<java.lang.String> getCannedTextResponses();
     method public java.util.List<android.telecom.Call> getChildren();
     method public java.util.List<android.telecom.Call> getConferenceableCalls();
@@ -44,10 +44,10 @@ package android.telecom {
     method @FlaggedApi("android.telecom.flags.explicit_call_transfer") public void transfer(@NonNull android.telecom.Call);
     method public void unhold();
     method public void unregisterCallback(android.telecom.Call.Callback);
-    field @FlaggedApi("com.android.server.telecom.flags.enable_audio_processing_use_case") public static final int AUDIO_PROCESSING_USE_CASE_ASK_TO_HOLD = 3; // 0x3
-    field @FlaggedApi("com.android.server.telecom.flags.enable_audio_processing_use_case") public static final int AUDIO_PROCESSING_USE_CASE_CALL_SCREENING = 2; // 0x2
-    field @FlaggedApi("com.android.server.telecom.flags.enable_audio_processing_use_case") public static final int AUDIO_PROCESSING_USE_CASE_UNKNOWN = 0; // 0x0
-    field @FlaggedApi("com.android.server.telecom.flags.enable_audio_processing_use_case") public static final int AUDIO_PROCESSING_USE_CASE_VOICEMAIL = 1; // 0x1
+    field @FlaggedApi("android.telecom.flags.enable_audio_processing_use_case") public static final int AUDIO_PROCESSING_USE_CASE_ASK_TO_HOLD = 3; // 0x3
+    field @FlaggedApi("android.telecom.flags.enable_audio_processing_use_case") public static final int AUDIO_PROCESSING_USE_CASE_CALL_SCREENING = 2; // 0x2
+    field @FlaggedApi("android.telecom.flags.enable_audio_processing_use_case") public static final int AUDIO_PROCESSING_USE_CASE_UNKNOWN = 0; // 0x0
+    field @FlaggedApi("android.telecom.flags.enable_audio_processing_use_case") public static final int AUDIO_PROCESSING_USE_CASE_VOICEMAIL = 1; // 0x1
     field @Deprecated public static final String AVAILABLE_PHONE_ACCOUNTS = "selectPhoneAccountAccounts";
     field @FlaggedApi("android.telecom.flags.is_using_crs") public static final int CRS_MEDIA_TYPE_AUDIO = 1; // 0x1
     field @FlaggedApi("android.telecom.flags.is_using_crs") public static final int CRS_MEDIA_TYPE_NONE = 0; // 0x0
@@ -113,7 +113,7 @@ package android.telecom {
     method public boolean can(int);
     method public static String capabilitiesToString(int);
     method public android.telecom.PhoneAccountHandle getAccountHandle();
-    method @FlaggedApi("com.android.server.telecom.flags.call_details_get_associated_user_api") @NonNull public android.os.UserHandle getAssociatedUser();
+    method @FlaggedApi("android.telecom.flags.call_details_get_associated_user_api2") @NonNull public android.os.UserHandle getAssociatedUser();
     method public int getCallCapabilities();
     method public int getCallDirection();
     method public int getCallProperties();
@@ -196,9 +196,11 @@ package android.telecom {
     method @NonNull public android.net.Uri getAddress();
     method public int getCallCapabilities();
     method public int getCallType();
+    method @FlaggedApi("android.telecom.flags.integrated_call_logs_stage2") @Nullable public android.net.Uri getContactUri();
     method public int getDirection();
     method @NonNull public CharSequence getDisplayName();
     method @NonNull public android.telecom.PhoneAccountHandle getPhoneAccountHandle();
+    method @FlaggedApi("android.telecom.flags.integrated_call_logs_stage2") public boolean isGroupCall();
     method @FlaggedApi("com.android.server.telecom.flags.integrated_call_logs") public boolean isLogExcluded();
     method public void writeToParcel(@Nullable android.os.Parcel, int);
     field public static final int AUDIO_CALL = 1; // 0x1
@@ -218,6 +220,8 @@ package android.telecom {
     method @NonNull public android.telecom.CallAttributes build();
     method @NonNull public android.telecom.CallAttributes.Builder setCallCapabilities(int);
     method @NonNull public android.telecom.CallAttributes.Builder setCallType(int);
+    method @FlaggedApi("android.telecom.flags.integrated_call_logs_stage2") @NonNull public android.telecom.CallAttributes.Builder setContactUri(@NonNull android.net.Uri);
+    method @FlaggedApi("android.telecom.flags.integrated_call_logs_stage2") @NonNull public android.telecom.CallAttributes.Builder setIsGroupCall(boolean);
     method @FlaggedApi("com.android.server.telecom.flags.integrated_call_logs") @NonNull public android.telecom.CallAttributes.Builder setLogExcluded(boolean);
   }
 
@@ -249,6 +253,8 @@ package android.telecom {
     method @FlaggedApi("com.android.server.telecom.flags.transactional_video_state") public void requestVideoState(int, @NonNull java.util.concurrent.Executor, @NonNull android.os.OutcomeReceiver<java.lang.Void,android.telecom.CallException>);
     method public void sendEvent(@NonNull String, @NonNull android.os.Bundle);
     method public void setActive(@NonNull java.util.concurrent.Executor, @NonNull android.os.OutcomeReceiver<java.lang.Void,android.telecom.CallException>);
+    method @FlaggedApi("android.telecom.flags.integrated_call_logs_stage2") public void setContactUri(@Nullable android.net.Uri, @NonNull java.util.concurrent.Executor, @NonNull android.os.OutcomeReceiver<java.lang.Void,android.telecom.CallException>);
+    method @FlaggedApi("android.telecom.flags.integrated_call_logs_stage2") public void setGroupCallState(boolean, @NonNull java.util.concurrent.Executor, @NonNull android.os.OutcomeReceiver<java.lang.Void,android.telecom.CallException>);
     method public void setInactive(@NonNull java.util.concurrent.Executor, @NonNull android.os.OutcomeReceiver<java.lang.Void,android.telecom.CallException>);
     method public void startCallStreaming(@NonNull java.util.concurrent.Executor, @NonNull android.os.OutcomeReceiver<java.lang.Void,android.telecom.CallException>);
   }
@@ -437,7 +443,7 @@ package android.telecom {
     method public final android.net.Uri getAddress();
     method public final int getAddressPresentation();
     method public final boolean getAudioModeIsVoip();
-    method @FlaggedApi("com.android.server.telecom.flags.enable_audio_processing_use_case") public final int getAudioProcessingUseCase();
+    method @FlaggedApi("android.telecom.flags.enable_audio_processing_use_case") public final int getAudioProcessingUseCase();
     method @Deprecated public final android.telecom.CallAudioState getCallAudioState();
     method public final String getCallerDisplayName();
     method public final int getCallerDisplayNamePresentation();
@@ -484,6 +490,8 @@ package android.telecom {
     method public void onStopDtmfTone();
     method public void onStopRtt();
     method public void onTrackedByNonUiService(boolean);
+    method @FlaggedApi("android.telecom.flags.explicit_call_transfer") public void onTransfer(@NonNull android.net.Uri, boolean);
+    method @FlaggedApi("android.telecom.flags.explicit_call_transfer") public void onTransfer(@NonNull android.telecom.Connection);
     method public void onUnhold();
     method public void onUsingAlternativeUi(boolean);
     method public static String propertiesToString(int);
@@ -501,7 +509,7 @@ package android.telecom {
     method public final void setActive();
     method public final void setAddress(android.net.Uri, int);
     method public final void setAudioModeIsVoip(boolean);
-    method @FlaggedApi("com.android.server.telecom.flags.enable_audio_processing_use_case") public final void setAudioProcessing(int);
+    method @FlaggedApi("android.telecom.flags.enable_audio_processing_use_case") public final void setAudioProcessing(int);
     method @Deprecated public final void setAudioRoute(int);
     method public final void setCallerDisplayName(String, int);
     method public final void setCallerNumberVerificationStatus(int);
@@ -520,7 +528,7 @@ package android.telecom {
     method public final void setPulling();
     method public final void setRingbackRequested(boolean);
     method public final void setRinging();
-    method @FlaggedApi("com.android.server.telecom.flags.enable_audio_processing_use_case") public final void setSimulatedRinging();
+    method @FlaggedApi("android.telecom.flags.enable_audio_processing_use_case") public final void setSimulatedRinging();
     method public final void setStatusHints(android.telecom.StatusHints);
     method public final void setVideoProvider(android.telecom.Connection.VideoProvider);
     method public final void setVideoState(int);
@@ -569,6 +577,8 @@ package android.telecom {
     field public static final int CAPABILITY_SUPPORT_DEFLECT = 33554432; // 0x2000000
     field public static final int CAPABILITY_SUPPORT_HOLD = 2; // 0x2
     field public static final int CAPABILITY_SWAP_CONFERENCE = 8; // 0x8
+    field @FlaggedApi("android.telecom.flags.explicit_call_transfer") public static final int CAPABILITY_TRANSFER = 134217728; // 0x8000000
+    field @FlaggedApi("android.telecom.flags.explicit_call_transfer") public static final int CAPABILITY_TRANSFER_CONSULTATIVE = 268435456; // 0x10000000
     field public static final String EVENT_CALL_HOLD_FAILED = "android.telecom.event.CALL_HOLD_FAILED";
     field public static final String EVENT_CALL_MERGE_FAILED = "android.telecom.event.CALL_MERGE_FAILED";
     field public static final String EVENT_CALL_PULL_FAILED = "android.telecom.event.CALL_PULL_FAILED";
@@ -604,7 +614,7 @@ package android.telecom {
     field public static final int PROPERTY_SELF_MANAGED = 128; // 0x80
     field public static final int PROPERTY_WIFI = 8; // 0x8
     field public static final int STATE_ACTIVE = 4; // 0x4
-    field @FlaggedApi("com.android.server.telecom.flags.enable_audio_processing_use_case") public static final int STATE_AUDIO_PROCESSING = 8; // 0x8
+    field @FlaggedApi("android.telecom.flags.enable_audio_processing_use_case") public static final int STATE_AUDIO_PROCESSING = 8; // 0x8
     field public static final int STATE_DIALING = 3; // 0x3
     field public static final int STATE_DISCONNECTED = 6; // 0x6
     field public static final int STATE_HOLDING = 5; // 0x5
@@ -612,7 +622,7 @@ package android.telecom {
     field public static final int STATE_NEW = 1; // 0x1
     field public static final int STATE_PULLING_CALL = 7; // 0x7
     field public static final int STATE_RINGING = 2; // 0x2
-    field @FlaggedApi("com.android.server.telecom.flags.enable_audio_processing_use_case") public static final int STATE_SIMULATED_RINGING = 9; // 0x9
+    field @FlaggedApi("android.telecom.flags.enable_audio_processing_use_case") public static final int STATE_SIMULATED_RINGING = 9; // 0x9
     field public static final int VERIFICATION_STATUS_FAILED = 2; // 0x2
     field public static final int VERIFICATION_STATUS_NOT_VERIFIED = 0; // 0x0
     field public static final int VERIFICATION_STATUS_PASSED = 1; // 0x1
@@ -696,6 +706,10 @@ package android.telecom {
     method public final java.util.Collection<android.telecom.Connection> getAllConnections();
     method public final android.os.IBinder onBind(android.content.Intent);
     method public void onConference(android.telecom.Connection, android.telecom.Connection);
+    method @FlaggedApi("android.telecom.flags.telecom_mainline_api") public void onConferenceAdded(@NonNull android.telecom.Conference);
+    method @FlaggedApi("android.telecom.flags.telecom_mainline_api") public void onConferenceRemoved(@NonNull android.telecom.Conference);
+    method @FlaggedApi("android.telecom.flags.telecom_mainline_api") public void onConnectionAdded(@NonNull android.telecom.Connection);
+    method @FlaggedApi("android.telecom.flags.telecom_mainline_api") public void onConnectionRemoved(@NonNull android.telecom.Connection);
     method public void onConnectionServiceFocusGained();
     method public void onConnectionServiceFocusLost();
     method @FlaggedApi("com.android.server.telecom.flags.telecom_resolve_hidden_dependencies") public void onCreateConferenceComplete(@NonNull android.telecom.Conference);
@@ -838,6 +852,7 @@ package android.telecom {
     field public static final int CAPABILITY_CALL_SUBJECT = 64; // 0x40
     field @FlaggedApi("android.telecom.flags.change_rtt_to_audio") public static final int CAPABILITY_CHANGE_RTT_CALL_TO_AUDIO_CALL = 1048576; // 0x100000
     field public static final int CAPABILITY_CONNECTION_MANAGER = 1; // 0x1
+    field @FlaggedApi("android.telecom.flags.opt_out_premium_network") public static final int CAPABILITY_OPT_OUT_OF_PREMIUM_NETWORK = 2097152; // 0x200000
     field public static final int CAPABILITY_PLACE_EMERGENCY_CALLS = 16; // 0x10
     field public static final int CAPABILITY_RTT = 4096; // 0x1000
     field @Deprecated @FlaggedApi("android.telecom.flags.deprecate_self_managed_cs") public static final int CAPABILITY_SELF_MANAGED = 2048; // 0x800
@@ -1095,6 +1110,7 @@ package android.telecom {
     field @FlaggedApi("com.android.server.telecom.flags.integrated_call_logs") public static final String ACTION_CALL_BACK = "android.telecom.action.CALL_BACK";
     field public static final String ACTION_CHANGE_DEFAULT_DIALER = "android.telecom.action.CHANGE_DEFAULT_DIALER";
     field public static final String ACTION_CHANGE_PHONE_ACCOUNTS = "android.telecom.action.CHANGE_PHONE_ACCOUNTS";
+    field @FlaggedApi("android.telecom.flags.integrated_call_logs_stage2") public static final String ACTION_CONFIGURE_CALL_LOG_INTEGRATION = "android.telecom.action.CONFIGURE_CALL_LOG_INTEGRATION";
     field public static final String ACTION_CONFIGURE_PHONE_ACCOUNT = "android.telecom.action.CONFIGURE_PHONE_ACCOUNT";
     field public static final String ACTION_DEFAULT_CALL_SCREENING_APP_CHANGED = "android.telecom.action.DEFAULT_CALL_SCREENING_APP_CHANGED";
     field public static final String ACTION_DEFAULT_DIALER_CHANGED = "android.telecom.action.DEFAULT_DIALER_CHANGED";
@@ -1106,6 +1122,7 @@ package android.telecom {
     field public static final String ACTION_SHOW_CALL_SETTINGS = "android.telecom.action.SHOW_CALL_SETTINGS";
     field public static final String ACTION_SHOW_MISSED_CALLS_NOTIFICATION = "android.telecom.action.SHOW_MISSED_CALLS_NOTIFICATION";
     field public static final String ACTION_SHOW_RESPOND_VIA_SMS_SETTINGS = "android.telecom.action.SHOW_RESPOND_VIA_SMS_SETTINGS";
+    field @FlaggedApi("android.telecom.flags.integrated_call_logs_stage2") public static final String ACTION_VOIP_CALL_LOG_PREFERENCE = "android.telecom.action.VOIP_CALL_LOG_PREFERENCE";
     field public static final char DTMF_CHARACTER_PAUSE = 44; // 0x002c ','
     field public static final char DTMF_CHARACTER_WAIT = 59; // 0x003b ';'
     field public static final int DURATION_LONG = 3; // 0x3
@@ -1142,6 +1159,7 @@ package android.telecom {
     field public static final String EXTRA_START_CALL_WITH_VIDEO_STATE = "android.telecom.extra.START_CALL_WITH_VIDEO_STATE";
     field public static final String EXTRA_USE_ASSISTED_DIALING = "android.telecom.extra.USE_ASSISTED_DIALING";
     field @FlaggedApi("com.android.server.telecom.flags.integrated_call_logs") public static final String EXTRA_UUID = "android.telecom.extra.UUID";
+    field @FlaggedApi("android.telecom.flags.integrated_call_logs_stage2") public static final String EXTRA_VOIP_CALL_LOG_PREFERENCE_STATUS = "android.telecom.extra.VOIP_CALL_LOG_PREFERENCE_STATUS";
     field public static final String GATEWAY_ORIGINAL_ADDRESS = "android.telecom.extra.GATEWAY_ORIGINAL_ADDRESS";
     field public static final String GATEWAY_PROVIDER_PACKAGE = "android.telecom.extra.GATEWAY_PROVIDER_PACKAGE";
     field public static final String METADATA_INCLUDE_EXTERNAL_CALLS = "android.telecom.INCLUDE_EXTERNAL_CALLS";
