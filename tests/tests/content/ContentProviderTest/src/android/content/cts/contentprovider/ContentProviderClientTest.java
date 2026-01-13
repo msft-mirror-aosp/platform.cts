@@ -21,6 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.RETURNS_DEFAULTS;
 import static org.mockito.Mockito.after;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -39,6 +40,7 @@ import android.content.Context;
 import android.content.ContextParams;
 import android.content.IContentProvider;
 import android.content.OperationApplicationException;
+import android.content.flags.Flags;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.CancellationSignal;
@@ -47,6 +49,9 @@ import android.os.ICancellationSignal;
 import android.os.OperationCanceledException;
 import android.os.RemoteException;
 import android.os.SystemClock;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.test.mock.MockContentResolver;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -54,6 +59,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.stubbing.Answer;
@@ -98,6 +104,9 @@ public final class ContentProviderClientTest {
     private ICancellationSignal mICancellationSignal;
     private boolean mCalledCancel = false;
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Before
     public void setUp() throws Exception {
         mIContentProvider = mock(IContentProvider.class, RETURNS_DEFAULTS);
@@ -141,6 +150,20 @@ public final class ContentProviderClientTest {
                 .query(mAttributionSource, URI, null, ARGS, mICancellationSignal);
 
         testTimeout(() -> mContentProviderClient.query(URI, null, ARGS, mCancellationSignal));
+
+        verify(mIContentProvider, after(150))
+                .query(mAttributionSource, URI, null, ARGS, mICancellationSignal);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONTENT_PROVIDER_CLIENT_ANR_ON_CANCEL)
+    public void testQueryTimeoutOnCancel() throws RemoteException, InterruptedException {
+        doAnswer(ANSWER_SLEEP)
+                .when(mIContentProvider)
+                .query(mAttributionSource, URI, null, ARGS, mICancellationSignal);
+
+        testTimeoutOnCancel(
+                () -> mContentProviderClient.query(URI, null, ARGS, mCancellationSignal));
 
         verify(mIContentProvider, after(150))
                 .query(mAttributionSource, URI, null, ARGS, mICancellationSignal);
@@ -240,6 +263,19 @@ public final class ContentProviderClientTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONTENT_PROVIDER_CLIENT_ANR_ON_CANCEL)
+    public void testRefreshTimeoutOnCancel() throws RemoteException, InterruptedException {
+        doAnswer(ANSWER_SLEEP)
+                .when(mIContentProvider)
+                .refresh(mAttributionSource, URI, null, mICancellationSignal);
+
+        testTimeoutOnCancel(() -> mContentProviderClient.refresh(URI, null, mCancellationSignal));
+
+        verify(mIContentProvider, after(150))
+                .refresh(mAttributionSource, URI, null, mICancellationSignal);
+    }
+
+    @Test
     public void testInsert() throws RemoteException {
         mContentProviderClient.insert(URI, VALUES, EXTRAS);
         verify(mIContentProvider).insert(mAttributionSource, URI, VALUES, EXTRAS);
@@ -334,6 +370,20 @@ public final class ContentProviderClientTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONTENT_PROVIDER_CLIENT_ANR_ON_CANCEL)
+    public void testOpenFileTimeoutOnCancel()
+            throws RemoteException, InterruptedException, FileNotFoundException {
+        doAnswer(ANSWER_SLEEP)
+                .when(mIContentProvider)
+                .openFile(mAttributionSource, URI, MODE, mICancellationSignal);
+
+        testTimeoutOnCancel(() -> mContentProviderClient.openFile(URI, MODE, mCancellationSignal));
+
+        verify(mIContentProvider, after(150))
+                .openFile(mAttributionSource, URI, MODE, mICancellationSignal);
+    }
+
+    @Test
     public void testOpenAssetFile() throws RemoteException, FileNotFoundException {
         mContentProviderClient.openAssetFile(URI, MODE, mCancellationSignal);
 
@@ -360,6 +410,21 @@ public final class ContentProviderClientTest {
                 () -> mContentProviderClient.openAssetFile(URI, MODE, mCancellationSignal));
 
         verify(mIContentProvider, never())
+                .openAssetFile(mAttributionSource, URI, MODE, mICancellationSignal);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONTENT_PROVIDER_CLIENT_ANR_ON_CANCEL)
+    public void testOpenAssetFileTimeoutOnCancel()
+            throws RemoteException, InterruptedException, FileNotFoundException {
+        doAnswer(ANSWER_SLEEP)
+                .when(mIContentProvider)
+                .openAssetFile(mAttributionSource, URI, MODE, mICancellationSignal);
+
+        testTimeoutOnCancel(
+                () -> mContentProviderClient.openAssetFile(URI, MODE, mCancellationSignal));
+
+        verify(mIContentProvider, after(150))
                 .openAssetFile(mAttributionSource, URI, MODE, mICancellationSignal);
     }
 
@@ -403,6 +468,23 @@ public final class ContentProviderClientTest {
                                 URI, MODE, ARGS, mCancellationSignal));
 
         verify(mIContentProvider, never())
+                .openTypedAssetFile(mAttributionSource, URI, MODE, ARGS, mICancellationSignal);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONTENT_PROVIDER_CLIENT_ANR_ON_CANCEL)
+    public void testOpenTypedAssetFileTimeoutOnCancel()
+            throws RemoteException, InterruptedException, FileNotFoundException {
+        doAnswer(ANSWER_SLEEP)
+                .when(mIContentProvider)
+                .openTypedAssetFile(mAttributionSource, URI, MODE, ARGS, mICancellationSignal);
+
+        testTimeoutOnCancel(
+                () ->
+                        mContentProviderClient.openTypedAssetFile(
+                                URI, MODE, ARGS, mCancellationSignal));
+
+        verify(mIContentProvider, after(150))
                 .openTypedAssetFile(mAttributionSource, URI, MODE, ARGS, mICancellationSignal);
     }
 
@@ -574,6 +656,44 @@ public final class ContentProviderClientTest {
                         })
                 .start();
 
+        latch.await(100, TimeUnit.MILLISECONDS);
+        assertThat(latch.getCount()).isEqualTo(0);
+
+        verify(mContentResolver).appNotRespondingViaProvider(mIContentProvider);
+    }
+
+    private void testTimeoutOnCancel(Function function) throws InterruptedException {
+        mContentProviderClient.setDetectNotRespondingOnCancel(25, 1);
+        CountDownLatch latch = new CountDownLatch(1);
+        doAnswer(
+                        invocation -> {
+                            latch.countDown();
+                            return null;
+                        })
+                .when(mContentResolver)
+                .appNotRespondingViaProvider(mIContentProvider);
+
+        new Thread(
+                        () -> {
+                            try {
+                                function.run();
+                            } catch (Exception e) {
+                                // Ignore, we are testing timeout
+                            } finally {
+                                latch.countDown();
+                            }
+                        })
+                .start();
+
+        // Wait for the call to progress.
+        SystemClock.sleep(50);
+
+        // Should not be called yet.
+        verify(mContentResolver, never()).appNotRespondingViaProvider(any());
+
+        // Cancel should start the timeout.
+        mCancellationSignal.cancel();
+        mCalledCancel = true;
         latch.await(100, TimeUnit.MILLISECONDS);
         assertThat(latch.getCount()).isEqualTo(0);
 
