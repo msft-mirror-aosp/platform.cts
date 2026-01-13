@@ -25,9 +25,10 @@ import static com.android.bedstead.nene.utils.Versions.meetsSdkVersionRequiremen
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeFalse;
 
-import android.os.Process;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.Binder;
+import android.os.Process;
 import android.util.Log;
 
 import com.android.bedstead.harrier.annotations.AfterClass;
@@ -450,7 +451,15 @@ public final class DeviceState extends HarrierRule {
                     TestApis.device().keepScreenOn(true);
 
                     if (!isInstantApp && !isSdkSandbox) {
-                        TestApis.device().setKeyguardEnabled(false);
+                        if (Process.isApplicationUid(Binder.getCallingUid())) {
+                            TestApis.device().setKeyguardEnabled(false);
+                        } else {
+                            Log.i(LOG_TAG, "not disabling Keyguard because we can't do it "
+                                    + "when the calling Uid isn't an Application Uid "
+                                    + "(for example called from the Service)");
+
+                        }
+
                     }
                     TestApis.users().setStopBgUsersOnSwitch(OptionalBoolean.FALSE);
 
@@ -484,7 +493,8 @@ public final class DeviceState extends HarrierRule {
                         teardownShareableState();
                     }
 
-                    if (!isInstantApp && !isSdkSandbox) {
+                    if (!isInstantApp && !isSdkSandbox &&
+                            Process.isApplicationUid(Binder.getCallingUid())) {
                         TestApis.device().setKeyguardEnabled(true);
                     }
                     // TODO(b/249710985): Reset to the default for the device or the previous value
