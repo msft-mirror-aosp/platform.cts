@@ -1032,6 +1032,17 @@ public class TvInteractiveAppServiceTest {
     }
 
     @Test
+    public void testStartInteractiveAppWithHandle() throws Throwable {
+        assertNotNull(mSession);
+        mSession.resetValues();
+        int handle = 0;
+        mTvIAppView.startInteractiveApp(handle);
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mStartInteractiveAppCount > 0);
+        assertThat(mSession.mStartInteractiveAppCount).isEqualTo(1);
+        assertThat(mSession.mAppHandle).isEqualTo(handle);
+    }
+
+    @Test
     public void testDispatchKeyDown() {
         assertNotNull(mSession);
         mSession.resetValues();

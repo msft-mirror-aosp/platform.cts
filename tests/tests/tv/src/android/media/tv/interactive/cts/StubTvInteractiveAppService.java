@@ -114,6 +114,7 @@ public class StubTvInteractiveAppService extends TvInteractiveAppService {
         public int mTrackSelectedCount;
         public int mSendCertificateCount;
         public int mVideoFreezeUpdatedCount;
+        public int mAppHandle;
 
         public Integer mKeyDownCode;
         public Integer mKeyUpCode;
@@ -192,6 +193,7 @@ public class StubTvInteractiveAppService extends TvInteractiveAppService {
             mTrackSelectedCount = 0;
             mSendCertificateCount = 0;
             mVideoFreezeUpdatedCount = 0;
+            mAppHandle = -1;
 
             mKeyDownCode = null;
             mKeyUpCode = null;
@@ -339,6 +341,16 @@ public class StubTvInteractiveAppService extends TvInteractiveAppService {
 
         @Override
         public void onRelease() {
+        }
+
+        @Override
+        public void onStartInteractiveApp(int handle) {
+            super.onStartInteractiveApp(handle);
+            mAppHandle = handle;
+            mStartInteractiveAppCount++;
+            notifySessionStateChanged(
+                    TvInteractiveAppManager.INTERACTIVE_APP_STATE_RUNNING,
+                    TvInteractiveAppManager.ERROR_NONE);
         }
 
         @Override
