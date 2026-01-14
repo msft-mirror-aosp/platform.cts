@@ -287,6 +287,11 @@ public class TestUsbTest extends DeviceTestCase implements IAbiReceiver, IBuildR
         CLog.i("Switching to root.");
         mDevice.enableAdbRoot();
 
+        if (!mDevice.isAdbRoot()) {
+            CLog.i("Could not switch to root, Skipping Test.");
+            return;
+        }
+
         // We run multiple iterations as sometimes USB stack set up after adb root takes time
         for (int i = 0; i < STABILITY_ITERATIONS; i++) {
             CLog.i("Stop/Start loop iteration: " + i);
