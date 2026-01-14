@@ -121,6 +121,8 @@ public class TvInputManagerTest extends ActivityInstrumentationTestCase2<TvViewS
             "com.android.providers.tv.permission.WRITE_EPG_DATA";
     private static final String PERMISSION_ACCESS_TUNED_INFO =
             "android.permission.ACCESS_TUNED_INFO";
+    private static final String PERMISSION_QUERY_AUDIO_STATE =
+            "android.permission.QUERY_AUDIO_STATE";
     private static final String PERMISSION_TV_INPUT_HARDWARE =
             "android.permission.TV_INPUT_HARDWARE";
     private static final String PERMISSION_TUNER_RESOURCE_ACCESS =
@@ -659,8 +661,9 @@ public class TvInputManagerTest extends ActivityInstrumentationTestCase2<TvViewS
         }
 
         String[] newPermissions =
-                Arrays.copyOf(BASE_SHELL_PERMISSIONS, BASE_SHELL_PERMISSIONS.length + 1);
+                Arrays.copyOf(BASE_SHELL_PERMISSIONS, BASE_SHELL_PERMISSIONS.length + 2);
         newPermissions[BASE_SHELL_PERMISSIONS.length] = PERMISSION_TV_INPUT_HARDWARE;
+        newPermissions[BASE_SHELL_PERMISSIONS.length + 1] = PERMISSION_QUERY_AUDIO_STATE;
         InstrumentationRegistry.getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
                 newPermissions);
 
