@@ -262,6 +262,13 @@ public abstract class CodecTestBase {
             DolbyVisionProfileDvheDtr, DolbyVisionProfileDvheStn, DolbyVisionProfileDvheDth,
             DolbyVisionProfileDvheDtb, DolbyVisionProfileDvheSt, DolbyVisionProfileDvavSe,
             DolbyVisionProfileDvav110};
+    static final int[] VVC_SDR_PROFILES = new int[]{VVCProfileMain8};
+    static final int[] VVC_HLG_PROFILES = new int[]{VVCProfileMain10};
+    static final int[] VVC_HDR10_PROFILES = new int[]{VVCProfileMain10HDR10};
+    static final int[] VVC_HDR10_PLUS_PROFILES = new int[]{VVCProfileMain10HDR10Plus};
+    static final int[] VVC_HDR_PROFILES =
+            combine(VVC_HLG_PROFILES, combine(VVC_HDR10_PROFILES, VVC_HDR10_PLUS_PROFILES));
+    static final int[] VVC_PROFILES = combine(VVC_SDR_PROFILES, VVC_HDR_PROFILES);
     static final int[] AAC_PROFILES = new int[]{AACObjectMain, AACObjectLC, AACObjectSSR,
             AACObjectLTP, AACObjectHE, AACObjectScalable, AACObjectERLC, AACObjectERScalable,
             AACObjectLD, AACObjectELD, AACObjectXHE};
@@ -505,6 +512,7 @@ public abstract class CodecTestBase {
         PROFILE_SDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP8, VP8_PROFILES);
         PROFILE_SDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_SDR_PROFILES);
         PROFILE_SDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_SDR_PROFILES);
+        PROFILE_SDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_VVC, VVC_SDR_PROFILES);
         PROFILE_SDR_MAP.put(MediaFormat.MIMETYPE_AUDIO_AAC, AAC_PROFILES);
         PROFILE_SDR_MAP.put(MediaFormat.MIMETYPE_AUDIO_AC4, AC4_PROFILES);
         PROFILE_SDR_MAP.put(MediaFormat.MIMETYPE_AUDIO_IAMF, IAMF_PROFILES);
@@ -514,16 +522,19 @@ public abstract class CodecTestBase {
         PROFILE_HLG_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HLG_PROFILES);
         PROFILE_HLG_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HLG_PROFILES);
         PROFILE_HLG_MAP.put(MediaFormat.MIMETYPE_VIDEO_APV, APV_HLG_PROFILES);
+        PROFILE_HLG_MAP.put(MediaFormat.MIMETYPE_VIDEO_VVC, VVC_HLG_PROFILES);
 
         PROFILE_HDR10_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_HDR10_PROFILES);
         PROFILE_HDR10_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HDR10_PROFILES);
         PROFILE_HDR10_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HDR10_PROFILES);
         PROFILE_HDR10_MAP.put(MediaFormat.MIMETYPE_VIDEO_APV, APV_HDR10_PROFILES);
+        PROFILE_HDR10_MAP.put(MediaFormat.MIMETYPE_VIDEO_VVC, VVC_HDR10_PROFILES);
 
         PROFILE_HDR10_PLUS_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_HDR10_PLUS_PROFILES);
         PROFILE_HDR10_PLUS_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HDR10_PLUS_PROFILES);
         PROFILE_HDR10_PLUS_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HDR10_PLUS_PROFILES);
         PROFILE_HDR10_PLUS_MAP.put(MediaFormat.MIMETYPE_VIDEO_APV, APV_HDR10_PLUS_PROFILES);
+        PROFILE_HDR10_PLUS_MAP.put(MediaFormat.MIMETYPE_VIDEO_VVC, VVC_HDR10_PLUS_PROFILES);
 
         PROFILE_DOLBY_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION,
                 DOLBY_VISION_HDR_PROFILES);
@@ -534,6 +545,7 @@ public abstract class CodecTestBase {
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HDR_PROFILES);
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_APV, APV_HDR_PROFILES);
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION, DOLBY_VISION_HDR_PROFILES);
+        PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_VVC, VVC_HDR_PROFILES);
 
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_AVC, AVC_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_PROFILES);
@@ -545,6 +557,7 @@ public abstract class CodecTestBase {
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_APV, APV_HDR_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION, DOLBY_VISION_HDR_PROFILES);
+        PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_VVC, VVC_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_AUDIO_AAC, AAC_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_AUDIO_AC4, AC4_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_AUDIO_IAMF, IAMF_PROFILES);
