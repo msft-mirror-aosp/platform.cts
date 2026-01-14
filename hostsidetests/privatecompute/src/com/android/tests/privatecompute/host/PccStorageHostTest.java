@@ -30,7 +30,6 @@ import com.android.tradefed.util.CommandStatus;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -222,7 +221,6 @@ public final class PccStorageHostTest extends BaseHostJUnit4Test {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT)
-    @Ignore("b/464548583")
     public void testPccToNonPccUpgrade_pccDirectoryRemoved() throws Exception {
         installPackageAsUser(PCC_TEST_APK, true, mUserId);
 
