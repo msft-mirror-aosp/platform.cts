@@ -59,7 +59,8 @@ public class MockMediaParserOutputConsumer implements MediaParser.OutputConsumer
         mFakeExtractorOutput =
                 new FakeExtractorOutput(
                         /* trackOutputFactory= */ (id, type) ->
-                                new FakeTrackOutput(/* deduplicateConsecutiveFormats= */ true));
+                                new FakeTrackOutput(
+                                        type, /* deduplicateConsecutiveFormats= */ true));
         mTrackOutputs = new HashMap<>();
     }
 

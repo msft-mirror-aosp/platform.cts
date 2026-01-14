@@ -17,14 +17,17 @@ package android.media.mediaediting.cts;
 
 import static androidx.media3.common.util.Assertions.checkArgument;
 import static androidx.media3.common.util.Assertions.checkNotNull;
-import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.junit.Assume.assumeTrue;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
 import android.net.Uri;
+
 import androidx.annotation.Nullable;
 import androidx.media3.common.C;
 import androidx.media3.common.MediaItem;
@@ -44,8 +47,12 @@ import androidx.media3.transformer.JsonUtil;
 import androidx.media3.transformer.TransformationRequest;
 import androidx.media3.transformer.Transformer;
 import androidx.test.platform.app.InstrumentationRegistry;
+
 import com.google.common.base.Ascii;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
+import org.json.JSONObject;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
@@ -53,7 +60,6 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-import org.json.JSONObject;
 
 /** An android instrumentation test runner for {@link Transformer}. */
 public class TransformerAndroidTestRunner {
@@ -249,8 +255,10 @@ public class TransformerAndroidTestRunner {
    * @throws Exception The cause of the export not completing.
    */
   public ExportTestResult run(String testId, EditedMediaItem editedMediaItem) throws Exception {
-    Composition composition =
-        new Composition.Builder(new EditedMediaItemSequence(editedMediaItem)).build();
+        Composition composition =
+                new Composition.Builder(
+                                new EditedMediaItemSequence.Builder(editedMediaItem).build())
+                        .build();
     return run(testId, composition);
   }
 
