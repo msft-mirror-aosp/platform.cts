@@ -71,6 +71,7 @@ import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.media.flags.Flags;
 
 import com.google.common.truth.Correspondence;
@@ -207,6 +208,9 @@ public class SystemMediaRouter2Test {
         mAppRouter2.setRouteListingPreference(null);
 
         mUiAutomation.dropShellPermissionIdentity();
+
+        PollingCheck.waitFor(
+                TIMEOUT_MS, () -> mSystemRouter2ForCts.getRouteListingPreference() == null);
     }
 
     @Test
