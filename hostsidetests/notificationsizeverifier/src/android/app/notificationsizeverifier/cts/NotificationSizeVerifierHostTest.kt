@@ -26,17 +26,12 @@ import com.google.common.truth.Truth.assertWithMessage
 
 class NotificationSizeVerifierHostTest : CompatChangeGatingTestCase() {
     private var apkInstalled = false
-    private var isFlagEnabled = false
 
     companion object {
         private const val DEVICE_TEST_APK = "CtsNotificationSizeVerifierDeviceTest.apk"
         internal const val DEVICE_TEST_PKG = "com.android.test.notificationsizeverifier"
         private const val DEVICE_TEST_RUNNER = "androidx.test.runner.AndroidJUnitRunner"
         private const val DEVICE_TEST_CLASS = "$DEVICE_TEST_PKG.NotificationSizeVerifierDeviceTest"
-        private const val FEATURE_FLAG_NAMESPACE = "systemui"
-        private const val FEATURE_FLAG_NAME =
-                "com.android.server.notification.notification_custom_view_uri_restriction"
-        private const val SUT_PACKAGE = "com.android.systemui"
         private const val CHECK_SIZE_OF_INFLATED_CUSTOM_VIEWS = 270553691L
         private const val TIMEOUT_SLEEP_MS = 1000L
         private const val POLLING_INTERVAL_MS = 100L
@@ -44,33 +39,25 @@ class NotificationSizeVerifierHostTest : CompatChangeGatingTestCase() {
 
     override fun setUp() {
         super.setUp()
-
-        val flagValue =
-                device
-                        .executeShellCommand(
-                                "device_config get $FEATURE_FLAG_NAMESPACE $FEATURE_FLAG_NAME"
-                        )
-                        .trim()
-        isFlagEnabled = "true".equals(flagValue, ignoreCase = true)
-
         installIfNotInstalled(DEVICE_TEST_APK)
 
         val userId = device.currentUser
         CLog.i("Running as user: $userId")
 
         val grantPermissionCmd =
-                "pm grant --user $userId $DEVICE_TEST_PKG android.permission.POST_NOTIFICATIONS"
+            "pm grant --user $userId $DEVICE_TEST_PKG android.permission.POST_NOTIFICATIONS"
         device.executeShellCommand(grantPermissionCmd)
         val resetBanCmd = "cmd notification reset_package_ban $DEVICE_TEST_PKG"
         device.executeShellCommand(resetBanCmd)
         val allowNotificationsCmd =
-                "cmd notification set_notifications_enabled_for_package --user $userId " +
-                        "$DEVICE_TEST_PKG true"
+            "cmd notification set_notifications_enabled_for_package --user $userId " +
+                    "$DEVICE_TEST_PKG true"
         device.executeShellCommand(allowNotificationsCmd)
 
         // Wait for a short period to allow the settings changes to propagate
         // within the system. Without this, subsequent operations might flake.
         RunUtil.getDefault().sleep(TIMEOUT_SLEEP_MS)
+        clearAllNotifications()
     }
 
     private fun installIfNotInstalled(apkName: String) {
@@ -82,10 +69,11 @@ class NotificationSizeVerifierHostTest : CompatChangeGatingTestCase() {
 
     override fun tearDown() {
         resetCompatConfig(
-                DEVICE_TEST_PKG,
-                setOf(CHECK_SIZE_OF_INFLATED_CUSTOM_VIEWS),
-                setOf(CHECK_SIZE_OF_INFLATED_CUSTOM_VIEWS)
+            DEVICE_TEST_PKG,
+            setOf(CHECK_SIZE_OF_INFLATED_CUSTOM_VIEWS),
+            setOf(CHECK_SIZE_OF_INFLATED_CUSTOM_VIEWS)
         )
+        clearAllNotifications()
         super.tearDown()
     }
 
@@ -121,37 +109,25 @@ class NotificationSizeVerifierHostTest : CompatChangeGatingTestCase() {
     }
 
     private fun runDeviceTest(methodName: String, compatChangeEnabledForTestPkg: Boolean = false) {
-        // TODO: b/448528742 - Use assumeTrue for flag check to skip tests instead of passing the
-        // test by default.
-        if (!isFlagEnabled) {
-            CLog.i("Skipping test $methodName as feature flag is not enabled.")
-            return
-        }
-
-        // Resource value verification test, does not need an explicit notification cleanup.
-        if (!methodName.equals("config_NotificationStripSizeBytes_VerifyValue")) {
-            clearAllNotifications()
-        }
-
         val userId = device.currentUser
         val enabledChanges: Set<Long> =
-        if (compatChangeEnabledForTestPkg) {
-            setOf(CHECK_SIZE_OF_INFLATED_CUSTOM_VIEWS)
-        } else {
-            emptySet()
-        }
+            if (compatChangeEnabledForTestPkg) {
+                setOf(CHECK_SIZE_OF_INFLATED_CUSTOM_VIEWS)
+            } else {
+                emptySet()
+            }
         val disabledChanges: Set<Long> =
-        if (compatChangeEnabledForTestPkg) {
-            emptySet()
-        } else {
-            setOf(CHECK_SIZE_OF_INFLATED_CUSTOM_VIEWS)
-        }
+            if (compatChangeEnabledForTestPkg) {
+                emptySet()
+            } else {
+                setOf(CHECK_SIZE_OF_INFLATED_CUSTOM_VIEWS)
+            }
 
         setCompatConfig(enabledChanges, disabledChanges, DEVICE_TEST_PKG)
 
         try {
             val testRunner =
-                    RemoteAndroidTestRunner(DEVICE_TEST_PKG, DEVICE_TEST_RUNNER, device.iDevice)
+                RemoteAndroidTestRunner(DEVICE_TEST_PKG, DEVICE_TEST_RUNNER, device.iDevice)
             testRunner.setMethodName(DEVICE_TEST_CLASS, methodName)
             testRunner.addInstrumentationArg("ENABLE_MANUAL", "true")
 
@@ -159,37 +135,37 @@ class NotificationSizeVerifierHostTest : CompatChangeGatingTestCase() {
 
             val success = device.runInstrumentationTestsAsUser(testRunner, userId, listener)
             assertWithMessage("Instrumentation run failed to start for $methodName")
-                    .that(success)
-                    .isTrue()
+                .that(success)
+                .isTrue()
 
             val result = listener.currentRunResults
             assertWithMessage(
-                    "Device test run failed for ${result.name}: ${result.runFailureMessage}"
+                "Device test run failed for ${result.name}: ${result.runFailureMessage}"
             )
-                    .that(result.isRunFailure)
-                    .isFalse()
+                .that(result.isRunFailure)
+                .isFalse()
 
             if (result.numTests == 0) {
                 throw AssertionError("No tests were run on the device for $methodName")
             }
             assertWithMessage(
-                    "Should run only exactly one test method! Found: ${result.testResults.keys}"
+                "Should run only exactly one test method! Found: ${result.testResults.keys}"
             )
-                    .that(result.numTests)
-                    .isEqualTo(1)
+                .that(result.numTests)
+                .isEqualTo(1)
 
             val resultEntry = result.testResults.entries.iterator().next()
             val testStatus = resultEntry.value.status
             if (testStatus != TestStatus.PASSED) {
                 if (testStatus == TestStatus.ASSUMPTION_FAILURE) {
                     CLog.w(
-                            "Assumption failed in device test: ${resultEntry.key}\n" +
-                                    "${resultEntry.value.stackTrace}"
+                        "Assumption failed in device test: ${resultEntry.key}\n" +
+                                "${resultEntry.value.stackTrace}"
                     )
                 } else {
                     throw AssertionError(
-                            "On-device test failed: ${resultEntry.key}\n" +
-                                    "${resultEntry.value.stackTrace}"
+                        "On-device test failed: ${resultEntry.key}\n" +
+                                "${resultEntry.value.stackTrace}"
                     )
                 }
             }
@@ -200,9 +176,6 @@ class NotificationSizeVerifierHostTest : CompatChangeGatingTestCase() {
         }
     }
 
-    fun testConfig_NotificationStripSizeBytes_VerifyValue() {
-        runDeviceTest("config_NotificationStripSizeBytes_VerifyValue")
-    }
     fun testBitmapOverLimit_ChangeEnabled() {
         runDeviceTest("bitmapOverLimit_ChangeEnabled", true)
     }

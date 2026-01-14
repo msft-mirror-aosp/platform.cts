@@ -20,12 +20,11 @@ import com.android.interactive.annotations.NotFullyAutomated
 import com.android.interactive.steps.YesNoStep
 
 @NotFullyAutomated(reason = "Requires manual visual inspection of notification rendering.")
-class VerifyNotificationUriUnderChangeEnabled : YesNoStep(
+class VerifyNotificationCustomContentRendered : YesNoStep(
     """
-    Compat Change CHECK_SIZE_OF_INFLATED_CUSTOM_VIEWS is ENABLED for SystemUI.
-    A 'Uri of Image Under Limit' notification was posted. Please EXPAND the notification.
+    Test notification was posted. Please expand the notification.
 
-    Expected: The custom content (colored Bitmap) SHOULD ALWAYS be visible.
+    Expected: RED BOX visible in the notification.
 
     Is the expanded notification rendered as expected?
     """.trimIndent()

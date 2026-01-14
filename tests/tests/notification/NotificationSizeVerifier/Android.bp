@@ -27,8 +27,12 @@ android_test_helper_app {
         "android-support-annotations",
         "junit",
         "truth",
+        "platform-test-annotations",
+        "flag-junit",
+        "notification_flags_lib",
     ],
     srcs: ["src/**/*.kt"],
+    manifest: "AndroidManifest.xml",
     sdk_version: "current",
     resource_dirs: ["res"],
 }
