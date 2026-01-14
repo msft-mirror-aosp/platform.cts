@@ -21,6 +21,7 @@ import static android.media.MediaFormat.MIMETYPE_VIDEO_H263;
 import static android.media.MediaFormat.MIMETYPE_VIDEO_HEVC;
 import static android.media.MediaFormat.MIMETYPE_VIDEO_MPEG4;
 import static android.media.MediaFormat.MIMETYPE_VIDEO_VP9;
+import static android.mediav2.common.cts.CodecTestBase.IS_AFTER_B;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -487,6 +488,9 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         adaptiveFormats.add(MediaFormat.MIMETYPE_VIDEO_HEVC);
         adaptiveFormats.add(MediaFormat.MIMETYPE_VIDEO_VP8);
         adaptiveFormats.add(MediaFormat.MIMETYPE_VIDEO_VP9);
+        if (IS_AFTER_B) {
+            adaptiveFormats.add(MediaFormat.MIMETYPE_VIDEO_AV1);
+        }
         return adaptiveFormats;
     }
 
