@@ -28,9 +28,9 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewTreeObserver.OnDrawListener;
+import android.view.Window;
 import android.view.WindowInsets;
 import android.view.cts.util.DisplayUtils;
 import android.widget.FrameLayout;
@@ -69,16 +69,14 @@ public class PixelCopyViewProducerActivity extends Activity implements OnDrawLis
 
         mContent = new ColoredGrid(this);
         setContentView(mContent);
-        TypedValue isWindowFullscreen = new TypedValue();
-        if (getTheme().resolveAttribute(android.R.attr.windowFullscreen, isWindowFullscreen, true)
-                && isWindowFullscreen.data != 0) {
-            // Hide the status bar and show window content under the navigation bar
-            // so that the window content doesn't resize when the system bars show or hide.
-            View view = this.getWindow().getDecorView();
-            view.setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_FULLSCREEN);
-        }
+
+        Window window = getWindow();
+        window.setDecorFitsSystemWindows(false);
+        window.setStatusBarColor(Color.TRANSPARENT);
+        window.setStatusBarContrastEnforced(false);
+        window.setNavigationBarColor(Color.TRANSPARENT);
+        window.setNavigationBarContrastEnforced(false);
+
         mContent.getViewTreeObserver().addOnDrawListener(this);
         mContent.setOnApplyWindowInsetsListener(this);
     }
