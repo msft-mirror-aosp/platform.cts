@@ -7445,4 +7445,46 @@ public class TelephonyManagerTest {
                 SecurityException.class,
                 () -> tm.getAutoManagedPinForSim(getContext().getMainExecutor(), callback));
     }
+
+    @Test
+    public void testSetOperatorBrandOverride_withModifyPhoneStatePermission() {
+        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+            return;
+        }
+
+        // 1. Ensure we have a valid subId (API likely requires a subscription)
+        int subId = SubscriptionManager.getDefaultSubscriptionId();
+        if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+            // Need a SIM to test this API
+            return;
+        }
+
+        try (PermissionContext p = TestApis.permissions().withPermission(
+                android.Manifest.permission.MODIFY_PHONE_STATE)) {
+            // 3. Call the API.
+            boolean result = mTelephonyManager.setOperatorBrandOverride(null);
+
+            // 4. Verify the result
+            assertTrue("setOperatorBrandOverride should return true with permission", result);
+        } catch (SecurityException e) {
+            fail("Should not throw SecurityException when holding MODIFY_PHONE_STATE");
+        }
+    }
+
+    @Test
+    public void testSetOperatorBrandOverride_withoutPermission_throwsSecurityException() {
+        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+            return;
+        }
+
+        try (PermissionContext p = TestApis.permissions().withoutPermission(
+                android.Manifest.permission.MODIFY_PHONE_STATE)) {
+            // Attempt to call the API
+            mTelephonyManager.setOperatorBrandOverride(null);
+            fail("SecurityException expected when caller lacks MODIFY_PHONE_STATE "
+                    + "or Carrier Privileges");
+        } catch (SecurityException expected) {
+            // Expected behavior
+        }
+    }
 }
