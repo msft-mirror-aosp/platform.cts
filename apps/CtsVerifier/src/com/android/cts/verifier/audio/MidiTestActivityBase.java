@@ -16,6 +16,9 @@
 
 package com.android.cts.verifier.audio;
 
+import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
+import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
+
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -33,10 +36,15 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.android.compatibility.common.util.ResultType;
+import com.android.compatibility.common.util.ResultUnit;
+import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.midilib.MidiTestModule;
 import com.android.midi.VerifierMidiEchoService;
+
+import org.json.JSONArray;
 
 import java.util.Collection;
 import java.util.concurrent.Executor;
@@ -50,6 +58,14 @@ public abstract class MidiTestActivityBase
 
     private static final String TAG = "MidiTestActivityBase";
     private static final boolean DEBUG = true;
+
+    // ReportLog Schema
+    protected static final String KEY_HAS_MIDI = "has_midi";
+    public static final String KEY_TEST_STATUS = "test_status";
+    public static final String KEY_DEVICE_TYPE = "device_type";
+    public static final String KEY_INPUT_NAME = "input_name";
+    public static final String KEY_OUTPUT_NAME = "output_name";
+    protected static final String KEY_STREAMS = "streams";
 
     protected MidiManager mMidiManager;
 
@@ -100,6 +116,7 @@ public abstract class MidiTestActivityBase
         // Standard PassFailButtons.Activity initialization
         setPassFailButtonClickListeners();
         setInfoResources(R.string.midi_test, R.string.midi_info, -1);
+        mRequireReportLogToPass = true;
 
         // May as well calculate this right off the bat.
         mHasMIDI = hasMIDI();
@@ -194,6 +211,36 @@ public abstract class MidiTestActivityBase
 
         getPassButton().setEnabled(hasPassed);
         return hasPassed;
+    }
+
+    @Override
+    public String getTestId() {
+        return setTestNameSuffix(sCurrentDisplayMode, getClass().getName());
+    }
+
+    @Override
+    public boolean requiresReportLog() {
+        return true;
+    }
+
+    @Override
+    public String getReportFileName() {
+        return PassFailButtons.AUDIO_TESTS_REPORT_LOG_NAME;
+    }
+
+    @Override
+    public void recordTestResults() {
+        CtsVerifierReportLog reportLog = getReportLog();
+        reportLog.addValue(KEY_HAS_MIDI, mHasMIDI, ResultType.NEUTRAL, ResultUnit.NONE);
+
+        JSONArray streams = new JSONArray();
+        streams.put(mUSBTestModule.getTestResultsAsJsonObject());
+        streams.put(mVirtualTestModule.getTestResultsAsJsonObject());
+        streams.put(mBTTestModule.getTestResultsAsJsonObject());
+
+        reportLog.addValues(KEY_STREAMS, streams);
+
+        reportLog.submit();
     }
 
     void scanMidiDevices() {

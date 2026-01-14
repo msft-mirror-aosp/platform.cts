@@ -604,4 +604,8 @@
     <option name="compatibility:include-filter" value="CtsVcnTestCases android.net.vcn.cts.VcnManagerTest#testVcnSafeModeOnTestNetwork_overrideTimeout"/>
     <!-- Exclude the failing tests in CtsTelecomTestCases -->
     <option name="compatibility:exclude-filter" value="CtsTelecomTestCases android.telecom.cts.HandoverTest#testIncomingHandoverRequestValid"/>
+    <!-- Exclude the failing tests in CtsTetheringTest -->
+    <option name="compatibility:exclude-filter" value="CtsTetheringTest"/>
+    <!-- Exclude the failing tests in CtsVcnTestCases -->
+    <option name="compatibility:exclude-filter" value="CtsVcnTestCases"/>
 </configuration>

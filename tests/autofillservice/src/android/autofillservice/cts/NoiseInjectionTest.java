@@ -196,8 +196,9 @@ public class NoiseInjectionTest extends AutoFillServiceTestCase.ManualActivityLa
         assertThat(
                         Integer.bitCount(
                                 usernameLabelNode
-                                        .getAutofillNoiseInjectedData()
-                                        .getRetainedBitMask()))
+                                                .getAutofillNoiseInjectedData()
+                                                .getRetainedBitMask()
+                                        & 0xFF))
                 .isEqualTo(BITS_TO_RETAIN);
 
         final Context context = InstrumentationRegistry.getInstrumentation().getContext();
@@ -214,7 +215,7 @@ public class NoiseInjectionTest extends AutoFillServiceTestCase.ManualActivityLa
 
         // Recompute the noise with the same implementation as the Platform to verify the coin
         // flipping probabilities, etc.
-        byte[] originalBytes = originalText.getBytes(StandardCharsets.UTF_16BE);
+        byte[] originalBytes = originalText.getBytes(StandardCharsets.UTF_8);
         byte[] adjustedBytes = new byte[FIXED_LENGTH_BYTES];
         int lengthToCopy = Math.min(originalBytes.length, FIXED_LENGTH_BYTES);
         System.arraycopy(originalBytes, 0, adjustedBytes, 0, lengthToCopy);

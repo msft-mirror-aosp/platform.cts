@@ -35,7 +35,6 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @UsesAnnotationExecutor(UsesAnnotationExecutor.ACCOUNTS)
-// TODO(b/206441366): Add instant app support
 @RequireNotInstantApp(reason = "Uses DevicePolicyManager system service, which Instant Apps cannot utilize")
 // TODO: Add options (features of the user, type of the user, etc.)
 public @interface EnsureHasNoAccounts {

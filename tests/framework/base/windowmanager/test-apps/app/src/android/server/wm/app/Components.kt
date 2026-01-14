@@ -115,6 +115,7 @@ object Components : ComponentsProvider() {
     val SHOW_WHEN_LOCKED_WITH_DIALOG_NO_PREVIEW_ACTIVITY =
         component("ShowWhenLockedWithDialogNoPreviewActivity")
     @JvmField val TASK_MOVE_TEST_ACTIVITY = component("TaskMoveTestActivity")
+    @JvmField val PINNED_WINDOWING_LAYER_ACTIVITY = component("PinnedWindowingLayerActivity")
 
     @JvmField val TEST_ACTIVITY = component("TestActivity")
     @JvmField val TOP_ACTIVITY = component("TopActivity")
@@ -674,6 +675,14 @@ object Components : ComponentsProvider() {
         const val EXTRA_EXCEPTION_KEY = "extra_exception_key"
         const val EXTRA_SYNC_EXCEPTION_KEY = "extra_sync_exception_key"
         const val EXTRA_TASK_MOVE_ALLOWED_RESULT = "extra_task_move_allowed_result"
+    }
+
+    object PinnedWindowingLayerActivity {
+        const val ACTION_REQUEST_WINDOWING_LAYER = "action_request_windowing_layer"
+        const val ACTION_REQUEST_WINDOWING_LAYER_RESULT = "action_request_windowing_layer_result"
+        const val EXTRA_WINDOWING_LAYER_TYPE = "extra_windowing_layer_type"
+        const val EXTRA_RESULT_SUCCESS = "extra_windowing_layer_result"
+        const val EXTRA_RESULT_DETAILS = "extra_windowing_layer_result_details"
     }
 
     @JvmStatic fun getPackageName() = packageName

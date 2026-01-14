@@ -102,6 +102,12 @@ public class VirtualCameraCaptureHelper {
 
     private final Handler mImageReaderHandler = VirtualCameraUtils.createHandler(
             "image-reader-callback");
+
+    /** Returns a {@link Handler} for image reader callbacks. */
+    public Handler getImageReaderHandler() {
+        return mImageReaderHandler;
+    }
+
     private final Executor mCameraExecutor = Executors.newSingleThreadExecutor();
     @Mock
     private CameraDevice.StateCallback mCameraStateCallback;
@@ -404,7 +410,7 @@ public class VirtualCameraCaptureHelper {
         return mVirtualCameraCallback.mConfiguredStreams.values().iterator().next();
     }
 
-    private CameraCaptureSession createCaptureSession(Collection<ImageReader> readers)
+    public CameraCaptureSession createCaptureSession(Collection<ImageReader> readers)
             throws CameraAccessException {
         CameraDevice cameraDevice = getOrOpenCameraDevice();
         ArrayList<OutputConfiguration> outputConfigurations = new ArrayList<>(readers.size());
@@ -530,6 +536,10 @@ public class VirtualCameraCaptureHelper {
     /** Returns the list of capture timestamps. */
     public List<Long> getCaptureDeviceTimestampsNanos() {
         return mCaptureCallback.getCaptureDeviceTimestamp();
+    }
+
+    public CameraCaptureSession getCameraSession() {
+        return mCaptureSession;
     }
 
     private static final class CaptureFormat {

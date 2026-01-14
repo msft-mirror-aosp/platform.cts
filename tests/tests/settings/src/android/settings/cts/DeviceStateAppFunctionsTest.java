@@ -78,7 +78,6 @@ public class DeviceStateAppFunctionsTest {
 
     private static final String VALID_DEVICE_STATE_RESPONSE_OUTPUT = "perScreenDeviceStates";
     private static final String VALID_METADATA_RESPONSE_OUTPUT = "perScreenMetadata";
-    private static final int EXECUTION_TIMEOUT_SECONDS = 60;
     private static final String SETTINGS_PACKAGE = "com.android.settings";
 
     private static final KeyguardManager sLocalKeyguardManager =
@@ -791,7 +790,7 @@ public class DeviceStateAppFunctionsTest {
                         future.completeExceptionally(error);
                     }
                 });
-        return future.get(EXECUTION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        return future.get();
     }
 
     private GenericDocument buildInitiatedWhileUnlockedParams(String schemaType) {

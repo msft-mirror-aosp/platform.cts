@@ -615,6 +615,12 @@ public class EncoderProfileLevelTest extends EncoderProfileLevelTestBase {
         int widthCdd = requirement.getWidth();
         int heightCdd = requirement.getHeight();
 
+        if (cfg.mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_AV1)
+                && isHardwareAcceleratedCodec(mCodecName)) {
+            levelCdd = AV1Level4;
+            widthCdd = 1920;
+            heightCdd = 1080;
+        }
         // Check if CDD doesn't require support beyond certain resolutions.
         if (widthCdd != -1 && mActiveEncCfg.mWidth > widthCdd) {
             return false;

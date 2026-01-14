@@ -523,6 +523,41 @@ TEST_F(NdkBinderTest_AParcel, GetDataSizeTest) {
   AParcel_delete(p);
 }
 
+TEST_F(NdkBinderTest_AParcel, DataCapacityTest) {
+  AParcel* p = AParcel_create();
+
+  AParcel_setDataCapacity(p, 255);
+  EXPECT_EQ(255, AParcel_getDataCapacity(p));
+
+  AParcel_delete(p);
+}
+
+TEST_F(NdkBinderTest_AParcel, NegativeDataCapacityTest) {
+  AParcel* p = AParcel_create();
+
+  EXPECT_EQ(STATUS_BAD_VALUE, AParcel_setDataCapacity(p, -2));
+
+  AParcel_delete(p);
+}
+
+TEST_F(NdkBinderTest_AParcel, NewCapacityLessThanExistingTest) {
+  AParcel* p = AParcel_create();
+
+  EXPECT_OK(AParcel_setDataCapacity(p, 20));
+  EXPECT_OK(AParcel_setDataCapacity(p, 10));
+
+  AParcel_delete(p);
+}
+
+TEST_F(NdkBinderTest_AParcel, NewCapacityLessThanSizeTest) {
+  AParcel* p = AParcel_create();
+
+  AParcel_writeInt32(p, 100);
+  EXPECT_OK(AParcel_setDataCapacity(p, 1));
+
+  AParcel_delete(p);
+}
+
 TEST_F(NdkBinderTest_AParcel, MarshalUnmarshalTest) {
   AParcel* p1 = AParcel_create();
   AParcel* p2 = AParcel_create();

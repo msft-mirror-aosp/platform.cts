@@ -33,7 +33,6 @@ android_test_helper_app {
     manifest: "AndroidManifest_Q.xml",
     // Tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "vts10",
         "general-tests",
     ],
@@ -47,7 +46,6 @@ android_test_helper_app {
     manifest: "AndroidManifest_R.xml",
     // Tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "vts10",
         "general-tests",
     ],

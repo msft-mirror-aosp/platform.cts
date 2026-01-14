@@ -8,12 +8,13 @@ from mobly import base_test
 from mobly import utils
 from mobly.controllers import android_device
 from test_utils import wait
-from time import sleep
+
 
 CDM_SNIPPET_PACKAGE = 'android.companion.cts.multidevice'
 
 BT_DISCOVERABLE_TIME = 15
 OPERATION_DELAY_TIME = 5
+
 
 def paired_devices(self):
     return map(lambda device: device['Address'], self.cdm.btGetPairedDevices())
@@ -28,7 +29,9 @@ class BaseTestClass(base_test.BaseTestClass):
             android_device, min_number=2)
 
         def _setup_device(device):
+            device.adb.shell('setprop persist.user.hsum_boot_strategy 0')
             device.load_snippet('cdm', CDM_SNIPPET_PACKAGE)
+
             # Enable bluetooth and enable receivers
             device.cdm.btEnable()
             device.address = device.cdm.btGetAddress()

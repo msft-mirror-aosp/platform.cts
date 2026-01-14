@@ -209,7 +209,6 @@ public class CellularSecurityCallbackTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CELLULAR_IDENTIFIER_DISCLOSURE_INDICATIONS)
     public void testOnCellularIdentifierDisclosedChangedListener() throws Throwable {
         assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 

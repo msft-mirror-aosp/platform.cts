@@ -38,12 +38,10 @@ import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.core.app.ApplicationProvider
-import androidx.test.platform.app.InstrumentationRegistry
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnPrimaryUser
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSecondaryUser
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
-import com.android.compatibility.common.util.AdoptShellPermissionsRule
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule
 import com.android.compatibility.common.util.SystemUtil
 import com.google.common.truth.Truth.assertThat
@@ -61,12 +59,6 @@ import org.junit.runner.RunWith
 @RunWith(BedsteadJUnit4::class)
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER)
 class AppFunctionMetadataTest {
-    @Rule
-    fun grantExecuteAppFunctionsPermissionRule() =
-        AdoptShellPermissionsRule(
-            InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-            Manifest.permission.EXECUTE_APP_FUNCTIONS,
-        )
 
     @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
@@ -92,16 +84,11 @@ class AppFunctionMetadataTest {
         )
 
     @Before
-    fun assumeValidAgent() = doBlocking {
-        val manager = context.getSystemService(AppFunctionManager::class.java)
-        assumeNotNull(manager)
-
-        if (checkAppFunctionAccessEnabled()) {
-            runWithShellPermission(Manifest.permission.MANAGE_APP_FUNCTION_ACCESS) {
-                assumeTrue(manager.validAgents.contains(context.packageName))
-            }
+    fun assumeValidAgent() =
+        doBlockingWithPermissions(Manifest.permission.EXECUTE_APP_FUNCTIONS) {
+            val manager = context.getSystemService(AppFunctionManager::class.java)
+            assumeNotNull(manager)
         }
-    }
 
     @Before
     @After
@@ -114,219 +101,268 @@ class AppFunctionMetadataTest {
     @Test
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
-    fun createAppFunctionMetadata() = doBlocking {
-        installPackage(TEST_APP_A_V2_PATH)
-        val packageName = TEST_APP_A_PKG
-        val functionId = "com.example.utils#print1"
-        val packageMetadata =
-            AppFunctionPackageMetadata.create(
-                TEST_APP_A_PKG,
-                listOf(
-                    GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                        .setPropertyString("exampleProperty", "exampleValue")
+    fun createAppFunctionStaticMetadata() =
+        doBlockingWithPermissions {
+            installPackage(TEST_APP_A_V2_PATH)
+            val packageName = TEST_APP_A_PKG
+            val functionId = "com.example.utils#print1"
+            val packageMetadata =
+                AppFunctionPackageMetadata.create(
+                    TEST_APP_A_PKG,
+                    listOf(
+                        GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                            .setPropertyString("exampleProperty", "exampleValue")
+                            .build()
+                    ),
+                )
+
+            retryAssert {
+                val afStaticMetadataGd = queryAppFunctionStaticMetadata(packageName, functionId)
+                val appFunctionMetadata =
+                    AppFunctionMetadata.Builder(afStaticMetadataGd, packageMetadata)
+                        .setEnabled(false)
                         .build()
-                ),
-            )
 
-        retryAssert {
-            val afStaticMetadataGd = queryAppFunctionStaticMetadata(packageName, functionId)
-            val appFunctionMetadata =
-                AppFunctionMetadata.Builder(afStaticMetadataGd, packageMetadata)
-                    .setEnabled(false)
-                    .build()
-
-            assertThat(appFunctionMetadata.name).isEqualTo(AppFunctionName(packageName, functionId))
-            assertThat(appFunctionMetadata.schemaMetadata)
-                .isEqualTo(AppFunctionSchemaMetadata("utils", "print", 1L))
-            assertThat(appFunctionMetadata.isEnabled).isFalse()
-            assertThat(appFunctionMetadata.metadataDocument).isEqualTo(afStaticMetadataGd)
-            assertThat(appFunctionMetadata.packageMetadata).isEqualTo(packageMetadata)
+                assertThat(appFunctionMetadata.name)
+                    .isEqualTo(AppFunctionName(packageName, functionId))
+                assertThat(appFunctionMetadata.schemaMetadata)
+                    .isEqualTo(AppFunctionSchemaMetadata("utils", "print", 1L))
+                assertThat(appFunctionMetadata.isEnabled).isFalse()
+                assertThat(appFunctionMetadata.metadataDocument).isEqualTo(afStaticMetadataGd)
+                assertThat(appFunctionMetadata.packageMetadata).isEqualTo(packageMetadata)
+            }
         }
-    }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @Test
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
-    fun parcelAndUnparcelMetadata_allFieldsSet() = doBlocking {
-        installPackage(TEST_APP_A_V2_PATH)
-        val packageName = TEST_APP_A_PKG
-        val functionId = "com.example.utils#print1"
-        val packageMetadata =
-            AppFunctionPackageMetadata.create(
-                TEST_APP_A_PKG,
-                listOf(
-                    GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                        .setPropertyString("exampleProperty", "exampleValue")
+    fun parcelAndUnparcelMetadata_allFieldsSet() =
+        doBlockingWithPermissions(Manifest.permission.EXECUTE_APP_FUNCTIONS) {
+            installPackage(TEST_APP_A_V2_PATH)
+            val packageName = TEST_APP_A_PKG
+            val functionId = "com.example.utils#print1"
+            val packageMetadata =
+                AppFunctionPackageMetadata.create(
+                    TEST_APP_A_PKG,
+                    listOf(
+                        GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                            .setPropertyString("exampleProperty", "exampleValue")
+                            .build()
+                    ),
+                )
+
+            retryAssert {
+                val afStaticMetadataGd = queryAppFunctionStaticMetadata(packageName, functionId)
+                val afRuntimeMetadataGd =
+                    queryAppFunctionRuntimeMetadata(packageName).single {
+                        it.id == String.format("%s/%s", packageName, functionId)
+                    }
+                val originalMetadata =
+                    AppFunctionMetadata.Builder(afStaticMetadataGd, packageMetadata)
+                        .setEnabled(true)
                         .build()
-                ),
-            )
 
-        retryAssert {
-            val afStaticMetadataGd = queryAppFunctionStaticMetadata(packageName, functionId)
-            val originalMetadata =
-                AppFunctionMetadata.Builder(afStaticMetadataGd, packageMetadata)
-                    .setEnabled(true)
-                    .build()
+                val restoredMetadata = parcelAndUnparcelAppFunctionMetadata(originalMetadata)
 
-            val restoredMetadata = parcelAndUnparcelAppFunctionMetadata(originalMetadata)
-
-            assertThat(restoredMetadata.name).isEqualTo(originalMetadata.name)
-            assertThat(restoredMetadata.schemaMetadata).isEqualTo(originalMetadata.schemaMetadata)
-            assertThat(restoredMetadata.isEnabled).isEqualTo(originalMetadata.isEnabled)
-            assertThat(restoredMetadata.metadataDocument)
-                .isEqualTo(originalMetadata.metadataDocument)
-            assertThat(restoredMetadata.packageMetadata).isEqualTo(originalMetadata.packageMetadata)
+                assertThat(restoredMetadata.name).isEqualTo(originalMetadata.name)
+                assertThat(restoredMetadata.schemaMetadata)
+                    .isEqualTo(originalMetadata.schemaMetadata)
+                assertThat(restoredMetadata.isEnabled).isEqualTo(originalMetadata.isEnabled)
+                assertThat(restoredMetadata.metadataDocument)
+                    .isEqualTo(originalMetadata.metadataDocument)
+                assertThat(restoredMetadata.packageMetadata)
+                    .isEqualTo(originalMetadata.packageMetadata)
+            }
         }
-    }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @Test
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
-    fun parcelAndUnparcelMetadata_nullSchema() = doBlocking {
-        val packageName = "android.app.appfunctions.cts"
-        val functionId = "noSchema"
-        val packageMetadata = AppFunctionPackageMetadata.create(packageName, listOf())
+    fun parcelAndUnparcelMetadata_nullSchema() =
+        doBlockingWithPermissions(Manifest.permission.EXECUTE_APP_FUNCTIONS) {
+            val packageName = "android.app.appfunctions.cts"
+            val functionId = "noSchema"
+            val packageMetadata = AppFunctionPackageMetadata.create(packageName, listOf())
 
-        retryAssert {
-            val afStaticMetadataGd = queryAppFunctionStaticMetadata(packageName, functionId)
-            val originalMetadata =
-                AppFunctionMetadata.Builder(afStaticMetadataGd, packageMetadata)
-                    .setEnabled(true)
-                    .build()
-            val restoredMetadata = parcelAndUnparcelAppFunctionMetadata(originalMetadata)
+            retryAssert {
+                val afStaticMetadataGd = queryAppFunctionStaticMetadata(packageName, functionId)
+                val afRuntimeMetadataGd =
+                    queryAppFunctionRuntimeMetadata(packageName).single {
+                        it.id == String.format("%s/%s", packageName, functionId)
+                    }
+                val originalMetadata =
+                    AppFunctionMetadata.Builder(afStaticMetadataGd, packageMetadata)
+                        .setEnabled(true)
+                        .build()
+                val restoredMetadata = parcelAndUnparcelAppFunctionMetadata(originalMetadata)
 
-            assertThat(restoredMetadata.name).isEqualTo(originalMetadata.name)
-            assertThat(restoredMetadata.schemaMetadata).isNull()
-            assertThat(restoredMetadata.isEnabled).isEqualTo(originalMetadata.isEnabled)
-            assertThat(restoredMetadata.metadataDocument)
-                .isEqualTo(originalMetadata.metadataDocument)
-            assertThat(restoredMetadata.packageMetadata).isEqualTo(originalMetadata.packageMetadata)
+                assertThat(restoredMetadata.name).isEqualTo(originalMetadata.name)
+                assertThat(restoredMetadata.schemaMetadata).isNull()
+                assertThat(restoredMetadata.isEnabled).isEqualTo(originalMetadata.isEnabled)
+                assertThat(restoredMetadata.metadataDocument)
+                    .isEqualTo(originalMetadata.metadataDocument)
+                assertThat(restoredMetadata.packageMetadata)
+                    .isEqualTo(originalMetadata.packageMetadata)
+            }
         }
-    }
 
     @Test
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
-    fun installPackageWithAppFunction_runtimeMetadataExist() = doBlocking {
-        installPackage(TEST_APP_A_V2_PATH)
+    fun installPackageWithAppFunction_runtimeMetadataExist_whenCallerHasPermission() =
+        doBlockingWithPermissions(Manifest.permission.EXECUTE_APP_FUNCTIONS) {
+            installPackage(TEST_APP_A_V2_PATH)
 
-        retryAssert {
-            assertThat(queryAppFunctionInfos(TEST_APP_A_PKG))
-                .containsExactly(AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print1"))
+            retryAssert {
+                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG))
+                    .containsExactly(AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print1"))
+            }
         }
-    }
 
     @Test
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
-    fun updatePackage_runtimeMetadataUpdated() = doBlocking {
-        installPackage(TEST_APP_A_V2_PATH)
-        retryAssert {
-            assertThat(queryAppFunctionInfos(TEST_APP_A_PKG))
-                .containsExactly(AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print1"))
-        }
+    fun installPackageWithAppFunction_runtimeMetadataNotVisible_withoutPermissions() =
+        doBlockingWithPermissions {
+            installPackage(TEST_APP_A_V2_PATH)
 
-        installPackage(TEST_APP_A_V3_PATH)
-
-        retryAssert {
-            assertThat(queryAppFunctionInfos(TEST_APP_A_PKG))
-                .containsExactly(
-                    AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print2"),
-                    AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print3"),
-                )
+            retryAssert {
+                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG))
+                    .isEmpty()
+            }
         }
-    }
 
     @Test
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
-    fun uninstallPackageWithAppFunctions_runtimeMetadataRemoved() = doBlocking {
-        installPackage(TEST_APP_A_V2_PATH)
-        retryAssert {
-            assertThat(queryAppFunctionInfos(TEST_APP_A_PKG))
-                .containsExactly(AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print1"))
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
+    fun installPackageWithAppFunction_runtimeMetadataVisible_withOnlyReadAppFunctionMetadataPermission() =
+        doBlockingWithPermissions(Manifest.permission.READ_APP_FUNCTION_METADATA) {
+            installPackage(TEST_APP_A_V2_PATH)
+
+            retryAssert {
+                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG))
+                    .containsExactly(AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print1"))
+            }
         }
-
-        uninstallPackage(TEST_APP_A_PKG)
-
-        retryAssert { assertThat(queryAppFunctionInfos(TEST_APP_A_PKG)).isEmpty() }
-    }
 
     @Test
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
-    fun installTwoPackageWithAppFunctions_runtimeMetadataExist() = doBlocking {
-        installPackage(TEST_APP_A_V2_PATH)
-        installPackage(TEST_APP_B_V1_PATH)
+    fun updatePackage_runtimeMetadataUpdated() =
+        doBlockingWithPermissions(Manifest.permission.EXECUTE_APP_FUNCTIONS) {
+            installPackage(TEST_APP_A_V2_PATH)
+            retryAssert {
+                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG))
+                    .containsExactly(AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print1"))
+            }
 
-        retryAssert {
-            assertThat(queryAppFunctionInfos(TEST_APP_A_PKG))
-                .containsExactly(AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print1"))
-            assertThat(queryAppFunctionInfos(TEST_APP_B_PKG))
-                .containsExactly(AppFunctionInfo(TEST_APP_B_PKG, "com.example.utils#print5"))
+            installPackage(TEST_APP_A_V3_PATH)
+
+            retryAssert {
+                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG))
+                    .containsExactly(
+                        AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print2"),
+                        AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print3"),
+                    )
+            }
         }
-    }
 
     @Test
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
-    fun twoPackagesInstalled_updateOneOfThem_runtimeMetadataUpdated() = doBlocking {
-        installPackage(TEST_APP_A_V2_PATH)
-        installPackage(TEST_APP_B_V1_PATH)
-        retryAssert {
-            assertThat(queryAppFunctionInfos(TEST_APP_A_PKG))
-                .containsExactly(AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print1"))
-            assertThat(queryAppFunctionInfos(TEST_APP_B_PKG))
-                .containsExactly(AppFunctionInfo(TEST_APP_B_PKG, "com.example.utils#print5"))
-        }
+    fun uninstallPackageWithAppFunctions_runtimeMetadataRemoved() =
+        doBlockingWithPermissions(Manifest.permission.EXECUTE_APP_FUNCTIONS) {
+            installPackage(TEST_APP_A_V2_PATH)
+            retryAssert {
+                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG))
+                    .containsExactly(AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print1"))
+            }
 
-        installPackage(TEST_APP_A_V3_PATH)
+            uninstallPackage(TEST_APP_A_PKG)
 
-        retryAssert {
-            assertThat(queryAppFunctionInfos(TEST_APP_A_PKG))
-                .containsExactly(
-                    AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print2"),
-                    AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print3"),
-                )
-            assertThat(queryAppFunctionInfos(TEST_APP_B_PKG))
-                .containsExactly(AppFunctionInfo(TEST_APP_B_PKG, "com.example.utils#print5"))
+            retryAssert { assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG)).isEmpty() }
         }
-    }
 
     @Test
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
-    fun twoPackagesInstalled_uninstallOneOfThem_runtimeMetadataUpdated() = doBlocking {
-        installPackage(TEST_APP_A_V2_PATH)
-        installPackage(TEST_APP_B_V1_PATH)
-        retryAssert {
-            assertThat(queryAppFunctionInfos(TEST_APP_A_PKG))
-                .containsExactly(AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print1"))
-            assertThat(queryAppFunctionInfos(TEST_APP_B_PKG))
-                .containsExactly(AppFunctionInfo(TEST_APP_B_PKG, "com.example.utils#print5"))
-        }
+    fun installTwoPackageWithAppFunctions_runtimeMetadataExist() =
+        doBlockingWithPermissions(Manifest.permission.EXECUTE_APP_FUNCTIONS) {
+            installPackage(TEST_APP_A_V2_PATH)
+            installPackage(TEST_APP_B_V1_PATH)
 
-        uninstallPackage(TEST_APP_A_PKG)
-
-        retryAssert {
-            assertThat(queryAppFunctionInfos(TEST_APP_A_PKG)).isEmpty()
-            assertThat(queryAppFunctionInfos(TEST_APP_B_PKG))
-                .containsExactly(AppFunctionInfo(TEST_APP_B_PKG, "com.example.utils#print5"))
+            retryAssert {
+                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG))
+                    .containsExactly(AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print1"))
+                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_B_PKG))
+                    .containsExactly(AppFunctionInfo(TEST_APP_B_PKG, "com.example.utils#print5"))
+            }
         }
-    }
 
     @Test
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
-    fun installPackageWithAppFunction_notValidAgent_runtimeMetadataNotVisible() = doBlocking {
-        clearAgentAllowlist()
+    fun twoPackagesInstalled_updateOneOfThem_runtimeMetadataUpdated() =
+        doBlockingWithPermissions(Manifest.permission.EXECUTE_APP_FUNCTIONS) {
+            installPackage(TEST_APP_A_V2_PATH)
+            installPackage(TEST_APP_B_V1_PATH)
+            retryAssert {
+                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG))
+                    .containsExactly(AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print1"))
+                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_B_PKG))
+                    .containsExactly(AppFunctionInfo(TEST_APP_B_PKG, "com.example.utils#print5"))
+            }
 
-        installPackage(TEST_APP_A_V2_PATH)
+            installPackage(TEST_APP_A_V3_PATH)
 
-        retryAssert { assertThat(queryAppFunctionInfos(TEST_APP_A_PKG).isEmpty()) }
-    }
+            retryAssert {
+                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG))
+                    .containsExactly(
+                        AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print2"),
+                        AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print3"),
+                    )
+                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_B_PKG))
+                    .containsExactly(AppFunctionInfo(TEST_APP_B_PKG, "com.example.utils#print5"))
+            }
+        }
+
+    @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    fun twoPackagesInstalled_uninstallOneOfThem_runtimeMetadataUpdated() =
+        doBlockingWithPermissions(Manifest.permission.EXECUTE_APP_FUNCTIONS) {
+            installPackage(TEST_APP_A_V2_PATH)
+            installPackage(TEST_APP_B_V1_PATH)
+            retryAssert {
+                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG))
+                    .containsExactly(AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print1"))
+                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_B_PKG))
+                    .containsExactly(AppFunctionInfo(TEST_APP_B_PKG, "com.example.utils#print5"))
+            }
+
+            uninstallPackage(TEST_APP_A_PKG)
+
+            retryAssert {
+                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG)).isEmpty()
+                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_B_PKG))
+                    .containsExactly(AppFunctionInfo(TEST_APP_B_PKG, "com.example.utils#print5"))
+            }
+        }
+
+    @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    fun installPackageWithAppFunction_notValidAgent_runtimeMetadataNotVisible() =
+        doBlockingWithPermissions(Manifest.permission.EXECUTE_APP_FUNCTIONS) {
+            clearAgentAllowlist()
+
+            installPackage(TEST_APP_A_V2_PATH)
+
+            retryAssert { assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG).isEmpty()) }
+        }
 
     private fun installPackage(path: String) {
         assertThat(
@@ -400,7 +436,7 @@ class AppFunctionMetadataTest {
             android.permission.flags.Flags.appFunctionAccessServiceEnabled()
     }
 
-    private fun queryAppFunctionInfos(packageName: String): List<AppFunctionInfo> {
+    private fun queryRuntimeAppFunctionInfos(packageName: String): List<AppFunctionInfo> {
         return queryAppFunctionRuntimeMetadata(packageName).map {
             AppFunctionInfo(
                 it.getPropertyString(PROPERTY_PACKAGE_NAME)!!,
@@ -427,7 +463,17 @@ class AppFunctionMetadataTest {
         const val PROPERTY_PACKAGE_NAME: String = "packageName"
     }
 
-    private fun doBlocking(block: suspend CoroutineScope.() -> Unit) = runBlocking(block = block)
+    private fun doBlockingWithPermissions(
+        vararg permissions: String,
+        block: suspend CoroutineScope.() -> Unit,
+    ) =
+        runBlocking<Unit> {
+            if (permissions.isNotEmpty()) {
+                runWithShellPermission(* permissions) { block() }
+            } else {
+                block()
+            }
+        }
 
     private fun parcelAndUnparcelAppFunctionMetadata(
         original: AppFunctionMetadata

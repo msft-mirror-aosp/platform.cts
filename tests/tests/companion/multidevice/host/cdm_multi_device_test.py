@@ -111,8 +111,7 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         secondary_id = self.primary.cdm.associate(self.secondary.address)
 
         # Reboot the primary device
-        with (self.primary.handle_reboot()):
-            self.primary.reboot()
+        self.primary.reboot()
 
         # The association should be remaining.
         associations = self.primary.cdm.getMyAssociations()

@@ -1,0 +1,21 @@
+package {
+    default_team: "trendy_team_fwk_telephony",
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+android_test_helper_app {
+    name: "MessageUpgradeTestApp",
+    defaults: ["cts_defaults"],
+    srcs: [
+        "src/**/*.java",
+    ],
+    static_libs: [
+        "androidx.core_core",
+    ],
+    platform_apis: true,
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+    sdk_version: "test_current",
+}

@@ -75,5 +75,6 @@
         <option name="test-file-name" value="MockSatelliteGatewayServiceApp.apk"/>
         <option name="test-file-name" value="MockSatelliteServiceApp.apk"/>
         <option name="test-file-name" value="MockPointingUiApp.apk"/>
+        <option name="test-file-name" value="MessageUpgradeTestApp.apk" />
     </target_preparer>
 </configuration>
