@@ -1233,7 +1233,10 @@ public class AudioManagerTest {
                 "Setting accessibility vol requires perms");
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ASSISTANT_VOLUME_CONTROL)
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ASSISTANT_VOLUME_CONTROL,
+        com.android.media.audio.Flags.FLAG_STREAM_ASSISTANT_NOT_ALIASED_TO_MUSIC
+    })
     @RequiresFlagsDisabled(Flags.FLAG_MANAGE_ASSISTANT_AUDIO_PERMISSION)
     @Test
     public void testAssistantVolume_withModifyAudioSettings() throws Exception {
@@ -1244,7 +1247,8 @@ public class AudioManagerTest {
 
     @RequiresFlagsEnabled({
         Flags.FLAG_ASSISTANT_VOLUME_CONTROL,
-        Flags.FLAG_MANAGE_ASSISTANT_AUDIO_PERMISSION
+        Flags.FLAG_MANAGE_ASSISTANT_AUDIO_PERMISSION,
+        com.android.media.audio.Flags.FLAG_STREAM_ASSISTANT_NOT_ALIASED_TO_MUSIC
     })
     @Test
     public void testAssistantVolume_withManageAssistantAudio() throws Exception {
