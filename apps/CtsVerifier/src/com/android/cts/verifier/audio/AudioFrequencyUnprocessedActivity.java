@@ -35,6 +35,8 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.ResultType;
+import com.android.compatibility.common.util.ResultUnit;
 import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.wavelib.DspBufferComplex;
@@ -55,6 +57,8 @@ import org.json.JSONObject;
 public class AudioFrequencyUnprocessedActivity extends AudioFrequencyActivity implements Runnable,
     AudioRecord.OnRecordPositionUpdateListener {
     private static final String TAG = "AudioFrequencyUnprocessedActivity";
+
+    private static final String KEY_SUPPORTS_UNPROCESSED = "supports_unprocessed";
 
     private static final int TEST_STARTED = 900;
     private static final int TEST_MESSAGE = 903;
@@ -948,6 +952,12 @@ public class AudioFrequencyUnprocessedActivity extends AudioFrequencyActivity im
 
     @Override // PassFailButtons
     public void recordTestResults() {
+        getReportLog()
+                .addValue(
+                        KEY_SUPPORTS_UNPROCESSED,
+                        mSupportsUnprocessed,
+                        ResultType.NEUTRAL,
+                        ResultUnit.NONE);
         getReportLog().submit();
     }
 
