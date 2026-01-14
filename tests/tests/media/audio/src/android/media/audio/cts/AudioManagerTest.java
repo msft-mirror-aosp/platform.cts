@@ -521,6 +521,7 @@ public class AudioManagerTest {
 
                 assertEquals(MODE_ASSISTANT_CONVERSATION, mAudioManager.getMode());
             } finally {
+                mAudioManager.setMode(MODE_NORMAL);
                 getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
             }
         }
@@ -1276,6 +1277,8 @@ public class AudioManagerTest {
             mAudioManager.setMode(MODE_NORMAL);
 
             mAudioManager.setStreamVolume(STREAM_ASSISTANT, originalAssistantVolume, 0);
+        } finally {
+            mAudioManager.setMode(MODE_NORMAL);
         }
     }
 
