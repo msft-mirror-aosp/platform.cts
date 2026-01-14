@@ -30,6 +30,7 @@ import android.graphics.Color;
 import android.graphics.HardwareBufferRenderer;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.RenderNode;
 import android.hardware.DataSpace;
 import android.hardware.HardwareBuffer;
@@ -55,7 +56,7 @@ import android.view.BlurRegion;
 import android.view.Display;
 import android.view.Gravity;
 import android.view.PixelCopy;
-import android.view.RRectBlurRegion;
+import android.view.RoundedRectBlurRegion;
 import android.view.SurfaceControl;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -662,11 +663,9 @@ public class SurfaceViewTests extends ActivityTestBase {
             float[] cornerRadius = new float[8];
             int width = helper.getSurfaceView().getWidth();
             int height = helper.getSurfaceView().getHeight();
-            RRectBlurRegion blurRegionOne =
-                    new RRectBlurRegion.Builder(0.0f, 0.0f, width, height, cornerRadius)
-                            .setBlurRadius(10.0f)
-                            .setAlpha(1.0f)
-                            .build();
+            RectF rect = new RectF(0.0f, 0.0f, width, height);
+            RoundedRectBlurRegion blurRegionOne =
+                    new RoundedRectBlurRegion(rect, cornerRadius, 1.0f, 10.0f);
             ArrayList<BlurRegion> blurRegions = new ArrayList<>();
             blurRegions.add(blurRegionOne);
 
@@ -739,11 +738,9 @@ public class SurfaceViewTests extends ActivityTestBase {
             float[] cornerRadius = new float[8];
             int width = helper.getSurfaceView().getWidth();
             int height = helper.getSurfaceView().getHeight();
-            RRectBlurRegion blurRegionOne =
-                    new RRectBlurRegion.Builder(0.0f, 0.0f, width, height, cornerRadius)
-                            .setBlurRadius(10.0f)
-                            .setAlpha(1.0f)
-                            .build();
+            RectF rect = new RectF(0.0f, 0.0f, width, height);
+            RoundedRectBlurRegion blurRegionOne =
+                    new RoundedRectBlurRegion(rect, cornerRadius, 1.0f, 10.0f);
             ArrayList<BlurRegion> blurRegions = new ArrayList<>();
             blurRegions.add(blurRegionOne);
 
@@ -815,11 +812,9 @@ public class SurfaceViewTests extends ActivityTestBase {
             float[] cornerRadius = new float[8];
             int width = helper.getSurfaceView().getWidth();
             int height = helper.getSurfaceView().getHeight();
-            RRectBlurRegion blurRegionOne =
-                    new RRectBlurRegion.Builder(0.0f, 0.0f, width, height, cornerRadius)
-                            .setBlurRadius(10.0f)
-                            .setAlpha(1.0f)
-                            .build();
+            RectF rect = new RectF(0.0f, 0.0f, width, height);
+            RoundedRectBlurRegion blurRegionOne =
+                    new RoundedRectBlurRegion(rect, cornerRadius, 1.0f, 10.0f);
             ArrayList<BlurRegion> blurRegions = new ArrayList<>();
             blurRegions.add(blurRegionOne);
 
@@ -904,11 +899,9 @@ public class SurfaceViewTests extends ActivityTestBase {
             float[] cornerRadius = new float[8];
             int width = helper.getSurfaceView().getWidth();
             int height = helper.getSurfaceView().getHeight();
-            RRectBlurRegion blurRegionOne =
-                    new RRectBlurRegion.Builder(0.0f, 0.0f, width, height, cornerRadius)
-                            .setBlurRadius(10.0f)
-                            .setAlpha(1.0f)
-                            .build();
+            RectF rect = new RectF(0.0f, 0.0f, width, height);
+            RoundedRectBlurRegion blurRegionOne =
+                    new RoundedRectBlurRegion(rect, cornerRadius, 1.0f, 10.0f);
             ArrayList<BlurRegion> blurRegions = new ArrayList<>();
             blurRegions.add(blurRegionOne);
 
