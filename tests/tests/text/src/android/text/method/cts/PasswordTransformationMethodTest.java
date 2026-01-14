@@ -28,13 +28,16 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
+import android.Manifest;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
+import android.app.compat.CompatChanges;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.ParcelFileDescriptor;
 import android.provider.Settings.SettingNotFoundException;
 import android.provider.Settings.System;
+import android.text.ShowSecretsSetting;
 import android.text.method.PasswordTransformationMethod;
 import android.util.Log;
 import android.util.TypedValue;
@@ -51,8 +54,10 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CtsKeyEventUtil;
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
 import com.android.compatibility.common.util.WindowUtil;
+import com.android.text.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -90,6 +95,8 @@ public class PasswordTransformationMethodTest {
 
     private CtsActivity mActivity;
     private int mPasswordPrefBackUp;
+    private boolean mTouchPasswordPrefBackUp;
+    private boolean mPhysicalPasswordPrefBackUp;
     private boolean isPasswordPrefSaved;
     private PasswordTransformationMethod mMethod;
     private EditText mEditText;
@@ -240,8 +247,17 @@ public class PasswordTransformationMethodTest {
 
     private void savePasswordPref() {
         try {
-            mPasswordPrefBackUp = System.getInt(mActivity.getContentResolver(),
-                    System.TEXT_SHOW_PASSWORD);
+            if (areSplitSettingsEnabled()) {
+                mTouchPasswordPrefBackUp =
+                        ShowSecretsSetting.shouldShowTouchInputForUser(
+                                mActivity.getContentResolver(), mUserHelper.getUser());
+                mPhysicalPasswordPrefBackUp =
+                        ShowSecretsSetting.shouldShowPhysicalInputForUser(
+                                mActivity.getContentResolver(), mUserHelper.getUser());
+            } else {
+                mPasswordPrefBackUp =
+                        System.getInt(mActivity.getContentResolver(), System.TEXT_SHOW_PASSWORD);
+            }
             isPasswordPrefSaved = true;
         } catch (SettingNotFoundException e) {
             isPasswordPrefSaved = false;
@@ -250,14 +266,37 @@ public class PasswordTransformationMethodTest {
 
     private void resumePasswordPref() {
         if (isPasswordPrefSaved) {
-            System.putInt(mActivity.getContentResolver(), System.TEXT_SHOW_PASSWORD,
-                    mPasswordPrefBackUp);
+            if (areSplitSettingsEnabled()) {
+                SystemUtil.runWithShellPermissionIdentity(
+                        () -> {
+                            ShowSecretsSetting.setShouldShowTouchInputForUser(
+                                    mActivity.getContentResolver(),
+                                    mTouchPasswordPrefBackUp,
+                                    mUserHelper.getUser());
+                            ShowSecretsSetting.setShouldShowPhysicalInputForUser(
+                                    mActivity.getContentResolver(),
+                                    mPhysicalPasswordPrefBackUp,
+                                    mUserHelper.getUser());
+                        },
+                        Manifest.permission.WRITE_SECURE_SETTINGS);
+            }
+        } else {
+            System.putInt(
+                    mActivity.getContentResolver(), System.TEXT_SHOW_PASSWORD, mPasswordPrefBackUp);
         }
     }
 
     private void switchShowPassword(boolean on) {
-        System.putInt(mActivity.getContentResolver(), System.TEXT_SHOW_PASSWORD,
-                on ? 1 : 0);
+        if (areSplitSettingsEnabled()) {
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> {
+                        ShowSecretsSetting.setShouldShowTouchInputForUser(
+                                mActivity.getContentResolver(), on, mUserHelper.getUser());
+                    },
+                    Manifest.permission.WRITE_SECURE_SETTINGS);
+        } else {
+            System.putInt(mActivity.getContentResolver(), System.TEXT_SHOW_PASSWORD, on ? 1 : 0);
+        }
     }
 
     private void runOnUiThread(Runnable runnable) throws Exception {
@@ -271,5 +310,11 @@ public class PasswordTransformationMethodTest {
         });
         Log.d(TAG, "runOnUiThread(): blocking until ran");
         assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    private boolean areSplitSettingsEnabled() {
+        return Flags.splitShowPasswordsToTouchAndPhysical()
+                && CompatChanges.isChangeEnabled(
+                        ShowSecretsSetting.SPLIT_SHOW_PASSWORDS_TO_TOUCH_AND_PHYSICAL);
     }
 }
