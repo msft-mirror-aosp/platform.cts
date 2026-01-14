@@ -21,6 +21,7 @@ import static com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.FEATUR
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresAdditionalFeatures;
 import com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -29,6 +30,7 @@ import org.junit.Test;
  */
 // We need managed users to be supported in order to create a profile of the user owner.
 @RequiresAdditionalFeatures({FEATURE_MANAGED_USERS})
+@Ignore("b/474229251") // Ignored due to UIAutomation connection flakiness for apps targeting R-.
 public final class MixedManagedProfileOwnerTestApi30 extends DeviceAndProfileOwnerTestApi30 {
 
     private int mParentUserId = -1;
