@@ -66,7 +66,22 @@ class TestAppAgent(
     }
 
     fun close() {
+        val future = CompletableFuture<Void>()
+        session.setLifecycleCallback(
+            Executors.newSingleThreadExecutor(),
+            object : ComputerControlSession.LifecycleCallback {
+                override fun onActive() {}
+
+                override fun onBlocked(reason: Int, blockingPackage: String?) {}
+
+                override fun onClosed(reason: Int) {
+                    future.complete(null)
+                }
+            }
+        )
         session.close()
+        // Wait for the onClosed() callback to be invoked.
+        future.get(SESSION_CLOSE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
     }
 
     fun requestFocus(textFieldId: String) {
@@ -137,5 +152,10 @@ class TestAppAgent(
         } finally {
             session.clearStabilityListener()
         }
+    }
+
+    companion object {
+        const val SESSION_CREATION_TIMEOUT_SECONDS = 5L
+        const val SESSION_CLOSE_TIMEOUT_SECONDS = 30L
     }
 }

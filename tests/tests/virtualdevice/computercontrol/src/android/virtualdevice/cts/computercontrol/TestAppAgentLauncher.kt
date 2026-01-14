@@ -29,7 +29,6 @@ import org.junit.Assume.assumeNotNull
 
 class TestAppAgentLauncher {
     private val context = InstrumentationRegistry.getInstrumentation().context
-    private var computerControlSession: ComputerControlSession? = null
 
     fun launch(sessionName: String, packageName: String, className: String? = null): TestAppAgent {
         Log.d(TAG, "Requesting ComputerControlSession")
@@ -75,7 +74,7 @@ class TestAppAgentLauncher {
                 }
             },
         )
-        return future.get(5, TimeUnit.SECONDS)
+        return future.get(TestAppAgent.SESSION_CREATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
     }
 
     companion object {
