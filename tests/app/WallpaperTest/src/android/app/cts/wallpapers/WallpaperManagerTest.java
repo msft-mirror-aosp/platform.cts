@@ -38,7 +38,6 @@ import static android.opengl.cts.Egl14Utils.getMaxTextureSize;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 import static com.android.server.backup.Flags.FLAG_ENABLE_CROSS_PLATFORM_TRANSFER;
-import static com.android.window.flags.Flags.FLAG_MULTI_CROP;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -1967,7 +1966,6 @@ public class WallpaperManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_MULTI_CROP})
     public void testSetWallpaperWithCrops_noCrop() {
         Point screenSize = getScreenSize();
         int bitmapHeight = 3 * screenSize.y;
@@ -2010,7 +2008,6 @@ public class WallpaperManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_MULTI_CROP)
     public void testSetWallpaperWithCrops_description_singleCrop() {
         Point displaySize = getScreenSize();
 
@@ -2027,7 +2024,6 @@ public class WallpaperManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_MULTI_CROP)
     public void testSetWallpaperWithCrops_description_twoCrops() {
         Point displaySize = getScreenSize();
         assumeFalse(displaySize.x == displaySize.y);
