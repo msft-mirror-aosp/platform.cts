@@ -16,14 +16,8 @@
 
 package android.graphics.gpuprofiling.cts
 
-import org.junit.Rule
+import com.google.common.truth.Truth.assertThat
 import org.junit.Test
-import org.junit.rules.ErrorCollector
-import org.mockito.ArgumentMatchers.any
-import org.mockito.ArgumentMatchers.contains
-import org.mockito.ArgumentMatchers.eq
-import org.mockito.Mockito.mock
-import org.mockito.Mockito.verify
 import perfetto.protos.PerfettoTrace.GpuRenderStageEvent
 import perfetto.protos.PerfettoTrace.Trace
 import perfetto.protos.PerfettoTrace.TracePacket
@@ -32,39 +26,33 @@ import perfetto.protos.PerfettoTrace.VulkanApiEvent.VkQueueSubmit
 
 class RenderStagesChecksTest {
 
-    @get:Rule
-    val errorCollector = ErrorCollector()
-
     @Test
     fun checkRenderStagesNotEmpty_emptyList_fails() {
-        val mockCollector = mock(ErrorCollector::class.java)
+        val fakeCollector = FakeErrorCollector()
 
-        checkRenderStagesNotEmpty(mockCollector, emptyList())
+        checkRenderStagesNotEmpty(fakeCollector, emptyList())
 
-        verify(mockCollector).checkThat(
-            eq("Trace does not contain GPU render stages."),
-            eq(emptyList<RenderStageEvent>()),
-            any()
+        fakeCollector.assertFailure()
+        assertThat(
+            fakeCollector.getErrorMessages()
+        ).containsExactly(
+            "Trace does not contain GPU render stages."
         )
     }
 
     @Test
     fun checkRenderStagesNotEmpty_nonEmptyList_passes() {
-        val mockCollector = mock(ErrorCollector::class.java)
+        val fakeCollector = FakeErrorCollector()
         val list = listOf(RenderStageEvent(1, GpuRenderStageEvent.getDefaultInstance()))
 
-        checkRenderStagesNotEmpty(mockCollector, list)
+        checkRenderStagesNotEmpty(fakeCollector, list)
 
-        verify(mockCollector).checkThat(
-            eq("Trace does not contain GPU render stages."),
-            eq(list),
-            any()
-        )
+        fakeCollector.assertSuccess()
     }
 
     @Test
     fun checkRenderStagesValidity_validEvents_passes() {
-        val mockCollector = mock(ErrorCollector::class.java)
+        val fakeCollector = FakeErrorCollector()
         val validEvent = GpuRenderStageEvent.newBuilder()
             .setEventId(1)
             .setHwQueueIid(1)
@@ -73,19 +61,15 @@ class RenderStagesChecksTest {
             .build()
         val list = listOf(RenderStageEvent(1, validEvent))
 
-        checkRenderStagesValidity(mockCollector, list)
+        checkRenderStagesValidity(fakeCollector, list)
 
-        verify(mockCollector).checkThat(
-            eq("Some of the reported GPU render stages are not valid."),
-            eq(""),
-            any()
-        )
+        fakeCollector.assertSuccess()
     }
 
     @Test
     @Suppress("DEPRECATION")
     fun checkRenderStagesValidity_deprecatedFields_reportsError() {
-        val mockCollector = mock(ErrorCollector::class.java)
+        val fakeCollector = FakeErrorCollector()
         val deprecatedEvent = GpuRenderStageEvent.newBuilder()
             .setEventId(10)
             .setContext(1)
@@ -94,94 +78,82 @@ class RenderStagesChecksTest {
             .build()
         val list = listOf(RenderStageEvent(1, deprecatedEvent))
 
-        checkRenderStagesValidity(mockCollector, list)
+        checkRenderStagesValidity(fakeCollector, list)
 
-        verify(mockCollector).checkThat(
-            eq("Some of the reported GPU render stages are not valid."),
-            contains("event_id 10 uses deprecated `hw_queue_id`"),
-            any()
-        )
+        fakeCollector.assertFailure()
+        assertThat(fakeCollector.getErrorMessages()).hasSize(1)
+        assertThat(
+            fakeCollector.getErrors().first().message
+        ).contains("event_id 10 uses deprecated `hw_queue_id`;")
     }
 
     @Test
     fun checkRenderStagesValidity_malformed_reportsError() {
-        val mockCollector = mock(ErrorCollector::class.java)
+        val fakeCollector = FakeErrorCollector()
         val malformedEvent = GpuRenderStageEvent.newBuilder()
             .setEventId(20)
             // Missing other required fields
             .build()
         val list = listOf(RenderStageEvent(1, malformedEvent))
 
-        checkRenderStagesValidity(mockCollector, list)
+        checkRenderStagesValidity(fakeCollector, list)
 
-        verify(mockCollector).checkThat(
-            eq("Some of the reported GPU render stages are not valid."),
-            contains("event_id 20 is missing `hw_queue_iid`"),
-            any()
-        )
-        verify(mockCollector).checkThat(
-            eq("Some of the reported GPU render stages are not valid."),
-            contains("event_id 20 is missing `stage_iid`"),
-            any()
-        )
-        verify(mockCollector).checkThat(
-            eq("Some of the reported GPU render stages are not valid."),
-            contains("event_id 20 is missing `context`"),
-            any()
-        )
+        fakeCollector.assertFailure()
+        assertThat(fakeCollector.getErrorMessages()).hasSize(1)
+        val errorMessage = fakeCollector.getErrors().first().message
+        assertThat(errorMessage).contains("event_id 20 is missing `hw_queue_iid`")
+        assertThat(errorMessage).contains("event_id 20 is missing `stage_iid`")
+        assertThat(errorMessage).contains("event_id 20 is missing `context`")
     }
 
     @Test
     fun checkQueueSubmitsNotEmpty_empty_fails() {
-        val mockCollector = mock(ErrorCollector::class.java)
-        checkQueueSubmitsNotEmpty(mockCollector, emptyList())
+        val fakeCollector = FakeErrorCollector()
 
-        verify(mockCollector).checkThat(
-            eq("QueueSubmit events are missing."),
-            eq(emptyList<QueueSubmitEvent>()),
-            any()
-        )
+        checkQueueSubmitsNotEmpty(fakeCollector, emptyList())
+
+        fakeCollector.assertFailure()
+        assertThat(
+            fakeCollector.getErrorMessages()
+        ).containsExactly("QueueSubmit events are missing.")
     }
 
     @Test
     fun checkQueueSubmitsStrictlyMonotonicallyIncreasing_increasing_passes() {
-        val mockCollector = mock(ErrorCollector::class.java)
+        val fakeCollector = FakeErrorCollector()
         val list = listOf(
             QueueSubmitEvent(1, 1),
             QueueSubmitEvent(2, 2),
             QueueSubmitEvent(3, 3)
         )
 
-        checkQueueSubmitsStrictlyMonotonicallyIncreasing(mockCollector, list)
+        checkQueueSubmitsStrictlyMonotonicallyIncreasing(fakeCollector, list)
 
-        verify(mockCollector).checkThat(
-            eq("The queue submit IDs are not strictly monotonically increasing."),
-            eq(listOf(1, 2, 3)),
-            any()
-        )
+        fakeCollector.assertSuccess()
     }
 
     @Test
     fun checkQueueSubmitsStrictlyMonotonicallyIncreasing_duplicates_fails() {
-        val mockCollector = mock(ErrorCollector::class.java)
+        val fakeCollector = FakeErrorCollector()
         val list = listOf(
             QueueSubmitEvent(1, 1),
             QueueSubmitEvent(2, 1), // Duplicate
             QueueSubmitEvent(3, 2)
         )
 
-        checkQueueSubmitsStrictlyMonotonicallyIncreasing(mockCollector, list)
+        checkQueueSubmitsStrictlyMonotonicallyIncreasing(fakeCollector, list)
 
-        verify(mockCollector).checkThat(
-            eq("The queue submit IDs are not strictly monotonically increasing."),
-            eq(listOf(1, 2)), // This is the sorted distinct one
-            any()
+        fakeCollector.assertFailure()
+        assertThat(
+            fakeCollector.getErrorMessages()
+        ).containsExactly(
+            "The queue submit IDs are not strictly monotonically increasing."
         )
     }
 
     @Test
     fun checkRenderStagesMatchQueueSubmits_matches_passes() {
-        val mockCollector = mock(ErrorCollector::class.java)
+        val fakeCollector = FakeErrorCollector()
 
         val trace = Trace.newBuilder().apply {
             // Padding start (ID 0)
@@ -251,19 +223,14 @@ class RenderStagesChecksTest {
 
         val data = RenderStagesData(trace)
 
-        checkRenderStagesMatchQueueSubmits(mockCollector, data)
+        checkRenderStagesMatchQueueSubmits(fakeCollector, data)
 
-        // Verify no failure on matching IDs
-        verify(mockCollector).checkThat(
-            eq("Found mismatched queue submits and/or render stages."),
-            eq(2),
-            any()
-        )
+        fakeCollector.assertSuccess()
     }
 
     @Test
     fun checkRenderStagesMatchQueueSubmits_timestampMismatch_fails() {
-        val mockCollector = mock(ErrorCollector::class.java)
+        val fakeCollector = FakeErrorCollector()
 
         val trace = Trace.newBuilder().apply {
             // Padding start (ID 0)
@@ -317,18 +284,17 @@ class RenderStagesChecksTest {
 
         val data = RenderStagesData(trace)
 
-        checkRenderStagesMatchQueueSubmits(mockCollector, data)
+        checkRenderStagesMatchQueueSubmits(fakeCollector, data)
 
-        verify(mockCollector).checkThat(
-            eq("Render stage reported before its VkQueueSubmit for submission_id: 1."),
-            eq(100L),
-            any()
-        )
+        fakeCollector.assertFailure()
+        assertThat(
+            fakeCollector.getErrorMessages()
+        ).containsExactly("Render stage reported before its VkQueueSubmit for submission_id: 1.")
     }
 
     @Test
     fun checkRenderStagesMatchQueueSubmits_missingQueueSubmit_fails() {
-        val mockCollector = mock(ErrorCollector::class.java)
+        val fakeCollector = FakeErrorCollector()
 
         val trace = Trace.newBuilder().apply {
             // ID 0 (Match)
@@ -405,13 +371,11 @@ class RenderStagesChecksTest {
 
         val data = RenderStagesData(trace)
 
-        checkRenderStagesMatchQueueSubmits(mockCollector, data)
+        checkRenderStagesMatchQueueSubmits(fakeCollector, data)
 
-        // Verify no failure on matching IDs
-        verify(mockCollector).checkThat(
-            eq("Found mismatched queue submits and/or render stages."),
-            eq(2),
-            any()
-        )
+        fakeCollector.assertFailure()
+        assertThat(
+            fakeCollector.getErrorMessages()
+        ).containsExactly("Found mismatched queue submits and/or render stages.")
     }
 }
