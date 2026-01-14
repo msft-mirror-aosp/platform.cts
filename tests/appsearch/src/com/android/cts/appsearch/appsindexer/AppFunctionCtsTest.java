@@ -325,29 +325,6 @@ public class AppFunctionCtsTest {
         }
     }
 
-    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
-    @Test
-    public void indexAppWithDynamicSchema_dynamicSchemasDisabled_indexesPredefinedSchemaFieldsOnly()
-            throws Throwable {
-        installPackage(mContext, TEST_APP_A_DYNAMIC_SCHEMA_PATH);
-
-        // Retry till the indexer has completed a run.
-        retryAssert(
-                () -> {
-                    // A MobileApplication for it should be inserted.
-                    GenericDocument mobileApplication =
-                            searchMobileApplicationWithId(TEST_APP_A_PKG);
-                    assertThat(mobileApplication).isNotNull();
-                });
-        // Its app functions should be indexed.
-        Map<String, GenericDocument> appFnMap = searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
-        assertThat(appFnMap).hasSize(1);
-        assertThat(
-                        clearTimestampsAndParentTypesInDocument(
-                                appFnMap.get(TEST_APP_A_PKG + "/com.example.utils#print1")))
-                .isEqualTo(APP_A_V2_PRINT_APP_FUNCTION);
-    }
-
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
