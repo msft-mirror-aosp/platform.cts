@@ -15,9 +15,13 @@
  */
 package android.devicepolicy.cts
 
+import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
+import android.devicepolicy.cts.utils.DevicePolicyManagementRoleUtils
+import android.platform.test.annotations.RequiresFlagsEnabled
 import com.android.bedstead.accounts.annotations.EnsureHasAccount
 import com.android.bedstead.accounts.annotations.EnsureHasNoAccounts
+import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
 import com.android.bedstead.enterprise.dpc
@@ -26,6 +30,7 @@ import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.harrier.annotations.Postsubmit
+import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.devicepolicy.DeviceAdmin
 import com.android.bedstead.nene.exceptions.AdbException
@@ -34,6 +39,8 @@ import com.android.bedstead.nene.packages.Package
 import com.android.bedstead.nene.utils.Poll
 import com.android.bedstead.nene.utils.ShellCommand
 import com.android.bedstead.nene.utils.ShellCommandUtils
+import com.android.bedstead.permissions.CommonPermissions
+import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.bedstead.remotedpc.RemoteDpc
 import com.android.bedstead.testapps.testApps
 import com.android.eventlib.truth.EventLogsSubject
@@ -69,7 +76,10 @@ class ProfileOwnerTest {
     @EnsureHasNoDpc
     // This explicitly requires no pre-created accounts so we must skip if there are any
     @EnsureHasNoAccounts(
-        onUser = UserType.ANY, allowPreCreatedAccounts = false, failureMode = FailureMode.SKIP)
+        onUser = UserType.ANY,
+        allowPreCreatedAccounts = false,
+        failureMode = FailureMode.SKIP
+    )
     @Test
     fun setProfileOwnerViaAdb_noAccounts_notTestOnly_sets() {
         NOT_TEST_ONLY_DPC.install().use {
@@ -136,9 +146,14 @@ class ProfileOwnerTest {
                     "Active admins"
             ) { TestApis.devicePolicy().getActiveAdmins() }
                     .toMeet { i: Set<DeviceAdmin> -> !i.contains(
-                            DeviceAdmin.of(TEST_ONLY_DPC.packageName(),
+                            DeviceAdmin.of(
+                                TEST_ONLY_DPC.packageName(),
                                     ComponentName(
-                                            TEST_ONLY_DPC.packageName(), "DeviceAdminReceiver")))
+                                            TEST_ONLY_DPC.packageName(),
+                                        "DeviceAdminReceiver"
+                                    )
+                            )
+                    )
                     }
                     .errorOnFail("Expected active admins to not contain DPC")
                     .await()
@@ -175,9 +190,14 @@ class ProfileOwnerTest {
                     "Active admins"
             ) { TestApis.devicePolicy().getActiveAdmins() }
                     .toMeet { i: Set<DeviceAdmin> -> !i.contains(
-                            DeviceAdmin.of(TEST_ONLY_DPC.packageName(),
+                            DeviceAdmin.of(
+                                TEST_ONLY_DPC.packageName(),
                                     ComponentName(
-                                            TEST_ONLY_DPC.packageName(), "DeviceAdminReceiver")))
+                                            TEST_ONLY_DPC.packageName(),
+                                        "DeviceAdminReceiver"
+                                    )
+                            )
+                    )
                     }
                     .errorOnFail("Expected active admins to not contain DPC")
                     .await()
@@ -214,9 +234,14 @@ class ProfileOwnerTest {
                     "Active admins"
             ) { TestApis.devicePolicy().getActiveAdmins() }
                     .toMeet { i: Set<DeviceAdmin> -> !i.contains(
-                            DeviceAdmin.of(TEST_ONLY_DPC.packageName(),
+                            DeviceAdmin.of(
+                                TEST_ONLY_DPC.packageName(),
                                     ComponentName(
-                                            TEST_ONLY_DPC.packageName(), "DeviceAdminReceiver")))
+                                            TEST_ONLY_DPC.packageName(),
+                                        "DeviceAdminReceiver"
+                                    )
+                            )
+                    )
                     }
                     .errorOnFail("Expected active admins to not contain DPC")
                     .await()
@@ -273,12 +298,126 @@ class ProfileOwnerTest {
                     "Active admins"
             ) { TestApis.devicePolicy().getActiveAdmins() }
                     .toMeet { i: Set<DeviceAdmin> -> !i.contains(
-                            DeviceAdmin.of(TEST_ONLY_DPC.packageName(),
+                            DeviceAdmin.of(
+                                TEST_ONLY_DPC.packageName(),
                                     ComponentName(
-                                            TEST_ONLY_DPC.packageName(), "DeviceAdminReceiver")))
+                                            TEST_ONLY_DPC.packageName(),
+                                        "DeviceAdminReceiver"
+                                    )
+                            )
+                    )
                     }
                     .errorOnFail("Expected active admins to not contain DPC")
                     .await()
+        }
+    }
+
+    @EnsureHasNoDpc
+    @EnsureHasNoAccounts(onUser = UserType.ANY)
+    @Postsubmit(reason = "new test")
+    @RequireRunOnSystemUser
+    @EnsureHasPermission(CommonPermissions.MANAGE_ROLE_HOLDERS)
+    @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING)
+    @Test
+    fun setTestOnlyProfileOwner_noNonDefaultDevicePolicyManagementRoleHolderExists_sets() {
+        DevicePolicyManagementRoleUtils.removeNonDefaultRoleHolders(context)
+        TEST_ONLY_DPC.install().use {
+            try {
+                ShellCommand
+                    .builderForUser(
+                        TestApis.users().instrumented(),
+                        SET_PROFILE_OWNER_COMMAND
+                    )
+                    .addOperand(TEST_ONLY_DPC_COMPONENT.flattenToString())
+                    .execute()
+                assertThat(TestApis.devicePolicy().getProfileOwner()?.componentName())
+                    .isEqualTo(TEST_ONLY_DPC_COMPONENT.componentName())
+            } finally {
+                val profileOwner = TestApis.devicePolicy().getProfileOwner()
+                profileOwner?.remove()
+            }
+        }
+    }
+
+    @EnsureHasNoDpc
+    @EnsureHasNoAccounts(onUser = UserType.ANY)
+    @EnsureHasDevicePolicyManagerRoleHolder
+    @Postsubmit(reason = "new test")
+    @RequireRunOnSystemUser
+    @EnsureHasPermission(CommonPermissions.MANAGE_ROLE_HOLDERS)
+    @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING)
+    @Test
+    fun setTestOnlyProfileOwner_nonDefaultDevicePolicyManagementRoleHolderExists_sets() {
+        TEST_ONLY_DPC.install().use {
+            try {
+                ShellCommand
+                    .builderForUser(
+                        TestApis.users().instrumented(),
+                        SET_PROFILE_OWNER_COMMAND
+                    )
+                    .addOperand(TEST_ONLY_DPC_COMPONENT.flattenToString())
+                    .execute()
+                assertThat(TestApis.devicePolicy().getProfileOwner()?.componentName())
+                    .isEqualTo(TEST_ONLY_DPC_COMPONENT.componentName())
+            } finally {
+                val profileOwner = TestApis.devicePolicy().getProfileOwner()
+                profileOwner?.remove()
+            }
+        }
+    }
+
+    @EnsureHasNoDpc
+    @EnsureHasNoAccounts(onUser = UserType.ANY)
+    @Postsubmit(reason = "new test")
+    @RequireRunOnSystemUser
+    @EnsureHasPermission(CommonPermissions.MANAGE_ROLE_HOLDERS)
+    @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING)
+    @Test
+    fun setNonTestOnlyProfileOwner_noNonDefaultDevicePolicyManagementRoleHolderExists_sets() {
+        DevicePolicyManagementRoleUtils.removeNonDefaultRoleHolders(context)
+        NOT_TEST_ONLY_DPC.install().use {
+            try {
+                ShellCommand
+                    .builderForUser(
+                        TestApis.users().instrumented(),
+                        SET_PROFILE_OWNER_COMMAND
+                    )
+                    .addOperand(NOT_TEST_ONLY_DPC_COMPONENT.flattenToString())
+                    .execute()
+                assertThat(TestApis.devicePolicy().getProfileOwner()?.componentName())
+                    .isEqualTo(NOT_TEST_ONLY_DPC_COMPONENT.componentName())
+            } finally {
+                val profileOwner = TestApis.devicePolicy().getProfileOwner()
+                profileOwner?.remove()
+            }
+        }
+    }
+
+    @EnsureHasNoDpc
+    @EnsureHasNoAccounts(onUser = UserType.ANY)
+    @Postsubmit(reason = "new test")
+    @RequireRunOnSystemUser
+    @EnsureHasDevicePolicyManagerRoleHolder
+    @EnsureHasPermission(CommonPermissions.MANAGE_ROLE_HOLDERS)
+    @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING)
+    @Test
+    fun setNonTestOnlyProfileOwner_nonDefaultDevicePolicyManagementRoleHolderExists_doesNotSet() {
+        NOT_TEST_ONLY_DPC.install().use {
+            try {
+                assertThrows(AdbException::class.java) {
+                    ShellCommand
+                        .builderForUser(
+                            TestApis.users().instrumented(),
+                            SET_PROFILE_OWNER_COMMAND
+                        )
+                        .addOperand(NOT_TEST_ONLY_DPC_COMPONENT.flattenToString())
+                        .execute()
+                }
+                assertThat(TestApis.devicePolicy().getProfileOwner()).isNull()
+            } finally {
+                val profileOwner = TestApis.devicePolicy().getProfileOwner()
+                profileOwner?.remove()
+            }
         }
     }
 
@@ -323,11 +462,14 @@ class ProfileOwnerTest {
     }
 
     companion object {
-        
+
         @JvmField
         @ClassRule
         @Rule
         val deviceState = DeviceState()
+
+        private val context = TestApis.context().instrumentedContext()
+        private val devicePolicyManager = context.getSystemService(DevicePolicyManager::class.java)
         private val TEST_ONLY_DPC = deviceState.testApps()
             .query().whereIsDeviceAdmin().isTrue()
             .whereTestOnly().isTrue()

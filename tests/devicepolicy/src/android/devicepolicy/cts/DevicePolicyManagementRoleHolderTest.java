@@ -458,9 +458,10 @@ public class DevicePolicyManagementRoleHolderTest {
     @EnsureHasNoDpc
     @EnsureHasNoAccounts
     @EnsureHasNoWorkProfile
-    @EnsureHasPermission(android.Manifest.permission.MANAGE_ROLE_HOLDERS)
+    @EnsureHasPermission(CommonPermissions.MANAGE_ROLE_HOLDERS)
     @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING)
     public void nonTestOnlyProfileOwner_shouldAllowBypassing_false() {
+        DevicePolicyManagementRoleUtils.removeNonDefaultRoleHolders(sContext);
         TestApp dpc = getDeviceAdminTestApp(/* isTestOnly */ false);
         ComponentName adminComponent = getDeviceAdminComponentName(dpc);
 
