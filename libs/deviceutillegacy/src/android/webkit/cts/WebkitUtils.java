@@ -24,6 +24,7 @@ import android.net.Network;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
+import android.provider.Settings;
 import android.util.Log;
 
 import com.android.compatibility.common.util.PollingCheck;
@@ -257,6 +258,30 @@ public final class WebkitUtils {
                             + " Please check to make sure there is no user input dialog which is"
                             + " stealing focus.";
             throw new CtsRequirementException(message, t);
+        }
+    }
+
+    /**
+     * Checks that the device has been provisioned and the setup wizard has been skipped. If this
+     * method throws CtsRequirementException, then it usually indicates the testing bot has been
+     * misconfigured and it's not a bug in the test itself.
+     *
+     * @param ctx the Context the test is running in.
+     * @throws CtsRequirementException if the device has not been properly provisioned.
+     */
+    public static void checkDeviceHasBeenProvisioned(Context ctx) {
+        int deviceProvisioned =
+                Settings.Global.getInt(
+                        ctx.getContentResolver(), Settings.Global.DEVICE_PROVISIONED, 0);
+        if (deviceProvisioned != 1) {
+            throw new CtsRequirementException(
+                    "The device needs to be provisioned in order for WebView text classifier to"
+                            + " work. If this is running on automated infrastructure, then the"
+                            + " infrastructure needs to be configured to set 'settings put global"
+                            + " device_provisioned 1'. If this is running in a local run, you may"
+                            + " need to manually run 'adb shell settings put global"
+                            + " device_provisioned 1' in the terminal to set up your device for"
+                            + " testing.");
         }
     }
 
