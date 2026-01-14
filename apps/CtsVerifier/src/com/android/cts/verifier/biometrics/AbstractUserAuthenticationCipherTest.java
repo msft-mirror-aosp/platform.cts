@@ -17,51 +17,31 @@
 package com.android.cts.verifier.biometrics;
 
 import android.hardware.biometrics.BiometricPrompt;
-import android.security.keystore.KeyGenParameterSpec;
-import android.security.keystore.KeyProperties;
 
-import java.security.KeyPairGenerator;
-import java.security.KeyStore;
-
-import javax.crypto.Cipher;
-import javax.crypto.KeyGenerator;
+import java.time.Duration;
 
 public abstract class AbstractUserAuthenticationCipherTest extends AbstractUserAuthenticationTest {
-    private Cipher mCipher;
+    private AuthBoundCipherTest mAuthBoundCipherTest = new AuthBoundCipherTest();
 
     @Override
-    void createUserAuthenticationKey(String keyName, int timeout, int authType,
+    void createUserAuthenticationKey(String keyName, Duration timeout, int authType,
             boolean useStrongBox) throws Exception {
-        KeyGenParameterSpec.Builder builder = new KeyGenParameterSpec.Builder(
-                keyName, KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT);
-        builder.setBlockModes(KeyProperties.BLOCK_MODE_CBC)
-                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_PKCS7)
-                .setUserAuthenticationRequired(true)
-                .setUserAuthenticationParameters(timeout, authType)
-                .setIsStrongBoxBacked(useStrongBox);
-
-        KeyGenerator keyGenerator = KeyGenerator.getInstance(
-                KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore");
-        keyGenerator.init(builder.build());
-        keyGenerator.generateKey();
+        mAuthBoundCipherTest.createUserAuthenticationKey(
+                keyName, timeout, authType, useStrongBox);
     }
 
     @Override
     void initializeKeystoreOperation(String keyName) throws Exception {
-        mCipher = Utils.initCipher(keyName);
+        mAuthBoundCipherTest.initializeKeystoreOperation(keyName);
     }
 
     @Override
     BiometricPrompt.CryptoObject getCryptoObject() {
-        return new BiometricPrompt.CryptoObject(mCipher);
+        return new BiometricPrompt.CryptoObject(mAuthBoundCipherTest.getCryptoObject());
     }
 
     @Override
     void doKeystoreOperation(byte[] payload) throws Exception {
-        try {
-            Utils.doEncrypt(mCipher, payload);
-        } finally {
-            mCipher = null;
-        }
+        mAuthBoundCipherTest.doKeystoreOperation(payload);
     }
 }
