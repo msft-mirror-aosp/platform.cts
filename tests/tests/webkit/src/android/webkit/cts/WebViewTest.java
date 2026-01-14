@@ -2278,6 +2278,7 @@ public class WebViewTest extends SharedWebViewTest {
 
     @Test
     public void testSetCustomTextClassifier() throws Exception {
+        WebkitUtils.checkDeviceHasBeenProvisioned(mContext);
         class CustomTextClassifier implements TextClassifier {
             @Override
             public TextSelection suggestSelection(
