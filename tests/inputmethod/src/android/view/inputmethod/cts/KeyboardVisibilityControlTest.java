@@ -1678,10 +1678,16 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             expectImeVisible(TIMEOUT);
 
             // Launch another app task activity to hide keyboard
-            new TestActivity.Starter().asNewTask().startSync(activity -> {
-                        activity.getWindow().setSoftInputMode(SOFT_INPUT_STATE_ALWAYS_HIDDEN);
-                        return new LinearLayout(activity);
-                    }, TestActivity.class);
+            final TestActivity secondActivity =
+                    new TestActivity.Starter()
+                            .asNewTask()
+                            .startSync(
+                                    activity -> {
+                                        activity.getWindow()
+                                                .setSoftInputMode(SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+                                        return new LinearLayout(activity);
+                                    },
+                                    TestActivity.class);
             expectEvent(stream, hideSoftInputMatcher(), TIMEOUT);
             expectEvent(stream, onFinishInputViewMatcher(false), TIMEOUT);
             expectEventWithKeyValue(stream, "onWindowVisibilityChanged", "visible",
@@ -1703,8 +1709,8 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                         }, TestActivity.class);
                 expectEvent(stream, editorMatcher("onStartInput", markerForActivity2), TIMEOUT);
             } else {
-                // Press back key to back to the first test activity
-                instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+                // Finish the second activity to go back to the first test activity
+                runOnMainSync(secondActivity::finish);
                 expectEvent(stream, editorMatcher("onStartInput", markerForActivity1), TIMEOUT);
             }
 
