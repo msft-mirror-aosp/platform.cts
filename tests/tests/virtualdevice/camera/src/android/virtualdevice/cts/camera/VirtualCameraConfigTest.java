@@ -261,17 +261,7 @@ public class VirtualCameraConfigTest {
                         .build());
     }
 
-    @Test
-    @RequiresFlagsDisabled(Flags.FLAG_EXTERNAL_VIRTUAL_CAMERAS)
-    public void virtualCameraConfigBuilder_unsupportedLensFacing_throwsException() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new VirtualCameraConfig.Builder(CAMERA_NAME)
-                        .addStreamConfig(CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_FORMAT,
-                                CAMERA_MAX_FPS)
-                        .setLensFacing(LENS_FACING_EXTERNAL)
-                        .setVirtualCameraCallback(mExecutor, mCallback)
-                        .build());
-    }
+
 
     @Test
     public void virtualCameraConfigBuilder_invalidLensFacing_throwsException() {
@@ -285,7 +275,6 @@ public class VirtualCameraConfigTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_EXTERNAL_VIRTUAL_CAMERAS)
     public void virtualCameraConfigBuilder_multipleExternalCamera_succeeds() {
         VirtualCameraConfig config1 = new VirtualCameraConfig.Builder(CAMERA_NAME_EXTERNAL_1)
                 .addStreamConfig(CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_FORMAT, CAMERA_MAX_FPS)
@@ -327,7 +316,7 @@ public class VirtualCameraConfigTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_EXTERNAL_VIRTUAL_CAMERAS, Flags.FLAG_VIRTUAL_CAMERA_METADATA})
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void virtualCameraConfigBuilder_multipleExternalCameraWithCharacteristics_succeeds() {
         CameraCharacteristics characteristics =
                 new CameraCharacteristics.Builder()

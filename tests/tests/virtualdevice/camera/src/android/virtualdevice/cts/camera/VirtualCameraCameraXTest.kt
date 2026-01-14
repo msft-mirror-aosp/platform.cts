@@ -347,10 +347,10 @@ class VirtualCameraCameraXTest {
     }
 
     @Suppress("unused") // Parameter for parametrized tests
-    private fun getAllLensFacingDirections() = listOfNotNull(
+    private fun getAllLensFacingDirections() = listOf(
         CameraMetadata.LENS_FACING_BACK,
         CameraMetadata.LENS_FACING_FRONT,
-        CameraMetadata.LENS_FACING_EXTERNAL.takeIf { Flags.externalVirtualCameras() },
+        CameraMetadata.LENS_FACING_EXTERNAL,
     )
 }
 
