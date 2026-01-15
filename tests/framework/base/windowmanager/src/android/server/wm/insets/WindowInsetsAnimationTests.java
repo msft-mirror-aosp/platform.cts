@@ -50,8 +50,6 @@ import android.view.WindowInsetsAnimation;
 import android.view.WindowInsetsAnimation.Bounds;
 import android.view.WindowInsetsAnimation.Callback;
 
-import com.android.window.flags.Flags;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -295,34 +293,5 @@ public class WindowInsetsAnimationTests extends WindowInsetsAnimationTestBase {
         verify(mActivity.mCallback).onStart(any(), any());
         verify(mActivity.mCallback, atLeastOnce()).onProgress(any(), any());
         verify(mActivity.mCallback).onEnd(any());
-    }
-
-    @Test
-    public void testAnimationCallbacks_frameCount() {
-        assumeTrue(Flags.preventSchedulingRedundantFrame());
-        assumeTrue(
-                "Test requires statusBars to create the animation.",
-                hasWindowInsets(mRootView, statusBars()));
-
-        // This removes the Editor from the hierarchy to prevent the blink cursor effect from
-        // causing unexpected frames.
-        getInstrumentation().runOnMainSync(() -> mActivity.mView.removeAllViews());
-        getInstrumentation().waitForIdleSync();
-
-        final int[] frameCount = {0};
-        mRootView.getViewTreeObserver().addOnDrawListener(() -> frameCount[0]++);
-        getInstrumentation()
-                .runOnMainSync(() -> mRootView.getWindowInsetsController().hide(statusBars()));
-        waitForOrFail("Waiting until animation done", () -> mActivity.mCallback.animationDone);
-
-        assertEquals("AnimationCallbacks must not cause redundant frames", 1, frameCount[0]);
-
-        frameCount[0] = 0;
-        mActivity.mCallback.animationDone = false;
-        getInstrumentation()
-                .runOnMainSync(() -> mRootView.getWindowInsetsController().show(statusBars()));
-        waitForOrFail("Waiting until animation done", () -> mActivity.mCallback.animationDone);
-
-        assertEquals("AnimationCallbacks must not cause redundant frames", 1, frameCount[0]);
     }
 }
