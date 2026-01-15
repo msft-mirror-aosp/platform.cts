@@ -62,5 +62,10 @@ public class SharedMemoryService extends Service {
                 mMappedBuffer.put(index, value);
             }
         }
+
+        @Override
+        public boolean isRegionReadOnly() throws RemoteException {
+            return mSharedMemory.isRegionReadOnly();
+        }
     }
 }
