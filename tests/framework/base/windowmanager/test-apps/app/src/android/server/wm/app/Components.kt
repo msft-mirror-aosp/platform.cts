@@ -680,9 +680,11 @@ object Components : ComponentsProvider() {
     object PinnedWindowingLayerActivity {
         const val ACTION_REQUEST_WINDOWING_LAYER = "action_request_windowing_layer"
         const val ACTION_REQUEST_WINDOWING_LAYER_RESULT = "action_request_windowing_layer_result"
+        const val ACTION_ACTIVITY_FINISHED = "action_activity_finished"
         const val EXTRA_WINDOWING_LAYER_TYPE = "extra_windowing_layer_type"
         const val EXTRA_RESULT_SUCCESS = "extra_windowing_layer_result"
         const val EXTRA_RESULT_DETAILS = "extra_windowing_layer_result_details"
+        const val EXTRA_EXCEPTION_CLASS= "extra_windowing_layer_exception_class"
     }
 
     @JvmStatic fun getPackageName() = packageName

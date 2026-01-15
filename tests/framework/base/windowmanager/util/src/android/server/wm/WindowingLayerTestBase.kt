@@ -24,10 +24,10 @@ import android.server.wm.ActivityManagerTestBase
 import android.server.wm.BuildUtils
 import android.server.wm.StateLogger.logAlways
 import android.server.wm.app.Components
+import android.server.wm.app.Components.PinnedWindowingLayerActivity.ACTION_ACTIVITY_FINISHED
 import android.server.wm.app.Components.PinnedWindowingLayerActivity.ACTION_REQUEST_WINDOWING_LAYER_RESULT
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.After
 import org.junit.Before
@@ -39,7 +39,10 @@ public abstract class WindowingLayerTestBase : ActivityManagerTestBase() {
     private val broadcastsReceived: ConcurrentHashMap<String, Channel<Intent>> =
         ConcurrentHashMap<String, Channel<Intent>>()
     private val broadcastIntentFilter =
-        IntentFilter().apply { addAction(ACTION_REQUEST_WINDOWING_LAYER_RESULT) }
+        IntentFilter().apply {
+            addAction(ACTION_REQUEST_WINDOWING_LAYER_RESULT)
+            addAction(ACTION_ACTIVITY_FINISHED)
+        }
     private val broadcastReceiver: BroadcastReceiver =
         object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
