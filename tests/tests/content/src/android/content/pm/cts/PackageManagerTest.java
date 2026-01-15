@@ -106,6 +106,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.ArchivedActivityInfo;
 import android.content.pm.ArchivedPackageInfo;
 import android.content.pm.ComponentInfo;
+import android.content.pm.Flags;
 import android.content.pm.IPackageManager;
 import android.content.pm.InstallSourceInfo;
 import android.content.pm.InstrumentationInfo;
@@ -4316,5 +4317,17 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
         setUpdateMimeGroupAndAssertBroadcasts(mimeTypes, /* isBroadcastReceived= */ true);
         assertThat(mPackageManager.getMimeGroup(MIME_GROUP)).isEqualTo(mimeTypes);
         setUpdateMimeGroupAndAssertBroadcasts(mimeTypes, /* isBroadcastReceived= */ false);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_PROTECT_SYSTEM_REQUIRED_PACKAGES)
+    public void testDisableSystemRequiredPackage() {
+        assertThrows(
+                SecurityException.class,
+                () ->
+                        mPackageManager.setApplicationEnabledSetting(
+                                "com.android.settings",
+                                PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                                PackageManager.DONT_KILL_APP));
     }
 }
