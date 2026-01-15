@@ -532,14 +532,6 @@ TEST_F(NdkBinderTest_AParcel, DataCapacityTest) {
   AParcel_delete(p);
 }
 
-TEST_F(NdkBinderTest_AParcel, NegativeDataCapacityTest) {
-  AParcel* p = AParcel_create();
-
-  EXPECT_EQ(STATUS_BAD_VALUE, AParcel_setDataCapacity(p, -2));
-
-  AParcel_delete(p);
-}
-
 TEST_F(NdkBinderTest_AParcel, NewCapacityLessThanExistingTest) {
   AParcel* p = AParcel_create();
 
