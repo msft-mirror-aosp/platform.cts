@@ -155,7 +155,7 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
       ))
       ui_interaction_utils.stop_cameraservice_watch(watch_process)
       result_zoom_ratios = ui_interaction_utils.get_jca_zoom_ratios(
-          watch_dump_path, physical_ids=[c.physical_id for c in captures]
+          watch_dump_path, request_zoom_ratios=z_list
       )
       logging.debug(
           'requested zoom ratios: %s, result zoom ratios: %s',
