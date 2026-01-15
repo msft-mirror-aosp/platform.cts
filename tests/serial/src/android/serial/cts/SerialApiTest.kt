@@ -122,7 +122,7 @@ class SerialApiTest {
         doAnswer { latch.countDown() }.whenever(listener).onSerialPortConnected(any())
         doAnswer { latch.countDown() }.whenever(outcomeReceiver).onResult(any())
         runWithShellPermissionIdentity {
-            mSerialManager!!.grantSerialPortAccess("ptmx", Process.myUid(), null)
+            mSerialManager!!.grantSerialPortAccess("ptmx", Process.myUid(), false, null)
         }
 
         // Opening PTY port /dev/ptmx causes creation of a new PTY device under /dev/pts
@@ -170,7 +170,7 @@ class SerialApiTest {
         val latch = CountDownLatch(1) // Wait for onResult
         doAnswer { latch.countDown() }.whenever(outcomeReceiver).onResult(any())
         runWithShellPermissionIdentity {
-            mSerialManager!!.grantSerialPortAccess("ptmx", Process.myUid(), null)
+            mSerialManager!!.grantSerialPortAccess("ptmx", Process.myUid(), false, null)
         }
 
         // Same logic as in test_registerSerialPortListener(), but now we test that
@@ -213,7 +213,7 @@ class SerialApiTest {
             latch.countDown()
         }.whenever(outcomeReceiver).onResult(any())
         runWithShellPermissionIdentity {
-            mSerialManager!!.grantSerialPortAccess("ptmx", Process.myUid(), null)
+            mSerialManager!!.grantSerialPortAccess("ptmx", Process.myUid(), false, null)
         }
 
         try {
