@@ -27,7 +27,6 @@ android_test_helper_app {
     sdk_version: "current",
     compile_multilib: "both",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }

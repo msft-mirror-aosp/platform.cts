@@ -41,9 +41,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * TODO(b/147496159): add more tests.
- */
 public class CtsExtractNativeLibsHostTestBase extends BaseHostJUnit4Test {
     static final String TEST_REMOTE_DIR = "/data/local/tmp/extract_native_libs_test";
     static final String TEST_APK_RESOURCE_PREFIX = "/prebuilt/";

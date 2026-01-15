@@ -134,4 +134,14 @@ public class LocalStorageIcingOptionsConfig implements IcingOptionsConfig {
     public boolean enableRepeatedFieldJoins() {
         return Flags.enableRepeatedFieldJoins();
     }
+
+    @Override
+    public boolean enableIcingBackgroundTaskScheduler() {
+        return true;
+    }
+
+    @Override
+    public long getExpiredDocumentPurgingThresholdMillis() {
+        return DEFAULT_EXPIRED_DOCUMENT_PURGING_THRESHOLD_MILLIS;
+    }
 }

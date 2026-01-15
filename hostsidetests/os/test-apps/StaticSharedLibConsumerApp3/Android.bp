@@ -25,7 +25,6 @@ android_test_helper_app {
     libs: ["CtsStaticSharedLibProviderApp7"],
     sdk_version: "current",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }

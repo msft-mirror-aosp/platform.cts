@@ -23,7 +23,6 @@ import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_V;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_HW;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
-import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_AT_MOST_U;
 import static android.mediav2.common.cts.DecodeStreamToYuv.getFormatInStream;
 import static android.mediav2.cts.DolbyVisionDecoderParamPreparer.getDvTestParams;
 
@@ -32,19 +31,16 @@ import static com.android.media.extractor.flags.Flags.extractorMp4EnableVvc;
 
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
-import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.mediav2.common.cts.CodecDecoderTestBase;
 import android.mediav2.common.cts.CodecTestActivity;
 import android.mediav2.common.cts.OutputManager;
-import android.util.Pair;
 
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.filters.LargeTest;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
-import com.android.compatibility.common.util.Preconditions;
 
 import org.junit.Assert;
 import org.junit.Assume;
@@ -54,9 +50,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -84,6 +78,9 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
         MUST_SUPPORT_APB.add(MediaFormat.MIMETYPE_VIDEO_VP9);
         MUST_SUPPORT_APB.add(MediaFormat.MIMETYPE_VIDEO_AVC);
         MUST_SUPPORT_APB.add(MediaFormat.MIMETYPE_VIDEO_HEVC);
+        if (IS_AFTER_B) {
+            MUST_SUPPORT_APB.add(MediaFormat.MIMETYPE_VIDEO_AV1);
+        }
     }
 
     public AdaptivePlaybackTest(String decoder, String mediaType, String[] srcFiles,

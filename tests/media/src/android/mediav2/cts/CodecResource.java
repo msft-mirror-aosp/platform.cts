@@ -233,6 +233,12 @@ class CodecResourceUtils {
         return currentGlobalResources;
     }
 
+    public static List<CodecResource> getCodecRequiredResources(MediaCodec codec) {
+        List<CodecResource> resources = new ArrayList<>();
+        addResources(codec.getRequiredResources(), resources, true);
+        return resources;
+    }
+
     /**
      * This function computes the sum of current globally available resources and current active
      * codec instance(s) consumed resources and matches them with system's globally available

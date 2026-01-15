@@ -211,4 +211,14 @@ public class AppSearchConfigImpl implements AppSearchConfig {
     public boolean enableRepeatedFieldJoins() {
         return mIcingOptionsConfig.enableRepeatedFieldJoins();
     }
+
+    @Override
+    public boolean enableIcingBackgroundTaskScheduler() {
+        return mIcingOptionsConfig.enableIcingBackgroundTaskScheduler();
+    }
+
+    @Override
+    public long getExpiredDocumentPurgingThresholdMillis() {
+        return mIcingOptionsConfig.getExpiredDocumentPurgingThresholdMillis();
+    }
 }

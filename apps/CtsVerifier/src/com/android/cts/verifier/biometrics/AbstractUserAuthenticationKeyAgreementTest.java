@@ -17,18 +17,10 @@
 package com.android.cts.verifier.biometrics;
 
 import android.hardware.biometrics.BiometricPrompt;
-import android.security.keystore.KeyGenParameterSpec;
-import android.security.keystore.KeyProperties;
 
 import com.android.compatibility.common.util.ApiTest;
 
-import org.junit.Assert;
-
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.spec.ECGenParameterSpec;
-
-import javax.crypto.KeyAgreement;
+import java.time.Duration;
 
 /**
  * This is a test to validate Key Agreement with auth type
@@ -37,57 +29,27 @@ import javax.crypto.KeyAgreement;
 @ApiTest(apis = {"javax.crypto.KeyAgreement#generateSecret"})
 public abstract class AbstractUserAuthenticationKeyAgreementTest
         extends AbstractUserAuthenticationTest {
-    private KeyAgreement mKeyAgreement;
-    private KeyPair mKeyPair;
+    private AuthBoundKeyAgreementTest mAuthBoundKeyAgreementTest = new AuthBoundKeyAgreementTest();
 
     @Override
     void createUserAuthenticationKey(
-            String keyName, int timeout, int authType, boolean useStrongBox) throws Exception {
-        KeyGenParameterSpec.Builder builder =
-                new KeyGenParameterSpec.Builder(
-                        keyName, KeyProperties.PURPOSE_AGREE_KEY);
-        builder.setUserAuthenticationRequired(true)
-                .setAlgorithmParameterSpec(new ECGenParameterSpec("secp256r1"))
-                .setUserAuthenticationParameters(timeout, authType)
-                .setIsStrongBoxBacked(useStrongBox);
-
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(
-                KeyProperties.KEY_ALGORITHM_EC, "AndroidKeyStore");
-        keyPairGenerator.initialize(builder.build());
-        mKeyPair = keyPairGenerator.generateKeyPair();
+            String keyName, Duration timeout, int authType, boolean useStrongBox) throws Exception {
+        mAuthBoundKeyAgreementTest.createUserAuthenticationKey(
+                keyName, timeout, authType, useStrongBox);
     }
 
     @Override
     void initializeKeystoreOperation(String keyName) throws Exception {
-        mKeyAgreement = Utils.initKeyAgreement(keyName);
+        mAuthBoundKeyAgreementTest.initializeKeystoreOperation(keyName);
     }
 
     @Override
     BiometricPrompt.CryptoObject getCryptoObject() {
-        return new BiometricPrompt.CryptoObject(mKeyAgreement);
+        return new BiometricPrompt.CryptoObject(mAuthBoundKeyAgreementTest.getCryptoObject());
     }
 
     @Override
     void doKeystoreOperation(byte[] payload) throws Exception {
-        try {
-            KeyPairGenerator otherKPG = KeyPairGenerator.getInstance("EC");
-            otherKPG.initialize(256);
-            KeyPair otherKP = otherKPG.generateKeyPair();
-
-            // Generate shared secret of the first keyAgreement
-            mKeyAgreement.doPhase(otherKP.getPublic(), true);
-            byte[] ourSharedSecret = mKeyAgreement.generateSecret();
-
-            // Generate second Shared Secret
-            KeyAgreement secondKeyAgreement = KeyAgreement.getInstance("ECDH");
-            secondKeyAgreement.init(otherKP.getPrivate());
-            secondKeyAgreement.doPhase(mKeyPair.getPublic(), true);
-            byte[] theirSharedSecret = secondKeyAgreement.generateSecret();
-
-            Assert.assertArrayEquals(ourSharedSecret, theirSharedSecret);
-        } finally {
-            mKeyAgreement = null;
-            mKeyPair = null;
-        }
+        mAuthBoundKeyAgreementTest.doKeystoreOperation(payload);
     }
 }

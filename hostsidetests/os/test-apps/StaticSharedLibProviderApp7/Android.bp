@@ -26,7 +26,6 @@ android_test_helper_app {
     certificate: ":cts-keyset-test-b",
     additional_certificates: [":cts-keyset-test-a"],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     optimize: {

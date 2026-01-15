@@ -15,6 +15,7 @@
  */
 package android.contentcaptureservice.cts;
 
+import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.contentcaptureservice.cts.Assertions.LifecycleOrder.CREATION;
 import static android.contentcaptureservice.cts.Assertions.LifecycleOrder.DESTRUCTION;
 import static android.contentcaptureservice.cts.Assertions.assertChildSessionContext;
@@ -41,7 +42,9 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.testng.Assert.assertThrows;
 
+import android.app.ActivityOptions;
 import android.content.ComponentName;
+import android.content.Intent;
 import android.content.LocusId;
 import android.contentcaptureservice.cts.CtsContentCaptureService.DisconnectListener;
 import android.contentcaptureservice.cts.CtsContentCaptureService.ServiceWatcher;
@@ -63,6 +66,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.test.core.app.ActivityScenario;
 import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.ActivitiesWatcher.ActivityWatcher;
@@ -201,15 +205,26 @@ public class ChildlessActivityTest
         final int taskId1 = activity1.getTaskId();
 
         // Launch and finish 2nd activity
-        final ActivityLauncher<LoginActivity> anotherActivityLauncher = new ActivityLauncher<>(
-                sContext, mActivitiesWatcher, LoginActivity.class);
-        final ActivityWatcher watcher2 = anotherActivityLauncher.getWatcher();
-        final LoginActivity activity2 = anotherActivityLauncher.launchActivity();
+        // Use ActivityScenario to launch the activity in fullscreen so it will occlude the 1st one.
+        final ActivityWatcher watcher2 = mActivitiesWatcher.watch(LoginActivity.class);
+        final ActivityOptions options = ActivityOptions.makeBasic();
+        options.setLaunchWindowingMode(WINDOWING_MODE_FULLSCREEN);
 
-        watcher2.waitFor(RESUMED);
-        final int taskId2 = activity2.getTaskId();
-        activity2.finish();
-        watcher2.waitFor(DESTROYED);
+        final Intent intent = new Intent(sContext, LoginActivity.class);
+        final AtomicReference<LoginActivity> activityRef2 = new AtomicReference<>();
+        final int taskId2;
+        final LoginActivity activity2;
+        try (ActivityScenario<LoginActivity> scenario =
+                ActivityScenario.launch(intent, options.toBundle())) {
+            scenario.onActivity(activityRef2::set);
+            watcher2.waitFor(RESUMED);
+
+            activity2 = activityRef2.get();
+            taskId2 = activity2.getTaskId();
+
+            activity2.finish();
+            watcher2.waitFor(DESTROYED);
+        }
 
         // Finish 1st activity
         activity1.finish();
@@ -219,12 +234,12 @@ public class ChildlessActivityTest
         final ComponentName name1 = activity1.getComponentName();
         final ComponentName name2 = activity2.getComponentName();
         service.assertThat()
-            .activityResumed(name1, taskId1)
-            .activityPaused(name1, taskId1)
-            .activityResumed(name2, taskId2)
-            .activityPaused(name2, taskId2)
-            .activityResumed(name1, taskId1)
-            .activityPaused(name1, taskId1);
+                .activityResumed(name1, taskId1)
+                .activityPaused(name1, taskId1)
+                .activityResumed(name2, taskId2)
+                .activityPaused(name2, taskId2)
+                .activityResumed(name1, taskId1)
+                .activityPaused(name1, taskId1);
 
         // Assert the sessions
         final List<ContentCaptureSessionId> sessionIds = service.getAllSessionIds();
@@ -245,7 +260,6 @@ public class ChildlessActivityTest
 
         final Session session2 = service.getFinishedSession(sessionId2);
         activity2.assertDefaultEvents(session2);
-
     }
 
     @Test

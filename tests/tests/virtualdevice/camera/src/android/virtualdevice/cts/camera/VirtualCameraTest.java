@@ -260,8 +260,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_EXTERNAL_VIRTUAL_CAMERAS,
-            Flags.FLAG_EXTERNAL_CAMERA_DEFAULT_POLICY})
+    @RequiresFlagsEnabled(Flags.FLAG_EXTERNAL_CAMERA_DEFAULT_POLICY)
     public void defaultContext_withVirtualExternalCamera_triggersCameraAvailabilityCallbacks() {
         // Create virtual device with default camera policy.
         mVirtualDevice = mRule.createManagedVirtualDevice();
@@ -558,18 +557,7 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_EXTERNAL_VIRTUAL_CAMERAS)
-    public void createExternalVirtualCamera_withDefaultPolicy_fails() {
-        // Create virtual device with default camera policy.
-        mVirtualDevice = mRule.createManagedVirtualDevice();
-
-        assertThrows(IllegalArgumentException.class,
-                () -> createVirtualCamera(LENS_FACING_EXTERNAL));
-    }
-
-    @Test
-    @RequiresFlagsEnabled({Flags.FLAG_EXTERNAL_VIRTUAL_CAMERAS,
-            Flags.FLAG_EXTERNAL_CAMERA_DEFAULT_POLICY})
+    @RequiresFlagsEnabled(Flags.FLAG_EXTERNAL_CAMERA_DEFAULT_POLICY)
     public void createExternalVirtualCamera_withDefaultPolicy_succeeds() throws Exception {
         // Create virtual device with default camera policy.
         mVirtualDevice = mRule.createManagedVirtualDevice();
@@ -1328,12 +1316,7 @@ public class VirtualCameraTest {
 
     @SuppressWarnings("unused") // Parameter for parametrized tests
     private static List<Integer> getAllLensFacingDirections() {
-        List<Integer> lensFacingDirections = new ArrayList<>(
-                List.of(LENS_FACING_BACK, LENS_FACING_FRONT));
-        if (Flags.externalVirtualCameras()) {
-            lensFacingDirections.add(LENS_FACING_EXTERNAL);
-        }
-        return lensFacingDirections;
+        return List.of(LENS_FACING_BACK, LENS_FACING_FRONT, LENS_FACING_EXTERNAL);
     }
 
     @SuppressWarnings("unused") // Parameter for parametrized tests

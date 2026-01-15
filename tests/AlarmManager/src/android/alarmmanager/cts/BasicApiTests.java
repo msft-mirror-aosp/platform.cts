@@ -269,6 +269,40 @@ public class BasicApiTests {
                 "Exact alarm with work source did not fire as expected");
     }
 
+    /**
+     * Throws a SecurityException when the caller does not hold the {@link
+     * android.Manifest.permission#UPDATE_DEVICE_STATS} permission.
+     */
+    @Test(expected = SecurityException.class)
+    public void testSetExactAllowWhileIdleWithWorkSource_noPermission() {
+        mAm.setExactAndAllowWhileIdle(
+                AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                SystemClock.elapsedRealtime(),
+                "test-tag",
+                Runnable::run,
+                new WorkSource(),
+                mMockAlarmReceiver);
+    }
+
+    /** Basic test to ensure permission requirements for setting exact allow while idle alarms. */
+    @Test
+    public void testSetExactAllowWhileIdle() throws Exception {
+        final long futurityMs = 1000;
+        mMockAlarmReceiver.reset();
+        mAm.setExactAndAllowWhileIdle(
+                AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                SystemClock.elapsedRealtime() + futurityMs,
+                "test-tag",
+                Runnable::run,
+                mMockAlarmReceiver);
+
+        SystemClock.sleep(futurityMs);
+        PollingCheck.waitFor(
+                2000,
+                mMockAlarmReceiver::isAlarmed,
+                "Exact allow while idle listener alarm did not fire as expected");
+    }
+
     @Test
     public void testSetWindow() throws Exception {
         final long futurityMs = 1000;
