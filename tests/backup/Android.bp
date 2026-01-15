@@ -31,6 +31,8 @@ android_test {
         "android.test.base.stubs.test",
     ],
     static_libs: [
+        "android.app.privatecompute.flags-aconfig-java",
+        "bedstead",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "ctstestserver",
@@ -57,6 +59,7 @@ android_test {
         ":CtsAppLocalesBackupApp1",
         ":CtsAppLocalesBackupApp2",
         ":CtsBackupRestoreEventLoggerApp",
+        ":CtsBackupAgentProcessPccApp",
         ":CtsFullBackupApp",
         ":CtsKeyValueBackupApp",
         ":CtsRestrictedModeOptedInApp",

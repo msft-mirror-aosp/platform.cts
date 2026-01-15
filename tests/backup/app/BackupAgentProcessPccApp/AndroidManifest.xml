@@ -1,0 +1,11 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="android.cts.backup.backupagentprocesspccapp">
+
+    <application
+        android:label="PccBackupAgentApp"
+        android:backupAgent="android.backup.app.PccCheckingBackupAgent"
+        android:backupAgentProcess="privateComputeCore">
+        <activity android:name=".MyActivity" android:privateComputeCore="true" />
+        <uses-library android:name="android.test.runner"/>
+    </application>
+</manifest>
