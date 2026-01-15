@@ -20,6 +20,7 @@
         package="android.media.mediatranscoding.cts">
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_DEVICE_CONFIG" />
 
     <application>
         <uses-library android:name="android.test.runner" />
