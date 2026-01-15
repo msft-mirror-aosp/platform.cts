@@ -257,16 +257,10 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
      */
     @Test
     public void testExternalDisplayActivityTurnPrimaryOff() {
-        // TODO(452755655): Re-enable the test for visible background users.
-        // In the middle of the test, the primary display needs to be turned off.
-        // When the test is run with --user-type secondary_user_on_secondary_display, the test is
-        // running on a visible background user and it will attempt to turn off the display that is
-        // assigned to the visible background user which is not the DEFAULT_DISPLAY.
-        // However, currently it is a known limitation that sending KEYCODE_SLEEP to the secondary
-        // display assigned to the visible background user is not supported.
-        // Therefore skipping this test for now for visible background users.
-        assumeRunNotOnVisibleBackgroundNonProfileUser(
-                "KEYCODE_SLEEP is not supported on visible background users to turn off screen");
+        assumeFalse("Skip test on devices with visible background users enabled "
+            + "(primarily Automotive Multi User Multi Display) because there "
+            + "is no support for turning off displays in all power groups.",
+                isVisibleBackgroundUserSupported());
 
         // Launch something on the primary display so we know there is a resumed activity there
         launchActivity(RESIZEABLE_ACTIVITY);

@@ -63,6 +63,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+import static org.junit.Assume.assumeFalse;
 
 import android.app.Activity;
 import android.app.ActivityOptions;
@@ -210,11 +211,10 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
      */
     @Test
     public void testLaunchExternalDisplayActivityWhilePrimaryOff() {
-        // TODO(b/371004199): Skip this test for visible background users,
-        // since the turning off the primary display using the sleep key is only allowed
-        // for the current user, and visible background users cannot put the device to sleep.
-        assumeRunNotOnVisibleBackgroundNonProfileUser(
-                "Visible background users cannot sleep the device.");
+        assumeFalse("Skip test on devices with visible background users enabled "
+            + "(primarily Automotive Multi User Multi Display) because there "
+            + "is no support for turning off displays in all power groups.",
+            isVisibleBackgroundUserSupported());
 
         // Leanback devices may launch a live broadcast app during screen off-on cycles.
         final boolean mayLaunchActivityOnScreenOff = isLeanBack();
@@ -1044,9 +1044,10 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
      */
     @Test
     public void testLaunchNoHistoryActivityOnNewDisplay() {
-        assumeRunNotOnVisibleBackgroundNonProfileUser(
-                "Skip the test for visible background users. "
-                + ", until per-display power management is fully supported.");
+        assumeFalse("Skip test on devices with visible background users enabled "
+            + "(primarily Automotive Multi User Multi Display) because there "
+            + "is no support for turning off displays in all power groups.",
+            isVisibleBackgroundUserSupported());
         launchActivity(NO_HISTORY_ACTIVITY);
         waitAndAssertTopResumedActivity(NO_HISTORY_ACTIVITY, getMainDisplayId(),
                 "Activity launched on main display assigned to the user and on top");
