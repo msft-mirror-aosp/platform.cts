@@ -1558,8 +1558,9 @@ public final class ActivityManagerProcessStateTest {
             maybeClick(device, By.res("android:id/switch_old"));
             waitForAppFocus(CANT_SAVE_STATE_2_PACKAGE_NAME, WAIT_TIME);
             device.waitForIdle();
-            uid2Watcher.waitFor(WatchUidRunner.CMD_UNCACHED, null);
-            uid2Watcher.expect(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_TOP);
+            // Explicitly wait for the expected state because on some platforms such as desktop
+            // mode, there may be some intermediate states.
+            uid2Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_TOP);
 
             // Return to home.
             mTargetContext.startActivity(homeIntent);
@@ -1584,16 +1585,21 @@ public final class ActivityManagerProcessStateTest {
             waitForAppFocus(CANT_SAVE_STATE_1_PACKAGE_NAME, WAIT_TIME);
             device.waitForIdle();
 
-            // Exit activity, check to see if we are now cached.
-            final Intent finishIntent = new Intent();
-            finishIntent.setPackage(CANT_SAVE_STATE_1_PACKAGE_NAME);
-            finishIntent.setAction(ACTION_FINISH);
-            finishIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            finishIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            mTargetContext.startActivity(finishIntent);
+            // Skip the check related to recents on PC devices because finished apps are immediately
+            // removed in recents too on PC devices.
+            if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_PC)) {
+                // Exit activity, check to see if we are now cached.
+                final Intent finishIntent = new Intent();
+                finishIntent.setPackage(CANT_SAVE_STATE_1_PACKAGE_NAME);
+                finishIntent.setAction(ACTION_FINISH);
+                finishIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                finishIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                mTargetContext.startActivity(finishIntent);
 
-            uid1Watcher.waitFor(WatchUidRunner.CMD_CACHED, null);
-            uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_RECENT);
+                uid1Watcher.waitFor(WatchUidRunner.CMD_CACHED, null);
+                uid1Watcher.waitFor(
+                        WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_RECENT);
+            }
 
             // Make both apps idle for cleanliness.
             cmd = "am make-uid-idle --user " + mTestRunningUserId
