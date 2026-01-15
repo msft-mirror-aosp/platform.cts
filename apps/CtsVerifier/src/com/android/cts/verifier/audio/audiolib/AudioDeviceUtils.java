@@ -20,7 +20,9 @@ import android.content.Context;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.media.AudioDeviceInfo;
+import android.media.AudioFormat;
 import android.media.AudioManager;
+import android.media.AudioTrack;
 import android.util.Log;
 
 import java.util.Collection;
@@ -381,5 +383,77 @@ public class AudioDeviceUtils {
             }
         }
         return report;
+    }
+
+    /**
+     * @param streamType The AudioTrack stream type ID.
+     * @return a human-readable stream type name.
+     */
+    public static String streamTypeToString(int streamType) {
+        return switch (streamType) {
+            case AudioManager.STREAM_VOICE_CALL -> "STREAM_VOICE_CALL";
+            case AudioManager.STREAM_SYSTEM -> "STREAM_SYSTEM";
+            case AudioManager.STREAM_RING -> "STREAM_RING";
+            case AudioManager.STREAM_MUSIC -> "STREAM_MUSIC";
+            case AudioManager.STREAM_ALARM -> "STREAM_ALARM";
+            case AudioManager.STREAM_NOTIFICATION -> "STREAM_NOTIFICATION";
+            case AudioManager.STREAM_BLUETOOTH_SCO -> "STREAM_BLUETOOTH_SCO";
+            case AudioManager.STREAM_SYSTEM_ENFORCED -> "STREAM_SYSTEM_ENFORCED";
+            case AudioManager.STREAM_DTMF -> "STREAM_DTMF";
+            case AudioManager.STREAM_TTS -> "STREAM_TTS";
+            case AudioManager.STREAM_ACCESSIBILITY -> "STREAM_ACCESSIBILITY";
+            case AudioManager.STREAM_ASSISTANT -> "STREAM_ASSISTANT";
+            default -> "UNKNOWN_STREAM_TYPE(" + streamType + ")";
+        };
+    }
+
+    /**
+     * @param channelConfig The AudioTrack channel configuration ID.
+     * @return a human-readable channel configuration name.
+     */
+    public static String channelConfigToString(int channelConfig) {
+        return switch (channelConfig) {
+            case AudioFormat.CHANNEL_OUT_MONO -> "CHANNEL_OUT_MONO";
+            case AudioFormat.CHANNEL_OUT_STEREO -> "CHANNEL_OUT_STEREO";
+            case AudioFormat.CHANNEL_OUT_QUAD -> "CHANNEL_OUT_QUAD";
+            case AudioFormat.CHANNEL_OUT_5POINT1 -> "CHANNEL_OUT_5POINT1";
+            case AudioFormat.CHANNEL_OUT_7POINT1 -> "CHANNEL_OUT_7POINT1";
+            case AudioFormat.CHANNEL_OUT_DEFAULT -> "CHANNEL_OUT_DEFAULT";
+            default -> "UNKNOWN_CHANNEL_CONFIG(" + channelConfig + ")";
+        };
+    }
+
+    /**
+     * @param audioFormat The AudioTrack audio format ID.
+     * @return a human-readable audio format name.
+     */
+    public static String audioFormatToString(int audioFormat) {
+        return switch (audioFormat) {
+            case AudioFormat.ENCODING_PCM_8BIT -> "ENCODING_PCM_8BIT";
+            case AudioFormat.ENCODING_PCM_16BIT -> "ENCODING_PCM_16BIT";
+            case AudioFormat.ENCODING_PCM_FLOAT -> "ENCODING_PCM_FLOAT";
+            case AudioFormat.ENCODING_AC3 -> "ENCODING_AC3";
+            case AudioFormat.ENCODING_E_AC3 -> "ENCODING_E_AC3";
+            case AudioFormat.ENCODING_DTS -> "ENCODING_DTS";
+            case AudioFormat.ENCODING_DTS_HD -> "ENCODING_DTS_HD";
+            case AudioFormat.ENCODING_MP3 -> "ENCODING_MP3";
+            case AudioFormat.ENCODING_AAC_LC -> "ENCODING_AAC_LC";
+            case AudioFormat.ENCODING_AAC_HE_V1 -> "ENCODING_AAC_HE_V1";
+            case AudioFormat.ENCODING_AAC_HE_V2 -> "ENCODING_AAC_HE_V2";
+            default -> "UNKNOWN_AUDIO_FORMAT(" + audioFormat + ")";
+        };
+    }
+
+    /**
+     * @param state The AudioTrack state ID.
+     * @return a human-readable audio track state name.
+     */
+    public static String audioTrackStateToString(int state) {
+        return switch (state) {
+            case AudioTrack.STATE_UNINITIALIZED -> "STATE_UNINITIALIZED";
+            case AudioTrack.STATE_INITIALIZED -> "STATE_INITIALIZED";
+            case AudioTrack.STATE_NO_STATIC_DATA -> "STATE_NO_STATIC_DATA";
+            default -> "UNKNOWN_STATE(" + state + ")";
+        };
     }
 }

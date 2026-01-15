@@ -16,6 +16,16 @@
 
 package com.android.cts.verifier.audio;
 
+import com.android.cts.verifier.CtsVerifierReportLog;
+import com.android.cts.verifier.PassFailButtons;
+import com.android.cts.verifier.R;
+import com.android.compatibility.common.util.ResultType;
+import com.android.compatibility.common.util.ResultUnit;
+import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
+
+import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
+import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
+
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -30,12 +40,10 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.LinearLayout.LayoutParams;
 import android.widget.PopupWindow;
 import android.widget.TextView;
-
-import com.android.cts.verifier.PassFailButtons;
-import com.android.cts.verifier.R;
 
 import com.androidplot.ui.AnchorPosition;
 import com.androidplot.ui.DynamicTableModel;
@@ -43,6 +51,7 @@ import com.androidplot.ui.XLayoutStyle;
 import com.androidplot.ui.YLayoutStyle;
 import com.androidplot.ui.widget.TextLabelWidget;
 import com.androidplot.util.PixelUtils;
+import com.androidplot.xy.PointLabelFormatter;
 import com.androidplot.xy.LineAndPointFormatter;
 import com.androidplot.xy.SimpleXYSeries;
 import com.androidplot.xy.XYLegendWidget;
@@ -52,6 +61,9 @@ import com.androidplot.xy.XYStepMode;
 
 import java.util.Arrays;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+
 public class HifiUltrasoundTestActivity extends PassFailButtons.Activity {
 
   public enum Status {
@@ -59,6 +71,26 @@ public class HifiUltrasoundTestActivity extends PassFailButtons.Activity {
   }
 
   private static final String TAG = "HifiUltrasoundTestActivity";
+
+  // ReportLog Schema
+  private static final String SECTION_HIFI_ULTRASOUND_TEST = "hifi_ultrasound_test";
+  private static final String KEY_MIC_SUPPORT = "mic_support";
+  private static final String KEY_SPKR_SUPPORT = "speaker_support";
+  private static final String KEY_RECORD_DB_VALUES = "record_db_values";
+  private static final String KEY_RECORD_NOISE_DB_VALUES = "record_noise_db_values";
+  private static final String KEY_RECORD_THRESHOLD = "record_threshold";
+  private static final String KEY_RECORD_DATA = "record_data";
+  private static final String KEY_RECORD_SAMPLE_RATE = "recording_sample_rate";
+  private static final String KEY_RECORD_SILENCE_THRESHOLD = "recording_silence_threshold";
+  private static final String KEY_RECORD_POWER_VALUES = "record_power_values";
+  private static final String KEY_TEST_RESULT = "test_result";
+  private static final String KEY_AUDIO_TRACK_STREAM_TYPE = "audio_track_stream_type";
+  private static final String KEY_AUDIO_TRACK_SAMPLE_RATE = "audio_track_sample_rate";
+  private static final String KEY_AUDIO_TRACK_CHANNEL_CONFIG = "audio_track_channel_config";
+  private static final String KEY_AUDIO_TRACK_AUDIO_FORMAT = "audio_track_audio_format";
+  private static final String KEY_AUDIO_TRACK_BUFFER_SIZE = "audio_track_buffer_size";
+
+  private WavAnalyzerTask mWavAnalyzerTask = null;
 
   private Status status = Status.START;
   private boolean onPlotScreen = false;
@@ -109,6 +141,7 @@ public class HifiUltrasoundTestActivity extends PassFailButtons.Activity {
     setInfoResources(R.string.hifi_ultrasound_test, R.string.hifi_ultrasound_test_info, -1);
     setPassFailButtonClickListeners();
     getPassButton().setEnabled(false);
+    mRequireReportLogToPass = true;
 
     info = (TextView) findViewById(R.id.info_text);
     info.setMovementMethod(new ScrollingMovementMethod());
@@ -143,11 +176,10 @@ public class HifiUltrasoundTestActivity extends PassFailButtons.Activity {
     recorderButton = (Button) findViewById(R.id.recorder_button);
     recorderButton.setEnabled(micSupport);
     recorderButton.setOnClickListener(new View.OnClickListener() {
-      private WavAnalyzerTask wavAnalyzerTask = null;
       private void stopRecording() {
         audioRecorder.stop();
-        wavAnalyzerTask = new WavAnalyzerTask(audioRecorder.getByte());
-        wavAnalyzerTask.execute();
+        mWavAnalyzerTask = new WavAnalyzerTask(audioRecorder.getByte());
+        mWavAnalyzerTask.execute();
         status = Status.DONE;
       }
       @Override
@@ -201,7 +233,7 @@ public class HifiUltrasoundTestActivity extends PassFailButtons.Activity {
             break;
 
           case DONE:
-            plotResponse(wavAnalyzerTask);
+            plotResponse(mWavAnalyzerTask);
             break;
 
           default: break;
@@ -331,6 +363,120 @@ public class HifiUltrasoundTestActivity extends PassFailButtons.Activity {
     }
   }
 
+  @Override
+  public void recordTestResults() {
+      CtsVerifierReportLog reportLog = getReportLog();
+      reportLog.addValue(
+              KEY_MIC_SUPPORT,
+              micSupport,
+              ResultType.NEUTRAL,
+              ResultUnit.NONE);
+      reportLog.addValue(
+              KEY_SPKR_SUPPORT,
+              spkrSupport,
+              ResultType.NEUTRAL,
+              ResultUnit.NONE);
+
+      if (mWavAnalyzerTask != null) {
+          reportLog.addValue(
+                  KEY_RECORD_THRESHOLD,
+                  mWavAnalyzerTask.getThreshold(),
+                  ResultType.NEUTRAL,
+                  ResultUnit.NONE);
+          reportLog.addValues(
+                  KEY_RECORD_DB_VALUES,
+                  mWavAnalyzerTask.getDB(),
+                  ResultType.NEUTRAL,
+                  ResultUnit.NONE);
+          reportLog.addValues(
+                  KEY_RECORD_NOISE_DB_VALUES,
+                  mWavAnalyzerTask.getNoiseDB(),
+                  ResultType.NEUTRAL,
+                  ResultUnit.NONE);
+          reportLog.addValue(
+                  KEY_TEST_RESULT,
+                  mWavAnalyzerTask.getResult() ? 1 : 0,
+                  ResultType.NEUTRAL,
+                  ResultUnit.NONE);
+          reportLog.addValue(
+                  KEY_RECORD_SILENCE_THRESHOLD,
+                  mWavAnalyzerTask.getSilenceThreshold(),
+                  ResultType.NEUTRAL,
+                  ResultUnit.NONE);
+          reportLog.addValue(
+                  KEY_RECORD_SAMPLE_RATE,
+                  mWavAnalyzerTask.getSampleRate(),
+                  ResultType.NEUTRAL,
+                  ResultUnit.NONE);
+          try {
+              double[][] power = mWavAnalyzerTask.getPower();
+              if (power != null) {
+                  JSONArray powerJson = new JSONArray();
+                  for (double[] row : power) {
+                      JSONArray rowJson = new JSONArray();
+                      for (double v : row) {
+                          rowJson.put(v);
+                      }
+                      powerJson.put(rowJson);
+                  }
+                  reportLog.addValues(KEY_RECORD_POWER_VALUES, powerJson);
+              }
+          } catch (JSONException e) {
+              Log.e(TAG, "Error logging power data", e);
+          }
+      }
+
+      if (audioTrack != null) {
+          reportLog.addValue(
+                  KEY_AUDIO_TRACK_STREAM_TYPE,
+                  AudioDeviceUtils.streamTypeToString(audioTrack.getStreamType()),
+                  ResultType.NEUTRAL,
+                  ResultUnit.NONE);
+          reportLog.addValue(
+                  KEY_AUDIO_TRACK_SAMPLE_RATE,
+                  audioTrack.getSampleRate(),
+                  ResultType.NEUTRAL,
+                  ResultUnit.NONE);
+          reportLog.addValue(
+                  KEY_AUDIO_TRACK_CHANNEL_CONFIG,
+                  AudioDeviceUtils.channelConfigToString(audioTrack.getChannelConfiguration()),
+                  ResultType.NEUTRAL,
+                  ResultUnit.NONE);
+          reportLog.addValue(
+                  KEY_AUDIO_TRACK_AUDIO_FORMAT,
+                  AudioDeviceUtils.audioFormatToString(audioTrack.getAudioFormat()),
+                  ResultType.NEUTRAL,
+                  ResultUnit.NONE);
+          reportLog.addValue(
+                  KEY_AUDIO_TRACK_BUFFER_SIZE,
+                  audioTrack.getBufferSizeInFrames(),
+                  ResultType.NEUTRAL,
+                  ResultUnit.FRAMES);
+      }
+
+      reportLog.submit();
+  }
+
+  @Override
+  public String getTestId() {
+      return setTestNameSuffix(sCurrentDisplayMode, getClass().getName());
+  }
+
+  @Override
+  public boolean requiresReportLog() {
+      return true;
+  }
+
+  @Override
+  public String getReportFileName() {
+      return PassFailButtons.AUDIO_TESTS_REPORT_LOG_NAME;
+  }
+
+  @Override
+  public final String getReportSectionName() {
+      return setTestNameSuffix(sCurrentDisplayMode, SECTION_HIFI_ULTRASOUND_TEST);
+  }
+
   /**
    * Plays the generated pips.
    */
@@ -363,6 +509,7 @@ public class HifiUltrasoundTestActivity extends PassFailButtons.Activity {
 
     private static final String TAG = "WavAnalyzerTask";
     WavAnalyzer wavAnalyzer;
+    private boolean mResult;
 
     public WavAnalyzerTask(byte[] recording) {
       wavAnalyzer = new WavAnalyzer(recording, Common.RECORDING_SAMPLE_RATE_HZ,
@@ -385,10 +532,22 @@ public class HifiUltrasoundTestActivity extends PassFailButtons.Activity {
       return wavAnalyzer.getThreshold();
     }
 
+    double getSilenceThreshold() {
+      return wavAnalyzer.SILENCE_THRESHOLD;
+    }
+
+    double[] getData() {
+      return wavAnalyzer.getData();
+    }
+
+    double getSampleRate() {
+      return wavAnalyzer.getSampleRate();
+    }
+
     @Override
     protected String doInBackground(Void... params) {
-      boolean result = wavAnalyzer.doWork();
-      if (result) {
+      mResult = wavAnalyzer.doWork();
+      if (mResult) {
         return getString(R.string.hifi_ultrasound_test_pass);
       }
       return getString(R.string.hifi_ultrasound_test_fail);
@@ -416,6 +575,9 @@ public class HifiUltrasoundTestActivity extends PassFailButtons.Activity {
     public void sendMessage(String message) {
       publishProgress(message);
     }
+
+    boolean getResult() {
+        return mResult;
+    }
   }
 }
-

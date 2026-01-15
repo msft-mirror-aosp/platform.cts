@@ -255,6 +255,14 @@ public class WavAnalyzer {
     return result;
   }
 
+  double[] getData() {
+    return data;
+  }
+
+  double getSampleRate() {
+    return sampleRate;
+  }
+
   boolean isSilence() {
     for (int i = 0; i < data.length; i++) {
       if (Math.abs(data[i]) > SILENCE_THRESHOLD) {
