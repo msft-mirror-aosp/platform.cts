@@ -106,6 +106,12 @@ class ComputerControlExtensionsTest {
     }
 
     @Test
+    fun testGetInstance_withoutPermission_returnsNull() {
+        getInstrumentation().uiAutomation.dropShellPermissionIdentity()
+        assertThat(ComputerControlExtensions.getInstance(context)).isNull()
+    }
+
+    @Test
     fun testRequestSession_emptySessionName() {
         val params =
             ComputerControlSession.Params.Builder(context)
