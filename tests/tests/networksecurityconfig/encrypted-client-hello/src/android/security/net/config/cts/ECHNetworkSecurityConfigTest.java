@@ -20,7 +20,6 @@ import static android.security.Flags.FLAG_ENCRYPTED_CLIENT_HELLO_CONFIGURATION;
 import static android.security.NetworkSecurityPolicy.DOMAIN_ENCRYPTION_MODE_DISABLED;
 import static android.security.NetworkSecurityPolicy.DOMAIN_ENCRYPTION_MODE_ENABLED;
 import static android.security.NetworkSecurityPolicy.DOMAIN_ENCRYPTION_MODE_OPPORTUNISTIC;
-import static android.security.NetworkSecurityPolicy.DOMAIN_ENCRYPTION_MODE_REQUIRED;
 
 import static org.junit.Assert.assertEquals;
 
@@ -58,8 +57,10 @@ public class ECHNetworkSecurityConfigTest {
                 DOMAIN_ENCRYPTION_MODE_DISABLED, mInstance.getDomainEncryptionMode("android.com"));
         assertEquals(
                 DOMAIN_ENCRYPTION_MODE_ENABLED, mInstance.getDomainEncryptionMode("brambonne.com"));
+        // TODO(b/476104302): update this assert once we have added back in support for required.
+        // Ensure that even with "required" set, we fall back to opportunistic at this point.
         assertEquals(
-                DOMAIN_ENCRYPTION_MODE_REQUIRED,
+                DOMAIN_ENCRYPTION_MODE_OPPORTUNISTIC,
                 mInstance.getDomainEncryptionMode("tls-ech.dev"));
     }
 }
