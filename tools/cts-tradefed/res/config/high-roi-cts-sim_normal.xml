@@ -346,8 +346,9 @@
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.statsd.UidAtomTests#testAppCrashOccurred"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.statsd.UidAtomTests#testAppCrashOccurredNative"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.statsd.UidAtomTests#testSyncState"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.tls.TlsHandshakeStatsTests#testTlsHandshake"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.wifi.WifiStatsTests#testWifiReconnect"/>
+    <!-- CtsTlsAtomHostTestCases -->
+    <option name="compatibility:include-filter" value="CtsTlsAtomHostTestCases android.cts.statsdatom.tls.TlsHandshakeStatsTests#testTlsHandshake"/>
     <!-- CtsStatsdAtomHostTestCases[instant] -->
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_crossUser_fail"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_crossUser_success"/>

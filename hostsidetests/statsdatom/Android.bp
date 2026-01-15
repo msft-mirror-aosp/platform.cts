@@ -81,7 +81,6 @@ java_test_host {
         "power/src/**/*.java",
         "sizecompatrestartbutton/src/**/*.java",
         "statsd/src/**/*.java",
-        "tls/src/**/*.java",
         "users/src/**/*.java",
         "wifi/src/**/*.java",
         "express/src/**/*.java",
