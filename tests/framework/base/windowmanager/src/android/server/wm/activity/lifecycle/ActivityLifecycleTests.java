@@ -792,7 +792,7 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
         // started again really quickly.
         if (!isTranslucent) {
             // Kill first activity
-            AmUtils.runKill(targetActivity.getPackageName(), true /* wait */);
+            AmUtils.runForceKill(targetActivity.getPackageName(), true /* wait */);
         }
 
         // Return back to first activity
