@@ -24,10 +24,9 @@ android_test_helper_app {
     sdk_version: "test_current",
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "vts10",
         "general-tests",
-    ]
+    ],
 }
 
 android_test_helper_app {
@@ -38,11 +37,10 @@ android_test_helper_app {
     sdk_version: "test_current",
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "vts10",
         "general-tests",
     ],
     aaptflags: [
-	"--rename-manifest-package com.google.android.cts.tts.helper2"
-    ]
+        "--rename-manifest-package com.google.android.cts.tts.helper2",
+    ],
 }

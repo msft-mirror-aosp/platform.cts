@@ -29,7 +29,6 @@ android_test_helper_app {
     manifest: "api23/AndroidManifest.xml",
     test_suites: [
         "arcts",
-        "cts",
         "general-tests",
     ],
     sdk_version: "test_current",
@@ -41,7 +40,6 @@ android_test_helper_app {
     manifest: "api24/AndroidManifest.xml",
     test_suites: [
         "arcts",
-        "cts",
         "general-tests",
     ],
     sdk_version: "test_current",
@@ -53,7 +51,6 @@ android_test_helper_app {
     manifest: "latest/AndroidManifest.xml",
     test_suites: [
         "arcts",
-        "cts",
         "general-tests",
     ],
     sdk_version: "test_current",
@@ -65,7 +62,6 @@ android_test_helper_app {
     manifest: "notalwayson/AndroidManifest.xml",
     test_suites: [
         "arcts",
-        "cts",
         "general-tests",
     ],
     sdk_version: "test_current",
