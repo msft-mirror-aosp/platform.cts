@@ -602,7 +602,9 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
     public void testConcurrentMaxInstances() {
         mActivityRule.getScenario().onActivity(activity -> mDynamicActivity = activity);
         validateMaxInstances(mCodecName, mMediaType, true, false);
-        if (BOARD_SDK_IS_AFTER_202504) validateMaxInstances(mCodecName, mMediaType, false, false);
+        if (BOARD_FIRST_SDK_IS_AT_LEAST_202604) {
+            validateMaxInstances(mCodecName, mMediaType, false, false);
+        }
     }
 
     /**
@@ -781,6 +783,7 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
      * non-realtime or vice versa in running state, the resources consumed is updated dynamically.
      */
     @LargeTest
+    @VsrTest(requirements = {"VSR-4.1.2"}) // 4.1.2-001 through 4.1.2-004
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @RequiresFlagsEnabled({FLAG_CODEC_AVAILABILITY, FLAG_DYNAMIC_OPERATING_MODE_SWITCH})
     @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
@@ -788,8 +791,8 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
              "android.media.MediaCodec.Callback#onRequiredResourcesChanged",
              "android.media.MediaFormat#KEY_PRIORITY"})
     public void testResourceConsumptionForOperatingMode() throws IOException, InterruptedException {
-        Assume.assumeTrue("Skip tests on devices with vendor partitions 202504 and below",
-                BOARD_SDK_IS_AFTER_202504);
+        Assume.assumeTrue("Skipping, intended for devices the board first sdk >= 202604",
+                BOARD_FIRST_SDK_IS_AT_LEAST_202604);
         MediaFormat format = setUpSource(mSrcFiles[0]);
         int frameRate = 30;
         if (!format.containsKey(MediaFormat.KEY_FRAME_RATE)) {
@@ -877,13 +880,14 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
      * from real time to non-real time.
      */
     @LargeTest
+    @VsrTest(requirements = {"VSR-4.1.2"}) // 4.1.2-001 through 4.1.2-004
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @RequiresFlagsEnabled({FLAG_CODEC_AVAILABILITY, FLAG_DYNAMIC_OPERATING_MODE_SWITCH})
     @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
             "android.media.MediaCodec#getRequiredResources"})
     public void testConcurrentMaxInstancesDynamic() {
-        Assume.assumeTrue("Skip tests on devices with vendor partitions 202504 and below",
-                BOARD_SDK_IS_AFTER_202504);
+        Assume.assumeTrue("Skipping, intended for devices the board first sdk >= 202604",
+                BOARD_FIRST_SDK_IS_AT_LEAST_202604);
         mActivityRule.getScenario().onActivity(activity -> mDynamicActivity = activity);
         validateMaxInstances(mCodecName, mMediaType, true, true);
     }
