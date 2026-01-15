@@ -38,7 +38,7 @@ class TestAppAgent(
     private val session: ComputerControlSession,
     private val packageName: String,
     private val className: String? = null,
-) {
+) : AutoCloseable {
     private val interactionQueue = Channel<Interaction>(Channel.UNLIMITED)
     private val interactionReceiver: InteractionReceiver
     private val testAppFocusRequester: TestAppFocusRequester
@@ -65,7 +65,7 @@ class TestAppAgent(
         Thread.sleep(1000)
     }
 
-    fun close() {
+    override fun close() {
         val future = CompletableFuture<Void>()
         session.setLifecycleCallback(
             Executors.newSingleThreadExecutor(),
