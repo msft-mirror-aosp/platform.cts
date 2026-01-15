@@ -25,6 +25,9 @@ android_test_helper_app {
         "compatibility-device-util-axt",
     ],
     srcs: ["src/**/*.java"],
+    jni_libs: [
+        "libctssimplenativeservice",
+    ],
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",

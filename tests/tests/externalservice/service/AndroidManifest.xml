@@ -93,5 +93,14 @@
                  android:externalService="true"
                  android:exported="true"
                  android:allowSharedIsolatedProcess="false"/>
+        <service android:name=".ExternalNativeService"
+                 android:isolatedProcess="true"
+                 android:externalService="true"
+                 android:exported="true"
+                 android:nativeService="true"
+                 android:allowSharedIsolatedProcess="false">
+          <property android:name="android.app.PROPERTY_NATIVE_SERVICE_LIBRARY_NAME"
+                     android:value="libctssimplenativeservice.so" />
+        </service>
     </application>
 </manifest>
