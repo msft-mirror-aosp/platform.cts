@@ -18,23 +18,20 @@ package android.security.identity.cts;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
-
-import android.security.identity.IdentityCredential;
 import android.security.identity.IdentityCredentialStore;
-import androidx.test.InstrumentationRegistry;
 
-import org.junit.Test;
-import static org.junit.Assume.assumeTrue;
+import androidx.test.InstrumentationRegistry;
 
 import com.google.common.primitives.Bytes;
 
+import org.junit.Test;
+
 import java.security.SecureRandom;
-import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Collection;
-
 import java.util.Optional;
 
 public class AttestationTest {
