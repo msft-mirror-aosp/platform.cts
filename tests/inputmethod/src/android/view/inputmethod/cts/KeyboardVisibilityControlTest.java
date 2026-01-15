@@ -48,6 +48,8 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.showSoftInputMatch
 import static com.android.cts.mockime.ImeEventStreamTestUtils.waitForInputViewLayoutStable;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.withDescription;
 
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -156,7 +158,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
@@ -3082,7 +3083,6 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             final AtomicReference<EditText> editTextRef = new AtomicReference<>();
             final TestActivity testActivity =
                     new TestActivity.Starter()
-                            .withWindowingMode(WINDOWING_MODE_FULLSCREEN)
                             .startSync(
                                     activity -> {
                                         final LinearLayout layout = new LinearLayout(activity);
@@ -3098,6 +3098,20 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                                     TestActivity.class);
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
 
+            final AtomicInteger backCallbackInvocationCount = new AtomicInteger();
+            runOnMainSync(
+                    () -> {
+                        if (onBackInvokedCallbackEnabled) {
+                            testActivity
+                                    .getOnBackInvokedDispatcher()
+                                    .registerOnBackInvokedCallback(
+                                            OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                                            backCallbackInvocationCount::getAndIncrement);
+                        } else {
+                            testActivity.setIgnoreBackKey(true);
+                        }
+                    });
+
             // Show IME and make sure it has window focus
             TestUtils.runOnMainSync(() -> {
                 editTextRef.get().requestFocus();
@@ -3107,23 +3121,21 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             expectImeVisible(TIMEOUT);
             assertTrue(testActivity.hasWindowFocus());
 
-            // First back event should hide the IME, the second should be ignored by the IME and
-            // close the activity.
+            // First back event should hide the IME
             mInstrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
             CtsWindowInfoUtils.waitForStableWindowGeometry(
                     Duration.ofMillis(LAYOUT_STABLE_THRESHOLD));
+
+            // Second back Event should be ignored by the IME and sent to the activity
             mInstrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
             mInstrumentation.waitForIdleSync();
 
-            expectEventWithKeyValue(stream, "onWindowVisibilityChanged", "visible", View.GONE,
-                    TIMEOUT);
-
-            // Make sure the activity was stopped by the second back key event.
-            try {
-                TestUtils.waitOnMainUntil(testActivity::isStopped, TIMEOUT);
-            } catch (TimeoutException e) {
-                throw new AssertionError("Activity should have been stopped", e);
-            }
+            assertWithMessage("Exactly one back event should reach the app")
+                    .that(
+                            onBackInvokedCallbackEnabled
+                                    ? backCallbackInvocationCount.get()
+                                    : testActivity.getOnBackPressedCallCount())
+                    .isEqualTo(1);
         }
     }
 
