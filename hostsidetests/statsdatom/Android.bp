@@ -65,8 +65,6 @@ java_test_host {
     team: "trendy_team_android_telemetry_client_infra",
     defaults: ["CtsStatsdAtomHostTest_defaults"],
     srcs: [
-        "appfunctions/src/**/*.java",
-        "apphibernation/src/**/*.java",
         "appops/src/**/*.java",
         "appexit/src/**/*.java",
         "batterystats/src/**/*.java",
@@ -91,9 +89,7 @@ java_test_host {
     ],
 
     static_libs: [
-        "android.app.appfunctions.flags-aconfig-java-host",
         "android.os.flags-aconfig-java-host",
-        "android.permission.flags-aconfig-java-host",
         "power_flags_lib_host",
         "display_flags_lib_host",
         "backstage_power_flags_lib-host",
@@ -114,9 +110,7 @@ java_test_host {
         ":CtsStatsdAdpfApp",
         ":CtsCredentialManagerTestCases",
         ":CtsStatsdExpressLogHelper",
-        ":CtsAppFunctionTestCases",
-        ":CtsAppFunctionsTestHelper",
-        ":CtsAppFunctionsSidecarTestHelper",
+
         ":ManagedConnectionServiceApp",
         ":TransactionalVoipAppMain",
     ],
