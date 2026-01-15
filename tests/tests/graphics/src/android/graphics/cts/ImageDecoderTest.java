@@ -16,12 +16,15 @@
 
 package android.graphics.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
@@ -1647,6 +1650,136 @@ public class ImageDecoderTest {
 
         // Confirm thread listener was run.
         assertEquals(Bitmap.Config.ALPHA_8, bm.getConfig());
+    }
+
+    // ImageDecoder_nDecodeBitmap does the first limited allocation when allocating a bitmap for the
+    // output of the decode
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_IMAGE_DECODER_ALLOCATION_LIMIT)
+    public void testAllocationLimitOutputBitmap(
+                    @TestParameter(valuesProvider = RecordProvider.class) Record record) {
+
+        ImageDecoder.OnHeaderDecodedListener listener =
+                new ImageDecoder.OnHeaderDecodedListener() {
+                    public void onHeaderDecoded(ImageDecoder decoder, ImageDecoder.ImageInfo info,
+                                                ImageDecoder.Source source) {
+                        decoder.setAllocationLimit(1);
+                    }
+                };
+
+        ImageDecoder.Source source =
+                    ImageDecoder.createSource(getResources(), record.resId);
+
+        IOException thrown = assertThrows(IOException.class,
+                () -> ImageDecoder.decodeBitmap(source, listener)
+        );
+
+        //"exceeds allocation limit" only happens with the output bitmap allocation error
+        assertThat(thrown).hasMessageThat().contains("exceeds allocation limit");
+    }
+
+    // compressed size under allocation limit but uncompressed over allocation limit, should
+    // abort decode
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_IMAGE_DECODER_ALLOCATION_LIMIT)
+    public void testAllocationLimitAboveCompressedSize() {
+        ImageDecoder.OnHeaderDecodedListener listener =
+                new ImageDecoder.OnHeaderDecodedListener() {
+                    public void onHeaderDecoded(ImageDecoder decoder, ImageDecoder.ImageInfo info,
+                                                ImageDecoder.Source source) {
+                        // compressed size 426765B, uncompressed size 921600B
+                        decoder.setAllocationLimit(700000);
+                    }
+                };
+
+        ImageDecoder.Source source =
+                    ImageDecoder.createSource(getResources(), R.drawable.png_test);
+
+        IOException thrown = assertThrows(IOException.class,
+                () -> ImageDecoder.decodeBitmap(source, listener)
+        );
+
+        //"exceeds allocation limit" only happens with the output bitmap allocation
+        assertThat(thrown).hasMessageThat().contains("exceeds allocation limit");
+    }
+
+    // if we need to scale/subset, an extra temporary bitmap allocation is made in
+    // ImageDecoder::decode()
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_IMAGE_DECODER_ALLOCATION_LIMIT)
+    public void testAllocationLimitTmpBitmap() throws IOException {
+        // png_test.png PNG 640x480 8-bit sRGB
+        // compressed: 426765B
+        // uncompressed: 640*480*3 bytes/pixel = 921600B
+        // since we end up using bitmap configured with 4 bytes/pixel,
+        // first allocation: 640*480*3 bytes/pixel = 1228800B
+
+        // limit large enough for first allocation only
+        long allocationLimit = 2000000;
+
+        /* ---- without scaling we decode successfully ---- */
+        ImageDecoder.OnHeaderDecodedListener listener =
+                new ImageDecoder.OnHeaderDecodedListener() {
+                    public void onHeaderDecoded(ImageDecoder decoder, ImageDecoder.ImageInfo info,
+                                                ImageDecoder.Source source) {
+                        decoder.setAllocationLimit(allocationLimit);
+                    }
+                };
+
+        ImageDecoder.Source source =
+                    ImageDecoder.createSource(getResources(), R.drawable.png_test);
+
+        ImageDecoder.decodeBitmap(source, listener);
+
+        /* ---- same limit but with crop, we should fail due to extra tmp allocation ---- */
+        ImageDecoder.OnHeaderDecodedListener listenerCrop =
+                new ImageDecoder.OnHeaderDecodedListener() {
+                    public void onHeaderDecoded(ImageDecoder decoder, ImageDecoder.ImageInfo info,
+                                                ImageDecoder.Source source) {
+                        decoder.setAllocationLimit(allocationLimit);
+
+                        Rect rect = new Rect(0, // left
+                                             0, // top
+                                             info.getSize().getWidth() - 1,   // right
+                                             info.getSize().getHeight() - 1); // bottom
+                        decoder.setCrop(rect);
+                    }
+                };
+
+        IOException thrown = assertThrows(IOException.class,
+                () -> ImageDecoder.decodeBitmap(source, listenerCrop)
+        );
+
+        assertThat(thrown).hasMessageThat().contains("getPixels failed with error out of memory");
+    }
+
+    // the codecs can make their own allocations during decoding, skia added support to track
+    // allocations and enforce allocation limiting
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_IMAGE_DECODER_ALLOCATION_LIMIT)
+    public void testAllocationLimitCodec() {
+        ImageDecoder.OnHeaderDecodedListener listener =
+                new ImageDecoder.OnHeaderDecodedListener() {
+                    public void onHeaderDecoded(ImageDecoder decoder, ImageDecoder.ImageInfo info,
+                                                ImageDecoder.Source source) {
+                        // allocation for output bitmap exactly 4915200, any future allocations by
+                        // codec will push us over limit
+                        decoder.setAllocationLimit(4915200);
+                    }
+                };
+
+        ImageDecoder.Source source =
+                    ImageDecoder.createSource(getResources(), R.drawable.baseline_jpeg);
+
+        IOException thrown = assertThrows(IOException.class,
+                () -> ImageDecoder.decodeBitmap(source, listener)
+        );
+
+        // for this decode, we do not use scaling so there are only two places for limit enforcement
+        // 1) output bitmap allocation with msg "exceeds allocation limit"
+        // 2) internal to codec which ends up throwing "getPixels failed with error out of memory"
+        // asserting from (2) ensures we are hitting the codec internal limit
+        assertThat(thrown).hasMessageThat().contains("getPixels failed with error out of memory");
     }
 
     @Test
