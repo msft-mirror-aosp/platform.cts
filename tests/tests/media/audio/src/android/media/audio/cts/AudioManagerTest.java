@@ -2977,28 +2977,29 @@ public class AudioManagerTest {
                     callbackHelper, workerThread.getThreadHandler());
             callbackHelper.waitForDevicesAdded();
 
-            // Test disconnect device.
-            callbackHelper.expectDevicesRemoved();
-            mAudioManager.setWiredDeviceConnectionState(
-                    device, AudioManager.DEVICE_CONNECTION_STATE_DISCONNECTED);
-            callbackHelper.waitForDevicesRemoved();
+            try {
+                // Test disconnect device.
+                callbackHelper.expectDevicesRemoved();
+                mAudioManager.setWiredDeviceConnectionState(
+                        device, AudioManager.DEVICE_CONNECTION_STATE_DISCONNECTED);
+                callbackHelper.waitForDevicesRemoved();
 
-            assertFalse(
-                    Arrays.asList(mAudioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS))
-                            .stream()
-                            .anyMatch(d -> d.getType() == device.getType()));
+                assertFalse(
+                        Arrays.asList(mAudioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS))
+                                .stream()
+                                .anyMatch(d -> d.getType() == device.getType()));
+            } finally {
+                // Test connect device.
+                callbackHelper.expectDevicesAdded();
+                mAudioManager.setWiredDeviceConnectionState(
+                        device, AudioManager.DEVICE_CONNECTION_STATE_CONNECTED);
+                callbackHelper.waitForDevicesAdded();
 
-            // Test connect device.
-            callbackHelper.expectDevicesAdded();
-            mAudioManager.setWiredDeviceConnectionState(
-                    device, AudioManager.DEVICE_CONNECTION_STATE_CONNECTED);
-            callbackHelper.waitForDevicesAdded();
-
-            assertTrue(
-                    Arrays.asList(mAudioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS))
-                            .stream()
-                            .anyMatch(d -> d.getType() == device.getType()));
-
+                assertTrue(
+                        Arrays.asList(mAudioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS))
+                                .stream()
+                                .anyMatch(d -> d.getType() == device.getType()));
+            }
         } finally {
             mAudioManager.unregisterAudioDeviceCallback(callbackHelper);
             workerThread.quit();
