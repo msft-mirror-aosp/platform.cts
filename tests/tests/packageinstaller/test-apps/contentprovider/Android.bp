@@ -28,7 +28,6 @@ android_test_helper_app {
     // tag this module as a cts test artifact
     test_suites: [
         "arcts",
-        "cts",
         "general-tests",
         "sts",
     ],
@@ -45,7 +44,6 @@ android_test_helper_app {
     // tag this module as a cts test artifact
     test_suites: [
         "arcts",
-        "cts",
         "general-tests",
         "sts",
     ],
@@ -62,7 +60,6 @@ android_test_helper_app {
     // tag this module as a cts test artifact
     test_suites: [
         "arcts",
-        "cts",
         "general-tests",
         "sts",
     ],
@@ -79,7 +76,6 @@ android_test_helper_app {
     // tag this module as a cts test artifact
     test_suites: [
         "arcts",
-        "cts",
         "general-tests",
         "sts",
     ],
@@ -96,7 +92,6 @@ android_test_helper_app {
     // tag this module as a cts test artifact
     test_suites: [
         "arcts",
-        "cts",
         "general-tests",
         "sts",
     ],
