@@ -31,6 +31,7 @@ import static com.android.compatibility.common.util.BlockedNumberUtil.insertBloc
 import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
 import static com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity;
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
+import static com.android.internal.telephony.flags.Flags.FLAG_MESSAGE_PROMOTION;
 import static com.android.internal.telephony.flags.Flags.FLAG_REDACT_OTP_SMS;
 import static com.android.internal.telephony.flags.Flags.FLAG_REDACT_OTP_SMS_API;
 
@@ -512,6 +513,66 @@ public class SmsManagerTest {
         // send/receive multi part text sms with and without messageId
         sendAndReceiveMultipartSms(mccmnc, /* addMessageId= */ true, defaultSmsApp);
         sendAndReceiveMultipartSms(mccmnc, /* addMessageId= */ false, defaultSmsApp);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_MESSAGE_PROMOTION)
+    public void testSendStoredTextMessage() throws Exception {
+        init();
+        Uri messageUri = insertTextMessage(mText);
+        SmsManager smsManager = mContext.getSystemService(SmsManager.class);
+        assertNotNull("smsManager cannot be null", smsManager);
+        smsManager.sendStoredTextMessage(messageUri, mSentIntent, mDeliveredIntent);
+        assertTrue("Could not send SMS. Check signal.", mSendReceiver.waitForCalls(1, TIME_OUT));
+        if (mDeliveryReportSupported) {
+            assertTrue(
+                    "SMS message delivery notification not received. Check signal.",
+                    mDeliveryReceiver.waitForCalls(1, TIME_OUT));
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_MESSAGE_PROMOTION)
+    public void testSendStoredMultipartTextMessage() throws Exception {
+        init();
+        Uri messageUri = insertTextMessage(LONG_TEXT);
+        List<String> parts = divideMessage(LONG_TEXT);
+        List<PendingIntent> sentIntents = new ArrayList<>();
+        List<PendingIntent> deliveryIntents = new ArrayList<>();
+        for (int i = 0; i < parts.size(); i++) {
+            sentIntents.add(
+                    PendingIntent.getBroadcast(
+                            mContext, 0, mSendIntent, PendingIntent.FLAG_MUTABLE_UNAUDITED));
+            deliveryIntents.add(
+                    PendingIntent.getBroadcast(
+                            mContext, 0, mDeliveryIntent, PendingIntent.FLAG_MUTABLE_UNAUDITED));
+        }
+        SmsManager smsManager = mContext.getSystemService(SmsManager.class);
+        assertNotNull("smsManager cannot be null", smsManager);
+        smsManager.sendStoredMultipartTextMessage(messageUri, sentIntents, deliveryIntents);
+        assertTrue(
+                "Could not send multi part SMS. Check signal.",
+                mSendReceiver.waitForCalls(parts.size(), TIME_OUT));
+        if (mDeliveryReportSupported) {
+            assertTrue(
+                    "Multi part SMS message delivery notification not received. Check signal.",
+                    mDeliveryReceiver.waitForCalls(parts.size(), TIME_OUT));
+        }
+    }
+
+    private Uri insertTextMessage(String text) {
+        try {
+            DefaultSmsAppHelper.ensureDefaultSmsApp();
+            ContentValues values = new ContentValues();
+            values.put(Telephony.Sms.ADDRESS, mDestAddr);
+            values.put(Telephony.Sms.BODY, text);
+            Uri messageUri =
+                    mContext.getContentResolver().insert(Telephony.Sms.Draft.CONTENT_URI, values);
+            assertNotNull("Failed to insert SMS into provider", messageUri);
+            return messageUri;
+        } finally {
+            DefaultSmsAppHelper.stopBeingDefaultSmsApp();
+        }
     }
 
     @Test
