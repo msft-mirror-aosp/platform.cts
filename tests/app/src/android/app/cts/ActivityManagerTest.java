@@ -1297,7 +1297,11 @@ public final class ActivityManagerTest {
             final Intent intent = new Intent(Intent.ACTION_MAIN);
             intent.setClassName(SIMPLE_PACKAGE_NAME, SIMPLE_PACKAGE_NAME + SIMPLE_ACTIVITY);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            mTargetContext.startActivity(intent);
+            // Explicitly launch the app in fullscreen to ensure that it will be the top process
+            // even in default-freeform environments.
+            final ActivityOptions options = ActivityOptions.makeBasic();
+            options.setLaunchWindowingMode(WINDOWING_MODE_FULLSCREEN);
+            mTargetContext.startActivity(intent, options.toBundle());
             assertThat(appStartedReceiver.waitForActivity()).isEqualTo(RESULT_PASS);
 
             RunningAppProcessInfo proc = getRunningAppProcessInfo(SIMPLE_PACKAGE_NAME);
@@ -1401,9 +1405,7 @@ public final class ActivityManagerTest {
         }
     }
 
-    /**
-     * Verifies the system will kill app's child processes if they are using excessive cpu
-     */
+    /** Verifies the system will kill app's child processes if they are using excessive cpu */
     @LargeTest
     @Test
     public void testKillingAppChildProcess() throws Exception {
