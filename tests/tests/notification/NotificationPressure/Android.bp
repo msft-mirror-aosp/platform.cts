@@ -24,7 +24,6 @@ android_test_helper_app {
         "**/*.java",
     ],
     test_suites: [
-        "cts",
         "vts10",
         "general-tests",
         "sts",
@@ -43,7 +42,6 @@ android_test_helper_app {
         "**/*.java",
     ],
     test_suites: [
-        "cts",
         "vts10",
         "general-tests",
         "sts",
@@ -62,7 +60,6 @@ android_test_helper_app {
         "**/*.java",
     ],
     test_suites: [
-        "cts",
         "vts10",
         "general-tests",
         "sts",
@@ -81,7 +78,6 @@ android_test_helper_app {
         "**/*.java",
     ],
     test_suites: [
-        "cts",
         "vts10",
         "general-tests",
         "sts",
@@ -100,7 +96,6 @@ android_test_helper_app {
         "**/*.java",
     ],
     test_suites: [
-        "cts",
         "vts10",
         "general-tests",
         "sts",
@@ -119,7 +114,6 @@ android_test_helper_app {
         "**/*.java",
     ],
     test_suites: [
-        "cts",
         "vts10",
         "general-tests",
         "sts",
@@ -138,7 +132,6 @@ android_test_helper_app {
         "**/*.java",
     ],
     test_suites: [
-        "cts",
         "vts10",
         "general-tests",
         "sts",
@@ -157,7 +150,6 @@ android_test_helper_app {
         "**/*.java",
     ],
     test_suites: [
-        "cts",
         "vts10",
         "general-tests",
         "sts",

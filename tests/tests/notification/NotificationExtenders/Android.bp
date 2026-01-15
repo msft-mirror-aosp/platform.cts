@@ -36,7 +36,6 @@ android_test_helper_app {
     manifest: "src/android/app/notification/extenders/cts/api34/AndroidManifest.xml",
     // Tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "34",
@@ -63,7 +62,6 @@ android_test_helper_app {
     manifest: "src/android/app/notification/extenders/cts/current/AndroidManifest.xml",
     // Tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "34",
