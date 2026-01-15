@@ -178,20 +178,35 @@ fun checkRenderStagesMatchQueueSubmits(
         not(empty())
     )
 
-    errorCollector.checkThat(
-        "Found mismatched queue submits and/or render stages.",
-        submissionEvents.values.stream().filter {
-            it.firstRenderStageTimestamp == null || it.queueSubmitTimestamp == null }.toList(),
-        empty()
+    data class MatchingSubmissionData(
+        val queueSubmitTimestamp: Long,
+        val firstRenderStageTimestamp: Long
     )
 
-    for (submissionData in submissionEvents) {
+    val matchingSubmissionEvents = submissionEvents.mapNotNull { (id, data) ->
+        if (data.queueSubmitTimestamp != null && data.firstRenderStageTimestamp != null) {
+            id to MatchingSubmissionData(
+                data.queueSubmitTimestamp,
+                data.firstRenderStageTimestamp
+            )
+        } else {
+            null
+        }
+    }.toMap().toSortedMap()
+
+    errorCollector.checkThat(
+        "Found mismatched queue submits and/or render stages.",
+        matchingSubmissionEvents.size,
+        Is(submissionEvents.size)
+    )
+
+    for (submissionData in matchingSubmissionEvents) {
         errorCollector.checkThat(
             "Render stage reported before its VkQueueSubmit for submission_id: " +
                     submissionData.key +
                     ".",
             submissionData.value.firstRenderStageTimestamp,
-            greaterThan(submissionData.value.queueSubmitTimestamp!!)
+            greaterThan(submissionData.value.queueSubmitTimestamp)
         )
     }
 }
