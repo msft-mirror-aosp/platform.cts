@@ -1407,6 +1407,9 @@ public final class ActivityManagerTest {
     @LargeTest
     @Test
     public void testKillingAppChildProcess() throws Exception {
+        // Apps are always immediately killed once stopped on PC devices.
+        assumeFalse(mTargetContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_PC));
+
         final long powerCheckInterval = 5 * 1000;
         final long processGoneTimeout = powerCheckInterval * 4;
         final int waitForSec = 10 * 1000;
