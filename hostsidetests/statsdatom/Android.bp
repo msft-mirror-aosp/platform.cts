@@ -65,7 +65,6 @@ java_test_host {
     team: "trendy_team_android_telemetry_client_infra",
     defaults: ["CtsStatsdAtomHostTest_defaults"],
     srcs: [
-        "appops/src/**/*.java",
         "appexit/src/**/*.java",
         "batterystats/src/**/*.java",
         "coregraphics/src/**/*.java",
