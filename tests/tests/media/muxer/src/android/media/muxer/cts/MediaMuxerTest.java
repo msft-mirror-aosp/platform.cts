@@ -43,19 +43,18 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
+import androidx.media3.common.ColorInfo;
+import androidx.media3.common.Format;
+import androidx.media3.common.MediaItem;
+import androidx.media3.common.util.Util;
+import androidx.media3.exoplayer.source.TrackGroupArray;
+import androidx.media3.inspector.MetadataRetriever;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.Preconditions;
-
-import com.google.android.exoplayer2.Format;
-import com.google.android.exoplayer2.MediaItem;
-import com.google.android.exoplayer2.MetadataRetriever;
-import com.google.android.exoplayer2.source.TrackGroupArray;
-import com.google.android.exoplayer2.util.Util;
-import com.google.android.exoplayer2.video.ColorInfo;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -590,7 +589,7 @@ public class MediaMuxerTest {
                     MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4,
                     /* signalEOS= */ false,
                     staticMetadataAdditionFunction);
-            assertNull(getVideoColorInfo(outputFilePath));
+            assertNull(getVideoColorInfo(outputFilePath).hdrStaticInfo);
         } finally {
             new File(outputFilePath).delete();
         }
@@ -1505,12 +1504,14 @@ public class MediaMuxerTest {
     /** Returns the static HDR metadata in the given {@code file}, or null if not present. */
     private ColorInfo getVideoColorInfo(String path)
             throws ExecutionException, InterruptedException {
-        TrackGroupArray trackGroupArray =
-                MetadataRetriever.retrieveMetadata(getContext(), MediaItem.fromUri(path)).get();
-        for (int i = 0; i < trackGroupArray.length; i++) {
-            Format format = trackGroupArray.get(i).getFormat(0);
-            if (format.sampleMimeType.startsWith("video/")) {
-                return format.colorInfo;
+        try (MetadataRetriever retriever =
+                new MetadataRetriever.Builder(getContext(), MediaItem.fromUri(path)).build()) {
+            TrackGroupArray trackGroupArray = retriever.retrieveTrackGroups().get();
+            for (int i = 0; i < trackGroupArray.length; i++) {
+                Format format = trackGroupArray.get(i).getFormat(0);
+                if (format.sampleMimeType != null && format.sampleMimeType.startsWith("video/")) {
+                    return format.colorInfo;
+                }
             }
         }
         return null;
