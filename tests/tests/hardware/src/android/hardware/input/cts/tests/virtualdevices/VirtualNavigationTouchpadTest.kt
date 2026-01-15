@@ -35,7 +35,7 @@ class VirtualNavigationTouchpadTest : VirtualDeviceTestCase() {
 
     override fun onSetUpVirtualInputDevice() {
         mVirtualNavigationTouchpad = VirtualInputDeviceCreator.createAndPrepareNavigationTouchpad(
-            mVirtualDevice, DEVICE_NAME, mVirtualDisplay.display, TOUCHPAD_WIDTH,
+            mVirtualDevice, DEVICE_NAME, mVirtualDisplay.display, null, TOUCHPAD_WIDTH,
             TOUCHPAD_HEIGHT
         ).device
     }

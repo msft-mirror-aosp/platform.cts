@@ -148,6 +148,7 @@ class VirtualKeyboardLayoutTest {
             mVirtualDevice,
             "$DEVICE_NAME/$languageTag/$layoutType",
             mVirtualDisplay.display,
+            null,
             languageTag,
             layoutType
         ).device

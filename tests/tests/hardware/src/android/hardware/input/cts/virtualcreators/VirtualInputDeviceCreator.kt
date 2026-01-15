@@ -17,6 +17,7 @@ package android.hardware.input.cts.virtualcreators
 
 import android.companion.virtual.VirtualDeviceManager
 import android.hardware.input.InputManager
+import android.hardware.input.ViewBehaviorConfig
 import android.hardware.input.VirtualDpad
 import android.hardware.input.VirtualDpadConfig
 import android.hardware.input.VirtualKeyboard
@@ -77,9 +78,10 @@ object VirtualInputDeviceCreator {
     fun createAndPrepareTouchscreen(
         virtualDevice: VirtualDeviceManager.VirtualDevice,
         name: String,
-        display: Display
+        display: Display,
+        viewBehaviorConfig: ViewBehaviorConfig? = null
     ): InputDeviceHolder<VirtualTouchscreen> = prepareInputDevice(name, {
-        virtualDevice.createVirtualTouchscreen(
+        val config =
             VirtualTouchscreenConfig.Builder(
                 display.mode.physicalWidth,
                 display.mode.physicalHeight
@@ -88,16 +90,19 @@ object VirtualInputDeviceCreator {
                 .setProductId(PRODUCT_ID)
                 .setInputDeviceName(name)
                 .setAssociatedDisplayId(display.displayId)
-                .build()
-        )
+        if (viewBehaviorConfig != null) {
+            config.setViewBehaviorConfig(viewBehaviorConfig)
+        }
+        virtualDevice.createVirtualTouchscreen(config.build())
     })
 
     fun createAndPrepareStylus(
         virtualDevice: VirtualDeviceManager.VirtualDevice,
         name: String,
-        display: Display
+        display: Display,
+        viewBehaviorConfig: ViewBehaviorConfig? = null
     ): InputDeviceHolder<VirtualStylus> = prepareInputDevice(name, {
-        virtualDevice.createVirtualStylus(
+        val config =
             VirtualStylusConfig.Builder(
                 display.mode.physicalWidth,
                 display.mode.physicalHeight
@@ -106,90 +111,102 @@ object VirtualInputDeviceCreator {
                 .setProductId(PRODUCT_ID)
                 .setInputDeviceName(name)
                 .setAssociatedDisplayId(display.displayId)
-                .build()
-        )
+        if (viewBehaviorConfig != null) {
+            config.setViewBehaviorConfig(viewBehaviorConfig)
+        }
+        virtualDevice.createVirtualStylus(config.build())
     })
 
     fun createAndPrepareMouse(
         virtualDevice: VirtualDeviceManager.VirtualDevice,
         name: String,
-        display: Display
+        display: Display,
+        viewBehaviorConfig: ViewBehaviorConfig? = null
     ): InputDeviceHolder<VirtualMouse> = prepareInputDevice(name, {
-        virtualDevice.createVirtualMouse(
-            VirtualMouseConfig.Builder()
-                .setVendorId(VENDOR_ID)
-                .setProductId(PRODUCT_ID)
-                .setInputDeviceName(name)
-                .setAssociatedDisplayId(display.displayId)
-                .build()
-        )
+        val config = VirtualMouseConfig.Builder()
+            .setVendorId(VENDOR_ID)
+            .setProductId(PRODUCT_ID)
+            .setInputDeviceName(name)
+            .setAssociatedDisplayId(display.displayId)
+        if (viewBehaviorConfig != null) {
+            config.setViewBehaviorConfig(viewBehaviorConfig)
+        }
+        virtualDevice.createVirtualMouse(config.build())
     })
 
     fun createAndPrepareRotary(
         virtualDevice: VirtualDeviceManager.VirtualDevice,
         name: String,
-        display: Display
+        display: Display,
+        viewBehaviorConfig: ViewBehaviorConfig? = null
     ): InputDeviceHolder<VirtualRotaryEncoder> = prepareInputDevice(name, {
-        virtualDevice.createVirtualRotaryEncoder(
-            VirtualRotaryEncoderConfig.Builder()
-                .setVendorId(VENDOR_ID)
-                .setProductId(PRODUCT_ID)
-                .setInputDeviceName(name)
-                .setAssociatedDisplayId(display.displayId)
-                .build()
-        )
+        val config = VirtualRotaryEncoderConfig.Builder()
+            .setVendorId(VENDOR_ID)
+            .setProductId(PRODUCT_ID)
+            .setInputDeviceName(name)
+            .setAssociatedDisplayId(display.displayId)
+        if (viewBehaviorConfig != null) {
+            config.setViewBehaviorConfig(viewBehaviorConfig)
+        }
+        virtualDevice.createVirtualRotaryEncoder(config.build())
     })
 
     fun createAndPrepareKeyboard(
         virtualDevice: VirtualDeviceManager.VirtualDevice,
         name: String,
         display: Display,
+        viewBehaviorConfig: ViewBehaviorConfig? = null,
         languageTag: String = VirtualKeyboardConfig.DEFAULT_LANGUAGE_TAG,
         layoutType: String = VirtualKeyboardConfig.DEFAULT_LAYOUT_TYPE
-    ): InputDeviceHolder<VirtualKeyboard> =
+        ): InputDeviceHolder<VirtualKeyboard> =
         prepareInputDevice(name, {
-            virtualDevice.createVirtualKeyboard(
-                VirtualKeyboardConfig.Builder()
+            val config = VirtualKeyboardConfig.Builder()
                     .setVendorId(VENDOR_ID)
                     .setProductId(PRODUCT_ID)
                     .setInputDeviceName(name)
                     .setAssociatedDisplayId(display.displayId)
                     .setLanguageTag(languageTag)
                     .setLayoutType(layoutType)
-                    .build()
-            )
+            if (viewBehaviorConfig != null) {
+                config.setViewBehaviorConfig(viewBehaviorConfig)
+            }
+            virtualDevice.createVirtualKeyboard(config.build())
         }, languageTag, layoutType)
 
     fun createAndPrepareDpad(
         virtualDevice: VirtualDeviceManager.VirtualDevice,
         name: String,
-        display: Display
+        display: Display,
+        viewBehaviorConfig: ViewBehaviorConfig? = null
     ): InputDeviceHolder<VirtualDpad> = prepareInputDevice(name, {
-        virtualDevice.createVirtualDpad(
-            VirtualDpadConfig.Builder()
-                .setVendorId(VENDOR_ID)
-                .setProductId(PRODUCT_ID)
-                .setInputDeviceName(name)
-                .setAssociatedDisplayId(display.displayId)
-                .build()
-        )
+        val config = VirtualDpadConfig.Builder()
+            .setVendorId(VENDOR_ID)
+            .setProductId(PRODUCT_ID)
+            .setInputDeviceName(name)
+            .setAssociatedDisplayId(display.displayId)
+        if (viewBehaviorConfig != null) {
+            config.setViewBehaviorConfig(viewBehaviorConfig)
+        }
+        virtualDevice.createVirtualDpad(config.build())
     })
 
     fun createAndPrepareNavigationTouchpad(
         virtualDevice: VirtualDeviceManager.VirtualDevice,
         name: String,
         display: Display,
+        viewBehaviorConfig: ViewBehaviorConfig? = null,
         touchpadWidth: Int = display.mode.physicalWidth,
         touchpadHeight: Int = display.mode.physicalHeight
     ): InputDeviceHolder<VirtualNavigationTouchpad> = prepareInputDevice(name, {
-        virtualDevice.createVirtualNavigationTouchpad(
-            VirtualNavigationTouchpadConfig.Builder(touchpadWidth, touchpadHeight)
-                .setVendorId(VENDOR_ID)
-                .setProductId(PRODUCT_ID)
-                .setInputDeviceName(name)
-                .setAssociatedDisplayId(display.displayId)
-                .build()
-        )
+        val config = VirtualNavigationTouchpadConfig.Builder(touchpadWidth, touchpadHeight)
+            .setVendorId(VENDOR_ID)
+            .setProductId(PRODUCT_ID)
+            .setInputDeviceName(name)
+            .setAssociatedDisplayId(display.displayId)
+        if (viewBehaviorConfig != null) {
+            config.setViewBehaviorConfig(viewBehaviorConfig)
+        }
+        virtualDevice.createVirtualNavigationTouchpad(config.build())
     })
 
     /** Holds a virtual input device along with its input device ID.  */
