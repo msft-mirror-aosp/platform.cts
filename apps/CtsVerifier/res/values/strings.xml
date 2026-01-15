@@ -5900,10 +5900,11 @@ You should be prompted to select credentials; choose the ones you just installed
         \n\nTest Setup:
         \n • It may be necessary to go to the \"Sound &amp; vibration\" settings panel to set the volume level for the output device.
         \n   With no audio peripherals connected, adjust the \"Media volume\" to max.
+        \n • Make sure speakers and microphones are not covered.
+        \n • Place the DUT in a quiet environment with minimal reflection and vibration. An acoustic anechoic box is ideal.
         \n\nTest Execution:
-        \n • Place the device on a flat surface in a quiet room.
         \n • Select the \"Native API\" button.
-        \n • Press the \"Start\" button. The test will step through the list of data paths playing a tone and noting its presence or absence.
+        \n • Press the \"Start\" button. The test will delay for 5 seconds and then step through the list of data paths playing a tone and noting its presence or absence.
         \n • Select the \"Java API\" button.
         \n • Press the \"Start\" button to repeat each data path test for the Java API.
         \n\nTest Completion:
