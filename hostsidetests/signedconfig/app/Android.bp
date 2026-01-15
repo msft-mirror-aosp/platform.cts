@@ -34,7 +34,6 @@ android_test_helper_app {
     manifest: "version1_AndroidManifest.xml",
     sdk_version: "current",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -44,7 +43,6 @@ android_test_helper_app {
     defaults: ["CtsSignedConfigDefaults"],
     manifest: "version1_instant_AndroidManifest.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -54,7 +52,6 @@ android_test_helper_app {
     defaults: ["CtsSignedConfigDefaults"],
     manifest: "version2_AndroidManifest.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -64,7 +61,6 @@ android_test_helper_app {
     defaults: ["CtsSignedConfigDefaults"],
     manifest: "version2_instant_AndroidManifest.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -74,7 +70,6 @@ android_test_helper_app {
     defaults: ["CtsSignedConfigDefaults"],
     manifest: "version1_package2_AndroidManifest.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -84,7 +79,6 @@ android_test_helper_app {
     defaults: ["CtsSignedConfigDefaults"],
     manifest: "version2_package2_AndroidManifest.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -94,7 +88,6 @@ android_test_helper_app {
     defaults: ["CtsSignedConfigDefaults"],
     manifest: "version1_badsignature_AndroidManifest.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -104,7 +97,6 @@ android_test_helper_app {
     defaults: ["CtsSignedConfigDefaults"],
     manifest: "version1_badb64_config_AndroidManifest.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -114,7 +106,6 @@ android_test_helper_app {
     defaults: ["CtsSignedConfigDefaults"],
     manifest: "version1_badb64_signature_AndroidManifest.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -124,7 +115,6 @@ android_test_helper_app {
     defaults: ["CtsSignedConfigDefaults"],
     manifest: "version3_configv1_AndroidManifest.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -134,7 +124,6 @@ android_test_helper_app {
     defaults: ["CtsSignedConfigDefaults"],
     manifest: "version1_debug_key_AndroidManifest.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }

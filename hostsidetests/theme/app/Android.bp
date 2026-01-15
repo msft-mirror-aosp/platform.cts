@@ -26,7 +26,6 @@ android_test_helper_app {
     aapt_include_all_resources: true,
     // Tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "test_current",

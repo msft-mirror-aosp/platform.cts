@@ -38,7 +38,6 @@ android_test_helper_app {
     srcs: ["app_no_extract/src/**/*.java"],
     manifest: "app_no_extract/AndroidManifest.xml",
     test_suites: [
-        "cts",
         "vts10",
         "general-tests",
     ],
@@ -58,7 +57,6 @@ android_test_helper_app {
     srcs: ["app_no_extract/src/**/*.java"],
     manifest: "app_no_extract/AndroidManifest.xml",
     test_suites: [
-        "cts",
         "vts10",
         "general-tests",
     ],
@@ -78,7 +76,6 @@ android_test_helper_app {
     srcs: ["app_no_extract/src/**/*.java"],
     manifest: "app_no_extract/AndroidManifest.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
     jni_libs: [
@@ -97,7 +94,6 @@ android_test_helper_app {
     srcs: ["app_extract/src/**/*.java"],
     manifest: "app_extract/AndroidManifest.xml",
     test_suites: [
-        "cts",
         "vts10",
         "general-tests",
     ],
@@ -117,7 +113,6 @@ android_test_helper_app {
     srcs: ["app_extract/src/**/*.java"],
     manifest: "app_extract/AndroidManifest.xml",
     test_suites: [
-        "cts",
         "vts10",
         "general-tests",
     ],
@@ -137,7 +132,6 @@ android_test_helper_app {
     srcs: ["app_extract/src/**/*.java"],
     manifest: "app_extract/AndroidManifest.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
     jni_libs: [

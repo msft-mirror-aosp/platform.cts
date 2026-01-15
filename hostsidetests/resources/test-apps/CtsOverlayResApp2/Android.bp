@@ -41,7 +41,6 @@ android_test_helper_app {
         "android.test.base.stubs.test",
     ],
     test_suites: [
-        "cts",
         "general-tests",
     ],
 
