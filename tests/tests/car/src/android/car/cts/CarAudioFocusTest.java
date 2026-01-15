@@ -18,6 +18,7 @@ package android.car.cts;
 
 import static android.Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED;
 import static android.car.media.CarAudioManager.AUDIO_FEATURE_DYNAMIC_ROUTING;
+import static android.car.settings.CarSettings.Secure.KEY_AUDIO_FOCUS_NAVIGATION_REJECTED_DURING_CALL;
 import static android.media.AudioManager.AUDIOFOCUS_GAIN;
 import static android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK;
 import static android.media.AudioManager.AUDIOFOCUS_LOSS;
@@ -33,11 +34,14 @@ import static org.junit.Assume.assumeTrue;
 import android.app.UiAutomation;
 import android.car.Car;
 import android.car.media.CarAudioManager;
+import android.content.ContentResolver;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.os.Looper;
+import android.os.Process;
 import android.platform.test.annotations.AppModeFull;
+import android.provider.Settings;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -397,6 +401,9 @@ public final class CarAudioFocusTest extends AbstractCarTestCase {
         testInteraction(ATTR_CALL_RING, ATTR_ALARM, interaction, gain, false);
         testInteraction(ATTR_CALL_RING, ATTR_NOTIFICATION, interaction, gain, false);
 
+        if (isAudioFocusNavigationRejectedDuringCall()) {
+            testInteraction(ATTR_CALL, ATTR_NAVIGATION, interaction, gain, false);
+        }
         testInteraction(ATTR_CALL, ATTR_MEDIA, interaction, gain, false);
         testInteraction(ATTR_CALL, ATTR_VOICE_COMMAND, interaction, gain, false);
         testInteraction(ATTR_CALL, ATTR_SYSTEM_SOUND, interaction, gain, false);
@@ -464,7 +471,9 @@ public final class CarAudioFocusTest extends AbstractCarTestCase {
         testInteraction(ATTR_CALL_RING, ATTR_CALL_RING, interaction, gain, pauseForDucking);
         testInteraction(ATTR_CALL_RING, ATTR_CALL, interaction, gain, pauseForDucking);
 
-        testInteraction(ATTR_CALL, ATTR_NAVIGATION, interaction, gain, pauseForDucking);
+        if (!isAudioFocusNavigationRejectedDuringCall()) {
+            testInteraction(ATTR_CALL, ATTR_NAVIGATION, interaction, gain, pauseForDucking);
+        }
         testInteraction(ATTR_CALL, ATTR_CALL_RING, interaction, gain, pauseForDucking);
         testInteraction(ATTR_CALL, ATTR_CALL, interaction, gain, pauseForDucking);
         testInteraction(ATTR_CALL, ATTR_ALARM, interaction, gain, pauseForDucking);
@@ -806,5 +815,12 @@ public final class CarAudioFocusTest extends AbstractCarTestCase {
 
     private boolean isDynamicRoutingEnabled() {
         return mCarAudioManager.isAudioFeatureEnabled(AUDIO_FEATURE_DYNAMIC_ROUTING);
+    }
+
+    private boolean isAudioFocusNavigationRejectedDuringCall() {
+        ContentResolver contentResolverForUser = mContext.createContextAsUser(
+            Process.myUserHandle(), /* flags= */ 0).getContentResolver();
+        return Settings.Secure.getInt(contentResolverForUser,
+            KEY_AUDIO_FOCUS_NAVIGATION_REJECTED_DURING_CALL , 0) == 1;
     }
 }
