@@ -2692,13 +2692,6 @@ public class AudioManagerTest {
                     // Following compatibility test will ensure API are dispatched
                     continue;
                 }
-                int zoneId =
-                        getZoneIdForVolumeGroupIdAndAttributes(
-                                audioVolumeGroup, audioVolumeGroup.getAudioAttributes().getFirst());
-                if (zoneId != DEFAULT_ZONE_ID) {
-                    // Filter zone id since it requires user id to zone mapping
-                    continue;
-                }
                 int indexMax = mAudioManager.getVolumeGroupMaxVolumeIndex(volumeGroupId);
                 int indexMin = mAudioManager.getVolumeGroupMinVolumeIndex(volumeGroupId);
                 boolean isMutable = (indexMin == 0) || (volumeGroupId == voiceCallVolumeGroup);
@@ -3121,31 +3114,21 @@ public class AudioManagerTest {
             var volumeGroups = AudioManager.getAudioVolumeGroups();
             for (var volumeGroup : volumeGroups) {
                 for (var attributes : volumeGroup.getAudioAttributes()) {
-                    int zoneId = getZoneIdForVolumeGroupIdAndAttributes(volumeGroup, attributes);
                     var productStrategy =
                             AudioProductStrategy.getAudioProductStrategyForAudioAttributes(
-                                    attributes, zoneId, /* fallbackOnDefault= */ true);
-                    assertWithMessage(
-                                    "Product strategy volume group for audio attribute %s in "
-                                            + "default zone with fallback on default",
-                                    attributes)
-                            .that(
-                                    AudioProductStrategy.getVolumeGroupIdForAudioAttributes(
-                                            attributes, zoneId, /* fallbackOnDefault= */ true))
+                                    attributes, DEFAULT_ZONE_ID, /* fallbackOnDefault= */ true);
+                    assertWithMessage("Product strategy volume group for audio attribute %s in "
+                            + "default zone with fallback on default", attributes)
+                            .that(AudioProductStrategy.getVolumeGroupIdForAudioAttributes(
+                                    attributes, DEFAULT_ZONE_ID, /* fallbackOnDefault= */ true))
                             .isEqualTo(volumeGroup.getId());
-                    assertWithMessage(
-                                    "Volume group for audio attribute %s in default zone",
-                                    attributes)
-                            .that(mAudioManager.getVolumeGroupIdForAttributes(attributes, zoneId))
-                            .isEqualTo(volumeGroup.getId());
-                    assertWithMessage(
-                                    "Product strategy volume group for audio attribute %s in "
-                                            + "default zone",
-                                    attributes)
-                            .that(
-                                    productStrategy.getVolumeGroupIdForAudioAttributes(
-                                            attributes, zoneId))
-                            .isEqualTo(volumeGroup.getId());
+                    assertWithMessage("Volume group for audio attribute %s in default zone",
+                            attributes).that(mAudioManager.getVolumeGroupIdForAttributes(
+                                    attributes, DEFAULT_ZONE_ID)).isEqualTo(volumeGroup.getId());
+                    assertWithMessage("Product strategy volume group for audio attribute %s in "
+                                    + "default zone", attributes)
+                            .that(productStrategy.getVolumeGroupIdForAudioAttributes(
+                                    attributes, DEFAULT_ZONE_ID)).isEqualTo(volumeGroup.getId());
                 }
             }
         }
@@ -3160,22 +3143,17 @@ public class AudioManagerTest {
             var volumeGroups = AudioManager.getAudioVolumeGroups();
             for (var volumeGroup : volumeGroups) {
                 for (var attributes : volumeGroup.getAudioAttributes()) {
-                    int zoneId = getZoneIdForVolumeGroupIdAndAttributes(volumeGroup, attributes);
                     var productStrategy =
                             AudioProductStrategy.getAudioProductStrategyForAudioAttributes(
-                                    attributes, zoneId, /* fallbackOnDefault= */ true);
+                                    attributes, DEFAULT_ZONE_ID, /* fallbackOnDefault= */ true);
                     assertWithMessage("Product strategy zone id")
-                            .that(productStrategy.getZoneId())
-                            .isEqualTo(zoneId);
+                            .that(productStrategy.getZoneId()).isEqualTo(DEFAULT_ZONE_ID);
                     assertWithMessage("Audio attributes for strategy %s", attributes)
                             .that(productStrategy.supportsAudioAttributes(attributes)).isTrue();
-                    assertWithMessage(
-                                    "Product strategy zone id for volume group %s",
-                                    volumeGroup.getId())
-                            .that(
-                                    AudioProductStrategy.getZoneIdForAudioVolumeGroupId(
-                                            volumeGroup.getId()))
-                            .isEqualTo(zoneId);
+                    assertWithMessage("Product strategy zone id for volume group %s",
+                            volumeGroup.getId())
+                            .that(AudioProductStrategy.getZoneIdForAudioVolumeGroupId(
+                                    volumeGroup.getId())).isEqualTo(DEFAULT_ZONE_ID);
                 }
             }
         }
@@ -3193,23 +3171,6 @@ public class AudioManagerTest {
         } finally {
             getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
         }
-    }
-
-    private int getZoneIdForVolumeGroupIdAndAttributes(
-            AudioVolumeGroup volumeGroup, AudioAttributes attributes) {
-        int audioZone = AudioProductStrategy.INVALID_ZONE_ID;
-        List<AudioProductStrategy> strategies = AudioManager.getAudioProductStrategies();
-        for (var strategy : strategies) {
-            int groupId = strategy.getVolumeGroupIdForAudioAttributes(attributes);
-            if (groupId == volumeGroup.getId()) {
-                audioZone = strategy.getZoneId();
-                break;
-            }
-        }
-        assertWithMessage("Audio zone id for group %s and attributes %s", volumeGroup, attributes)
-                .that(audioZone)
-                .isAtLeast(DEFAULT_ZONE_ID);
-        return audioZone;
     }
 
     private AudioDeviceAttributes findDetachableOutputDevice() {
