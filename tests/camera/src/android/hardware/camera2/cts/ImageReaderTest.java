@@ -273,14 +273,14 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
                 Set<Long> availableProfiles =
                         mStaticInfo.getAvailableDynamicRangeProfilesChecked();
-                if (!availableProfiles.contains(DynamicRangeProfiles.STANDARD_AGTM)) {
+                if (!availableProfiles.contains(DynamicRangeProfiles.STANDARD_SMPTE_2094_50)) {
                     Log.v(TAG, "Standard AGTM dynamic range profile not supported skipping!");
                     continue;
                 }
 
                 BufferFormatTestParam params = new BufferFormatTestParam(
                         ImageFormat.YUV_420_888, /*repeating*/false);
-                params.mDynamicRangeProfile = DynamicRangeProfiles.STANDARD_AGTM;
+                params.mDynamicRangeProfile = DynamicRangeProfiles.STANDARD_SMPTE_2094_50;
                 params.mValidateImageData = true;
                 bufferFormatTestByCamera(params);
             } finally {
@@ -303,14 +303,14 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
                 Set<Long> availableProfiles =
                         mStaticInfo.getAvailableDynamicRangeProfilesChecked();
-                if (!availableProfiles.contains(DynamicRangeProfiles.HLG10_AGTM)) {
+                if (!availableProfiles.contains(DynamicRangeProfiles.HLG10_SMPTE_2094_50)) {
                     Log.v(TAG, "HLG10 AGTM dynamic range profile not supported skipping!");
                     continue;
                 }
 
                 BufferFormatTestParam params = new BufferFormatTestParam(
                         ImageFormat.YCBCR_P010, /*repeating*/false);
-                params.mDynamicRangeProfile = DynamicRangeProfiles.HLG10_AGTM;
+                params.mDynamicRangeProfile = DynamicRangeProfiles.HLG10_SMPTE_2094_50;
                 params.mValidateImageData = true;
                 bufferFormatTestByCamera(params);
             } finally {
