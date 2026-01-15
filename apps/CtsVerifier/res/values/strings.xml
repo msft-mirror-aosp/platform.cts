@@ -3293,6 +3293,13 @@ You should be prompted to select credentials; choose the ones you just installed
 
     <!-- Strings for DeskClock -->
     <string name="deskclock_tests">Alarms and Timers Tests</string>
+
+    <!-- EyeDropper Test -->
+    <string name="eyedropper_test">EyeDropper Test</string>
+    <string name="eyedropper_test_instructions">Click the button to launch the EyeDropper API. Select a color on the screen and verify that the correct color is returned.</string>
+    <string name="launch_eyedropper_button_text">Launch EyeDropper</string>
+    <string name="selected_color_label">Selected Color:</string>
+    <string name="target_colors_label">Target Colors:</string>
     <string name="deskclock_tests_info">
         The Alarms and Timers tests verify that the Clock app implements the AlarmClock API properly.
     </string>
