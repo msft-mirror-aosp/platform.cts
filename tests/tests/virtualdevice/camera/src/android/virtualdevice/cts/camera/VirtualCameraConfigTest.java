@@ -316,7 +316,6 @@ public class VirtualCameraConfigTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void virtualCameraConfigBuilder_multipleExternalCameraWithCharacteristics_succeeds() {
         CameraCharacteristics characteristics =
                 new CameraCharacteristics.Builder()
@@ -361,7 +360,6 @@ public class VirtualCameraConfigTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void parcelAndUnparcelCharacteristics_matches() {
         CameraCharacteristics characteristics = new CameraCharacteristics.Builder()
                 .set(CameraCharacteristics.LENS_FACING, CAMERA_LENS_FACING_CHARACTERISTIC)
@@ -404,7 +402,6 @@ public class VirtualCameraConfigTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void conflictingLensFacing_throws() {
         CameraCharacteristics characteristics = new CameraCharacteristics.Builder()
                 .set(CameraCharacteristics.LENS_FACING, CAMERA_LENS_FACING_CHARACTERISTIC)

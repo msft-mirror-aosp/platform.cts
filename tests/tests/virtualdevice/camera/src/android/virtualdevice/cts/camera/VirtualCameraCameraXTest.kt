@@ -148,7 +148,6 @@ class VirtualCameraCameraXTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     @Parameters(method = "getAllLensFacingDirections")
     fun virtualDeviceContext_takePicture_withCharacteristics(lensFacing: Int) {
         val characteristics =
@@ -169,7 +168,6 @@ class VirtualCameraCameraXTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     @Parameters(method = "getAllLensFacingDirections")
     fun virtualDeviceContext_availableCameraInfos_returnsVirtualCameras_withCharacteristics(
         lensFacing: Int

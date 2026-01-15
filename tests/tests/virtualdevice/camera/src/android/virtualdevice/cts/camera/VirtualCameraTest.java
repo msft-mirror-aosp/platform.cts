@@ -813,7 +813,6 @@ public class VirtualCameraTest {
 
     @Parameters(method = "getAllLensFacingDirections")
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void createVirtualCamera_withCameraCharacteristics_succeeds(int lensFacing)
             throws Exception {
         setupVirtualDeviceCameraManager();
@@ -823,7 +822,6 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void createVirtualCamera_withPerFrameMetadataEnabled_succeeds() throws Exception {
         setupVirtualDeviceCameraManager();
         createDefaultCameraWithMetadata(LENS_FACING_BACK, false);
@@ -832,7 +830,6 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void virtualCamera_withPerFrameMetadataEnabled_canSendCaptureResults() throws Exception {
         setupVirtualDeviceCameraManager();
         createDefaultCameraWithMetadata(LENS_FACING_BACK, true);
@@ -870,7 +867,6 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void virtualCamera_withPerFrameMetadataDisabled_canNotSendCaptureResults()
             throws Exception {
         setupVirtualDeviceCameraManager();
@@ -898,7 +894,6 @@ public class VirtualCameraTest {
 
     @Parameters(method = "getAllLensFacingDirections")
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void createCharacteristicsVirtualCamera_withSessionParameters_succeeds(int lensFacing)
             throws Exception {
         List<CaptureRequest.Key<?>> availableSessionKeys =
@@ -962,7 +957,6 @@ public class VirtualCameraTest {
 
     @Parameters(method = "getAllLensFacingDirections")
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void createDefaultVirtualCamera_withSessionParameters_succeeds(int lensFacing)
             throws Exception {
         setupVirtualDeviceCameraManager();
@@ -1023,7 +1017,6 @@ public class VirtualCameraTest {
 
     @Parameters(method = "getAllLensFacingDirections")
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void createVirtualCamera_withSensorInfo_succeeds(int lensFacing) throws Exception {
         setupVirtualDeviceCameraManager();
 
