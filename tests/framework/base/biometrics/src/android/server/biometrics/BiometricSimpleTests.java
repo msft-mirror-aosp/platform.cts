@@ -59,6 +59,7 @@ import android.hardware.biometrics.SensorProperties;
 import android.os.CancellationSignal;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.biometrics.util.BiometricServiceState;
 import android.server.biometrics.util.SensorStates;
@@ -1340,21 +1341,20 @@ public class BiometricSimpleTests extends BiometricTestBase {
      * Tests that the values specified through the public APIs are shown on the BiometricPrompt UI
      * when credential auth is requested.
      *
-     * Upon successful authentication, checks that the result is
-     * {@link BiometricPrompt#AUTHENTICATION_RESULT_TYPE_BIOMETRIC}
+     * <p>Upon successful authentication, checks that the result is {@link
+     * BiometricPrompt#AUTHENTICATION_RESULT_TYPE_BIOMETRIC}
      */
-    @ApiTest(apis = {
-            "android.hardware.biometrics."
-                    + "BiometricPrompt.Builder#setTitle",
-            "android.hardware.biometrics."
-                    + "BiometricPrompt.Builder#setSubtitle",
-            "android.hardware.biometrics."
-                    + "BiometricPrompt.Builder#setDescription",
-            "android.hardware.biometrics."
-                    + "BiometricPrompt#authenticate",
-            "android.hardware.biometrics."
-                    + "BiometricPrompt.AuthenticationResult#getAuthenticationType"})
+    @ApiTest(
+            apis = {
+                "android.hardware.biometrics." + "BiometricPrompt.Builder#setTitle",
+                "android.hardware.biometrics." + "BiometricPrompt.Builder#setSubtitle",
+                "android.hardware.biometrics." + "BiometricPrompt.Builder#setDescription",
+                "android.hardware.biometrics." + "BiometricPrompt#authenticate",
+                "android.hardware.biometrics."
+                        + "BiometricPrompt.AuthenticationResult#getAuthenticationType"
+            })
     @Test
+    @RequiresFlagsDisabled(com.android.systemui.Flags.FLAG_LARGE_SCREEN_BP)
     public void testSimpleCredentialAuth() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
         //TODO: b/331955301 need to update Auto biometric UI
@@ -1385,9 +1385,9 @@ public class BiometricSimpleTests extends BiometricTestBase {
 
             // These views aren't available on wear devices.
             if (!isWatch()) {
-                final UiObject2 actualTitle = findView(TITLE_VIEW);
-                final UiObject2 actualSubtitle = findView(SUBTITLE_VIEW);
-                final UiObject2 actualDescription = findView(DESCRIPTION_VIEW);
+                final UiObject2 actualTitle = waitForView(TITLE_VIEW);
+                final UiObject2 actualSubtitle = waitForView(SUBTITLE_VIEW);
+                final UiObject2 actualDescription = waitForView(DESCRIPTION_VIEW);
                 assertEquals(randomTitle, actualTitle.getText());
                 assertEquals(randomSubtitle, actualSubtitle.getText());
                 assertEquals(randomDescription, actualDescription.getText());
