@@ -16,81 +16,12 @@
 
 package android.security.identity.cts;
 
-import android.security.identity.ResultData;
+import android.content.Context;
+import android.content.pm.FeatureInfo;
+import android.content.pm.PackageManager;
 import android.security.identity.IdentityCredentialStore;
 
-import android.content.Context;
-import android.content.pm.PackageManager;
-import android.content.pm.FeatureInfo;
-import android.os.SystemProperties;
-import android.security.keystore.KeyProperties;
-import android.util.Log;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.KeyStore;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
-import java.security.PrivateKey;
-import java.security.Signature;
-import java.security.SignatureException;
-import java.security.cert.CertificateEncodingException;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
-import java.security.spec.ECGenParameterSpec;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.Formatter;
-import java.util.Map;
-
-import javax.crypto.KeyAgreement;
-import javax.crypto.Mac;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-
-import java.security.interfaces.ECPublicKey;
-import java.security.spec.ECPoint;
-
-import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.ASN1OctetString;
-
-import co.nstant.in.cbor.CborBuilder;
-import co.nstant.in.cbor.CborDecoder;
-import co.nstant.in.cbor.CborEncoder;
-import co.nstant.in.cbor.CborException;
-import co.nstant.in.cbor.builder.ArrayBuilder;
-import co.nstant.in.cbor.builder.MapBuilder;
-import co.nstant.in.cbor.model.AbstractFloat;
-import co.nstant.in.cbor.model.Array;
-import co.nstant.in.cbor.model.ByteString;
-import co.nstant.in.cbor.model.DataItem;
-import co.nstant.in.cbor.model.DoublePrecisionFloat;
-import co.nstant.in.cbor.model.MajorType;
-import co.nstant.in.cbor.model.NegativeInteger;
-import co.nstant.in.cbor.model.SimpleValue;
-import co.nstant.in.cbor.model.SimpleValueType;
-import co.nstant.in.cbor.model.SpecialType;
-import co.nstant.in.cbor.model.UnicodeString;
-import co.nstant.in.cbor.model.UnsignedInteger;
 
 class TestUtil {
     private static final String TAG = "Util";
@@ -134,7 +65,10 @@ class TestUtil {
     static boolean isHalImplemented() {
         Context appContext = InstrumentationRegistry.getTargetContext();
         IdentityCredentialStore store = IdentityCredentialStore.getInstance(appContext);
-        if (store != null) {
+        PackageManager pm = appContext.getPackageManager();
+
+        if (store != null && pm.hasSystemFeature(
+                PackageManager.FEATURE_IDENTITY_CREDENTIAL_HARDWARE)) {
             return true;
         }
         return false;
