@@ -157,9 +157,9 @@ class NoPermissionTests {
         errorMessage: String?,
         checkNull: Boolean = true
     ): UiObject2? {
-        // Wait for a minimum 2000ms and maximum 10000ms for the UI to become idle.
+        // Wait for maximum 10000ms for the UI to become idle (= 1000ms quiet time).
         InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(
-            (2 * FIND_OBJECT_TIMEOUT),
+            FIND_OBJECT_TIMEOUT,
             (10 * FIND_OBJECT_TIMEOUT)
         )
 
