@@ -101,6 +101,8 @@ private:
 
     uint32_t currentFrame = 0;
     VkSurfaceTransformFlagBitsKHR pretransformFlag;
+
+    uint32_t submitIdInternal = 0;
 };
 
 #endif // GPU_PROFILING_VULKAN_RENDERER

@@ -23,6 +23,7 @@ import static android.graphics.gpuprofiling.cts.ProfilingDataUtilsKt.buildConfig
 import static android.graphics.gpuprofiling.cts.ProfilingDataUtilsKt.calculateMostCommonIntervalNs;
 import static android.graphics.gpuprofiling.cts.ProfilingDataUtilsKt.counterMatchesGpuUtilisation;
 import static android.graphics.gpuprofiling.cts.ProfilingDataUtilsKt.getGpuUsageTimeline;
+import static android.graphics.gpuprofiling.cts.RenderStagesChecksKt.checkQueueSubmitsMatchAppLogs;
 import static android.graphics.gpuprofiling.cts.RenderStagesChecksKt.checkQueueSubmitsNotEmpty;
 import static android.graphics.gpuprofiling.cts.RenderStagesChecksKt.checkQueueSubmitsStrictlyMonotonicallyIncreasing;
 import static android.graphics.gpuprofiling.cts.RenderStagesChecksKt.checkRenderStagesMatchQueueSubmits;
@@ -356,6 +357,9 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
 
                 checkQueueSubmitsNotEmpty(errorCollector, queueSubmits);
                 checkQueueSubmitsStrictlyMonotonicallyIncreasing(errorCollector, queueSubmits);
+
+                checkQueueSubmitsMatchAppLogs(
+                        errorCollector, queueSubmits, renderStagesData.getAppQueueSubmits());
 
                 checkRenderStagesMatchQueueSubmits(errorCollector, renderStagesData);
             }

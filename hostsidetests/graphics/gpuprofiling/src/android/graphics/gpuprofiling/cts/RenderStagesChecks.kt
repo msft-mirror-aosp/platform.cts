@@ -118,6 +118,48 @@ fun checkQueueSubmitsStrictlyMonotonicallyIncreasing(
     )
 }
 
+fun checkQueueSubmitsMatchAppLogs(
+    errorCollector: ErrorCollector,
+    queueSubmits: List<QueueSubmitEvent>,
+    appQueueSubmits: List<AppQueueSubmitEvent>
+) {
+    var syncedQueueSubmits = queueSubmits
+    var syncedAppQueueSubmits = appQueueSubmits
+
+    // First and last event might not have a match, drop them if needed.
+    if (syncedQueueSubmits.first().timestamp < appQueueSubmits.first().timestampBefore) {
+        syncedQueueSubmits = syncedQueueSubmits.drop(1)
+    } else if (syncedAppQueueSubmits.first().timestampAfter < queueSubmits.first().timestamp) {
+        syncedAppQueueSubmits = syncedAppQueueSubmits.drop(1)
+    }
+    if (syncedQueueSubmits.last().timestamp > appQueueSubmits.last().timestampAfter) {
+        syncedQueueSubmits = syncedQueueSubmits.dropLast(1)
+    } else if (syncedAppQueueSubmits.last().timestampBefore > queueSubmits.last().timestamp) {
+        syncedAppQueueSubmits = syncedAppQueueSubmits.dropLast(1)
+    }
+
+    errorCollector.checkThat(
+        "The number of reported VkQueueSubmits does not match the app's Atrace logs.",
+        syncedQueueSubmits.size,
+        Is(syncedAppQueueSubmits.size)
+    )
+
+    val matchedPairs = syncedQueueSubmits.zip(syncedAppQueueSubmits)
+
+    val misalignedSubmissionEventIds = matchedPairs
+        .filter { (queueSubmit, appQueueSubmit) ->
+            queueSubmit.timestamp < appQueueSubmit.timestampBefore ||
+                    queueSubmit.durationNs >
+                    appQueueSubmit.timestampAfter - appQueueSubmit.timestampBefore
+        }
+
+    errorCollector.checkThat(
+        "Reported VkQueueSubmit event timing does not match app's Atrace logs.",
+        misalignedSubmissionEventIds,
+        Is(empty())
+    )
+}
+
 fun checkRenderStagesMatchQueueSubmits(
     errorCollector: ErrorCollector,
     renderStagesData: RenderStagesData

@@ -18,7 +18,10 @@ package android.graphics.gpuprofiling.cts
 
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
+import perfetto.protos.PerfettoTrace.FtraceEvent
+import perfetto.protos.PerfettoTrace.FtraceEventBundle
 import perfetto.protos.PerfettoTrace.GpuRenderStageEvent
+import perfetto.protos.PerfettoTrace.PrintFtraceEvent
 import perfetto.protos.PerfettoTrace.Trace
 import perfetto.protos.PerfettoTrace.TracePacket
 import perfetto.protos.PerfettoTrace.VulkanApiEvent
@@ -36,8 +39,24 @@ class RenderStagesDataTest {
             addPacket(TracePacket.newBuilder().apply {
                 timestamp = 200L
                 setVulkanApiEvent(VulkanApiEvent.newBuilder().setVkQueueSubmit(
-                    VkQueueSubmit.newBuilder().setSubmissionId(10)
+                    VkQueueSubmit.newBuilder().setSubmissionId(10).setDurationNs(30)
                 ))
+            })
+            addPacket(TracePacket.newBuilder().apply {
+                setFtraceEvents(FtraceEventBundle.newBuilder().apply {
+                    addEvent(FtraceEvent.newBuilder().apply {
+                        timestamp = 300L
+                        setPrint(
+                            PrintFtraceEvent.newBuilder().setBuf("S|406|CtsTestQueueSubmit|58\n")
+                        )
+                    })
+                    addEvent(FtraceEvent.newBuilder().apply {
+                        timestamp = 400L
+                        setPrint(
+                            PrintFtraceEvent.newBuilder().setBuf("F|406|CtsTestQueueSubmit|58\n")
+                        )
+                    })
+                })
             })
         }.build()
 
@@ -47,7 +66,10 @@ class RenderStagesDataTest {
             RenderStageEvent(100L, GpuRenderStageEvent.newBuilder().setEventId(1).build())
         )
         assertThat(renderStagesData.queueSubmits).containsExactly(
-            QueueSubmitEvent(200L, 10)
+            QueueSubmitEvent(200L, 10, 30)
+        )
+        assertThat(renderStagesData.appQueueSubmits).containsExactly(
+            AppQueueSubmitEvent(300L, 400L)
         )
     }
 }

@@ -19,6 +19,7 @@
 #include <android/asset_manager.h>
 #include <android/log.h>
 #include <android/native_window.h>
+#include <android/trace.h>
 #include <assert.h>
 #include <vulkan/vulkan.h>
 
@@ -270,7 +271,10 @@ void VulkanRenderer::render(uint32_t trianglesCount) {
 
     vkDeviceWaitIdle(device);
     auto gpuFrameStartTime = std::chrono::high_resolution_clock::now();
+    submitIdInternal += 1;
+    ATrace_beginAsyncSection("CtsTestQueueSubmit", submitIdInternal);
     VK_CHECK(vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]));
+    ATrace_endAsyncSection("CtsTestQueueSubmit", submitIdInternal);
     vkDeviceWaitIdle(device);
     lastFrameDurationMs = std::chrono::duration<double, std::milli>(
                                   std::chrono::high_resolution_clock::now() - gpuFrameStartTime)
