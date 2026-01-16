@@ -16,7 +16,10 @@
 
 package android.assist.cts;
 
+import static android.Manifest.permission.ADD_TRUSTED_DISPLAY;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
+import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED;
+import static android.view.Display.DEFAULT_DISPLAY;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
@@ -37,8 +40,12 @@ import android.assist.common.Utils;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.hardware.display.DisplayManager;
+import android.hardware.display.VirtualDisplay;
+import android.media.ImageReader;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.LocaleList;
@@ -56,11 +63,14 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.SettingsStateChangerRule;
 import com.android.compatibility.common.util.SettingsStateManager;
 import com.android.compatibility.common.util.StateKeeperRule;
+import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingRunnable;
 import com.android.compatibility.common.util.Timeout;
 
@@ -106,6 +116,11 @@ abstract class AssistTestBase {
     private final SettingsStateChangerRule mServiceSetterRule = new SettingsStateChangerRule(
             sContext, Settings.Secure.VOICE_INTERACTION_SERVICE,
             "android.assist.service/.MainInteractionService");
+    private final SettingsStateChangerRule mAssistantSetterRule =
+            new SettingsStateChangerRule(
+                    sContext,
+                    Settings.Secure.ASSISTANT,
+                    "android.assist.service/.MainInteractionService");
     private final StateKeeperRule<String> mStructureEnabledKeeperRule = new StateKeeperRule<>(
             sStructureEnabledMgr);
     private final StateKeeperRule<String> mScreenshotEnabledKeeperRule = new StateKeeperRule<>(
@@ -114,11 +129,18 @@ abstract class AssistTestBase {
             new ActivityTestRule<>(TestStartActivity.class, false, false);
 
     @Rule
-    public final RuleChain mLookAllTheseRules = RuleChain
-            .outerRule(mServiceSetterRule)
-            .around(mStructureEnabledKeeperRule)
-            .around(mScreenshotEnabledKeeperRule)
-            .around(mActivityTestRule);
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule =
+            new AdoptShellPermissionsRule(
+                    InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                    ADD_TRUSTED_DISPLAY);
+
+    @Rule
+    public final RuleChain mLookAllTheseRules =
+            RuleChain.outerRule(mServiceSetterRule)
+                    .around(mAssistantSetterRule)
+                    .around(mStructureEnabledKeeperRule)
+                    .around(mScreenshotEnabledKeeperRule)
+                    .around(mActivityTestRule);
 
     protected ActivityManager mActivityManager;
     private TestStartActivity mTestActivity;
@@ -127,6 +149,7 @@ abstract class AssistTestBase {
     protected AssistStructure mAssistStructure;
     protected boolean mScreenshot;
     protected Bundle mAssistBundle;
+    protected Bundle mSessionBundle;
     protected Bundle mOnShowArgs;
     protected Context mContext;
     private AutoResetLatch mReadyLatch = new AutoResetLatch(1);
@@ -134,6 +157,7 @@ abstract class AssistTestBase {
     private AutoResetLatch mHasTestDestroyedLatch = new AutoResetLatch(1);
     private AutoResetLatch mSessionCompletedLatch = new AutoResetLatch(1);
     protected AutoResetLatch mAssistDataReceivedLatch = new AutoResetLatch();
+    protected AutoResetLatch mSessionDataReceivedLatch = new AutoResetLatch(1);
 
     protected ActionLatchReceiver mActionLatchReceiver;
 
@@ -151,6 +175,7 @@ abstract class AssistTestBase {
     private Point mDisplaySize;
     private String mTestName;
     private View mView;
+    private VirtualDisplay mVirtualDisplay;
 
     @BeforeClass
     public static void setFeatures() {
@@ -168,6 +193,7 @@ abstract class AssistTestBase {
         mAssistStructure = null;
         mAssistContent = null;
         mAssistBundle = null;
+        mSessionBundle = null;
         mIsActivityIdNull = false;
 
         mActionLatchReceiver = new ActionLatchReceiver();
@@ -185,6 +211,10 @@ abstract class AssistTestBase {
 
     @After
     public final void tearDown() throws Exception {
+        if (mVirtualDisplay != null) {
+            mVirtualDisplay.release();
+            mVirtualDisplay = null;
+        }
         customTearDown();
         mTestActivity.finish();
         mContext.sendBroadcast(new Intent(Utils.HIDE_SESSION));
@@ -218,6 +248,10 @@ abstract class AssistTestBase {
     }
 
     protected void startTest(String testName) throws Exception {
+        startTest(testName, DEFAULT_DISPLAY);
+    }
+
+    protected void startTest(String testName, int displayId) throws Exception {
         Log.i(TAG, "Starting test activity for TestCaseType = " + testName);
         Intent intent = new Intent();
         intent.putExtra(Utils.TESTCASE_TYPE, testName);
@@ -225,15 +259,28 @@ abstract class AssistTestBase {
         intent.putExtra(Utils.EXTRA_REMOTE_CALLBACK, mRemoteCallback);
         intent.addFlags(Intent.FLAG_ACTIVITY_MATCH_EXTERNAL);
 
-        mTestActivity.startActivity(intent);
+        if (displayId != DEFAULT_DISPLAY) {
+            final ActivityOptions options = ActivityOptions.makeBasic();
+            options.setLaunchDisplayId(displayId);
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> {
+                        mTestActivity.startActivity(intent, options.toBundle());
+                    });
+        } else {
+            mTestActivity.startActivity(intent);
+        }
         waitForTestActivityOnDestroy();
     }
 
     protected void start3pApp(String testCaseName) throws Exception {
-        start3pApp(testCaseName, null);
+        start3pApp(testCaseName, /* extras= */ null, DEFAULT_DISPLAY);
     }
 
     protected void start3pApp(String testCaseName, Bundle extras) throws Exception {
+        start3pApp(testCaseName, extras, DEFAULT_DISPLAY);
+    }
+
+    protected void start3pApp(String testCaseName, Bundle extras, int displayId) throws Exception {
         Intent intent = new Intent();
         intent.putExtra(Utils.TESTCASE_TYPE, testCaseName);
         Utils.setTestAppAction(intent, testCaseName);
@@ -242,6 +289,9 @@ abstract class AssistTestBase {
         // Make sure activities are launched in fullscreen to cover the entire screen even
         // in freeform environement.
         final ActivityOptions options = ActivityOptions.makeBasic();
+        if (displayId != DEFAULT_DISPLAY) {
+            options.setLaunchDisplayId(displayId);
+        }
         options.setLaunchWindowingMode(WINDOWING_MODE_FULLSCREEN);
 
         // In devices which support multi-window Activity positioning by default (such as foldables)
@@ -266,7 +316,14 @@ abstract class AssistTestBase {
             intent.putExtras(extras);
         }
 
-        mTestActivity.startActivity(intent, options.toBundle());
+        if (displayId != DEFAULT_DISPLAY) {
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> {
+                        mTestActivity.startActivity(intent, options.toBundle());
+                    });
+        } else {
+            mTestActivity.startActivity(intent, options.toBundle());
+        }
         waitForOnResume();
     }
 
@@ -290,6 +347,25 @@ abstract class AssistTestBase {
         intent.putExtra(Utils.EXTRA_REMOTE_CALLBACK, mRemoteCallback);
         mTestActivity = mActivityTestRule.launchActivity(intent);
         mActivityManager = (ActivityManager) mContext.getSystemService(Context.ACTIVITY_SERVICE);
+    }
+
+    /** Create a virtual display and return the id of the display. */
+    protected int createVirtualDisplay() {
+        final DisplayManager displayManager = mContext.getSystemService(DisplayManager.class);
+        final Point displaySize = new Point();
+        mTestActivity.getWindowManager().getDefaultDisplay().getRealSize(displaySize);
+        final int width = displaySize.x / 2;
+        final int height = displaySize.y / 2;
+        mVirtualDisplay =
+                displayManager.createVirtualDisplay(
+                        "AssistVirtualDisplay",
+                        width,
+                        height,
+                        160,
+                        ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
+                                .getSurface(),
+                        VIRTUAL_DISPLAY_FLAG_TRUSTED);
+        return mVirtualDisplay.getDisplay().getDisplayId();
     }
 
     /**
@@ -780,6 +856,7 @@ abstract class AssistTestBase {
             this.entries.put(Utils.TEST_ACTIVITY_DESTROY, mHasTestDestroyedLatch);
             this.entries.put(Utils.ASSIST_RECEIVER_REGISTERED, mReadyLatch);
             this.entries.put(Utils.BROADCAST_ASSIST_DATA_INTENT, mAssistDataReceivedLatch);
+            this.entries.put(Utils.BROADCAST_SESSION_BUNDLE, mSessionDataReceivedLatch);
         }
 
         protected ActionLatchReceiver(String action, AutoResetLatch latch) {
@@ -788,17 +865,18 @@ abstract class AssistTestBase {
 
         protected void onAction(Bundle bundle, String action) {
             switch (action) {
+                case Utils.BROADCAST_SESSION_BUNDLE:
+                    mSessionBundle = bundle.getBundle(Utils.SESSION_BUNDLE_KEY);
+                    break;
                 case Utils.BROADCAST_ASSIST_DATA_INTENT:
                     AssistTestBase.this.setAssistResults(bundle);
-                    // fall-through
-                default:
-                    AutoResetLatch latch = entries.get(action);
-                    if (latch == null) {
-                        Log.e(TAG, this.getClass() + ": invalid action " + action);
-                    } else {
-                        latch.countDown();
-                    }
                     break;
+            }
+            AutoResetLatch latch = entries.get(action);
+            if (latch == null) {
+                Log.e(TAG, this.getClass() + ": invalid action " + action);
+            } else {
+                latch.countDown();
             }
         }
     }

@@ -36,6 +36,7 @@ public class Utils {
     public static final String ACTION_PREFIX = "android.intent.action.";
     public static final String BROADCAST_INTENT = ACTION_PREFIX + "ASSIST_TESTAPP";
     public static final String BROADCAST_ASSIST_DATA_INTENT = ACTION_PREFIX + "ASSIST_DATA";
+    public static final String BROADCAST_SESSION_BUNDLE = ACTION_PREFIX + "SESSION_BUNDLE";
     public static final String BROADCAST_INTENT_START_ASSIST = ACTION_PREFIX + "START_ASSIST";
     public static final String ASSIST_RECEIVER_REGISTERED = ACTION_PREFIX + "ASSIST_READY";
     public static final String ACTION_END_OF_TEST = ACTION_PREFIX + "END_OF_TEST";
@@ -47,6 +48,7 @@ public class Utils {
     public static final String ASSIST_STRUCTURE_KEY = "assist_structure";
     public static final String ASSIST_CONTENT_KEY = "assist_content";
     public static final String ASSIST_BUNDLE_KEY = "assist_bundle";
+    public static final String SESSION_BUNDLE_KEY = "session_bundle";
     public static final String ASSIST_IS_ACTIVITY_ID_NULL = "assist_is_activity_id_null";
     public static final String ASSIST_SCREENSHOT_KEY = "assist_screenshot";
     public static final String SCREENSHOT_COLOR_KEY = "set_screenshot_color";

@@ -16,6 +16,8 @@
 
 package android.assist.service;
 
+import static android.assist.common.Utils.BROADCAST_SESSION_BUNDLE;
+import static android.assist.common.Utils.SESSION_BUNDLE_KEY;
 import static android.assist.common.Utils.SHOW_SESSION_FLAGS_TO_SET;
 import static android.service.voice.VoiceInteractionSession.SHOW_WITH_ASSIST;
 import static android.service.voice.VoiceInteractionSession.SHOW_WITH_ASSIST_STRUCTURE_SCREEN_CONTENT;
@@ -63,6 +65,15 @@ public class MainInteractionService extends VoiceInteractionService {
         mRemoteCallback = mIntent.getParcelableExtra(Utils.EXTRA_REMOTE_CALLBACK);
         maybeStart();
         return START_NOT_STICKY;
+    }
+
+    @Override
+    public void onPrepareToShowSession(Bundle args, int flags) {
+        Bundle bundle = new Bundle();
+        bundle.putBundle(SESSION_BUNDLE_KEY, args);
+        bundle.putString(Utils.EXTRA_REMOTE_CALLBACK_ACTION, BROADCAST_SESSION_BUNDLE);
+        mRemoteCallback.sendResult(bundle);
+        super.onPrepareToShowSession(args, flags);
     }
 
     protected void notify(String action) {
