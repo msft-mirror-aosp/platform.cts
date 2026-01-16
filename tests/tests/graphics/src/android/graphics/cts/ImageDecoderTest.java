@@ -3156,6 +3156,7 @@ public class ImageDecoderTest {
                 "dngs/test_b456471290.dng",
                 "dngs/test_b456471487.dng",
                 "dngs/test_b461790658.dng",
+                "dngs/test_b467352655.dng",
                 "dngs/test_b467994310.dng",
                 "dngs/test_b467994860.dng",
                 "dngs/test_b470966846.dng",
