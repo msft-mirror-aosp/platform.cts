@@ -21,10 +21,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
 import android.os.Parcel;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.security.Flags;
 import android.security.trusttoken.TrustTokenResponse;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -34,6 +39,9 @@ import java.util.List;
 
 @RunWith(AndroidJUnit4.class)
 public final class TrustTokenResponseTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final List<byte[]> TEST_ENCODED_TOKENS =
             Arrays.asList(new byte[] {0, 1}, new byte[] {2, 3});
     private static final List<byte[]> TEST_ROOT_AUTHORITY_KEYS =
@@ -43,6 +51,7 @@ public final class TrustTokenResponseTest {
     private static final Instant TEST_UPDATE_TIME = Instant.ofEpochMilli(1234L);
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
     public void addEncodedToken_null_throws() {
         assertThrows(
                 NullPointerException.class,
@@ -50,6 +59,7 @@ public final class TrustTokenResponseTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
     public void addRootAuthorityKey_null_throws() {
         assertThrows(
                 NullPointerException.class,
@@ -57,6 +67,7 @@ public final class TrustTokenResponseTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
     public void addIntermediateCertificate_null_throws() {
         assertThrows(
                 NullPointerException.class,
@@ -64,6 +75,7 @@ public final class TrustTokenResponseTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
     public void setUpdateTime_null_throws() {
         assertThrows(
                 NullPointerException.class,
@@ -71,6 +83,7 @@ public final class TrustTokenResponseTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
     public void builderAndGetters() {
         TrustTokenResponse response =
                 new TrustTokenResponse.Builder()
@@ -88,6 +101,7 @@ public final class TrustTokenResponseTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
     public void parcelable() {
         TrustTokenResponse response =
                 new TrustTokenResponse.Builder()
@@ -133,6 +147,7 @@ public final class TrustTokenResponseTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
     public void parcelable_emptyResponse() {
         TrustTokenResponse response =
                 new TrustTokenResponse.Builder().setUpdateTime(TEST_UPDATE_TIME).build();

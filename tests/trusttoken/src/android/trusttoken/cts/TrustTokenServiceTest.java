@@ -23,15 +23,21 @@ import static org.junit.Assert.assertThrows;
 
 import android.content.Intent;
 import android.os.IBinder;
-import android.security.trusttoken.TrustTokenCallback;
+import android.os.OutcomeReceiver;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.security.Flags;
 import android.security.trusttoken.TrustTokenRequest;
 import android.security.trusttoken.TrustTokenResponse;
 import android.security.trusttoken.TrustTokenService;
+import android.security.trusttoken.TrustTokenServiceException;
 
 import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -40,16 +46,20 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @RunWith(AndroidJUnit4.class)
 public final class TrustTokenServiceTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private TestTrustTokenService mService;
 
     private static class TestTrustTokenService extends TrustTokenService {
         TrustTokenRequest mLastRequest;
-        TrustTokenCallback mLastCallback;
+        OutcomeReceiver<TrustTokenResponse, TrustTokenServiceException> mLastCallback;
         boolean mThrowOnRequest;
 
         @Override
         public void onRequestTrustTokens(
-                @NonNull TrustTokenRequest request, @NonNull TrustTokenCallback callback) {
+                @NonNull TrustTokenRequest request,
+                @NonNull OutcomeReceiver<TrustTokenResponse, TrustTokenServiceException> callback) {
             if (mThrowOnRequest) {
                 throw new UnsupportedOperationException("Not implemented");
             }
@@ -64,6 +74,7 @@ public final class TrustTokenServiceTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
     public void getTrustTokens_unimplemented_throws() {
         mService.mThrowOnRequest = true;
         assertThrows(
@@ -72,6 +83,7 @@ public final class TrustTokenServiceTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
     public void onBind_correctAction_returnsBinder() {
         Intent intent = new Intent(TrustTokenService.SERVICE_INTERFACE);
         IBinder binder = mService.onBind(intent);
@@ -79,6 +91,7 @@ public final class TrustTokenServiceTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
     public void onBind_wrongAction_returnsNull() {
         Intent intent = new Intent("wrong.action");
         IBinder binder = mService.onBind(intent);
@@ -86,21 +99,23 @@ public final class TrustTokenServiceTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
     public void onBind_nullIntent_returnsNull() {
         IBinder binder = mService.onBind(null);
         assertNull(binder);
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
     public void onRequestTrustTokens_requestAndCallbackAreSet() {
         TrustTokenRequest request = new TrustTokenRequest.Builder().build();
-        TrustTokenCallback callback =
-                new TrustTokenCallback() {
+        OutcomeReceiver<TrustTokenResponse, TrustTokenServiceException> callback =
+                new OutcomeReceiver<>() {
                     @Override
-                    public void onSuccess(@NonNull TrustTokenResponse response) {}
+                    public void onResult(@NonNull TrustTokenResponse response) {}
 
                     @Override
-                    public void onFailure(int code) {}
+                    public void onError(@NonNull TrustTokenServiceException e) {}
                 };
 
         mService.onRequestTrustTokens(request, callback);
@@ -110,47 +125,54 @@ public final class TrustTokenServiceTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
     public void onRequestTrustTokens_invokesCallbackSuccess() {
         final AtomicReference<TrustTokenResponse> responseRef = new AtomicReference<>();
         TrustTokenRequest request = new TrustTokenRequest.Builder().build();
-        TrustTokenCallback callback =
-                new TrustTokenCallback() {
+        OutcomeReceiver<TrustTokenResponse, TrustTokenServiceException> callback =
+                new OutcomeReceiver<>() {
                     @Override
-                    public void onSuccess(@NonNull TrustTokenResponse response) {
+                    public void onResult(@NonNull TrustTokenResponse response) {
                         responseRef.set(response);
                     }
 
                     @Override
-                    public void onFailure(int code) {}
+                    public void onError(@NonNull TrustTokenServiceException e) {}
                 };
         mService.onRequestTrustTokens(request, callback);
         assertNotNull(mService.mLastCallback);
 
         TrustTokenResponse expectedResponse = new TrustTokenResponse.Builder().build();
-        mService.mLastCallback.onSuccess(expectedResponse);
+        mService.mLastCallback.onResult(expectedResponse);
 
         assertEquals(expectedResponse, responseRef.get());
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
     public void onRequestTrustTokens_invokesCallbackFailure() {
         final AtomicInteger errorCodeRef = new AtomicInteger(-1);
+        final AtomicReference<String> errorMessageRef = new AtomicReference<>();
         TrustTokenRequest request = new TrustTokenRequest.Builder().build();
-        TrustTokenCallback callback =
-                new TrustTokenCallback() {
+        OutcomeReceiver<TrustTokenResponse, TrustTokenServiceException> callback =
+                new OutcomeReceiver<>() {
                     @Override
-                    public void onSuccess(@NonNull TrustTokenResponse response) {}
+                    public void onResult(@NonNull TrustTokenResponse response) {}
 
                     @Override
-                    public void onFailure(int code) {
-                        errorCodeRef.set(code);
+                    public void onError(@NonNull TrustTokenServiceException e) {
+                        errorCodeRef.set(e.getErrorCode());
+                        errorMessageRef.set(e.getMessage());
                     }
                 };
         mService.onRequestTrustTokens(request, callback);
         assertNotNull(mService.mLastCallback);
 
-        mService.mLastCallback.onFailure(TrustTokenCallback.ERROR_INTERNAL);
+        mService.mLastCallback.onError(
+                new TrustTokenServiceException(
+                        TrustTokenServiceException.ERROR_INTERNAL, "internal error"));
 
-        assertEquals(TrustTokenCallback.ERROR_INTERNAL, errorCodeRef.get());
+        assertEquals(TrustTokenServiceException.ERROR_INTERNAL, errorCodeRef.get());
+        assertEquals("internal error", errorMessageRef.get());
     }
 }
