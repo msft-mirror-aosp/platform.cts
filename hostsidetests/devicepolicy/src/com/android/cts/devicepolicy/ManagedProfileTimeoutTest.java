@@ -25,10 +25,20 @@ import com.android.tradefed.device.DeviceNotAvailableException;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
+import com.android.compatibility.common.util.FeatureUtil;
 
 public final class ManagedProfileTimeoutTest extends BaseManagedProfileTest {
     // This should be sufficiently larger than ProfileTimeoutTestHelper.TIMEOUT_MS
     private static final int PROFILE_TIMEOUT_DELAY_MS = 60_000;
+
+    @Override
+    public void tearDown() throws Exception {
+        // Return the headset to not being worn state.
+        if (FeatureUtil.isXrHeadset(getDevice())) {
+            setOffBody();
+        }
+        super.tearDown();
+    }
 
     /** Profile should get locked if it is not in foreground no matter what. */
     @FlakyTest
@@ -78,12 +88,36 @@ public final class ManagedProfileTimeoutTest extends BaseManagedProfileTest {
     public void testWorkProfileTimeoutKeepScreenOnWindow() throws Exception {
         assumeHasSecureLockScreenFeature();
 
+        // On XR a work window only keeps the profile from timing out if the headset is being worn.
+        if (FeatureUtil.isXrHeadset(getDevice())) {
+            setOnBody();
+        }
         setUpWorkProfileTimeout();
 
         startTestActivity(mProfileUserId, true);
         RunUtil.getDefault().sleep(PROFILE_TIMEOUT_DELAY_MS);
 
         verifyOnlyProfileLocked(false);
+    }
+
+    void setOnBody() throws DeviceNotAvailableException {
+        // Enable sensor injection in sensorservice
+        getDevice().executeShellCommand("dumpsys sensorservice hal_bypass_replay_data_injection android");
+        // Enable sensor data injection with XrServiceHelperService
+        getDevice().executeShellCommand("cmd XrServiceHelperService sensor-data-injection enable");
+        // Simulate headset being worn.
+        getDevice().executeShellCommand("cmd XrServiceHelperService offbody false");
+    }
+
+     void setOffBody() throws DeviceNotAvailableException {
+        // Enable sensor injection in sensorservice
+        getDevice().executeShellCommand("dumpsys sensorservice hal_bypass_replay_data_injection android");
+        // Enable sensor data injection with XrServiceHelperService
+        getDevice().executeShellCommand("cmd XrServiceHelperService sensor-data-injection enable");
+        // Simulate headset not being worn.
+        getDevice().executeShellCommand("cmd XrServiceHelperService offbody true");
+        // Disable sensor data injection with XrServiceHelperService
+        getDevice().executeShellCommand("cmd XrServiceHelperService sensor-data-injection disable");
     }
 
     private void setUpWorkProfileTimeout() throws DeviceNotAvailableException {
