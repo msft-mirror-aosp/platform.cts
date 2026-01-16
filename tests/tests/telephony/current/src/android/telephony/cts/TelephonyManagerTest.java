@@ -2233,6 +2233,33 @@ public class TelephonyManagerTest {
                 "Skipping test since rebootModem is not supported/enforced up to IRadio 2.4.",
                 mModemHalVersion > RADIO_HAL_VERSION_2_4);
 
+        tryRebootModem();
+    }
+
+    /**
+     * Verify that if rebootModem() does not work on devices where it is optional that it properly
+     * indicates that it does not work.
+     */
+    @Test
+    public void testRebootModemOptional() throws Throwable {
+        // Make this test mutually exclusive with testRebootModem() in order to avoid increasing
+        // test time for newer devices.
+        assumeTrue(
+                !hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS)
+                        || mModemHalVersion <= RADIO_HAL_VERSION_2_4);
+
+        try {
+            tryRebootModem();
+        } catch (UnsupportedOperationException allowed) {
+            // Allowed for devices with vendor partitions locked prior to enforcement of
+            // FEATURE_TELEPHONY_RADIO_ACCESS and which return UNSUPPORTED from the modem
+            // instead, because the HAL has been present and optional since 1.0 through an
+            // NV Write command.
+            // Note: this is the only allowable exception if the method is unsupported.
+        }
+    }
+
+    private void tryRebootModem() throws Throwable {
         RadioCallback rc = new RadioCallback();
 
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
