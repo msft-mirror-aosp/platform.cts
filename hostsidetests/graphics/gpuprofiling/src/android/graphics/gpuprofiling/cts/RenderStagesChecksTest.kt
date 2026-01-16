@@ -256,7 +256,7 @@ class RenderStagesChecksTest {
         // Verify no failure on matching IDs
         verify(mockCollector).checkThat(
             eq("Found mismatched queue submits and/or render stages."),
-            eq(emptyList<Any>()),
+            eq(2),
             any()
         )
     }
@@ -322,6 +322,95 @@ class RenderStagesChecksTest {
         verify(mockCollector).checkThat(
             eq("Render stage reported before its VkQueueSubmit for submission_id: 1."),
             eq(100L),
+            any()
+        )
+    }
+
+    @Test
+    fun checkRenderStagesMatchQueueSubmits_missingQueueSubmit_fails() {
+        val mockCollector = mock(ErrorCollector::class.java)
+
+        val trace = Trace.newBuilder().apply {
+            // ID 0 (Match)
+            addPacket(
+                TracePacket.newBuilder().setTimestamp(
+                    10
+                ).setVulkanApiEvent(
+                    VulkanApiEvent.newBuilder().setVkQueueSubmit(
+                        VkQueueSubmit.newBuilder().setSubmissionId(0)
+                    )
+                )
+            )
+            addPacket(
+                TracePacket.newBuilder().setTimestamp(
+                    20
+                ).setGpuRenderStageEvent(GpuRenderStageEvent.newBuilder().setSubmissionId(0))
+            )
+
+            // ID 1 (Match)
+            addPacket(
+                TracePacket.newBuilder().setTimestamp(
+                    100
+                ).setVulkanApiEvent(
+                    VulkanApiEvent.newBuilder().setVkQueueSubmit(
+                        VkQueueSubmit.newBuilder().setSubmissionId(1)
+                    )
+                )
+            )
+            addPacket(
+                TracePacket.newBuilder().setTimestamp(
+                    120
+                ).setGpuRenderStageEvent(GpuRenderStageEvent.newBuilder().setSubmissionId(1))
+            )
+
+            // ID 2 (Missing queue submit)
+            addPacket(
+                TracePacket.newBuilder().setTimestamp(
+                    220
+                ).setGpuRenderStageEvent(GpuRenderStageEvent.newBuilder().setSubmissionId(2))
+            )
+
+            // ID 3 (Match)
+            addPacket(
+                TracePacket.newBuilder().setTimestamp(
+                    300
+                ).setVulkanApiEvent(
+                    VulkanApiEvent.newBuilder().setVkQueueSubmit(
+                        VkQueueSubmit.newBuilder().setSubmissionId(3)
+                    )
+                )
+            )
+            addPacket(
+                TracePacket.newBuilder().setTimestamp(
+                    320
+                ).setGpuRenderStageEvent(GpuRenderStageEvent.newBuilder().setSubmissionId(3))
+            )
+
+            // ID 4 (Match)
+            addPacket(
+                TracePacket.newBuilder().setTimestamp(
+                    400
+                ).setVulkanApiEvent(
+                    VulkanApiEvent.newBuilder().setVkQueueSubmit(
+                        VkQueueSubmit.newBuilder().setSubmissionId(4)
+                    )
+                )
+            )
+            addPacket(
+                TracePacket.newBuilder().setTimestamp(
+                    420
+                ).setGpuRenderStageEvent(GpuRenderStageEvent.newBuilder().setSubmissionId(4))
+            )
+        }.build()
+
+        val data = RenderStagesData(trace)
+
+        checkRenderStagesMatchQueueSubmits(mockCollector, data)
+
+        // Verify no failure on matching IDs
+        verify(mockCollector).checkThat(
+            eq("Found mismatched queue submits and/or render stages."),
+            eq(2),
             any()
         )
     }

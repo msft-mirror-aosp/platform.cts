@@ -106,8 +106,6 @@ public class DecoderBlockModelTest {
                         "bbb_s1_320x180_webm_vp8_800kbps_30fps_opus_5ch_320kbps_48000hz.webm"},
                 {MediaFormat.MIMETYPE_AUDIO_AAC,
                         "video_480x360_mp4_h264_1000kbps_25fps_aac_stereo_128kbps_44100hz.mp4"},
-                {MediaFormat.MIMETYPE_VIDEO_AVC,
-                        "video_480x360_mp4_h264_1000kbps_25fps_aac_stereo_128kbps_44100hz.mp4"},
         }));
         // SkipCutBuffer handling for the following media types in case of block model mode had
         // issues prior to Android V (b/329767811). These issues were fixed in Android V and hence
@@ -117,6 +115,13 @@ public class DecoderBlockModelTest {
                     {MediaFormat.MIMETYPE_AUDIO_MPEG, "sinesweepmp3smpb.mp3"},
                     {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "bbb_mono_16kHz_23.85kbps_amrwb.3gp"},
                     {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "bbb_mono_8kHz_4.75kbps_amrnb.3gp"},
+            }));
+        }
+        if (!TestUtils.isCtsMode() || BOARD_SDK_IS_AFTER_202504) {
+            exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
+                    {MediaFormat.MIMETYPE_VIDEO_AVC,
+                            "video_480x360_mp4_h264_1000kbps_25fps_aac_stereo_128kbps_44100hz"
+                                    + ".mp4"},
             }));
         }
         // Due to offset alignment issues (b/445856828), some non-AVC h/w video codecs fail on

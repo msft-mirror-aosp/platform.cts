@@ -59,7 +59,7 @@ public class ContextHintWithSignatureTest {
     @ApiTest(
             apis = {
                 "android.service.personalcontext.hint.ContextHintWithSignature.Builder"
-                        + "#setRenderToken",
+                        + "#addRenderTokens",
                 "android.service.personalcontext.hint.ContextHintWithSignature.Builder"
                         + "#setOriginatingPackage",
                 "android.service.personalcontext.hint.ContextHintWithSignature.Builder"
@@ -67,7 +67,7 @@ public class ContextHintWithSignatureTest {
                 "android.service.personalcontext.hint.ContextHintWithSignature.Builder#build",
                 "android.service.personalcontext.hint.ContextHintWithSignature#isSignatureValid",
                 "android.service.personalcontext.hint.ContextHintWithSignature#getContextHint",
-                "android.service.personalcontext.hint.ContextHintWithSignature#getRenderToken",
+                "android.service.personalcontext.hint.ContextHintWithSignature#getRenderTokens",
                 "android.service.personalcontext.hint.ContextHintWithSignature"
                         + "#getOriginatingPackage",
                 "android.service.personalcontext.hint.ContextHintWithSignature#getAttributionHints",
@@ -89,19 +89,19 @@ public class ContextHintWithSignatureTest {
 
         final ContextHintWithSignature signedAttributedHint1 =
                 new ContextHintWithSignature.Builder(attributedHint1, key)
-                        .setRenderToken(renderToken)
+                        .addRenderTokens(List.of(renderToken))
                         .build();
 
         final ContextHintWithSignature signedAttributedHint2 =
                 new ContextHintWithSignature.Builder(attributedHint2, key)
-                        .setRenderToken(renderToken)
+                        .addRenderTokens(List.of(renderToken))
                         .build();
 
         final Parcel parcel = Parcel.obtain();
         parcel.writeParcelable(
                 new ContextHintWithSignature.Builder(hint, key)
-                        .setRenderToken(renderToken)
                         .setOriginatingPackage(origin.getPackageName())
+                        .addRenderTokens(List.of(renderToken))
                         .addAttributionHint(signedAttributedHint1)
                         .addAttributionHint(signedAttributedHint2)
                         .build(),
@@ -116,8 +116,7 @@ public class ContextHintWithSignatureTest {
 
         assertThat(signedHint.isSignatureValid(key)).isTrue();
         assertThat(signedHint.getContextHint().getHintId()).isEqualTo(hint.getHintId());
-        assertThat(signedHint.getRenderToken().getRendererComponentId())
-                .isEqualTo(renderToken.getRendererComponentId());
+        assertThat(signedHint.getRenderTokens()).containsExactly(renderToken);
         assertThat(signedHint.getOriginatingPackage()).isEqualTo(origin.getPackageName());
         assertThat(signedHint.getAttributionHints().size()).isEqualTo(2);
         assertThat(signedHint.getAttributionHints().get(0).getOriginatingPackage()).isNull();
@@ -131,13 +130,13 @@ public class ContextHintWithSignatureTest {
     @ApiTest(
             apis = {
                 "android.service.personalcontext.hint.ContextHintWithSignature.Builder"
-                        + "#setRenderToken",
+                        + "#addRenderTokens",
                 "android.service.personalcontext.hint.ContextHintWithSignature.Builder"
                         + "#addAttributionHint",
                 "android.service.personalcontext.hint.ContextHintWithSignature.Builder#build",
                 "android.service.personalcontext.hint.ContextHintWithSignature#isSignatureValid",
                 "android.service.personalcontext.hint.ContextHintWithSignature#getContextHint",
-                "android.service.personalcontext.hint.ContextHintWithSignature#getRenderToken",
+                "android.service.personalcontext.hint.ContextHintWithSignature#getRenderTokens",
                 "android.service.personalcontext.hint.ContextHintWithSignature"
                         + "#getOriginatingPackage",
                 "android.service.personalcontext.hint.ContextHintWithSignature#getAttributionHints",
@@ -157,18 +156,18 @@ public class ContextHintWithSignatureTest {
 
         final ContextHintWithSignature signedAttributedHint1 =
                 new ContextHintWithSignature.Builder(attributedHint1, key)
-                        .setRenderToken(renderToken)
+                        .addRenderTokens(List.of(renderToken))
                         .build();
 
         final ContextHintWithSignature signedAttributedHint2 =
                 new ContextHintWithSignature.Builder(attributedHint2, key)
-                        .setRenderToken(renderToken)
+                        .addRenderTokens(List.of(renderToken))
                         .build();
 
         final Parcel parcel = Parcel.obtain();
         parcel.writeParcelable(
                 new ContextHintWithSignature.Builder(hint, key)
-                        .setRenderToken(renderToken)
+                        .addRenderTokens(List.of(renderToken))
                         .addAttributionHints(List.of(signedAttributedHint1, signedAttributedHint2))
                         .build(),
                 0);
@@ -182,8 +181,7 @@ public class ContextHintWithSignatureTest {
 
         assertThat(signedHint.isSignatureValid(key)).isTrue();
         assertThat(signedHint.getContextHint().getHintId()).isEqualTo(hint.getHintId());
-        assertThat(signedHint.getRenderToken().getRendererComponentId())
-                .isEqualTo(renderToken.getRendererComponentId());
+        assertThat(signedHint.getRenderTokens()).containsExactly(renderToken);
         assertThat(signedHint.getOriginatingPackage()).isNull();
         assertThat(signedHint.getAttributionHints().size()).isEqualTo(2);
         assertThat(signedHint.getAttributionHints().get(0).getOriginatingPackage()).isNull();
@@ -203,7 +201,7 @@ public class ContextHintWithSignatureTest {
                 "android.service.personalcontext.hint.ContextHintWithSignature.Builder#build",
                 "android.service.personalcontext.hint.ContextHintWithSignature#isSignatureValid",
                 "android.service.personalcontext.hint.ContextHintWithSignature#getContextHint",
-                "android.service.personalcontext.hint.ContextHintWithSignature#getRenderToken",
+                "android.service.personalcontext.hint.ContextHintWithSignature#getRenderTokens",
                 "android.service.personalcontext.hint.ContextHintWithSignature"
                         + "#getOriginatingPackage",
                 "android.service.personalcontext.hint.ContextHintWithSignature#getAttributionHints",
@@ -241,7 +239,7 @@ public class ContextHintWithSignatureTest {
 
         assertThat(signedHint.isSignatureValid(key)).isTrue();
         assertThat(signedHint.getContextHint().getHintId()).isEqualTo(hint.getHintId());
-        assertThat(signedHint.getRenderToken()).isNull();
+        assertThat(signedHint.getRenderTokens()).isEmpty();
         assertThat(signedHint.getOriginatingPackage()).isEqualTo(origin.getPackageName());
         assertThat(signedHint.getAttributionHints().size()).isEqualTo(2);
         assertThat(signedHint.getAttributionHints().get(0).getContextHint().getHintId())
@@ -253,13 +251,13 @@ public class ContextHintWithSignatureTest {
     @ApiTest(
             apis = {
                 "android.service.personalcontext.hint.ContextHintWithSignature.Builder"
-                        + "#setRenderToken",
+                        + "#addRenderTokens",
                 "android.service.personalcontext.hint.ContextHintWithSignature.Builder"
                         + "#setOriginatingPackage",
                 "android.service.personalcontext.hint.ContextHintWithSignature.Builder#build",
                 "android.service.personalcontext.hint.ContextHintWithSignature#isSignatureValid",
                 "android.service.personalcontext.hint.ContextHintWithSignature#getContextHint",
-                "android.service.personalcontext.hint.ContextHintWithSignature#getRenderToken",
+                "android.service.personalcontext.hint.ContextHintWithSignature#getRenderTokens",
                 "android.service.personalcontext.hint.ContextHintWithSignature"
                         + "#getOriginatingPackage",
                 "android.service.personalcontext.hint.ContextHintWithSignature#getAttributionHints",
@@ -280,7 +278,7 @@ public class ContextHintWithSignatureTest {
         parcel.writeParcelable(
                 new ContextHintWithSignature.Builder(hint, key)
                         .setOriginatingPackage(origin.getPackageName())
-                        .setRenderToken(renderToken)
+                        .addRenderTokens(List.of(renderToken))
                         .build(),
                 0);
 
@@ -293,8 +291,7 @@ public class ContextHintWithSignatureTest {
 
         assertThat(signedHint.isSignatureValid(key)).isTrue();
         assertThat(signedHint.getContextHint().getHintId()).isEqualTo(hint.getHintId());
-        assertThat(signedHint.getRenderToken().getRendererComponentId())
-                .isEqualTo(renderToken.getRendererComponentId());
+        assertThat(signedHint.getRenderTokens()).containsExactly(renderToken);
         assertThat(signedHint.getOriginatingPackage()).isEqualTo(origin.getPackageName());
         assertThat(signedHint.getAttributionHints().size()).isEqualTo(0);
     }

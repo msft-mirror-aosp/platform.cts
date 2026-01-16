@@ -26,6 +26,7 @@ import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import java.util.Arrays;
 import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
@@ -35,6 +36,8 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.ResultType;
+import com.android.compatibility.common.util.ResultUnit;
 import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.wavelib.DspBufferComplex;
@@ -55,6 +58,8 @@ import org.json.JSONObject;
 public class AudioFrequencyUnprocessedActivity extends AudioFrequencyActivity implements Runnable,
     AudioRecord.OnRecordPositionUpdateListener {
     private static final String TAG = "AudioFrequencyUnprocessedActivity";
+
+    private static final String KEY_SUPPORTS_UNPROCESSED = "supports_unprocessed";
 
     private static final int TEST_STARTED = 900;
     private static final int TEST_MESSAGE = 903;
@@ -948,6 +953,12 @@ public class AudioFrequencyUnprocessedActivity extends AudioFrequencyActivity im
 
     @Override // PassFailButtons
     public void recordTestResults() {
+        getReportLog()
+                .addValue(
+                        KEY_SUPPORTS_UNPROCESSED,
+                        mSupportsUnprocessed,
+                        ResultType.NEUTRAL,
+                        ResultUnit.NONE);
         getReportLog().submit();
     }
 
@@ -1105,8 +1116,10 @@ public class AudioFrequencyUnprocessedActivity extends AudioFrequencyActivity im
             mFftServer.fft(mC, 1);
 
             double[] halfMagnitude = new double[mBlockSizeSamples / 2];
+            double scale = 2.0 / Arrays.stream(mWindow.mBuffer.mData).sum();
             for (i = 0; i < mBlockSizeSamples / 2; i++) {
-                halfMagnitude[i] = Math.sqrt(mC.mReal[i] * mC.mReal[i] + mC.mImag[i] * mC.mImag[i]);
+                halfMagnitude[i] = scale * Math.sqrt(mC.mReal[i] * mC.mReal[i]
+                        + mC.mImag[i] * mC.mImag[i]);
             }
 
             switch(mCurrentTest) {

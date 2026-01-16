@@ -16,6 +16,9 @@
 
 package com.android.cts.verifier.audio;
 
+import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
+import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
+
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.graphics.Color;
@@ -24,10 +27,21 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.widget.TextView;
 
+import com.android.compatibility.common.util.ResultType;
+import com.android.compatibility.common.util.ResultUnit;
+import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.R; // needed to access resource in CTSVerifier project namespace.
 
 public class USBAudioPeripheralButtonsActivity extends USBAudioPeripheralActivity {
     private static final String TAG = "USBAudioPeripheralButtonsActivity";
+
+    // ReportLog Schema
+    private static final String SECTION_USB_AUDIO_PERIPHERAL_BUTTONS =
+            "usb_audio_peripheral_buttons";
+    private static final String KEY_BTN_PLAY_PAUSE = "button_play_pause";
+    private static final String KEY_BTN_VOLUME_UP = "button_volume_up";
+    private static final String KEY_BTN_VOLUME_DOWN = "button_volume_down";
+    private static final String KEY_DEVICE_NAME = "device_name";
 
     // State
     private boolean mHasBtnA;
@@ -64,6 +78,8 @@ public class USBAudioPeripheralButtonsActivity extends USBAudioPeripheralActivit
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.uap_buttons_panel);
+
+        mRequireReportLogToPass = true;
 
         connectPeripheralStatusWidgets();
 
@@ -146,6 +162,36 @@ public class USBAudioPeripheralButtonsActivity extends USBAudioPeripheralActivit
         mHasBtnA = mHasBtnB = mHasBtnC = false;
         showButtonsState();
         calculateMatch();
+    }
+
+    @Override
+    public String getTestId() {
+        return setTestNameSuffix(sCurrentDisplayMode, getClass().getName());
+    }
+
+    @Override
+    public final String getReportSectionName() {
+        return setTestNameSuffix(sCurrentDisplayMode, SECTION_USB_AUDIO_PERIPHERAL_BUTTONS);
+    }
+
+    @Override
+    public void recordTestResults() {
+        CtsVerifierReportLog reportLog = getReportLog();
+        reportLog.addValue(KEY_BTN_PLAY_PAUSE, mHasBtnA, ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.addValue(KEY_BTN_VOLUME_UP, mHasBtnB, ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.addValue(KEY_BTN_VOLUME_DOWN, mHasBtnC, ResultType.NEUTRAL, ResultUnit.NONE);
+
+        String deviceName = "";
+        if (mIsPeripheralAttached) {
+            if (mOutputDevInfo != null) {
+                deviceName = mOutputDevInfo.getProductName().toString();
+            } else if (mInputDevInfo != null) {
+                deviceName = mInputDevInfo.getProductName().toString();
+            }
+        }
+        reportLog.addValue(KEY_DEVICE_NAME, deviceName, ResultType.NEUTRAL, ResultUnit.NONE);
+
+        reportLog.submit();
     }
 }
 

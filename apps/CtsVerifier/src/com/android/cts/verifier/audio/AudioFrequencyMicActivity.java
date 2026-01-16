@@ -43,6 +43,7 @@ import com.android.cts.verifier.audio.wavelib.DspWindow;
 import com.android.cts.verifier.audio.wavelib.PipeShort;
 import com.android.cts.verifier.audio.wavelib.VectorAverage;
 
+import java.util.Arrays;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -857,8 +858,10 @@ public class AudioFrequencyMicActivity extends AudioFrequencyActivity implements
             mFftServer.fft(mC, 1);
 
             double[] halfMagnitude = new double[mBlockSizeSamples / 2];
+            double scale = 2.0 / Arrays.stream(mWindow.mBuffer.mData).sum();
             for (i = 0; i < mBlockSizeSamples / 2; i++) {
-                halfMagnitude[i] = Math.sqrt(mC.mReal[i] * mC.mReal[i] + mC.mImag[i] * mC.mImag[i]);
+                halfMagnitude[i] = scale * Math.sqrt(mC.mReal[i] * mC.mReal[i] +
+                        mC.mImag[i] * mC.mImag[i]);
             }
 
             switch(mCurrentTest) {

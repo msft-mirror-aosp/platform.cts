@@ -51,10 +51,11 @@ java_defaults {
     compile_multilib: "both",
     static_libs: [
         "android.media.extractor.flags-aconfig-java",
+        "androidx.media3.media3-exoplayer",
+        "androidx.media3.media3-inspector",
         "com.android.media.flags.editing-aconfig-java",
         "ctsmediav2common",
         "ctstestrunner-axt",
-        "exoplayer-mediamuxer_tests",
     ],
     jni_libs: [
         "libctsmediamuxertest_jni",

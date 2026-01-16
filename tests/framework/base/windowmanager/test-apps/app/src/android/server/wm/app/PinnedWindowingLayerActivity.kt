@@ -24,8 +24,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.OutcomeReceiver
+import android.server.wm.app.Components.PinnedWindowingLayerActivity.ACTION_ACTIVITY_FINISHED
 import android.server.wm.app.Components.PinnedWindowingLayerActivity.ACTION_REQUEST_WINDOWING_LAYER
 import android.server.wm.app.Components.PinnedWindowingLayerActivity.ACTION_REQUEST_WINDOWING_LAYER_RESULT
+import android.server.wm.app.Components.PinnedWindowingLayerActivity.EXTRA_EXCEPTION_CLASS
 import android.server.wm.app.Components.PinnedWindowingLayerActivity.EXTRA_RESULT_DETAILS
 import android.server.wm.app.Components.PinnedWindowingLayerActivity.EXTRA_RESULT_SUCCESS
 import android.server.wm.app.Components.PinnedWindowingLayerActivity.EXTRA_WINDOWING_LAYER_TYPE
@@ -54,6 +56,14 @@ class PinnedWindowingLayerActivity : Activity() {
         )
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        if (isFinishing) {
+            sendBroadcast(Intent(ACTION_ACTIVITY_FINISHED))
+        }
+        unregisterReceiver(broadcastReceiver)
+    }
+
     private fun requestWindowingLayer(type: Int) {
         Log.d(TAG, "requestWindowingLayer: type=$type")
         try {
@@ -66,24 +76,40 @@ class PinnedWindowingLayerActivity : Activity() {
     }
 
     private fun createApiOutcomeReceiver(type: Int) =
-        object : OutcomeReceiver<Void, Exception> {
-            override fun onResult(result: Void?) {
-                Log.d(TAG, "onResult: success")
-                sendResultBroadcast(true, type)
+        object : OutcomeReceiver<Int, Exception> {
+            override fun onResult(result: Int?) {
+                Log.d(TAG, "onResult: ${returnCodeAsString(result)}")
+                when (result) {
+                    AppTask.WINDOWING_LAYER_REQUEST_GRANTED -> sendResultBroadcast(true, type)
+                    else ->
+                        sendResultBroadcast(
+                            false,
+                            type,
+                            "rejected with code ${returnCodeAsString(result)}",
+                        )
+                }
             }
 
             override fun onError(error: Exception) {
                 Log.e(TAG, "onError: msg=${error.message}")
-                sendResultBroadcast(false, type, "callback.onError: msg=${error.message}")
+                sendResultBroadcast(false, type, "callback.onError: msg=${error.message}", error)
             }
         }
 
-    private fun sendResultBroadcast(success: Boolean, layer: Int, details: String? = null) {
+    private fun sendResultBroadcast(
+        success: Boolean,
+        layer: Int,
+        details: String? = null,
+        error: Exception? = null,
+    ) {
         val broadcast = Intent(ACTION_REQUEST_WINDOWING_LAYER_RESULT)
         broadcast.putExtra(EXTRA_RESULT_SUCCESS, success)
         broadcast.putExtra(EXTRA_WINDOWING_LAYER_TYPE, layer)
         if (details != null) {
             broadcast.putExtra(EXTRA_RESULT_DETAILS, details)
+        }
+        if (error != null) {
+            broadcast.putExtra(EXTRA_EXCEPTION_CLASS, error.javaClass.name)
         }
         sendBroadcast(broadcast)
     }
@@ -98,5 +124,12 @@ class PinnedWindowingLayerActivity : Activity() {
 
     companion object {
         private const val TAG = "PinnedWindowingLayerActivity"
+
+        private fun returnCodeAsString(code: Int?) =
+            when (code) {
+                AppTask.WINDOWING_LAYER_REQUEST_GRANTED -> "GRANTED"
+                AppTask.WINDOWING_LAYER_REQUEST_REJECTED -> "REJECTED"
+                else -> "Urecognized code=$code"
+            }
     }
 }
