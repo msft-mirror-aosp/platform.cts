@@ -280,8 +280,6 @@ public class VehiclePropertyVerifier<T> {
                     DetailedErrorCode.NOT_AVAILABLE_SPEED_HIGH,
                     DetailedErrorCode.NOT_AVAILABLE_POOR_VISIBILITY,
                     DetailedErrorCode.NOT_AVAILABLE_SAFETY);
-    private static final boolean CAR_PROPERTY_SUPPORTED_VALUE_FLAG =
-            isAtLeastB() && Flags.carPropertySupportedValue();
     private static final ImmutableSet<Integer> VALID_CAR_PROPERTY_VALUE_STATUSES_BEFORE_C =
             ImmutableSet.of(
                     CarPropertyValue.STATUS_AVAILABLE,
@@ -957,17 +955,17 @@ public class VehiclePropertyVerifier<T> {
                         }
 
                         if (step.equals(STEP_VERIFY_READ_APIS_GET_MIN_MAX_SUPPORTED_VALUE)
-                                && CAR_PROPERTY_SUPPORTED_VALUE_FLAG) {
+                                && isAtLeastB()) {
                             verifyGetMinMaxSupportedValue();
                         }
 
                         if (step.equals(STEP_VERIFY_READ_APIS_GET_SUPPORTED_VALUES_LIST)
-                                && CAR_PROPERTY_SUPPORTED_VALUE_FLAG) {
+                                && isAtLeastB()) {
                             verifyGetSupportedValuesList();
                         }
 
                         if (step.equals(STEP_VERIFY_READ_APIS_REG_UNREG_SUPPORTED_VALUES_CHANGE)
-                                && CAR_PROPERTY_SUPPORTED_VALUE_FLAG) {
+                                && isAtLeastB()) {
                             verifyRegisterUnregisterSupportedValuesChangeCallback();
                         }
 
@@ -1093,7 +1091,7 @@ public class VehiclePropertyVerifier<T> {
                                     mCarPropertyManager.registerCallback(
                                             FAKE_CALLBACK, mPropertyId, 0f));
 
-                    if (isAtLeastV() && Flags.variableUpdateRate()) {
+                    if (isAtLeastV()) {
                         // For the new API, if the caller does not read permission, it throws
                         // SecurityException.
                         assertThrows(
@@ -2099,7 +2097,7 @@ public class VehiclePropertyVerifier<T> {
             CarPropertyManager.CarPropertyEventCallback callback,
             int propertyId,
             float updateRateHz) {
-        if (isAtLeastV() && Flags.variableUpdateRate()) {
+        if (isAtLeastV()) {
             // Use new API if at least V.
             return carPropertyManager.subscribePropertyEvents(
                     List.of(
@@ -2125,7 +2123,7 @@ public class VehiclePropertyVerifier<T> {
             CarPropertyManager carPropertyManager,
             CarPropertyManager.CarPropertyEventCallback callback,
             int propertyId) {
-        if (isAtLeastV() && Flags.variableUpdateRate()) {
+        if (isAtLeastV()) {
             // Use new API if at least V.
             carPropertyManager.unsubscribePropertyEvents(propertyId, callback);
         } else {
@@ -2375,7 +2373,7 @@ public class VehiclePropertyVerifier<T> {
                         .that(areaIdMaxValue)
                         .isNotNull();
 
-                if (CAR_PROPERTY_SUPPORTED_VALUE_FLAG) {
+                if (isAtLeastB()) {
                     assertWithMessage(
                                     mPropertyName
                                             + " - area ID: "
@@ -2461,7 +2459,7 @@ public class VehiclePropertyVerifier<T> {
                                         + mAllPossibleEnumValues)
                         .that(mAllPossibleEnumValues.containsAll(supportedEnumValues))
                         .isTrue();
-                if (CAR_PROPERTY_SUPPORTED_VALUE_FLAG) {
+                if (isAtLeastB()) {
                     assertWithMessage(
                                     mPropertyName
                                             + " - areaId: "
@@ -3065,7 +3063,7 @@ public class VehiclePropertyVerifier<T> {
                 .that(mCarPropertyManager.registerCallback(FAKE_CALLBACK, mPropertyId, 0f))
                 .isFalse();
 
-        if (isAtLeastV() && Flags.variableUpdateRate()) {
+        if (isAtLeastV()) {
             // For the new API, if the caller does not have read and write permission, it throws
             // SecurityException.
             assertThrows(
