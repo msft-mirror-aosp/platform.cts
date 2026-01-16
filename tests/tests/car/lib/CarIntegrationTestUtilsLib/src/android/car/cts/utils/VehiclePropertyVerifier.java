@@ -63,6 +63,8 @@ import android.car.hardware.property.Subscription;
 import android.content.Context;
 import android.os.Build;
 import android.os.SystemClock;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.platform.test.flag.util.FlagReadException;
 import android.util.ArrayMap;
 import android.util.ArraySet;
 import android.util.Log;
@@ -324,6 +326,8 @@ public class VehiclePropertyVerifier<T> {
             new SparseArray<>();
 
     private static final Context sContext = TestApis.context().instrumentedContext();
+    private static final DeviceFlagsValueProvider sFlagsValueProvider =
+            new DeviceFlagsValueProvider();
     private final CarPropertyManager mCarPropertyManager;
     private final int mPropertyId;
     private final String mPropertyName;
@@ -2183,7 +2187,8 @@ public class VehiclePropertyVerifier<T> {
                         carPropertyValue,
                         carPropertyValue.getAreaId(),
                         CAR_PROPERTY_VALUE_SOURCE_CALLBACK);
-                if (Flags.carPropertyStatusDetailedNotAvailable()) {
+                if (isFeatureFlagEnabledSafe(
+                        Flags.FLAG_CAR_PROPERTY_STATUS_DETAILED_NOT_AVAILABLE)) {
                     if (sContext.checkSelfPermission(Car.PERMISSION_READ_PROPERTY_VENDOR_STATUS)
                             != PERMISSION_GRANTED) {
                         assertThrows(
@@ -2763,7 +2768,7 @@ public class VehiclePropertyVerifier<T> {
                 .isTrue();
 
         ImmutableSet<Integer> validStatuses = VALID_CAR_PROPERTY_VALUE_STATUSES;
-        if (!Flags.carPropertyStatusDetailedNotAvailable()) {
+        if (!isFeatureFlagEnabledSafe(Flags.FLAG_CAR_PROPERTY_STATUS_DETAILED_NOT_AVAILABLE)) {
             validStatuses = VALID_CAR_PROPERTY_VALUE_STATUSES_BEFORE_C;
         }
         assertWithMessage(
@@ -4535,7 +4540,7 @@ public class VehiclePropertyVerifier<T> {
     }
 
     private static void verifyVendorErrorCode(Supplier<Integer> getVendorErrorCode) {
-        if (Flags.carPropertyVendorErrorCodePermission()
+        if (isFeatureFlagEnabledSafe(Flags.FLAG_CAR_PROPERTY_VENDOR_ERROR_CODE_PERMISSION)
                 && sContext.checkSelfPermission(Car.PERMISSION_READ_PROPERTY_VENDOR_ERROR_CODE)
                         != PERMISSION_GRANTED) {
             assertThrows(SecurityException.class, () -> getVendorErrorCode.get());
@@ -4620,6 +4625,19 @@ public class VehiclePropertyVerifier<T> {
                 }
                 SystemClock.sleep(remainingDelayMs);
             } while (true);
+        }
+    }
+
+    /**
+     * Safely checks if a feature flag is enabled, returning false if the flag doesn't exist on the
+     * current platform.
+     */
+    private static boolean isFeatureFlagEnabledSafe(String flagName) {
+        try {
+            return sFlagsValueProvider.getBoolean(flagName);
+        } catch (FlagReadException e) {
+            Log.i(TAG, "Feature flag '" + flagName + "' not found. Assuming feature is disabled.");
+            return false;
         }
     }
 }
