@@ -18,9 +18,11 @@ package com.android.bedstead.enterprise
 import com.android.bedstead.enterprise.annotations.EnsureDoesNotHaveUserRestriction
 import com.android.bedstead.enterprise.annotations.EnsureHasDelegate
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceAdmin
+import com.android.bedstead.enterprise.annotations.EnsureHasDeviceController
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDelegate
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceController
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasNoProfileOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasNoTestDeviceAdmin
@@ -103,6 +105,8 @@ class EnterpriseAnnotationExecutor(locator: BedsteadServiceLocator) : Annotation
             /** Multi-User Management */
             is EnsureHasUserController -> profileOwnersComponent.ensureHasUserController(this)
             is EnsureHasNoUserController -> profileOwnersComponent.ensureHasNoUserController(this)
+            is EnsureHasDeviceController -> enterpriseComponent.ensureHasDeviceController(this)
+            is EnsureHasNoDeviceController -> enterpriseComponent.ensureHasNoDeviceController()
         }
     }
 }
