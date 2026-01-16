@@ -28,6 +28,7 @@ android_test {
     static_libs: [
         "androidx.test.uiautomator_uiautomator",
         "androidx.test.rules",
+        "bedstead",
         "compatibility-device-util-axt",
         "CtsExternalServiceCommon",
         "cts_app_test_shared_lib",
