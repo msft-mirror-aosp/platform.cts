@@ -54,7 +54,6 @@ android_test_helper_app {
     ],
     test_suites: [
         "general-tests",
-        "cts",
     ],
     package_name: "android.app.fgsstarttesthelpercurrent",
     manifest: "helper/AndroidManifest.xml",
@@ -68,7 +67,6 @@ android_test_helper_app {
     ],
     test_suites: [
         "general-tests",
-        "cts",
     ],
     manifest: "helper/AndroidManifest.xml",
     package_name: "android.app.fgsstarttesthelper34",
