@@ -1098,7 +1098,7 @@ public final class Package {
     @Experimental
     public void removeAsRoleHolder(String role, UserReference user) {
         try (PermissionContext p = TestApis.permissions().withPermission(
-                MANAGE_ROLE_HOLDERS)) {
+                MANAGE_ROLE_HOLDERS, INTERACT_ACROSS_USERS_FULL)) {
             Retry.logic(() -> {
                 TestApis.logcat().clear();
                 DefaultBlockingCallback<Boolean> blockingCallback = new DefaultBlockingCallback<>();
