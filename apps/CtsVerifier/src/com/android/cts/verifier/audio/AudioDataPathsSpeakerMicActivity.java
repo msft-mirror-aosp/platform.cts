@@ -34,6 +34,7 @@ import org.hyphonate.megaaudio.recorder.sinks.AppCallbackAudioSinkProvider;
 public class AudioDataPathsSpeakerMicActivity extends AudioDataPathsBaseActivity {
     // ReportLog Schema
     private static final String SECTION_DATAPATHS_SPEAKERMIC = "data_paths_speaker_mic";
+    private static final int DELAY_START_TIME_MILLIS = 5000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,8 +42,12 @@ public class AudioDataPathsSpeakerMicActivity extends AudioDataPathsBaseActivity
 
         super.onCreate(savedInstanceState);
 
-        setInfoResources(R.string.audio_datapaths_speakermic_test,
-                R.string.audio_datapaths_speakermic_info, -1);
+        setInfoResources(
+                R.string.audio_datapaths_speakermic_test,
+                R.string.audio_datapaths_speakermic_info,
+                -1,
+                "file:///android_asset/html/AudioDataPathsSpeakerMicInfo.html");
+        setTestStartDelay(DELAY_START_TIME_MILLIS);
 
         getPassButton().setEnabled(passBtnEnabled());
     }
