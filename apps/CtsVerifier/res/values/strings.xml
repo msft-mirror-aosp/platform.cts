@@ -6782,17 +6782,20 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="proaudio_test">Pro Audio Test</string>
     <string name="proaudio_info">This tests that any device claiming \"Pro Audio\" meets the
         requirements specified in the
-        <a href="https://source.android.com/compatibility/12/android-12-cdd#510_professional_audio">
+        <a href="https://source.android.com/docs/compatibility/15/android-15-cdd#510_professional_audio">
             CDD section 5.10. Professional Audio</a>
-        \n\nTo execute the test:
-        \n1. Note that all required flags report \"true\"
-        \n2. If the DUT supports HDMI:
-        \n  a. Click the \"Has HDMI Support\" checkbox
-        \n  b. Connect an HDMI device to the DUT
-        \n  c. Verify that the reported HDMI attributes meet the specification.
+        \n\nTest Criteria:
+        \nThis device PASSES the test if it meets one of the following conditions:
+        \na. The device does not claim support for Pro Audio.
+        \nb. The device claims support for Professional Audio AND it also supports all of the following:
+        \n\t\t1. Low-Latency Audio
+        \n\t\t2. MIDI
+        \n\t\t3. USB Host Mode
+        \n\t\t4. USB Peripheral Mode
         \n\nNote that the latency measurement for Pro Audio has been moved to the
         Audio Loopback Latency Test
     </string>
+
     <string name="proaudio_hdmi_infotitle">HDMI Support</string>
     <string name="proaudio_hdmi_message">Please connect an HDMI peripheral to validate
         HDMI output attributes.
