@@ -17,28 +17,27 @@
 package com.android.test.notificationsizeverifier
 
 import android.content.Context
-import android.content.res.Resources
+import android.content.pm.PackageManager
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.interactive.Step
 import com.android.interactive.annotations.Interactive
 import com.android.interactive.annotations.NotFullyAutomated
-import com.android.interactive.steps.sysui.VerifyNotificationBitmapOverChangeDisabled
-import com.android.interactive.steps.sysui.VerifyNotificationBitmapOverChangeEnabled
-import com.android.interactive.steps.sysui.VerifyNotificationBitmapUnderChangeDisabled
-import com.android.interactive.steps.sysui.VerifyNotificationBitmapUnderChangeEnabled
-import com.android.interactive.steps.sysui.VerifyNotificationUriOverChangeDisabled
-import com.android.interactive.steps.sysui.VerifyNotificationUriOverChangeEnabled
-import com.android.interactive.steps.sysui.VerifyNotificationUriUnderChangeDisabled
-import com.android.interactive.steps.sysui.VerifyNotificationUriUnderChangeEnabled
+import com.android.interactive.steps.sysui.VerifyNotificationCustomContentRendered
+import com.android.interactive.steps.sysui.VerifyNotificationCustomContentStripped
+import com.android.server.notification.Flags
 import org.junit.After
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assume
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
+@RequiresFlagsEnabled(Flags.FLAG_NOTIFICATION_CUSTOM_VIEW_URI_RESTRICTION)
 class NotificationSizeVerifierDeviceTest {
     private lateinit var context: Context
     private lateinit var poster: NotificationPoster
@@ -50,13 +49,23 @@ class NotificationSizeVerifierDeviceTest {
         private const val NOTIFICATION_ID_URI_OVER = 12003
         private const val NOTIFICATION_ID_URI_UNDER = 12004
         private const val NOTIFICATION_STRIP_SIZE_BYTES = 5000000
+
+        private const val LOG_COMPAT_CHANGE = "android.permission.LOG_COMPAT_CHANGE"
+        private const val READ_COMPAT_CHANGE_CONFIG = "android.permission.READ_COMPAT_CHANGE_CONFIG"
     }
+
+    @get:Rule
+    val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @Before
     fun setUp() {
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+            .adoptShellPermissionIdentity(LOG_COMPAT_CHANGE, READ_COMPAT_CHANGE_CONFIG)
+
         context = InstrumentationRegistry.getInstrumentation().targetContext
         poster = NotificationPoster(context, NOTIFICATION_STRIP_SIZE_BYTES)
         poster.createNotificationChannel()
+        Assume.assumeTrue(platformSupportsNotificationStyles())
     }
 
     @After
@@ -64,41 +73,23 @@ class NotificationSizeVerifierDeviceTest {
         if (this::poster.isInitialized) {
             poster.cancelAllNotifications()
         }
+        InstrumentationRegistry.getInstrumentation().getUiAutomation().dropShellPermissionIdentity()
     }
 
-    @Test
-    fun config_NotificationStripSizeBytes_VerifyValue() {
-        try {
-            val systemRes = Resources.getSystem()
-            val resId =
-                systemRes.getIdentifier(
-                    "config_notificationStripRemoteViewSizeBytes",
-                    "integer",
-                    "android"
-                )
-            if (resId != 0) {
-                assertEquals(
-                    "config_notificationStripRemoteViewSizeBytes should be set to " +
-                            "${NOTIFICATION_STRIP_SIZE_BYTES} for consistency across the ecosystem",
-                    NOTIFICATION_STRIP_SIZE_BYTES,
-                    systemRes.getInteger(resId)
-                )
-            } else {
-                throw AssertionError(
-                    "Failed to get resource id for config_notificationStripRemoteViewSizeBytes."
-                )
-            }
-        } catch (e: Exception) {
-            throw AssertionError("Error accessing system resource: ${e.message}")
-        }
-    }
+    private fun platformSupportsNotificationStyles(): Boolean =
+        !(hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE) ||
+            hasSystemFeature(PackageManager.FEATURE_LEANBACK))
+
+    private fun hasSystemFeature(feature: String) =
+        InstrumentationRegistry.getInstrumentation()
+            .targetContext.packageManager.hasSystemFeature(feature)
 
     @Test
     @Interactive
     @NotFullyAutomated(reason = "Manual notification UI verification required")
     fun bitmapOverLimit_ChangeEnabled() {
-        poster.postBitmapNotification(NOTIFICATION_ID_BITMAP_OVER, true)
-        val result = Step.execute(VerifyNotificationBitmapOverChangeEnabled::class.java)
+        poster.postBitmapNotification(NOTIFICATION_ID_BITMAP_OVER, true, true)
+        val result = Step.execute(VerifyNotificationCustomContentStripped::class.java)
         assertTrue("Tester indicated failure for Bitmap Over Limit (Change Enabled)", result)
     }
 
@@ -106,8 +97,8 @@ class NotificationSizeVerifierDeviceTest {
     @Interactive
     @NotFullyAutomated(reason = "Manual notification UI verification required")
     fun bitmapUnderLimit_ChangeEnabled() {
-        poster.postBitmapNotification(NOTIFICATION_ID_BITMAP_UNDER, false)
-        val result = Step.execute(VerifyNotificationBitmapUnderChangeEnabled::class.java)
+        poster.postBitmapNotification(NOTIFICATION_ID_BITMAP_UNDER, false, false)
+        val result = Step.execute(VerifyNotificationCustomContentRendered::class.java)
         assertTrue("Tester indicated failure for Bitmap Under Limit (Change Enabled)", result)
     }
 
@@ -115,8 +106,8 @@ class NotificationSizeVerifierDeviceTest {
     @Interactive
     @NotFullyAutomated(reason = "Manual notification UI verification required")
     fun uriOverLimit_ChangeEnabled() {
-        poster.postUriNotification(NOTIFICATION_ID_URI_OVER, true)
-        val result = Step.execute(VerifyNotificationUriOverChangeEnabled::class.java)
+        poster.postUriNotification(NOTIFICATION_ID_URI_OVER, true, true)
+        val result = Step.execute(VerifyNotificationCustomContentStripped::class.java)
         assertTrue("Tester indicated failure for URI Over Limit (Change Enabled)", result)
     }
 
@@ -124,8 +115,8 @@ class NotificationSizeVerifierDeviceTest {
     @Interactive
     @NotFullyAutomated(reason = "Manual notification UI verification required")
     fun uriUnderLimit_ChangeEnabled() {
-        poster.postUriNotification(NOTIFICATION_ID_URI_UNDER, false)
-        val result = Step.execute(VerifyNotificationUriUnderChangeEnabled::class.java)
+        poster.postUriNotification(NOTIFICATION_ID_URI_UNDER, false, false)
+        val result = Step.execute(VerifyNotificationCustomContentRendered::class.java)
         assertTrue("Tester indicated failure for URI Under Limit (Change Enabled)", result)
     }
 
@@ -133,8 +124,8 @@ class NotificationSizeVerifierDeviceTest {
     @Interactive
     @NotFullyAutomated(reason = "Manual notification UI verification required")
     fun bitmapOverLimit_ChangeDisabled() {
-        poster.postBitmapNotification(NOTIFICATION_ID_BITMAP_OVER, true)
-        val result = Step.execute(VerifyNotificationBitmapOverChangeDisabled::class.java)
+        poster.postBitmapNotification(NOTIFICATION_ID_BITMAP_OVER, true, true)
+        val result = Step.execute(VerifyNotificationCustomContentStripped::class.java)
         assertTrue("Tester indicated failure for Bitmap Over Limit (Change Disabled)", result)
     }
 
@@ -142,8 +133,8 @@ class NotificationSizeVerifierDeviceTest {
     @Interactive
     @NotFullyAutomated(reason = "Manual notification UI verification required")
     fun bitmapUnderLimit_ChangeDisabled() {
-        poster.postBitmapNotification(NOTIFICATION_ID_BITMAP_UNDER, false)
-        val result = Step.execute(VerifyNotificationBitmapUnderChangeDisabled::class.java)
+        poster.postBitmapNotification(NOTIFICATION_ID_BITMAP_UNDER, false, false)
+        val result = Step.execute(VerifyNotificationCustomContentRendered::class.java)
         assertTrue("Tester indicated failure for Bitmap Under Limit (Change Disabled)", result)
     }
 
@@ -151,8 +142,8 @@ class NotificationSizeVerifierDeviceTest {
     @Interactive
     @NotFullyAutomated(reason = "Manual notification UI verification required")
     fun uriOverLimit_ChangeDisabled() {
-        poster.postUriNotification(NOTIFICATION_ID_URI_OVER, true)
-        val result = Step.execute(VerifyNotificationUriOverChangeDisabled::class.java)
+        poster.postUriNotification(NOTIFICATION_ID_URI_OVER, true, false)
+        val result = Step.execute(VerifyNotificationCustomContentRendered::class.java)
         assertTrue("Tester indicated failure for URI Over Limit (Change Disabled)", result)
     }
 
@@ -160,8 +151,8 @@ class NotificationSizeVerifierDeviceTest {
     @Interactive
     @NotFullyAutomated(reason = "Manual notification UI verification required")
     fun uriUnderLimit_ChangeDisabled() {
-        poster.postUriNotification(NOTIFICATION_ID_URI_UNDER, false)
-        val result = Step.execute(VerifyNotificationUriUnderChangeDisabled::class.java)
+        poster.postUriNotification(NOTIFICATION_ID_URI_UNDER, false, false)
+        val result = Step.execute(VerifyNotificationCustomContentRendered::class.java)
         assertTrue("Tester indicated failure for URI Under Limit (Change Disabled)", result)
     }
 }

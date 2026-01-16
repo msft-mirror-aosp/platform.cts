@@ -17,10 +17,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.android.test.notificationsizeverifier">
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.READ_COMPAT_CHANGE_CONFIG" />
+    <uses-permission android:name="android.permission.LOG_COMPAT_CHANGE" />
 
-    <uses-sdk android:minSdkVersion="35"/>
+    <uses-sdk android:minSdkVersion="35" android:targetSdkVersion="35"/>
 
-    <application>
+    <application android:debuggable="true">
         <uses-library android:name="android.test.runner" />
         <provider
             android:name="androidx.core.content.FileProvider"

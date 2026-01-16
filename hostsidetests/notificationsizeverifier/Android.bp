@@ -22,7 +22,6 @@ java_test_host {
     defaults: ["cts_defaults"],
     srcs: ["src/**/*.kt"],
     test_suites: [
-        "general-tests",
         "cts-v-host",
     ],
     libs: [
@@ -37,4 +36,5 @@ java_test_host {
     static_libs: [
         "CompatChangeGatingTestBase",
     ],
+    test_config: "AndroidTest.xml",
 }
