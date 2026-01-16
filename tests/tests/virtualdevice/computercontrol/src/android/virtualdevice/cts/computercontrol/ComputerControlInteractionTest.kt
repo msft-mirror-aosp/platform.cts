@@ -28,7 +28,6 @@ import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import com.android.compatibility.common.util.AdoptShellPermissionsRule
 import com.google.common.truth.Truth.assertThat
 import org.junit.After
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestName
@@ -192,7 +191,6 @@ class ComputerControlInteractionTest {
         assertThat(screenshot.getHeight()).isEqualTo(bounds.height())
     }
 
-    @Ignore("b/475912235")
     @Test
     fun testInsertText() {
         testAppAgent = launchTestApp(TEST_APP_CLASS_NAME)
