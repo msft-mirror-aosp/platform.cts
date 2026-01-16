@@ -508,6 +508,8 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
     // TODO: b/454188665
     private static final ImmutableSet<String> PREBUILT_GMSCORE_APK_IN_APEX_BURNDOWN_LIST =
             ImmutableSet.of(
+                // /apex/com.android.configinfrastructure/javalib/framework-configinfrastructure.jar
+                "Landroid/os/flagging/AconfigStorageReadException;",
                 // /apex/com.android.art/javalib/core-oj.jar
                 "Ljava/util/function/Function;",
                 "Ljava/util/function/IntFunction;",
