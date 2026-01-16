@@ -324,7 +324,7 @@ public final class MultiUserMockImeTest {
         } finally {
             // Prevent test isolation bugs by switching back to the initial user as this is what the
             // other tests expect.
-            currentUser.switchTo();
+            currentUser.switchTo(6 /* timeoutInMinutes */);
         }
     }
 
