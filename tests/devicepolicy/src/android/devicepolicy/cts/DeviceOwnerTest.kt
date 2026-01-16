@@ -20,6 +20,7 @@ import android.content.ComponentName
 import android.content.pm.PackageManager
 import android.devicepolicy.cts.utils.DevicePolicyManagementRoleUtils
 import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import com.android.bedstead.accounts.annotations.EnsureHasAccount
 import com.android.bedstead.accounts.annotations.EnsureHasNoAccounts
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
@@ -60,10 +61,15 @@ import org.junit.Assume.assumeFalse
 import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TestRule
 import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
 class DeviceOwnerTest {
+
+    @Rule
+    @JvmField
+    val mCheckFlagsRule: TestRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @Test
     @Postsubmit(reason = "new test")
