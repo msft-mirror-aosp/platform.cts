@@ -2082,11 +2082,24 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
         }
         // To ensure the mock IME overlaps the test dialog in automotive multi-window,
         // set IME height to 50% of test activity wherever it is located.
+
+        // 1. Determine the total display height from maximum window metrics.
+        final var display = testActivity.getDisplay();
+        final var displayContext = testActivity.createWindowContext(display,
+                WindowManager.LayoutParams.TYPE_APPLICATION, /* options= */ null);
+        final var windowManager = displayContext.getSystemService(WindowManager.class);
+        final var maxWindowMetrics = windowManager.getMaximumWindowMetrics();
+        final int totalDisplayHeight = maxWindowMetrics.getBounds().height();
+
+        // 2. Calculate the vertical midpoint of the activity on the screen.
         final var decorView = testActivity.getWindow().getDecorView();
         final int[] locationOnScreen = new int[2];
         decorView.getLocationOnScreen(locationOnScreen);
         final int activityHeight = decorView.getHeight();
-        return locationOnScreen[1] + (activityHeight / 2);
+        final int activityCenterY = locationOnScreen[1] + (activityHeight / 2);
+
+        // 3. Return the distance from the bottom of the display to the activity midpoint.
+        return totalDisplayHeight - activityCenterY;
     }
 
     private static void openDialogAndShowIme(TestActivity activity, String marker,
