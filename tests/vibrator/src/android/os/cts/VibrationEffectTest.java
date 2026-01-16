@@ -501,7 +501,6 @@ public class VibrationEffectTest {
         assertThat(effect).isNotEqualTo(otherEffect);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_PRIMITIVE_COMPOSITION_ABSOLUTE_DELAY)
     @Test
     public void testComposedDifferentDelayTypeNotEquals() {
         VibrationEffect effect = VibrationEffect.startComposition()

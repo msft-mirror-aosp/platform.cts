@@ -26,11 +26,6 @@ import android.cts.statsdatom.lib.AtomTestUtils;
 import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
-import android.os.vibrator.Flags;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
 import com.android.compatibility.common.util.NonApiTest;
 import com.android.os.AtomsProto.Atom;
@@ -61,10 +56,6 @@ import java.util.function.Function;
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class VibratorStatsTests extends BaseHostJUnit4Test implements IBuildReceiver {
     private IBuildInfo mCtsBuild;
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
 
     @Before
     public void setUp() throws Exception {
@@ -126,23 +117,6 @@ public class VibratorStatsTests extends BaseHostJUnit4Test implements IBuildRece
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_PRIMITIVE_COMPOSITION_ABSOLUTE_DELAY)
-    public void testVibrationReportedComposedVibrationWithFeatureFlagDisabled() throws Exception {
-        assumeTrue(isVibratorSupportedOnDevice());
-
-        List<EventMetricData> data = runVibratorDeviceTests(
-                Atom.VIBRATION_REPORTED_FIELD_NUMBER, "testComposedTickThenClickVibration");
-
-        assertSingleValueOccurred(VibrationReported.VibrationType.SINGLE_VALUE, data,
-                atom -> atom.getVibrationReported().getVibrationType().getNumber());
-        assertSingleValueOccurred(/* expectedValue= */ 1, data,
-                atom -> atom.getVibrationReported().getHalComposeCount());
-        assertSingleValueOccurred(/* expectedValue= */ 2, data,
-                atom -> atom.getVibrationReported().getHalCompositionSize());
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_PRIMITIVE_COMPOSITION_ABSOLUTE_DELAY)
     public void testVibrationReportedComposedVibration() throws Exception {
         assumeTrue(isTickAndClickPrimitivesSupportedOnDevice());
 
@@ -165,7 +139,6 @@ public class VibratorStatsTests extends BaseHostJUnit4Test implements IBuildRece
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_PRIMITIVE_COMPOSITION_ABSOLUTE_DELAY)
     public void testVibrationReportedComposedVibration_noSupportForPrimitives() throws Exception {
         assumeTrue(isVibratorSupportedOnDevice());
         assumeFalse(isTickAndClickPrimitivesSupportedOnDevice());
