@@ -19,6 +19,7 @@ package android.server.wm.activity;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_ASSISTANT;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
+import static android.app.WindowConfiguration.WINDOWING_MODE_MULTI_WINDOW;
 import static android.app.WindowConfiguration.WINDOWING_MODE_PINNED;
 import static android.app.WindowConfiguration.WINDOWING_MODE_UNDEFINED;
 import static android.server.wm.CliIntentExtra.extraString;
@@ -69,6 +70,7 @@ import org.junit.Test;
 public class AssistantStackTests extends ActivityManagerTestBase {
 
     private int mAssistantDisplayId = DEFAULT_DISPLAY;
+    private int mAssistantWindowingMode = WINDOWING_MODE_UNDEFINED;
 
     public void setUp() throws Exception {
         super.setUp();
@@ -82,6 +84,7 @@ public class AssistantStackTests extends ActivityManagerTestBase {
             WindowManagerState.Task assistantStack =
                     mWmState.getRootTaskByActivityType(ACTIVITY_TYPE_ASSISTANT);
             mAssistantDisplayId = assistantStack.mDisplayId;
+            mAssistantWindowingMode = assistantStack.getWindowingMode();
         }
     }
 
@@ -188,11 +191,19 @@ public class AssistantStackTests extends ActivityManagerTestBase {
 
         // Now, tell it to finish itself and ensure that the assistant stack is brought back forward
         mBroadcastActionTrigger.doAction(TEST_ACTIVITY_ACTION_FINISH_SELF);
-        mWmState.waitForFocusedStack(WINDOWING_MODE_UNDEFINED, ACTIVITY_TYPE_ASSISTANT);
-        mWmState.assertFrontStackActivityType(
-                "Assistant stack should be on top.", ACTIVITY_TYPE_ASSISTANT);
-        mWmState.assertFocusedRootTask("Assistant stack should be focused.",
-                WINDOWING_MODE_UNDEFINED, ACTIVITY_TYPE_ASSISTANT);
+        if (!(mAssistantWindowingMode == WINDOWING_MODE_MULTI_WINDOW && isCar())) {
+            // On a multiwindow system on automotive, there is no guarantee that a non-assistant
+            // task (TEST_ACTIVITY launched in the test) and assistant task would behave like
+            // backstack siblings. So when the TEST_ACTIVITY finishes itself, we cannot assert if
+            // the next focused task will be the assistant.
+            mWmState.waitForFocusedStack(WINDOWING_MODE_UNDEFINED, ACTIVITY_TYPE_ASSISTANT);
+            mWmState.assertFrontStackActivityType(
+                    "Assistant stack should be on top.", ACTIVITY_TYPE_ASSISTANT);
+            mWmState.assertFocusedRootTask(
+                    "Assistant stack should be focused.",
+                    WINDOWING_MODE_UNDEFINED,
+                    ACTIVITY_TYPE_ASSISTANT);
+        }
     }
 
     @Test
