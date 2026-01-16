@@ -426,13 +426,12 @@ class DeviceOwnerTest {
     @EnsureHasNoAccounts(onUser = UserType.ANY)
     @EnsureHasNoAdditionalUser
     @Postsubmit(reason = "new test")
-    @RequireRunOnSystemUser
     @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING)
     @EnsureHasPermission(CommonPermissions.MANAGE_ROLE_HOLDERS)
     @Test
     fun setTestOnlyDeviceOwner_noNonDefaultDevicePolicyManagementRoleHolderExists_sets() {
         DevicePolicyManagementRoleUtils.removeNonDefaultRoleHolders(context)
-        TEST_ONLY_DPC.install().use {
+        TEST_ONLY_DPC.install(TestApis.users().system()).use {
             DeviceOwnerResource().use {
                 ShellCommand
                     .builder(SET_DEVICE_OWNER_COMMAND)
@@ -449,12 +448,11 @@ class DeviceOwnerTest {
     @EnsureHasNoAdditionalUser
     @EnsureHasDevicePolicyManagerRoleHolder
     @Postsubmit(reason = "new test")
-    @RequireRunOnSystemUser
     @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING)
     @EnsureHasPermission(CommonPermissions.MANAGE_ROLE_HOLDERS)
     @Test
     fun setTestOnlyDeviceOwner_nonDefaultDevicePolicyManagementRoleHolderExists_sets() {
-        TEST_ONLY_DPC.install().use {
+        TEST_ONLY_DPC.install(TestApis.users().system()).use {
             DeviceOwnerResource().use {
                 ShellCommand
                     .builder(SET_DEVICE_OWNER_COMMAND)
@@ -472,6 +470,7 @@ class DeviceOwnerTest {
     @Postsubmit(reason = "new test")
     @RequireRunOnSystemUser
     @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SECURE_ADB_ROLE_BYPASSING)
+    @RequireNotHeadlessSystemUserMode(reason = "No non-testonly dpc which supports headless")
     @EnsureHasPermission(CommonPermissions.MANAGE_ROLE_HOLDERS)
     @Test
     fun setNonTestOnlyDeviceOwner_noNonDefaultDevicePolicyManagementRoleHolderExists_sets() {
