@@ -150,10 +150,13 @@ public abstract class CodecTestBase {
             BOARD_API_LEVEL < Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
     public static final int ANDROID_VENDOR_API_202404 = 202404;
     public static final int ANDROID_VENDOR_API_202504 = 202504;
+    public static final int ANDROID_VENDOR_API_202604 = 202604;
     public static final boolean BOARD_SDK_IS_AT_LEAST_202504 =
             BOARD_API_LEVEL >= ANDROID_VENDOR_API_202504;
     public static final boolean BOARD_SDK_IS_AFTER_202504 =
             BOARD_API_LEVEL > ANDROID_VENDOR_API_202504;
+    public static final boolean BOARD_SDK_IS_AT_LEAST_202604 =
+            BOARD_API_LEVEL >= ANDROID_VENDOR_API_202604;
     // ro.vendor.api_level is guaranteed to be set on devices running in Android T and above,
     // so using a default of 0 when not defined is safe to detect devices launching with 202404.
     // These tests run on older versions where ro.vendor.api_level is not defined. So this
@@ -163,8 +166,8 @@ public abstract class CodecTestBase {
             VENDOR_API_LEVEL >= ANDROID_VENDOR_API_202404;
     public static final boolean BOARD_FIRST_SDK_IS_AT_LEAST_202504 =
             VENDOR_API_LEVEL >= ANDROID_VENDOR_API_202504;
-    public static final boolean BOARD_FIRST_SDK_IS_AFTER_202504 =
-            VENDOR_API_LEVEL > ANDROID_VENDOR_API_202504;
+    public static final boolean BOARD_FIRST_SDK_IS_AT_LEAST_202604 =
+            VENDOR_API_LEVEL >= ANDROID_VENDOR_API_202604;
     public static final boolean IS_HDR_EDITING_SUPPORTED;
     public static final boolean IS_HLG_EDITING_SUPPORTED;
     public static final boolean IS_HDR_CAPTURE_SUPPORTED;

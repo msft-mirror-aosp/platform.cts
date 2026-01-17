@@ -24,7 +24,6 @@ import static android.os.VibrationEffect.Composition.PRIMITIVE_SPIN;
 import static android.os.VibrationEffect.Composition.PRIMITIVE_TICK;
 import static android.os.VibrationEffect.EFFECT_CLICK;
 import static android.os.vibrator.Flags.FLAG_NORMALIZED_PWLE_EFFECTS;
-import static android.os.vibrator.Flags.FLAG_PRIMITIVE_COMPOSITION_ABSOLUTE_DELAY;
 import static android.os.vibrator.Flags.FLAG_VENDOR_VIBRATION_EFFECTS;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -1400,7 +1399,6 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_PRIMITIVE_COMPOSITION_ABSOLUTE_DELAY)
     public void testParsePrimitiveWithDelayType_withFeatureFlagEnabled_isSuccessful()
             throws Exception {
         assertSuccessfulParse(
@@ -1422,8 +1420,7 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_PRIMITIVE_COMPOSITION_ABSOLUTE_DELAY)
-    public void testParseInvalidPrimitiveDelayType_withFeatureFlagEnabled_fails() {
+    public void testParseInvalidPrimitiveDelayType_fails() {
         assertFailedParse(
                 """
                 <vibration-effect>
@@ -1439,20 +1436,7 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(FLAG_PRIMITIVE_COMPOSITION_ABSOLUTE_DELAY)
-    public void testParsePrimitiveWithDelayType_withFeatureFlagDisabled_fails() {
-        assertFailedParse(
-                """
-                <vibration-effect>
-                    <primitive-effect name="tick" delayType="relative_start_offset"/>
-                    <primitive-effect name="click" scale="0.123" delayType="pause"/>
-                </vibration-effect>
-                """);
-    }
-
-    @Test
-    @RequiresFlagsEnabled(FLAG_PRIMITIVE_COMPOSITION_ABSOLUTE_DELAY)
-    public void testSerializePrimitiveWithDelayType_withFeatureFlagEnabled_isSuccessful()
+    public void testSerializePrimitiveWithDelayType_isSuccessful()
             throws Exception {
         VibrationEffect effect = VibrationEffect.startComposition()
                 .addPrimitive(PRIMITIVE_TICK, 0.5f, 0, DELAY_TYPE_RELATIVE_START_OFFSET)

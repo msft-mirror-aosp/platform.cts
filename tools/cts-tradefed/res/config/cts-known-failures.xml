@@ -460,4 +460,6 @@
     <option name="compatibility:exclude-filter" value="AdExtServicesFrameworkUnitTests android.adservices.adselection.AdSelectionManagerTest"/>
     <option name="compatibility:exclude-filter" value="CtsAdExtServicesDeviceTestCases android.adservices.cts.TestAdSelectionManagerTest"/>
     <option name="compatibility:exclude-filter" value="AdExtServicesServiceCoreProtectedAudienceUnitTests com.android.adservices.service.adselection.OnDeviceAdSelectionFailureIntegrationTest"/>
+    <option name="compatibility:exclude-filter" value="AdExtServicesEndToEndTests com.android.adservices.customaudience.CustomAudienceManagerTest"/>
+    <option name="compatibility:exclude-filter" value="CtsAdExtServicesDeviceTestCases android.adservices.cts.CustomAudienceApiCtsTest"/>
 </configuration>

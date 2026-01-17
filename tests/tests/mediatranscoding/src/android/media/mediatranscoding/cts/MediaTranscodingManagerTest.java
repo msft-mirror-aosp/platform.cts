@@ -104,7 +104,6 @@ public class MediaTranscodingManagerTest {
 
     // Threshold for the psnr to make sure the transcoded video is valid.
     private static final int PSNR_THRESHOLD = 20;
-    private static final boolean TRANSCODING_ENABLED = isTranscodingEnabled();
 
     // Copy the resource to cache.
     private Uri resourceToUri(int resId, String name) throws IOException {
@@ -165,8 +164,6 @@ public class MediaTranscodingManagerTest {
     public void setUp() throws Exception {
         Log.d(TAG, "setUp");
 
-        Assume.assumeTrue("Media transcoding disabled", TRANSCODING_ENABLED);
-
         PackageManager pm =
                 InstrumentationRegistry.getInstrumentation().getTargetContext().getPackageManager();
         Assume.assumeFalse("Unsupported device type (TV, Watch, Car)",
@@ -177,8 +174,14 @@ public class MediaTranscodingManagerTest {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
         mContentResolver = mContext.getContentResolver();
 
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                .adoptShellPermissionIdentity("android.permission.WRITE_MEDIA_STORAGE");
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        "android.permission.WRITE_MEDIA_STORAGE",
+                        "android.permission.READ_DEVICE_CONFIG");
+
+        Assume.assumeTrue("Media transcoding disabled", isTranscodingEnabled());
+
         mMediaTranscodingManager = mContext.getSystemService(MediaTranscodingManager.class);
         assertNotNull(mMediaTranscodingManager);
         androidx.test.InstrumentationRegistry.registerInstance(

@@ -307,17 +307,18 @@
     <option name="compatibility:include-filter" value="CtsSimRestrictedApisTestCases android.telephony4.cts.SimRestrictedApisTest#testIccCloseLogicalChannel"/>
     <option name="compatibility:include-filter" value="CtsSimRestrictedApisTestCases android.telephony4.cts.SimRestrictedApisTest#testIccOpenLogicalChannel"/>
     <option name="compatibility:include-filter" value="CtsSimRestrictedApisTestCases android.telephony4.cts.SimRestrictedApisTest#testIccOpenLogicalChannelBySlot"/>
+    <!-- CtsAppFunctionsAtomHostTestCases -->
+    <option name="compatibility:include-filter" value="CtsAppFunctionsAtomHostTestCases android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_crossUser_fail"/>
+    <option name="compatibility:include-filter" value="CtsAppFunctionsAtomHostTestCases android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_crossUser_success"/>
+    <option name="compatibility:include-filter" value="CtsAppFunctionsAtomHostTestCases android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_failed_uncaughtClientException"/>
+    <option name="compatibility:include-filter" value="CtsAppFunctionsAtomHostTestCases android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_failed_uncaughtClientException_accessEnabled"/>
+    <option name="compatibility:include-filter" value="CtsAppFunctionsAtomHostTestCases android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_platformManager_platformAppFunctionService_success"/>
+    <option name="compatibility:include-filter" value="CtsAppFunctionsAtomHostTestCases android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_platformManager_platformAppFunctionService_success_accessEnabled"/>
+    <option name="compatibility:include-filter" value="CtsAppFunctionsAtomHostTestCases android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_throwsException"/>
+    <option name="compatibility:include-filter" value="CtsAppFunctionsAtomHostTestCases android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_throwsException_accessEnabled"/>
     <!-- CtsStatsdAtomHostTestCases -->
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appexit.AppExitHostTest#testLogStatsdOther"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_crossUser_fail"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_crossUser_success"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_failed_uncaughtClientException"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_failed_uncaughtClientException_accessEnabled"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_platformManager_platformAppFunctionService_success"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_platformManager_platformAppFunctionService_success_accessEnabled"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_throwsException"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_throwsException_accessEnabled"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.apphibernation.AppHibernationStatsTest#testUserLevelAppHibernationStateChanged_fromNotHibernatingToHibernating"/>
+
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.batterystats.BatteryUsageStatsTests#testBatteryUsageStatsPerUid"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.batterystats.BatteryUsageStatsTests#testBatteryUsageStatsSinceReset"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.coregraphics.GraphicsAtomTests#colorModeEvents"/>
@@ -346,14 +347,18 @@
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.statsd.UidAtomTests#testAppCrashOccurred"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.statsd.UidAtomTests#testAppCrashOccurredNative"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.statsd.UidAtomTests#testSyncState"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.tls.TlsHandshakeStatsTests#testTlsHandshake"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.wifi.WifiStatsTests#testWifiReconnect"/>
+    <!-- CtsTlsAtomHostTestCases -->
+    <option name="compatibility:include-filter" value="CtsTlsAtomHostTestCases android.cts.statsdatom.tls.TlsHandshakeStatsTests#testTlsHandshake"/>
+    <!-- CtsAppHibernationAtomHostTestCases -->
+    <option name="compatibility:include-filter" value="CtsAppHibernationAtomHostTestCases android.cts.statsdatom.apphibernation.AppHibernationStatsTest#testUserLevelAppHibernationStateChanged_fromNotHibernatingToHibernating"/>
+    <!-- CtsAppFunctionsAtomHostTestCases[instant] -->
+    <option name="compatibility:include-filter" value="CtsAppFunctionsAtomHostTestCases[instant] android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_crossUser_fail"/>
+    <option name="compatibility:include-filter" value="CtsAppFunctionsAtomHostTestCases[instant] android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_crossUser_success"/>
+    <option name="compatibility:include-filter" value="CtsAppFunctionsAtomHostTestCases[instant] android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_failed_uncaughtClientException_accessEnabled"/>
+    <option name="compatibility:include-filter" value="CtsAppFunctionsAtomHostTestCases[instant] android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_platformManager_platformAppFunctionService_success_accessEnabled"/>
+    <option name="compatibility:include-filter" value="CtsAppFunctionsAtomHostTestCases[instant] android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_throwsException_accessEnabled"/>
     <!-- CtsStatsdAtomHostTestCases[instant] -->
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_crossUser_fail"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_crossUser_success"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_failed_uncaughtClientException_accessEnabled"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_platformManager_platformAppFunctionService_success_accessEnabled"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_throwsException_accessEnabled"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.coregraphics.GraphicsAtomTests#surfaceControlLutsEvents"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.display.DisplayEventOccurredStatsTests#testDisplayEventStateReported"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.display.DisplayEventOccurredStatsTests#testDisplayRefreshRateReported"/>

@@ -70,6 +70,23 @@ java_test_host {
     test_config: "CtsGpuProfilingDataTestCases.xml",
 }
 
+java_library_host {
+    name: "GpuProfilingDataTestingUtils",
+    defaults: ["cts_defaults"],
+
+    libs: [
+        "tradefed",
+    ],
+
+    static_libs: [
+        "hamcrest-library",
+    ],
+
+    srcs: [
+        "src/**/FakeErrorCollector.kt",
+    ],
+}
+
 // Unit tests for utilities used by the CTS tests - not CTS itself
 java_test_host {
     name: "GpuProfilingUtilsTestCases",
@@ -80,6 +97,7 @@ java_test_host {
         "src/**/RenderStagesDataTest.kt",
     ],
     static_libs: [
+        "GpuProfilingDataTestingUtils",
         "GpuProfilingDataUtils",
         "mockito-hostside-prebuilt",
         "perfetto_config-full",

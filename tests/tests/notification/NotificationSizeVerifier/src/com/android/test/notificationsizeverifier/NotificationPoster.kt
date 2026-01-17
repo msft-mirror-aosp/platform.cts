@@ -112,7 +112,7 @@ class NotificationPoster(private val context: Context, private val stripSizeByte
      * @param notificationId Unique ID for the notification.
      * @param shouldExceed True to make bitmap sizes likely exceed the limit, false to stay under.
      */
-    fun postBitmapNotification(notificationId: Int, shouldExceed: Boolean) {
+    fun postBitmapNotification(notificationId: Int, shouldExceed: Boolean, shouldStrip: Boolean) {
         val numBitmaps = 8
         val bytesPerPixel = 4 // ARGB_8888
         val targetTotalAllocation =
@@ -126,20 +126,12 @@ class NotificationPoster(private val context: Context, private val stripSizeByte
 
         var bitmapSidePx = ceil(sqrt(targetPerBitmap / bytesPerPixel.toDouble())).toInt()
         if (bitmapSidePx == 0) bitmapSidePx = 1
-        val color = if (shouldExceed) Color.RED else Color.GREEN
-
         val remoteViews =
                 RemoteViews(context.packageName, R.layout.custom_notification_many_images)
         var totalBitmapAllocation = 0L
 
         for (i in 0 until numBitmaps) {
-            val uniqueColor =
-                    Color.rgb(
-                            Color.red(color),
-                            (Color.green(color) + i * 15) % 256,
-                            (Color.blue(color) + i * 25) % 256
-                    )
-            val bitmap = createBitmap(bitmapSidePx, uniqueColor)
+            val bitmap = createBitmap(bitmapSidePx, Color.RED)
             if (IMAGE_VIEW_IDS[i] != 0) {
                 remoteViews.setImageViewBitmap(IMAGE_VIEW_IDS[i], bitmap)
             } else {
@@ -154,8 +146,12 @@ class NotificationPoster(private val context: Context, private val stripSizeByte
                         "Limit=$stripSizeBytes"
         )
 
-        val title = if (shouldExceed) "Bitmap Over (Expand)" else "Bitmap Under (Expand)"
-        val contentText = "Bitmap Alloc: $totalBitmapAllocation / Limit: $stripSizeBytes"
+        val title = "Test Notification (Expand it)"
+        val contentText = if (shouldStrip) {
+            "NO RED BOX should be visible in this notification!"
+        } else {
+            "RED BOX should be visible in this notification!"
+        }
 
         val builder =
                 Notification.Builder(context, CHANNEL_ID)
@@ -216,10 +212,10 @@ class NotificationPoster(private val context: Context, private val stripSizeByte
      * @param shouldExceed True to generate an image file for the URI that likely exceeds the size
      *     limit, false to stay under.
      */
-    fun postUriNotification(notificationId: Int, shouldExceed: Boolean) {
+    fun postUriNotification(notificationId: Int, shouldExceed: Boolean, shouldStrip: Boolean) {
         val targetBitmapBytes =
         if (shouldExceed) stripSizeBytes.toLong() * 2L else stripSizeBytes.toLong() / 4L
-        val color = if (shouldExceed) Color.RED else Color.GREEN
+        val color = Color.RED
         val fileName = "test_image_$notificationId.png"
 
         val imageUri = createImageFile(targetBitmapBytes, color, fileName)
@@ -232,9 +228,12 @@ class NotificationPoster(private val context: Context, private val stripSizeByte
                 RemoteViews(context.packageName, R.layout.custom_notification_image)
         remoteViews.setImageViewUri(R.id.custom_notification_imageView, imageUri)
 
-        val title = if (shouldExceed) "URI Over (Expand)" else "URI Under (Expand)"
-        val contentText = "Expand to test URI. Target raw size: $targetBitmapBytes"
-
+        val title = "Test Notification (Expand it)"
+        val contentText = if (shouldStrip) {
+            "NO RED BOX should be visible in this notification!"
+        } else {
+            "RED BOX should be visible in this notification!"
+        }
         val builder =
                 Notification.Builder(context, CHANNEL_ID)
                         .setSmallIcon(android.R.drawable.stat_notify_chat) // Use a local icon

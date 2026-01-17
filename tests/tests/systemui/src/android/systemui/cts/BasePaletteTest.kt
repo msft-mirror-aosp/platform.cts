@@ -16,7 +16,6 @@
 
 package android.systemui.cts
 
-import android.app.Flags
 import android.app.Instrumentation
 import android.app.UiModeManager
 import android.content.BroadcastReceiver
@@ -30,7 +29,6 @@ import android.graphics.Paint
 import android.graphics.Typeface
 import android.os.Environment
 import android.os.SystemClock
-import android.os.UserManager
 import android.provider.Settings
 import android.view.View
 import android.view.ViewGroup
@@ -161,14 +159,9 @@ open class BasePaletteTest {
 
         val isDynamicColorSupported: Boolean
             get() {
-                if (FeatureUtil.isAutomotive() ||
-                    FeatureUtil.isTV() ||
-                    FeatureUtil.isWatch()) {
-                        return false
-                    }
-
-                if (!UserManager.isHeadlessSystemUserMode()) return true
-                return Flags.fixContrastAndForceInvertStateForMultiUser()
+                return !(FeatureUtil.isAutomotive() ||
+                        FeatureUtil.isTV() ||
+                        FeatureUtil.isWatch())
             }
 
         fun isSupportedStyle(@ThemeStyle.Type style: Int): Boolean {

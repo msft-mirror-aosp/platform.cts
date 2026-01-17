@@ -59,6 +59,7 @@ import android.hardware.biometrics.SensorProperties;
 import android.os.CancellationSignal;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.biometrics.util.BiometricServiceState;
 import android.server.biometrics.util.SensorStates;
@@ -195,6 +196,15 @@ public class BiometricSimpleTests extends BiometricTestBase {
     public void testGetBiometricSensorStrengths_allowedWalletRoleHolder() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
 
+        // Grant wallet role to the wallet test helper app.
+        boolean setWalletRoleResult =
+                setRoleHolder(WalletTestHelperConstants.PACKAGE_NAME, RoleManager.ROLE_WALLET);
+        assumeTrue(
+                String.format(
+                        "Failed to grant %s to the test helper app %s. Skipping test.",
+                        RoleManager.ROLE_WALLET, WalletTestHelperConstants.PACKAGE_NAME),
+                setWalletRoleResult);
+
         Map<Integer, List<Integer>> expectedSensorStrengths = getExpectedSensorStrengths(true);
         final Pair<LinkedBlockingQueue<Intent>, BroadcastReceiver> receiverRegistration =
                 registerBroadcastReceiver(WalletTestHelperConstants.INTENT_RESULT);
@@ -202,15 +212,6 @@ public class BiometricSimpleTests extends BiometricTestBase {
         final BroadcastReceiver broadcastReceiver = receiverRegistration.second;
 
         try {
-            // Grant wallet role to the wallet test helper app.
-            boolean setWalletRoleResult =
-                    setRoleHolder(WalletTestHelperConstants.PACKAGE_NAME, RoleManager.ROLE_WALLET);
-            assertTrue(
-                    String.format(
-                            "Failed to grant %s to %s.",
-                            RoleManager.ROLE_WALLET, WalletTestHelperConstants.PACKAGE_NAME),
-                    setWalletRoleResult);
-
             // Launch the wallet test helper activity and wait for the broadcast result intent.
             launchActivity(
                     new ComponentName(
@@ -305,24 +306,24 @@ public class BiometricSimpleTests extends BiometricTestBase {
             throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
 
+        // Grant wallet role to the no API permission wallet test helper app.
+        boolean setWalletRoleResult =
+                setRoleHolder(
+                        WalletTestHelperConstants.NO_API_PERMISSION_PACKAGE_NAME,
+                        RoleManager.ROLE_WALLET);
+        assumeTrue(
+                String.format(
+                        "Failed to grant %s to the test helper app %s. Skipping test.",
+                        RoleManager.ROLE_WALLET,
+                        WalletTestHelperConstants.NO_API_PERMISSION_PACKAGE_NAME),
+                setWalletRoleResult);
+
         final Pair<LinkedBlockingQueue<Intent>, BroadcastReceiver> receiverRegistration =
                 registerBroadcastReceiver(WalletTestHelperConstants.INTENT_RESULT);
         final LinkedBlockingQueue<Intent> broadcastQueue = receiverRegistration.first;
         final BroadcastReceiver broadcastReceiver = receiverRegistration.second;
 
         try {
-            // Grant wallet role to the no API permission wallet test helper app.
-            boolean setWalletRoleResult =
-                    setRoleHolder(
-                            WalletTestHelperConstants.NO_API_PERMISSION_PACKAGE_NAME,
-                            RoleManager.ROLE_WALLET);
-            assertTrue(
-                    String.format(
-                            "Failed to grant %s to %s.",
-                            RoleManager.ROLE_WALLET,
-                            WalletTestHelperConstants.NO_API_PERMISSION_PACKAGE_NAME),
-                    setWalletRoleResult);
-
             // Launch the wallet test helper activity and wait for the broadcast result intent.
             launchActivity(
                     new ComponentName(
@@ -358,24 +359,24 @@ public class BiometricSimpleTests extends BiometricTestBase {
             throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
 
+        // Grant wallet role to the no biometric permission wallet test helper app.
+        boolean setWalletRoleResult =
+                setRoleHolder(
+                        WalletTestHelperConstants.NO_BIO_PERMISSION_PACKAGE_NAME,
+                        RoleManager.ROLE_WALLET);
+        assumeTrue(
+                String.format(
+                        "Failed to grant %s to the test helper app %s. Skipping test.",
+                        RoleManager.ROLE_WALLET,
+                        WalletTestHelperConstants.NO_BIO_PERMISSION_PACKAGE_NAME),
+                setWalletRoleResult);
+
         final Pair<LinkedBlockingQueue<Intent>, BroadcastReceiver> receiverRegistration =
                 registerBroadcastReceiver(WalletTestHelperConstants.INTENT_RESULT);
         final LinkedBlockingQueue<Intent> broadcastQueue = receiverRegistration.first;
         final BroadcastReceiver broadcastReceiver = receiverRegistration.second;
 
         try {
-            // Grant wallet role to the no biometric permission wallet test helper app.
-            boolean setWalletRoleResult =
-                    setRoleHolder(
-                            WalletTestHelperConstants.NO_BIO_PERMISSION_PACKAGE_NAME,
-                            RoleManager.ROLE_WALLET);
-            assertTrue(
-                    String.format(
-                            "Failed to grant %s to %s.",
-                            RoleManager.ROLE_WALLET,
-                            WalletTestHelperConstants.NO_BIO_PERMISSION_PACKAGE_NAME),
-                    setWalletRoleResult);
-
             // Launch the wallet test helper activity and wait for the broadcast result intent.
             launchActivity(
                     new ComponentName(
@@ -410,21 +411,21 @@ public class BiometricSimpleTests extends BiometricTestBase {
             throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
 
+        // Grant wallet role to the wallet test helper app.
+        boolean setWalletRoleResult =
+                setRoleHolder(WalletTestHelperConstants.PACKAGE_NAME, RoleManager.ROLE_WALLET);
+        assumeTrue(
+                String.format(
+                        "Failed to grant %s to the test helper app %s. Skipping test.",
+                        RoleManager.ROLE_WALLET, WalletTestHelperConstants.PACKAGE_NAME),
+                setWalletRoleResult);
+
         final Pair<LinkedBlockingQueue<Intent>, BroadcastReceiver> receiverRegistration =
                 registerBroadcastReceiver(WalletTestHelperConstants.BACKGROUND_INTENT_RESULT);
         final LinkedBlockingQueue<Intent> broadcastQueue = receiverRegistration.first;
         final BroadcastReceiver broadcastReceiver = receiverRegistration.second;
 
         try {
-            // Grant wallet role to the wallet test helper app.
-            boolean setWalletRoleResult =
-                    setRoleHolder(WalletTestHelperConstants.PACKAGE_NAME, RoleManager.ROLE_WALLET);
-            assertTrue(
-                    String.format(
-                            "Failed to grant %s to %s.",
-                            RoleManager.ROLE_WALLET, WalletTestHelperConstants.PACKAGE_NAME),
-                    setWalletRoleResult);
-
             // Send a broadcast intent to trigger the background thread and wait for the
             // broadcast result intent. Note that initially the app is in a stopped state, so an
             // extra intent flag needs to be added to reach the test helper broadcast receiver.
@@ -1340,21 +1341,20 @@ public class BiometricSimpleTests extends BiometricTestBase {
      * Tests that the values specified through the public APIs are shown on the BiometricPrompt UI
      * when credential auth is requested.
      *
-     * Upon successful authentication, checks that the result is
-     * {@link BiometricPrompt#AUTHENTICATION_RESULT_TYPE_BIOMETRIC}
+     * <p>Upon successful authentication, checks that the result is {@link
+     * BiometricPrompt#AUTHENTICATION_RESULT_TYPE_BIOMETRIC}
      */
-    @ApiTest(apis = {
-            "android.hardware.biometrics."
-                    + "BiometricPrompt.Builder#setTitle",
-            "android.hardware.biometrics."
-                    + "BiometricPrompt.Builder#setSubtitle",
-            "android.hardware.biometrics."
-                    + "BiometricPrompt.Builder#setDescription",
-            "android.hardware.biometrics."
-                    + "BiometricPrompt#authenticate",
-            "android.hardware.biometrics."
-                    + "BiometricPrompt.AuthenticationResult#getAuthenticationType"})
+    @ApiTest(
+            apis = {
+                "android.hardware.biometrics." + "BiometricPrompt.Builder#setTitle",
+                "android.hardware.biometrics." + "BiometricPrompt.Builder#setSubtitle",
+                "android.hardware.biometrics." + "BiometricPrompt.Builder#setDescription",
+                "android.hardware.biometrics." + "BiometricPrompt#authenticate",
+                "android.hardware.biometrics."
+                        + "BiometricPrompt.AuthenticationResult#getAuthenticationType"
+            })
     @Test
+    @RequiresFlagsDisabled(com.android.systemui.Flags.FLAG_LARGE_SCREEN_BP)
     public void testSimpleCredentialAuth() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
         //TODO: b/331955301 need to update Auto biometric UI
@@ -1385,9 +1385,9 @@ public class BiometricSimpleTests extends BiometricTestBase {
 
             // These views aren't available on wear devices.
             if (!isWatch()) {
-                final UiObject2 actualTitle = findView(TITLE_VIEW);
-                final UiObject2 actualSubtitle = findView(SUBTITLE_VIEW);
-                final UiObject2 actualDescription = findView(DESCRIPTION_VIEW);
+                final UiObject2 actualTitle = waitForView(TITLE_VIEW);
+                final UiObject2 actualSubtitle = waitForView(SUBTITLE_VIEW);
+                final UiObject2 actualDescription = waitForView(DESCRIPTION_VIEW);
                 assertEquals(randomTitle, actualTitle.getText());
                 assertEquals(randomSubtitle, actualSubtitle.getText());
                 assertEquals(randomDescription, actualDescription.getText());

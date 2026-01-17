@@ -20,8 +20,6 @@
     <option name="compatibility:include-filter" value="CtsAdServicesEndToEndTests com.android.adservices.tests.cts.topics.TopicsManagerTest#testTopicsManager_shouldThrowDeprecatedException"/>
     <!-- CtsAdServicesExtDataStorageServiceTest -->
     <option name="compatibility:include-filter" value="CtsAdServicesExtDataStorageServiceTest com.android.adservices.tests.extdata.AdServicesExtDataServiceCtsTest#testAdServicesExtDataStorageService"/>
-    <!-- CtsAdServicesNotInAllowListEndToEndTests -->
-    <option name="compatibility:include-filter" value="CtsAdServicesNotInAllowListEndToEndTests com.android.adservices.tests.permissions.NotInAllowListTest#testNotInAllowList_fledgeLeaveCustomAudience"/>
     <!-- CtsAdServicesTopicsAppUpdateTests -->
     <option name="compatibility:include-filter" value="CtsAdServicesTopicsAppUpdateTests com.android.adservices.tests.cts.topics.appupdate.AppUpdateTest#testAppUpdate"/>
     <!-- CtsAdServicesTopicsConnectionTests -->

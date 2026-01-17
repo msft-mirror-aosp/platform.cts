@@ -150,7 +150,6 @@
   <option name="compatibility:include-filter" value="CtsAppSetIdEndToEndTest"/>
   <option name="compatibility:include-filter" value="CtsSettingsTestCases"/>
   <option name="compatibility:include-filter" value="CtsNNAPIJavaTestCases"/>
-  <option name="compatibility:include-filter" value="CtsAdServicesPermissionsNoPermEndToEndTests"/>
   <option name="compatibility:include-filter" value="CtsWifiBroadcastsHostTestCases"/>
   <option name="compatibility:include-filter" value="CtsApacheHttpLegacyCurrentApiSignatureTestCases"/>
   <option name="compatibility:include-filter" value="CtsAccelerationTestCases"/>
@@ -204,7 +203,6 @@
   <option name="compatibility:include-filter" value="CtsTelephonyProviderHostCases"/>
   <option name="compatibility:include-filter" value="CtsSampleHostTestCases"/>
   <option name="compatibility:include-filter" value="CtsUidIsolationTestCases"/>
-  <option name="compatibility:include-filter" value="CtsAdServicesNotInAllowListEndToEndTests"/>
   <option name="compatibility:include-filter" value="CtsGpuProfilingDataTestCases"/>
   <option name="compatibility:include-filter" value="CtsNativeNetDnsTestCases"/>
   <option name="compatibility:include-filter" value="CtsNetSecConfigInvalidPinTestCases"/>

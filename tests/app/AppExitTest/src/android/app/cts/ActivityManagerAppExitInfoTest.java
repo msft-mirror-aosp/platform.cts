@@ -56,6 +56,7 @@ import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.externalservice.common.RunningServiceInfo;
 import android.externalservice.common.ServiceMessages;
+import android.nativeservice.simple.ISimpleNativeService;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Build;
@@ -2076,6 +2077,148 @@ public final class ActivityManagerAppExitInfoTest {
                 ApplicationExitInfo.REASON_EXIT_SELF, EXIT_CODE, null, now, now2, cookie1);
     }
 
+    private NativeServiceTestConnection bindNativeService(String pkg, String serviceName)
+            throws Exception {
+        final Intent intent = new Intent();
+        intent.setClassName(pkg, serviceName);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        final NativeServiceTestConnection conn = new NativeServiceTestConnection(latch);
+
+        // Start the service
+        assertTrue(
+                mContext.bindService(
+                        intent, conn, Context.BIND_AUTO_CREATE | Context.BIND_EXTERNAL_SERVICE));
+        Log.i(TAG, "Waiting for latch...");
+        assertTrue(latch.await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
+        assertTrue(conn.mService != null);
+        return conn;
+    }
+
+    private static final class NativeServiceState {
+        final int mPid;
+        final int mUid;
+
+        NativeServiceState(int pid, int uid) {
+            this.mPid = pid;
+            this.mUid = uid;
+        }
+    }
+
+    private NativeServiceState getNativeServiceState(NativeServiceTestConnection conn)
+            throws RemoteException {
+        int pid = conn.mService.getPid();
+        int uid = conn.mService.getUid();
+        assertTrue("Native service process not found", pid > 0);
+        assertTrue("Native service process uid not found", uid > 0);
+        return new NativeServiceState(pid, uid);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.os.Flags.FLAG_NATIVE_FRAMEWORK_PROTOTYPE)
+    public void testNativeServiceExit() throws Exception {
+        final String servicePackage = "android.externalservice.service";
+        final String serviceName = servicePackage + ".ExternalNativeService";
+        NativeServiceTestConnection conn = bindNativeService(servicePackage, serviceName);
+
+        NativeServiceState state = getNativeServiceState(conn);
+        int pid = state.mPid;
+        int uid = state.mUid;
+
+        final WatchUidRunner watcher = new WatchUidRunner(mInstrumentation, uid, WAITFOR_MSEC);
+
+        long now = System.currentTimeMillis();
+
+        // Unbind the service, it should exit since it's an isolated process
+        mContext.unbindService(conn);
+
+        try {
+            // Isolated process should have been killed as long as its service is done.
+            waitForGone(watcher);
+        } finally {
+            watcher.finish();
+        }
+
+        long now2 = System.currentTimeMillis();
+
+        // Verify exit info
+        final List<ApplicationExitInfo> list =
+                mActivityManager.getHistoricalProcessExitReasons(null, pid, 1);
+        assertNotNull(list);
+        assertEquals(1, list.size());
+
+        ApplicationExitInfo info = list.get(0);
+        verify(
+                info,
+                pid,
+                uid,
+                /* processName= */ null,
+                ApplicationExitInfo.REASON_OTHER,
+                /* status= */ null,
+                "isolated not needed",
+                now,
+                now2);
+        assertEquals(Process.myUid(), info.getPackageUid());
+        assertEquals(
+                mContext.getPackageManager().getPackageUid(servicePackage, 0),
+                info.getDefiningUid());
+        assertEquals(
+                ActivityManager.RunningAppProcessInfo.IMPORTANCE_SERVICE, info.getImportance());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.os.Flags.FLAG_NATIVE_FRAMEWORK_PROTOTYPE)
+    public void testNativeServiceCrash() throws Exception {
+        final String servicePackage = "android.externalservice.service";
+        final String serviceName = servicePackage + ".ExternalNativeService";
+        NativeServiceTestConnection conn = bindNativeService(servicePackage, serviceName);
+
+        NativeServiceState state = getNativeServiceState(conn);
+        int pid = state.mPid;
+        int uid = state.mUid;
+
+        long now = System.currentTimeMillis();
+
+        // Crash the native service
+        conn.mService.crash();
+
+        // Verify exit info
+        List<ApplicationExitInfo> list = new ArrayList<>();
+        PollingCheck.check(
+                "not able to get ApplicationExitInfo",
+                WAITFOR_SETTLE_DOWN,
+                () -> {
+                    final List<ApplicationExitInfo> result =
+                            mActivityManager.getHistoricalProcessExitReasons(null, pid, 1);
+                    if (result != null && !result.isEmpty()) {
+                        list.addAll(result);
+                        return true;
+                    }
+                    return false;
+                });
+
+        long now2 = System.currentTimeMillis();
+
+        assertNotNull(list);
+        assertEquals(1, list.size());
+
+        ApplicationExitInfo exitInfo = list.get(0);
+        verify(
+                exitInfo,
+                pid,
+                uid,
+                /* processName= */ null,
+                ApplicationExitInfo.REASON_CRASH_NATIVE,
+                /* status= */ null,
+                /* description= */ null,
+                now,
+                now2);
+
+        // Skip tombstone file check because it's created but not associated to AppExitInfo (native
+        // services are isolated and NativeTombstoneManager ignores tombstone files for isolated
+        // processes).
+    }
+
     /**
      * By design, an app's process in cached state is subject to being killed due
      * to system memory pressure. Any work in this state, e.g. an {@link Activity}
@@ -2331,5 +2474,23 @@ public final class ActivityManagerAppExitInfoTest {
                     android.Manifest.permission.DUMP);
             return (mTrace != null);
         }
+    }
+
+    private static final class NativeServiceTestConnection implements ServiceConnection {
+        ISimpleNativeService mService;
+        CountDownLatch mLatch;
+
+        NativeServiceTestConnection(CountDownLatch latch) {
+            mLatch = latch;
+        }
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            mService = ISimpleNativeService.Stub.asInterface(service);
+            mLatch.countDown();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {}
     }
 }

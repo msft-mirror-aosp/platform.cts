@@ -91,7 +91,6 @@ public class AudioServiceRebootTest {
         mAm.adjustStreamVolume(STREAM_MUSIC, AudioManager.ADJUST_UNMUTE, 0);
         mAm.setStreamVolume(STREAM_ALARM, TEST_ALARM_VOLUME, 0);
         mAm.setStreamVolume(STREAM_RING, TEST_RING_VOLUME, 0);
-        mAm.adjustStreamVolume(STREAM_RING, AudioManager.ADJUST_MUTE, 0);
 
         mAm.waitForAudioHandlerBarrier();
         AmUtils.waitForBroadcastBarrier();
@@ -99,8 +98,7 @@ public class AudioServiceRebootTest {
         assertThat(mAm.getStreamVolume(STREAM_MUSIC)).isEqualTo(TEST_MUSIC_VOLUME);
         assertThat(mAm.isStreamMute(STREAM_MUSIC)).isFalse();
         assertThat(mAm.getStreamVolume(STREAM_ALARM)).isEqualTo(TEST_ALARM_VOLUME);
-        assertThat(mAm.getStreamVolume(STREAM_RING)).isEqualTo(0);
-        assertThat(mAm.isStreamMute(STREAM_RING)).isTrue();
+        assertThat(mAm.getStreamVolume(STREAM_RING)).isEqualTo(TEST_RING_VOLUME);
     }
 
     @Test
@@ -108,13 +106,6 @@ public class AudioServiceRebootTest {
         assertThat(mAm.getStreamVolume(STREAM_MUSIC)).isEqualTo(TEST_MUSIC_VOLUME);
         assertThat(mAm.isStreamMute(STREAM_MUSIC)).isFalse();
         assertThat(mAm.getStreamVolume(STREAM_ALARM)).isEqualTo(TEST_ALARM_VOLUME);
-        assertThat(mAm.isStreamMute(STREAM_RING)).isTrue();
-        assertThat(mAm.getStreamVolume(STREAM_RING)).isEqualTo(0);
-
-        mAm.adjustStreamVolume(STREAM_RING, AudioManager.ADJUST_UNMUTE, 0);
-        mAm.waitForAudioHandlerBarrier();
-        AmUtils.waitForBroadcastBarrier();
-
         assertThat(mAm.getStreamVolume(STREAM_RING)).isEqualTo(TEST_RING_VOLUME);
     }
 

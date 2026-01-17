@@ -1236,7 +1236,15 @@ public class SubscriptionManagerTest {
             mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_CARRIER);
             mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
             if (Flags.getPhoneNumberTs43Api()) {
-                mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+                getPhoneNumberViaShell(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+                try {
+                    mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+                    fail(
+                            "Accessing TS.43 source should throw SecurityException "
+                                    + "for unprivileged apps.");
+                } catch (SecurityException expected) {
+                    // Test passes: The system correctly restricted access based on the calling UID.
+                }
             }
         } finally {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
@@ -1252,7 +1260,15 @@ public class SubscriptionManagerTest {
             mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_CARRIER);
             mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
             if (Flags.getPhoneNumberTs43Api()) {
-                mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+                getPhoneNumberViaShell(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+                try {
+                    mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+                    fail(
+                            "Accessing TS.43 source should throw SecurityException "
+                                    + "for unprivileged apps.");
+                } catch (SecurityException expected) {
+                    // Test passes: The system correctly restricted access based on the calling UID.
+                }
             }
         } finally {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
@@ -1269,7 +1285,15 @@ public class SubscriptionManagerTest {
                     mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_UICC);
                     mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
                     if (Flags.getPhoneNumberTs43Api()) {
-                        mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+                        getPhoneNumberViaShell(
+                                mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+                        try {
+                            mSm.getPhoneNumber(
+                                    mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+                            fail("Expect SecurityException from getPhoneNumber()");
+                        } catch (SecurityException e) {
+                            // expected
+                        }
                     }
 
                     String originalPhoneNumber =
@@ -1325,6 +1349,11 @@ public class SubscriptionManagerTest {
         }
     }
 
+    private String getPhoneNumberViaShell(int subId, int source) throws Exception {
+        String cmd = "cmd phone get-phone-number " + subId + " " + source;
+        return SystemUtil.runShellCommand(InstrumentationRegistry.getInstrumentation(), cmd).trim();
+    }
+
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_GET_PHONE_NUMBER_TS43_API)
     public void testSetTs43PhoneNumber() throws Exception {
@@ -1340,12 +1369,12 @@ public class SubscriptionManagerTest {
         String originalPhoneNumber = null;
         try {
             originalPhoneNumber =
-                    mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+                    getPhoneNumberViaShell(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
             final String testNumber = "1234567890";
             mSm.setTs43PhoneNumber(mSubId, testNumber);
 
             String retrievedNumber =
-                    mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
+                    getPhoneNumberViaShell(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
             assertEquals(
                     "The retrieved phone number should match the one that was set.",
                     testNumber,
@@ -1951,12 +1980,13 @@ public class SubscriptionManagerTest {
         setAndVerifySubscriptionPlans(ctx, mSubId, Collections.emptyList(), expirationDuration);
     }
 
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SUBSCRIPTION_PLAN_ENHANCEMENT)
-    public void testEnrollableSubscriptionPlansExpiration() throws Exception {
+    /**
+     * Sets a subscription plan with an expiration time and verifies that it expires as expected.
+     */
+    private void setAndVerifySubscriptionPlanWithExpiration(long expirationDuration)
+            throws Exception {
         // SetUp: set expiration duration to 1sec to the sample plan
         Context ctx = InstrumentationRegistry.getContext();
-        long expirationDuration = 1000;
         SubscriptionPlan plan =
                 SubscriptionPlan.Builder.createRecurring(ZonedDateTime.now(), Period.ofMonths(1))
                         .setTitle("Expiring Plan")
@@ -1965,10 +1995,10 @@ public class SubscriptionManagerTest {
         // Test1. Initialize.
         setAndVerifySubscriptionPlans(ctx, mSubId, Collections.emptyList(), 0);
 
-        // Test2. set a plan with 1 sec duration.
+        // Test2. set a plan with expirationDuration.
         setAndVerifySubscriptionPlans(ctx, mSubId, Arrays.asList(plan), expirationDuration);
 
-        // Verify that 1 sec duration plan has gone.
+        // Verify that plan has gone.
         CarrierPrivilegeUtils.withCarrierPrivileges(
                 ctx,
                 mSubId,
@@ -1986,36 +2016,36 @@ public class SubscriptionManagerTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SUBSCRIPTION_PLAN_ENHANCEMENT)
+    public void testEnrollableSubscriptionPlansExpiration() throws Exception {
+        long expirationDuration = 1000; // 1 second
+        setAndVerifySubscriptionPlanWithExpiration(expirationDuration);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUBSCRIPTION_PLAN_ENHANCEMENT)
     public void testEnrollableSubscriptionPlans_Security() throws Exception {
-        Context ctx = InstrumentationRegistry.getContext();
-        SubscriptionPlan plan =
-                SubscriptionPlan.Builder.createRecurring(
-                                ZonedDateTime.parse("2025-01-01T00:00:00.000Z"), Period.ofMonths(1))
-                        .setTitle("Owner Check Plan")
-                        .build();
+        long expirationDuration = 1000; // 1 second
+        setAndVerifySubscriptionPlanWithExpiration(expirationDuration);
 
         // Test1. Verify access without MANAGE_SUBSCRIPTION_PLANS permission.
         // (Shell does not have MANAGE_SUBSCRIPTION_PLANS permission.)
         try {
             // Act: call set plan API
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                    mSm, (sm) -> sm.setEnrollableSubscriptionPlans(mSubId, Arrays.asList(plan), 0));
+            mSm.setEnrollableSubscriptionPlans(mSubId, Collections.emptyList(), 0);
             // Verify that exceptions should be thrown if app does not have the permission.
-            fail("Fails to set enrollable plans with MANAGE_SUBSCRIPTION_PLANS permission.");
+            fail("Fails to set enrollable plans. this test requires SecurityException.");
         } catch (SecurityException e) {
             // Success
         }
 
-        // Test2. Carrier Privileges & Owner Access
-        setAndVerifySubscriptionPlans(ctx, mSubId, Arrays.asList(plan), 0);
-
-        // Test3. get plans with owner access.
+        // Test2. test getEnrollableSubscriptionPlans
         try {
-            // Act: call get plan API without a permission but this app is the owner.
+            // Act: call get plan API
             List<SubscriptionPlan> plans = mSm.getEnrollableSubscriptionPlans(mSubId);
-            // Verifying access as Owner without permission
+            // Verify that exceptions should be thrown if app does not have the permission.
+            fail("Fails to get enrollable plans. this test requires SecurityException.");
         } catch (SecurityException e) {
-            fail("Owner should have access without extra permissions: " + e.getMessage());
+            // Success
         }
     }
 }

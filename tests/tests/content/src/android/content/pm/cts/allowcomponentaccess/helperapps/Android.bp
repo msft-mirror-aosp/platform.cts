@@ -3,20 +3,67 @@ package {
 }
 
 android_test_helper_app {
-    name: "CtsAllowComponentAccessClientAllow",
-    manifest: "Client_Allow_AndroidManifest.xml",
+    name: "CtsAllowComponentAccessSourceAllow",
+    manifest: "Source_Allow_AndroidManifest.xml",
+    srcs: [
+        "src/**/*.java",
+        ":CtsAllowComponentAccessTest_Constants",
+        ":CtsAllowComponentAccessTest_Aidl",
+    ],
     sdk_version: "current",
 }
 
 android_test_helper_app {
-    name: "CtsAllowComponentAccessClientNoTag",
-    manifest: "Client_NoTag_AndroidManifest.xml",
+    name: "CtsAllowComponentAccessSourceNoTag",
+    manifest: "Source_NoTag_AndroidManifest.xml",
+    srcs: [
+        "src/**/*.java",
+        ":CtsAllowComponentAccessTest_Constants",
+        ":CtsAllowComponentAccessTest_Aidl",
+    ],
     sdk_version: "current",
 }
 
 android_test_helper_app {
-    name: "CtsAllowComponentAccessServer",
-    srcs: ["src/**/*.java"],
-    manifest: "Server_AndroidManifest.xml",
+    name: "CtsAllowComponentAccessSourceBlock",
+    manifest: "Source_Block_AndroidManifest.xml",
+    srcs: [
+        "src/**/*.java",
+        ":CtsAllowComponentAccessTest_Constants",
+        ":CtsAllowComponentAccessTest_Aidl",
+    ],
+    sdk_version: "current",
+}
+
+android_test_helper_app {
+    name: "CtsAllowComponentAccessTargetNoTag",
+    manifest: "Target_NoTag_AndroidManifest.xml",
+    srcs: [
+        "src/**/*.java",
+        ":CtsAllowComponentAccessTest_Constants",
+        ":CtsAllowComponentAccessTest_Aidl",
+    ],
+    sdk_version: "current",
+}
+
+android_test_helper_app {
+    name: "CtsAllowComponentAccessTargetBlock",
+    manifest: "Target_Block_AndroidManifest.xml",
+    srcs: [
+        "src/**/*.java",
+        ":CtsAllowComponentAccessTest_Constants",
+        ":CtsAllowComponentAccessTest_Aidl",
+    ],
+    sdk_version: "current",
+}
+
+android_test_helper_app {
+    name: "CtsAllowComponentAccessTargetAllow",
+    manifest: "Target_Allow_AndroidManifest.xml",
+    srcs: [
+        "src/**/*.java",
+        ":CtsAllowComponentAccessTest_Constants",
+        ":CtsAllowComponentAccessTest_Aidl",
+    ],
     sdk_version: "current",
 }

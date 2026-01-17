@@ -253,6 +253,11 @@ public abstract class AudioDataPathsBaseActivity
         super.onStop();
     }
 
+    protected void setTestStartDelay(int delayMillis) {
+        for(var manager : mTestManagers) {
+            manager.setTestStartDelay(delayMillis);
+        }
+    }
     //
     // UI Helpers
     //
@@ -1193,6 +1198,7 @@ public abstract class AudioDataPathsBaseActivity
         private boolean mTestHasBeenRun;
         private boolean mTestCanceledByUser;
         private boolean mIsTestModulesGathered = false;
+        private int mTestStartDelayMillis = 0;
 
         public void initializeTests() {
             // Get the test modules from the sub-class
@@ -1203,6 +1209,10 @@ public abstract class AudioDataPathsBaseActivity
             }
             validateTestDevices();
             displayTestDevices();
+        }
+
+        public void setTestStartDelay(int delayMillis) {
+            mTestStartDelayMillis = delayMillis;
         }
 
         public void cancelTest() {
@@ -1480,7 +1490,7 @@ public abstract class AudioDataPathsBaseActivity
             mUtiltitiesHandler.setEnabled(false);
             synchronized (mTimerMutex) {
                 mTimer = new Timer();
-                mTimer.schedule(new MyTimerTask(), 0);
+                mTimer.schedule(new MyTimerTask(), mTestStartDelayMillis);
             }
         }
 

@@ -392,7 +392,6 @@ public class VibratorTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_PRIMITIVE_COMPOSITION_ABSOLUTE_DELAY)
     @Test
     public void testVibrateComposedWithRelativeDelays() throws InterruptedException {
         boolean[] supported = mVibrator.arePrimitivesSupported(PRIMITIVE_EFFECTS);

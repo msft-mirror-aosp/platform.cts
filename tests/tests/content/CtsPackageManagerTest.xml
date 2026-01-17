@@ -85,12 +85,6 @@
         <option name="push" value="CtsPackageChangedSharedUserIdTestApp.apk->/data/local/tmp/cts/content/CtsPackageChangedSharedUserIdTestApp.apk" />
         <option name="push" value="CtsIntentResolutionApplicationOverrideTestApp.apk->/data/local/tmp/cts/content/CtsIntentResolutionApplicationOverrideTestApp.apk" />
         <option name="push" value="CtsIntentResolutionComponentOverrideTestApp.apk->/data/local/tmp/cts/content/CtsIntentResolutionComponentOverrideTestApp.apk" />
-        <option name="push"
-            value="CtsAllowComponentAccessClientAllow.apk->/data/local/tmp/cts/content/CtsAllowComponentAccessClientAllow.apk" />
-        <option name="push"
-            value="CtsAllowComponentAccessClientNoTag.apk->/data/local/tmp/cts/content/CtsAllowComponentAccessClientNoTag.apk" />
-        <option name="push"
-            value="CtsAllowComponentAccessServer.apk->/data/local/tmp/cts/content/CtsAllowComponentAccessServer.apk" />
         <option name="push" value="CtsOnlyForLocationButtonApp.apk->/data/local/tmp/cts/content/CtsOnlyForLocationButtonApp.apk" />
     </target_preparer>
 
@@ -236,9 +230,12 @@
         <option name="test-file-name" value="CtsContentNoApplicationTestApp.apk" />
         <option name="test-file-name" value="CtsIntentResolutionApplicationOverrideTestApp.apk" />
         <option name="test-file-name" value="CtsIntentResolutionComponentOverrideTestApp.apk" />
-        <option name="test-file-name" value="CtsAllowComponentAccessClientAllow.apk" />
-        <option name="test-file-name" value="CtsAllowComponentAccessClientNoTag.apk" />
-        <option name="test-file-name" value="CtsAllowComponentAccessServer.apk" />
+        <option name="test-file-name" value="CtsAllowComponentAccessSourceAllow.apk" />
+        <option name="test-file-name" value="CtsAllowComponentAccessSourceNoTag.apk" />
+        <option name="test-file-name" value="CtsAllowComponentAccessSourceBlock.apk" />
+        <option name="test-file-name" value="CtsAllowComponentAccessTargetNoTag.apk" />
+        <option name="test-file-name" value="CtsAllowComponentAccessTargetBlock.apk" />
+        <option name="test-file-name" value="CtsAllowComponentAccessTargetAllow.apk" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.AFlagsTargetPreparer" />

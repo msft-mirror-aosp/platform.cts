@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.android.cts.allowcomponentaccess.target_allow">
+
+    <allow-component-access>
+        <package android:name="com.android.cts.allowcomponentaccess.source_notag" />
+        <package android:name="com.android.cts.allowcomponentaccess.source_allow" />
+        <package android:name="com.android.cts.allowcomponentaccess.source_block" />
+    </allow-component-access>
+
+    <application android:label="CtsServerAllow">
+        <receiver android:name="com.android.cts.allowcomponentaccess.target.TargetReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.android.cts.allowcomponentaccess.PING" />
+            </intent-filter>
+        </receiver>
+
+        <service android:name="com.android.cts.allowcomponentaccess.target.TargetService"
+            android:exported="true" />
+    </application>
+</manifest>

@@ -14,23 +14,18 @@
  * limitations under the License.
  */
 
-package com.android.cts.allowcomponentaccess.server;
+package com.android.interactive.steps.sysui
 
-import android.app.Service;
-import android.content.Intent;
-import android.os.Binder;
-import android.os.IBinder;
+import com.android.interactive.annotations.NotFullyAutomated
+import com.android.interactive.steps.YesNoStep
 
-/**
- * A simple exported service used as a binding target for the AllowComponentAccess CTS tests. It
- * returns a basic Binder instance from onBind to allow successful binding.
- */
-public class MyService extends Service {
+@NotFullyAutomated(reason = "Requires manual visual inspection of notification rendering.")
+class VerifyNotificationCustomContentStripped : YesNoStep(
+    """
+    Test notification was posted. Please expand the notification.
 
-    private final IBinder mBinder = new Binder();
+    Expected: Notification should ONLY show text, NO RED BOX.
 
-    @Override
-    public IBinder onBind(Intent intent) {
-        return mBinder;
-    }
-}
+    Is the expanded notification rendered as expected?
+    """.trimIndent()
+)
