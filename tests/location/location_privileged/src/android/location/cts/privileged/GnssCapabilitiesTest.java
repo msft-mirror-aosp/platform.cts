@@ -6,9 +6,13 @@ import android.location.GnssCapabilities;
 import android.location.GnssSignalType;
 import android.location.GnssStatus;
 import android.os.Parcel;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -20,6 +24,9 @@ import java.util.Arrays;
  */
 @RunWith(AndroidJUnit4.class)
 public class GnssCapabilitiesTest {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final GnssSignalType SIGNAL_TYPE_1 =
             GnssSignalType.create(GnssStatus.CONSTELLATION_GPS, 1575.42e6, "C");
@@ -49,6 +56,17 @@ public class GnssCapabilitiesTest {
         verifyTestValues(newGnssCapabilities);
         assertEquals(newGnssCapabilities, gnssCapabilities);
         parcel.recycle();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            android.location.flags.Flags
+                    .FLAG_GNSS_CAPABILITY_RESTART_ENGINE_AFTER_POWER_MODE_CHANGE)
+    public void testEngineRestartAfterPowerModeChange() {
+        GnssCapabilities.Builder builder = new GnssCapabilities.Builder();
+        builder.setHasGnssEngineRestartAfterPowerModeChange(true);
+        GnssCapabilities gnssCapabilities = builder.build();
+        assertEquals(true, gnssCapabilities.hasGnssEngineRestartAfterPowerModeChange());
     }
 
     private static GnssCapabilities getTestGnssCapabilities() {
