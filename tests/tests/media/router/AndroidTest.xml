@@ -51,11 +51,10 @@
         <option name="instrumentation-arg" key="media-testing-mode" value="cts" />
     </test>
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
-        <option name="test-user-token" value="%TEST_USER%"/>
         <!-- disable DeprecatedAbi warning -->
         <option name="run-command" value="setprop debug.wm.disable_deprecated_abi_dialog 1" />
         <!-- Ensure NEARBY_WIFI_DEVICES does not get auto-granted like other permissions -->
         <option name="run-command"
-                value="pm revoke --user %TEST_USER% android.media.router.cts android.permission.NEARBY_WIFI_DEVICES" />
+                value="pm revoke android.media.router.cts android.permission.NEARBY_WIFI_DEVICES" />
     </target_preparer>
 </configuration>
