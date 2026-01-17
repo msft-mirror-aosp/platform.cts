@@ -78,6 +78,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.format.DateUtils;
+import android.util.AndroidRuntimeException;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.Pair;
@@ -5727,6 +5728,51 @@ public class ViewTest {
         assertThat(extraRenderingInfo).isNotNull();
         assertThat(extraRenderingInfo.getBackgroundColor()).isEqualTo(Color.YELLOW);
         assertThat(extraRenderingInfo.getAlpha()).isEqualTo(0.5f);
+    }
+
+    @Test
+    public void testCalledFromWrongThreadListener() throws Throwable {
+        final MockView view = (MockView) mActivity.findViewById(R.id.mock_view);
+
+        final AtomicBoolean listenerCalled = new AtomicBoolean(false);
+        final View.CalledFromWrongThreadListener listener = () -> {
+            listenerCalled.set(true);
+        };
+
+        try {
+            // Unregistering a non-existent listener should be a no-op.
+            View.unregisterCalledFromWrongThreadListener(listener);
+
+            // Test that a registered listener is called.
+            View.registerCalledFromWrongThreadListener(listener);
+
+            try {
+                view.invalidate();
+            } catch (AndroidRuntimeException ignored) {
+                // The call may throw ViewRootImpl.CalledFromWrongThreadException, but this is
+                // expected. However this type is not in the SDK, so we catch its parent class
+                // AndroidRuntimeException.
+            }
+            assertTrue("Listener was not called", listenerCalled.get());
+
+            // Test that after unregistering, the listener is not called.
+            listenerCalled.set(false);
+            View.unregisterCalledFromWrongThreadListener(listener);
+
+            try {
+                view.invalidate();
+            } catch (AndroidRuntimeException ignored) {
+                // The call may throw ViewRootImpl.CalledFromWrongThreadException, but this is
+                // expected. However this type is not in the SDK, so we catch its parent class
+                // AndroidRuntimeException.
+            }
+
+            assertFalse("Listener should not have been called after unregistering",
+                    listenerCalled.get());
+
+        } finally {
+            View.unregisterCalledFromWrongThreadListener(listener);
+        }
     }
 
     private static class MockDrawable extends Drawable {
