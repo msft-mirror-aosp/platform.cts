@@ -37,12 +37,14 @@ public class QueryAutofillStatusActivity extends Activity {
     private static final int AUTOFILL_DISABLE = 2;
 
     private PendingIntent mPendingIntent;
+    private PendingIntent mDestroyedPendingIntent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         final Intent intent = getIntent();
         mPendingIntent = intent.getParcelableExtra("finishBroadcast");
+        mDestroyedPendingIntent = intent.getParcelableExtra("activityDestroyedBroadcast");
     }
 
     @Override
@@ -66,5 +68,17 @@ public class QueryAutofillStatusActivity extends Activity {
             }
         }
         finish();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mDestroyedPendingIntent != null) {
+            try {
+                mDestroyedPendingIntent.send();
+            } catch (CanceledException e) {
+                Log.w(TAG, "Pending intent " + mDestroyedPendingIntent + " canceled");
+            }
+        }
     }
 }
