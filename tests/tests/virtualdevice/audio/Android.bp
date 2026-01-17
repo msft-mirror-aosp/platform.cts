@@ -30,6 +30,7 @@ android_test {
     static_libs: [
         "CtsVirtualDeviceCommonLib",
         "junit-params",
+        "android.media.audio-aconfig-java",
         "android.permission.flags-aconfig-java",
     ],
 
