@@ -31,6 +31,8 @@ android_test {
         "ub-uiautomator",
         "android.os.flags-aconfig-java",
         "bedstead",
+        "platform-test-annotations",
+        "flag-junit",
     ],
     libs: [
         "android.test.runner.stubs.test",

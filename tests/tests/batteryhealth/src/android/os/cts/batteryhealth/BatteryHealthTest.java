@@ -16,20 +16,27 @@
 package android.os.cts.batteryhealth;
 
 import static android.os.Flags.stateOfHealthPublic;
-import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
 import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.fail;
 
-import android.app.UiAutomation;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.BatteryManager;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.InstrumentationRegistry;
 
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireAutomotive;
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Before;
@@ -41,6 +48,9 @@ public class BatteryHealthTest {
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String TAG = "BatteryHealthTest";
 
@@ -60,8 +70,6 @@ public class BatteryHealthTest {
 
     private BatteryManager mBatteryManager;
 
-    private UiAutomation mAutomation;
-
     @Before
     public void setUp() {
         final Context context = InstrumentationRegistry.getContext();
@@ -71,9 +79,8 @@ public class BatteryHealthTest {
 
     @Test
     @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_MANUFACTURING_DATE"})
+    @EnsureHasPermission(android.Manifest.permission.BATTERY_STATS)
     public void testManufacturingDate_dataInRange() {
-        mAutomation = getInstrumentation().getUiAutomation();
-        mAutomation.adoptShellPermissionIdentity(android.Manifest.permission.BATTERY_STATS);
         final long manufacturingDate = mBatteryManager.getLongProperty(BatteryManager
                 .BATTERY_PROPERTY_MANUFACTURING_DATE);
 
@@ -81,15 +88,12 @@ public class BatteryHealthTest {
             assertThat(manufacturingDate).isAtLeast(BATTERY_USAGE_DATE_IN_EPOCH_MIN);
             assertThat(manufacturingDate).isLessThan(BATTERY_USAGE_DATE_IN_EPOCH_MAX + 1);
         }
-
-        mAutomation.dropShellPermissionIdentity();
     }
 
     @Test
     @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_FIRST_USAGE_DATE"})
+    @EnsureHasPermission(android.Manifest.permission.BATTERY_STATS)
     public void testFirstUsageDate_dataInRange() {
-        mAutomation = getInstrumentation().getUiAutomation();
-        mAutomation.adoptShellPermissionIdentity(android.Manifest.permission.BATTERY_STATS);
         final long firstUsageDate = mBatteryManager.getLongProperty(BatteryManager
                 .BATTERY_PROPERTY_FIRST_USAGE_DATE);
 
@@ -97,63 +101,63 @@ public class BatteryHealthTest {
             assertThat(firstUsageDate).isAtLeast(BATTERY_USAGE_DATE_IN_EPOCH_MIN);
             assertThat(firstUsageDate).isLessThan(BATTERY_USAGE_DATE_IN_EPOCH_MAX + 1);
         }
-
-        mAutomation.dropShellPermissionIdentity();
     }
 
     @Test
     @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_CHARGING_POLICY"})
+    @EnsureHasPermission(android.Manifest.permission.BATTERY_STATS)
     public void testChargingPolicy_dataInRange() {
-        mAutomation = getInstrumentation().getUiAutomation();
-        mAutomation.adoptShellPermissionIdentity(android.Manifest.permission.BATTERY_STATS);
         final int chargingPolicy = mBatteryManager.getIntProperty(BatteryManager
                 .BATTERY_PROPERTY_CHARGING_POLICY);
 
         if (chargingPolicy >= 0) {
             assertThat(chargingPolicy).isAtLeast(CHARGING_POLICY_DEFAULT);
         }
-
-        mAutomation.dropShellPermissionIdentity();
     }
 
     @Test
     @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_STATE_OF_HEALTH"})
     public void testBatteryStateOfHealth_dataInRange() {
-        if (!stateOfHealthPublic()) {
-            mAutomation = getInstrumentation().getUiAutomation();
-            mAutomation.adoptShellPermissionIdentity(android.Manifest.permission.BATTERY_STATS);
+        if (stateOfHealthPublic()) {
+            // When the feature is enabled, the API is public and should work without privileged
+            // permissions.
+            verifyBatteryStateOfHealth();
+        } else {
+            // When the feature is disabled, the API is restricted and requires BATTERY_STATS.
+            try (PermissionContext p =
+                    TestApis.permissions()
+                            .withPermission(android.Manifest.permission.BATTERY_STATS)) {
+                verifyBatteryStateOfHealth();
+            }
         }
-        final int stateOfHealth = mBatteryManager.getIntProperty(BatteryManager
-                .BATTERY_PROPERTY_STATE_OF_HEALTH);
+    }
+
+    private void verifyBatteryStateOfHealth() {
+        final int stateOfHealth =
+                mBatteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_STATE_OF_HEALTH);
 
         if (stateOfHealth >= 0) {
             assertThat(stateOfHealth).isAtLeast(BATTERY_STATE_OF_HEALTH_MIN);
             assertThat(stateOfHealth).isLessThan(BATTERY_STATE_OF_HEALTH_MAX + 1);
         }
-        if (!stateOfHealthPublic()) {
-            mAutomation.dropShellPermissionIdentity();
-        }
     }
 
     @Test
     @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_SERIAL_NUMBER"})
+    @EnsureHasPermission(android.Manifest.permission.BATTERY_STATS)
     public void testBatterySerialNumber_dataValid() {
-        mAutomation = getInstrumentation().getUiAutomation();
-        mAutomation.adoptShellPermissionIdentity(android.Manifest.permission.BATTERY_STATS);
         final String serialNumber = mBatteryManager.getStringProperty(BatteryManager
                 .BATTERY_PROPERTY_SERIAL_NUMBER);
 
         if (serialNumber != null) {
             assertThat(serialNumber).isNotEmpty();
         }
-        mAutomation.dropShellPermissionIdentity();
     }
 
     @Test
     @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_PART_STATUS"})
+    @EnsureHasPermission(android.Manifest.permission.BATTERY_STATS)
     public void testBatteryPartStatus_dataInRange() {
-        mAutomation = getInstrumentation().getUiAutomation();
-        mAutomation.adoptShellPermissionIdentity(android.Manifest.permission.BATTERY_STATS);
         final int partStatus = mBatteryManager.getIntProperty(BatteryManager
                 .BATTERY_PROPERTY_PART_STATUS);
         if (partStatus == Integer.MIN_VALUE) {
@@ -162,7 +166,6 @@ public class BatteryHealthTest {
 
         assertThat(partStatus).isAtLeast(BatteryManager.PART_STATUS_UNSUPPORTED);
         assertThat(partStatus).isAtMost(BatteryManager.PART_STATUS_REPLACED);
-        mAutomation.dropShellPermissionIdentity();
     }
 
     @Test
@@ -190,11 +193,53 @@ public class BatteryHealthTest {
     }
 
     @Test
+    @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_MANUFACTURER"})
+    @RequiresFlagsEnabled("android.os.battery_manufacturer_diagnostics_api")
+    @EnsureHasPermission(android.Manifest.permission.BATTERY_STATS)
+    public void testBatteryManufacturer_dataValid() {
+        final String manufacturer =
+                mBatteryManager.getStringProperty(BatteryManager.BATTERY_PROPERTY_MANUFACTURER);
+
+        if (manufacturer != null) {
+            assertThat(manufacturer.length()).isAtLeast(2);
+            assertThat(isAsciiPrintable(manufacturer)).isTrue();
+        }
+    }
+
+    @Test
+    @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_MODEL_NAME"})
+    @RequiresFlagsEnabled("android.os.battery_manufacturer_diagnostics_api")
+    @EnsureHasPermission(android.Manifest.permission.BATTERY_STATS)
+    public void testBatteryModelName_dataValid() {
+        final String modelName =
+                mBatteryManager.getStringProperty(BatteryManager.BATTERY_PROPERTY_MODEL_NAME);
+
+        if (modelName != null) {
+            assertThat(modelName.length()).isAtLeast(2);
+            assertThat(isAsciiPrintable(modelName)).isTrue();
+        }
+    }
+
+    @Test
+    @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_VOLTAGE_MIN_DESIGN"})
+    @RequiresFlagsEnabled("android.os.battery_manufacturer_diagnostics_api")
+    @EnsureHasPermission(android.Manifest.permission.BATTERY_STATS)
+    public void testBatteryVoltageMinDesign_dataInRange() {
+        final long voltageMinDesign =
+                mBatteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_VOLTAGE_MIN_DESIGN);
+
+        if (voltageMinDesign != 0) {
+            // 2,000,000 uV = 2V
+            assertThat(voltageMinDesign).isAtLeast(2000000L);
+        }
+    }
+
+    @Test
     @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_MANUFACTURING_DATE"})
+    @EnsureDoesNotHavePermission(android.Manifest.permission.BATTERY_STATS)
     public void testManufacturingDate_noPermission() {
         try {
-            final long manufacturingDate = mBatteryManager.getLongProperty(BatteryManager
-                    .BATTERY_PROPERTY_MANUFACTURING_DATE);
+            mBatteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_MANUFACTURING_DATE);
         } catch (SecurityException expected) {
             return;
         }
@@ -203,10 +248,10 @@ public class BatteryHealthTest {
 
     @Test
     @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_FIRST_USAGE_DATE"})
+    @EnsureDoesNotHavePermission(android.Manifest.permission.BATTERY_STATS)
     public void testFirstUsageDate_noPermission() {
         try {
-            final long firstUsageDate = mBatteryManager.getLongProperty(BatteryManager
-                    .BATTERY_PROPERTY_FIRST_USAGE_DATE);
+            mBatteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_FIRST_USAGE_DATE);
         } catch (SecurityException expected) {
             return;
         }
@@ -215,14 +260,65 @@ public class BatteryHealthTest {
 
     @Test
     @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_CHARGING_POLICY"})
+    @EnsureDoesNotHavePermission(android.Manifest.permission.BATTERY_STATS)
     public void testChargingPolicy_noPermission() {
         try {
-            final int chargingPolicy = mBatteryManager.getIntProperty(BatteryManager
-                    .BATTERY_PROPERTY_CHARGING_POLICY);
+            mBatteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGING_POLICY);
         } catch (SecurityException expected) {
             return;
         }
         fail("Didn't throw SecurityException");
+    }
+
+    @Test
+    @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_SERIAL_NUMBER"})
+    @EnsureDoesNotHavePermission(android.Manifest.permission.BATTERY_STATS)
+    public void testBatterySerialNumber_noPermission() {
+        try {
+            mBatteryManager.getStringProperty(BatteryManager.BATTERY_PROPERTY_SERIAL_NUMBER);
+        } catch (SecurityException expected) {
+            return;
+        }
+        fail("Didn't throw SecurityException for BATTERY_PROPERTY_SERIAL_NUMBER");
+    }
+
+    @Test
+    @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_MANUFACTURER"})
+    @RequiresFlagsEnabled("android.os.battery_manufacturer_diagnostics_api")
+    @EnsureDoesNotHavePermission(android.Manifest.permission.BATTERY_STATS)
+    public void testBatteryManufacturer_noPermission() {
+        try {
+            mBatteryManager.getStringProperty(BatteryManager.BATTERY_PROPERTY_MANUFACTURER);
+        } catch (SecurityException expected) {
+            return;
+        }
+        fail("Didn't throw SecurityException for BATTERY_PROPERTY_MANUFACTURER");
+    }
+
+    @Test
+    @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_MODEL_NAME"})
+    @RequiresFlagsEnabled("android.os.battery_manufacturer_diagnostics_api")
+    @EnsureDoesNotHavePermission(android.Manifest.permission.BATTERY_STATS)
+    public void testBatteryModelName_noPermission() {
+        try {
+            mBatteryManager.getStringProperty(BatteryManager.BATTERY_PROPERTY_MODEL_NAME);
+        } catch (SecurityException expected) {
+            return;
+        }
+        fail("Didn't throw SecurityException for BATTERY_PROPERTY_MODEL_NAME");
+    }
+
+    @Test
+    @ApiTest(apis = {"android.os.BatteryManager#BATTERY_PROPERTY_VOLTAGE_MIN_DESIGN"})
+    @RequiresFlagsEnabled("android.os.battery_manufacturer_diagnostics_api")
+    @EnsureDoesNotHavePermission(android.Manifest.permission.BATTERY_STATS)
+    public void testBatteryVoltageMinDesign_noPermission() {
+        try {
+            mBatteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_VOLTAGE_MIN_DESIGN);
+        } catch (SecurityException expected) {
+            return;
+        }
+        fail("Didn't throw SecurityException for BATTERY_PROPERTY_VOLTAGE_MIN_DESIGN");
     }
 
     @Test
@@ -233,10 +329,13 @@ public class BatteryHealthTest {
     }
 
     @Test
-    @ApiTest(apis = {"android.os.BatteryManager#EXTRA_STATUS",
-            "android.os.BatteryManager#EXTRA_PLUGGED",
-            "android.os.BatteryManager#EXTRA_LEVEL",
-            "android.os.BatteryManager#EXTRA_SCALE"})
+    @ApiTest(
+            apis = {
+                "android.os.BatteryManager#EXTRA_STATUS",
+                "android.os.BatteryManager#EXTRA_PLUGGED",
+                "android.os.BatteryManager#EXTRA_LEVEL",
+                "android.os.BatteryManager#EXTRA_SCALE"
+            })
     @RequireAutomotive(reason = "Auto assumes an always charging and large capacity battery")
     public void testAutomotive_getIntExtra() {
         final Context context = InstrumentationRegistry.getContext();
@@ -292,5 +391,19 @@ public class BatteryHealthTest {
         final long energyCounter = mBatteryManager.getLongProperty(
                 BatteryManager.BATTERY_PROPERTY_ENERGY_COUNTER);
         assertThat(energyCounter).isAtLeast(0);
+    }
+
+    private static boolean isAsciiPrintable(String s) {
+        if (s == null) {
+            return true;
+        }
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            // Check if the character is within the ASCII printable range (space to ~).
+            if (c < 32 || c > 126) {
+                return false;
+            }
+        }
+        return true;
     }
 }
