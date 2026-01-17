@@ -7388,7 +7388,8 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             List<WifiConfiguration> savedNetworks = sWifiManager.getConfiguredNetworks();
             wifi7Network = TestHelper.findFirstAvailableSavedNetwork(sWifiManager,
                     savedNetworks, TestHelper.AP_CAPABILITY_BIT_WIFI7);
-            // TODO: b/322011012
+            // Skip this test if a Wi-Fi 7 AP is not available, as it's not a mandatory CTS
+            // requirement. See b/322011012 for context.
             assumeTrue("Unable to locate Wi-Fi 7 networks in range.\n", wifi7Network != null);
 
             // Store original Wi-Fi 7 state and enable it for the test
