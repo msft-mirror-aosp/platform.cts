@@ -19,9 +19,11 @@ package android.service.personalcontext.cts;
 import static com.google.common.truth.Truth.assertThat;
 
 import android.content.ComponentName;
+import android.os.Bundle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.service.autofill.FillEventHistory;
 import android.service.personalcontext.Flags;
 import android.service.personalcontext.hint.AutofillInlineRequestHint;
 import android.service.personalcontext.hint.ContextHint;
@@ -63,6 +65,8 @@ public class AutofillInlineRequestHintTest {
                 "android.service.personalcontext.hint.AutofillInlineRequestHint#getAutofillValue",
                 "android.service.personalcontext.hint.AutofillInlineRequestHint"
                         + "#getInlineSuggestionsRequest",
+                "android.service.personalcontext.hint.AutofillInlineRequestHint"
+                        + "#getFillEventHistory",
                 "android.service.personalcontext.hint.AutofillInlineRequestHint#equals",
                 "android.service.personalcontext.hint.AutofillInlineRequestHint#hashCode",
             })
@@ -76,6 +80,9 @@ public class AutofillInlineRequestHintTest {
         final AutofillValue autofillValue = AutofillValue.forText("test");
         final InlineSuggestionsRequest inlineSuggestionsRequest =
                 new InlineSuggestionsRequest.Builder(List.of(INLINE_PRESENTATION_SPEC)).build();
+        final Bundle bundle = new Bundle();
+        bundle.putBoolean("test", true);
+        final FillEventHistory fillEventHistory = new FillEventHistory(sessionId, bundle);
 
         final AutofillInlineRequestHint hint =
                 new AutofillInlineRequestHint.Builder()
@@ -86,6 +93,7 @@ public class AutofillInlineRequestHintTest {
                         .setFocusedId(focusedId)
                         .setAutofillValue(autofillValue)
                         .setInlineSuggestionsRequest(inlineSuggestionsRequest)
+                        .setFillEventHistory(fillEventHistory)
                         .build();
 
         final ContextHint outputHint = bundleUnbundle(hint);
@@ -99,6 +107,8 @@ public class AutofillInlineRequestHintTest {
         assertThat(outputAutofillHint.getAutofillValue()).isEqualTo(autofillValue);
         assertThat(outputAutofillHint.getInlineSuggestionsRequest())
                 .isEqualTo(inlineSuggestionsRequest);
+        assertThat(outputAutofillHint.getFillEventHistory().getClientState())
+                .isEqualTo(fillEventHistory.getClientState());
 
         assertThat(outputAutofillHint).isEqualTo(hint);
         assertThat(outputAutofillHint.hashCode()).isEqualTo(hint.hashCode());
