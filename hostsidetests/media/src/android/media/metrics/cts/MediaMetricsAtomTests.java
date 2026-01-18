@@ -20,6 +20,7 @@ import static android.media.cts.MediaMetricsTestConstants.LOG_SESSION_ID_KEY;
 import static android.os.statsd.media.MediaEditingExtensionAtoms.MEDIA_EDITING_ENDED_REPORTED_FIELD_NUMBER;
 
 import static com.android.media.editing.flags.Flags.FLAG_ADD_UID_TO_MEDIA_METRICS_EDITING;
+import static android.media.metrics.Flags.FLAG_ENABLE_EXTENDED_BUNDLE_METRICS;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -153,6 +154,90 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
         DeviceUtils.runDeviceTests(getDevice(), TEST_PKG,
                 "android.media.metrics.cts.MediaMetricsAtomHostSideTests",
                 "testBundleSessionPlaybackStateEvent",
+                new LogSessionIdListener());
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+
+        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
+
+        assertThat(data.size()).isEqualTo(1);
+        assertThat(data.get(0).getAtom().hasMediaPlaybackStateChanged()).isTrue();
+        AtomsProto.MediaPlaybackStateChanged result = data.get(
+                0).getAtom().getMediaPlaybackStateChanged();
+        assertThat(result.getPlaybackState().toString()).isEqualTo("JOINING_FOREGROUND");
+        assertThat(result.getTimeSincePlaybackCreatedMillis()).isEqualTo(1763L);
+    }
+
+    @RequiresFlagsEnabled(FLAG_ENABLE_EXTENDED_BUNDLE_METRICS)
+    @Test
+    public void testPlaybackSessionReportBundleMetrics() throws Exception {
+        ConfigUtils.uploadConfigForPushedAtom(getDevice(), TEST_PKG,
+                AtomsProto.Atom.MEDIA_PLAYBACK_STATE_CHANGED_FIELD_NUMBER);
+        DeviceUtils.runDeviceTests(getDevice(), TEST_PKG,
+                "android.media.metrics.cts.MediaMetricsAtomHostSideTests",
+                "testPlaybackSessionReportBundleMetrics",
+                new LogSessionIdListener());
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+
+        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
+
+        assertThat(data.size()).isEqualTo(1);
+        assertThat(data.get(0).getAtom().hasMediaPlaybackStateChanged()).isTrue();
+        AtomsProto.MediaPlaybackStateChanged result = data.get(
+                0).getAtom().getMediaPlaybackStateChanged();
+        assertThat(result.getPlaybackState().toString()).isEqualTo("JOINING_FOREGROUND");
+        assertThat(result.getTimeSincePlaybackCreatedMillis()).isEqualTo(1763L);
+    }
+
+    @RequiresFlagsEnabled(FLAG_ENABLE_EXTENDED_BUNDLE_METRICS)
+    @Test
+    public void testRecordingSessionReportBundleMetrics() throws Exception {
+        ConfigUtils.uploadConfigForPushedAtom(getDevice(), TEST_PKG,
+                AtomsProto.Atom.MEDIA_PLAYBACK_STATE_CHANGED_FIELD_NUMBER);
+        DeviceUtils.runDeviceTests(getDevice(), TEST_PKG,
+                "android.media.metrics.cts.MediaMetricsAtomHostSideTests",
+                "testRecordingSessionReportBundleMetrics",
+                new LogSessionIdListener());
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+
+        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
+
+        assertThat(data.size()).isEqualTo(1);
+        assertThat(data.get(0).getAtom().hasMediaPlaybackStateChanged()).isTrue();
+        AtomsProto.MediaPlaybackStateChanged result = data.get(
+                0).getAtom().getMediaPlaybackStateChanged();
+        assertThat(result.getPlaybackState().toString()).isEqualTo("JOINING_FOREGROUND");
+        assertThat(result.getTimeSincePlaybackCreatedMillis()).isEqualTo(1763L);
+    }
+
+    @RequiresFlagsEnabled(FLAG_ENABLE_EXTENDED_BUNDLE_METRICS)
+    @Test
+    public void testEditingSessionReportBundleMetrics() throws Exception {
+        ConfigUtils.uploadConfigForPushedAtom(getDevice(), TEST_PKG,
+                AtomsProto.Atom.MEDIA_PLAYBACK_STATE_CHANGED_FIELD_NUMBER);
+        DeviceUtils.runDeviceTests(getDevice(), TEST_PKG,
+                "android.media.metrics.cts.MediaMetricsAtomHostSideTests",
+                "testEditingSessionReportBundleMetrics",
+                new LogSessionIdListener());
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+
+        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
+
+        assertThat(data.size()).isEqualTo(1);
+        assertThat(data.get(0).getAtom().hasMediaPlaybackStateChanged()).isTrue();
+        AtomsProto.MediaPlaybackStateChanged result = data.get(
+                0).getAtom().getMediaPlaybackStateChanged();
+        assertThat(result.getPlaybackState().toString()).isEqualTo("JOINING_FOREGROUND");
+        assertThat(result.getTimeSincePlaybackCreatedMillis()).isEqualTo(1763L);
+    }
+
+    @RequiresFlagsEnabled(FLAG_ENABLE_EXTENDED_BUNDLE_METRICS)
+    @Test
+    public void testTranscodingSessionReportBundleMetrics() throws Exception {
+        ConfigUtils.uploadConfigForPushedAtom(getDevice(), TEST_PKG,
+                AtomsProto.Atom.MEDIA_PLAYBACK_STATE_CHANGED_FIELD_NUMBER);
+        DeviceUtils.runDeviceTests(getDevice(), TEST_PKG,
+                "android.media.metrics.cts.MediaMetricsAtomHostSideTests",
+                "testTranscodingSessionReportBundleMetrics",
                 new LogSessionIdListener());
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
@@ -702,7 +787,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
     }
 
     @Test
-    public void testBundleSession() throws Exception {
+    public void testSession() throws Exception {
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), TEST_PKG,
                 AtomsProto.Atom.MEDIAMETRICS_PLAYBACK_REPORTED_FIELD_NUMBER);
         DeviceUtils.runDeviceTests(getDevice(), TEST_PKG,
