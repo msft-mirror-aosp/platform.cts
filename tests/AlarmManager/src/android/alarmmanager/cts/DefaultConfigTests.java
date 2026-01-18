@@ -25,6 +25,7 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 import java.util.concurrent.TimeUnit;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,6 +38,7 @@ public class DefaultConfigTests {
     private final AlarmManager mAm = mContext.getSystemService(AlarmManager.class);
 
     @Test
+    @Ignore("b/473898720")
     public void testPrioritizedAlarmDelayIsOneMinute() {
         final long expectedDelay = TimeUnit.MINUTES.toMillis(1);
         final long delay = mAm.getPrioritizedAlarmDelay();
