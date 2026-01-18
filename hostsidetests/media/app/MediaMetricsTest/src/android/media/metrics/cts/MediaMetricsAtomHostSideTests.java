@@ -19,6 +19,7 @@ package android.media.metrics.cts;
 import static android.media.cts.MediaMetricsTestConstants.LOG_SESSION_ID_KEY;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import android.content.Context;
 import android.device.collectors.util.SendToInstrumentation;
@@ -500,6 +501,70 @@ public class MediaMetricsAtomHostSideTests {
         b.putInt("playbackstateevent-state", PlaybackStateEvent.STATE_JOINING_FOREGROUND);
         b.putLong("playbackstateevent-lifetime", 1763L);
         s.reportBundleMetrics(b);
+        resetProperties();
+    }
+
+    @Test
+    public void testPlaybackSessionReportBundleMetrics() throws Exception {
+        turnOnForTesting();
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        MediaMetricsManager manager = context.getSystemService(MediaMetricsManager.class);
+        try (PlaybackSession s = manager.createPlaybackSession()) {
+            PersistableBundle b = new PersistableBundle();
+            b.putInt(BundleSession.KEY_STATSD_ATOM, 322);
+            b.putString("playbackstateevent-sessionid", s.getSessionId().getStringId());
+            b.putInt("playbackstateevent-state", PlaybackStateEvent.STATE_JOINING_FOREGROUND);
+            b.putLong("playbackstateevent-lifetime", 1763L);
+            s.reportBundleMetrics(b);
+        }
+        resetProperties();
+    }
+
+    @Test
+    public void testRecordingSessionReportBundleMetrics() throws Exception {
+        turnOnForTesting();
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        MediaMetricsManager manager = context.getSystemService(MediaMetricsManager.class);
+        try (RecordingSession s = manager.createRecordingSession()) {
+            PersistableBundle b = new PersistableBundle();
+            b.putInt(BundleSession.KEY_STATSD_ATOM, 322);
+            b.putString("playbackstateevent-sessionid", s.getSessionId().getStringId());
+            b.putInt("playbackstateevent-state", PlaybackStateEvent.STATE_JOINING_FOREGROUND);
+            b.putLong("playbackstateevent-lifetime", 1763L);
+            s.reportBundleMetrics(b);
+        }
+        resetProperties();
+    }
+
+    @Test
+    public void testEditingSessionReportBundleMetrics() throws Exception {
+        turnOnForTesting();
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        MediaMetricsManager manager = context.getSystemService(MediaMetricsManager.class);
+        try (EditingSession s = manager.createEditingSession()) {
+            PersistableBundle b = new PersistableBundle();
+            b.putInt(BundleSession.KEY_STATSD_ATOM, 322);
+            b.putString("playbackstateevent-sessionid", s.getSessionId().getStringId());
+            b.putInt("playbackstateevent-state", PlaybackStateEvent.STATE_JOINING_FOREGROUND);
+            b.putLong("playbackstateevent-lifetime", 1763L);
+            s.reportBundleMetrics(b);
+        }
+        resetProperties();
+    }
+
+    @Test
+    public void testTranscodingSessionReportBundleMetrics() throws Exception {
+        turnOnForTesting();
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        MediaMetricsManager manager = context.getSystemService(MediaMetricsManager.class);
+        try (TranscodingSession s = manager.createTranscodingSession()) {
+            PersistableBundle b = new PersistableBundle();
+            b.putInt(BundleSession.KEY_STATSD_ATOM, 322);
+            b.putString("playbackstateevent-sessionid", s.getSessionId().getStringId());
+            b.putInt("playbackstateevent-state", PlaybackStateEvent.STATE_JOINING_FOREGROUND);
+            b.putLong("playbackstateevent-lifetime", 1763L);
+            s.reportBundleMetrics(b);
+        }
         resetProperties();
     }
 
