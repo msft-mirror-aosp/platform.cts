@@ -486,27 +486,47 @@ public class TvViewTest extends ActivityInstrumentationTestCase2<TvViewStubActiv
         }.run();
     }
 
-    public void testSetZOrderMediaOverlay() throws Exception {
+    public void testSetZOrderMediaOverlay() throws Throwable {
         if (!Utils.hasTvInputFramework(getActivity())) {
             return;
         }
         // Verifying the z-order from app is not possible. Here we just check if calling APIs does
         // not lead to any break.
-        mTvView.setZOrderMediaOverlay(true);
+        runTestOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mTvView.setZOrderMediaOverlay(true);
+            }
+        });
         mInstrumentation.waitForIdleSync();
-        mTvView.setZOrderMediaOverlay(false);
+        runTestOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mTvView.setZOrderMediaOverlay(false);
+            }
+        });
         mInstrumentation.waitForIdleSync();
     }
 
-    public void testSetZOrderOnTop() throws Exception {
+    public void testSetZOrderOnTop() throws Throwable {
         if (!Utils.hasTvInputFramework(getActivity())) {
             return;
         }
         // Verifying the z-order from app is not possible. Here we just check if calling APIs does
         // not lead to any break.
-        mTvView.setZOrderOnTop(true);
+        runTestOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mTvView.setZOrderOnTop(true);
+            }
+        });
         mInstrumentation.waitForIdleSync();
-        mTvView.setZOrderOnTop(false);
+        runTestOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mTvView.setZOrderOnTop(false);
+            }
+        });
         mInstrumentation.waitForIdleSync();
     }
 
