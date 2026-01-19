@@ -80,7 +80,6 @@ public class PkgInstallSignatureVerificationTest extends BaseAppSecurityTest {
     private static final String[] EC_KEY_NAMES = {"p256", "p384", "p521"};
     private static final String[] RSA_KEY_NAMES = {"1024", "2048", "3072", "4096", "8192"};
     private static final String[] RSA_KEY_NAMES_2048_AND_LARGER = {"2048", "3072", "4096", "8192"};
-    private static final String[] ML_DSA_KEY_NAMES = {"65", "87"};
 
     private static final boolean INCREMENTAL = true;
     private static final boolean NON_INCREMENTAL = false;
@@ -1821,8 +1820,13 @@ public class PkgInstallSignatureVerificationTest extends BaseAppSecurityTest {
     @CddTest(requirement = "4/C-0-2")
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
-    public void testInstallV2V3OneSignerMLDSA() throws Exception {
-        assertInstallSucceedsForEach("v2v3-with-mldsa-%s.apk", ML_DSA_KEY_NAMES);
+    public void testInstallV2V3OneSignerMLDSA_noPlatformSupport_installFails() throws Exception {
+        // During the transition to PQC, the platform will only accept PQC signers as part of the
+        // new hybrid signature scheme. This test verifies an APK signed with an ML-DSA key in the
+        // v3 signature block fails to install. Note, this test will need to be device SDK gated
+        // once support is added for single PQC signers.
+        assertInstallFails("v2v3-with-mldsa-65.apk");
+        assertInstallFails("v2v3-with-mldsa-87.apk");
     }
 
     @CddTest(requirement = "4/C-0-2")
@@ -1838,13 +1842,14 @@ public class PkgInstallSignatureVerificationTest extends BaseAppSecurityTest {
     @CddTest(requirement = "4/C-0-2")
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_APK_PQC_HYBRID_SIGNING)
-    public void testInstallV31_mldsaTargets36Dev_installUsesMlDsa() throws Exception {
-        assertInstallSucceeds("v31-rsa-2048_2-tgt-33-mldsa-65-tgt-36-dev.apk");
-        Utils.runDeviceTests(
-                getDevice(),
-                DEVICE_TESTS_PKG,
-                DEVICE_TESTS_CLASS,
-                "testMlDsaTargetedSignerIsUsedDuringInstall");
+    public void testInstallV31_mldsaTargets36Dev_installFails() throws Exception {
+        // This test is intended to verify that the platform supports two signers targeting the same
+        // SDK version when one of the signers is targeting the development release. However, since
+        // the signer targeting the development release is a PQC signer, the install should fail
+        // until single PQC signing is supported by the platform.
+        assertInstallFailsWithError(
+                "v31-rsa-2048_2-tgt-33-mldsa-65-tgt-36-dev.apk",
+                "The platform does not currently support single PQC signers");
     }
 
     @CddTest(requirement = "4/C-0-2")
