@@ -33,6 +33,7 @@ import android.media.quality.ActiveProcessingPicture;
 import android.media.quality.AmbientBacklightEvent;
 import android.media.quality.AmbientBacklightMetadata;
 import android.media.quality.AmbientBacklightSettings;
+import android.media.quality.IMediaQualityManager;
 import android.media.quality.MediaQualityContract;
 import android.media.quality.MediaQualityContract.PictureQuality;
 import android.media.quality.MediaQualityContract.SoundQuality;
@@ -78,6 +79,9 @@ public class MediaQualityTest {
     private static final String PACKAGE_NAME = "android.media.mediaquality.cts";
     private AmbientBacklightSettings mAmbientBacklightSettings;
     private IMediaQuality mMediaQuality;
+    private Object mOriginalService;
+    private java.lang.reflect.Field mServiceField;
+    private static final String SERVICE_FIELD_NAME = "mService";
     private static final int POLLING_TIMEOUT_MS = 5000; // 5 seconds max wait
     private static final int POLLING_INTERVAL_MS = 100; // Check every 0.1 seconds
 
@@ -92,6 +96,16 @@ public class MediaQualityTest {
         mAmbientBacklightSettings = createAmbientBacklightSettings();
         assumeTrue(mManager != null);
         mMediaQuality = Mockito.mock(IMediaQuality.class);
+
+        // [Modified] Backup the real service ONLY. Do NOT inject mock here.
+        // This ensures legacy tests use the real service and pass.
+        try {
+            mServiceField = MediaQualityManager.class.getDeclaredField(SERVICE_FIELD_NAME);
+            mServiceField.setAccessible(true);
+            mOriginalService = mServiceField.get(mManager);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to backup real service via reflection.", e);
+        }
         if (mManager == null || !isSupported()) {
             return;
         }
@@ -104,6 +118,15 @@ public class MediaQualityTest {
     @After
     public void tearDown() throws InterruptedException {
         Thread.sleep(500);
+        // [Modified] Restore real service BEFORE cleanup.
+        if (mManager != null && mOriginalService != null && mServiceField != null) {
+            try {
+                mServiceField.set(mManager, mOriginalService);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to restore real service during tearDown", e);
+            }
+        }
+
         if (mManager != null) {
             // Remove all picture profiles.
             List<PictureProfile> pictureProfiles =
@@ -633,18 +656,38 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW_C)
     @Test
-    public void testSetMutedColor() throws RemoteException {
+    public void testSetMutedColor() throws Exception {
         assumeTrue(mMediaQuality != null);
-        doNothing().when(mMediaQuality).setMutedColor(anyInt());
-        mManager.setMutedColor(Color.RED);
+        IMediaQualityManager mockService = Mockito.mock(IMediaQualityManager.class);
+
+        mServiceField.set(mManager, mockService);
+
+        try {
+            int testColor = Color.GREEN;
+            mManager.setMutedColor(testColor);
+            Mockito.verify(mockService).setMutedColor(Mockito.eq(testColor), anyInt());
+        } finally {
+            mServiceField.set(mManager, mOriginalService);
+        }
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW_C)
     @Test
-    public void testSetColorMuteEnabled() throws RemoteException {
+    public void testSetColorMuteEnabled() throws Exception {
         assumeTrue(mMediaQuality != null);
-        doNothing().when(mMediaQuality).setColorMuteEnabled(anyBoolean());
-        mManager.setColorMuteEnabled(true);
+        IMediaQualityManager mockService = Mockito.mock(IMediaQualityManager.class);
+
+        mServiceField.set(mManager, mockService);
+
+        try {
+            mManager.setColorMuteEnabled(true);
+            Mockito.verify(mockService).setColorMuteEnabled(Mockito.eq(true), anyInt());
+
+            mManager.setColorMuteEnabled(false);
+            Mockito.verify(mockService).setColorMuteEnabled(Mockito.eq(false), anyInt());
+        } finally {
+            mServiceField.set(mManager, mOriginalService);
+        }
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
