@@ -18,18 +18,11 @@ package android.telephony.satellite.cts;
 
 import static android.Manifest.permission.SATELLITE_COMMUNICATION;
 
-import static com.android.internal.telephony.flags.Flags.FLAG_SATELLITE_SERVICE_METADATA_CHECK;
-
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.satellite.SatelliteManager;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -39,7 +32,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -56,9 +48,6 @@ public class SatelliteManagerServiceMetaDataTest {
 
     private Context mContext;
     private SatelliteManager mSatelliteManager;
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -80,26 +69,13 @@ public class SatelliteManagerServiceMetaDataTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_SATELLITE_SERVICE_METADATA_CHECK)
-    public void testAppIsSatelliteOptimized_whenFlagEnabled() {
+    public void testAppIsSatelliteOptimized() {
         if (!isSatelliteSupported()) return;
 
         List<String> optimizedApps = mSatelliteManager.getSatelliteDataOptimizedApps();
         assertNotNull(optimizedApps);
         assertTrue(
                 "Optimized app list should contain the test app",
-                optimizedApps.contains(SATELLITE_OPTIMIZED_APP_PACKAGE_NAME));
-    }
-
-    @Test
-    @RequiresFlagsDisabled(FLAG_SATELLITE_SERVICE_METADATA_CHECK)
-    public void testAppIsNotSatelliteOptimized_whenFlagDisabled() {
-        if (!isSatelliteSupported()) return;
-
-        List<String> optimizedApps = mSatelliteManager.getSatelliteDataOptimizedApps();
-        assertNotNull(optimizedApps);
-        assertFalse(
-                "Optimized app list should not contain the test app",
                 optimizedApps.contains(SATELLITE_OPTIMIZED_APP_PACKAGE_NAME));
     }
 
