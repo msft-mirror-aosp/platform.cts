@@ -21,9 +21,40 @@
 import dataclasses
 import os
 import vulkan_device_info_gen_util as util
-import sys
+import shutil
+import subprocess
 
 dataclass_field = dataclasses.field
+
+def format_java_file_aosp(file_path):
+    """
+    Formats the Java file at the given path using google-java-format with AOSP style.
+
+    Args:
+        file_path (str): The absolute or relative path to the Java file.
+    """
+    if not (os.path.exists(file_path) and file_path.endswith(".java")):
+        raise ValueError(f"Invalid file or path: {file_path}")
+
+    if not shutil.which("google-java-format"):
+        raise FileNotFoundError(
+            "google-java-format not found in PATH. "
+            "Install via 'sudo apt install google-java-format' or "
+            "see go/google-java-format for more details."
+        )
+
+    try:
+        print(f"Formatting {os.path.basename(file_path)}...")
+        subprocess.run(
+            ['google-java-format', '--aosp', '-i', '--skip-javadoc-formatting', file_path],
+            check=True,
+            capture_output=True,
+            text=True
+        )
+        print(f"Successfully formatted: {file_path}")
+
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f"google-java-format failed: {e.stderr.strip()}") from e
 
 def gen_vulkan_device_info_utils():
     """Generates vulkanDeviceInfoUtils.java file.
@@ -96,8 +127,8 @@ public final class VulkanDeviceInfoUtils {
 }
 \n""")
         f.close()
-
-
+    print("\nGenerated VulkanDeviceInfoUtils.java\n")
+    format_java_file_aosp(genfile)
 
 
 def gen_vulkan_device_info():
@@ -423,3 +454,5 @@ public final class VulkanDeviceInfo extends DeviceInfo {
 }
 \n""")
         f.close()
+    print("\nGenerated VulkanDeviceInfo.java\n")
+    format_java_file_aosp(genfile)
