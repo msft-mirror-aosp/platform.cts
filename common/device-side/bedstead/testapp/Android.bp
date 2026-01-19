@@ -236,7 +236,10 @@ android_test_helper_app {
     static_libs: [
         "TestApp_TestApps",
     ],
-    resource_dirs: ["src/testapps/main/res/test_resources"],
+    resource_dirs: [
+        "src/testapps/main/res/test_resources",
+        "src/testapps/main/res/device_admin",
+    ],
     defaults: ["mts-target-sdk-version-current"],
     manifest: "manifests/NotEmptyTestAppManifest.xml",
     additional_manifests: ["CommonManifest.xml"],

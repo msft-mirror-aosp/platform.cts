@@ -2162,7 +2162,8 @@ class ProvisioningTest {
             "com.android.bedstead.testapp.AccountManagementApp.account.type"
         private val ACCOUNT_WITH_EXISTING_TYPE = Account("user0", EXISTING_ACCOUNT_TYPE)
         private val sNoHeadlessSupportTestApp = deviceState.testApps().query()
-            .wherePackageName().isEqualTo("com.android.bedstead.testapp.DeviceAdminTestApp")
+            .wherePackageName()
+            .isEqualTo("com.android.bedstead.testapp.NotEmptyTestApp")
             .get()
 
         private fun createManagedProfileProvisioningParamsBuilder(): ManagedProfileProvisioningParams.Builder {
