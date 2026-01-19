@@ -77,6 +77,8 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
             "FGS_TYPE_NONE_DEPRECATION_CHANGE_ID",
             "FGS_TYPE_NONE_DISABLED_CHANGE_ID",
             "FGS_TYPE_PERMISSION_CHANGE_ID",
+            "OVERRIDE_RESIZING_FIXED_ASPECT_RATIO",
+            "OVERRIDE_RESIZING_PRESERVE_ORIENTATION",
             "FORCE_NON_RESIZE_APP",
             "FORCE_RESIZE_APP",
             "OVERRIDE_CAMERA_ROTATE_AND_CROP_DEFAULTS",

@@ -32,6 +32,16 @@ import java.util.List;
  * available.
  */
 public class ContactsContractIntentsTest extends AndroidTestCase {
+
+    private boolean skipForDeviceType() {
+        // tested intents are not mandatory for automotive devices, watches and XR headsets
+        // according to Google documentation referenced in CDD
+        PackageManager packageManager = getContext().getPackageManager();
+        return packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+                || packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)
+                || FeatureUtil.isXrHeadset();
+    }
+
     public void assertCanBeHandled(Intent intent) {
         List<ResolveInfo> resolveInfoList = getContext()
                 .getPackageManager().queryIntentActivities(intent, 0);
@@ -41,8 +51,7 @@ public class ContactsContractIntentsTest extends AndroidTestCase {
     }
 
     public void testViewContactDir() {
-        if (FeatureUtil.isXrHeadset()) {
-            // Contact app in XR device is optional to OEM. No need for test.
+        if (skipForDeviceType()) {
             return;
         }
 
@@ -52,8 +61,7 @@ public class ContactsContractIntentsTest extends AndroidTestCase {
     }
 
     public void testPickContactDir() {
-        if (FeatureUtil.isXrHeadset()) {
-            // Contact app in XR device is optional to OEM. No need for test.
+        if (skipForDeviceType()) {
             return;
         }
 
@@ -63,8 +71,7 @@ public class ContactsContractIntentsTest extends AndroidTestCase {
     }
 
     public void testGetContentContactDir() {
-        if (FeatureUtil.isXrHeadset()) {
-            // Contact app in XR device is optional to OEM. No need for test.
+        if (skipForDeviceType()) {
             return;
         }
 
@@ -75,15 +82,11 @@ public class ContactsContractIntentsTest extends AndroidTestCase {
 
     @CddTest(requirements={"3.18/C-2-1"})
     public void testSetDefaultAccount() {
-        PackageManager packageManager = getContext().getPackageManager();
-        if (packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)
-                || packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
-                || FeatureUtil.isXrHeadset()) {
-            // Skip test on watch, automotive and XR Headset since the intent is
-            // not required.
+        if (skipForDeviceType()) {
             return;
         }
 
+        PackageManager packageManager = getContext().getPackageManager();
         Intent intent = new Intent(ContactsContract.Settings.ACTION_SET_DEFAULT_ACCOUNT);
         List<ResolveInfo> resolveInfoList = packageManager.queryIntentActivities(intent, 0);
         assertNotNull("Missing ResolveInfo", resolveInfoList);
