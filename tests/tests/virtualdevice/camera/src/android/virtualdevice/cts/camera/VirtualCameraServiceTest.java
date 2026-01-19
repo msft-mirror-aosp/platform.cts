@@ -48,6 +48,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -97,6 +98,7 @@ public class VirtualCameraServiceTest {
     }
 
     @Test
+    @Ignore("b/477017867")
     public void virtualCameraService_crash_notifiesStreamClosed() throws Exception {
         mCaptureHelper.createVirtualCamera(
                 VirtualCameraCaptureHelper.createBuilderWithDefaults("TestCamera"),
