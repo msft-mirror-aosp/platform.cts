@@ -52,7 +52,7 @@ public class ServiceInfoTest {
 
     @Test
     public void testDataAccess() {
-        assumeTrue(MbmsUtil.hasMbmsFeature());
+        assumeTrue("Device does not have MBMS feature", MbmsUtil.hasMbmsFeature());
         assertEquals(LOCALES.size(), STREAMING_SERVICE_INFO.getLocales().size());
         for (int i = 0; i < LOCALES.size(); i++) {
             assertTrue(STREAMING_SERVICE_INFO.getLocales().contains(LOCALES.get(i)));

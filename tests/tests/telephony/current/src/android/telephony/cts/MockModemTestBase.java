@@ -145,7 +145,7 @@ public class MockModemTestBase {
     @Before
     public void beforeTest() throws Exception {
         if (VDBG) Log.d(TAG, "beforeTest");
-        assumeTrue(hasTelephonyFeature());
+        assumeTrue("Device does not have TELEPHONY feature", hasTelephonyFeature());
     }
 
     @After

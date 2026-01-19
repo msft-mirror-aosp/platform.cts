@@ -41,7 +41,7 @@ public class DownloadRequestTest {
 
     @Before
     public void setUp() throws Exception {
-        assumeTrue(MbmsUtil.hasMbmsFeature());
+        assumeTrue("Device does not have MBMS feature", MbmsUtil.hasMbmsFeature());
     }
 
     @Test

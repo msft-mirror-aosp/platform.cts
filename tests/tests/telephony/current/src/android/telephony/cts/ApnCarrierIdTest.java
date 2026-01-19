@@ -122,6 +122,7 @@ public class ApnCarrierIdTest {
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
         assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_DATA",
                 mContext.getPackageManager()
                         .hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
         mTelephonyManager = mContext.getSystemService(TelephonyManager.class);

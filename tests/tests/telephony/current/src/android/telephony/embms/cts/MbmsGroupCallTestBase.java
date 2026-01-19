@@ -149,7 +149,7 @@ public class MbmsGroupCallTestBase {
 
     @Before
     public void setUp() throws Exception {
-        assumeTrue(MbmsUtil.hasMbmsFeature());
+        assumeTrue("Device does not have MBMS feature", MbmsUtil.hasMbmsFeature());
 
         mContext = getContext();
         mHandlerThread = new HandlerThread("EmbmsCtsTestWorker");

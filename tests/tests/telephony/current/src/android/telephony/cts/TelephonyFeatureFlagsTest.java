@@ -38,9 +38,13 @@ public final class TelephonyFeatureFlagsTest {
 
     @Before
     public void setUp() {
-        assumeTrue(getVendorApiLevel() > Build.VERSION_CODES.S);
+        assumeTrue(
+                "Vendor API level is not greater than S",
+                getVendorApiLevel() > Build.VERSION_CODES.S);
         mPackageManager = getContext().getPackageManager();
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
     }
 
     @Test

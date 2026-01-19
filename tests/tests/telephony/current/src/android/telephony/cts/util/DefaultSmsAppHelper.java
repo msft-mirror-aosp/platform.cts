@@ -186,11 +186,11 @@ public class DefaultSmsAppHelper {
     }
 
     public static void assumeTelephony() {
-        Assume.assumeTrue(hasTelephony());
+        Assume.assumeTrue("Device should have FEATURE_TELEPHONY", hasTelephony());
     }
 
     public static void assumeMessaging() {
-        Assume.assumeTrue(hasSms());
+        Assume.assumeTrue("Device should have SMS feature", hasSms());
     }
 
     public static boolean hasTelephony() {

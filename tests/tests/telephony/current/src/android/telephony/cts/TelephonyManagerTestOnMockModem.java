@@ -274,7 +274,7 @@ public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
     public void testSimStateChange() throws Throwable {
         Log.d(TAG, "TelephonyManagerTestOnMockModem#testSimStateChange");
 
-        assumeTrue(isSimHotSwapCapable());
+        assumeTrue("Sim hotswap is not capable", isSimHotSwapCapable());
 
         int slotId = 0;
 
@@ -307,7 +307,7 @@ public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
     public void testServiceStateChange() throws Throwable {
         Log.d(TAG, "TelephonyManagerTestOnMockModem#testServiceStateChange");
 
-        assumeTrue(isSimHotSwapCapable());
+        assumeTrue("SIM hotswap is not capable", isSimHotSwapCapable());
 
         int slotId = 0;
         int subId;
@@ -401,7 +401,7 @@ public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
     public void testRegistrationFailed() throws Throwable {
         Log.d(TAG, "TelephonyManagerTestOnMockModem#testRegistrationFailed");
 
-        assumeTrue(isSimHotSwapCapable());
+        assumeTrue("SIM hotswap is not capable", isSimHotSwapCapable());
 
         int slotId = 0;
         int subId;
@@ -505,7 +505,7 @@ public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
             return;
         }
 
-        assumeTrue(isSimHotSwapCapable());
+        assumeTrue("SIM hotswap is not capable", isSimHotSwapCapable());
 
         int slotId = 0;
         int subId;
@@ -980,7 +980,7 @@ public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void testGetPrimaryImei() {
-        assumeTrue(sTelephonyManager.getActiveModemCount() > 0);
+        assumeTrue("Active modem count is not > 0", sTelephonyManager.getActiveModemCount() > 0);
 
         String primaryImei = ShellIdentityUtils.invokeMethodWithShellPermissions(sTelephonyManager,
                 (tm) -> tm.getPrimaryImei());
@@ -995,7 +995,7 @@ public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
     @Test
     public void onImeiMappingChanged() {
         // As first step verify the primary Imei against the default allocation
-        assumeTrue(sTelephonyManager.getActiveModemCount() > 1);
+        assumeTrue("Active modem count is not > 1", sTelephonyManager.getActiveModemCount() > 1);
         String primaryImei = ShellIdentityUtils.invokeMethodWithShellPermissions(sTelephonyManager,
                 (tm) -> tm.getPrimaryImei());
         assertNotNull(primaryImei);
@@ -1021,7 +1021,7 @@ public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     @Test
     public void getAllowedCarriers_ReadPhoneState_Restricted() throws Exception {
-        assumeTrue(isCarrierLockEnabled());
+        assumeTrue("Carrier lock not enabled", isCarrierLockEnabled());
         sMockModemManager.updateCarrierRestrictionInfo(getCarrierList(false),
                 CarrierRestrictions.CarrierRestrictionStatus.RESTRICTED);
         CarrierRestrictionRules rules =runWithShellPermissionIdentity(() -> {
@@ -1056,7 +1056,7 @@ public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
             codeName = "VanillaIceCream")
     @Test
     public void getCarrierRestrictionRules() {
-        assumeTrue(isCarrierLockEnabled());
+        assumeTrue("Carrier lock not enabled", isCarrierLockEnabled());
         // settings the data in MockModem
         android.hardware.radio.sim.CarrierRestrictions carrierRestrictions =
                 new android.hardware.radio.sim.CarrierRestrictions();
@@ -1090,7 +1090,7 @@ public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
             codeName = "VanillaIceCream")
     @Test
     public void getCarrierRestrictionRules_WithEphlmnList() {
-        assumeTrue(isCarrierLockEnabled());
+        assumeTrue("Carrier lock not enabled", isCarrierLockEnabled());
         // settings the data in MockModem
         android.hardware.radio.sim.CarrierRestrictions carrierRestrictions =
                 new android.hardware.radio.sim.CarrierRestrictions();

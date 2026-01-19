@@ -150,6 +150,7 @@ public class SignalThresholdInfoTest {
     @Before
     public void setUp() throws Exception {
         assumeTrue(
+                "Device does not have FEATURE_TELEPHONY",
                 InstrumentationRegistry.getContext()
                         .getPackageManager()
                         .hasSystemFeature(PackageManager.FEATURE_TELEPHONY));

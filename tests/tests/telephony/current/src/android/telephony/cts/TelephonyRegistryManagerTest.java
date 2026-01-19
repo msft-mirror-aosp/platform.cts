@@ -71,7 +71,9 @@ public class TelephonyRegistryManagerTest {
     @Before
     public void setUp() throws Exception {
         Context context = InstrumentationRegistry.getContext();
-        assumeTrue(context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
+        assumeTrue(
+                "Device does not support FEATURE_TELEPHONY",
+                context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
 
         mTelephonyRegistryMgr = context.getSystemService(TelephonyRegistryManager.class);
         mLocationHelper = new LocationHelper(context);

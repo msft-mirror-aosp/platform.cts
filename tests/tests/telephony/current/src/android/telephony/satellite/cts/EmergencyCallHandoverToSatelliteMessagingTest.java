@@ -169,7 +169,9 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
     @Before
     public void beforeTest() throws Exception {
         logd(LOG_TAG, "beforeTest");
-        assumeTrue(shouldTestEmergencyHandoverToSatelliteMessaging());
+        assumeTrue(
+                "Device does not support emergency handover to satellite messaging",
+                shouldTestEmergencyHandoverToSatelliteMessaging());
 
         if (sMockModemManager != null) {
             sMockModemManager.resetImsAllLatchCountdown();
@@ -210,7 +212,9 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
          * 4. Verify the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE is sent
          *    and its contents are correct.
          */
-        assumeTrue(shouldTestEmergencyHandoverToSatelliteMessaging());
+        assumeTrue(
+                "Device does not support emergency handover to satellite messaging",
+                shouldTestEmergencyHandoverToSatelliteMessaging());
 
         boolean supportDomainSelection =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(sTelephonyManager,
@@ -227,7 +231,9 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
             setUpImsCallingTestEnvironment(MANUAL_CONNECT_SLOT_ID);
 
             sNtnOnlySubId = SubscriptionManager.getSubscriptionId(MANUAL_CONNECT_SLOT_ID);
-            assumeTrue(sNtnOnlySubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+            assumeTrue(
+                    "NTN-only subscription not found",
+                    sNtnOnlySubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
             setUpSatelliteAccessAllowedAtDefaultTestLocation();
             assertTrue(sMockSatelliteServiceManager.setCtsMode(true));
             setUpNtnOnlySubscription();
@@ -301,7 +307,9 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
          * 5. Verify the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE is sent
          *    and its contents are correct.
          */
-        assumeTrue(shouldTestEmergencyHandoverToSatelliteMessaging());
+        assumeTrue(
+                "Device does not support emergency handover to satellite messaging",
+                shouldTestEmergencyHandoverToSatelliteMessaging());
 
         boolean supportDomainSelection =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(sTelephonyManager,
@@ -383,7 +391,9 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
          * 5. Verify the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE is sent
          *    and its contents are correct.
          */
-        assumeTrue(shouldTestEmergencyHandoverToSatelliteMessaging());
+        assumeTrue(
+                "Device does not support emergency handover to satellite messaging",
+                shouldTestEmergencyHandoverToSatelliteMessaging());
         assumeTrue("Skip test on single SIM device", sIsMultiSimDevice);
 
         boolean supportDomainSelection =
@@ -468,7 +478,9 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
          * 5. Verify the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE is sent
          *    and its contents are correct.
          */
-        assumeTrue(shouldTestEmergencyHandoverToSatelliteMessaging());
+        assumeTrue(
+                "Device does not support emergency handover to satellite messaging",
+                shouldTestEmergencyHandoverToSatelliteMessaging());
         assumeTrue("Skip test on single SIM device", sIsMultiSimDevice);
 
         boolean supportDomainSelection =
@@ -553,12 +565,14 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
          * 4. Verify the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE is sent
          *    and its contents are correct.
          */
-        assumeTrue(shouldTestEmergencyHandoverToSatelliteMessaging());
+        assumeTrue(
+                "Device does not support emergency handover to satellite messaging",
+                shouldTestEmergencyHandoverToSatelliteMessaging());
 
         boolean supportDomainSelection =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(sTelephonyManager,
                         (tm) -> tm.isDomainSelectionSupported());
-        assumeTrue(supportDomainSelection);
+        assumeTrue("Domain selection not supported", supportDomainSelection);
 
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         ImsMmTelManager mmTelManager = null;
@@ -573,7 +587,9 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
             setUpImsCallingTestEnvironment(MANUAL_CONNECT_SLOT_ID);
 
             sNtnOnlySubId = SubscriptionManager.getSubscriptionId(MANUAL_CONNECT_SLOT_ID);
-            assumeTrue(sNtnOnlySubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+            assumeTrue(
+                    "NTN-only subscription not found",
+                    sNtnOnlySubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
             setUpSatelliteAccessAllowedAtDefaultTestLocation();
             assertTrue(sMockSatelliteServiceManager.setCtsMode(true));
             setUpNtnOnlySubscription();
@@ -666,12 +682,14 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
          * 5. Verify the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE is sent
          *    and its contents are correct.
          */
-        assumeTrue(shouldTestEmergencyHandoverToSatelliteMessaging());
+        assumeTrue(
+                "Device does not support emergency handover to satellite messaging",
+                shouldTestEmergencyHandoverToSatelliteMessaging());
 
         boolean supportDomainSelection =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(sTelephonyManager,
                         (tm) -> tm.isDomainSelectionSupported());
-        assumeTrue(supportDomainSelection);
+        assumeTrue("Domain selection not supported", supportDomainSelection);
 
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         ImsMmTelManager mmTelManager = null;
@@ -689,7 +707,9 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
             assertTrue(sMockSatelliteServiceManager.setCtsMode(true));
 
             int subId = SubscriptionManager.getSubscriptionId(SLOT_ID_0);
-            assumeTrue(subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+            assumeTrue(
+                    "Invalid subscription ID",
+                    subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
             mmTelManager = imsManager.getImsMmTelManager(subId);
             sVoLteEnabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mmTelManager,
                     ImsMmTelManager::isAdvancedCallingSettingEnabled);
@@ -773,14 +793,16 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
          * 5. Verify the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE is sent
          *    and its contents are correct.
          */
-        assumeTrue(shouldTestEmergencyHandoverToSatelliteMessaging());
+        assumeTrue(
+                "Device does not support emergency handover to satellite messaging",
+                shouldTestEmergencyHandoverToSatelliteMessaging());
 
-        assumeTrue(Flags.vzwAstSkyloFallback());
+        assumeTrue("VZW AST Skylo fallback flag is not enabled", Flags.vzwAstSkyloFallback());
 
         boolean supportDomainSelection =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(
                         sTelephonyManager, (tm) -> tm.isDomainSelectionSupported());
-        assumeTrue(supportDomainSelection);
+        assumeTrue("Domain selection not supported", supportDomainSelection);
 
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         ImsMmTelManager mmTelManager = null;
@@ -802,7 +824,9 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
             assertTrue(sMockSatelliteServiceManager.setCtsMode(true));
 
             int subId = SubscriptionManager.getSubscriptionId(SLOT_ID_0);
-            assumeTrue(subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+            assumeTrue(
+                    "Invalid subscription ID",
+                    subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
             mmTelManager = imsManager.getImsMmTelManager(subId);
             sVoLteEnabled =
                     ShellIdentityUtils.invokeMethodWithShellPermissions(
@@ -906,14 +930,16 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
          * 7. Place emergency call
          * 8. Verify global handover fallback
          */
-        assumeTrue(shouldTestEmergencyHandoverToSatelliteMessaging());
+        assumeTrue(
+                "Device does not support emergency handover to satellite messaging",
+                shouldTestEmergencyHandoverToSatelliteMessaging());
 
-        assumeTrue(Flags.vzwAstSkyloFallback());
+        assumeTrue("VZW AST Skylo fallback flag is not enabled", Flags.vzwAstSkyloFallback());
 
         boolean supportDomainSelection =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(
                         sTelephonyManager, (tm) -> tm.isDomainSelectionSupported());
-        assumeTrue(supportDomainSelection);
+        assumeTrue("Domain selection not supported", supportDomainSelection);
 
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         ImsMmTelManager mmTelManager = null;
@@ -943,7 +969,9 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
             assertTrue(sMockSatelliteServiceManager.setCtsMode(true));
 
             int subId = SubscriptionManager.getSubscriptionId(SLOT_ID_0);
-            assumeTrue(subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+            assumeTrue(
+                    "Invalid subscription ID",
+                    subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
             mmTelManager = imsManager.getImsMmTelManager(subId);
             sVoLteEnabled =
                     ShellIdentityUtils.invokeMethodWithShellPermissions(
@@ -1113,13 +1141,15 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
          * 5. Verify the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE is sent
          *    and its contents are correct.
          */
-        assumeTrue(shouldTestEmergencyHandoverToSatelliteMessaging());
+        assumeTrue(
+                "Device does not support emergency handover to satellite messaging",
+                shouldTestEmergencyHandoverToSatelliteMessaging());
 
-        assumeTrue(Flags.vzwAstSkyloFallback());
+        assumeTrue("VZW AST Skylo fallback flag is not enabled", Flags.vzwAstSkyloFallback());
         boolean supportDomainSelection =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(
                         sTelephonyManager, (tm) -> tm.isDomainSelectionSupported());
-        assumeTrue(supportDomainSelection);
+        assumeTrue("Domain selection not supported", supportDomainSelection);
 
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         ImsMmTelManager mmTelManager = null;
@@ -1144,7 +1174,9 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
             setUpImsCallingTestEnvironment(MANUAL_CONNECT_SLOT_ID);
 
             int subId = SubscriptionManager.getSubscriptionId(MANUAL_CONNECT_SLOT_ID);
-            assumeTrue(subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+            assumeTrue(
+                    "Invalid subscription ID",
+                    subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
             mmTelManager = imsManager.getImsMmTelManager(subId);
             sVoLteEnabled =
                     ShellIdentityUtils.invokeMethodWithShellPermissions(
@@ -1248,13 +1280,15 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
          * 5. Verify the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE is sent
          *    and its contents are correct.
          */
-        assumeTrue(shouldTestEmergencyHandoverToSatelliteMessaging());
+        assumeTrue(
+                "Device does not support emergency handover to satellite messaging",
+                shouldTestEmergencyHandoverToSatelliteMessaging());
         assumeTrue("Skip test on single SIM device", sIsMultiSimDevice);
 
         boolean supportDomainSelection =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(sTelephonyManager,
                         (tm) -> tm.isDomainSelectionSupported());
-        assumeTrue(supportDomainSelection);
+        assumeTrue("Domain selection not supported", supportDomainSelection);
 
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         ImsMmTelManager mmTelManager = null;
@@ -1278,7 +1312,9 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                 AUTO_CONNECT_PHONE_NUMBER, false);
 
             int subId = SubscriptionManager.getSubscriptionId(MANUAL_CONNECT_SLOT_ID);
-            assumeTrue(subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+            assumeTrue(
+                    "Invalid subscription ID",
+                    subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
             mmTelManager = imsManager.getImsMmTelManager(subId);
             sVoLteEnabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mmTelManager,
                     ImsMmTelManager::isAdvancedCallingSettingEnabled);
@@ -1364,13 +1400,15 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
          * 5. Verify the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE is sent
          *    and its contents are correct.
          */
-        assumeTrue(shouldTestEmergencyHandoverToSatelliteMessaging());
+        assumeTrue(
+                "Device does not support emergency handover to satellite messaging",
+                shouldTestEmergencyHandoverToSatelliteMessaging());
         assumeTrue("Skip test on single SIM device", sIsMultiSimDevice);
 
         boolean supportDomainSelection =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(sTelephonyManager,
                         (tm) -> tm.isDomainSelectionSupported());
-        assumeTrue(supportDomainSelection);
+        assumeTrue("Domain selection not supported", supportDomainSelection);
 
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         ImsMmTelManager mmTelManager = null;
@@ -1389,7 +1427,9 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
             setUpImsCallingTestEnvironment(AUTO_CONNECT_SLOT_ID);
 
             int subId = SubscriptionManager.getSubscriptionId(AUTO_CONNECT_SLOT_ID);
-            assumeTrue(subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+            assumeTrue(
+                    "Invalid subscription ID",
+                    subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
             mmTelManager = imsManager.getImsMmTelManager(subId);
             sVoLteEnabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mmTelManager,
                     ImsMmTelManager::isAdvancedCallingSettingEnabled);

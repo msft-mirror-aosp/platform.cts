@@ -85,7 +85,7 @@ public class DataServiceTestOnMockModem {
         mPackageManager = getContext().getPackageManager();
         mSupportTelephonyData =
                 mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA);
-        assumeTrue(mSupportTelephonyData);
+        assumeTrue("Device does not support telephony data", mSupportTelephonyData);
 
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
@@ -167,7 +167,7 @@ public class DataServiceTestOnMockModem {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_DATA_SERVICE_USER_DATA_TOGGLE_NOTIFY)
     public void testNotifyUserDataEnabled() {
-        assumeTrue(canMakeRequest(RADIO_HAL_VERSION_2_4));
+        assumeTrue("Device does not support RADIO HAL V2_4", canMakeRequest(RADIO_HAL_VERSION_2_4));
         mTelephonyManager.setDataEnabledForReason(TelephonyManager.DATA_ENABLED_REASON_USER, true);
         waitForDataLatchCountdown(LATCH_SET_USER_DATA_ENABLED);
         assertTrue(mMockModemManager.getIsUserDataEnabled(TEST_SLOT));
@@ -182,7 +182,7 @@ public class DataServiceTestOnMockModem {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_DATA_SERVICE_USER_DATA_TOGGLE_NOTIFY)
     public void testNotifyUserDataRoamingEnabled() {
-        assumeTrue(canMakeRequest(RADIO_HAL_VERSION_2_4));
+        assumeTrue("Device does not support RADIO HAL V2_4", canMakeRequest(RADIO_HAL_VERSION_2_4));
         mTelephonyManager.setDataRoamingEnabled(true);
         waitForDataLatchCountdown(LATCH_SET_USER_DATA_ROAMING_ENABLED);
         assertTrue(mMockModemManager.getIsUserDataRoamingEnabled(TEST_SLOT));
@@ -197,8 +197,10 @@ public class DataServiceTestOnMockModem {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_DATA_SERVICE_NOTIFY_IMS_DATA_NETWORK)
     public void testNotifyImsDataNetwork() {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_IMS));
-        assumeTrue(canMakeRequest(RADIO_HAL_VERSION_2_4));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_IMS",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_IMS));
+        assumeTrue("Device does not support RADIO HAL V2_4", canMakeRequest(RADIO_HAL_VERSION_2_4));
         ConnectivityManager connectivityManager =
                 (ConnectivityManager) getContext().getSystemService(ConnectivityManager.class);
         NetworkRequest.Builder builder = new NetworkRequest.Builder();

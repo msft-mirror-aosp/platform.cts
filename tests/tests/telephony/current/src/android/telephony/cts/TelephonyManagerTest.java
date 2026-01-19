@@ -588,7 +588,9 @@ public class TelephonyManagerTest {
     public void setUp() throws Exception {
         mCm = getContext().getSystemService(ConnectivityManager.class);
         mPackageManager = getContext().getPackageManager();
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
 
         mSubscriptionManager = getContext().getSystemService(SubscriptionManager.class);
         mLocationHelper = new LocationHelper(getContext());
@@ -769,7 +771,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testHasCarrierPrivilegesViaCarrierConfigs() throws Exception {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         PersistableBundle carrierConfig = new PersistableBundle();
         try {
             // purge the certs in carrierConfigs first
@@ -837,7 +841,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testDevicePolicyApn() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_DATA",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_DATA));
 
         // These methods aren't accessible to anything except system and phone by design, so we just
         // look for security exceptions here.
@@ -1108,7 +1114,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testGetCallForwarding() throws Exception {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
 
         List<Integer> callForwardingReasons = new ArrayList<>();
         callForwardingReasons.add(CallForwardingInfo.REASON_UNCONDITIONAL);
@@ -1176,7 +1184,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testSetCallForwarding() throws Exception {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
 
         List<Integer> callForwardingReasons = new ArrayList<>();
         callForwardingReasons.add(CallForwardingInfo.REASON_UNCONDITIONAL);
@@ -1260,7 +1270,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testSetCallWaitingStatus() throws Exception {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
 
         Set<Integer> validCallWaitingErrors = new HashSet<Integer>();
         validCallWaitingErrors.add(TelephonyManager.CALL_WAITING_STATUS_UNKNOWN_ERROR);
@@ -1348,7 +1360,9 @@ public class TelephonyManagerTest {
     @Test
     @ApiTest(apis = {"android.telephony.TelephonyManager#getPhoneAccountHandle"})
     public void testGetPhoneAccountHandle() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
 
         TelecomManager telecomManager = getContext().getSystemService(TelecomManager.class);
         List<PhoneAccountHandle> callCapableAccounts = telecomManager
@@ -1538,7 +1552,9 @@ public class TelephonyManagerTest {
     @Test
     @ApiTest(apis = "android.telephony.TelephonyManager#getNetworkCountryIso")
     public void testGetNetworkCountryIso() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         String countryCode = mTelephonyManager.getNetworkCountryIso();
         ServiceState serviceState = mTelephonyManager.getServiceState();
@@ -1584,7 +1600,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testSetSystemSelectionChannels() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         assumeFalse(hasFeature(PackageManager.FEATURE_WATCH));
 
         // Get initial list of system selection channels if the API is available
@@ -1700,7 +1718,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testGetSimCountryIso() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         String countryCode = mTelephonyManager.getSimCountryIso();
         if (mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY) &&
@@ -1764,7 +1784,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testNetworkTypeMatchesDataNetworkType() throws Exception {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         assertEquals(
                 "Network type is not same as data network type",
                 mTelephonyManager.getDataNetworkType(),
@@ -1773,7 +1795,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testNetworkTypeMatchesCellIdentity() throws Exception {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         mLocationHelper.enable();
 
@@ -1815,7 +1839,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testGetServiceState() throws InterruptedException {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         if (mCm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE) == null) {
             Log.d(TAG, "Skipping test that requires ConnectivityManager.TYPE_MOBILE");
@@ -1977,7 +2003,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testGetServiceStateForInactiveSub() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         if (mCm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE) == null) {
             Log.d(TAG, "Skipping test that requires ConnectivityManager.TYPE_MOBILE");
@@ -2003,7 +2031,9 @@ public class TelephonyManagerTest {
     @Test
     @CddTest(requirement = "7.4.1/C-4-1")
     public void testIWlanServiceState() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         if (mCm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE) == null) {
             Log.d(TAG, "Skipping test that requires ConnectivityManager.TYPE_MOBILE");
@@ -2027,7 +2057,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testGetPhoneCapabilityAndVerify() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY",
+                hasFeature(PackageManager.FEATURE_TELEPHONY));
 
         boolean is5gStandalone = getContext().getResources().getBoolean(
                 Resources.getSystem().getIdentifier("config_telephony5gStandalone", "bool",
@@ -2058,7 +2090,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testGetSimLocale() throws InterruptedException {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         if (SubscriptionManager.getDefaultSubscriptionId()
                 == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
@@ -2116,7 +2150,7 @@ public class TelephonyManagerTest {
     @Test
     public void testGetPrimaryImei() {
         // make sure the modem supports primaryImei feature
-        assumeTrue(mModemHalVersion >= RADIO_HAL_VERSION_2_1);
+        assumeTrue("Modem HAL version is less than 2.1", mModemHalVersion >= RADIO_HAL_VERSION_2_1);
         String primaryImei = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                 (tm) -> tm.getPrimaryImei());
 
@@ -2156,7 +2190,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testGetRadioPowerState() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         // Also verify that no exception is thrown.
         assertWithMessage("Unexpected power state")
@@ -2170,7 +2206,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testSetCarrierDataEnabled() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_DATA",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_DATA));
 
         // Also verify that no exception is thrown.
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
@@ -2228,7 +2266,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testRebootModem() throws Throwable {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         assumeTrue(
                 "Skipping test since rebootModem is not supported/enforced up to IRadio 2.4.",
                 mModemHalVersion > RADIO_HAL_VERSION_2_4);
@@ -2278,7 +2318,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testGetAidForAppType() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                 (tm) -> tm.getAidForAppType(TelephonyManager.APPTYPE_SIM));
@@ -2297,7 +2339,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testGetIsimDomain() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                 (tm) -> tm.getIsimDomain());
@@ -2310,7 +2354,9 @@ public class TelephonyManagerTest {
     @Ignore("API moved back to @hide for Android R.")
     @Test
     public void testGetIsimImpu() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                 TelephonyManager::getIsimImpu);
@@ -2329,7 +2375,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testNetworkRegistrationInfoRegisteredPlmn() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         // get NetworkRegistration object
         ServiceState ss = mTelephonyManager.getServiceState();
@@ -2356,7 +2404,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testNetworkRegistrationInfoIsRoaming() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         // get NetworkRegistration object
         NetworkRegistrationInfo nwReg = mTelephonyManager.getServiceState()
@@ -2373,7 +2423,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testNetworkRegistrationInfoGetRoamingType() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         // get NetworkRegistration object for voice
         NetworkRegistrationInfo nwReg = mTelephonyManager.getServiceState()
@@ -2403,7 +2455,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testNetworkRegistrationStateGetAccessNetworkTechnology() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         // get NetworkRegistration object for voice
         NetworkRegistrationInfo nwReg = mTelephonyManager.getServiceState()
@@ -2447,7 +2501,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testGetForbiddenPlmns() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         String[] plmns = mTelephonyManager.getForbiddenPlmns();
 
@@ -2473,7 +2529,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testGetEquivalentHomePlmns() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         List<String> plmns = mTelephonyManager.getEquivalentHomePlmns();
 
@@ -2493,7 +2551,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testGetCardIdForDefaultEuicc() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_EUICC));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_EUICC",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_EUICC));
 
         int cardId = mTelephonyManager.getCardIdForDefaultEuicc();
         assertTrue("Card ID for default EUICC is not a valid value",
@@ -2504,7 +2564,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testSetLine1NumberUpdatesSubscriptionInfo() throws Exception {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         // get a random 10 digit number
         final String randomLine1Number = String.format(
@@ -2552,7 +2614,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testGetUiccCardsInfo() throws Exception {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         // With READ_PRIVILEGED_PHONE_STATE only, it should work
         List<UiccCardInfo> infos =
@@ -2620,7 +2684,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testIsVoNrEnabled() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
 
         try {
             int result = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
@@ -2642,7 +2708,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testSetVoNrEnabledException() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
         try {
             mTelephonyManager.setVoNrEnabled(true);
             fail("Expected SecurityException. App does not have carrier privileges.");
@@ -2753,7 +2821,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testGetEmergencyNumberList() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
 
         Map<Integer, List<EmergencyNumber>> emergencyNumberList =
                 mTelephonyManager.getEmergencyNumberList();
@@ -2779,7 +2849,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testGetEmergencyNumberListForCategories() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
 
         Map<Integer, List<EmergencyNumber>> emergencyNumberList =
                 mTelephonyManager.getEmergencyNumberList(
@@ -2813,7 +2885,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testIsEmergencyNumber() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
 
         for (Map.Entry<String, String> entry : EMERGENCY_NUMBERS_FOR_COUNTRIES.entrySet()) {
             if (mTelephonyManager.getNetworkCountryIso().equals(entry.getKey())) {
@@ -2829,7 +2903,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testIsPotentialEmergencyNumber() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
         //NOTE: TelephonyManager#isPotentialEmergencyNumber is a hidden
         //and now deprecated API (from Android-U). This test is updated to make sure we never
         //do a "potential" match, but always use "exact" matching since it can cause issues
@@ -2848,7 +2924,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testSetGetCallComposerStatus() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
 
         if (hasFeature(PackageManager.FEATURE_TELEPHONY_IMS)) {
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
@@ -2892,7 +2970,9 @@ public class TelephonyManagerTest {
     @RequiresFlagsEnabled(com.android.server.telecom.flags.Flags.FLAG_BUSINESS_CALL_COMPOSER)
     @Test
     public void testBusinessOnlyCallComposerStatus() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
         if (hasFeature(PackageManager.FEATURE_TELEPHONY_IMS)) {
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
                     tm -> tm.setCallComposerStatus(
@@ -2910,7 +2990,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testGetRadioAccessFamily() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         long raf = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                 (tm) -> tm.getSupportedRadioAccessFamily());
@@ -2937,7 +3019,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testPreferredOpportunisticDataSubscription() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_DATA",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_DATA));
 
         int randomSubId = 1;
         int activeSubscriptionInfoCount = ShellIdentityUtils.invokeMethodWithShellPermissions(
@@ -3097,7 +3181,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testUpdateAvailableNetworks() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         int randomSubId = 1;
         int activeSubscriptionInfoCount = ShellIdentityUtils.invokeMethodWithShellPermissions(
@@ -3161,7 +3247,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testSwitchMultiSimConfig() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         try {
             mTelephonyManager.switchMultiSimConfig(mTelephonyManager.getActiveModemCount());
@@ -3178,7 +3266,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testIccOpenLogicalChannelBySlot() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         // just verify no crash
         try {
@@ -3191,7 +3281,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testIccOpenLogicalChannelBySlotAndPort() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         var slotAndPort = getValidSlotIndexAndPort();
         int slotIndex = slotAndPort.getKey();
         int portIndex = slotAndPort.getValue();
@@ -3211,7 +3303,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testIccCloseLogicalChannelBySlot() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         // just verify no crash
         try {
@@ -3223,7 +3317,9 @@ public class TelephonyManagerTest {
     }
     @Test
     public void testIccCloseLogicalChannelBySlotAndPort() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         var slotAndPort = getValidSlotIndexAndPort();
         int slotIndex = slotAndPort.getKey();
@@ -3256,7 +3352,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testIccTransmitApduLogicalChannelBySlot() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         int slotIndex = getValidSlotIndexAndPort().getKey();
         // just verify no crash
@@ -3280,7 +3378,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testIccTransmitApduLogicalChannelBySlotAndPort() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         var slotAndPort = getValidSlotIndexAndPort();
         int slotIndex = slotAndPort.getKey();
@@ -3307,7 +3407,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testIccTransmitApduBasicChannelBySlot() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         // just verify no crash
         int slotIndex = getValidSlotIndexAndPort().getKey();
@@ -3328,7 +3430,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testIccTransmitApduBasicChannelBySlotAndPort() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         // just verify no crash
         var slotAndPort = getValidSlotIndexAndPort();
@@ -3348,7 +3452,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testIsIccLockEnabled() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         // verify SecurityException
         try {
@@ -3365,7 +3471,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testIsDataEnabledForApn() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_DATA",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_DATA));
 
         // verify SecurityException
         try {
@@ -3382,7 +3490,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testIsTetheringApnRequired() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_DATA",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_DATA));
 
         // verify SecurityException
         try {
@@ -3400,7 +3510,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testGetCarrierInfoForImsiEncryption() throws Exception {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         // test without permission: verify SecurityException
         try {
@@ -3479,7 +3591,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testResetCarrierKeysForImsiEncryption() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         // test without permission: verify SecurityException
         try {
@@ -3496,7 +3610,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testIsInEmergencySmsMode() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_MESSAGING",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));
 
         // test without permission: verify SecurityException
         try {
@@ -3513,7 +3629,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testGetSubscriptionId() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         TelephonyManager tm = mTelephonyManager.createForSubscriptionId(1);
         int subId = tm.getSubscriptionId();
@@ -3522,7 +3640,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testSetAllowedNetworkTypes() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         // test without permission: verify SecurityException
         long allowedNetworkTypes = TelephonyManager.NETWORK_TYPE_BITMASK_LTE;
@@ -3551,7 +3671,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testDisAllowedNetworkTypes() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         long allowedNetworkTypes = ~TelephonyManager.NETWORK_TYPE_BITMASK_NR;
         long networkTypeBitmask = TelephonyManager.NETWORK_TYPE_BITMASK_LTE
@@ -3594,7 +3716,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testSetAllowedNetworkTypesForReason() throws Exception {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         // test without permission: verify SecurityException
         long allowedNetworkTypes = TelephonyManager.NETWORK_TYPE_BITMASK_LTE;
@@ -3618,7 +3742,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testSetAllowedNetworkTypesForReason_carrierPrivileges() throws Exception {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         CarrierPrivilegeUtils.withCarrierPrivileges(getContext(),
                 SubscriptionManager.getDefaultSubscriptionId(),
                 () -> {
@@ -3751,7 +3877,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testIsApplicationOnUicc() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         // Expect a security exception without permission.
         try {
@@ -3876,8 +4004,11 @@ public class TelephonyManagerTest {
 
     @Test
     public void testOpportunisticNetworkState() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS)
-                && !mPackageManager.hasSystemFeature(PackageManager.FEATURE_WATCH));
+        assumeTrue(
+                "Skip Test: Only test on devices with FEATURE_TELEPHONY_RADIO_ACCESS and not"
+                        + " FEATURE_WATCH",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS)
+                        && !mPackageManager.hasSystemFeature(PackageManager.FEATURE_WATCH));
 
         boolean isEnabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                 tm -> tm.isOpportunisticNetworkEnabled());
@@ -3899,7 +4030,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testGetSimApplicationState() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         int simApplicationState = mTelephonyManager.getSimApplicationState();
         assertTrue(
@@ -3934,7 +4067,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testGetSimApplicationStateWithPhysicalSlotIndexAndPortIndex() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         List<UiccCardInfo> cardInfoList =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
@@ -3965,7 +4100,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testGetSimCardState() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         int simCardState = mTelephonyManager.getSimCardState();
         assertTrue(
@@ -3982,7 +4119,9 @@ public class TelephonyManagerTest {
     @ApiTest(apis = {"android.telephony.TelephonyManager#getUiccCardsInfo",
             "android.telephony.TelephonyManager#getSimCardState"})
     public void getSimCardStateTest() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
@@ -4037,7 +4176,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testThermalDataEnable() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_DATA",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_DATA));
 
         // Perform this test on default data subscription.
         mTelephonyManager = getContext().getSystemService(TelephonyManager.class)
@@ -4086,7 +4227,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testPolicyDataEnable() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_DATA",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_DATA));
 
         // Perform this test on default data subscription.
         mTelephonyManager = getContext().getSystemService(TelephonyManager.class)
@@ -4132,7 +4275,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testCarrierDataEnable() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_DATA",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_DATA));
 
         // Perform this test on default data subscription.
         mTelephonyManager = getContext().getSystemService(TelephonyManager.class)
@@ -4169,7 +4314,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testUserDataEnable() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_DATA",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_DATA));
 
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
                 mTelephonyManager,
@@ -4203,7 +4350,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testDataDuringVoiceCallPolicy() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_DATA",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_DATA));
 
         ShellIdentityUtils.ShellPermissionMethodHelper<Boolean, TelephonyManager> getPolicyHelper =
                 (tm) -> tm.isMobileDataPolicyEnabled(
@@ -4272,7 +4421,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testAlwaysAllowMmsDataPolicy() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_DATA",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_DATA));
 
         ShellIdentityUtils.ShellPermissionMethodHelper<Boolean, TelephonyManager> getPolicyHelper =
                 (tm) -> tm.isMobileDataPolicyEnabled(
@@ -4308,7 +4459,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testAutoDataSwitchPolicy() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_DATA",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_DATA));
 
         ShellIdentityUtils.ShellPermissionMethodHelper<Boolean, TelephonyManager> getPolicyHelper =
                 (tm) -> tm.isMobileDataPolicyEnabled(
@@ -4369,7 +4522,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testNrDualConnectivityEnable() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         if (!ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mTelephonyManager, (tm) -> tm.isRadioInterfaceCapabilitySupported(
@@ -4413,7 +4568,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testPinResult() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         final String empty_pin = ""; // For getting current remaining pin attempt.
         final String pin = "fake_pin";
@@ -4475,7 +4632,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testSetSignalStrengthUpdateRequest_nullRequest() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         // Verify NPE throws if set request with null object
         try {
@@ -4487,7 +4646,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testSetSignalStrengthUpdateRequest_noPermission() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         final SignalStrengthUpdateRequest normalRequest =
                 new SignalStrengthUpdateRequest.Builder()
@@ -4516,7 +4677,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testSetSignalStrengthUpdateRequest_systemThresholdReportingRequestedWhileIdle() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         // Verify system privileged app with permission LISTEN_ALWAYS_REPORTED_SIGNAL_STRENGTH can
         // set systemThresholdReportingRequestedWhileIdle to true with empty thresholdInfos
@@ -4536,7 +4699,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testSetSignalStrengthUpdateRequest_hysteresisDbSet() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         // Verify SE throws for app when set hysteresisDb in the SignalThresholdInfo
         SignalStrengthUpdateRequest requestWithHysteresisDbSet =
@@ -4567,7 +4732,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testSetSignalStrengthUpdateRequest_hysteresisMsSet() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         // Verify SE throws for app when set hysteresisMs in the SignalThresholdInfo
         SignalStrengthUpdateRequest requestWithHysteresisMsSet =
@@ -4598,7 +4765,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testSetSignalStrengthUpdateRequest_isEnabledSet() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         // Verify SE throws for app when set isEnabled in the SignalThresholdInfo
         SignalStrengthUpdateRequest requestWithThresholdIsEnabledSet =
@@ -4628,7 +4797,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testSetSignalStrengthUpdateRequest_tooShortThresholds() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         // verify SE throws if app set too short thresholds
         SignalStrengthUpdateRequest requestWithTooShortThresholds =
@@ -4656,7 +4827,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testSetSignalStrengthUpdateRequest_tooLongThresholds() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         // verify SE throws if app set too long thresholds
         SignalStrengthUpdateRequest requestWithTooLongThresholds =
@@ -4685,7 +4858,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testSetSignalStrengthUpdateRequest_duplicatedRequest() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         final SignalStrengthUpdateRequest normalRequest =
                 new SignalStrengthUpdateRequest.Builder()
@@ -4717,7 +4892,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testClearSignalStrengthUpdateRequest_nullRequest() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         // Verify NPE should throw if clear request with null object
         try {
@@ -4729,7 +4906,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testClearSignalStrengthUpdateRequest_noPermission() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         final SignalStrengthUpdateRequest normalRequest =
                 new SignalStrengthUpdateRequest.Builder()
@@ -4755,7 +4934,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testClearSignalStrengthUpdateRequest_clearWithNoSet() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         SignalStrengthUpdateRequest requestNeverSetBefore = new SignalStrengthUpdateRequest
                 .Builder()
@@ -4774,7 +4955,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testSendThermalMitigationRequest() throws Exception {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         StringBuilder cmdBuilder = new StringBuilder();
         cmdBuilder.append(THERMAL_MITIGATION_COMMAND_BASE).append(ALLOW_PACKAGE_SUBCOMMAND)
@@ -4894,7 +5077,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testIsRadioInterfaceCapabilitySupported() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         assertFalse("empty", mTelephonyManager.isRadioInterfaceCapabilitySupported("empty"));
         assertFalse("null", mTelephonyManager.isRadioInterfaceCapabilitySupported(null));
@@ -4930,7 +5115,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testGetAllCellInfo() throws Exception {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         mLocationHelper.enable();
 
@@ -5038,7 +5225,9 @@ public class TelephonyManagerTest {
             "android.telephony.CarrierConfigManager#KEY_CARRIER_METERED_ROAMING_APN_TYPES_STRINGS",
             "android.telephony.TelephonyManager#isApnMetered"})
     public void testIsApnMetered() throws Exception {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         PersistableBundle carrierConfig = new PersistableBundle();
         carrierConfig.putStringArray(
@@ -5383,7 +5572,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testRegisterTelephonyCallback() throws Throwable {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         mLocationHelper.enable();
 
@@ -5466,7 +5657,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testGetNetworkSlicingConfiguration() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         CompletableFuture<NetworkSlicingConfig> resultFuture = new CompletableFuture<>();
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
@@ -5476,7 +5669,9 @@ public class TelephonyManagerTest {
     @Test
     @ApiTest(apis = {"android.telephony.TelephonyManager#checkCarrierPrivilegesForPackage"})
     public void testCheckCarrierPrivilegesForPackageEnforcesReadPrivilege() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         try {
             InstrumentationRegistry.getInstrumentation()
@@ -5492,7 +5687,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testCheckCarrierPrivilegesForPackageThrowsExceptionWithoutReadPrivilege() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         try {
             mTelephonyManager.checkCarrierPrivilegesForPackage(mSelfPackageName);
@@ -5506,7 +5703,9 @@ public class TelephonyManagerTest {
     @Test
     @ApiTest(apis = {"android.telephony.TelephonyManager#checkCarrierPrivilegesForPackageAnyPhone"})
     public void testCheckCarrierPrivilegesForPackageAnyPhone() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         try {
             mTelephonyManager.checkCarrierPrivilegesForPackageAnyPhone(mSelfPackageName);
@@ -5529,7 +5728,9 @@ public class TelephonyManagerTest {
     @Test
     @ApiTest(apis = {"android.telephony.TelephonyManager#getCarrierPackageNamesForIntentAndPhone"})
     public void testGetCarrierPackageNamesForIntentAndPhoneEnforcesReadPrivilege() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         try {
             InstrumentationRegistry.getInstrumentation()
@@ -5547,7 +5748,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testGetCarrierPackageNamesForIntentAndPhoneThrowsExceptionWithoutReadPrivilege() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         try {
             Intent intent = new Intent();
@@ -5567,7 +5770,9 @@ public class TelephonyManagerTest {
     @ApiTest(apis = {"android.telephony.TelephonyManager#getPackagesWithCarrierPrivileges"})
     @RequiresFlagsEnabled(android.os.Flags.FLAG_MAINLINE_VCN_PLATFORM_API)
     public void testGetPackagesWithCarrierPrivilegesEnforcesReadPrivilege() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         try {
             InstrumentationRegistry.getInstrumentation()
@@ -5585,7 +5790,9 @@ public class TelephonyManagerTest {
     @ApiTest(apis = {"android.telephony.TelephonyManager#getPackagesWithCarrierPrivileges"})
     @RequiresFlagsEnabled(android.os.Flags.FLAG_MAINLINE_VCN_PLATFORM_API)
     public void testGetPackagesWithCarrierPrivilegesThrowsExceptionWithoutReadPrivilege() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         try {
             mTelephonyManager.getPackagesWithCarrierPrivileges();
@@ -5600,7 +5807,9 @@ public class TelephonyManagerTest {
     @ApiTest(apis = {"android.telephony.TelephonyManager#getSimSlotMapping",
             "android.telephony.TelephonyManager#setSimSlotMapping"})
     public void testSimSlotMapping() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(
@@ -5705,7 +5914,9 @@ public class TelephonyManagerTest {
     @Test
     @ApiTest(apis = {"android.telephony.TelephonyManager#getUiccSlotsInfo"})
     public void getUiccSlotInfoTest() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
@@ -5758,7 +5969,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testGetUiccSlotInfosFailsWithoutReadPhoneStatePrivilege() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         try {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
@@ -5772,7 +5985,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void getSimSlotMappingTestReadPermission() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         try {
             Collection<UiccSlotMapping> simSlotMapping = mTelephonyManager.getSimSlotMapping();
@@ -5784,7 +5999,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testSetAllowedNetworkTypesForReason_ignoreInvalidNetworkType() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         // NETWORK_TYPE_BITMASK_LTE_CA is invalid, should be converted into NETWORK_TYPE_BITMASK_LTE
         long invalidAllowedNetworkTypes = TelephonyManager.NETWORK_TYPE_BITMASK_LTE
@@ -5812,7 +6029,9 @@ public class TelephonyManagerTest {
     @Test
     @ApiTest(apis = {"android.telephony.TelephonyManager#getSimSlotMapping"})
     public void getSimSlotMappingTest() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
@@ -5931,7 +6150,9 @@ public class TelephonyManagerTest {
     @RequiresFlagsEnabled(
             com.android.server.telecom.flags.Flags.FLAG_TELECOM_RESOLVE_HIDDEN_DEPENDENCIES)
     public void testSetVoiceServiceStateOverride() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
         ServiceStateRadioStateListener callback = new ServiceStateRadioStateListener(
                 mTelephonyManager.getServiceState(), mTelephonyManager.getRadioPowerState());
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
@@ -6039,7 +6260,9 @@ public class TelephonyManagerTest {
             "android.telephony.TelephonyManager#clearRadioPowerOffForReason",
             "android.telephony.TelephonyManager#getRadioPowerOffReasons"})
     public void testSetRadioPowerForReasonNearbyDevice() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         ServiceStateRadioStateListener callback = new ServiceStateRadioStateListener(
                 mTelephonyManager.getServiceState(), mTelephonyManager.getRadioPowerState());
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
@@ -6086,7 +6309,9 @@ public class TelephonyManagerTest {
             "android.telephony.TelephonyManager#getRadioPowerOffReasons",
             "android.telephony.TelephonyManager#setRadioEnabled"})
     public void testSetRadioPowerForReasonCarrier() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         ServiceStateRadioStateListener callback = new ServiceStateRadioStateListener(
                 mTelephonyManager.getServiceState(), mTelephonyManager.getRadioPowerState());
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
@@ -6136,7 +6361,9 @@ public class TelephonyManagerTest {
             "android.telephony.TelephonyManager#getCellBroadcastIdRanges",
             "android.telephony.TelephonyManager#setCellBroadcastIdRanges"})
     public void testSetCellBroadcastIdRanges() throws Exception {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_MESSAGING",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));
 
         final List<CellBroadcastIdRange> ranges = new ArrayList<>();
         ranges.add(new CellBroadcastIdRange(0, 999, SmsCbMessage.MESSAGE_FORMAT_3GPP, true));
@@ -6238,7 +6465,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void getImsPrivateUserIdentity() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         // make sure not to face any permission problem while calling the API
         try {
             setAppOpsPermissionAllowed(true, OPSTR_USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER);
@@ -6256,7 +6485,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void getImsPrivateUserIdentity_NoPermissionGranted() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         try {
             mTelephonyManager.getImsPrivateUserIdentity();
             fail(); // if no SecurityException then it fails()
@@ -6273,7 +6504,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void getImsPublicUserIdentities_ReadPrivilegedPermission() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         // make sure not to face any permission problem while calling the API
         try {
             List<Uri> impuList = ShellIdentityUtils.invokeMethodWithShellPermissions(
@@ -6299,7 +6532,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void getImsPublicUserIdentities_NoPermissionGranted() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         try {
             mTelephonyManager.getImsPublicUserIdentities();
             fail(); // if no SecurityException then it fails()
@@ -6316,7 +6551,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void getImsPcscfAddresses_WithReadPrivilegedPermission() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         // make sure not to face any permission problem while calling the API
         try {
             List<String> pcscfList = ShellIdentityUtils.invokeMethodWithShellPermissions(
@@ -6334,7 +6571,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void getImsPcscfAddresses_NoPermissionGranted() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         try {
             mTelephonyManager.getImsPcscfAddresses();
             fail(); // if no SecurityException then it fails()
@@ -6351,7 +6590,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void getSimServiceTable_WithReadPrivilegedPermission() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         // make sure not to face any permission problem while calling the API
         OutcomeReceiver<byte[], Exception> callback =
                 new OutcomeReceiver<>() {
@@ -6381,7 +6622,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void getSimServiceTable_NoPermissionGranted() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         OutcomeReceiver<byte[], Exception> callback =
                 new OutcomeReceiver<>() {
@@ -6411,7 +6654,9 @@ public class TelephonyManagerTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_IMS_REGISTRATION_EVENT_DOWNLOAD)
     public void requestIari_WithReadPrivilegedPermission() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         // make sure not to face any permission problem while calling the API
         CompletableFuture<Pair<Set<String>, Exception>> pendingResult = new CompletableFuture<>();
         OutcomeReceiver<Set<String>, Exception> callback = createOutcomeReceiver(pendingResult);
@@ -6448,7 +6693,9 @@ public class TelephonyManagerTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_IMS_REGISTRATION_EVENT_DOWNLOAD)
     public void requestIari_NoPermissionGranted() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         CompletableFuture<Pair<Set<String>, Exception>> pendingResult = new CompletableFuture<>();
         OutcomeReceiver<Set<String>, Exception> callback = createOutcomeReceiver(pendingResult);
 
@@ -6516,7 +6763,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testLastKnownCountryIso() throws Exception {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         CountryChangedReceiver countryChangedReceiver = new CountryChangedReceiver();
 
@@ -6649,7 +6898,9 @@ public class TelephonyManagerTest {
             "android.telephony.TelephonyManager#clearRadioPowerOffForReason",
             "android.telephony.TelephonyManager#getRadioPowerOffReasons"})
     public void testSetRadioPowerForMultiSimDevice() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         if (mTelephonyManager.isMultiSimSupported() != TelephonyManager.MULTISIM_ALLOWED) {
             Log.d(TAG, "testSetRadioPowerForMultiSimDevice: Multi SIM is not supported");
             return;
@@ -6742,7 +6993,9 @@ public class TelephonyManagerTest {
                         + "#setEnableCellularIdentifierDisclosureNotifications"
             })
     public void testSetEnableCellularIdentifierDisclosureNotifications() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         if (mNetworkHalVersion < RADIO_HAL_VERSION_2_2) {
             Log.d(TAG,
                     "Skipping test since modem does not support IRadioNetwork HAL v2.2");
@@ -6780,7 +7033,9 @@ public class TelephonyManagerTest {
                         + "#setEnableCellularIdentifierDisclosureNotifications"
             })
     public void testCellularIdentifierDisclosureNotificationsPermissions() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         if (mNetworkHalVersion < RADIO_HAL_VERSION_2_2) {
             Log.d(TAG, "Skipping test since modem does not support IRadioNetwork HAL v2.2");
             return;
@@ -6811,7 +7066,9 @@ public class TelephonyManagerTest {
             })
     @RequiresFlagsEnabled(Flags.FLAG_NETWORK_SECURITY_EVENT_INDICATIONS)
     public void testGetSupportedNetworkAlertCategoriesPermissions() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         if (mNetworkHalVersion < RADIO_HAL_VERSION_2_4) {
             Log.d(TAG,
                     "Skipping test since modem does not support IRadioNetwork HAL v2.4");
@@ -6832,7 +7089,9 @@ public class TelephonyManagerTest {
             })
     @RequiresFlagsEnabled(Flags.FLAG_NETWORK_SECURITY_EVENT_INDICATIONS)
     public void testGetSupportedNetworkAlertCategories() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         if (mNetworkHalVersion < RADIO_HAL_VERSION_2_4) {
             Log.d(TAG,
                     "Skipping test since modem does not support IRadioNetwork HAL v2.4");
@@ -6851,7 +7110,9 @@ public class TelephonyManagerTest {
     public void testGetLastKnownCellIdentity() {
         mLocationHelper.enable();
 
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         // Revoking ACCESS_FINE_LOCATION will cause test to crash. Verify that security exception
         // is still thrown if com.android.phone.permission.ACCESS_LAST_KNOWN_CELL_ID is
         // not granted.
@@ -6886,7 +7147,7 @@ public class TelephonyManagerTest {
                         .map(nri -> nri.getCellIdentity())
                         .distinct()
                         .findFirst();
-        assumeTrue(primaryCellIdentity.isPresent());
+        assumeTrue("Primary cell identity is not present", primaryCellIdentity.isPresent());
 
         CellIdentity cellIdentity =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(
@@ -6904,7 +7165,9 @@ public class TelephonyManagerTest {
                 "android.telephony.TelephonyManager#setNullCipherNotificationsEnabled"
             })
     public void testsetNullCipherNotificationsEnabled() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         if (mNetworkHalVersion < RADIO_HAL_VERSION_2_2) {
             Log.d(TAG, "Skipping test since modem does not support IRadioNetwork HAL v2.2");
             return;
@@ -6933,7 +7196,9 @@ public class TelephonyManagerTest {
             "android.telephony.TelephonyManager#isNullCipherNotificationsEnabled",
             "android.telephony.TelephonyManager#setNullCipherNotificationsEnabled"})
     public void testNullCipherNotificationsPermissions() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         if (mNetworkHalVersion < RADIO_HAL_VERSION_2_2) {
             Log.d(TAG, "Skipping test since modem does not support IRadioNetwork HAL v2.2");
             return;
@@ -7148,7 +7413,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testGetServiceStateForSlot() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .adoptShellPermissionIdentity(
@@ -7186,7 +7453,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testGetCarrierIdFromCarrierIdentifier() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         CarrierIdentifier carrier =
                 new CarrierIdentifier("", "", null, null, null, null);
@@ -7291,7 +7560,9 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testGetGroupIdLevel2() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
 
         // The API requires READ_PRIVILEGED_PHONE_STATE privilege
         try {
@@ -7321,7 +7592,9 @@ public class TelephonyManagerTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_SLOT_SWITCHING_2PSIM_1ESIM_CONFIG)
     public void testSimTypeInfo() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         if (mConfigHalVersion < RADIO_HAL_VERSION_2_3) {
             Log.d(TAG, "Skipping test since SimTypeInfo is not supported until IRadioConfig 2.3.");
             return;

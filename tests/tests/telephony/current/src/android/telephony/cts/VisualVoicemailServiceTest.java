@@ -113,7 +113,7 @@ public class VisualVoicemailServiceTest {
     @Before
     public void setUp() throws Exception {
         mContext = getInstrumentation().getContext();
-        assumeTrue(hasFeatureSupported(mContext));
+        assumeTrue("Device does not support visual voicemail", hasFeatureSupported(mContext));
         // The tests run on real modem with visual voicemail SMS.
         assumeFalse(Build.IS_EMULATOR);
         // Wear does not support Visual Voicemail

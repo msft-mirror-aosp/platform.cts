@@ -73,6 +73,7 @@ public class NumberVerificationTest {
     public void testNumberVerificationUk() throws Exception {
         // Only run this test on devices with Telephony calling.
         assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
                 InstrumentationRegistry.getContext()
                         .getPackageManager()
                         .hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
