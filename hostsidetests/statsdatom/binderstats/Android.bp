@@ -21,9 +21,5 @@ java_test_host {
     defaults: ["CtsStatsdAtomHostTest_defaults"],
     srcs: ["src/**/*.java"],
     team: "trendy_team_android_performance_console",
-    test_suites: [
-        "general-tests",
-        "cts",
-    ],
     test_config: "AndroidTest.xml",
 }
