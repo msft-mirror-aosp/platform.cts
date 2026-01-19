@@ -63,8 +63,9 @@ public class OpportunisticMockModemTestBase extends MockModemTestBase {
     public static void beforeAllTests() throws Exception {
         if (!MockModemTestBase.beforeAllTestsCheck()) return;
         // These must be true to perform the following SIM operations, but cannot be checked by
-        // assumeTrue at this stage. They are checked in beforeTest.
-        if (!sIsMultiSimDevice || !isSimHotSwapCapable()) return;
+        // assumeTrue at this stage. They are checked in beforeTest and afterAllTests to skip
+        // closing mockModem since it is not created during test setup.
+        if (!shouldTestOpportunisticSubscription()) return;
 
         MockModemTestBase.createMockModemAndConnectToService();
         sShouldTearDownSims = true;
@@ -78,6 +79,10 @@ public class OpportunisticMockModemTestBase extends MockModemTestBase {
 
     @AfterClass
     public static void afterAllTests() throws Exception {
+        // Skip close MockModem for following condition as the MockModem would not be created in
+        // beforeTest.
+        if (!shouldTestOpportunisticSubscription()) return;
+
         if (sShouldTearDownSims) {
             // Get ICCID of subs before removing the SIM cards.
             setSubAsOpportunistic(sOpptSubId, false);
@@ -213,5 +218,9 @@ public class OpportunisticMockModemTestBase extends MockModemTestBase {
                     .getUiAutomation()
                     .dropShellPermissionIdentity();
         }
+    }
+
+    private static boolean shouldTestOpportunisticSubscription() {
+        return (sIsMultiSimDevice && isSimHotSwapCapable());
     }
 }
