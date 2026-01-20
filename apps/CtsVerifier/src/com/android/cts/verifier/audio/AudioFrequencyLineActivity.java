@@ -28,7 +28,6 @@ import android.os.Message;
 import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
-import java.util.Arrays;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.ProgressBar;
@@ -635,10 +634,8 @@ public class AudioFrequencyLineActivity extends AudioFrequencyActivity implement
             mFftServer.fft(mC, 1);
 
             double[] halfMagnitude = new double[mBlockSizeSamples / 2];
-            double scale = 2.0 / Arrays.stream(mWindow.mBuffer.mData).sum();
             for (i = 0; i < mBlockSizeSamples / 2; i++) {
-                halfMagnitude[i] = scale * Math.sqrt(mC.mReal[i] * mC.mReal[i] +
-                        mC.mImag[i] * mC.mImag[i]);
+                halfMagnitude[i] = Math.sqrt(mC.mReal[i] * mC.mReal[i] + mC.mImag[i] * mC.mImag[i]);
             }
 
             mFreqAverageMain.setData(halfMagnitude, false); //average all of them!

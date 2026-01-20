@@ -24,7 +24,6 @@ import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import java.util.Arrays;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -190,9 +189,8 @@ public class AudioFrequencyVoiceRecognitionActivity extends AudioFrequencyActivi
                     mFftServer.fft(mC, 1);
 
                     double[] magnitude = new double[BLOCK_SIZE_SAMPLES / 2];
-                    double scale = 2.0 / Arrays.stream(mWindow.mBuffer.mData).sum();
                     for (i = 0; i < BLOCK_SIZE_SAMPLES / 2; i++) {
-                        magnitude[i] = scale * Math.sqrt(mC.mReal[i] * mC.mReal[i] +
+                        magnitude[i] = Math.sqrt(mC.mReal[i] * mC.mReal[i] +
                                 mC.mImag[i] * mC.mImag[i]);
                     }
 
