@@ -80,8 +80,11 @@ public class DataConnectionTest {
         mPm = context.getPackageManager();
         mSubId = SubscriptionManager.getDefaultDataSubscriptionId();
 
-        assumeTrue(mPm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
         assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_DATA",
+                mPm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        assumeTrue(
+                "Vendor API level is not at least CINNAMON_BUN",
                 ApiLevelUtil.isVendorApiLevelAtLeast(
                         android.os.Build.VERSION_CODES_FULL.CINNAMON_BUN));
     }

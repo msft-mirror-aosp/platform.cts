@@ -31,6 +31,7 @@ import android.os.Process
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.provider.MediaStore
+import android.widget.photopicker.PhotoPickerSelectionParams
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
@@ -277,6 +278,60 @@ class PhotoPickerApiSurfaceTest {
         // press back to ensure picker launches successfully
         photoPickerRule.device.pressBack()
         future.get(5, TimeUnit.SECONDS)
+    }
+
+    @Test
+    @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
+    @ModernPhotopickerOnly
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PHOTOPICKER_SELECTION_PARAMS_API)
+    fun testLaunch_withSelectionParamsExtra_succeeds() {
+        val selectionParams =
+            PhotoPickerSelectionParams.Builder()
+                .setMaxMediaItemSizeInBytes(10000L)
+                .build()
+        val intent =
+            Intent(MediaStore.ACTION_PICK_IMAGES)
+                .putExtra(MediaStore.EXTRA_PICK_IMAGES_SELECTION_PARAMS, selectionParams)
+        val future = photoPickerRule.launchPhotoPicker(intent)
+        // press back to ensure picker launches successfully
+        photoPickerRule.device.pressBack()
+        future.get(5, TimeUnit.SECONDS)
+    }
+
+    @Test
+    @ModernPhotopickerOnly
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PHOTOPICKER_SELECTION_PARAMS_API)
+    fun testLaunch_withSelectionParamsExtra_getContent_fails() {
+        val selectionParams =
+            PhotoPickerSelectionParams.Builder()
+                .setMaxMediaItemSizeInBytes(10000L)
+                .build()
+        val intent =
+            Intent(Intent.ACTION_GET_CONTENT)
+                .setType("image/*")
+                .putExtra(MediaStore.EXTRA_PICK_IMAGES_SELECTION_PARAMS, selectionParams)
+        val result = photoPickerRule.launchPhotoPicker(intent).get(5, TimeUnit.SECONDS)
+        assertThat(result.resultCode).isEqualTo(Activity.RESULT_CANCELED)
+    }
+
+    @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    @ModernPhotopickerOnly
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PHOTOPICKER_SELECTION_PARAMS_API)
+    fun testLaunch_withSelectionParamsExtra_userSelect_fails() {
+        val selectionParams =
+            PhotoPickerSelectionParams.Builder()
+                .setMaxMediaItemSizeInBytes(10000L)
+                .build()
+        val intent =
+            Intent(MediaStore.ACTION_USER_SELECT_IMAGES_FOR_APP)
+                .putExtra(Intent.EXTRA_UID, Process.myUid())
+                .putExtra(MediaStore.EXTRA_PICK_IMAGES_SELECTION_PARAMS, selectionParams)
+
+        TestApis.permissions().withPermission(Manifest.permission.GRANT_RUNTIME_PERMISSIONS).use {
+            val result = photoPickerRule.launchPhotoPicker(intent).get(5, TimeUnit.SECONDS)
+            assertThat(result.resultCode).isEqualTo(Activity.RESULT_CANCELED)
+        }
     }
 
     // GET_CONTENT

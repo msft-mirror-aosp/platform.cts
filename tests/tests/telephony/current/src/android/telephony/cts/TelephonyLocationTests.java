@@ -62,7 +62,9 @@ public class TelephonyLocationTests {
     public void setUp() {
         Context context = InstrumentationRegistry.getContext();
         PackageManager pm = context.getPackageManager();
-        assumeTrue(pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY",
+                pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
         try {
             context.getSystemService(TelephonyManager.class)
                     .getHalVersion(TelephonyManager.HAL_SERVICE_RADIO);

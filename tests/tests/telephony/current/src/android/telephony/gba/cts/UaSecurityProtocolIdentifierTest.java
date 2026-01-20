@@ -88,7 +88,7 @@ public final class UaSecurityProtocolIdentifierTest {
 
     @Test
     public void testDefaultId() {
-        assumeTrue(isFeatureSupported());
+        assumeTrue("Device should have FEATURE_TELEPHONY_SUBSCRIPTION", isFeatureSupported());
 
         UaSecurityProtocolIdentifier.Builder builder = new UaSecurityProtocolIdentifier.Builder();
         UaSecurityProtocolIdentifier sp = builder.build();
@@ -99,7 +99,7 @@ public final class UaSecurityProtocolIdentifierTest {
 
     @Test
     public void testValid3gppId() {
-        assumeTrue(isFeatureSupported());
+        assumeTrue("Device should have FEATURE_TELEPHONY_SUBSCRIPTION", isFeatureSupported());
 
         for (int i = 0; i < PROTO_3GPP_PLAIN_ID.length; i++) {
             UaSecurityProtocolIdentifier sp = testCreate3GppSpId(
@@ -114,7 +114,7 @@ public final class UaSecurityProtocolIdentifierTest {
 
     @Test
     public void testValid3gppIdWithTls() {
-        assumeTrue(isFeatureSupported());
+        assumeTrue("Device should have FEATURE_TELEPHONY_SUBSCRIPTION", isFeatureSupported());
 
         for (int i = 0; i < PROTO_3GPP_TLS_ID.length; i++) {
             for (int j = 0; j < TLS_CS_ID_SUPPORTED.length; j++) {
@@ -135,7 +135,7 @@ public final class UaSecurityProtocolIdentifierTest {
 
     @Test
     public void testInvalidId() {
-        assumeTrue(isFeatureSupported());
+        assumeTrue("Device should have FEATURE_TELEPHONY_SUBSCRIPTION", isFeatureSupported());
 
         Random rand = new Random();
         HashSet<Integer> validIds = new HashSet<>();
@@ -154,7 +154,7 @@ public final class UaSecurityProtocolIdentifierTest {
 
     @Test
     public void testInvalid3gppIdWithTls() {
-        assumeTrue(isFeatureSupported());
+        assumeTrue("Device should have FEATURE_TELEPHONY_SUBSCRIPTION", isFeatureSupported());
         Random rand = new Random();
         for (int i = 0; i < PROTO_3GPP_TLS_ID.length; i++) {
             for (int j = 0; j < 200; j++) {
@@ -169,7 +169,7 @@ public final class UaSecurityProtocolIdentifierTest {
 
     @Test
     public void testParcelUnparcel() {
-        assumeTrue(isFeatureSupported());
+        assumeTrue("Device should have FEATURE_TELEPHONY_SUBSCRIPTION", isFeatureSupported());
 
         UaSecurityProtocolIdentifier sp = testCreate3GppSpId(
                 PROTO_3GPP_TLS_ID[0], TLS_CS_ID_SUPPORTED[0], false);
@@ -184,7 +184,7 @@ public final class UaSecurityProtocolIdentifierTest {
 
     @Test
     public void testIsTlsCipherSuiteSupported() {
-        assumeTrue(isFeatureSupported());
+        assumeTrue("Device should have FEATURE_TELEPHONY_SUBSCRIPTION", isFeatureSupported());
 
         Random rand = new Random();
 
@@ -202,7 +202,7 @@ public final class UaSecurityProtocolIdentifierTest {
 
     @Test
     public void testUaSecurityProtocolIdentifierBuilder() {
-        assumeTrue(isFeatureSupported());
+        assumeTrue("Device should have FEATURE_TELEPHONY_SUBSCRIPTION", isFeatureSupported());
 
         UaSecurityProtocolIdentifier sp = testCreate3GppSpId(
                 PROTO_3GPP_TLS_ID[0], TLS_CS_ID_SUPPORTED[0], false);

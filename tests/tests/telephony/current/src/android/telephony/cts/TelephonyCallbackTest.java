@@ -303,7 +303,9 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnServiceStateChangedByRegisterTelephonyCallback() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         assertFalse(mOnServiceStateChangedCalled);
 
         mServiceStateCallback = new ServiceStateListener();
@@ -327,7 +329,9 @@ public class TelephonyCallbackTest {
     @Test
     public void testOnServiceStateChangedByRegisterTelephonyCallbackWithLocationRenounce()
             throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         assertFalse(mOnServiceStateChangedCalled);
 
         mServiceStateCallback = new ServiceStateListener();
@@ -351,7 +355,9 @@ public class TelephonyCallbackTest {
     @Test
     public void testOnServiceStateChangedByRegisterTelephonyCallbackWithCoarseRenounce()
             throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         assertFalse(mOnServiceStateChangedCalled);
 
         mServiceStateCallback = new ServiceStateListener();
@@ -375,7 +381,9 @@ public class TelephonyCallbackTest {
     @Test
     public void testOnServiceStateChangedByRegisterTelephonyCallbackWithFineOnlyRenounce()
             throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         assertFalse(mOnServiceStateChangedCalled);
 
         mServiceStateCallback = new ServiceStateListener();
@@ -419,7 +427,9 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnUnRegisterFollowedByRegisterTelephonyCallback() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         assertFalse(mOnServiceStateChangedCalled);
 
         mServiceStateCallback = new ServiceStateListener();
@@ -483,7 +493,9 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnSignalStrengthsChangedByRegisterTelephonyCallback() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         assertTrue(mSignalStrength == null);
 
         mSignalStrengthsCallback = new SignalStrengthsListener();
@@ -519,7 +531,9 @@ public class TelephonyCallbackTest {
     @Test
     public void testOnMessageWaitingIndicatorChangedByRegisterTelephonyCallback()
             throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_MESSAGING",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));
         assertFalse(mOnMessageWaitingIndicatorChangedCalled);
 
         mMessageWaitingIndicatorCallback = new MessageWaitingIndicatorListener();
@@ -554,7 +568,9 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnPreciseCallStateChangedByRegisterTelephonyCallback() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
         assertThat(mOnPreciseCallStateChangedCalled).isFalse();
 
         mPreciseCallStateCallback = new PreciseCallStateListener();
@@ -594,7 +610,9 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnCallStatesChangedByRegisterTelephonyCallback() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
         assertThat(mOnCallStatesChangedCalled).isFalse();
 
         mCallAttributesListener = new CallAttributesListener();
@@ -636,7 +654,9 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnCallDisconnectCauseChangedByRegisterTelephonyCallback() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
         assertThat(mOnCallDisconnectCauseChangedCalled).isFalse();
 
         mCallDisconnectCauseCallback = new CallDisconnectCauseListener();
@@ -671,7 +691,9 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnImsCallDisconnectCauseChangedByRegisterTelephonyCallback() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
 
         assertThat(mOnImsCallDisconnectCauseChangedCalled).isFalse();
 
@@ -707,7 +729,9 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnSrvccStateChangedByRegisterTelephonyCallback() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_IMS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_IMS",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_IMS));
         assertThat(mSrvccStateChangedCalled).isFalse();
 
         mSrvccStateCallback = new SrvccStateListener();
@@ -742,7 +766,9 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnRadioPowerStateChangedByRegisterTelephonyCallback() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         assertThat(mOnRadioPowerStateChangedCalled).isFalse();
 
         mRadioPowerStateCallback = new RadioPowerStateListener();
@@ -779,7 +805,9 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnVoiceActivationStateChangedByRegisterTelephonyCallback() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
         assertThat(mVoiceActivationStateChangedCalled).isFalse();
 
         mVoiceActivationStateCallback = new VoiceActivationStateListener();
@@ -841,7 +869,9 @@ public class TelephonyCallbackTest {
     @Test
     public void testOnPreciseDataConnectionStateChangedByRegisterTelephonyCallback()
             throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_DATA",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
         assertThat(mOnCallDisconnectCauseChangedCalled).isFalse();
 
         mPreciseDataConnectionStateCallback =
@@ -911,7 +941,9 @@ public class TelephonyCallbackTest {
     @Test
     public void testOnCallForwardingIndicatorChangedByRegisterTelephonyCallback()
             throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
         assertFalse(mOnCallForwardingIndicatorChangedCalled);
 
         mCallForwardingIndicatorCallback = new CallForwardingIndicatorListener();
@@ -945,7 +977,9 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnCellLocationChangedByRegisterTelephonyCallback() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         assertFalse(mOnCellLocationChangedCalled);
 
         mLocationHelper.enable();
@@ -980,7 +1014,9 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnCallStateChangedByRegisterTelephonyCallback() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
         assertFalse(mOnCallStateChangedCalled);
 
         mCallStateCallback = new CallStateListener();
@@ -1017,7 +1053,9 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnDataConnectionStateChangedByRegisterTelephonyCallback() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_DATA",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
         assertFalse(mOnDataConnectionStateChangedCalled);
         assertFalse(mOnDataConnectionStateChangedWithNetworkTypeCalled);
 
@@ -1054,7 +1092,9 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnDataActivityByRegisterTelephonyCallback() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_DATA",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
         assertFalse(mOnDataActivityCalled);
 
         mDataActivityCallback = new DataActivityListener();
@@ -1087,7 +1127,9 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnCellInfoChangedByRegisterTelephonyCallback() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         assertFalse(mOnDataActivityCalled);
 
         mLocationHelper.enable();
@@ -1122,7 +1164,9 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnUserMobileDataStateChangedByRegisterTelephonyCallback() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_DATA",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
         assertFalse(mOnUserMobileDataStateChanged);
 
         mUserMobileDataStateCallback = new UserMobileDataStateListener();
@@ -1157,7 +1201,9 @@ public class TelephonyCallbackTest {
     @Test
     public void testOnOutgoingSmsEmergencyNumberChangedByRegisterTelephonyCallback()
             throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_MESSAGING",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));
         TelephonyUtils.addTestEmergencyNumber(
                 InstrumentationRegistry.getInstrumentation(), TEST_EMERGENCY_NUMBER);
         assertNull(mOnOutgoingSmsEmergencyNumberChanged);
@@ -1210,7 +1256,9 @@ public class TelephonyCallbackTest {
     @Test
     public void testOnActiveDataSubscriptionIdChangedByRegisterTelephonyCallback()
             throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         assertFalse(mOnActiveDataSubscriptionIdChanged);
 
         mActiveDataSubscriptionIdCallback =
@@ -1429,7 +1477,9 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnPhysicalChannelConfigChanged() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         Pair<Integer, Integer> networkHalVersion =
                 mTelephonyManager.getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK);
         // 1.2+ or 1.6 with CAPABILITY_PHYSICAL_CHANNEL_CONFIG_1_6_SUPPORTED or 2.0+
@@ -1479,7 +1529,9 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnDataEnabledChangedByRegisterTelephonyCallback() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_DATA",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
         assertFalse(mOnDataEnabledChangedCalled);
 
         mDataEnabledCallback = new DataEnabledListener();
@@ -1515,7 +1567,9 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnAllowedNetworkTypesChangedByRegisterPhoneStateListener() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         long originalAllowedNetworkTypeUser = ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mTelephonyManager, (tm) -> {
@@ -1631,7 +1685,9 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnEmergencyCallbackModeListener() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
 
         if (mCm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE) == null) {
             Log.d(TAG, "Skipping test that requires ConnectivityManager.TYPE_MOBILE");
@@ -1786,7 +1842,9 @@ public class TelephonyCallbackTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_DOMAIN_SELECTION_EMERGENCY_MODE_NOTIFICATION)
     public void testOnDomainSelectionEmergencyModeExited() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
 
         assertFalse(mOnDomainSelectionEmergencyModeChangedCalled);
         mDomainSelectionEmergencyModeListener = new DomainSelectionEmergencyModeListener();

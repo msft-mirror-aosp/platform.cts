@@ -23,7 +23,6 @@ import android.app.ActivityManager
 import android.app.admin.DevicePolicyManager
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Build.VERSION.SDK_INT
 import com.android.bedstead.harrier.AnnotationExecutorUtil.checkFailOrSkip
 import com.android.bedstead.harrier.AnnotationExecutorUtil.failOrSkip

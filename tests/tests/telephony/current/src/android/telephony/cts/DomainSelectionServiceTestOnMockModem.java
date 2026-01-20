@@ -173,7 +173,7 @@ public class DomainSelectionServiceTestOnMockModem extends DomainSelectionCallin
     public void beforeTest() throws Exception {
         if (VDBG) Log.d(LOG_TAG, "beforeTest");
 
-        assumeTrue(sSupportDomainSelection);
+        assumeTrue("Device does not support domain selection", sSupportDomainSelection);
         try {
             sTelephonyManager.getHalVersion(TelephonyManager.HAL_SERVICE_RADIO);
         } catch (IllegalStateException e) {

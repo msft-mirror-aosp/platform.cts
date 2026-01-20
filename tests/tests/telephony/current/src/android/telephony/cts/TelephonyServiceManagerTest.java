@@ -61,7 +61,9 @@ public class TelephonyServiceManagerTest {
         mPackageManager =
                 InstrumentationRegistry.getInstrumentation().getContext().getPackageManager();
         // This test requires the telephony feature. Skips the test if it is not available.
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
         mTelephonyServiceManager = new TelephonyServiceManager();
     }
 

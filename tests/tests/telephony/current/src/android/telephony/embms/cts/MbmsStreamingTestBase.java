@@ -128,7 +128,7 @@ public class MbmsStreamingTestBase {
 
     @Before
     public void setUp() throws Exception {
-        assumeTrue(MbmsUtil.hasMbmsFeature());
+        assumeTrue("Device should have MBMS feature", MbmsUtil.hasMbmsFeature());
 
         mContext = getContext();
         mHandlerThread = new HandlerThread("EmbmsCtsTestWorker");

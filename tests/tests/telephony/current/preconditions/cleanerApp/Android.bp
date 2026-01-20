@@ -30,7 +30,6 @@ android_test_helper_app {
     libs: ["android.test.base.stubs.test"],
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "mts",
         "general-tests",
     ],

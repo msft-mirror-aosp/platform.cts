@@ -255,7 +255,9 @@ public class SipDelegateManagerTest {
     public void beforeTest() {
         // If the device does not have FEATURE_TELEPHONY_IMS_SINGLE_REGISTRATION,
         // skip the all tests
-        assumeTrue(ImsUtils.shouldTestImsSingleRegistration());
+        assumeTrue(
+                "Device does not support IMS single registration",
+                ImsUtils.shouldTestImsSingleRegistration());
         TelephonyManager tm = (TelephonyManager) InstrumentationRegistry.getInstrumentation()
                 .getContext().getSystemService(Context.TELEPHONY_SERVICE);
         if (tm.getSimState(sTestSlot) != TelephonyManager.SIM_STATE_READY) {

@@ -27,6 +27,7 @@ import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.DynamicSchemaH
 import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunctionAndWait
 import android.app.appfunctions.cts.AppFunctionUtils.getAllRuntimeMetadataPackages
 import android.app.appfunctions.cts.AppFunctionUtils.getAllStaticMetadataPackages
+import android.app.appfunctions.cts.AppFunctionUtils.isAppFunctionEnabled
 import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabled
 import android.app.appfunctions.testutils.ConcatStrings
 import android.app.appfunctions.testutils.ConcatStrings.Companion.CONCAT_STRINGS_FUNCTION_ID
@@ -117,6 +118,12 @@ class AppFunctionRegistrationTest {
         assumeNotNull(manager)
         this@AppFunctionRegistrationTest.manager = manager
         uninstallPackage(TEST_APP_A_PKG)
+
+        setAppFunctionEnabled(
+            DynamicSchemaHelperApp.PACKAGE_NAME,
+            CONCAT_STRINGS_FUNCTION_ID,
+            AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
+        )
     }
 
     @After
@@ -640,7 +647,9 @@ class AppFunctionRegistrationTest {
     @Test
     @IncludeRunOnPrimaryUser
     @IncludeRunOnSecondaryUser
-    @RequiresFlagsEnabled(android.app.appfunctions.flags.Flags.FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
+    @RequiresFlagsEnabled(
+        android.app.appfunctions.flags.Flags.FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2
+    )
     fun execute_getUrisFunction_hasAccessToReturnedUris() = doBlocking {
         val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
         service.registerAppFunction(FunctionType.GET_URIS.toString())
@@ -666,6 +675,102 @@ class AppFunctionRegistrationTest {
             assertWriteAccessible(contentResolver, writeOnlyUri)
             assertWriteAccessible(contentResolver, readWriteUri)
             assertWriteInaccessible(contentResolver, readOnlyUri)
+        }
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    fun isAppFunctionEnabled_shouldReturnFalse_whenFunctionNotRegisteredAndDisabled() = doBlocking {
+        setAppFunctionEnabled(
+            DynamicSchemaHelperApp.PACKAGE_NAME,
+            CONCAT_STRINGS_FUNCTION_ID,
+            AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
+        )
+
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val result =
+                isAppFunctionEnabled(
+                    manager,
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    CONCAT_STRINGS_FUNCTION_ID,
+                )
+
+            assertThat(result.exceptionOrNull()).isNull()
+            assertThat(result.getOrThrow()).isFalse()
+        }
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    fun isAppFunctionEnabled_shouldReturnFalse_whenFunctionNotRegisteredButEnabled() = doBlocking {
+        setAppFunctionEnabled(
+            DynamicSchemaHelperApp.PACKAGE_NAME,
+            CONCAT_STRINGS_FUNCTION_ID,
+            AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
+        )
+
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val result =
+                isAppFunctionEnabled(
+                    manager,
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    CONCAT_STRINGS_FUNCTION_ID,
+                )
+
+            assertThat(result.exceptionOrNull()).isNull()
+            assertThat(result.getOrThrow()).isFalse()
+        }
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    fun isAppFunctionEnabled_shouldReturnFalse_whenFunctionRegisteredButDisabled() = doBlocking {
+        val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
+        setAppFunctionEnabled(
+            DynamicSchemaHelperApp.PACKAGE_NAME,
+            CONCAT_STRINGS_FUNCTION_ID,
+            AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
+        )
+        assertThat(service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())).isTrue()
+
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val result =
+                isAppFunctionEnabled(
+                    manager,
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    CONCAT_STRINGS_FUNCTION_ID,
+                )
+
+            assertThat(result.exceptionOrNull()).isNull()
+            assertThat(result.getOrThrow()).isFalse()
+        }
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    fun isAppFunctionEnabled_shouldReturnTrue_whenFunctionRegisteredAndEnabled() = doBlocking {
+        val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
+        setAppFunctionEnabled(
+            DynamicSchemaHelperApp.PACKAGE_NAME,
+            CONCAT_STRINGS_FUNCTION_ID,
+            AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
+        )
+        assertThat(service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())).isTrue()
+
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val result =
+                isAppFunctionEnabled(
+                    manager,
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    CONCAT_STRINGS_FUNCTION_ID,
+                )
+
+            assertThat(result.exceptionOrNull()).isNull()
+            assertThat(result.getOrThrow()).isTrue()
         }
     }
 
@@ -725,6 +830,29 @@ class AppFunctionRegistrationTest {
             }
         val binder: IBinder = serviceTestRule.bindService(serviceIntent)
         return ITestAppFunctionRegistrationService.Stub.asInterface(binder)
+    }
+
+    private fun setAppFunctionEnabled(
+        packageName: String,
+        functionId: String,
+        @AppFunctionManager.EnabledState enabledState: Int,
+    ) {
+        val enabledStateString =
+            when (enabledState) {
+                AppFunctionManager.APP_FUNCTION_STATE_DEFAULT -> "default"
+                AppFunctionManager.APP_FUNCTION_STATE_ENABLED -> "enable"
+                AppFunctionManager.APP_FUNCTION_STATE_DISABLED -> "disable"
+                else -> throw IllegalArgumentException("Unknown enable state: $enabledState")
+            }
+
+        assertThat(
+                ShellCommand.builder("cmd app_function set-enabled")
+                    .addOption("--package", packageName)
+                    .addOption("--function", functionId)
+                    .addOption("--state", enabledStateString)
+                    .execute()
+            )
+            .isEqualTo("App function enabled state updated successfully.\n")
     }
 
     private fun createConcatStringsRequest(

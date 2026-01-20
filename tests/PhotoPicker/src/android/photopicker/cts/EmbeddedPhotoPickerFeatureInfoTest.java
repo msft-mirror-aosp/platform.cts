@@ -28,11 +28,13 @@ import android.content.res.Configuration;
 import android.cts.photopicker.lib.PhotoPickerTestRule;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Parcel;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.MediaStore;
 import android.widget.photopicker.EmbeddedPhotoPickerFeatureInfo;
+import android.widget.photopicker.PhotoPickerSelectionParams;
 
 import androidx.annotation.ColorLong;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -457,6 +459,78 @@ public class EmbeddedPhotoPickerFeatureInfoTest {
                 IllegalArgumentException.class,
                 () -> builder.setThemeNightMode(invalidNightMode),
                 "Expected exception when setThemeNightMode is called with invalid value");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PHOTOPICKER_SELECTION_PARAMS_API)
+    public void testSetSelectionParams_default_returnsNull() {
+        final EmbeddedPhotoPickerFeatureInfo info =
+                new EmbeddedPhotoPickerFeatureInfo.Builder().build();
+
+        assertWithMessage("Expected default selection params to be null")
+                .that(info.getSelectionParams())
+                .isNull();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PHOTOPICKER_SELECTION_PARAMS_API)
+    public void testSetSelectionParams_withValidParams_returnsSetParams() {
+        PhotoPickerSelectionParams selectionParams =
+                new PhotoPickerSelectionParams.Builder().setMaxMediaItemSizeInBytes(1024L).build();
+        final EmbeddedPhotoPickerFeatureInfo info =
+                new EmbeddedPhotoPickerFeatureInfo.Builder()
+                        .setSelectionParams(selectionParams)
+                        .build();
+
+        assertWithMessage("Expected selection params to be set")
+                .that(info.getSelectionParams())
+                .isEqualTo(selectionParams);
+
+        Assert.assertNotNull(info.getSelectionParams());
+        assertWithMessage("Expected selection params max media item size to be preserved")
+                .that(info.getSelectionParams().getMaxMediaItemSizeInBytes())
+                .isEqualTo(1024L);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PHOTOPICKER_SELECTION_PARAMS_API)
+    public void testSetSelectionParams_withNull_returnsNull() {
+        PhotoPickerSelectionParams selectionParams =
+                new PhotoPickerSelectionParams.Builder().build();
+        final EmbeddedPhotoPickerFeatureInfo info =
+                new EmbeddedPhotoPickerFeatureInfo.Builder()
+                        .setSelectionParams(selectionParams) // Set initially
+                        .setSelectionParams(null) // Then clear
+                        .build();
+
+        assertWithMessage("Expected selection params to be null after clearing")
+                .that(info.getSelectionParams())
+                .isNull();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PHOTOPICKER_SELECTION_PARAMS_API)
+    public void testFeatureInfoParceling_withSelectionParams() {
+        PhotoPickerSelectionParams selectionParams =
+                new PhotoPickerSelectionParams.Builder().setMinVideoDurationInSeconds(10L).build();
+        EmbeddedPhotoPickerFeatureInfo original =
+                new EmbeddedPhotoPickerFeatureInfo.Builder()
+                        .setSelectionParams(selectionParams)
+                        .build();
+        Assert.assertNotNull(original.getSelectionParams());
+
+        Parcel parcel = Parcel.obtain();
+        original.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+
+        EmbeddedPhotoPickerFeatureInfo created =
+                EmbeddedPhotoPickerFeatureInfo.CREATOR.createFromParcel(parcel);
+        parcel.recycle();
+
+        Assert.assertNotNull(created.getSelectionParams());
+        assertWithMessage("Expected selection params to be preserved after parceling")
+                .that(created.getSelectionParams().getMinVideoDurationInSeconds())
+                .isEqualTo(original.getSelectionParams().getMinVideoDurationInSeconds());
     }
 
     private static <T extends Throwable> void assertThrows(

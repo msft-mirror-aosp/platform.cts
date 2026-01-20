@@ -51,7 +51,7 @@ public class EuiccProfileInfoTest {
 
     @Before
     public void setUp() throws Exception {
-        assumeTrue(EuiccUtil.hasEuiccFeature());
+        assumeTrue("Device does not have Euicc feature", EuiccUtil.hasEuiccFeature());
     }
 
     @Test

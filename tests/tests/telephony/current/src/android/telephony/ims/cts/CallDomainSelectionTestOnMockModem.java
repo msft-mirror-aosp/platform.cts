@@ -154,7 +154,7 @@ public class CallDomainSelectionTestOnMockModem extends ImsCallingBase {
 
     @Before
     public void setup() throws Exception {
-        assumeTrue(sMockModemManager != null);
+        assumeTrue("MockModemManager is null", sMockModemManager != null);
     }
 
     @AfterClass

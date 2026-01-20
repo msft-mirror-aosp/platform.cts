@@ -179,7 +179,7 @@ public class EuiccServiceTest {
 
     @Before
     public void setUp() throws Exception {
-        assumeTrue(EuiccUtil.hasEuiccFeature());
+        assumeTrue("Device does not have Euicc feature", EuiccUtil.hasEuiccFeature());
 
         mCallback = new MockEuiccServiceCallback();
         MockEuiccService.setCallback(mCallback);

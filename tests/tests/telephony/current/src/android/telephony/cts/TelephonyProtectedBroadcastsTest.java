@@ -27,7 +27,6 @@ import androidx.test.InstrumentationRegistry;
 import org.junit.Before;
 import org.junit.Test;
 
-
 public class TelephonyProtectedBroadcastsTest {
     private static final String[] BACKGROUND_BROADCASTS = new String[] {
             "android.intent.action.ACTION_DEFAULT_DATA_SUBSCRIPTION_CHANGED",
@@ -51,8 +50,11 @@ public class TelephonyProtectedBroadcastsTest {
 
     @Before
     public void setUp() throws Exception {
-        assumeTrue(getContext().getPackageManager()
-                .hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY",
+                getContext()
+                        .getPackageManager()
+                        .hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
     }
 
     @Test

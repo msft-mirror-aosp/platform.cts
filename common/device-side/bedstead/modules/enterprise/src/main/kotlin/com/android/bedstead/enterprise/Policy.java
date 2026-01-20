@@ -19,6 +19,7 @@ package com.android.bedstead.enterprise;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_AFFILIATED_PROFILE_OWNER;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_AFFILIATED_PROFILE_OWNER_PROFILE;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_AFFILIATED_PROFILE_OWNER_USER;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_DEVICE_CONTROLLER;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_DPM_ROLE_HOLDER;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_FINANCED_DEVICE_OWNER;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_USER_CONTROLLER;
@@ -43,6 +44,7 @@ import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.DO_NO
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.DO_NOT_APPLY_TO_POLICY_DOES_NOT_APPLY_TESTS;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.INHERITABLE;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.NO;
+import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnAdditionalUserWithDeviceControllerKt.includeRunOnAdditionalUserWithDeviceController;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnAffiliatedDeviceOwnerSecondaryUserKt.includeRunOnAffiliatedDeviceOwnerSecondaryUser;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnBackgroundDeviceOwnerUserKt.includeRunOnBackgroundDeviceOwnerUser;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideManagedProfileKt.includeRunOnCloneProfileAlongsideManagedProfile;
@@ -59,6 +61,7 @@ import static com.android.bedstead.enterprise.annotations.parameterized.IncludeR
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnPrivateProfileAlongsideOrganizationOwnedProfileUsingParentInstanceKt.includeRunOnPrivateProfileAlongsideOrganizationOwnedProfileUsingParentInstance;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSingleDeviceOwnerUserKt.includeRunOnSingleDeviceOwnerUser;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSystemDeviceOwnerUserKt.includeRunOnSystemDeviceOwnerUser;
+import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSystemUserWithDeviceControllerKt.includeRunOnSystemUserWithDeviceController;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnUnaffiliatedDeviceOwnerSecondaryUserKt.includeRunOnUnaffiliatedDeviceOwnerSecondaryUser;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnAdditionalUserWithInitialUserControllerKt.includeRunOnAdditionalUserWithInitialUserController;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnUserControllerKt.includeRunOnUserController;
@@ -210,6 +213,8 @@ public final class Policy {
                     // Multi-User Management states.
                     .put(APPLIED_BY_USER_CONTROLLER | APPLIES_TO_OWN_USER, singleAnnotation(includeRunOnUserController()))
                     .put(APPLIED_BY_USER_CONTROLLER | APPLIES_TO_UNAFFILIATED_OTHER_USERS, singleAnnotation(includeRunOnAdditionalUserWithInitialUserController()))
+                    .put(APPLIED_BY_DEVICE_CONTROLLER | APPLIES_TO_OWN_USER, singleAnnotation(includeRunOnSystemUserWithDeviceController()))
+                    .put(APPLIED_BY_DEVICE_CONTROLLER | APPLIES_TO_UNAFFILIATED_OTHER_USERS, singleAnnotation(includeRunOnAdditionalUserWithDeviceController()))
                     .build();
     // This must contain one key for every APPLIED_BY that is being used, and maps to the
     // "default" for testing that DPC type
@@ -235,6 +240,7 @@ public final class Policy {
                     .put(APPLIED_BY_PARENT_INSTANCE_OF_NON_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE, (flags, canSet) -> singleAnnotation(includeRunOnParentOfProfileOwnerUsingParentInstance()).apply(flags))
                     .put(APPLIED_BY_DPM_ROLE_HOLDER, (flags, canSet) -> singleAnnotation(includeRunOnDevicePolicyManagementRoleHolderUser()).apply(flags))
                     .put(APPLIED_BY_USER_CONTROLLER, (flags, canSet) -> userControllerIfCanSet().apply(flags, canSet))
+                    .put(APPLIED_BY_DEVICE_CONTROLLER, (flags, canSet) -> singleAnnotation(includeRunOnSystemUserWithDeviceController()).apply(flags))
                     .build();
 
     private static BiFunction<EnterprisePolicy, Boolean, Set<Annotation>> userControllerIfCanSet() {
@@ -265,7 +271,8 @@ public final class Policy {
                     | APPLIED_BY_PARENT_INSTANCE_OF_NON_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE
                     | APPLIED_BY_PARENT_INSTANCE_OF_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE
                     | APPLIED_BY_DPM_ROLE_HOLDER
-                    | APPLIED_BY_USER_CONTROLLER;
+                    | APPLIED_BY_USER_CONTROLLER
+                    | APPLIED_BY_DEVICE_CONTROLLER;
     private static final Map<Function<EnterprisePolicy, Set<Annotation>>, Set<Integer>>
             ANNOTATIONS_MAP = calculateAnnotationsMap(STATE_ANNOTATIONS);
 

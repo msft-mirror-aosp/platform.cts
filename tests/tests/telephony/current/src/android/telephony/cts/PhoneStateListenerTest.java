@@ -206,7 +206,9 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnServiceStateChanged() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         assertFalse(mOnServiceStateChangedCalled);
 
@@ -233,7 +235,9 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnUnRegisterFollowedByRegister() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         assertFalse(mOnServiceStateChangedCalled);
 
@@ -283,7 +287,9 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnSignalStrengthChanged() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         assertFalse(mOnSignalStrengthChangedCalled);
 
@@ -310,7 +316,9 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnSignalStrengthsChanged() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         assertTrue(mSignalStrength == null);
 
         mHandler.post(() -> {
@@ -385,7 +393,9 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnMessageWaitingIndicatorChanged() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_MESSAGING",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));
         assertFalse(mOnMessageWaitingIndicatorChangedCalled);
 
         mHandler.post(() -> {
@@ -412,7 +422,9 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnPreciseCallStateChanged() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
         assertThat(mOnPreciseCallStateChangedCalled).isFalse();
 
         mHandler.post(() -> {
@@ -444,7 +456,9 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnCallDisconnectCauseChanged() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
         assertThat(mOnCallDisconnectCauseChangedCalled).isFalse();
 
         mHandler.post(() -> {
@@ -473,7 +487,9 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnImsCallDisconnectCauseChanged() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_IMS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_IMS",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_IMS));
         assertThat(mOnImsCallDisconnectCauseChangedCalled).isFalse();
 
         mHandler.post(() -> {
@@ -503,7 +519,9 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnPhoneStateListenerExecutorWithSrvccChanged() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_IMS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_IMS",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_IMS));
         assertThat(mSrvccStateChangedCalled).isFalse();
 
         mHandler.post(() -> {
@@ -532,7 +550,9 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnRadioPowerStateChanged() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         assertThat(mOnRadioPowerStateChangedCalled).isFalse();
 
         mHandler.post(() -> {
@@ -562,7 +582,9 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnVoiceActivationStateChanged() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
         assertThat(mVoiceActivationStateChangedCalled).isFalse();
 
         mHandler.post(() -> {
@@ -594,7 +616,9 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnPreciseDataConnectionStateChanged() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_DATA",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
 
         assertThat(mOnCallDisconnectCauseChangedCalled).isFalse();
 
@@ -673,7 +697,9 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnCallForwardingIndicatorChanged() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
         assertFalse(mOnCallForwardingIndicatorChangedCalled);
 
         mHandler.post(() -> {
@@ -700,7 +726,9 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnCellLocationChanged() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         assertFalse(mOnCellLocationChangedCalled);
 
         mLocationHelper.enable();
@@ -727,7 +755,9 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnCallStateChanged() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
         assertFalse(mOnCallStateChangedCalled);
 
         mHandler.post(() -> {
@@ -753,7 +783,9 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnDataConnectionStateChanged() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_DATA",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
         assertFalse(mOnDataConnectionStateChangedCalled);
         assertFalse(mOnDataConnectionStateChangedWithNetworkTypeCalled);
 
@@ -797,7 +829,9 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnDataActivity() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_DATA",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
         assertFalse(mOnDataActivityCalled);
 
         mHandler.post(() -> {
@@ -823,7 +857,9 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnCellInfoChanged() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         assertFalse(mOnDataActivityCalled);
 
         mLocationHelper.enable();
@@ -850,7 +886,9 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnUserMobileDataStateChanged() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_DATA",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
         assertFalse(mOnUserMobileDataStateChanged);
 
         mHandler.post(() -> {
@@ -877,7 +915,9 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnOutgoingSmsEmergencyNumberChanged() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_MESSAGING",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));
         TelephonyUtils.addTestEmergencyNumber(
                 InstrumentationRegistry.getInstrumentation(), TEST_EMERGENCY_NUMBER);
         PollingCheck.waitFor(
@@ -930,7 +970,9 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnActiveDataSubscriptionIdChanged() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_SUBSCRIPTION",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         assertFalse(mOnActiveDataSubscriptionIdChanged);
 
         mHandler.post(() -> {

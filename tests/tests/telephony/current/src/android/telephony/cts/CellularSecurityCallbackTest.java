@@ -45,7 +45,6 @@ import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyManager;
 import android.telephony.mockmodem.MockModemManager;
 import android.util.ArraySet;
-import android.util.SparseArray;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.internal.telephony.flags.Flags;
@@ -55,8 +54,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -160,7 +157,9 @@ public class CellularSecurityCallbackTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SECURITY_ALGORITHMS_UPDATE_INDICATIONS)
     public void testOnSecurityAlgorithmsChangedListener() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         // Inserting a SIM is necessary otherwise mockmodem will crash
         assertTrue(sMockModemManager.insertSimCard(SLOT_ID_0, MOCK_SIM_PROFILE_ID_US_FI));
         // Timeout required after inserting a SIM to prevent the test from flakiness
@@ -210,7 +209,9 @@ public class CellularSecurityCallbackTest {
 
     @Test
     public void testOnCellularIdentifierDisclosedChangedListener() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         // Inserting a SIM is necessary otherwise mockmodem will crash
         assertTrue(sMockModemManager.insertSimCard(SLOT_ID_0, MOCK_SIM_PROFILE_ID_US_FI));
@@ -264,7 +265,9 @@ public class CellularSecurityCallbackTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_NETWORK_SECURITY_EVENT_INDICATIONS)
     public void testOnNetworkSecurityEventsListener() throws Throwable {
-        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         // Inserting a SIM is necessary otherwise mockmodem will crash
         assertTrue(sMockModemManager.insertSimCard(SLOT_ID_0, MOCK_SIM_PROFILE_ID_US_FI));
         // Timeout required after inserting a SIM to prevent the test from flakiness

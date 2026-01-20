@@ -81,8 +81,12 @@ public class NetworkSelectionModeTest {
         // Wait previously queued broadcasts to complete before starting the test
         AmUtils.waitForBroadcastBarrier();
 
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-        assumeTrue(mTelephonyManager.getPhoneType() == TelephonyManager.PHONE_TYPE_GSM);
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeTrue(
+                "Device does not have PHONE_TYPE_GSM",
+                mTelephonyManager.getPhoneType() == TelephonyManager.PHONE_TYPE_GSM);
     }
 
     @After

@@ -427,7 +427,6 @@ public class VirtualCameraCaptureTest {
     @Parameters(method = "getOutputPixelFormats")
     @TestCaseName("{method}_{params}")
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void captureImageWithFrameMetadata_withInput_succeeds(String format) {
         int outputPixelFormat = toFormat(format);
         VirtualCameraConfig.Builder configBuilder =
@@ -451,7 +450,6 @@ public class VirtualCameraCaptureTest {
     @Parameters(method = "getOutputPixelFormats")
     @TestCaseName("{method}_{params}")
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void captureImageWithFrameMetadata_withoutInput_fails(String format) {
         int outputPixelFormat = toFormat(format);
         VirtualCameraConfig.Builder virtualCameraConfigBuilder =
@@ -672,7 +670,6 @@ public class VirtualCameraCaptureTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void captureImageCharacteristicsFrameMetadata_withRequestAndResultMetadata_succeeds() {
         final int sensorWidth = 4032;
         final int sensorHeight = 3024;
@@ -706,7 +703,6 @@ public class VirtualCameraCaptureTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void captureImageWithFrameMetadata_withRequestAndResultMetadata_succeeds() {
         final int cropLeft = 100;
         final int cropTop = 200;

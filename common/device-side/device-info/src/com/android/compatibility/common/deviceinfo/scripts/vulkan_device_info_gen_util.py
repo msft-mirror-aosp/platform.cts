@@ -531,7 +531,6 @@ def emit_vk_features_properties(struct_type):
     for core in VK.VULKAN_CORES_AND_STRUCTS_MAPPING["versions"].keys():
         vulkan_versions.append(core.lstrip("Core"))
 
-    #print(len(vulkan_versions))
     for version in vulkan_versions[1:]:
         vulkan_code.append("\n")
         vulkan_code.append(INDENT*5 + "if (properties.getLong(KEY_API_VERSION) >= VK_API_VERSION_" + version[0] + "_"+ version[1]+") {")

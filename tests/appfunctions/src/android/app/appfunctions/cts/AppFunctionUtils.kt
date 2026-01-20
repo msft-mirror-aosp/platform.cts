@@ -41,6 +41,30 @@ import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.suspendCancellableCoroutine
 
 object AppFunctionUtils {
+    /** Checks if target AppFunction is enable or not. */
+    suspend fun isAppFunctionEnabled(
+        manager: AppFunctionManager,
+        packageName: String,
+        functionIdentifier: String,
+    ): Result<Boolean> {
+        return suspendCancellableCoroutine { cont ->
+            manager.isAppFunctionEnabled(
+                functionIdentifier,
+                packageName,
+                Runnable::run,
+                object : OutcomeReceiver<Boolean, Exception> {
+                    override fun onResult(isEnabled: Boolean) {
+                        cont.resume(Result.success(isEnabled))
+                    }
+
+                    override fun onError(error: Exception) {
+                        cont.resume(Result.failure(error))
+                    }
+                },
+            )
+        }
+    }
+
     /** Executes an app function and waits for the response. */
     suspend fun executeAppFunctionAndWait(
         manager: AppFunctionManager,

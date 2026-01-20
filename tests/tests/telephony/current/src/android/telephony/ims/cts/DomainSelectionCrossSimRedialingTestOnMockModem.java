@@ -238,10 +238,12 @@ public class DomainSelectionCrossSimRedialingTestOnMockModem extends ImsCallingB
 
     @Before
     public void beforeTest() throws Exception {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY));
-        assumeTrue(ImsUtils.shouldTestImsService());
-        assumeTrue(sModemCount > 1);
-        assumeTrue(sSupportDomainSelection);
+        assumeTrue(
+                "Device should have FEATURE_TELEPHONY",
+                hasFeature(PackageManager.FEATURE_TELEPHONY));
+        assumeTrue("No ImsService should be tested", ImsUtils.shouldTestImsService());
+        assumeTrue("Modem count should be grater than 1", sModemCount > 1);
+        assumeTrue("Device should support domain selection", sSupportDomainSelection);
 
         if (sMockModemManager != null) {
             unsolBarringInfoChanged(sTestSlot, false, false);

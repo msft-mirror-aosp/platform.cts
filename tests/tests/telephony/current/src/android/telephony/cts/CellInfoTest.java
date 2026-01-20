@@ -243,6 +243,7 @@ public class CellInfoTest {
     @Before
     public void setUp() throws Exception {
         assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
                 getContext()
                         .getPackageManager()
                         .hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
