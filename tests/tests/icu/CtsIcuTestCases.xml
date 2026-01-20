@@ -47,6 +47,7 @@
                 value="com.android.cts.core.runner.ExpectationBasedFilter" />
         <option name="core-expectation" value="/android/icu/cts/expectations/icu-known-failures.txt" />
         <option name="runtime-hint" value="18m" />
+        <option name="shell-timeout" value="1500000" /> <!-- 25 minutes -->
         <option name="include-annotation" value="android.icu.testsharding.MainTestShard" />
         <option name="hidden-api-checks" value="false"/>
     </test>
