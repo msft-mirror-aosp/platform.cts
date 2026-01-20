@@ -19,7 +19,6 @@ package android.server.biometrics.wallet;
 import android.app.Activity;
 import android.content.Intent;
 import android.hardware.biometrics.BiometricManager;
-import android.os.Bundle;
 import android.server.biometrics.util.WalletTestHelperConstants;
 
 import java.util.Map;
@@ -27,8 +26,8 @@ import java.util.Map;
 public class TestHelperActivity extends Activity {
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    protected void onResume() {
+        super.onResume();
         getBiometricSensorStrengthsAndBroadcastResults();
         finish();
     }
