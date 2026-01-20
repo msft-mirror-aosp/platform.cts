@@ -165,8 +165,7 @@ public class KeyFactoryTest {
                         KeyProperties.DIGEST_SHA224,
                         KeyProperties.DIGEST_SHA384,
                         KeyProperties.DIGEST_SHA512};
-                @KeyProperties.PurposeEnum int purposes =
-                        KeyProperties.PURPOSE_DECRYPT | KeyProperties.PURPOSE_SIGN;
+                int purposes = KeyProperties.PURPOSE_SIGN;
                 KeyPairGenerator keyGenerator =
                         KeyPairGenerator.getInstance(algorithm, EXPECTED_PROVIDER_NAME);
                 keyGenerator.initialize(new KeyGenParameterSpec.Builder("test1", purposes)
@@ -219,7 +218,9 @@ public class KeyFactoryTest {
             try {
                 KeyPairGenerator keyGenerator =
                         KeyPairGenerator.getInstance(algorithm, EXPECTED_PROVIDER_NAME);
-                keyGenerator.initialize(new KeyGenParameterSpec.Builder("test1", 0).build());
+                keyGenerator.initialize(
+                        new KeyGenParameterSpec.Builder("test1", KeyProperties.PURPOSE_SIGN)
+                                .build());
                 KeyPair keyPair = keyGenerator.generateKeyPair();
                 KeyFactory keyFactory = getKeyFactory(algorithm);
                 try {
@@ -251,7 +252,9 @@ public class KeyFactoryTest {
 
                 KeyPairGenerator keyGenerator =
                         KeyPairGenerator.getInstance(algorithm, EXPECTED_PROVIDER_NAME);
-                keyGenerator.initialize(new KeyGenParameterSpec.Builder("test1", 0).build());
+                keyGenerator.initialize(
+                        new KeyGenParameterSpec.Builder("test1", KeyProperties.PURPOSE_SIGN)
+                                .build());
                 KeyPair keyPair = keyGenerator.generateKeyPair();
 
                 KeyFactory keyFactory = getKeyFactory(algorithm);
@@ -272,7 +275,9 @@ public class KeyFactoryTest {
             try {
                 KeyPairGenerator keyGenerator =
                         KeyPairGenerator.getInstance(algorithm, EXPECTED_PROVIDER_NAME);
-                keyGenerator.initialize(new KeyGenParameterSpec.Builder("test1", 0).build());
+                keyGenerator.initialize(
+                        new KeyGenParameterSpec.Builder("test1", KeyProperties.PURPOSE_SIGN)
+                                .build());
                 KeyPair keyPair = keyGenerator.generateKeyPair();
                 KeyFactory keyFactory = getKeyFactory(algorithm);
                 try {
@@ -292,7 +297,9 @@ public class KeyFactoryTest {
             try {
                 KeyPairGenerator keyGenerator =
                         KeyPairGenerator.getInstance(algorithm, EXPECTED_PROVIDER_NAME);
-                keyGenerator.initialize(new KeyGenParameterSpec.Builder("test1", 0).build());
+                keyGenerator.initialize(
+                        new KeyGenParameterSpec.Builder("test1", KeyProperties.PURPOSE_SIGN)
+                                .build());
                 KeyPair keyPair = keyGenerator.generateKeyPair();
                 PublicKey publicKey = keyPair.getPublic();
 
@@ -313,7 +320,9 @@ public class KeyFactoryTest {
             try {
                 KeyPairGenerator keyGenerator =
                         KeyPairGenerator.getInstance(algorithm, EXPECTED_PROVIDER_NAME);
-                keyGenerator.initialize(new KeyGenParameterSpec.Builder("test1", 0).build());
+                keyGenerator.initialize(
+                        new KeyGenParameterSpec.Builder("test1", KeyProperties.PURPOSE_SIGN)
+                                .build());
                 KeyPair keyPair = keyGenerator.generateKeyPair();
                 PublicKey publicKey = keyPair.getPublic();
 
@@ -377,7 +386,9 @@ public class KeyFactoryTest {
             try {
                 KeyPairGenerator keyGenerator =
                         KeyPairGenerator.getInstance(algorithm, EXPECTED_PROVIDER_NAME);
-                keyGenerator.initialize(new KeyGenParameterSpec.Builder("test1", 0).build());
+                keyGenerator.initialize(
+                        new KeyGenParameterSpec.Builder("test1", KeyProperties.PURPOSE_SIGN)
+                                .build());
                 KeyPair keyPair = keyGenerator.generateKeyPair();
 
                 KeyFactory keyFactory = getKeyFactory(algorithm);
@@ -543,7 +554,9 @@ public class KeyFactoryTest {
             try {
                 KeyPairGenerator keyGenerator =
                         KeyPairGenerator.getInstance(algorithm, EXPECTED_PROVIDER_NAME);
-                keyGenerator.initialize(new KeyGenParameterSpec.Builder("test1", 0).build());
+                keyGenerator.initialize(
+                        new KeyGenParameterSpec.Builder("test1", KeyProperties.PURPOSE_SIGN)
+                                .build());
                 KeyPair keyPair = keyGenerator.generateKeyPair();
                 KeyInfo keyInfo = TestUtils.getKeyInfo(keyPair.getPrivate());
 
