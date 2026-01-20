@@ -239,7 +239,7 @@ class AppFunctionMetadataTest {
     @IncludeRunOnPrimaryUser
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
     fun installPackageWithAppFunction_runtimeMetadataVisible_withOnlyReadAppFunctionMetadataPermission() =
-        doBlockingWithPermissions(Manifest.permission.READ_APP_FUNCTION_METADATA) {
+        doBlockingWithPermissions(Manifest.permission.DISCOVER_APP_FUNCTIONS) {
             installPackage(TEST_APP_A_V2_PATH)
 
             retryAssert {
