@@ -19,12 +19,16 @@ package android.media.audio.cts;
 import static android.Manifest.permission.MODIFY_AUDIO_ROUTING;
 import static android.Manifest.permission.RECORD_AUDIO;
 import static android.media.AudioManager.AUDIO_SESSION_ID_GENERATE;
+import static android.media.audio.Flags.FLAG_DAP_INJECTION_STARVE_MANAGEMENT;
+import static android.media.audiopolicy.AudioMixingRule.MIX_ROLE_INJECTOR;
+import static android.media.audiopolicy.AudioMixingRule.RULE_MATCH_AUDIO_SESSION_ID;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.*;
 
 import android.media.AudioAttributes;
+import android.media.AudioDeviceInfo;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
@@ -34,6 +38,10 @@ import android.media.audiopolicy.AudioMix;
 import android.media.audiopolicy.AudioMixingRule;
 import android.media.audiopolicy.AudioPolicy;
 import android.os.Process;
+import android.os.SystemClock;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -51,6 +59,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -70,6 +79,9 @@ public class AudioPolicyInjectionTest {
     private static final int CAPTURE_TIME_MS = 1100;
     private static final int ZERO_READS_TO_FINISH_MS = 3000;
     private static final long DEFAULT_TIMEOUT_MS = 5000;
+    // longer than 3s
+    private static final long SLEEP_AUDIO_MIX_SILENCE_ON_STARVE_MS = 4000;
+    private static final long SLEEP_SHORT_TIMEOUT_MS = 500;
     private static final int FAKE_APPLICATION_UID = 1234;
 
     /**
@@ -115,6 +127,9 @@ public class AudioPolicyInjectionTest {
     public final PermissionUpdateBarrierRule mBarrierRule =
             new PermissionUpdateBarrierRule(
                     InstrumentationRegistry.getInstrumentation().getContext());
+
+    @Rule(order = 3)
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private AudioManager mAudioManager;
     private AudioPolicy mAudioPolicy;
@@ -213,8 +228,7 @@ public class AudioPolicyInjectionTest {
     @Test
     public void testInjectionForAudioSessionIdMatched() {
         int sessionId = mAudioManager.generateAudioSessionId();
-        setupInjectionWithMixRules(
-                MixRule.createRule(AudioMixingRule.RULE_MATCH_AUDIO_SESSION_ID, sessionId));
+        setupInjectionWithMixRules(MixRule.createRule(RULE_MATCH_AUDIO_SESSION_ID, sessionId));
         mVoiceRecord = buildAudioRecordForSessionId(sessionId);
 
         injectAndVerifyCapture(/* present= */ true);
@@ -227,8 +241,7 @@ public class AudioPolicyInjectionTest {
     @Test
     public void testInjectionForAudioSessionIdNotMatched() {
         int sessionId = mAudioManager.generateAudioSessionId();
-        setupInjectionWithMixRules(
-                MixRule.createRule(AudioMixingRule.RULE_MATCH_AUDIO_SESSION_ID, sessionId));
+        setupInjectionWithMixRules(MixRule.createRule(RULE_MATCH_AUDIO_SESSION_ID, sessionId));
         // Generate new unique session id for the record, so it won't match the session id
         // in the mix rule.
         mVoiceRecord = buildAudioRecordForSessionId(AUDIO_SESSION_ID_GENERATE);
@@ -292,6 +305,159 @@ public class AudioPolicyInjectionTest {
         injectAndVerifyCapture(/* present= */ false);
     }
 
+    /**
+     * Tests that a recording from a mix configured to inject silence on starve records silence even
+     * without a source AudioTrack.
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_DAP_INJECTION_STARVE_MANAGEMENT)
+    public void testInjectSilenceOnStarveNoSourceAudioTrack() {
+        int sessionId = mAudioManager.generateAudioSessionId();
+        setupInjectionWithMixRules(
+                true /* silenceOnStarve */,
+                MixRule.createRule(RULE_MATCH_AUDIO_SESSION_ID, sessionId));
+
+        verifySilenceRecording(sessionId);
+        // check also a second recording on the same mix
+        verifySilenceRecording(sessionId);
+    }
+
+    /**
+     * Tests that a recording from a mix configured to inject silence on starve records silence even
+     * with a source AudioTrack that underruns.
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_DAP_INJECTION_STARVE_MANAGEMENT)
+    public void testInjectSilenceOnStarveUnderrunSourceAudioTrack() {
+        int sessionId = mAudioManager.generateAudioSessionId();
+        setupInjectionWithMixRules(
+                true /* silenceOnStarve */,
+                MixRule.createRule(RULE_MATCH_AUDIO_SESSION_ID, sessionId));
+
+        mInjectionTrack.play();
+
+        verifySilenceRecording(sessionId);
+        // check also a second recording on the same mix
+        verifySilenceRecording(sessionId);
+    }
+
+    /**
+     * Tests that a recording from a mix configured to inject silence on starve records silence from
+     * a source AudioTrack that starts while the recording is in progress.
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_DAP_INJECTION_STARVE_MANAGEMENT)
+    public void testInjectSilenceOnStarveInProgressSourceAudioTrack() {
+        int sessionId = mAudioManager.generateAudioSessionId();
+        setupInjectionWithMixRules(
+                true /* silenceOnStarve */,
+                MixRule.createRule(RULE_MATCH_AUDIO_SESSION_ID, sessionId));
+
+        AudioRecord loopbackRecord = buildAudioRecordForSessionId(sessionId);
+
+        SilenceCapturingThread silenceThread = new SilenceCapturingThread(loopbackRecord);
+        silenceThread.start();
+
+        SystemClock.sleep(SLEEP_AUDIO_MIX_SILENCE_ON_STARVE_MS);
+        mInjectionTrack.play();
+
+        SystemClock.sleep(SLEEP_AUDIO_MIX_SILENCE_ON_STARVE_MS);
+        silenceThread.stopAndCheckSuccessfulRun();
+
+        loopbackRecord.release();
+    }
+
+    /**
+     * Tests that a recording from a mix configured to inject silence on starve records silence from
+     * a source AudioTrack that stops while the recording is in progress.
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_DAP_INJECTION_STARVE_MANAGEMENT)
+    public void testInjectSilenceOnStarveStopSourceAudioTrack() {
+        int sessionId = mAudioManager.generateAudioSessionId();
+        setupInjectionWithMixRules(
+                true /* silenceOnStarve */,
+                MixRule.createRule(RULE_MATCH_AUDIO_SESSION_ID, sessionId));
+
+        mInjectionTrack.play();
+
+        AudioRecord loopbackRecord = buildAudioRecordForSessionId(sessionId);
+        SilenceCapturingThread silenceThread = new SilenceCapturingThread(loopbackRecord);
+        silenceThread.start();
+
+        SystemClock.sleep(SLEEP_SHORT_TIMEOUT_MS);
+        mInjectionTrack.stop();
+        SystemClock.sleep(SLEEP_SHORT_TIMEOUT_MS);
+        mInjectionTrack.play();
+        SystemClock.sleep(SLEEP_SHORT_TIMEOUT_MS);
+        mInjectionTrack.stop();
+        mInjectionTrack.release();
+        mInjectionTrack = null;
+
+        SystemClock.sleep(SLEEP_AUDIO_MIX_SILENCE_ON_STARVE_MS);
+        silenceThread.stopAndCheckSuccessfulRun();
+
+        loopbackRecord.release();
+    }
+
+    /**
+     * Tests that multiple recordings from a mix configured to inject silence on starve record
+     * silence from a source AudioTrack that underruns.
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_DAP_INJECTION_STARVE_MANAGEMENT)
+    public void testInjectSilenceOnStarveMultipleRecordings() {
+        int sessionId = mAudioManager.generateAudioSessionId();
+        setupInjectionWithMixRules(
+                true /* silenceOnStarve */,
+                MixRule.createRule(RULE_MATCH_AUDIO_SESSION_ID, sessionId));
+
+        mInjectionTrack.play();
+
+        AudioRecord loopbackRecord = buildAudioRecordForSessionId(sessionId);
+        SilenceCapturingThread silenceThread = new SilenceCapturingThread(loopbackRecord);
+        silenceThread.start();
+
+        AudioRecord loopbackRecord2 = buildAudioRecordForSessionId(sessionId);
+        SilenceCapturingThread silenceThread2 = new SilenceCapturingThread(loopbackRecord2);
+        silenceThread2.start();
+
+        SystemClock.sleep(SLEEP_AUDIO_MIX_SILENCE_ON_STARVE_MS);
+        silenceThread.stopAndCheckSuccessfulRun();
+        silenceThread2.stopAndCheckSuccessfulRun();
+
+        loopbackRecord.release();
+        loopbackRecord2.release();
+    }
+
+    /** Tests regular capture from a mix with inject silence on starve. */
+    @Test
+    @RequiresFlagsEnabled(FLAG_DAP_INJECTION_STARVE_MANAGEMENT)
+    public void testInjectSilenceOnStarveRegularCapture() {
+        int sessionId = mAudioManager.generateAudioSessionId();
+        setupInjectionWithMixRules(
+                true /* silenceOnStarve */,
+                MixRule.createRule(RULE_MATCH_AUDIO_SESSION_ID, sessionId));
+
+        mVoiceRecord = buildAudioRecordForSessionId(sessionId);
+
+        injectAndVerifyCapture(/* present= */ true);
+    }
+
+    private void verifySilenceRecording(int sessionId) {
+        AudioRecord loopbackRecord = buildAudioRecordForSessionId(sessionId);
+
+        SilenceCapturingThread silenceThread = new SilenceCapturingThread(loopbackRecord);
+        silenceThread.start();
+
+        // wait for a longer than the 3s standard delay for the injection track standby
+        // and check if recording in still running
+        SystemClock.sleep(SLEEP_AUDIO_MIX_SILENCE_ON_STARVE_MS);
+        silenceThread.stopAndCheckSuccessfulRun();
+
+        loopbackRecord.release();
+    }
+
     private static AudioRecord buildAudioRecordForSource(int source) {
         AudioRecord record =
                 new AudioRecord.Builder()
@@ -315,16 +481,27 @@ public class AudioPolicyInjectionTest {
     }
 
     private void setupInjectionWithMixRules(MixRule... mixRules) {
+        setupInjectionWithMixRules(false, mixRules);
+    }
+
+    private void setupInjectionWithMixRules(boolean silenceOnStarve, MixRule... mixRules) {
         AudioMixingRule.Builder mixingRuleBuilder =
-                new AudioMixingRule.Builder().setTargetMixRole(AudioMixingRule.MIX_ROLE_INJECTOR);
+                new AudioMixingRule.Builder().setTargetMixRole(MIX_ROLE_INJECTOR);
         for (MixRule mixRule : mixRules) {
             mixRule.addToMixingRuleBuilder(mixingRuleBuilder);
         }
-        AudioMix audioMix =
+        AudioMix.Builder audioMixBuilder =
                 new AudioMix.Builder(mixingRuleBuilder.build())
                         .setFormat(FORMAT_VOICE_INJECTION)
-                        .setRouteFlags(AudioMix.ROUTE_FLAG_LOOP_BACK)
-                        .build();
+                        .setRouteFlags(AudioMix.ROUTE_FLAG_LOOP_BACK);
+
+        if (silenceOnStarve) {
+            Log.i(TAG, "Set silence injection on starvation for the AudioMix");
+            audioMixBuilder.setInjectSilenceOnStarvation(true);
+        }
+
+        AudioMix audioMix = audioMixBuilder.build();
+
         mAudioPolicy =
                 new AudioPolicy.Builder(ApplicationProvider.getApplicationContext())
                         .addMix(audioMix)
@@ -739,6 +916,98 @@ public class AudioPolicyInjectionTest {
                 }
             }
             return false;
+        }
+    }
+
+    private static class SilenceCapturingThread extends Thread {
+        private final AudioRecord mAudioRecord;
+        private final int mReadBufferSize;
+        private volatile Exception mException;
+        private volatile boolean mQuit = false;
+        private final Semaphore mQuitWait = new Semaphore(0);
+
+        SilenceCapturingThread(AudioRecord record) {
+            super();
+            mAudioRecord = record;
+            mReadBufferSize =
+                    AudioPolicyInjectionTest.computeNumSamples(
+                            READ_BUFFER_SIZE_MS,
+                            mAudioRecord.getSampleRate(),
+                            mAudioRecord.getChannelCount());
+        }
+
+        synchronized void stopAndCheckSuccessfulRun() {
+            mQuit = true;
+            try {
+                mQuitWait.tryAcquire(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                // ignore
+            }
+
+            if (mException != null) {
+                Log.e(TAG, "SilenceCapturingThread failed", mException);
+                fail(mException.getMessage());
+            }
+        }
+
+        @Override
+        public void run() {
+            mAudioRecord.startRecording();
+            assertEquals(
+                    "AudioRecord is not recording (silence)",
+                    AudioRecord.RECORDSTATE_RECORDING,
+                    mAudioRecord.getRecordingState());
+
+            short[] readBuffer = new short[mReadBufferSize];
+            while (!mQuit) {
+                // keep reading silent buffers
+                int read = mAudioRecord.read(readBuffer, 0, mReadBufferSize);
+
+                if (read < 0) {
+                    mException = new Exception("Silence read returned " + read);
+                    break;
+                }
+
+                if (read == 0) {
+                    mException = new Exception("Silence read returned no data");
+                    break;
+                }
+
+                if (!isSilentBuffer(readBuffer)) {
+                    Log.w(TAG, "Read non silence data: " + Arrays.toString(readBuffer));
+                    mException = new Exception("Read NON silence data returned " + read);
+                    break;
+                }
+
+                // silence recording is expected only from the remote submix device
+                if (mAudioRecord.getRoutedDevice() == null
+                        || mAudioRecord.getRoutedDevice().getType()
+                                != AudioDeviceInfo.TYPE_REMOTE_SUBMIX) {
+                    mException = new Exception("Silence read from unexpected source.");
+                    break;
+                }
+            }
+
+            try {
+                mAudioRecord.stop();
+            } catch (Exception e) {
+                if (mException == null) {
+                    mException = e;
+                } else {
+                    Log.w(TAG, "Error stopping silence audio record: ", e);
+                }
+            }
+
+            mQuitWait.release();
+        }
+
+        private static boolean isSilentBuffer(short[] data) {
+            for (int i = 0; i < data.length; i++) {
+                if (data[i] != 0) {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 }
