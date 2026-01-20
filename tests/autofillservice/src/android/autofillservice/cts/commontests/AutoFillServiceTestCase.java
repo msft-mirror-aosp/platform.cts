@@ -33,6 +33,7 @@ import android.autofillservice.cts.R;
 import android.autofillservice.cts.activities.AbstractAutoFillActivity;
 import android.autofillservice.cts.activities.AugmentedAuthActivity;
 import android.autofillservice.cts.activities.AuthenticationActivity;
+import android.autofillservice.cts.activities.CustomPasswordViewLoginActivity;
 import android.autofillservice.cts.activities.LoginActivity;
 import android.autofillservice.cts.activities.LoginImportantForCredentialManagerActivity;
 import android.autofillservice.cts.activities.LoginMixedImportantForCredentialManagerActivity;
@@ -215,6 +216,17 @@ public final class AutoFillServiceTestCase {
             mContext.startActivity(intent);
             mUiBot.assertShownByRelativeId(PreSimpleSaveActivity.ID_PRE_LABEL);
             return PreSimpleSaveActivity.getInstance();
+        }
+
+        protected CustomPasswordViewLoginActivity startCustomPasswordViewLoginActivity()
+                throws Exception {
+            final Intent intent =
+                    new Intent(mContext, CustomPasswordViewLoginActivity.class)
+                            .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            mContext.startActivity(intent);
+            mUiBot.waitForIdleSync();
+            mUiBot.assertShownByRelativeId(Helper.ID_USERNAME_LABEL);
+            return CustomPasswordViewLoginActivity.getCurrentActivity();
         }
 
         protected LoginActivity startLoginActivity() throws Exception {
