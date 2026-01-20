@@ -16,6 +16,8 @@
 
 package android.server.wm.display;
 
+import static android.app.WindowConfiguration.WINDOWING_MODE_UNDEFINED;
+import static android.server.wm.WindowManagerState.STATE_STOPPED;
 import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.WindowManager.LayoutParams.TYPE_PRIVATE_PRESENTATION;
 
@@ -115,6 +117,26 @@ public class PresentationTest extends MultiDisplayTestBase {
         final WindowManagerState.DisplayContent presentationDisplay = createPresentationDisplay();
         launchPresentationActivity(displayForActivity.mId, presentationDisplay.mId);
         waitAndAssertPesentationOnDisplayAndMatchesDisplayMetrics(presentationDisplay.mId);
+    }
+
+    /** Asserts that a presentation occludes another activity behind it. */
+    @ApiTest(apis = {"android.app.Presentation#show"})
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ENABLE_PRESENTATION_FOR_CONNECTED_DISPLAYS,
+        Flags.FLAG_ENABLE_PRESENTATION_STOPS_TOP_TASK_BUGFIX
+    })
+    @Test
+    public void testPresentationOccludesOtherActivitiesBehind() {
+        final WindowManagerState.DisplayContent displayForActivity = createDisplayForActivity();
+        final WindowManagerState.DisplayContent presentationDisplay = createPresentationDisplay();
+
+        launchActivityOnDisplay(
+                Components.TEST_ACTIVITY, WINDOWING_MODE_UNDEFINED, presentationDisplay.mId);
+        launchPresentationActivity(displayForActivity.mId, presentationDisplay.mId);
+
+        waitAndAssertPesentationOnDisplayAndMatchesDisplayMetrics(presentationDisplay.mId);
+        assertTrue(mWmState.waitForActivityState(Components.TEST_ACTIVITY, STATE_STOPPED));
+        mWmState.waitAndAssertVisibilityGone(Components.TEST_ACTIVITY);
     }
 
     /**
