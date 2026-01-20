@@ -303,8 +303,8 @@ public class VirtualCameraCaptureHelper {
             CaptureRequest.Builder request = cameraDevice.createCaptureRequest(
                     CameraDevice.TEMPLATE_PREVIEW);
             config.mRequestBuilderModifier.accept(request);
-            CountDownLatch imageReaderLatch =
-                    new CountDownLatch(config.mImageCount * readers.size());
+            CountDownLatch imageReaderLatch = new CountDownLatch(
+                    config.mImageCount * readers.size());
             for (int i = 0; i < readers.size(); i++) {
                 ImageReader reader = readers.get(i);
                 request.addTarget(reader.getSurface());
@@ -497,6 +497,13 @@ public class VirtualCameraCaptureHelper {
         };
     }
 
+    /**
+     * Returns a {@link Mock} of {@link CaptureCallback}
+     */
+    public CaptureCallback getCaptureCallback() {
+        return mCaptureCallback;
+    }
+
     /** Returns a {@link Mock} of {@link VirtualCameraCallback} */
     public TestVirtualCameraCallback getVirtualCameraCallback() {
         return mVirtualCameraCallback;
@@ -547,7 +554,8 @@ public class VirtualCameraCaptureHelper {
         private int mImageCount = 1;
         public boolean mFailOnCaptureError = true;
         private boolean mVerifyCaptureComplete = true;
-        private Consumer<Surface> mInputSurfaceConsumer = (surface) -> {};
+        private Consumer<Surface> mInputSurfaceConsumer = (surface) -> {
+        };
         private Consumer<CaptureRequest.Builder> mRequestBuilderModifier = (request) -> {
         };
         private final List<CaptureFormat> mOutputConfigurations = new ArrayList<>();
@@ -556,8 +564,8 @@ public class VirtualCameraCaptureHelper {
 
         /**
          * Set the number of image to capture
-         *
-         * <p>Default is 1.
+         * <p>
+         * Default is 1.
          */
         public CaptureConfiguration setImageCount(int imageCount) {
             mImageCount = imageCount;
@@ -594,8 +602,8 @@ public class VirtualCameraCaptureHelper {
 
         /**
          * Set a consumer to write onto the input surface of the {@link VirtualCamera}
-         *
-         * <p>Default is no-op.
+         * <p>
+         * Default is no-op.
          */
         public CaptureConfiguration setInputSurfaceConsumer(
                 Consumer<Surface> inputSurfaceConsumer) {
