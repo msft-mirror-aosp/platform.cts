@@ -75,6 +75,9 @@ class JcaJpegRImageParityClassTest(its_base_test.ItsBaseTest):
         uiautomator.ANDROID_SERVICE_NAME, uiautomator.UiAutomatorService
     )
     gen2_rig_controller_utils.get_usb_devices_connected()
+    self.dut.adb.shell(['input', 'keyevent', 'KEYCODE_WAKEUP'])
+    time.sleep(its_base_test.TABLET_CMD_DELAY_SEC)
+    self.dut.adb.shell('svc power stayon usb')
     # start screen recording
     def start_screen_recording():
       self.dut.adb.shell(f'screenrecord {_SCREEN_RECORDING_PATH}')
