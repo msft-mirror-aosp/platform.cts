@@ -505,6 +505,88 @@ public class AccessibilityEventTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_RESTRICT_VIEWGROUP_ACCESSIBILITY_EVENT_POPULATION)
+    public void testViewGroupDispatchAccessibilityEvent_childPopulatesByDefault() throws Throwable {
+        final CassowaryView childView = new CassowaryView(mParentView.getContext());
+        sInstrumentation.runOnMainSync(
+                () -> {
+                    childView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+                    mParentView.addView(childView, 0);
+                });
+        sUiAutomation.waitForIdle(IDLE_TIMEOUT_MS, DEFAULT_TIMEOUT_MS);
+
+        sendEventFromParentAndAssertOnChildPresence(/* shouldBePresent= */ true);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_RESTRICT_VIEWGROUP_ACCESSIBILITY_EVENT_POPULATION)
+    public void testViewGroupDispatchAccessibilityEvent_childIsImportantForA11yNo_doesNotPopulate()
+            throws Throwable {
+        final CassowaryView childView = new CassowaryView(mParentView.getContext());
+        sInstrumentation.runOnMainSync(
+                () -> {
+                    childView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+                    mParentView.addView(childView, 0);
+                });
+        sUiAutomation.waitForIdle(IDLE_TIMEOUT_MS, DEFAULT_TIMEOUT_MS);
+
+        sendEventFromParentAndAssertOnChildPresence(/* shouldBePresent= */ false);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_RESTRICT_VIEWGROUP_ACCESSIBILITY_EVENT_POPULATION)
+    public void testViewGroupDispatchAccessibilityEvent_childIsA11yDataSensitive_doesNotPopulate()
+            throws Throwable {
+        final CassowaryView childView = new CassowaryView(mParentView.getContext());
+        sInstrumentation.runOnMainSync(
+                () -> {
+                    childView.setAccessibilityDataSensitive(View.ACCESSIBILITY_DATA_SENSITIVE_YES);
+                    mParentView.addView(childView, 0);
+                });
+        sUiAutomation.waitForIdle(IDLE_TIMEOUT_MS, DEFAULT_TIMEOUT_MS);
+
+        sendEventFromParentAndAssertOnChildPresence(/* shouldBePresent= */ false);
+    }
+
+    private void sendEventFromParentAndAssertOnChildPresence(boolean shouldBePresent)
+            throws TimeoutException {
+        final Runnable sendFocusEventAction =
+                () ->
+                        sInstrumentation.runOnMainSync(
+                                () ->
+                                        mParentView.sendAccessibilityEvent(
+                                                AccessibilityEvent
+                                                        .TYPE_VIEW_ACCESSIBILITY_FOCUSED));
+
+        final UiAutomation.AccessibilityEventFilter childDescriptionFilter =
+                event ->
+                        event.getEventType() == AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED
+                                && event.getText().stream()
+                                        .anyMatch(
+                                                s ->
+                                                        s.toString()
+                                                                .contains(
+                                                                        CassowaryView.DESCRIPTION));
+
+        if (shouldBePresent) {
+            // Assert that an event with the child's description is received.
+            AccessibilityEvent event =
+                    sUiAutomation.executeAndWaitForEvent(
+                            sendFocusEventAction, childDescriptionFilter, DEFAULT_TIMEOUT_MS);
+            assertThat(event).isNotNull();
+        } else {
+            // Assert that an event with the child's description is NOT received (times out).
+            assertThrows(
+                    TimeoutException.class,
+                    () ->
+                            sUiAutomation.executeAndWaitForEvent(
+                                    sendFocusEventAction,
+                                    childDescriptionFilter,
+                                    DEFAULT_TIMEOUT_MS));
+        }
+    }
+
+    @Test
     public void testStateEvent() throws Throwable {
         sUiAutomation.executeAndWaitForEvent(
                 () -> {
@@ -579,6 +661,39 @@ public class AccessibilityEventTest {
         }
     }
     ;
+
+    /*
+     * A very pro-Cassowary view, at least in terms of how it represents itself throughout the
+     * dispatch of AccessibilityEvents.
+     */
+    private static class CassowaryView extends View {
+        static final String DESCRIPTION = "Cassowary";
+
+        CassowaryView(Context context) {
+            super(context);
+            setContentDescription("contentDescription " + DESCRIPTION);
+            setStateDescription("stateDescription " + DESCRIPTION);
+            setSupplementalDescription("supplementalDescription " + DESCRIPTION);
+        }
+
+        @Override
+        public void onInitializeAccessibilityEvent(AccessibilityEvent event) {
+            super.onInitializeAccessibilityEvent(event);
+            event.getText().add("onInitializeAccessibilityEvent " + DESCRIPTION);
+        }
+
+        @Override
+        public void onPopulateAccessibilityEvent(AccessibilityEvent event) {
+            super.onPopulateAccessibilityEvent(event);
+            event.getText().add("onPopulateAccessibilityEvent " + DESCRIPTION);
+        }
+
+        @Override
+        public boolean dispatchPopulateAccessibilityEvent(AccessibilityEvent event) {
+            event.getText().add("dispatchPopulateAccessibilityEvent " + DESCRIPTION);
+            return super.dispatchPopulateAccessibilityEvent(event);
+        }
+    }
 
     private abstract class AccessibilityEventFilter
             implements UiAutomation.AccessibilityEventFilter {
