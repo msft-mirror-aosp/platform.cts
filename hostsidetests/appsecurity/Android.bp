@@ -109,9 +109,11 @@ java_test_host {
         "src/**/ApexSignatureVerificationTest.java",
         "src/**/AppSecurityTests.java",
         "src/**/DeviceIdentifierTest.java",
+        "src/**/HybridSignatureVerificationTest.java",
         "src/**/KeySetHostTest.java",
         "src/**/KeyStoreManagerTest.java",
         "src/**/ListeningPortsTest.java",
+        "src/**/PackageInstallTestUtils.java",
         "src/**/PkgInstallSignatureVerificationTest.java",
         "src/**/StatsdAppSecurityAtomTest.java",
         "src/**/RoleSecurityTest.java",
@@ -144,6 +146,8 @@ java_test_host {
         ":CtsDeclarePermissions_WithSpaces",
         // DeviceIdentifierTest
         ":CtsAccessDeviceIdentifiers",
+        // HybridSignatureVerificationTest
+        ":CtsV32HybridSigningSchemeTest",
         // KeySetHostTest
         ":CtsKeySetPermDefSigningA",
         ":CtsKeySetPermDefSigningB",

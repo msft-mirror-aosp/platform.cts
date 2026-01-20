@@ -16,8 +16,14 @@
 
 package android.appsecurity.cts;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static android.appsecurity.cts.PackageInstallTestUtils.assertInstallOnDeviceFails;
+import static android.appsecurity.cts.PackageInstallTestUtils.assertInstallOnDeviceFromBuildFails;
+import static android.appsecurity.cts.PackageInstallTestUtils.assertInstallOnDeviceFromBuildSucceeds;
+import static android.appsecurity.cts.PackageInstallTestUtils.assertInstallOnDeviceSucceeds;
+import static android.appsecurity.cts.PackageInstallTestUtils.cleanUpFile;
+import static android.appsecurity.cts.PackageInstallTestUtils.getFileFromResource;
+import static android.appsecurity.cts.PackageInstallTestUtils.installPackageFromResourceOnDevice;
+
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
@@ -32,7 +38,6 @@ import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.compatibility.common.util.CddTest;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.testtype.junit4.DeviceParameterizedRunner;
-import com.android.tradefed.util.FileUtil;
 
 import junitparams.Parameters;
 
@@ -42,12 +47,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -1416,7 +1417,7 @@ public class PkgInstallSignatureVerificationTest extends BaseAppSecurityTest {
         // An app targeting SDK version >= 30 must have at least a V2 signature; this test verifies
         // that an app targeting SDK version 30 with both a V1 and V2 signature installs
         // successfully.
-        installApkFromBuild("v1v2-ec-p256-two-signers-targetSdk-30.apk");
+        assertInstallFromBuildSucceeds("v1v2-ec-p256-two-signers-targetSdk-30.apk");
     }
 
     @Test
@@ -1883,14 +1884,12 @@ public class PkgInstallSignatureVerificationTest extends BaseAppSecurityTest {
     }
 
     private void assertInstallSucceeds(String apkFilenameInResources) throws Exception {
-        String installResult = installPackageFromResource(apkFilenameInResources);
-        if (installResult != null) {
-            fail("Failed to install " + apkFilenameInResources + ": " + installResult);
-        }
+        assertInstallOnDeviceSucceeds(apkFilenameInResources, getDevice());
     }
 
     private void assertInstallEphemeralSucceeds(String apkFilenameInResources) throws Exception {
-        String installResult = installEphemeralPackageFromResource(apkFilenameInResources);
+        String installResult =
+                installPackageFromResourceOnDevice(apkFilenameInResources, true, getDevice());
         if (installResult != null) {
             fail("Failed to install " + apkFilenameInResources + ": " + installResult);
         }
@@ -1901,7 +1900,8 @@ public class PkgInstallSignatureVerificationTest extends BaseAppSecurityTest {
         for (String arg : args) {
             String apkFilenameInResources =
                     String.format(Locale.US, apkFilenamePatternInResources, arg);
-            String installResult = installPackageFromResource(apkFilenameInResources);
+            String installResult =
+                    installPackageFromResourceOnDevice(apkFilenameInResources, false, getDevice());
             if (installResult != null) {
                 fail("Failed to install " + apkFilenameInResources + ": " + installResult);
             }
@@ -1954,7 +1954,8 @@ public class PkgInstallSignatureVerificationTest extends BaseAppSecurityTest {
 
     private void assertInstallFailsWithError(
             String apkFilenameInResources, String errorSubstring) throws Exception {
-        String installResult = installPackageFromResource(apkFilenameInResources);
+        String installResult =
+                installPackageFromResourceOnDevice(apkFilenameInResources, false, getDevice());
         if (installResult == null) {
             fail("Install of " + apkFilenameInResources + " succeeded but was expected to fail"
                     + " with \"" + errorSubstring + "\"");
@@ -1967,7 +1968,8 @@ public class PkgInstallSignatureVerificationTest extends BaseAppSecurityTest {
 
     private void assertInstallEphemeralFailsWithError(
             String apkFilenameInResources, String errorSubstring) throws Exception {
-        String installResult = installEphemeralPackageFromResource(apkFilenameInResources);
+        String installResult =
+                installPackageFromResourceOnDevice(apkFilenameInResources, true, getDevice());
         if (installResult == null) {
             fail("Install of " + apkFilenameInResources + " succeeded but was expected to fail"
                     + " with \"" + errorSubstring + "\"");
@@ -1979,10 +1981,7 @@ public class PkgInstallSignatureVerificationTest extends BaseAppSecurityTest {
     }
 
     private void assertInstallFails(String apkFilenameInResources) throws Exception {
-        String installResult = installPackageFromResource(apkFilenameInResources);
-        if (installResult == null) {
-            fail("Install of " + apkFilenameInResources + " succeeded but was expected to fail");
-        }
+        assertInstallOnDeviceFails(apkFilenameInResources, getDevice());
     }
 
     private static void assertContains(String message, String expectedSubstring, String actual) {
@@ -2001,54 +2000,11 @@ public class PkgInstallSignatureVerificationTest extends BaseAppSecurityTest {
     }
 
     private void assertInstallFromBuildSucceeds(String apkName) throws Exception {
-        String result = installApkFromBuild(apkName);
-        assertNull("failed to install " + apkName + ", Reason: " + result, result);
+        assertInstallOnDeviceFromBuildSucceeds(apkName, getDevice(), getBuild());
     }
 
     private void assertInstallFromBuildFails(String apkName) throws Exception {
-        String result = installApkFromBuild(apkName);
-        assertNotNull("Successfully installed " + apkName + " when failure was expected", result);
-    }
-
-    private String installApkFromBuild(String apkName) throws Exception {
-        CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(getBuild());
-        File apk = buildHelper.getTestFile(apkName);
-        try {
-            return getDevice().installPackage(apk, true, INSTALL_ARG_FORCE_QUERYABLE,
-                    INSTALL_ARG_BYPASS_LOW_TARGET_SDK_BLOCK);
-        } finally {
-            getDevice().deleteFile("/data/local/tmp/" + apk.getName());
-        }
-    }
-
-    private String installPackageFromResource(String apkFilenameInResources, boolean ephemeral)
-            throws IOException, DeviceNotAvailableException {
-        // ITestDevice.installPackage API requires the APK to be install to be a File. We thus
-        // copy the requested resource into a temporary file, attempt to install it, and delete the
-        // file during cleanup.
-        File apkFile = null;
-        try {
-            apkFile = getFileFromResource(apkFilenameInResources);
-            if (ephemeral) {
-                return getDevice()
-                        .adbInstallPackage(
-                                apkFile,
-                                true,
-                                "--ephemeral",
-                                INSTALL_ARG_FORCE_QUERYABLE,
-                                INSTALL_ARG_BYPASS_LOW_TARGET_SDK_BLOCK);
-            } else {
-                return getDevice()
-                        .adbInstallPackage(
-                                apkFile,
-                                true,
-                                INSTALL_ARG_FORCE_QUERYABLE,
-                                INSTALL_ARG_BYPASS_LOW_TARGET_SDK_BLOCK);
-            }
-        } finally {
-            cleanUpFile(apkFile);
-            getDevice().deleteFile("/data/local/tmp/" + apkFile.getName());
-        }
+        assertInstallOnDeviceFromBuildFails(apkName, getDevice(), getBuild());
     }
 
     private String installV4PackageFromResource(String apkFilenameInResources)
@@ -2105,46 +2061,6 @@ public class PkgInstallSignatureVerificationTest extends BaseAppSecurityTest {
             .forceQueryable()
             .addRemoteFile(remoteApkPath)
             .runForResult();
-    }
-
-    private File getFileFromResource(String filenameInResources)
-            throws IOException, IllegalArgumentException {
-        String fullResourceName = TEST_APK_RESOURCE_PREFIX + filenameInResources;
-        File tempDir = FileUtil.createTempDir("pkginstalltest");
-        File file = new File(tempDir, filenameInResources);
-        InputStream in = getClass().getResourceAsStream(fullResourceName);
-        if (in == null) {
-            throw new IllegalArgumentException("Resource not found: " + fullResourceName);
-        }
-        OutputStream out = new BufferedOutputStream(new FileOutputStream(file));
-        byte[] buf = new byte[65536];
-        int chunkSize;
-        while ((chunkSize = in.read(buf)) != -1) {
-            out.write(buf, 0, chunkSize);
-        }
-        out.close();
-        return file;
-    }
-
-    private void cleanUpFile(File file) {
-        if (file != null && file.exists()) {
-            file.delete();
-            // Delete the parent dir as well which is a temp dir
-            File parent = file.getParentFile();
-            if (parent.exists()) {
-                parent.delete();
-            }
-        }
-    }
-
-    private String installPackageFromResource(String apkFilenameInResources)
-            throws IOException, DeviceNotAvailableException {
-        return installPackageFromResource(apkFilenameInResources, false);
-    }
-
-    private String installEphemeralPackageFromResource(String apkFilenameInResources)
-            throws IOException, DeviceNotAvailableException {
-        return installPackageFromResource(apkFilenameInResources, true);
     }
 
     private String uninstallPackage() throws DeviceNotAvailableException {

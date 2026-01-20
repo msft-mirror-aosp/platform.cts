@@ -3,6 +3,7 @@
 # Bug component: 36137 = per-file BaseInstallMultiple.java
 # Bug component: 568761 = per-file CorruptApkTests.java
 # Bug component: 36137 = per-file EphemeralTest.java
+# Bug component: 36824 = per-file HybridSignatureVerificationTest.java
 # Bug component: 36137 = per-file InstantAppUserTest.java
 # Bug component: 36137 = per-file InstantCookieHostTest.java
 # Bug component: 36137 = per-file IsolatedSplitsTests.java
@@ -46,9 +47,11 @@ per-file UseEmbeddedDexTest.java = victorhsieh@google.com
 per-file AccessSerialNumberTest.java = mpgroover@google.com
 per-file AppSecurityTests.java = mpgroover@google.com
 per-file DeviceIdentifierTest.java = mpgroover@google.com
+per-file HybridSignatureVerificationTest.java = mpgroover@google.com
 per-file KeySetHostTest.java = mpgroover@google.com
 per-file KeyStoreManagerTest.java = mpgroover@google.com
 per-file ListeningPortsTest.java = mpgroover@google.com
+per-file PackageInstallTestUtils.java = mpgroover@google.com
 per-file PkgInstallSignatureVerificationTest.java = mpgroover@google.com
 per-file StatsdAppSecurityAtomTest.java = yaochen@google.com
 
