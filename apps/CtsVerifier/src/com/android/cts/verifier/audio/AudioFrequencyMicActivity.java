@@ -43,9 +43,10 @@ import com.android.cts.verifier.audio.wavelib.DspWindow;
 import com.android.cts.verifier.audio.wavelib.PipeShort;
 import com.android.cts.verifier.audio.wavelib.VectorAverage;
 
-import java.util.Arrays;
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import java.util.Arrays;
 
 /**
  * Tests Audio built in Microphone response using external speakers and USB reference microphone.
@@ -686,6 +687,10 @@ public class AudioFrequencyMicActivity extends AudioFrequencyActivity implements
      */
     private static final String SECTION_AUDIOFREQUENCYMIC =
             "audio_frequency_mic";
+
+    private static final String KEY_BAND_SPECS = "band_specs";
+    private static final String KEY_BASE_BAND_SPECS = "base_band_specs";
+
     @Override
     public final String getReportSectionName() {
         return setTestNameSuffix(sCurrentDisplayMode, SECTION_AUDIOFREQUENCYMIC);
@@ -716,6 +721,8 @@ public class AudioFrequencyMicActivity extends AudioFrequencyActivity implements
 
     @Override // PassFailButtons
     public void recordTestResults() {
+        recordBandSpecs(KEY_BAND_SPECS, bandSpecsArray);
+        recordBandSpecs(KEY_BASE_BAND_SPECS, baseBandSpecsArray);
         getReportLog().submit();
     }
 
