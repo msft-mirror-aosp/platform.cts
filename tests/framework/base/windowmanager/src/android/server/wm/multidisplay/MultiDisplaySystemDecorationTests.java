@@ -35,7 +35,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityOptions;
-import android.app.Flags;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -379,10 +378,6 @@ public class MultiDisplaySystemDecorationTests extends MultiDisplayTestBase {
     private boolean supportsLiveWallpaper() {
         if (!hasDeviceFeature(PackageManager.FEATURE_LIVE_WALLPAPER)) {
             return false;
-        }
-
-        if (!Flags.enableConnectedDisplaysWallpaper()) {
-            return true;
         }
 
         Resources resources = mTargetContext.getResources();
