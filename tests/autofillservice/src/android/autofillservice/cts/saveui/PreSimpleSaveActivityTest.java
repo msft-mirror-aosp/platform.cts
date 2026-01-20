@@ -179,6 +179,9 @@ public class PreSimpleSaveActivityTest
                 assertTextAndValue(findNodeByResourceId(saveRequest.structure, ID_PRE_INPUT),
                         "108");
                 break;
+            case TAP_CLOSE_BUTTON:
+                mUiBot.clickSaveDialogClose();
+                break;
             default:
                 throw new IllegalArgumentException("invalid action: " + action);
         }

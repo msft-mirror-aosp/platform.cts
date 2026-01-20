@@ -25,4 +25,5 @@ public enum DismissType {
     BACK_BUTTON,
     HOME_BUTTON,
     TOUCH_OUTSIDE,
+    CLOSE_BUTTON,
 }
