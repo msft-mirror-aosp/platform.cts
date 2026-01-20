@@ -17,6 +17,7 @@
 import sys
 import argparse
 import os
+import re
 import xml.etree.ElementTree as etree
 import subprocess
 
@@ -89,49 +90,58 @@ def _handle_config_file(metadata: metadata_pb2.FileMetadata, file_path: str) -> 
     """Extracts the information from a configuration file and adds to the FileMetadata proto."""
     metadata.file_type = metadata_pb2.FileMetadata.FileType.TYPE_CONFIG
 
-    def _get_values(
-            root_element: etree.Element,
-            target_element: str,
-            filter_rules: dict[str, str],
-            target_attr: str
-    ) -> list[str]:
-        values = set()
-        for e in root_element.findall(target_element):
-            if all(e.get(key) == value for key, value in filter_rules.items()):
-                values.add(e.get(target_attr))
-        return list(values)
+    def _extract_values(root: etree.Element, xpath: str, attr: str) -> list[str]:
+        """Extracts unique attribute values from elements matching an XPath."""
+        return list({
+            elem.get(attr)
+            for elem in root.findall(xpath)
+            if elem.get(attr) is not None
+        })
 
-    with open(os.path.join(file_path), 'r') as file:
-        root = etree.parse(file).getroot()
+    tree = etree.parse(file_path)
+    root = tree.getroot()
 
-    component = _get_values(root, 'option', {'key': 'component'}, 'value')
-    sim_card_token = _get_values(root, 'option', {'key': 'token'}, 'value')
-    runners = _get_values(root, 'test', {}, 'class')
-    parameters = _get_values(root, 'option', {'key': 'parameter'}, 'value')
-    target_preparers = _get_values(root, 'target_preparer', {}, 'class')
-    mainline_modules = set()
-    for element in root.findall('object'):
-        mainline_modules = mainline_modules.union(
-            _get_values(
-                element,
-                'option',
-                {'name': 'mainline-module-package-name'},
-                'value',
-            )
-        )
+    components = _extract_values(root, "./option[@key='component']", 'value')
+    sim_card_tokens = _extract_values(root, "./option[@key='token']", 'value')
+    runners = _extract_values(root, "./test", 'class')
+    parameters = _extract_values(root, "./option[@key='parameter']", 'value')
+    target_preparers = _extract_values(root, "./target_preparer", 'class')
+    mainline_modules = _extract_values(
+        root,
+        "./object/option[@name='mainline-module-package-name']",
+        'value'
+    )
+    disable_hidden_api_checks = False
+    run_commands = _extract_values(
+        root,
+        "./target_preparer[@class='com.android.tradefed.targetprep.RunCommandTargetPreparer']"
+        "/option[@name='run-command']",
+        'value'
+    )
+    disable_hidden_api_checks |= 'settings get global hidden_api_policy 1' in run_commands
+    hidden_api_checks = _extract_values(
+        root,
+        "./test/option[@name='hidden-api-checks']",
+        'value'
+    )
+    disable_hidden_api_checks |= 'false' in hidden_api_checks
 
-
-    assert len(component) <= 1 and len(sim_card_token) <= 1 and runners
+    if len(components) > 1:
+        raise ValueError(f"Configuration contains multiple components: {components}")
+    if len(sim_card_tokens) > 1:
+        raise ValueError(f"Configuration contains multiple SIM card tokens: {sim_card_tokens}")
+    if not runners:
+        raise ValueError("Configuration must contain at least one test runner")
 
     metadata.config_summary.CopyFrom(metadata_pb2.ConfigFileSummary(
-        component=component[0] if component else None,
+        component=components[0] if components else None,
         test_runner=runners,
-        sim_card_token=sim_card_token[0] if sim_card_token else None,
-        mainline_module_package_name=list(mainline_modules),
+        sim_card_token=sim_card_tokens[0] if sim_card_tokens else None,
+        mainline_module_package_name=mainline_modules,
         parameter=parameters,
         target_preparer=target_preparers,
+        disable_hidden_api_checks=disable_hidden_api_checks,
     ))
-
 
 def _handle_apk_file(
         metadata: metadata_pb2.FileMetadata,
@@ -149,11 +159,10 @@ def _handle_apk_file(
         aapt2_tool: The path to the `aapt2` executable.
         default_sdk_version: The default SDK version to use.
     """
-    target_sdk_version, min_sdk_version = None, None
     metadata.file_type = metadata_pb2.FileMetadata.FileType.TYPE_APK
     try:
         stdout = subprocess.run(
-            [aapt2_tool, 'dump', 'badging', file_path],
+            [aapt2_tool, 'dump', 'xmltree', file_path, '--file', 'AndroidManifest.xml'],
             check=True,
             stdout=subprocess.PIPE,
         ).stdout.decode('utf-8').strip()
@@ -161,25 +170,35 @@ def _handle_apk_file(
         metadata.apk_summary.CopyFrom(metadata_pb2.ApkFileSummary())
         return
 
-    def _get_sdk_version(prefix: str, content: str) -> int | None:
-        if content.startswith(prefix):
-            raw_sdk_version = content.removeprefix(prefix).strip('\'')
-            if raw_sdk_version.isdigit():
-                return min(default_sdk_version, int(raw_sdk_version))
-            return default_sdk_version
+    # Helper function to find attribute values in the tree
+    def find_attr_in_block(block_name: str, attr_name: str, text: str) -> str | None:
+        # Find the block (e.g., E: uses-sdk)
+        # Then capture all lines until the next element (E:) starts
+        pattern = rf'E: {block_name}.*?\n((?:\s+A:.*?\n)*)'
+        match = re.search(pattern, text, re.DOTALL)
+        if match:
+            attributes_block = match.group(1)
+            # Find the specific attribute inside that block
+            attr_pattern = rf'{attr_name}.*?=(?:\(0x.*?\))?"?([^"\s\n)]+)"?'
+            attr_match = re.search(attr_pattern, attributes_block)
+            if attr_match:
+                return attr_match.group(1)
         return None
 
-    for line in stdout.splitlines():
-        sdk_version = _get_sdk_version('targetSdkVersion:', line)
-        if sdk_version is not None:
-            target_sdk_version = sdk_version
-        sdk_version = _get_sdk_version('minSdkVersion:', line)
-        if sdk_version is not None:
-            min_sdk_version = sdk_version
+    def get_sdk_version(raw_sdk: str | None):
+        if raw_sdk is not None and raw_sdk.isdigit():
+            return min(int(raw_sdk), default_sdk_version)
+        return default_sdk_version
+
+    min_sdk_version = get_sdk_version(find_attr_in_block("uses-sdk", "minSdkVersion", stdout))
+    target_sdk_version = get_sdk_version(find_attr_in_block("uses-sdk", "targetSdkVersion", stdout))
+    use_none_sdk_api = find_attr_in_block("application", "usesNonSdkApi", stdout)
+
     metadata.apk_summary.CopyFrom(
         metadata_pb2.ApkFileSummary(
-            target_sdk_version=target_sdk_version,
             min_sdk_version=min_sdk_version,
+            target_sdk_version=target_sdk_version,
+            use_non_sdk_api=(use_none_sdk_api == 'true'),
         )
     )
 

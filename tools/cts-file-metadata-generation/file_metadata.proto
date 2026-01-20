@@ -39,6 +39,9 @@ message ConfigFileSummary {
 
   // The target preparers that the test module depends on.
   repeated string target_preparer = 6;
+
+  // Whether the hidden API check is disabled via the config.
+  bool disable_hidden_api_checks = 7;
 }
 
 // Summary information for an APK file.
@@ -48,6 +51,9 @@ message ApkFileSummary {
 
   // The minimal SDK version of this APK file.
   int64 min_sdk_version = 2;
+
+  // Whether the apk can access non-SDK APIs by default.
+  bool use_non_sdk_api = 3;
 }
 
 // Metadata for a single file under the "testcases" directory.
