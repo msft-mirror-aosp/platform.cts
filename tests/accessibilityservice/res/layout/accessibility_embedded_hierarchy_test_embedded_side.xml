@@ -15,7 +15,14 @@
   ~ limitations under the License.
   -->
 
-<EditText xmlns:android="http://schemas.android.com/apk/res/android"
-        android:id="@+id/embedded_editText"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/embedded_scrollView"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <EditText
+            android:id="@+id/embedded_editText"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
+</ScrollView>

@@ -32,6 +32,9 @@ import android.graphics.Rect;
 import android.hardware.display.DisplayManager;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.CtsWindowInfoUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -40,7 +43,9 @@ import android.view.SurfaceControlViewHost;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.accessibility.Flags;
 
 import androidx.lifecycle.Lifecycle;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
@@ -78,18 +83,23 @@ public class AccessibilityEmbeddedHierarchyTest {
 
     private static final String HOST_PARENT_RESOURCE_NAME =
             "android.accessibilityservice.cts:id/host_surfaceview";
-    private static final String EMBEDDED_VIEW_RESOURCE_NAME =
+    private static final String EMBEDDED_CONTAINER_RESOURCE_NAME =
+            "android.accessibilityservice.cts:id/embedded_scrollView";
+
+    private static final String EMBEDDED_EDITTEXT_RESOURCE_NAME =
             "android.accessibilityservice.cts:id/embedded_editText";
 
     private final AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
 
+    private final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule(sUiAutomation);
+
     private AccessibilityEmbeddedHierarchyActivity mActivity;
 
     @Rule
-    public final RuleChain mRuleChain = RuleChain
-            .outerRule(mActivityRule)
-            .around(mDumpOnFailureRule);
+    public final RuleChain mRuleChain =
+            RuleChain.outerRule(mActivityRule).around(mCheckFlagsRule).around(mDumpOnFailureRule);
 
     @BeforeClass
     public static void oneTimeSetup() {
@@ -152,7 +162,8 @@ public class AccessibilityEmbeddedHierarchyTest {
     @Test
     public void testEmbeddedViewCanFindItsHostParent() {
         final AccessibilityNodeInfo target =
-                findEmbeddedAccessibilityNodeInfo(sUiAutomation.getRootInActiveWindow());
+                findEmbeddedAccessibilityNodeInfo(
+                        sUiAutomation.getRootInActiveWindow(), EMBEDDED_CONTAINER_RESOURCE_NAME);
         final AccessibilityNodeInfo parent = target.getParent();
         assertThat(parent.getViewIdResourceName()).isEqualTo(HOST_PARENT_RESOURCE_NAME);
     }
@@ -229,18 +240,52 @@ public class AccessibilityEmbeddedHierarchyTest {
                 target.isVisibleToUser()).isFalse();
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_EMBEDDED_UI_USES_HOST_WINDOW_ID)
+    public void testEmbeddedViews_nodesAndEventsUseHostWindowId() throws TimeoutException {
+        final AccessibilityNodeInfo root = sUiAutomation.getRootInActiveWindow();
+        final AccessibilityNodeInfo hostWindowNode = findHostAccessibilityNodeInfo(root);
+        final int hostWindowId = hostWindowNode.getWindowId();
+
+        final AccessibilityNodeInfo embeddedNode =
+                findEmbeddedAccessibilityNodeInfo(root, EMBEDDED_CONTAINER_RESOURCE_NAME);
+        assertNodeAndEventsUseWindowId(embeddedNode, hostWindowId);
+        final AccessibilityNodeInfo embeddedChild = embeddedNode.getChild(0);
+        assertNodeAndEventsUseWindowId(embeddedChild, hostWindowId);
+    }
+
+    private void assertNodeAndEventsUseWindowId(AccessibilityNodeInfo node, int expectedWindowId)
+            throws TimeoutException {
+        assertThat(node.getWindowId()).isEqualTo(expectedWindowId);
+        assertThat(node.getWindow().getId()).isEqualTo(expectedWindowId);
+
+        final AccessibilityEvent embeddedWindowEvent =
+                sUiAutomation.executeAndWaitForEvent(
+                        () -> node.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS),
+                        event ->
+                                event.getEventType()
+                                        == AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED,
+                        DEFAULT_TIMEOUT_MS);
+        assertThat(embeddedWindowEvent.getWindowId()).isEqualTo(expectedWindowId);
+    }
+
     private AccessibilityNodeInfo findEmbeddedAccessibilityNodeInfo(AccessibilityNodeInfo root) {
+        return findEmbeddedAccessibilityNodeInfo(root, EMBEDDED_EDITTEXT_RESOURCE_NAME);
+    }
+
+    private AccessibilityNodeInfo findEmbeddedAccessibilityNodeInfo(
+            AccessibilityNodeInfo root, String resourceName) {
         final int childCount = root.getChildCount();
         for (int i = 0; i < childCount; i++) {
             final AccessibilityNodeInfo info = root.getChild(i);
             if (info == null) {
                 continue;
             }
-            if (EMBEDDED_VIEW_RESOURCE_NAME.equals(info.getViewIdResourceName())) {
+            if (resourceName.equals(info.getViewIdResourceName())) {
                 return info;
             }
             if (info.getChildCount() != 0) {
-                return findEmbeddedAccessibilityNodeInfo(info);
+                return findEmbeddedAccessibilityNodeInfo(info, resourceName);
             }
         }
         return null;
