@@ -40,7 +40,6 @@ import com.android.tradefed.util.RunUtil;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -64,6 +63,8 @@ public class VibratorStatsTests extends BaseHostJUnit4Test implements IBuildRece
         ReportUtils.clearReports(getDevice());
         DeviceUtils.installStatsdTestApp(getDevice(), mCtsBuild);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+        getDevice().setSetting("system", "vibrate_on", "1");
+        getDevice().setSetting("system", "haptic_feedback_enabled", "1");
     }
 
     @After
