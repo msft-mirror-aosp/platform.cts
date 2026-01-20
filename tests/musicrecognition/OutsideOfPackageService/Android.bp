@@ -23,11 +23,10 @@ android_test_helper_app {
     defaults: ["cts_defaults"],
     sdk_version: "system_current",
     static_libs: [
-            "androidx.annotation_annotation",
-        ],
+        "androidx.annotation_annotation",
+    ],
     // Tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
     ],
     srcs: ["src/**/*.java"],
