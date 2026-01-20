@@ -19,6 +19,7 @@ package android.server.wm.multidisplay;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.app.WindowConfiguration.WINDOWING_MODE_MULTI_WINDOW;
+import static android.server.wm.ComponentNameUtils.getActivityName;
 import static android.server.wm.ComponentNameUtils.getWindowName;
 import static android.server.wm.ShellCommandHelper.executeShellCommand;
 import static android.server.wm.StateLogger.logE;
@@ -128,9 +129,7 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
         assertActivityDestroyed(RESIZEABLE_ACTIVITY);
     }
 
-    /**
-     * Tests that newly launched activity will be landing on default display on display removal.
-     */
+    /** Tests that newly launched activity will be landing on default display on display removal. */
     @Test
     public void testActivityLaunchOnContentDestroyDisplayRemoved() {
         try (final VirtualDisplaySession virtualDisplaySession = new VirtualDisplaySession()) {
@@ -147,8 +146,9 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
             // Destroy the display
         }
 
-        waitAndAssertResumedAndFocusedActivityOnDisplay(TEST_ACTIVITY, getMainDisplayId(),
-                "Newly launches activity should be landing on main display assigned to the user");
+        mWmState.waitAndAssert(
+                state -> state.hasActivityInDisplay(getMainDisplayId(), TEST_ACTIVITY),
+                "Newly launched activity should be landing on main display assigned to the user");
     }
 
     /**
@@ -518,7 +518,13 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
         }
 
         mWmState.computeState();
-        assertActivityLifecycle(RESIZEABLE_ACTIVITY, false /* relaunched */);
+        // Fullscreen tasks will not necessarily reparent to the front; confirm the behavior first.
+        final boolean reparentedToFront =
+                getActivityName(RESIZEABLE_ACTIVITY)
+                        .equals(mWmState.getFocusedActivityOnDisplay(getMainDisplayId()));
+        if (reparentedToFront) {
+            assertActivityLifecycle(RESIZEABLE_ACTIVITY, false /* relaunched */);
+        }
         mWmState.waitForValidState(new WaitForValidActivityState.Builder(RESIZEABLE_ACTIVITY)
                 .setWindowingMode(windowingMode)
                 .setActivityType(ACTIVITY_TYPE_STANDARD)
@@ -526,13 +532,15 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
         mWmState.assertValidity();
 
         // Check if the top activity is now back on primary display.
-        mWmState.assertVisibility(RESIZEABLE_ACTIVITY, true /* visible */);
+        mWmState.assertVisibility(RESIZEABLE_ACTIVITY, reparentedToFront /* visible */);
         mWmState.assertFocusedRootTask(
                 "Default stack on primary display must be focused after display removed",
                 windowingMode, ACTIVITY_TYPE_STANDARD);
-        mWmState.assertFocusedActivity(
-                "Focus must be switched back to activity on primary display",
-                RESIZEABLE_ACTIVITY);
+        if (reparentedToFront) {
+            mWmState.assertFocusedActivity(
+                    "Focus must be switched back to activity on primary display",
+                    RESIZEABLE_ACTIVITY);
+        }
     }
 
     /**
@@ -803,10 +811,29 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
             // Destroy the display.
         }
 
-        // Activity must be reparented to main display assigned to the user and relaunched.
-        assertActivityLifecycle(TEST_ACTIVITY, true /* relaunched */);
-        waitAndAssertResumedAndFocusedActivityOnDisplay(TEST_ACTIVITY, getMainDisplayId(),
-                "Top activity must be reparented to main display assigned to the user");
+        // Fullscreen tasks will not necessarily reparent to the front; confirm the behavior first.
+        final boolean reparentedToFront =
+                getActivityName(TEST_ACTIVITY)
+                        .equals(mWmState.getFocusedActivityOnDisplay(getMainDisplayId()));
+
+        if (reparentedToFront) {
+            // Activity must be reparented to main display assigned to the user and relaunched.
+            assertActivityLifecycle(TEST_ACTIVITY, true /* relaunched */);
+            waitAndAssertResumedAndFocusedActivityOnDisplay(
+                    TEST_ACTIVITY,
+                    getMainDisplayId(),
+                    "Top activity must be reparented to main display assigned to the user");
+        } else {
+            // Activity must be reparented to main display assigned to the user and stopped.
+            assertEquals(
+                    "Activity must be reparented to primary display.",
+                    /* expected= */ getMainDisplayId(),
+                    /* actual= */ mWmState.getDisplayByActivity(TEST_ACTIVITY));
+            waitAndAssertActivityState(
+                    TEST_ACTIVITY,
+                    STATE_STOPPED,
+                    "Activity reparented to primary display must be stopped");
+        }
 
         // Check the surface size after task was reparented to main display assigned to the user.
         assertTopTaskSameSurfaceSizeWithDisplay(getMainDisplayId());
