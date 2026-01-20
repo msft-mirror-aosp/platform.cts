@@ -34,6 +34,9 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Telephony;
 import android.provider.Telephony.Mms.Draft;
 import android.provider.Telephony.Mms.Inbox;
@@ -49,6 +52,7 @@ import androidx.test.filters.SmallTest;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 import javax.annotation.Nullable;
@@ -56,6 +60,9 @@ import javax.annotation.Nullable;
 @SmallTest
 public class MmsTest {
     private static final String TAG = "MmsTest";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String[] MMS_ADDRESSES = new String[]{"+1223", "+43234234"};
     private static final String MMS_SUBJECT_ONE = "MMS Subject CTS One";

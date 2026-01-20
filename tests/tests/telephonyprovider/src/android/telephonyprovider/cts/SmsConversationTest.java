@@ -21,14 +21,23 @@ import static android.telephony.cts.util.DefaultSmsAppHelper.assumeMessaging;
 
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
+import static com.android.internal.telephony.flags.Flags.FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES;
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Telephony;
+import android.provider.Telephony.Threads;
+import android.provider.Telephony.ReadRestriction;
+import android.provider.Telephony.ReadRestriction.ReadRestrictionValues;
 import android.provider.Telephony.Sms.Conversations;
 import android.telephony.cts.util.DefaultSmsAppHelper;
 
@@ -37,10 +46,14 @@ import androidx.test.filters.SmallTest;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 @SmallTest
 public class SmsConversationTest {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String TEST_ADDRESS = "+19998880001";
     private static final String TEST_SMS_BODY = "TEST_SMS_BODY";
@@ -74,8 +87,8 @@ public class SmsConversationTest {
     public void testQueryConversation_snippetEqualsMostRecentMessageBody() {
         String testSmsMostRecent = "TEST_SMS_MOST_RECENT";
 
-        saveToTelephony(TEST_SMS_BODY, TEST_ADDRESS);
-        saveToTelephony(testSmsMostRecent, TEST_ADDRESS);
+        saveToTelephony(TEST_SMS_BODY, TEST_ADDRESS, /* isRestricted= */ false);
+        saveToTelephony(testSmsMostRecent, TEST_ADDRESS, /* isRestricted= */ false);
 
         Cursor cursor = mContentResolver
                 .query(Telephony.Sms.CONTENT_URI, null, null, null);
@@ -92,6 +105,124 @@ public class SmsConversationTest {
     }
 
     /**
+     * The purpose of this test is to check that the conversation is visible to non default sms apps
+     * after inserting an unrestricted sms.
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
+    public void testQueryConversation_threadBecomesNonRestrictedAfterInsertingNonRestrictedSms() {
+        saveToTelephony(TEST_SMS_BODY, TEST_ADDRESS, /* isRestricted= */ true);
+
+        {
+            try {
+                stopBeingDefaultSmsApp();
+
+                Cursor threadCursor = mContentResolver
+                        .query(Threads.CONTENT_URI, null, null, null);
+
+                assertThat(threadCursor.getCount()).isEqualTo(0);
+            } finally {
+                ensureDefaultSmsApp();
+            }
+        }
+
+
+        saveToTelephony(TEST_SMS_BODY, TEST_ADDRESS, /* isRestricted= */ false);
+
+        {
+            try {
+                stopBeingDefaultSmsApp();
+
+                Cursor threadCursor = mContentResolver
+                        .query(Threads.CONTENT_URI, null, null, null);
+
+                assertThat(threadCursor.getCount()).isEqualTo(1);
+            } finally {
+                ensureDefaultSmsApp();
+            }
+        }
+    }
+
+
+    /**
+     * The purpose of this test is to check that the conversation is visible to non default sms apps
+     * after inserting an unrestricted sms.
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
+    public void queryConversation_threadIsEmptyForNonDefaultSmsAppAfterRemovingUnrestrictedSms() {
+        saveToTelephony(TEST_SMS_BODY, TEST_ADDRESS, /* isRestricted= */ true);
+        Uri unrestricted = saveToTelephony(TEST_SMS_BODY, TEST_ADDRESS, /* isRestricted= */ false);
+
+        // The thread is visible to the default sms app.
+        {
+            Cursor conversationCursor = mContentResolver
+                    .query(Conversations.CONTENT_URI, null, null, null);
+            assertThat(conversationCursor.getCount()).isEqualTo(1);
+        }
+        // The thread is visible to a non default sms app.
+        {
+            try {
+                stopBeingDefaultSmsApp();
+
+                Cursor conversationCursor = mContentResolver
+                        .query(Conversations.CONTENT_URI, null, null, null);
+                assertThat(conversationCursor.getCount()).isEqualTo(1);
+            } finally {
+                ensureDefaultSmsApp();
+            }
+        }
+
+        // Remove the unrestricted message.
+        mContentResolver.delete(unrestricted, null, null);
+
+        // The thread is still visible to the default sms app.
+        {
+            Cursor conversationCursor = mContentResolver
+                    .query(Conversations.CONTENT_URI, null, null, null);
+            assertThat(conversationCursor.getCount()).isEqualTo(1);
+        }
+        // The thread is no longer visible to a non default sms app.
+        {
+            try {
+                stopBeingDefaultSmsApp();
+
+                Cursor conversationCursor = mContentResolver
+                        .query(Conversations.CONTENT_URI, null, null, null);
+                assertThat(conversationCursor.getCount()).isEqualTo(0);
+            } finally {
+                ensureDefaultSmsApp();
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
+    public void queryNonExistingThreadId_nonDefaultSmsApp_returnsEmptyCursor() {
+        {
+            try {
+                stopBeingDefaultSmsApp();
+
+                Cursor conversationCursor = mContentResolver.query(
+                        Uri.parse("content://mms-sms/threadID?recipient=" + TEST_ADDRESS),
+                        null, null, null);
+                assertThat(conversationCursor.getCount()).isEqualTo(0);
+            } finally {
+                ensureDefaultSmsApp();
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
+    public void queryNonExistingThreadId_defaultSmsApp_createsNewThread() {
+            Cursor conversationCursor = mContentResolver.query(
+                    Uri.parse("content://mms-sms/threadID?recipient=" + TEST_ADDRESS),
+                    null, null, null);
+            assertThat(conversationCursor.getCount()).isEqualTo(1);
+    }
+
+    /**
      * The purpose of this test is to check Conversation message count is equal to the number of sms
      * inserted.
      */
@@ -99,8 +230,8 @@ public class SmsConversationTest {
     public void testQueryConversation_returnsCorrectMessageCount() {
         String testSecondSmsBody = "TEST_SECOND_SMS_BODY";
 
-        saveToTelephony(TEST_SMS_BODY, TEST_ADDRESS);
-        saveToTelephony(testSecondSmsBody, TEST_ADDRESS);
+        saveToTelephony(TEST_SMS_BODY, TEST_ADDRESS, /* isRestricted= */ false);
+        saveToTelephony(testSecondSmsBody, TEST_ADDRESS, /* isRestricted= */ false);
 
         Cursor cursor = mContentResolver
                 .query(Telephony.Sms.CONTENT_URI, null, null, null);
@@ -116,11 +247,19 @@ public class SmsConversationTest {
             .isEqualTo(2);
     }
 
-    public void saveToTelephony(String messageBody, String address) {
+    private Uri saveToTelephony(String messageBody, String address, boolean isRestricted) {
         ContentValues values = new ContentValues();
         values.put(Telephony.Sms.BODY, messageBody);
         values.put(Telephony.Sms.ADDRESS, address);
-        Uri uri1 = mContentResolver.insert(Telephony.Sms.CONTENT_URI, values);
+        if (isRestricted) {
+            values.put(ReadRestriction.RESTRICTED, true);
+        }
+        return mContentResolver.insert(Telephony.Sms.CONTENT_URI, values);
+    }
+
+    private static void stopBeingDefaultSmsApp() {
+        DefaultSmsAppHelper.stopBeingDefaultSmsApp();
+        getInstrumentation().waitForIdleSync();
     }
 }
 
