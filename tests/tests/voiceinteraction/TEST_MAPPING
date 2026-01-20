@@ -7,9 +7,9 @@
       "name": "CtsLocalVoiceInteraction"
     }
   ],
-  "presubmit-large" : [
+  "presubmit" : [
     {
-      "name" : "CtsStatsdAtomHostTestCases",
+      "name" : "CtsVoiceInteractionAtomHostTestCases",
       "options": [
         {
           "exclude-annotation": "androidx.test.filters.FlakyTest"
