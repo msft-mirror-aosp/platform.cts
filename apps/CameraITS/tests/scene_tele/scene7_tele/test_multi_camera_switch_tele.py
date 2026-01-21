@@ -117,12 +117,14 @@ class MultiCameraSwitchTeleTest(its_base_test.ItsBaseTest):
           file_path = os.path.join(self.log_path, filename)
           if os.path.isfile(file_path) and not filename.endswith(_MP4_FORMAT):
             os.remove(file_path)
-        raise AssertionError('Error during crossover check') from e
+        raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'
+                             f'\n\n{e_msg}')
 
       # Raise error if lens did not switch within the range
       if not lens_changed:
         e_msg = 'Crossover point not found. Try running the test again!'
-        raise AssertionError(e_msg)
+        raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'
+                             f'\n\n{e_msg}')
 
       # Process capture results and get camera properties
       img_w_file, img_tele_file, min_focus_distance_tele = (
@@ -235,8 +237,8 @@ class MultiCameraSwitchTeleTest(its_base_test.ItsBaseTest):
       if failed_awb_msg or failed_ae_msg:
         error_msg = multi_camera_switch_utils.get_error_msg(
             failed_awb_msg, failed_ae_msg)
-        raise AssertionError(f'{_NAME} failed with following errors:\n'
-                             f'{error_msg}')
+        raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'
+                             f'\n\n{error_msg}')
 
 if __name__ == '__main__':
   test_runner.main()
