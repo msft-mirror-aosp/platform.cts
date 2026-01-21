@@ -29,6 +29,9 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
@@ -40,6 +43,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -52,6 +56,10 @@ import java.util.Iterator;
  */
 @RunWith(AndroidJUnit4.class)
 public class SeccompDeviceTest {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     static {
         System.loadLibrary("ctsseccomp_jni");
     }
@@ -174,6 +182,7 @@ public class SeccompDeviceTest {
     }
 
     @Test
+    @RequiresFlagsDisabled(com.android.server.am.Flags.FLAG_USE_SAFESETID_UID_POLICY2)
     public void testAppZygoteSyscalls() {
         // Isolated services that spawn from the application Zygote are allowed
         // to preload code in a security context that is allowed to use
