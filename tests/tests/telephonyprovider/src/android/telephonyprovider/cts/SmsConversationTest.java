@@ -30,6 +30,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Bundle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -102,6 +103,35 @@ public class SmsConversationTest {
         assertThat(
             conversationCursor.getString(conversationCursor.getColumnIndex(Conversations.SNIPPET)))
             .isEqualTo(testSmsMostRecent);
+    }
+
+    @Test
+    public void testQueryConversation_usingRestrictedInWhereClause_returnsCorrectMessages() {
+        saveToTelephony(TEST_SMS_BODY, TEST_ADDRESS, /* isRestricted= */ false);
+        saveToTelephony(TEST_SMS_BODY, TEST_ADDRESS, /* isRestricted= */ false);
+        saveToTelephony(TEST_SMS_BODY, TEST_ADDRESS, /* isRestricted= */ true);
+        saveToTelephony(TEST_SMS_BODY, TEST_ADDRESS, /* isRestricted= */ true);
+        saveToTelephony(TEST_SMS_BODY, TEST_ADDRESS, /* isRestricted= */ true);
+
+        Cursor restrictedMessagesCursor = mContentResolver
+                .query(Telephony.Sms.CONTENT_URI,
+                        /* projection= */ null,
+                        /* selection= */ "restricted = ?",
+                        /* selectionArgs= */ new String[] { "1" },
+                        /* sortOrder= */ null,
+                        /* cancellationSignal= */ null);
+
+        assertThat(restrictedMessagesCursor.getCount()).isEqualTo(3);
+
+        Cursor unrestrictedMessagesCursor = mContentResolver
+            .query(Telephony.Sms.CONTENT_URI,
+                    /* projection= */ null,
+                    /* selection= */ "restricted = ?",
+                    /* selectionArgs= */ new String[] { "0" },
+                    /* sortOrder= */ null,
+                    /* cancellationSignal= */ null);
+
+        assertThat(unrestrictedMessagesCursor.getCount()).isEqualTo(2);
     }
 
     /**
