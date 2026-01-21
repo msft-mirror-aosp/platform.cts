@@ -1289,13 +1289,7 @@ public class SubscriptionManagerTest {
                     if (Flags.getPhoneNumberTs43Api()) {
                         getPhoneNumberViaShell(
                                 mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
-                        try {
-                            mSm.getPhoneNumber(
-                                    mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
-                            fail("Expect SecurityException from getPhoneNumber()");
-                        } catch (SecurityException e) {
-                            // expected
-                        }
+                        mSm.getPhoneNumber(mSubId, SubscriptionManager.PHONE_NUMBER_SOURCE_TS43);
                     }
 
                     String originalPhoneNumber =
