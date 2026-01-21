@@ -190,11 +190,7 @@ public class AudioFrequencyVoiceRecognitionActivity extends AudioFrequencyActivi
                     DspBufferMath.set(mC, mData);
                     mFftServer.fft(mC, 1);
 
-                    double[] magnitude = new double[BLOCK_SIZE_SAMPLES / 2];
-                    for (i = 0; i < BLOCK_SIZE_SAMPLES / 2; i++) {
-                        magnitude[i] = Math.sqrt(mC.mReal[i] * mC.mReal[i] +
-                                mC.mImag[i] * mC.mImag[i]);
-                    }
+                    double[] magnitude = computeMagnitudeSpectrum(mC, mWindow);
 
                     switch (mCurrentTest) {
                         case TEST_TONE: {
