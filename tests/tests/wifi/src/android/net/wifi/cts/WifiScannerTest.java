@@ -35,7 +35,9 @@ import android.os.Handler;
 import android.os.HandlerExecutor;
 import android.os.HandlerThread;
 import android.os.Parcel;
+import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
+import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
@@ -49,13 +51,16 @@ import org.junit.runner.RunWith;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "Cannot get WifiManager in instant app mode")
 public class WifiScannerTest extends WifiJUnit4TestBase {
 
+    public static String TAG = "WifiScannerTest";
     private static Context sContext;
     private static WifiScanner sWifiScanner;
     private static final long TEST_WAIT_DURATION_MS = 5000;
@@ -66,6 +71,11 @@ public class WifiScannerTest extends WifiJUnit4TestBase {
     public static final int TEST_LEVEL = -56;
     public static final int TEST_FREQUENCY = 2412;
     public static final long TEST_TIMESTAMP = 4660L;
+    private static final int BATCH_SCAN_PERIOD_MILLIS = 10 * 1000;
+    private static final int BATCH_SCAN_PERIOD_DELTA_MILLIS = 5 * 1000;
+    private static final int BATCH_SCAN_POOL_TIME_MILLIS = 60 * 1000;
+    private static final int BATCH_SCAN_EXPONENTIAL_MAX_PERIOD_MILLIS = 50 * 1000;
+    private static final int BATCH_SCAN_EXPONENTIAL_POOL_TIME_MILLIS = 180 * 1000;
 
     private final Object mLock = new Object();
     private boolean mCachedScanDataReturned = false;
@@ -232,6 +242,446 @@ public class WifiScannerTest extends WifiJUnit4TestBase {
             // Expected if the device does not support this API
         } catch (Exception e) {
             fail("getCachedScanData unexpected Exception " + e);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    /**
+     * Implementation of {@link WifiScanner.ScanListener} used for one-shot(none full results) or
+     * batch scans.
+     */
+    public static class WifiScanListener implements WifiScanner.ScanListener {
+        private final CountDownLatch mCountDownLatch = new CountDownLatch(1);
+        private ScanData[] mScanData;
+        public boolean onFailureCalled = false;
+        public boolean onSuccessCalled = false;
+
+        @Override
+        public void onSuccess() {
+            Log.d(TAG, "onSuccess called");
+            onSuccessCalled = true;
+        }
+
+        @Override
+        public void onPeriodChanged(int periodInMs) {} // Ignore period change.
+
+        @Override
+        public void onFailure(int reason, String description) {
+            Log.d(TAG, "onFailure called: " + reason + ", " + description);
+            onFailureCalled = true;
+        }
+
+        @Override
+        public void onResults(ScanData[] scanData) {
+            Log.d(TAG, "onResults called");
+            mScanData = scanData;
+            mCountDownLatch.countDown();
+        }
+
+        @Override
+        public void onFullResult(ScanResult fullScanResult) {} // Ignore full scan results.
+
+        /**
+         * Wait for scan results to come back. Returns {@code false} if scan results haven't been
+         * received after {@code timeoutMillis}.
+         */
+        public boolean await(int timeoutMillis) {
+            try {
+                return mCountDownLatch.await(timeoutMillis, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                Log.d(TAG, "interrupted in await", e);
+                return false;
+            }
+        }
+
+        /** Resets internal variables */
+        public void reset() {
+            onSuccessCalled = false;
+            onFailureCalled = false;
+        }
+
+        public ScanData[] getScanData() {
+            return mScanData;
+        }
+    }
+
+    // Cause the thread to sleep. Don't throw Exceptions.
+    private void sleep(int millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Log.d(TAG, "sleep interrupted");
+        }
+    }
+
+    // Verify scan timestamps in results are within [scanStartMillis, scanEndMillis].
+    private void verifyScanTimestamp(long startMicros, long stopMicros, ScanResult[] results) {
+        if (results.length == 0) {
+            return;
+        }
+        for (ScanResult result : results) {
+            assertTrue(
+                    "device observed time "
+                            + result.timestamp
+                            + " outside of ["
+                            + startMicros
+                            + ", "
+                            + stopMicros
+                            + "]",
+                    result.timestamp >= startMicros && result.timestamp <= stopMicros);
+        }
+    }
+
+    /**
+     * Test batching scans. Ensure timestamps of each scan are in order and within
+     * BATCH_SCAN_INTERVAL_PERIOD_MILLIS of the scan interval.
+     */
+    @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    public void testBatchScanTimestamp() {
+        assumeTrue(WifiFeature.isWifiSupported(sContext));
+        WifiScanner.ScanSettings requestSettings =
+                createRequest(
+                        WifiScanner.WIFI_BAND_BOTH_WITH_DFS,
+                        BATCH_SCAN_PERIOD_MILLIS,
+                        5,
+                        20,
+                        WifiScanner.REPORT_EVENT_AFTER_BUFFER_FULL);
+        WifiScanListener scanListener = new WifiScanListener();
+
+        long batchStartMicros = SystemClock.elapsedRealtime() * 1000;
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            sWifiScanner.startBackgroundScan(requestSettings, scanListener);
+            long timeout = System.currentTimeMillis() + 10000;
+            synchronized (mLock) {
+                try {
+                    // Wait for either onSuccess or onFailure to get called
+                    while (System.currentTimeMillis() < timeout
+                            && !scanListener.onFailureCalled
+                            && !scanListener.onSuccessCalled) {
+                        mLock.wait(POLL_WAIT_MSEC);
+                    }
+                } catch (InterruptedException e) {
+                    return;
+                }
+            }
+            // Batched scan is optional, allow devices to skip the test if they don't support it.
+            if (scanListener.onFailureCalled) {
+                Log.w(TAG, "Batched scan failed, skipping test");
+                return;
+            }
+            sleep(BATCH_SCAN_POOL_TIME_MILLIS);
+            assertTrue(sWifiScanner.getScanResults());
+            boolean isScanResultsReceived = scanListener.await(10000);
+            if (!isScanResultsReceived) {
+                Log.w(
+                        TAG,
+                        "Batched scan failed - Didn't receive scan results in "
+                                + BATCH_SCAN_POOL_TIME_MILLIS
+                                + "ms"
+                                + " skipping test");
+                return;
+            }
+            sWifiScanner.stopBackgroundScan(scanListener);
+
+            long prevScanMaxTimestamp = 0;
+            int i = 0;
+            ScanData[] scanDataArray = scanListener.getScanData();
+            for (ScanData scanData : scanDataArray) {
+                // Verify order of scans.
+                long currScanMaxTimestamp = 0;
+                for (ScanResult result : scanData.getResults()) {
+                    assertTrue(
+                            "scan timestamp out of order", result.timestamp > prevScanMaxTimestamp);
+                    if (result.timestamp > currScanMaxTimestamp) {
+                        currScanMaxTimestamp = result.timestamp;
+                    }
+                }
+                prevScanMaxTimestamp = currScanMaxTimestamp;
+
+                // Verify scans are within delta.
+                long scanStartMicros =
+                        batchStartMicros + (BATCH_SCAN_PERIOD_MILLIS * 1000 * (long) i);
+                long scanEndMicros = scanStartMicros + (BATCH_SCAN_PERIOD_DELTA_MILLIS * 1000);
+                verifyScanTimestamp(scanStartMicros, scanEndMicros, scanData.getResults());
+                i += 1;
+            }
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    /**
+     * Ensure timestamps of each batch scan are within BATCH_SCAN_PERIOD_DELTA_MILLIS of the
+     * exponential scan period.
+     */
+    @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    public void testBatchScanTimestampExponential() {
+        assumeTrue(WifiFeature.isWifiSupported(sContext));
+        WifiScanner.ScanSettings requestSettings =
+                createRequest(
+                        WifiScanner.WIFI_BAND_BOTH_WITH_DFS,
+                        BATCH_SCAN_EXPONENTIAL_MAX_PERIOD_MILLIS,
+                        5,
+                        20,
+                        WifiScanner.REPORT_EVENT_AFTER_BUFFER_FULL);
+        requestSettings.stepCount = 1;
+        WifiScanListener scanListener = new WifiScanListener();
+
+        long batchStartMicros = SystemClock.elapsedRealtime() * 1000;
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            sWifiScanner.startBackgroundScan(requestSettings, scanListener);
+            long timeout = System.currentTimeMillis() + 10000;
+            synchronized (mLock) {
+                try {
+                    // Wait for either onSuccess or onFailure to get called
+                    while (System.currentTimeMillis() < timeout
+                            && !scanListener.onFailureCalled
+                            && !scanListener.onSuccessCalled) {
+                        mLock.wait(POLL_WAIT_MSEC);
+                    }
+                } catch (InterruptedException e) {
+                    return;
+                }
+            }
+            // Batched scan is optional, allow devices to skip the test if they don't support it.
+            if (scanListener.onFailureCalled) {
+                Log.w(TAG, "Batched scan failed, skipping test");
+                return;
+            }
+            sleep(BATCH_SCAN_EXPONENTIAL_POOL_TIME_MILLIS);
+            // Batched scan is optional, allow devices to skip the test if they don't support it.
+            if (scanListener.onFailureCalled) {
+                Log.w(TAG, "Batched scan failed, skipping test");
+                return;
+            }
+            assertTrue(sWifiScanner.getScanResults());
+            boolean isScanResultsReceived = scanListener.await(10000);
+            if (!isScanResultsReceived) {
+                Log.w(
+                        TAG,
+                        "Batched scan failed - Didn't receive scan results in "
+                                + BATCH_SCAN_POOL_TIME_MILLIS
+                                + "ms"
+                                + " skipping test");
+                return;
+            }
+            sWifiScanner.stopBackgroundScan(scanListener);
+
+            long scanStartMicros = batchStartMicros;
+            long scanPeriodMillis = BATCH_SCAN_PERIOD_MILLIS;
+            ScanData[] scanDataArray = scanListener.getScanData();
+            for (ScanData scanData : scanDataArray) {
+                long scanEndMicros = scanStartMicros + (BATCH_SCAN_PERIOD_DELTA_MILLIS * 1000);
+                verifyScanTimestamp(scanStartMicros, scanEndMicros, scanData.getResults());
+                scanStartMicros += scanPeriodMillis * 1000;
+                scanPeriodMillis *= 2;
+                if (scanPeriodMillis > BATCH_SCAN_EXPONENTIAL_MAX_PERIOD_MILLIS) {
+                    scanPeriodMillis = BATCH_SCAN_EXPONENTIAL_MAX_PERIOD_MILLIS;
+                }
+            }
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    /** Ensure results for the correct band are returned when specified. */
+    @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    public void testBatchScanCorrectBandResults() {
+        assumeTrue(WifiFeature.isWifiSupported(sContext));
+        WifiScanner.ScanSettings requestSettings =
+                createRequest(
+                        WifiScanner.WIFI_BAND_24_GHZ,
+                        BATCH_SCAN_PERIOD_MILLIS,
+                        5,
+                        20,
+                        WifiScanner.REPORT_EVENT_AFTER_BUFFER_FULL);
+        WifiScanListener mScanListener24GHz = new WifiScanListener();
+        WifiScanListener mScanListener5GHz = new WifiScanListener();
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            sWifiScanner.startBackgroundScan(requestSettings, mScanListener24GHz);
+            long timeout = System.currentTimeMillis() + 10000;
+            synchronized (mLock) {
+                try {
+                    // Wait for either onSuccess or onFailure to get called
+                    while (System.currentTimeMillis() < timeout
+                            && !mScanListener24GHz.onFailureCalled
+                            && !mScanListener24GHz.onSuccessCalled) {
+                        mLock.wait(POLL_WAIT_MSEC);
+                    }
+                } catch (InterruptedException e) {
+                    return;
+                }
+            }
+            // Batched scan is optional, allow devices to skip the test if they don't support it.
+            if (mScanListener24GHz.onFailureCalled) {
+                Log.w(TAG, "Batched scan failed, skipping test");
+                return;
+            }
+            sleep(BATCH_SCAN_POOL_TIME_MILLIS);
+            assertTrue(sWifiScanner.getScanResults());
+            boolean isScanResultsReceived = mScanListener24GHz.await(10000);
+            if (!isScanResultsReceived) {
+                Log.w(
+                        TAG,
+                        "2.4GHz Batched scan failed - Didn't receive scan results in "
+                                + BATCH_SCAN_POOL_TIME_MILLIS
+                                + "ms"
+                                + " skipping test");
+                return;
+            }
+            sWifiScanner.stopBackgroundScan(mScanListener24GHz);
+            ScanData[] scanDataArray24GHz = mScanListener24GHz.getScanData();
+
+            for (ScanData scanData : scanDataArray24GHz) {
+                for (ScanResult result : scanData.getResults()) {
+                    assertTrue(
+                            "Non 2.4GHz result returned to 2.4GHz listener",
+                            result.frequency >= 2400 && result.frequency <= 2500);
+                }
+            }
+
+            requestSettings.band = WifiScanner.WIFI_BAND_5_GHZ;
+            sWifiScanner.startBackgroundScan(requestSettings, mScanListener5GHz);
+            timeout = System.currentTimeMillis() + 10000;
+            synchronized (mLock) {
+                try {
+                    // Wait for either onSuccess or onFailure to get called
+                    while (System.currentTimeMillis() < timeout
+                            && !mScanListener5GHz.onFailureCalled
+                            && !mScanListener5GHz.onSuccessCalled) {
+                        mLock.wait(POLL_WAIT_MSEC);
+                    }
+                } catch (InterruptedException e) {
+                    return;
+                }
+            }
+            // Batched scan is optional, allow devices to skip the test if they don't support it.
+            if (mScanListener5GHz.onFailureCalled) {
+                Log.w(TAG, "Batched scan failed, skipping test");
+                return;
+            }
+            sleep(BATCH_SCAN_POOL_TIME_MILLIS);
+            assertTrue(sWifiScanner.getScanResults());
+            isScanResultsReceived = mScanListener5GHz.await(10000);
+            if (!isScanResultsReceived) {
+                Log.w(
+                        TAG,
+                        "5GHz Batched scan failed - Didn't receive scan results in "
+                                + BATCH_SCAN_POOL_TIME_MILLIS
+                                + "ms"
+                                + " skipping test");
+                return;
+            }
+            sWifiScanner.stopBackgroundScan(mScanListener5GHz);
+
+            ScanData[] scanDataArray5GHz = mScanListener5GHz.getScanData();
+            for (ScanData scanData : scanDataArray5GHz) {
+                for (ScanResult result : scanData.getResults()) {
+                    assertTrue(
+                            "Non 5GHz result returned to 5GHz listener",
+                            result.frequency >= 4900 && result.frequency <= 5900);
+                }
+            }
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    /**
+     * Ensure that the correct band results are returned to a client scanning 2.4GHz and a different
+     * client scanning 5GHz.
+     */
+    @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    public void testBatchScanMultipleClientsDifferentBand() {
+        assumeTrue(WifiFeature.isWifiSupported(sContext));
+        WifiScanner.ScanSettings requestSettings =
+                createRequest(
+                        WifiScanner.WIFI_BAND_BOTH_WITH_DFS,
+                        BATCH_SCAN_PERIOD_MILLIS,
+                        5,
+                        20,
+                        WifiScanner.REPORT_EVENT_AFTER_BUFFER_FULL);
+        WifiScanListener mScanListener24GHz = new WifiScanListener();
+        WifiScanListener mScanListener5GHz = new WifiScanListener();
+
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            requestSettings.band = WifiScanner.WIFI_BAND_24_GHZ;
+            sWifiScanner.startBackgroundScan(requestSettings, mScanListener24GHz);
+            requestSettings.band = WifiScanner.WIFI_BAND_5_GHZ;
+            sWifiScanner.startBackgroundScan(requestSettings, mScanListener5GHz);
+            long timeout = System.currentTimeMillis() + 10000;
+            synchronized (mLock) {
+                try {
+                    // Wait for either onSuccess or onFailure to get called
+                    while (System.currentTimeMillis() < timeout
+                            && !mScanListener24GHz.onFailureCalled
+                            && !mScanListener24GHz.onSuccessCalled) {
+                        mLock.wait(POLL_WAIT_MSEC);
+                    }
+                } catch (InterruptedException e) {
+                    return;
+                }
+            }
+            // Batched scan is optional, allow devices to skip the test if they don't support it.
+            // Batched scan is optional, allow devices to skip the test if they don't support it.
+            if (mScanListener24GHz.onFailureCalled || mScanListener5GHz.onFailureCalled) {
+                Log.w(TAG, "Batched scan failed, skipping test");
+                return;
+            }
+            sleep(BATCH_SCAN_POOL_TIME_MILLIS);
+            assertTrue(sWifiScanner.getScanResults());
+            boolean isScanResultsReceived = mScanListener24GHz.await(10000);
+            if (!isScanResultsReceived) {
+                Log.w(
+                        TAG,
+                        "2.4GHz Batched scan failed - Didn't receive scan results in "
+                                + BATCH_SCAN_POOL_TIME_MILLIS
+                                + "ms"
+                                + " skipping test");
+                return;
+            }
+            sWifiScanner.stopBackgroundScan(mScanListener24GHz);
+            isScanResultsReceived = mScanListener5GHz.await(10000);
+            if (!isScanResultsReceived) {
+                Log.w(
+                        TAG,
+                        "5GHz Batched scan failed - Didn't receive scan results in "
+                                + BATCH_SCAN_POOL_TIME_MILLIS
+                                + "ms"
+                                + " skipping test");
+                return;
+            }
+            sWifiScanner.stopBackgroundScan(mScanListener5GHz);
+
+            ScanData[] scanDataArray24GHz = mScanListener24GHz.getScanData();
+            for (ScanData scanData : scanDataArray24GHz) {
+                for (ScanResult result : scanData.getResults()) {
+                    assertTrue(
+                            "Non 2.4GHz result returned to 2.4GHz listener",
+                            result.frequency >= 2400 && result.frequency <= 2500);
+                }
+            }
+            ScanData[] scanDataArray5GHz = mScanListener5GHz.getScanData();
+            for (ScanData scanData : scanDataArray5GHz) {
+                for (ScanResult result : scanData.getResults()) {
+                    assertTrue(
+                            "Non 5GHz result returned to 5GHz listener",
+                            result.frequency >= 4900 && result.frequency <= 5900);
+                }
+            }
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }
