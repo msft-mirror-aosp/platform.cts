@@ -40,6 +40,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
@@ -519,6 +520,10 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
      */
     @Test
     public void testUpdateWifiUsabilityScore() throws Exception {
+        assertThrows(
+                "No permission should trigger SecurityException",
+                SecurityException.class,
+                () -> sWifiManager.updateWifiUsabilityScore(0, 50, 50));
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             uiAutomation.adoptShellPermissionIdentity();
@@ -675,6 +680,12 @@ public class ConnectedNetworkScorerTest extends WifiJUnit4TestBase {
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         TestUsabilityStatsListener usabilityStatsListener =
                 new TestUsabilityStatsListener(countDownLatchUsabilityStats);
+        assertThrows(
+                "No permission should trigger SecurityException",
+                SecurityException.class,
+                () ->
+                        sWifiManager.addOnWifiUsabilityStatsListener(
+                                mExecutor, usabilityStatsListener));
         try {
             uiAutomation.adoptShellPermissionIdentity();
             // Clear any external scorer already active on the device.
