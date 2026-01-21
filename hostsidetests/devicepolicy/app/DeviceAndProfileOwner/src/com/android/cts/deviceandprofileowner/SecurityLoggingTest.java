@@ -54,6 +54,9 @@ import static android.app.admin.SecurityLog.TAG_NFC_DISABLED;
 import static android.app.admin.SecurityLog.TAG_NFC_ENABLED;
 import static android.app.admin.SecurityLog.TAG_OS_SHUTDOWN;
 import static android.app.admin.SecurityLog.TAG_OS_STARTUP;
+import static android.app.admin.SecurityLog.TAG_PACKAGE_INSTALLED;
+import static android.app.admin.SecurityLog.TAG_PACKAGE_UNINSTALLED;
+import static android.app.admin.SecurityLog.TAG_PACKAGE_UPDATED;
 import static android.app.admin.SecurityLog.TAG_PASSWORD_CHANGED;
 import static android.app.admin.SecurityLog.TAG_PASSWORD_COMPLEXITY_REQUIRED;
 import static android.app.admin.SecurityLog.TAG_PASSWORD_COMPLEXITY_SET;
@@ -173,6 +176,9 @@ public class SecurityLoggingTest extends BaseDeviceAdminTest {
                     .put(TAG_BLUETOOTH_DISCONNECTION, of(S, S))
                     .put(TAG_NFC_DISABLED, of())
                     .put(TAG_NFC_ENABLED, of())
+                    .put(TAG_PACKAGE_INSTALLED, of(S, L, I))
+                    .put(TAG_PACKAGE_UPDATED, of(S, L, I))
+                    .put(TAG_PACKAGE_UNINSTALLED, of(S, L, I))
                     .build();
 
     private static final String GENERATED_KEY_ALIAS = "generated_key_alias";
