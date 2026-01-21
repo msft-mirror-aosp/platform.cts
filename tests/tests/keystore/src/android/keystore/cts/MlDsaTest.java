@@ -34,6 +34,7 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
 
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -62,6 +63,11 @@ public class MlDsaTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @BeforeClass
+    public static void setUp() {
+        TestUtils.assumeMlDsaSupported(/* useStrongBox= */ false);
+    }
 
     private KeyPairGenerator getKeyPairGenerator(String algorithm)
             throws NoSuchAlgorithmException, NoSuchProviderException {
