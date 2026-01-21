@@ -223,6 +223,14 @@ public class LightsManagerTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_LIGHT_ANIMATIONS)
     @Test
+    public void testDynamicLightsHaveMinUpdatePeriod() {
+        for (Light light : mEffectLights) {
+            assertThat(light.getMinUpdatePeriodMillis()).isGreaterThan(0);
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_LIGHT_ANIMATIONS)
+    @Test
     public void testColorSequenceValidation() {
         ColorSequence.Builder colorSequenceBuilder = new ColorSequence.Builder();
 
@@ -315,7 +323,10 @@ public class LightsManagerTest {
         // Validate creating a well constructed effect.
         MultiLightEffect.Builder effectBuilder =
                 new MultiLightEffect.Builder().addLightSequence(light, colorSequence);
-        Map<Integer, ColorSequence> sequenceMap = effectBuilder.build().getSequences();
+        LightsRequest.Builder requestBuilder =
+                new LightsRequest.Builder().setEffect(effectBuilder.build());
+
+        Map<Integer, ColorSequence> sequenceMap = requestBuilder.build().getEffect().getSequences();
         assertThat(sequenceMap.keySet()).containsExactly(light.getId());
         assertThat(sequenceMap.get(light.getId()).getDelaysMillis())
                 .asList()
@@ -342,6 +353,40 @@ public class LightsManagerTest {
                 () -> {
                     new MultiLightEffect.Builder().build();
                 });
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_LIGHT_ANIMATIONS)
+    @Test
+    public void testLightEffect_noInterpolation() {
+        assumeTrue("Skipped. Test requires animatable lights.", mEffectLights.size() >= 1);
+
+        Light light = mEffectLights.getFirst();
+        ColorSequence colorSequence =
+                new ColorSequence.Builder()
+                        .addControlPoint(0, BLUE)
+                        .addControlPoint(500, GREEN)
+                        .setInterpolationMode(ColorSequence.INTERPOLATION_MODE_NONE)
+                        .build();
+
+        // Validate that hte
+        MultiLightEffect.Builder effectBuilder =
+                new MultiLightEffect.Builder().addLightSequence(light, colorSequence);
+        Map<Integer, ColorSequence> sequenceMap = effectBuilder.build().getSequences();
+        assertThat(sequenceMap.keySet()).containsExactly(light.getId());
+        assertThat(sequenceMap.get(light.getId()).getInterpolationMode())
+                .isEqualTo(ColorSequence.INTERPOLATION_MODE_NONE);
+
+        try (LightsManager.LightsSession session = mManager.openSession(HIGH_PRIORITY)) {
+            // When the session plays an effect on the light:
+            session.requestLights(new Builder().setEffect(effectBuilder.build()).build());
+
+            // The light is configured with a sequence.
+            ColorSequence sequence = mManager.getLightSequence(light);
+
+            // Service received the interpolation type and kept it.
+            assertThat(sequence.getInterpolationMode())
+                    .isEqualTo(ColorSequence.INTERPOLATION_MODE_NONE);
+        }
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_LIGHT_ANIMATIONS)
@@ -446,6 +491,8 @@ public class LightsManagerTest {
             assertThat(sequence.getColors()[0]).isEqualTo(BLUE);
             assertThat(sequence.getDelaysMillis().length).isEqualTo(1);
             assertThat(sequence.getDelaysMillis()[0]).isEqualTo(500L);
+            assertThat(sequence.getInterpolationMode())
+                    .isEqualTo(ColorSequence.INTERPOLATION_MODE_LINEAR);
         }
     }
 
