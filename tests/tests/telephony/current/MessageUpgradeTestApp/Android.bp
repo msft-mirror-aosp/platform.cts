@@ -14,7 +14,6 @@ android_test_helper_app {
     ],
     platform_apis: true,
     test_suites: [
-        "cts",
         "general-tests",
     ],
     sdk_version: "test_current",

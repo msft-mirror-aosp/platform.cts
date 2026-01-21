@@ -23,7 +23,6 @@ android_test_helper_app {
     srcs: ["packages/src/**/*.java"],
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
     ],
     aaptflags: [
@@ -40,7 +39,6 @@ android_test_helper_app {
     srcs: ["packages/src/**/*.java"],
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
     ],
     aaptflags: [
@@ -57,7 +55,6 @@ android_test_helper_app {
     srcs: ["packages/src/**/*.java"],
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
     ],
     aaptflags: [
@@ -74,7 +71,6 @@ android_test_helper_app {
     srcs: ["packages/src/**/*.java"],
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
     ],
     aaptflags: [
