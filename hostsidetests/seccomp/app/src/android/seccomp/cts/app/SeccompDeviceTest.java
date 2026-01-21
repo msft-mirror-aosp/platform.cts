@@ -30,6 +30,7 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
@@ -150,13 +151,13 @@ public class SeccompDeviceTest {
             mConnectedCondition.close();
         }
 
-        public boolean getTestResult() {
+        public boolean getTestResult(int cmd) {
             boolean connected = mConnectedCondition.block(SERVICE_START_TIMEOUT_MS);
             if (!connected) {
                Log.e(TAG, "Failed to wait for IsolatedService to bind.");
                return false;
             }
-            Message msg = Message.obtain(null, IsolatedService.MSG_GET_SECCOMP_RESULT);
+            Message msg = Message.obtain(null, cmd);
             msg.replyTo = mMessenger;
             try {
                 mService.send(msg);
@@ -195,7 +196,28 @@ public class SeccompDeviceTest {
         // same address space as the ZygotePreload class, which holds the test
         // result.
         IsolatedConnection conn = bindService(IsolatedService.class);
-        boolean testResult = conn.getTestResult();
+        boolean testResult = conn.getTestResult(IsolatedService.MSG_GET_SECCOMP_RESULT);
+        Assert.assertTrue("seccomp tests in application zygote failed; see logs.", testResult);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.server.am.Flags.FLAG_USE_SAFESETID_UID_POLICY2)
+    public void testAppZygoteSyscallsSafesetid() {
+        // Isolated services that spawn from the application Zygote are allowed
+        // to preload code in a security context that is allowed to use
+        // setresuid() / setresgid() in a limited range; this test enforces
+        // we allow calls within the range, and reject those outside them.
+        // This is done from the ZygotePreload class (which runs in the app zygote
+        // context); here we just wait for the service to come up, and ask it
+        // whether the tests were executed successfully. We have to ask the service
+        // because that is the only process that we can talk to that shares the
+        // same address space as the ZygotePreload class, which holds the test
+        // result.
+        //
+        // When the safesetid UID policy is enabled, there is no longer an
+        // app-specific range, and only the global range is enforced.
+        IsolatedConnection conn = bindService(IsolatedService.class);
+        boolean testResult = conn.getTestResult(IsolatedService.MSG_GET_SECCOMP_RESULT_SAFESETID);
         Assert.assertTrue("seccomp tests in application zygote failed; see logs.", testResult);
     }
 
