@@ -75,6 +75,7 @@ class CompanionDeviceTestAppActivity : Activity() {
     val glassesCheckbox by lazy { CheckBox(this).apply { text = "Glasses" } }
     val medicalCheckbox by lazy { CheckBox(this).apply { text = "Medical" } }
     val nearbyCheckbox by lazy { CheckBox(this).apply { text = "Nearby Devices" } }
+    val aiAgentCheckbox by lazy { CheckBox(this).apply { text = "Remote AI Agent Support" } }
 
     val associationListLabel by lazy { TextView(this).apply { text = "Association List:" } }
     val associationListRadioGroup by lazy { RadioGroup(this).apply {
@@ -124,6 +125,7 @@ class CompanionDeviceTestAppActivity : Activity() {
             addView(fitnessCheckbox)
             addView(medicalCheckbox)
             addView(nearbyCheckbox)
+            addView(aiAgentCheckbox)
             addView(associationListLabel)
             addView(associationListScrollView)
 
@@ -145,6 +147,9 @@ class CompanionDeviceTestAppActivity : Activity() {
                 }
                 if (nearbyCheckbox.isChecked) {
                     setExtraPermissions(setOf(PERMISSION_GROUP_NEARBY))
+                }
+                if (aiAgentCheckbox.isChecked) {
+                    setRemoteAiAgentSupported(true)
                 }
                 addDeviceFilter(BluetoothDeviceFilter.Builder().apply {
                     if (!nameFilter.text.isEmpty()) {
