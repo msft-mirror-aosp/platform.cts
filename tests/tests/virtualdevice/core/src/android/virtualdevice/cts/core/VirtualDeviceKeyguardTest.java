@@ -103,8 +103,7 @@ public class VirtualDeviceKeyguardTest {
         try (LockScreenSession session = new LockScreenSession(sInstrumentation, mWmState)) {
             session.setLockCredential().gotoKeyguard();
             mWmState.assertKeyguardShowingAndNotOccluded();
-            mVirtualDeviceRule.runWithTemporaryPermission(
-                    () -> session.unlockDevice().enterAndConfirmLockCredential());
+            mVirtualDeviceRule.runWithTemporaryPermission(session::unlock);
             mWmState.waitAndAssertKeyguardGone();
 
             assertThat(mDefaultDeviceKeyguardManager.isDeviceSecure()).isTrue();

@@ -1375,8 +1375,7 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             orientationSession.setDeviceOrientation(Orientation.PORTRAIT);
 
             // Turn screen on again, unlock and verify that the IME is showing again
-            lockScreenSession.wakeUpDevice();
-            lockScreenSession.unlockDevice();
+            lockScreenSession.unlock();
             assertTrue("TestActivity should be focused after wakeup",
                     wmState.waitForFocusedActivity(testActivity.getComponentName()));
             assertTrue("EditText should remain focused after wakeup",

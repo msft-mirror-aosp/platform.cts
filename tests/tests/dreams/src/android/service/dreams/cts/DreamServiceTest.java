@@ -38,8 +38,8 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.os.RemoteException;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.platform.test.flag.junit.SetFlagsRule;
@@ -345,7 +345,7 @@ public class DreamServiceTest extends ActivityManagerTestBase {
         injectKey(KeyEvent.KEYCODE_SPACE, true, true);
         // Ensure keyguard is still visible
         mWmState.waitAndAssertKeyguardShowingAndOccluded();
-        lockScreenSession.enterAndConfirmLockCredential();
+        lockScreenSession.enterLockCredentialAndConfirm();
 
         mWmState.waitForHomeActivityVisible();
 
@@ -413,7 +413,7 @@ public class DreamServiceTest extends ActivityManagerTestBase {
 
         // Ensure keyguard is still visible
         mWmState.waitAndAssertKeyguardShowingAndOccluded();
-        lockScreenSession.enterAndConfirmLockCredential();
+        lockScreenSession.enterLockCredentialAndConfirm();
 
         mWmState.waitForHomeActivityVisible();
 

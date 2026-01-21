@@ -24,7 +24,6 @@ import static android.server.biometrics.cts.FingerprintHostsideConstants.FACE_AU
 import static android.server.biometrics.cts.FingerprintHostsideConstants.FACE_ENROLL_ACQUIRED_MESSAGES;
 import static android.server.biometrics.cts.FingerprintHostsideConstants.FINGERPRINT_AUTH_ACQUIRED_MESSAGES;
 import static android.server.biometrics.cts.FingerprintHostsideConstants.FINGERPRINT_ENROLL_ACQUIRED_MESSAGES;
-import static android.server.wm.ShellCommandHelper.executeShellCommand;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 
@@ -330,12 +329,7 @@ public class BiometricsAtomsHostSideTests {
             // Test SecureLockDeviceStateChanged.SecureLockDeviceEventType.
             // DISABLED_TWO_FACTOR_AUTHENTICATION
             // Successful primary authentication for first step of two-factor authentication:
-            // 1) Wake device
-            lockScreenSession.wakeUpDevice();
-            // 2) Show the bouncer before entering the credential.
-            executeShellCommand("wm dismiss-keyguard");
-            // 3) Enter the device credential
-            lockScreenSession.enterAndConfirmLockCredential();
+            lockScreenSession.unlock();
 
             PollingCheck.waitFor(
                     TIMEOUT,

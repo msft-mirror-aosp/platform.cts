@@ -138,7 +138,7 @@ public class MultiDisplayKeyguardTests extends MultiDisplayTestBase {
         mWmState.waitAndAssertKeyguardShownOnSecondaryDisplay(publicDisplay.mId);
 
         // Unlock then lock again, to ensure the display metrics has updated.
-        lockScreenSession.wakeUpDevice().unlockDevice();
+        lockScreenSession.unlock();
         // Overriding the display metrics on the default display should not affect Keyguard to show
         // on secondary display.
         final ReportedDisplayMetrics originalDisplayMetrics =
@@ -195,8 +195,7 @@ public class MultiDisplayKeyguardTests extends MultiDisplayTestBase {
         mWmState.waitAndAssertKeyguardShownOnSecondaryDisplay(secondDisplayId);
 
         // Unlock device. Keyguard should be dismissed on the second display
-        lockScreenSession.unlockDevice();
-        lockScreenSession.enterAndConfirmLockCredential();
+        lockScreenSession.unlock();
         mWmState.waitAndAssertKeyguardGone();
         mWmState.waitAndAssertKeyguardGoneOnSecondaryDisplay(secondDisplayId);
     }
@@ -235,8 +234,7 @@ public class MultiDisplayKeyguardTests extends MultiDisplayTestBase {
         mWmState.waitAndAssertKeyguardShownOnSecondaryDisplay(decoredSystemDisplayId);
 
         // Unlock device. Keyguard should be dismissed on the decored system display
-        lockScreenSession.unlockDevice();
-        lockScreenSession.enterAndConfirmLockCredential();
+        lockScreenSession.unlock();
         mWmState.waitAndAssertKeyguardGone();
         mWmState.waitAndAssertKeyguardGoneOnSecondaryDisplay(decoredSystemDisplayId);
     }
