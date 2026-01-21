@@ -86,6 +86,7 @@ public class MockModemService extends Service {
     protected static CountDownLatch[] sLatches;
     private LocalBinder mBinder;
     private final Semaphore mSetSatellitePlmnSemaphore = new Semaphore(0);
+    private final Semaphore mSetSatelliteNetworkInfoSemaphore = new Semaphore(0);
     private final Semaphore mSetSatelliteEnabledForCarrierSemaphore = new Semaphore(0);
     private final Semaphore mSatelliteEnabledForCarrierStateChangedSemaphore = new Semaphore(0);
     private static final long TIMEOUT = 5000;
@@ -417,6 +418,43 @@ public class MockModemService extends Service {
 
     public int getActiveMockModemCount() {
         return mNumOfPhone;
+    }
+
+    /** Modem completed setting satellite network info. */
+    public void onSetSatelliteNetworkInfo() {
+        Log.d(TAG, "onSetSatelliteNetworkInfo");
+        try {
+            mSetSatelliteNetworkInfoSemaphore.release();
+        } catch (Exception ex) {
+            Log.d(TAG, "onSetSatelliteNetworkInfo: Got exception, ex=" + ex);
+        }
+    }
+
+    /**
+     * Wait until setSatelliteNetworkInfo() is called.
+     *
+     * @param expectedNumberOfEvents The number of events expected to occur.
+     * @return true if the expected number of events occurred within the timeout, false otherwise.
+     */
+    public boolean waitForEventOnSetSatelliteNetworkInfo(int expectedNumberOfEvents) {
+        for (int i = 0; i < expectedNumberOfEvents; i++) {
+            try {
+                if (!mSetSatelliteNetworkInfoSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                    Log.e(TAG, "Timeout to receive onSetSatelliteNetworkInfo");
+                    return false;
+                }
+            } catch (Exception ex) {
+                Log.e(TAG, "onSetSatelliteNetworkInfo: Got exception=" + ex);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** Clear the events of setting satellite network info. */
+    public void clearEventOnSetSatelliteNetworkInfo() {
+        mSetSatelliteNetworkInfoSemaphore.drainPermits();
+        Log.d(TAG, "clearEventOnSetSatelliteNetworkInfo: drained");
     }
 
     /** Modem completed setting satellite PLMN. */

@@ -16,7 +16,9 @@
 
 package android.telephony.satellite.cts;
 
+import static android.telephony.mockmodem.MockModemConfigBase.SimInfoChangedResult.SIM_INFO_TYPE_MCC_MNC;
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_CHT;
+import static android.telephony.satellite.SatelliteManager.NT_RADIO_TECHNOLOGY_LTE_DTC;
 import static android.telephony.satellite.cts.ManualConnectCarrierRoamingSatelliteTest.createSendPendingIntent;
 import static android.telephony.satellite.cts.ManualConnectCarrierRoamingSatelliteTest.registerSmsMmsBroadcastReceiver;
 
@@ -25,10 +27,14 @@ import static junit.framework.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
 import android.app.Activity;
 import android.app.PendingIntent;
+import android.hardware.radio.AccessNetwork;
+import android.hardware.radio.network.NetworkInfo;
+import android.hardware.radio.network.SatelliteTechnology;
 import android.os.PersistableBundle;
 import android.os.SystemClock;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -38,11 +44,13 @@ import android.provider.Telephony;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.CarrierConfigManager;
 import android.telephony.NetworkRegistrationInfo;
+import android.telephony.ServiceState;
 import android.telephony.SignalThresholdInfo;
 import android.telephony.SubscriptionManager;
+import android.telephony.TelephonyCallback;
+import android.telephony.TelephonyManager;
 import android.telephony.ims.ImsManager;
 import android.telephony.ims.ImsMmTelManager;
-import android.telephony.mockmodem.MockModemConfigBase;
 import android.telephony.satellite.PlmnSatelliteConfig;
 import android.telephony.satellite.SatelliteManager;
 
@@ -52,6 +60,7 @@ import com.android.internal.telephony.flags.Flags;
 import com.android.internal.telephony.nano.PersistAtomsProto;
 import com.android.internal.telephony.nano.PersistAtomsProto.IncomingSms;
 import com.android.internal.telephony.nano.PersistAtomsProto.OutgoingSms;
+import com.android.internal.telephony.satellite.SatelliteServiceUtils;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -69,6 +78,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -121,6 +131,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
     public void tearDown() throws Exception {
         logd(TAG, "tearDown()");
         if (!shouldTestSatelliteWithMockService()) return;
+        sMockModemManager.setSatelliteTechnology(SLOT_ID_0, SatelliteTechnology.SAT_TECH_NONE);
         cleanUpMockSim(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT, true);
     }
 
@@ -390,10 +401,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
                     SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_ENTITLEMENT);
             waitForSatelliteDisabledForCarrier(SLOT_ID_0);
             // Verify that the PLMN list come from carrier config.
-            String satellitePlmn =
-                    sMockModemManager.getSimInfo(
-                            SLOT_ID_0,
-                            MockModemConfigBase.SimInfoChangedResult.SIM_INFO_TYPE_MCC_MNC);
+            String satellitePlmn = sMockModemManager.getSimInfo(SLOT_ID_0, SIM_INFO_TYPE_MCC_MNC);
             List<String> expectedTelephonyCarrierPlmnList = new ArrayList<>();
             List<String> expectedConfiguredCarrierPlmnList = new ArrayList<>();
             expectedTelephonyCarrierPlmnList.add(satellitePlmn);
@@ -523,7 +531,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             overrideCarrierConfig(subId, null);
 
             int[] boundaryThresholds = new int[] {-140, -100, -60, -44};
-            logd("Testing boundary values: " + Arrays.toString(boundaryThresholds));
+            logd(TAG, "Testing boundary values: " + Arrays.toString(boundaryThresholds));
             overrideCarrierConfig(
                     subId,
                     createBundle(
@@ -626,7 +634,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             overrideCarrierConfig(subId, null);
 
             int[] boundaryThresholds = new int[] {-23, 0, 20, 40};
-            logd("Testing boundary values: " + Arrays.toString(boundaryThresholds));
+            logd(TAG, "Testing boundary values: " + Arrays.toString(boundaryThresholds));
             overrideCarrierConfig(
                     subId,
                     createBundle(
@@ -729,7 +737,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             overrideCarrierConfig(subId, null);
 
             int[] boundaryThresholds = new int[] {-43, -20, 0, 20};
-            logd("Testing boundary values: " + Arrays.toString(boundaryThresholds));
+            logd(TAG, "Testing boundary values: " + Arrays.toString(boundaryThresholds));
             overrideCarrierConfig(
                     subId,
                     createBundle(
@@ -901,6 +909,240 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
         } finally {
             sTelephonyManager.unregisterTelephonyCallback(listener);
             dropShellIdentity();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_NR_NTN, Flags.FLAG_SATELLITE_26Q2_APIS})
+    public void testSetSatelliteNetworkInfo() throws Exception {
+        logd(TAG, "testSetSatelliteNetworkInfo");
+        if (!shouldTestSatelliteWithMockService()) return;
+        assumeTrue(
+                "Skipping test: HAL version is lower than 2.4",
+                getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK) >= RADIO_HAL_VERSION_2_4);
+
+        int subId = SubscriptionManager.getSubscriptionId(SLOT_ID_0);
+        sMockModemManager.clearEventOnSetSatelliteNetworkInfo();
+
+        String satellitePlmn = sMockModemManager.getSimInfo(SLOT_ID_0, SIM_INFO_TYPE_MCC_MNC);
+        logd(TAG, "satellitePlmn is " + satellitePlmn);
+
+        try {
+            PersistableBundle bundle = new PersistableBundle();
+            PersistableBundle satellitePlmnBundle = new PersistableBundle();
+            PersistableBundle plmnConfig = new PersistableBundle();
+            plmnConfig.putIntArray(
+                    CarrierConfigManager.KEY_SATELLITE_TECHNOLOGY_INT_ARRAY,
+                    new int[] {NT_RADIO_TECHNOLOGY_LTE_DTC});
+            satellitePlmnBundle.putPersistableBundle(satellitePlmn, plmnConfig);
+            bundle.putPersistableBundle(
+                    CarrierConfigManager.KEY_SATELLITE_CONFIGS_PER_PLMN_BUNDLE,
+                    satellitePlmnBundle);
+            overrideCarrierConfig(subId, bundle);
+            assertTrue(
+                    "Modem should receive setSatelliteNetworkInfo "
+                            + "when CarrierConfig is updated",
+                    sMockModemManager.waitForEventOnSetSatelliteNetworkInfo(1));
+
+            logd("Verify if allowed network info list is configured as expected");
+            List<NetworkInfo> configuredAllowedNetworkInfoList =
+                    getAllowedSatelliteNetworkInfoListConfigured(SLOT_ID_0);
+
+            NetworkInfo expectedNetworkInfo = new NetworkInfo();
+            expectedNetworkInfo.plmn = satellitePlmn;
+            expectedNetworkInfo.satelliteTechnology = SatelliteTechnology.SAT_TECH_DTC;
+            expectedNetworkInfo.accessNetwork = AccessNetwork.EUTRAN;
+            expectedNetworkInfo.arfcns = new int[] {};
+            expectedNetworkInfo.hasSamePriorityAsTn = false;
+            List<NetworkInfo> expectedAllowedNetworkInfoList = List.of(expectedNetworkInfo);
+
+            assertTrue(
+                    areNetworkInfoListsTheSame(
+                            expectedAllowedNetworkInfoList, configuredAllowedNetworkInfoList));
+
+            logd("Verify if disallowed network info list is configured as expected");
+            List<String> satellitePlmnListFromOverlayConfig =
+                    sMockSatelliteServiceManager.getPlmnListFromOverlayConfig();
+            List<String> satellitePlmnListFromCarrier =
+                    sSatelliteManager.getSatellitePlmnsForCarrier(subId);
+            List<String> mergedAllSatellitePlmnList =
+                    SatelliteServiceUtils.mergeStrLists(
+                            satellitePlmnListFromOverlayConfig, satellitePlmnListFromCarrier);
+            logd(TAG, "expectedAllSatellitePlmnList: " + mergedAllSatellitePlmnList);
+            List<String> expectedAllSatellitePlmnList = new ArrayList<>(mergedAllSatellitePlmnList);
+            assertTrue(
+                    "carrier plmn should be included",
+                    expectedAllSatellitePlmnList.remove(satellitePlmn));
+
+            List<NetworkInfo> expectedDisallowedSatelliteNetworkInfoList =
+                    getDefaultNetworkInfoList(expectedAllSatellitePlmnList);
+            List<NetworkInfo> configuredDisallowedSatelliteNetworkInfoList =
+                    getDisallowedSatelliteNetworkInfoListConfigured(SLOT_ID_0);
+            assertNotNull(configuredDisallowedSatelliteNetworkInfoList);
+            logd(
+                    TAG,
+                    "expectedDisallowedSatelliteNetworkInfoList:"
+                            + logNetworkInfoList(expectedDisallowedSatelliteNetworkInfoList));
+            logd(
+                    TAG,
+                    "configuredDisallowedSatelliteNetworkInfoList:"
+                            + logNetworkInfoList(configuredDisallowedSatelliteNetworkInfoList));
+            assertTrue(
+                    areNetworkInfoListsTheSame(
+                            expectedDisallowedSatelliteNetworkInfoList,
+                            configuredDisallowedSatelliteNetworkInfoList));
+            assertTrue(
+                    "No common items allowed",
+                    haveNoCommonNetworkInfoItems(
+                            configuredAllowedNetworkInfoList,
+                            configuredDisallowedSatelliteNetworkInfoList));
+        } finally {
+            overrideCarrierConfig(subId, null);
+        }
+    }
+
+    protected static class NtnStateCallback extends TelephonyCallback
+            implements TelephonyCallback.ServiceStateListener {
+        private final boolean mExpectedNtnState;
+        private final int mExpectedSatelliteTech;
+        private final CountDownLatch mLatch = new CountDownLatch(1);
+
+        /**
+         * Constructs a new NtnStateCallback with the expected NTN state and satellite technology.
+         *
+         * @param expectedState The expected Non-Terrestrial Network (NTN) registration state.
+         * @param satelliteTech The expected {@link SatelliteManager.NTRadioTechnology}.
+         */
+        NtnStateCallback(boolean expectedState, int satelliteTech) {
+            super();
+            mExpectedNtnState = expectedState;
+            mExpectedSatelliteTech = satelliteTech;
+        }
+
+        @Override
+        public void onServiceStateChanged(ServiceState serviceState) {
+            if (serviceState == null) return;
+            logd(TAG, "NtnStateCallback:onServiceStateChanged: " + serviceState);
+            NetworkRegistrationInfo nri =
+                    serviceState.getNetworkRegistrationInfo(
+                            NetworkRegistrationInfo.DOMAIN_PS,
+                            AccessNetworkConstants.TRANSPORT_TYPE_WWAN);
+            if (nri != null) {
+                int sateTechFromNetwork = nri.getSatelliteTechnology();
+                boolean isNtn = nri.isNonTerrestrialNetwork();
+                String registeredPlmn = nri.getRegisteredPlmn();
+                logd(
+                        TAG,
+                        "NtnStateCallback: isNonTerrestrialNetwork: "
+                                + isNtn
+                                + ", mExpectedNtnState: "
+                                + mExpectedNtnState
+                                + ", nri.getSatelliteTechnology: "
+                                + sateTechFromNetwork
+                                + ", mExpectedSatelliteTech: "
+                                + mExpectedSatelliteTech);
+
+                if (sateTechFromNetwork == mExpectedSatelliteTech && isNtn == mExpectedNtnState) {
+                    if (mLatch.getCount() > 0) {
+                        mLatch.countDown();
+                    }
+                }
+            } else {
+                logd(TAG, "NtnStateCallback: NetworkRegistrationInfo is null");
+            }
+        }
+
+        public boolean awaitStateChange(long timeoutMillis) throws InterruptedException {
+            boolean result = mLatch.await(timeoutMillis, TimeUnit.MILLISECONDS);
+            logd(TAG, "NtnStateCallback: awaitStateChange: result is " + result);
+            return result;
+        }
+    }
+
+    private void clearCarrierConfigurationForPlmn(int subId) {
+        logd(TAG, "Clear all carrier configuration for plmn");
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putPersistableBundle(
+                CarrierConfigManager.KEY_CARRIER_SUPPORTED_SATELLITE_SERVICES_PER_PROVIDER_BUNDLE,
+                PersistableBundle.EMPTY);
+        bundle.putPersistableBundle(
+                CarrierConfigManager.KEY_SATELLITE_CONFIGS_PER_PLMN_BUNDLE,
+                PersistableBundle.EMPTY);
+        bundle.putStringArray(
+                CarrierConfigManager.KEY_SATELLITE_SUPPORTED_EMERGENCY_PLMN_STRING_ARRAY,
+                new String[0]);
+        bundle.putStringArray(
+                CarrierConfigManager.KEY_SATELLITE_SUPPORTED_DISASTER_PLMN_STRING_ARRAY,
+                new String[0]);
+        overrideCarrierConfig(subId, bundle);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_NR_NTN, Flags.FLAG_SATELLITE_26Q2_APIS})
+    public void testNtnRecognition_WithUnlistedPlmn_BasedOnModemReport() throws Exception {
+        logd(TAG, "testNtnRecognition_WithUnlistedPlmn_BasedOnModemReport");
+        if (!shouldTestSatelliteWithMockService()) return;
+        assumeTrue(
+                "Skipping test: HAL version is lower than 2.4",
+                getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK) >= RADIO_HAL_VERSION_2_4);
+
+        int subId = SubscriptionManager.getSubscriptionId(SLOT_ID_0);
+        clearCarrierConfigurationForPlmn(subId);
+        CarrierRoamingNtnListenerTest roamingListener = new CarrierRoamingNtnListenerTest();
+        roamingListener.clearModeChanges();
+        sTelephonyManager.registerTelephonyCallback(
+                getContext().getMainExecutor(), roamingListener);
+        try {
+            logd(TAG, "Set the network mode to TN (NTN=false, Tech=UNKNOWN)");
+            NtnStateCallback ntnCallbackFalse =
+                    new NtnStateCallback(false, SatelliteManager.NT_RADIO_TECHNOLOGY_UNKNOWN);
+            sTelephonyManager.registerTelephonyCallback(
+                    getContext().getMainExecutor(), ntnCallbackFalse);
+            try {
+                logd(TAG, "No satellite technology (NONE) and a PLMN not in config");
+                sMockModemManager.setSatelliteTechnology(
+                        SLOT_ID_0, SatelliteTechnology.SAT_TECH_NONE);
+                sMockModemManager.changeNetworkService(
+                        SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT, true);
+
+                logd(TAG, "Verify: NTN=false, Tech=UNKNOWN");
+                assertTrue(
+                        "Failed to receive ntn=false state change",
+                        ntnCallbackFalse.awaitStateChange(TIMEOUT));
+                logd(TAG, "Verify: Check the status of the roaming listener");
+                assertFalse("Should be in terrestrial mode", roamingListener.getNtnMode());
+            } finally {
+                sTelephonyManager.unregisterTelephonyCallback(ntnCallbackFalse);
+            }
+
+            roamingListener.clearModeChanges();
+            logd(TAG, "Set the network as NTN (NTN=true, Tech=LTE_DTC, Plmn=unconfigured)");
+            NtnStateCallback ntnCallbackTrue =
+                    new NtnStateCallback(true, SatelliteManager.NT_RADIO_TECHNOLOGY_LTE_DTC);
+            sTelephonyManager.registerTelephonyCallback(
+                    getContext().getMainExecutor(), ntnCallbackTrue);
+            try {
+                sMockModemManager.setSatelliteTechnology(
+                        SLOT_ID_0, SatelliteTechnology.SAT_TECH_DTC);
+                assertNotNull(sMockModemManager.getAllSatellitePlmnList(SLOT_ID_0));
+                assertFalse(
+                        "Should not be included in configured all plmn",
+                        sMockModemManager
+                                .getAllSatellitePlmnList(SLOT_ID_0)
+                                .contains(
+                                        sTelephonyManager.getServiceState().getOperatorNumeric()));
+                assertTrue(
+                        "Failed to receive ntn=true state change based on modem report",
+                        ntnCallbackTrue.awaitStateChange(TIMEOUT));
+                assertTrue(roamingListener.waitForModeChanged(1));
+                assertTrue("Should be NTN mode", roamingListener.getNtnMode());
+            } finally {
+                sTelephonyManager.unregisterTelephonyCallback(ntnCallbackTrue);
+            }
+        } finally {
+            sTelephonyManager.unregisterTelephonyCallback(roamingListener);
+            overrideCarrierConfig(subId, null);
+            sMockModemManager.setSatelliteTechnology(SLOT_ID_0, SatelliteTechnology.SAT_TECH_NONE);
         }
     }
 }

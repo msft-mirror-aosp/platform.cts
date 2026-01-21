@@ -39,6 +39,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.hardware.radio.network.NetworkInfo;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
@@ -56,6 +57,7 @@ import android.telephony.mockmodem.MockModemConfigBase;
 import android.telephony.mockmodem.MockModemManager;
 import android.telephony.satellite.SatelliteManager;
 import android.telephony.satellite.stub.NTRadioTechnology;
+import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
 
@@ -747,6 +749,11 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
             NetworkRegistrationInfo.SERVICE_TYPE_MMS
         };
 
+        int[] supportedSatTechs = {
+            SatelliteManager.NT_RADIO_TECHNOLOGY_LTE_DTC,
+            SatelliteManager.NT_RADIO_TECHNOLOGY_NR_NTN
+        };
+
         PersistableBundle bundle = new PersistableBundle();
         bundle.putBoolean(CarrierConfigManager.KEY_SATELLITE_ATTACH_SUPPORTED_BOOL, true);
         bundle.putInt(
@@ -773,6 +780,15 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         // Configs for automatic connect type
         if (connectType == CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC) {
             bundle.putBoolean(CarrierConfigManager.KEY_EMERGENCY_MESSAGING_SUPPORTED_BOOL, true);
+
+            PersistableBundle plmnSpecificConfig = new PersistableBundle();
+            plmnSpecificConfig.putIntArray(
+                    CarrierConfigManager.KEY_SATELLITE_TECHNOLOGY_INT_ARRAY, supportedSatTechs);
+            PersistableBundle satelliteConfigPerPlmnBundle = new PersistableBundle();
+            satelliteConfigPerPlmnBundle.putPersistableBundle(satellitePlmn, plmnSpecificConfig);
+            bundle.putPersistableBundle(
+                    CarrierConfigManager.KEY_SATELLITE_CONFIGS_PER_PLMN_BUNDLE,
+                    satelliteConfigPerPlmnBundle);
         }
 
         // Configs for manual connect type only
@@ -850,6 +866,11 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
 
         // auto bundle
         PersistableBundle autoBundle = new PersistableBundle();
+        int[] supportedSatTechs = {
+            SatelliteManager.NT_RADIO_TECHNOLOGY_LTE_DTC,
+            SatelliteManager.NT_RADIO_TECHNOLOGY_NR_NTN
+        };
+
         autoBundle.putInt(
                 CarrierConfigManager
                         .KEY_CARRIER_ROAMING_NTN_EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_INT,
@@ -860,6 +881,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         autoBundle.putInt(
                 CarrierConfigManager.KEY_SATELLITE_DATA_SUPPORT_MODE_INT,
                 CarrierConfigManager.SATELLITE_DATA_SUPPORT_BANDWIDTH_CONSTRAINED);
+        autoBundle.putIntArray(
+                CarrierConfigManager.KEY_SATELLITE_TECHNOLOGY_INT_ARRAY, supportedSatTechs);
         perPlmnBundle.putPersistableBundle(autoPlmn, autoBundle);
 
         // manual bundle
@@ -871,6 +894,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         manualBundle.putInt(
                 CarrierConfigManager.KEY_CARRIER_ROAMING_NTN_CONNECT_TYPE_INT,
                 CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_MANUAL);
+        manualBundle.putIntArray(
+                CarrierConfigManager.KEY_SATELLITE_TECHNOLOGY_INT_ARRAY, supportedSatTechs);
         perPlmnBundle.putPersistableBundle(manualPlmn, manualBundle);
 
         bundle.putPersistableBundle(
@@ -1216,6 +1241,14 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         return sMockModemManager.waitForEventOnSetSatellitePlmn(expectedNumOfEvents);
     }
 
+    protected static boolean waitForEventOnSetSatelliteNetworkInfo(int expectedNumOfEvents) {
+        if (getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK) < RADIO_HAL_VERSION_2_4) {
+            loge(TAG, "waitForEventOnSetSatelliteNetworkInfo: not supported on HAL < 2.4");
+            return true;
+        }
+        return sMockModemManager.waitForEventOnSetSatelliteNetworkInfo(expectedNumOfEvents);
+    }
+
     @Nullable
     protected static List<String> getCarrierPlmnListConfigured(int slotId) {
         if (getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK) < RADIO_HAL_VERSION_2_3) {
@@ -1230,6 +1263,57 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
             return sMockSatelliteServiceManager.getAllSatellitePlmnList();
         }
         return sMockModemManager.getAllSatellitePlmnList(slotId);
+    }
+
+    /** Get the list of allowed satellite PLMNs configured in the mock modem. */
+    @Nullable
+    protected static List<NetworkInfo> getAllowedSatelliteNetworkInfoListConfigured(int slotId) {
+        if (getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK) < RADIO_HAL_VERSION_2_4) {
+            loge(TAG, "getAllowedSatelliteNetworkInfoListConfigured: not supported on HAL < 2.4");
+            return null;
+        }
+
+        return sMockModemManager.getAllowedSatelliteNetworkInfoList(slotId);
+    }
+
+    /** Get the list of allowed satellite PLMNs configured in the mock modem. */
+    @Nullable
+    protected static NetworkInfo getAllowedSatelliteNetworkInfoConfigured(
+            @Nullable List<NetworkInfo> networkInfoList, @NonNull String plmn) {
+
+        if (networkInfoList == null || networkInfoList.isEmpty()) {
+            loge(TAG, "getAllowedSatelliteNetworkInfoConfigured: networkInfoList is null or empty");
+            return null;
+        }
+
+        for (NetworkInfo info : networkInfoList) {
+            if (info != null && TextUtils.equals(info.plmn, plmn)) {
+                return info;
+            }
+        }
+        loge(TAG, "getAllowedSatelliteNetworkInfoConfigured: no matched networkInfo");
+        return null;
+    }
+
+    /** Get the list of disallowed satellite PLMNs configured in the mock modem. */
+    @Nullable
+    protected static List<NetworkInfo> getDisallowedSatelliteNetworkInfoListConfigured(int slotId) {
+        if (getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK) < RADIO_HAL_VERSION_2_4) {
+            loge(
+                    TAG,
+                    "getDisallowedSatelliteNetworkInfoListConfigured: not supported on HAL < 2.4");
+            return null;
+        }
+        return sMockModemManager.getDisallowedSatelliteNetworkInfoList(slotId);
+    }
+
+    /** Get the list of disallowed satellite PLMNs configured in the mock modem. */
+    protected static void clearAllSatelliteNetworkInfoList(int slotId) {
+        if (getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK) < RADIO_HAL_VERSION_2_4) {
+            loge(TAG, "clearAllSatelliteNetworkInfoList: not supported on HAL < 2.4");
+            return;
+        }
+        sMockModemManager.clearAllSatelliteNetworkInfoList(slotId);
     }
 
     protected static boolean getIsSatelliteEnabledForCarrierInMockService(int slotId) {
