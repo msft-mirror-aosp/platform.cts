@@ -971,6 +971,32 @@ class AppFunctionManagerTest {
         }
     }
 
+    @Test
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @EnsureHasNoDeviceOwner
+    @RequiresFlagsEnabled(android.app.appfunctions.flags.Flags.FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
+    fun executeAppFunction_inDifferentPackage_executeAppFunctionSystemPermission_success() = doBlocking {
+        runWithShellPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM) {
+            val parameters: GenericDocument =
+                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                    .setPropertyLong("a", 1)
+                    .setPropertyLong("b", 2)
+                    .build()
+            val request =
+                ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "add")
+                    .setParameters(parameters)
+                    .build()
+
+            val response = executeAppFunctionAndWait(mManager, request)
+
+            assertThat(response.exceptionOrNull()).isNull()
+            assertThat(response.isSuccess).isTrue()
+            assertThat(response.getOrNull()?.resultDocument?.getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE))
+                .isEqualTo(3)
+            assertServiceDestroyed()
+        }
+    }
+
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#isAppFunctionEnabled"])
     @Test
     @IncludeRunOnSecondaryUser

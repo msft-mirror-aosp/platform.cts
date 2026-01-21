@@ -251,6 +251,20 @@ class AppFunctionMetadataTest {
     @Test
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
+    fun installPackageWithAppFunction_runtimeMetadataVisible_withOnlyExecuteAppFunctionSystemPermission() =
+        doBlockingWithPermissions(Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM) {
+            installPackage(TEST_APP_A_V2_PATH)
+
+            retryAssert {
+                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG))
+                    .containsExactly(AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print1"))
+            }
+        }
+
+    @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     fun updatePackage_runtimeMetadataUpdated() =
         doBlockingWithPermissions(Manifest.permission.EXECUTE_APP_FUNCTIONS) {
             installPackage(TEST_APP_A_V2_PATH)

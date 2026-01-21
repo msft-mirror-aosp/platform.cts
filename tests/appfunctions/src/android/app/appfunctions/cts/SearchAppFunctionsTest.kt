@@ -368,6 +368,42 @@ class SearchAppFunctionsTest {
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @EnsureHasPermission(
+        Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM,
+        Manifest.permission.QUERY_ALL_PACKAGES,
+    )
+    fun searchAppFunctions_searchAllQueryAndExecuteAppFunctionsSystemPermission_shouldSeeAllPackages() =
+        doBlocking {
+            installPackage(TEST_APP_A_PATH)
+            try {
+                val searchSpec = AppFunctionSearchSpec.Builder().build()
+
+                val results: List<AppFunctionMetadata> = searchAppFunctions(searchSpec)
+                val functionsGroupByPackage = results.groupBy { it.packageMetadata.packageName }
+
+                assertThat(functionsGroupByPackage.keys).containsAnyIn(getVisiblePackages())
+                assertThat(
+                        functionsGroupByPackage[LegacySchemaHelperApp.PACKAGE_NAME]!!.map {
+                            it.name
+                        }
+                    )
+                    .containsExactlyElementsIn(LegacySchemaHelperApp.FunctionNames.ALL_FUNCTIONS)
+                assertThat(
+                        functionsGroupByPackage[DynamicSchemaHelperApp.PACKAGE_NAME]!!.map {
+                            it.name
+                        }
+                    )
+                    .containsExactlyElementsIn(DynamicSchemaHelperApp.FunctionNames.ALL_FUNCTIONS)
+            } finally {
+                uninstallPackage(TEST_APP_A_PKG)
+            }
+        }
+
+    @Test
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#searchAppFunctions"])
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    @EnsureHasPermission(
         Manifest.permission.QUERY_ALL_PACKAGES,
         Manifest.permission.EXECUTE_APP_FUNCTIONS,
     )
