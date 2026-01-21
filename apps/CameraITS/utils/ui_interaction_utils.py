@@ -1177,21 +1177,19 @@ def stop_cameraservice_watch(watch_process):
   logging.debug('Stopped watching 3a')
 
 
-def get_jca_zoom_ratios(file_name, physical_ids=None):
+def get_jca_zoom_ratios(file_name, request_zoom_ratios):
   """Returns the zoom_ratios used by JCA.
 
   Args:
     file_name: str; file name storing JCA camera pkg watch
       cameraservice dump output.
-    physical_ids: set of physical camera IDs to filter the zoom ratios for.
-      If None, all zoom ratios are returned.
+    request_zoom_ratios: list of zoom ratios requested by the test.
   Returns:
     zoom_ratios: zoom_ratios used by JCA
   Raises:
     FileNotFoundError: If file_name does not exist
   """
   zoom_ratios = []
-  skipped_first = False
   if not os.path.exists(file_name):
     raise FileNotFoundError(f'File not found: {file_name}')
   with open(file_name, 'r') as f:
@@ -1200,55 +1198,50 @@ def get_jca_zoom_ratios(file_name, physical_ids=None):
         zoom_ratio = re.findall(r'\[(.*?)\]', line)
         if len(zoom_ratio) != 1:
           raise ValueError(f'Failed to parse zoom ratio: {line}')
-        if not skipped_first:
-          skipped_first = True
-          continue
         try:
           zoom_ratios.append(float(zoom_ratio[0]))
         except ValueError as e:
           logging.debug('Failed to parse zoom ratio: %s', line)
           raise e
   logging.debug('zoom_ratios from JCA watch dump: %s', zoom_ratios)
-  if not physical_ids:
-    return zoom_ratios
-  # b/455846016: On physical camera switch, multiple zoom ratios can be logged
-  # in quick succession. For example:
-  # Camera IDs:  [3, 3, 2, 2, 2]
-  # Zoom Ratios: [0.5, 0.75, 1.001, 1.002, 2, 4, 6]
-  # There should be the same number of zoom ratios as camera IDs. To remove
-  # duplicates, we want to select the first or last zoom ratio in each "cluster"
-  # of similar zoom ratios. If the camera ID changes, then we select the last
-  # zoom ratio in the cluster. Otherwise, we select the first zoom ratio.
-  # In the example, there is a cluster of 1.001 and 1.002. 1.002 will
-  # be selected since the camera ID changed from 3 to 2.
-  processed_zoom_ratios = []
-  zoom_ratio_index = 0
-  for i in range(len(physical_ids)):
-    if zoom_ratio_index >= len(zoom_ratios):
-      raise AssertionError('Not enough zoom ratios found in JCA watch dump.')
-    current_physical_id = physical_ids[i]
-    id_changed = i > 0 and current_physical_id != physical_ids[i-1]
-    first_ratio_in_cluster = zoom_ratios[zoom_ratio_index]
-    cluster = []
-    temp_ratio_index = zoom_ratio_index
-    while temp_ratio_index < len(zoom_ratios):
-      current_ratio = zoom_ratios[temp_ratio_index]
-      if math.isclose(
-          current_ratio,
-          first_ratio_in_cluster,
-          abs_tol=JETPACK_CAMERA_APP_ZOOM_ATOL):
-        cluster.append(current_ratio)
-        temp_ratio_index += 1
-      else:
+  return match_zoom_ratios(zoom_ratios, request_zoom_ratios)
+
+
+def match_zoom_ratios(
+    result_zoom_ratios, request_zoom_ratios,
+    abs_tol=JETPACK_CAMERA_APP_ZOOM_ATOL):
+  """Returns zoom ratios that match request zoom ratios within a tolerance."""
+  result_index = 0
+  aligned_ratios = []
+  for request_ratio in request_zoom_ratios:
+    found = False
+    while result_index < len(result_zoom_ratios):
+      current_result_ratio = result_zoom_ratios[result_index]
+      # Check if this result matches the request within a tolerance
+      if math.isclose(current_result_ratio, request_ratio, abs_tol=abs_tol):
+        aligned_ratios.append(current_result_ratio)
+        result_index += 1
+        found = True
         break
-    if len(cluster) == 1 or not id_changed:
-      selected_ratio = cluster[0]
-    else:
-      selected_ratio = cluster[-1]
-    processed_zoom_ratios.append(selected_ratio)
-    zoom_ratio_index += len(cluster)
-  logging.debug('processed_zoom_ratios: %s', processed_zoom_ratios)
-  return processed_zoom_ratios
+      else:
+        logging.debug(
+            'Skipping result zoom ratio %s while looking for %s',
+            current_result_ratio,
+            request_ratio,
+        )
+        result_index += 1
+
+    if not found:
+      raise ValueError(
+          f'Could not find a match for request {request_ratio} in results.'
+          f' Mismatch too great at result index {result_index}.')
+
+  if len(aligned_ratios) != len(request_zoom_ratios):
+    raise ValueError(
+        f'Mismatch in number of ratios: {len(aligned_ratios)} vs'
+        f' {len(request_zoom_ratios)}')
+
+  return aligned_ratios
 
 
 def get_default_camera_zoom_ratio(file_name):
