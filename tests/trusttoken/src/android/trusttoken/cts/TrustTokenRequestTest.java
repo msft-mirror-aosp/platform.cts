@@ -21,10 +21,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
 import android.os.Parcel;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.security.Flags;
 import android.security.trusttoken.TrustTokenRequest;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -33,6 +38,9 @@ import java.util.List;
 
 @RunWith(AndroidJUnit4.class)
 public final class TrustTokenRequestTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final List<byte[]> TEST_ATTESTATION =
             Collections.singletonList(new byte[] {0, 1});
     private static final List<byte[]> TEST_PUBLIC_KEYS =
@@ -41,6 +49,7 @@ public final class TrustTokenRequestTest {
     private static final byte[] TEST_SIGNATURE = new byte[] {6, 7};
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
     public void build_nullAttestation_throws() {
         assertThrows(
                 NullPointerException.class,
@@ -53,6 +62,7 @@ public final class TrustTokenRequestTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
     public void build_nullPublicKeys_doesNotThrow() {
         TrustTokenRequest request =
                 new TrustTokenRequest.Builder()
@@ -64,6 +74,7 @@ public final class TrustTokenRequestTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
     public void build_emptyPublicKeys_doesNotThrow() {
         new TrustTokenRequest.Builder()
                 .setAttestation(TEST_ATTESTATION)
@@ -74,6 +85,7 @@ public final class TrustTokenRequestTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
     public void build_nullBatchHash_throws() {
         assertThrows(
                 NullPointerException.class,
@@ -86,6 +98,7 @@ public final class TrustTokenRequestTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
     public void build_nullSignature_throws() {
         assertThrows(
                 NullPointerException.class,
@@ -98,6 +111,7 @@ public final class TrustTokenRequestTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
     public void getters() {
         TrustTokenRequest request =
                 new TrustTokenRequest.Builder()
@@ -114,6 +128,7 @@ public final class TrustTokenRequestTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
     public void parcelable() {
         TrustTokenRequest request =
                 new TrustTokenRequest.Builder()
@@ -138,6 +153,7 @@ public final class TrustTokenRequestTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
     public void parcelable_corruptedParcel_throws() {
         Parcel parcel = Parcel.obtain();
         // Write some corrupted data to the parcel.
@@ -149,6 +165,7 @@ public final class TrustTokenRequestTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
     public void parcelable_noPublicKeys() {
         TrustTokenRequest request =
                 new TrustTokenRequest.Builder()
