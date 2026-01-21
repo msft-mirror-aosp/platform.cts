@@ -20,7 +20,7 @@ android_test {
     name: "CtsContactsPickerCoreTestCases",
     defaults: ["cts_defaults"],
     static_libs: [
-        "android.content.flags-aconfig-java",
+        "android.content.flags-aconfig-java-export",
         "androidx.test.rules",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
