@@ -43,6 +43,8 @@ import com.android.cts.verifier.audio.wavelib.VectorAverage;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.util.Arrays;
+
 /**
  * Tests Audio built in Microphone response for Voice Recognition audio source feature.
  */
@@ -920,6 +922,11 @@ public class AudioFrequencyVoiceRecognitionActivity extends AudioFrequencyActivi
      */
     private static final String SECTION_AUDIOFREQUENCYVOICERECOGNITION =
             "audio_frequency_voice_recognition";
+
+    private static final String KEY_BAND_SPECS_TONE = "band_specs_tone";
+    private static final String KEY_BAND_SPECS_MIC = "band_specs_mic";
+    private static final String KEY_BAND_SPECS_BACK = "band_specs_back";
+
     @Override
     public final String getReportSectionName() {
         return setTestNameSuffix(sCurrentDisplayMode, SECTION_AUDIOFREQUENCYVOICERECOGNITION);
@@ -950,6 +957,9 @@ public class AudioFrequencyVoiceRecognitionActivity extends AudioFrequencyActivi
 
     @Override // PassFailButtons
     public void recordTestResults() {
+        recordBandSpecs(KEY_BAND_SPECS_TONE, mBandSpecsTone);
+        recordBandSpecs(KEY_BAND_SPECS_MIC, mBandSpecsMic);
+        recordBandSpecs(KEY_BAND_SPECS_BACK, mBandSpecsBack);
         getReportLog().submit();
     }
 

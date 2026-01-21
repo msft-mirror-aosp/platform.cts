@@ -46,6 +46,8 @@ import com.android.cts.verifier.audio.wavelib.VectorAverage;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.util.Arrays;
+
 /**
  * Tests Audio Device roundtrip latency by using a loopback plug.
  */
@@ -452,6 +454,9 @@ public class AudioFrequencyLineActivity extends AudioFrequencyActivity implement
      */
     private static final String SECTION_AUDIOFREQUENCYLINE =
             "audio_frequency_line";
+
+    private static final String KEY_BAND_SPECS = "band_specs";
+
     @Override
     public final String getReportSectionName() {
         return setTestNameSuffix(sCurrentDisplayMode, SECTION_AUDIOFREQUENCYLINE);
@@ -482,6 +487,7 @@ public class AudioFrequencyLineActivity extends AudioFrequencyActivity implement
 
     @Override // PassFailButtons
     public void recordTestResults() {
+        recordBandSpecs(KEY_BAND_SPECS, bandSpecsArray);
         getReportLog().submit();
     }
 

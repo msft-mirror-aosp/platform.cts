@@ -50,6 +50,8 @@ import com.android.cts.verifier.audio.wavelib.VectorAverage;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.util.Arrays;
+
 /**
  * Tests Audio built in Microphone response for Unprocessed audio source feature.
  */
@@ -922,6 +924,12 @@ public class AudioFrequencyUnprocessedActivity extends AudioFrequencyActivity im
      */
     private static final String SECTION_AUDIOFREQUENCYUNPROCESSED =
             "audio_frequency_unprocessed";
+
+    private static final String KEY_MIC_RESPONSE_BAND_SPECS = "mic_response_band_specs";
+    private static final String KEY_TONE_RESPONSE_BAND_SPECS = "tone_response_band_specs";
+    private static final String KEY_BACKGROUND_RESPONSE_BAND_SPECS =
+            "background_response_band_specs";
+
     @Override
     public final String getReportSectionName() {
         return setTestNameSuffix(sCurrentDisplayMode, SECTION_AUDIOFREQUENCYUNPROCESSED);
@@ -952,6 +960,10 @@ public class AudioFrequencyUnprocessedActivity extends AudioFrequencyActivity im
 
     @Override // PassFailButtons
     public void recordTestResults() {
+        recordBandSpecs(KEY_MIC_RESPONSE_BAND_SPECS, mBandSpecsMic);
+        recordBandSpecs(KEY_TONE_RESPONSE_BAND_SPECS, mBandSpecsTone);
+        recordBandSpecs(KEY_BACKGROUND_RESPONSE_BAND_SPECS, mBandSpecsBack);
+
         getReportLog()
                 .addValue(
                         KEY_SUPPORTS_UNPROCESSED,
