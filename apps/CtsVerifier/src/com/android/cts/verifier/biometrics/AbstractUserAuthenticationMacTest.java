@@ -17,46 +17,31 @@
 package com.android.cts.verifier.biometrics;
 
 import android.hardware.biometrics.BiometricPrompt;
-import android.security.keystore.KeyGenParameterSpec;
-import android.security.keystore.KeyProperties;
 
-import javax.crypto.KeyGenerator;
-import javax.crypto.Mac;
+import java.time.Duration;
 
 public abstract class AbstractUserAuthenticationMacTest extends AbstractUserAuthenticationTest {
-    private Mac mMac;
+
+    private AuthBoundMacTest mAuthBoundMacTest = new AuthBoundMacTest();
 
     @Override
-    void createUserAuthenticationKey(String keyName, int timeout, int authType,
+    void createUserAuthenticationKey(String keyName, Duration timeout, int authType,
             boolean useStrongBox) throws Exception {
-        KeyGenParameterSpec.Builder builder = new KeyGenParameterSpec.Builder(
-                keyName, KeyProperties.PURPOSE_SIGN);
-        builder.setUserAuthenticationRequired(true)
-                .setIsStrongBoxBacked(useStrongBox)
-                .setUserAuthenticationParameters(timeout, authType);
-
-        KeyGenerator keyGenerator = KeyGenerator.getInstance(
-                KeyProperties.KEY_ALGORITHM_HMAC_SHA256, "AndroidKeyStore");
-        keyGenerator.init(builder.build());
-        keyGenerator.generateKey();
+        mAuthBoundMacTest.createUserAuthenticationKey(keyName, timeout, authType, useStrongBox);
     }
 
     @Override
     void initializeKeystoreOperation(String keyName) throws Exception {
-        mMac = Utils.initMac(keyName);
+        mAuthBoundMacTest.initializeKeystoreOperation(keyName);
     }
 
     @Override
     BiometricPrompt.CryptoObject getCryptoObject() {
-        return new BiometricPrompt.CryptoObject(mMac);
+        return new BiometricPrompt.CryptoObject(mAuthBoundMacTest.getCryptoObject());
     }
 
     @Override
     void doKeystoreOperation(byte[] payload) throws Exception {
-        try {
-            mMac.doFinal(payload);
-        } finally {
-            mMac = null;
-        }
+        mAuthBoundMacTest.doKeystoreOperation(payload);
     }
 }

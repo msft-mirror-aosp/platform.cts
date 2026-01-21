@@ -17,50 +17,31 @@
 package com.android.cts.verifier.biometrics;
 
 import android.hardware.biometrics.BiometricPrompt;
-import android.security.keystore.KeyGenParameterSpec;
-import android.security.keystore.KeyProperties;
 
-import java.security.KeyPairGenerator;
-import java.security.Signature;
-import java.security.spec.ECGenParameterSpec;
+import java.time.Duration;
 
 public abstract class AbstractUserAuthenticationSignatureTest
         extends AbstractUserAuthenticationTest {
-    private Signature mSignature;
+    private AuthBoundSignatureTest mAuthBoundSignatureTest = new AuthBoundSignatureTest();
 
     @Override
-    void createUserAuthenticationKey(String keyName, int timeout, int authType,
+    void createUserAuthenticationKey(String keyName, Duration timeout, int authType,
             boolean useStrongBox) throws Exception {
-        KeyGenParameterSpec.Builder builder = new KeyGenParameterSpec.Builder(
-                keyName, KeyProperties.PURPOSE_SIGN);
-        builder.setDigests(KeyProperties.DIGEST_SHA256)
-                .setAlgorithmParameterSpec(new ECGenParameterSpec("secp256r1"))
-                .setUserAuthenticationRequired(true)
-                .setIsStrongBoxBacked(useStrongBox)
-                .setUserAuthenticationParameters(timeout, authType);
-
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(
-                KeyProperties.KEY_ALGORITHM_EC, "AndroidKeyStore");
-        keyPairGenerator.initialize(builder.build());
-        keyPairGenerator.generateKeyPair();
+        mAuthBoundSignatureTest.createUserAuthenticationKey(keyName, timeout, authType, useStrongBox);
     }
 
     @Override
     void initializeKeystoreOperation(String keyName) throws Exception {
-        mSignature = Utils.initSignature(keyName);
+        mAuthBoundSignatureTest.initializeKeystoreOperation(keyName);
     }
 
     @Override
     BiometricPrompt.CryptoObject getCryptoObject() {
-        return new BiometricPrompt.CryptoObject(mSignature);
+        return new BiometricPrompt.CryptoObject(mAuthBoundSignatureTest.getCryptoObject());
     }
 
     @Override
     void doKeystoreOperation(byte[] payload) throws Exception {
-        try {
-            Utils.doSign(mSignature, payload);
-        } finally {
-            mSignature = null;
-        }
+        mAuthBoundSignatureTest.doKeystoreOperation(payload);
     }
 }
