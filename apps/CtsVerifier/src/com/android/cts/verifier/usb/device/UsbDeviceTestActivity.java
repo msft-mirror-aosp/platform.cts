@@ -112,6 +112,7 @@ public class UsbDeviceTestActivity extends PassFailButtons.Activity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.usb_main);
+        setPassFailButtonClickListeners();
         setInfoResources(R.string.usb_device_test, R.string.usb_device_test_info, -1);
 
         mStatus = (TextView) findViewById(R.id.status);
