@@ -118,7 +118,7 @@ def _handle_config_file(metadata: metadata_pb2.FileMetadata, file_path: str) -> 
         "/option[@name='run-command']",
         'value'
     )
-    disable_hidden_api_checks |= 'settings get global hidden_api_policy 1' in run_commands
+    disable_hidden_api_checks |= 'settings put global hidden_api_policy 1' in run_commands
     hidden_api_checks = _extract_values(
         root,
         "./test/option[@name='hidden-api-checks']",
