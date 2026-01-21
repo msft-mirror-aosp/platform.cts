@@ -33,7 +33,6 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
 import static java.lang.Math.abs;
@@ -163,7 +162,9 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                                 new FileInputStreamSource(file));
                         file.delete();
                     }
-                    fail("TEST FAILED; trace files saved: " + mTraceFiles + ".");
+                    CLog.logAndDisplay(
+                            Log.LogLevel.ERROR,
+                            "TEST FAILED; trace files saved: " + mTraceFiles + ".");
                 }
 
                 @Override
