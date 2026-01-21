@@ -2668,6 +2668,7 @@ public class AndroidKeyStoreTest {
     @CddTest(requirements = {"9.11/C-1-2"})
     @RequiresFlagsEnabled(android.security.keystore2.Flags.FLAG_MLDSA_SUPPORT)
     public void testKeyStore_ImportSupported_MlDsa() throws Exception {
+        TestUtils.assumeMlDsaSupported(/* useStrongBox= */ false);
         mKeyStore.load(null);
         String alias = "import-mldsa";
         String[] algorithms = {
