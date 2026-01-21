@@ -428,6 +428,12 @@ public class AudioPolicyInjectionTest {
         }
         captureThread.quit();
         captureThread.checkSuccessfulRun();
+        // allow the capture thread to finish
+        try {
+            captureThread.join(500);
+        } catch (InterruptedException e) {
+            // ignore interruption
+        }
         assertFalse("voice capture thread did not stop", captureThread.isAlive());
 
         assertFrequencyPresence("Voice", captureThread, FREQ_VOICE_STIMULI_HZ, present);
