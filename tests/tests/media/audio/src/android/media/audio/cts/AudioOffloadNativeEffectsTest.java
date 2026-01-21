@@ -89,6 +89,9 @@ public class AudioOffloadNativeEffectsTest {
     public void setup() throws Exception {
         assumeFalse("Skipping test, no need to test on emulator", Build.IS_EMULATOR);
         assumeFalse("Skipping test, no need to test on cuttlefish", MediaUtils.onCuttlefish());
+        assumeFalse(
+                "Skipping test, no need to test on gsi image running on cuttlefish",
+                MediaUtils.gsiOnCuttleFish());
 
         final Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
 
