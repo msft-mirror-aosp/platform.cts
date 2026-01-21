@@ -132,7 +132,6 @@ test_module_config {
         "android.view.cts.HoverTest",
         "android.view.cts.MotionEventTest",
         "android.view.cts.PointerCaptureTest",
-        "android.view.cts.TooltipTest",
         "android.view.cts.TouchDelegateTest",
         "android.view.cts.VerifyInputEventTest",
         "android.view.cts.ViewTest",
