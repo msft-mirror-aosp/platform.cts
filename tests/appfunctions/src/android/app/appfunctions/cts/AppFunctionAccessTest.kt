@@ -106,7 +106,8 @@ class AppFunctionAccessTest {
                 }
                 assertTrue(
                     "allowlist was $allowlist, searched for $testAgentPackageName, " +
-                            "expected to find: " + shouldContain
+                        "expected to find: " +
+                        shouldContain
                 ) {
                     allowlist.any { it == testAgentPackageName } == shouldContain
                 }
@@ -144,8 +145,8 @@ class AppFunctionAccessTest {
     fun getAccessRequestState_otherOverrideUser() {
         setAppFunctionFlags(ACCESS_FLAG_OTHER_DENIED or ACCESS_FLAG_USER_GRANTED)
         assertWithMessage(
-            "Expected access to be denied for other denied flag, even if user granted set"
-        )
+                "Expected access to be denied for other denied flag, even if user granted set"
+            )
             .that(getAccessRequestState(AGENT_PKG_NAME, TARGET_PKG_NAME))
             .isEqualTo(ACCESS_REQUEST_STATE_DENIED)
     }
@@ -360,41 +361,45 @@ class AppFunctionAccessTest {
     }
 
     @ApiTest(
-        apis = [
-        "android.app.appfunctions.AppFunctionManager#addAccessListener",
-        "android.app.appfunctions.AppFunctionManager#removeAccessListener"
-    ]
+        apis =
+            [
+                "android.app.appfunctions.AppFunctionManager#addAccessListener",
+                "android.app.appfunctions.AppFunctionManager#removeAccessListener",
+            ]
     )
     @Test
     @Throws(PackageManager.NameNotFoundException::class)
     fun addAndRemoveAccessListener_listenerRespondsToUpdates() {
         val latch = CountDownLatch(1)
         val latch2 = CountDownLatch(1)
-        val listener = AppFunctionManager.OnAppFunctionAccessChangedListener { aUid ->
-            if (aUid == android.os.Process.myUid()) {
-                if (latch.count != 0L) {
-                    latch.countDown()
-                } else {
-                    latch2.countDown()
+        val listener =
+            AppFunctionManager.OnAppFunctionAccessChangedListener { aUid ->
+                if (aUid == android.os.Process.myUid()) {
+                    if (latch.count != 0L) {
+                        latch.countDown()
+                    } else {
+                        latch2.countDown()
+                    }
                 }
             }
-        }
         try {
             val executor = Executor { it.run() }
             runWithShellPermissionIdentity {
                 appFunctionManager.addAccessChangedListener(executor, listener)
             }
             setAppFunctionFlags(ACCESS_FLAG_USER_GRANTED, context.packageName, TARGET_PKG_NAME)
-            assertWithMessage(
-                "Expected to get callback"
-            ).that(latch.await(LATCH_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isEqualTo(true)
+            assertWithMessage("Expected to get callback")
+                .that(latch.await(LATCH_TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                .isEqualTo(true)
             runWithShellPermissionIdentity {
                 appFunctionManager.removeAccessChangedListener(listener)
             }
             setAppFunctionFlags(0, context.packageName, TARGET_PKG_NAME)
             assertWithMessage(
-                "Expected latch to time out waiting for a callback after removing the callback"
-            ).that(latch2.await(LATCH_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isEqualTo(false)
+                    "Expected latch to time out waiting for a callback after removing the callback"
+                )
+                .that(latch2.await(LATCH_TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                .isEqualTo(false)
         } finally {
             // Even if we fail an assertion above, remove the listener
             runWithShellPermissionIdentity {
@@ -472,25 +477,6 @@ class AppFunctionAccessTest {
         }
     }
 
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#getValidTargets"])
-    @Test
-    fun getValidTargets_deviceSettingPackagesShouldHaveAndroidPackageName() {
-        val deviceSettingPackages = appFunctionManager.deviceSettingPackages
-
-        val targets = callWithShellPermissionIdentity { appFunctionManager.validTargets }
-
-        for (deviceSettingPackage in deviceSettingPackages) {
-            assertWithMessage("Expected $deviceSettingPackage to not be in the target list")
-                .that(targets)
-                .doesNotContain(deviceSettingPackage)
-        }
-        if (deviceSettingPackages.isNotEmpty()) {
-            assertWithMessage("Expected $ANDROID_PKG_NAME to be in the target list")
-                .that(targets)
-                .contains(ANDROID_PKG_NAME)
-        }
-    }
-
     @ApiTest(
         apis = ["android.app.appfunctions.AppFunctionManager#createRequestAppFunctionAccessIntent"]
     )
@@ -499,9 +485,7 @@ class AppFunctionAccessTest {
     fun testCreateRequestAppFunctionAccessIntent() {
         val testPkgName = "com.android.test"
         val intent = appFunctionManager.createRequestAccessIntent(testPkgName)
-        assertWithMessage(
-                "Expected intent action to be ${ACTION_REQUEST_APP_FUNCTION_ACCESS}"
-            )
+        assertWithMessage("Expected intent action to be ${ACTION_REQUEST_APP_FUNCTION_ACCESS}")
             .that(intent.action)
             .isEqualTo(ACTION_REQUEST_APP_FUNCTION_ACCESS)
         assertWithMessage("Expected targetPackage to be included in intent")

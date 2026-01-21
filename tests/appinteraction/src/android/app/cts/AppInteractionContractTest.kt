@@ -22,6 +22,8 @@ import android.app.UiAutomation
 import android.app.appfunctions.flags.Flags.FLAG_ENABLE_APP_INTERACTION_API
 import android.content.ContentResolver
 import android.content.Context
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
@@ -38,9 +40,11 @@ import com.android.bedstead.nene.TestApis
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.compatibility.common.util.ApiTest
+import com.google.common.truth.Truth.assertThat
 import kotlin.test.assertFailsWith
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.fail
 import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.ClassRule
@@ -125,6 +129,35 @@ class AppInteractionContractTest {
                     "content://com.android.appinteraction.history/user/${secondaryUser.userHandle().identifier}"
                 )
             )
+        }
+    }
+
+    @ApiTest(apis = ["android.app.AppInteractionContracts#getDeviceAssistancePackageNames"])
+    @Test
+    fun getDeviceAssistancePackageNames_shouldAllBeSystemApps() {
+        val packages: List<String> = AppInteractionContract.getDeviceAssistancePackageNames(context)
+
+        assertThat(packages).isNotNull()
+        for (pkg in packages) {
+            assertThat(pkg).isNotEmpty()
+            assertIsSystemApp(pkg)
+        }
+    }
+
+    private fun assertIsSystemApp(packageName: String) {
+        val pm = context.packageManager
+        if (pm.isSystemApp(packageName)) {
+            return
+        }
+        fail("$packageName is not a system app")
+    }
+
+    private fun PackageManager.isSystemApp(packageName: String): Boolean {
+        try {
+            val applicationInfo = getApplicationInfo(packageName, 0)
+            return (applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+        } catch (e: PackageManager.NameNotFoundException) {
+            return false
         }
     }
 
