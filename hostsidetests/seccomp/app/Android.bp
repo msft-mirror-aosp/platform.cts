@@ -24,6 +24,7 @@ android_test_helper_app {
     static_libs: [
         "androidx.test.rules",
         "compatibility-device-util-axt",
+        "am_flags_lib",
     ],
     jni_libs: [
         "libctsseccomp_jni",
