@@ -155,7 +155,6 @@ public class CellularSecurityCallbackTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SECURITY_ALGORITHMS_UPDATE_INDICATIONS)
     public void testOnSecurityAlgorithmsChangedListener() throws Throwable {
         assumeTrue(
                 "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
