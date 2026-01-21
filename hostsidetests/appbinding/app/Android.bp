@@ -50,7 +50,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     manifest: "app1/AndroidManifest.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -64,7 +63,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     manifest: "app2/AndroidManifest.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -78,7 +76,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     manifest: "app3/AndroidManifest.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -92,7 +89,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     manifest: "app4/AndroidManifest.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -106,7 +102,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     manifest: "app5/AndroidManifest.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -120,7 +115,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     manifest: "app6/AndroidManifest.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -134,7 +128,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     manifest: "app7/AndroidManifest.xml",
     test_suites: [
-        "cts",
         "vts",
         "general-tests",
     ],
@@ -150,7 +143,6 @@ android_test_helper_app {
     manifest: "appb/AndroidManifest.xml",
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -164,7 +156,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     manifest: "appsup1/AndroidManifest.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -178,7 +169,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     manifest: "appsup2/AndroidManifest.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -192,7 +182,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     manifest: "appsup3/AndroidManifest.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -206,7 +195,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     manifest: "appsup4/AndroidManifest.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -220,7 +208,6 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     manifest: "appsup5/AndroidManifest.xml",
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
