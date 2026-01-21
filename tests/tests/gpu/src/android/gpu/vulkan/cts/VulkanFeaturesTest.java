@@ -161,7 +161,11 @@ public class VulkanFeaturesTest {
                     "VK_KHR_video_decode_h265",
                     "VK_KHR_video_decode_queue",
                     "VK_KHR_video_queue",
-                    "VK_GOOGLE_user_type"});
+                    "VK_GOOGLE_user_type",
+                    // Note: while the KHR version of this extension is actually much newer,
+                    // test coverage is provided by the same set of tests used for the EXT
+                    // version of the extension, which were introduced with Android U (2023)
+                    "VK_KHR_swapchain_maintenance1"});
         DEQP_EXTENSIONS_MAP.put(
                 DEQP_LEVEL_FOR_T,
                 new String[] {
