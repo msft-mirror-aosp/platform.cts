@@ -610,19 +610,15 @@ object DevicePolicy {
                             /* refreshing= */ true, user.id())
                 }
 
-        val expectedActiveAdmin = DeviceAdmin.of(
-            user,
-            TestApis.packages().find(componentName.packageName),
-            componentName
-        )
         Poll.forValue("Active admins") { getActiveAdmins(user) }
                 .toMeet { i: Set<DeviceAdmin> ->
-                    i.contains(expectedActiveAdmin)
+                    i.contains(
+                            DeviceAdmin.of(componentName.packageName, componentName))
                 }
                 .errorOnFail()
                 .await()
 
-        return expectedActiveAdmin
+        return DeviceAdmin(user, TestApis.packages().find(componentName.packageName), componentName)
     }
 
     /**
@@ -635,10 +631,7 @@ object DevicePolicy {
                 val activeAdmins = devicePolicyManager(user).activeAdmins ?: return setOf()
                 return activeAdmins.stream()
                     .map { component: ComponentName ->
-                        DeviceAdmin.of(
-                            user,
-                            TestApis.packages().find(component.packageName),
-                            component)
+                        DeviceAdmin.of(component.packageName, component)
                     }
                     .collect(
                         Collectors.toSet()
