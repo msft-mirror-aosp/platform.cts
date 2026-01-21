@@ -28,6 +28,10 @@ import static org.junit.Assert.fail;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.keystore.cts.util.ImportedKey;
 import android.keystore.cts.util.TestUtils;
 import android.security.KeyPairGeneratorSpec;
 import android.security.keystore.KeyGenParameterSpec;
@@ -41,9 +45,11 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.bedstead.nene.annotations.Nullable;
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.CddTest;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -759,6 +765,10 @@ public class AndroidKeyStoreTest {
     private Context getContext() {
         return InstrumentationRegistry.getInstrumentation().getTargetContext();
     }
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -2629,6 +2639,56 @@ public class AndroidKeyStoreTest {
             try {
                 mKeyStore.deleteEntry(alias);
             } catch (Exception ignored) {}
+        }
+    }
+
+    // TODO(b/395069350): Delete this method once parsing the test resources works.
+    // Note: This can't be defined in TestUtils because it's in a different package and can't
+    // access the test resources.
+    private ImportedKey importMlDsaKeyIntoAndroidKeyStore(
+            String alias, Context context, String algorithm) throws Exception {
+        Certificate cert;
+        PrivateKey privateKey;
+        if (algorithm.equals(KeyProperties.KEY_ALGORITHM_ML_DSA_65)) {
+            cert = TestUtils.getRawResX509Certificate(context, R.raw.mldsa65_cert);
+            privateKey = TestUtils.getMlDsa65PrivateKey();
+        } else if (algorithm.equals(KeyProperties.KEY_ALGORITHM_ML_DSA_87)) {
+            cert = TestUtils.getRawResX509Certificate(context, R.raw.mldsa87_cert);
+            privateKey = TestUtils.getMlDsa87PrivateKey();
+        } else {
+            throw new IllegalArgumentException("Unsupported ML-DSA algorithm: " + algorithm);
+        }
+        PublicKey publicKey = cert.getPublicKey();
+        KeyProtection params =
+                TestUtils.getMinimalWorkingImportParametersForSigningWith("ML-DSA");
+        return TestUtils.importIntoAndroidKeyStore(alias, cert, publicKey, privateKey, params);
+    }
+
+    @Test
+    @CddTest(requirements = {"9.11/C-1-2"})
+    @RequiresFlagsEnabled(android.security.keystore2.Flags.FLAG_MLDSA_SUPPORT)
+    public void testKeyStore_ImportSupported_MlDsa() throws Exception {
+        mKeyStore.load(null);
+        String alias = "import-mldsa";
+        String[] algorithms = {
+            KeyProperties.KEY_ALGORITHM_ML_DSA_65, KeyProperties.KEY_ALGORITHM_ML_DSA_87
+        };
+
+        for (String algorithm : algorithms) {
+            try {
+                mKeyStore.deleteEntry(alias);
+                // TODO(b/395069350): Call TestUtils.importIntoAndroidKeyStore to use the
+                // DER-encoded private keys in cts/tests/tests/keystore/res/raw once parsing them
+                // works.
+                importMlDsaKeyIntoAndroidKeyStore(alias, getContext(), algorithm);
+            } catch (Throwable e) {
+                throw new RuntimeException("Failed for algorithm: " + algorithm, e);
+            } finally {
+                try {
+                    mKeyStore.deleteEntry(alias);
+                } catch (Exception ignored) {
+                }
+            }
         }
     }
 

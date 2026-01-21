@@ -363,7 +363,7 @@ public class SignatureTest {
             DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
-    @CddTest(requirement = "9.11/C-1-2")
+    @CddTest(requirements = {"9.11/C-1-2"})
     @RequiresFlagsEnabled(android.security.keystore2.Flags.FLAG_MLDSA_SUPPORT)
     public void testAlgorithmList_withMlDsa() {
         TestUtils.assumeMlDsaSupported(/* useStrongBox= */ false);
@@ -371,7 +371,7 @@ public class SignatureTest {
     }
 
     @Test
-    @CddTest(requirement = "9.11/C-1-2")
+    @CddTest(requirements = {"9.11/C-1-2"})
     @RequiresFlagsDisabled(android.security.keystore2.Flags.FLAG_MLDSA_SUPPORT)
     public void testAlgorithmList_withoutMlDsa() {
         testAlgorithmList(/* expectMlDsa= */ false);

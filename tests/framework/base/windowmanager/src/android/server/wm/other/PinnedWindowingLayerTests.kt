@@ -16,7 +16,6 @@
 
 package android.server.wm.other
 
-import android.app.Activity
 import android.app.ActivityManager.AppTask
 import android.app.AppOpsManager
 import android.content.Context
@@ -25,8 +24,9 @@ import android.content.pm.PackageManager
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import android.server.wm.ActivityLauncher.KEY_NEW_TASK
+import android.server.wm.CliIntentExtra.extraBool
 import android.server.wm.StateLogger.logAlways
-import android.server.wm.WindowManagerState
 import android.server.wm.WindowingLayerTestBase
 import android.server.wm.app.Components.PINNED_WINDOWING_LAYER_ACTIVITY
 import android.server.wm.app.Components.PinnedWindowingLayerActivity.ACTION_ACTIVITY_FINISHED
@@ -36,6 +36,7 @@ import android.server.wm.app.Components.PinnedWindowingLayerActivity.EXTRA_EXCEP
 import android.server.wm.app.Components.PinnedWindowingLayerActivity.EXTRA_RESULT_DETAILS
 import android.server.wm.app.Components.PinnedWindowingLayerActivity.EXTRA_RESULT_SUCCESS
 import android.server.wm.app.Components.PinnedWindowingLayerActivity.EXTRA_WINDOWING_LAYER_TYPE
+import android.server.wm.app.Components.TEST_ACTIVITY
 import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.FeatureUtil.isAutomotive
 import com.android.window.flags.Flags
@@ -146,6 +147,32 @@ class PinnedWindowingLayerTests : WindowingLayerTestBase() {
             "Did not receive an intent indicating the activity has finished.",
         )
         mWmState.waitForActivityRemoved(PINNED_WINDOWING_LAYER_ACTIVITY)
+    }
+
+    @Test
+    fun requestPinnedLayer_whenTaskIsNotFocused_fails() = runBlocking {
+        // assume task can be pinned, and unpin it to prepare for the test
+        launchTestActivity()
+        assumeRequestingPinnedLayerIsSupportedWithSuccessfulResult()
+        val unpinResult = requestWindowingLayer(AppTask.WINDOWING_LAYER_NORMAL_APP)
+        assertSuccess(unpinResult, AppTask.WINDOWING_LAYER_NORMAL_APP)
+        // unfocus the tested activity by launching a different new task
+        launchActivityOnDisplay(TEST_ACTIVITY, mainDisplayId, extraBool(KEY_NEW_TASK, true))
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+            TEST_ACTIVITY,
+            mainDisplayId,
+            "Test activity should be the top resumed activity with focus",
+        )
+
+        val result = requestWindowingLayer(AppTask.WINDOWING_LAYER_PINNED)
+
+        assertFalse(result.success)
+        assertNull(result.errorClass)
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+            TEST_ACTIVITY,
+            mainDisplayId,
+            "Test activity should still be focused after the rejected pinning request",
+        )
     }
 
     private fun launchTestActivity() {

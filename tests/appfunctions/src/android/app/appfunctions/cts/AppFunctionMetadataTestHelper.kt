@@ -159,23 +159,25 @@ class AppFunctionMetadataTestHelper {
                 GenericDocument.Builder<GenericDocument.Builder<*>>(
                         "app_functions",
                         "$PACKAGE_NAME/testTopLevelComponentId",
-                        "",
+                        "CustomTopLevelComponent1-android.app.appfunctions.cts.dynamic.schema",
                     )
+                    .setPropertyString("packageName", "android.app.appfunctions.cts.dynamic.schema")
                     .setPropertyString("customStringProperty", "testValue")
                     .build()
             val TOP_LEVEL_COMPONENT_2 =
                 GenericDocument.Builder<GenericDocument.Builder<*>>(
                         "app_functions",
                         "$PACKAGE_NAME/testTopLevelComponentId2",
-                        "",
+                        "CustomTopLevelComponent2-android.app.appfunctions.cts.dynamic.schema",
                     )
+                    .setPropertyString("packageName", "android.app.appfunctions.cts.dynamic.schema")
                     .setPropertyDocument(
                         "nestedDocumentProperty",
                         GenericDocument.Builder<GenericDocument.Builder<*>>(
-                                "",
+                                "app_functions",
                                 "$PACKAGE_NAME/" +
                                     "testTopLevelComponentId2/nestedDocumentProperty",
-                                "",
+                                "NestedDocument-android.app.appfunctions.cts.dynamic.schema",
                             )
                             .setPropertyLong("nestedIntProperty", 333L)
                             .setPropertyString("nestedRepeatedString", "value 1", "value 2")
@@ -281,7 +283,7 @@ class AppFunctionMetadataTestHelper {
             val DYNAMIC_SCHEMA_PACKAGE_METADATA =
                 AppFunctionPackageMetadata.create(
                     PACKAGE_NAME,
-                    listOf(Components.TOP_LEVEL_COMPONENT_1, Components.TOP_LEVEL_COMPONENT_2),
+                    listOf(Components.TOP_LEVEL_COMPONENT_2, Components.TOP_LEVEL_COMPONENT_1),
                 )
         }
     }

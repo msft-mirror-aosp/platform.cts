@@ -309,6 +309,9 @@
     <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraUPerfClassCharacteristics[1]" />
     <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraOrientationAlignedWithDevice[1]" />
 
+    <!-- b/476297893 -->
+    <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.CaptureRequestTest#testNoiseReductionModeControlFastFps[1]" />
+
     <!-- b/363168669 -->
     <option name="compatibility:exclude-filter" value="CtsWidgetTestCases[foldable:1:HALF_OPENED] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
     <option name="compatibility:exclude-filter" value="CtsWidgetTestCases[foldable:2:OPENED] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />

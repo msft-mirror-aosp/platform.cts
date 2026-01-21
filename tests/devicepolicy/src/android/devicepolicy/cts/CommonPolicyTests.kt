@@ -25,6 +25,7 @@ import android.app.admin.flags.Flags
 import android.app.admin.metadata.EnumPolicyMetadata
 import android.app.admin.metadata.GeneratedPolicyMetadata
 import android.app.admin.metadata.IntegerPolicyMetadata
+import android.app.admin.metadata.StringPolicyMetadata
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
 import com.android.bedstead.enterprise.dpc
@@ -89,7 +90,7 @@ public abstract class CommonPolicyTests<T> {
 
     @Test
     @CanSetPolicyTest(scope = POLICY_SCOPE_DEVICE)
-    fun scopeDevice_setValueToDefault_accepted() {
+    open fun scopeDevice_setValueToDefault_accepted() {
         setInitialValue(POLICY_SCOPE_DEVICE, getValidValue())
         testSetAndGet(POLICY_SCOPE_DEVICE, null)
     }
@@ -280,6 +281,8 @@ public abstract class CommonPolicyTests<T> {
             is IntegerPolicyMetadata,
             is EnumPolicyMetadata ->
                 dpcDpm.setIntegerPolicy(policyIdentifier.getId(), scope, value as Int)
+            is StringPolicyMetadata ->
+                dpcDpm.setStringPolicy(policyIdentifier.getId(), scope, value as String)
             else -> throw IllegalArgumentException("Unsupported type")
         }
     }
@@ -295,6 +298,8 @@ public abstract class CommonPolicyTests<T> {
                 val result = dpcDpm.getIntegerPolicy(policyIdentifier.getId(), scope)
                 return if (result == -1) null else result as T
             }
+            is StringPolicyMetadata ->
+                return dpcDpm.getStringPolicy(policyIdentifier.getId(), scope) as T?
             else -> throw IllegalArgumentException("Unsupported type")
         }
     }

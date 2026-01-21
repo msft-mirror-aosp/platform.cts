@@ -334,6 +334,74 @@ class PhotoPickerApiSurfaceTest {
         }
     }
 
+    @Test
+    @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
+    @ModernPhotopickerOnly
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PHOTOPICKER_UI_CUSTOMIZATION_PARAMS_API)
+    fun testLaunch_withUiCustomizationParamsExtra_succeeds() {
+        val params =
+            android.widget.photopicker.PhotoPickerUiCustomizationParams.Builder()
+                .setAspectRatio(
+                    android.widget.photopicker.PhotoPickerUiCustomizationParams
+                        .ASPECT_RATIO_PORTRAIT_9_16
+                )
+                .build()
+        val intent =
+            Intent(MediaStore.ACTION_PICK_IMAGES)
+                .putExtra(MediaStore.EXTRA_PICK_IMAGES_UI_CUSTOMIZATION_PARAMS, params)
+        val future = photoPickerRule.launchPhotoPicker(intent)
+        // press back to ensure picker launches successfully
+        photoPickerRule.device.pressBack()
+        future.get(5, TimeUnit.SECONDS)
+    }
+
+    @Test
+    @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
+    @ModernPhotopickerOnly
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PHOTOPICKER_UI_CUSTOMIZATION_PARAMS_API)
+    fun testGetContentLaunch_withUiCustomizationParamsExtra_fails() {
+        val params =
+            android.widget.photopicker.PhotoPickerUiCustomizationParams.Builder()
+                .setAspectRatio(
+                    android.widget.photopicker.PhotoPickerUiCustomizationParams
+                        .ASPECT_RATIO_PORTRAIT_9_16
+                )
+                .build()
+        val intent =
+            Intent(Intent.ACTION_GET_CONTENT).apply {
+                type = "image/*"
+                putExtra(MediaStore.EXTRA_PICK_IMAGES_UI_CUSTOMIZATION_PARAMS, params)
+            }
+
+        val result = photoPickerRule.launchPhotoPicker(intent).get(5, TimeUnit.SECONDS)
+        assertThat(result.resultCode).isEqualTo(Activity.RESULT_CANCELED)
+    }
+
+    @Test
+    @WithTestMedia(media = [TestMedia(type = MediaType.IMAGE)])
+    @ModernPhotopickerOnly
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PHOTOPICKER_UI_CUSTOMIZATION_PARAMS_API)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    fun testUserSelectLaunch_withUiCustomizationParamsExtra_fails() {
+        val params =
+            android.widget.photopicker.PhotoPickerUiCustomizationParams.Builder()
+                .setAspectRatio(
+                    android.widget.photopicker.PhotoPickerUiCustomizationParams
+                        .ASPECT_RATIO_PORTRAIT_9_16
+                )
+                .build()
+        val intent =
+            Intent(MediaStore.ACTION_USER_SELECT_IMAGES_FOR_APP).apply {
+                putExtra(Intent.EXTRA_UID, Process.myUid())
+                putExtra(MediaStore.EXTRA_PICK_IMAGES_UI_CUSTOMIZATION_PARAMS, params)
+            }
+
+        TestApis.permissions().withPermission(Manifest.permission.GRANT_RUNTIME_PERMISSIONS).use {
+            val result = photoPickerRule.launchPhotoPicker(intent).get(5, TimeUnit.SECONDS)
+            assertThat(result.resultCode).isEqualTo(Activity.RESULT_CANCELED)
+        }
+    }
+
     // GET_CONTENT
 
     // GET_CONTENT takeover requires a DeviceConfig override on S, so skip in CTS.
