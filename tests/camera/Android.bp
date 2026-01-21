@@ -92,6 +92,7 @@ android_test {
     stl: "c++_shared",
     srcs: [
         "src/**/*.java",
+        "src/**/*.kt",
     ],
     java_resources: [
         ":CameraCtsPropertyTestApp1",
