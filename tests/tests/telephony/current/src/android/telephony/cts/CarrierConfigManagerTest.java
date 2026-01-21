@@ -397,12 +397,10 @@ public class CarrierConfigManagerTest {
                     config.getIntArray(CarrierConfigManager
                             .KEY_CAPABILITIES_EXEMPT_FROM_SINGLE_DC_CHECK_INT_ARRAY),
                     new int[] {NetworkCapabilities.NET_CAPABILITY_IMS});
-            if (Flags.starlinkDataBugfix()) {
-                assertEquals("KEY_SATELLITE_CONNECTED_NOTIFICATION_THROTTLE_IN_MILLIS "
-                                + "doesn't match static default.",
-                        config.getLong(KEY_SATELLITE_CONNECTED_NOTIFICATION_THROTTLE_MILLIS_INT),
-                        TimeUnit.DAYS.toMillis(7));
-            }
+            assertEquals("KEY_SATELLITE_CONNECTED_NOTIFICATION_THROTTLE_IN_MILLIS "
+                            + "doesn't match static default.",
+                    config.getLong(KEY_SATELLITE_CONNECTED_NOTIFICATION_THROTTLE_MILLIS_INT),
+                    TimeUnit.DAYS.toMillis(7));
             if (Flags.enableRttHoldCarrierConfig()) {
                 assertTrue("KEY_ALLOW_HOLD_IN_RTT_CALL_BOOL doesn't match static default.",
                         config.getBoolean(KEY_ALLOW_HOLD_IN_RTT_CALL_BOOL));
