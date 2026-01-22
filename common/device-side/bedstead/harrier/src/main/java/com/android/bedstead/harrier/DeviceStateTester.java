@@ -76,6 +76,12 @@ public final class DeviceStateTester implements AutoCloseable {
     public void tearDown() {
         mDeviceState.teardown();
     }
+
+    /** Teardown all non-shareable states. */
+    public void tearDownNonShareableState() {
+        mDeviceState.teardownNonShareableState();
+    }
+
     private void setup(List<Annotation> annotations) {
         try {
             Description description =
