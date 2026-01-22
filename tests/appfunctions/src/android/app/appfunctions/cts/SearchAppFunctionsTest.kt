@@ -123,7 +123,7 @@ class SearchAppFunctionsTest {
     @EnsureDoesNotHavePermission(
         Manifest.permission.QUERY_ALL_PACKAGES,
         Manifest.permission.EXECUTE_APP_FUNCTIONS,
-        Manifest.permission.READ_APP_FUNCTION_METADATA,
+        Manifest.permission.DISCOVER_APP_FUNCTIONS,
     )
     @RequireRootInstrumentation(
         "Require to remove QUERY_ALL_PACKAGES permission that is granted by default when" +
@@ -167,7 +167,7 @@ class SearchAppFunctionsTest {
     @EnsureHasNoDeviceOwner
     @EnsureDoesNotHavePermission(
         Manifest.permission.EXECUTE_APP_FUNCTIONS,
-        Manifest.permission.READ_APP_FUNCTION_METADATA,
+        Manifest.permission.DISCOVER_APP_FUNCTIONS,
     )
     @EnsureHasPermission(Manifest.permission.QUERY_ALL_PACKAGES)
     @RequireRootInstrumentation(
@@ -214,7 +214,7 @@ class SearchAppFunctionsTest {
     @EnsureDoesNotHavePermission(
         Manifest.permission.QUERY_ALL_PACKAGES,
         Manifest.permission.EXECUTE_APP_FUNCTIONS,
-        Manifest.permission.READ_APP_FUNCTION_METADATA,
+        Manifest.permission.DISCOVER_APP_FUNCTIONS,
     )
     @RequireRootInstrumentation(
         "Require to remove QUERY_ALL_PACKAGES permission that is granted by default " +
@@ -244,7 +244,7 @@ class SearchAppFunctionsTest {
     @EnsureDoesNotHavePermission(
         Manifest.permission.QUERY_ALL_PACKAGES,
         Manifest.permission.EXECUTE_APP_FUNCTIONS,
-        Manifest.permission.READ_APP_FUNCTION_METADATA,
+        Manifest.permission.DISCOVER_APP_FUNCTIONS,
     )
     @RequireRootInstrumentation(
         "Require to remove QUERY_ALL_PACKAGES permission that is granted by default " +
@@ -332,7 +332,7 @@ class SearchAppFunctionsTest {
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @EnsureHasPermission(
-        Manifest.permission.READ_APP_FUNCTION_METADATA,
+        Manifest.permission.DISCOVER_APP_FUNCTIONS,
         Manifest.permission.QUERY_ALL_PACKAGES,
     )
     fun searchAppFunctions_searchAllQueryAndReadAppFunctionMetadataPermission_shouldSeeAllPackages() =
