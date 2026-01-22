@@ -16,8 +16,6 @@
 
 package android.view.cts;
 
-import static android.view.accessibility.Flags.FLAG_TEXT_CURSOR_BLINK_INTERVAL;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -122,7 +120,6 @@ public class ViewConfigurationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_TEXT_CURSOR_BLINK_INTERVAL)
     public void testGetTextCursorBlinkIntervalMillisInstanceMethod() {
         ViewConfiguration vc = ViewConfiguration.get(InstrumentationRegistry.getTargetContext());
         int blinkIntervalMs = vc.getTextCursorBlinkIntervalMillis();
