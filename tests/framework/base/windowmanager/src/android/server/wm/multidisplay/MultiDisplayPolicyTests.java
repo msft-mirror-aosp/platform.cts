@@ -399,6 +399,8 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
      */
     @Test
     public void testMoveTaskBetweenDisplays() {
+        // TODO(b/464035997): enable the test on main branch once we fix CarLaunchParamsModifier.
+        assumeFalse(isAutomotiveScalableUI());
         // Create new virtual display.
         final DisplayContent newDisplay = createManagedVirtualDisplaySession().createDisplay();
         mWmState.assertVisibility(VIRTUAL_DISPLAY_ACTIVITY, true /* visible */);
