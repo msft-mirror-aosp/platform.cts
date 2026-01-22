@@ -164,6 +164,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
 
                 // Click fallback page button
                 fallbackPageButton.click();
+                mDevice.waitForIdle();
 
                 // Wait for transition between pages
                 UiObject2 credentialButton = waitForView(FALLBACK_PAGE_CREDENTIAL_BUTTON);
@@ -267,6 +268,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
                 final UiObject2 fallbackPageButton = waitForView(BUTTON_ID_FALLBACK);
                 assertThat(fallbackPageButton).isNotNull();
                 fallbackPageButton.click();
+                mDevice.waitForIdle();
 
                 // Find fallback button
                 final Pattern fallbackPattern =
@@ -332,6 +334,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
                 final UiObject2 fallbackPageButton = waitForView(BUTTON_ID_FALLBACK);
                 assertThat(fallbackPageButton).isNotNull();
                 fallbackPageButton.click();
+                mDevice.waitForIdle();
 
                 // Find fallback button
                 final UiObject2 manageIdentityCheckButton =
@@ -386,9 +389,12 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
                     final UiObject2 fallbackPageButton = waitForView(BUTTON_ID_FALLBACK);
                     assertThat(fallbackPageButton).isNotNull();
                     fallbackPageButton.click();
+                    mDevice.waitForIdle();
 
                     // Test each fallback button
-                    final UiObject2 fallbackButton = findViewByText(fallbackTexts[i]);
+                    final BySelector fallbackSelector = By.text(fallbackTexts[i]);
+                    mDevice.wait(Until.hasObject(fallbackSelector), VIEW_WAIT_TIME_MS);
+                    final UiObject2 fallbackButton = mDevice.findObject(fallbackSelector);
                     assertThat(fallbackButton).isNotNull();
                     fallbackButton.click();
                     mInstrumentation.waitForIdleSync();
@@ -522,6 +528,7 @@ public class BiometricPromptFallbackOptionsTest extends BiometricTestBase {
             final UiObject2 credentialFallbackButton = waitForView(CREDENTIAL_FALLBACK_BUTTON);
             assertThat(credentialFallbackButton).isNotNull();
             credentialFallbackButton.click();
+            mDevice.waitForIdle();
 
             // Find first fallback
             final BySelector fallbackSelector = By.text(fallbackTexts[0]);
