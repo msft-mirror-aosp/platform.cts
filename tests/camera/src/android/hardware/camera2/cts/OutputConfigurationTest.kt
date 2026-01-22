@@ -52,6 +52,37 @@ class OutputConfigurationTest {
     @ApiTest(
         apis =
             [
+                "android.hardware.camera2.params.OutputConfiguration#setPhysicalCameraId",
+                "android.hardware.camera2.params.OutputConfiguration#getPhysicalCameraId",
+            ]
+    )
+    @RequiresFlagsEnabled(Flags.FLAG_OUTPUT_CONFIGURATION_GET_PHYSICAL_CAMERA_ID)
+    fun testPhysicalCameraIdGetter() {
+        val physicalCameraId = "23"
+        val size = Size(1280, 720)
+        val config = OutputConfiguration(size, SurfaceTexture::class.java)
+
+        // Default OutputConfiguration should return null for physical camera ID.
+        Assert.assertNull("OutputConfiguration must return null for physical camera ID when not " +
+                "set", config.physicalCameraId)
+
+        // Set the physical camera ID and verify that the user set value is returned.
+        config.setPhysicalCameraId(physicalCameraId)
+        Assert.assertEquals(
+            physicalCameraId,
+            config.physicalCameraId,
+        )
+
+        // Set the physical camera ID to null and verify that physicalCameraId is unset.
+        config.setPhysicalCameraId(null)
+        Assert.assertNull("OutputConfiguration must return null for physical camera ID when set to " +
+                "null", config.physicalCameraId)
+    }
+
+    @Test
+    @ApiTest(
+        apis =
+            [
                 "android.hardware.camera2.params.OutputConfiguration#getConfiguredFormat",
                 "android.hardware.camera2.params.OutputConfiguration#getConfiguredSize",
                 "android.hardware.camera2.params.OutputConfiguration#getUsage",
