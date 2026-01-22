@@ -232,36 +232,37 @@
     <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.PermissionTest23#testNoResidualPermissionsOnUninstall" />
 
     <!-- b/198992105 -->
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:1:TENT] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:2:HALF_FOLDED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:3:OPEN] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:1:TENT] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:2:HALF_FOLDED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:3:OPEN] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionStateAtomHostTestCases android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionStateAtomHostTestCases[instant] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionStateAtomHostTestCases[foldable:1:TENT] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionStateAtomHostTestCases[foldable:2:HALF_FOLDED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionStateAtomHostTestCases[foldable:3:OPEN] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionStateAtomHostTestCases android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionStateAtomHostTestCases[instant] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionStateAtomHostTestCases[foldable:1:TENT] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionStateAtomHostTestCases[foldable:2:HALF_FOLDED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionStateAtomHostTestCases[foldable:3:OPEN] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
     <!-- b/300310474 -->
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:REAR_DUAL] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:REAR_DUAL] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionStateAtomHostTestCases[foldable:5:REAR_DUAL] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionStateAtomHostTestCases[foldable:5:REAR_DUAL] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
     <!-- b/319385496 -->
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:2:HALF_OPENED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:3:OPENED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:4:OPENED_REVERSE] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:OPENED_PRESENTATION] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:6:OPENED_REVERSE_PRESENTATION] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:2:HALF_OPENED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:3:OPENED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:4:OPENED_REVERSE] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:OPENED_PRESENTATION] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:6:OPENED_REVERSE_PRESENTATION] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionStateAtomHostTestCases[foldable:2:HALF_OPENED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionStateAtomHostTestCases[foldable:3:OPENED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionStateAtomHostTestCases[foldable:4:OPENED_REVERSE] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionStateAtomHostTestCases[foldable:5:OPENED_PRESENTATION] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionStateAtomHostTestCases[foldable:6:OPENED_REVERSE_PRESENTATION] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionStateAtomHostTestCases[foldable:2:HALF_OPENED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionStateAtomHostTestCases[foldable:3:OPENED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionStateAtomHostTestCases[foldable:4:OPENED_REVERSE] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionStateAtomHostTestCases[foldable:5:OPENED_PRESENTATION] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionStateAtomHostTestCases[foldable:6:OPENED_REVERSE_PRESENTATION] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
     <!-- b/330287133 -->
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:OPENED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:OPENED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionStateAtomHostTestCases[foldable:5:OPENED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionStateAtomHostTestCases[foldable:5:OPENED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
     <!-- b/377901387 -->
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:CONCURRENT_OUTER_DEFAULT] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:CONCURRENT_OUTER_DEFAULT] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionStateAtomHostTestCases[foldable:5:CONCURRENT_OUTER_DEFAULT] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionStateAtomHostTestCases[foldable:5:CONCURRENT_OUTER_DEFAULT] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
+
     <!-- b/202357331 -->
     <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testCreateAdminSupportIntent" />
     <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testCreateAdminSupportIntent" />

@@ -69,14 +69,18 @@
     <option name="compatibility:include-filter" value="CtsSimRestrictedApisTestCases android.telephony4.cts.SimRestrictedApisTest#testSetLine1NumberForDisplay"/>
     <option name="compatibility:include-filter" value="CtsSimRestrictedApisTestCases android.telephony4.cts.SimRestrictedApisTest#testSetOperatorBrandOverride"/>
     <option name="compatibility:include-filter" value="CtsSimRestrictedApisTestCases android.telephony4.cts.SimRestrictedApisTest#testSetPreferredNetworkTypeToGlobal"/>
+    <!-- CtsMediaAtomHostTestCases -->
+    <option name="compatibility:include-filter" value="CtsMediaAtomHostTestCases android.cts.statsdatom.media.projection.MediaProjectionAtomsTests#testMediaProjectionStateChanged_appSelectorShown"/>
+    <option name="compatibility:include-filter" value="CtsMediaAtomHostTestCases android.cts.statsdatom.media.projection.MediaProjectionAtomsTests#testMediaProjectionStateChanged_setupCancelled"/>
+    <option name="compatibility:include-filter" value="CtsMediaAtomHostTestCases android.cts.statsdatom.media.projection.MediaProjectionAtomsTests#testMediaProjectionStateChanged_stoppedCapture"/>
+    <option name="compatibility:include-filter" value="CtsMediaAtomHostTestCases android.cts.statsdatom.media.projection.MediaProjectionAtomsTests#testMediaProjectionTargetChanged_stoppedCapture"/>
+    <!-- CtsPerfAtomHostTestCases -->
+    <option name="compatibility:include-filter" value="CtsPerfAtomHostTestCases android.cts.statsdatom.perf.UprobeStatsTest#testUpdateDeviceIdleTempAllowlist"/>
+    <!-- CtsPowerAtomHostTestCases -->
+    <option name="compatibility:include-filter" value="CtsPowerAtomHostTestCases android.cts.statsdatom.power.AdaptiveSuspendStatsTests#testAdaptiveSuspendStats"/>
+    <!-- CtsPowerManagerAtomHostTestCases -->
+    <option name="compatibility:include-filter" value="CtsPowerManagerAtomHostTestCases android.cts.statsdatom.powermanager.ThermalPowerManagerStatsTests#testThermalHeadroomCalledIsPushed"/>
     <!-- CtsStatsdAtomHostTestCases -->
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.media.projection.MediaProjectionAtomsTests#testMediaProjectionStateChanged_appSelectorShown"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.media.projection.MediaProjectionAtomsTests#testMediaProjectionStateChanged_setupCancelled"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.media.projection.MediaProjectionAtomsTests#testMediaProjectionStateChanged_stoppedCapture"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.media.projection.MediaProjectionAtomsTests#testMediaProjectionTargetChanged_stoppedCapture"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.perf.UprobeStatsTest#testUpdateDeviceIdleTempAllowlist"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.power.AdaptiveSuspendStatsTests#testAdaptiveSuspendStats"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.powermanager.ThermalPowerManagerStatsTests#testThermalHeadroomCalledIsPushed"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.statsd.UidAtomTests#testSyncState"/>
     <!-- CtsTetheringTest -->
     <option name="compatibility:include-filter" value="CtsTetheringTest android.tethering.cts.TetheringWifiP2pTest#testWifiP2pGoNetworkAgent_networkCallbacks"/>
