@@ -15,6 +15,7 @@
  */
 package android.app.appfunctions.cts
 
+import android.Manifest
 import android.app.appfunctions.AppFunctionException
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.AppFunctionManager.EnabledState
@@ -24,6 +25,8 @@ import android.app.appfunctions.AppFunctionStaticMetadataHelper.APP_FUNCTION_STA
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
 import android.app.appfunctions.cts.AppSearchUtils.collectAllSearchResults
+import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
+import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
 import android.app.appsearch.GenericDocument
 import android.app.appsearch.GlobalSearchSessionShim
 import android.app.appsearch.SearchResultsShim
@@ -136,11 +139,79 @@ object AppFunctionUtils {
             .isEqualTo("App function enabled state updated successfully.\n")
     }
 
-    /** Install package to the user */
-    fun installExistingPackageAsUser(packageName: String, user: UserReference) {
+    /** Install package as the context's user. */
+    suspend fun installPackage(
+        apkPath: String,
+        packageName: String,
+        userContext: Context,
+        checkIndexation: Boolean,
+    ) {
+        assertThat(
+                SystemUtil.runShellCommand(
+                    "pm install -r -t -g --user ${userContext.userId} $apkPath"
+                )
+            )
+            .isEqualTo("Success\n")
+
+        if (checkIndexation) {
+            retryAssert {
+                assertThat(getAllStaticMetadataPackages(userContext)).contains(packageName)
+            }
+            runWithShellPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS) {
+                retryAssert { assertThat(getAllRuntimeMetadataPackages()).contains(packageName) }
+            }
+        }
+    }
+
+    /** Install an existing package to the user. */
+    suspend fun installExistingPackageAsUser(
+        packageName: String,
+        user: UserReference,
+        context: Context? = null,
+        checkIndexation: Boolean = false,
+    ) {
         val userId = user.id()
         assertThat(SystemUtil.runShellCommand("pm install-existing --user $userId $packageName"))
             .isEqualTo("Package $packageName installed for user: $userId\n")
+
+        if (checkIndexation) {
+            retryAssert {
+                runWithShellPermission(Manifest.permission.INTERACT_ACROSS_USERS_FULL) {
+                    assertThat(
+                            getAllStaticMetadataPackages(
+                                context?.createContextAsUser(user.userHandle(), 0)
+                            )
+                        )
+                        .contains(packageName)
+                    assertThat(
+                            getAllRuntimeMetadataPackages(
+                                context?.createContextAsUser(user.userHandle(), 0)
+                            )
+                        )
+                        .contains(packageName)
+                }
+            }
+        }
+    }
+
+    suspend fun uninstallPackage(
+        packageName: String,
+        userContext: Context,
+        checkIndexation: Boolean = false,
+    ) {
+        SystemUtil.runShellCommand("pm uninstall --user ${userContext.userId} $packageName")
+
+        if (checkIndexation) {
+            // Blocked until the AppFunctions are removed
+            retryAssert {
+                assertThat(getAllStaticMetadataPackages(userContext)).doesNotContain(packageName)
+            }
+            runWithShellPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS) {
+                retryAssert {
+                    assertThat(getAllRuntimeMetadataPackages()).doesNotContain(packageName)
+                }
+            }
+        }
     }
 
     fun uninstallPackageAsUser(packageName: String, user: UserReference) {

@@ -25,9 +25,9 @@ import android.app.appfunctions.ExecuteAppFunctionResponse
 import android.app.appfunctions.RegisterAppFunctionRequest
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.CtsApp
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.DynamicSchemaHelperApp
+import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.UpdatableHelperApp
 import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunctionAndWait
-import android.app.appfunctions.cts.AppFunctionUtils.getAllRuntimeMetadataPackages
-import android.app.appfunctions.cts.AppFunctionUtils.getAllStaticMetadataPackages
+import android.app.appfunctions.cts.AppFunctionUtils.installPackage
 import android.app.appfunctions.cts.AppFunctionUtils.isAppFunctionEnabled
 import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabled
 import android.app.appfunctions.testutils.ConcatStrings
@@ -118,7 +118,7 @@ class AppFunctionRegistrationTest {
         val manager = context.getSystemService(AppFunctionManager::class.java)
         assumeNotNull(manager)
         this@AppFunctionRegistrationTest.manager = manager
-        uninstallPackage(TEST_APP_A_PKG)
+        uninstallPackage(UpdatableHelperApp.PACKAGE_NAME)
 
         setAppFunctionEnabled(
             DynamicSchemaHelperApp.PACKAGE_NAME,
@@ -264,17 +264,18 @@ class AppFunctionRegistrationTest {
     fun register_rightAfterInstalledPackage_success() = doBlocking {
         try {
             installPackage(
-                TEST_APP_A_PATH_DYNAMIC_ONLY_FUNCTIONS,
-                TEST_APP_A_PKG,
+                UpdatableHelperApp.ApkPaths.DYNAMIC_ONLY_FUNCTIONS,
+                UpdatableHelperApp.PACKAGE_NAME,
+                context,
                 checkIndexation = true,
             )
-            val service = bindToRegistrationService(TEST_APP_A_PKG)
+            val service = bindToRegistrationService(UpdatableHelperApp.PACKAGE_NAME)
             retryAssert {
                 assertThat(service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString()))
                     .isEqualTo(true)
             }
         } finally {
-            uninstallPackage(TEST_APP_A_PKG)
+            uninstallPackage(UpdatableHelperApp.PACKAGE_NAME)
         }
     }
 
@@ -284,19 +285,25 @@ class AppFunctionRegistrationTest {
     @Throws(Exception::class)
     fun register_rightAfterIndexedFunctionsDuringUpdate_success() = doBlocking {
         try {
-            installPackage(TEST_APP_A_PATH_NO_FUNCTIONS, TEST_APP_A_PKG, checkIndexation = false)
             installPackage(
-                TEST_APP_A_PATH_DYNAMIC_ONLY_FUNCTIONS,
-                TEST_APP_A_PKG,
+                UpdatableHelperApp.ApkPaths.NO_FUNCTIONS,
+                UpdatableHelperApp.PACKAGE_NAME,
+                context,
+                checkIndexation = false,
+            )
+            installPackage(
+                UpdatableHelperApp.ApkPaths.DYNAMIC_ONLY_FUNCTIONS,
+                UpdatableHelperApp.PACKAGE_NAME,
+                context,
                 checkIndexation = true,
             )
-            val service = bindToRegistrationService(TEST_APP_A_PKG)
+            val service = bindToRegistrationService(UpdatableHelperApp.PACKAGE_NAME)
             retryAssert {
                 assertThat(service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString()))
                     .isEqualTo(true)
             }
         } finally {
-            uninstallPackage(TEST_APP_A_PKG)
+            uninstallPackage(UpdatableHelperApp.PACKAGE_NAME)
         }
     }
 
@@ -307,22 +314,24 @@ class AppFunctionRegistrationTest {
     fun register_rightAfterIndexedFunctionsDuringUpdate_fromStaticFunctions_success() = doBlocking {
         try {
             installPackage(
-                TEST_APP_A_PATH_STATIC_ONLY_FUNCTIONS,
-                TEST_APP_A_PKG,
+                UpdatableHelperApp.ApkPaths.STATIC_ONLY_FUNCTIONS,
+                UpdatableHelperApp.PACKAGE_NAME,
+                context,
                 checkIndexation = true,
             )
             installPackage(
-                TEST_APP_A_PATH_DYNAMIC_ONLY_FUNCTIONS,
-                TEST_APP_A_PKG,
+                UpdatableHelperApp.ApkPaths.DYNAMIC_ONLY_FUNCTIONS,
+                UpdatableHelperApp.PACKAGE_NAME,
+                context,
                 checkIndexation = true,
             )
-            val service = bindToRegistrationService(TEST_APP_A_PKG)
+            val service = bindToRegistrationService(UpdatableHelperApp.PACKAGE_NAME)
             retryAssert {
                 assertThat(service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString()))
                     .isEqualTo(true)
             }
         } finally {
-            uninstallPackage(TEST_APP_A_PKG)
+            uninstallPackage(UpdatableHelperApp.PACKAGE_NAME)
         }
     }
 
@@ -1003,25 +1012,6 @@ class AppFunctionRegistrationTest {
             .isEqualTo(expectedOutput)
     }
 
-    private suspend fun installPackage(
-        path: String,
-        packageName: String,
-        checkIndexation: Boolean,
-    ) {
-        assertThat(
-                SystemUtil.runShellCommand(java.lang.String.format("pm install -r -t -g %s", path))
-            )
-            .isEqualTo("Success\n")
-
-        // Blocked until the AppFunctions are indexed too
-        if (checkIndexation) {
-            retryAssert { assertThat(getAllStaticMetadataPackages(context)).contains(packageName) }
-            runWithShellPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS) {
-                retryAssert { assertThat(getAllRuntimeMetadataPackages()).contains(packageName) }
-            }
-        }
-    }
-
     private fun uninstallPackage(packageName: String) {
         SystemUtil.runShellCommand("pm uninstall $packageName")
     }
@@ -1033,16 +1023,5 @@ class AppFunctionRegistrationTest {
         const val LONG_TIMEOUT_SECOND: Long = 20
 
         const val EXECUTE_APP_FUNCTIONS_PERMISSION = Manifest.permission.EXECUTE_APP_FUNCTIONS
-        const val TEST_APP_A_PKG: String = "com.android.cts.appsearch.indexertestapp.a"
-        const val TEST_APP_ROOT_FOLDER: String = "/data/local/tmp/cts/appfunctions/"
-
-        const val TEST_APP_A_PATH_NO_FUNCTIONS: String =
-            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppAV1.apk"
-
-        const val TEST_APP_A_PATH_STATIC_ONLY_FUNCTIONS: String =
-            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppAV3.apk"
-
-        const val TEST_APP_A_PATH_DYNAMIC_ONLY_FUNCTIONS =
-            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppAAppLevelFunctionsReg.apk"
     }
 }
