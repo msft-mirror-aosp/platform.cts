@@ -21,6 +21,8 @@ android_test {
     defaults: ["cts_defaults"],
     compile_multilib: "both",
     static_libs: [
+        "androidx.media3.media3-common",
+        "androidx.media3.media3-transformer",
         "compatibility-device-util-axt",
         "ctsmediav2common",
         "ctstestrunner-axt",
