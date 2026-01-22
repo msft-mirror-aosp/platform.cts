@@ -16,6 +16,7 @@
 package com.android.compatibility.common.util;
 
 import android.os.Process;
+import android.util.Log;
 
 /** A helper class for calling {@code am} commands. */
 public final class AmUtils {
@@ -33,7 +34,43 @@ public final class AmUtils {
     }
 
     /**
-     * Run "adb shell am kill PACKAGE"
+     * Kills all processes for a package. This is done by using {@code run-as} to gain the package's
+     * identity and then sending a {@code kill} signal to each of the package's processes.
+     *
+     * <p><b>NOTE:</b> This only kills debuggable apps
+     *
+     * @param packageName The package to kill.
+     * @param wait whether to wait until the package's processes have been killed.
+     * @throws Exception if the process is not killed in time.
+     */
+    public static void runForceKill(String packageName, boolean wait) throws Exception {
+        // Step 1: Find the PID of the running process for the given package.
+        // The 'pidof -s' command returns a single PID.
+        final String pidString = SystemUtil.runShellCommand("pidof -s " + packageName).trim();
+
+        // If pidString is empty, log a warning and return
+        if (pidString.isEmpty()) {
+            Log.w(TAG, "No PID found for " + packageName + ", skipping force kill.");
+            return;
+        }
+
+        // Step 2: Send the SIGKILL signal directly to the PID.
+        SystemUtil.runShellCommandForNoOutput("run-as " + packageName + " kill -9 " + pidString);
+
+        if (!wait) {
+            return;
+        }
+
+        TestUtils.waitUntil(
+                "package process was not killed:" + packageName,
+                () -> !isProcessRunning(packageName));
+    }
+
+    /**
+     * Kills all processes for a package.
+     *
+     * <p><b>NOTE:</b> This only kills processes that are safe to kill and that won't disrupt the
+     * user experience. Specifically ones with oom-adj >= 500
      *
      * @param packageName The package to kill.
      */
@@ -45,7 +82,7 @@ public final class AmUtils {
      * Run "adb shell am kill" on a package for the current user.
      *
      * <p><b>NOTE:</b> This only kills processes that are safe to kill and that won't disrupt the
-     * user experience.
+     * user experience. Specifically ones with oom-adj >= 500
      *
      * @param packageName The package to kill.
      * @param wait whether to wait until the package's processes have been killed.
