@@ -55,6 +55,7 @@ android_test {
         "platform-screenshot-diff-core",
         "ravenwood-junit",
         "android.app.flags-aconfig-java",
+        "android.systemserver.flags-aconfig-java",
     ],
     srcs: [
         "src/**/*.java",
