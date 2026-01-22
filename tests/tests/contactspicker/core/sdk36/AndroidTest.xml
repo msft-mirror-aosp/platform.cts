@@ -26,6 +26,15 @@
 
     <option name="force-queryable" value="true" />
 
+
+    <object type="module_controller" class="com.android.tradefed.testtype.suite.module.DeviceFeatureModuleController">
+        <option name="forbidden-feature" value="android.hardware.type.automotive"/>
+        <option name="forbidden-feature" value="android.software.leanback"/>
+        <option name="forbidden-feature" value="android.hardware.type.television"/>
+        <option name="forbidden-feature" value="android.hardware.type.watch"/>
+        <option name="forbidden-feature" value="android.hardware.type.pc"/>
+    </object>
+
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
         <option name="test-file-name" value="CtsContactsPickerCoreTestCasesSdk36.apk" />
