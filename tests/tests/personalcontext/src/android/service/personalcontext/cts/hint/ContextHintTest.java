@@ -37,6 +37,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.time.Instant;
+
 /** Build/Install/Run: atest CtsPersonalContextTestCases:ContextHintTest */
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PERSONAL_CONTEXT_SERVICE)
 @RunWith(AndroidJUnit4.class)
@@ -73,6 +75,9 @@ public class ContextHintTest {
         assertThat(outputHint).isInstanceOf(BundleHint.class);
         assertThat(hint.getHintId()).isEqualTo(outputHint.getHintId());
         assertThat(hint.getTokens()).containsExactly(tokenA, tokenB);
+        assertThat(hint.getCreationTime()).isGreaterThan(Instant.ofEpochMilli(0));
+        assertThat(hint.getCreationTime().toEpochMilli())
+                .isEqualTo(outputHint.getCreationTime().toEpochMilli());
     }
 
     /** Bundles then unbundles the given {@link ContextHint}. */

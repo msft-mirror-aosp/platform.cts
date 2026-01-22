@@ -47,6 +47,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Answers;
 
 import java.security.GeneralSecurityException;
+import java.time.Instant;
 import java.util.Random;
 import java.util.UUID;
 
@@ -118,6 +119,9 @@ public class ContextInsightTest {
         assertThat(outputInsight).isInstanceOf(BundleInsight.class);
         assertThat(insight.getInsightId()).isEqualTo(outputInsight.getInsightId());
         assertThat(insight.getTokens()).containsExactly(tokenA, tokenB);
+        assertThat(insight.getCreationTime()).isGreaterThan(Instant.ofEpochMilli(0));
+        assertThat(insight.getCreationTime().toEpochMilli())
+                .isEqualTo(outputInsight.getCreationTime().toEpochMilli());
 
         assertThat(outputInsight.getOriginHints().size()).isEqualTo(1);
 
