@@ -98,6 +98,7 @@ public class InsightSurfaceClientTest {
                 "android.service.personalcontext.embedded.InsightSurfaceClient#getNestedScrollAxes",
                 "android.service.personalcontext.embedded.InsightSurfaceClient"
                         + "#isNestedScrollAxisLocked",
+                "android.service.personalcontext.embedded.InsightSurfaceClient#shouldBlur",
                 "android.service.personalcontext.embedded.InsightSurfaceClient#getHints",
                 "android.service.personalcontext.embedded.InsightSurfaceClient#getReceivers",
             })
@@ -110,12 +111,14 @@ public class InsightSurfaceClientTest {
         final Color backgroundColor = Color.valueOf(Color.RED);
         final int nestedScrollAxes = View.SCROLL_AXIS_HORIZONTAL | View.SCROLL_AXIS_VERTICAL;
         final boolean isNestedScrollAxisLocked = true;
+        final boolean shouldBlur = true;
         final InsightSurfaceClient client =
                 new InsightSurfaceClient.Builder(mContext, mExecutor, mClientCallbacks)
                         .setMeasureSpecs(widthMeasureSpec, heightMeasureSpec)
                         .setBackgroundColor(backgroundColor)
                         .setNestedScrollAxes(nestedScrollAxes)
                         .setNestedScrollAxisLocked(isNestedScrollAxisLocked)
+                        .setShouldBlur(shouldBlur)
                         .addReceiver(mInsightReceiver)
                         .addHint(mHint)
                         .build();
@@ -125,6 +128,7 @@ public class InsightSurfaceClientTest {
         assertThat(client.getBackgroundColor()).isEqualTo(backgroundColor);
         assertThat(client.getNestedScrollAxes()).isEqualTo(nestedScrollAxes);
         assertThat(client.isNestedScrollAxisLocked()).isEqualTo(isNestedScrollAxisLocked);
+        assertThat(client.shouldBlur()).isEqualTo(shouldBlur);
         assertThat(client.getHints()).contains(mHint);
         assertThat(client.getReceivers()).contains(mInsightReceiver);
     }
