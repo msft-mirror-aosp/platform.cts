@@ -24,6 +24,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.personalcontext.Flags;
+import android.service.personalcontext.hint.ChatMessageContentCaptureData;
 import android.service.personalcontext.hint.ChatMessageData;
 import android.service.personalcontext.hint.ContextHint;
 import android.service.personalcontext.hint.ConversationData;
@@ -56,7 +57,6 @@ public class ConversationHintTest {
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String CONVERSATION_SESSION_ID = "session_id";
-    private static final AutofillId AUTOFILL_ID = new AutofillId(1);
     private static final String CONTENT_DESCRIPTION = "content description";
     private Instant mReferenceTime;
     private Instant mClientEventTimestamp;
@@ -72,9 +72,6 @@ public class ConversationHintTest {
                         .setText("text")
                         .setAuthor("author")
                         .setReferenceTime(mReferenceTime)
-                        .setAutofillId(AUTOFILL_ID)
-                        .setTimeText("12:00 PM")
-                        .setDateText("Today")
                         .setContentDescription(CONTENT_DESCRIPTION)
                         .build();
     }
@@ -100,7 +97,8 @@ public class ConversationHintTest {
         final Instant enterTimestamp = mReferenceTime;
         final Instant clientEventTimestamp = mClientEventTimestamp;
         final ConversationEnterEvent enterEvent =
-                new ConversationEnterEvent(CONVERSATION_SESSION_ID, clientEventTimestamp, enterTimestamp);
+                new ConversationEnterEvent(
+                        CONVERSATION_SESSION_ID, clientEventTimestamp, enterTimestamp);
         final ConversationHint hint = new ConversationHint.Builder(enterEvent).build();
         assertThat(hint.getHintId()).isNotNull();
 
@@ -134,9 +132,11 @@ public class ConversationHintTest {
         final Instant enterTimestamp = mReferenceTime;
         final Instant clientEventTimestamp = mClientEventTimestamp;
         final ConversationEnterEvent enterEvent =
-                new ConversationEnterEvent(CONVERSATION_SESSION_ID, clientEventTimestamp, enterTimestamp);
+                new ConversationEnterEvent(
+                        CONVERSATION_SESSION_ID, clientEventTimestamp, enterTimestamp);
         final ConversationEnterEvent enterEvent2 =
-                new ConversationEnterEvent(CONVERSATION_SESSION_ID, clientEventTimestamp, enterTimestamp);
+                new ConversationEnterEvent(
+                        CONVERSATION_SESSION_ID, clientEventTimestamp, enterTimestamp);
         assertThat(enterEvent).isEqualTo(enterEvent2);
         assertThat(enterEvent.hashCode()).isEqualTo(enterEvent2.hashCode());
         assertThat(enterEvent.toString()).isNotNull();
@@ -167,7 +167,8 @@ public class ConversationHintTest {
         final Instant eventTimestamp = mReferenceTime;
         final Instant clientEventTimestamp = mClientEventTimestamp;
         final ConversationExitEvent exitEvent =
-                new ConversationExitEvent(CONVERSATION_SESSION_ID, clientEventTimestamp, eventTimestamp);
+                new ConversationExitEvent(
+                        CONVERSATION_SESSION_ID, clientEventTimestamp, eventTimestamp);
         final ConversationHint hint = new ConversationHint.Builder(exitEvent).build();
         assertThat(hint.getHintId()).isNotNull();
 
@@ -200,9 +201,11 @@ public class ConversationHintTest {
         final Instant eventTimestamp = mReferenceTime;
         final Instant clientEventTimestamp = mClientEventTimestamp;
         final ConversationExitEvent exitEvent =
-                new ConversationExitEvent(CONVERSATION_SESSION_ID, clientEventTimestamp, eventTimestamp);
+                new ConversationExitEvent(
+                        CONVERSATION_SESSION_ID, clientEventTimestamp, eventTimestamp);
         final ConversationExitEvent exitEvent2 =
-                new ConversationExitEvent(CONVERSATION_SESSION_ID, clientEventTimestamp, eventTimestamp);
+                new ConversationExitEvent(
+                        CONVERSATION_SESSION_ID, clientEventTimestamp, eventTimestamp);
         assertThat(exitEvent).isEqualTo(exitEvent2);
         assertThat(exitEvent.hashCode()).isEqualTo(exitEvent2.hashCode());
         assertThat(exitEvent.toString()).isNotNull();
@@ -347,7 +350,10 @@ public class ConversationHintTest {
         final Instant updateTimestamp = mReferenceTime;
         final ConversationUpdateEvent updateEvent =
                 new ConversationUpdateEvent(
-                        CONVERSATION_SESSION_ID, clientEventTimestamp, updateTimestamp, conversationData);
+                        CONVERSATION_SESSION_ID,
+                        clientEventTimestamp,
+                        updateTimestamp,
+                        conversationData);
         final ConversationHint hint = new ConversationHint.Builder(updateEvent).build();
         assertThat(hint.getHintId()).isNotNull();
 
@@ -405,10 +411,16 @@ public class ConversationHintTest {
         final Instant updateTimestamp = mReferenceTime;
         final ConversationUpdateEvent updateEvent =
                 new ConversationUpdateEvent(
-                        CONVERSATION_SESSION_ID, clientEventTimestamp, updateTimestamp, conversationData);
+                        CONVERSATION_SESSION_ID,
+                        clientEventTimestamp,
+                        updateTimestamp,
+                        conversationData);
         final ConversationUpdateEvent updateEvent2 =
                 new ConversationUpdateEvent(
-                        CONVERSATION_SESSION_ID, clientEventTimestamp, updateTimestamp, conversationData);
+                        CONVERSATION_SESSION_ID,
+                        clientEventTimestamp,
+                        updateTimestamp,
+                        conversationData);
         assertThat(updateEvent).isEqualTo(updateEvent2);
         assertThat(updateEvent.hashCode()).isEqualTo(updateEvent2.hashCode());
         assertThat(updateEvent.toString()).isNotNull();
@@ -423,12 +435,10 @@ public class ConversationHintTest {
     @ApiTest(
             apis = {
                 "android.service.personalcontext.hint.ChatMessageData#getAuthor",
-                "android.service.personalcontext.hint.ChatMessageData#getAutofillId",
                 "android.service.personalcontext.hint.ChatMessageData#getContentDescription",
-                "android.service.personalcontext.hint.ChatMessageData#getDateText",
                 "android.service.personalcontext.hint.ChatMessageData#getReferenceTime",
                 "android.service.personalcontext.hint.ChatMessageData#getText",
-                "android.service.personalcontext.hint.ChatMessageData#getTimeText",
+                "android.service.personalcontext.hint.ChatMessageData#getContentCaptureData",
                 "android.service.personalcontext.hint.ChatMessageData#isOutgoingMessage",
                 "android.service.personalcontext.hint.ChatMessageData#equals",
                 "android.service.personalcontext.hint.ChatMessageData#hashCode",
@@ -436,13 +446,28 @@ public class ConversationHintTest {
                 "android.service.personalcontext.hint.ChatMessageData.Builder#Builder",
                 "android.service.personalcontext.hint.ChatMessageData.Builder#build",
                 "android.service.personalcontext.hint.ChatMessageData.Builder#setAuthor",
-                "android.service.personalcontext.hint.ChatMessageData.Builder#setAutofillId",
                 "android.service.personalcontext.hint.ChatMessageData"
                         + ".Builder#setContentDescription",
-                "android.service.personalcontext.hint.ChatMessageData.Builder#setDateText",
                 "android.service.personalcontext.hint.ChatMessageData.Builder#setReferenceTime",
                 "android.service.personalcontext.hint.ChatMessageData.Builder#setText",
-                "android.service.personalcontext.hint.ChatMessageData.Builder#setTimeText",
+                "android.service.personalcontext.hint.ChatMessageData.Builder"
+                        + "#setContentCaptureData",
+                "android.service.personalcontext.hint.ChatMessageContentCaptureData#getAutofillId",
+                "android.service.personalcontext.hint.ChatMessageContentCaptureData"
+                        + "#getRawParsedDateString",
+                "android.service.personalcontext.hint.ChatMessageContentCaptureData"
+                        + "#getRawParsedTimeString",
+                "android.service.personalcontext.hint.ChatMessageContentCaptureData#equals",
+                "android.service.personalcontext.hint.ChatMessageContentCaptureData.Builder"
+                        + "#Builder",
+                "android.service.personalcontext.hint.ChatMessageContentCaptureData.Builder"
+                        + "#setAutofillId",
+                "android.service.personalcontext.hint.ChatMessageContentCaptureData.Builder"
+                        + "#setRawParsedDateString",
+                "android.service.personalcontext.hint.ChatMessageContentCaptureData.Builder"
+                        + "#setRawParsedTimeString",
+                "android.service.personalcontext.hint.ChatMessageContentCaptureData.Builder"
+                        + "#build",
                 "android.service.personalcontext.hint.ConversationData#getChatMessages",
                 "android.service.personalcontext.hint.ConversationData#getComponentName",
                 "android.service.personalcontext.hint.ConversationData#getConversationTitle",
@@ -482,26 +507,38 @@ public class ConversationHintTest {
         final Instant chatMessageReferenceTime = mReferenceTime;
         final AutofillId chatMessageAutofillId = new AutofillId(2);
         final String chatMessageContentDescription = "chat message content description";
+
+        ChatMessageContentCaptureData contentCaptureData =
+                new ChatMessageContentCaptureData.Builder()
+                        .setRawParsedTimeString("12:00 PM")
+                        .setRawParsedDateString("Today")
+                        .setAutofillId(chatMessageAutofillId)
+                        .build();
+
         final ChatMessageData chatMessageData =
                 new ChatMessageData.Builder()
                         .setOutgoingMessage(true)
                         .setText("text")
                         .setAuthor("author")
                         .setReferenceTime(chatMessageReferenceTime)
-                        .setAutofillId(chatMessageAutofillId)
-                        .setTimeText("12:00 PM")
-                        .setDateText("Today")
+                        .setContentCaptureData(contentCaptureData)
                         .setContentDescription(chatMessageContentDescription)
                         .build();
         assertThat(chatMessageData.getText()).isEqualTo("text");
         assertThat(chatMessageData.getAuthor()).isEqualTo("author");
         assertThat(chatMessageData.getReferenceTime()).isEqualTo(chatMessageReferenceTime);
         assertThat(chatMessageData.isOutgoingMessage()).isTrue();
-        assertThat(chatMessageData.getTimeText()).isEqualTo("12:00 PM");
-        assertThat(chatMessageData.getDateText()).isEqualTo("Today");
-        assertThat(chatMessageData.getAutofillId()).isEqualTo(chatMessageAutofillId);
         assertThat(chatMessageData.getContentDescription())
                 .isEqualTo(chatMessageContentDescription);
+
+        assertThat(chatMessageData.getContentCaptureData()).isEqualTo(contentCaptureData);
+        assertThat(chatMessageData.getContentCaptureData().getRawParsedTimeString())
+                .isEqualTo(contentCaptureData.getRawParsedTimeString());
+        assertThat(chatMessageData.getContentCaptureData().getRawParsedDateString())
+                .isEqualTo(contentCaptureData.getRawParsedDateString());
+        assertThat(chatMessageData.getContentCaptureData().getAutofillId())
+                .isEqualTo(chatMessageAutofillId);
+
         assertThat(chatMessageData.toString()).isNotNull();
 
         final ChatMessageData chatMessageData2 =
@@ -510,9 +547,7 @@ public class ConversationHintTest {
                         .setText("text")
                         .setAuthor("author")
                         .setReferenceTime(chatMessageReferenceTime)
-                        .setAutofillId(chatMessageAutofillId)
-                        .setTimeText("12:00 PM")
-                        .setDateText("Today")
+                        .setContentCaptureData(contentCaptureData)
                         .setContentDescription(chatMessageContentDescription)
                         .build();
         assertThat(chatMessageData).isEqualTo(chatMessageData2);
