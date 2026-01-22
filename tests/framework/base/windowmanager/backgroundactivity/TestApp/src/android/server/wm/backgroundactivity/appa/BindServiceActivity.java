@@ -23,8 +23,12 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.os.Bundle;
 import android.os.IBinder;
+import android.os.StrictMode;
 import android.util.Log;
+
+import androidx.annotation.Nullable;
 
 /**
  * Foreground activity that makes AppB as foreground.
@@ -40,6 +44,12 @@ public class BindServiceActivity extends Activity {
         @Override
         public void onServiceDisconnected(ComponentName name) {}
     };
+
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        StrictMode.enableDefaults();
+    }
 
     @Override
     protected void onStart() {

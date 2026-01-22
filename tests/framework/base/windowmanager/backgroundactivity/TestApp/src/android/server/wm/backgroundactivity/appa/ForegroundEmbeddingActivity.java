@@ -31,9 +31,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.server.wm.jetpack.extensions.util.TestValueCountConsumer;
 import android.server.wm.jetpack.utils.WindowManagerJetpackTestBase;
 
+import androidx.annotation.Nullable;
 import androidx.window.extensions.embedding.ActivityEmbeddingComponent;
 import androidx.window.extensions.embedding.SplitInfo;
 
@@ -69,8 +71,9 @@ public class ForegroundEmbeddingActivity extends Activity {
             };
 
     @Override
-    public void onCreate(Bundle bundle) {
-        super.onCreate(bundle);
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        StrictMode.enableDefaults();
         final String appPackageName = getApplicationContext().getPackageName();
         mActionLaunchEmbeddedActivity =
                 buildFullActionName(appPackageName, ACTION_LAUNCH_EMBEDDED_ACTIVITY_SUFFIX);

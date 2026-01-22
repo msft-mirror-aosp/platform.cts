@@ -19,6 +19,7 @@ package android.server.wm.backgroundactivity.appa;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.os.SystemClock;
 import android.util.Log;
 
@@ -35,6 +36,7 @@ public class PipActivity extends Activity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        StrictMode.enableDefaults();
     }
 
     @Override
