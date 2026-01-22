@@ -34,7 +34,7 @@ _MIN_PHONE_MOVEMENT_ANGLE = 5  # degrees
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_ROTATIONS = 24
 _START_FRAME = 30  # give 3A 1s to warm up
-_VIDEO_DELAY_TIME = 5.5  # seconds
+_VIDEO_DELAY_TIME = 8  # seconds
 _VIDEO_DURATION = 5.5  # seconds
 _VIDEO_QUALITIES_TESTED = ('CIF:3', '480P:4', '720P:5', '1080P:6', 'QVGA:7',
                            'VGA:9')
