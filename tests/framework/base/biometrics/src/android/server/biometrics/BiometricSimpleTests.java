@@ -864,11 +864,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
                 "android.hardware.biometrics.BiometricPrompt.Builder#setAllowedAuthenticators",
                 "android.hardware.biometrics.BiometricPrompt#authenticate",
             })
-    @RequiresFlagsEnabled({
-        Flags.FLAG_IDENTITY_CHECK_API,
-        Flags.FLAG_IDENTITY_CHECK_TEST_API,
-        Flags.FLAG_IDENTITY_CHECK_ALL_SURFACES
-    })
+    @RequiresFlagsEnabled({Flags.FLAG_IDENTITY_CHECK_API, Flags.FLAG_IDENTITY_CHECK_TEST_API})
     @Test
     public void testBiometricAuth_biometricWeakAndDeviceCredential_identityCheckActive()
             throws Exception {
@@ -910,11 +906,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
                 "android.hardware.biometrics.BiometricPrompt.Builder#setAllowedAuthenticators",
                 "android.hardware.biometrics.BiometricPrompt#authenticate",
             })
-    @RequiresFlagsEnabled({
-        Flags.FLAG_IDENTITY_CHECK_API,
-        Flags.FLAG_IDENTITY_CHECK_TEST_API,
-        Flags.FLAG_IDENTITY_CHECK_ALL_SURFACES
-    })
+    @RequiresFlagsEnabled({Flags.FLAG_IDENTITY_CHECK_API, Flags.FLAG_IDENTITY_CHECK_TEST_API})
     @Test
     public void testBiometricAuth_biometricStrongAndDeviceCredential_identityCheckActive()
             throws Exception {
@@ -952,11 +944,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
                 "android.hardware.biometrics.BiometricPrompt.Builder#setAllowedAuthenticators",
                 "android.hardware.biometrics.BiometricPrompt#authenticate",
             })
-    @RequiresFlagsEnabled({
-        Flags.FLAG_IDENTITY_CHECK_API,
-        Flags.FLAG_IDENTITY_CHECK_TEST_API,
-        Flags.FLAG_IDENTITY_CHECK_ALL_SURFACES
-    })
+    @RequiresFlagsEnabled({Flags.FLAG_IDENTITY_CHECK_API, Flags.FLAG_IDENTITY_CHECK_TEST_API})
     @Test
     public void testBiometricAuth_deviceCredential_identityCheckActive() throws Exception {
         if (!hasWeakAndStrongSensor()) {
