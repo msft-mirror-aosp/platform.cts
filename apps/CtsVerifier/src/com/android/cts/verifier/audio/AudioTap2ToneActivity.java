@@ -40,6 +40,7 @@ import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
 import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.PassFailButtons;
+import com.android.cts.verifier.audio.reportlog.TestStatus;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.analyzers.TapLatencyAnalyzer;
 import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
@@ -141,6 +142,8 @@ public class AudioTap2ToneActivity
     private double[] mLatencyMin = new double[NUM_TEST_APIS];   // ms
     private double[] mLatencyMax = new double[NUM_TEST_APIS];   // ms
     private double[] mLatencyAve = new double[NUM_TEST_APIS];   // ms
+    private double[] mLatencyMeanAbsoluteDeviation = new double[NUM_TEST_APIS]; //ms
+    private TestStatus mTestStatus = TestStatus.TEST_STATUS_UNSPECIFIED;
 
     // Test State
     private static final int NUM_TEST_PHASES = 5;
@@ -349,7 +352,7 @@ public class AudioTap2ToneActivity
         mLatencyMin[mActiveTestAPI] =
             mLatencyMax[mActiveTestAPI] =
             mLatencyAve[mActiveTestAPI] = 0;
-
+        mLatencyMeanAbsoluteDeviation[mActiveTestAPI] = 0;
         java.util.Arrays.fill(mLatencyMillis, 0.0);
 
         mTestPhase = 0;
@@ -373,11 +376,13 @@ public class AudioTap2ToneActivity
             mSpecView.setText("");
             mResultsView.setText(getResources().getString(R.string.audio_tap2tone_isemulator));
             enableAudioButtons(false, false);
+            mTestStatus = TestStatus.TEST_STATUS_SKIPPED_UNSUPPORTED_DEVICE;
             getPassButton().setEnabled(true);
         } else if (!mHasMic || !mHasSpeaker) {
             mSpecView.setText("");
             mResultsView.setText(getResources().getString(R.string.audio_tap2tone_noio));
             enableAudioButtons(false, false);
+            mTestStatus = TestStatus.TEST_STATUS_SKIPPED_UNSUPPORTED_DEVICE;
             getPassButton().setEnabled(true);
         } else {
             boolean testCompleted = mTestPhase >= NUM_TEST_PHASES;
@@ -400,6 +405,11 @@ public class AudioTap2ToneActivity
             } else {
                 mSpecView.setText("Average: " + averageLatency + " ms > "
                         + mMaxRequiredLatency + " ms -- FAIL");
+            }
+            if (pass) {
+                mTestStatus = TestStatus.TEST_STATUS_PASSED;
+            } else {
+                mTestStatus = TestStatus.TEST_STATUS_FAILED;
             }
             getPassButton().setEnabled(pass);
         }
@@ -468,6 +478,7 @@ public class AudioTap2ToneActivity
         mLatencyAve[mActiveTestAPI] = StatUtils.calculateMean(mLatencyMillis);
         double meanAbsoluteDeviation = StatUtils.calculateMeanAbsoluteDeviation(
                 mLatencyAve[mActiveTestAPI], mLatencyMillis, mTestPhase + 1);
+        mLatencyMeanAbsoluteDeviation[mActiveTestAPI] = meanAbsoluteDeviation;
 
         mTestPhase++;
 
@@ -571,7 +582,10 @@ public class AudioTap2ToneActivity
     private static final String KEY_LATENCY_MIN = "latency_min_";
     private static final String KEY_LATENCY_MAX = "latency_max_";
     private static final String KEY_LATENCY_AVE = "latency_ave_";
+    private static final String KEY_LATENCY_MEAN_ABSOLUTE_DEVIATION = "latency_mean_absolute_deviation_";
+    private static final String KEY_LATENCY_THRESHOLD = "latency_threshold_";
     private static final String KEY_LATENCY_NUM_MEASUREMENTS = "latency_num_measurements_";
+    private static final String KEY_STATUS = "status";
 
     private void reportTestResultForApi(int api) {
         CtsVerifierReportLog reportLog = getReportLog();
@@ -591,6 +605,16 @@ public class AudioTap2ToneActivity
                 ResultType.NEUTRAL,
                 ResultUnit.NONE);
         reportLog.addValue(
+                KEY_LATENCY_MEAN_ABSOLUTE_DEVIATION + api,
+                mLatencyMeanAbsoluteDeviation[api],
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+        reportLog.addValue(
+                KEY_LATENCY_THRESHOLD + api,
+                mMaxRequiredLatency,
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+        reportLog.addValue(
                 KEY_LATENCY_NUM_MEASUREMENTS + api,
                 mNumMeasurements[api],
                 ResultType.NEUTRAL,
@@ -605,6 +629,11 @@ public class AudioTap2ToneActivity
         getReportLog().addValue(
                 Common.KEY_VERSION_CODE,
                 Common.VERSION_CODE,
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+        getReportLog().addValue(
+                KEY_STATUS,
+                mTestStatus.name(),
                 ResultType.NEUTRAL,
                 ResultUnit.NONE);
 
