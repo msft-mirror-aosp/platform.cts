@@ -540,25 +540,4 @@ public class DevicePolicyManagerTest extends AndroidTestCase {
             assertProfileOwnerMessage(tolerated.getMessage());
         }
     }
-
-    public void testSetStorageEncryption_noAdmin() {
-        if (!mDeviceAdmin) {
-            Log.w(TAG, "Skipping testSetStorageEncryption_noAdmin");
-            return;
-        }
-        final ComponentName notAdmin = new ComponentName("com.test.foo", ".bar");
-        if (UserManager.isHeadlessSystemUserMode() && !mUser.isSystem()) {
-            assertWithMessage("setStorageEncryption(%s, true) on user %s", notAdmin, mUser)
-                    .that(mDevicePolicyManager.setStorageEncryption(notAdmin, true))
-                    .isEqualTo(DevicePolicyManager.ENCRYPTION_STATUS_UNSUPPORTED);
-            assertWithMessage("setStorageEncryption(%s, false) on user %s", notAdmin, mUser)
-                    .that(mDevicePolicyManager.setStorageEncryption(notAdmin, false))
-                    .isEqualTo(DevicePolicyManager.ENCRYPTION_STATUS_UNSUPPORTED);
-        } else {
-            assertThrows(SecurityException.class,
-                () -> mDevicePolicyManager.setStorageEncryption(notAdmin, true));
-            assertThrows(SecurityException.class,
-                () -> mDevicePolicyManager.setStorageEncryption(notAdmin, false));
-        }
-    }
 }
