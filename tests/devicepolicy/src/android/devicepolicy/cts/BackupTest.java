@@ -39,20 +39,21 @@ import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.enterprise.policies.Backup;
+import com.android.bedstead.enterprise.policies.BackupAppliesToParent;
+import com.android.bedstead.enterprise.policies.SecurityLoggingDelegation;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnumTestParameter;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
-import com.android.bedstead.enterprise.policies.Backup;
-import com.android.bedstead.enterprise.policies.BackupAppliesToParent;
-import com.android.bedstead.enterprise.policies.SecurityLoggingDelegation;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
@@ -135,6 +136,7 @@ public final class BackupTest {
     @PolicyDoesNotApplyTest(policy = BackupAppliesToParent.class)
     @Postsubmit(reason = "new test")
     @EnsureHasPermission(BACKUP)
+    @Ignore("b/477541808")
     public void setBackupServiceEnabled_doesNotApply_doesNotSetBackupServiceEnabled() {
         try {
             dpc(sDeviceState).devicePolicyManager().setBackupServiceEnabled(

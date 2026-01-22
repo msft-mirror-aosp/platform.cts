@@ -23,6 +23,7 @@ import android.computercontrol.testapp.common.TestAppFocusRequester
 import android.content.ComponentName
 import android.content.Context
 import android.media.Image
+import android.os.SystemProperties
 import android.util.Log
 import android.util.Size
 import com.android.extensions.computercontrol.ComputerControlSession
@@ -155,7 +156,10 @@ class TestAppAgent(
     }
 
     companion object {
+        private val HW_TIMEOUT_MULTIPLIER = SystemProperties.getInt("ro.hw_timeout_multiplier", 1)
+
         const val SESSION_CREATION_TIMEOUT_SECONDS = 5L
-        const val SESSION_CLOSE_TIMEOUT_SECONDS = 30L
+        // TODO: b/454903475 - Reduce this timeout once the bug is fixed.
+        val SESSION_CLOSE_TIMEOUT_SECONDS = 120L * HW_TIMEOUT_MULTIPLIER
     }
 }

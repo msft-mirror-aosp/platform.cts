@@ -162,6 +162,7 @@ public final class MediaRouterTestConstants {
     public static final String ROUTE_NAME_RESTRICTED_ALLOW_PRIVILEGED = "allow_privileged_route";
     public static final String ROUTE_NAME_RESTRICTED_OTHER_PACKAGE =
             "other_package_restricted_route";
+    public static final String NON_EXISTENT_PACKAGE = "android.media.router.cts.nonexistentpackage";
 
     public static final String ROUTE_DEDUPLICATION_ID_1 = "dedup_id_1";
     public static final String ROUTE_DEDUPLICATION_ID_2 = "dedup_id_2";

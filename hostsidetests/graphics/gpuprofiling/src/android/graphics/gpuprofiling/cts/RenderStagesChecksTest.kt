@@ -287,9 +287,12 @@ class RenderStagesChecksTest {
         checkRenderStagesMatchQueueSubmits(fakeCollector, data)
 
         fakeCollector.assertFailure()
+        val fullErrorMessage = fakeCollector.getErrors().first().message
         assertThat(
-            fakeCollector.getErrorMessages()
-        ).containsExactly("Render stage reported before its VkQueueSubmit for submission_id: 1.")
+            fullErrorMessage
+        ).contains("Render stages reported before their VkQueueSubmit events for submission_ids")
+        assertThat(fullErrorMessage).contains("Expected: is an empty collection")
+        assertThat(fullErrorMessage).contains("but: <[1]>")
     }
 
     @Test

@@ -17,7 +17,6 @@
 package android.graphics.gpuprofiling.cts
 
 import org.hamcrest.Matchers.empty
-import org.hamcrest.Matchers.greaterThan
 import org.hamcrest.Matchers.`is` as Is
 import org.hamcrest.Matchers.lessThanOrEqualTo
 import org.hamcrest.Matchers.not
@@ -200,13 +199,13 @@ fun checkRenderStagesMatchQueueSubmits(
         Is(submissionEvents.size)
     )
 
-    for (submissionData in matchingSubmissionEvents) {
-        errorCollector.checkThat(
-            "Render stage reported before its VkQueueSubmit for submission_id: " +
-                    submissionData.key +
-                    ".",
-            submissionData.value.firstRenderStageTimestamp,
-            greaterThan(submissionData.value.queueSubmitTimestamp)
-        )
-    }
+    val mistimedSubmissionEventIds = matchingSubmissionEvents.filter { (_, data) ->
+        data.firstRenderStageTimestamp < data.queueSubmitTimestamp
+    }.keys.toList()
+
+    errorCollector.checkThat(
+        "Render stages reported before their VkQueueSubmit events for submission_ids",
+        mistimedSubmissionEventIds,
+        Is(empty())
+    )
 }

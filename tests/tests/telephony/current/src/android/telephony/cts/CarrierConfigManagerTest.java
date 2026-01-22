@@ -356,6 +356,12 @@ public class CarrierConfigManagerTest {
                     config.getInt(
                             KEY_CARRIER_ROAMING_NTN_EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_INT),
                     SatelliteManager.EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_T911);
+            if (Flags.satellite26q2Apis()) {
+                assertEquals(
+                        "KEY_SATELLITE_TECHNOLOGY_INT_ARRAY " + "doesn't match static default.",
+                        config.getInt(CarrierConfigManager.KEY_SATELLITE_TECHNOLOGY_INT_ARRAY),
+                        SatelliteManager.NT_RADIO_TECHNOLOGY_UNKNOWN);
+            }
             assertEquals("KEY_CARRIER_SUPPORTED_SATELLITE_NOTIFICATION_HYSTERESIS_SEC_INT "
                             + "doesn't match static default.",
                     config.getInt(KEY_CARRIER_SUPPORTED_SATELLITE_NOTIFICATION_HYSTERESIS_SEC_INT),
@@ -397,12 +403,10 @@ public class CarrierConfigManagerTest {
                     config.getIntArray(CarrierConfigManager
                             .KEY_CAPABILITIES_EXEMPT_FROM_SINGLE_DC_CHECK_INT_ARRAY),
                     new int[] {NetworkCapabilities.NET_CAPABILITY_IMS});
-            if (Flags.starlinkDataBugfix()) {
-                assertEquals("KEY_SATELLITE_CONNECTED_NOTIFICATION_THROTTLE_IN_MILLIS "
-                                + "doesn't match static default.",
-                        config.getLong(KEY_SATELLITE_CONNECTED_NOTIFICATION_THROTTLE_MILLIS_INT),
-                        TimeUnit.DAYS.toMillis(7));
-            }
+            assertEquals("KEY_SATELLITE_CONNECTED_NOTIFICATION_THROTTLE_IN_MILLIS "
+                            + "doesn't match static default.",
+                    config.getLong(KEY_SATELLITE_CONNECTED_NOTIFICATION_THROTTLE_MILLIS_INT),
+                    TimeUnit.DAYS.toMillis(7));
             if (Flags.enableRttHoldCarrierConfig()) {
                 assertTrue("KEY_ALLOW_HOLD_IN_RTT_CALL_BOOL doesn't match static default.",
                         config.getBoolean(KEY_ALLOW_HOLD_IN_RTT_CALL_BOOL));
@@ -1059,7 +1063,10 @@ public class CarrierConfigManagerTest {
             boolean awaitResult =
                     COUNT_DOWN_LATCH.await(BROADCAST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
             if (!awaitResult) {
-                fail("Private network field was not updated in " + BROADCAST_TIMEOUT_MILLIS + " ms");
+                fail(
+                        "Private network field was not updated in "
+                                + BROADCAST_TIMEOUT_MILLIS
+                                + " ms");
             }
         } finally {
             mConfigManager.overrideConfig(subId, null);

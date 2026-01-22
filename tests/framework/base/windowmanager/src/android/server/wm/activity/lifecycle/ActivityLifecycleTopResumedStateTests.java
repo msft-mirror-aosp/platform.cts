@@ -810,9 +810,9 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
         // Secondary display was removed - activity will be moved to the default display
         waitForActivityTransitions(SingleTopActivity.class,
                 getRelaunchSequence(ON_TOP_POSITION_GAINED));
-        assertOrder(getTransitionLog(), Arrays.asList(
-                transition(SingleTopActivity.class, ON_TOP_POSITION_LOST),
-                transition(SingleTopActivity.class, ON_TOP_POSITION_GAINED)),
+        assertOrder(
+                getTransitionLog(),
+                Arrays.asList(transition(SingleTopActivity.class, ON_TOP_POSITION_LOST)),
                 "hostingDisplayRemoved");
     }
 

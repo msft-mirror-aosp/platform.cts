@@ -38,7 +38,6 @@ public class SensorToggleRestrictionTest extends BaseDeviceOwnerTest {
     protected void setUp() throws Exception {
         super.setUp();
         mSensorPrivacyManager = mContext.getSystemService(SensorPrivacyManager.class);
-
     }
 
     @Override
@@ -52,34 +51,73 @@ public class SensorToggleRestrictionTest extends BaseDeviceOwnerTest {
         if (!mSensorPrivacyManager.supportsSensorToggle(SensorPrivacyManager.Sensors.CAMERA)) {
             return;
         }
-        assertFalse("Camera sensor privacy should be off by default",
-                ShellIdentityUtils.invokeMethodWithShellPermissions(mSensorPrivacyManager,
-                        m -> m.isSensorPrivacyEnabled(SensorPrivacyManager.Sensors.CAMERA)));
 
-        mDevicePolicyManager.addUserRestriction(getWho(), UserManager.DISALLOW_CAMERA_TOGGLE);
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mSensorPrivacyManager,
-                m -> m.setSensorPrivacy(OTHER, SensorPrivacyManager.Sensors.CAMERA, true));
+        boolean originalState =
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        mSensorPrivacyManager,
+                        m -> m.isSensorPrivacyEnabled(SensorPrivacyManager.Sensors.CAMERA));
 
-        assertFalse("Camera sensor privacy should not be enabled given admin restriction",
-                ShellIdentityUtils.invokeMethodWithShellPermissions(mSensorPrivacyManager,
-                        m -> m.isSensorPrivacyEnabled(SensorPrivacyManager.Sensors.CAMERA)));
+        try {
+            // Reset potential leftover state from previous tests to ensure a clean environment.
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mSensorPrivacyManager,
+                    m -> m.setSensorPrivacy(OTHER, SensorPrivacyManager.Sensors.CAMERA, false));
+
+            mDevicePolicyManager.addUserRestriction(getWho(), UserManager.DISALLOW_CAMERA_TOGGLE);
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mSensorPrivacyManager,
+                    m -> m.setSensorPrivacy(OTHER, SensorPrivacyManager.Sensors.CAMERA, true));
+
+            assertFalse(
+                    "Camera sensor privacy should not be enabled given admin restriction",
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            mSensorPrivacyManager,
+                            m -> m.isSensorPrivacyEnabled(SensorPrivacyManager.Sensors.CAMERA)));
+        } finally {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mSensorPrivacyManager,
+                    m ->
+                            m.setSensorPrivacy(
+                                    OTHER, SensorPrivacyManager.Sensors.CAMERA, originalState));
+        }
     }
 
     public void testMicrophoneToggle_RestrictionSet_CannotChangeSensorPrivacy() {
         if (!mSensorPrivacyManager.supportsSensorToggle(SensorPrivacyManager.Sensors.MICROPHONE)) {
             return;
         }
-        assertFalse("Microphone sensor privacy should be off by default",
-                ShellIdentityUtils.invokeMethodWithShellPermissions(mSensorPrivacyManager,
-                        m -> m.isSensorPrivacyEnabled(SensorPrivacyManager.Sensors.MICROPHONE)));
 
-        mDevicePolicyManager.addUserRestriction(getWho(), UserManager.DISALLOW_MICROPHONE_TOGGLE);
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mSensorPrivacyManager,
-                m -> m.setSensorPrivacy(OTHER, SensorPrivacyManager.Sensors.MICROPHONE, true));
+        boolean originalState =
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        mSensorPrivacyManager,
+                        m -> m.isSensorPrivacyEnabled(SensorPrivacyManager.Sensors.MICROPHONE));
 
-        assertFalse("Microphone sensor privacy should not be enabled given admin restriction",
-                ShellIdentityUtils.invokeMethodWithShellPermissions(mSensorPrivacyManager,
-                        m -> m.isSensorPrivacyEnabled(SensorPrivacyManager.Sensors.MICROPHONE)));
+        try {
+            // Reset potential leftover state from previous tests to ensure a clean environment.
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mSensorPrivacyManager,
+                    m -> m.setSensorPrivacy(OTHER, SensorPrivacyManager.Sensors.MICROPHONE, false));
+
+            mDevicePolicyManager.addUserRestriction(
+                    getWho(), UserManager.DISALLOW_MICROPHONE_TOGGLE);
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mSensorPrivacyManager,
+                    m -> m.setSensorPrivacy(OTHER, SensorPrivacyManager.Sensors.MICROPHONE, true));
+
+            assertFalse(
+                    "Microphone sensor privacy should not be enabled given admin restriction",
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            mSensorPrivacyManager,
+                            m ->
+                                    m.isSensorPrivacyEnabled(
+                                            SensorPrivacyManager.Sensors.MICROPHONE)));
+        } finally {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mSensorPrivacyManager,
+                    m ->
+                            m.setSensorPrivacy(
+                                    OTHER, SensorPrivacyManager.Sensors.MICROPHONE, originalState));
+        }
     }
 
     public void testCameraToggle_RestrictionSet_ResetSensorPrivacy() {

@@ -16,10 +16,15 @@
 
 package android.telephony.mockmodem;
 
+import static android.hardware.radio.network.NrVopsInfo.EMC_INDICATOR_BOTH_NR_EUTRA_CONNECTED_TO_5GCN;
+import static android.hardware.radio.network.NrVopsInfo.EMF_INDICATOR_BOTH_NR_EUTRA_CONNECTED_TO_5GCN;
+import static android.hardware.radio.network.NrVopsInfo.VOPS_INDICATOR_VOPS_OVER_3GPP;
+
 import android.content.Context;
 import android.hardware.radio.RadioError;
 import android.hardware.radio.RadioIndicationType;
 import android.hardware.radio.RadioResponseInfo;
+import android.hardware.radio.RadioTechnology;
 import android.hardware.radio.network.BarringInfo;
 import android.hardware.radio.network.BarringTypeSpecificInfo;
 import android.hardware.radio.network.CellIdentity;
@@ -29,12 +34,14 @@ import android.hardware.radio.network.EmergencyRegResult;
 import android.hardware.radio.network.IRadioNetwork;
 import android.hardware.radio.network.IRadioNetworkIndication;
 import android.hardware.radio.network.IRadioNetworkResponse;
+import android.hardware.radio.network.NetworkInfo;
 import android.hardware.radio.network.NetworkScanRequest;
 import android.hardware.radio.network.NetworkSecurityEvent;
 import android.hardware.radio.network.PrioritizedNetworkScanRequest;
 import android.hardware.radio.network.RadioAccessSpecifier;
 import android.hardware.radio.network.RegState;
 import android.hardware.radio.network.SatelliteNetworkInfo;
+import android.hardware.radio.network.SatelliteTechnology;
 import android.hardware.radio.network.SecurityAlgorithmUpdate;
 import android.hardware.radio.network.SignalThresholdInfo;
 import android.hardware.radio.sim.CardStatus;
@@ -48,7 +55,9 @@ import android.util.Log;
 import android.util.SparseArray;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class IRadioNetworkImpl extends IRadioNetwork.Stub {
@@ -81,8 +90,11 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
     @RadioError private int mSatelliteErrorCode = RadioError.NONE;
     private String[] mCarrierPlmnArray = new String[0];
     private String[] mAllSatellitePlmnArray = new String[0];
+    private List<NetworkInfo> mAllowedPlmnNetworkInfoList = new ArrayList<>();
+    private List<NetworkInfo> mDisallowedPlmnNetworkInfoList = new ArrayList<>();
     private boolean mIsSatelliteEnabledForCarrier = false;
     private int[] mAlertCategories = new int[0];
+    private int mSatelliteTech = SatelliteTechnology.SAT_TECH_NONE;
 
     public IRadioNetworkImpl(
             MockModemService service,
@@ -480,6 +492,19 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
         dataRegResponse.accessTechnologySpecificInfo =
                 android.hardware.radio.network.AccessTechnologySpecificInfo.noinit(true);
 
+        try {
+            Log.d(TAG, "getDataRegistrationState: mSatelliteTech=" + mSatelliteTech);
+            if (mSatelliteTech != SatelliteTechnology.SAT_TECH_NONE) {
+                dataRegResponse.accessTechnologySpecificInfo =
+                        getAccessTechnologySpecificInfoForSatellite(
+                                dataRegResponse.rat, mSatelliteTech);
+            } else {
+                Log.d(mTag, "mSatelliteTech is SatelliteTechnology.SAT_TECH_NONE");
+            }
+        } catch (NoClassDefFoundError | NoSuchFieldError | NoSuchMethodError e) {
+            Log.e(mTag, "Failed to set satelliteTechnology" + e);
+        }
+
         RadioResponseInfo rsp = mService.makeSolRsp(serial);
         try {
             mRadioNetworkResponse.getDataRegistrationStateResponse(rsp, dataRegResponse);
@@ -755,6 +780,17 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
         } catch (RemoteException ex) {
             Log.e(mTag, "Failed to setLocationUpdates from AIDL. Exception" + ex);
         }
+    }
+
+    /**
+     * Sets the satellite technology and notifies the framework about the network state change.
+     *
+     * @param satelliteTechnology The new satellite technology to set.
+     */
+    public void setSatelliteTechnology(int satelliteTechnology) {
+        mSatelliteTech = satelliteTechnology;
+        Log.d(mTag, "setSatelliteTechnology: " + mSatelliteTech);
+        unsolNetworkStateChanged();
     }
 
     @Override
@@ -1155,13 +1191,69 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
     @Override
     public void setSatelliteNetworkInfo(int serial, SatelliteNetworkInfo satelliteNetworkInfo)
             throws RemoteException {
-        Log.d(TAG, "setSatelliteNetworkInfo");
-        RadioResponseInfo rsp = mService.makeSolRsp(serial);
+        Log.d(TAG, "setSatelliteNetworkInfo: mErrorCode=" + mSatelliteErrorCode);
+
+        RadioResponseInfo rsp;
+        if (mSatelliteErrorCode != RadioError.NONE) {
+            rsp = mService.makeSolRsp(serial, mSatelliteErrorCode);
+        } else {
+            rsp = mService.makeSolRsp(serial, RadioError.NONE);
+
+            if (satelliteNetworkInfo.allowedPlmns != null) {
+                mAllowedPlmnNetworkInfoList =
+                        new ArrayList<>(Arrays.asList(satelliteNetworkInfo.allowedPlmns));
+            } else {
+                mAllowedPlmnNetworkInfoList.clear();
+            }
+
+            if (satelliteNetworkInfo.disallowedPlmns != null) {
+                mDisallowedPlmnNetworkInfoList =
+                        new ArrayList<>(Arrays.asList(satelliteNetworkInfo.disallowedPlmns));
+            } else {
+                mDisallowedPlmnNetworkInfoList.clear();
+            }
+
+            Log.d(
+                    TAG,
+                    "setSatelliteNetworkInfo: allowed "
+                            + logNetworkInfo(mAllowedPlmnNetworkInfoList));
+            Log.d(
+                    TAG,
+                    "setSatelliteNetworkInfo: disallowed "
+                            + logNetworkInfo(mDisallowedPlmnNetworkInfoList));
+        }
+
         try {
             mRadioNetworkResponse.setSatelliteNetworkInfoResponse(rsp);
         } catch (RemoteException ex) {
             Log.e(TAG, "Failed to setSatelliteNetworkInfo from AIDL. Exception " + ex);
         }
+        mService.onSetSatelliteNetworkInfo();
+    }
+
+    private String logNetworkInfo(
+            List<android.hardware.radio.network.NetworkInfo> networkInfoList) {
+        if (networkInfoList == null) {
+            String msg = "networkInfoList is null";
+            Log.d(TAG, msg);
+            return msg;
+        }
+        StringBuilder sb = new StringBuilder();
+        String header = "networkInfoList (Size: " + networkInfoList.size() + ")";
+        sb.append(header).append("\n");
+        for (int i = 0; i < networkInfoList.size(); i++) {
+            android.hardware.radio.network.NetworkInfo info = networkInfoList.get(i);
+            if (info != null) {
+                sb.append("  [")
+                        .append(i)
+                        .append("]: plmn=")
+                        .append(info.plmn)
+                        .append(", satelliteTechnology=")
+                        .append(info.satelliteTechnology)
+                        .append("\n");
+            }
+        }
+        return sb.toString();
     }
 
     @Override
@@ -1475,6 +1567,44 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
         }
     }
 
+    /**
+     * Returns the {@link android.hardware.radio.network.AccessTechnologySpecificInfo} populated
+     * with satellite details for the specified RAT.
+     */
+    private static android.hardware.radio.network.AccessTechnologySpecificInfo
+            getAccessTechnologySpecificInfoForSatellite(int rat, int satelliteTechnology) {
+        Log.d(
+                TAG,
+                "getAccessTechnologySpecificInfoForSatellite: satelliteTechnology="
+                        + satelliteTechnology
+                        + ", rat="
+                        + rat);
+        if (rat == RadioTechnology.NR) {
+            android.hardware.radio.network.NrRegistrationInfo nrInfo =
+                    new android.hardware.radio.network.NrRegistrationInfo();
+            nrInfo.satelliteTechnology = satelliteTechnology;
+            nrInfo.nrVopsInfo = new android.hardware.radio.network.NrVopsInfo();
+            nrInfo.nrVopsInfo.vopsSupported = VOPS_INDICATOR_VOPS_OVER_3GPP;
+            nrInfo.nrVopsInfo.emcSupported = EMC_INDICATOR_BOTH_NR_EUTRA_CONNECTED_TO_5GCN;
+            nrInfo.nrVopsInfo.emfSupported = EMF_INDICATOR_BOTH_NR_EUTRA_CONNECTED_TO_5GCN;
+            return android.hardware.radio.network.AccessTechnologySpecificInfo.nrInfo(nrInfo);
+        } else if (rat == RadioTechnology.LTE) {
+            android.hardware.radio.network.EutranRegistrationInfo eutranInfo =
+                    new android.hardware.radio.network.EutranRegistrationInfo();
+            eutranInfo.satelliteTechnology = satelliteTechnology;
+            eutranInfo.lteVopsInfo = new android.hardware.radio.network.LteVopsInfo();
+            eutranInfo.lteVopsInfo.isVopsSupported = true;
+            eutranInfo.lteVopsInfo.isEmcBearerSupported = true;
+            // Default values are false if not set, which implies 5G NSA is not supported.
+            eutranInfo.nrIndicators = new android.hardware.radio.network.NrIndicators();
+            return android.hardware.radio.network.AccessTechnologySpecificInfo.eutranInfo(
+                    eutranInfo);
+        } else {
+            // Set as noinit if the RAT is neither NR nor LTE.
+            return android.hardware.radio.network.AccessTechnologySpecificInfo.noinit(true);
+        }
+    }
+
     private BarringInfo[] convertBarringInfo(
             SparseArray<android.telephony.BarringInfo.BarringServiceInfo> barringServiceInfos) {
         ArrayList<BarringInfo> halBarringInfo = new ArrayList<>();
@@ -1555,6 +1685,25 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
     public String[] getAllSatellitePlmnArray() {
         Log.d(TAG, "getAllSatellitePlmnArray");
         return mAllSatellitePlmnArray;
+    }
+
+    /** Get the allowed satellite network info list. */
+    public List<NetworkInfo> getAllowedSatelliteNetworkInfoList() {
+        Log.d(mTag, "getAllowedSatelliteNetworkInfoList: " + mAllowedPlmnNetworkInfoList);
+        return mAllowedPlmnNetworkInfoList;
+    }
+
+    /** Get the disallowed satellite network info list. */
+    public List<NetworkInfo> getDisallowedSatelliteNetworkInfoList() {
+        Log.d(mTag, "getDisallowedSatelliteNetworkInfoList: " + mDisallowedPlmnNetworkInfoList);
+        return mDisallowedPlmnNetworkInfoList;
+    }
+
+    /** Clear the allowed and disallowed satellite network info list. */
+    public void clearAllSatelliteNetworkInfoList() {
+        Log.d(mTag, "clearAllSatelliteNetworkInfoList");
+        mDisallowedPlmnNetworkInfoList.clear();
+        mAllowedPlmnNetworkInfoList.clear();
     }
 
     /** Get whether satellite is enabled for carrier. */

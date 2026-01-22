@@ -23,6 +23,7 @@ import static com.android.internal.telephony.RILConstants.RIL_REQUEST_RADIO_POWE
 import android.annotation.Nullable;
 import android.content.Context;
 import android.hardware.radio.RadioError;
+import android.hardware.radio.network.NetworkInfo;
 import android.hardware.radio.sim.Carrier;
 import android.hardware.radio.sim.CarrierRestrictions;
 import android.hardware.radio.voice.CdmaSignalInfoRecord;
@@ -1262,6 +1263,32 @@ public class MockModemManager {
         mMockModemService.getIRadioNetwork((byte) slotId).setSatelliteErrorCode(errorCode);
     }
 
+    /**
+     * Wait until setSatelliteNetworkInfo() is called.
+     *
+     * @param expectedNumberOfEvents The number of events expected to occur.
+     * @return true if the expected number of events occurred within the timeout, false otherwise.
+     */
+    public boolean waitForEventOnSetSatelliteNetworkInfo(int expectedNumberOfEvents) {
+        Log.d(TAG, "waitForEventOnSetSatelliteNetworkInfo");
+        if (mMockModemService == null) {
+            Log.e(TAG, "waitForEventOnSetSatelliteNetworkInfo: mMockModemService is null");
+            return false;
+        }
+
+        return mMockModemService.waitForEventOnSetSatelliteNetworkInfo(expectedNumberOfEvents);
+    }
+
+    /** Clear the events of setting satellite network info. */
+    public void clearEventOnSetSatelliteNetworkInfo() {
+        Log.d(TAG, "clearEventOnSetSatelliteNetworkInfo");
+        if (mMockModemService == null) {
+            Log.e(TAG, "clearEventOnSetSatelliteNetworkInfo: mMockModemService is null");
+            return;
+        }
+        mMockModemService.clearEventOnSetSatelliteNetworkInfo();
+    }
+
     /** Wait until setSatellitePlmn() is called. */
     public boolean waitForEventOnSetSatellitePlmn(int expectedNumberOfEvents) {
         Log.d(TAG, "waitForEventOnSetSatellitePlmn");
@@ -1367,6 +1394,42 @@ public class MockModemManager {
         return Arrays.asList(allSatellitePlmnArray);
     }
 
+    /** Get the list of allowed satellite network info list. */
+    @Nullable
+    public List<NetworkInfo> getAllowedSatelliteNetworkInfoList(int slotId) {
+        Log.d(TAG, "getAllowedSatelliteNetworkInfoList: slotId=" + slotId);
+        if (mMockModemService == null) {
+            Log.e(TAG, "getAllowedSatelliteNetworkInfoList: mMockModemService is null");
+            return null;
+        }
+        return mMockModemService
+                .getIRadioNetwork((byte) slotId)
+                .getAllowedSatelliteNetworkInfoList();
+    }
+
+    /** Get the list of disallowed satellite network info list. */
+    @Nullable
+    public List<NetworkInfo> getDisallowedSatelliteNetworkInfoList(int slotId) {
+        Log.d(TAG, "getDisallowedSatelliteNetworkInfoList: slotId=" + slotId);
+        if (mMockModemService == null) {
+            Log.e(TAG, "getDisallowedSatelliteNetworkInfoList: mMockModemService is null");
+            return null;
+        }
+        return mMockModemService
+                .getIRadioNetwork((byte) slotId)
+                .getDisallowedSatelliteNetworkInfoList();
+    }
+
+    /** Clear all satellite network info */
+    public void clearAllSatelliteNetworkInfoList(int slotId) {
+        Log.d(TAG, "clearSatelliteEnabledForCarrier: slotId=" + slotId);
+        if (mMockModemService == null) {
+            Log.e(TAG, "clearSatelliteEnabledForCarrier: mMockModemService is null");
+        }
+
+        mMockModemService.getIRadioNetwork((byte) slotId).clearAllSatelliteNetworkInfoList();
+    }
+
     /** Clear satellite enabled for carrier. */
     public void clearSatelliteEnabledForCarrier(int slotId) {
         Log.d(TAG, "clearSatelliteEnabledForCarrier: slotId=" + slotId);
@@ -1439,6 +1502,22 @@ public class MockModemManager {
         IRadioConfigImpl configImpl = mMockModemService.getIRadioConfig();
         if (configImpl != null) {
             configImpl.resetRebootModemCalledFlag();
+        }
+    }
+
+    /** Sets the satellite technology for the mock modem on the specified slot. */
+    public void setSatelliteTechnology(int slotId, int satelliteTech) {
+        Log.d(TAG, "setSatelliteTechnology: slotId=" + slotId + ", satelliteTech=" + satelliteTech);
+        if (mMockModemService == null) {
+            Log.e(TAG, "setSatelliteTechnology: mMockModemService is null");
+            return;
+        }
+
+        IRadioNetworkImpl radioNetwork = mMockModemService.getIRadioNetwork((byte) slotId);
+        if (radioNetwork != null) {
+            radioNetwork.setSatelliteTechnology(satelliteTech);
+        } else {
+            Log.e(TAG, "setSatelliteTechnology: IRadioNetworkImpl for slot " + slotId + " is null");
         }
     }
 

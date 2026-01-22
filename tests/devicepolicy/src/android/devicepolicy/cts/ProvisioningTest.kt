@@ -54,6 +54,7 @@ import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature
 import com.android.bedstead.harrier.annotations.RequireFeature
 import com.android.bedstead.harrier.annotations.RequireNotWatch
+import com.android.bedstead.harrier.annotations.RequireResourcesBooleanValue
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
 import com.android.bedstead.multiuser.additionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
@@ -738,6 +739,10 @@ class ProvisioningTest {
         interactive = TRUE,
     )
     @RequireRunOnSystemUser(switchedToUser = TRUE)
+    @RequireResourcesBooleanValue(
+        configName = "config_enableMultiUserManagement",
+        requiredValue = true
+    )
     @Test
     @ApiTest(
         apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserDevice",
@@ -774,6 +779,10 @@ class ProvisioningTest {
         interactive = TRUE,
     )
     @RequireRunOnSystemUser(switchedToUser = TRUE)
+    @RequireResourcesBooleanValue(
+        configName = "config_enableMultiUserManagement",
+        requiredValue = true
+    )
     @Test
     @ApiTest(
         apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserDevice",
@@ -819,6 +828,10 @@ class ProvisioningTest {
     @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING)
     @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
+    @RequireResourcesBooleanValue(
+        configName = "config_enableMultiUserManagement",
+        requiredValue = true
+    )
     @RequireRunOnSystemUser
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserManagedUser"])
@@ -846,6 +859,10 @@ class ProvisioningTest {
     @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING)
     @RequireNotHeadlessSystemUserMode(reason = "Testing non-HSUM functionality")
+    @RequireResourcesBooleanValue(
+        configName = "config_enableMultiUserManagement",
+        requiredValue = true
+    )
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserManagedUser"])
     fun provisionMultiUserManagedUser_nonHsum_throwsException() {
@@ -874,6 +891,10 @@ class ProvisioningTest {
     @EnsureHasProfileOwner
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING)
     @RequireHeadlessSystemUserMode(reason = "Multi-user user provisioning requires HSUM")
+    @RequireResourcesBooleanValue(
+        configName = "config_enableMultiUserManagement",
+        requiredValue = true
+    )
     @RequireRunOnInitialUser
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserManagedUser"])
@@ -903,6 +924,10 @@ class ProvisioningTest {
     @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING)
     @RequireHeadlessSystemUserMode(reason = "Multi-user user provisioning requires HSUM")
+    @RequireResourcesBooleanValue(
+        configName = "config_enableMultiUserManagement",
+        requiredValue = true
+    )
     @RequireRunOnInitialUser
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserManagedUser"])
@@ -934,6 +959,10 @@ class ProvisioningTest {
     @EnsureHasWorkProfile
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING)
     @RequireHeadlessSystemUserMode(reason = "Multi-user user provisioning requires HSUM")
+    @RequireResourcesBooleanValue(
+        configName = "config_enableMultiUserManagement",
+        requiredValue = true
+    )
     @RequireRunOnInitialUser
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserManagedUser"])
@@ -966,6 +995,10 @@ class ProvisioningTest {
     @EnsureHasNoWorkProfile
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING)
     @RequireHeadlessSystemUserMode(reason = "Multi-user user provisioning requires HSUM")
+    @RequireResourcesBooleanValue(
+        configName = "config_enableMultiUserManagement",
+        requiredValue = true
+    )
     @RequireRunOnInitialUser
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserManagedUser"])
@@ -1026,6 +1059,10 @@ class ProvisioningTest {
     )
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING)
     @RequireHeadlessSystemUserMode(reason = "Multi-user user provisioning requires HSUM")
+    @RequireResourcesBooleanValue(
+        configName = "config_enableMultiUserManagement",
+        requiredValue = true
+    )
     @RequireRunOnInitialUser
     @Test
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserManagedUser"])
@@ -1339,6 +1376,10 @@ class ProvisioningTest {
         interactive = TRUE,
     )
     @RequireRunOnSystemUser(switchedToUser = TRUE)
+    @RequireResourcesBooleanValue(
+        configName = "config_enableMultiUserManagement",
+        requiredValue = true
+    )
     @Test
     @ApiTest(
         apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPreCondition",
@@ -1360,6 +1401,10 @@ class ProvisioningTest {
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING)
     @RequireHeadlessSystemUserMode(reason = "Multi-user device provisioning requires HSUM")
     @RequireRunOnSecondaryUser
+    @RequireResourcesBooleanValue(
+        configName = "config_enableMultiUserManagement",
+        requiredValue = true
+    )
     @Test
     @ApiTest(
         apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPreCondition",
@@ -1381,6 +1426,10 @@ class ProvisioningTest {
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING)
     @RequireNotHeadlessSystemUserMode(reason = "Device must not be in headless system user mode")
     @RequireRunOnSystemUser()
+    @RequireResourcesBooleanValue(
+        configName = "config_enableMultiUserManagement",
+        requiredValue = true
+    )
     @Test
     @ApiTest(
         apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPreCondition",
@@ -1405,6 +1454,10 @@ class ProvisioningTest {
         interactive = TRUE,
     )
     @RequireRunOnSystemUser(switchedToUser = TRUE)
+    @RequireResourcesBooleanValue(
+        configName = "config_enableMultiUserManagement",
+        requiredValue = true
+    )
     @Test
     @ApiTest(
         apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPreCondition",
@@ -1430,6 +1483,10 @@ class ProvisioningTest {
         interactive = TRUE,
     )
     @RequireRunOnSystemUser(switchedToUser = TRUE)
+    @RequireResourcesBooleanValue(
+        configName = "config_enableMultiUserManagement",
+        requiredValue = true
+    )
     @Test
     @ApiTest(
         apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPreCondition",

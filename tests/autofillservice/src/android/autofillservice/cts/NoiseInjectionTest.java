@@ -22,7 +22,7 @@ import static android.autofillservice.cts.testcore.Helper.ID_USERNAME;
 import static com.google.common.truth.Truth.assertThat;
 
 import android.app.assist.AssistStructure;
-import android.autofillservice.cts.activities.LoginActivity;
+import android.autofillservice.cts.activities.CustomPasswordViewLoginActivity;
 import android.autofillservice.cts.commontests.AutoFillServiceTestCase;
 import android.autofillservice.cts.testcore.CannedFillResponse;
 import android.autofillservice.cts.testcore.Helper;
@@ -49,7 +49,7 @@ import java.util.Random;
 public class NoiseInjectionTest extends AutoFillServiceTestCase.ManualActivityLaunch {
 
     private static final int FIXED_LENGTH_BYTES = 32;
-    private static final int BITS_TO_RETAIN = 2;
+    private static final int BITS_TO_RETAIN = 4;
 
     private final CannedFillResponse.Builder mLoginResponseBuilder =
             new CannedFillResponse.Builder()
@@ -77,7 +77,7 @@ public class NoiseInjectionTest extends AutoFillServiceTestCase.ManualActivityLa
 
         sReplier.addResponse(mLoginResponseBuilder.build());
         // Start the activity
-        startLoginActivity();
+        startCustomPasswordViewLoginActivity();
         mUiBot.waitForIdle();
 
         // Trigger autofill
@@ -97,12 +97,46 @@ public class NoiseInjectionTest extends AutoFillServiceTestCase.ManualActivityLa
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_STRING_REBUILD_API)
+    public void testEditText_noNoiseInFillResponse() throws Exception {
+        enableService();
+
+        sReplier.addResponse(mLoginResponseBuilder.build());
+        // Start the activity
+        startCustomPasswordViewLoginActivity();
+        mUiBot.waitForIdle();
+
+        // Add text to the username input field before triggering autofill
+        updateUsername("sensitive_text");
+        updatePassword("sensitive_text");
+
+        // Trigger autofill
+        mUiBot.selectByRelativeId(Helper.ID_USERNAME);
+        mUiBot.waitForIdle();
+
+        final InstrumentedAutoFillService.FillRequest request = sReplier.getNextFillRequest();
+        final AssistStructure structure = request.structure;
+
+        // The username node in the request should not have noise, since it's an EditText.
+        assertThat(structure).isNotNull();
+        final AssistStructure.ViewNode username =
+                Helper.findNodeByResourceId(structure, "username");
+        assertThat(username.getAutofillNoiseInjectedData()).isNull();
+        // Verify for editable input views which are NOT directly EditText, they should not have
+        // noise injected data, either.
+        assertThat(structure).isNotNull();
+        final AssistStructure.ViewNode password =
+                Helper.findNodeByResourceId(structure, "password");
+        assertThat(username.getAutofillNoiseInjectedData()).isNull();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_STRING_REBUILD_API)
     public void testSensitiveText_differentNoiseForDifferentViews() throws Exception {
         enableService();
 
         sReplier.addResponse(mLoginResponseBuilder.build());
         // Start the activity
-        startLoginActivity();
+        startCustomPasswordViewLoginActivity();
         mUiBot.waitForIdle();
 
         // Update password_label and username_label so that their plaintexts will be sanitized.
@@ -171,7 +205,7 @@ public class NoiseInjectionTest extends AutoFillServiceTestCase.ManualActivityLa
 
         sReplier.addResponse(mLoginResponseBuilder.build());
         // Start the activity
-        startLoginActivity();
+        startCustomPasswordViewLoginActivity();
         mUiBot.waitForIdle();
 
         // Update username_label so that their plaintexts will be sanitized.
@@ -256,7 +290,7 @@ public class NoiseInjectionTest extends AutoFillServiceTestCase.ManualActivityLa
             throws Exception {
         sReplier.addResponse(mLoginResponseBuilder.build());
         // Start the activity
-        startLoginActivity();
+        startCustomPasswordViewLoginActivity();
         mUiBot.waitForIdle();
 
         // Update password_label and username_label so that their plaintexts will be sanitized.
@@ -279,14 +313,34 @@ public class NoiseInjectionTest extends AutoFillServiceTestCase.ManualActivityLa
     }
 
     private void updateUsernameLabel(String text) {
-        LoginActivity loginActivity = LoginActivity.getCurrentActivity();
-        loginActivity.syncRunOnUiThread(() -> loginActivity.getUsernameLabel().setText(text));
+        CustomPasswordViewLoginActivity customPasswordViewLoginActivity =
+                CustomPasswordViewLoginActivity.getCurrentActivity();
+        customPasswordViewLoginActivity.syncRunOnUiThread(
+                () -> customPasswordViewLoginActivity.getUsernameLabel().setText(text));
         mUiBot.waitForIdle();
     }
 
     private void updatePasswordLabel(String text) {
-        LoginActivity loginActivity = LoginActivity.getCurrentActivity();
-        loginActivity.syncRunOnUiThread(() -> loginActivity.getPasswordLabel().setText(text));
+        CustomPasswordViewLoginActivity customPasswordViewLoginActivity =
+                CustomPasswordViewLoginActivity.getCurrentActivity();
+        customPasswordViewLoginActivity.syncRunOnUiThread(
+                () -> customPasswordViewLoginActivity.getPasswordLabel().setText(text));
+        mUiBot.waitForIdle();
+    }
+
+    private void updateUsername(String text) {
+        CustomPasswordViewLoginActivity customPasswordViewLoginActivity =
+                CustomPasswordViewLoginActivity.getCurrentActivity();
+        customPasswordViewLoginActivity.syncRunOnUiThread(
+                () -> customPasswordViewLoginActivity.getUsername().setText(text));
+        mUiBot.waitForIdle();
+    }
+
+    private void updatePassword(String text) {
+        CustomPasswordViewLoginActivity customPasswordViewLoginActivity =
+                CustomPasswordViewLoginActivity.getCurrentActivity();
+        customPasswordViewLoginActivity.syncRunOnUiThread(
+                () -> customPasswordViewLoginActivity.getPassword().setText(text));
         mUiBot.waitForIdle();
     }
 

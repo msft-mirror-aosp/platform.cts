@@ -25,11 +25,11 @@ import android.Manifest;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.os.UserHandle;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings.Secure;
-import android.provider.Settings.SettingNotFoundException;
 import android.text.ShowSecretsSetting;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -48,6 +48,11 @@ import org.junit.runner.RunWith;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
+@DisabledOnRavenwood(
+        blockedBy = UserHelper.class,
+        reason =
+                "Underlying call to UserManager.isVisibleBackgroundUsersSupported() fails with"
+                        + " userManager being null")
 public class ShowSecretsSettingTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -56,29 +61,25 @@ public class ShowSecretsSettingTest {
     private static final String TEXT_SHOW_PASSWORD_PHYSICAL = "show_passwords_physical";
     private UserHelper mUserHelper;
     private ContentResolver mContentResolver;
-    private int mOriginalTouchValue;
-    private int mOriginalPhysicalValue;
+    private String mOriginalTouchValue;
+    private String mOriginalPhysicalValue;
 
     @Before
     public void setup() {
         Context context = ApplicationProvider.getApplicationContext();
         mContentResolver = context.getContentResolver();
         mUserHelper = new UserHelper(context);
-
-        try {
-            mOriginalTouchValue = Secure.getInt(mContentResolver, TEXT_SHOW_PASSWORD_TOUCH);
-            mOriginalPhysicalValue = Secure.getInt(mContentResolver, TEXT_SHOW_PASSWORD_PHYSICAL);
-        } catch (SettingNotFoundException e) {
-            throw new AssertionError("The setting should exist but does not.", e);
-        }
+        mOriginalTouchValue = Secure.getString(mContentResolver, TEXT_SHOW_PASSWORD_TOUCH);
+        mOriginalPhysicalValue = Secure.getString(mContentResolver, TEXT_SHOW_PASSWORD_PHYSICAL);
     }
 
     @After
     public void tearDown() {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    Secure.putInt(mContentResolver, TEXT_SHOW_PASSWORD_TOUCH, mOriginalTouchValue);
-                    Secure.putInt(
+                    Secure.putString(
+                            mContentResolver, TEXT_SHOW_PASSWORD_TOUCH, mOriginalTouchValue);
+                    Secure.putString(
                             mContentResolver, TEXT_SHOW_PASSWORD_PHYSICAL, mOriginalPhysicalValue);
                 },
                 Manifest.permission.WRITE_SECURE_SETTINGS);

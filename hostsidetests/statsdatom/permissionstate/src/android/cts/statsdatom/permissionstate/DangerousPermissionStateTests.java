@@ -60,6 +60,11 @@ public class DangerousPermissionStateTests extends DeviceTestCase implements IBu
         mCtsBuild = buildInfo;
     }
 
+    // TODO: kiranmr - Remove this placeholder once b/418240323 is fixed and other tests are enabled
+    public void testPlaceHolder() throws Exception {
+        return;
+    }
+
     // TODO: kiranmr - Re-enable this test once b/418240323 is fixed.
     public void ignore_testDangerousPermissionState() throws Exception {
 

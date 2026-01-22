@@ -34,6 +34,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -223,11 +224,15 @@ public class BiometricSimpleTests extends BiometricTestBase {
                             "Timed out waiting for result from test helper app %s.",
                             WalletTestHelperConstants.PACKAGE_NAME),
                     resultIntent);
-            assertFalse(
-                    String.format(
-                            "Test helper app %s encountered an exception.",
-                            WalletTestHelperConstants.PACKAGE_NAME),
-                    resultIntent.hasExtra(WalletTestHelperConstants.INTENT_EXTRA_EXCEPTION));
+            if (resultIntent.hasExtra(WalletTestHelperConstants.INTENT_EXTRA_EXCEPTION)) {
+                Exception e =
+                        resultIntent.getSerializableExtra(
+                                WalletTestHelperConstants.INTENT_EXTRA_EXCEPTION, Exception.class);
+                fail(
+                        String.format(
+                                "Test helper app %s encountered an exception \"%s\".",
+                                WalletTestHelperConstants.PACKAGE_NAME, e.toString()));
+            }
 
             // Reconstruct the received biometric sensor strengths.
             int[] modalities =

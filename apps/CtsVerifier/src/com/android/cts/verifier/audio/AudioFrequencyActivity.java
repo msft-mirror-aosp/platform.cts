@@ -33,6 +33,9 @@ import com.android.compatibility.common.util.ResultUnit;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 /**
  * Audio Frequency Test base activity
  */
@@ -122,6 +125,13 @@ public class AudioFrequencyActivity extends PassFailButtons.Activity {
     protected static final String KEY_POINTS_TOTAL = "points_total";
     protected static final String KEY_MAGNITUDE_SPECTRUM_LOG = "magnitude_spectrum_log";
     protected static final String KEY_BANDS = "bands";
+    private static final String KEY_FREQ_START = "freq_start";
+    private static final String KEY_FREQ_STOP = "freq_stop";
+    private static final String KEY_RIPPLE_START_TOP = "ripple_start_top";
+    private static final String KEY_RIPPLE_START_BOTTOM = "ripple_start_bottom";
+    private static final String KEY_RIPPLE_STOP_TOP = "ripple_stop_top";
+    private static final String KEY_RIPPLE_STOP_BOTTOM = "ripple_stop_bottom";
+    private static final String KEY_OFFSET = "offset";
 
     protected static final String LOG_ERROR_STR = "Could not log metric.";
 
@@ -139,6 +149,26 @@ public class AudioFrequencyActivity extends PassFailButtons.Activity {
                 found,
                 ResultType.NEUTRAL,
                 ResultUnit.NONE);
+    }
+
+    protected void recordBandSpecs(String label, AudioBandSpecs[] bandSpecs) {
+        try {
+            JSONArray bandsArray = new JSONArray();
+            for (int b = 0; b < bandSpecs.length; b++) {
+                JSONObject bandObject = new JSONObject();
+                bandObject.put(KEY_FREQ_START, bandSpecs[b].mFreqStart);
+                bandObject.put(KEY_FREQ_STOP, bandSpecs[b].mFreqStop);
+                bandObject.put(KEY_RIPPLE_START_TOP, bandSpecs[b].mRippleStartTop);
+                bandObject.put(KEY_RIPPLE_START_BOTTOM, bandSpecs[b].mRippleStartBottom);
+                bandObject.put(KEY_RIPPLE_STOP_TOP, bandSpecs[b].mRippleStopTop);
+                bandObject.put(KEY_RIPPLE_STOP_BOTTOM, bandSpecs[b].mRippleStopBottom);
+                bandObject.put(KEY_OFFSET, bandSpecs[b].mOffset);
+                bandsArray.put(bandObject);
+            }
+            getReportLog().addValues(label, bandsArray);
+        } catch (Exception e) {
+            Log.e(TAG, LOG_ERROR_STR, e);
+        }
     }
 
     //

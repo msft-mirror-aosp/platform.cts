@@ -16,6 +16,7 @@
 import unittest
 import unittest.mock
 
+import numpy.testing as npt
 from snippet_uiautomator import uidevice
 from snippet_uiautomator import uiobject2
 
@@ -96,6 +97,113 @@ class UiInteractionUtilsTest(unittest.TestCase):
     self.assertEqual(mock_kwargs[_SCREENSHOT_PREFIX_KEYWORD_ARGUMENT],
                      ui_interaction_utils.VIEWFINDER_NOT_VISIBLE_PREFIX)
     self.mock_not_visible_dut.ui.dump.assert_called_once()
+
+  def test_match_zoom_ratios_with_leading_result_1_0_and_duplicates(self):
+    request_zoom_ratios = [0.85, 1, 1.5, 2.1, 2.5]
+    result_zoom_ratios = [1.0, 0.86, 1.02, 1.51, 2.12, 2.13, 2.52]
+    matched_zoom_ratios = ui_interaction_utils.match_zoom_ratios(
+        result_zoom_ratios, request_zoom_ratios
+    )
+    npt.assert_array_almost_equal(
+        [0.86, 1.02, 1.51, 2.12, 2.52],
+        matched_zoom_ratios
+    )
+
+  def test_match_zoom_ratios_with_both_leading_ratio_1_0(self):
+    request_zoom_ratios = [
+        1.0, 1.33, 1.67, 2.0, 2.33, 2.67, 3.0, 3.33, 3.67, 4.0]
+    result_zoom_ratios = [
+        1.0, 1.33000004, 1.66999996, 2.0, 2.32999992,
+        2.67000008, 3.0, 3.32999992, 3.67000008, 4.0]
+    # Special case where the expected result matches a function input
+    expected_matched_zoom_ratios = result_zoom_ratios
+    matched_zoom_ratios = ui_interaction_utils.match_zoom_ratios(
+        result_zoom_ratios, request_zoom_ratios
+    )
+    npt.assert_array_almost_equal(
+        expected_matched_zoom_ratios,
+        matched_zoom_ratios
+    )
+
+  def test_match_zoom_ratios_with_mismatch_at_end(self):
+    request_zoom_ratios = [1.0, 1.5, 1.8, 2.1, 2.5]
+    result_zoom_ratios = [1.0, 1.501, 1.802, 2.102, 4.0]
+    with self.assertRaises(ValueError):
+      ui_interaction_utils.match_zoom_ratios(
+          result_zoom_ratios, request_zoom_ratios
+      )
+
+  def test_match_zoom_ratios_with_mismatch_in_middle(self):
+    request_zoom_ratios = [1.0, 1.5, 1.8, 2.1, 2.5]
+    result_zoom_ratios = [1.0, 1.501, 18, 2.102, 2.501]
+    with self.assertRaises(ValueError):
+      ui_interaction_utils.match_zoom_ratios(
+          result_zoom_ratios, request_zoom_ratios
+      )
+
+  def test_match_zoom_ratios_with_mismatch_in_length(self):
+    request_zoom_ratios = [1.0, 1.5, 1.8, 2.1, 2.5]
+    result_zoom_ratios = [1.0, 1.501, 2.102, 2.501]
+    with self.assertRaises(ValueError):
+      ui_interaction_utils.match_zoom_ratios(
+          result_zoom_ratios, request_zoom_ratios
+      )
+
+  def test_match_zoom_ratios_simple_one_to_one(self):
+    request_zoom_ratios = [1.0, 2.0, 3.0]
+    result_zoom_ratios = [1.01, 2.02, 3.03]
+    matched_zoom_ratios = ui_interaction_utils.match_zoom_ratios(
+        result_zoom_ratios, request_zoom_ratios
+    )
+    npt.assert_array_almost_equal([1.01, 2.02, 3.03], matched_zoom_ratios)
+
+  def test_match_zoom_ratios_with_skipped_results_no_leading_one(self):
+    request_zoom_ratios = [1.5, 2.5]
+    result_zoom_ratios = [1.2, 1.51, 2.0, 2.52, 3.0]
+    matched_zoom_ratios = ui_interaction_utils.match_zoom_ratios(
+        result_zoom_ratios, request_zoom_ratios
+    )
+    npt.assert_array_almost_equal([1.51, 2.52], matched_zoom_ratios)
+
+  def test_match_zoom_ratios_with_longer_result_list(self):
+    request_zoom_ratios = [2.0, 4.0]
+    result_zoom_ratios = [1.0, 1.5, 2.01, 2.5, 3.0, 3.5, 4.02, 4.5]
+    matched_zoom_ratios = ui_interaction_utils.match_zoom_ratios(
+        result_zoom_ratios, request_zoom_ratios
+    )
+    npt.assert_array_almost_equal([2.01, 4.02], matched_zoom_ratios)
+
+  def test_match_zoom_ratios_exact_match(self):
+    request_zoom_ratios = [1.0, 1.5, 2.0]
+    result_zoom_ratios = [1.0, 1.5, 2.0]
+    matched_zoom_ratios = ui_interaction_utils.match_zoom_ratios(
+        result_zoom_ratios, request_zoom_ratios
+    )
+    npt.assert_array_almost_equal([1.0, 1.5, 2.0], matched_zoom_ratios)
+
+  def test_match_zoom_ratios_request_list_longer_than_results(self):
+    request_zoom_ratios = [1.0, 2.0, 3.0, 4.0]
+    result_zoom_ratios = [1.01, 2.02, 3.03]
+    with self.assertRaises(ValueError):
+      ui_interaction_utils.match_zoom_ratios(
+          result_zoom_ratios, request_zoom_ratios
+      )
+
+  def test_match_zoom_ratios_duplicate_1_0_in_request(self):
+    request_zoom_ratios = [1.0, 1.0, 2.0]
+    result_zoom_ratios = [1.01, 1.02, 2.03]
+    matched_zoom_ratios = ui_interaction_utils.match_zoom_ratios(
+        result_zoom_ratios, request_zoom_ratios
+    )
+    npt.assert_array_almost_equal([1.01, 1.02, 2.03], matched_zoom_ratios)
+
+  def test_match_zoom_ratios_duplicate_1_0_in_result(self):
+    request_zoom_ratios = [1.0, 2.0, 3.0]
+    result_zoom_ratios = [1.01, 1.02, 2.03, 3.01]
+    matched_zoom_ratios = ui_interaction_utils.match_zoom_ratios(
+        result_zoom_ratios, request_zoom_ratios
+    )
+    npt.assert_array_almost_equal([1.01, 2.03, 3.01], matched_zoom_ratios)
 
 
 if __name__ == '__main__':

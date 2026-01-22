@@ -612,6 +612,20 @@ public class AttachedSurfaceControlTest {
             SurfaceControl mirror = asc.createMirror();
             assertTrue(mirror.isValid());
 
+            // Calculate the insets of the window to be excluded from verification later.
+            final Insets[] insets = new Insets[1];
+            scenario.onActivity(
+                    a -> {
+                        insets[0] =
+                                a.getWindow()
+                                        .getDecorView()
+                                        .getRootWindowInsets()
+                                        .getInsets(
+                                                android.view.WindowInsets.Type.systemBars()
+                                                        | android.view.WindowInsets.Type
+                                                                .displayCutout());
+                    });
+
             // Create a virtual display and present the mirror.
             int displayId = vdHelper.createAndWaitForDisplay();
             vdHelper.turnDisplayOn();
@@ -637,7 +651,7 @@ public class AttachedSurfaceControlTest {
             CountDownLatch latch = new CountDownLatch(1);
             imageReader.setOnImageAvailableListener(
                     reader -> {
-                        if (verifyImage(reader, Color.YELLOW, width, height)) {
+                        if (verifyImage(reader, Color.YELLOW, width, height, insets[0])) {
                             latch.countDown();
                             vdHelper.releaseDisplay();
                         }
@@ -648,7 +662,7 @@ public class AttachedSurfaceControlTest {
     }
 
     private boolean verifyImage(
-            ImageReader reader, int color, int surfaceWidth, int surfaceHeight) {
+            ImageReader reader, int color, int surfaceWidth, int surfaceHeight, Insets insets) {
         Bitmap bitmap;
         try (Image image = reader.acquireLatestImage()) {
             HardwareBuffer hardwareBuffer = image.getHardwareBuffer();
@@ -667,6 +681,10 @@ public class AttachedSurfaceControlTest {
                         0,
                         Math.min(bitmap.getWidth(), surfaceWidth),
                         Math.min(bitmap.getHeight(), surfaceHeight));
+        if (insets != null) {
+            checkingBounds.inset(insets);
+        }
+
         int numMatchedPixels = checker.getNumMatchingPixels(bitmap, checkingBounds);
         return checkingBounds.width() * checkingBounds.height() == numMatchedPixels;
     }

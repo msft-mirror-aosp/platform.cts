@@ -144,11 +144,12 @@ def _compare_means(formats_means, ae_mode, flash_strengths):
       if formats_means[mean] >= formats_means[mean+1]:
         msg = (
             f'Capture with CONTROL_AE_MODE {_AE_MODES[ae_mode]}. '
-            f'Strength {flash_strengths[mean]} mean: {formats_means[mean]}; '
-            f'Strength {flash_strengths[mean+1]} mean: '
-            f'{formats_means[mean+1]}. '
-            f'Mean of {flash_strengths[mean+1]} should be brighter than '
-            f'Mean of {flash_strengths[mean]}. '
+            f'Strength {flash_strengths[mean]:.2f} '
+            f'mean: {formats_means[mean]:.4f}; '
+            f'Strength {flash_strengths[mean+1]:.2f} mean: '
+            f'{formats_means[mean+1]:.4f}. '
+            f'Mean of {flash_strengths[mean+1]:.2f} should be brighter than '
+            f'Mean of {flash_strengths[mean]:.2f}. '
         )
         failure_messages.append(msg)
   else:
@@ -157,9 +158,10 @@ def _compare_means(formats_means, ae_mode, flash_strengths):
       if diff > _BRIGHTNESS_MEAN_ATOL:
         msg = (
             f'Capture with CONTROL_AE_MODE {_AE_MODES[ae_mode]}. '
-            f'Strength {flash_strengths[mean]} mean: {formats_means[mean]}; '
-            f'Strength {flash_strengths[mean+1]} mean: '
-            f'{formats_means[mean+1]}. '
+            f'Strength {flash_strengths[mean]:.2f} '
+            f'mean: {formats_means[mean]:.4f}; '
+            f'Strength {flash_strengths[mean+1]:.2f} mean: '
+            f'{formats_means[mean+1]:.4f}. '
             f'Diff: {diff}; ATOL: {_BRIGHTNESS_MEAN_ATOL}. '
         )
         failure_messages.append(msg)

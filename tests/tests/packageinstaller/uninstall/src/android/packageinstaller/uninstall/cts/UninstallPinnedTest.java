@@ -155,7 +155,7 @@ public class UninstallPinnedTest {
 
         mWmState.computeState();
 
-        int stackId = mWmState.getRootTaskIdByActivity(component);
+        int stackId = mWmState.getTaskByActivity(component).getTaskId();
 
         runWithShellPermissionIdentity(() -> {
             mActivityTaskManager.startSystemLockTaskMode(

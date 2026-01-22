@@ -51,6 +51,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.database.ContentObserver;
+import android.hardware.radio.network.NetworkInfo;
 import android.location.Location;
 import android.location.LocationManager;
 import android.location.provider.ProviderProperties;
@@ -125,6 +126,7 @@ public class SatelliteManagerTestBase {
     protected static final String TOKEN = "TEST_TOKEN";
     protected static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     public static final int RADIO_HAL_VERSION_2_3 = makeRadioVersion(2, 3);
+    public static final int RADIO_HAL_VERSION_2_4 = makeRadioVersion(2, 4);
 
     /**
      * Since SST sets waiting time up to 10 seconds for the power off radio, the timer waiting for
@@ -3890,5 +3892,119 @@ public class SatelliteManagerTestBase {
             }
         }
         return true;
+    }
+
+    protected static boolean areNetworkInfoListsTheSame(
+            @Nullable List<NetworkInfo> list1, @Nullable List<NetworkInfo> list2) {
+        if (list1 == null && list2 == null) return true;
+        if (list1 == null || list2 == null) return false;
+        if (list1.size() != list2.size()) return false;
+
+        for (NetworkInfo element1 : list1) {
+            boolean found = false;
+            for (NetworkInfo element2 : list2) {
+                if (isNetworkInfoSame(element1, element2)) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) return false;
+        }
+        return true;
+    }
+
+    protected static boolean haveNoCommonNetworkInfoItems(
+            @Nullable List<NetworkInfo> list1, @Nullable List<NetworkInfo> list2) {
+        if (list1 == null || list2 == null || list1.isEmpty() || list2.isEmpty()) {
+            return true;
+        }
+
+        for (NetworkInfo item1 : list1) {
+            for (NetworkInfo item2 : list2) {
+                if (isNetworkInfoSame(item1, item2)) {
+                    logd("Found common item: " + logNetworkInfo(item1));
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    protected static boolean isNetworkInfoSame(NetworkInfo n1, NetworkInfo n2) {
+        if (n1 == n2) return true;
+        if (n1 == null || n2 == null) return false;
+
+        return TextUtils.equals(n1.plmn, n2.plmn)
+                && n1.satelliteTechnology == n2.satelliteTechnology
+                && n1.accessNetwork == n2.accessNetwork
+                && n1.hasSamePriorityAsTn == n2.hasSamePriorityAsTn
+                && Arrays.equals(n1.arfcns, n2.arfcns);
+    }
+
+    protected static String logNetworkInfo(android.hardware.radio.network.NetworkInfo info) {
+        if (info == null) {
+            logd("NetworkInfo is null");
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("NetworkInfo { ")
+                .append("plmn='")
+                .append(info.plmn)
+                .append("', ")
+                .append("satelliteTechnology=")
+                .append(info.satelliteTechnology)
+                .append(", ")
+                .append("accessNetwork=")
+                .append(info.accessNetwork)
+                .append(", ")
+                .append("arfcns=")
+                .append(java.util.Arrays.toString(info.arfcns))
+                .append(", ")
+                .append("hasSamePriorityAsTn=")
+                .append(info.hasSamePriorityAsTn)
+                .append(" }");
+        return sb.toString();
+    }
+
+    protected static String logNetworkInfoList(
+            List<android.hardware.radio.network.NetworkInfo> networkInfoList) {
+        if (networkInfoList == null) {
+            return "networkInfoList is null";
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("networkInfoList (Size: ").append(networkInfoList.size()).append(")\n");
+        for (int i = 0; i < networkInfoList.size(); i++) {
+            android.hardware.radio.network.NetworkInfo info = networkInfoList.get(i);
+            sb.append("  [").append(i).append("]: ");
+            if (info != null) {
+                sb.append(logNetworkInfo(info));
+            } else {
+                sb.append("null");
+            }
+            sb.append("\n");
+        }
+        return sb.toString();
+    }
+
+    protected List<android.hardware.radio.network.NetworkInfo> getDefaultNetworkInfoList(
+            List<String> plmnList) {
+        Log.d(TAG, "getDefaultNetworkInfoList: " + plmnList);
+        List<android.hardware.radio.network.NetworkInfo> networkInfoList =
+                new java.util.ArrayList<>();
+        if (plmnList == null) {
+            return networkInfoList;
+        }
+        for (String plmn : plmnList) {
+            android.hardware.radio.network.NetworkInfo info =
+                    new android.hardware.radio.network.NetworkInfo();
+            info.plmn = plmn;
+            info.accessNetwork = android.hardware.radio.AccessNetwork.UNKNOWN;
+            info.arfcns = new int[] {};
+            info.satelliteTechnology =
+                    android.hardware.radio.network.SatelliteTechnology.SAT_TECH_NONE;
+            info.hasSamePriorityAsTn = false;
+            networkInfoList.add(info);
+        }
+        return networkInfoList;
     }
 }

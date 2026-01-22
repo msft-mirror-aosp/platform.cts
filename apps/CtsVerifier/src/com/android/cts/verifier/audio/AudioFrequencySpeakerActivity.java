@@ -28,7 +28,6 @@ import android.os.Message;
 import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
-import java.util.Arrays;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.ProgressBar;
@@ -46,6 +45,8 @@ import com.android.cts.verifier.audio.wavelib.VectorAverage;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import java.util.Arrays;
 
 /**
  * Tests Audio Device roundtrip latency by using a loopback plug.
@@ -483,6 +484,10 @@ public class AudioFrequencySpeakerActivity extends AudioFrequencyActivity implem
      */
     private static final String SECTION_AUDIOFREQUENCYSPEAKER =
             "audio_frequency_speaker";
+
+    private static final String KEY_BAND_SPECS = "band_specs";
+    private static final String KEY_BASE_BAND_SPECS = "base_band_specs";
+
     @Override
     public final String getReportSectionName() {
         return setTestNameSuffix(sCurrentDisplayMode, SECTION_AUDIOFREQUENCYSPEAKER);
@@ -513,6 +518,8 @@ public class AudioFrequencySpeakerActivity extends AudioFrequencyActivity implem
 
     @Override // PassFailButtons
     public void recordTestResults() {
+        recordBandSpecs(KEY_BAND_SPECS, bandSpecsArray);
+        recordBandSpecs(KEY_BASE_BAND_SPECS, baseBandSpecsArray);
         getReportLog().submit();
     }
 
@@ -663,10 +670,8 @@ public class AudioFrequencySpeakerActivity extends AudioFrequencyActivity implem
             mFftServer.fft(mC, 1);
 
             double[] halfMagnitude = new double[mBlockSizeSamples / 2];
-            double scale = 2.0 / Arrays.stream(mWindow.mBuffer.mData).sum();
             for (i = 0; i < mBlockSizeSamples / 2; i++) {
-                halfMagnitude[i] = scale * Math.sqrt(mC.mReal[i] * mC.mReal[i] +
-                        mC.mImag[i] * mC.mImag[i]);
+                halfMagnitude[i] = Math.sqrt(mC.mReal[i] * mC.mReal[i] + mC.mImag[i] * mC.mImag[i]);
             }
 
             mFreqAverageMain.setData(halfMagnitude, false); //average all of them!

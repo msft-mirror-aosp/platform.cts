@@ -18,6 +18,8 @@ package android.media.router.cts;
 
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_1_APK;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_1_PACKAGE;
+import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_2_APK;
+import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_2_PACKAGE;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_SECONDARY_USER_HELPER_APK;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_SECONDARY_USER_HELPER_PACKAGE;
 import static android.media.cts.MediaRouterTestConstants.PROXY_MEDIA_ROUTER_SCANNING_TEST_APP_APK;
@@ -30,6 +32,7 @@ import static android.media.cts.MediaRouterTestConstants.PROXY_MEDIA_ROUTER_WITH
 import static android.media.cts.MediaRouterTestConstants.PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_TEST_CLASS;
 import static android.media.cts.MediaRouterTestConstants.TARGET_USER_ID_KEY;
 
+import static com.android.media.flags.Flags.FLAG_ENABLE_MR2_PROXY_INVALIDATION_ON_TARGET_UNINSTALL;
 import static com.android.media.flags.Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -68,6 +71,7 @@ public class ProxyMediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest 
             secondaryUser = device.createUser("TEST_USER", false, false, true);
 
             installTestAppAsUser(testInformation, MEDIA_ROUTER_PROVIDER_1_APK, secondaryUser);
+            installTestAppAsUser(testInformation, MEDIA_ROUTER_PROVIDER_2_APK, secondaryUser);
             installTestAppAsUser(
                     testInformation, MEDIA_ROUTER_SECONDARY_USER_HELPER_APK, secondaryUser);
             assertThat(secondaryUser).isNotEqualTo(-1);
@@ -75,6 +79,8 @@ public class ProxyMediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest 
         }
 
         installTestAppAsUser(testInformation, MEDIA_ROUTER_PROVIDER_1_APK, device.getCurrentUser());
+
+        installTestAppAsUser(testInformation, MEDIA_ROUTER_PROVIDER_2_APK, device.getCurrentUser());
 
         installTestAppAsUser(
                 testInformation,
@@ -107,11 +113,28 @@ public class ProxyMediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest 
 
         // This uninstalls package across all users.
         device.uninstallPackage(MEDIA_ROUTER_PROVIDER_1_PACKAGE);
+        device.uninstallPackage(MEDIA_ROUTER_PROVIDER_2_PACKAGE);
     }
 
     @Before
     public void setUp() throws Throwable {
+        ITestDevice device = getDevice();
+        int currentUserId = device.getCurrentUser();
+
+        // Restore test packages uninstalled by previous test methods.
+        // e.g. uninstallTargetPackage_invalidatesProxyRouter
+        // This ensures required apps are present for all tests,
+        // as @BeforeClass installApps runs only once at the beginning of the class.
+        if (!device.isPackageInstalled(
+                MEDIA_ROUTER_PROVIDER_1_PACKAGE, Integer.toString(currentUserId))) {
+            installTestAppAsUser(getTestInformation(), MEDIA_ROUTER_PROVIDER_1_APK, currentUserId);
+        }
+        if (!device.isPackageInstalled(
+                MEDIA_ROUTER_PROVIDER_2_PACKAGE, Integer.toString(currentUserId))) {
+            installTestAppAsUser(getTestInformation(), MEDIA_ROUTER_PROVIDER_2_APK, currentUserId);
+        }
         forceStopAndWaitForRunningStatus(MEDIA_ROUTER_PROVIDER_1_PACKAGE);
+        forceStopAndWaitForRunningStatus(MEDIA_ROUTER_PROVIDER_2_PACKAGE);
         forceStopAndWaitForRunningStatus(
                 PROXY_MEDIA_ROUTER_WITH_MEDIA_CONTENT_CONTROL_HELPER_PACKAGE);
         forceStopAndWaitForRunningStatus(PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_PACKAGE);
@@ -408,6 +431,51 @@ public class ProxyMediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest 
                 PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_PACKAGE,
                 PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_TEST_CLASS,
                 "getInstance_withMediaRoutingControl_canSeePrivilegeAllowedRoute");
+    }
+
+    @Test
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled(FLAG_ENABLE_MR2_PROXY_INVALIDATION_ON_TARGET_UNINSTALL)
+    public void uninstallTargetPackage_invalidatesProxyRouter() throws Exception {
+        runDeviceTests(
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_PACKAGE,
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_TEST_CLASS,
+                "uninstallTargetPackage_invalidatesProxyRouter");
+    }
+
+    @Test
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled(FLAG_ENABLE_MR2_PROXY_INVALIDATION_ON_TARGET_UNINSTALL)
+    public void uninstallTargetPackage_callsAllOnInstanceInvalidatedListeners() throws Exception {
+        runDeviceTests(
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_PACKAGE,
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_TEST_CLASS,
+                "uninstallTargetPackage_callsAllOnInstanceInvalidatedListeners");
+    }
+
+    @Test
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled(FLAG_ENABLE_MR2_PROXY_INVALIDATION_ON_TARGET_UNINSTALL)
+    public void getInstance_forUninstalledPackage_throwsIllegalArgumentException()
+            throws Exception {
+        runDeviceTests(
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_PACKAGE,
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_TEST_CLASS,
+                "getInstance_forUninstalledPackage_throwsIllegalArgumentException");
+    }
+
+    @Test
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled(FLAG_ENABLE_MR2_PROXY_INVALIDATION_ON_TARGET_UNINSTALL)
+    public void uninstallTargetPackage_invalidatesMultipleProxyRouter() throws Exception {
+        runDeviceTests(
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_PACKAGE,
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_TEST_CLASS,
+                "uninstallTargetPackage_invalidatesMultipleProxyRouter");
     }
 
     private static void installTestAppAsUser(

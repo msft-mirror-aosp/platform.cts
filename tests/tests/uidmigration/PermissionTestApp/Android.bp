@@ -23,7 +23,6 @@ android_test_helper_app {
     sdk_version: "current",
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -35,7 +34,6 @@ android_test_helper_app {
     manifest: "AndroidManifest2.xml",
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -47,7 +45,6 @@ android_test_helper_app {
     manifest: "AndroidManifest3.xml",
     // tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }

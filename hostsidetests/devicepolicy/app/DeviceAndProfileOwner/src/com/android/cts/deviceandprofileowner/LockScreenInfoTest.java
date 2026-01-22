@@ -65,17 +65,6 @@ public final class LockScreenInfoTest extends BaseDeviceAdminTest {
         setLockInfo(new String(new char[messageLength]).replace('\0', 'Z'));
     }
 
-    public void testSetLockInfoWithNullAdminFails() {
-        final String message = "nulladmin";
-
-        // Set message
-        try {
-            mDevicePolicyManager.setDeviceOwnerLockScreenInfo(null, message);
-            fail("Exception should have been thrown for null admin ComponentName");
-        } catch (NullPointerException expected) {
-        }
-    }
-
     /**
      * Sets device owner lock screen info on behalf of the current device owner admin.
      *

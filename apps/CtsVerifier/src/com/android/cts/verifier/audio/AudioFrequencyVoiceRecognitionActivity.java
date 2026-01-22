@@ -24,7 +24,6 @@ import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import java.util.Arrays;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -43,6 +42,8 @@ import com.android.cts.verifier.audio.wavelib.VectorAverage;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import java.util.Arrays;
 
 /**
  * Tests Audio built in Microphone response for Voice Recognition audio source feature.
@@ -190,9 +191,8 @@ public class AudioFrequencyVoiceRecognitionActivity extends AudioFrequencyActivi
                     mFftServer.fft(mC, 1);
 
                     double[] magnitude = new double[BLOCK_SIZE_SAMPLES / 2];
-                    double scale = 2.0 / Arrays.stream(mWindow.mBuffer.mData).sum();
                     for (i = 0; i < BLOCK_SIZE_SAMPLES / 2; i++) {
-                        magnitude[i] = scale * Math.sqrt(mC.mReal[i] * mC.mReal[i] +
+                        magnitude[i] = Math.sqrt(mC.mReal[i] * mC.mReal[i] +
                                 mC.mImag[i] * mC.mImag[i]);
                     }
 
@@ -922,6 +922,11 @@ public class AudioFrequencyVoiceRecognitionActivity extends AudioFrequencyActivi
      */
     private static final String SECTION_AUDIOFREQUENCYVOICERECOGNITION =
             "audio_frequency_voice_recognition";
+
+    private static final String KEY_BAND_SPECS_TONE = "band_specs_tone";
+    private static final String KEY_BAND_SPECS_MIC = "band_specs_mic";
+    private static final String KEY_BAND_SPECS_BACK = "band_specs_back";
+
     @Override
     public final String getReportSectionName() {
         return setTestNameSuffix(sCurrentDisplayMode, SECTION_AUDIOFREQUENCYVOICERECOGNITION);
@@ -952,6 +957,9 @@ public class AudioFrequencyVoiceRecognitionActivity extends AudioFrequencyActivi
 
     @Override // PassFailButtons
     public void recordTestResults() {
+        recordBandSpecs(KEY_BAND_SPECS_TONE, mBandSpecsTone);
+        recordBandSpecs(KEY_BAND_SPECS_MIC, mBandSpecsMic);
+        recordBandSpecs(KEY_BAND_SPECS_BACK, mBandSpecsBack);
         getReportLog().submit();
     }
 

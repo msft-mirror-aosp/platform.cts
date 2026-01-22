@@ -20,6 +20,8 @@ import static android.media.RoutingSessionInfo.TRANSFER_REASON_APP;
 import static android.media.RoutingSessionInfo.TRANSFER_REASON_SYSTEM_REQUEST;
 import static android.media.cts.MediaRouterTestConstants.FEATURE_SAMPLE;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_1_PACKAGE;
+import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_2_PACKAGE;
+import static android.media.cts.MediaRouterTestConstants.NON_EXISTENT_PACKAGE;
 import static android.media.cts.MediaRouterTestConstants.PROXY_MEDIA_ROUTER_SCANNING_TEST_APP_PACKAGE;
 import static android.media.cts.MediaRouterTestConstants.PROXY_MEDIA_ROUTER_SCANNING_TEST_APP_TEST_CLASS;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_1_ROUTE_1;
@@ -28,6 +30,7 @@ import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_VISIBILITY_RES
 import static android.media.cts.app.common.MediaRouter2TestUtils.fetchRoutes;
 import static android.media.cts.app.common.MediaRouter2TestUtils.waitForAndGetRoutes;
 
+import static com.android.media.flags.Flags.FLAG_ENABLE_MR2_PROXY_INVALIDATION_ON_TARGET_UNINSTALL;
 import static com.android.media.flags.Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -59,6 +62,7 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.SystemUtil;
 import com.android.media.flags.Flags;
 
 import org.junit.After;
@@ -83,6 +87,7 @@ public class MediaRouter2DeviceTest {
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final int TIMEOUT_MS = 5000;
+    private static final Runnable NO_OP_RUNNABLE = () -> {};
 
     private Instrumentation mInstrumentation;
     private Context mContext;
@@ -659,5 +664,104 @@ public class MediaRouter2DeviceTest {
                 discoveryPreference,
                 Set.of(ROUTE_ID_RESTRICTED_ALLOW_PRIVILEGED),
                 mExecutor);
+    }
+
+    @SuppressLint("MissingPermission")
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_MR2_PROXY_INVALIDATION_ON_TARGET_UNINSTALL)
+    public void uninstallTargetPackage_invalidatesProxyRouter() throws Exception {
+        mInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        Manifest.permission.MEDIA_ROUTING_CONTROL,
+                        Manifest.permission.MANAGE_APP_OPS_MODES,
+                        Manifest.permission.DELETE_PACKAGES);
+        String targetPackage = MEDIA_ROUTER_PROVIDER_1_PACKAGE;
+        CountDownLatch invalidatedLatch = new CountDownLatch(1);
+        MediaRouter2.getInstance(mContext, targetPackage, mExecutor, invalidatedLatch::countDown);
+
+        SystemUtil.runShellCommand(
+                "pm uninstall --user " + mContext.getUserId() + " " + targetPackage);
+
+        assertThat(invalidatedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> MediaRouter2.getInstance(mContext, targetPackage, mExecutor, NO_OP_RUNNABLE));
+    }
+
+    @SuppressLint("MissingPermission")
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_MR2_PROXY_INVALIDATION_ON_TARGET_UNINSTALL)
+    public void uninstallTargetPackage_callsAllOnInstanceInvalidatedListeners() throws Exception {
+        mInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        Manifest.permission.MEDIA_ROUTING_CONTROL,
+                        Manifest.permission.MANAGE_APP_OPS_MODES,
+                        Manifest.permission.DELETE_PACKAGES);
+        String targetPackage = MEDIA_ROUTER_PROVIDER_1_PACKAGE;
+        CountDownLatch invalidatedLatch = new CountDownLatch(5);
+
+        for (int i = 0; i < 5; ++i) {
+            MediaRouter2.getInstance(
+                    mContext, targetPackage, mExecutor, invalidatedLatch::countDown);
+        }
+        SystemUtil.runShellCommand(
+                "pm uninstall --user " + mContext.getUserId() + " " + targetPackage);
+
+        assertThat(invalidatedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> MediaRouter2.getInstance(mContext, targetPackage, mExecutor, NO_OP_RUNNABLE));
+    }
+
+    @SuppressLint("MissingPermission")
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_MR2_PROXY_INVALIDATION_ON_TARGET_UNINSTALL)
+    public void getInstance_forUninstalledPackage_throwsIllegalArgumentException() {
+        mInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        Manifest.permission.MEDIA_ROUTING_CONTROL,
+                        Manifest.permission.MANAGE_APP_OPS_MODES,
+                        Manifest.permission.DELETE_PACKAGES);
+        String targetPackage = NON_EXISTENT_PACKAGE;
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> MediaRouter2.getInstance(mContext, targetPackage, mExecutor, NO_OP_RUNNABLE));
+    }
+
+    @SuppressLint("MissingPermission")
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_MR2_PROXY_INVALIDATION_ON_TARGET_UNINSTALL)
+    public void uninstallTargetPackage_invalidatesMultipleProxyRouter() throws Exception {
+        mInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        Manifest.permission.MEDIA_ROUTING_CONTROL,
+                        Manifest.permission.MANAGE_APP_OPS_MODES,
+                        Manifest.permission.DELETE_PACKAGES);
+        String targetPackage1 = MEDIA_ROUTER_PROVIDER_1_PACKAGE;
+        String targetPackage2 = MEDIA_ROUTER_PROVIDER_2_PACKAGE;
+        CountDownLatch invalidatedLatch = new CountDownLatch(2);
+        MediaRouter2.getInstance(mContext, targetPackage1, mExecutor, invalidatedLatch::countDown);
+        MediaRouter2.getInstance(mContext, targetPackage2, mExecutor, invalidatedLatch::countDown);
+
+        SystemUtil.runShellCommand(
+                "pm uninstall --user " + mContext.getUserId() + " " + targetPackage1);
+        SystemUtil.runShellCommand(
+                "pm uninstall --user " + mContext.getUserId() + " " + targetPackage2);
+
+        assertThat(invalidatedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        MediaRouter2.getInstance(
+                                mContext, targetPackage1, mExecutor, NO_OP_RUNNABLE));
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        MediaRouter2.getInstance(
+                                mContext, targetPackage2, mExecutor, NO_OP_RUNNABLE));
     }
 }

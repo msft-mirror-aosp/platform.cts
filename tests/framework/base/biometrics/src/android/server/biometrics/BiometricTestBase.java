@@ -118,7 +118,7 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
             DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String TAG = "BiometricTestBase";
-    private static final float SCROLL_DOWN_PERCENT = 0.6f;
+    private static final float SCROLL_DOWN_PERCENT = 0.4f;
     private static final String DUMPSYS_BIOMETRIC = Utils.DUMPSYS_BIOMETRIC;
     private static final String FLAG_CLEAR_SCHEDULER_LOG = " --clear-scheduler-buffer";
     private static final String LOCK_CREDENTIAL = "1234";
