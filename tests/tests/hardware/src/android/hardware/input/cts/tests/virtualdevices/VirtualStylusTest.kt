@@ -15,23 +15,28 @@
  */
 package android.hardware.input.cts.tests.virtualdevices
 
+import android.annotation.SuppressLint
 import android.graphics.Point
+import android.hardware.input.InputManager
 import android.hardware.input.VirtualStylus
 import android.hardware.input.VirtualStylusButtonEvent
 import android.hardware.input.VirtualStylusMotionEvent
 import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator
 import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator
+import android.platform.test.annotations.RequiresFlagsEnabled
 import android.view.InputDevice
 import android.view.InputEvent
 import android.view.MotionEvent
 import androidx.test.filters.SmallTest
 import com.android.cts.input.DebugInputRule
+import com.google.common.truth.Truth.assertThat
 import junitparams.JUnitParamsRunner
 import junitparams.Parameters
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
+@SuppressLint("MissingCheckFlagsRule") // TODO: b/463342925 - remove once fixed
 @SmallTest
 @RunWith(JUnitParamsRunner::class)
 class VirtualStylusTest : VirtualDeviceTestCase() {
@@ -383,6 +388,19 @@ class VirtualStylusTest : VirtualDeviceTestCase() {
         )
 
         assertNoMoreEvents()
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.hardware.input.Flags.FLAG_CREATE_VIRTUAL_KEYBOARD_API)
+    fun hasAssociatedDisplayId() {
+        val inputManager: InputManager =
+            mInstrumentation.context.getSystemService(InputManager::class.java)
+        val stylusId: Int = mVirtualStylus.inputDeviceId
+        assertThat(inputManager.inputDeviceIds.asList()).contains(stylusId)
+
+        val inputDevice: InputDevice = inputManager.getInputDevice(stylusId)!!
+        assertThat(inputDevice.name).isEqualTo(DEVICE_NAME)
+        assertThat(inputDevice.associatedDisplayId).isEqualTo(mVirtualDisplay.display.displayId)
     }
 
     private fun verifyStylusTouchWithTilt(

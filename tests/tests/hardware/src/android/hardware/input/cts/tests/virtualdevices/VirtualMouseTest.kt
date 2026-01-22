@@ -15,8 +15,10 @@
  */
 package android.hardware.input.cts.tests.virtualdevices
 
+import android.annotation.SuppressLint
 import android.companion.virtualdevice.flags.Flags
 import android.graphics.PointF
+import android.hardware.input.InputManager
 import android.hardware.input.VirtualMouse
 import android.hardware.input.VirtualMouseButtonEvent
 import android.hardware.input.VirtualMouseRelativeEvent
@@ -25,9 +27,11 @@ import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator
 import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator
 import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.annotations.RequiresFlagsEnabled
+import android.view.InputDevice
 import android.view.InputEvent
 import android.view.MotionEvent
 import com.android.cts.input.DefaultPointerSpeedRule
+import com.google.common.truth.Truth.assertThat
 import junitparams.JUnitParamsRunner
 import junitparams.Parameters
 import org.junit.Assert.assertEquals
@@ -35,6 +39,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
+@SuppressLint("MissingCheckFlagsRule") // TODO: b/463342925 - remove once fixed
 @RunWith(JUnitParamsRunner::class)
 class VirtualMouseTest : VirtualDeviceTestCase() {
     @get:Rule
@@ -244,6 +249,19 @@ class VirtualMouseTest : VirtualDeviceTestCase() {
 
         assertEquals("Cursor position x differs", startPosition.x, position.x, EPSILON)
         assertEquals("Cursor position y differs", startPosition.y, position.y, EPSILON)
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.hardware.input.Flags.FLAG_CREATE_VIRTUAL_KEYBOARD_API)
+    fun hasAssociatedDisplayId() {
+        val inputManager: InputManager =
+            mInstrumentation.context.getSystemService(InputManager::class.java)
+        val mouseId: Int = mVirtualMouse.inputDeviceId
+        assertThat(inputManager.inputDeviceIds.asList()).contains(mouseId)
+
+        val inputDevice: InputDevice = inputManager.getInputDevice(mouseId)!!
+        assertThat(inputDevice.name).isEqualTo(DEVICE_NAME)
+        assertThat(inputDevice.associatedDisplayId).isEqualTo(mVirtualDisplay.display.displayId)
     }
 
     private fun verifyScrollX(hScroll: Float) {
