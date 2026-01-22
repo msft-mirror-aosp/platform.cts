@@ -382,8 +382,11 @@ public class ScreenCaptureTest extends WindowManagerTestBase {
                         WindowMetrics windowMetrics = getWindowManager().getCurrentWindowMetrics();
                         Rect windowBounds = windowMetrics.getBounds();
                         Insets systemBarInsets = insets.getInsets(WindowInsets.Type.systemBars());
+                        Insets tappableInsets =
+                                insets.getInsets(WindowInsets.Type.tappableElement());
+                        boolean isButtonNavigation = tappableInsets.bottom > 0;
                         boolean isDesktopMode = insets.isVisible(WindowInsets.Type.captionBar());
-                        if (isDesktopMode) {
+                        if (isDesktopMode || isButtonNavigation) {
                             // TODO(b/454352473): Use {@link insets#getRoundedCorner()} when it's
                             //  fully supported.
                             int radius = 128;
