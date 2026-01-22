@@ -22,6 +22,7 @@ import static android.app.ActivityManager.getCapabilitiesSummary;
 import static android.app.ActivityManager.procStateToString;
 import static android.jobscheduler.cts.BaseJobSchedulerTest.HW_TIMEOUT_MULTIPLIER;
 import static android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver.ACTION_JOB_SCHEDULE_RESULT;
+import static android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver.ACTION_PENDING_JOB_REASONS_RESULT;
 import static android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver.EXTRA_REQUEST_JOB_UID_STATE;
 import static android.jobscheduler.cts.jobtestapp.TestJobService.ACTION_JOB_STARTED;
 import static android.jobscheduler.cts.jobtestapp.TestJobService.ACTION_JOB_STOPPED;
@@ -108,6 +109,7 @@ class TestAppInterface implements AutoCloseable {
         intentFilter.addAction(ACTION_JOB_STARTED);
         intentFilter.addAction(ACTION_JOB_STOPPED);
         intentFilter.addAction(ACTION_JOB_SCHEDULE_RESULT);
+        intentFilter.addAction(ACTION_PENDING_JOB_REASONS_RESULT);
         mContext.registerReceiver(mReceiver, intentFilter, Context.RECEIVER_EXPORTED);
         SystemUtil.runShellCommand(
                 "am compat enable --no-kill ALLOW_TEST_API_ACCESS " + TEST_APP_PACKAGE);
@@ -376,58 +378,85 @@ class TestAppInterface implements AutoCloseable {
         mContext.sendBroadcast(testFgs);
     }
 
-    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            Log.d(TAG, "Received action " + intent.getAction());
-            switch (intent.getAction()) {
-                case ACTION_JOB_STARTED:
-                case ACTION_JOB_STOPPED:
-                    final JobParameters params = intent.getParcelableExtra(JOB_PARAMS_EXTRA_KEY);
-                    Log.d(TAG, "JobId: " + params.getJobId());
-                    synchronized (mTestJobStates) {
-                        TestJobState jobState = mTestJobStates.get(params.getJobId());
-                        if (jobState == null) {
-                            jobState = new TestJobState();
-                            mTestJobStates.put(params.getJobId(), jobState);
-                        } else {
-                            jobState.reset();
+    public void requestPendingJobReasons(int jobId) {
+        final Intent intent = new Intent(TestJobSchedulerReceiver.ACTION_GET_PENDING_JOB_REASONS);
+        intent.setComponent(new ComponentName(TEST_APP_PACKAGE, TEST_APP_RECEIVER));
+        intent.putExtra(TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, jobId);
+        mContext.sendBroadcast(intent);
+    }
+
+    private final BroadcastReceiver mReceiver =
+            new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    Log.d(TAG, "Received action " + intent.getAction());
+                    switch (intent.getAction()) {
+                        case ACTION_JOB_STARTED, ACTION_JOB_STOPPED -> {
+                            final JobParameters params =
+                                    intent.getParcelableExtra(JOB_PARAMS_EXTRA_KEY);
+                            Log.d(TAG, "JobId: " + params.getJobId());
+                            synchronized (mTestJobStates) {
+                                TestJobState jobState = mTestJobStates.get(params.getJobId());
+                                if (jobState == null) {
+                                    jobState = new TestJobState();
+                                    mTestJobStates.put(params.getJobId(), jobState);
+                                } else {
+                                    jobState.reset();
+                                }
+                                jobState.running = ACTION_JOB_STARTED.equals(intent.getAction());
+                                jobState.params = params;
+                                // With these broadcasts, the job is/was running, and therefore
+                                // scheduling
+                                // was successful.
+                                jobState.scheduleResult = JobScheduler.RESULT_SUCCESS;
+                                if (intent.getBooleanExtra(EXTRA_REQUEST_JOB_UID_STATE, false)) {
+                                    jobState.procState =
+                                            intent.getIntExtra(
+                                                    JOB_PROC_STATE_KEY,
+                                                    ActivityManager.PROCESS_STATE_NONEXISTENT);
+                                    jobState.capabilities =
+                                            intent.getIntExtra(
+                                                    JOB_CAPABILITIES_KEY,
+                                                    ActivityManager.PROCESS_CAPABILITY_NONE);
+                                    jobState.oomScoreAdj =
+                                            intent.getIntExtra(JOB_OOM_SCORE_ADJ_KEY, INVALID_ADJ);
+                                }
+                            }
                         }
-                        jobState.running = ACTION_JOB_STARTED.equals(intent.getAction());
-                        jobState.params = params;
-                        // With these broadcasts, the job is/was running, and therefore scheduling
-                        // was successful.
-                        jobState.scheduleResult = JobScheduler.RESULT_SUCCESS;
-                        if (intent.getBooleanExtra(EXTRA_REQUEST_JOB_UID_STATE, false)) {
-                            jobState.procState = intent.getIntExtra(JOB_PROC_STATE_KEY,
-                                    ActivityManager.PROCESS_STATE_NONEXISTENT);
-                            jobState.capabilities = intent.getIntExtra(JOB_CAPABILITIES_KEY,
-                                    ActivityManager.PROCESS_CAPABILITY_NONE);
-                            jobState.oomScoreAdj = intent.getIntExtra(JOB_OOM_SCORE_ADJ_KEY,
-                                    INVALID_ADJ);
+                        case ACTION_JOB_SCHEDULE_RESULT -> {
+                            synchronized (mTestJobStates) {
+                                final int jobId =
+                                        intent.getIntExtra(
+                                                TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, 0);
+                                TestJobState jobState = mTestJobStates.get(jobId);
+                                if (jobState == null) {
+                                    jobState = new TestJobState();
+                                    mTestJobStates.put(jobId, jobState);
+                                } else {
+                                    jobState.reset();
+                                }
+                                jobState.running = false;
+                                jobState.params = null;
+                                jobState.scheduleResult =
+                                        intent.getIntExtra(
+                                                TestJobSchedulerReceiver.EXTRA_SCHEDULE_RESULT, -1);
+                            }
+                        }
+                        case ACTION_PENDING_JOB_REASONS_RESULT -> {
+                            Log.d(TAG, "Received pending job reasons result");
+                            synchronized (mTestJobStates) {
+                                final int jobId =
+                                        intent.getIntExtra(
+                                                TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, 0);
+                                TestJobState jobState = mTestJobStates.get(jobId);
+                                jobState.setPendingReasons(
+                                        intent.getIntArrayExtra(
+                                                TestJobSchedulerReceiver.EXTRA_PENDING_REASONS));
+                            }
                         }
                     }
-                    break;
-                case ACTION_JOB_SCHEDULE_RESULT:
-                    synchronized (mTestJobStates) {
-                        final int jobId = intent.getIntExtra(
-                                TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, 0);
-                        TestJobState jobState = mTestJobStates.get(jobId);
-                        if (jobState == null) {
-                            jobState = new TestJobState();
-                            mTestJobStates.put(jobId, jobState);
-                        } else {
-                            jobState.reset();
-                        }
-                        jobState.running = false;
-                        jobState.params = null;
-                        jobState.scheduleResult = intent.getIntExtra(
-                                TestJobSchedulerReceiver.EXTRA_SCHEDULE_RESULT, -1);
-                    }
-                    break;
-            }
-        }
-    };
+                }
+            };
 
     boolean awaitJobStart(long maxWait) throws Exception {
         return awaitJobStart(mJobId, maxWait);
@@ -512,6 +541,13 @@ class TestAppInterface implements AutoCloseable {
         }
     }
 
+    public int[] getPendingJobReasons(int jobId) {
+        synchronized (mTestJobStates) {
+            final TestJobState jobState = mTestJobStates.get(jobId);
+            return jobState != null ? jobState.mPendingReasons : null;
+        }
+    }
+
     private static final class TestJobState {
         int scheduleResult;
         boolean running;
@@ -519,6 +555,7 @@ class TestAppInterface implements AutoCloseable {
         int capabilities;
         int oomScoreAdj;
         JobParameters params;
+        int[] mPendingReasons;
 
         TestJobState() {
             initState();
@@ -534,6 +571,11 @@ class TestAppInterface implements AutoCloseable {
             capabilities = ActivityManager.PROCESS_CAPABILITY_NONE;
             oomScoreAdj = INVALID_ADJ;
             scheduleResult = -1;
+            mPendingReasons = null;
+        }
+
+        void setPendingReasons(int[] reasons) {
+            mPendingReasons = reasons;
         }
     }
 
