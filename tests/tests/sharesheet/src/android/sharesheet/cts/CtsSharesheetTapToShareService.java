@@ -27,6 +27,7 @@ public class CtsSharesheetTapToShareService extends TapToShareService {
 
     private static volatile CountDownLatch mSessionStartLatch;
     private static volatile CountDownLatch mSessionEndLatch;
+    private static volatile CountDownLatch mDestroyLatch;
 
     public static CtsSharesheetTapToShareService getInstance() {
         return sInstance;
@@ -45,6 +46,7 @@ public class CtsSharesheetTapToShareService extends TapToShareService {
         sInstanceLatch = new CountDownLatch(1);
         mSessionStartLatch = new CountDownLatch(1);
         mSessionEndLatch = new CountDownLatch(1);
+        mDestroyLatch = new CountDownLatch(1);
     }
 
     @Override
@@ -57,6 +59,9 @@ public class CtsSharesheetTapToShareService extends TapToShareService {
     @Override
     public void onDestroy() {
         sInstance = null;
+        if (mDestroyLatch != null) {
+            mDestroyLatch.countDown();
+        }
         super.onDestroy();
     }
 
@@ -82,5 +87,9 @@ public class CtsSharesheetTapToShareService extends TapToShareService {
 
     public boolean awaitSessionEnd(long timeoutMs) throws InterruptedException {
         return mSessionEndLatch.await(timeoutMs, TimeUnit.MILLISECONDS);
+    }
+
+    public boolean awaitDestroy(long timeoutMs) throws InterruptedException {
+        return mDestroyLatch.await(timeoutMs, TimeUnit.MILLISECONDS);
     }
 }
