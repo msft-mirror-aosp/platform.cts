@@ -29,7 +29,6 @@ android_test_helper_app {
     target_sdk_version: "22",
 
     test_suites: [
-        "cts",
         "general-tests",
         "automotive-tests",
         "automotive-general-tests",
