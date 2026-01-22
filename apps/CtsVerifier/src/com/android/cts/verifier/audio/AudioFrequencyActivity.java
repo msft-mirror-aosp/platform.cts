@@ -35,6 +35,8 @@ import com.android.cts.verifier.audio.wavelib.DspWindow;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
 
+import java.util.Arrays;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -136,6 +138,8 @@ public class AudioFrequencyActivity extends PassFailButtons.Activity {
     private static final String KEY_OFFSET = "offset";
 
     protected static final String LOG_ERROR_STR = "Could not log metric.";
+    private static final double SINE_CREST_FACTOR = Math.sqrt(2.0);
+    private static final double WHITE_NOISE_CREST_FACTOR = 4.0;
 
     private void recordRefMicStatus(boolean has) {
         getReportLog().addValue(
@@ -251,6 +255,67 @@ public class AudioFrequencyActivity extends PassFailButtons.Activity {
                                     + fftResult.mImag[i] * fftResult.mImag[i]);
         }
         return halfMagnitude;
+    }
+
+    protected double[] computeSineMagnitudeSpectrum(DspBufferComplex fftResult, DspWindow window) {
+        int windowSize = window.mBuffer.getSize();
+        double[] halfMagnitude = new double[windowSize / 2];
+        // The `sqrt(2.0)` factor is used to convert the magnitude of the single-sided
+        // spectrum (which represents half the total amplitude of a real sine wave)
+        // The sum of window weights compensates for the amplitude reduction caused by
+        // the window function.
+        // For details on FFT scaling, see:
+        // https://holometer.fnal.gov/GH_FFT.pdf
+        double scale = Math.sqrt(2.0) / Arrays.stream(window.mBuffer.mData).sum();
+        for (int i = 0; i < windowSize / 2; i++) {
+            halfMagnitude[i] = scale * Math.sqrt(fftResult.mReal[i] * fftResult.mReal[i] +
+                    fftResult.mImag[i] * fftResult.mImag[i]);
+        }
+        return halfMagnitude;
+    }
+
+    protected double[] computeSineAmplitudePeak(DspBufferComplex fftResult, DspWindow window) {
+        double magnitudes[] = computeSineMagnitudeSpectrum(fftResult, window);
+        for (int i = 0; i < magnitudes.length; i++) {
+            magnitudes[i] = SINE_CREST_FACTOR * magnitudes[i];
+        }
+        return magnitudes;
+    }
+
+    protected double[] estimateWhiteNoiseRMS(DspBufferComplex complex, DspWindow window, int samplingRate) {
+        int windowSize = window.mBuffer.mData.length;
+        double[] result = new double[windowSize / 2];
+        double incoherent = 0;
+
+        for (int i = 0; i < windowSize; i++) {
+             incoherent += window.mBuffer.mData[i] * window.mBuffer.mData[i];
+        }
+        for (int i = 0; i < windowSize / 2; i++) {
+            result[i] = Math.sqrt(complex.mReal[i] * complex.mReal[i] +
+                    complex.mImag[i] * complex.mImag[i]);
+        }
+
+        for (int i = 0; i < windowSize / 2; i++) {
+            // Converts the magnitude spectrum to an estimate of the white noise RMS.
+            // This involves two transformations:
+            // 1. Magnitude spectrum to Power Spectral Density (PSD):
+            //    PSD[i] = 2 * magnitudes[i]^2 / (incoherent * sampling rate)
+            //    Ref: https://holometer.fnal.gov/GH_FFT.pdf
+            // 2. PSD to White Noise RMS:
+            //    White noise RMS = sqrt(PSD[i] * (sampling rate / 2))
+            // Combining these yields: White noise RMS = magnitudes[i] / sqrt(incoherent)
+            result[i] = result[i] / Math.sqrt(incoherent);
+        }
+
+        return result;
+    }
+
+    protected double[] estimateWhiteNoisePeak(DspBufferComplex complex, DspWindow window, int samplingRate) {
+        double[] magnitudes = estimateWhiteNoiseRMS(complex, window, samplingRate);
+        for (int i = 0; i < magnitudes.length; i++) {
+            magnitudes[i] = WHITE_NOISE_CREST_FACTOR * magnitudes[i];
+        }
+        return magnitudes;
     }
 
     private void scanPeripheralList(AudioDeviceInfo[] devices) {

@@ -864,7 +864,7 @@ public class AudioFrequencyMicActivity extends AudioFrequencyActivity implements
             DspBufferMath.set(mC, mData);
             mFftServer.fft(mC, 1);
 
-            double[] halfMagnitude = computeMagnitudeSpectrum(mC, mWindow);
+            double[] halfMagnitude = estimateWhiteNoisePeak(mC, mWindow, mSamplingRate);
 
             switch(mCurrentTest) {
                 case TEST_NOISE:

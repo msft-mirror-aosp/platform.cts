@@ -669,7 +669,7 @@ public class AudioFrequencySpeakerActivity extends AudioFrequencyActivity implem
             DspBufferMath.set(mC, mData);
             mFftServer.fft(mC, 1);
 
-            double[] halfMagnitude = computeMagnitudeSpectrum(mC, mWindow);
+            double[] halfMagnitude = estimateWhiteNoisePeak(mC, mWindow, mSamplingRate);
 
             mFreqAverageMain.setData(halfMagnitude, false); //average all of them!
 
