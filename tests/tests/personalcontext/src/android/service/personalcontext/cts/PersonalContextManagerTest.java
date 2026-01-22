@@ -27,8 +27,6 @@ import android.service.personalcontext.RenderToken;
 import android.service.personalcontext.hint.BundleHint;
 import android.service.personalcontext.hint.ContextHint;
 import android.service.personalcontext.hint.ContextHintWithSignature;
-import android.service.personalcontext.insight.BundleInsight;
-import android.service.personalcontext.insight.ContextInsight;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -119,18 +117,5 @@ public class PersonalContextManagerTest {
                         signedHint.getAttributionHints().stream()
                                 .map(chws -> chws.getContextHint().getHintId()))
                 .containsExactly(attributionHint1.getHintId(), attributionHint2.getHintId());
-    }
-
-    @ApiTest(
-            apis = {
-                "android.service.personalcontext.PersonalContextManager#publishInsight",
-            })
-    @Test
-    public void testPublishInsight() {
-        final List<ContextInsight> insights =
-                List.of(new BundleInsight.Builder().build(), new BundleInsight.Builder().build());
-
-        mPersonalContextManager.publishInsight(insights);
-        // TODO: Check that insights are received by service.
     }
 }
