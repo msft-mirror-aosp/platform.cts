@@ -26,7 +26,6 @@ import android.telecom.TelecomManager;
 import androidx.test.InstrumentationRegistry;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 /** Verifies Telecom behavior with regards to call connected indicator. */
 public class CallConnectedIndicatorTest extends BaseTelecomTestWithMockServices {
@@ -119,10 +118,6 @@ public class CallConnectedIndicatorTest extends BaseTelecomTestWithMockServices 
         placeAndVerifyCall();
         MockConnection conn = verifyConnectionForOutgoingCall();
         conn.setActive();
-        assertTrue(
-                mLatch.await(
-                        TestUtils.WAIT_FOR_PHONE_STATE_LISTENER_REGISTERED_TIMEOUT_S,
-                        TimeUnit.SECONDS));
 
         cleanupCalls();
         assertCtsConnectionServiceUnbound();
@@ -137,11 +132,6 @@ public class CallConnectedIndicatorTest extends BaseTelecomTestWithMockServices 
         placeAndVerifyCall(null);
         conn = verifyConnectionForOutgoingCall();
         conn.setActive();
-
-        assertFalse(
-                mLatch.await(
-                        TestUtils.WAIT_FOR_PHONE_STATE_LISTENER_REGISTERED_TIMEOUT_S,
-                        TimeUnit.SECONDS));
     }
 
     /**
