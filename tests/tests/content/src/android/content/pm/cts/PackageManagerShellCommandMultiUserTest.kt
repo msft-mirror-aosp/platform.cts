@@ -918,7 +918,10 @@ class PackageManagerShellCommandMultiUserTest {
             runWithShellPermissionIdentity(
                     uiAutomation,
                     {
-                        // Delete the system package with DELETE_SYSTEM_APP on primary user
+                        // Delete the system package with DELETE_SYSTEM_APP on primary user. Since
+                        // device has multiple users, the package will be deleted for the user
+                        // (unlike the case of a device having a single user, where the package will
+                        // be downgraded).
                         uninstallPackageAsUser(CTS_SHIM_PACKAGE_NAME, primaryUser)
                         assertThat(PackageManagerTest.matchesInstalled(
                                 context.packageManager,

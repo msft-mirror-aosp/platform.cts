@@ -3736,6 +3736,12 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
 
     @Test
     public void testDeleteSystemApp() {
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    int userCount = mContext.getSystemService(UserManager.class).getUserCount();
+                    assumeTrue(userCount == 1);
+                });
+
         PackageInfo ctsShimPackageInfo = null;
         try {
             ctsShimPackageInfo = mPackageManager.getPackageInfo(
@@ -3745,20 +3751,33 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
         }
         assumeTrue(ctsShimPackageInfo != null);
         final int testUserId = Process.myUserHandle().getIdentifier();
-        try {
-            // Delete the system package with DELETE_SYSTEM_APP
-            uninstallPackageForUser(CTS_SHIM_PACKAGE_NAME, testUserId);
-            assertThat(matchesInstalled(mPackageManager, CTS_SHIM_PACKAGE_NAME, testUserId,
-                    0)).isFalse();
-            assertThat(matchesInstalled(mPackageManager, CTS_SHIM_PACKAGE_NAME, testUserId,
-                    MATCH_DISABLED_COMPONENTS)).isFalse();
-            assertThat(matchesInstalled(mPackageManager, CTS_SHIM_PACKAGE_NAME, testUserId,
-                    MATCH_DISABLED_UNTIL_USED_COMPONENTS)).isFalse();
-            assertThat(matchesInstalled(mPackageManager, CTS_SHIM_PACKAGE_NAME, testUserId,
-                    MATCH_HIDDEN_UNTIL_INSTALLED_COMPONENTS)).isTrue();
-        } finally {
-            installExistingPackageForUser(CTS_SHIM_PACKAGE_NAME, testUserId);
-        }
+
+        uninstallPackageForUser(CTS_SHIM_PACKAGE_NAME, testUserId);
+
+        // Since this is the only user on the device, the app won't be deleted for the user.
+        assertThat(matchesInstalled(mPackageManager, CTS_SHIM_PACKAGE_NAME, testUserId, 0))
+                .isTrue();
+        assertThat(
+                        matchesInstalled(
+                                mPackageManager,
+                                CTS_SHIM_PACKAGE_NAME,
+                                testUserId,
+                                MATCH_DISABLED_COMPONENTS))
+                .isTrue();
+        assertThat(
+                        matchesInstalled(
+                                mPackageManager,
+                                CTS_SHIM_PACKAGE_NAME,
+                                testUserId,
+                                MATCH_DISABLED_UNTIL_USED_COMPONENTS))
+                .isTrue();
+        assertThat(
+                        matchesInstalled(
+                                mPackageManager,
+                                CTS_SHIM_PACKAGE_NAME,
+                                testUserId,
+                                MATCH_HIDDEN_UNTIL_INSTALLED_COMPONENTS))
+                .isTrue();
     }
 
     @Test
