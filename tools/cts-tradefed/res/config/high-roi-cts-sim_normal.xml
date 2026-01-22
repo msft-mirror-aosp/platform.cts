@@ -371,17 +371,17 @@
     <option name="compatibility:include-filter" value="CtsAppFunctionsAtomHostTestCases[instant] android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_platformManager_platformAppFunctionService_success_accessEnabled"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionsAtomHostTestCases[instant] android.cts.statsdatom.appfunctions.AppFunctionsStatsTest#testAtom_executeAppFunction_throwsException_accessEnabled"/>
     <!-- CtsStatsdAtomHostTestCases[instant] -->
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.coregraphics.GraphicsAtomTests#surfaceControlLutsEvents"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.display.DisplayEventOccurredStatsTests#testDisplayEventStateReported"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.display.DisplayEventOccurredStatsTests#testDisplayRefreshRateReported"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.net.BytesTransferredTest#testBytesTransferByTagAndMetered"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.net.BytesTransferredTest#testDataUsageBytesTransfer"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.net.BytesTransferredTest#testMobileBytesTransfer"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.net.BytesTransferredTest#testMobileBytesTransferByFgBg"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.perf.UprobeStatsTest#testUpdateDeviceIdleTempAllowlist"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.power.AdaptiveSuspendStatsTests#testAdaptiveSuspendStats"/>
+    <option name="compatibility:include-filter" value="CtsCoreGraphicsAtomHostTestCases[instant] android.cts.statsdatom.coregraphics.GraphicsAtomTests#surfaceControlLutsEvents"/>
+    <option name="compatibility:include-filter" value="CtsDisplayAtomHostTestCases[instant] android.cts.statsdatom.display.DisplayEventOccurredStatsTests#testDisplayEventStateReported"/>
+    <option name="compatibility:include-filter" value="CtsDisplayAtomHostTestCases[instant] android.cts.statsdatom.display.DisplayEventOccurredStatsTests#testDisplayRefreshRateReported"/>
+    <option name="compatibility:include-filter" value="CtsNetAtomHostTestCases[instant] android.cts.statsdatom.net.BytesTransferredTest#testBytesTransferByTagAndMetered"/>
+    <option name="compatibility:include-filter" value="CtsNetAtomHostTestCases[instant] android.cts.statsdatom.net.BytesTransferredTest#testDataUsageBytesTransfer"/>
+    <option name="compatibility:include-filter" value="CtsNetAtomHostTestCases[instant] android.cts.statsdatom.net.BytesTransferredTest#testMobileBytesTransfer"/>
+    <option name="compatibility:include-filter" value="CtsNetAtomHostTestCases[instant] android.cts.statsdatom.net.BytesTransferredTest#testMobileBytesTransferByFgBg"/>
+    <option name="compatibility:include-filter" value="CtsPerfAtomHostTestCases[instant] android.cts.statsdatom.perf.UprobeStatsTest#testUpdateDeviceIdleTempAllowlist"/>
+    <option name="compatibility:include-filter" value="CtsPowerAtomHostTestCases[instant] android.cts.statsdatom.power.AdaptiveSuspendStatsTests#testAdaptiveSuspendStats"/>
     <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.statsd.UidAtomTests#testSyncState"/>
-    <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases[instant] android.cts.statsdatom.wifi.WifiStatsTests#testWifiReconnect"/>
+    <option name="compatibility:include-filter" value="CtsWifiAtomHostTestCases[instant] android.cts.statsdatom.wifi.WifiStatsTests#testWifiReconnect"/>
     <!-- CtsTelecomTestCases -->
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.AccessibilitySystemActionTest#testInCall_headsetHookAction_hangupCall"/>
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.AccessibilitySystemActionTest#testIncomingCall_headsetHookAction_acceptsCall"/>
