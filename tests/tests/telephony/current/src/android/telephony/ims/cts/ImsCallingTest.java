@@ -44,7 +44,6 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.PersistableBundle;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -352,8 +351,7 @@ public class ImsCallingTest extends ImsCallingBase {
         waitForUnboundService();
     }
 
-    @RequiresFlagsEnabled({Flags.FLAG_REUSE_ORIGINAL_CONN_REMOTE_CONF_BEHAVIOR,
-        android.telecom.flags.Flags.FLAG_MULTI_PARTY_ANCHOR_CONF})
+    @RequiresFlagsEnabled(android.telecom.flags.Flags.FLAG_MULTI_PARTY_ANCHOR_CONF)
     @Test
     @ApiTest(apis={"android.telecom.Conference#setConferenceables",
             "android.telecom.Conference#onMerge"})
@@ -406,7 +404,6 @@ public class ImsCallingTest extends ImsCallingBase {
         overrideCarrierConfig(null);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_REUSE_ORIGINAL_CONN_REMOTE_CONF_BEHAVIOR)
     @Test
     public void testIncomingCallBecomesRemotelyHostedConference() throws Exception {
         if (!ImsUtils.shouldTestImsCall()) {
@@ -457,7 +454,6 @@ public class ImsCallingTest extends ImsCallingBase {
         waitForUnboundService();
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_REUSE_ORIGINAL_CONN_REMOTE_CONF_BEHAVIOR)
     @Test
     public void testIgnoreStartRemoteConferenceWhenUsingSimCallManager() throws Exception {
         if (!ImsUtils.shouldTestImsCall()) {
@@ -508,44 +504,6 @@ public class ImsCallingTest extends ImsCallingBase {
         } finally {
             overrideCarrierConfig(null);
         }
-    }
-
-    @RequiresFlagsDisabled(Flags.FLAG_REUSE_ORIGINAL_CONN_REMOTE_CONF_BEHAVIOR)
-    @Test
-    public void testIncomingCallBecomesRemotelyHostedConferenceLegacy() throws Exception {
-        if (!ImsUtils.shouldTestImsCall()) {
-            return;
-        }
-        bindImsService();
-        mServiceCallBack = new ServiceCallBack();
-        InCallServiceStateValidator.setCallbacks(mServiceCallBack);
-
-        Bundle extras = new Bundle();
-        sServiceConnector.getCarrierService().getMmTelFeature().onIncomingCallReceived(extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
-
-        Call call = getCall(mCurrentCallId);
-        if (call.getDetails().getState() == Call.STATE_RINGING) {
-            call.answer(0);
-        }
-
-        waitForCallSessionToNotBe(null);
-        TestImsCallSessionImpl callSession =
-                sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
-
-        isCallActive(call, callSession);
-
-        // Initiate this call becoming a remotely hosted conference call:
-        callSession.changeMultipartyState(true);
-
-        // Ensure that the original call is disconnected when the new conference call is created:
-        waitForCallState(call, Call.STATE_DISCONNECTED);
-
-        // End the conference call and ensure it is cleaned up correctly:
-        callSession.terminateIncomingCall();
-        isCallDisconnected(call, callSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
-        waitForUnboundService();
     }
 
     @Test
