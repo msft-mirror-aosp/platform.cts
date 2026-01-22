@@ -29,8 +29,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-
+import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
@@ -44,7 +43,7 @@ import org.junit.runner.RunWith;
 import java.util.ArrayList;
 import java.util.List;
 
-@RunWith(AndroidJUnit4.class)
+@RunWith(BedsteadJUnit4.class)
 public class PowerMonitorsTest {
 
     @Rule
