@@ -27,9 +27,11 @@ import android.os.SystemProperties
 import android.util.Log
 import android.util.Size
 import com.android.extensions.computercontrol.ComputerControlSession
+import java.lang.reflect.Proxy
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
@@ -43,8 +45,24 @@ class TestAppAgent(
     private val interactionQueue = Channel<Interaction>(Channel.UNLIMITED)
     private val interactionReceiver: InteractionReceiver
     private val testAppFocusRequester: TestAppFocusRequester
+    private val sessionCloseFuture = CompletableFuture<Void>()
+
+    /** Lifecycle callback that can be installed on the test agent. */
+    var lifecycleCallback:
+            AtomicReference<ComputerControlSession.LifecycleCallback?> = AtomicReference(null)
 
     init {
+        val proxyLifecycleCallback = polledDelegate { lifecycleCallback.get() }
+        session.setLifecycleCallback(
+            Executors.newSingleThreadExecutor(),
+            object : ComputerControlSession.LifecycleCallback by proxyLifecycleCallback {
+                override fun onClosed(reason: Int) {
+                    proxyLifecycleCallback.onClosed(reason)
+                    sessionCloseFuture.complete(null)
+                }
+            }
+        )
+
         actAndWaitForStable {
             if (className != null) {
                 session.launchApplication(ComponentName(packageName, className))
@@ -67,22 +85,9 @@ class TestAppAgent(
     }
 
     override fun close() {
-        val future = CompletableFuture<Void>()
-        session.setLifecycleCallback(
-            Executors.newSingleThreadExecutor(),
-            object : ComputerControlSession.LifecycleCallback {
-                override fun onActive() {}
-
-                override fun onBlocked(reason: Int, blockingPackage: String?) {}
-
-                override fun onClosed(reason: Int) {
-                    future.complete(null)
-                }
-            }
-        )
         session.close()
         // Wait for the onClosed() callback to be invoked.
-        future.get(SESSION_CLOSE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        sessionCloseFuture.get(SESSION_CLOSE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
     }
 
     fun requestFocus(textFieldId: String) {
@@ -159,7 +164,22 @@ class TestAppAgent(
         private val HW_TIMEOUT_MULTIPLIER = SystemProperties.getInt("ro.hw_timeout_multiplier", 1)
 
         const val SESSION_CREATION_TIMEOUT_SECONDS = 5L
+
         // TODO: b/454903475 - Reduce this timeout once the bug is fixed.
         val SESSION_CLOSE_TIMEOUT_SECONDS = 120L * HW_TIMEOUT_MULTIPLIER
+
+        /**
+         * Creates a proxy object of type T that polls the [provider] every time on each
+         * method invocation.
+         */
+        private inline fun <reified T : Any> polledDelegate(crossinline provider: () -> T?): T {
+            return Proxy.newProxyInstance(
+                T::class.java.classLoader,
+                arrayOf(T::class.java)
+            ) { _, method, args ->
+                // Poll the provider on each invocation.
+                provider()?.let { method.invoke(it, *(args ?: arrayOf())) }
+            } as T
+        }
     }
 }
