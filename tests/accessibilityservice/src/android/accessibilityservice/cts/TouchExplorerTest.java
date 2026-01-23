@@ -211,9 +211,9 @@ public class TouchExplorerTest {
             mSwipeDistance =
                     TypedValue.applyDimension(
                             TypedValue.COMPLEX_UNIT_MM, GESTURE_LENGTH_MMS, metrics);
-            // This must be slower than 10mm per 150ms to be detected as touch exploration.
-            final double swipeDistanceMm = mSwipeDistance / metrics.xdpi * 25.4;
-            mSwipeTimeMillis = (long) swipeDistanceMm * 20;
+            // This must be slower than 10mm per 150ms to be detected as touch exploration instead
+            // of a "swipe" gesture. Use 250ms per 10mm to be safely past that threshold.
+            mSwipeTimeMillis = (long) ((GESTURE_LENGTH_MMS / 10) * 250);
             mView.setOnClickListener(mClickListener);
             mView.setOnLongClickListener(mLongClickListener);
             mView.requestFocusFromTouch();
