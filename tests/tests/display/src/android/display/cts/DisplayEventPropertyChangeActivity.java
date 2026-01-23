@@ -355,12 +355,25 @@ public class DisplayEventPropertyChangeActivity extends Activity {
                         // caused the timeout failure. Wait for a bit to see if we get notified
                         // of a precondition violation, and if so, retry the test. Otherwise
                         // fail.
-                        assertTrue(
-                                String.format(
-                                        "Timed out waiting for a stable and compatible frame"
-                                                + " rate. requested=%.2f received=%.2f.",
-                                        exc.appRequestedFrameRate, exc.deviceRefreshRate),
-                                waitForPreconditionViolation());
+                        if (!waitForPreconditionViolation()) {
+                            if (!frameRatesEqual(mReportedDisplayRefreshRate, initialRefreshRate)) {
+                                Log.i(
+                                        TAG,
+                                        String.format(
+                                                "Refresh rate changed while running the test."
+                                                        + " initial=%.2f current=%.2f. Retrying.",
+                                                initialRefreshRate, mReportedDisplayRefreshRate));
+                                initialRefreshRate = mReportedDisplayRefreshRate;
+                                continue;
+                            }
+
+                            assertTrue(
+                                    String.format(
+                                            "Timed out waiting for a stable and compatible frame"
+                                                    + " rate. requested=%.2f received=%.2f.",
+                                            exc.appRequestedFrameRate, exc.deviceRefreshRate),
+                                    false);
+                        }
                     }
 
                     if (!testPassed) {
