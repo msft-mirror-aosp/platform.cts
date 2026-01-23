@@ -186,6 +186,27 @@ public class TvInteractiveAppViewTest {
             @Override
             protected boolean check() {
                 return mCallback.mInteractiveAppServiceId == mStubInfo.getId()
+                        && mCallback.mState == TvInteractiveAppManager.INTERACTIVE_APP_STATE_RUNNING
+                        && mCallback.mErr == TvInteractiveAppManager.ERROR_NONE;
+            }
+        }.run();
+    }
+
+    @Test
+    public void testStartInteractiveAppWithHandle() throws Throwable {
+        mTvInteractiveAppView.prepareInteractiveApp(mStubInfo.getId(), 1);
+        mInstrumentation.waitForIdleSync();
+        new PollingCheck(TIME_OUT_MS) {
+            @Override
+            protected boolean check() {
+                return mTvInteractiveAppView.getInteractiveAppSession() != null;
+            }
+        }.run();
+        mTvInteractiveAppView.startInteractiveApp(0);
+        new PollingCheck(TIME_OUT_MS) {
+            @Override
+            protected boolean check() {
+                return mCallback.mInteractiveAppServiceId == mStubInfo.getId()
                         && mCallback.mState
                         == TvInteractiveAppManager.INTERACTIVE_APP_STATE_RUNNING
                         && mCallback.mErr == TvInteractiveAppManager.ERROR_NONE;
