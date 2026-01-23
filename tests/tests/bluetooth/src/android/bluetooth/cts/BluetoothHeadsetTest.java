@@ -42,11 +42,17 @@ import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothStatusCodes;
 import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.content.Context;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.sysprop.BluetoothProperties;
+import android.bluetooth.test_utils.Permissions;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
+
+import com.android.bluetooth.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -66,6 +72,9 @@ public class BluetoothHeadsetTest {
     private static final String TAG = BluetoothHeadsetTest.class.getSimpleName();
 
     @Rule public final MockitoRule mockito = MockitoJUnit.rule();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Mock private BluetoothProfile.ServiceListener mListener;
 
@@ -287,5 +296,25 @@ public class BluetoothHeadsetTest {
 
         assertThat(mService.setAudioRouteAllowed(false)).isEqualTo(BluetoothStatusCodes.SUCCESS);
         assertThat(mService.getAudioRouteAllowed()).isEqualTo(BluetoothStatusCodes.NOT_ALLOWED);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_HFP_GET_CODEC_API)
+    @Test
+    public void getCodecType() {
+        assertThrows(NullPointerException.class, () -> mService.getCodecType(null));
+
+        assertThat(mService.getCodecType(mDevice))
+                .isEqualTo(BluetoothHeadset.CODEC_TYPE_UNSUPPORTED);
+
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
+        assertThat(mService.getCodecType(mDevice))
+                .isEqualTo(BluetoothHeadset.CODEC_TYPE_UNSUPPORTED);
+
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_HFP_GET_CODEC_API)
+    @Test
+    public void getCodecType_withoutPermission_throwsSecurityException() {
+       Permissions.enforce(BLUETOOTH_CONNECT, () -> mService.getCodecType(mDevice));
     }
 }
