@@ -171,15 +171,11 @@ public class MultiDisplayTestBase extends ActivityManagerTestBase {
 
     /** Checks if the device supports multi-display. */
     protected boolean supportsMultiDisplay() {
-        return supportsActivitiesOnSecondaryDisplays() && canEnterDesktop();
-    }
-
-    private boolean canEnterDesktop() {
-        return new DesktopModeTestUtil(mContext.getResources()).canEnterDesktopMode();
+        return supportsActivitiesOnSecondaryDisplays();
     }
 
     /** Checks if the device supports activities on secondary displays. */
-    protected boolean supportsActivitiesOnSecondaryDisplays() {
+    private boolean supportsActivitiesOnSecondaryDisplays() {
         return hasDeviceFeature(FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS);
     }
 
