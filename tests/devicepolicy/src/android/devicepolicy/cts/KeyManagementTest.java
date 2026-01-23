@@ -29,6 +29,7 @@ import static org.junit.Assume.assumeFalse;
 
 import static java.util.Collections.singleton;
 
+import android.app.admin.flags.Flags;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Process;
@@ -45,6 +46,7 @@ import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.policies.KeyManagement;
 import com.android.bedstead.enterprise.policies.KeyManagementWithAdminReceiver;
 import com.android.bedstead.enterprise.policies.KeySelection;
+import com.android.bedstead.flags.annotations.RequireFlagsEnabled;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.certificates.Certificates;
 import com.android.bedstead.nene.packages.ProcessReference;
@@ -65,8 +67,12 @@ import java.security.InvalidKeyException;
 import java.security.PrivateKey;
 import java.security.Signature;
 import java.security.cert.Certificate;
+import java.security.Principal;
+import java.util.Collections;
 import java.util.Map;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Executor;
 
 /**
  * Test that a DPC can manage keys and certificate on a device by installing, generating and
@@ -75,10 +81,8 @@ import java.util.concurrent.TimeUnit;
  */
 @RunWith(BedsteadJUnit4.class)
 public final class KeyManagementTest {
+    @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
 
-    @ClassRule
-    @Rule
-    public static final DeviceState sDeviceState = new DeviceState();
     private static final int KEYCHAIN_CALLBACK_TIMEOUT_SECONDS = 540;
     private static final String RSA = "RSA";
     private static final String RSA_ALIAS = "com.android.test.valid-rsa-key-1";
@@ -89,6 +93,7 @@ public final class KeyManagementTest {
     private static final Certificate[] CERTIFICATES = new Certificate[]{CERTIFICATE};
     private static final String NON_EXISTENT_ALIAS = "KeyManagementTest-nonexistent";
     private static final Context sContext = TestApis.context().instrumentedContext();
+    private static final Executor directExecutor = Runnable::run;
 
     private static Uri getUri(String alias) {
         try {
@@ -103,15 +108,42 @@ public final class KeyManagementTest {
      * No user apps run on HSUM DO user so there is no need to test KeyChain.choosePrivateKeyAlias
      * in that case anyway. Use {@code assumeFalse(isHeadlessDoMode())} to skip those test cases.
      */
-    private static void choosePrivateKeyAlias(KeyChainAliasCallback callback, String alias) {
+    private static void choosePrivateKeyAlias(android.security.KeyChainAliasCallback callback, String alias) {
         /* Pass the alias as a GET to an imaginary server instead of explicitly asking for it,
          * to make sure the DPC actually has to do some work to grant the cert.
          */
         try {
             ActivityContext.runWithContext(
-                    (activity) -> KeyChain.choosePrivateKeyAlias(activity, callback, /* keyTypes= */
-                            null, /* issuers= */ null, getUri(alias), /* alias = */ null)
-            );
+                    (activity) ->
+                            KeyChain.choosePrivateKeyAlias(
+                                    activity,
+                                    callback,
+                                    /* keyTypes= */ null,
+                                    /* issuers= */ null,
+                                    getUri(alias),
+                                    /* alias= */ null));
+        } catch (InterruptedException e) {
+            throw new AssertionError("Unable to choose private key alias." + e);
+        }
+    }
+
+    private static void choosePrivateKeyAlias(
+            android.security.KeyChainAliasCallback callback, String alias, boolean suppressCertificateSelection) {
+        /* Pass the alias as a GET to an imaginary server instead of explicitly asking for it,
+         * to make sure the DPC actually has to do some work to grant the cert.
+         */
+        try {
+            ActivityContext.runWithContext(
+                    (activity) ->
+                            KeyChain.choosePrivateKeyAlias(
+                                    activity,
+                                    /* keyTypes= */ null,
+                                    /* issuers= */ null,
+                                    /* uri= */ getUri(alias),
+                                    /* alias= */ null,
+                                    /* suppressCertificateSelection= */ suppressCertificateSelection,
+                                    /* executor= */ directExecutor,
+                                    /* callback= */ callback));
         } catch (InterruptedException e) {
             throw new AssertionError("Unable to choose private key alias." + e);
         }
@@ -291,7 +323,37 @@ public final class KeyManagementTest {
                     .isEqualTo(RSA_ALIAS);
         } finally {
             // Remove keypair
-            dpc(sDeviceState).devicePolicyManager()
+            dpc(sDeviceState)
+                    .devicePolicyManager()
+                    .removeKeyPair(dpc(sDeviceState).componentName(), RSA_ALIAS);
+        }
+    }
+
+    @Postsubmit(reason = "new test")
+    @PolicyAppliesTest(policy = KeyManagementWithAdminReceiver.class)
+    @RequireFlagsEnabled(Flags.FLAG_KEYCHAIN_SUPPRESS_CERTIFICATE_SELECTION)
+    public void
+            choosePrivateKeyAlias_suppressCertificateSelection_aliasIsSelectedByAdmin_returnAlias()
+                    throws Exception {
+        // Test doesn't apply to HSUM DO case as no app on that user is expected to request keypair.
+        assumeFalse(isHeadlessDoMode());
+
+        try {
+            // Install keypair
+            dpc(sDeviceState)
+                    .devicePolicyManager()
+                    .installKeyPair(
+                            dpc(sDeviceState).componentName(), PRIVATE_KEY, CERTIFICATE, RSA_ALIAS);
+            KeyChainAliasCallback callback = new KeyChainAliasCallback();
+
+            choosePrivateKeyAlias(callback, RSA_ALIAS, /* suppressCertificateSelection= */ true);
+
+            assertThat(callback.await(KEYCHAIN_CALLBACK_TIMEOUT_SECONDS, TimeUnit.SECONDS))
+                    .isEqualTo(RSA_ALIAS);
+        } finally {
+            // Remove keypair
+            dpc(sDeviceState)
+                    .devicePolicyManager()
                     .removeKeyPair(dpc(sDeviceState).componentName(), RSA_ALIAS);
         }
     }
@@ -313,14 +375,50 @@ public final class KeyManagementTest {
 
     @Postsubmit(reason = "new test")
     @PolicyAppliesTest(policy = KeyManagementWithAdminReceiver.class)
-    public void choosePrivateKeyAlias_adminDenySelection_returnNull()
-            throws Exception {
+    @RequireFlagsEnabled(Flags.FLAG_KEYCHAIN_SUPPRESS_CERTIFICATE_SELECTION)
+    public void
+            choosePrivateKeyAlias_suppressCertificateSelection_NonexistentAliasSelectedByAdmin_returnNull()
+                    throws Exception {
+        // Test doesn't apply to HSUM DO case as no app on that user is expected to request keypair.
+        assumeFalse(isHeadlessDoMode());
+
+        KeyChainAliasCallback callback = new KeyChainAliasCallback();
+
+        choosePrivateKeyAlias(
+                callback, NON_EXISTENT_ALIAS, /* suppressCertificateSelection= */ true);
+
+        assertThat(callback.await(KEYCHAIN_CALLBACK_TIMEOUT_SECONDS, TimeUnit.SECONDS))
+                .isEqualTo(null);
+    }
+
+    @Postsubmit(reason = "new test")
+    @PolicyAppliesTest(policy = KeyManagementWithAdminReceiver.class)
+    public void choosePrivateKeyAlias_adminDenySelection_returnNull() throws Exception {
         // Test doesn't apply to HSUM DO case as no app on that user is expected to request keypair.
         assumeFalse(isHeadlessDoMode());
 
         KeyChainAliasCallback callback = new KeyChainAliasCallback();
 
         choosePrivateKeyAlias(callback, KeyChain.KEY_ALIAS_SELECTION_DENIED);
+
+        assertThat(callback.await(KEYCHAIN_CALLBACK_TIMEOUT_SECONDS, TimeUnit.SECONDS))
+                .isEqualTo(null);
+    }
+
+    @Postsubmit(reason = "new test")
+    @PolicyAppliesTest(policy = KeyManagementWithAdminReceiver.class)
+    @RequireFlagsEnabled(Flags.FLAG_KEYCHAIN_SUPPRESS_CERTIFICATE_SELECTION)
+    public void choosePrivateKeyAlias_suppressCertificateSelection_adminDenySelection_returnNull()
+            throws Exception {
+        // Test doesn't apply to HSUM DO case as no app on that user is expected to request keypair.
+        assumeFalse(isHeadlessDoMode());
+
+        KeyChainAliasCallback callback = new KeyChainAliasCallback();
+
+        choosePrivateKeyAlias(
+                callback,
+                KeyChain.KEY_ALIAS_SELECTION_DENIED,
+                /* suppressCertificateSelection= */ true);
 
         assertThat(callback.await(KEYCHAIN_CALLBACK_TIMEOUT_SECONDS, TimeUnit.SECONDS))
                 .isEqualTo(null);
@@ -346,7 +444,72 @@ public final class KeyManagementTest {
                     .isEqualTo(RSA_ALIAS);
         } finally {
             // Remove keypair
-            dpc(sDeviceState).devicePolicyManager()
+            dpc(sDeviceState)
+                    .devicePolicyManager()
+                    .removeKeyPair(dpc(sDeviceState).componentName(), RSA_ALIAS);
+        }
+    }
+
+    @Postsubmit(reason = "new test")
+    @PolicyAppliesTest(policy = KeyManagementWithAdminReceiver.class)
+    @RequireFlagsEnabled(Flags.FLAG_KEYCHAIN_SUPPRESS_CERTIFICATE_SELECTION)
+    public void
+            choosePrivateKeyAlias_suppressCertificateSelection_nonUserSelectedAliasIsSelectedByAdmin_returnAlias()
+                    throws Exception {
+        // Test doesn't apply to HSUM DO case as no app on that user is expected to request keypair.
+        assumeFalse(isHeadlessDoMode());
+
+        try {
+            // Install keypair which is not user selectable
+            dpc(sDeviceState)
+                    .devicePolicyManager()
+                    .installKeyPair(
+                            dpc(sDeviceState).componentName(),
+                            PRIVATE_KEY,
+                            CERTIFICATES,
+                            RSA_ALIAS,
+                            /* flags= */ 0);
+            KeyChainAliasCallback callback = new KeyChainAliasCallback();
+
+            choosePrivateKeyAlias(callback, RSA_ALIAS, /* suppressCertificateSelection= */ true);
+
+            assertThat(callback.await(KEYCHAIN_CALLBACK_TIMEOUT_SECONDS, TimeUnit.SECONDS))
+                    .isEqualTo(RSA_ALIAS);
+        } finally {
+            // Remove keypair
+            dpc(sDeviceState)
+                    .devicePolicyManager()
+                    .removeKeyPair(dpc(sDeviceState).componentName(), RSA_ALIAS);
+        }
+    }
+
+    @Postsubmit(reason = "new test")
+    @PolicyAppliesTest(policy = KeyManagementWithAdminReceiver.class)
+    @RequireFlagsEnabled(Flags.FLAG_KEYCHAIN_SUPPRESS_CERTIFICATE_SELECTION)
+    public void choosePrivateKeyAlias_suppressCertificateSelection_noAdminSelectableKey_returnNull()
+            throws Exception {
+        assumeFalse(isHeadlessDoMode());
+
+       try {
+            // Install non-user selectable keypair
+            dpc(sDeviceState)
+                    .devicePolicyManager()
+                    .installKeyPair(
+                            dpc(sDeviceState).componentName(),
+                            PRIVATE_KEY,
+                            CERTIFICATES,
+                            RSA_ALIAS,
+                            /* flags= */ 0);
+            KeyChainAliasCallback callback = new KeyChainAliasCallback();
+            // Call with suppression, but no DPC and non-user selectable keypair, return null.
+            choosePrivateKeyAlias(callback, "", /* suppressCertificateSelection= */ true);
+
+            assertThat(callback.await(KEYCHAIN_CALLBACK_TIMEOUT_SECONDS, TimeUnit.SECONDS))
+               .isEqualTo(null);
+        } finally {
+            // Remove keypair
+            dpc(sDeviceState)
+                    .devicePolicyManager()
                     .removeKeyPair(dpc(sDeviceState).componentName(), RSA_ALIAS);
         }
     }
@@ -680,13 +843,41 @@ public final class KeyManagementTest {
         return sign.sign();
     }
 
-    private static class KeyChainAliasCallback extends BlockingCallback<String> implements
-            android.security.KeyChainAliasCallback {
+    private static class KeyChainAliasCallback extends BlockingCallback<String>
+            implements android.security.KeyChainAliasCallback {
+
+        private volatile Integer mError = null;
+        private final java.util.concurrent.CountDownLatch mErrorLatch =
+                new java.util.concurrent.CountDownLatch(1);
 
         @Override
         public void alias(final String chosenAlias) {
             callbackTriggered(chosenAlias);
         }
+
+        @Override
+        public void onError(int error) {
+            mError = error;
+            mErrorLatch.countDown();
+            // Default behavior from interface is to call alias(null)
+            alias(null);
+        }
+
+        public int awaitError(long timeout, TimeUnit unit) throws InterruptedException {
+            if (!mErrorLatch.await(timeout, unit)) {
+                Assert.fail("Timed out waiting for error callback.");
+            }
+            return mError;
+        }
+    }
+
+    private static class KeyChainAliasCallbackWithoutOnError extends BlockingCallback<String>
+            implements android.security.KeyChainAliasCallback {
+        @Override
+        public void alias(final String chosenAlias) {
+            callbackTriggered(chosenAlias);
+        }
+        // onError is not overridden, default from interface will be used.
     }
 
     // Returns true if the test is currently running as (user 0) DO on a HSUM build.
