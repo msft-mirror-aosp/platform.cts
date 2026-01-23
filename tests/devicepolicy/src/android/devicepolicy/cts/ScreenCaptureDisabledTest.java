@@ -507,12 +507,22 @@ public final class ScreenCaptureDisabledTest {
 
         // Getting pixels of only the middle part(from y  = height/4 to 3/4(height)) of the
         // screenshot to check(screenshot is redacted) for only the middle part of the screen,
-        // as there could be notifications in the top part and white line(navigation bar) at bottom
+        // skipping the "margin" (1/4 of the height) from the bottom and the top. It is because
+        // there could be notifications in the top part and white line(navigation bar) at bottom
         // which are included in the screenshot and are not redacted(black). It's not perfect, but
         // seems best option to avoid any flakiness at this point.
-        int len = width * (height / 2);
+        // For split-screen multi-tasking, use a taller margin (2/5 of the height), taking into
+        // account the other panels. Ideally, we would want to use the actual dimensions of the app
+        // panel, but there is no good way to get access to the current test activity or its window,
+        // because the activity is running in a different process, according to the bedstead team.
+        // We would need am adb command that can return the app panel layouts on the screen.
+        int margin = isCarSplitscreenMultitasking() ? (height * 2 / 5) : (height / 4);
+        int effectiveHeight = height - (2 * margin);
+        int len = width * effectiveHeight;
         int[] pixels = new int[len];
-        screenshot.getPixels(pixels, 0, width, 0, height / 4, width, height / 2);
+        // Get the actual pixels to check from the screenshot, excluding the margins.
+        screenshot.getPixels(pixels, /* offset= */ 0, /* stride= */ width,
+                /* x= */ 0, /* y= */ margin, /* width= */ width, /* height = */ effectiveHeight);
 
         for (int i = 0; i < len; ++i) {
             // Skip some pixels from the right to accommodate for the edge panel(present on
@@ -535,4 +545,9 @@ public final class ScreenCaptureDisabledTest {
                 .hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 
+    private static boolean isCarSplitscreenMultitasking() {
+        return isAutomotive()
+                && TestApis.context().instrumentedContext().getPackageManager()
+                        .hasSystemFeature(PackageManager.FEATURE_CAR_SPLITSCREEN_MULTITASKING);
+    }
 }
