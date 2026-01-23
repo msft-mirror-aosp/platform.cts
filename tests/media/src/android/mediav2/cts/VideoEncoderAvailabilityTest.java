@@ -62,9 +62,11 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.VsrTest;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -322,6 +324,16 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @BeforeClass
+    public static void setUpDeviceForTest() {
+        setWallpaperToSolidColor();
+    }
+
+    @AfterClass
+    public static void tearDownTestSettings() {
+        setWallpaperToSystemDefault();
+    }
 
     @Before
     public void prerequisite() {

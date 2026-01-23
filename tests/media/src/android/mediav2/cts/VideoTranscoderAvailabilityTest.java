@@ -44,8 +44,10 @@ import androidx.test.filters.SdkSuppress;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.VsrTest;
 
+import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -113,6 +115,16 @@ public class VideoTranscoderAvailabilityTest extends CodecEncoderSurfaceTestBase
             finalArgsList.add(arg);
         }
         return finalArgsList;
+    }
+
+    @BeforeClass
+    public static void setUpDeviceForTest() {
+        CodecTestBase.setWallpaperToSolidColor();
+    }
+
+    @AfterClass
+    public static void tearDownTestSettings() {
+        CodecTestBase.setWallpaperToSystemDefault();
     }
 
     @Before
