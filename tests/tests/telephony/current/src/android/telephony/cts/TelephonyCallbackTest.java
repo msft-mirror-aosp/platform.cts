@@ -253,6 +253,19 @@ public class TelephonyCallbackTest {
         mTelephonyManager.unregisterTelephonyCallback(ssc);
         // duplicate calls to unregister are idempotent
         mTelephonyManager.unregisterTelephonyCallback(ssc);
+
+        mTelephonyManager.registerTelephonyCallback(mSimpleExecutor, ssc);
+        // reregistering the same callback fails while it is registered
+        assertThrows(
+                IllegalStateException.class,
+                () -> mTelephonyManager.registerTelephonyCallback(mSimpleExecutor, ssc));
+        mTelephonyManager.unregisterTelephonyCallback(ssc);
+
+        // Check that registrants don't leak binders
+        for (int i = 0; i < 200; i++) {
+            mTelephonyManager.registerTelephonyCallback(mSimpleExecutor, ssc);
+            mTelephonyManager.unregisterTelephonyCallback(ssc);
+        }
     }
 
     private void registerTelephonyCallbackWithPermission(@NonNull TelephonyCallback callback) {
