@@ -30,6 +30,8 @@ import android.widget.LinearLayout;
 
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
+import com.android.cts.verifier.audio.wavelib.DspBufferComplex;
+import com.android.cts.verifier.audio.wavelib.DspWindow;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
 
@@ -237,6 +239,18 @@ public class AudioFrequencyActivity extends PassFailButtons.Activity {
             View view = layout.getChildAt(i);
             view.setEnabled(enable);
         }
+    }
+
+    protected double[] computeMagnitudeSpectrum(DspBufferComplex fftResult, DspWindow window) {
+        int windowSize = window.mBuffer.getSize();
+        double[] halfMagnitude = new double[windowSize / 2];
+        for (int i = 0; i < windowSize / 2; i++) {
+            halfMagnitude[i] =
+                    Math.sqrt(
+                            fftResult.mReal[i] * fftResult.mReal[i]
+                                    + fftResult.mImag[i] * fftResult.mImag[i]);
+        }
+        return halfMagnitude;
     }
 
     private void scanPeripheralList(AudioDeviceInfo[] devices) {
