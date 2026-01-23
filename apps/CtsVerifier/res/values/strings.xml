@@ -66,17 +66,15 @@
     <string name="test_category_audio">Audio</string>
     <string name="audio_communication_latency_test">Audio Communication Latency Test</string>
     <string name="audio_communication_latency_test_info">
-        This test measures the time it takes to switch between different audio communication
-        devices. A low latency is important for a seamless user experience when switching between
-        speakerphone, earpiece, Bluetooth headsets, etc. during a call.
-
+        This test measures audio device switching latency
+        (e.g. speaker, earpiece, Bluetooth, USB).
+        Low latency is crucial for calls.
         \n\nInstructions:
-        \n1. Ensure all relevant audio communication devices are connected (e.g., wired headset, Bluetooth SCO headset, USB headset).
-        \n2. The application will display a list of available and supported audio communication devices. This list may include Built-in Speaker, Earpiece, Wired Headset, Bluetooth SCO, USB Headset, and any other communication devices detected.
-        \n3. For each device in the list, press the \"Run Test\" button to measure its communication latency.
-        \n4. Follow any on-screen instructions for connecting or activating devices that are supported but not currently available.
-        \n5. Once all desired devices have been tested, review the results displayed for each device.
-        \n6. The \"Pass\" button will become enabled when all supported devices have either passed their test or are marked as not supported.
+        \n1. A list of supported audio communication devices will be shown.
+        \n2. Connect any listed devices that are not currently available, following on-screen prompts.
+        \n3. Press \"Run Test\" for each device to measure latency.
+        \n4. Review the results for each device.
+        \n5. The \"Pass\" button enables if all supported devices pass (or are marked not supported), or if fewer than two devices are supported.
     </string>
     <string name="audio_communication_no_support">Device does not support communication output. Test passed.</string>
     <string name="audio_communication_latency_progress_format">Testing device: %1$s (Run %2$d of %3$d)</string>
@@ -97,6 +95,8 @@
 <string name="audio_communication_latency_test_skipped">Test for this device was skipped as it could not be properly tested.</string>
     <string name="audio_communication_latency_no_valid_runs">No valid test runs were completed for this device.</string>
     <string name="audio_communication_latency_overall_passed">  PASSED</string>
+    <string name="waiting_for_tests_run">Run the test above to complete test.</string>
+    <string name="not_enought_devices_to_run">There are not enough supported devices to run test: Passed</string>
 
     <!-- Audio Communication Latency Test -->
     <string name="audio_communication_latency_device_speaker">Built-In Speaker</string>

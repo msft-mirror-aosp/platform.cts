@@ -16,22 +16,36 @@
  -->
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:fitsSystemWindows="@bool/fit_system_windows"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="10dp">
-
-    <TextView
+    style="@style/RootLayoutPadding">
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/audio_communication_latency_test_info" />
+        android:layout_height="match_parent"
+        android:id="@+id/scrollView" >
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/device_list"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:scrollbars="vertical" />
+        <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" >
 
-    <include layout="@layout/pass_fail_buttons" />
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/device_list"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:scrollbars="vertical" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/waiting_for_tests_run"
+                android:id="@+id/final_test_result_text" />
+
+            <include layout="@layout/pass_fail_buttons" />
+
+        </LinearLayout>
+    </ScrollView>
 </LinearLayout>
