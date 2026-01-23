@@ -22,10 +22,12 @@ import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.assist.common.Utils;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 
 import com.android.compatibility.common.util.ApiTest;
 
@@ -39,6 +41,7 @@ public class AssistKeyTest extends AssistTestBase {
     @Override
     protected void customSetup() throws Exception {
         assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_VOICE_RECOGNIZERS));
+        assumeFalse("KEYCODE_ASSIST not supported in automotive", Utils.isAutomotive(mContext));
         startTestActivity(TEST_CASE_TYPE);
     }
 
@@ -60,6 +63,9 @@ public class AssistKeyTest extends AssistTestBase {
     @Test
     @ApiTest(apis = {"android.content.Intent#EXTRA_ASSIST_DISPLAY_ID"})
     public void testAssistKeyStartsAssistantOnVirtualDisplay() throws Exception {
+        assumeTrue(
+                mContext.getPackageManager()
+                        .hasSystemFeature(PackageManager.FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS));
         final int virtualDisplayId = createVirtualDisplay();
 
         startTest(TEST_CASE_TYPE, virtualDisplayId);
