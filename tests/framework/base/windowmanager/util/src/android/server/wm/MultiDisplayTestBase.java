@@ -99,6 +99,8 @@ public class MultiDisplayTestBase extends ActivityManagerTestBase {
 
     public static final int CUSTOM_DENSITY_DPI = 222;
     private static final int INVALID_DENSITY_DPI = -1;
+    private static final String FEATURE_CAR_SPLITSCREEN_MULTITASKING =
+            "android.software.car.splitscreen_multitasking";
     protected Context mTargetContext;
 
     @ClassRule
@@ -684,6 +686,11 @@ public class MultiDisplayTestBase extends ActivityManagerTestBase {
     /** Checks if the device supports wallpaper. */
     protected boolean supportsWallpaper() {
         return WallpaperManager.getInstance(mContext).isWallpaperSupported();
+    }
+
+    /** Returns {@code true} if device is Automotive Scalable UI. */
+    protected boolean isAutomotiveScalableUI() {
+        return hasDeviceFeature(FEATURE_CAR_SPLITSCREEN_MULTITASKING);
     }
 
     /** @see ObjectTracker#manage(AutoCloseable) */
