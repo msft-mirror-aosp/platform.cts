@@ -37,7 +37,50 @@
   <option name="compatibility:include-filter" value="CtsKeystoreTestCases"/>
   <option name="compatibility:include-filter" value="CtsMediaAudioTestCases"/>
   <option name="compatibility:include-filter" value="CtsUwbMultiDeviceTestCase_UwbManagerTests"/>
+  <option name="compatibility:include-filter" value="CtsAlarmAtomHostTestCases"/>
   <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsTelecomAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsAppcompatStateAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsAppExitAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsAppFunctionsAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsAppHibernationAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsAppOpsAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsAppStartAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsBackportedFixesAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsBatteryCycleAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsBatteryStatsAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsBinderStatsAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsBluetoothAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsCoreGraphicsAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsCpuAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsCredentialsAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsDevicePowerAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsDeviceStateAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsDisplayAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsGameManagerAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsGnssAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsHardwareHealthAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsJobSchedulerAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsMediaAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsMemoryAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsMemorySafetyAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsNetAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsNotificationAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsPerfAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsPerfettoAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsPerformanceHintManagerAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsPermissionStateAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsPowerAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsPowerManagerAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsSettingsStatsAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsSizeCompatRestartButtonAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsTelephonyAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsTlsAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsUsbAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsUsersAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsVibratorAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsVoiceInteractionAtomHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsWifiAtomHostTestCases"/>
   <option name="compatibility:include-filter" value="CtsHostsideNetworkTests"/>
   <option name="compatibility:include-filter" value="CtsMediaCodecTestCases"/>
   <option name="compatibility:include-filter" value="CtsKeystorePerformanceTestCases"/>
