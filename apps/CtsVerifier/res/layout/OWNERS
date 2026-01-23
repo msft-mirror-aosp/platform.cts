@@ -6,3 +6,4 @@ per-file camera_*.xml = file:platform/frameworks/av:/camera/OWNERS
 per-file cam_*.xml = file:platform/frameworks/av:/camera/OWNERS
 per-file co_main.xml,ci_main.xml,cb_main.xml,cf_main.xml = file:platform/frameworks/av:/camera/OWNERS
 per-file eyedropper_test.xml = file:platform/packages/apps/EyeDropper:/OWNERS
+per-file sysui_*.xml = file:platform/frameworks/base:/services/core/java/com/android/server/wm/OWNERS

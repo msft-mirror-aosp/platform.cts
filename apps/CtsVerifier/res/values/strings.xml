@@ -8037,4 +8037,46 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="drag_view_shadow_toast_pass">Test Passed!</string>
     <string name="drag_view_shadow_toast_fail">Test Failed...</string>
     <string name="drag_view_shadow_toast_remind">Almost there! Drag the block to sufficiently cover the target area.</string>
+
+    <!-- Strings for Self Movable Tasks Test. -->
+    <string name="sysui_smt_title">Self Movable Tasks Test</string>
+    <string name="sysui_smt_acknowledge_button_text">Acknowledge</string>
+    <string name="sysui_smt_proceed_button_text">Proceed</string>
+    <string name="sysui_smt_retry_button_text">Retry</string>
+    <string name="sysui_smt_permission_prompt_title">Permissions needed</string>
+    <string name="sysui_smt_permission_prompt_content">
+        Please set the CTS Verifier app as the default browser in Settings and click the "Retry"
+        button.
+        \nThis is needed to obtain relevant permissions.
+    </string>
+    <string name="sysui_smt_launch_movable_task_info_dialog_title">Test step info</string>
+    <string name="sysui_smt_launch_movable_task_info_dialog_content">
+        After this information is acknowledged, a new window will be launched.
+        \nPlease place it so that you can still see instructions provided in this window.
+    </string>
+    <string name="sysui_smt_launch_movable_task_fail_info_dialog_title">Test step info</string>
+    <string name="sysui_smt_launch_movable_task_fail_info_dialog_content">
+        This device does not fulfill assumptions required by the test.
+        \nAfter this information is acknowledged, the test will be marked as passed and will finish
+        automatically.
+    </string>
+    <string name="sysui_smt_decoration_visibility_info_dialog_title">Verification needed</string>
+    <string name="sysui_smt_decoration_visibility_info_dialog_content">
+        If the new window is presented with a distinguishable persistent decoration (e.g. caption
+        bar), please click the "Proceed" button.
+        Otherwise, please click the Fail button.
+        \n\nThe app-controlled screen surface is marked with a purple lattice. The new window should
+        show a distinguishable, always-visible decoration (e.g., a horizontal bar anchored to the
+        top edge of the window) in addition to this purple lattice.
+    </string>
+    <string name="sysui_smt_close_task_info_dialog_title">Verification needed</string>
+    <string name="sysui_smt_close_task_info_dialog_content">
+        Please close the test window (not this one) WITHOUT using any elements of the
+        distinguishable persistent decoration that you identified in the previous step.
+        If you succeed and the window closes, please click the Pass button.
+        If this is not possible, please click the Fail button.
+        \n\nTry exploring the task bar, usually located at the bottom of the screen, if it exists,
+        or using the Overview/Recents screen.
+    </string>
+
 </resources>
