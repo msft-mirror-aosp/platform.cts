@@ -605,6 +605,7 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
             int imgHeight = -1;
             int imgFormat = -1;
             if (imageReaderIdx != -1) {
+                sharedStreamArray.add(TestConstants.SURFACE_TYPE_IMAGE_READER);
                 SharedOutputConfiguration imgReaderConfig =
                         sharedSessionConfig.getOutputStreamsInformation().get(imageReaderIdx);
                 imgWidth = imgReaderConfig.getSize().getWidth();
