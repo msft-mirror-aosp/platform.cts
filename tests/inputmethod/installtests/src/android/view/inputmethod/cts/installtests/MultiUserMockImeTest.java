@@ -900,10 +900,7 @@ public final class MultiUserMockImeTest {
                     assertEquals("Expected MockImeSession to crash due to user removal",
                             ApplicationExitInfo.REASON_USER_STOPPED, exitInfo.getReason());
 
-                    lockScreenSession.wakeUpDevice();
-                    // Wait for lock screen to be visible and focused before unlocking.
-                    mWmState.waitForNonActivityWindowFocused();
-                    lockScreenSession.unlockDevice();
+                    lockScreenSession.unlock();
 
                     mWmState.waitForFocusedActivity(MockTestActivityUtil.TEST_ACTIVITY);
 

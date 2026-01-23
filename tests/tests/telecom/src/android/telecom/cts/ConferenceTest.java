@@ -782,8 +782,7 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
         if (!mShouldTestTelecom) {
             return;
         }
-        if (!Flags.reuseOriginalConnRemoteConfApi() &&
-                !com.android.internal.telephony.flags.Flags.reuseOriginalConnRemoteConfBehavior()) {
+        if (!Flags.reuseOriginalConnRemoteConfApi()) {
             return;
         }
 

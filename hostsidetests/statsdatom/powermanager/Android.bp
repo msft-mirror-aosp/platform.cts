@@ -24,5 +24,8 @@ java_test_host {
     static_libs: [
         "android.os.flags-aconfig-java-host",
     ],
+    device_common_data: [
+        ":CtsStatsdAdpfApp",
+    ],
     test_config: "AndroidTest.xml",
 }

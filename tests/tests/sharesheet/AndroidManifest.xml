@@ -30,6 +30,8 @@
 
     <uses-permission android:name="android.permission.SHOW_CUSTOMIZED_RESOLVER"/>
 
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"/>
+
     <application android:requestLegacyExternalStorage="true"
          android:label="@string/test_app_label">
 
@@ -82,6 +84,16 @@
                 <action android:name="android.service.chooser.TapToShareService"/>
             </intent-filter>
         </service>
+
+        <activity android:name=".CtsGestureExchangeActivity"
+             android:exported="true"
+             android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <action android:name="android.intent.action.SEND_MULTIPLE"/>
+                <data android:mimeType="test/tap_to_share_cts"/>
+            </intent-filter>
+        </activity>
 
         <activity-alias android:name=".ExtraInitialIntentTestActivity"
              android:label="@string/test_extra_initial_intents_label"

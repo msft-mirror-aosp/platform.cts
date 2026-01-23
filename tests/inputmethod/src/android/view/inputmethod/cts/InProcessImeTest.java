@@ -51,6 +51,7 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -77,34 +78,39 @@ public final class InProcessImeTest extends EndToEndImeTestBase {
 
     private InputMethodManager mInputMethodManager;
     private UiAutomation mUiAutomation;
+    private Context mContext;
     private int mUserId;
 
-    private void enableInProcIme() {
+    @Before
+    public void setup() {
         final var instrumentation = InstrumentationRegistry.getInstrumentation();
+        mContext = instrumentation.getContext();
         mUiAutomation = instrumentation.getUiAutomation();
-        mInputMethodManager =
-                instrumentation.getContext().getSystemService(InputMethodManager.class);
-
+        mInputMethodManager = mContext.getSystemService(InputMethodManager.class);
         mUserId = UserHandle.myUserId();
+    }
 
-        final String inProcImeId = new ComponentName(
-                InstrumentationRegistry.getInstrumentation().getContext().getPackageName(),
-                InProcIme.class.getName()).flattenToShortString();
+    @After
+    public void resetIme() {
+        if (mUiAutomation == null || mInputMethodManager == null) {
+            return;
+        }
+        runWithShellPermissionIdentity(
+                mUiAutomation,
+                () -> {
+                    mInputMethodManager.resetInputMethodsForTesting(mUserId);
+                },
+                IME_TEST_API_PERMISSIONS);
+    }
+
+    private void enableInProcIme() {
+        final String inProcImeId =
+                new ComponentName(mContext, InProcIme.class).flattenToShortString();
         runWithShellPermissionIdentity(
                 mUiAutomation,
                 () -> {
                     mInputMethodManager.enableInputMethodForTesting(inProcImeId, mUserId);
                     mInputMethodManager.setInputMethodForTesting(inProcImeId, mUserId);
-                },
-                IME_TEST_API_PERMISSIONS);
-    }
-
-    @After
-    public void resetIme() {
-        runWithShellPermissionIdentity(
-                mUiAutomation,
-                () -> {
-                    mInputMethodManager.resetInputMethodsForTesting(mUserId);
                 },
                 IME_TEST_API_PERMISSIONS);
     }

@@ -16,6 +16,8 @@
 
 package android.service.personalcontext.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -24,6 +26,7 @@ import android.service.personalcontext.PersonalContextManager;
 import android.service.personalcontext.RenderToken;
 import android.service.personalcontext.hint.BundleHint;
 import android.service.personalcontext.hint.ContextHint;
+import android.service.personalcontext.hint.ContextHintWithSignature;
 import android.service.personalcontext.insight.BundleInsight;
 import android.service.personalcontext.insight.ContextInsight;
 
@@ -63,8 +66,8 @@ public class PersonalContextManagerTest {
             })
     @Test
     public void testPublishTriggeringHintWithRenderToken() {
-        final List<ContextHint> hints = List.of(
-                new BundleHint.Builder().build(), new BundleHint.Builder().build());
+        final List<ContextHint> hints =
+                List.of(new BundleHint.Builder().build(), new BundleHint.Builder().build());
 
         final List<RenderToken> renderTokens =
                 List.of(
@@ -74,6 +77,48 @@ public class PersonalContextManagerTest {
 
         mPersonalContextManager.publishTriggeringHint(hints, renderTokens);
         // TODO: Check that hints are received by service.
+    }
+
+    @ApiTest(
+            apis = {
+                "android.service.personalcontext.PersonalContextManager#publishTriggeringHint",
+            })
+    @Test
+    public void testPublishTriggeringHintWithAttributionHints() {
+        final List<ContextHint> mainHints =
+                List.of(new BundleHint.Builder().build(), new BundleHint.Builder().build());
+        final List<ContextHint> attributionHints =
+                List.of(new BundleHint.Builder().build(), new BundleHint.Builder().build());
+
+        final List<RenderToken> renderTokens =
+                List.of(
+                        new RenderToken.RenderTokenBuilder()
+                                .setRendererComponentId(UUID.randomUUID())
+                                .build());
+
+        mPersonalContextManager.publishTriggeringHint(mainHints, renderTokens, attributionHints);
+        // TODO: Check that hints are received by service.
+    }
+
+    @ApiTest(
+            apis = {
+                "android.service.personalcontext.PersonalContextManager#signHint",
+            })
+    @Test
+    public void testSignHintWithAttributionHints() {
+        final ContextHint mainHint = new BundleHint.Builder().build();
+        final ContextHint attributionHint1 = new BundleHint.Builder().build();
+        final ContextHint attributionHint2 = new BundleHint.Builder().build();
+
+        final ContextHintWithSignature signedHint =
+                mPersonalContextManager.signHint(
+                        mainHint, List.of(attributionHint1, attributionHint2));
+
+        assertThat(signedHint.getContextHint().getHintId()).isEqualTo(mainHint.getHintId());
+        assertThat(
+                        signedHint.getAttributionHints().stream()
+                                .map(chws -> chws.getContextHint().getHintId()))
+                .containsExactly(attributionHint1.getHintId(), attributionHint2.getHintId());
     }
 
     @ApiTest(

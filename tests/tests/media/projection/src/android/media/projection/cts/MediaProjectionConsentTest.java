@@ -75,7 +75,9 @@ public class MediaProjectionConsentTest {
             })
     @Test
     public void testCallbackOnStop() throws Exception {
-        MediaProjection mediaProjection = mMediaProjectionRule.startMediaProjection();
+        MediaProjection mediaProjection =
+                mMediaProjectionRule.startMediaProjection(
+                        MediaProjectionConfig.createConfigForDefaultDisplay());
 
         CountDownLatch latch = new CountDownLatch(1);
         mMediaProjectionRule.registerCallback(

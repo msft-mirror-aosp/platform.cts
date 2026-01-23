@@ -81,7 +81,7 @@ _PROPERTIES_TO_MATCH = (
 _TABLET_SCENES = (
     'scene0', 'scene1_1', 'scene1_2', 'scene1_3', 'scene2_a', 'scene2_b',
     'scene2_c', 'scene2_d', 'scene2_e', 'scene2_f', 'scene2_g', 'scene3',
-    'scene4', 'scene6', 'scene7', 'scene8', 'scene9', 'scene_wide_gamut',
+    'scene4', 'scene6', 'scene8', 'scene9', 'scene_wide_gamut',
     os.path.join('scene_extensions', 'scene_hdr'),
     os.path.join('scene_extensions', 'scene_low_light'),
     os.path.join('scene_tele', 'scene6_tele'),
@@ -157,8 +157,6 @@ _SCENE_REQ = types.MappingProxyType({
               'for more details',
     'scene6': 'A grid of ArUco markers on a white background. '
               'See tests/scene6/scene6.png',
-    'scene7': 'The picture with 4 different colors, slanted edge and'
-              '4 ArUco markers. See tests/scene7/scene7.png',
     'scene8': 'The picture with 4 faces in 4 different colors overlay.'
               'See tests/scene8/scene8.png',
     'scene9': 'A scene with high entropy consisting of random size and colored '
@@ -179,8 +177,8 @@ _SCENE_REQ = types.MappingProxyType({
         'See tests/scene_tele/scene6_tele/scene6_tele.png'
     ),
     os.path.join('scene_tele', 'scene7_tele'): (
-        'Identical to scene7, but for tele cameras. '
-        'See tests/scene_tele/scene7_tele/scene7_tele.png'
+        'The picture with 4 different colors, slanted edge and'
+        '4 ArUco markers. See tests/scene_tele/scene7_tele/scene7_tele.png'
     ),
     'sensor_fusion': 'A checkerboard pattern for phone to rotate in front of '
                      'in tests/sensor_fusion/checkerboard.pdf\n'

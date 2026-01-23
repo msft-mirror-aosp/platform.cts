@@ -316,6 +316,11 @@ public class MediaProjectionAppContentTest {
                     callback.accept(contentProjectionCallback);
                 }
             } else {
+                // Make sure that we don't hold the shell permission at that point,
+                // otherwise we'll have the MANAGE_MEDIA_PROJECTION permission.
+                InstrumentationRegistry.getInstrumentation()
+                        .getUiAutomation()
+                        .dropShellPermissionIdentity();
                 callback.accept(contentProjectionCallback);
             }
         } finally {

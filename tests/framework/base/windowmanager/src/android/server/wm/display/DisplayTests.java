@@ -221,7 +221,7 @@ public class DisplayTests extends MultiDisplayTestBase {
 
         // Lock and unlock device. This will cause a DISPLAY_CHANGED event to be triggered and
         // might update the metrics.
-        lockScreenSession.sleepDevice().wakeUpDevice().unlockDevice();
+        lockScreenSession.sleepDevice().unlock();
         mWmState.waitForHomeActivityVisible();
 
         // Check if overrides are still applied.

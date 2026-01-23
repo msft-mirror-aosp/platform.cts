@@ -1649,7 +1649,7 @@ public class WallpaperManagerTest {
                         WallpaperWindowsTestUtils.WallpaperWindowsHelper wallpaperWindowsHelper =
                                 new WallpaperWindowsTestUtils.WallpaperWindowsHelper(
                                         sWindowManagerStateHelper);
-                        lockScreenSession.disableLockScreen().unlockDevice();
+                        lockScreenSession.disableLockScreen().unlock();
 
                         // Launch an activity that shows the wallpaper to make sure it is not behind
                         // opaque activities

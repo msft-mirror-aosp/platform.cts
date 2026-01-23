@@ -16,13 +16,19 @@
 package android.sharesheet.cts;
 
 import static android.Manifest.permission.BIND_TO_TAP_TO_SHARE_SERVICE;
+import static android.provider.Settings.Secure.TAP_EVENT_SERVICE_COMPONENT;
+import static android.provider.Settings.Secure.TAP_SHARE_FULFILLMENT_ACTIVITY_COMPONENT;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import android.content.ContentResolver;
+import android.content.Intent;
 import androidx.annotation.NonNull;
 import android.content.ComponentName;
 import android.content.Context;
+import android.provider.Settings;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -37,6 +43,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -54,6 +61,10 @@ public class CtsSharesheetTapToShareServiceTest {
     private static final ComponentName OUT_OF_PROCESS_SERVICE_COMPONENT =
             new ComponentName("android.sharesheet.cts.outofprocess",
                     "android.sharesheet.cts.outofprocess.CtsSharesheetOutOfProcessTapToShareService");
+    private static final ComponentName GESTURE_EXCHANGE_ACTIVITY_COMPONENT =
+            new ComponentName("android.sharesheet.cts",
+                    "android.sharesheet.cts.CtsGestureExchangeActivity");
+    private static final String GESTURE_EXCHANGE_MIME_TYPE = "test/tap_to_share_cts";
     private static final int TIMEOUT_MS = 5000;
 
     private Context mContext;
@@ -65,6 +76,16 @@ public class CtsSharesheetTapToShareServiceTest {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
         mClient = new TapToShareClient(mContext);
         CtsSharesheetTapToShareService.reset();
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        // Make sure the service is destroyed to avoid interference with other tests
+        CtsSharesheetTapToShareService service = CtsSharesheetTapToShareService.getInstance();
+        if (service != null) {
+            assertTrue("Service should have been destroyed",
+                    service.awaitDestroy(TIMEOUT_MS));
+        }
     }
 
     @Test
@@ -193,5 +214,48 @@ public class CtsSharesheetTapToShareServiceTest {
             mClient.endSession();
         }
         assertTrue("onSessionEnd should be called", service.awaitSessionEnd(TIMEOUT_MS));
+    }
+
+    @Test
+    public void testTapToShare_launchesFulfillmentActivity() throws Exception {
+        final CountDownLatch intentLatch = new CountDownLatch(1);
+        final AtomicReference<Intent> receivedIntent = new AtomicReference<>();
+        CtsGestureExchangeActivity.setOnIntentReceivedConsumer(intent -> {
+            receivedIntent.set(intent);
+            intentLatch.countDown();
+        });
+
+        ContentResolver resolver = mContext.getContentResolver();
+        String oldService = Settings.Secure.getString(resolver, TAP_EVENT_SERVICE_COMPONENT);
+        String oldActivity = Settings.Secure.getString(resolver,
+                TAP_SHARE_FULFILLMENT_ACTIVITY_COMPONENT);
+        Settings.Secure.putString(resolver, TAP_EVENT_SERVICE_COMPONENT,
+            SERVICE_COMPONENT.flattenToString());
+        Settings.Secure.putString(resolver, TAP_SHARE_FULFILLMENT_ACTIVITY_COMPONENT,
+            GESTURE_EXCHANGE_ACTIVITY_COMPONENT.flattenToString());
+        try {
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType(GESTURE_EXCHANGE_MIME_TYPE);
+            shareIntent.putExtra(Intent.EXTRA_TEXT, "Test");
+            Intent chooser = Intent.createChooser(shareIntent, "Share test");
+            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            TestApis.activities().startActivity(chooser);
+
+            CtsSharesheetTapToShareService service =
+                    CtsSharesheetTapToShareService.awaitService(TIMEOUT_MS);
+            assertTrue("onSessionStart timeout", service.awaitSessionStart(TIMEOUT_MS));
+            service.performTapToShare();
+
+            assertTrue("Fulfillment activity not launched in time",
+                    intentLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS));
+            assertNotNull(receivedIntent.get());
+            assertEquals(Intent.ACTION_SEND, receivedIntent.get().getAction());
+            assertEquals(GESTURE_EXCHANGE_MIME_TYPE, receivedIntent.get().getType());
+            assertEquals("Test", receivedIntent.get().getStringExtra(Intent.EXTRA_TEXT));
+        } finally {
+            Settings.Secure.putString(resolver, TAP_EVENT_SERVICE_COMPONENT, oldService);
+            Settings.Secure.putString(resolver, TAP_SHARE_FULFILLMENT_ACTIVITY_COMPONENT, oldActivity);
+            mContext.sendBroadcast(new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS));
+        }
     }
 }

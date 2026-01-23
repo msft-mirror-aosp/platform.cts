@@ -16,7 +16,9 @@
 
 package com.android.bedstead.enterprise;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpmRoleHolder;
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
+import static com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolderKt.ensureHasDevicePolicyManagerRoleHolder;
 import static com.android.bedstead.enterprise.annotations.EnsureHasWorkProfileKt.ensureHasWorkProfile;
 import static com.android.bedstead.harrier.annotations.EnsureNoPackageRespondsToIntentKt.ensureNoPackageRespondsToIntent;
 import static com.android.bedstead.harrier.annotations.EnsurePackageRespondsToIntentKt.ensurePackageRespondsToIntent;
@@ -32,6 +34,7 @@ import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.app.role.RoleManager;
 import android.content.Intent;
 
 import com.android.bedstead.harrier.DeviceStateTester;
@@ -47,38 +50,37 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import java.lang.Throwable;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Use this class to create tests that validate the behavior of {@code DeviceState} components.
  *
- * <p>The tests would comprise multiple steps where each step would execute the implementation
- * of one or more {@code DeviceState} component(s). Device state changes can be asserted after
- * each step.
+ * <p>The tests would comprise multiple steps where each step would execute the implementation of
+ * one or more {@code DeviceState} component(s). Device state changes can be asserted after each
+ * step.
  *
- * <p>Below is an example of a test that tests the case when an annotation is used twice in a
- * test class, the test asserts that the state created by the first test is reused by the second
- * one.
+ * <p>Below is an example of a test that tests the case when an annotation is used twice in a test
+ * class, the test asserts that the state created by the first test is reused by the second one.
  *
- * <pre>
- *  {@code
- *  @Test
- *  public void ensureHasWorkProfile_reusesUser() {
- *      AtomicReference<UserReference> user = new AtomicReference<>();
+ * <pre>{@code
+ * @Test
+ * public void ensureHasWorkProfile_reusesUser() {
+ *     AtomicReference<UserReference> user = new AtomicReference<>();
  *
- *      mDeviceState.stepName("createWorkProfile")
- *                 .apply(List.of(ensureHasProfileOwner()), () -> {
- *          user.set(mDeviceState.profileOwner().user());
- *      });
+ *     mDeviceState.stepName("createWorkProfile")
+ *                .apply(List.of(ensureHasProfileOwner()), () -> {
+ *         user.set(mDeviceState.profileOwner().user());
+ *     });
  *
- *      mDeviceState.stepName("reuseWorkProfile")
- *                 .apply(List.of(ensureHasProfileOwner()), () -> {
- *          assertThat(mDeviceState.profileOwner().user()).isEqualTo(user.get());
- *      });
- *  }}
- * </pre>
+ *     mDeviceState.stepName("reuseWorkProfile")
+ *                .apply(List.of(ensureHasProfileOwner()), () -> {
+ *         assertThat(mDeviceState.profileOwner().user()).isEqualTo(user.get());
+ *     });
+ * }
+ * }</pre>
+ *
+ * Run with `atest com.android.bedstead.enterprise.DeviceStateInternalTest`
  */
 @RunWith(JUnit4.class)
 public final class DeviceStateInternalTest {
@@ -123,14 +125,19 @@ public final class DeviceStateInternalTest {
                 .get()
                 .install();
 
-        mDeviceStateTester.stepName("requirePackageRespondsToIntentAnnotation_packageRespondsToIntent")
-                .apply(List.of(requirePackageRespondsToIntent(INTENT_ACTION))
-                        , () ->
+        mDeviceStateTester
+                .stepName("requirePackageRespondsToIntentAnnotation_packageRespondsToIntent")
+                .apply(
+                        List.of(requirePackageRespondsToIntent(INTENT_ACTION)),
+                        () ->
                                 assertThat(
-                                        TestApis.context().instrumentedContext().getPackageManager().queryIntentActivities(
-                                                new Intent(INTENT_ACTION),
-                                                /* flags= */0)
-                                ).isNotEmpty());
+                                                TestApis.context()
+                                                        .instrumentedContext()
+                                                        .getPackageManager()
+                                                        .queryIntentActivities(
+                                                                new Intent(INTENT_ACTION),
+                                                                /* flags= */ 0))
+                                        .isNotEmpty());
     }
 
     @Test
@@ -144,37 +151,57 @@ public final class DeviceStateInternalTest {
                                         .get()
                                         .install(workProfile(mDeviceStateTester.getDeviceState())));
 
-        mDeviceStateTester.stepName("requirePackageRespondsToIntentAnnotation_workProfile_packageRespondsToIntent")
-                .apply(List.of(requirePackageRespondsToIntent(INTENT_ACTION, UserType.WORK_PROFILE), ensureHasPermission(INTERACT_ACROSS_USERS, INTERACT_ACROSS_USERS_FULL))
-                        , () ->
+        mDeviceStateTester
+                .stepName(
+                        "requirePackageRespondsToIntentAnnotation_workProfile_packageRespondsToIntent")
+                .apply(
+                        List.of(
+                                requirePackageRespondsToIntent(
+                                        INTENT_ACTION, UserType.WORK_PROFILE),
+                                ensureHasPermission(
+                                        INTERACT_ACROSS_USERS, INTERACT_ACROSS_USERS_FULL)),
+                        () ->
                                 assertThat(
-                                        TestApis.context().androidContextAsUser(workProfile(mDeviceStateTester.getDeviceState())).getPackageManager().queryIntentActivities(
-                                                new Intent(INTENT_ACTION),
-                                                /* flags= */0)
-                                ).isNotEmpty());
+                                                TestApis.context()
+                                                        .androidContextAsUser(
+                                                                workProfile(
+                                                                        mDeviceStateTester
+                                                                                .getDeviceState()))
+                                                        .getPackageManager()
+                                                        .queryIntentActivities(
+                                                                new Intent(INTENT_ACTION),
+                                                                /* flags= */ 0))
+                                        .isNotEmpty());
     }
 
     @Test
     public void requirePackageRespondsToIntentAnnotation_noPackageRespondsToIntent() {
-        assertThrows(NeneException.class
-                , () ->
+        assertThrows(
+                NeneException.class,
+                () ->
                         mDeviceStateTester
-                                .stepName("requirePackageRespondsToIntentAnnotation_noPackageRespondsToIntent")
-                                .apply(List.of(requirePackageRespondsToIntent("INTENT_ACTION"))
-                                        , () -> {})
-        );
+                                .stepName(
+                                        "requirePackageRespondsToIntentAnnotation_noPackageRespondsToIntent")
+                                .apply(
+                                        List.of(requirePackageRespondsToIntent("INTENT_ACTION")),
+                                        () -> {}));
     }
 
     @Test
     public void requireNoPackageRespondsToIntentAnnotation_noPackageRespondsToIntent() {
-        mDeviceStateTester.stepName("requireNoPackageRespondsToIntentAnnotation_noPackageRespondsToIntent")
-                .apply(List.of(requireNoPackageRespondsToIntent("INTENT_ACTION"))
-                        , () ->
+        mDeviceStateTester
+                .stepName("requireNoPackageRespondsToIntentAnnotation_noPackageRespondsToIntent")
+                .apply(
+                        List.of(requireNoPackageRespondsToIntent("INTENT_ACTION")),
+                        () ->
                                 assertThat(
-                                        TestApis.context().instrumentedContext().getPackageManager().queryIntentActivities(
-                                                new Intent("INTENT_ACTION"),
-                                                /* flags= */0)
-                                ).isEmpty());
+                                                TestApis.context()
+                                                        .instrumentedContext()
+                                                        .getPackageManager()
+                                                        .queryIntentActivities(
+                                                                new Intent("INTENT_ACTION"),
+                                                                /* flags= */ 0))
+                                        .isEmpty());
     }
 
     @Test
@@ -188,13 +215,15 @@ public final class DeviceStateInternalTest {
                 .get()
                 .install();
 
-        assertThrows(NeneException.class
-                , () ->
+        assertThrows(
+                NeneException.class,
+                () ->
                         mDeviceStateTester
-                                .stepName("requireNoPackageRespondsToIntentAnnotation_packageRespondsToIntent")
-                                .apply(List.of(requireNoPackageRespondsToIntent(INTENT_ACTION))
-                                        , () -> {})
-        );
+                                .stepName(
+                                        "requireNoPackageRespondsToIntentAnnotation_packageRespondsToIntent")
+                                .apply(
+                                        List.of(requireNoPackageRespondsToIntent(INTENT_ACTION)),
+                                        () -> {}));
     }
 
     @Test
@@ -232,5 +261,25 @@ public final class DeviceStateInternalTest {
                                     assertThat(TestApis.packages().find(testApp.packageName()).installedOnUser()).isFalse()
                     );
         }
+    }
+
+    @Test
+    public void ensureDevicePolicyManagementRoleHolderIsRemovedBetweenTests() {
+        AtomicReference<String> dpmPackageName = new AtomicReference<>();
+        mDeviceStateTester
+                .stepName("ensureHasDevicePolicyManagementRoleHolderAnnotation")
+                .apply(
+                        List.of(ensureHasDevicePolicyManagerRoleHolder(UserType.SYSTEM_USER, true)),
+                        () -> {
+                            dpmPackageName.set(
+                                    dpmRoleHolder(mDeviceStateTester.getDeviceState())
+                                            .packageName());
+                        });
+        assertThat(TestApis.roles().getRoleHolders(RoleManager.ROLE_DEVICE_POLICY_MANAGEMENT))
+                .contains(dpmPackageName.get());
+
+        mDeviceStateTester.tearDownNonShareableState();
+        assertThat(TestApis.roles().getRoleHolders(RoleManager.ROLE_DEVICE_POLICY_MANAGEMENT))
+                .isEmpty();
     }
 }

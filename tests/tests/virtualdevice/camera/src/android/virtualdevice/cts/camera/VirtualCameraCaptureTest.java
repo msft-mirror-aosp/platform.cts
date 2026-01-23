@@ -86,9 +86,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.ObjLongConsumer;
 
@@ -824,6 +824,110 @@ public class VirtualCameraCaptureTest {
             assertThat(aePriorityModeResult).isEqualTo(resultAePriorityMode);
             Integer afStateResult = result.get(TotalCaptureResult.CONTROL_AF_STATE);
             assertThat(afStateResult).isEqualTo(resultAfState);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MULTIPLE_INPUT_STREAMS)
+    public void virtualCamera_camera_multiple_input_streams() throws Exception {
+        int imageCount = 5;
+        int streamWidth = 1280;
+        int streamHeight = 720;
+        int stream2Width = streamWidth / 2;
+        int stream2Height = streamHeight / 2;
+
+        VirtualCameraConfig.Builder builder =
+                new VirtualCameraConfig.Builder("virtualCamera")
+                        .addStreamConfig(streamWidth, streamHeight, YUV_420_888, 20)
+                        .addStreamConfig(stream2Width, stream2Height, YUV_420_888, 20)
+                        .setConcurrentStreamConfigSupported(true)
+                        .setLensFacing(LENS_FACING_FRONT);
+
+        mCaptureHelper.createVirtualCamera(
+                builder,
+                new DefaultVirtualCameraCallback() {
+                    @Override
+                    public void onStreamConfigured(
+                            int streamId,
+                            @NonNull Surface surface,
+                            int width,
+                            int height,
+                            int format) {
+                        switch (streamId) {
+                            case 0 -> VirtualCameraUtils.paintSurface(surface, Color.RED);
+                            case 1 -> VirtualCameraUtils.paintSurface(surface, Color.BLUE);
+                        }
+                    }
+                });
+
+        CaptureConfiguration config =
+                new CaptureConfiguration()
+                        .setImageCount(imageCount)
+                        .addOutputFormat(streamWidth, streamHeight, YUV_420_888)
+                        .addOutputFormat(stream2Width, stream2Height, YUV_420_888)
+                        .setCapturePeriod(
+                                Duration.ofNanos(
+                                        SECOND_TO_NANOS
+                                                / VirtualCameraCaptureHelper.CAMERA_MAX_FPS));
+
+        List<Image> images = mCaptureHelper.captureImages(config);
+        try {
+            assertThat(images.get(0)).hasOnlyColor(Color.RED);
+            assertThat(images.get(1)).hasOnlyColor(Color.BLUE);
+        } finally {
+            images.stream().filter(Objects::nonNull).forEach(Image::close);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MULTIPLE_INPUT_STREAMS)
+    public void virtualCamera_camera_multiple_input_streams_disabled_in_config() {
+        int imageCount = 5;
+        int streamWidth = 1280;
+        int streamHeight = 720;
+        int stream2Width = streamWidth / 2;
+        int stream2Height = streamHeight / 2;
+
+        VirtualCameraConfig.Builder builder =
+                new VirtualCameraConfig.Builder("virtualCamera")
+                        .addStreamConfig(streamWidth, streamHeight, YUV_420_888, 20)
+                        .addStreamConfig(stream2Width, stream2Height, YUV_420_888, 20)
+                        .setConcurrentStreamConfigSupported(false)
+                        .setLensFacing(LENS_FACING_FRONT);
+
+        mCaptureHelper.createVirtualCamera(
+                builder,
+                new DefaultVirtualCameraCallback() {
+                    @Override
+                    public void onStreamConfigured(
+                            int streamId,
+                            @NonNull Surface surface,
+                            int width,
+                            int height,
+                            int format) {
+                        switch (streamId) {
+                            case 0 -> VirtualCameraUtils.paintSurface(surface, Color.RED);
+                            case 1 -> VirtualCameraUtils.paintSurface(surface, Color.BLUE);
+                        }
+                    }
+                });
+
+        CaptureConfiguration config =
+                new CaptureConfiguration()
+                        .setImageCount(imageCount)
+                        .addOutputFormat(streamWidth, streamHeight, YUV_420_888)
+                        .addOutputFormat(stream2Width, stream2Height, YUV_420_888)
+                        .setCapturePeriod(
+                                Duration.ofNanos(
+                                        SECOND_TO_NANOS
+                                                / VirtualCameraCaptureHelper.CAMERA_MAX_FPS));
+
+        List<Image> images = mCaptureHelper.captureImages(config);
+        try {
+            assertThat(images.get(0)).hasOnlyColor(Color.RED);
+            assertThat(images.get(1)).hasOnlyColor(Color.RED);
+        } finally {
+            images.stream().filter(Objects::nonNull).forEach(Image::close);
         }
     }
 

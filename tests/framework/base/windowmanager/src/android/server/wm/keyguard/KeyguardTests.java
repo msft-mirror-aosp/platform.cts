@@ -874,8 +874,8 @@ public class KeyguardTests extends KeyguardTestBase {
         mKeyguardManager.addKeyguardLockedStateListener(mContext.getMainExecutor(), listener);
 
         lockScreenSession.gotoKeyguard();
-        lockScreenSession.unlockDevice();
-        lockScreenSession.unlockDevice();  // state not changed
+        lockScreenSession.unlock();
+        lockScreenSession.requestKeyguardDismissal(); // state not changed
 
         verify(listener, times(1)).onKeyguardLockedStateChanged(true);
         verify(listener, times(1)).onKeyguardLockedStateChanged(false);
@@ -894,7 +894,7 @@ public class KeyguardTests extends KeyguardTestBase {
         mKeyguardManager.removeKeyguardLockedStateListener(listener);
 
         lockScreenSession.gotoKeyguard();
-        lockScreenSession.unlockDevice();
+        lockScreenSession.unlock();
         lockScreenSession.gotoKeyguard();
 
         verify(listener, never()).onKeyguardLockedStateChanged(anyBoolean());

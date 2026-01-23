@@ -861,27 +861,27 @@ public class SmsTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
-    public void insertUnrestrictedSms_verifyReadRestrictionUnset() {
+    public void insertUnrestrictedSms_verifyRestrictedBitIsUnset() {
         Uri inserted = mSmsTestHelper.insertTestSmsWithThread(TEST_ADDRESS, TEST_SMS_BODY,
                 TEST_THREAD_ID_1, /* isRestricted= */ false);
 
-        mSmsTestHelper.assertSmsColumnEquals(ReadRestriction.READ_RESTRICTION_COLUMN_NAME, inserted,
+        mSmsTestHelper.assertSmsColumnEquals(ReadRestriction.RESTRICTED, inserted,
                 String.valueOf(0));
     }
 
     @Test
     @RequiresFlagsEnabled(FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
-    public void insertRestrictedSms_verifyReadRestrictionSet() {
+    public void insertRestrictedSms_verifyRestrictedBitIsSet() {
         Uri inserted = mSmsTestHelper.insertTestSmsWithThread(TEST_ADDRESS, TEST_SMS_BODY,
                 TEST_THREAD_ID_1, /* isRestricted= */ true);
 
-        mSmsTestHelper.assertSmsColumnEquals(ReadRestriction.READ_RESTRICTION_COLUMN_NAME, inserted,
-                String.valueOf(ReadRestriction.ReadRestrictionValues.READ_RESTRICTION_RESTRICTED));
+        mSmsTestHelper.assertSmsColumnEquals(ReadRestriction.RESTRICTED, inserted,
+                String.valueOf(1));
     }
 
     @Test
     @RequiresFlagsEnabled(FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
-    public void updateRestrictedSms_toUnrestricted_verifyReadRestrictionUnset() {
+    public void updateRestrictedSms_toUnrestricted_verifyRestrictionBitIsUnset() {
         Uri inserted = mSmsTestHelper.insertTestSmsWithThread(TEST_ADDRESS, TEST_SMS_BODY,
                 TEST_THREAD_ID_1, /* isRestricted= */ true);
 
@@ -889,7 +889,7 @@ public class SmsTest {
         values.put(ReadRestriction.RESTRICTED, false);
         mContentResolver.update(inserted, values, null, null);
 
-        mSmsTestHelper.assertSmsColumnEquals(ReadRestriction.READ_RESTRICTION_COLUMN_NAME, inserted,
+        mSmsTestHelper.assertSmsColumnEquals(ReadRestriction.RESTRICTED, inserted,
                 String.valueOf(0));
     }
 
@@ -908,12 +908,12 @@ public class SmsTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
-    public void insertSms_messageRestricted_verifyReadRestrictionSet() {
+    public void insertSms_messageRestricted_verifyRestrictionBitIsSet() {
         Uri inserted = mSmsTestHelper.insertTestSmsWithThread(TEST_ADDRESS, TEST_SMS_BODY,
                 TEST_THREAD_ID_1, /* isRestricted= */ true);
 
-        mSmsTestHelper.assertSmsColumnEquals(ReadRestriction.READ_RESTRICTION_COLUMN_NAME, inserted,
-                String.valueOf(ReadRestriction.ReadRestrictionValues.READ_RESTRICTION_RESTRICTED));
+        mSmsTestHelper.assertSmsColumnEquals(ReadRestriction.RESTRICTED, inserted,
+                String.valueOf(1));
     }
 
     @Test
@@ -1055,6 +1055,18 @@ public class SmsTest {
             runShellCommand("am compat reset --no-kill "
                     + FILTER_GENERIC_OTP_CHANGE_ID + " " + getContext().getPackageName());
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
+    public void querySms_byDefaultSmsApp_readRestrictionColumnIsHidden() {
+        Uri inserted = mSmsTestHelper.insertTestSmsWithThread(TEST_ADDRESS, TEST_SMS_BODY,
+                TEST_THREAD_ID_1, /* isRestricted= */ true);
+
+        Cursor cursor = mContentResolver.query(Telephony.Sms.CONTENT_URI, null, null, null);
+        cursor.moveToNext();
+        assertThat(cursor.getColumnIndex(ReadRestriction.READ_RESTRICTION_COLUMN_NAME))
+                .isEqualTo(-1);
     }
 
     // Gets the retriever hash belong to itself

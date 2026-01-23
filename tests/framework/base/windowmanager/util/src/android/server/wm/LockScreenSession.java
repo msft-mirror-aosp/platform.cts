@@ -27,6 +27,7 @@ import static android.server.wm.StateLogger.logE;
 import static android.server.wm.UiDeviceUtils.pressBackButton;
 import static android.server.wm.UiDeviceUtils.pressEnterButton;
 import static android.server.wm.UiDeviceUtils.pressHomeButton;
+import static android.server.wm.UiDeviceUtils.pressMenuButton;
 import static android.server.wm.UiDeviceUtils.pressSleepButton;
 import static android.server.wm.UiDeviceUtils.pressUnlockButton;
 import static android.server.wm.UiDeviceUtils.pressWakeupButton;
@@ -143,9 +144,35 @@ public class LockScreenSession implements AutoCloseable {
     }
 
     /**
-     * Unlocks a device by entering a lock credential.
+     * Unlocks the device with the best effort.
+     *
+     * <p>This wakes the device and then either enters the credential into the bouncer, or attempts
+     * a passwordless unlock using the "unlock" key (KEYCODE_MENU).
      */
-    public LockScreenSession enterAndConfirmLockCredential() {
+    public LockScreenSession unlock() {
+        wakeUpDevice();
+        if (mLockCredentialSet) {
+            // Pressing the menu button typically brings up the bouncer if the keyguard is locked.
+            // We avoid requestKeyguardDismissal() here because it waits for the device to be fully
+            // unlocked, which won't happen until we enter the credential.
+            pressMenuButton();
+            enterLockCredentialAndConfirm();
+        } else {
+            requestKeyguardDismissal();
+        }
+        return this;
+    }
+
+    /**
+     * Enters a lock credential. This should be called when the bouncer is shown. Normally, use
+     * {#unlock()} instead.
+     */
+    public LockScreenSession enterLockCredentialAndConfirm() {
+        if (!mLockCredentialSet) {
+            throw new IllegalStateException(
+                    "Requested to enter credential without setting lock credential.");
+        }
+
         // Ensure focus will switch to default display. Meanwhile we cannot tap on center area,
         // which may tap on input credential area.
         mTouchHelper.touchAndCancelOnDisplayCenterSync(DEFAULT_DISPLAY);
@@ -220,10 +247,13 @@ public class LockScreenSession implements AutoCloseable {
     }
 
     /**
-     * Unlocks the device by using the unlock button.
+     * Presses the unlock button.
+     *
+     * <p>On devices with insecure keyguard, this unlocks the device. On devices only with secure
+     * keyguard, this shows the bouncer.
      */
-    public LockScreenSession unlockDevice() {
-        // Make sure the unlock button event is send to the default display.
+    public LockScreenSession requestKeyguardDismissal() {
+        // Make sure the unlock button event is sent to the default display.
         mTouchHelper.touchAndCancelOnDisplayCenterSync(DEFAULT_DISPLAY);
 
         pressUnlockButton();
@@ -297,7 +327,7 @@ public class LockScreenSession implements AutoCloseable {
             mWmState.computeState();
             if (WindowManagerStateHelper.isKeyguardShowingAndNotOccluded(mWmState)) {
                 // Keyguard is showing and not occluded so only need to unlock.
-                unlockDevice();
+                requestKeyguardDismissal();
                 return;
             }
 
@@ -317,7 +347,7 @@ public class LockScreenSession implements AutoCloseable {
             wakeUpDevice();
         }
         if (isKeyguardLocked()) {
-            unlockDevice();
+            requestKeyguardDismissal();
         }
     }
 

@@ -2726,6 +2726,18 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         }
     }
 
+    /** Verity setDeviceMobilityState requires privileged permission. */
+    @ApiTest(apis = {"android.net.wifi.WifiManager#setDeviceMobilityState"})
+    @Test
+    public void testSetWifiSetDeviceMobilityState() {
+        assertThrows(
+                "No permission should trigger SecurityException",
+                SecurityException.class,
+                () ->
+                        sWifiManager.setDeviceMobilityState(
+                                WifiManager.DEVICE_MOBILITY_STATE_UNKNOWN));
+    }
+
     /**
      * Verify that the {@link android.Manifest.permission#NETWORK_CARRIER_PROVISIONING} permission
      * is held by at most one application.

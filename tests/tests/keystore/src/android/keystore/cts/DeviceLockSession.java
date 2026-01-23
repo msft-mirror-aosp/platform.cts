@@ -57,9 +57,7 @@ class DeviceLockSession implements AutoCloseable {
     }
 
     public void performDeviceUnlock() throws Exception {
-        mLockCredential.gotoKeyguard();
-        UiDeviceUtils.pressUnlockButton();
-        mLockCredential.enterAndConfirmLockCredential();
+        mLockCredential.unlock();
         var keyguardManager = mContext.getSystemService(KeyguardManager.class);
         for (int i = 0; i < 25 && keyguardManager.isDeviceLocked(); i++) {
             SystemClock.sleep(200);

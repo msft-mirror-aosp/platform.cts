@@ -125,7 +125,7 @@ class EnterpriseComponent(locator: BedsteadServiceLocator) : DeviceStateComponen
         }
     }
 
-    override fun teardownShareableState() {
+    override fun teardownNonShareableState() {
         devicePolicyManagerRoleHolder?.let {
             devicePolicy().unsetDevicePolicyManagementRoleHolder(
                 it.testApp().pkg(),
@@ -133,9 +133,6 @@ class EnterpriseComponent(locator: BedsteadServiceLocator) : DeviceStateComponen
             )
             devicePolicyManagerRoleHolder = null
         }
-    }
-
-    override fun teardownNonShareableState() {
         delegateDpc = null
         primaryPolicyManager = null
     }
