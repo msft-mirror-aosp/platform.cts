@@ -71,7 +71,6 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
 
     private static final ImmutableList<Integer> REQUIRED_DEVICES =
             ImmutableList.of(
-                    AudioDeviceInfo.TYPE_BLUETOOTH_SCO,
                     AudioDeviceInfo.TYPE_USB_HEADSET,
                     AudioDeviceInfo.TYPE_WIRED_HEADSET,
                     AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
@@ -151,7 +150,7 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
         List<AudioDeviceInfo> availableDevices = mAudioManager.getAvailableCommunicationDevices();
         Set<Integer> processedDeviceTypes = new HashSet<>();
 
-        // Add required devices first.
+        // Add supported devices in order.
         for (int deviceType : REQUIRED_DEVICES) {
             boolean isSupported = supportedDeviceTypes.contains(deviceType);
             boolean isAvailable =
@@ -164,20 +163,6 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
                             isSupported,
                             isAvailable));
             processedDeviceTypes.add(deviceType);
-        }
-
-        // Add any other available (and thus supported) communication devices.
-        for (AudioDeviceInfo availableDevice : availableDevices) {
-            if (!processedDeviceTypes.contains(availableDevice.getType())) {
-                mDeviceList.add(
-                        new DeviceData(
-                                getDescriptiveDeviceName(availableDevice),
-                                availableDevice.getType(),
-                                "", // No specific instructions for non-required devices.
-                                true, // It's available, so it's supported.
-                                true));
-                processedDeviceTypes.add(availableDevice.getType());
-            }
         }
 
         if (mDeviceAdapter == null) {
@@ -207,8 +192,6 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
                     getString(R.string.audio_communication_latency_device_earpiece);
             case AudioDeviceInfo.TYPE_WIRED_HEADSET ->
                     getString(R.string.audio_communication_latency_device_wired_headset);
-            case AudioDeviceInfo.TYPE_BLUETOOTH_SCO ->
-                    getString(R.string.audio_communication_latency_device_bt_sco);
             case AudioDeviceInfo.TYPE_USB_HEADSET ->
                     getString(R.string.audio_communication_latency_device_usb_headset);
             default -> getString(R.string.audio_communication_latency_device_unknown);
@@ -224,8 +207,6 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
             case AudioDeviceInfo.TYPE_WIRED_HEADSET ->
                     getString(
                             R.string.audio_communication_latency_device_instructions_wired_headset);
-            case AudioDeviceInfo.TYPE_BLUETOOTH_SCO ->
-                    getString(R.string.audio_communication_latency_device_instructions_bt_sco);
             case AudioDeviceInfo.TYPE_USB_HEADSET ->
                     getString(R.string.audio_communication_latency_device_instructions_usb_headset);
             default -> "";
