@@ -47,7 +47,7 @@ import org.junit.runner.RunWith
 class ComputerControlExtensionsTest {
     private class ComputerControlSessionCallbackImpl : ComputerControlSession.Callback {
         private val future = CompletableFuture<ComputerControlSession?>()
-        private var errorCode = ERROR_CODE_UNSET
+        private var errorCode = ComputerControlSession.ERROR_UNKNOWN
 
         fun awaitSessionAndClose(block: ((ComputerControlSession) -> Unit)? = null) {
             val session =
@@ -238,7 +238,7 @@ class ComputerControlExtensionsTest {
             val callback2 = ComputerControlSessionCallbackImpl()
             extension!!.requestSession(params2, Executors.newSingleThreadExecutor(), callback2)
             val errorCode = callback2.awaitSessionCreationError()
-            assertThat(errorCode).isEqualTo(ERROR_CODE_SESSION_LIMIT_REACHED)
+            assertThat(errorCode).isEqualTo(ComputerControlSession.ERROR_SESSION_LIMIT_REACHED)
         }
     }
 
@@ -259,7 +259,7 @@ class ComputerControlExtensionsTest {
             val callback = ComputerControlSessionCallbackImpl()
             extension!!.requestSession(params, Executors.newSingleThreadExecutor(), callback)
             val errorCode = callback.awaitSessionCreationError()
-            assertThat(errorCode).isEqualTo(ERROR_CODE_DEVICE_LOCKED)
+            assertThat(errorCode).isEqualTo(ComputerControlSession.ERROR_DEVICE_LOCKED)
         } finally {
             SystemUtil.runShellCommand("input keyevent WAKEUP")
             SystemUtil.runShellCommand("wm dismiss-keyguard")
@@ -279,7 +279,7 @@ class ComputerControlExtensionsTest {
             val callback = ComputerControlSessionCallbackImpl()
             extension!!.requestSession(params, Executors.newSingleThreadExecutor(), callback)
             val errorCode = callback.awaitSessionCreationError()
-            assertThat(errorCode).isEqualTo(ERROR_CODE_PERMISSION_DENIED)
+            assertThat(errorCode).isEqualTo(ComputerControlSession.ERROR_PERMISSION_DENIED)
         } finally {
             SystemUtil.runShellCommand("appops set com.android.shell COMPUTER_CONTROL allow")
         }
@@ -289,17 +289,5 @@ class ComputerControlExtensionsTest {
         private const val TAG = "ComputerControlExtensionsTest"
         private const val TEST_APP_PACKAGE_NAME = "android.computercontrol.testapp"
         private const val DEADLINE_SECONDS = 5L
-
-        // List of ComputerControlSession error codes.
-        private const val ERROR_CODE_UNSET = -1
-
-        // The error code is ComputerControlSession.ERROR_SESSION_LIMIT_REACHED.
-        private const val ERROR_CODE_SESSION_LIMIT_REACHED = 1
-
-        // The error code is ComputerControlSession.ERROR_DEVICE_LOCKED.
-        private const val ERROR_CODE_DEVICE_LOCKED = 2
-
-        // The error code is ComputerControlSession.ERROR_PERMISSION_DENIED.
-        private const val ERROR_CODE_PERMISSION_DENIED = 3
     }
 }

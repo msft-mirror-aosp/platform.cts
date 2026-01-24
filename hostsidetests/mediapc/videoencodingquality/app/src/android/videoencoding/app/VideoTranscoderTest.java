@@ -29,7 +29,7 @@ import android.media.MediaFormat;
 import android.mediav2.common.cts.CodecTestBase;
 import android.mediav2.common.cts.EncoderConfigParams;
 import android.os.Environment;
-import android.videoencoding.transcoders.MediaCodecTranscoder;
+import android.videoencoding.transcoders.TransformerTranscoder;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
@@ -46,6 +46,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -125,8 +126,7 @@ public class VideoTranscoderTest {
                             .setLevel(codecConfig.getInt("Level"))
                             .setColorFormat(COLOR_FormatSurface)
                             .build();
-            String outFileName = codecConfig.getString("EncodedFileName");
-            mOutputFileNames[i] = outFileName.substring(0, outFileName.lastIndexOf('.'));
+            mOutputFileNames[i] = codecConfig.getString("EncodedFileName");
         }
         MediaFormat format = getFormatInStream(mTestFileMediaType, mTestFile);
         mDecoderName = MEDIA_CODEC_LIST_REGULAR.findDecoderForFormat(format);
@@ -136,6 +136,12 @@ public class VideoTranscoderTest {
         }
         ArrayList<String> codecs = selectCodecs(mEncMediaType, formats, null, true, cType);
         if (!codecs.isEmpty()) mEncoderName = codecs.get(0);
+    }
+
+    private String getTempFilePath(String fileName) throws IOException {
+        String totalPath = PATH_PREFIX + fileName;
+        new FileOutputStream(totalPath).close();
+        return totalPath;
     }
 
     @LargeTest
@@ -150,6 +156,7 @@ public class VideoTranscoderTest {
                 "Apk does not have permissions to write to external storage",
                 PackageManager.PERMISSION_GRANTED,
                 getContext().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE));
+
         File pub = new File(SDCARD_MOUNT_POINT + "/veq/output/");
         File dir =
                 buildPath(
@@ -160,21 +167,15 @@ public class VideoTranscoderTest {
         }
         PATH_PREFIX = dir.getAbsolutePath() + File.separator;
         for (int i = 0; i < mEncCfgParams.length; i++) {
-            MediaCodecTranscoder transcoder =
-                    new MediaCodecTranscoder(
-                            mEncoderName,
-                            mEncMediaType,
-                            mDecoderName,
-                            mTestFileMediaType,
+            TransformerTranscoder transformerTranscoder =
+                    new TransformerTranscoder(
+                            getContext(),
                             mTestFile,
-                            mEncCfgParams[i],
-                            mOutputFileNames[i],
-                            mDecColorFormat,
-                            false,
-                            false,
-                            "",
-                            PATH_PREFIX);
-            transcoder.doTranscode();
+                            getTempFilePath(mOutputFileNames[i]),
+                            mEncMediaType,
+                            TransformerTranscoder.convertEncoderConfigParamsToSettings(
+                                    mEncCfgParams[i]));
+            transformerTranscoder.transcode();
         }
     }
 }

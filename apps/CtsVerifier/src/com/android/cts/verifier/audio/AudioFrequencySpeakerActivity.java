@@ -167,12 +167,12 @@ public class AudioFrequencySpeakerActivity extends AudioFrequencyActivity implem
         bandSpecsArray[2] = new AudioBandSpecs(
                 4000, 12000,    /* frequency start,stop */
                 4.0, -4.0,      /* start top,bottom value */
-                5.0, -5.0       /* stop top,bottom value */);
+                10.0, -10.0       /* stop top,bottom value */);
 
         bandSpecsArray[3] = new AudioBandSpecs(
                 12000, 20000,   /* frequency start,stop */
-                5.0, -5.0,      /* start top,bottom value */
-                5.0, -30.0      /* stop top,bottom value */);
+                10.0, -10.0,      /* start top,bottom value */
+                10.0, -40.0      /* stop top,bottom value */);
 
         //Init base bands for silence
         baseBandSpecsArray[0] = new AudioBandSpecs(
@@ -669,10 +669,7 @@ public class AudioFrequencySpeakerActivity extends AudioFrequencyActivity implem
             DspBufferMath.set(mC, mData);
             mFftServer.fft(mC, 1);
 
-            double[] halfMagnitude = new double[mBlockSizeSamples / 2];
-            for (i = 0; i < mBlockSizeSamples / 2; i++) {
-                halfMagnitude[i] = Math.sqrt(mC.mReal[i] * mC.mReal[i] + mC.mImag[i] * mC.mImag[i]);
-            }
+            double[] halfMagnitude = estimateWhiteNoisePeak(mC, mWindow, mSamplingRate);
 
             mFreqAverageMain.setData(halfMagnitude, false); //average all of them!
 

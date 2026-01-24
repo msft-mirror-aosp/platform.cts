@@ -22,13 +22,17 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.ResultReceiver;
+import android.os.StrictMode;
 import android.server.wm.backgroundactivity.common.Components;
+
+import androidx.annotation.Nullable;
 
 public class StartNextMatchingActivity extends Activity {
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        StrictMode.enableDefaults();
         ResultReceiver receiver = getIntent().getParcelableExtra(EVENT_NOTIFIER_EXTRA,
                 ResultReceiver.class);
         receiver.send(Components.Event.APP_A_LAUNCHER_MOVING_TO_BACKGROUND_ACTIVITY, null);

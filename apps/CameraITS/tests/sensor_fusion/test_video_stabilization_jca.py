@@ -36,7 +36,7 @@ _MIN_PHONE_MOVEMENT_ANGLE = 5  # Degrees
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_ROTATIONS = 36
 _START_FRAME = 30  # Give 3A 1s to warm up.
-_VIDEO_DELAY_TIME = 3  # Seconds
+_VIDEO_DELAY_TIME = 8  # Seconds
 _VIDEO_DURATION = 5.5  # Seconds
 _VIDEO_STABILIZATION_FACTOR = 0.7  # 70% of gyro movement allowed.
 

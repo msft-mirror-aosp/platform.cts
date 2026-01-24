@@ -190,10 +190,11 @@ public class AudioFrequencyVoiceRecognitionActivity extends AudioFrequencyActivi
                     DspBufferMath.set(mC, mData);
                     mFftServer.fft(mC, 1);
 
-                    double[] magnitude = new double[BLOCK_SIZE_SAMPLES / 2];
-                    for (i = 0; i < BLOCK_SIZE_SAMPLES / 2; i++) {
-                        magnitude[i] = Math.sqrt(mC.mReal[i] * mC.mReal[i] +
-                                mC.mImag[i] * mC.mImag[i]);
+                    double[] magnitude;
+                    if (mCurrentTest == TEST_TONE) {
+                        magnitude = computeSineAmplitudePeak(mC, mWindow);
+                    } else {
+                        magnitude = estimateWhiteNoisePeak(mC, mWindow, SAMPLING_RATE);
                     }
 
                     switch (mCurrentTest) {

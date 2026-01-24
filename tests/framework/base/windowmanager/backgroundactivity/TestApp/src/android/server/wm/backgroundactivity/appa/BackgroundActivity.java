@@ -19,7 +19,10 @@ package android.server.wm.backgroundactivity.appa;
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.Process;
+import android.os.StrictMode;
 import android.util.Log;
+
+import androidx.annotation.Nullable;
 
 /**
  * A background activity that will be launched, for testing if app is able to start background
@@ -30,8 +33,9 @@ public class BackgroundActivity extends Activity {
     public static final String TAG = "BackgroundActivity";
 
     @Override
-    protected void onCreate(Bundle bundle) {
-        super.onCreate(bundle);
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        StrictMode.enableDefaults();
         Log.i(TAG, "onCreate(" + Process.myUserHandle() + ")");
     }
 

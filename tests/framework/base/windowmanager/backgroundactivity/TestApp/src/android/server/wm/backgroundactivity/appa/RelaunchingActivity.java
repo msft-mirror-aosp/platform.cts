@@ -18,9 +18,19 @@ package android.server.wm.backgroundactivity.appa;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.os.Bundle;
+import android.os.StrictMode;
 import android.os.SystemClock;
 
+import androidx.annotation.Nullable;
+
 public class RelaunchingActivity extends Activity {
+
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        StrictMode.enableDefaults();
+    }
 
     @Override
     public void onPause() {

@@ -104,7 +104,7 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
     // available
     // - Ensure the validity of GPU counter values
 
-    private static final String BIN_NAME = "gpu_counter_producer";
+    private static final String GPU_COUNTER_PRODUCER = "gpu_counter_producer";
     private static final String APK = "CtsGraphicsProfilingDataApp.apk";
     private static final String ACTIVITY = APP + "/.GpuProfilingNativeActivity";
     private static final int MAX_WAIT_FOR_ACTIVITY_SECONDS = 10;
@@ -200,7 +200,7 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
     @After
     public void cleanup() throws Exception {
         if (initialDebugPropertyValue != null) {
-            getDevice().executeShellV2Command("killall " + BIN_NAME);
+            getDevice().executeShellV2Command("killall " + GPU_COUNTER_PRODUCER);
             getDevice().executeShellV2Command("am force-stop " + APP);
             getDevice().executeShellV2Command("settings delete global gpu_debug_layers");
             getDevice().executeShellV2Command("settings delete global enable_gpu_debug_layers");
@@ -237,6 +237,11 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
         installPackage(APK);
         getDevice().setProperty(DEBUG_PROPERTY, "1");
         mHasGpuCountersCapability = getProperty(GPU_COUNTERS_CAPABILITY_PROPERTY);
+
+        // Spin up a new thread to avoid blocking the main thread while the native process waits to
+        // be killed.
+        ShellThread shellThread = new ShellThread(GPU_COUNTER_PRODUCER);
+        shellThread.start();
     }
 
     /**
@@ -249,24 +254,7 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
             return;
         }
 
-        // Spin up a new thread to avoid blocking the main thread while the native process waits to
-        // be killed.
-        ShellThread shellThread = new ShellThread(BIN_NAME);
-        shellThread.start();
-        CommandResult activityStatus = getDevice().executeShellV2Command("am start -n " + ACTIVITY);
-        Assert.assertEquals(CommandStatus.SUCCESS, activityStatus.getStatus());
-        // Wait for the native activity to start.
-        boolean activityProcessStarted = false;
-        for (int i = 0; i < MAX_WAIT_FOR_ACTIVITY_SECONDS; i++) {
-            RunUtil.getDefault().sleep(1000);
-            activityProcessStarted =
-                    getDevice()
-                            .executeShellV2Command("dumpsys package " + APP)
-                            .getStdout()
-                            .contains(ACTIVITY);
-            if (activityProcessStarted) break;
-        }
-        Assert.assertTrue("NativeActivity failed to start", activityProcessStarted);
+        restartTestApp();
 
         boolean countersSourceFound = false;
         boolean stagesSourceFound = false;
@@ -548,6 +536,8 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
     }
 
     private Trace captureTrace(TraceConfig traceConfig, String traceFileName) throws Exception {
+        restartTestApp();
+
         File configFile = File.createTempFile("perfetto", ".cfg");
         String traceFilePath = TRACE_FILE_PREFIX + traceFileName;
         try (OutputStream out = new FileOutputStream(configFile)) {
@@ -570,6 +560,26 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
         Assert.assertEquals(CommandStatus.SUCCESS, deleteTraceStatus.getStatus());
 
         return trace;
+    }
+
+    private void restartTestApp() throws Exception {
+        CommandResult appStopStatus = getDevice().executeShellV2Command("am force-stop " + APP);
+        Assert.assertEquals(CommandStatus.SUCCESS, appStopStatus.getStatus());
+
+        CommandResult activityStatus = getDevice().executeShellV2Command("am start -n " + ACTIVITY);
+        Assert.assertEquals(CommandStatus.SUCCESS, activityStatus.getStatus());
+        // Wait for the native activity to start.
+        boolean activityProcessStarted = false;
+        for (int i = 0; i < MAX_WAIT_FOR_ACTIVITY_SECONDS; i++) {
+            RunUtil.getDefault().sleep(1000);
+            activityProcessStarted =
+                    getDevice()
+                            .executeShellV2Command("dumpsys package " + APP)
+                            .getStdout()
+                            .contains(ACTIVITY);
+            if (activityProcessStarted) break;
+        }
+        Assert.assertTrue("NativeActivity failed to start", activityProcessStarted);
     }
 
     private boolean getProperty(String propertyName) throws Exception {

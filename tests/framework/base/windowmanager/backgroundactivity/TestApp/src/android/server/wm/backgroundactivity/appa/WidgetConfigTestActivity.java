@@ -27,6 +27,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.ResultReceiver;
+import android.os.StrictMode;
+
+import androidx.annotation.Nullable;
 
 public class WidgetConfigTestActivity extends Activity {
 
@@ -34,8 +37,9 @@ public class WidgetConfigTestActivity extends Activity {
     private ResultReceiver mResultReceiver;
 
     @Override
-    public void onCreate(Bundle bundle) {
-        super.onCreate(bundle);
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        StrictMode.enableDefaults();
         Intent widgetIntent = getIntent().getParcelableExtra(Intent.EXTRA_INTENT, Intent.class);
         mResultReceiver = getIntent().getParcelableExtra(EVENT_NOTIFIER_EXTRA,
                 ResultReceiver.class);

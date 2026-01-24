@@ -34,6 +34,7 @@ import android.graphics.Color;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
+import android.server.wm.BuildUtils;
 import android.server.wm.LaunchActivityBuilder;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerTestBase;
@@ -61,11 +62,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 /** Build/Install/Run: atest CtsWindowManagerDeviceOther:KeepClearRectsTests */
 @Presubmit
 public class KeepClearRectsTests extends WindowManagerTestBase {
-    private static final long SAME_ELEMENT_ASSERTION_TIMEOUT = 3000;
+    private static final long SAME_ELEMENT_ASSERTION_TIMEOUT =
+            TimeUnit.SECONDS.toMillis(3) * BuildUtils.HW_TIMEOUT_MULTIPLIER;
     private static final List<Rect> TEST_KEEP_CLEAR_RECTS =
             Arrays.asList(new Rect(0, 0, 25, 25),
                           new Rect(30, 0, 50, 25),

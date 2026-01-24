@@ -39,6 +39,8 @@ import android.os.SystemClock;
 import android.os.Temperature;
 import android.os.UserHandle;
 import android.platform.test.annotations.RequiresDevice;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
@@ -961,6 +963,7 @@ public class JobThrottlingTest {
                 mTestAppInterface.getLastParams().getStopReason());
     }
 
+    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API)
     @Test
     public void testLongExpeditedJobStoppedByBatterySaver() throws Exception {
         BatteryUtils.assumeBatterySaverFeature();
@@ -972,16 +975,47 @@ public class JobThrottlingTest {
         BatteryUtils.enableBatterySaver(false);
         mTestAppInterface.scheduleJob(false, JobInfo.NETWORK_TYPE_NONE, true);
         runJob();
-        assertTrue("Job did not start after scheduling",
+        assertTrue(
+                "Job did not start after scheduling",
                 mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT));
         // Should get to run past min runtime.
         assertFalse("Job stopped after runtime", mTestAppInterface.awaitJobStop(90_000L));
 
         // Should stop when battery saver is turned on.
         BatteryUtils.enableBatterySaver(true);
-        assertTrue("Job did not stop after battery saver turned on",
+        assertTrue(
+                "Job did not stop after battery saver turned on",
                 mTestAppInterface.awaitJobStop(DEFAULT_WAIT_TIMEOUT));
-        assertEquals(JobParameters.STOP_REASON_DEVICE_STATE,
+        assertEquals(
+                JobParameters.STOP_REASON_DEVICE_STATE_BATTERY_SAVER,
+                mTestAppInterface.getLastParams().getStopReason());
+    }
+
+    @RequiresFlagsDisabled(android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API)
+    @Test
+    public void testDisabledFlagLongExpeditedJobStoppedByBatterySaver() throws Exception {
+        BatteryUtils.assumeBatterySaverFeature();
+
+        // Intentionally set a value below 1 minute to ensure the range checks work.
+        mDeviceConfigStateHelper.set("runtime_min_ej_guarantee_ms", Long.toString(0L));
+
+        setChargingState(false);
+        BatteryUtils.enableBatterySaver(false);
+        mTestAppInterface.scheduleJob(false, JobInfo.NETWORK_TYPE_NONE, true);
+        runJob();
+        assertTrue(
+                "Job did not start after scheduling",
+                mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT));
+        // Should get to run past min runtime.
+        assertFalse("Job stopped after runtime", mTestAppInterface.awaitJobStop(90_000L));
+
+        // Should stop when battery saver is turned on.
+        BatteryUtils.enableBatterySaver(true);
+        assertTrue(
+                "Job did not stop after battery saver turned on",
+                mTestAppInterface.awaitJobStop(DEFAULT_WAIT_TIMEOUT));
+        assertEquals(
+                JobParameters.STOP_REASON_DEVICE_STATE,
                 mTestAppInterface.getLastParams().getStopReason());
     }
 
@@ -1312,6 +1346,7 @@ public class JobThrottlingTest {
     }
      */
 
+    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API)
     @Test
     public void testRestrictingStopReason_BatterySaver() throws Exception {
         BatteryUtils.assumeBatterySaverFeature();
@@ -1320,13 +1355,38 @@ public class JobThrottlingTest {
         BatteryUtils.enableBatterySaver(false);
         sendScheduleJobBroadcast(false);
         runJob();
-        assertTrue("Job did not start after scheduling",
+        assertTrue(
+                "Job did not start after scheduling",
                 mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT));
 
         BatteryUtils.enableBatterySaver(true);
-        assertTrue("Job did not stop on entering battery saver",
+        assertTrue(
+                "Job did not stop on entering battery saver",
                 mTestAppInterface.awaitJobStop(DEFAULT_WAIT_TIMEOUT));
-        assertEquals(JobParameters.STOP_REASON_DEVICE_STATE,
+        assertEquals(
+                JobParameters.STOP_REASON_DEVICE_STATE_BATTERY_SAVER,
+                mTestAppInterface.getLastParams().getStopReason());
+    }
+
+    @RequiresFlagsDisabled(android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API)
+    @Test
+    public void testDisabledFlagRestrictingStopReason_BatterySaver() throws Exception {
+        BatteryUtils.assumeBatterySaverFeature();
+
+        setChargingState(false);
+        BatteryUtils.enableBatterySaver(false);
+        sendScheduleJobBroadcast(false);
+        runJob();
+        assertTrue(
+                "Job did not start after scheduling",
+                mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT));
+
+        BatteryUtils.enableBatterySaver(true);
+        assertTrue(
+                "Job did not stop on entering battery saver",
+                mTestAppInterface.awaitJobStop(DEFAULT_WAIT_TIMEOUT));
+        assertEquals(
+                JobParameters.STOP_REASON_DEVICE_STATE,
                 mTestAppInterface.getLastParams().getStopReason());
     }
 
@@ -1344,6 +1404,92 @@ public class JobThrottlingTest {
         assertTrue("Job did not stop on entering doze",
                 mTestAppInterface.awaitJobStop(DEFAULT_WAIT_TIMEOUT));
         assertEquals(JobParameters.STOP_REASON_DEVICE_STATE,
+                mTestAppInterface.getLastParams().getStopReason());
+    }
+
+    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API)
+    @Test
+    public void testStopReason_Thermal() throws Exception {
+        try {
+            mTestAppInterface.scheduleJob(false, NETWORK_TYPE_NONE, false);
+            runJob();
+            assertTrue(
+                    "Job did not start after scheduling",
+                    mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT));
+
+            ThermalUtils.overrideThermalStatus(Temperature.THROTTLING_SEVERE);
+            assertTrue(
+                    "Job did not stop on thermal throttling",
+                    mTestAppInterface.awaitJobStop(DEFAULT_WAIT_TIMEOUT));
+            assertEquals(
+                    JobParameters.STOP_REASON_DEVICE_STATE_THERMAL,
+                    mTestAppInterface.getLastParams().getStopReason());
+        } finally {
+            ThermalUtils.resetThermalStatus();
+        }
+    }
+
+    @RequiresFlagsDisabled(android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API)
+    @Test
+    public void testDisabledFlagStopReason_Thermal() throws Exception {
+        try {
+            mTestAppInterface.scheduleJob(false, NETWORK_TYPE_NONE, false);
+            runJob();
+            assertTrue(
+                    "Job did not start after scheduling",
+                    mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT));
+
+            ThermalUtils.overrideThermalStatus(Temperature.THROTTLING_SEVERE);
+            assertTrue(
+                    "Job did not stop on thermal throttling",
+                    mTestAppInterface.awaitJobStop(DEFAULT_WAIT_TIMEOUT));
+            assertEquals(
+                    JobParameters.STOP_REASON_DEVICE_STATE,
+                    mTestAppInterface.getLastParams().getStopReason());
+        } finally {
+            ThermalUtils.resetThermalStatus();
+        }
+    }
+
+    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API)
+    @Test
+    public void testStopReason_BatterySaver() throws Exception {
+        BatteryUtils.assumeBatterySaverFeature();
+        setChargingState(false);
+        BatteryUtils.enableBatterySaver(false);
+        sendScheduleJobBroadcast(false);
+        runJob();
+        assertTrue(
+                "Job did not start after scheduling",
+                mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT));
+
+        BatteryUtils.enableBatterySaver(true);
+        assertTrue(
+                "Job did not stop on entering battery saver",
+                mTestAppInterface.awaitJobStop(DEFAULT_WAIT_TIMEOUT));
+        assertEquals(
+                JobParameters.STOP_REASON_DEVICE_STATE_BATTERY_SAVER,
+                mTestAppInterface.getLastParams().getStopReason());
+    }
+
+    @RequiresFlagsDisabled(android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API)
+    @Test
+    public void testDisabledFlagStopReason_BatterySaver() throws Exception {
+        BatteryUtils.assumeBatterySaverFeature();
+        setChargingState(false);
+        BatteryUtils.enableBatterySaver(false);
+        sendScheduleJobBroadcast(false);
+        runJob();
+        assertTrue(
+                "Job did not start after scheduling",
+                mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT));
+
+        BatteryUtils.enableBatterySaver(true);
+        assertTrue(
+                "Job did not stop on entering battery saver",
+                mTestAppInterface.awaitJobStop(DEFAULT_WAIT_TIMEOUT));
+        assertEquals(
+                JobParameters.STOP_REASON_DEVICE_STATE,
                 mTestAppInterface.getLastParams().getStopReason());
     }
 

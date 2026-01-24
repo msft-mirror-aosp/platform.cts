@@ -173,7 +173,7 @@
     <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases[instant] android.graphics.cts.ImageDecoderTest#testDecode10BitHeifWithLowRam" />
 
     <!-- b/342028446 Remove SizeCompatRestartButtonStatsTests#testSizeCompatRestartButtonAppearedButNotClicked from cts-on-gsi -->
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.sizecompatrestartbutton.SizeCompatRestartButtonStatsTests#testSizeCompatRestartButtonAppearedButNotClicked" />
+    <option name="compatibility:exclude-filter" value="CtsSizeCompatRestartButtonAtomHostTestCases android.cts.statsdatom.sizecompatrestartbutton.SizeCompatRestartButtonStatsTests#testSizeCompatRestartButtonAppearedButNotClicked" />
 
     <!-- b/337678518#comment25 Missing vendor_required_attestation_certificates.xml -->
     <option name="compatibility:exclude-filter" value="CtsCompanionDeviceManagerMultiDeviceTestCases" />

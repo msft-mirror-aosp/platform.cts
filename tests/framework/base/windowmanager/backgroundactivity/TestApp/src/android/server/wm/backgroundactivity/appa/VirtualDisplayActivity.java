@@ -22,12 +22,16 @@ import android.app.Presentation;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.os.Bundle;
+import android.os.StrictMode;
+
+import androidx.annotation.Nullable;
 
 public class VirtualDisplayActivity extends RelaunchingActivity {
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        StrictMode.enableDefaults();
         boolean usePublicPresentation = getIntent().getBooleanExtra(USE_PUBLIC_PRESENTATION, false);
         if (usePublicPresentation) {
             createPublicVirtualDisplayAndShowPresentation();

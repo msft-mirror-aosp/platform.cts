@@ -23,7 +23,10 @@ import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.util.Log;
+
+import androidx.annotation.Nullable;
 
 /**
  * Receive pending intent and launch it
@@ -33,9 +36,9 @@ public class StartPendingIntentActivity extends Activity {
     public static final String TAG = "StartPendingIntentActivity";
 
     @Override
-    protected void onCreate(Bundle b) {
-        super.onCreate(b);
-
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        StrictMode.enableDefaults();
         Intent intent = getIntent();
         final PendingIntent pendingIntent = intent.getParcelableExtra(PENDING_INTENT);
         try {

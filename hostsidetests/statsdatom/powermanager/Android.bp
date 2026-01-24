@@ -29,3 +29,10 @@ java_test_host {
     ],
     test_config: "AndroidTest.xml",
 }
+
+test_module_config_host {
+    name: "CtsStatsdAtomHostTestCases_statsdatom_powermanager",
+    base: "CtsPowerManagerAtomHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.cts.statsdatom.powermanager"],
+}

@@ -60,6 +60,7 @@ import android.media.tv.TvRecordingClient;
 import android.media.tv.TvRecordingInfo;
 import android.media.tv.TvTrackInfo;
 import android.media.tv.TvView;
+import android.media.tv.interactive.TvInteractiveAppInfo;
 import android.media.tv.interactive.TvInteractiveAppManager;
 import android.media.tv.interactive.TvInteractiveAppService;
 import android.media.tv.interactive.TvInteractiveAppServiceInfo;
@@ -204,6 +205,8 @@ public class TvInteractiveAppServiceTest {
         private String mAlias = null;
         private Integer mPort = null;
         private byte[] mData = null;
+        private TvInteractiveAppInfo mAppInfo = null;
+        private int mInteractiveAppUpdateCount = 0;
 
         private void resetValues() {
             mRequestCurrentChannelUriCount = 0;
@@ -245,6 +248,8 @@ public class TvInteractiveAppServiceTest {
             mPort = null;
             mData = null;
             mAlias = null;
+            mAppInfo = null;
+            mInteractiveAppUpdateCount = 0;
         }
 
         @Override
@@ -297,6 +302,15 @@ public class TvInteractiveAppServiceTest {
             mIAppServiceId = iAppServiceId;
             mState = state;
             mErr = err;
+        }
+
+        @Override
+        public void onInteractiveAppInfoChanged(
+                String iAppServiceId, TvInteractiveAppInfo appInfo) {
+            super.onInteractiveAppInfoChanged(iAppServiceId, appInfo);
+            mInteractiveAppUpdateCount++;
+            mIAppServiceId = iAppServiceId;
+            mAppInfo = appInfo;
         }
 
         @Override
@@ -1017,6 +1031,38 @@ public class TvInteractiveAppServiceTest {
     }
 
     @Test
+    public void testInteractiveAppInfoChanged() throws Throwable {
+        assertNotNull(mSession);
+        mCallback.resetValues();
+        TvInteractiveAppInfo testInfo =
+                new TvInteractiveAppInfo.Builder()
+                        .setControlCode(TvInteractiveAppInfo.CONTROL_CODE_AUTOSTART)
+                        .setHandle(0)
+                        .setId("testId")
+                        .setName("testInfo")
+                        .setState(TvInteractiveAppInfo.INTERACTIVE_APP_STATE_STARTED)
+                        .setType(TvInteractiveAppInfo.INTERACTIVE_APP_TYPE_NCL)
+                        .setIsServiceBound(true)
+                        .setIsStored(false)
+                        .build();
+        mSession.notifyInteractiveAppInfoChanged(testInfo);
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mCallback.mInteractiveAppUpdateCount > 0);
+
+        assertThat(mCallback.mInteractiveAppUpdateCount).isEqualTo(1);
+        assertThat(mCallback.mIAppServiceId).isEqualTo(mStubInfo.getId());
+
+        // Check contents are the same
+        assertThat(mCallback.mAppInfo.getControlCode()).isEqualTo(testInfo.getControlCode());
+        assertThat(mCallback.mAppInfo.getId()).isEqualTo(testInfo.getId());
+        assertThat(mCallback.mAppInfo.getName()).isEqualTo(testInfo.getName());
+        assertThat(mCallback.mAppInfo.getType()).isEqualTo(testInfo.getType());
+        assertThat(mCallback.mAppInfo.isServiceBound()).isEqualTo(testInfo.isServiceBound());
+        assertThat(mCallback.mAppInfo.isStored()).isEqualTo(testInfo.isStored());
+        assertThat(mCallback.mAppInfo.getHandle()).isEqualTo(testInfo.getHandle());
+        assertThat(mCallback.mAppInfo.getState()).isEqualTo(testInfo.getState());
+    }
+
+    @Test
     public void testStartStopInteractiveApp() throws Throwable {
         assertNotNull(mSession);
         mSession.resetValues();
@@ -1029,6 +1075,17 @@ public class TvInteractiveAppServiceTest {
         mTvIAppView.stopInteractiveApp();
         PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mStopInteractiveAppCount > 0);
         assertThat(mSession.mStopInteractiveAppCount).isEqualTo(1);
+    }
+
+    @Test
+    public void testStartInteractiveAppWithHandle() throws Throwable {
+        assertNotNull(mSession);
+        mSession.resetValues();
+        int handle = 0;
+        mTvIAppView.startInteractiveApp(handle);
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mStartInteractiveAppCount > 0);
+        assertThat(mSession.mStartInteractiveAppCount).isEqualTo(1);
+        assertThat(mSession.mAppHandle).isEqualTo(handle);
     }
 
     @Test

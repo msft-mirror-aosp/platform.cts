@@ -44,7 +44,6 @@ import com.google.common.collect.ImmutableList;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -68,14 +67,15 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
     private DeviceAdapter mDeviceAdapter;
     private List<DeviceData> mDeviceList;
     private AudioDeviceCallback mAudioDeviceCallback;
+    private TextView mFinalResultsText;
 
     private static final ImmutableList<Integer> REQUIRED_DEVICES =
             ImmutableList.of(
-                    AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
-                    AudioDeviceInfo.TYPE_BUILTIN_EARPIECE,
-                    AudioDeviceInfo.TYPE_WIRED_HEADSET,
                     AudioDeviceInfo.TYPE_BLUETOOTH_SCO,
-                    AudioDeviceInfo.TYPE_USB_HEADSET);
+                    AudioDeviceInfo.TYPE_USB_HEADSET,
+                    AudioDeviceInfo.TYPE_WIRED_HEADSET,
+                    AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
+                    AudioDeviceInfo.TYPE_BUILTIN_EARPIECE);
 
     // Enum for test result states.
     private enum TestResult {
@@ -95,8 +95,8 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
         setContentView(R.layout.audio_communication_latency);
+        super.onCreate(savedInstanceState);
         setPassFailButtonClickListeners();
         setInfoResources(
                 R.string.audio_communication_latency_test,
@@ -107,6 +107,8 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
         mAudioManager = getSystemService(AudioManager.class);
         mDeviceListView = findViewById(R.id.device_list);
         mDeviceListView.setLayoutManager(new LinearLayoutManager(this));
+
+        mFinalResultsText = findViewById(R.id.final_test_result_text);
 
         mAudioDeviceCallback = new TestAudioDeviceCallback();
 
@@ -177,16 +179,6 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
                 processedDeviceTypes.add(availableDevice.getType());
             }
         }
-        // Sort the list to show available devices first, then by name.
-        Collections.sort(
-                mDeviceList,
-                (d1, d2) -> {
-                    int availabilityCompare = Boolean.compare(d2.mIsAvailable, d1.mIsAvailable);
-                    if (availabilityCompare != 0) {
-                        return availabilityCompare;
-                    }
-                    return d1.mName.compareTo(d2.mName);
-                });
 
         if (mDeviceAdapter == null) {
             mDeviceAdapter = new DeviceAdapter(mDeviceList);
@@ -195,7 +187,16 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
             mDeviceAdapter.setDeviceData(mDeviceList);
             mDeviceAdapter.notifyDataSetChanged();
         }
+
+        if (!hasMoreThanOneDeviceToTest()) {
+            mDeviceListView.setVisibility(View.GONE);
+        }
         updatePassButton(); // Update pass button state after setting up the device list.
+    }
+
+    private boolean hasMoreThanOneDeviceToTest() {
+        return mDeviceList != null
+                && mDeviceList.stream().filter(DeviceData::isSupported).count() > 1;
     }
 
     private String getDeviceName(int deviceType) {
@@ -288,8 +289,10 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
 
     /** Enables the pass button only if all device tests are completed (PASS or NOT_SUPPORTED). */
     private void updatePassButton() {
-        if (mDeviceList == null || mDeviceList.isEmpty()) {
+        // Auto pass if there is only one device or less since there is no communication switch
+        if (!hasMoreThanOneDeviceToTest()) {
             getPassButton().setEnabled(true);
+            mFinalResultsText.setText(getString(R.string.not_enought_devices_to_run));
             return;
         }
 
@@ -302,6 +305,7 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
                                                         == TestResult.NOT_SUPPORTED);
 
         getPassButton().setEnabled(allTestsCompleted);
+        mFinalResultsText.setVisibility(View.GONE);
     }
 
     private void setTestResult(@Nullable DeviceData deviceData, String message, TestResult result) {
@@ -641,6 +645,10 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
             if (!isSupported) {
                 mTestResult = TestResult.NOT_SUPPORTED;
             }
+        }
+
+        boolean isSupported() {
+            return mIsSupported;
         }
     }
 

@@ -39,6 +39,7 @@ import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
@@ -207,7 +208,8 @@ public class WindowInputTests {
         intent.setComponent(Components.OVERLAY_TEST_SERVICE);
         intent.putExtra(EXTRA_LAYOUT_PARAMS, lp);
         intent.putExtra(EXTRA_DISPLAY_ID_PARAM, mActivity.getDisplay().getDisplayId());
-        mActivity.startForegroundService(intent);
+        assertNotNull(
+                "Failed to start overlay test service", mActivity.startForegroundService(intent));
 
         mInstrumentation.waitForIdleSync();
         final String windowName = lp.getTitle().toString();

@@ -639,10 +639,7 @@ public class AudioFrequencyLineActivity extends AudioFrequencyActivity implement
             DspBufferMath.set(mC, mData);
             mFftServer.fft(mC, 1);
 
-            double[] halfMagnitude = new double[mBlockSizeSamples / 2];
-            for (i = 0; i < mBlockSizeSamples / 2; i++) {
-                halfMagnitude[i] = Math.sqrt(mC.mReal[i] * mC.mReal[i] + mC.mImag[i] * mC.mImag[i]);
-            }
+            double[] halfMagnitude = estimateWhiteNoisePeak(mC, mWindow, mSamplingRate);
 
             mFreqAverageMain.setData(halfMagnitude, false); //average all of them!
 

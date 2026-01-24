@@ -1126,9 +1126,12 @@ public class AudioFrequencyUnprocessedActivity extends AudioFrequencyActivity im
             DspBufferMath.set(mC, mData);
             mFftServer.fft(mC, 1);
 
-            double[] halfMagnitude = new double[mBlockSizeSamples / 2];
-            for (i = 0; i < mBlockSizeSamples / 2; i++) {
-                halfMagnitude[i] = Math.sqrt(mC.mReal[i] * mC.mReal[i] + mC.mImag[i] * mC.mImag[i]);
+            double[] halfMagnitude;
+
+            if (mCurrentTest == TEST_TONE) {
+                halfMagnitude = computeSineAmplitudePeak(mC, mWindow);
+            } else {
+                halfMagnitude = estimateWhiteNoisePeak(mC, mWindow, mSamplingRate);
             }
 
             switch(mCurrentTest) {
