@@ -320,6 +320,11 @@ public class BiometricsAtomsTests extends BiometricDeviceTestCase {
             exemptionReasons = {},
             justification = "METRIC")
     public void testSecureLockDeviceStateChangedAtom() throws Exception {
+        if (!hasSecureLockscreen()) {
+            CLog.w("Skipping test - no secure lockscreen on device");
+            return;
+        }
+
         if (!hasAidlBiometrics()) {
             CLog.w("Skipping test - no AIDL biometrics on device");
             return;
