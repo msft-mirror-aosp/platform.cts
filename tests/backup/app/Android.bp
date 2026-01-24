@@ -203,6 +203,29 @@ android_test_helper_app {
 }
 
 android_test_helper_app {
+    name: "CtsBackupAgentProcessPccApp",
+    defaults: [
+        "cts_support_defaults",
+        "mts-target-sdk-version-current",
+    ],
+    min_sdk_version: "30",
+    target_sdk_version: "34",
+    sdk_version: "test_current",
+    srcs: [
+        "src/**/*.java",
+    ],
+    static_libs: [
+        "compatibility-device-util-axt",
+        "ctstestrunner-axt",
+    ],
+    test_suites: [
+        "general-tests",
+        "mts",
+    ],
+    manifest: "BackupAgentProcessPccApp/AndroidManifest.xml",
+}
+
+android_test_helper_app {
     name: "CtsRestrictedModeOptedOutApp",
     defaults: [
         "cts_support_defaults",

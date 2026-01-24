@@ -34,7 +34,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-/** Host side tests for pcc processes. */
+/** Host side storage tests for pcc processes. */
 @RunWith(DeviceJUnit4ClassRunner.class)
 public final class PccStorageHostTest extends BaseHostJUnit4Test {
 

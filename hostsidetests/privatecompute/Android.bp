@@ -18,8 +18,9 @@ package {
 }
 
 java_test_host {
-    name: "PccStorageHostTest",
+    name: "PccHostTest",
     srcs: [
+        "src/**/PccBackupHostTest.java",
         "src/**/PccStorageHostTest.java",
         ":CtsHostsideTestsAppSecurityUtil",
     ],
@@ -44,6 +45,8 @@ java_test_host {
     device_common_data: [
         ":PccHostTestApp",
         ":NonPccHostTestApp",
+        ":PccMalformedBackupApp",
+        ":PccBackupApp",
     ],
     enable_static_aconfig_pb: true,
 }
@@ -63,5 +66,23 @@ android_test_helper_app {
         "apps/NonPccApp/**/*.java",
     ],
     manifest: "apps/NonPccApp/AndroidManifest.xml",
+    min_sdk_version: "34",
+}
+
+android_test_helper_app {
+    name: "PccMalformedBackupApp",
+    srcs: [
+        "apps/PccMalformedBackupApp/**/*.java",
+    ],
+    manifest: "apps/PccMalformedBackupApp/AndroidManifest.xml",
+    min_sdk_version: "34",
+}
+
+android_test_helper_app {
+    name: "PccBackupApp",
+    srcs: [
+        "apps/PccBackupApp/**/*.java",
+    ],
+    manifest: "apps/PccBackupApp/AndroidManifest.xml",
     min_sdk_version: "34",
 }

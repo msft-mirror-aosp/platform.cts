@@ -19,6 +19,7 @@ package android.companion.cts.core
 import android.companion.AssociationInfo
 import android.companion.AssociationRequest.DEVICE_PROFILE_WATCH
 import android.companion.AssociationRequest.PERMISSION_GROUP_NEARBY
+import android.companion.Flags
 import android.companion.cts.common.MAC_ADDRESS_A
 import android.companion.cts.common.MAC_ADDRESS_B
 import android.platform.test.annotations.AppModeFull
@@ -43,15 +44,18 @@ class AssociationInfoBuilderTest : CoreTestBase() {
         var associationInfo = cdm.myAssociations[0]
         var currentTime = System.currentTimeMillis()
 
-        var newAssociationInfo = AssociationInfo.Builder(associationInfo)
-                .setDeviceProfile(DEVICE_PROFILE_WATCH)
-                .setSelfManaged(true)
-                .setDisplayName(DISPLAY_NAME)
-                .setLastTimeConnected(currentTime)
-                .setTimeApproved(currentTime)
-                .setDeviceMacAddress(MAC_ADDRESS_B)
-                .setExtraPermissions(setOf(PERMISSION_GROUP_NEARBY))
-                .build()
+        var newAssociationInfo = AssociationInfo.Builder(associationInfo).apply {
+            setDeviceProfile(DEVICE_PROFILE_WATCH)
+            setSelfManaged(true)
+            setDisplayName(DISPLAY_NAME)
+            setLastTimeConnected(currentTime)
+            setTimeApproved(currentTime)
+            setDeviceMacAddress(MAC_ADDRESS_B)
+            setExtraPermissions(setOf(PERMISSION_GROUP_NEARBY))
+            if (Flags.supportAiAgent()) {
+                setRemoteAiAgentSupported(true)
+            }
+        }.build()
 
         assertEquals(actual = newAssociationInfo.deviceProfile, expected = DEVICE_PROFILE_WATCH)
         assertEquals(actual = newAssociationInfo.displayName, expected = DISPLAY_NAME)
@@ -63,6 +67,9 @@ class AssociationInfoBuilderTest : CoreTestBase() {
             expected = setOf(PERMISSION_GROUP_NEARBY)
         )
         assertTrue(newAssociationInfo.isSelfManaged)
+        if (Flags.supportAiAgent()) {
+            assertTrue(newAssociationInfo.isRemoteAiAgentSupported)
+        }
     }
 
     companion object {

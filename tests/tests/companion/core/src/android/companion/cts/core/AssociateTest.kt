@@ -23,6 +23,7 @@ import android.companion.AssociationRequest.PERMISSION_GROUP_NEARBY
 import android.companion.CompanionDeviceManager.FLAG_CALL_METADATA
 import android.companion.CompanionDeviceManager.FLAG_UNIVERSAL_CLIPBOARD
 import android.companion.DeviceId
+import android.companion.Flags
 import android.companion.cts.common.CUSTOM_ID_A
 import android.companion.cts.common.CUSTOM_ID_B
 import android.companion.cts.common.CUSTOM_ID_INVALID
@@ -35,12 +36,15 @@ import android.companion.cts.common.getAssociationForPackage
 import android.content.pm.PackageManager
 import android.net.MacAddress
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.compatibility.common.util.FeatureUtil
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 import org.junit.Assume.assumeFalse
 import org.junit.Rule
 import org.junit.Test
@@ -356,6 +360,20 @@ class AssociateTest : CoreTestBase() {
                 pm.checkPermission(p, packageName)
             )
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_AI_AGENT)
+    fun test_associate_support_ai_agent() = with(targetApp) {
+        associate(MAC_ADDRESS_A, "null", "null", false)
+        var associations = cdm.myAssociations
+        assertFalse(associations[0].isRemoteAiAgentSupported)
+
+        disassociate(MAC_ADDRESS_A)
+
+        associate(MAC_ADDRESS_A, "null", "null", true)
+        associations = cdm.myAssociations
+        assertTrue(associations[0].isRemoteAiAgentSupported)
     }
 
     private fun createDeviceId(id: String?, macAddress: MacAddress?): DeviceId {

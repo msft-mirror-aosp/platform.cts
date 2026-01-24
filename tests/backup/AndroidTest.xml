@@ -42,6 +42,7 @@
         <option name="test-file-name" value="CtsPermissionBackupApp22.apk" />
         <option name="test-file-name" value="CtsAppLocalesBackupApp1.apk" />
         <option name="test-file-name" value="CtsAppLocalesBackupApp2.apk" />
+        <option name="test-file-name" value="CtsBackupAgentProcessPccApp.apk" />
         <option name="test-file-name" value="CtsBackupRestoreEventLoggerApp.apk" />
         <option name="test-file-name" value="CtsRestrictedModeOptedInApp.apk" />
         <option name="test-file-name" value="CtsRestrictedModeOptedOutApp.apk" />

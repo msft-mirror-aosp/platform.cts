@@ -1913,6 +1913,7 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
                 : initialInfo.getMinVolumeGainIndex();
         assertWithMessage("Initial volume group info attenuated status")
                 .that(initialInfo.isAttenuated()).isFalse();
+        mEventCallback.reset();
 
         List<Integer> restrictions = List.of(
                 android.car.media.CarVolumeGroupEvent.EXTRA_INFO_TRANSIENT_ATTENUATION_EXTERNAL);
