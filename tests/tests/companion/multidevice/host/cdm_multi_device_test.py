@@ -221,6 +221,7 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
             'android.companion.CompanionDeviceManager#requestHandoff(int, int, java.util.concurrent.Executor, android.companion.CompanionDeviceManager.HandoffRequestCallback)',
             'android.companion.CompanionDeviceManager#registerRemoteTaskListener(java.util.concurrent.Executor, android.companion.CompanionDeviceManager.RemoteTaskListener)',
             'android.companion.CompanionDeviceManager#unregisterRemoteTaskListener(android.companion.CompanionDeviceManager.RemoteTaskListener)',
+            'android.app.Activity#onHandoffActivityDataRequested(android.app.HandoffActivityDataRequestInfo)',
     ])
     def test_handoff(self):
         """Test that handoff can exchange data between devices"""
