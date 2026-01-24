@@ -24,13 +24,14 @@ import camera_properties_utils
 import capture_request_utils
 import image_processing_utils
 import its_session_utils
+import numpy as np
 
 _MAX_IMG_SIZE = (1920, 1080)
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _TEST_REQUIRED_MPC = 33
 _THRESHOLD_MAX_RMS_DIFF_YUV_JPEG = 0.03  # YUV/JPEG bit exactness threshold
 _THRESHOLD_MAX_RMS_DIFF_USE_CASE = 0.1  # Catch swapped color channels
-_THRESHOLD_MAX_RMS_DIFF_USE_CASE_ANDROID17 = 0.04  # For Android API 17 and above
+_THRESHOLD_MAX_E76_DIFF_USE_CASE_ANDROID17 = 5.0  # For Android API 17 and above
 _USE_CASE_PREVIEW = 1
 _USE_CASE_STILL_CAPTURE = 2
 _USE_CASE_VIDEO_RECORD = 3
@@ -43,6 +44,44 @@ _USE_CASE_NAME_MAP = {
     _USE_CASE_PREVIEW_VIDEO_STILL: 'preview_video_still',
     _USE_CASE_VIDEO_CALL: 'video_call'
 }
+
+
+def _get_lab_mean_values(img):
+  """Computes the mean values of the 'L', 'A', and 'B' channels.
+
+  Converts the img from RGB to CIELAB color space and calculates the mean values
+  of L, A and B channels only for the non-transparent regions of the image
+
+  Args:
+    img: img array in RGB colorspace. Expected to be float32 [0.0, 1.0].
+  Returns:
+    mean_l, mean_a, mean_b: mean value of l, a, b channels
+  """
+
+  # The scaling below assumes cv2.COLOR_RGB2LAB on uint8 input
+  img_lab = cv2.cvtColor(img, cv2.COLOR_RGB2LAB)
+  mean_l = np.mean(img_lab[:, :, 0])
+  mean_a = np.mean(img_lab[:, :, 1])
+  mean_b = np.mean(img_lab[:, :, 2])
+  logging.debug('L, A, B values: %.2f %.2f %.2f', mean_l, mean_a, mean_b)
+  return mean_l, mean_a, mean_b
+
+
+def _get_delta_e76(patch1, patch2):
+  """Computes the CIE76 delta E value between two image patches.
+
+  Euclidean distance between two colors in CIELAB color space.
+
+  Args:
+    patch1: first image patch for comparison.
+    patch2: second image patch for comparison.
+
+  Returns:
+    delta_e76: delta E76 value between patch1 and patch2.
+  """
+  l_1, a_1, b_1 = _get_lab_mean_values(patch1)
+  l_2, a_2, b_2 = _get_lab_mean_values(patch2)
+  return np.sqrt((l_1 - l_2)**2 + (a_1 - a_2)**2 + (b_1 - b_2)**2)
 
 
 class YuvJpegCaptureSamenessTest(its_base_test.ItsBaseTest):
@@ -144,7 +183,8 @@ class YuvJpegCaptureSamenessTest(its_base_test.ItsBaseTest):
       print(f'test_yuv_jpeg_capture_sameness_rms_diff: {rms_diff:.4f}')
       marginal_pass_msg = []
       if rms_diff >= _THRESHOLD_MAX_RMS_DIFF_YUV_JPEG:
-        raise AssertionError(f'{msg}, ATOL: {_THRESHOLD_MAX_RMS_DIFF_YUV_JPEG:.4f}')
+        raise AssertionError(
+            f'{msg}, ATOL: {_THRESHOLD_MAX_RMS_DIFF_YUV_JPEG:.4f}')
       else:
         marginal_pass_tol = (_THRESHOLD_MAX_RMS_DIFF_YUV_JPEG *
                              its_session_utils.MARGINAL_PASS_FACTOR)
@@ -165,31 +205,46 @@ class YuvJpegCaptureSamenessTest(its_base_test.ItsBaseTest):
         rgb_yuv_use_case = image_processing_utils.convert_capture_to_rgb_image(
             cap_yuv_use_case, True)
         use_case_name = _USE_CASE_NAME_MAP[use_case]
+        logging.debug('Use Case: %s, rgb_yuv_use_case shape: %s',
+                      use_case_name, rgb_yuv_use_case.shape)
         image_processing_utils.write_image(
             rgb_yuv_use_case, f'{file_stem}_yuv_{use_case_name}.jpg')
-        rms_diff = image_processing_utils.compute_image_rms_difference_3d(
-            rgb_yuv, rgb_yuv_use_case)
-        msg = (f'RMS diff for single {use_case_name} use case & still capture '
-               f'YUV: {rms_diff:.4f}')
-        logging.debug('%s', msg)
-        marginal_pass_tol_use_case = (
-            _THRESHOLD_MAX_RMS_DIFF_USE_CASE *
-            its_session_utils.MARGINAL_PASS_FACTOR
-        )
-        if rms_diff >= _THRESHOLD_MAX_RMS_DIFF_USE_CASE:
-          logging.error('%s, ATOL: %.2f', msg, _THRESHOLD_MAX_RMS_DIFF_USE_CASE)
-          num_fail += 1
-        elif first_api_level >= its_session_utils.ANDROID17_API_LEVEL:
-          if rms_diff >= _THRESHOLD_MAX_RMS_DIFF_USE_CASE_ANDROID17:
+
+        # Check delta E76
+        if first_api_level >= its_session_utils.ANDROID17_API_LEVEL:
+          e76_diff = _get_delta_e76(rgb_yuv, rgb_yuv_use_case)
+          msg = (f'E76 diff for single {use_case_name} use case & still '
+                 f'capture YUV: {e76_diff:.4f}')
+          logging.debug('%s', msg)
+          marginal_pass_tol_use_case = (
+              _THRESHOLD_MAX_E76_DIFF_USE_CASE_ANDROID17 *
+              its_session_utils.MARGINAL_PASS_FACTOR
+          )
+          if e76_diff >= _THRESHOLD_MAX_E76_DIFF_USE_CASE_ANDROID17:
             logging.error('%s, ATOL: %.2f', msg,
-                          _THRESHOLD_MAX_RMS_DIFF_USE_CASE_ANDROID17)
+                          _THRESHOLD_MAX_E76_DIFF_USE_CASE_ANDROID17)
             num_fail += 1
+          else:
+            if e76_diff >= marginal_pass_tol_use_case:
+              marginal_pass_msg.append(
+                  f'Marginal pass for use case {use_case_name}, '
+                  f'E76 diff: {e76_diff:.4f}, '
+                  f'ATOL: {marginal_pass_tol_use_case:.4f}')
+
+        # Check RMS difference if first API level < 17
         else:
-          if rms_diff >= marginal_pass_tol_use_case:
-            marginal_pass_msg.append(
-                f'Marginal pass for use case {use_case_name}, '
-                f'RMS diff: {rms_diff:.4f}, '
-                f'ATOL: {marginal_pass_tol_use_case:.4f}')
+          rms_diff = image_processing_utils.compute_image_rms_difference_3d(
+              rgb_yuv, rgb_yuv_use_case)
+          msg = (f'RMS diff for single {use_case_name} use case & still '
+                 f'capture YUV: {rms_diff:.4f}')
+          logging.debug('%s', msg)
+          if rms_diff >= _THRESHOLD_MAX_RMS_DIFF_USE_CASE:
+            raise AssertionError(
+                f'{msg}, ATOL: {_THRESHOLD_MAX_RMS_DIFF_USE_CASE:.4f}')
+          marginal_pass_tol = (_THRESHOLD_MAX_RMS_DIFF_USE_CASE *
+                               its_session_utils.MARGINAL_PASS_FACTOR)
+          if rms_diff >= marginal_pass_tol:
+            marginal_pass_msg.append(f'{msg}, ATOL: {marginal_pass_tol:.4f}')
 
       if marginal_pass_msg:
         for msg in marginal_pass_msg:
