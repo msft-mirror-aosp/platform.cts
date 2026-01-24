@@ -1905,7 +1905,7 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
         int currentVolumeIndex = mCarAudioManager.getGroupVolume(mZoneId, mVolumeGroupId);
         mCarAudioManager.setVolumeGroupRestrictions(mZoneId, mVolumeGroupId, List.of(),
                 currentVolumeIndex);
-        mEventCallback.waitForVolumeGroupEvent();
+        mEventCallback.waitForVolumeGroupEvent(mZoneId, mVolumeGroupId);
         CarVolumeGroupInfo initialInfo = mCarAudioManager.getVolumeGroupInfo(mZoneId,
                 mVolumeGroupId);
         int restrictionIndex = currentVolumeIndex > initialInfo.getMinVolumeGainIndex()
@@ -1919,7 +1919,7 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
         mCarAudioManager.setVolumeGroupRestrictions(mZoneId, mVolumeGroupId, restrictions,
                 restrictionIndex);
 
-        mEventCallback.waitForVolumeGroupEvent();
+        mEventCallback.waitForVolumeGroupEvent(mZoneId, mVolumeGroupId);
         assertWithMessage("Car Volume Group Event attenuation type after attenuated restriction")
                 .that(mEventCallback.getEventTypes()
                 & android.car.media.CarVolumeGroupEvent.EVENT_TYPE_ATTENUATION_CHANGED)
@@ -1935,7 +1935,7 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
         mCarAudioManager.setVolumeGroupRestrictions(mZoneId, mVolumeGroupId, List.of(),
                 currentVolumeIndex);
 
-        mEventCallback.waitForVolumeGroupEvent();
+        mEventCallback.waitForVolumeGroupEvent(mZoneId, mVolumeGroupId);
         assertWithMessage("Car Volume Group Event attenuation type after unattenuated restriction")
                 .that(mEventCallback.getEventTypes()
                 & android.car.media.CarVolumeGroupEvent.EVENT_TYPE_ATTENUATION_CHANGED)
