@@ -83,6 +83,9 @@ class AssociationRequestBuilderTest {
                 setDeviceIcon(deviceIcon)
             }
             setExtraPermissions(setOf(PERMISSION_GROUP_NEARBY))
+            if (Flags.supportAiAgent()) {
+                setRemoteAiAgentSupported(true)
+            }
         }.build()
 
         request.apply {
@@ -102,6 +105,9 @@ class AssociationRequestBuilderTest {
                     actual = extraPermissions,
                     expected = setOf(PERMISSION_GROUP_NEARBY)
             )
+            if (Flags.supportAiAgent()) {
+                assertTrue(isRemoteAiAgentSupported)
+            }
         }
     }
 

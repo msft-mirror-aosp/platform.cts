@@ -26,15 +26,21 @@ class AppHelper(
     val packageName: String,
     private val apkPath: String? = null
 ) {
-    fun associate(macAddress: MacAddress, role: String = "null", permissions: String = "") =
+    fun associate(
+        macAddress: MacAddress,
+        role: String = "null",
+        permissions: String = "null",
+        isRemoteAiAgentSupported: Boolean = false
+    ) =
             runShellCommand(
-                "cmd companiondevice associate $userId $packageName $macAddress " +
-                        "$role false $permissions"
+                "cmd companiondevice associate $userId $packageName $macAddress $role" +
+                        " false $permissions $isRemoteAiAgentSupported"
             )
 
     fun associateSelfManaged(macAddress: MacAddress, role: String) =
             runShellCommand(
-                "cmd companiondevice associate $userId $packageName $macAddress $role true"
+                "cmd companiondevice associate $userId $packageName $macAddress $role true" +
+                        " null false"
             )
 
     fun disassociate(macAddress: MacAddress) =
