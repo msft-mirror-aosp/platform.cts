@@ -65,6 +65,7 @@ import android.media.tv.interactive.TvInteractiveAppManager;
 import android.media.tv.interactive.TvInteractiveAppService;
 import android.media.tv.interactive.TvInteractiveAppServiceInfo;
 import android.media.tv.interactive.TvInteractiveAppView;
+import android.media.tv.interactive.WebServiceClientInfo;
 import android.net.Uri;
 import android.net.http.SslCertificate;
 import android.os.Bundle;
@@ -2216,6 +2217,39 @@ public class TvInteractiveAppServiceTest {
         assertThat(response.getUnitsPerSecond()).isEqualTo(10);
         assertThat(response.getWallClock()).isEqualTo(100);
         assertThat(response.getTicks()).isEqualTo(1000);
+    }
+
+    @Test
+    public void testUpdateWebserviceClient() {
+        mSession.resetValues();
+        mSession.updateWebServiceClientState(
+                0, WebServiceClientInfo.WEB_SERVICE_CLIENT_STATE_TRUSTED);
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mUpdateWebserviceClientCount > 0);
+        assertThat(mSession.mUpdateWebserviceClientCount).isEqualTo(1);
+        WebServiceClientInfo clientInfo = mSession.mWebserviceClientCache.get(0);
+        assertThat(clientInfo.getClientState())
+                .isEqualTo(WebServiceClientInfo.WEB_SERVICE_CLIENT_STATE_TRUSTED);
+        mSession.resetValues();
+    }
+
+    @Test
+    public void testRemoveWebserviceClient() {
+        mSession.resetValues();
+        mSession.mWebserviceClientCache.put(
+                0,
+                new WebServiceClientInfo(
+                        0,
+                        WebServiceClientInfo.WEB_SERVICE_CLIENT_STATE_TRUSTED,
+                        "test",
+                        "test",
+                        null));
+        mSession.removeWebServiceClient(0);
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mRemoveWebserviceClientCount > 0);
+        assertThat(mSession.mRemoveWebserviceClientCount).isEqualTo(1);
+        assertThat(mSession.mWebserviceClientCache.size()).isEqualTo(0);
+        mSession.resetValues();
     }
 
     @Test

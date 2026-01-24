@@ -31,6 +31,7 @@ import android.media.tv.interactive.AppLinkInfo;
 import android.media.tv.interactive.TvInteractiveAppInfo;
 import android.media.tv.interactive.TvInteractiveAppManager;
 import android.media.tv.interactive.TvInteractiveAppService;
+import android.media.tv.interactive.WebServiceClientInfo;
 import android.net.Uri;
 import android.net.http.SslCertificate;
 import android.os.Bundle;
@@ -41,7 +42,10 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Stub implementation of (@link android.media.tv.interactive.TvInteractiveAppService}.
@@ -152,6 +156,11 @@ public class StubTvInteractiveAppService extends TvInteractiveAppService {
         public Integer mPort;
         public Boolean mVideoFrozen;
 
+        public Map<Integer, WebServiceClientInfo> mWebserviceClientCache = new HashMap<>();
+        public int mUpdateWebserviceClientCount;
+        public int mRemoveWebserviceClientCount;
+        public int mRequestWebserviceClientsCount;
+
         StubSessionImpl(Context context) {
             super(context);
         }
@@ -195,6 +204,9 @@ public class StubTvInteractiveAppService extends TvInteractiveAppService {
             mSendCertificateCount = 0;
             mVideoFreezeUpdatedCount = 0;
             mAppHandle = -1;
+            mUpdateWebserviceClientCount = 0;
+            mRemoveWebserviceClientCount = 0;
+            mRequestWebserviceClientsCount = 0;
 
             mKeyDownCode = null;
             mKeyUpCode = null;
@@ -230,6 +242,7 @@ public class StubTvInteractiveAppService extends TvInteractiveAppService {
             mHost = null;
             mPort = null;
             mVideoFrozen = null;
+            mWebserviceClientCache = new HashMap<>();
         }
 
         @Override
@@ -711,6 +724,59 @@ public class StubTvInteractiveAppService extends TvInteractiveAppService {
             super.onVideoFreezeUpdated(isFrozen);
             mVideoFreezeUpdatedCount++;
             mVideoFrozen = isFrozen;
+        }
+
+        @Override
+        public void requestWebServiceClients() {
+            super.requestWebServiceClients();
+        }
+
+        @Override
+        public void updateWebServiceClientState(int handle, int state) {
+            super.updateWebServiceClientState(handle, state);
+            mWebserviceClientCache.compute(
+                    handle,
+                    (key, existingInfo) -> {
+                        if (existingInfo != null) {
+                            return new WebServiceClientInfo(
+                                    handle,
+                                    state,
+                                    existingInfo.getUuid(),
+                                    existingInfo.getName(),
+                                    null);
+                        } else {
+                            return new WebServiceClientInfo(
+                                    handle,
+                                    state,
+                                    "default_uuid_" + handle,
+                                    "new_client_" + handle,
+                                    null);
+                        }
+                    });
+        }
+
+        @Override
+        public void removeWebServiceClient(int handle) {
+            super.removeWebServiceClient(handle);
+            mWebserviceClientCache.remove(handle);
+        }
+
+        @Override
+        public void onUpdateWebServiceClientState(int handle, int state) {
+            mUpdateWebserviceClientCount++;
+        }
+
+        @Override
+        public void onRemoveWebServiceClient(int handle) {
+            mRemoveWebserviceClientCount++;
+        }
+
+        @Override
+        public void onRequestWebServiceClients() {
+            mRequestWebserviceClientsCount++;
+            mWebserviceClientCache.put(
+                    0, new WebServiceClientInfo(0, 0, "default_uuid_0", "default_client", null));
+            sendWebServiceClientList(new ArrayList<>(mWebserviceClientCache.values()));
         }
     }
 }

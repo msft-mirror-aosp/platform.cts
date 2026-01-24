@@ -16,6 +16,8 @@
 
 package android.media.tv.interactive.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertNotNull;
 
 import android.app.Instrumentation;
@@ -26,6 +28,7 @@ import android.media.tv.flags.Flags;
 import android.media.tv.interactive.TvInteractiveAppManager;
 import android.media.tv.interactive.TvInteractiveAppServiceInfo;
 import android.media.tv.interactive.TvInteractiveAppView;
+import android.media.tv.interactive.WebServiceClientInfo;
 import android.os.ConditionVariable;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -46,6 +49,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.List;
 import java.util.concurrent.Executor;
 
 /**
@@ -76,6 +80,7 @@ public class TvInteractiveAppViewTest {
         private String mInteractiveAppServiceId;
         private int mState = -1;
         private int mErr = -1;
+        private List<WebServiceClientInfo> mWebClientList;
 
         @Override
         public void onStateChanged(String interactiveAppServiceId, int state, int err) {
@@ -83,6 +88,14 @@ public class TvInteractiveAppViewTest {
             mInteractiveAppServiceId = interactiveAppServiceId;
             mState = state;
             mErr = err;
+        }
+
+        @Override
+        public void onSendWebServiceClientList(
+                String interactiveAppServiceId, List<WebServiceClientInfo> list) {
+            super.onSendWebServiceClientList(interactiveAppServiceId, list);
+            mInteractiveAppServiceId = interactiveAppServiceId;
+            mWebClientList = list;
         }
     }
 
@@ -258,6 +271,43 @@ public class TvInteractiveAppViewTest {
         mTvInteractiveAppView.setZOrderOnTop(true);
         mInstrumentation.waitForIdleSync();
         mTvInteractiveAppView.setZOrderOnTop(false);
+        mInstrumentation.waitForIdleSync();
+    }
+
+    @Test
+    public void testRequestWebserviceClient() {
+        // reset values
+        mCallback.mWebClientList = null;
+        mTvInteractiveAppView.prepareInteractiveApp(mStubInfo.getId(), 1);
+        mInstrumentation.waitForIdleSync();
+        new PollingCheck(TIME_OUT_MS) {
+            @Override
+            protected boolean check() {
+                return mTvInteractiveAppView.getInteractiveAppSession() != null;
+            }
+        }.run();
+
+        mTvInteractiveAppView.requestWebServiceClients();
+
+        new PollingCheck(TIME_OUT_MS) {
+            @Override
+            protected boolean check() {
+                return mCallback.mInteractiveAppServiceId == mStubInfo.getId();
+            }
+        }.run();
+
+        assertThat(mCallback.mWebClientList).hasSize(1);
+        WebServiceClientInfo mClient = mCallback.mWebClientList.getFirst();
+        assertNotNull(mClient);
+        new PollingCheck(TIME_OUT_MS) {
+            @Override
+            protected boolean check() {
+                return mClient.getUuid().equals("default_uuid_0")
+                        && mClient.getName().equals("default_client")
+                        && mClient.getHandle() == 0
+                        && mClient.getClientState() == 0;
+            }
+        }.run();
         mInstrumentation.waitForIdleSync();
     }
 }
