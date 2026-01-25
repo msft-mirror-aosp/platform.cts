@@ -3314,7 +3314,7 @@ public class SatelliteManagerTestBase {
         public boolean waitForCarrierConfigChanged() {
             logd("CarrierConfigReceiver waitForCarrierConfigChanged()");
             try {
-                if (!mSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                if (!mSemaphore.tryAcquire(EXTERNAL_DEPENDENT_TIMEOUT, TimeUnit.MILLISECONDS)) {
                     loge("Timeout to receive ACTION_CARRIER_CONFIG_CHANGED");
                     return false;
                 }
