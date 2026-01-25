@@ -105,6 +105,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        InteractionSender.sendInteraction(Interaction(Action.Destroy))
         super.onDestroy()
         interactionReceiverBinder.unregister(this)
     }

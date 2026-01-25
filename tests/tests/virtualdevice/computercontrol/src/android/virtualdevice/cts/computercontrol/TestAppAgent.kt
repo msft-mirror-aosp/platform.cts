@@ -26,6 +26,7 @@ import android.media.Image
 import android.os.SystemProperties
 import android.util.Log
 import android.util.Size
+import android.view.accessibility.AccessibilityWindowInfo
 import com.android.extensions.computercontrol.ComputerControlSession
 import java.lang.reflect.Proxy
 import java.util.concurrent.CompletableFuture
@@ -36,20 +37,25 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 
-class TestAppAgent(
-    private val context: Context,
-    private val session: ComputerControlSession,
-    private val packageName: String,
-    private val className: String? = null,
-) : AutoCloseable {
+class TestAppAgent(private val context: Context, private val session: ComputerControlSession) :
+    AutoCloseable {
     private val interactionQueue = Channel<Interaction>(Channel.UNLIMITED)
-    private val interactionReceiver: InteractionReceiver
-    private val testAppFocusRequester: TestAppFocusRequester
+    private var interactionReceiver: InteractionReceiver? = null
+    private var testAppFocusRequester: TestAppFocusRequester? = null
     private val sessionCloseFuture = CompletableFuture<Void>()
 
     /** Lifecycle callback that can be installed on the test agent. */
-    var lifecycleCallback:
-            AtomicReference<ComputerControlSession.LifecycleCallback?> = AtomicReference(null)
+    var lifecycleCallback: AtomicReference<ComputerControlSession.LifecycleCallback?> =
+        AtomicReference(null)
+
+    constructor(
+        context: Context,
+        session: ComputerControlSession,
+        packageName: String,
+        className: String? = null,
+    ) : this(context, session) {
+        launchApplication(packageName, className)
+    }
 
     init {
         val proxyLifecycleCallback = polledDelegate { lifecycleCallback.get() }
@@ -60,9 +66,19 @@ class TestAppAgent(
                     proxyLifecycleCallback.onClosed(reason)
                     sessionCloseFuture.complete(null)
                 }
-            }
+            },
         )
+        Log.d("TestAppAgent", "TestAppAgent initialized")
+    }
 
+    override fun close() {
+        session.close()
+        // Wait for the onClosed() callback to be invoked.
+        sessionCloseFuture.get(SESSION_CLOSE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+    }
+
+    fun launchApplication(packageName: String, className: String? = null) {
+        Log.d("TestAppAgent", "Launching application: $packageName")
         actAndWaitForStable {
             if (className != null) {
                 session.launchApplication(ComponentName(packageName, className))
@@ -72,28 +88,32 @@ class TestAppAgent(
                 Log.d("TestAppAgent", "Launched application: $packageName")
             }
         }
-        Log.d("TestAppAgent", "TestAppAgent init, binding InteractionReceiver")
+
         interactionReceiver = InteractionReceiver(context)
-        interactionReceiver.bind { interaction ->
+        interactionReceiver!!.bind { interaction ->
             Log.d("TestAppAgent", "Interaction received")
             interactionQueue.trySend(interaction)
         }
         testAppFocusRequester = TestAppFocusRequester(context)
+
         // TODO: look into how to get rid of this sleep for interaction receiver
         // binding.
         Thread.sleep(1000)
     }
 
-    override fun close() {
-        session.close()
-        // Wait for the onClosed() callback to be invoked.
-        sessionCloseFuture.get(SESSION_CLOSE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+    fun handOverApplications() {
+        session.handOverApplications()
     }
 
     fun requestFocus(textFieldId: String) {
-        testAppFocusRequester.requestFocus(textFieldId)
+        testAppFocusRequester!!.requestFocus(textFieldId)
         // TODO: look into how to get rid of this sleep for requesting focus.
         Thread.sleep(1000)
+    }
+
+    // When session is closed, tap is no op, and no need to wait for stability.
+    fun noOpTap() {
+        session.tap(0, 0)
     }
 
     fun tap(x: Int, y: Int) {
@@ -122,6 +142,10 @@ class TestAppAgent(
 
     fun getScreenshot(): Image? {
         return session.getScreenshot()
+    }
+
+    fun getAccessibilityWindows(): List<AccessibilityWindowInfo> {
+        return session.getAccessibilityWindows()
     }
 
     fun <T : Action> nextAction(clazz: Class<T>): T? = runBlocking {
@@ -169,14 +193,14 @@ class TestAppAgent(
         val SESSION_CLOSE_TIMEOUT_SECONDS = 120L * HW_TIMEOUT_MULTIPLIER
 
         /**
-         * Creates a proxy object of type T that polls the [provider] every time on each
-         * method invocation.
+         * Creates a proxy object of type T that polls the [provider] every time on each method
+         * invocation.
          */
         private inline fun <reified T : Any> polledDelegate(crossinline provider: () -> T?): T {
-            return Proxy.newProxyInstance(
-                T::class.java.classLoader,
-                arrayOf(T::class.java)
-            ) { _, method, args ->
+            return Proxy.newProxyInstance(T::class.java.classLoader, arrayOf(T::class.java)) {
+                _,
+                method,
+                args ->
                 // Poll the provider on each invocation.
                 provider()?.let { method.invoke(it, *(args ?: arrayOf())) }
             } as T

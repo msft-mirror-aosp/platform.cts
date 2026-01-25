@@ -32,15 +32,16 @@ class TestAppAgentLauncher {
 
     fun launch(sessionName: String, packageName: String, className: String? = null): TestAppAgent {
         Log.d(TAG, "Requesting ComputerControlSession")
-        val session = requestComputerControlSession(sessionName, packageName)
+        val session = requestComputerControlSession(sessionName, listOf(packageName))
         assertNotNull(session)
         val testAppAgent = TestAppAgent(context, session!!, packageName, className)
         return testAppAgent
     }
 
-    private fun requestComputerControlSession(
+    fun requestComputerControlSession(
         sessionName: String,
-        packageName: String,
+        packageNames: List<String>,
+        onClose: (() -> Unit)? = null,
     ): ComputerControlSession? {
         val future = CompletableFuture<ComputerControlSession?>()
         val extension = ComputerControlExtensions.getInstance(context)
@@ -48,7 +49,7 @@ class TestAppAgentLauncher {
         val params =
             ComputerControlSession.Params.Builder(context)
                 .setName(sessionName)
-                .setTargetPackageNames(listOf(packageName))
+                .setTargetPackageNames(packageNames)
                 .build()
         extension!!.requestSession(
             params,
@@ -70,6 +71,7 @@ class TestAppAgentLauncher {
 
                 override fun onSessionClosed() {
                     Log.d(TAG, "Session Closed")
+                    onClose?.invoke()
                     future.complete(null)
                 }
             },
