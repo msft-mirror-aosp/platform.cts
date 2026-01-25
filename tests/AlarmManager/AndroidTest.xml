@@ -35,6 +35,8 @@
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <option name="run-command" value="settings put global activity_manager_constants background_settle_time=0" />
         <option name="teardown-command" value="settings delete global activity_manager_constants" />
+        <option name="run-command" value="device_config set_sync_disabled_for_tests persistent" />
+        <option name="teardown-command" value="device_config set_sync_disabled_for_tests none" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
