@@ -219,6 +219,19 @@ class ComputerControlExtensionsTest {
     }
 
     @Test
+    fun testRequestSession_packageWithoutLauncher() {
+        val params =
+            ComputerControlSession.Params.Builder(context)
+                .setName("${testName.methodName}")
+                .setTargetPackageNames(listOf(TEST_APP2_WITHOUT_LAUNCHER_PACKAGE_NAME))
+                .build()
+        val callback = ComputerControlSessionCallbackImpl()
+        assertThrows(IllegalArgumentException::class.java) {
+            extension!!.requestSession(params, Executors.newSingleThreadExecutor(), callback)
+        }
+    }
+
+    @Test
     fun testRequestSession_failWithSessionLimitReached() {
         val params1 =
             ComputerControlSession.Params.Builder(context)
@@ -288,6 +301,8 @@ class ComputerControlExtensionsTest {
     companion object {
         private const val TAG = "ComputerControlExtensionsTest"
         private const val TEST_APP_PACKAGE_NAME = "android.computercontrol.testapp"
+        private const val TEST_APP2_WITHOUT_LAUNCHER_PACKAGE_NAME =
+            "android.computercontrol.testapp2withoutlauncher"
         private const val DEADLINE_SECONDS = 5L
     }
 }

@@ -30,6 +30,8 @@
         <option name="cleanup-apks" value="true" />
         <option name="install-arg" value="-t" />
         <option name="test-file-name" value="CtsComputerControlTestApp.apk" />
+        <option name="test-file-name" value="CtsComputerControlTestApp2.apk" />
+        <option name="test-file-name" value="CtsComputerControlTestApp2WithoutLauncher.apk" />
         <option name="test-file-name" value="CtsVirtualDevicesComputerControlTests.apk" />
     </target_preparer>
 

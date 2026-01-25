@@ -40,12 +40,14 @@ android_test {
     ],
 
     static_libs: [
-        "android.companion.virtualdevice.flags-aconfig-java",
         "CtsComputerControlTestAppCommonLib",
+        "NeneInternal",
+        "android.companion.virtualdevice.flags-aconfig-java",
         "androidx.test.ext.junit",
         "androidx.test.rules",
-        "compatibility-device-util-axt",
         "com.android.extensions.computercontrol",
+        "compatibility-device-util-axt",
+        "cts-wm-util",
         "flag-junit",
         "junit",
         "kotlin-parcelize-runtime",
@@ -54,5 +56,7 @@ android_test {
     ],
     data: [
         ":CtsComputerControlTestApp",
+        ":CtsComputerControlTestApp2",
+        ":CtsComputerControlTestApp2WithoutLauncher",
     ],
 }

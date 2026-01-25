@@ -49,10 +49,17 @@ sealed interface Action : Parcelable {
     }
 
     @Parcelize
+    data object Destroy : Action {
+        override fun toString(): String {
+            return "Destroy"
+        }
+    }
+
+    @Parcelize
     data class TextFieldValueChange(
-            val textFieldId: String,
-            val text: String,
-            val uncommittedText: String?
+        val textFieldId: String,
+        val text: String,
+        val uncommittedText: String?,
     ) : Action {
         override fun toString(): String {
             return "TextFieldValueChange(id=$textFieldId, value=$text, uncommittedText=$uncommittedText)"
