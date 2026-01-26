@@ -2114,6 +2114,23 @@ public final class ActivityManagerAppExitInfoTest {
         return new NativeServiceState(pid, uid);
     }
 
+    private List<ApplicationExitInfo> getApplicationExitInfoOfProcess(int pid) throws Exception {
+        List<ApplicationExitInfo> list = new ArrayList<>();
+        PollingCheck.check(
+                "Failed to get ApplicationExitInfo for pid " + pid + " from AMS",
+                WAITFOR_SETTLE_DOWN,
+                () -> {
+                    final List<ApplicationExitInfo> result =
+                            mActivityManager.getHistoricalProcessExitReasons(null, pid, 1);
+                    if (result != null && !result.isEmpty()) {
+                        list.addAll(result);
+                        return true;
+                    }
+                    return false;
+                });
+        return list;
+    }
+
     @Test
     @RequiresFlagsEnabled(android.os.Flags.FLAG_NATIVE_FRAMEWORK_PROTOTYPE)
     public void testNativeServiceExit() throws Exception {
@@ -2142,8 +2159,7 @@ public final class ActivityManagerAppExitInfoTest {
         long now2 = System.currentTimeMillis();
 
         // Verify exit info
-        final List<ApplicationExitInfo> list =
-                mActivityManager.getHistoricalProcessExitReasons(null, pid, 1);
+        final List<ApplicationExitInfo> list = getApplicationExitInfoOfProcess(pid);
         assertNotNull(list);
         assertEquals(1, list.size());
 
@@ -2176,29 +2192,21 @@ public final class ActivityManagerAppExitInfoTest {
         NativeServiceState state = getNativeServiceState(conn);
         int pid = state.mPid;
         int uid = state.mUid;
+        final WatchUidRunner watcher = new WatchUidRunner(mInstrumentation, uid, WAITFOR_MSEC);
 
         long now = System.currentTimeMillis();
 
         // Crash the native service
         conn.mService.crash();
-
-        // Verify exit info
-        List<ApplicationExitInfo> list = new ArrayList<>();
-        PollingCheck.check(
-                "not able to get ApplicationExitInfo",
-                WAITFOR_SETTLE_DOWN,
-                () -> {
-                    final List<ApplicationExitInfo> result =
-                            mActivityManager.getHistoricalProcessExitReasons(null, pid, 1);
-                    if (result != null && !result.isEmpty()) {
-                        list.addAll(result);
-                        return true;
-                    }
-                    return false;
-                });
-
+        try {
+            waitForGone(watcher);
+        } finally {
+            watcher.finish();
+        }
         long now2 = System.currentTimeMillis();
 
+        // Verify exit info
+        final List<ApplicationExitInfo> list = getApplicationExitInfoOfProcess(pid);
         assertNotNull(list);
         assertEquals(1, list.size());
 
