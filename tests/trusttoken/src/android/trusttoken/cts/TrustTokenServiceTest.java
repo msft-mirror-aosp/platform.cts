@@ -16,12 +16,19 @@
 
 package android.trusttoken.cts;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 import android.content.Intent;
+import android.os.CancellationSignal;
 import android.os.IBinder;
 import android.os.OutcomeReceiver;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -31,6 +38,7 @@ import android.security.Flags;
 import android.security.trusttoken.TrustTokenRequest;
 import android.security.trusttoken.TrustTokenResponse;
 import android.security.trusttoken.TrustTokenService;
+import android.security.trusttoken.TrustTokenServiceClient;
 import android.security.trusttoken.TrustTokenServiceException;
 
 import androidx.annotation.NonNull;
@@ -41,8 +49,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
 public final class TrustTokenServiceTest {
@@ -50,27 +58,44 @@ public final class TrustTokenServiceTest {
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private TestTrustTokenService mService;
+    private TrustTokenServiceClient mClient;
 
     private static class TestTrustTokenService extends TrustTokenService {
+        CountDownLatch mCalled = new CountDownLatch(1);
         TrustTokenRequest mLastRequest;
         OutcomeReceiver<TrustTokenResponse, TrustTokenServiceException> mLastCallback;
+        CancellationSignal mLastCancellationSignal;
         boolean mThrowOnRequest;
 
         @Override
         public void onRequestTrustTokens(
                 @NonNull TrustTokenRequest request,
+                @NonNull CancellationSignal cancellationSignal,
                 @NonNull OutcomeReceiver<TrustTokenResponse, TrustTokenServiceException> callback) {
+            mCalled.countDown();
             if (mThrowOnRequest) {
                 throw new UnsupportedOperationException("Not implemented");
             }
             mLastRequest = request;
+            mLastCancellationSignal = cancellationSignal;
             mLastCallback = callback;
+        }
+
+        boolean isCalled() {
+            try {
+                return mCalled.await(1, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                return false;
+            }
         }
     }
 
     @Before
     public void setUp() {
         mService = new TestTrustTokenService();
+        mClient =
+                new TrustTokenServiceClient(
+                        mService.onBind(new Intent(TrustTokenService.SERVICE_INTERFACE)));
     }
 
     @Test
@@ -79,7 +104,7 @@ public final class TrustTokenServiceTest {
         mService.mThrowOnRequest = true;
         assertThrows(
                 UnsupportedOperationException.class,
-                () -> mService.onRequestTrustTokens(null, null));
+                () -> mService.onRequestTrustTokens(null, null, null));
     }
 
     @Test
@@ -107,72 +132,42 @@ public final class TrustTokenServiceTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
-    public void onRequestTrustTokens_requestAndCallbackAreSet() {
-        TrustTokenRequest request = new TrustTokenRequest.Builder().build();
-        OutcomeReceiver<TrustTokenResponse, TrustTokenServiceException> callback =
-                new OutcomeReceiver<>() {
-                    @Override
-                    public void onResult(@NonNull TrustTokenResponse response) {}
-
-                    @Override
-                    public void onError(@NonNull TrustTokenServiceException e) {}
-                };
-
-        mService.onRequestTrustTokens(request, callback);
-
-        assertEquals(request, mService.mLastRequest);
-        assertEquals(callback, mService.mLastCallback);
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
     public void onRequestTrustTokens_invokesCallbackSuccess() {
-        final AtomicReference<TrustTokenResponse> responseRef = new AtomicReference<>();
         TrustTokenRequest request = new TrustTokenRequest.Builder().build();
-        OutcomeReceiver<TrustTokenResponse, TrustTokenServiceException> callback =
-                new OutcomeReceiver<>() {
-                    @Override
-                    public void onResult(@NonNull TrustTokenResponse response) {
-                        responseRef.set(response);
-                    }
-
-                    @Override
-                    public void onError(@NonNull TrustTokenServiceException e) {}
-                };
-        mService.onRequestTrustTokens(request, callback);
-        assertNotNull(mService.mLastCallback);
-
-        TrustTokenResponse expectedResponse = new TrustTokenResponse.Builder().build();
-        mService.mLastCallback.onResult(expectedResponse);
-
-        assertEquals(expectedResponse, responseRef.get());
+        var callback = mock(OutcomeReceiver.class);
+        mClient.requestTrustTokens(request, callback);
+        assertTrue(mService.isCalled());
+        TrustTokenResponse response = new TrustTokenResponse.Builder().build();
+        mService.mLastCallback.onResult(response);
+        verify(callback, timeout(1000)).onResult(eq(response));
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
     public void onRequestTrustTokens_invokesCallbackFailure() {
-        final AtomicInteger errorCodeRef = new AtomicInteger(-1);
-        final AtomicReference<String> errorMessageRef = new AtomicReference<>();
         TrustTokenRequest request = new TrustTokenRequest.Builder().build();
-        OutcomeReceiver<TrustTokenResponse, TrustTokenServiceException> callback =
-                new OutcomeReceiver<>() {
-                    @Override
-                    public void onResult(@NonNull TrustTokenResponse response) {}
-
-                    @Override
-                    public void onError(@NonNull TrustTokenServiceException e) {
-                        errorCodeRef.set(e.getErrorCode());
-                        errorMessageRef.set(e.getMessage());
-                    }
-                };
-        mService.onRequestTrustTokens(request, callback);
-        assertNotNull(mService.mLastCallback);
-
+        var callback = mock(OutcomeReceiver.class);
+        mClient.requestTrustTokens(request, callback);
+        assertTrue(mService.isCalled());
         mService.mLastCallback.onError(
-                new TrustTokenServiceException(
-                        TrustTokenServiceException.ERROR_INTERNAL, "internal error"));
+                new TrustTokenServiceException(TrustTokenServiceException.ERROR_INTERNAL, ""));
+        verify(callback, timeout(1000))
+                .onError(
+                        argThat(
+                                (err) ->
+                                        ((TrustTokenServiceException) err).getErrorCode()
+                                                == TrustTokenServiceException.ERROR_INTERNAL));
+    }
 
-        assertEquals(TrustTokenServiceException.ERROR_INTERNAL, errorCodeRef.get());
-        assertEquals("internal error", errorMessageRef.get());
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
+    public void onRequestTrustTokens_cancellation() {
+        TrustTokenRequest request = new TrustTokenRequest.Builder().build();
+        var callback = mock(OutcomeReceiver.class);
+        CancellationSignal cancellation = mClient.requestTrustTokens(request, callback);
+        assertTrue(mService.isCalled());
+        assertFalse(mService.mLastCancellationSignal.isCanceled());
+        cancellation.cancel();
+        assertTrue(mService.mLastCancellationSignal.isCanceled());
     }
 }
