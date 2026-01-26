@@ -22,6 +22,7 @@ import android.content.ComponentName;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.telecom.CallAudioState;
 import android.telecom.Connection;
 import android.telecom.DisconnectCause;
 import android.telecom.StatusHints;
@@ -471,6 +472,18 @@ public class ConnectionTest extends AndroidTestCase {
 
         assertEquals("[Properties: PROPERTY_IS_EXTERNAL_CALL]",
                 Connection.propertiesToString(Connection.PROPERTY_IS_EXTERNAL_CALL));
+    }
+
+    public void testSetSupportedAudioRoutes() {
+        if (!shouldTestTelecom(getContext())) {
+            return;
+        }
+
+        final Semaphore lock = new Semaphore(0);
+        Connection connection = createConnection(lock);
+        waitForStateChange(lock);
+
+        connection.setSupportedAudioRoutes(CallAudioState.ROUTE_SPEAKER);
     }
 
     private static Connection createConnection(final Semaphore lock) {
