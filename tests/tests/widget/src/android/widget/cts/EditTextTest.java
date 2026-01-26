@@ -16,7 +16,6 @@
 
 package android.widget.cts;
 
-import static android.view.accessibility.Flags.FLAG_TEXT_CURSOR_BLINK_INTERVAL;
 import static android.view.accessibility.Flags.a11yTextChangeTypesApi;
 
 import static org.junit.Assert.assertEquals;
@@ -813,7 +812,6 @@ public class EditTextTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_TEXT_CURSOR_BLINK_INTERVAL)
     public void testCursorShouldNotBlink_WithZeroInterval() {
         Activity testActivity = mEmptyActivityRule.launchActivity(null);
         EditText et = testActivity.findViewById(R.id.edittext_simple1);
@@ -839,7 +837,6 @@ public class EditTextTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_TEXT_CURSOR_BLINK_INTERVAL)
     public void testCursorShouldBlink_WithNonZeroInterval() {
         Activity testActivity = mEmptyActivityRule.launchActivity(null);
         EditText et = testActivity.findViewById(R.id.edittext_simple1);
