@@ -31,11 +31,6 @@ import android.app.ondeviceintelligence.ProcessingCallback;
 import android.app.ondeviceintelligence.ProcessingSignal;
 import android.app.ondeviceintelligence.StreamingProcessingCallback;
 import android.app.ondeviceintelligence.TokenInfo;
-import android.app.ondeviceintelligence.embedding.EmbeddingRequest;
-import android.app.ondeviceintelligence.embedding.EmbeddingResponse;
-import android.app.ondeviceintelligence.embedding.EmbeddingVector;
-import android.app.ondeviceintelligence.imagedescription.ImageDescriptionRequest;
-import android.app.ondeviceintelligence.imagedescription.ImageDescriptionResponse;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.CancellationSignal;
@@ -58,7 +53,6 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -87,15 +81,6 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
         } else {
             return new TokenInfo(status, persistableBundle);
         }
-    }
-
-    public static EmbeddingResponse getSampleEmbeddingResponse() {
-        return new EmbeddingResponse(List.of(new EmbeddingVector(new float[]{0.1f, 0.2f, 0.3f})));
-    }
-
-    public static ImageDescriptionResponse getSampleImageDescriptionResponse() {
-        return new ImageDescriptionResponse(
-                new ImageDescriptionResponse.ImageDescription("test-description", 0.9f));
     }
 
     @NonNull
@@ -396,28 +381,6 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
     public void onRegisterInferenceServiceLifecycleListener(@NonNull LifecycleListener listener) {
         Log.i(TAG, "Lifecycle listener registered.");
         mLifecycleListener = listener;
-    }
-
-    @Override
-    public void onGenerateEmbeddings(
-            int callerUid,
-            @NonNull Feature feature,
-            @NonNull EmbeddingRequest request,
-            @Nullable CancellationSignal cancellationSignal,
-            @NonNull OutcomeReceiver<EmbeddingResponse, OnDeviceIntelligenceException> callback) {
-        callback.onResult(getSampleEmbeddingResponse());
-    }
-
-    @Override
-    public void onGenerateImageDescription(
-            int callerUid,
-            @NonNull Feature feature,
-            @NonNull ImageDescriptionRequest request,
-            @Nullable CancellationSignal cancellationSignal,
-            @NonNull
-                    OutcomeReceiver<ImageDescriptionResponse, OnDeviceIntelligenceException>
-                            callback) {
-        callback.onResult(getSampleImageDescriptionResponse());
     }
 
     private Future<String> getFileContentFromFdMap(@NonNull Feature feature) {
