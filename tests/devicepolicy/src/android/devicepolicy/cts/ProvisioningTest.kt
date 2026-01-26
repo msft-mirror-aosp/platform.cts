@@ -769,48 +769,6 @@ class ProvisioningTest {
         }
     }
 
-    @Postsubmit(reason = "New test")
-    @EnsureHasNoDpc
-    @EnsureHasDevicePolicyManagerRoleHolder(onUser = SYSTEM_USER)
-    @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
-    @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING)
-    @RequireHeadlessSystemUserMode(
-        reason = "Multi-user device provisioning requires interactive HSUM",
-        interactive = TRUE,
-    )
-    @RequireRunOnSystemUser(switchedToUser = TRUE)
-    @RequireResourcesBooleanValue(
-        configName = "config_enableMultiUserManagement",
-        requiredValue = true
-    )
-    @Test
-    @ApiTest(
-        apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserDevice",
-            "android.app.admin.DevicePolicyManager#MultiUserDeviceProvisioningParams"]
-    )
-    fun provisionMultiUserManagementDevice_leavesAllSystemAppsEnabledWhenRequested() {
-        val dmrh = deviceState.dpmRoleHolder()
-        val dmrhComponent = ComponentName(
-            dmrh.packageName(),
-            dmrh.packageName() + ".DeviceAdminReceiver"
-        )
-        try {
-            withIncompleteSetupOnAllUsers {
-                val params = MultiUserDeviceProvisioningParams.Builder(dmrhComponent)
-                    .setLeaveAllSystemAppsEnabled(true)
-                    .build()
-                val systemAppsBeforeProvisioning = TestApis.packages().systemApps()
-
-                localDevicePolicyManager.provisionMultiUserDevice(params)
-
-                val systemAppsAfterProvisioning = TestApis.packages().systemApps()
-                assertThat(systemAppsAfterProvisioning).isEqualTo(systemAppsBeforeProvisioning)
-            }
-        } finally {
-            TestApis.devicePolicy().clearMultiUserDeviceManagement(dmrhComponent)
-        }
-    }
-
     @Postsubmit(reason = "new test")
     @EnsureDoesNotHavePermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING)

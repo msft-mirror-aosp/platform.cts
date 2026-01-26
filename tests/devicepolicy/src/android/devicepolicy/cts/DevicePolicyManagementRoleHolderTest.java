@@ -580,9 +580,7 @@ public class DevicePolicyManagementRoleHolderTest {
         withIncompleteSetupOnAllUsers(
                 () -> {
                     MultiUserDeviceProvisioningParams params =
-                            new MultiUserDeviceProvisioningParams.Builder(dmrhComponent)
-                                    .setLeaveAllSystemAppsEnabled(true)
-                                    .build();
+                            new MultiUserDeviceProvisioningParams.Builder(dmrhComponent).build();
 
                     try {
                         sDevicePolicyManager.provisionMultiUserDevice(params);
