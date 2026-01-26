@@ -27,6 +27,7 @@ import android.service.personalcontext.Flags;
 import android.service.personalcontext.RenderToken;
 import android.service.personalcontext.hint.BundleHint;
 import android.service.personalcontext.hint.ContextHintWithSignature;
+import android.service.personalcontext.hint.ContextHintWithSignatureWrapper;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
@@ -99,18 +100,20 @@ public class ContextHintWithSignatureTest {
 
         final Parcel parcel = Parcel.obtain();
         parcel.writeParcelable(
-                new ContextHintWithSignature.Builder(hint, key)
-                        .setOriginatingPackage(origin.getPackageName())
-                        .addRenderTokens(List.of(renderToken))
-                        .addAttributionHint(signedAttributedHint1)
-                        .addAttributionHint(signedAttributedHint2)
-                        .build(),
+                new ContextHintWithSignatureWrapper(
+                        new ContextHintWithSignature.Builder(hint, key)
+                                .setOriginatingPackage(origin.getPackageName())
+                                .addRenderTokens(List.of(renderToken))
+                                .addAttributionHint(signedAttributedHint1)
+                                .addAttributionHint(signedAttributedHint2)
+                                .build()),
                 0);
 
         parcel.setDataPosition(0);
 
         final ContextHintWithSignature signedHint =
-                parcel.readParcelable(/* loader= */ null, ContextHintWithSignature.class);
+                parcel.readParcelable(/* loader= */ null, ContextHintWithSignatureWrapper.class)
+                        .getContextHintWithSignature();
 
         parcel.recycle();
 
@@ -166,16 +169,19 @@ public class ContextHintWithSignatureTest {
 
         final Parcel parcel = Parcel.obtain();
         parcel.writeParcelable(
-                new ContextHintWithSignature.Builder(hint, key)
-                        .addRenderTokens(List.of(renderToken))
-                        .addAttributionHints(List.of(signedAttributedHint1, signedAttributedHint2))
-                        .build(),
+                new ContextHintWithSignatureWrapper(
+                        new ContextHintWithSignature.Builder(hint, key)
+                                .addRenderTokens(List.of(renderToken))
+                                .addAttributionHints(
+                                        List.of(signedAttributedHint1, signedAttributedHint2))
+                                .build()),
                 0);
 
         parcel.setDataPosition(0);
 
         final ContextHintWithSignature signedHint =
-                parcel.readParcelable(/* loader= */ null, ContextHintWithSignature.class);
+                parcel.readParcelable(/* loader= */ null, ContextHintWithSignatureWrapper.class)
+                        .getContextHintWithSignature();
 
         parcel.recycle();
 
@@ -224,16 +230,19 @@ public class ContextHintWithSignatureTest {
 
         final Parcel parcel = Parcel.obtain();
         parcel.writeParcelable(
-                new ContextHintWithSignature.Builder(hint, key)
-                        .setOriginatingPackage(origin.getPackageName())
-                        .addAttributionHints(List.of(signedAttributedHint1, signedAttributedHint2))
-                        .build(),
+                new ContextHintWithSignatureWrapper(
+                        new ContextHintWithSignature.Builder(hint, key)
+                                .setOriginatingPackage(origin.getPackageName())
+                                .addAttributionHints(
+                                        List.of(signedAttributedHint1, signedAttributedHint2))
+                                .build()),
                 0);
 
         parcel.setDataPosition(0);
 
         final ContextHintWithSignature signedHint =
-                parcel.readParcelable(/* loader= */ null, ContextHintWithSignature.class);
+                parcel.readParcelable(/* loader= */ null, ContextHintWithSignatureWrapper.class)
+                        .getContextHintWithSignature();
 
         parcel.recycle();
 
@@ -276,16 +285,18 @@ public class ContextHintWithSignatureTest {
 
         final Parcel parcel = Parcel.obtain();
         parcel.writeParcelable(
-                new ContextHintWithSignature.Builder(hint, key)
-                        .setOriginatingPackage(origin.getPackageName())
-                        .addRenderTokens(List.of(renderToken))
-                        .build(),
+                new ContextHintWithSignatureWrapper(
+                        new ContextHintWithSignature.Builder(hint, key)
+                                .setOriginatingPackage(origin.getPackageName())
+                                .addRenderTokens(List.of(renderToken))
+                                .build()),
                 0);
 
         parcel.setDataPosition(0);
 
         final ContextHintWithSignature signedHint =
-                parcel.readParcelable(/* loader= */ null, ContextHintWithSignature.class);
+                parcel.readParcelable(/* loader= */ null, ContextHintWithSignatureWrapper.class)
+                        .getContextHintWithSignature();
 
         parcel.recycle();
 
@@ -311,39 +322,5 @@ public class ContextHintWithSignatureTest {
                 (new ContextHintWithSignature.Builder(hint, generateSignedHintKey()).build());
 
         assertThat(signedHint.isSignatureValid(generateSignedHintKey())).isFalse();
-    }
-
-    @ApiTest(
-            apis = {
-                "android.service.personalcontext.hint.ContextHintWithSignature.Builder#build",
-                "android.service.personalcontext.hint.ContextHintWithSignature#isSignatureValid",
-                "android.service.personalcontext.hint.ContextHintWithSignature#writeToParcel",
-                "android.service.personalcontext.hint.ContextHintWithSignature#CREATOR",
-            })
-    @Test
-    public void testSignatureBadHash() throws GeneralSecurityException {
-        final SecretKeySpec key = generateSignedHintKey();
-        final BundleHint hint = new BundleHint.Builder().build();
-
-        final Parcel parcel = Parcel.obtain();
-        new ContextHintWithSignature.Builder(hint, key).build().writeToParcel(parcel, 0);
-
-        // Modify hash bytes in parcel.
-        parcel.setDataPosition(0);
-        final byte[] hash = parcel.createByteArray();
-
-        hash[0] ^= 1;
-
-        parcel.setDataPosition(0);
-        parcel.writeByteArray(hash);
-        parcel.setDataPosition(0);
-
-        // Re-read the parcel with a bad signature.
-        final ContextHintWithSignature signedHint =
-                ContextHintWithSignature.CREATOR.createFromParcel(parcel);
-
-        parcel.recycle();
-
-        assertThat(signedHint.isSignatureValid(key)).isFalse();
     }
 }
