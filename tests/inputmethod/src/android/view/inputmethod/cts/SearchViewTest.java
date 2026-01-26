@@ -35,7 +35,6 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.cts.util.EndToEndImeTestBase;
 import android.view.inputmethod.cts.util.TestActivity;
-import android.view.inputmethod.cts.util.UnlockScreenRule;
 import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -71,9 +70,6 @@ public final class SearchViewTest extends EndToEndImeTestBase {
 
     static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     static final long NOT_EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
-
-    @Rule
-    public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
 
     public SearchView launchTestActivity(boolean requestFocus) {
         final AtomicReference<SearchView> searchViewRef = new AtomicReference<>();

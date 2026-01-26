@@ -43,7 +43,6 @@ import android.view.inputmethod.cts.util.EndToEndImeTestBase;
 import android.view.inputmethod.cts.util.FixedDeviceOrientationSession;
 import android.view.inputmethod.cts.util.TestActivity;
 import android.view.inputmethod.cts.util.TestUtils;
-import android.view.inputmethod.cts.util.UnlockScreenRule;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 
@@ -80,9 +79,6 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
-    @Rule
-    public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
 
     @Test
     public void testSwitchingIme() throws Exception {

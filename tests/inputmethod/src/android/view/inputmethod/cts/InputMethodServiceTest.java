@@ -91,7 +91,6 @@ import android.view.inputmethod.cts.util.TestActivity;
 import android.view.inputmethod.cts.util.TestActivity2;
 import android.view.inputmethod.cts.util.TestUtils;
 import android.view.inputmethod.cts.util.TestWebView;
-import android.view.inputmethod.cts.util.UnlockScreenRule;
 import android.webkit.WebView;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -159,8 +158,6 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
 
     private static final int EDIT_TEXT_ID = 777;
 
-    @Rule
-    public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
     @Rule
     public final ServiceTestRule mServiceRule = new ServiceTestRule();
     @Rule

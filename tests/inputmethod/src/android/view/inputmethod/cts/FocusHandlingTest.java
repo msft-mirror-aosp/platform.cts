@@ -93,7 +93,6 @@ import android.view.inputmethod.cts.util.EndToEndImeTestBase;
 import android.view.inputmethod.cts.util.TestActivity;
 import android.view.inputmethod.cts.util.TestActivity2;
 import android.view.inputmethod.cts.util.TestUtils;
-import android.view.inputmethod.cts.util.UnlockScreenRule;
 import android.view.inputmethod.cts.util.WindowFocusHandleService;
 import android.view.inputmethod.cts.util.WindowFocusStealer;
 import android.widget.Button;
@@ -147,9 +146,6 @@ public final class FocusHandlingTest extends EndToEndImeTestBase {
     static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5) * BuildUtils.HW_TIMEOUT_MULTIPLIER;
     static final long EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
     static final long NOT_EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(1);
-
-    @Rule
-    public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
 
     public EditText launchTestActivity(String marker) {
         final AtomicReference<EditText> editTextRef = new AtomicReference<>();

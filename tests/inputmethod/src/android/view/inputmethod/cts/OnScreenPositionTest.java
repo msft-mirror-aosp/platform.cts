@@ -25,7 +25,6 @@ import android.view.Gravity;
 import android.view.WindowManager;
 import android.view.inputmethod.cts.util.EndToEndImeTestBase;
 import android.view.inputmethod.cts.util.TestActivity;
-import android.view.inputmethod.cts.util.UnlockScreenRule;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 
@@ -51,9 +50,6 @@ public final class OnScreenPositionTest extends EndToEndImeTestBase {
     public static final DeviceState sDeviceState = new DeviceState();
 
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
-
-    @Rule
-    public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
 
     /**
      * Regression test for Bug 33308065.

@@ -47,6 +47,8 @@ import android.inputmethodservice.InputMethodService;
 import android.os.IBinder;
 import android.os.Process;
 import android.platform.test.annotations.AppModeFull;
+import android.server.wm.LockScreenSession;
+import android.server.wm.WindowManagerStateHelper;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.Selection;
@@ -64,7 +66,6 @@ import android.view.inputmethod.cts.util.MockTestActivityUtil;
 import android.view.inputmethod.cts.util.RequireImeCompatFlagRule;
 import android.view.inputmethod.cts.util.TestActivity;
 import android.view.inputmethod.cts.util.TestUtils;
-import android.view.inputmethod.cts.util.UnlockScreenRule;
 import android.view.inputmethod.cts.util.WindowFocusStealer;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -101,8 +102,6 @@ public final class InputMethodStartInputLifecycleTest extends EndToEndImeTestBas
     @Rule
     public final DisableScreenDozeRule mDisableScreenDozeRule = new DisableScreenDozeRule();
     @Rule
-    public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
-    @Rule
     public final RequireImeCompatFlagRule mRequireImeCompatFlagRule = new RequireImeCompatFlagRule(
             FINISH_INPUT_NO_FALLBACK_CONNECTION, true);
 
@@ -126,9 +125,11 @@ public final class InputMethodStartInputLifecycleTest extends EndToEndImeTestBas
         assumeTrue(context.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_INPUT_METHODS));
         final AtomicReference<EditText> focusedEditTextRef = new AtomicReference<>();
+        final var wmState = new WindowManagerStateHelper();
 
         try (MockImeSession imeSession = MockImeSession.create(
-                context, instrumentation.getUiAutomation(), new ImeSettings.Builder())) {
+                context, instrumentation.getUiAutomation(), new ImeSettings.Builder());
+             var lockScreenSession = new LockScreenSession(instrumentation, wmState)) {
             final ImeEventStream stream = imeSession.openEventStream();
 
             final String marker = getTestMarker();
@@ -160,8 +161,8 @@ public final class InputMethodStartInputLifecycleTest extends EndToEndImeTestBas
             final EditText editText = focusedEditTextRef.get();
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
 
-            // Expected text commit will not work when turnScreenOff.
-            TestUtils.turnScreenOff();
+            // Expected text commit will not work when device is put to sleep.
+            lockScreenSession.sleepDevice();
             TestUtils.waitOnMainUntil(() -> screenStateCallbackRef.get() == SCREEN_STATE_OFF
                             && editText.getWindowVisibility() != VISIBLE, TIMEOUT);
 
@@ -179,9 +180,8 @@ public final class InputMethodStartInputLifecycleTest extends EndToEndImeTestBas
             TestUtils.waitOnMainUntil(() -> !TextUtils.equals(editText.getText(), "Hi!"), TIMEOUT,
                     "InputMethodService#commitText should not work after screen off");
 
-            // Expected text commit will work when turnScreenOn.
-            TestUtils.turnScreenOn();
-            TestUtils.unlockScreen();
+            // Expected text commit will work when device is unlocked.
+            lockScreenSession.unlock();
             TestUtils.waitOnMainUntil(() -> screenStateCallbackRef.get() == SCREEN_STATE_ON
                             && editText.getWindowVisibility() == VISIBLE, TIMEOUT);
             clickOnViewCenter(editText);

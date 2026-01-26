@@ -47,7 +47,6 @@ import android.view.ViewGroup;
 import android.view.inputmethod.cts.util.EndToEndImeTestBase;
 import android.view.inputmethod.cts.util.NavigationBarInfo;
 import android.view.inputmethod.cts.util.TestActivity;
-import android.view.inputmethod.cts.util.UnlockScreenRule;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -83,9 +82,6 @@ public final class NavigationBarColorTest extends EndToEndImeTestBase {
     private static final long LAYOUT_STABLE_THRESHOLD = TimeUnit.SECONDS.toMillis(3);
 
     private static final String TEST_MARKER = "android.view.inputmethod.cts.NavigationBarColorTest";
-
-    @Rule
-    public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
 
     private static void updateSystemUiVisibility(@NonNull View view, int flags, int mask) {
         final int currentFlags = view.getSystemUiVisibility();
