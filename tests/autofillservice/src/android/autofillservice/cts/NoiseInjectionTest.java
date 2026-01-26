@@ -49,7 +49,8 @@ import java.util.Random;
 public class NoiseInjectionTest extends AutoFillServiceTestCase.ManualActivityLaunch {
 
     private static final int FIXED_LENGTH_BYTES = 32;
-    private static final int BITS_TO_RETAIN = 4;
+    private static final int ODD_BITS_MASK = 0xAA;
+    private static final int EVEN_BITS_MASK = 0x55;
 
     private final CannedFillResponse.Builder mLoginResponseBuilder =
             new CannedFillResponse.Builder()
@@ -226,14 +227,9 @@ public class NoiseInjectionTest extends AutoFillServiceTestCase.ManualActivityLa
         final AutofillNoiseInjectedData noiseInjectedData =
                 usernameLabelNode.getAutofillNoiseInjectedData();
         assertThat(noiseInjectedData).isNotNull();
-        // The mask should only have BITS_TO_RETAIN of bits set to 1.
-        assertThat(
-                        Integer.bitCount(
-                                usernameLabelNode
-                                                .getAutofillNoiseInjectedData()
-                                                .getRetainedBitMask()
-                                        & 0xFF))
-                .isEqualTo(BITS_TO_RETAIN);
+        // The mask should be either all odd or all even bits.
+        int retainedBitMask = noiseInjectedData.getRetainedBitMask() & 0xFF;
+        assertThat(retainedBitMask == ODD_BITS_MASK || retainedBitMask == EVEN_BITS_MASK).isTrue();
 
         final Context context = InstrumentationRegistry.getInstrumentation().getContext();
         final AutofillManager afm = context.getSystemService(AutofillManager.class);
