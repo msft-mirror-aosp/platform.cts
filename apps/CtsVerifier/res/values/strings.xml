@@ -7989,6 +7989,7 @@ You should be prompted to select credentials; choose the ones you just installed
         <item>CtsUwbMultiDeviceFiraRangingTests</item>
         <item>CtsMultiDeviceGenericRangingTests</item>
         <item>CtsUwbMultiDeviceUwbManagerTests</item>
+        <item>CtsWifiConnectionTests</item>
         <item>CtsWifiAwareTests</item>
         <item>CtsWifiSoftApTestCases</item>
         <item>CtsWifiDirectTests</item>
