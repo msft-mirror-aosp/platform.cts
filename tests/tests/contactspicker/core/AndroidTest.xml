@@ -41,6 +41,7 @@
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="runner" value="androidx.test.runner.AndroidJUnitRunner" />
         <option name="package" value="com.android.contactspicker.cts" />
-        <option name="runtime-hint" value="2m00s" />
+        <!-- TODO(b/478807884): Adjust the hint value as tests evolve. -->
+        <option name="runtime-hint" value="8m00s" />
     </test>
 </configuration>
