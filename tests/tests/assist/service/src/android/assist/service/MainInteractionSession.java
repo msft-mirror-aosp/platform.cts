@@ -133,7 +133,9 @@ public class MainInteractionSession extends VoiceInteractionSession {
                                 bundle.putString(
                                         Utils.EXTRA_REMOTE_CALLBACK_ACTION,
                                         Utils.BROADCAST_CONTENT_VIEW);
-                                mRemoteCallback.sendResult(bundle);
+                                if (mRemoteCallback != null) {
+                                    mRemoteCallback.sendResult(bundle);
+                                }
                                 return true;
                             }
                         });
@@ -269,12 +271,14 @@ public class MainInteractionSession extends VoiceInteractionSession {
         } else if (mScreenshotNeeded && !hasReceivedScreenshot) {
             Log.i(TAG, "waiting for screenshot before broadcasting results");
         } else {
-            Bundle bundle = new Bundle();
-            bundle.putString(
-                    Utils.EXTRA_REMOTE_CALLBACK_ACTION, Utils.BROADCAST_ASSIST_DATA_INTENT);
-            bundle.putBundle(Utils.ON_SHOW_ARGS_KEY, mOnShowArgs);
-            bundle.putAll(mAssistData);
-            mRemoteCallback.sendResult(bundle);
+            if (mRemoteCallback != null) {
+                Bundle bundle = new Bundle();
+                bundle.putString(
+                        Utils.EXTRA_REMOTE_CALLBACK_ACTION, Utils.BROADCAST_ASSIST_DATA_INTENT);
+                bundle.putBundle(Utils.ON_SHOW_ARGS_KEY, mOnShowArgs);
+                bundle.putAll(mAssistData);
+                mRemoteCallback.sendResult(bundle);
+            }
 
             hasReceivedAssistData = false;
             hasReceivedScreenshot = false;
