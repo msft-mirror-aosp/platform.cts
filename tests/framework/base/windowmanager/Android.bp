@@ -139,6 +139,7 @@ java_defaults {
         ":CtsPropertyCompatOptOutSandboxingViewBoundsApisApp",
         ":CtsPropertyCompatEnableFakeFocusOptInApp",
         ":CtsPropertyCompatEnableFakeFocusOptOutApp",
+        ":CtsPropertyCompatAllowExcludeCaptionInsetsOptOutApp",
         ":CtsDeviceServicesTestApp",
         ":CtsDeviceServicesTestApp27",
         ":CtsDeviceServicesTestApp30",

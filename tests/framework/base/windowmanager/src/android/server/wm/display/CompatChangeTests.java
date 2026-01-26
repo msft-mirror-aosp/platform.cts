@@ -16,11 +16,13 @@
 
 package android.server.wm.display;
 
+import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.content.pm.ActivityInfo.FORCE_RESIZE_APP;
 import static android.content.pm.ActivityInfo.OVERRIDE_CAMERA_COMPAT_DISABLE_SIMULATE_REQUESTED_ORIENTATION;
 import static android.content.pm.ActivityInfo.OVERRIDE_ENABLE_COMPAT_FAKE_FOCUS;
 import static android.content.pm.ActivityInfo.OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED;
+import static android.content.pm.ActivityInfo.OVERRIDE_EXCLUDE_CAPTION_INSETS_FROM_APP_BOUNDS;
 import static android.content.pm.ActivityInfo.OVERRIDE_MIN_ASPECT_RATIO;
 import static android.content.pm.ActivityInfo.OVERRIDE_MIN_ASPECT_RATIO_LARGE_VALUE;
 import static android.content.pm.ActivityInfo.OVERRIDE_MIN_ASPECT_RATIO_MEDIUM_VALUE;
@@ -35,6 +37,7 @@ import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
 import static android.provider.DeviceConfig.NAMESPACE_CONSTRAIN_DISPLAY_APIS;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
 import static android.server.wm.allowdisplayorientationoverride.Components.ALLOW_DISPLAY_ORIENTATION_OVERRIDE_ACTIVITY;
+import static android.server.wm.allowexcludecaptioninsetsoptout.Components.ALLOW_EXCLUDE_CAPTION_INSETS_OPT_OUT_ACTIVITY;
 import static android.server.wm.allowignoringorientationrequestwhenloopdetectedoptin.Components.ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED_OPT_IN_ACTIVITY;
 import static android.server.wm.allowignoringorientationrequestwhenloopdetectedoptout.Components.ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED_OPT_OUT_ACTIVITY;
 import static android.server.wm.allowignoringorientationrequestwhenloopdetectedunset.Components.ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED_UNSET_ACTIVITY;
@@ -79,6 +82,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
@@ -468,17 +472,21 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     }
 
     /**
-     * Test that if an orientation loop is detected, the orientation request is ignored when
-     * {@link ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED} is
-     * enabled and {@link
+     * Test that if an orientation loop is detected, the orientation request is ignored when {@link
+     * ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED} is enabled
+     * and {@link
      * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED}
      * is set to true.
      */
     @Test
-    @ApiTest(apis = {"android.content.pm.ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED",
-            "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED"})
+    @ApiTest(
+            apis = {
+                "android.content.pm.ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED",
+                "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
-    public void testOverrideIgnoreOrientationRequestWhenLoopDetected_propertyTrue_overrideEnabled_overrideApplied() {
+    public void
+            testOverrideIgnoreOrientationRequestWhenLoopDetected_propertyTrue_overrideEnabled_overrideApplied() {
         assumeTrue("Skipping test: "
                         + "config_letterboxIsPolicyForIgnoringRequestedOrientationEnabled disabled",
                 isPolicyForIgnoringRequestedOrientationEnabled());
@@ -503,10 +511,14 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
      * is set to false.
      */
     @Test
-    @ApiTest(apis = {"android.content.pm.ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED",
-            "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED"})
+    @ApiTest(
+            apis = {
+                "android.content.pm.ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED",
+                "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
-    public void testOverrideIgnoreOrientationRequestWhenLoopDetected_propertyFalse_overrideEnabled_overrideNotApplied() {
+    public void
+            testOverrideIgnoreOrientationRequestWhenLoopDetected_propertyFalse_overrideEnabled_overrideNotApplied() {
         assumeTrue("Skipping test: "
                         + "config_letterboxIsPolicyForIgnoringRequestedOrientationEnabled disabled",
                 isPolicyForIgnoringRequestedOrientationEnabled());
@@ -533,10 +545,14 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
      * is set to true.
      */
     @Test
-    @ApiTest(apis = {"android.content.pm.ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED",
-            "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED"})
+    @ApiTest(
+            apis = {
+                "android.content.pm.ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED",
+                "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
-    public void testOverrideIgnoreOrientationRequestWhenLoopDetected_propertyTrue_overrideDisabled_overrideNotApplied() {
+    public void
+            testOverrideIgnoreOrientationRequestWhenLoopDetected_propertyTrue_overrideDisabled_overrideNotApplied() {
         assumeTrue("Skipping test: "
                         + "config_letterboxIsPolicyForIgnoringRequestedOrientationEnabled disabled",
                 isPolicyForIgnoringRequestedOrientationEnabled());
@@ -557,10 +573,14 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
      * is set to false.
      */
     @Test
-    @ApiTest(apis = {"android.content.pm.ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED",
-            "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED"})
+    @ApiTest(
+            apis = {
+                "android.content.pm.ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED",
+                "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
-    public void testOverrideIgnoreOrientationRequestWhenLoopDetected_propertyFalse_overrideDisabled_overrideNotApplied() {
+    public void
+            testOverrideIgnoreOrientationRequestWhenLoopDetected_propertyFalse_overrideDisabled_overrideNotApplied() {
         assumeTrue("Skipping test: "
                         + "config_letterboxIsPolicyForIgnoringRequestedOrientationEnabled disabled",
                 isPolicyForIgnoringRequestedOrientationEnabled());
@@ -574,17 +594,21 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     }
 
     /**
-     * Test that if an orientation loop is detected, the orientation request is ignored when
-     * {@link ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED} is
-     * enabled and {@link
+     * Test that if an orientation loop is detected, the orientation request is ignored when {@link
+     * ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED} is enabled
+     * and {@link
      * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED}
      * is unset.
      */
     @Test
-    @ApiTest(apis = {"android.content.pm.ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED",
-            "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED"})
+    @ApiTest(
+            apis = {
+                "android.content.pm.ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED",
+                "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
-    public void testOverrideIgnoreOrientationRequestWhenLoopDetected_propertyNotSet_overrideEnabled_overrideApplied() {
+    public void
+            testOverrideIgnoreOrientationRequestWhenLoopDetected_propertyNotSet_overrideEnabled_overrideApplied() {
         assumeTrue("Skipping test: "
                         + "config_letterboxIsPolicyForIgnoringRequestedOrientationEnabled disabled",
                 isPolicyForIgnoringRequestedOrientationEnabled());
@@ -609,10 +633,14 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
      * is unset.
      */
     @Test
-    @ApiTest(apis = {"android.content.pm.ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED",
-            "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED"})
+    @ApiTest(
+            apis = {
+                "android.content.pm.ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED",
+                "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
-    public void testOverrideIgnoreOrientationRequestWhenLoopDetected_propertyNotSet_overrideDisabled_overrideNotApplied() {
+    public void
+            testOverrideIgnoreOrientationRequestWhenLoopDetected_propertyNotSet_overrideDisabled_overrideNotApplied() {
         assumeTrue("Skipping test: "
                         + "config_letterboxIsPolicyForIgnoringRequestedOrientationEnabled disabled",
                 isPolicyForIgnoringRequestedOrientationEnabled());
@@ -1923,6 +1951,43 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
         try (var session = new ActivitySessionCloseable(
                 NON_RESIZEABLE_NON_FIXED_ORIENTATION_ACTIVITY)) {
             assertFalse(session.getActivityState().getIsUserFullscreenOverrideEnabled());
+        }
+    }
+
+    @Test
+    @ApiTest(apis = {"android.view.WindowManager#PROPERTY_COMPAT_ALLOW_EXCLUDE_CAPTION_INSETS"})
+    @RequiresFlagsEnabled(Flags.FLAG_EXCLUDE_CAPTION_INSETS_OPT_OUT_API)
+    @EnableCompatChanges({OVERRIDE_EXCLUDE_CAPTION_INSETS_FROM_APP_BOUNDS})
+    public void testAllowExcludeCaptionInsets_propertyUnset_overrideAllowed() {
+        assumeTrue("Skipping test: freeform windowing is not supported.", supportsFreeform());
+
+        try (var session =
+                new ActivitySessionCloseable(RESPONSIVE_ACTIVITY, WINDOWING_MODE_FREEFORM)) {
+            final Rect activityBounds = session.getActivityState().getBounds();
+            final Rect taskBounds = session.getActivityState().getTask().getBounds();
+            assertNotEquals(
+                    "Caption insets should be excluded from app bounds",
+                    taskBounds.top,
+                    activityBounds.top);
+        }
+    }
+
+    @Test
+    @ApiTest(apis = {"android.view.WindowManager#PROPERTY_COMPAT_ALLOW_EXCLUDE_CAPTION_INSETS"})
+    @RequiresFlagsEnabled(Flags.FLAG_EXCLUDE_CAPTION_INSETS_OPT_OUT_API)
+    @EnableCompatChanges({OVERRIDE_EXCLUDE_CAPTION_INSETS_FROM_APP_BOUNDS})
+    public void testAllowExcludeCaptionInsets_propertyFalse_overrideNotAllowed() {
+        assumeTrue("Skipping test: freeform windowing is not supported.", supportsFreeform());
+
+        try (var session =
+                new ActivitySessionCloseable(
+                        ALLOW_EXCLUDE_CAPTION_INSETS_OPT_OUT_ACTIVITY, WINDOWING_MODE_FREEFORM)) {
+            final Rect activityBounds = session.getActivityState().getBounds();
+            final Rect taskBounds = session.getActivityState().getTask().getBounds();
+            assertEquals(
+                    "Caption insets are not excluded from app bounds",
+                    taskBounds.top,
+                    activityBounds.top);
         }
     }
 
