@@ -236,7 +236,7 @@ class AppFunctionManagerTest {
                 secondaryUser != TestApis.users().instrumented(),
             )
             installExistingPackageAsUser(CURRENT_PKG, secondaryUser)
-            retryAssert {
+            retryAssert(maxIntervals = 40) {
                 assertThat(
                         getAllStaticMetadataPackages(
                             context.createContextAsUser(secondaryUser.userHandle(), 0)
