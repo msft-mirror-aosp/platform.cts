@@ -17,7 +17,6 @@
 package android.view.cts;
 
 import static android.view.accessibility.AccessibilityNodeInfo.EXTRA_DATA_RENDERING_INFO_KEY;
-import static android.view.accessibility.Flags.FLAG_REQUEST_RECTANGLE_WITH_SOURCE;
 import static android.view.flags.Flags.FLAG_TOOLKIT_SET_FRAME_RATE_READ_ONLY;
 import static android.view.flags.Flags.FLAG_VIEW_VELOCITY_API;
 
@@ -3511,20 +3510,6 @@ public class ViewTest {
 
     @UiThreadTest
     @Test
-    @RequiresFlagsDisabled(FLAG_REQUEST_RECTANGLE_WITH_SOURCE)
-    public void testOnFocusChanged_doesNotRequestRectangleOnScreen() throws Throwable {
-        MockView view = (MockView) mActivity.findViewById(R.id.mock_view);
-
-        mActivity.findViewById(R.id.fit_windows).setFocusable(true);
-        view.setFocusable(true);
-        view.requestFocus();
-        assertTrue(view.hasCalledOnFocusChanged());
-        assertFalse(view.hasCalledRequestRectangleOnScreen());
-    }
-
-    @UiThreadTest
-    @Test
-    @RequiresFlagsEnabled(FLAG_REQUEST_RECTANGLE_WITH_SOURCE)
     public void testOnFocusChanged_callsRequestRectangleOnScreen() throws Throwable {
         MockView view = (MockView) mActivity.findViewById(R.id.mock_view);
 
@@ -3769,7 +3754,6 @@ public class ViewTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_REQUEST_RECTANGLE_WITH_SOURCE)
     public void testRequestRectangleOnScreen_withUndefinedSource() {
         MockView view = new MockView(mActivity);
         Rect rectangle = new Rect();
@@ -3795,7 +3779,6 @@ public class ViewTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_REQUEST_RECTANGLE_WITH_SOURCE)
     public void testRequestRectangleOnScreen_withTextCursorSource() {
         MockView view = new MockView(mActivity);
         Rect rectangle = new Rect();
@@ -3823,7 +3806,6 @@ public class ViewTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_REQUEST_RECTANGLE_WITH_SOURCE)
     public void testRequestRectangleOnScreen_withInputFocusSource() {
         MockView view = new MockView(mActivity);
         Rect rectangle = new Rect();
@@ -3851,7 +3833,6 @@ public class ViewTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_REQUEST_RECTANGLE_WITH_SOURCE)
     public void testRequestRectangleOnScreen_withScrollOnlySource() {
         MockView view = new MockView(mActivity);
         Rect rectangle = new Rect();
