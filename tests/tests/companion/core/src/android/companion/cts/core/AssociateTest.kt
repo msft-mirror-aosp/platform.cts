@@ -365,13 +365,13 @@ class AssociateTest : CoreTestBase() {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_AI_AGENT)
     fun test_associate_support_ai_agent() = with(targetApp) {
-        associate(MAC_ADDRESS_A, "null", "null", false)
+        associate(MAC_ADDRESS_A, "null", null, false)
         var associations = cdm.myAssociations
         assertFalse(associations[0].isRemoteAiAgentSupported)
 
         disassociate(MAC_ADDRESS_A)
 
-        associate(MAC_ADDRESS_A, "null", "null", true)
+        associate(MAC_ADDRESS_A, "null", null, true)
         associations = cdm.myAssociations
         assertTrue(associations[0].isRemoteAiAgentSupported)
     }
