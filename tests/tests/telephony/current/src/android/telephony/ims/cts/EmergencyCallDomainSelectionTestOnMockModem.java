@@ -265,9 +265,13 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
 
     @Before
     public void beforeTest() throws Exception {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
-        assumeTrue(ImsUtils.shouldTestImsService());
-        assumeTrue(sSupportDomainSelection);
+        assumeTrue(
+                "Device does not have FEATURE_TELEPHONY_CALLING",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        assumeTrue(
+                "Device does not have HAL_SERVICE_RADIO and FEATURE_TELEPHONY_IMS",
+                ImsUtils.shouldTestImsService());
+        assumeTrue("Device does not support DOMAIN_SELECTION", sSupportDomainSelection);
 
         if (sMockModemManager != null) {
             unsolBarringInfoChanged(false);
