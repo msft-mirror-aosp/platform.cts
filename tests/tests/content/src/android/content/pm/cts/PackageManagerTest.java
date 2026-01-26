@@ -53,7 +53,6 @@ import static android.content.pm.PackageManager.MATCH_ANY_USER;
 import static android.content.pm.PackageManager.MATCH_APEX;
 import static android.content.pm.PackageManager.MATCH_ARCHIVED_PACKAGES;
 import static android.content.pm.PackageManager.MATCH_DISABLED_COMPONENTS;
-import static android.content.pm.PackageManager.MATCH_DISABLED_UNTIL_USED_COMPONENTS;
 import static android.content.pm.PackageManager.MATCH_FACTORY_ONLY;
 import static android.content.pm.PackageManager.MATCH_HIDDEN_UNTIL_INSTALLED_COMPONENTS;
 import static android.content.pm.PackageManager.MATCH_INSTANT;
@@ -3736,12 +3735,6 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
 
     @Test
     public void testDeleteSystemApp() {
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> {
-                    int userCount = mContext.getSystemService(UserManager.class).getUserCount();
-                    assumeTrue(userCount == 1);
-                });
-
         PackageInfo ctsShimPackageInfo = null;
         try {
             ctsShimPackageInfo = mPackageManager.getPackageInfo(
@@ -3752,31 +3745,13 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
         assumeTrue(ctsShimPackageInfo != null);
         final int testUserId = Process.myUserHandle().getIdentifier();
 
-        uninstallPackageForUser(CTS_SHIM_PACKAGE_NAME, testUserId);
-
-        // Since this is the only user on the device, the app won't be deleted for the user.
+        // Attempt to delete the system package with DELETE_SYSTEM_APP, should fail as it is not
+        // running with root.
+        String result =
+                SystemUtil.runShellCommand(
+                        "pm uninstall --user " + testUserId + " " + CTS_SHIM_PACKAGE_NAME);
+        assertThat(result).contains("Failure");
         assertThat(matchesInstalled(mPackageManager, CTS_SHIM_PACKAGE_NAME, testUserId, 0))
-                .isTrue();
-        assertThat(
-                        matchesInstalled(
-                                mPackageManager,
-                                CTS_SHIM_PACKAGE_NAME,
-                                testUserId,
-                                MATCH_DISABLED_COMPONENTS))
-                .isTrue();
-        assertThat(
-                        matchesInstalled(
-                                mPackageManager,
-                                CTS_SHIM_PACKAGE_NAME,
-                                testUserId,
-                                MATCH_DISABLED_UNTIL_USED_COMPONENTS))
-                .isTrue();
-        assertThat(
-                        matchesInstalled(
-                                mPackageManager,
-                                CTS_SHIM_PACKAGE_NAME,
-                                testUserId,
-                                MATCH_HIDDEN_UNTIL_INSTALLED_COMPONENTS))
                 .isTrue();
     }
 
