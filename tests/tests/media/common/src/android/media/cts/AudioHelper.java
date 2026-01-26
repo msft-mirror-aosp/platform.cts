@@ -28,6 +28,7 @@ import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.AudioTimestamp;
 import android.media.AudioTrack;
+import android.os.Build;
 import android.os.Looper;
 import android.os.PersistableBundle;
 import android.util.Log;
@@ -35,10 +36,10 @@ import android.util.Log;
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.DeviceReportLog;
+import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
 
@@ -49,6 +50,30 @@ import java.nio.ShortBuffer;
 // Used for statistics and loopers in listener tests.
 // See AudioRecordTest.java and AudioTrack_ListenerTest.java.
 public class AudioHelper {
+    private static final String TAG = "AudioHelper";
+    private static final boolean mIsRelaxedTimingDevice;
+
+    static {
+        boolean isRelaxedTimingDevice = false;
+        try {
+            isRelaxedTimingDevice = Build.IS_EMULATOR || MediaUtils.onFrankenDevice();
+        } catch (Exception e) {
+            Log.w(TAG, "Cannot determine if device is RelaxedTimingDevice type. " + e);
+        }
+        mIsRelaxedTimingDevice = isRelaxedTimingDevice;
+    }
+
+    /**
+     * Check if running on a relaxed timing device, such as Cuttlefish, GSI, or Emulator.
+     *
+     * <p>Such a device is not an actual shipping configuration, but one where functional
+     * compatibility is being tested instead of performance.
+     *
+     * @return true if a relaxed timing device.
+     */
+    public static boolean isRelaxedTimingDevice() {
+        return mIsRelaxedTimingDevice;
+    }
 
     // asserts key equals expected in the metrics bundle.
     public static void assertMetricsKeyEquals(
@@ -357,16 +382,16 @@ public class AudioHelper {
 
         // CDD 5.6 1ms timestamp accuracy
         // a validity check
-        private static final double TEST_MAX_JITTER_MS_ALLOWED = isWatch() ? 23. : 6.;
+        private final double TEST_MAX_JITTER_MS_ALLOWED;
         // flaky tolerance 3x
-        private static final double TEST_STD_JITTER_MS_ALLOWED = isWatch() ? 7. : 3.;
+        private final double TEST_STD_JITTER_MS_ALLOWED;
         // CDD requirement warning
-        private static final double TEST_STD_JITTER_MS_WARN = 1.;
+        private final double TEST_STD_JITTER_MS_WARN;
 
         // CDD 5.6 100ms track startup latency
-        private static final double TEST_STARTUP_TIME_MS_ALLOWED = 500.; // error
-        private final double TEST_STARTUP_TIME_MS_WARN;                  // warning
-        private static final double TEST_STARTUP_TIME_MS_INFO = 100.;    // informational
+        private final double TEST_STARTUP_TIME_MS_ALLOWED; // error
+        private final double TEST_STARTUP_TIME_MS_WARN; // warning
+        private final double TEST_STARTUP_TIME_MS_INFO; // informational
 
         private static final int MILLIS_PER_SECOND = 1000;
         private static final long NANOS_PER_MILLISECOND = 1000000;
@@ -392,8 +417,17 @@ public class AudioHelper {
             mTag = tag;  // Log accepts null
             mSampleRate = sampleRate;
             mStartFrames = startFrames;
+
+            // Adjust all of the hard assert limits by toleranceScale.
+            final int toleranceScale = isRelaxedTimingDevice() ? 4 : 1;
+            TEST_MAX_JITTER_MS_ALLOWED = (isWatch() ? 23. : 6.) * toleranceScale;
+            TEST_STD_JITTER_MS_ALLOWED = (isWatch() ? 7. : 3.) * toleranceScale;
+            TEST_STD_JITTER_MS_WARN = 1.;
+
+            TEST_STARTUP_TIME_MS_ALLOWED = 500. * toleranceScale;
             // Warning if higher than MUST value for pro audio.  Zero means ignore.
             TEST_STARTUP_TIME_MS_WARN = isProAudioDevice ? 200. : 0.;
+            TEST_STARTUP_TIME_MS_INFO = 100.;
         }
 
         public int getJitterCount() { return mJitterCount; }
