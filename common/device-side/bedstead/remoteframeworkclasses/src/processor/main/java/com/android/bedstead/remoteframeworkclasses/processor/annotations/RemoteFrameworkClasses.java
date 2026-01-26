@@ -22,5 +22,4 @@ package com.android.bedstead.remoteframeworkclasses.processor.annotations;
  * <p>This should only be used in the RemoteFrameworkClasses module, to trigger the generation of
  * the Remote* classes.
  */
-public @interface RemoteFrameworkClasses {
-}
+public @interface RemoteFrameworkClasses {}
