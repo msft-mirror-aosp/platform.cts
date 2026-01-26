@@ -35,7 +35,8 @@ import org.junit.runner.RunWith;
 public class CtsHandleConfigChangeHostTests extends BaseHostJUnit4Test {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice, this.getClass());
+
     private static final String DEVICE_TEST_PKG1 = "android.resources.cts.overlayresapp";
     private static final String DEVICE_TEST_PKG2 = "android.resources.cts.overlayresapp2";
     private static final String DEVICE_TEST_CLASS = "OverlayResTest";
