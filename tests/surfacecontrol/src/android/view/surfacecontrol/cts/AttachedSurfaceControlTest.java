@@ -15,6 +15,7 @@
  */
 package android.view.surfacecontrol.cts;
 
+import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
 import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
@@ -34,6 +35,7 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
 import android.app.Activity;
+import android.app.ActivityOptions;
 import android.app.Presentation;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
@@ -200,7 +202,12 @@ public class AttachedSurfaceControlTest {
     public void testOnBufferTransformHintChangedListener() throws InterruptedException {
         supportRotationCheck();
 
-        try (ActivityScenario<?> scenario = launch(HandleConfigurationActivity.class)) {
+        // Launch the test activity in fullscreen because orientation request from freeform window
+        // is ignored.
+        ActivityOptions options = android.app.ActivityOptions.makeBasic();
+        options.setLaunchWindowingMode(WINDOWING_MODE_FULLSCREEN);
+        try (ActivityScenario<?> scenario =
+                ActivityScenario.launch(HandleConfigurationActivity.class, options.toBundle())) {
             Activity activity = awaitActivityStart(scenario);
 
             final int[] transformHintResult = new int[2];
@@ -267,7 +274,12 @@ public class AttachedSurfaceControlTest {
     public void testOnBufferTransformHintChangesFromLandToSea() throws InterruptedException {
         supportRotationCheck();
 
-        try (ActivityScenario<?> scenario = launch(HandleConfigurationActivity.class)) {
+        // Launch the test activity in fullscreen because orientation request from freeform window
+        // is ignored.
+        ActivityOptions options = android.app.ActivityOptions.makeBasic();
+        options.setLaunchWindowingMode(WINDOWING_MODE_FULLSCREEN);
+        try (ActivityScenario<?> scenario =
+                ActivityScenario.launch(HandleConfigurationActivity.class, options.toBundle())) {
             Activity activity = awaitActivityStart(scenario);
 
             final int[] transformHintResult = new int[2];
