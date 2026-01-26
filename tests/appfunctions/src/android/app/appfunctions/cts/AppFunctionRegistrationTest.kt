@@ -26,11 +26,13 @@ import android.app.appfunctions.RegisterAppFunctionRequest
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.CtsApp
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.DynamicSchemaHelperApp
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.UpdatableHelperApp
+import android.app.appfunctions.cts.AppFunctionUtils.assertFunctionState
 import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunctionAndWait
 import android.app.appfunctions.cts.AppFunctionUtils.installPackage
 import android.app.appfunctions.cts.AppFunctionUtils.isAppFunctionEnabled
 import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabled
 import android.app.appfunctions.testutils.ConcatStrings
+import android.app.appfunctions.testutils.ConcatStrings.Companion.ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
 import android.app.appfunctions.testutils.ConcatStrings.Companion.CONCAT_STRINGS_FUNCTION_ID
 import android.app.appfunctions.testutils.CtsTestUtil.assertReadAccessible
 import android.app.appfunctions.testutils.CtsTestUtil.assertReadInaccessible
@@ -204,7 +206,7 @@ class AppFunctionRegistrationTest {
         val service = bindToRegistrationService(CURRENT_PKG)
         assertThat(service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())).isTrue()
 
-        assertFunctionState(CURRENT_PKG, CONCAT_STRINGS_FUNCTION_ID, isEnabled = true)
+        assertFunctionState(CURRENT_PKG, CONCAT_STRINGS_FUNCTION_ID, manager, isEnabled = true)
 
         assertFailsWith<IllegalStateException>() {
             registerAppFunctions(
@@ -212,7 +214,7 @@ class AppFunctionRegistrationTest {
                 listOf(ConcatStrings(), ConcatStrings()),
             )
         }
-        assertFunctionState(CURRENT_PKG, LONG_RUNNING_FUNCTION_ID, isEnabled = false)
+        assertFunctionState(CURRENT_PKG, LONG_RUNNING_FUNCTION_ID, manager, isEnabled = false)
 
         assertFailsWith<IllegalStateException>() {
             registerAppFunctions(
@@ -220,7 +222,7 @@ class AppFunctionRegistrationTest {
                 listOf(ConcatStrings(), ConcatStrings()),
             )
         }
-        assertFunctionState(CURRENT_PKG, LONG_RUNNING_FUNCTION_ID, isEnabled = false)
+        assertFunctionState(CURRENT_PKG, LONG_RUNNING_FUNCTION_ID, manager, isEnabled = false)
     }
 
     @Test
@@ -241,6 +243,16 @@ class AppFunctionRegistrationTest {
     @IncludeRunOnPrimaryUser
     @IncludeRunOnSecondaryUser
     @Throws(Exception::class)
+    fun register_emptyBatch_reportsInvalidArgumentError() {
+        assertFailsWith<IllegalArgumentException>() {
+            registerAppFunctions(listOf(), listOf())
+        }
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    @Throws(Exception::class)
     fun register_serviceLevelFunction_reportsInvalidArgumentError() {
         assertFailsWith<IllegalArgumentException>() {
             registerAppFunction(CtsApp.FunctionNames.ADD.functionId, ConcatStrings())
@@ -254,6 +266,16 @@ class AppFunctionRegistrationTest {
     fun register_unknownFunction_reportsInvalidArgumentError() {
         assertFailsWith<IllegalArgumentException>() {
             registerAppFunction("unknownFunctionId", ConcatStrings())
+        }
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    @Throws(Exception::class)
+    fun register_activityScopedFunction_fails() {
+        assertFailsWith<IllegalArgumentException>() {
+            registerAppFunction(ACTIVITY_CONCAT_STRINGS_FUNCTION_ID, ConcatStrings())
         }
     }
 
@@ -360,7 +382,7 @@ class AppFunctionRegistrationTest {
 
         staleRegistration.unregister() // This call should be no-op
 
-        assertFunctionState(CURRENT_PKG, CONCAT_STRINGS_FUNCTION_ID, isEnabled = true)
+        assertFunctionState(CURRENT_PKG, CONCAT_STRINGS_FUNCTION_ID, manager, isEnabled = true)
     }
 
     @Test
@@ -377,7 +399,7 @@ class AppFunctionRegistrationTest {
 
         staleRegistration.unregister() // This call should be no-op
 
-        assertFunctionState(CURRENT_PKG, CONCAT_STRINGS_FUNCTION_ID, isEnabled = true)
+        assertFunctionState(CURRENT_PKG, CONCAT_STRINGS_FUNCTION_ID, manager, isEnabled = true)
     }
 
     @Test
@@ -392,7 +414,7 @@ class AppFunctionRegistrationTest {
 
         staleRegistration.unregister() // This call should be no-op
 
-        assertFunctionState(CURRENT_PKG, CONCAT_STRINGS_FUNCTION_ID, isEnabled = true)
+        assertFunctionState(CURRENT_PKG, CONCAT_STRINGS_FUNCTION_ID, manager, isEnabled = true)
     }
 
     @Test
@@ -910,28 +932,6 @@ class AppFunctionRegistrationTest {
         return registerAppFunction(CONCAT_STRINGS_FUNCTION_ID, ConcatStrings())
     }
 
-    private suspend fun assertFunctionState(
-        packageName: String,
-        functionId: String,
-        isEnabled: Boolean,
-    ) {
-        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-            val result =
-                isAppFunctionEnabled(
-                    manager,
-                    packageName,
-                    functionId,
-                )
-
-            assertThat(result.exceptionOrNull()).isNull()
-            if (isEnabled) {
-                assertThat(result.getOrThrow()).isTrue()
-            } else {
-                assertThat(result.getOrThrow()).isFalse()
-            }
-        }
-    }
-
     /** Creates an OutcomeReceiver for testing purposes. */
     private fun createOutcomeReceiver(
         resultQueue: LinkedBlockingQueue<ExecuteAppFunctionResponse>,
@@ -1030,7 +1030,7 @@ class AppFunctionRegistrationTest {
         SystemUtil.runShellCommand("pm uninstall $packageName")
     }
 
-    private companion object {
+    companion object {
         @JvmField @ClassRule @Rule val sDeviceState: DeviceState = DeviceState()
         const val CURRENT_PKG: String = "android.app.appfunctions.cts"
         const val SHORT_TIMEOUT_SECOND: Long = 2

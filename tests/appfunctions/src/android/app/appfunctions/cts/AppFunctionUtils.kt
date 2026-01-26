@@ -24,6 +24,7 @@ import android.app.appfunctions.AppFunctionStaticMetadataHelper
 import android.app.appfunctions.AppFunctionStaticMetadataHelper.APP_FUNCTION_STATIC_NAMESPACE
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
+import android.app.appfunctions.cts.AppFunctionRegistrationTest.Companion.EXECUTE_APP_FUNCTIONS_PERMISSION
 import android.app.appfunctions.cts.AppSearchUtils.collectAllSearchResults
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
 import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
@@ -44,6 +45,30 @@ import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.suspendCancellableCoroutine
 
 object AppFunctionUtils {
+
+    suspend fun assertFunctionState(
+        packageName: String,
+        functionId: String,
+        manager: AppFunctionManager,
+        isEnabled: Boolean,
+    ) {
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val result =
+                isAppFunctionEnabled(
+                    manager,
+                    packageName,
+                    functionId,
+                )
+
+            assertThat(result.exceptionOrNull()).isNull()
+            if (isEnabled) {
+                assertThat(result.getOrThrow()).isTrue()
+            } else {
+                assertThat(result.getOrThrow()).isFalse()
+            }
+        }
+    }
+
     /** Checks if target AppFunction is enable or not. */
     suspend fun isAppFunctionEnabled(
         manager: AppFunctionManager,
