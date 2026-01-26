@@ -393,6 +393,26 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         }
     }
 
+    private void assertAllNonBridgedPostedNotificationsAutogrouped()
+            throws Exception {
+        String expectedGroupKey = null;
+
+        StatusBarNotification[] sbns = mNotificationManager.getActiveNotifications();
+        for (StatusBarNotification sbn : sbns) {
+            if (sbn.getNotification().getBridgedNotificationMetadata() == null) {
+                // all notis should be in a group determined by autogrouping
+                assertTrue(sbn.getOverrideGroupKey() != null);
+                if (expectedGroupKey == null) {
+                    expectedGroupKey = sbn.getGroupKey();
+                }
+                // all notis should be in the same group
+                assertEquals(expectedGroupKey, sbn.getGroupKey());
+            } else {
+                assertTrue(sbn.getOverrideGroupKey() == null);
+            }
+        }
+    }
+
     private int getCancellationReason(String key) {
         for (int tries = 3; tries-- > 0; ) {
             if (mListener.mRemovedReasons.containsKey(key)) {
@@ -1732,6 +1752,31 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         assertAllPostedNotificationsAutogrouped();
     }
 
+    @Test
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_BRIDGED_NOTIFICATIONS)
+    public void testAutogrouping_noAutoGroupingBridgedNotifications() throws Exception {
+        assumeFalse(
+                "NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
+        InstrumentationRegistry.getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
+                "android.permission.POST_BRIDGED_NOTIFICATIONS");
+        mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
+        assertNotNull(mListener);
+        CountDownLatch rerankLatch = mListener.setRankingUpdateCountDown(5);
+        CountDownLatch postingLatch = mListener.setPostedCountDown(5);
+        sendNotification(801, R.drawable.black);
+        sendNotification(802, R.drawable.blue);
+        sendNotification(803, R.drawable.yellow);
+        sendNotification(804, R.drawable.yellow);
+        sendNotification(805, null, false, R.drawable.blue, false, null, true);
+
+        // Wait until all the notifications, including the autogroup, are posted and grouped.
+        postingLatch.await(400, TimeUnit.MILLISECONDS);
+        rerankLatch.await(400, TimeUnit.MILLISECONDS);
+        assertNotificationCount(6);
+        assertAllNonBridgedPostedNotificationsAutogrouped();
+    }
+
     private void testAutogrouping_autogroupStaysUntilAllNotificationsCanceled_common(
             final int numExpectedUpdates) throws Exception {
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
@@ -1846,10 +1891,10 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         CountDownLatch rerankLatch;
 
         String testGroup = "testGroup";
-        sendNotification(910, testGroup, summaryOnly, R.drawable.black, false, null);
-        sendNotification(920, testGroup, summaryOnly, R.drawable.blue, false, null);
-        sendNotification(930, testGroup, summaryOnly, R.drawable.yellow, false, null);
-        sendNotification(940, testGroup, summaryOnly, R.drawable.yellow, false, null);
+        sendNotification(910, testGroup, summaryOnly, R.drawable.black, false, null, false);
+        sendNotification(920, testGroup, summaryOnly, R.drawable.blue, false, null, false);
+        sendNotification(930, testGroup, summaryOnly, R.drawable.yellow, false, null, false);
+        sendNotification(940, testGroup, summaryOnly, R.drawable.yellow, false, null, false);
 
         List<Integer> postedIds = new ArrayList<>();
         postedIds.add(910);
@@ -1912,8 +1957,9 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             CountDownLatch postingLatch = mListener.setPostedCountDown(2);
             CountDownLatch rerankLatch = mListener.setRankingUpdateCountDown(2);
             String testGroup = "testGroup " + i;
-            sendNotification(startId + i, testGroup, false, R.drawable.black, false, null);
-            sendNotification(startSummaryId + i, testGroup, true, R.drawable.blue, false, null);
+            sendNotification(startId + i, testGroup, false, R.drawable.black, false, null, false);
+            sendNotification(
+                    startSummaryId + i, testGroup, true, R.drawable.blue, false, null, false);
             postedIds.add(startId + i);
             postedSummaryIds.add(startSummaryId + i);
             postingLatch.await(400, TimeUnit.MILLISECONDS);
@@ -1970,8 +2016,9 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             CountDownLatch postingLatch = mListener.setPostedCountDown(2);
             CountDownLatch rerankLatch = mListener.setRankingUpdateCountDown(2);
             String testGroup = "testGroup " + i;
-            sendNotification(startId + i, testGroup, false, R.drawable.black, false, null);
-            sendNotification(startSummaryId + i, testGroup, true, R.drawable.blue, false, null);
+            sendNotification(startId + i, testGroup, false, R.drawable.black, false, null, false);
+            sendNotification(
+                    startSummaryId + i, testGroup, true, R.drawable.blue, false, null, false);
             postedSummaryIds.add(startSummaryId + i);
             postingLatch.await(400, TimeUnit.MILLISECONDS);
             rerankLatch.await(400, TimeUnit.MILLISECONDS);
@@ -2053,7 +2100,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
         // post new group summary => avoid forced regrouping
         int newGroupSummaryId = 999;
-        sendNotification(newGroupSummaryId, newGroup, true, R.drawable.yellow, false, null);
+        sendNotification(newGroupSummaryId, newGroup, true, R.drawable.yellow, false, null, false);
         postingLatch.await(400, TimeUnit.MILLISECONDS);
         rerankLatch.await(400, TimeUnit.MILLISECONDS);
         assertNotificationCount(6);
