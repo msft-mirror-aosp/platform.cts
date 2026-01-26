@@ -106,7 +106,7 @@ public class ConfigurationCallbacksTest extends WindowManagerTestBase {
                 mApplicationOnConfigurationChangedTracker);
         mActivity.getApplication().registerComponentCallbacks(mApplicationCallbacks);
 
-        mDisplayListener = new TestDisplayListener(mDisplayListenerTracker);
+        mDisplayListener = new TestDisplayListener(getMainDisplayId(), mDisplayListenerTracker);
         mDm.registerDisplayListener(mDisplayListener, new Handler(Looper.getMainLooper()));
     }
 
@@ -576,8 +576,10 @@ public class ConfigurationCallbacksTest extends WindowManagerTestBase {
 
         @NonNull
         private final WindowConfigTracker mTracker;
+        private final int mMainDisplayId;
 
-        TestDisplayListener(@NonNull WindowConfigTracker tracker) {
+        TestDisplayListener(int mainDisplayId, @NonNull WindowConfigTracker tracker) {
+            mMainDisplayId = mainDisplayId;
             mTracker = tracker;
         }
 
@@ -589,7 +591,7 @@ public class ConfigurationCallbacksTest extends WindowManagerTestBase {
 
         @Override
         public void onDisplayChanged(int displayId) {
-            if (displayId == DEFAULT_DISPLAY) {
+            if (displayId == mMainDisplayId) {
                 // Only test against the default display.
                 Log.d(TAG, "DisplayListener#onDisplayChanged");
                 mTracker.onWindowConfigChanged();
