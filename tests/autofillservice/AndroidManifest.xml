@@ -40,7 +40,7 @@
         <package android:name="com.android.cts.mockime" />
     </queries>
 
-    <application>
+    <application android:enableOnBackInvokedCallback="false">
 
         <uses-library android:name="android.test.runner"/>
 
