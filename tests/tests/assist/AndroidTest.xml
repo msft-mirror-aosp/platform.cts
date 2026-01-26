@@ -37,6 +37,8 @@
         <option name="run-command" value="cmd statusbar collapse" />
         <!-- Dismiss all system dialogs before launch test -->
         <option name="run-command" value="am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS" />
+        <option name="run-command" value="am compat enable BYPASS_SELF_TRIGGER_ASSIST_RESTRICTION android.assist.service" />
+        <option name="teardown-command" value="am compat reset BYPASS_SELF_TRIGGER_ASSIST_RESTRICTION android.assist.service" />
     </target_preparer>
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.assist.cts" />
