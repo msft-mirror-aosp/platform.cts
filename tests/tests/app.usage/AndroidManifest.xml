@@ -46,6 +46,7 @@
 
     <application android:usesCleartextTraffic="true"
             android:networkSecurityConfig="@xml/network_security_config"
+            android:enableOnBackInvokedCallback="false"
             android:debuggable="true" >
         <uses-library android:name="android.test.runner"/>
 
