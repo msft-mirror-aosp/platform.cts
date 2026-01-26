@@ -75,6 +75,7 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
                     "DO_NOT_DOWNSCALE_TO_1080P_ON_TV",
                     "ENABLE_FLUID_RESIZING",
                     "ENABLE_PREVENT_INTENT_REDIRECT_TAKE_ACTION",
+                    "ENFORCE_ENQUEUED_BROADCAST_LIMITS_FOR_SENDER",
                     "ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS",
                     "ENFORCE_MINIMUM_TIME_WINDOWS",
                     "FGS_BG_START_RESTRICTION_CHANGE_ID",
