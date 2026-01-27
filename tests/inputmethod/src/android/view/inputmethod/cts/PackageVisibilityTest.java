@@ -29,7 +29,6 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
 import android.view.inputmethod.cts.util.EndToEndImeTestBase;
 import android.view.inputmethod.cts.util.MockTestActivityUtil;
-import android.view.inputmethod.cts.util.UnlockScreenRule;
 
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -56,9 +55,6 @@ public final class PackageVisibilityTest extends EndToEndImeTestBase {
     public static final DeviceState sDeviceState = new DeviceState();
 
     static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
-
-    @Rule
-    public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
 
     @AppModeFull
     @Test

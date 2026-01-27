@@ -33,11 +33,9 @@ import static org.junit.Assert.assertNotNull;
 import android.app.Activity;
 import android.app.ActivityTaskManager;
 import android.app.Instrumentation;
-import android.app.KeyguardManager;
 import android.content.Context;
 import android.graphics.Rect;
 import android.hardware.display.DisplayManager;
-import android.os.PowerManager;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.view.Display;
@@ -53,7 +51,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.compatibility.common.util.CommonTestUtils;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.input.UinputStylus;
 import com.android.cts.input.UinputTouchDevice;
@@ -189,69 +186,6 @@ public final class TestUtils {
         final Display defaultDisplay = dm.getDisplay(DEFAULT_DISPLAY);
         return ActivityTaskManager.supportsSplitScreenMultiWindow(
                 context.createDisplayContext(defaultDisplay));
-    }
-
-    /**
-     * Call a command to turn screen On.
-     *
-     * This method will wait until the power state is interactive with {@link
-     * PowerManager#isInteractive()}.
-     */
-    public static void turnScreenOn() throws Exception {
-        final Context context = InstrumentationRegistry.getInstrumentation().getContext();
-        final PowerManager pm = context.getSystemService(PowerManager.class);
-        assertNotNull(pm);
-        runShellCommand("input keyevent KEYCODE_WAKEUP");
-        CommonTestUtils.waitUntil(
-                "Device does not wake up after " + TIMEOUT.toSeconds() + " seconds",
-                TIMEOUT.toSeconds(),
-                () -> pm.isInteractive());
-    }
-
-    /**
-     * Call a command to turn screen off.
-     *
-     * This method will wait until the power state is *NOT* interactive with
-     * {@link PowerManager#isInteractive()}.
-     * Note that {@link PowerManager#isInteractive()} may not return {@code true} when the device
-     * enables Aod mode, recommend to add (@link DisableScreenDozeRule} in the test to disable Aod
-     * for making power state reliable.
-     */
-    public static void turnScreenOff() throws Exception {
-        final Context context = InstrumentationRegistry.getInstrumentation().getContext();
-        final PowerManager pm = context.getSystemService(PowerManager.class);
-        assertNotNull(pm);
-        runShellCommand("input keyevent KEYCODE_SLEEP");
-        CommonTestUtils.waitUntil("Device does not sleep after " + TIMEOUT.toSeconds() + " seconds",
-                TIMEOUT.toSeconds(),
-                () -> !pm.isInteractive());
-    }
-
-    /**
-     * Simulates a {@link KeyEvent#KEYCODE_MENU} event to unlock screen.
-     *
-     * This method will retry until {@link KeyguardManager#isKeyguardLocked()} return {@code false}
-     * in given timeout.
-     *
-     * Note that {@link KeyguardManager} is not accessible in instant mode due to security concern,
-     * so this method always throw exception with instant app.
-     */
-    public static void unlockScreen() throws Exception {
-        final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
-        final Context context = instrumentation.getContext();
-        final KeyguardManager kgm = context.getSystemService(KeyguardManager.class);
-        assertNotNull(kgm);
-
-        assertFalse("This method is currently not supported in instant apps.",
-                context.getPackageManager().isInstantApp());
-        CommonTestUtils.waitUntil(
-                "Device does not unlock after " + TIMEOUT.toSeconds() + " seconds",
-                TIMEOUT.toSeconds(),
-                () -> {
-                    SystemUtil.runWithShellPermissionIdentity(
-                            () -> instrumentation.sendKeyDownUpSync((KeyEvent.KEYCODE_MENU)));
-                    return !kgm.isKeyguardLocked();
-                });
     }
 
     /**

@@ -39,7 +39,6 @@ import android.view.WindowInsetsController;
 import android.view.WindowInsetsController.OnControllableInsetsChangedListener;
 import android.view.inputmethod.cts.util.EndToEndImeTestBase;
 import android.view.inputmethod.cts.util.TestActivity;
-import android.view.inputmethod.cts.util.UnlockScreenRule;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 
@@ -71,9 +70,6 @@ public class ImeInsetsControllerTest extends EndToEndImeTestBase {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
 
     private static final String TEST_MARKER = "android.view.inputmethod.cts.InsetsControllerTest";
-
-    @Rule
-    public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
 
     public Pair<EditText, Window> launchTestActivity() {
         final AtomicReference<EditText> editTextRef = new AtomicReference<>();

@@ -43,7 +43,6 @@ import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.SurroundingText;
 import android.view.inputmethod.cts.util.EndToEndImeTestBase;
 import android.view.inputmethod.cts.util.TestActivity;
-import android.view.inputmethod.cts.util.UnlockScreenRule;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 
@@ -76,9 +75,6 @@ public final class EditTextImeSupportTest extends EndToEndImeTestBase {
     public static final DeviceState sDeviceState = new DeviceState();
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private static final long NOT_EXPECT_TIMEOUT = 10;  // msec
-
-    @Rule
-    public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
 
     public EditText launchTestActivity(String marker, String initialText,
             int initialSelectionStart, int initialSelectionEnd) {
