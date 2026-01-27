@@ -7,7 +7,6 @@ android_test_helper_app {
     defaults: ["cts_defaults"],
 
     test_suites: [
-        "cts",
         "general-tests",
         "sts",
     ],
