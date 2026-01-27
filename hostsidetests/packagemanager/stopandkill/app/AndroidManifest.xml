@@ -15,9 +15,6 @@
         <activity android:name="com.android.cts.stopandkillapp.PersistableTimeoutActivity"
             android:exported="true" android:persistableMode="persistAcrossReboots"/>
 
-        <activity android:name="com.android.cts.stopandkillapp.NonPersistableActivity"
-            android:exported="true" android:persistableMode="persistNever" />
-
         <activity-alias
             android:name="com.android.cts.stopandkillapp.AliasActivity"
             android:targetActivity="com.android.cts.stopandkillapp.PersistableActivity"
