@@ -36,7 +36,6 @@ import kotlin.use
 import org.junit.Assert.assertThrows
 import org.junit.Assume.assumeNotNull
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestName
@@ -242,7 +241,6 @@ class ComputerControlExtensionsTest {
         }
     }
 
-    @Ignore("b/475292675")
     @Test
     fun testRequestSession_failWithDeviceLocked() {
         val keyguardManager = context.getSystemService(KeyguardManager::class.java)
@@ -264,6 +262,7 @@ class ComputerControlExtensionsTest {
             SystemUtil.runShellCommand("input keyevent WAKEUP")
             SystemUtil.runShellCommand("wm dismiss-keyguard")
             SystemUtil.runShellCommand("locksettings clear --old 1234")
+            PollingCheck.waitFor(DEADLINE_SECONDS * 1000L) { !keyguardManager.isDeviceLocked() }
         }
     }
 
