@@ -405,8 +405,8 @@ public class PackageInstallerCujTestBase {
 
         // x is the center of the dialog
         int x = (bound.left + bound.right) / 2;
-        // The default value of y is the (minTop + maxTop) / 2
-        int y = (minTop + maxTop) / 2;
+        // The default value of y is the furthest point from the top outside the dialog.
+        int y = maxTop;
         if (minTop > maxTop) {
             // the maximum of bottom is the minimum of (display height * 9 / 10) and
             // the display height - the bottom of the insets - 24 * dp
@@ -419,7 +419,7 @@ public class PackageInstallerCujTestBase {
                 pressBack();
                 throw new AssumptionViolatedException("There is no space to touch outside!");
             }
-            y = (minBottom + maxBottom) / 2;
+            y = minBottom;
         }
 
         Log.d(TAG, "touchOutside x = " + x + ", y = " + y);
