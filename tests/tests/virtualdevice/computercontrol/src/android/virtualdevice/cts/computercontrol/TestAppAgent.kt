@@ -163,19 +163,19 @@ class TestAppAgent(private val context: Context, private val session: ComputerCo
     }
 
     fun actAndWaitForStable(action: () -> Unit) {
+        val future = CompletableFuture<Void>()
+        Log.d("TestAppAgent", "Setting stability listener")
+        session.setStabilityListener(
+            Executors.newSingleThreadExecutor(),
+            object : ComputerControlSession.StabilityListener {
+                override fun onSessionStable() {
+                    Log.d("TestAppAgent", "Session is stable")
+                    future.complete(null)
+                }
+            },
+        )
+        action()
         try {
-            val future = CompletableFuture<Void>()
-            Log.d("TestAppAgent", "Setting stability listener")
-            session.setStabilityListener(
-                Executors.newSingleThreadExecutor(),
-                object : ComputerControlSession.StabilityListener {
-                    override fun onSessionStable() {
-                        Log.d("TestAppAgent", "Session is stable")
-                        future.complete(null)
-                    }
-                },
-            )
-            action()
             Log.d("TestAppAgent", "Waiting for session to be stable")
             future.get(5, TimeUnit.SECONDS)
             Log.d("TestAppAgent", "Session is stable")
