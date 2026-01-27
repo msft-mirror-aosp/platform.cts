@@ -162,16 +162,6 @@ public class TestUtils {
     }
 
     /**
-     * Returns 0 if not implemented. Otherwise returns the feature version.
-     */
-    public static int getFeatureVersionKeystore(Context appContext, boolean useStrongbox) {
-        if (useStrongbox) {
-            return getFeatureVersionKeystoreStrongBox(appContext);
-        }
-        return getFeatureVersionKeystore(appContext);
-    }
-
-    /**
      * This function returns the valid digest algorithms supported for a Strongbox or default
      * KeyMint implementation. The isStrongbox parameter specifies the underlying KeyMint
      * implementation. If true, it indicates Strongbox KeyMint, otherwise TEE/Software KeyMint
@@ -185,42 +175,29 @@ public class TestUtils {
         return new String[]{DIGEST_NONE, DIGEST_SHA256, DIGEST_SHA512};
     }
 
-    // Returns 0 if not implemented. Otherwise returns the feature version.
-    //
-    public static int getFeatureVersionKeystore(Context appContext) {
+    /**
+     * Returns the version of the PackageManager feature for Android Keystore backed by a TEE (or
+     * StrongBox if <code>strongBox</code> is <code>true</code>), or 0 if the applicable feature is
+     * not available.
+     *
+     * @param appContext Application context.
+     * @param strongBox Whether the version of the StrongBox feature should be returned.
+     * @return Feature version, or 0 if the feature is not available.
+     */
+    public static int getFeatureVersionKeystore(Context appContext, boolean strongBox) {
+        String feature =
+                strongBox
+                        ? PackageManager.FEATURE_STRONGBOX_KEYSTORE
+                        : PackageManager.FEATURE_HARDWARE_KEYSTORE;
         PackageManager pm = appContext.getPackageManager();
 
         int featureVersionFromPm = 0;
-        if (pm.hasSystemFeature(PackageManager.FEATURE_HARDWARE_KEYSTORE)) {
+        if (pm.hasSystemFeature(feature)) {
             FeatureInfo info = null;
             FeatureInfo[] infos = pm.getSystemAvailableFeatures();
             for (int n = 0; n < infos.length; n++) {
                 FeatureInfo i = infos[n];
-                if (i.name.equals(PackageManager.FEATURE_HARDWARE_KEYSTORE)) {
-                    info = i;
-                    break;
-                }
-            }
-            if (info != null) {
-                featureVersionFromPm = info.version;
-            }
-        }
-
-        return featureVersionFromPm;
-    }
-
-    // Returns 0 if not implemented. Otherwise returns the feature version.
-    //
-    public static int getFeatureVersionKeystoreStrongBox(Context appContext) {
-        PackageManager pm = appContext.getPackageManager();
-
-        int featureVersionFromPm = 0;
-        if (pm.hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE)) {
-            FeatureInfo info = null;
-            FeatureInfo[] infos = pm.getSystemAvailableFeatures();
-            for (int n = 0; n < infos.length; n++) {
-                FeatureInfo i = infos[n];
-                if (i.name.equals(PackageManager.FEATURE_STRONGBOX_KEYSTORE)) {
+                if (i.name.equals(feature)) {
                     info = i;
                     break;
                 }
@@ -265,7 +242,7 @@ public class TestUtils {
         }
 
         Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        if (getFeatureVersionKeystore(context) >= version) {
+        if (getFeatureVersionKeystore(context, /* strongBox= */ false) >= version) {
             Assert.assertEquals(keyInfo.getSecurityLevel(), ecdsaSecurityLevel);
         } else {
             Assert.assertEquals(keyInfo.getSecurityLevel(),
@@ -289,7 +266,7 @@ public class TestUtils {
     public static void assumeMlDsaSupported(boolean useStrongBox) {
         assumeFalse("Only TEE KeyMint supports ML-DSA", useStrongBox);
         assumeTrue("Only test when TEE KeyMint on DUT supports ML-DSA",
-                getFeatureVersionKeystore(getContext()) >= 500);
+                getFeatureVersionKeystore(getContext(), /* strongBox= */ false) >= 500);
     }
 
     /**
