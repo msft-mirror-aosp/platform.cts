@@ -26,6 +26,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
+import android.app.ActivityManager;
 import android.app.Instrumentation;
 import android.content.ComponentName;
 import android.content.Context;
@@ -204,6 +205,8 @@ public class PackageInstallerCujTestBase {
         uninstallTestPackage();
         // to avoid any UI is still on the screen
         pressBack();
+        // Package install can trigger settings launch, to avoid settings remaining active kill app.
+        forceStopPackage(getSettingsPackageName(getPackageManager()));
     }
 
     /** Assert the target package that is the version 1 is installed. */
@@ -573,6 +576,16 @@ public class PackageInstallerCujTestBase {
         SystemUtil.runShellCommand(String.format("pm uninstall %s", packageName));
     }
 
+    /** Force stop the package with {@code packageName}. */
+    public static void forceStopPackage(String packageName) {
+        SystemUtil.runWithShellPermissionIdentity(
+                () ->
+                        getInstrumentation()
+                                .getContext()
+                                .getSystemService(ActivityManager.class)
+                                .forceStopPackage(packageName));
+    }
+
     /**
      * Install the test apk with update-ownership.
      */
@@ -618,6 +631,15 @@ public class PackageInstallerCujTestBase {
     public static void installNoLauncherActivityTestPackage() throws IOException {
         installPackage(TEST_NO_LAUNCHER_ACTIVITY_APK_NAME);
         assertTestPackageInstalled();
+    }
+
+    /** Return the packing name for the associated settings application. */
+    public static @NonNull String getSettingsPackageName(@NonNull final PackageManager pm) {
+        final Intent settingsIntent = new Intent(Settings.ACTION_SETTINGS);
+        final ComponentName settingsComponent = settingsIntent.resolveActivity(pm);
+        return settingsComponent != null
+                ? settingsComponent.getPackageName()
+                : "com.android.settings";
     }
 
     /**
