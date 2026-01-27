@@ -17,6 +17,7 @@
 package android.telephony.satellite.cts;
 
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_CHT;
+import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_NO_RESOURCES;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -37,6 +38,7 @@ import android.content.pm.PackageManager;
 import android.hardware.radio.RadioError;
 import android.os.PersistableBundle;
 import android.os.SystemClock;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Telephony;
@@ -45,16 +47,19 @@ import android.telephony.SmsManager;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.cts.util.DefaultSmsAppHelper;
+import android.telephony.satellite.SatelliteAccessConfiguration;
 import android.telephony.satellite.SatelliteManager;
 import android.telephony.satellite.SatelliteModemEnableRequestAttributes;
 import android.telephony.satellite.SatelliteSubscriberInfo;
 import android.telephony.satellite.SatelliteSubscriberProvisionStatus;
+import android.telephony.satellite.SystemSelectionSpecifier;
 import android.telephony.satellite.stub.SatelliteModemState;
 import android.telephony.satellite.stub.SatelliteResult;
 import android.text.TextUtils;
 import android.util.Pair;
 
 import com.android.internal.telephony.RILConstants;
+import com.android.internal.telephony.flags.Flags;
 import com.android.internal.telephony.nano.PersistAtomsProto;
 import com.android.internal.telephony.nano.PersistAtomsProto.IncomingSms;
 import com.android.internal.telephony.nano.PersistAtomsProto.OutgoingSms;
@@ -70,6 +75,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatelliteTestBase {
     @Rule
@@ -621,6 +627,106 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
             setDefaultSmsSubId(context, defaultSmsSubId);
             revokeSatellitePermission();
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SYSTEM_SELECTION_SPECIFIER_ENHANCEMENT)
+    public void testUpdateSelectionChannel() throws Exception {
+        logd("testUpdateSelectionChannel");
+        if (!shouldTestManualConnectCarrierRoaming()) return;
+
+        logd("testUpdateSelectionChannel: Enable default supported services for carrier PLMNs");
+        List<String> expectedCarrierPlmnList = new ArrayList<>();
+        expectedCarrierPlmnList.add("310280");
+        expectedCarrierPlmnList.add("311480");
+        enableDefaultSupportedServicesForCarrier(sEsosSubId, expectedCarrierPlmnList);
+        waitForCarrierPlmnListAvailableInTelephony(sEsosSubId, expectedCarrierPlmnList);
+
+        final long timeOut = TimeUnit.SECONDS.toMillis(1);
+        grantSatellitePermission();
+        SatelliteCommunicationAccessStateCallbackTest allowStateCallback =
+                new SatelliteCommunicationAccessStateCallbackTest();
+        long registerResultAllowState =
+                sSatelliteManager.registerForCommunicationAccessStateChanged(
+                        getContext().getMainExecutor(), allowStateCallback);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResultAllowState);
+        assertTrue(
+                allowStateCallback.waitUntilSatelliteAccessConfigurationChangedEvent(1, timeOut));
+        assertNull(allowStateCallback.getSatelliteAccessConfiguration());
+        allowStateCallback.drainPermits();
+        Pair<SatelliteAccessConfiguration, Integer> resultReceiver =
+                requestSatelliteAccessConfigurationForCurrentLocation();
+        SatelliteAccessConfiguration queriedSatelliteAccessConfiguration = resultReceiver.first;
+        assertNull(queriedSatelliteAccessConfiguration);
+        assertEquals(SATELLITE_RESULT_NO_RESOURCES, (int) resultReceiver.second);
+
+        logd("testUpdateSelectionChannel: Test access controller using on-device data");
+        assertTrue(sMockSatelliteServiceManager.setSatelliteAccessControlOverlayConfigs(false, true,
+                SATELLITE_S2_FILE_WITH_CONFIG_ID, TimeUnit.MINUTES.toNanos(10), "US",
+                SATELLITE_ACCESS_CONFIGURATION_FILE));
+        allowStateCallback.drainPermits();
+        registerTestLocationProvider();
+        grantSatellitePermission();
+        SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+        long registerResult = sSatelliteManager.registerForModemStateChanged(
+                getContext().getMainExecutor(), callback);
+        logd("testUpdateSelectionChannel: callback is " + callback);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+        assertTrue(callback.waitUntilResult(1));
+        if (isSatelliteEnabled()) {
+            requestSatelliteEnabled(false);
+            assertTrue(callback.waitUntilModemOff());
+            assertFalse(isSatelliteEnabled());
+        }
+
+        logd("testUpdateSelectionChannel: Set current location to Google San Diego office");
+        setTestProviderLocation(32.909808231041644, -117.18185788819781);
+        verifyIsSatelliteAllowed(true);
+        assertTrue(
+                allowStateCallback.waitUntilSatelliteAccessConfigurationChangedEvent(1, timeOut));
+        SatelliteAccessConfiguration notifiedSatelliteAccessConfiguration =
+                allowStateCallback.getSatelliteAccessConfiguration();
+        assertNotNull(notifiedSatelliteAccessConfiguration);
+        resultReceiver = requestSatelliteAccessConfigurationForCurrentLocation();
+        queriedSatelliteAccessConfiguration = resultReceiver.first;
+        assertNotNull(queriedSatelliteAccessConfiguration);
+
+        logd(
+                "testUpdateSelectionChannel: "
+                        + "Trigger updateSystemSelectionChannels by enabling satellite.");
+        assertFalse(isSatelliteEnabled());
+        allowStateCallback.drainPermits();
+        requestSatelliteEnabled(true);
+        assertTrue(isSatelliteEnabled());
+        assertFalse(
+                allowStateCallback.waitUntilSatelliteAccessConfigurationChangedEvent(1, timeOut));
+
+        logd("testUpdateSelectionChannel: Use first configuration for San-Diego Office");
+        SatelliteAccessConfiguration expectedConfiguration =
+                getExpectedSatelliteConfiguration().getFirst();
+        // Verify notified satellite access configuration has same value with expected.
+        assertEquals(expectedConfiguration, notifiedSatelliteAccessConfiguration);
+        // Verify return value for requestSatelliteAccessConfigurationForCurrentLocation has same
+        // value with expected.
+        assertEquals(expectedConfiguration, queriedSatelliteAccessConfiguration);
+        // Verify modem received satellite access configuration has same value with expected.
+        SystemSelectionSpecifier configuredSystemSelectionSpecifier =
+                sMockSatelliteServiceManager.getSystemSelectionChannels().getFirst();
+        logd("testUpdateSelectionChannel: configuredSystemSelectionSpecifier: "
+                + configuredSystemSelectionSpecifier);
+        verifySatelliteAccessConfiguration(
+                expectedConfiguration, configuredSystemSelectionSpecifier);
+        grantSatelliteAndReadPrivilegedPhoneStatePermissions();
+        SubscriptionInfo esosSubInfo = sSubscriptionManager.getActiveSubscriptionInfo(sEsosSubId);
+        logd("testUpdateSelectionChannel: esosSubInfo= " + esosSubInfo.toString());
+        verifySystemSelectionSpecifier(
+                configuredSystemSelectionSpecifier,
+                expectedCarrierPlmnList,
+                esosSubInfo.getIccId(),
+                expectedCarrierPlmnList.get(0));
+        sSatelliteManager.unregisterForModemStateChanged(callback);
+        sSatelliteManager.unregisterForCommunicationAccessStateChanged(allowStateCallback);
+        revokeSatellitePermission();
     }
 
     private static void sendSms(String destAddr, int resultCode) throws Exception {
