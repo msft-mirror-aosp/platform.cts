@@ -26,57 +26,52 @@ import javax.lang.model.type.TypeMirror
 import javax.lang.model.util.Elements
 import javax.lang.model.util.Types
 
-/**
- * A collection of [MethodSignature] for accessible methods.
- */
+/** A collection of [MethodSignature] for accessible methods. */
 class Apis private constructor(private val mMethods: Set<MethodSignature>) {
-    /**
-     * Get methods in the API set.
-     */
+    /** Get methods in the API set. */
     fun methods(): Set<MethodSignature> {
         return mMethods
     }
 
     companion object {
-        private val API_FILES = arrayOf<String>(
-            "current.txt",
-            "bluetooth-current.txt",
-            "telephony-current.txt",
-            "wifi-current.txt",
-            "system-current.txt",
-            "telephony-system-current.txt",
-        )
+        private val API_FILES =
+            arrayOf<String>(
+                "current.txt",
+                "bluetooth-current.txt",
+                "telephony-current.txt",
+                "wifi-current.txt",
+                "system-current.txt",
+                "telephony-system-current.txt",
+            )
 
         private val CODEBASE = initializeCodebase()
 
         private fun initializeCodebase(): Codebase {
-            val apis = API_FILES.map {
-                try {
-                     it to Resources.toString(
-                        Processor::class.java.getResource("/apis/$it"),
-                        StandardCharsets.UTF_8
-                    )
-                } catch (e: IOException) {
-                    throw IllegalStateException("Could not read file $it", e)
-                }
-            }.map { (name, content) ->
-                SignatureFile.fromText(name, content)
-            }
+            val apis =
+                API_FILES.map {
+                        try {
+                            it to
+                                Resources.toString(
+                                    Processor::class.java.getResource("/apis/$it"),
+                                    StandardCharsets.UTF_8,
+                                )
+                        } catch (e: IOException) {
+                            throw IllegalStateException("Could not read file $it", e)
+                        }
+                    }
+                    .map { (name, content) -> SignatureFile.fromText(name, content) }
 
             return ApiFile.parseApi(apis)
         }
 
-        /**
-         * Get public and test APIs for a given class name.
-         */
+        /** Get public and test APIs for a given class name. */
         @JvmStatic
         fun forClass(className: String, types: Types, elements: Elements): Apis {
             val parents: MutableSet<String> = HashSet()
             findParents(parents, className, elements)
 
-            val methods: List<MethodSignature> = parents.flatMap {
-                getMethodsForClass(it, types, elements)
-            }
+            val methods: List<MethodSignature> =
+                parents.flatMap { getMethodsForClass(it, types, elements) }
 
             return Apis(methods.toSet())
         }
@@ -84,7 +79,7 @@ class Apis private constructor(private val mMethods: Set<MethodSignature>) {
         private fun findParents(
             parents: MutableSet<String>,
             className: String,
-            elements: Elements
+            elements: Elements,
         ) {
             parents.add(className)
 
@@ -107,7 +102,7 @@ class Apis private constructor(private val mMethods: Set<MethodSignature>) {
         private fun getMethodsForClass(
             className: String,
             types: Types,
-            elements: Elements
+            elements: Elements,
         ): List<MethodSignature> {
             val clazz = CODEBASE.findClass(className)
 

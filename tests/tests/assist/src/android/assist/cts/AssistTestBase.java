@@ -216,7 +216,9 @@ abstract class AssistTestBase {
             mVirtualDisplay = null;
         }
         customTearDown();
-        mTestActivity.finish();
+        if (mTestActivity != null) {
+            mTestActivity.finish();
+        }
         mContext.sendBroadcast(new Intent(Utils.HIDE_SESSION));
 
         if (m3pActivityCallback != null) {

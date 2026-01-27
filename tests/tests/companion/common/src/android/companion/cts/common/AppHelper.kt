@@ -29,19 +29,23 @@ class AppHelper(
     fun associate(
         macAddress: MacAddress,
         role: String = "null",
-        permissions: String = "null",
+        permissions: String? = null,
         isRemoteAiAgentSupported: Boolean = false
-    ) =
-            runShellCommand(
-                "cmd companiondevice associate $userId $packageName $macAddress $role" +
-                        " false $permissions $isRemoteAiAgentSupported"
-            )
+    ) {
+        var cmd = "cmd companiondevice associate $userId $packageName $macAddress $role false"
+        if (permissions != null) {
+            cmd += " --extra-permissions $permissions"
+        }
+        if (isRemoteAiAgentSupported) {
+            cmd += " --ai-agent $isRemoteAiAgentSupported"
+        }
+        runShellCommand(cmd)
+    }
 
     fun associateSelfManaged(macAddress: MacAddress, role: String) =
-            runShellCommand(
-                "cmd companiondevice associate $userId $packageName $macAddress $role true" +
-                        " null false"
-            )
+        runShellCommand(
+            "cmd companiondevice associate $userId $packageName $macAddress $role true"
+        )
 
     fun disassociate(macAddress: MacAddress) =
             runShellCommand("cmd companiondevice disassociate $userId $packageName $macAddress")

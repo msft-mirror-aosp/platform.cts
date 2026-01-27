@@ -294,7 +294,9 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
         setUpNtnOnlyTestEnvironment(
             NTN_ONLY_SLOT_ID, NTN_ONLY_SIM_PROFILE_ID, NTN_ONLY_PHONE_NUMBER);
         sNtnOnlySubId = SubscriptionManager.getSubscriptionId(NTN_ONLY_SLOT_ID);
-        assumeTrue(sNtnOnlySubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+        assumeTrue(
+                "NTN only SubId is INVALID_SUBSCRIPTION_ID",
+                sNtnOnlySubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
 
         // Enable CTS mode to ignore the requests from SG-APK and real Pointing UI app.
         assertTrue(sMockSatelliteServiceManager.setCtsMode(true));
@@ -353,8 +355,12 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
     public void setUp() throws Exception {
         logd("setUp");
         if (sInitError != null) throw sInitError;
-        assumeTrue(shouldTestSatelliteWithMockService());
-        assumeTrue(sMockSatelliteServiceManager != null);
+        assumeTrue(
+                "Device does not support to test satellite with mock service",
+                shouldTestSatelliteWithMockService());
+        assumeTrue(
+                "MockSatelliteServiceManager is null but expected not null",
+                sMockSatelliteServiceManager != null);
 
         sMockSatelliteServiceManager.executeTelephonyDebugServiceDumpsys(
                 "--clearatoms", "--saveFileImmediately");
@@ -416,7 +422,9 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
     public void tearDown() {
         logd("tearDown");
         if (!shouldTestSatelliteWithMockService()) return;
-        assumeTrue(sMockSatelliteServiceManager != null);
+        assumeTrue(
+                "MockSatelliteServiceManager is null but expected not null",
+                sMockSatelliteServiceManager != null);
         sMockSatelliteServiceManager.setErrorCode(SatelliteResult.SATELLITE_RESULT_SUCCESS);
         sMockSatelliteServiceManager.setWaitToSend(false);
         sMockSatelliteServiceManager.setShouldRespondTelephony(true);
@@ -693,7 +701,9 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
     @Test
     public void testSatelliteRequestEnabled() throws Exception {
         logd("testSatelliteRequestEnabled");
-        assumeTrue(sMockSatelliteServiceManager != null);
+        assumeTrue(
+                "MockSatelliteServiceManager is null but expected not null",
+                sMockSatelliteServiceManager != null);
         grantSatellitePermission();
 
         LocationSettingBroadcastReceiver locationSettingReceiver =
@@ -1602,7 +1612,7 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
 
     @Test
     public void testSatelliteEnableErrorHandling() {
-        assumeTrue(sTelephonyManager != null);
+        assumeTrue("TelephonyManager is null but expected not null", sTelephonyManager != null);
 
         grantSatellitePermission();
         assertTrue(isSatelliteProvisioned());
@@ -4100,7 +4110,9 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
                         getContext().getMainExecutor(), allowStatecallback);
         assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResultAllowState);
         assertTrue(allowStatecallback.waitUntilResult(1));
-        assumeTrue(allowStatecallback.isAllowed);
+        assumeTrue(
+                "Allow State callback is not allowed but expected allowed",
+                allowStatecallback.isAllowed);
 
         SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
         long registerResult = sSatelliteManager.registerForModemStateChanged(
@@ -4223,12 +4235,12 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
         logd("testSatelliteAccessControlWithSatelliteConfigOta");
 
         logd("testSatelliteAccessControlWithSatelliteConfigOta: check if satellite is supported");
-        assumeTrue(shouldTestSatellite());
+        assumeTrue("Device does not support SATELLITE", shouldTestSatellite());
 
         logd(
                 "testSatelliteAccessControlWithSatelliteConfigOta: check if configupdater is"
                         + " installed");
-        assumeTrue(isAppInstalled(PACKAGE_CONFIGUPDATER));
+        assumeTrue("CONFIGUPDATER is not installed", isAppInstalled(PACKAGE_CONFIGUPDATER));
 
         assumeSatelliteConfigFilesExistAndFailIfMisconfigured();
         resetSatelliteAccessControlOverlayConfigs();
@@ -4396,7 +4408,7 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
         logd("testSatelliteAccessControl_UpdateSelectionChannel");
 
         logd("testCarrierRoamingConfigUpdate: check if satellite is supported");
-        assumeTrue(shouldTestSatellite());
+        assumeTrue("Device does not support SATELLITE", shouldTestSatellite());
 
         final long timeOut = TimeUnit.SECONDS.toMillis(1);
         grantSatellitePermission();
@@ -4696,12 +4708,12 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
         logd("testSatelliteAccessControllerLoadSatelliteAccessData");
 
         logd("testCarrierRoamingConfigUpdate: check if satellite is supported");
-        assumeTrue(shouldTestSatellite());
+        assumeTrue("Device does not support SATELLITE", shouldTestSatellite());
 
         logd(
                 "testSatelliteAccessControllerLoadSatelliteAccessData: "
                         + "check if configupdater is installed");
-        assumeTrue(isAppInstalled(PACKAGE_CONFIGUPDATER));
+        assumeTrue("CONFIGUPDATER is not installed", isAppInstalled(PACKAGE_CONFIGUPDATER));
 
         // Get rid of the overridden test satellite configs, as we are going
         // to use actual on-device and ota'd satellite configs in this test
@@ -4877,7 +4889,7 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
     public void testSystemSelectionSpecifier() {
         logd("testSystemSelectionSpecifier");
         logd("testCarrierRoamingConfigUpdate: check if satellite is supported");
-        assumeTrue(shouldTestSatellite());
+        assumeTrue("Device does not support SATELLITE", shouldTestSatellite());
 
         String mccMnc = "310260";
         SatellitePosition position = new SatellitePosition(-101.3, 35786.0);
@@ -4931,10 +4943,10 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
         logd("testCarrierRoamingConfigUpdate");
 
         logd("testCarrierRoamingConfigUpdate: check if satellite is supported");
-        assumeTrue(shouldTestSatellite());
+        assumeTrue("Device does not support SATELLITE", shouldTestSatellite());
 
         logd("testCarrierRoamingConfigUpdate: check if configupdater is installed");
-        assumeTrue(isAppInstalled(PACKAGE_CONFIGUPDATER));
+        assumeTrue("CONFIGUPDATER is not installed", isAppInstalled(PACKAGE_CONFIGUPDATER));
 
         logd("testCarrierRoamingConfigUpdate: grant satellite permission");
         grantSatellitePermission();
@@ -5998,7 +6010,9 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
         if (!shouldTestSatelliteWithMockService()) {
             return;
         }
-        assumeTrue(sMockSatelliteServiceManager != null);
+        assumeTrue(
+                "MockSatelliteServiceManager is null but expected not null",
+                sMockSatelliteServiceManager != null);
         grantSatellitePermission();
         logd(
                 "testSatelliteLocationSettingsEnabledDisabled: "
@@ -7591,7 +7605,9 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
     @Test
     public void testSatelliteSubscriptionProvisionStateChanged() {
         logd("testSatelliteSubscriptionProvisionStateChanged:");
-        assumeTrue(sNtnOnlySubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+        assumeTrue(
+                "NTN only SubId is INVALID_SUBSCRIPTION_ID",
+                sNtnOnlySubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
 
         SatelliteSubscriptionProvisionStateChangedTest callback =
                 registerSubscriberIdProvisionCallback();
@@ -7782,7 +7798,9 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
     @Test
     public void testDeprovisionSatellite() {
         logd("testDeprovisionSatellite:");
-        assumeTrue(sNtnOnlySubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+        assumeTrue(
+                "NTN only SubId is INVALID_SUBSCRIPTION_ID",
+                sNtnOnlySubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
 
         SatelliteSubscriptionProvisionStateChangedTest callback =
                 registerSubscriberIdProvisionCallback();

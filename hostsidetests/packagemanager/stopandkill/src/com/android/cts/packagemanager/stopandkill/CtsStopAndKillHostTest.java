@@ -343,6 +343,47 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
         }
     }
 
+    /** Verifies that the app's importance is captured and reported in the installation metrics. */
+    @Test
+    public void testUpdate_emitsAppImportanceMetric() throws Exception {
+        ConfigUtils.uploadConfigForPushedAtom(
+                getDevice(),
+                mApp1.pkg,
+                AtomsProto.Atom.PACKAGE_INSTALLATION_SESSION_REPORTED_FIELD_NUMBER);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
+
+        mApp1.installPackage();
+        launchActivityAndAssertResumed(mApp1.persistableActivity);
+
+        // Update the package
+        mApp1.installPackage("-r");
+
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
+
+        List<AtomsProto.PackageInstallationSessionReported> reports = new ArrayList<>();
+        for (StatsLog.EventMetricData data : ReportUtils.getEventMetricDataList(getDevice())) {
+            if (data.getAtom().hasPackageInstallationSessionReported()) {
+                reports.add(data.getAtom().getPackageInstallationSessionReported());
+            }
+        }
+
+        // We expect two reports: one for the initial install, and one for the update (-r)
+        assertThat(reports.size()).isAtLeast(2);
+
+        // The update report should have the app_importance captured
+        boolean foundUpdateReportWithImportance = false;
+        for (AtomsProto.PackageInstallationSessionReported report : reports) {
+            if (report.getIsReplace()) {
+                // ActivityManager.IMPORTANCE_FOREGROUND == 100
+                assertThat(report.getAppImportance()).isEqualTo(100);
+                foundUpdateReportWithImportance = true;
+            }
+        }
+        assertWithMessage("Didn't find update report with non-zero app_importance")
+                .that(foundUpdateReportWithImportance)
+                .isTrue();
+    }
+
     /**
      * Verifies that when launching an activity alias of a persistable activity, the app's instance
      * state is saved during an update and restored in the new version.

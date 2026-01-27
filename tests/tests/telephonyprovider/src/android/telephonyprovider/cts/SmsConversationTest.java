@@ -106,6 +106,7 @@ public class SmsConversationTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
     public void testQueryConversation_usingRestrictedInWhereClause_returnsCorrectMessages() {
         saveToTelephony(TEST_SMS_BODY, TEST_ADDRESS, /* isRestricted= */ false);
         saveToTelephony(TEST_SMS_BODY, TEST_ADDRESS, /* isRestricted= */ false);

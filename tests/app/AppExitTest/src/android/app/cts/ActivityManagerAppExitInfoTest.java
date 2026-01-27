@@ -40,13 +40,11 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningAppProcessInfo;
-import android.app.ActivityOptions;
 import android.app.AnrTypes;
 import android.app.ApplicationExitInfo;
 import android.app.ApplicationExitInfo.AnrInfo;
 import android.app.Flags;
 import android.app.Instrumentation;
-import android.app.WindowConfiguration;
 import android.app.stubs.shared.IHeartbeat;
 import android.app.tools.WatchUidRunner;
 import android.content.BroadcastReceiver;
@@ -93,7 +91,6 @@ import android.view.KeyEvent;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.bedstead.nene.TestApis;
 import com.android.compatibility.common.util.AmMonitor;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.CddTest;
@@ -2117,6 +2114,23 @@ public final class ActivityManagerAppExitInfoTest {
         return new NativeServiceState(pid, uid);
     }
 
+    private List<ApplicationExitInfo> getApplicationExitInfoOfProcess(int pid) throws Exception {
+        List<ApplicationExitInfo> list = new ArrayList<>();
+        PollingCheck.check(
+                "Failed to get ApplicationExitInfo for pid " + pid + " from AMS",
+                WAITFOR_SETTLE_DOWN,
+                () -> {
+                    final List<ApplicationExitInfo> result =
+                            mActivityManager.getHistoricalProcessExitReasons(null, pid, 1);
+                    if (result != null && !result.isEmpty()) {
+                        list.addAll(result);
+                        return true;
+                    }
+                    return false;
+                });
+        return list;
+    }
+
     @Test
     @RequiresFlagsEnabled(android.os.Flags.FLAG_NATIVE_FRAMEWORK_PROTOTYPE)
     public void testNativeServiceExit() throws Exception {
@@ -2145,8 +2159,7 @@ public final class ActivityManagerAppExitInfoTest {
         long now2 = System.currentTimeMillis();
 
         // Verify exit info
-        final List<ApplicationExitInfo> list =
-                mActivityManager.getHistoricalProcessExitReasons(null, pid, 1);
+        final List<ApplicationExitInfo> list = getApplicationExitInfoOfProcess(pid);
         assertNotNull(list);
         assertEquals(1, list.size());
 
@@ -2179,29 +2192,21 @@ public final class ActivityManagerAppExitInfoTest {
         NativeServiceState state = getNativeServiceState(conn);
         int pid = state.mPid;
         int uid = state.mUid;
+        final WatchUidRunner watcher = new WatchUidRunner(mInstrumentation, uid, WAITFOR_MSEC);
 
         long now = System.currentTimeMillis();
 
         // Crash the native service
         conn.mService.crash();
-
-        // Verify exit info
-        List<ApplicationExitInfo> list = new ArrayList<>();
-        PollingCheck.check(
-                "not able to get ApplicationExitInfo",
-                WAITFOR_SETTLE_DOWN,
-                () -> {
-                    final List<ApplicationExitInfo> result =
-                            mActivityManager.getHistoricalProcessExitReasons(null, pid, 1);
-                    if (result != null && !result.isEmpty()) {
-                        list.addAll(result);
-                        return true;
-                    }
-                    return false;
-                });
-
+        try {
+            waitForGone(watcher);
+        } finally {
+            watcher.finish();
+        }
         long now2 = System.currentTimeMillis();
 
+        // Verify exit info
+        final List<ApplicationExitInfo> list = getApplicationExitInfoOfProcess(pid);
         assertNotNull(list);
         assertEquals(1, list.size());
 
@@ -2311,10 +2316,7 @@ public final class ActivityManagerAppExitInfoTest {
         clientIntent.putExtra(HEARTBEAT_COUNTDOWN_NAME, HEARTBEAT_COUNTDOWN);
         clientIntent.putExtra(HEARTBEAT_INTERVAL_NAME, HEARTBEAT_INTERVAL);
         clientIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        ActivityOptions options = ActivityOptions.makeBasic();
-        options.setLaunchWindowingMode(WindowConfiguration.WINDOWING_MODE_FULLSCREEN);
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> TestApis.activities().startActivity(clientIntent, options.toBundle()));
+        mContext.startActivity(clientIntent);
         sleep(1000);
 
         // Launch another app to bring the HeartbeatActivity to background

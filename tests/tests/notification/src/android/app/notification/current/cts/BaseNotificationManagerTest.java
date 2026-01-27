@@ -29,6 +29,7 @@ import android.Manifest;
 import android.app.ActivityManager;
 import android.app.Instrumentation;
 import android.app.Notification;
+import android.app.Notification.BridgedNotificationMetadata;
 import android.app.Notification.CallStyle;
 import android.app.NotificationChannel;
 import android.app.NotificationChannelGroup;
@@ -48,6 +49,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
+import android.graphics.Bitmap;
 import android.graphics.drawable.Icon;
 import android.media.AudioManager;
 import android.net.Uri;
@@ -310,17 +312,22 @@ public abstract class BaseNotificationManagerTest {
 
     protected void sendNotification(final int id,
             String groupKey, final int icon) {
-        sendNotification(id, groupKey, false, icon, false, null);
+        sendNotification(id, groupKey, false, icon, false, null, false);
     }
 
     protected void sendNotification(final int id, String groupKey, final int icon, boolean isCall,
             Uri phoneNumber) {
-        sendNotification(id, groupKey, false, icon, isCall, phoneNumber);
+        sendNotification(id, groupKey, false, icon, isCall, phoneNumber, false);
     }
 
-    protected void sendNotification(final int id,
-            String groupKey, boolean isSummary, final int icon,
-            boolean isCall, Uri phoneNumber) {
+    protected void sendNotification(
+            final int id,
+            String groupKey,
+            boolean isSummary,
+            final int icon,
+            boolean isCall,
+            Uri phoneNumber,
+            boolean isBridged) {
         final Intent intent = new Intent(Intent.ACTION_MAIN, Telephony.Threads.CONTENT_URI);
 
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -338,6 +345,18 @@ public abstract class BaseNotificationManagerTest {
                 .setContentIntent(pendingIntent)
                 .setGroup(groupKey)
                 .setGroupSummary(isSummary);
+        if (isBridged) {
+            Icon bridgedIcon =
+                    Icon.createWithBitmap(Bitmap.createBitmap(300, 300, Bitmap.Config.ARGB_8888));
+            BridgedNotificationMetadata metadata =
+                    new BridgedNotificationMetadata(
+                            BridgedNotificationMetadata.BRIDGED_METADATA_TYPE_PHONE,
+                            "test_display_name",
+                            "test_bridged_package",
+                            "TEST_CHANNEL_ID",
+                            bridgedIcon);
+            nb.setBridgedNotificationMetadata(metadata);
+        }
 
         if (isCall) {
             nb.setCategory(CATEGORY_CALL);

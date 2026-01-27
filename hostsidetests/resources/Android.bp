@@ -43,6 +43,7 @@ java_test_host {
     ],
     per_testcase_directory: true,
     test_config: "AndroidTest.xml",
+    enable_static_aconfig_pb: true,
 }
 
 java_test_host {
@@ -75,4 +76,5 @@ java_test_host {
     ],
     per_testcase_directory: true,
     test_config: "ConfigChangeTests.xml",
+    enable_static_aconfig_pb: true,
 }

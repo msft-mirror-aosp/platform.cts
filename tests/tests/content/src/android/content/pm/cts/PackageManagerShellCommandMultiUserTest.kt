@@ -58,6 +58,8 @@ import com.android.bedstead.multiuser.secondaryUser
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.users.UserType
+import com.android.bedstead.nene.utils.ShellCommand
+import com.android.bedstead.nene.utils.ShellCommandUtils
 import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.google.common.truth.Truth.assertThat
@@ -904,7 +906,105 @@ class PackageManagerShellCommandMultiUserTest {
     }
 
     @Test
-    fun testDeleteSystemAppMultiuser() {
+    fun testDeleteSystemAppMultiuserWithRoot() {
+        assumeTrue(ShellCommandUtils.isRootAvailable())
+
+        var ctsShimPackageInfo: PackageInfo? = null
+        try {
+            ctsShimPackageInfo = context.packageManager.getPackageInfo(
+                CTS_SHIM_PACKAGE_NAME,
+                PackageInfoFlags.of((MATCH_SYSTEM_ONLY or MATCH_KNOWN_PACKAGES).toLong()))
+        } catch (e: PackageManager.NameNotFoundException) {
+        }
+        // Skip the test if CtsShim cannot be found
+        assumeTrue(ctsShimPackageInfo != null)
+        try {
+            runWithShellPermissionIdentity(
+                uiAutomation,
+                {
+                    // Delete the system package with DELETE_SYSTEM_APP on primary user. Since
+                    // device has multiple users, the package will be uninstalled for that user.
+                    ShellCommand.builderForUser(primaryUser, "pm uninstall")
+                        .asRoot(true)
+                        .addOperand(CTS_SHIM_PACKAGE_NAME)
+                        .execute()
+                    assertThat(PackageManagerTest.matchesInstalled(
+                        context.packageManager,
+                        CTS_SHIM_PACKAGE_NAME,
+                        primaryUser.id(),
+                        0
+                    )).isFalse()
+                    assertThat(PackageManagerTest.matchesInstalled(
+                        context.packageManager,
+                        CTS_SHIM_PACKAGE_NAME,
+                        primaryUser.id(),
+                        MATCH_DISABLED_COMPONENTS.toLong()
+                    )).isFalse()
+                    assertThat(PackageManagerTest.matchesInstalled(
+                        context.packageManager,
+                        CTS_SHIM_PACKAGE_NAME,
+                        primaryUser.id(),
+                        MATCH_DISABLED_UNTIL_USED_COMPONENTS.toLong()
+                    )).isFalse()
+                    assertThat(PackageManagerTest.matchesInstalled(
+                        context.packageManager,
+                        CTS_SHIM_PACKAGE_NAME,
+                        primaryUser.id(),
+                        MATCH_HIDDEN_UNTIL_INSTALLED_COMPONENTS.toLong()
+                    )).isTrue()
+                    assertThat(PackageManagerTest.matchesInstalled(
+                        context.packageManager,
+                        CTS_SHIM_PACKAGE_NAME,
+                        primaryUser.id(),
+                        MATCH_KNOWN_PACKAGES.toLong()
+                    )).isTrue()
+                    // Delete the system package with DELETE_SYSTEM_APP on secondary user
+                    ShellCommand.builderForUser(secondaryUser, "pm uninstall")
+                        .asRoot(true)
+                        .addOperand(CTS_SHIM_PACKAGE_NAME)
+                        .execute()
+                    assertThat(PackageManagerTest.matchesInstalled(
+                        context.packageManager,
+                        CTS_SHIM_PACKAGE_NAME,
+                        secondaryUser.id(),
+                        0
+                    )).isFalse()
+                    assertThat(PackageManagerTest.matchesInstalled(
+                        context.packageManager,
+                        CTS_SHIM_PACKAGE_NAME,
+                        secondaryUser.id(),
+                        MATCH_DISABLED_COMPONENTS.toLong()
+                    )).isFalse()
+                    assertThat(PackageManagerTest.matchesInstalled(
+                        context.packageManager,
+                        CTS_SHIM_PACKAGE_NAME,
+                        secondaryUser.id(),
+                        MATCH_DISABLED_UNTIL_USED_COMPONENTS.toLong()
+                    )).isFalse()
+                    assertThat(PackageManagerTest.matchesInstalled(
+                        context.packageManager,
+                        CTS_SHIM_PACKAGE_NAME,
+                        secondaryUser.id(),
+                        MATCH_HIDDEN_UNTIL_INSTALLED_COMPONENTS.toLong()
+                    )).isTrue()
+                    assertThat(PackageManagerTest.matchesInstalled(
+                        context.packageManager,
+                        CTS_SHIM_PACKAGE_NAME,
+                        secondaryUser.id(),
+                        MATCH_KNOWN_PACKAGES.toLong()
+                    )).isTrue()
+                },
+                Manifest.permission.INTERACT_ACROSS_USERS,
+                Manifest.permission.INTERACT_ACROSS_USERS_FULL
+            )
+        } finally {
+            installExistingPackageAsUser(CTS_SHIM_PACKAGE_NAME, primaryUser)
+            installExistingPackageAsUser(CTS_SHIM_PACKAGE_NAME, secondaryUser)
+        }
+    }
+
+    @Test
+    fun testDeleteSystemAppMultiuserWithoutRoot() {
         var ctsShimPackageInfo: PackageInfo? = null
         try {
             ctsShimPackageInfo = context.packageManager.getPackageInfo(
@@ -914,85 +1014,35 @@ class PackageManagerShellCommandMultiUserTest {
         }
         // Skip the test if CtsShim cannot be found
         assumeTrue(ctsShimPackageInfo != null)
-        try {
-            runWithShellPermissionIdentity(
-                    uiAutomation,
-                    {
-                        // Delete the system package with DELETE_SYSTEM_APP on primary user. Since
-                        // device has multiple users, the package will be deleted for the user
-                        // (unlike the case of a device having a single user, where the package will
-                        // be downgraded).
-                        uninstallPackageAsUser(CTS_SHIM_PACKAGE_NAME, primaryUser)
-                        assertThat(PackageManagerTest.matchesInstalled(
-                                context.packageManager,
-                                CTS_SHIM_PACKAGE_NAME,
-                                primaryUser.id(),
-                                0
-                        )).isFalse()
-                        assertThat(PackageManagerTest.matchesInstalled(
-                                context.packageManager,
-                                CTS_SHIM_PACKAGE_NAME,
-                                primaryUser.id(),
-                                MATCH_DISABLED_COMPONENTS.toLong()
-                        )).isFalse()
-                        assertThat(PackageManagerTest.matchesInstalled(
-                                context.packageManager,
-                                CTS_SHIM_PACKAGE_NAME,
-                                primaryUser.id(),
-                                MATCH_DISABLED_UNTIL_USED_COMPONENTS.toLong()
-                        )).isFalse()
-                        assertThat(PackageManagerTest.matchesInstalled(
-                                context.packageManager,
-                                CTS_SHIM_PACKAGE_NAME,
-                                primaryUser.id(),
-                                MATCH_HIDDEN_UNTIL_INSTALLED_COMPONENTS.toLong()
-                        )).isTrue()
-                        assertThat(PackageManagerTest.matchesInstalled(
-                                context.packageManager,
-                                CTS_SHIM_PACKAGE_NAME,
-                                primaryUser.id(),
-                                MATCH_KNOWN_PACKAGES.toLong()
-                        )).isTrue()
-                        // Delete the system package with DELETE_SYSTEM_APP on secondary user
-                        uninstallPackageAsUser(CTS_SHIM_PACKAGE_NAME, secondaryUser)
-                        assertThat(PackageManagerTest.matchesInstalled(
-                                context.packageManager,
-                                CTS_SHIM_PACKAGE_NAME,
-                                secondaryUser.id(),
-                                0
-                        )).isFalse()
-                        assertThat(PackageManagerTest.matchesInstalled(
-                                context.packageManager,
-                                CTS_SHIM_PACKAGE_NAME,
-                                secondaryUser.id(),
-                                MATCH_DISABLED_COMPONENTS.toLong()
-                        )).isFalse()
-                        assertThat(PackageManagerTest.matchesInstalled(
-                                context.packageManager,
-                                CTS_SHIM_PACKAGE_NAME,
-                                secondaryUser.id(),
-                                MATCH_DISABLED_UNTIL_USED_COMPONENTS.toLong()
-                        )).isFalse()
-                        assertThat(PackageManagerTest.matchesInstalled(
-                                context.packageManager,
-                                CTS_SHIM_PACKAGE_NAME,
-                                secondaryUser.id(),
-                                MATCH_HIDDEN_UNTIL_INSTALLED_COMPONENTS.toLong()
-                        )).isTrue()
-                        assertThat(PackageManagerTest.matchesInstalled(
-                                context.packageManager,
-                                CTS_SHIM_PACKAGE_NAME,
-                                secondaryUser.id(),
-                                MATCH_KNOWN_PACKAGES.toLong()
-                        )).isTrue()
-                    },
-                    Manifest.permission.INTERACT_ACROSS_USERS,
-                    Manifest.permission.INTERACT_ACROSS_USERS_FULL
-            )
-        } finally {
-            installExistingPackageAsUser(CTS_SHIM_PACKAGE_NAME, primaryUser)
-            installExistingPackageAsUser(CTS_SHIM_PACKAGE_NAME, secondaryUser)
-        }
+        runWithShellPermissionIdentity(
+                uiAutomation,
+                {
+                    assertThat(
+                        SystemUtil.runShellCommand(
+                            "pm uninstall --user ${primaryUser.id()} $CTS_SHIM_PACKAGE_NAME"
+                        )
+                    ).contains("Failure")
+                    assertThat(PackageManagerTest.matchesInstalled(
+                            context.packageManager,
+                            CTS_SHIM_PACKAGE_NAME,
+                            primaryUser.id(),
+                            0
+                    )).isTrue()
+                    assertThat(
+                        SystemUtil.runShellCommand(
+                            "pm uninstall --user ${secondaryUser.id()} $CTS_SHIM_PACKAGE_NAME"
+                        )
+                    ).contains("Failure")
+                    assertThat(PackageManagerTest.matchesInstalled(
+                            context.packageManager,
+                            CTS_SHIM_PACKAGE_NAME,
+                            secondaryUser.id(),
+                            0
+                    )).isTrue()
+                },
+                Manifest.permission.INTERACT_ACROSS_USERS,
+                Manifest.permission.INTERACT_ACROSS_USERS_FULL
+        )
     }
 
     @Test
