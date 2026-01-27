@@ -53,12 +53,7 @@ object AppFunctionUtils {
         isEnabled: Boolean,
     ) {
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-            val result =
-                isAppFunctionEnabled(
-                    manager,
-                    packageName,
-                    functionId,
-                )
+            val result = isAppFunctionEnabled(manager, packageName, functionId)
 
             assertThat(result.exceptionOrNull()).isNull()
             if (isEnabled) {
@@ -251,6 +246,51 @@ object AppFunctionUtils {
     /** Gets all the runtime metadata packages. */
     fun getAllRuntimeMetadataPackages(context: Context? = null) =
         searchRuntimeMetadata(context).map { it.getPropertyString(PROPERTY_PACKAGE_NAME) }.toSet()
+
+    /** Enable allowlist. */
+    fun enableAllowlist() {
+        assertThat(ShellCommand.builder("cmd app_function enable-allowlist").execute())
+            .isEqualTo("Enable allowlist\n")
+    }
+
+    /** Disable allowlist. */
+    fun disableAllowlist() {
+        assertThat(ShellCommand.builder("cmd app_function disable-allowlist").execute())
+            .isEqualTo("Disable allowlist\n")
+    }
+
+    /** Sets interaction allowlist. */
+    fun setInteractionAllowlist(agentPackageName: String, appPackageNames: List<String>) {
+        assertThat(
+                ShellCommand.builder("cmd app_function set-test-allowlist-entry")
+                    .addOption("--agent-package", agentPackageName)
+                    .addOption("--app-packages", appPackageNames.joinToString(separator = ","))
+                    .execute()
+            )
+            .isEqualTo("Set test allowlist entry\n")
+    }
+
+    /** Clear interaction allowlist. */
+    fun clearInteractionAllowlist() {
+        ShellCommand.builder("cmd app_function clear-test-allowlist").execute()
+    }
+
+    /**
+     * Runs [runnable] with interaction between [agentPackageName] and [appPackageNames]
+     * allowlisted.
+     */
+    suspend fun runWithInteractionAllowlisted(
+        agentPackageName: String,
+        appPackageNames: List<String>,
+        runnable: suspend () -> Unit,
+    ) {
+        setInteractionAllowlist(agentPackageName, appPackageNames)
+        try {
+            runnable.invoke()
+        } finally {
+            clearInteractionAllowlist()
+        }
+    }
 
     private fun searchStaticMetadata(context: Context? = null): List<GenericDocument> {
         val globalSearchSession = getGlobalSearchSession(context)

@@ -380,6 +380,7 @@ class SearchAppFunctionsTest {
         Manifest.permission.DISCOVER_APP_FUNCTIONS,
         Manifest.permission.QUERY_ALL_PACKAGES,
     )
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
     fun searchAppFunctions_hasQueryAllAndReadAppFunctionMetadataPermission_shouldSeeAllPackages() =
         doBlocking {
             installPackage(UpdatableHelperApp.ApkPaths.BASE_APP)
@@ -416,6 +417,7 @@ class SearchAppFunctionsTest {
         Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM,
         Manifest.permission.QUERY_ALL_PACKAGES,
     )
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
     fun searchAppFunctions_hasQueryAllAndExecuteSystemPermission_shouldSeeAllPackages() =
         doBlocking {
             installPackage(UpdatableHelperApp.ApkPaths.BASE_APP)
@@ -462,15 +464,7 @@ class SearchAppFunctionsTest {
             searchAppFunctions(searchSpec).associateBy { it.name }
 
         assertThat(resultAppFunctionsByName.keys)
-            .containsExactly(
-                LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT,
-                LegacySchemaHelperApp.FunctionNames.ADD_DISABLED_BY_DEFAULT,
-                LegacySchemaHelperApp.FunctionNames.NO_OP,
-                LegacySchemaHelperApp.FunctionNames.RESTRICT_CALLER_FALSE,
-                LegacySchemaHelperApp.FunctionNames.RESTRICT_CALLER_TRUE,
-                LegacySchemaHelperApp.FunctionNames.GET_URIS,
-                LegacySchemaHelperApp.FunctionNames.ECHO_BYTES,
-            )
+            .containsExactlyElementsIn(LegacySchemaHelperApp.FunctionNames.ALL_FUNCTIONS)
     }
 
     @Test

@@ -15,18 +15,14 @@
  */
 package android.cts.statsdatom.appfunctions;
 
-import static android.app.appfunctions.flags.Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER;
-import static android.permission.flags.Flags.FLAG_APP_FUNCTION_ACCESS_API_ENABLED;
-import static android.permission.flags.Flags.FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED;
-
 import static com.google.common.truth.Truth.assertThat;
 
+import android.app.appfunctions.flags.Flags;
 import android.cts.statsdatom.lib.AtomTestUtils;
 import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
 import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
@@ -54,13 +50,13 @@ import java.util.List;
 @NonApiTest(
         exemptionReasons = {},
         justification = "METRIC")
-@RequiresFlagsEnabled(FLAG_ENABLE_APP_FUNCTION_MANAGER)
+// TODO(b/481654763): Evaluate how to better support stats tests as it doesn't work well
+// with bedstead annotation.
+@RequiresFlagsDisabled(Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class AppFunctionsStatsTest extends BaseHostJUnit4Test implements IBuildReceiver {
     private static final String TEST_PKG = "android.app.appfunctions.cts";
     private static final String TEST_CLASS = TEST_PKG + ".AppFunctionManagerTest";
-    private static final String FEATURE_AUTOMOTIVE = "android.hardware.type.automotive";
-    private static final int ERROR_DENIED = 1000;
 
     private static final int ERROR_INVALID_ARGUMENT = 1001;
     private static final int SUCCESS_ERROR_CODE = -1;
@@ -108,10 +104,6 @@ public class AppFunctionsStatsTest extends BaseHostJUnit4Test implements IBuildR
     }
 
     @Test
-    @RequiresFlagsDisabled({
-        FLAG_APP_FUNCTION_ACCESS_API_ENABLED,
-        FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED
-    })
     public void testAtom_executeAppFunction_failed_uncaughtClientException() throws Exception {
         AppFunctionsRequestReported afRequestReported =
                 runTestAndGetAtom("executeAppFunction_failed_uncaughtClientException_nonParam");
@@ -120,10 +112,6 @@ public class AppFunctionsStatsTest extends BaseHostJUnit4Test implements IBuildR
     }
 
     @Test
-    @RequiresFlagsDisabled({
-        FLAG_APP_FUNCTION_ACCESS_API_ENABLED,
-        FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED
-    })
     @Ignore("b/455988256 - Fix the flaky issue before re-enable")
     public void testAtom_executeAppFunction_crossUser_success() throws Exception {
         if (!getDevice().isMultiUserSupported()) return;
@@ -135,10 +123,6 @@ public class AppFunctionsStatsTest extends BaseHostJUnit4Test implements IBuildR
     }
 
     @Test
-    @RequiresFlagsDisabled({
-        FLAG_APP_FUNCTION_ACCESS_API_ENABLED,
-        FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED
-    })
     public void testAtom_executeAppFunction_platformManager_platformAppFunctionService_success()
             throws Exception {
         AppFunctionsRequestReported afRequestReported =
@@ -150,10 +134,6 @@ public class AppFunctionsStatsTest extends BaseHostJUnit4Test implements IBuildR
     }
 
     @Test
-    @RequiresFlagsDisabled({
-        FLAG_APP_FUNCTION_ACCESS_API_ENABLED,
-        FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED
-    })
     public void testAtom_executeAppFunction_throwsException() throws Exception {
         AppFunctionsRequestReported afRequestReported =
                 runTestAndGetAtom("executeAppFunction_throwsException_nonParam");
