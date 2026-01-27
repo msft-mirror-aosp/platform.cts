@@ -15,6 +15,7 @@
  */
 package android.uirendering.cts.testclasses;
 
+import static android.view.flags.Flags.FLAG_SURFACE_VIEW_MAX_HDR_HEADROOM;
 import static android.view.flags.Flags.FLAG_SURFACE_VIEW_SET_BLUR_REGIONS;
 import static android.view.flags.Flags.FLAG_SURFACE_VIEW_SET_COMPOSITION_ORDER;
 
@@ -1357,6 +1358,89 @@ public class SurfaceViewTests extends ActivityTestBase {
                 assertTrue(
                         "Headroom is too high for HLG at brightness: " + brightness,
                         headroom < 4.927f);
+            }
+        } finally {
+            activity.reset();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SURFACE_VIEW_MAX_HDR_HEADROOM)
+    public void testSurfaceViewDesiredHdrHeadroomClampsChildren() throws InterruptedException {
+        Assume.assumeTrue(Flags.limitedHdr());
+        Assume.assumeTrue(android.view.flags.Flags.surfaceViewMaxHdrHeadroom());
+
+        CountDownLatch latch = new CountDownLatch(1);
+        SurfaceViewHolder initializer =
+                new SurfaceViewHolder(new DrawCallback((holder, w, h) -> latch.countDown()));
+
+        DrawActivity activity = getActivity();
+
+        try {
+            TestPositionInfo testInfo =
+                    activity.enqueueRenderSpecAndWait(
+                            R.layout.frame_layout, null, initializer, true, false);
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+            SurfaceView surfaceView = initializer.getSurfaceView();
+            Display display = activity.getDisplay();
+
+            if (display.isHdrSdrRatioAvailable()) {
+                SurfaceControl childSc =
+                        new SurfaceControl.Builder()
+                                .setName("HLG Child")
+                                .setParent(surfaceView.getSurfaceControl())
+                                .setBufferSize(100, 100)
+                                .setFormat(HardwareBuffer.RGBA_8888)
+                                .build();
+
+                HardwareBuffer buffer =
+                        HardwareBuffer.create(
+                                100,
+                                100,
+                                HardwareBuffer.RGBA_8888,
+                                1,
+                                HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE
+                                        | HardwareBuffer.USAGE_COMPOSER_OVERLAY);
+
+                HardwareBufferRenderer renderer = new HardwareBufferRenderer(buffer);
+                RenderNode node = new RenderNode("content");
+                node.setPosition(0, 0, 100, 100);
+                Canvas canvas = node.beginRecording();
+                canvas.drawColor(Color.WHITE);
+                node.endRecording();
+                renderer.setContentRoot(node);
+                CountDownLatch drawLatch = new CountDownLatch(1);
+                renderer.obtainRenderRequest().draw(Runnable::run, result -> drawLatch.countDown());
+                assertTrue(drawLatch.await(5, TimeUnit.SECONDS));
+
+                new SurfaceControl.Transaction()
+                        .setBuffer(childSc, buffer)
+                        .setDataSpace(childSc, DataSpace.DATASPACE_BT2020_HLG)
+                        .setVisibility(childSc, true)
+                        .apply();
+
+                float ratio = getStableHdrSdrRatio(display);
+                Assume.assumeTrue(
+                        "Device does not have enough headroom currently to test this",
+                        ratio > 1.02f);
+
+                float limitRatio = 1.f + (ratio - 1.f) / 2;
+                getInstrumentation()
+                        .runOnMainSync(
+                                () -> {
+                                    surfaceView.setDesiredHdrHeadroom(limitRatio);
+                                });
+
+                float clampedRatio = getStableHdrSdrRatio(display);
+                assertTrue(
+                        "Headroom " + clampedRatio + " should be clamped to limit " + limitRatio,
+                        clampedRatio <= (limitRatio + 0.01f));
+
+                // Cleanup
+                new SurfaceControl.Transaction().reparent(childSc, null).apply();
+                childSc.release();
+                buffer.close();
             }
         } finally {
             activity.reset();
