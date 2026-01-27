@@ -216,7 +216,6 @@ public class MediaRouter2DeviceTest {
     }
 
     @RequireSwitchableUserSupport
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CROSS_USER_ROUTING_IN_MEDIA_ROUTER2)
     @Test
     public void getInstance_acrossUsers_withInteractAcrossUsersFull_returnsInstance() {
         Bundle args = InstrumentationRegistry.getArguments();
@@ -243,7 +242,6 @@ public class MediaRouter2DeviceTest {
     }
 
     @RequireSwitchableUserSupport
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CROSS_USER_ROUTING_IN_MEDIA_ROUTER2)
     @Test
     public void getInstance_acrossUsers_withoutInteractAcrossUsersFull_throwsSecurityException() {
         Bundle args = InstrumentationRegistry.getArguments();
@@ -263,7 +261,6 @@ public class MediaRouter2DeviceTest {
     }
 
     @RequireSwitchableUserSupport
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CROSS_USER_ROUTING_IN_MEDIA_ROUTER2)
     @SuppressLint("MissingPermission")
     @Test
     public void getInstance_acrossUsers_withFakePackageName_throwsIAE() {
@@ -276,7 +273,6 @@ public class MediaRouter2DeviceTest {
                                 mContext.getUser()));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CROSS_USER_ROUTING_IN_MEDIA_ROUTER2)
     @Test
     public void getInstance_withinUser_returnsInstance() {
         assertThat(
