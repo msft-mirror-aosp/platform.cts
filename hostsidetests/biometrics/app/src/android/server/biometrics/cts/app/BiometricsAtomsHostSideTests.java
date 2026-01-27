@@ -87,7 +87,9 @@ public class BiometricsAtomsHostSideTests {
     private UiDevice mDevice;
     private int mUserId;
     private AuthenticationPolicyManager mAuthenticationPolicyManager;
+
     private BiometricManager mBiometricManager;
+
     private List<SensorProperties> mSensorProperties;
     private String mUiPackage;
     private Context mContext;
@@ -356,17 +358,11 @@ public class BiometricsAtomsHostSideTests {
             // Successful biometric authentication to complete two-factor authentication
             session.acceptAuthentication(mUserId);
 
-            // Wait for keyguard to report transition to GONE - only then does
-            // SecureLockDeviceInteractor run onGoneTransitionFinished to disable secure lock
-            // device.
-            lockScreenSession.waitForKeyguardGone();
+            UiDeviceUtils.pressWakeupButton();
+            UiDeviceUtils.pressEnterButton();
 
-            if (mAuthenticationPolicyManager.isSecureLockDeviceEnabled()) {
-                // Disabling after biometric auth if onGoneTransitionFinished does not finish in
-                // time during test
-                mAuthenticationPolicyManager.disableSecureLockDevice(
-                        new DisableSecureLockDeviceParams("Disabling after biometric auth"));
-            }
+            mDevice.wait(Until.gone(getBySelector(SECURE_LOCK_DEVICE_BIOMETRIC_AUTH_ID)), WAIT_MS);
+
             // Poll to wait for the asynchronous state change to complete.
             PollingCheck.waitFor(
                     TIMEOUT,
