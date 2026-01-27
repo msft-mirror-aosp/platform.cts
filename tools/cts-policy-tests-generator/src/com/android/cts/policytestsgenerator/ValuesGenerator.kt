@@ -20,6 +20,7 @@ import android.processor.devicepolicy.protos.PolicyMetadata
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.BooleanPolicyMetadata
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.EnumPolicyMetadata
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.IntegerPolicyMetadata
+import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.LongPolicyMetadata
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.ListPolicyMetadata
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.ListPolicyMetadata.ListElementMetadataCase
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.StringPolicyMetadata
@@ -32,6 +33,7 @@ object ValuesGenerator {
         when (type.typeMetadataCase) {
             TypeMetadataCase.STRING_METADATA -> return generateValidStrings(type.stringMetadata)
             TypeMetadataCase.INTEGER_METADATA -> return generateValidIntegers(type.integerMetadata)
+            TypeMetadataCase.LONG_METADATA -> return generateValidLongs(type.longMetadata)
             TypeMetadataCase.BOOLEAN_METADATA -> return generateValidBooleans(type.booleanMetadata)
             TypeMetadataCase.ENUM_METADATA -> return generateValidEnums(type.enumMetadata)
             TypeMetadataCase.LIST_METADATA -> return generateValidLists(type.listMetadata)
@@ -45,6 +47,8 @@ object ValuesGenerator {
             TypeMetadataCase.STRING_METADATA -> return generateInvalidStrings(type.stringMetadata)
             TypeMetadataCase.INTEGER_METADATA ->
                 return generateInvalidIntegers(type.integerMetadata)
+            TypeMetadataCase.LONG_METADATA ->
+                return generateInvalidLongs(type.longMetadata)
             TypeMetadataCase.BOOLEAN_METADATA ->
                 return generateInvalidBooleans(type.booleanMetadata)
             TypeMetadataCase.ENUM_METADATA -> return generateInvalidEnums(type.enumMetadata)
@@ -84,6 +88,16 @@ object ValuesGenerator {
 
     private fun generateInvalidIntegers(
         metadata: IntegerPolicyMetadata
+    ): List<InvalidValueTestCase> {
+        return listOf()
+    }
+
+    private fun generateValidLongs(metadata: LongPolicyMetadata): List<String> {
+        return listOf("-1L", "0L", "1L", "12345L")
+    }
+
+    private fun generateInvalidLongs(
+        metadata: LongPolicyMetadata
     ): List<InvalidValueTestCase> {
         return listOf()
     }

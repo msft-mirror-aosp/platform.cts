@@ -36,6 +36,7 @@ fun FullyQualifiedClassName.toKotlinType(): String {
         "java.lang.String" -> "String"
         "java.lang.Boolean" -> "Boolean"
         "java.lang.Integer" -> "Int"
+        "java.lang.Long" -> "Long"
         "java.util.List<java.lang.String>" -> "List<String>"
         "java.util.List<java.lang.Integer>" -> "List<Int>"
         else -> throw IllegalArgumentException("Unsupported type: ${this.format()}")

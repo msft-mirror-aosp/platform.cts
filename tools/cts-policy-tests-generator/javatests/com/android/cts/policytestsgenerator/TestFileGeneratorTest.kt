@@ -25,6 +25,7 @@ import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.BooleanPolicyMetadata
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.EnumPolicyMetadata
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.ListPolicyMetadata
+import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.LongPolicyMetadata
 import android.processor.devicepolicy.protos.TypeSpecificPolicyMetadata.StringPolicyMetadata
 import com.google.common.truth.Truth.assertThat
 import junitparams.JUnitParamsRunner
@@ -53,6 +54,12 @@ class TestFileGeneratorTest {
     val booleanType =
         FullyQualifiedClassName.newBuilder()
             .setClassName("Boolean")
+            .setPackageName("java.lang")
+            .build()
+
+    val longType =
+        FullyQualifiedClassName.newBuilder()
+            .setClassName("Long")
             .setPackageName("java.lang")
             .build()
 
@@ -91,6 +98,36 @@ class TestFileGeneratorTest {
                             0,
                             1,
                             12345,
+                        )
+
+                    // TODO: Add other meaningful invalid values here (if any). Remove this TODO before committing.
+                    override val invalidValueTestCases = listOf()
+                }
+                """
+                    .trimIndent()
+            )
+    }
+
+    @Test
+    fun longPolicy_generatesTestClass() {
+        val metadata = longPolicyMetadata("MY_LONG_POLICY")
+
+        val output_file = TestFileGenerator(metadata).generate()
+
+        assertThat(output_file.getTestClass())
+            .isEqualTo(
+                """
+                class MyLongPolicyTest : CommonPolicyTests<Long>() {
+
+                    override val policyIdentifier = PolicyIdentifier.MY_LONG_POLICY
+
+                    // TODO: Add other meaningful valid values here (if any). Remove this TODO before committing.
+                    override val validValues =
+                        listOf(
+                            -1L,
+                            0L,
+                            1L,
+                            12345L,
                         )
 
                     // TODO: Add other meaningful invalid values here (if any). Remove this TODO before committing.
@@ -766,6 +803,16 @@ class TestFileGeneratorTest {
             .setTypeSpecificMetadata(
                 TypeSpecificPolicyMetadata.newBuilder()
                     .setBooleanMetadata(BooleanPolicyMetadata.newBuilder())
+            )
+            .build()
+
+    private fun longPolicyMetadata(identifier: String) =
+        PolicyMetadata.newBuilder()
+            .setIdentifier(fullyQualifiedFieldName(identifier))
+            .setType(longType)
+            .setTypeSpecificMetadata(
+                TypeSpecificPolicyMetadata.newBuilder()
+                    .setLongMetadata(TypeSpecificPolicyMetadata.LongPolicyMetadata.newBuilder())
             )
             .build()
 
