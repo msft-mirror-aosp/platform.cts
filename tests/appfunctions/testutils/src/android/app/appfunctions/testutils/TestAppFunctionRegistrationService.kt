@@ -19,6 +19,7 @@ package android.app.appfunctions.testutils
 import android.app.Service
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.AppFunctionRegistration
+import android.app.appfunctions.RegisterAppFunctionRequest
 import android.app.appfunctions.testutils.TestAppFunctionFactory.createAppFunction
 import android.app.appfunctions.testutils.TestAppFunctionFactory.getFunctionId
 import android.content.Intent
@@ -46,6 +47,21 @@ class TestAppFunctionRegistrationService : Service() {
                     return false
                 }
                 Log.d(TAG, "Registered callback for function id $functionId")
+                return true
+            }
+
+            override fun registerAppFunctions(functionTypes: List<String>): Boolean {
+                val requests: MutableList<RegisterAppFunctionRequest> = mutableListOf()
+                for (functionType in functionTypes) {
+                    val functionType = FunctionType.valueOf(functionType)
+                    requests.add(RegisterAppFunctionRequest(
+                        getFunctionId(functionType),
+                        mainExecutor,
+                        createAppFunction(functionType, this@TestAppFunctionRegistrationService)
+                    ))
+                }
+                val registrationId = requests.joinToString(",") { it.functionIdentifier }
+                registrations[registrationId] = manager.registerAppFunctions(requests)
                 return true
             }
 
