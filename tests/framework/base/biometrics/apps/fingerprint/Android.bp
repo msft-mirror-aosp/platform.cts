@@ -35,7 +35,6 @@ android_test_helper_app {
     min_sdk_version: "34",
 
     test_suites: [
-        "cts",
         "vts10",
         "general-tests",
     ],
