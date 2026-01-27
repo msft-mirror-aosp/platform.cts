@@ -47,6 +47,7 @@ import android.hardware.display.VirtualDisplay;
 import android.inputmethodservice.InputMethodService;
 import android.os.Bundle;
 import android.platform.test.annotations.AppModeFull;
+import android.server.wm.BuildUtils;
 import android.server.wm.Condition;
 import android.view.Display;
 import android.view.WindowManager;
@@ -81,7 +82,8 @@ import java.util.concurrent.TimeUnit;
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
 public class VirtualDeviceImeTest {
 
-    private static final long TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(20);
+    private static final long TIMEOUT_MILLIS =
+            TimeUnit.SECONDS.toMillis(10) * BuildUtils.HW_TIMEOUT_MULTIPLIER;
     private static final long NO_IME_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(5);
 
     @Rule
