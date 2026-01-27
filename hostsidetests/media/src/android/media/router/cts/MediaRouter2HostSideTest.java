@@ -21,6 +21,7 @@ import static android.media.cts.MediaRouterTestConstants.DEVICE_SIDE_TEST_CLASS_
 import static android.media.cts.MediaRouterTestConstants.DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_APK;
 import static android.media.cts.MediaRouterTestConstants.DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS;
 import static android.media.cts.MediaRouterTestConstants.DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE;
+import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER2_OSW_PACKAGE_VISIBILITY_ALLOWED_TEST_CLASS;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_1_APK;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_1_PACKAGE;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_2_APK;
@@ -380,6 +381,16 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
                 .isTrue();
         assertThat(forceStopAndWaitForRunningStatus(PER_APP_DISCOVERY_CONSUMER_APP2_PACKAGE))
                 .isTrue();
+    }
+
+    @AppModeFull
+    @RequiresDevice
+    @Test
+    public void testOutputSwitcherPackageRestrictedRouteIsVisible() throws Throwable {
+        runDeviceTests(
+                MEDIA_ROUTER_TEST_PACKAGE,
+                MEDIA_ROUTER2_OSW_PACKAGE_VISIBILITY_ALLOWED_TEST_CLASS,
+                "outputSwitcherPackageRestrictedRouteIsVisible");
     }
 
     @AppModeFull
