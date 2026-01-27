@@ -24,6 +24,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
@@ -36,6 +37,7 @@ import android.util.Log;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.BitmapUtils;
+import com.android.compatibility.common.util.FeatureUtil;
 
 import org.junit.Rule;
 import org.junit.rules.TestName;
@@ -172,6 +174,9 @@ public abstract class PreferenceActivityFlowTest {
     }
 
     void backPressToExitInner() {
+        // Skip on desktop mode because back navigation does not exit the application by design.
+        // See b/456302602 for details.
+        assumeFalse("Skipping test on desktop", FeatureUtil.isDesktop());
         launchActivity();
         if (shouldRunLargeDeviceTest()) {
             largeScreenBackPressToExitInner();
