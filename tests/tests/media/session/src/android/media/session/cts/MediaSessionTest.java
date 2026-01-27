@@ -67,6 +67,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.TextUtils;
+import android.util.Size;
 import android.view.KeyEvent;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -76,6 +77,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.UserTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
+import com.android.media.mediasession.flags.Flags;
 
 import com.google.common.collect.ImmutableList;
 
@@ -1281,6 +1283,17 @@ public class MediaSessionTest {
         }
 
         assertThat(hasGcTestSessions).isFalse();
+    }
+
+    @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
+    @RequiresFlagsEnabled(Flags.FLAG_EXPOSE_BITMAP_SIZE_LIMIT_API)
+    public void getBitmapSizeLimit_isReasonable() {
+        Size limit = MediaSession.getBitmapSizeLimit(mContext);
+        assertThat(limit.getWidth()).isGreaterThan(0);
+        assertThat(limit.getWidth()).isAtMost(4096);
+        assertThat(limit.getHeight()).isGreaterThan(0);
+        assertThat(limit.getHeight()).isAtMost(4096);
     }
 
     /**
