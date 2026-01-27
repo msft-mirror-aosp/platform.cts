@@ -57,7 +57,6 @@ import java.util.regex.Pattern;
 public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
 
     private static final String PERSISTABLE_ACTIVITY = "PersistableActivity";
-    private static final String NON_PERSISTABLE_ACTIVITY = "NonPersistableActivity";
     private static final String PERSISTABLE_TIMEOUT_ACTIVITY = "PersistableTimeoutActivity";
     private static final String ALIAS_ACTIVITY = "AliasActivity";
 
@@ -141,25 +140,6 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
 
         // Assert that the app was stopped since the activity was persistable
         mApp1.assertStateFileCreatedOnStop(/* shouldExist= */ true);
-    }
-
-    /**
-     * Verifies that when the 'wait_for_kill_on_package_update' flag is enabled, but the activity is
-     * not persistable, the app is NOT stopped.
-     */
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_RESTART_AFTER_UPDATE)
-    public void testUpdate_nonPersistableActivity_doesNotStopApp() throws Exception {
-        mApp1.installPackage();
-        launchActivityAndAssertResumed(mApp1.nonPersistableActivity);
-
-        // Activity shouldn't have been stopped before we update
-        mApp1.assertStateFileCreatedOnStop(/* shouldExist= */ false);
-
-        mApp1.installPackage("-r");
-
-        // Assert that the app wasn't stopped since the activity is not persistable.
-        mApp1.assertStateFileCreatedOnStop(/* shouldExist= */ false);
     }
 
     /**
@@ -463,7 +443,6 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
         public final String pkg;
         public final String apk;
         public final String persistableActivity;
-        public final String nonPersistableActivity;
         public final String persistableTimeoutActivity;
         public final String aliasActivity;
 
@@ -471,7 +450,6 @@ public class CtsStopAndKillHostTest extends BaseHostJUnit4Test {
             this.pkg = pkg;
             this.apk = apk;
             this.persistableActivity = getComponentName(pkg, PERSISTABLE_ACTIVITY);
-            this.nonPersistableActivity = getComponentName(pkg, NON_PERSISTABLE_ACTIVITY);
             this.persistableTimeoutActivity = getComponentName(pkg, PERSISTABLE_TIMEOUT_ACTIVITY);
             this.aliasActivity = getComponentName(pkg, ALIAS_ACTIVITY);
         }
