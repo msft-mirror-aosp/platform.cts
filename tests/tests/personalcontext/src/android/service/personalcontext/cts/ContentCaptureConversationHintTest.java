@@ -26,14 +26,14 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.personalcontext.Flags;
 import android.service.personalcontext.hint.ChatMessageContentCaptureData;
 import android.service.personalcontext.hint.ChatMessageData;
+import android.service.personalcontext.hint.ContentCaptureConversationEvent;
+import android.service.personalcontext.hint.ContentCaptureConversationEvent.ConversationEnterEvent;
+import android.service.personalcontext.hint.ContentCaptureConversationEvent.ConversationExitEvent;
+import android.service.personalcontext.hint.ContentCaptureConversationEvent.ConversationProcessingEvent;
+import android.service.personalcontext.hint.ContentCaptureConversationEvent.ConversationUpdateEvent;
+import android.service.personalcontext.hint.ContentCaptureConversationHint;
 import android.service.personalcontext.hint.ContextHint;
 import android.service.personalcontext.hint.ConversationData;
-import android.service.personalcontext.hint.ConversationEvent;
-import android.service.personalcontext.hint.ConversationEvent.ConversationEnterEvent;
-import android.service.personalcontext.hint.ConversationEvent.ConversationExitEvent;
-import android.service.personalcontext.hint.ConversationEvent.ConversationProcessingEvent;
-import android.service.personalcontext.hint.ConversationEvent.ConversationUpdateEvent;
-import android.service.personalcontext.hint.ConversationHint;
 import android.view.autofill.AutofillId;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -49,10 +49,10 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
-/** Build/Install/Run: atest CtsPersonalContextTestCases:ConversationHintTest */
+/** Build/Install/Run: atest CtsPersonalContextTestCases:ContentCaptureConversationHintTest */
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PERSONAL_CONTEXT_SERVICE)
 @RunWith(AndroidJUnit4.class)
-public class ConversationHintTest {
+public class ContentCaptureConversationHintTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
@@ -78,18 +78,21 @@ public class ConversationHintTest {
 
     @ApiTest(
             apis = {
-                "android.service.personalcontext.hint.ConversationEvent"
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
                         + ".ConversationEnterEvent#ConversationEnterEvent",
-                "android.service.personalcontext.hint.ConversationHint.Builder#Builder",
-                "android.service.personalcontext.hint.ConversationHint.Builder#build",
+                "android.service.personalcontext.hint.ContentCaptureConversationHint.Builder"
+                        + "#Builder",
+                "android.service.personalcontext.hint.ContentCaptureConversationHint.Builder#build",
                 "android.service.personalcontext.hint.ContextHint#createHintFromBundle",
                 "android.service.personalcontext.hint.ContextHint#getHintId",
-                "android.service.personalcontext.hint.ConversationHint#toBundle",
-                "android.service.personalcontext.hint.ConversationHint#getConversationEvent",
-                "android.service.personalcontext.hint.ConversationEvent#getClientEventTimestamp",
-                "android.service.personalcontext.hint.ConversationEvent"
+                "android.service.personalcontext.hint.ContentCaptureConversationHint#toBundle",
+                "android.service.personalcontext.hint.ContentCaptureConversationHint"
+                        + "#getConversationEvent",
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
+                        + "#getClientEventTimestamp",
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
                         + ".ConversationEnterEvent#getConversationSessionId",
-                "android.service.personalcontext.hint.ConversationEvent"
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
                         + ".ConversationEnterEvent#getConversationEnterTimestamp",
             })
     @Test
@@ -99,14 +102,15 @@ public class ConversationHintTest {
         final ConversationEnterEvent enterEvent =
                 new ConversationEnterEvent(
                         CONVERSATION_SESSION_ID, clientEventTimestamp, enterTimestamp);
-        final ConversationHint hint = new ConversationHint.Builder(enterEvent).build();
+        final ContentCaptureConversationHint hint =
+                new ContentCaptureConversationHint.Builder(enterEvent).build();
         assertThat(hint.getHintId()).isNotNull();
 
         final ContextHint outputHint = bundleUnbundle(hint);
-        assertThat(outputHint).isInstanceOf(ConversationHint.class);
+        assertThat(outputHint).isInstanceOf(ContentCaptureConversationHint.class);
         assertThat(outputHint.getHintId()).isEqualTo(hint.getHintId());
-        final ConversationEvent outputEvent =
-                ((ConversationHint) outputHint).getConversationEvent();
+        final ContentCaptureConversationEvent outputEvent =
+                ((ContentCaptureConversationHint) outputHint).getConversationEvent();
         assertThat(outputEvent).isInstanceOf(ConversationEnterEvent.class);
 
         final ConversationEnterEvent outputEnterEvent = (ConversationEnterEvent) outputEvent;
@@ -117,14 +121,14 @@ public class ConversationHintTest {
 
     @ApiTest(
             apis = {
-                "android.service.personalcontext.hint.ConversationHint#equals",
-                "android.service.personalcontext.hint.ConversationHint#hashCode",
-                "android.service.personalcontext.hint.ConversationHint#toString",
-                "android.service.personalcontext.hint.ConversationEvent"
+                "android.service.personalcontext.hint.ContentCaptureConversationHint#equals",
+                "android.service.personalcontext.hint.ContentCaptureConversationHint#hashCode",
+                "android.service.personalcontext.hint.ContentCaptureConversationHint#toString",
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
                         + ".ConversationEnterEvent#equals",
-                "android.service.personalcontext.hint.ConversationEvent"
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
                         + ".ConversationEnterEvent#hashCode",
-                "android.service.personalcontext.hint.ConversationEvent"
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
                         + ".ConversationEnterEvent#toString",
             })
     @Test
@@ -141,7 +145,8 @@ public class ConversationHintTest {
         assertThat(enterEvent.hashCode()).isEqualTo(enterEvent2.hashCode());
         assertThat(enterEvent.toString()).isNotNull();
 
-        final ConversationHint hint = new ConversationHint.Builder(enterEvent).build();
+        final ContentCaptureConversationHint hint =
+                new ContentCaptureConversationHint.Builder(enterEvent).build();
         final ContextHint unbundledHint = bundleUnbundle(hint);
         assertThat(hint).isEqualTo(unbundledHint);
         assertThat(hint.hashCode()).isEqualTo(unbundledHint.hashCode());
@@ -150,16 +155,19 @@ public class ConversationHintTest {
 
     @ApiTest(
             apis = {
-                "android.service.personalcontext.hint.ConversationEvent"
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
                         + ".ConversationExitEvent#ConversationExitEvent",
-                "android.service.personalcontext.hint.ConversationHint.Builder#Builder",
-                "android.service.personalcontext.hint.ConversationHint.Builder#build",
+                "android.service.personalcontext.hint.ContentCaptureConversationHint.Builder"
+                        + "#Builder",
+                "android.service.personalcontext.hint.ContentCaptureConversationHint.Builder#build",
                 "android.service.personalcontext.hint.ContextHint#createHintFromBundle",
                 "android.service.personalcontext.hint.ContextHint#getHintId",
-                "android.service.personalcontext.hint.ConversationHint#toBundle",
-                "android.service.personalcontext.hint.ConversationHint#getConversationEvent",
-                "android.service.personalcontext.hint.ConversationEvent#getClientEventTimestamp",
-                "android.service.personalcontext.hint.ConversationEvent"
+                "android.service.personalcontext.hint.ContentCaptureConversationHint#toBundle",
+                "android.service.personalcontext.hint.ContentCaptureConversationHint"
+                        + "#getConversationEvent",
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
+                        + "#getClientEventTimestamp",
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
                         + ".ConversationExitEvent#getConversationSessionId"
             })
     @Test
@@ -169,14 +177,15 @@ public class ConversationHintTest {
         final ConversationExitEvent exitEvent =
                 new ConversationExitEvent(
                         CONVERSATION_SESSION_ID, clientEventTimestamp, eventTimestamp);
-        final ConversationHint hint = new ConversationHint.Builder(exitEvent).build();
+        final ContentCaptureConversationHint hint =
+                new ContentCaptureConversationHint.Builder(exitEvent).build();
         assertThat(hint.getHintId()).isNotNull();
 
         final ContextHint outputHint = bundleUnbundle(hint);
-        assertThat(outputHint).isInstanceOf(ConversationHint.class);
+        assertThat(outputHint).isInstanceOf(ContentCaptureConversationHint.class);
         assertThat(outputHint.getHintId()).isEqualTo(hint.getHintId());
-        final ConversationEvent outputEvent =
-                ((ConversationHint) outputHint).getConversationEvent();
+        final ContentCaptureConversationEvent outputEvent =
+                ((ContentCaptureConversationHint) outputHint).getConversationEvent();
         assertThat(outputEvent).isInstanceOf(ConversationExitEvent.class);
 
         final ConversationExitEvent outputExitEvent = (ConversationExitEvent) outputEvent;
@@ -186,14 +195,14 @@ public class ConversationHintTest {
 
     @ApiTest(
             apis = {
-                "android.service.personalcontext.hint.ConversationHint#equals",
-                "android.service.personalcontext.hint.ConversationHint#hashCode",
-                "android.service.personalcontext.hint.ConversationHint#toString",
-                "android.service.personalcontext.hint.ConversationEvent"
+                "android.service.personalcontext.hint.ContentCaptureConversationHint#equals",
+                "android.service.personalcontext.hint.ContentCaptureConversationHint#hashCode",
+                "android.service.personalcontext.hint.ContentCaptureConversationHint#toString",
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
                         + ".ConversationExitEvent#equals",
-                "android.service.personalcontext.hint.ConversationEvent"
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
                         + ".ConversationExitEvent#hashCode",
-                "android.service.personalcontext.hint.ConversationEvent"
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
                         + ".ConversationExitEvent#toString",
             })
     @Test
@@ -210,7 +219,8 @@ public class ConversationHintTest {
         assertThat(exitEvent.hashCode()).isEqualTo(exitEvent2.hashCode());
         assertThat(exitEvent.toString()).isNotNull();
 
-        final ConversationHint hint = new ConversationHint.Builder(exitEvent).build();
+        final ContentCaptureConversationHint hint =
+                new ContentCaptureConversationHint.Builder(exitEvent).build();
         final ContextHint unbundledHint = bundleUnbundle(hint);
         assertThat(hint).isEqualTo(unbundledHint);
         assertThat(hint.hashCode()).isEqualTo(unbundledHint.hashCode());
@@ -219,20 +229,23 @@ public class ConversationHintTest {
 
     @ApiTest(
             apis = {
-                "android.service.personalcontext.hint.ConversationEvent"
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
                         + ".ConversationProcessingEvent#ConversationProcessingEvent",
-                "android.service.personalcontext.hint.ConversationHint.Builder#Builder",
-                "android.service.personalcontext.hint.ConversationHint.Builder#build",
+                "android.service.personalcontext.hint.ContentCaptureConversationHint.Builder"
+                        + "#Builder",
+                "android.service.personalcontext.hint.ContentCaptureConversationHint.Builder#build",
                 "android.service.personalcontext.hint.ContextHint#createHintFromBundle",
                 "android.service.personalcontext.hint.ContextHint#getHintId",
-                "android.service.personalcontext.hint.ConversationHint#toBundle",
-                "android.service.personalcontext.hint.ConversationHint#getConversationEvent",
-                "android.service.personalcontext.hint.ConversationEvent#getClientEventTimestamp",
-                "android.service.personalcontext.hint.ConversationEvent"
+                "android.service.personalcontext.hint.ContentCaptureConversationHint#toBundle",
+                "android.service.personalcontext.hint.ContentCaptureConversationHint"
+                        + "#getConversationEvent",
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
+                        + "#getClientEventTimestamp",
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
                         + ".ConversationProcessingEvent#getStartProcessingTimestamp",
-                "android.service.personalcontext.hint.ConversationEvent"
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
                         + ".ConversationProcessingEvent#getMessageAutofillId",
-                "android.service.personalcontext.hint.ConversationEvent"
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
                         + ".ConversationProcessingEvent#getConversationSessionId",
             })
     @Test
@@ -246,14 +259,15 @@ public class ConversationHintTest {
                         clientEventTimestamp,
                         processingTimestamp,
                         messageAutofillId);
-        final ConversationHint hint = new ConversationHint.Builder(processingEvent).build();
+        final ContentCaptureConversationHint hint =
+                new ContentCaptureConversationHint.Builder(processingEvent).build();
         assertThat(hint.getHintId()).isNotNull();
 
         final ContextHint outputHint = bundleUnbundle(hint);
-        assertThat(outputHint).isInstanceOf(ConversationHint.class);
+        assertThat(outputHint).isInstanceOf(ContentCaptureConversationHint.class);
         assertThat(outputHint.getHintId()).isEqualTo(hint.getHintId());
-        final ConversationEvent outputEvent =
-                ((ConversationHint) outputHint).getConversationEvent();
+        final ContentCaptureConversationEvent outputEvent =
+                ((ContentCaptureConversationHint) outputHint).getConversationEvent();
         assertThat(outputEvent).isInstanceOf(ConversationProcessingEvent.class);
 
         final ConversationProcessingEvent outputProcessingEvent =
@@ -268,14 +282,14 @@ public class ConversationHintTest {
 
     @ApiTest(
             apis = {
-                "android.service.personalcontext.hint.ConversationHint#equals",
-                "android.service.personalcontext.hint.ConversationHint#hashCode",
-                "android.service.personalcontext.hint.ConversationHint#toString",
-                "android.service.personalcontext.hint.ConversationEvent"
+                "android.service.personalcontext.hint.ContentCaptureConversationHint#equals",
+                "android.service.personalcontext.hint.ContentCaptureConversationHint#hashCode",
+                "android.service.personalcontext.hint.ContentCaptureConversationHint#toString",
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
                         + ".ConversationProcessingEvent#equals",
-                "android.service.personalcontext.hint.ConversationEvent"
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
                         + ".ConversationProcessingEvent#hashCode",
-                "android.service.personalcontext.hint.ConversationEvent"
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
                         + ".ConversationProcessingEvent#toString",
             })
     @Test
@@ -299,7 +313,8 @@ public class ConversationHintTest {
         assertThat(processingEvent.hashCode()).isEqualTo(processingEvent2.hashCode());
         assertThat(processingEvent.toString()).isNotNull();
 
-        final ConversationHint hint = new ConversationHint.Builder(processingEvent).build();
+        final ContentCaptureConversationHint hint =
+                new ContentCaptureConversationHint.Builder(processingEvent).build();
         final ContextHint unbundledHint = bundleUnbundle(hint);
         assertThat(hint).isEqualTo(unbundledHint);
         assertThat(hint.hashCode()).isEqualTo(unbundledHint.hashCode());
@@ -308,18 +323,21 @@ public class ConversationHintTest {
 
     @ApiTest(
             apis = {
-                "android.service.personalcontext.hint.ConversationEvent"
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
                         + ".ConversationUpdateEvent#ConversationUpdateEvent",
-                "android.service.personalcontext.hint.ConversationHint.Builder#Builder",
-                "android.service.personalcontext.hint.ConversationHint.Builder#build",
+                "android.service.personalcontext.hint.ContentCaptureConversationHint.Builder"
+                        + "#Builder",
+                "android.service.personalcontext.hint.ContentCaptureConversationHint.Builder#build",
                 "android.service.personalcontext.hint.ContextHint#createHintFromBundle",
                 "android.service.personalcontext.hint.ContextHint#getHintId",
-                "android.service.personalcontext.hint.ConversationHint#toBundle",
-                "android.service.personalcontext.hint.ConversationHint#getConversationEvent",
-                "android.service.personalcontext.hint.ConversationEvent#getClientEventTimestamp",
-                "android.service.personalcontext.hint.ConversationEvent"
+                "android.service.personalcontext.hint.ContentCaptureConversationHint#toBundle",
+                "android.service.personalcontext.hint.ContentCaptureConversationHint"
+                        + "#getConversationEvent",
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
+                        + "#getClientEventTimestamp",
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
                         + ".ConversationUpdateEvent#getConversationData",
-                "android.service.personalcontext.hint.ConversationEvent"
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
                         + ".ConversationUpdateEvent#getConversationSessionId",
                 "android.service.personalcontext.hint.ConversationData#hasNewMessage",
                 "android.service.personalcontext.hint.ConversationData"
@@ -354,14 +372,15 @@ public class ConversationHintTest {
                         clientEventTimestamp,
                         updateTimestamp,
                         conversationData);
-        final ConversationHint hint = new ConversationHint.Builder(updateEvent).build();
+        final ContentCaptureConversationHint hint =
+                new ContentCaptureConversationHint.Builder(updateEvent).build();
         assertThat(hint.getHintId()).isNotNull();
 
         final ContextHint outputHint = bundleUnbundle(hint);
-        assertThat(outputHint).isInstanceOf(ConversationHint.class);
+        assertThat(outputHint).isInstanceOf(ContentCaptureConversationHint.class);
         assertThat(outputHint.getHintId()).isEqualTo(hint.getHintId());
-        final ConversationEvent outputEvent =
-                ((ConversationHint) outputHint).getConversationEvent();
+        final ContentCaptureConversationEvent outputEvent =
+                ((ContentCaptureConversationHint) outputHint).getConversationEvent();
         assertThat(outputEvent).isInstanceOf(ConversationUpdateEvent.class);
 
         final ConversationUpdateEvent outputUpdateEvent = (ConversationUpdateEvent) outputEvent;
@@ -373,14 +392,14 @@ public class ConversationHintTest {
 
     @ApiTest(
             apis = {
-                "android.service.personalcontext.hint.ConversationHint#equals",
-                "android.service.personalcontext.hint.ConversationHint#hashCode",
-                "android.service.personalcontext.hint.ConversationHint#toString",
-                "android.service.personalcontext.hint.ConversationEvent"
+                "android.service.personalcontext.hint.ContentCaptureConversationHint#equals",
+                "android.service.personalcontext.hint.ContentCaptureConversationHint#hashCode",
+                "android.service.personalcontext.hint.ContentCaptureConversationHint#toString",
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
                         + ".ConversationUpdateEvent#equals",
-                "android.service.personalcontext.hint.ConversationEvent"
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
                         + ".ConversationUpdateEvent#hashCode",
-                "android.service.personalcontext.hint.ConversationEvent"
+                "android.service.personalcontext.hint.ContentCaptureConversationEvent"
                         + ".ConversationUpdateEvent#toString",
                 "android.service.personalcontext.hint.ConversationData#hasNewMessage",
                 "android.service.personalcontext.hint.ConversationData"
@@ -425,7 +444,8 @@ public class ConversationHintTest {
         assertThat(updateEvent.hashCode()).isEqualTo(updateEvent2.hashCode());
         assertThat(updateEvent.toString()).isNotNull();
 
-        final ConversationHint hint = new ConversationHint.Builder(updateEvent).build();
+        final ContentCaptureConversationHint hint =
+                new ContentCaptureConversationHint.Builder(updateEvent).build();
         final ContextHint unbundledHint = bundleUnbundle(hint);
         assertThat(hint).isEqualTo(unbundledHint);
         assertThat(hint.hashCode()).isEqualTo(unbundledHint.hashCode());
