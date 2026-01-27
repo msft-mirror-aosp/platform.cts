@@ -18,7 +18,7 @@ android_test {
     ],
 
     static_libs: [
-        "android.content.flags-aconfig-java",
+        "android.content.flags-aconfig-java-export",
         "androidx.test.ext.junit",
         "ctstestrunner-axt",
         "contactsprovider_flags_java_lib",
