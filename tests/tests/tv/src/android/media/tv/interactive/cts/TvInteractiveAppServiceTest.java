@@ -2269,9 +2269,14 @@ public class TvInteractiveAppServiceTest {
     }
 
     @Test
-    public void testViewOnLayout() {
+    public void testViewOnLayout() throws Throwable {
         int left = 1, top = 10, right = 5, bottom = 20;
-        mTvIAppView.onLayout(true, left, top, right, bottom);
+        runTestOnUiThread(
+                new Runnable() {
+                    public void run() {
+                        mTvIAppView.onLayout(true, left, top, right, bottom);
+                    }
+                });
     }
 
     @Test
@@ -2281,8 +2286,13 @@ public class TvInteractiveAppServiceTest {
     }
 
     @Test
-    public void testViewOnVisibilityChanged() {
-        mTvIAppView.onVisibilityChanged(mTvIAppView, View.VISIBLE);
+    public void testViewOnVisibilityChanged() throws Throwable {
+        runTestOnUiThread(
+                new Runnable() {
+                    public void run() {
+                        mTvIAppView.onVisibilityChanged(mTvIAppView, View.VISIBLE);
+                    }
+                });
     }
 
     @Test
