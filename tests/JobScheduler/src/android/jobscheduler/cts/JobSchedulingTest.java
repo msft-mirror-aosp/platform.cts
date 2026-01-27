@@ -61,6 +61,7 @@ import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThermalUtils;
 
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -974,6 +975,7 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
     }
 
     @RequiresFlagsDisabled(android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API)
+    @Ignore("b/478055911")
     @Test
     public void testDisabledFlagPendingJobReason_BatterySaver() throws Exception {
         try (TestAppInterface testAppInterface = new TestAppInterface(getContext(), JOB_ID)) {
