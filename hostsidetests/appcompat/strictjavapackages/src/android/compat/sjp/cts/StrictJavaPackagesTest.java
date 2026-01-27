@@ -508,8 +508,16 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
     // TODO: b/454188665
     private static final ImmutableSet<String> PREBUILT_GMSCORE_APK_IN_APEX_BURNDOWN_LIST =
             ImmutableSet.of(
+                // /system/framework/framework.jar
+                "Landroid/service/credentials/CredentialProviderService;",
+                "Landroid/window/OnBackAnimationCallback;",
+
+                // /apex/com.android.tethering/javalib/framework-connectivity.jar
+                "Landroid/net/http/UploadDataProvider;",
+
                 // /apex/com.android.configinfrastructure/javalib/framework-configinfrastructure.jar
                 "Landroid/os/flagging/AconfigStorageReadException;",
+
                 // /apex/com.android.art/javalib/core-oj.jar
                 "Ljava/util/function/Function;",
                 "Ljava/util/function/IntFunction;",
@@ -630,6 +638,9 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                             PREBUILT_GMSCORE_APK_IN_APEX_BURNDOWN_LIST)
                     .put(
                             "/apex/com.google.android.gmssystem/priv-app/PrebuiltGmsCoreVic/PrebuiltGmsCoreVic.apk",
+                            PREBUILT_GMSCORE_APK_IN_APEX_BURNDOWN_LIST)
+                    .put(
+                            "/apex/com.google.android.gmssystem/priv-app/PrebuiltGmsCoreForClockworkWearable/PrebuiltGmsCoreForClockworkWearable.apk",
                             PREBUILT_GMSCORE_APK_IN_APEX_BURNDOWN_LIST)
                     .build();
 
