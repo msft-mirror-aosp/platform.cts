@@ -95,6 +95,9 @@ abstract class TestBase {
     fun base_setUp() {
         assumeTrue(hasCompanionDeviceSetupFeature)
 
+        // Block all incoming action requests.
+        withShellPermissionIdentity { cdm.setRequestActionAllowList(listOf()) }
+
         // Remove all existing associations (for the user).
         assertEmpty(withShellPermissionIdentity {
             cdm.disassociateAll()
@@ -111,13 +114,16 @@ abstract class TestBase {
     @After
     fun base_tearDown() {
         if (!hasCompanionDeviceSetupFeature) return
-
+        // KEEP it blocked while we are cleaning up associations.
+        withShellPermissionIdentity { cdm.setRequestActionAllowList(listOf()) }
         tearDown()
 
         // Remove all existing associations (for the user).
         withShellPermissionIdentity { cdm.disassociateAll() }
         // Disable the location if it was disabled.
         disableLocation()
+        // Unblock all incoming action requests.
+        withShellPermissionIdentity { cdm.setRequestActionAllowList(null) }
     }
 
     @CallSuper
