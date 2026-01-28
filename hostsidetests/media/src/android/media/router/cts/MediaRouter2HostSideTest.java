@@ -748,10 +748,7 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
 
     @AppModeFull
     @RequiresDevice
-    @RequiresFlagsEnabled({
-        Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING,
-        Flags.FLAG_ENABLE_FULL_SCAN_WITH_MEDIA_CONTENT_CONTROL
-    })
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_FULL_SCAN_WITH_MEDIA_CONTENT_CONTROL)
     @Test
     public void screenOffScan_onLocalRouter_allowedWithMediaContentControl() throws Exception {
         runDeviceTests(
@@ -762,10 +759,7 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
 
     @AppModeFull
     @RequiresDevice
-    @RequiresFlagsEnabled({
-        Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING,
-        Flags.FLAG_ENABLE_FULL_SCAN_WITH_MEDIA_CONTENT_CONTROL
-    })
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_FULL_SCAN_WITH_MEDIA_CONTENT_CONTROL)
     @Test
     public void screenOffScan_onProxyRouter_allowedWithMediaContentControl() throws Exception {
         runDeviceTests(

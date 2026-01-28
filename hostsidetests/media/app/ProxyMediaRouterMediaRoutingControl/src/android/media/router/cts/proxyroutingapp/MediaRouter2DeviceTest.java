@@ -194,10 +194,7 @@ public class MediaRouter2DeviceTest {
                                 mContext.getUser()));
     }
 
-    @RequiresFlagsEnabled({
-        Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING,
-        Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL
-    })
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL)
     @Test
     public void requestScan_withScreenOff_triggersScanning() throws InterruptedException {
         mInstrumentation
@@ -240,10 +237,7 @@ public class MediaRouter2DeviceTest {
         }
     }
 
-    @RequiresFlagsEnabled({
-        Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING,
-        Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL
-    })
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL)
     @Test
     public void cancelScanRequest_screenOffScanning_unbindsSelfScanProvider() {
         mInstrumentation
@@ -286,10 +280,7 @@ public class MediaRouter2DeviceTest {
         assertThat(onUnbindConditionVariable.block(TIMEOUT_MS)).isTrue();
     }
 
-    @RequiresFlagsEnabled({
-        Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING,
-        Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL
-    })
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL)
     @Test
     public void cancelScanRequest_multipleTypes_unbindsSelfScanProvider() {
         mInstrumentation
