@@ -324,7 +324,8 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
                 GLOBAL_AVBL_RESOURCES, String.format(Locale.getDefault(),
                         "getRequiredResources() failed in %s state \n", CodecState.EOS)
                         + mTestEnv + mTestConfig);
-        mCodec.flush();
+        flushCodec();
+        mOutputBuff.reset();
         validateGetCodecResources(List.of(Pair.create(mCodec, CodecState.FLUSHED)),
                 GLOBAL_AVBL_RESOURCES, String.format(Locale.getDefault(),
                         "getRequiredResources() failed in %s state \n", CodecState.FLUSHED)
@@ -570,7 +571,9 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
             }
             surfaces.clear();
             codecs.clear();
-            if (lastGlobalResourceForFormat != null) {
+            // Only in real-time, it is guaranteed that the more pixels are processed per sec, the
+            // more is the resource usage.
+            if (lastGlobalResourceForFormat != null && testRTMode) {
                 int result = compareResources(lastGlobalResourceForFormat,
                         currentGlobalResourcesForFormat, testLogs);
                 Assert.assertEquals("format : " + (lastFormat == null ? "empty" : lastFormat)

@@ -590,7 +590,9 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
                         RHS_RESOURCE_GE, result);
             }
             codecs.clear();
-            if (lastGlobalResourcesForFormat != null) {
+            // Only in real-time, it is guaranteed that the more pixels are processed per sec, the
+            // more is the resource usage.
+            if (lastGlobalResourcesForFormat != null && testRTMode) {
                 int result = compareResources(lastGlobalResourcesForFormat,
                         currentGlobalResourcesForFormat, testLogs);
                 Assert.assertEquals("format : " + (lastFormat == null ? "empty" : lastFormat)
@@ -621,7 +623,7 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
             "android.media.MediaCodec#getRequiredResources"})
     public void testConcurrentMaxInstances() throws CloneNotSupportedException {
         validateMaxInstances(mCodecName, mMediaType, true, false);
-        if (BOARD_SDK_IS_AT_LEAST_202604) {
+        if (BOARD_FIRST_SDK_IS_AT_LEAST_202604) {
             validateMaxInstances(mCodecName, mMediaType, false, false);
         }
     }

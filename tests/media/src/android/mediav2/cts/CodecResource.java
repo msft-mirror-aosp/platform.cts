@@ -34,6 +34,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * This class encapsulates information about the availability of a generic media codec resource
@@ -94,6 +95,7 @@ class CodecResourceUtils {
     public static final int LHS_RESOURCE_GE = 1;
     public static final int RHS_RESOURCE_GE = 2;
     public static final int RESOURCE_COMPARISON_UNKNOWN = -1;
+    public static List<String> RESOURCE_IDS_LIST = null;
 
     public enum CodecState {
         UNINITIALIZED,
@@ -236,6 +238,22 @@ class CodecResourceUtils {
     public static List<CodecResource> getCodecRequiredResources(MediaCodec codec) {
         List<CodecResource> resources = new ArrayList<>();
         addResources(codec.getRequiredResources(), resources, true);
+        // If a resource is not required for the operation of the current instance, then
+        // getRequiredResources() list may not contain this resource item altogether. In that case
+        // add a mock entry with requirement set to 0. This is helpful for comparison of required
+        // resources across instances.
+        if (RESOURCE_IDS_LIST == null) {
+            // cache all the resource Ids available
+            RESOURCE_IDS_LIST = new ArrayList<>();
+            MediaCodec.getGloballyAvailableResources()
+                    .forEach(res -> RESOURCE_IDS_LIST.add(res.getName()));
+        }
+        Set<String> existingIds =
+                resources.stream().map(CodecResource::getResourceId).collect(Collectors.toSet());
+        RESOURCE_IDS_LIST.stream()
+                .filter(resId -> !existingIds.contains(resId))
+                .map(resId -> new CodecResource(resId, CAPACITY_UNKNOWN, 0))
+                .forEach(resources::add);
         return resources;
     }
 
