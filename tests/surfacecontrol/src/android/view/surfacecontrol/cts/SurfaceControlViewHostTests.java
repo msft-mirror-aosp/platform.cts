@@ -2340,7 +2340,9 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
                 "android.view.SurfaceControlViewHost.LayoutParams#LayoutParams",
                 "android.view.SurfaceControlViewHost.LayoutParams#isFocusable",
                 "android.view.SurfaceControlViewHost.LayoutParams#getWidth",
-                "android.view.SurfaceControlViewHost.LayoutParams#getHeight"
+                "android.view.SurfaceControlViewHost.LayoutParams#getHeight",
+                "android.view.SurfaceControlViewHost.LayoutParams#setTitle",
+                "android.view.SurfaceControlViewHost.LayoutParams#getTitle"
             })
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SCVH_SET_FOCUSABLE_API)
@@ -2355,12 +2357,14 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         assertEquals(mEmbeddedViewWidth, lp.getWidth());
         assertEquals(mEmbeddedViewHeight, lp.getHeight());
         assertTrue(lp.isFocusable());
+        assertEquals("", lp.getTitle());
 
         // Change layout params and check again.
         mActivityRule.runOnUiThread(
                 () -> {
                     SurfaceControlViewHost.LayoutParams newLp =
                             new SurfaceControlViewHost.LayoutParams(200, 300, false);
+                    newLp.setTitle("SCVH-Test");
                     mVr.relayout(newLp);
                 });
         mInstrumentation.waitForIdleSync();
@@ -2369,6 +2373,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         assertEquals(200, lp.getWidth());
         assertEquals(300, lp.getHeight());
         assertFalse(lp.isFocusable());
+        assertEquals("SCVH-Test", lp.getTitle());
     }
 
     private void assertViewHasFocus(String message, View view) {
