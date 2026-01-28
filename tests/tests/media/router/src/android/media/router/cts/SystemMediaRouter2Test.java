@@ -59,7 +59,6 @@ import android.media.RoutingSessionInfo;
 import android.media.cts.ResourceReleaser;
 import android.os.Process;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.TextUtils;
@@ -224,9 +223,8 @@ public class SystemMediaRouter2Test {
                 .isSameInstanceAs(mSystemRouter2ForCts);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CROSS_USER_ROUTING_IN_MEDIA_ROUTER2)
     @Test
-    public void getInstance_withDifferentOverrides_returnsSameInstance() {
+    public void getInstance_withoutUser_returnsInstanceWithUserFromContext() {
         assertThat(MediaRouter2.getInstance(mContext, mContext.getPackageName()))
                 .isSameInstanceAs(
                         MediaRouter2.getInstance(
