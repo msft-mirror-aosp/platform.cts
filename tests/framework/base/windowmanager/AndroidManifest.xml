@@ -679,9 +679,12 @@
                 android:name="android.window.PROPERTY_COMPAT_ALLOW_SAFE_REGION_LETTERBOXING"
                 android:value="false" />
         </activity>
+        <!-- The android:configChanges below is to prevent activity recreation
+             during tests on AAOS builds. -->
         <activity android:name="android.server.wm.backnavigation.BackNavigationActivity"
                   android:enableOnBackInvokedCallback="true"
-                  android:exported="true"/>
+                  android:exported="true"
+                  android:configChanges="screenSize|density"/>
         <activity android:name="android.server.wm.backnavigation.OptOutBackNavigationActivity"
             android:enableOnBackInvokedCallback="false"
             android:exported="true"/>
