@@ -21,12 +21,13 @@ android_test {
     name: "CtsSearchUiServiceTestCases",
     defaults: ["cts_defaults"],
     static_libs: [
+        "android.app.search.flags-aconfig-java",
         "androidx.annotation_annotation",
         "androidx.test.ext.junit",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
-        "truth",
         "testng",
+        "truth",
     ],
     srcs: ["src/**/*.java"],
     // Tag this module as a cts test artifact
