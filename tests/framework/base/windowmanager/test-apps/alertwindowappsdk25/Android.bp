@@ -21,7 +21,7 @@ filegroup {
     srcs: ["src/android/server/wm/alertwindowappsdk25/AlertWindowTestBaseActivity.java"],
 }
 
-android_test {
+android_test_helper_app {
     name: "CtsDeviceAlertWindowTestAppSdk25",
     defaults: ["cts_support_defaults"],
 
@@ -35,7 +35,6 @@ android_test {
     sdk_version: "25",
 
     test_suites: [
-        "cts",
         "general-tests",
         "sts",
     ],

@@ -39,7 +39,6 @@ java_defaults {
     defaults: ["cts_support_defaults"],
     static_libs: ["bal-testapp"],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     target_sdk_version: "current",
