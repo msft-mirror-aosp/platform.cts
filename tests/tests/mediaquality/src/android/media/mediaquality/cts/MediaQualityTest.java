@@ -850,16 +850,31 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW_C)
     @Test
-    public void testUsesDisplayTechnology() throws RemoteException {
+    public void testUsesDisplayTechnology() throws Exception {
         assumeTrue(mMediaQuality != null);
+        IMediaQualityManager mockService = Mockito.mock(IMediaQualityManager.class);
 
-        when(mMediaQuality.isDisplayTechnologySupported(anyInt())).thenReturn(true);
+        mServiceField.set(mManager, mockService);
 
-        boolean usedTech =
-                mManager.usesDisplayTechnology(MediaQualityContract.PANEL_TECHNOLOGY_OLED);
+        try {
+            Mockito.when(mockService.usesDisplayTechnology(anyInt(), anyInt())).thenReturn(true);
+            Assert.assertTrue(
+                    "usesDisplayTechnology should return true when service returns true",
+                    mManager.usesDisplayTechnology(MediaQualityContract.PANEL_TECHNOLOGY_OLED));
 
-        Assert.assertTrue(
-                "usesDisplayTechnology should return the mocked value from HAL", usedTech);
+            Mockito.verify(mockService)
+                    .usesDisplayTechnology(
+                            Mockito.eq(MediaQualityContract.PANEL_TECHNOLOGY_OLED), anyInt());
+
+            Mockito.when(mockService.usesDisplayTechnology(anyInt(), anyInt())).thenReturn(false);
+            Assert.assertFalse(
+                    "usesDisplayTechnology should return false when service returns false",
+                    mManager.usesDisplayTechnology(MediaQualityContract.PANEL_TECHNOLOGY_OLED));
+
+            Mockito.verify(mockService, Mockito.times(2)).usesDisplayTechnology(anyInt(), anyInt());
+        } finally {
+            mServiceField.set(mManager, mOriginalService);
+        }
     }
 
     private PictureProfile getTestPictureProfile(String methodName) {
