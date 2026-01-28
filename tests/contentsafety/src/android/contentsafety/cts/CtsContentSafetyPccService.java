@@ -35,7 +35,7 @@ public class CtsContentSafetyPccService extends ContentSafetySandboxedService {
     static final String TAG = "SampleCtsContentSafetyPccService";
 
     @Override
-    public void onCheckContent(
+    public void onCheckContentRequest(
             int featureType,
             @NonNull Map<Integer, List<ParcelFileDescriptor>> contentPayloadMap,
             @Nullable CancellationSignal cancellationSignal,
@@ -49,7 +49,7 @@ public class CtsContentSafetyPccService extends ContentSafetySandboxedService {
     }
 
     @Override
-    public void onLoadFeature(
+    public void onLoadFeatureRequest(
             @NonNull Map<String, ParcelFileDescriptor> features,
             @Nullable CancellationSignal cancellationSignal,
             @NonNull OutcomeReceiver<Void, ContentSafetyException> callback) {

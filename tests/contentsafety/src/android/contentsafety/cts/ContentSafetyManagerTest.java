@@ -136,7 +136,7 @@ public class ContentSafetyManagerTest {
                 "no access to checkContent from non system component",
                 SecurityException.class,
                 () ->
-                        mContentSafetyManager.checkContent(
+                        mContentSafetyManager.requestCheckContent(
                                 SENSITIVE_VIDEO,
                                 new HashMap<Integer, List<ParcelFileDescriptor>>(),
                                 new CancellationSignal(),
@@ -157,7 +157,7 @@ public class ContentSafetyManagerTest {
                 "no access to isFeatureEnabled from non system component",
                 SecurityException.class,
                 () ->
-                        mContentSafetyManager.isFeatureEnabled(
+                        mContentSafetyManager.requestIsFeatureEnabled(
                                 SENSITIVE_VIDEO, null, EXECUTOR, null));
     }
 
@@ -218,7 +218,7 @@ public class ContentSafetyManagerTest {
                                         SENSITIVE_VIDEO, List.of(CONTENT_SAFETY_SUCCESS_SENSITIVE));
                         latch.countDown();
                     };
-            mContentSafetyManager.checkContent(
+            mContentSafetyManager.requestCheckContent(
                     SENSITIVE_VIDEO,
                     Map.of(SENSITIVE_VIDEO, List.of(pfd)),
                     null,
@@ -235,7 +235,7 @@ public class ContentSafetyManagerTest {
         Log.i(TAG, "Test isFeatureEnabledPass:  started");
 
         CountDownLatch latch = new CountDownLatch(1);
-        mContentSafetyManager.isFeatureEnabled(
+        mContentSafetyManager.requestIsFeatureEnabled(
                 SENSITIVE_VIDEO,
                 null,
                 EXECUTOR,
