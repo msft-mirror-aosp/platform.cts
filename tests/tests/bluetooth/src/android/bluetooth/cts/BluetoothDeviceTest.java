@@ -158,7 +158,7 @@ public class BluetoothDeviceTest {
 
         runShellCommand(
                 String.format(
-                        "cmd companiondevice associate %d %s %s",
+                        "cmd companiondevice associate %d %s --mac-address %s",
                         userId, packageName, mFakeDeviceAddress));
         String output = runShellCommand("dumpsys companiondevice");
         assertThat(output).contains(packageName);
@@ -179,7 +179,7 @@ public class BluetoothDeviceTest {
                 .isEqualTo(BluetoothStatusCodes.ERROR_DEVICE_NOT_BONDED);
         runShellCommand(
                 String.format(
-                        "cmd companiondevice disassociate %d %s %s",
+                        "cmd companiondevice disassociate %d %s --mac-address %s",
                         userId, packageName, mFakeDeviceAddress));
 
         assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
@@ -370,7 +370,7 @@ public class BluetoothDeviceTest {
         String packageName = mContext.getOpPackageName();
         runShellCommand(
                 String.format(
-                        "cmd companiondevice disassociate %d %s %s",
+                        "cmd companiondevice disassociate %d %s --mac-address %s",
                         userId, packageName, mFakeDeviceAddress));
     }
 
@@ -379,7 +379,7 @@ public class BluetoothDeviceTest {
         String packageName = mContext.getOpPackageName();
         runShellCommand(
                 String.format(
-                        "cmd companiondevice associate %d %s %s",
+                        "cmd companiondevice associate %d %s --mac-address %s",
                         userId, packageName, mFakeDeviceAddress));
         String output = runShellCommand("dumpsys companiondevice");
         assertThat(output).contains(packageName);

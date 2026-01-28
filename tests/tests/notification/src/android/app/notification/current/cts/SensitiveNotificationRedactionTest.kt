@@ -374,7 +374,7 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
         try {
             runShellCommand(
                 "cmd companiondevice associate " +
-                        "${mContext.userId} ${mContext.packageName} $macAddress"
+                        "${mContext.userId} ${mContext.packageName} --mac-address $macAddress"
             )
             // Trusted status is cached on helper enable, so disable + enable the listener
             mNotificationHelper.disableListener(STUB_PACKAGE_NAME)
