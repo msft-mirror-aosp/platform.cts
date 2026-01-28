@@ -30,4 +30,9 @@ java_test_host {
     // *Not* tagged as a cts test artifact intentionally: b/109660132
     //$(COMPATIBILITY_TESTCASES_OUT_cts)/CtsUiHostTestCases.jar : $(COMPATIBILITY_TESTCASES_OUT_cts)/com.replica.replicaisland.apk
     test_suites: ["general-tests"],
+    device_common_data: [
+        ":CtsDeviceTaskSwitchingAppA",
+        ":CtsDeviceTaskSwitchingAppB",
+        ":CtsDeviceTaskSwitchingControl",
+    ],
 }
