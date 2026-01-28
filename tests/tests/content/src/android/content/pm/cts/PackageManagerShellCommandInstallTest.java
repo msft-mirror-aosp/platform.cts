@@ -2691,6 +2691,128 @@ public class PackageManagerShellCommandInstallTest {
 
     @Test
     @LargeTest
+    @RequiresFlagsEnabled(android.content.pm.Flags.FLAG_EXTEND_VERIFICATION_TIMEOUT_MULTIPLE_TIMES)
+    public void testLastTimeoutCallVerificationReject_appNotUpdated() throws Exception {
+        uninstallPackageSilently(TEST_VERIFIER_PACKAGE);
+
+        AtomicInteger dataLoaderType = new AtomicInteger(-1);
+
+        runPackageVerifierTest(
+                TEST_HW5,
+                TEST_HW7,
+                "Failure",
+                (context, intent) -> {
+                    int verificationId = intent.getIntExtra(EXTRA_VERIFICATION_ID, -1);
+                    assertNotEquals(-1, verificationId);
+
+                    dataLoaderType.set(intent.getIntExtra(EXTRA_DATA_LOADER_TYPE, -1));
+                    int sessionId = intent.getIntExtra(EXTRA_SESSION_ID, -1);
+                    assertNotEquals(-1, sessionId);
+
+                    // Since flag is enabled, 2nd API call will take effect. Update will not be
+                    // allowed.
+                    getPackageManager()
+                            .extendVerificationTimeout(verificationId, VERIFICATION_ALLOW, 1000);
+                    getPackageManager()
+                            .extendVerificationTimeout(verificationId, VERIFICATION_REJECT, 1000);
+                });
+
+        assertEquals(mDataLoaderType, dataLoaderType.get());
+    }
+
+    @Test
+    @LargeTest
+    @RequiresFlagsEnabled(android.content.pm.Flags.FLAG_EXTEND_VERIFICATION_TIMEOUT_MULTIPLE_TIMES)
+    public void testLastTimeoutCallVerificationAllow_appIsUpdated() throws Exception {
+        uninstallPackageSilently(TEST_VERIFIER_PACKAGE);
+
+        AtomicInteger dataLoaderType = new AtomicInteger(-1);
+
+        runPackageVerifierTest(
+                TEST_HW5,
+                TEST_HW7,
+                "Success",
+                (context, intent) -> {
+                    int verificationId = intent.getIntExtra(EXTRA_VERIFICATION_ID, -1);
+                    assertNotEquals(-1, verificationId);
+
+                    dataLoaderType.set(intent.getIntExtra(EXTRA_DATA_LOADER_TYPE, -1));
+                    int sessionId = intent.getIntExtra(EXTRA_SESSION_ID, -1);
+                    assertNotEquals(-1, sessionId);
+
+                    // Since flag is enabled, 2nd API call will take effect. Update will be allowed.
+                    getPackageManager()
+                            .extendVerificationTimeout(verificationId, VERIFICATION_REJECT, 1000);
+                    getPackageManager()
+                            .extendVerificationTimeout(verificationId, VERIFICATION_ALLOW, 1000);
+                });
+
+        assertEquals(mDataLoaderType, dataLoaderType.get());
+    }
+
+    @Test
+    @LargeTest
+    @RequiresFlagsDisabled(android.content.pm.Flags.FLAG_EXTEND_VERIFICATION_TIMEOUT_MULTIPLE_TIMES)
+    public void testFirstTimeoutCallVerificationAllow_appIsUpdated() throws Exception {
+        uninstallPackageSilently(TEST_VERIFIER_PACKAGE);
+
+        AtomicInteger dataLoaderType = new AtomicInteger(-1);
+
+        runPackageVerifierTest(
+                TEST_HW5,
+                TEST_HW7,
+                "Success",
+                (context, intent) -> {
+                    int verificationId = intent.getIntExtra(EXTRA_VERIFICATION_ID, -1);
+                    assertNotEquals(-1, verificationId);
+
+                    dataLoaderType.set(intent.getIntExtra(EXTRA_DATA_LOADER_TYPE, -1));
+                    int sessionId = intent.getIntExtra(EXTRA_SESSION_ID, -1);
+                    assertNotEquals(-1, sessionId);
+
+                    // Since flag is disabled, 2nd API call will be ignored. Update will be allowed.
+                    getPackageManager()
+                            .extendVerificationTimeout(verificationId, VERIFICATION_ALLOW, 1000);
+                    getPackageManager()
+                            .extendVerificationTimeout(verificationId, VERIFICATION_REJECT, 1000);
+                });
+
+        assertEquals(mDataLoaderType, dataLoaderType.get());
+    }
+
+    @Test
+    @LargeTest
+    @RequiresFlagsDisabled(android.content.pm.Flags.FLAG_EXTEND_VERIFICATION_TIMEOUT_MULTIPLE_TIMES)
+    public void testFirstTimeoutCallVerificationReject_appNotUpdated() throws Exception {
+        uninstallPackageSilently(TEST_VERIFIER_PACKAGE);
+
+        AtomicInteger dataLoaderType = new AtomicInteger(-1);
+
+        runPackageVerifierTest(
+                TEST_HW5,
+                TEST_HW7,
+                "Failure",
+                (context, intent) -> {
+                    int verificationId = intent.getIntExtra(EXTRA_VERIFICATION_ID, -1);
+                    assertNotEquals(-1, verificationId);
+
+                    dataLoaderType.set(intent.getIntExtra(EXTRA_DATA_LOADER_TYPE, -1));
+                    int sessionId = intent.getIntExtra(EXTRA_SESSION_ID, -1);
+                    assertNotEquals(-1, sessionId);
+
+                    // Since flag is disabled, 2nd API call will be ignored. Update will not be
+                    // allowed.
+                    getPackageManager()
+                            .extendVerificationTimeout(verificationId, VERIFICATION_REJECT, 1000);
+                    getPackageManager()
+                            .extendVerificationTimeout(verificationId, VERIFICATION_ALLOW, 1000);
+                });
+
+        assertEquals(mDataLoaderType, dataLoaderType.get());
+    }
+
+    @Test
+    @LargeTest
     public void testPackageVerifierWithExtensionAndTimeout() throws Exception {
         assumeTrue(mVerifierTimeoutTest);
         AtomicInteger dataLoaderType = new AtomicInteger(-1);
