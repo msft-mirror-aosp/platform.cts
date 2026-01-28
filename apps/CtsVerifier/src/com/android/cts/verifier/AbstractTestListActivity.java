@@ -64,6 +64,12 @@ public abstract class AbstractTestListActivity extends ListActivity {
         return item.intent;
     }
 
+    private void setNotExecutedTestResult(TestResult testResult) {
+        testResult.getHistoryCollection()
+                .addEmptyTestResultHistory(testResult.getName());
+        mAdapter.setTestResult(testResult, false);
+    }
+
     private void setTestResult(TestResult testResult) {
         testResult.getHistoryCollection().add(
                 testResult.getName(), mStartTime, mEndTime, mIsAutomated);
@@ -98,6 +104,29 @@ public abstract class AbstractTestListActivity extends ListActivity {
         setContentView(R.layout.list_content);
     }
 
+    protected void handleLaunchNotExecutedTestResult(Intent data) {
+        if (data == null) {
+            throw new IllegalStateException("Received null Intent");
+        }
+        TestResult testResult = TestResult.fromActivityResult(data);
+        if (testResult.getResult() != TestResult.TEST_RESULT_NOT_EXECUTED) {
+            throw new IllegalStateException(
+                    "Received unexpected result: " + testResult.getResult());
+        }
+        // Set the same result in both folded and unfolded mode if the device is foldable
+        // and the test pass mode is set to either_mode.
+        TestListItem testListItem = mAdapter.getItemByName(testResult.getName());
+        if (mAdapter.isFoldableDevice() && testListItem != null
+                && testListItem.passInEitherMode) {
+            setNotExecutedTestResult(TestResult.fromActivityResultWithDisplayMode(
+                    data, DisplayMode.FOLDED.toString()));
+            setNotExecutedTestResult(TestResult.fromActivityResultWithDisplayMode(
+                    data, DisplayMode.UNFOLDED.toString()));
+        } else {
+            setNotExecutedTestResult(testResult);
+        }
+    }
+
     protected void handleLaunchTestResult(int resultCode, Intent data) {
         // The mStartTime can be the initial 0 if this Activity has been recreated.
         if (mStartTime == 0 && data != null && data.hasExtra(TestResult.TEST_START_TIME)) {
@@ -113,16 +142,16 @@ public abstract class AbstractTestListActivity extends ListActivity {
             if (mEndTime == 0) {
                 mEndTime = System.currentTimeMillis();
             }
-            TestResult testResult = TestResult.fromActivityResult(resultCode, data);
+            TestResult testResult = TestResult.fromActivityResult(data);
             // Set the same result in both folded and unfolded mode if the device is foldable
             // and the test pass mode is set to either_mode.
             TestListItem testListItem = mAdapter.getItemByName(testResult.getName());
             if (mAdapter.isFoldableDevice() && testListItem != null
                     && testListItem.passInEitherMode) {
                 setTestResult(TestResult.fromActivityResultWithDisplayMode(
-                        resultCode, data, DisplayMode.FOLDED.toString()));
+                        data, DisplayMode.FOLDED.toString()));
                 setTestResult(TestResult.fromActivityResultWithDisplayMode(
-                        resultCode, data, DisplayMode.UNFOLDED.toString()));
+                        data, DisplayMode.UNFOLDED.toString()));
             } else {
                 setTestResult(testResult);
             }

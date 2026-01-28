@@ -327,7 +327,7 @@ class TestResultsReport {
                 return TestStatus.FAIL;
 
             case TestResult.TEST_RESULT_NOT_EXECUTED:
-                return null;
+                return TestStatus.INCOMPLETE;
 
             default:
                 throw new IllegalArgumentException("Unknown test result: " + testResult);

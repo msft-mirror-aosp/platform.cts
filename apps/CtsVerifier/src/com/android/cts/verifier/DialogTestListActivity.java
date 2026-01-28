@@ -262,6 +262,22 @@ public abstract class DialogTestListActivity extends PassFailButtons.TestListAct
         getListView().smoothScrollToPosition(mCurrentTestPosition + 1);
     }
 
+    /* Sets NOT_EXECUTED test result for all tests listed in the adapter. */
+    protected void setNotExecutedTestResults(ArrayTestListAdapter adapter) {
+        for (TestListAdapter.TestListItem testItem: adapter.getRows()) {
+            Intent resultIntent = new Intent();
+            TestResult.addResultData(
+                    resultIntent,
+                    TestResult.TEST_RESULT_NOT_EXECUTED,
+                    testItem.testName,
+                    /* testDetails */ null,
+                    /* reportLog */ null,
+                    null
+            );
+            handleLaunchNotExecutedTestResult(resultIntent);
+        }
+    }
+
     protected void showToast(int messageId) {
         String message = getString(messageId);
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
