@@ -481,7 +481,30 @@ public class MediaProjectionActivity extends Activity {
 
     /** Returns true if the MediaProjection permission dialog is using the new Compose UI. */
     public static boolean isComposeUI(UiDevice device) {
-        return device.hasObject(By.res(SHARE_TAB_TEST_TAG));
+        boolean rroEnabled = false;
+        try {
+            final Context testContext = getInstrumentation().getContext();
+            final Context systemUiContext =
+                    testContext.createPackageContext("com.android.systemui", 0);
+            final Resources systemUiResources = systemUiContext.getResources();
+            final int resId =
+                    systemUiResources.getIdentifier(
+                            "config_enableLargeScreenScreencapture",
+                            "bool",
+                            "com.android.systemui");
+
+            if (resId != 0) {
+                rroEnabled = systemUiResources.getBoolean(resId);
+            } else {
+                Log.w(
+                        TAG,
+                        "Could not find resource 'config_enableLargeScreenScreencapture'. "
+                                + "Assuming false.");
+            }
+        } catch (PackageManager.NameNotFoundException e) {
+            Log.e(TAG, "Could not create context for SystemUI package. Assuming false.", e);
+        }
+        return rroEnabled;
     }
 
     @Override
