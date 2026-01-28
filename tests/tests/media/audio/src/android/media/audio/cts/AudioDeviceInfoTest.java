@@ -97,6 +97,11 @@ public class AudioDeviceInfoTest {
             OUTPUT_TYPES.add(AudioDeviceInfo.TYPE_MULTICHANNEL_GROUP);
         }
 
+        if (Flags.bleHearingAidDevice()) {
+            INPUT_TYPES.add(AudioDeviceInfo.TYPE_BLE_HEARING_AID);
+            OUTPUT_TYPES.add(AudioDeviceInfo.TYPE_BLE_HEARING_AID);
+        }
+
         if (Flags.blePeripheralDevices()) {
             INPUT_TYPES.add(AudioDeviceInfo.TYPE_BLE_CENTRAL);
             INPUT_TYPES.add(AudioDeviceInfo.TYPE_BLE_CENTRAL_BROADCAST);
