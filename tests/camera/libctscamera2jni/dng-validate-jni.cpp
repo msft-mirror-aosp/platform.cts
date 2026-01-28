@@ -455,8 +455,10 @@ Java_android_hardware_camera2_cts_DngCreatorTest_validateDngNative(
             ALOGI("  |%s", line.c_str());
         }
     }
-    // If no output is produced, assume something went wrong
-    if (lineCount > 0) {
+
+    // dng_timer outputs the timer values to stderr, so if there is no output
+    // the DNG SDK failed before it could output anything.
+    if (lineCount < 3) {
         ALOGE("Unexpected stderr output!");
         dng_err = dng_error_unknown;
     }
