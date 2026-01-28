@@ -80,7 +80,20 @@ public class InstallUtilsHost {
                 "sm supports-checkpoint");
         assertWithMessage("Failed to check if file system checkpoint is supported : %s",
                 result.getStderr()).that(result.getStatus()).isEqualTo(CommandStatus.SUCCESS);
-        return "true".equals(result.getStdout().trim());
+        if ("false".equals(result.getStdout().trim())) {
+            return false;
+        }
+        // Storage manager returns true if any of the partition supports checkpoint.
+        // Meanwhile, we are only interested in /data partition.
+        // If /data partition is ext4, then checkpoint is not supported.
+        result =
+                getTestInfo()
+                        .getDevice()
+                        .executeShellV2Command("cat /proc/mounts | grep ' /data '");
+        assertWithMessage("Failed to get /proc/mounts : %s", result.getStderr())
+                .that(result.getStatus())
+                .isEqualTo(CommandStatus.SUCCESS);
+        return !result.getStdout().contains("/data ext4");
     }
 
     /**
