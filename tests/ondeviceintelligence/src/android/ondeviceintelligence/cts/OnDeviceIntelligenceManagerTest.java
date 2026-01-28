@@ -17,6 +17,7 @@
 package android.ondeviceintelligence.cts;
 
 import static android.app.ondeviceintelligence.flags.Flags.FLAG_ON_DEVICE_INTELLIGENCE_25Q4;
+import static android.app.ondeviceintelligence.flags.Flags.FLAG_ON_DEVICE_INTELLIGENCE_26Q2;
 import static android.content.Context.RECEIVER_EXPORTED;
 import static android.ondeviceintelligence.cts.CtsIsolatedInferenceService.constructException;
 import static android.ondeviceintelligence.cts.CtsIsolatedInferenceService.constructTokenInfo;
@@ -28,6 +29,7 @@ import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
@@ -45,6 +47,12 @@ import android.app.ondeviceintelligence.ProcessingCallback;
 import android.app.ondeviceintelligence.ProcessingSignal;
 import android.app.ondeviceintelligence.StreamingProcessingCallback;
 import android.app.ondeviceintelligence.TokenInfo;
+import android.app.ondeviceintelligence.embedding.EmbeddingModel;
+import android.app.ondeviceintelligence.embedding.EmbeddingRequest;
+import android.app.ondeviceintelligence.embedding.EmbeddingResponse;
+import android.app.ondeviceintelligence.imagedescription.ImageDescriptionModel;
+import android.app.ondeviceintelligence.imagedescription.ImageDescriptionRequest;
+import android.app.ondeviceintelligence.imagedescription.ImageDescriptionResponse;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -99,7 +107,9 @@ import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 /**
- * Test the OnDeviceIntelligenceManager API. Run with "atest OnDeviceIntelligenceManagerTest"
+ * Test the OnDeviceIntelligenceManager API. Run with "atest OnDeviceIntelligenceManagerTest".
+ *
+ * TODO:b/458658574 - Add coverage tests for the new APIs.
  * .
  */
 @RunWith(AndroidJUnit4.class)
@@ -1500,6 +1510,143 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
 
+    @Test
+    @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_26Q2)
+    public void testListEmbeddingModels() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch statusLatch = new CountDownLatch(1);
+        mOnDeviceIntelligenceManager.listEmbeddingModels(
+                EXECUTOR,
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(List<EmbeddingModel> result) {
+                        assertThat(result).hasSize(1);
+                        assertThat(result.get(0).getModelSignature()).isEqualTo(
+                                "test-embedding-model");
+                        statusLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        fail("onError called: " + error);
+                    }
+                });
+        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_26Q2)
+    public void testFetchEmbeddingModel() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch statusLatch = new CountDownLatch(1);
+        mOnDeviceIntelligenceManager.fetchEmbeddingModel(
+                "test-embedding-model",
+                EXECUTOR,
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(EmbeddingModel result) {
+                        assertThat(result.getModelSignature()).isEqualTo("test-embedding-model");
+                        statusLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        fail("onError called: " + error);
+                    }
+                });
+        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_26Q2)
+    public void testFetchImageDescriptionModel() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch statusLatch = new CountDownLatch(1);
+        mOnDeviceIntelligenceManager.fetchImageDescriptionModel(
+                EXECUTOR,
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(ImageDescriptionModel result) {
+                        assertThat(result.getModelSignature()).isEqualTo(
+                                "test-image-description-model");
+                        statusLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        fail("onError called: " + error);
+                    }
+                });
+        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_26Q2)
+    public void testGenerateEmbeddings() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch statusLatch = new CountDownLatch(1);
+        Feature feature = CtsIntelligenceService.getSampleFeature(3);
+        mOnDeviceIntelligenceManager.generateEmbeddings(
+                feature,
+                new EmbeddingRequest("test text"),
+                null,
+                EXECUTOR,
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(EmbeddingResponse result) {
+                        assertThat(result.getEmbeddings()).hasSize(1);
+                        assertThat(result.getEmbeddings().get(0).getVector()).isEqualTo(
+                                new float[]{0.1f, 0.2f, 0.3f});
+                        statusLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        fail("onError called: " + error);
+                    }
+                });
+        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_26Q2)
+    public void testGenerateImageDescription() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch statusLatch = new CountDownLatch(1);
+        Feature feature = CtsIntelligenceService.getSampleFeature(4);
+        android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(100, 100,
+                android.graphics.Bitmap.Config.ARGB_8888);
+        mOnDeviceIntelligenceManager.generateImageDescription(
+                feature,
+                new ImageDescriptionRequest(bitmap, null),
+                null,
+                EXECUTOR,
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(ImageDescriptionResponse result) {
+                        assertThat(result.getImageDescription().getDescription()).isEqualTo(
+                                "test-description");
+                        statusLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        fail("onError called: " + error);
+                    }
+                });
+        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+    }
+
     public static void clearTestableOnDeviceIntelligenceService() {
         runShellCommand("cmd on_device_intelligence set-temporary-services");
     }
@@ -1594,6 +1741,4 @@ public class OnDeviceIntelligenceManagerTest {
             }
         }
     };
-
-
 }

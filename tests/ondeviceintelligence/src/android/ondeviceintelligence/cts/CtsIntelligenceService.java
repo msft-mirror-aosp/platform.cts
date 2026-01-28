@@ -25,6 +25,8 @@ import android.app.ondeviceintelligence.DownloadCallback;
 import android.app.ondeviceintelligence.Feature;
 import android.app.ondeviceintelligence.FeatureDetails;
 import android.app.ondeviceintelligence.OnDeviceIntelligenceException;
+import android.app.ondeviceintelligence.embedding.EmbeddingModel;
+import android.app.ondeviceintelligence.imagedescription.ImageDescriptionModel;
 import android.content.Intent;
 import android.os.CancellationSignal;
 import android.os.Bundle;
@@ -90,6 +92,20 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
         } else {
             return new FeatureDetails(/* status */ featureId);
         }
+    }
+
+    public static EmbeddingModel getSampleEmbeddingModel() {
+        return new EmbeddingModel(
+                getSampleFeature(3),
+                "test-embedding-model",
+                /* embeddingDimension= */ 128,
+                List.of(EmbeddingModel.MODALITY_TEXT));
+    }
+
+    public static ImageDescriptionModel getSampleImageDescriptionModel() {
+        return new ImageDescriptionModel(
+                getSampleFeature(4),
+                "test-image-description-model");
     }
 
     static final String TAG = "CtsIntelligenceService";
@@ -218,6 +234,34 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
         Bundle bundle = new Bundle();
         bundle.putString(TEST_KEY, "feature_metadata");
         metadataConsumer.accept(bundle);
+    }
+
+    @Override
+    public void onListEmbeddingModels(
+            int callerUid,
+            @NonNull
+                    OutcomeReceiver<List<EmbeddingModel>, OnDeviceIntelligenceException>
+                            callback) {
+        List<EmbeddingModel> list = new ArrayList<>();
+        list.add(getSampleEmbeddingModel());
+        callback.onResult(list);
+    }
+
+    @Override
+    public void onFetchEmbeddingModel(
+            int callerUid,
+            @NonNull String modelSignature,
+            @NonNull OutcomeReceiver<EmbeddingModel, OnDeviceIntelligenceException> callback) {
+        callback.onResult(getSampleEmbeddingModel());
+    }
+
+    @Override
+    public void onFetchImageDescriptionModel(
+            int callerUid,
+            @NonNull
+                    OutcomeReceiver<ImageDescriptionModel, OnDeviceIntelligenceException>
+                            callback) {
+        callback.onResult(getSampleImageDescriptionModel());
     }
 
     /**
