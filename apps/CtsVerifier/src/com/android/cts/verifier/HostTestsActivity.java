@@ -73,6 +73,7 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
                 .addTest("CtsMultiDeviceGenericRangingTests", "CtsMultiDeviceGenericRangingTests")
                 .addTest("CtsUwbMultiDeviceUwbManagerTests", "CtsUwbMultiDeviceUwbManagerTests"),
         new HostTestCategory("Wi-Fi Tests")
+                .addTest("CtsWifiConnectionTests", "CtsWifiConnectionTests")
                 .addTest("CtsWifiAwareTests", "CtsWifiAwareTests")
                 .addTest("CtsWifiSoftApTestCases", "CtsWifiSoftApTestCases")
                 .addTest("CtsWifiDirectTests", "CtsWifiDirectTests")

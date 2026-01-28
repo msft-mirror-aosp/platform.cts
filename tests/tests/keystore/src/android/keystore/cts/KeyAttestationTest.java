@@ -535,7 +535,7 @@ public class KeyAttestationTest {
         assumeTrue("Device does not support attestation", TestUtils.isAttestationSupported());
 
         int keyStoreFeatureVersionStrongBox =
-                TestUtils.getFeatureVersionKeystoreStrongBox(getContext());
+                TestUtils.getFeatureVersionKeystore(getContext(), /* strongBox= */ true);
 
         if (!TestUtils.hasStrongBox(getContext())) {
             // If there's no StrongBox, ensure there's no feature version for it.
@@ -574,15 +574,9 @@ public class KeyAttestationTest {
             X509Certificate attestationCert = (X509Certificate) certificates[0];
             Attestation attestation = Attestation.loadFromCertificate(attestationCert);
             int kmVersionFromAttestation = attestation.keymasterVersion;
-            int keyStoreFeatureVersion;
+            int keyStoreFeatureVersion =
+                    TestUtils.getFeatureVersionKeystore(getContext(), isStrongBox);
 
-            if (isStrongBox) {
-                keyStoreFeatureVersion =
-                        TestUtils.getFeatureVersionKeystoreStrongBox(getContext());
-            } else {
-                keyStoreFeatureVersion =
-                        TestUtils.getFeatureVersionKeystore(getContext());
-            }
             // Feature Version is required on devices launching with Android 12 (API Level
             // 31) but may be reported on devices launching with an earlier version. If it's
             // present, it must match what is reported in attestation.

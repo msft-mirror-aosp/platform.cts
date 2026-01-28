@@ -22,6 +22,7 @@ import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.AppFunctionRegistration
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
+import android.app.appfunctions.RegisterAppFunctionRequest
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.CtsApp
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.DynamicSchemaHelperApp
 import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunctionAndWait
@@ -175,6 +176,71 @@ class AppFunctionRegistrationTest {
     @IncludeRunOnPrimaryUser
     @IncludeRunOnSecondaryUser
     @Throws(Exception::class)
+    fun register_twoFunctionsAtOnce_success() {
+        registerAppFunctions(
+            listOf(CONCAT_STRINGS_FUNCTION_ID, DISABLED_BY_DEFAULT_FUNCTION_ID),
+            listOf (ConcatStrings(), ConcatStrings()),
+        )
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    @Throws(Exception::class)
+    fun register_theSameIdsInABatchedRegistrationRequest_fail() {
+        assertFailsWith<IllegalArgumentException>() {
+            registerAppFunctions(
+                listOf(CONCAT_STRINGS_FUNCTION_ID, CONCAT_STRINGS_FUNCTION_ID),
+                listOf (ConcatStrings(), ConcatStrings()),
+            )
+        }
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    @Throws(Exception::class)
+    fun register_theSameIdTwiceDifferentProcesses_failAllBatchRegistration() = doBlocking {
+        val service = bindToRegistrationService(CURRENT_PKG)
+        assertThat(service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())).isTrue()
+
+        assertFunctionState(CURRENT_PKG, CONCAT_STRINGS_FUNCTION_ID, isEnabled = true)
+
+        assertFailsWith<IllegalStateException>() {
+            registerAppFunctions(
+                listOf(LONG_RUNNING_FUNCTION_ID, CONCAT_STRINGS_FUNCTION_ID),
+                listOf(ConcatStrings(), ConcatStrings()),
+            )
+        }
+        assertFunctionState(CURRENT_PKG, LONG_RUNNING_FUNCTION_ID, isEnabled = false)
+
+        assertFailsWith<IllegalStateException>() {
+            registerAppFunctions(
+                listOf(CONCAT_STRINGS_FUNCTION_ID, LONG_RUNNING_FUNCTION_ID),
+                listOf(ConcatStrings(), ConcatStrings()),
+            )
+        }
+        assertFunctionState(CURRENT_PKG, LONG_RUNNING_FUNCTION_ID, isEnabled = false)
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    @Throws(Exception::class)
+    fun register_sameIdInDifferentProcessAfterBatchedRegistration_fail() {
+        registerAppFunctions(
+            listOf(CONCAT_STRINGS_FUNCTION_ID, DISABLED_BY_DEFAULT_FUNCTION_ID),
+            listOf (ConcatStrings(), ConcatStrings()),
+        )
+
+        val service = bindToRegistrationService(CURRENT_PKG)
+        assertThat(service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())).isFalse()
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    @Throws(Exception::class)
     fun register_serviceLevelFunction_reportsInvalidArgumentError() {
         assertFailsWith<IllegalArgumentException>() {
             registerAppFunction(CtsApp.FunctionNames.ADD.functionId, ConcatStrings())
@@ -264,26 +330,21 @@ class AppFunctionRegistrationTest {
     @IncludeRunOnPrimaryUser
     @IncludeRunOnSecondaryUser
     @Throws(Exception::class)
-    fun unregister_callTwice_shouldNotAffectActiveRegistrationWithSameId() {
+    fun unregister_callTwice_shouldNotAffectActiveRegistrationWithSameId() = doBlocking {
         val staleRegistration = registerConcatStringsAppFunction()
         staleRegistration.unregister()
         val activeRegistration = registerConcatStringsAppFunction()
 
         staleRegistration.unregister() // This call should be no-op
 
-        // TODO(b/438413084): switch to appfunction enabled check
-        assertFailsWith<IllegalStateException>(
-            "The second registration is expected to still be valid."
-        ) {
-            registerConcatStringsAppFunction()
-        }
+        assertFunctionState(CURRENT_PKG, CONCAT_STRINGS_FUNCTION_ID, isEnabled = true)
     }
 
     @Test
     @IncludeRunOnPrimaryUser
     @IncludeRunOnSecondaryUser
     @Throws(Exception::class)
-    fun unregister_callTwice_shouldNotAffectActiveRegistrationWithSameIdAndFunction() {
+    fun unregister_callTwice_shouldNotAffectActiveRegistrationWithSameIdAndFunction() = doBlocking {
         val function = ConcatStrings()
         val staleRegistration =
             registerAppFunction(function = function, functionId = CONCAT_STRINGS_FUNCTION_ID)
@@ -293,19 +354,14 @@ class AppFunctionRegistrationTest {
 
         staleRegistration.unregister() // This call should be no-op
 
-        // TODO(b/438413084): switch to appfunction enabled check
-        assertFailsWith<IllegalStateException>(
-            "The second registration is expected to still be valid."
-        ) {
-            registerConcatStringsAppFunction()
-        }
+        assertFunctionState(CURRENT_PKG, CONCAT_STRINGS_FUNCTION_ID, isEnabled = true)
     }
 
     @Test
     @IncludeRunOnPrimaryUser
     @IncludeRunOnSecondaryUser
     @Throws(Exception::class)
-    fun unregister_callTwice_shouldNotAffectActiveRegistrationInTheOtherProcess() {
+    fun unregister_callTwice_shouldNotAffectActiveRegistrationInTheOtherProcess() = doBlocking {
         val staleRegistration = registerConcatStringsAppFunction()
         staleRegistration.unregister()
         val service = bindToRegistrationService(CURRENT_PKG)
@@ -313,12 +369,7 @@ class AppFunctionRegistrationTest {
 
         staleRegistration.unregister() // This call should be no-op
 
-        // TODO(b/438413084): switch to appfunction enabled check
-        assertFailsWith<IllegalStateException>(
-            "The service registration is expected to still be valid."
-        ) {
-            registerConcatStringsAppFunction()
-        }
+        assertFunctionState(CURRENT_PKG, CONCAT_STRINGS_FUNCTION_ID, isEnabled = true)
     }
 
     @Test
@@ -386,6 +437,41 @@ class AppFunctionRegistrationTest {
             assertThat(response.appFunctionException().errorCode)
                 .isEqualTo(AppFunctionException.ERROR_INVALID_ARGUMENT)
             assertThat(response.appFunctionException().message)
+                .startsWith(OutputInvalidArgumentException.INVALID_ARGUMENT_MESSAGE)
+        }
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    @Throws(Exception::class)
+    fun execute_batchRegistration_canExecuteBothFunctions() = doBlocking {
+        val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
+        assertThat(service.registerAppFunctions(
+            listOf<String>(
+                FunctionType.OUTPUT_INVALID_ARGUMENT_EXCEPTION.toString(),
+                FunctionType.CONCAT_STRINGS.toString()
+            )
+        )).isTrue()
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val request =
+                createConcatStringsRequest(targetPackage = DynamicSchemaHelperApp.PACKAGE_NAME)
+
+            val response = executeAppFunctionAndWait(manager, request)
+            assertConcatStringsResponseCorrect(response)
+
+            val request2 =
+                ExecuteAppFunctionRequest.Builder(
+                    DynamicSchemaHelperApp.PACKAGE_NAME,
+                    OUTPUT_INVALID_ARGUMENT_EXCEPTION_FUNCTION_ID,
+                )
+                    .build()
+
+            val response2 = executeAppFunctionAndWait(manager, request2)
+            assertThat(response2.isSuccess).isFalse()
+            assertThat(response2.appFunctionException().errorCode)
+                .isEqualTo(AppFunctionException.ERROR_INVALID_ARGUMENT)
+            assertThat(response2.appFunctionException().message)
                 .startsWith(OutputInvalidArgumentException.INVALID_ARGUMENT_MESSAGE)
         }
     }
@@ -784,8 +870,43 @@ class AppFunctionRegistrationTest {
         return registration
     }
 
+    private fun registerAppFunctions(
+        functionIds: List<String>,
+        functions: List<AppFunction>,
+    ): AppFunctionRegistration {
+        val requests = functionIds.zip(functions).map { (id, function) ->
+                RegisterAppFunctionRequest(id, testRegistrationExecutor, function)
+            }
+        val registration =
+            manager.registerAppFunctions(requests)
+        registrations.add(registration)
+        return registration
+    }
+
     private fun registerConcatStringsAppFunction(): AppFunctionRegistration {
         return registerAppFunction(CONCAT_STRINGS_FUNCTION_ID, ConcatStrings())
+    }
+
+    private suspend fun assertFunctionState(
+        packageName: String,
+        functionId: String,
+        isEnabled: Boolean,
+    ) {
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val result =
+                isAppFunctionEnabled(
+                    manager,
+                    packageName,
+                    functionId,
+                )
+
+            assertThat(result.exceptionOrNull()).isNull()
+            if (isEnabled) {
+                assertThat(result.getOrThrow()).isTrue()
+            } else {
+                assertThat(result.getOrThrow()).isFalse()
+            }
+        }
     }
 
     /** Creates an OutcomeReceiver for testing purposes. */

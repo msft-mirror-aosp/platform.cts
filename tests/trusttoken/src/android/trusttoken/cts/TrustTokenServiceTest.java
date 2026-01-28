@@ -29,6 +29,7 @@ import static org.mockito.Mockito.verify;
 
 import android.content.Intent;
 import android.os.CancellationSignal;
+import android.os.CancellationSignal.OnCancelListener;
 import android.os.IBinder;
 import android.os.OutcomeReceiver;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -161,13 +162,21 @@ public final class TrustTokenServiceTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_TALISMAN_SERVICE_API)
-    public void onRequestTrustTokens_cancellation() {
+    public void onRequestTrustTokens_cancellation() throws Exception {
         TrustTokenRequest request = new TrustTokenRequest.Builder().build();
         var callback = mock(OutcomeReceiver.class);
         CancellationSignal cancellation = mClient.requestTrustTokens(request, callback);
         assertTrue(mService.isCalled());
         assertFalse(mService.mLastCancellationSignal.isCanceled());
         cancellation.cancel();
-        assertTrue(mService.mLastCancellationSignal.isCanceled());
+        var cancelled = new CountDownLatch(1);
+        mService.mLastCancellationSignal.setOnCancelListener(
+                new OnCancelListener() {
+                    @Override
+                    public void onCancel() {
+                        cancelled.countDown();
+                    }
+                });
+        assertTrue(cancelled.await(1, TimeUnit.SECONDS));
     }
 }

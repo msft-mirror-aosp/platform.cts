@@ -293,6 +293,15 @@ public class SatelliteManagerTestBase {
                         Manifest.permission.DUMP);
     }
 
+    protected static void grantSatelliteAndReadPrivilegedPhoneStatePermissions() {
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        Manifest.permission.SATELLITE_COMMUNICATION,
+                        Manifest.permission.DUMP,
+                        Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+    }
+
     protected static void grantSatelliteAndSendSmsPermissions() {
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
@@ -2586,6 +2595,15 @@ public class SatelliteManagerTestBase {
         assertEquals(expectedEarfcnList, actualEarfcnList);
         assertArrayEquals(expectedSatelliteInfoArray, actualSatelliteInfoArray);
         assertEquals(expectedTagIdList, actualTagIdList);
+    }
+
+    protected static void verifySystemSelectionSpecifier(
+            @NonNull SystemSelectionSpecifier actualSystemSelectionSpecifier,
+            @NonNull List<String> expectedMccMncs, @NonNull String expectedIccId,
+            @NonNull String expectedMccMnc) {
+        assertEquals(expectedMccMncs, Arrays.asList(actualSystemSelectionSpecifier.getMccMncs()));
+        assertEquals(expectedMccMnc, actualSystemSelectionSpecifier.getMccMnc());
+        assertEquals(expectedIccId, actualSystemSelectionSpecifier.getIccId());
     }
 
     /** Get HAL version for the given HAL service. */

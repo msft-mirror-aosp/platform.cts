@@ -35,7 +35,6 @@ import android.view.inputmethod.cts.util.InputMethodVisibilityVerifier
 import android.view.inputmethod.cts.util.TestActivity
 import android.view.inputmethod.cts.util.TestUtils.runOnMainSync
 import android.view.inputmethod.cts.util.TestUtils.waitOnMainUntil
-import android.view.inputmethod.cts.util.UnlockScreenRule
 import android.view.textservice.SentenceSuggestionsInfo
 import android.view.textservice.SpellCheckerSession
 import android.view.textservice.SpellCheckerSubtype
@@ -92,9 +91,6 @@ class SpellCheckerTest : EndToEndImeTestBase() {
     private val instrumentation: Instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context: Context = instrumentation.targetContext
     private val uiDevice: UiDevice = UiDevice.getInstance(instrumentation)
-
-    @Rule
-    fun unlockScreenRule() = UnlockScreenRule()
 
     @Rule
     fun spellCheckerSettingsRule() = SettingsStateChangerRule(

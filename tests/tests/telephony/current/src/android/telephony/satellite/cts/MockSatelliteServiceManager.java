@@ -1431,7 +1431,17 @@ class MockSatelliteServiceManager {
         IntArray tagIds = new IntArray(systemSelectionSpecifier.tagIds.length);
         tagIds.addAll(systemSelectionSpecifier.tagIds);
 
-        return new SystemSelectionSpecifier(mccmnc, bands, earfcns, satelliteInfoArray, tagIds);
+        String iccId = systemSelectionSpecifier.mIccId;
+        String[] mccMncs = new String[0];
+        if (systemSelectionSpecifier.mMccMncs != null) {
+            mccMncs = new String[systemSelectionSpecifier.mMccMncs.length];
+            for (int i = 0; i < systemSelectionSpecifier.mMccMncs.length; i++) {
+                mccMncs[i] = systemSelectionSpecifier.mMccMncs[i];
+            }
+        }
+
+        return new SystemSelectionSpecifier(
+                mccmnc, bands, earfcns, satelliteInfoArray, tagIds, iccId, mccMncs);
     }
 
     /** Set telephony country codes */

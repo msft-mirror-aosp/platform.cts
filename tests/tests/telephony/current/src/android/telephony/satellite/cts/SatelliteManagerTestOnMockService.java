@@ -4404,7 +4404,7 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
     }
 
     @Test
-    public void testSatelliteAccessControl_UpdateSelectionChannel() {
+    public void testSatelliteAccessControl_UpdateSelectionChannel() throws Exception {
         logd("testSatelliteAccessControl_UpdateSelectionChannel");
 
         logd("testCarrierRoamingConfigUpdate: check if satellite is supported");
@@ -4908,6 +4908,8 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
         List<SatelliteInfo> satelliteInfoList = List.of(satelliteInfo);
         List<Integer> tagIds = List.of(11, 1001);
         List<Integer> earfcns = List.of(229011, 229013, 229015, 229017);
+        String iccId = "12345678901234567890";
+        String[] mccMncs = {"310260", "310410"};
 
         SystemSelectionSpecifier specifier1 =
                 new SystemSelectionSpecifier.Builder()
@@ -4916,6 +4918,8 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
                         .setEarfcns(earfcns.stream().mapToInt(Integer::intValue).toArray())
                         .setSatelliteInfos(satelliteInfoList)
                         .setTagIds(tagIds.stream().mapToInt(Integer::intValue).toArray())
+                        .setIccId(iccId)
+                        .setMccMncs(mccMncs)
                         .build();
 
         SystemSelectionSpecifier specifier2 =
@@ -4925,6 +4929,8 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
                         .setEarfcns(earfcns.stream().mapToInt(Integer::intValue).toArray())
                         .setSatelliteInfos(satelliteInfoList)
                         .setTagIds(tagIds.stream().mapToInt(Integer::intValue).toArray())
+                        .setIccId(iccId)
+                        .setMccMncs(mccMncs)
                         .build();
 
         assertEquals(mccMnc, specifier1.getMccMnc());
@@ -4935,6 +4941,8 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
         assertEquals(satelliteInfoList, specifier1.getSatelliteInfos());
         assertArrayEquals(
                 tagIds.stream().mapToInt(Integer::intValue).toArray(), specifier1.getTagIds());
+        assertEquals(iccId, specifier1.getIccId());
+        assertArrayEquals(mccMncs, specifier1.getMccMncs());
         assertEquals(specifier1, specifier2);
     }
 

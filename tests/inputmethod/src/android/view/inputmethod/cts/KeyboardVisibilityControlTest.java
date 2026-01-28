@@ -111,7 +111,6 @@ import android.view.inputmethod.cts.util.TestActivity;
 import android.view.inputmethod.cts.util.TestActivity2;
 import android.view.inputmethod.cts.util.TestUtils;
 import android.view.inputmethod.cts.util.TestWebView;
-import android.view.inputmethod.cts.util.UnlockScreenRule;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -182,8 +181,6 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     private static final PreBackPressProcedure NO_OP_PRE_BACK_PRESS_PROCEDURE =
             (instrumentation, editorRef) -> {};
 
-    @Rule
-    public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
     @Rule
     public final RequireImeCompatFlagRule mRequireImeCompatFlagRule = new RequireImeCompatFlagRule(
             FINISH_INPUT_NO_FALLBACK_CONNECTION, true);
@@ -756,18 +753,19 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     @AppModeFull(reason = "KeyguardManager is not accessible from instant apps")
     @Test
     public void testHideImeAfterBackPressed_ScreenOffOn() throws Exception {
-        try (var ignored = new FixedDeviceOrientationSession(Orientation.PORTRAIT)) {
+        final var wmState = new WindowManagerStateHelper();
+        try (var ignored = new FixedDeviceOrientationSession(Orientation.PORTRAIT);
+             var lockScreenSession = new LockScreenSession(mInstrumentation, wmState)) {
             verifyHideImeBackPressed(
                     /* appRequestsBackCallback= */ true,
                     /* imeRequestsBackCallback= */ true,
                     /* fullscreenInteraction= */ false,
                     (instrumentation, editorRef) -> {
-                        TestUtils.turnScreenOff();
+                        lockScreenSession.sleepDevice();
                         TestUtils.waitOnMainUntil(
                                 () -> ((TestActivity) editorRef.get().getContext()).isPaused(),
                                 TIMEOUT);
-                        TestUtils.turnScreenOn();
-                        TestUtils.unlockScreen();
+                        lockScreenSession.unlock();
                         TestUtils.waitOnMainUntil(
                                 () -> !((TestActivity) editorRef.get().getContext()).isPaused(),
                                 TIMEOUT);
@@ -1244,10 +1242,12 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     }
 
     private void runImeDoesntReshowAfterKeyguardTest(int softInputState) throws Exception {
+        final var wmState = new WindowManagerStateHelper();
         try (MockImeSession imeSession = MockImeSession.create(
                 mInstrumentation.getContext(),
                 mInstrumentation.getUiAutomation(),
-                new ImeSettings.Builder())) {
+                new ImeSettings.Builder());
+             var lockScreenSession = new LockScreenSession(mInstrumentation, wmState)) {
             final ImeEventStream stream = imeSession.openEventStream();
             // Launch a simple test activity
             final TestActivity testActivity = TestActivity.startSync(LinearLayout::new);
@@ -1290,7 +1290,7 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                         View.VISIBLE, TIMEOUT);
                 expectImeVisible(TIMEOUT);
 
-                TestUtils.turnScreenOff();
+                lockScreenSession.sleepDevice();
                 // Clear editor focus after screen-off
                 TestUtils.runOnMainSync(editTextRef.get()::clearFocus);
 
@@ -1318,8 +1318,7 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 }
 
                 // Verify IME will invisible after device unlocked
-                TestUtils.turnScreenOn();
-                TestUtils.unlockScreen();
+                lockScreenSession.unlock();
                 // Expect hideSoftInput will called by IMMS when the same window
                 // focused since the editText view focus has been cleared.
                 TestUtils.waitOnMainUntil(() -> editTextRef.get().hasWindowFocus()
@@ -1374,7 +1373,7 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
             orientationSession.setDeviceOrientation(Orientation.PORTRAIT);
 
-            // Turn screen on again, unlock and verify that the IME is showing again
+            // Unlock and verify that the IME is showing again
             lockScreenSession.unlock();
             assertTrue("TestActivity should be focused after wakeup",
                     wmState.waitForFocusedActivity(testActivity.getComponentName()));

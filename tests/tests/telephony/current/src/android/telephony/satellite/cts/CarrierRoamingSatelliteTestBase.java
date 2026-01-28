@@ -977,6 +977,27 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         overrideCarrierConfig(subId, bundle);
     }
 
+    protected static void enableDefaultSupportedServicesForCarrier(int subId,
+            @NonNull List<String> plmns) throws Exception {
+        logd(TAG, "enableDefaultSupportedServicesForCarrier subId:" + subId);
+        assumeTrue(isActiveSubId(subId));
+
+        int[] defaultSupportedServices = {
+          NetworkRegistrationInfo.SERVICE_TYPE_SMS,
+          NetworkRegistrationInfo.SERVICE_TYPE_EMERGENCY_SMS
+        };
+        PersistableBundle bundle = new PersistableBundle();
+        PersistableBundle plmnBundle = new PersistableBundle();
+        for (String plmn : plmns) {
+            plmnBundle.putIntArray(plmn, defaultSupportedServices);
+        }
+        bundle.putPersistableBundle(
+                CarrierConfigManager.KEY_CARRIER_SUPPORTED_SATELLITE_SERVICES_PER_PROVIDER_BUNDLE,
+                plmnBundle);
+        bundle.putBoolean(CarrierConfigManager.KEY_SATELLITE_ATTACH_SUPPORTED_BOOL, true);
+        overrideCarrierConfig(subId, bundle);
+    }
+
     protected static void disableSatellitePlmns(int slotId) {
         int subId = SubscriptionManager.getSubscriptionId(slotId);
         logd(TAG, "disableSatellitePlmns slotId:" + slotId + " subId:" + subId);
@@ -2066,10 +2087,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         sNtnOnlySubId = SubscriptionManager.getSubscriptionId(slotId);
         assumeTrue(sNtnOnlySubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
         logd(TAG, "setUpNtnOnlyTestEnvironment: sNtnOnlySubId=" + sNtnOnlySubId);
-        if (!isActiveSubId(sNtnOnlySubId)) {
-            logd(TAG, "Skip the test because the NTN only subId is not active.");
-            return;
-        }
+        assumeTrue("Skip the test because the NTN only subId is not active.",
+                isActiveSubId(sNtnOnlySubId));
         // Set phone number
         setPhoneNumber(sNtnOnlySubId, phoneNumber);
         setUpNtnOnlySubscription();

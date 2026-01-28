@@ -120,6 +120,9 @@ public final class MediaRouterTestConstants {
     public static final String PROXY_MEDIA_ROUTER_SCANNING_TEST_APP_TEST_CLASS =
             "android.media.router.cts.ScanningActivity";
 
+    public static final String MEDIA_ROUTER2_OSW_PACKAGE_VISIBILITY_ALLOWED_TEST_CLASS =
+            "android.media.router.cts.bluetoothpermissionsapp.OutputSwitcherPackageVisibilityTest";
+
     public static final String ROUTE_ID_APP_1_ROUTE_1 = "route_1-1";
     public static final String ROUTE_ID_APP_1_ROUTE_2 = "route_1-2";
     public static final String ROUTE_ID_APP_1_ROUTE_3 = "route_1-3";
@@ -147,6 +150,9 @@ public final class MediaRouterTestConstants {
     public static final String ROUTE_ID_RESTRICTED_ALLOW_PRIVILEGED = "route_allow_privileged";
     public static final String ROUTE_ID_RESTRICTED_OTHER_PACKAGE = "route_other_package_restricted";
 
+    public static final String ROUTE_ID_OSW_PACKAGE_RESTRICTED_TO_BT_APP =
+            "osw_pkg_restricted_to_bt_app";
+
     public static final String ROUTE_NAME_1 = "route 1";
     public static final String ROUTE_NAME_2 = "route 2";
     public static final String ROUTE_NAME_3 = "route 3";
@@ -162,6 +168,8 @@ public final class MediaRouterTestConstants {
     public static final String ROUTE_NAME_RESTRICTED_ALLOW_PRIVILEGED = "allow_privileged_route";
     public static final String ROUTE_NAME_RESTRICTED_OTHER_PACKAGE =
             "other_package_restricted_route";
+    public static final String ROUTE_NAME_OSW_PACKAGE_RESTRICTED_TO_BT_APP =
+            "osw_restricted_to_bt_app_route";
     public static final String NON_EXISTENT_PACKAGE = "android.media.router.cts.nonexistentpackage";
 
     public static final String ROUTE_DEDUPLICATION_ID_1 = "dedup_id_1";
@@ -186,6 +194,8 @@ public final class MediaRouterTestConstants {
             "android.permission.READ_MEDIA_IMAGES";
     public static final String REQUIRED_PERMISSION_LOCAL_NETWORK =
             "android.permission.ACCESS_LOCAL_NETWORK";
+
+    public static final String SYSTEM_UI_PACKAGE = "com.android.systemui";
 
     // This id is defined as RESTRICT_LOCAL_NETWORK in the connectivity module's
     // ConnectivityCompatChanges.java.

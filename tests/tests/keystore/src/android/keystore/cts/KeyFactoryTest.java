@@ -16,18 +16,16 @@
 
 package android.keystore.cts;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 
 import android.content.Context;
 import android.keystore.cts.R;
 import android.keystore.cts.util.TestUtils;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyInfo;
 import android.security.keystore.KeyProperties;
@@ -38,12 +36,12 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.InputStream;
 import java.security.InvalidKeyException;
+import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -76,38 +74,18 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 @RunWith(AndroidJUnit4.class)
-public class KeyFactoryTest {
+@CddTest(requirements = {"9.11/C-1-2"})
+public abstract class KeyFactoryTest {
     private static final String EXPECTED_PROVIDER_NAME = TestUtils.EXPECTED_PROVIDER_NAME;
 
-    private static final String[] EXPECTED_ALGORITHMS = {
-        "EC",
-        "RSA",
-    };
+    protected abstract String[] getExpectedAlgorithms();
 
     private Context getContext() {
         return InstrumentationRegistry.getInstrumentation().getTargetContext();
     }
 
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
-
     @Test
-    @CddTest(requirements = {"9.11/C-1-2"})
-    @RequiresFlagsEnabled(android.security.keystore2.Flags.FLAG_MLDSA_SUPPORT)
-    public void testAlgorithmList_withMlDsa() {
-        TestUtils.assumeMlDsaSupported(/* useStrongBox= */ false);
-        testAlgorithmList(/* expectMlDsa= */ true);
-    }
-
-    @Test
-    @CddTest(requirements = {"9.11/C-1-2"})
-    @RequiresFlagsDisabled(android.security.keystore2.Flags.FLAG_MLDSA_SUPPORT)
-    public void testAlgorithmList_withoutMlDsa() {
-        testAlgorithmList(/* expectMlDsa= */ false);
-    }
-
-    private void testAlgorithmList(boolean expectMlDsa) {
+    public void testAlgorithmList() {
         // Assert that Android Keystore Provider exposes exactly the expected KeyFactory algorithms.
         // We don't care whether the algorithms are exposed via aliases, as long as canonical names
         // of algorithms are accepted. If the Provider exposes extraneous algorithms, it'll be
@@ -118,7 +96,7 @@ public class KeyFactoryTest {
         Set<Service> services = provider.getServices();
         Set<String> actualAlgsLowerCase = new HashSet<String>();
         Set<String> expectedAlgsLowerCase = new HashSet<String>(
-                Arrays.asList(TestUtils.toLowerCase(EXPECTED_ALGORITHMS)));
+                Arrays.asList(TestUtils.toLowerCase(getExpectedAlgorithms())));
 
         // XDH is also a supported algorithm, but not available for other tests as the keys
         // generated with it have more limited set of uses.
@@ -126,14 +104,6 @@ public class KeyFactoryTest {
         if (TestUtils.isEd25519AlgorithmExpectedToSupport()) {
             // AndroidKeyStore supports key generation of curve Ed25519 from Android V preview
             expectedAlgsLowerCase.add("ed25519");
-        }
-
-        if (expectMlDsa) {
-            // TODO(b/395069350): Move these values to EXPECTED_ALGORITHMS once the remaining tests
-            // in this file are updated to handle ML-DSA.
-            expectedAlgsLowerCase.add("ml-dsa");
-            expectedAlgsLowerCase.add("ml-dsa-65");
-            expectedAlgsLowerCase.add("ml-dsa-87");
         }
 
         for (Service service : services) {
@@ -155,16 +125,24 @@ public class KeyFactoryTest {
                 new Date(System.currentTimeMillis() + TestUtils.DAY_IN_MILLIS);
         Date keyValidityForConsumptionEnd =
                 new Date(System.currentTimeMillis() + 3 * TestUtils.DAY_IN_MILLIS);
-        for (String algorithm : EXPECTED_ALGORITHMS) {
+        for (String algorithm : getExpectedAlgorithms()) {
             try {
                 String[] blockModes = new String[] {KeyProperties.BLOCK_MODE_ECB};
                 String[] encryptionPaddings =
                         new String[] {KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1,
                                 KeyProperties.ENCRYPTION_PADDING_RSA_OAEP};
-                String[] digests = new String[] {KeyProperties.DIGEST_SHA1,
-                        KeyProperties.DIGEST_SHA224,
-                        KeyProperties.DIGEST_SHA384,
-                        KeyProperties.DIGEST_SHA512};
+                String[] digests;
+                if (algorithm.startsWith("ML-DSA")) {
+                    digests = new String[] {KeyProperties.DIGEST_NONE};
+                } else {
+                    digests =
+                            new String[] {
+                                KeyProperties.DIGEST_SHA1,
+                                KeyProperties.DIGEST_SHA224,
+                                KeyProperties.DIGEST_SHA384,
+                                KeyProperties.DIGEST_SHA512
+                            };
+                }
                 int purposes = KeyProperties.PURPOSE_SIGN;
                 KeyPairGenerator keyGenerator =
                         KeyPairGenerator.getInstance(algorithm, EXPECTED_PROVIDER_NAME);
@@ -193,8 +171,11 @@ public class KeyFactoryTest {
 
                 List<String> actualDigests =
                         new ArrayList<String>(Arrays.asList(keyInfo.getDigests()));
-                // Keystore may have added DIGEST_NONE to allow software digesting.
-                actualDigests.remove(KeyProperties.DIGEST_NONE);
+                if (!algorithm.startsWith("ML-DSA")) {
+                    // Keystore may have added DIGEST_NONE to allow software digesting. For ML-DSA,
+                    // we set DIGEST_NONE in the spec, so we expect it to appear in the KeyInfo.
+                    actualDigests.remove(KeyProperties.DIGEST_NONE);
+                }
                 TestUtils.assertContentsInAnyOrder(actualDigests, digests);
 
                 MoreAsserts.assertEmpty(Arrays.asList(keyInfo.getSignaturePaddings()));
@@ -214,7 +195,7 @@ public class KeyFactoryTest {
     @Test
     public void testGetKeySpecWithKeystorePublicKeyRejectsKeyInfo()
             throws Exception {
-        for (String algorithm : EXPECTED_ALGORITHMS) {
+        for (String algorithm : getExpectedAlgorithms()) {
             try {
                 KeyPairGenerator keyGenerator =
                         KeyPairGenerator.getInstance(algorithm, EXPECTED_PROVIDER_NAME);
@@ -239,13 +220,16 @@ public class KeyFactoryTest {
     @Test
     public void testGetKeySpecWithKeystorePrivateKeyRejectsTransparentKeySpec()
             throws Exception {
-        for (String algorithm : EXPECTED_ALGORITHMS) {
+        for (String algorithm : getExpectedAlgorithms()) {
             try {
                 Class<? extends KeySpec> transparentKeySpecClass;
                 if ("EC".equalsIgnoreCase(algorithm)) {
                     transparentKeySpecClass = ECPrivateKeySpec.class;
                 } else if ("RSA".equalsIgnoreCase(algorithm)) {
                     transparentKeySpecClass = RSAPrivateKeySpec.class;
+                } else if (algorithm.startsWith("ML-DSA")) {
+                    // There is no transparent key spec for ML-DSA private keys, so skip.
+                    continue;
                 } else {
                     throw new RuntimeException("Unsupported key algorithm: " + algorithm);
                 }
@@ -271,7 +255,7 @@ public class KeyFactoryTest {
     @Test
     public void testGetKeySpecWithKeystorePrivateKeyRejectsPKCS8EncodedKeySpec()
             throws Exception {
-        for (String algorithm : EXPECTED_ALGORITHMS) {
+        for (String algorithm : getExpectedAlgorithms()) {
             try {
                 KeyPairGenerator keyGenerator =
                         KeyPairGenerator.getInstance(algorithm, EXPECTED_PROVIDER_NAME);
@@ -293,7 +277,7 @@ public class KeyFactoryTest {
     @Test
     public void testGetKeySpecWithKeystorePublicKeyAcceptsX509EncodedKeySpec()
             throws Exception {
-        for (String algorithm : EXPECTED_ALGORITHMS) {
+        for (String algorithm : getExpectedAlgorithms()) {
             try {
                 KeyPairGenerator keyGenerator =
                         KeyPairGenerator.getInstance(algorithm, EXPECTED_PROVIDER_NAME);
@@ -316,7 +300,7 @@ public class KeyFactoryTest {
     @Test
     public void testGetKeySpecWithKeystorePublicKeyAcceptsTransparentKeySpec()
             throws Exception {
-        for (String algorithm : EXPECTED_ALGORITHMS) {
+        for (String algorithm : getExpectedAlgorithms()) {
             try {
                 KeyPairGenerator keyGenerator =
                         KeyPairGenerator.getInstance(algorithm, EXPECTED_PROVIDER_NAME);
@@ -340,6 +324,11 @@ public class KeyFactoryTest {
                             keyFactory.getKeySpec(publicKey, RSAPublicKeySpec.class);
                     assertEquals(rsaPublicKey.getModulus(), spec.getModulus());
                     assertEquals(rsaPublicKey.getPublicExponent(), spec.getPublicExponent());
+                } else if (algorithm.startsWith("ML-DSA")) {
+                    X509EncodedKeySpec keySpec =
+                            keyFactory.getKeySpec(publicKey, X509EncodedKeySpec.class);
+                    assertEquals(keySpec.getFormat(), "X.509");
+                    assertArrayEquals(keySpec.getEncoded(), publicKey.getEncoded());
                 } else {
                     throw new RuntimeException("Unsupported key algorithm: " + algorithm);
                 }
@@ -351,7 +340,7 @@ public class KeyFactoryTest {
 
     @Test
     public void testTranslateKeyWithNullKeyThrowsInvalidKeyException() throws Exception {
-        for (String algorithm : EXPECTED_ALGORITHMS) {
+        for (String algorithm : getExpectedAlgorithms()) {
             try {
                 KeyFactory keyFactory = getKeyFactory(algorithm);
                 try {
@@ -366,7 +355,7 @@ public class KeyFactoryTest {
 
     @Test
     public void testTranslateKeyRejectsNonAndroidKeystoreKeys() throws Exception {
-        for (String algorithm : EXPECTED_ALGORITHMS) {
+        for (String algorithm : getExpectedAlgorithms()) {
             try {
                 SecretKey key = new SecretKeySpec(new byte[16], algorithm);
                 KeyFactory keyFactory = getKeyFactory(algorithm);
@@ -382,7 +371,7 @@ public class KeyFactoryTest {
 
     @Test
     public void testTranslateKeyAcceptsAndroidKeystoreKeys() throws Exception {
-        for (String algorithm : EXPECTED_ALGORITHMS) {
+        for (String algorithm : getExpectedAlgorithms()) {
             try {
                 KeyPairGenerator keyGenerator =
                         KeyPairGenerator.getInstance(algorithm, EXPECTED_PROVIDER_NAME);
@@ -402,7 +391,7 @@ public class KeyFactoryTest {
 
     @Test
     public void testGeneratePrivateWithNullSpecThrowsInvalidKeySpecException() throws Exception {
-        for (String algorithm : EXPECTED_ALGORITHMS) {
+        for (String algorithm : getExpectedAlgorithms()) {
             try {
                 KeyFactory keyFactory = getKeyFactory(algorithm);
                 try {
@@ -417,7 +406,7 @@ public class KeyFactoryTest {
 
     @Test
     public void testGeneratePublicWithNullSpecThrowsInvalidKeySpecException() throws Exception {
-        for (String algorithm : EXPECTED_ALGORITHMS) {
+        for (String algorithm : getExpectedAlgorithms()) {
             try {
                 KeyFactory keyFactory = getKeyFactory(algorithm);
                 try {
@@ -432,12 +421,17 @@ public class KeyFactoryTest {
 
     @Test
     public void testGeneratePrivateRejectsPKCS8EncodedKeySpec() throws Exception {
-        for (String algorithm : EXPECTED_ALGORITHMS) {
+        for (String algorithm : getExpectedAlgorithms()) {
             int resId;
             if ("EC".equalsIgnoreCase(algorithm)) {
                 resId = R.raw.ec_key1_pkcs8;
             } else if ("RSA".equalsIgnoreCase(algorithm)) {
                 resId = R.raw.rsa_key2_pkcs8;
+            } else if ("ML-DSA".equalsIgnoreCase(algorithm)
+                    || "ML-DSA-65".equalsIgnoreCase(algorithm)) {
+                resId = R.raw.mldsa65_pkcs8;
+            } else if ("ML-DSA-87".equalsIgnoreCase(algorithm)) {
+                resId = R.raw.mldsa87_pkcs8;
             } else {
                 throw new RuntimeException("Unsupported key algorithm: " + algorithm);
             }
@@ -461,12 +455,17 @@ public class KeyFactoryTest {
 
     @Test
     public void testGeneratePublicRejectsX509EncodedKeySpec() throws Exception {
-        for (String algorithm : EXPECTED_ALGORITHMS) {
+        for (String algorithm : getExpectedAlgorithms()) {
             int resId;
             if ("EC".equalsIgnoreCase(algorithm)) {
                 resId = R.raw.ec_key2_cert;
             } else if ("RSA".equalsIgnoreCase(algorithm)) {
                 resId = R.raw.rsa_key1_cert;
+            } else if ("ML-DSA".equalsIgnoreCase(algorithm)
+                    || "ML-DSA-65".equalsIgnoreCase(algorithm)) {
+                resId = R.raw.mldsa65_cert;
+            } else if ("ML-DSA-87".equalsIgnoreCase(algorithm)) {
+                resId = R.raw.mldsa87_cert;
             } else {
                 throw new RuntimeException("Unsupported key algorithm: " + algorithm);
             }
@@ -490,7 +489,13 @@ public class KeyFactoryTest {
 
     @Test
     public void testGeneratePrivateRejectsTransparentKeySpec() throws Exception {
-        for (String algorithm : EXPECTED_ALGORITHMS) {
+        for (String algorithm : getExpectedAlgorithms()) {
+            // TODO(b/395069350): Remove this once testGeneratePrivateRejectsTransparentKeySpecMlDsa
+            // is merged into this test (see TODO on that test).
+            if (algorithm.startsWith("ML-DSA")) {
+                continue;
+            }
+
             int resId;
             Class<? extends KeySpec> keySpecClass;
             if ("EC".equalsIgnoreCase(algorithm)) {
@@ -518,9 +523,27 @@ public class KeyFactoryTest {
         }
     }
 
+    // TODO(b/395069350): Merge this test into testGeneratePrivateRejectsTransparentKeySpec once
+    // we figure out why key generation fails with the ML-DSA test resources.
+    @Test
+    public void testGeneratePrivateRejectsTransparentKeySpecMlDsa() throws Exception {
+        KeyFactory keyFactory = getKeyFactory(KeyProperties.KEY_ALGORITHM_ML_DSA);
+        KeyFactory anotherKeyFactory = KeyFactory.getInstance(KeyProperties.KEY_ALGORITHM_ML_DSA);
+
+        // ML-DSA-65
+        PrivateKey key = TestUtils.getMlDsa65PrivateKey();
+        KeySpec spec65 = anotherKeyFactory.getKeySpec(key, PKCS8EncodedKeySpec.class);
+        assertThrows(InvalidKeySpecException.class, () -> keyFactory.generatePrivate(spec65));
+
+        // ML-DSA-87
+        key = TestUtils.getMlDsa87PrivateKey();
+        KeySpec spec87 = anotherKeyFactory.getKeySpec(key, PKCS8EncodedKeySpec.class);
+        assertThrows(InvalidKeySpecException.class, () -> keyFactory.generatePrivate(spec87));
+    }
+
     @Test
     public void testGeneratePublicRejectsTransparentKeySpec() throws Exception {
-        for (String algorithm : EXPECTED_ALGORITHMS) {
+        for (String algorithm : getExpectedAlgorithms()) {
             int resId;
             Class<? extends KeySpec> keySpecClass;
             if ("EC".equalsIgnoreCase(algorithm)) {
@@ -529,6 +552,13 @@ public class KeyFactoryTest {
             } else if ("RSA".equalsIgnoreCase(algorithm)) {
                 resId = R.raw.rsa_key2_cert;
                 keySpecClass = RSAPublicKeySpec.class;
+            } else if ("ML-DSA".equalsIgnoreCase(algorithm)
+                    || "ML-DSA-65".equalsIgnoreCase(algorithm)) {
+                resId = R.raw.mldsa65_cert;
+                keySpecClass = X509EncodedKeySpec.class;
+            } else if ("ML-DSA-87".equalsIgnoreCase(algorithm)) {
+                resId = R.raw.mldsa87_cert;
+                keySpecClass = X509EncodedKeySpec.class;
             } else {
                 throw new RuntimeException("Unsupported key algorithm: " + algorithm);
             }
@@ -550,7 +580,7 @@ public class KeyFactoryTest {
 
     @Test
     public void testGeneratePrivateAndPublicRejectKeyInfo() throws Exception {
-        for (String algorithm : EXPECTED_ALGORITHMS) {
+        for (String algorithm : getExpectedAlgorithms()) {
             try {
                 KeyPairGenerator keyGenerator =
                         KeyPairGenerator.getInstance(algorithm, EXPECTED_PROVIDER_NAME);

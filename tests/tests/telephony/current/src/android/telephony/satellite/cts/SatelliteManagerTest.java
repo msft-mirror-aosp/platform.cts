@@ -28,6 +28,10 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
+import static android.telephony.CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC;
+import static android.telephony.CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_MANUAL;
+import static android.telephony.CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_HYBRID;
+
 import android.content.Context;
 import android.content.Intent;
 import android.os.CancellationSignal;
@@ -37,6 +41,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.SubscriptionManager;
 import android.telephony.satellite.EnableRequestAttributes;
+import android.telephony.satellite.EnableResponse;
 import android.telephony.satellite.NtnSignalStrength;
 import android.telephony.satellite.NtnSignalStrengthCallback;
 import android.telephony.satellite.SatelliteCapabilities;
@@ -377,6 +382,24 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_UPSELL)
+    public void testRequestSatelliteEnabledWithEnableRequestAttributes() {
+        if (!shouldTestSatellite()) return;
+
+        LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class, () -> sSatelliteManager.requestEnabled(
+                1,
+                new EnableRequestAttributes.Builder(true).build(),
+                getContext().getMainExecutor(), error::offer));
+        assertThrows(SecurityException.class, () -> sSatelliteManager.requestEnabled(
+                1,
+                new EnableRequestAttributes.Builder(false).build(),
+                getContext().getMainExecutor(), error::offer));
+    }
+
+    @Test
     public void testRequestIsSatelliteEnabled() {
         if (!shouldTestSatellite()) return;
 
@@ -399,6 +422,36 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
         assertThrows(SecurityException.class, () -> sSatelliteManager.requestIsEnabled(
+                getContext().getMainExecutor(), receiver));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_UPSELL)
+    public void testRequestIsSatelliteEnabledWithEnableRequestAttributes() {
+        if (!shouldTestSatellite()) return;
+
+        final AtomicReference<EnableResponse> enableResponse =
+                new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        OutcomeReceiver<EnableResponse, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(EnableResponse result) {
+                        Log.d(TAG, "onResult: result=" + result);
+                        enableResponse.set(result);
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        Log.d(TAG, "onError: exception=" + exception);
+                        errorCode.set(exception.getErrorCode());
+                    }
+                };
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class, () -> sSatelliteManager.requestIsEnabled(
+                1,
+                CARRIER_ROAMING_NTN_CONNECT_MANUAL,
                 getContext().getMainExecutor(), receiver));
     }
 

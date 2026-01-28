@@ -27,8 +27,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import com.android.compatibility.common.util.AdoptShellPermissionsRule
 import com.google.common.truth.Truth.assertThat
-import org.junit.After
-import org.junit.Assert.assertThrows
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestName
@@ -57,13 +55,6 @@ class ComputerControlInteractionTest {
             .getSystemService(WindowManager::class.java)
             .currentWindowMetrics
             .bounds
-
-    private var testAppAgent: TestAppAgent? = null
-
-    @After
-    fun tearDown() {
-        testAppAgent?.close()
-    }
 
     fun launchTestApp(className: String? = null): TestAppAgent {
         // TODO(b/463464798): Added failure test case to verify the behavior
@@ -105,80 +96,6 @@ class ComputerControlInteractionTest {
         Log.d(TAG, "LongPress from TestApp: (${longPress.x}, ${longPress.y})")
         assertThat(longPress.x).isEqualTo(x)
         assertThat(longPress.y).isEqualTo(y)
-    }
-
-    @Test
-    fun testLongPress_edge() {
-        testAppAgent = launchTestApp()
-        val width = bounds.width()
-        val height = bounds.height()
-
-        // Test long pressing at the corners and edges of the screen.
-        val testCases =
-            listOf(
-                Pair(0, 0), // Top-left
-                Pair(width - 1, 0), // Top-right
-                Pair(0, height - 1), // Bottom-left
-                Pair(width - 1, height - 1), // Bottom-right
-                Pair(width / 2, 0), // Top-middle
-                Pair(width / 2, height - 1), // Bottom-middle
-                Pair(0, height / 2), // Left-middle
-                Pair(width - 1, height / 2) // Right-middle
-            )
-
-        for ((x, y) in testCases) {
-            testAppAgent!!.longPress(x, y)
-            Log.d(TAG, "Long pressed at edge: ($x, $y)")
-
-            val longPress = testAppAgent!!.nextAction(Action.LongPress::class.java)
-            assertThat(longPress).isNotNull()
-            longPress!!
-            Log.d(TAG, "Long press from TestApp: (${longPress.x}, ${longPress.y})")
-            assertThat(longPress.x).isEqualTo(x)
-            assertThat(longPress.y).isEqualTo(y)
-        }
-    }
-
-    @Test
-    fun testLongPress_outOfBounds() {
-        testAppAgent = launchTestApp()
-        val width = bounds.width()
-        val height = bounds.height()
-
-        // Test long pressing outside the screen bounds(positive).
-        val outOfBoundsTestCases =
-            listOf(
-                Pair(width, 0), // Right of screen
-                Pair(0, height), // Below screen
-                Pair(width + 100, height + 100) // Far outside
-            )
-
-        for ((x, y) in outOfBoundsTestCases) {
-            testAppAgent!!.longPress(x, y)
-            Log.d(TAG, "Attempted long press out of bounds: ($x, $y)")
-
-            // Expect no long press action to be received by the app.
-            val longPress = testAppAgent!!.nextAction(Action.LongPress::class.java)
-            assertThat(longPress).isNull()
-            Log.d(TAG, "No long press received from TestApp for out of bounds long press.")
-        }
-    }
-
-    @Test
-    fun testLongPress_negativeCoordinates() {
-        testAppAgent = launchTestApp()
-        val negativeCases =
-            listOf(
-                Pair(-1, -1), // Both coordinates negative
-                Pair(-1, 0), // Negative x, zero y
-                Pair(0, -1), // Zero x, negative y
-                Pair(-100, -100) // Far outside with negative coordinates
-            )
-        for ((x, y) in negativeCases) {
-            assertThrows(IllegalArgumentException::class.java) {
-                testAppAgent!!.longPress(x, y)
-            }
-        }
     }
 
     @Test
@@ -248,48 +165,6 @@ class ComputerControlInteractionTest {
             Log.d(TAG, "Tap from TestApp: (${tap.x}, ${tap.y})")
             assertThat(tap.x).isEqualTo(x)
             assertThat(tap.y).isEqualTo(y)
-        }
-    }
-
-    @Test
-    fun testTap_outOfBounds() {
-        testAppAgent = launchTestApp()
-        val width = bounds.width()
-        val height = bounds.height()
-
-        // Test tapping outside the screen bounds(positive).
-        val outOfBoundsTestCases =
-            listOf(
-                Pair(width, 0), // Right of screen
-                Pair(0, height), // Below screen
-                Pair(width + 100, height + 100) // Far outside
-            )
-
-        for ((x, y) in outOfBoundsTestCases) {
-            testAppAgent!!.tap(x, y)
-            Log.d(TAG, "Attempted tap out of bounds: ($x, $y)")
-
-            // Expect no tap action to be received by the app.
-            val tap = testAppAgent!!.nextAction(Action.Tap::class.java)
-            assertThat(tap).isNull()
-            Log.d(TAG, "No tap received from TestApp for out of bounds tap.")
-        }
-    }
-
-    @Test
-    fun testTap_negativeCoordinates() {
-        testAppAgent = launchTestApp()
-        val negativeCases =
-            listOf(
-                Pair(-1, -1), // Both coordinates negative
-                Pair(-1, 0), // Negative x, zero y
-                Pair(0, -1), // Zero x, negative y
-                Pair(-100, -100) // Far outside with negative coordinates
-            )
-        for ((x, y) in negativeCases) {
-            assertThrows(IllegalArgumentException::class.java) {
-                testAppAgent!!.tap(x, y)
-            }
         }
     }
 

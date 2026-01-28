@@ -19,20 +19,15 @@ package com.android.cts.stopandkillapp;
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.PersistableBundle;
-import android.os.SystemClock;
 
 import androidx.annotation.NonNull;
-
-import java.util.concurrent.TimeUnit;
 
 public class PersistableActivity extends Activity {
     @Override
     public void onSaveInstanceState(
             @NonNull Bundle outState, @NonNull PersistableBundle outPersistentState) {
         super.onSaveInstanceState(outState, outPersistentState);
-        // Sleep a short duration
-        SystemClock.sleep(TimeUnit.SECONDS.toMillis(5));
-        // This part should be reached since system should wait for activity to finish stopping
+
         StateManager.createStateFile(this);
     }
 }

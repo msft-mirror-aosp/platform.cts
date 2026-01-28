@@ -159,7 +159,7 @@ class ComputerControlSessionManagementTest {
                 onClose = { sessionClosedFuture.complete(null) },
             )!!
         session.use { block(it) }
-        sessionClosedFuture.get(5, TimeUnit.SECONDS)
+        sessionClosedFuture.get(TestAppAgent.SESSION_CLOSE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
     }
 
     // Returns the display id of the given component name.

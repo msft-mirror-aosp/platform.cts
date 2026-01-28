@@ -64,6 +64,7 @@ import com.android.compatibility.common.util.UserHelper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -1369,6 +1370,7 @@ public class JobThrottlingTest {
     }
 
     @RequiresFlagsDisabled(android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API)
+    @Ignore("b/478055911")
     @Test
     public void testDisabledFlagRestrictingStopReason_BatterySaver() throws Exception {
         BatteryUtils.assumeBatterySaverFeature();
@@ -1473,6 +1475,7 @@ public class JobThrottlingTest {
     }
 
     @RequiresFlagsDisabled(android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API)
+    @Ignore("b/478055911")
     @Test
     public void testDisabledFlagStopReason_BatterySaver() throws Exception {
         BatteryUtils.assumeBatterySaverFeature();

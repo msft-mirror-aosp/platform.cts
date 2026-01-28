@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,10 +78,10 @@ public final class AutoTimePolicy_ScopeParentUser {}
     apis =
         [
             "android.app.admin.PolicyIdentifier#AUTO_TIME",
-            "android.app.admin.PolicyIdentifier#AUTO_TIME_DISABLED_UNENFORCED",
-            "android.app.admin.PolicyIdentifier#AUTO_TIME_ENABLED_UNENFORCED",
             "android.app.admin.PolicyIdentifier#AUTO_TIME_DISABLED",
-            "android.app.admin.PolicyIdentifier#AUTO_TIME_ENFORCED",
+            "android.app.admin.PolicyIdentifier#AUTO_TIME_DISABLED_UNENFORCED",
+            "android.app.admin.PolicyIdentifier#AUTO_TIME_ENABLED",
+            "android.app.admin.PolicyIdentifier#AUTO_TIME_ENABLED_UNENFORCED",
             "android.app.admin.PolicyIdentifier#AUTO_TIME_USER_CHOICE",
         ]
 )
@@ -95,12 +95,12 @@ class AutoTimeTest : CommonPolicyTests<Int>() {
             PolicyIdentifier.AUTO_TIME_DISABLED_UNENFORCED,
             PolicyIdentifier.AUTO_TIME_ENABLED_UNENFORCED,
             PolicyIdentifier.AUTO_TIME_DISABLED,
-            PolicyIdentifier.AUTO_TIME_ENFORCED,
+            PolicyIdentifier.AUTO_TIME_ENABLED,
         )
 
     override val invalidValueTestCases =
         listOf(
-            InvalidValueTestCase(0), // Lower than lowest value
-            InvalidValueTestCase(6), // Higher than highest value
+            InvalidValueTestCase(-1), // Lower than lowest value
+            InvalidValueTestCase(5), // Higher than highest value
         )
 }
