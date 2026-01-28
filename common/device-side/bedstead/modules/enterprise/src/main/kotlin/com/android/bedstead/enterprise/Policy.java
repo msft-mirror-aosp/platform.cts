@@ -22,17 +22,15 @@ import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLI
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_DEVICE_CONTROLLER;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_DPM_ROLE_HOLDER;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_FINANCED_DEVICE_OWNER;
-import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_USER_CONTROLLER;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_PARENT_INSTANCE_OF_NON_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_PARENT_INSTANCE_OF_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE;
-import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_PARENT_INSTANCE_OF_PROFILE_OWNER_PROFILE;
-import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_PROFILE_OWNER;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_PROFILE_OWNER_USER_WITH_NO_DO;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_SINGLE_DEVICE_OWNER;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_SYSTEM_DEVICE_OWNER;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_PROFILE;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_USER;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_USER_CONTROLLER;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_IN_BACKGROUND;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_TO_AFFILIATED_OTHER_USERS;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_TO_OWN_USER;
@@ -45,6 +43,7 @@ import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.DO_NO
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.INHERITABLE;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.NO;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnAdditionalUserWithDeviceControllerKt.includeRunOnAdditionalUserWithDeviceController;
+import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnAdditionalUserWithInitialUserControllerKt.includeRunOnAdditionalUserWithInitialUserController;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnAffiliatedDeviceOwnerSecondaryUserKt.includeRunOnAffiliatedDeviceOwnerSecondaryUser;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnBackgroundDeviceOwnerUserKt.includeRunOnBackgroundDeviceOwnerUser;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideManagedProfileKt.includeRunOnCloneProfileAlongsideManagedProfile;
@@ -63,9 +62,9 @@ import static com.android.bedstead.enterprise.annotations.parameterized.IncludeR
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSystemDeviceOwnerUserKt.includeRunOnSystemDeviceOwnerUser;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSystemUserWithDeviceControllerKt.includeRunOnSystemUserWithDeviceController;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnUnaffiliatedDeviceOwnerSecondaryUserKt.includeRunOnUnaffiliatedDeviceOwnerSecondaryUser;
-import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnAdditionalUserWithInitialUserControllerKt.includeRunOnAdditionalUserWithInitialUserController;
 import static com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnUserControllerKt.includeRunOnUserController;
 import static com.android.bedstead.harrier.UserType.INSTRUMENTED_USER;
+import static com.android.bedstead.harrier.annotations.EnsureTestAppInstalled.DEFAULT_KEY;
 import static com.android.bedstead.nene.devicepolicy.CommonDevicePolicy.DELEGATION_APP_RESTRICTIONS;
 import static com.android.bedstead.nene.devicepolicy.CommonDevicePolicy.DELEGATION_BLOCK_UNINSTALL;
 import static com.android.bedstead.nene.devicepolicy.CommonDevicePolicy.DELEGATION_CERT_INSTALL;
@@ -82,7 +81,9 @@ import static com.android.bedstead.testapps.TestAppsComponent.DELEGATE_KEY;
 import static com.android.xts.root.annotations.RequireRootInstrumentationKt.requireRootInstrumentation;
 
 import com.android.bedstead.enterprise.annotations.EnsureHasDelegate;
+import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDelegate;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile;
 import com.android.bedstead.enterprise.annotations.EnsureTestAppInstalledAsPrimaryDPC;
 import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
 import com.android.bedstead.enterprise.annotations.EnterprisePolicy.AppOp;
@@ -97,7 +98,6 @@ import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnPro
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnProfileOwnerProfileWithNoDeviceOwner;
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSecondaryUserInDifferentProfileGroupToOrganizationOwnedProfileOwnerProfileUsingParentInstance;
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSecondaryUserInDifferentProfileGroupToProfileOwnerProfile;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSystemDeviceOwnerUser;
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnUnaffiliatedProfileOwnerAdditionalUser;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DynamicParameterizedAnnotation;
@@ -108,6 +108,8 @@ import com.android.bedstead.harrier.annotations.EnsureTestAppHasPermission;
 import com.android.bedstead.harrier.annotations.FailureMode;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeNone;
+import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser;
+import com.android.bedstead.nene.types.OptionalBoolean;
 import com.android.queryable.annotations.Query;
 
 import com.google.auto.value.AutoAnnotation;
@@ -369,16 +371,30 @@ public final class Policy {
     }
 
     @AutoAnnotation
+    private static EnsureHasNoWorkProfile ensureHasNoWorkProfile() {
+        return new AutoAnnotation_Policy_ensureHasNoWorkProfile();
+    }
+
+    @AutoAnnotation
+    private static EnsureHasDeviceOwner ensureHasDeviceOwner(String key, Query dpc) {
+        return new AutoAnnotation_Policy_ensureHasDeviceOwner(key, dpc);
+    }
+
+    @AutoAnnotation
     private static IncludeRunOnParentOfProfileOwnerUsingParentInstance includeRunOnParentOfProfileOwnerUsingParentInstance() {
         return new AutoAnnotation_Policy_includeRunOnParentOfProfileOwnerUsingParentInstance();
     }
 
     @AutoAnnotation
-    public static IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance includeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance() {
+    private static IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance
+            includeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance() {
         return new AutoAnnotation_Policy_includeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance();
     }
 
-
+    @AutoAnnotation
+    private static RequireRunOnSystemUser requireRunOnSystemUser(OptionalBoolean switchedToUser) {
+        return new AutoAnnotation_Policy_requireRunOnSystemUser(switchedToUser);
+    }
 
     private static Function<EnterprisePolicy, Set<Annotation>> singleAnnotation(
             Annotation annotation) {
@@ -645,12 +661,10 @@ public final class Policy {
 
         if (includeNonDeviceAdminStates) {
             Set<String> validScopes = ImmutableSet.copyOf(enterprisePolicy.delegatedScopes());
-            String[] scopes = ALL_DELEGATE_SCOPES.stream()
-                    .filter(i -> !validScopes.contains(i))
-                    .toArray(String[]::new);
-            Annotation[] existingAnnotations = filterAnnotations(
-                    IncludeRunOnSystemDeviceOwnerUser.class.getAnnotations(), EnsureHasNoDelegate.class);
-
+            String[] scopes =
+                    ALL_DELEGATE_SCOPES.stream()
+                            .filter(i -> !validScopes.contains(i))
+                            .toArray(String[]::new);
             String[] validPermissions =
                     Arrays.stream(enterprisePolicy.permissions())
                             .flatMap(permission -> Arrays.stream(permission.appliedWith()))
@@ -658,39 +672,29 @@ public final class Policy {
 
             if (BedsteadJUnit4.isDebug()) {
                 // Add a non-DPC with no delegate scopes
-                Annotation[] newAnnotations = Arrays.copyOf(existingAnnotations,
-                        existingAnnotations.length + 2);
-                newAnnotations[newAnnotations.length - 2] = ensureHasDelegate(
-                        EnsureHasDelegate.AdminType.PRIMARY, new String[]{},
-                        /* isPrimary= */ true);
-                newAnnotations[newAnnotations.length - 1] = ensureTestAppDoesNotHavePermission(
-                        DELEGATE_KEY, validPermissions, FailureMode.SKIP);
                 annotations.add(
-                        new DynamicParameterizedAnnotation("DelegateWithNoScopes", newAnnotations));
+                        createTestCaseWithoutPermissionsWithScopes(
+                                "DelegateWithNoScopes", validPermissions, new String[] {}));
 
                 for (String scope : scopes) {
-                    newAnnotations = Arrays.copyOf(existingAnnotations,
-                            existingAnnotations.length + 1);
-                    newAnnotations[newAnnotations.length - 1] = ensureHasDelegate(
-                            EnsureHasDelegate.AdminType.PRIMARY, new String[]{scope},
-                            /* isPrimary= */ true);
                     annotations.add(
-                            new DynamicParameterizedAnnotation(
-                                    "DelegateWithScope:" + scope, newAnnotations));
+                            createTestCaseWithoutPermissionsWithScopes(
+                                    "DelegateWithScope:" + scope,
+                                    validPermissions,
+                                    new String[] {scope}));
                 }
+                annotations.add(
+                        createTestCaseWithoutPermissions(
+                                "TestAppWithoutPermission", validPermissions));
             } else {
-                Annotation[] newAnnotations = Arrays.copyOf(existingAnnotations,
-                        existingAnnotations.length + 2);
-                newAnnotations[newAnnotations.length - 2] = ensureHasDelegate(
-                        EnsureHasDelegate.AdminType.PRIMARY, scopes, /* isPrimary= */ true);
                 // TODO: We should add @RequireRootInstrumentation if the permission is root-only
                 //  - but we need to be able to determine that from the host
-                newAnnotations[newAnnotations.length - 1] =
-                        ensureTestAppDoesNotHavePermission(
-                                DELEGATE_KEY, validPermissions, FailureMode.SKIP);
                 annotations.add(
-                        new DynamicParameterizedAnnotation("DelegateWithoutValidScope",
-                                newAnnotations));
+                        createTestCaseWithoutPermissionsWithScopes(
+                                "DelegateWithoutValidScope", validPermissions, scopes));
+                annotations.add(
+                        createTestCaseWithoutPermissions(
+                                "TestAppWithoutPermission", validPermissions));
             }
         }
 
@@ -704,10 +708,40 @@ public final class Policy {
         return new ArrayList<>(annotations);
     }
 
-    /** Return {@code annotations} excluding any which are of type
-     * {@code filteredAnnotationClass}. */
-    private static Annotation[] filterAnnotations(Annotation[] annotations,
-            Class<? extends Annotation> filteredAnnotationClass) {
+    private static Annotation createTestCaseWithoutPermissions(String name, String[] permissions) {
+        Annotation[] testCaseAnnotations = {
+            requireRunOnSystemUser(OptionalBoolean.ANY),
+            ensureHasNoWorkProfile(),
+            ensureTestAppInstalledAsPrimaryDPC(
+                    DEFAULT_KEY,
+                    queryBuilder()
+                            .wherePackageName()
+                            .isEqualTo(DELEGATE_PACKAGE_NAME)
+                            .toAnnotation(),
+                    INSTRUMENTED_USER),
+            ensureTestAppDoesNotHavePermission(DEFAULT_KEY, permissions, FailureMode.SKIP)
+        };
+        return new DynamicParameterizedAnnotation(name, testCaseAnnotations);
+    }
+
+    private static Annotation createTestCaseWithoutPermissionsWithScopes(
+            String name, String[] permissions, String[] scopes) {
+        Annotation[] testCaseAnnotations = {
+            requireRunOnSystemUser(OptionalBoolean.ANY),
+            ensureHasNoWorkProfile(),
+            ensureHasDeviceOwner("dpc", queryBuilder().toAnnotation()),
+            ensureHasDelegate(EnsureHasDelegate.AdminType.PRIMARY, scopes, /* isPrimary= */ true),
+            ensureTestAppDoesNotHavePermission(DELEGATE_KEY, permissions, FailureMode.SKIP)
+        };
+        return new DynamicParameterizedAnnotation(name, testCaseAnnotations);
+    }
+
+    /**
+     * /** Return {@code annotations} excluding any which are of type {@code
+     * filteredAnnotationClass}.
+     */
+    private static Annotation[] filterAnnotations(
+            Annotation[] annotations, Class<? extends Annotation> filteredAnnotationClass) {
         return Arrays.stream(annotations).filter(
                 f -> !f.annotationType().equals(filteredAnnotationClass))
                 .toArray(Annotation[]::new);
