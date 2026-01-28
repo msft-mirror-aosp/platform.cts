@@ -24,6 +24,8 @@ import com.android.bedstead.nene.types.OptionalBoolean
 import com.android.bedstead.settings.SettingsPreferenceMetadataParameter.Companion.PREFERENCE_FILTER_LAUNCH_INTENT_NOT_NULL
 import com.android.bedstead.settings.SettingsPreferenceMetadataParameter.Companion.PREFERENCE_FILTER_READ_PERMISSIONS_NOT_EMPTY
 import com.android.bedstead.settings.SettingsPreferenceMetadataParameter.Companion.PREFERENCE_FILTER_WRITE_PERMISSIONS_NOT_EMPTY
+import com.android.bedstead.settings.appfunctions.AppFunctionsComponent
+import com.android.bedstead.settings.appfunctions.PerScreenDeviceStatesParameter
 import org.junit.runners.model.FrameworkMethod
 
 /**
@@ -35,15 +37,20 @@ class SettingsParameterizedTestWithArgumentGenerator(
 ) : ParameterizedTestWithArgumentGenerator {
 
     private val clientComponent: SettingsPreferenceServiceClientComponent by locator
+    private val appFunctionsComponent: AppFunctionsComponent by locator
 
     override fun handleFrameworkMethod(
         frameworkMethod: FrameworkMethod,
         annotation: Annotation
     ): List<FrameworkMethod> {
-        return if (annotation is SettingsPreferenceMetadataParameter) {
-            annotation.logic(frameworkMethod)
-        } else {
-            super.handleFrameworkMethod(frameworkMethod, annotation)
+        return when (annotation) {
+            is SettingsPreferenceMetadataParameter -> annotation.logic(frameworkMethod)
+            is PerScreenDeviceStatesParameter -> appFunctionsComponent
+                .perScreenDeviceStatesParameter(
+                    annotation,
+                    frameworkMethod
+                )
+            else -> super.handleFrameworkMethod(frameworkMethod, annotation)
         }
     }
 
