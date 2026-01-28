@@ -870,10 +870,33 @@ public class WindowUntrustedTouchTest {
                 FeatureUtil.isXrHeadset());
 
         addToastOverlay(APP_SELF, /* custom */ false);
+
         Rect toast = mWmState.waitForResult("toast bounds",
                 state -> state.findFirstWindowWithType(LayoutParams.TYPE_TOAST).getFrame());
 
-        mTouchHelper.tapOnCenter(toast, mActivity.getDisplayId());
+        // In some non-phone targets, e.g. Automotive's multi tasking environments based on
+        // multiple root tasks where the activities are not launched in full screen,
+        // there are scenarios that the toast does not appear within the test activity's bounds.
+        // Tapping the center of the toast could lead to a missed touch if they do not overlap at
+        // all.
+        // To account for such geometries, we first attempt to find the intersection between the
+        // toast and the activity. If any intersection can be found, we tap the center of the
+        // intersection. Otherwise, we have to skip the test.
+        int[] viewXY = new int[2];
+        mContainer.getLocationOnScreen(viewXY);
+        final Rect containerRect =
+                new Rect(
+                        viewXY[0],
+                        viewXY[1],
+                        viewXY[0] + mContainer.getWidth(),
+                        viewXY[1] + mContainer.getHeight());
+        final Rect intersection = new Rect();
+        // TODO(b/440669095): Improve the test.
+        assumeTrue(
+                "Toast does not overlap with the activity, skipping test.",
+                intersection.setIntersect(toast, containerRect));
+
+        mTouchHelper.tapOnCenter(intersection, mActivity.getDisplayId());
 
         assertTouchReceived();
     }
@@ -886,10 +909,33 @@ public class WindowUntrustedTouchTest {
         assumeFalse("Watch does not support new Toast behavior yet.", FeatureUtil.isWatch());
 
         addToastOverlay(APP_A, /* custom */ false);
+
         Rect toast = mWmState.waitForResult("toast bounds",
                 state -> state.findFirstWindowWithType(LayoutParams.TYPE_TOAST).getFrame());
 
-        mTouchHelper.tapOnCenter(toast, mActivity.getDisplayId());
+        // In some non-phone targets, e.g. Automotive's multi tasking environments based on
+        // multiple root tasks where the activities are not launched in full screen,
+        // there are scenarios that the toast does not appear within the test activity's bounds.
+        // Tapping the center of the toast could lead to a missed touch if they do not overlap at
+        // all.
+        // To account for such geometries, we first attempt to find the intersection between the
+        // toast and the activity. If any intersection can be found, we tap the center of the
+        // intersection. Otherwise, we have to skip the test.
+        int[] viewXY = new int[2];
+        mContainer.getLocationOnScreen(viewXY);
+        final Rect containerRect =
+                new Rect(
+                        viewXY[0],
+                        viewXY[1],
+                        viewXY[0] + mContainer.getWidth(),
+                        viewXY[1] + mContainer.getHeight());
+        final Rect intersection = new Rect();
+        // TODO(b/440669095): Improve the test.
+        assumeTrue(
+                "Toast does not overlap with the activity, skipping test.",
+                intersection.setIntersect(toast, containerRect));
+
+        mTouchHelper.tapOnCenter(intersection, mActivity.getDisplayId());
 
         assertTouchReceived();
     }
