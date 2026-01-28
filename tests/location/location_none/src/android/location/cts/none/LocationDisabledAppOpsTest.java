@@ -27,9 +27,13 @@ import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.location.LocationManager;
+import android.location.flags.Flags;
 import android.os.PackageTagsList;
 import android.os.Process;
 import android.os.UserHandle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.InstrumentationRegistry;
 
@@ -37,6 +41,7 @@ import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -47,6 +52,9 @@ public class LocationDisabledAppOpsTest {
     private final Context mContext = InstrumentationRegistry.getContext();
     private LocationManager mLm;
     private AppOpsManager mAom;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() {
@@ -60,6 +68,7 @@ public class LocationDisabledAppOpsTest {
             "android.app.AppOpsManager#noteOpNoThrow",
             "android.app.AppOpsManager#checkOpNoThrow",
     })
+    @RequiresFlagsEnabled(Flags.FLAG_CHANGE_GET_ADAS_ALLOWLIST_FROM_HIDDEN_TO_SYSTEM)
     public void testLocationAppOpIsIgnoredForAppsWhenLocationIsDisabled() {
         PackageTagsList ignoreList = mLm.getIgnoreSettingsAllowlist();
 
