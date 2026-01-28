@@ -67,7 +67,7 @@ public abstract class AbstractTestListActivity extends ListActivity {
     private void setTestResult(TestResult testResult) {
         testResult.getHistoryCollection().add(
                 testResult.getName(), mStartTime, mEndTime, mIsAutomated);
-        mAdapter.setTestResult(testResult);
+        mAdapter.setTestResult(testResult, true);
     }
 
     @Override
