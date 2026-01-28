@@ -64,15 +64,6 @@ public final class AmUtils {
     }
 
     /**
-     * Runs "adb shell am stop-app PACKAGE".
-     *
-     * @param packageName The package to stop.
-     */
-    public static void runStopApp(String packageName) {
-        SystemUtil.runShellCommandForNoOutput("am stop-app " + packageName);
-    }
-
-    /**
      * Checks if a process is running for the given package.
      *
      * @param packageName The package to check.
@@ -144,6 +135,15 @@ public final class AmUtils {
         } catch (NumberFormatException nfe) {
             return STANDBY_BUCKET_DOES_NOT_EXIST;
         }
+    }
+
+    /**
+     * Runs "adb shell am stop-app" for the given package and the current user.
+     *
+     * @param packageName The package to stop.
+     */
+    public static void runStopApp(String packageName) throws Exception {
+        runStopApp(packageName, false);
     }
 
     /**
