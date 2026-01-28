@@ -24,14 +24,10 @@ import static junit.framework.Assert.assertNull;
 import static org.junit.Assert.assertArrayEquals;
 
 import android.companion.virtual.camera.VirtualCameraConfig;
-import android.companion.virtualdevice.flags.Flags;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Range;
 import android.util.Size;
 
@@ -46,10 +42,6 @@ import java.util.List;
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
 public class VirtualCameraBuildersTest {
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
     private static final int CAMERA_SENSOR_ORIENTATION_CHARACTERISTIC =
             VirtualCameraConfig.SENSOR_ORIENTATION_180;
     private static final int CAMERA_LENS_FACING_CHARACTERISTIC =
@@ -75,7 +67,6 @@ public class VirtualCameraBuildersTest {
 
     // CameraCharacteristics.Builder
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void buildCameraCharacteristics_matches() {
         CameraCharacteristics characteristics =
                 new CameraCharacteristics.Builder()
@@ -115,7 +106,6 @@ public class VirtualCameraBuildersTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void cameraCharacteristicsBuilder_buildsCopy() {
         final Size expectedPixelArraySize = new Size(1920, 1080);
         final int[] expectedAfModes = {
@@ -185,7 +175,6 @@ public class VirtualCameraBuildersTest {
 
     // CaptureResult.Builder
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void buildCaptureResult_matches() {
         CaptureResult captureResult = new CaptureResult.Builder()
                 .set(CaptureResult.CONTROL_AE_MODE, CaptureResult.CONTROL_AE_MODE_ON)
@@ -206,7 +195,6 @@ public class VirtualCameraBuildersTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_METADATA)
     public void captureResultBuilder_buildsCopy() {
         CaptureResult.Builder captureResultBuilder = new CaptureResult.Builder()
                 .set(CaptureResult.CONTROL_AE_MODE, CaptureResult.CONTROL_AE_MODE_ON)
