@@ -195,8 +195,11 @@ public class MediaSyncEventTest {
 
             // Verify recording starts shortly after AudioTrack completion (typical diff 180ms)
             final long recordStartAfterPlaybackMs =
-                    firstSampleReadTimeMs - startTimeMs - PLAYBACK_TIME_IN_MS;
-            final long recordStartToleranceMs = isLowLatencyDevice() ? 200 : 800;
+                    firstSampleReadTimeMs
+                            - startTimeMs
+                            - playbackStartLatencyMs
+                            - PLAYBACK_TIME_IN_MS;
+            final long recordStartToleranceMs = isLowLatencyDevice() ? 120 : 600;
             Log.d(TEST_NAME, "recordStartAfterPlaybackMs: " + recordStartAfterPlaybackMs
                     + " recordStartToleranceMs: " + recordStartToleranceMs);
 
