@@ -18,14 +18,17 @@ package android.companion.cts.core
 
 import android.Manifest
 import android.Manifest.permission.ACCESS_COMPANION_MESSAGE_PCC
+import android.Manifest.permission.MANAGE_COMPANION_DEVICES
 import android.companion.AssociationInfo
 import android.companion.CompanionDeviceManager.MESSAGE_ONEWAY_PCC
 import android.companion.CompanionDeviceManager.MESSAGE_REQUEST_PING
 import android.companion.Flags
 import android.companion.cts.common.MAC_ADDRESS_A
+import android.companion.cts.common.MAC_ADDRESS_B
 import android.companion.cts.common.RecordingOnTransportsChangedListener
 import android.companion.cts.common.SIMPLE_EXECUTOR
 import android.companion.cts.common.assertEmpty
+import android.companion.cts.common.getAssociationForPackage
 import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -240,12 +243,20 @@ class TransportsListenerTest : CoreTestBase() {
     @RequiresFlagsEnabled(Flags.FLAG_TRUSTED_DEVICES)
     fun test_isSystemDataTransportAttached_with_pcc_permission() {
         targetApp.associate(MAC_ADDRESS_A)
-        val associationId = cdm.myAssociations.first().id
+        val associationA = cdm.myAssociations[0]
+        testApp.associate(MAC_ADDRESS_B)
+        val associationB = withShellPermissionIdentity(MANAGE_COMPANION_DEVICES) {
+            getAssociationForPackage(userId, testApp.packageName, MAC_ADDRESS_B, cdm)
+        }
 
         withShellPermissionIdentity(ACCESS_COMPANION_MESSAGE_PCC) {
-            // The device must be trusted even hold ACCESS_COMPANION_MESSAGE_PCC permission.
+            // Target app can always access its own association's transport
+            val attached = cdm.isSystemDataTransportAttached(associationA.id)
+            assertFalse(attached, "No transport should be attached at the moment.")
+
+            // Other app's associations are only accessible if trusted
             assertFailsWith(SecurityException::class) {
-                cdm.isSystemDataTransportAttached(associationId)
+                cdm.isSystemDataTransportAttached(associationB.id)
             }
         }
     }
