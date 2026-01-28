@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2026 Google LLC.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<configuration description="Settings specific for CTS-V-HOST interactive tests">
+    <result_reporter class="com.android.compatibility.common.tradefed.result.suite.InteractiveResultReporter" />
+
+    <!-- In case any interactive module doesn't configure it at module level. -->
+    <option name="compatibility:test-arg" value="com.android.tradefed.testtype.AndroidJUnitTest:include-annotation:com.android.interactive.annotations.Interactive" />
+    <option name="compatibility:test-arg" value="com.android.tradefed.testtype.HostTest:include-annotation:com.android.interactive.annotations.Interactive" />
+    <option name="compatibility:test-arg" value="com.android.compatibility.common.tradefed.testtype.JarHostTest:include-annotation:com.android.interactive.annotations.Interactive" />
+
+    <!-- By default ENABLE_MANUAL is false, set it as true for modules that need a manual test as fallback.-->
+    <option name="compatibility:module-arg" value="CtsSysuiInteractiveTestCases:instrumentation-arg:ENABLE_MANUAL:=true" />
+</configuration>
