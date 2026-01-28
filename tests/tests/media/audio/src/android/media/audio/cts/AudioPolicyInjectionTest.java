@@ -42,6 +42,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
+import com.android.media.mediatestutils.PermissionUpdateBarrierRule;
 
 import org.junit.After;
 import org.junit.Before;
@@ -103,12 +104,17 @@ public class AudioPolicyInjectionTest {
                     .setCapturePreset(MediaRecorder.AudioSource.VOICE_RECOGNITION)
                     .build();
 
-    @Rule
+    @Rule(order = 1)
     public final AdoptShellPermissionsRule mPermissionRule =
             new AdoptShellPermissionsRule(
                     InstrumentationRegistry.getInstrumentation().getUiAutomation(),
                     MODIFY_AUDIO_ROUTING,
                     RECORD_AUDIO);
+
+    @Rule(order = 2)
+    public final PermissionUpdateBarrierRule mBarrierRule =
+            new PermissionUpdateBarrierRule(
+                    InstrumentationRegistry.getInstrumentation().getContext());
 
     private AudioManager mAudioManager;
     private AudioPolicy mAudioPolicy;
