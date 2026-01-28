@@ -28,7 +28,6 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.Telephony;
-import android.provider.Telephony.ReadRestriction;
 
 import com.android.compatibility.common.util.SystemUtil;
 
@@ -106,6 +105,16 @@ class SmsTestHelper {
 
         return mContentResolver.insert(Telephony.Sms.CONTENT_URI, mContentValues);
     }
+
+    public Uri insertTestSmsWithTransactionId(
+            String testAddress, String testSmsBody, String transactionId) {
+        mContentValues.put(Telephony.Sms.ADDRESS, testAddress);
+        mContentValues.put(Telephony.Sms.BODY, testSmsBody);
+        mContentValues.put(Telephony.Sms.TRANSACTION_ID, transactionId);
+
+        return mContentResolver.insert(Telephony.Sms.CONTENT_URI, mContentValues);
+    }
+
     /**
      * Asserts the verify message details
      */

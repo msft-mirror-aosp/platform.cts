@@ -34,6 +34,7 @@ import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
 import static com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity;
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 import static com.android.internal.telephony.flags.Flags.FLAG_LIMIT_RAW_TABLE_VISIBILITY;
+import static com.android.internal.telephony.flags.Flags.FLAG_MESSAGE_PROMOTION;
 import static com.android.internal.telephony.flags.Flags.FLAG_REDACT_OTP_SMS;
 import static com.android.internal.telephony.flags.Flags.FLAG_REDACT_OTP_SMS_API;
 import static com.android.internal.telephony.flags.Flags.FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES;
@@ -96,7 +97,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 
 @SmallTest
 @RunWith(BedsteadJUnit4.class)
@@ -1067,6 +1067,23 @@ public class SmsTest {
         cursor.moveToNext();
         assertThat(cursor.getColumnIndex(ReadRestriction.READ_RESTRICTION_COLUMN_NAME))
                 .isEqualTo(-1);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_MESSAGE_PROMOTION)
+    public void testInsertSms_withoutTransactionId() {
+        Uri inserted = mSmsTestHelper.insertTestSms(TEST_ADDRESS, TEST_SMS_BODY);
+        mSmsTestHelper.assertSmsColumnEquals(Telephony.Sms.TRANSACTION_ID, inserted, null);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_MESSAGE_PROMOTION)
+    public void testInsertSms_withTransactionId() {
+        String transactionId = "TEST_SMS_TR_ID";
+        Uri inserted =
+                mSmsTestHelper.insertTestSmsWithTransactionId(
+                        TEST_ADDRESS, TEST_SMS_BODY, transactionId);
+        mSmsTestHelper.assertSmsColumnEquals(Telephony.Sms.TRANSACTION_ID, inserted, transactionId);
     }
 
     // Gets the retriever hash belong to itself
