@@ -47,8 +47,6 @@ class TestResultsReport {
 
     private static final String PREFIX_TAG = "build_";
 
-    private static final String HOST_TEST_CASE_NAME = "hostTests";
-
     private final Context mContext;
 
     private final TestListAdapter mAdapter;
@@ -66,8 +64,6 @@ class TestResultsReport {
         String versionSecurityPatch = null;
         String versionRelease = null;
         IInvocationResult result = new InvocationResult();
-        IModuleResult moduleResult = result.getOrCreateModule(
-                mContext.getResources().getString(R.string.module_id));
 
         // Collect build fields available in API level 21
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -131,7 +127,7 @@ class TestResultsReport {
 
         // Get test result, including test name, result, report log, details and histories.
         getCaseResult(result);
-        getHostCaseResult(moduleResult);
+        getHostCaseResult(result);
 
         return result;
     }
@@ -233,53 +229,41 @@ class TestResultsReport {
         fillTestResult(currentTestResult, subTestName, subTestNameInReport, history);
     }
 
-
     /**
      * Get case results per host test, including result, report log, details and histories.
      *
-     * @param moduleResult The module result bound with {@link IInvocationResult}.
+     * @param result The result bound with {@link IInvocationResult}.
      */
-    private void getHostCaseResult(IModuleResult moduleResult) {
-        ICaseResult caseResult = moduleResult.getOrCreateResult(HOST_TEST_CASE_NAME);
+    private void getHostCaseResult(IInvocationResult result) {
         for (String module : mContext.getResources().getStringArray(R.array.host_modules)) {
             for (String testName : mAdapter.getTestResultNames()) {
-                if (!testName.startsWith(module)) {
-                    continue;
+                if (testName.startsWith(module)) {
+                    String[] parts = testName.split(HostTestsActivity.TEST_ID_SEPARATOR, 3);
+                    if (parts.length < 3) {
+                        continue;
+                    }
+                    IModuleResult moduleResult = result.getOrCreateModule(getModuleId(parts[0]));
+                    moduleResult.setDone(true);
+                    ICaseResult caseResult = moduleResult.getOrCreateResult(parts[1]);
+                    createHostTestResult(caseResult, testName, parts[2]);
                 }
-                // Split Module and Class#TestCase
-                String[] parts = testName.split(HostTestsActivity.TEST_ID_SEPARATOR, 2);
-                if (parts.length < 2 || !parts[1].contains(HostTestsActivity.TEST_ID_SEPARATOR)) {
-                    continue;
-                }
-                createTestResult(caseResult, testName, parts[1]);
             }
         }
     }
 
-    private void createTestResult(ICaseResult caseResult, String testName, String resultName) {
-        ITestResult currentTestResult = caseResult.getOrCreateResult(resultName);
-        TestStatus resultStatus = getTestResultStatus(mAdapter.getTestResult(testName));
+    private void createHostTestResult(
+            ICaseResult caseResult, String fullTestName, String testName) {
+        ITestResult currentTestResult = caseResult.getOrCreateResult(testName);
 
-        currentTestResult.setResultStatus(resultStatus);
-        // TODO: report test details with Extended Device Info (EDI) or CTS metrics
-        String details = mAdapter.getTestDetails(testName);
-        currentTestResult.setMessage(details);
+        TestResultHistory resultHistory = null;
+        TestResultHistoryCollection historyCollection = mAdapter.getHistoryCollection(fullTestName);
 
-        ReportLog reportLog = mAdapter.getReportLog(testName);
-        if (reportLog != null) {
-            currentTestResult.setReportLog(reportLog);
+        if (historyCollection != null && !historyCollection.asSet().isEmpty()) {
+            // For host side tests, there should only be one history.
+            resultHistory = historyCollection.asSet().iterator().next();
         }
 
-        TestResultHistoryCollection historyCollection = mAdapter.getHistoryCollection(testName);
-        if (historyCollection != null) {
-            List<TestResultHistory> leafTestHistories = getTestResultHistories(historyCollection);
-            currentTestResult.setTestResultHistories(leafTestHistories);
-        }
-
-        TestScreenshotsMetadata screenshotsMetadata = mAdapter.getScreenshotsMetadata(testName);
-        if (screenshotsMetadata != null) {
-            currentTestResult.setTestScreenshotsMetadata(screenshotsMetadata);
-        }
+        fillTestResult(currentTestResult, fullTestName, testName, resultHistory);
     }
 
     /**
