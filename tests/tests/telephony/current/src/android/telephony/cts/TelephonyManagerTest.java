@@ -4210,6 +4210,13 @@ public class TelephonyManagerTest {
         // Perform this test on default data subscription.
         mTelephonyManager = getContext().getSystemService(TelephonyManager.class)
                 .createForSubscriptionId(SubscriptionManager.getDefaultDataSubscriptionId());
+        // Ensure Mobile Data is Enabled so callbacks will fire
+        if (!ShellIdentityUtils.invokeMethodWithShellPermissions(
+            mTelephonyManager, TelephonyManager::isDataEnabled)) {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                tm -> tm.setDataEnabled(true));
+            waitForMs(1000);
+        }
         // Register data enabled listener
         DataEnabledListenerTest dataEnabledListener = new DataEnabledListenerTest();
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
