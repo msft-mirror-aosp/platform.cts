@@ -29,7 +29,6 @@ import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Instrumentation;
@@ -267,15 +266,10 @@ public class BiometricsAtomsHostSideTests {
 
     @Test
     public void testSecureLockDeviceStateChanged() throws Exception {
-        assumeFalse(
-                "Do not test on automotive",
-                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
-        assumeFalse(
-                "Do not test on TV",
-                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK));
-        assumeFalse(
-                "Do not test on watch",
-                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH));
+        assumeTrue(
+                "Device must support secure lock screen",
+                mContext.getPackageManager()
+                        .hasSystemFeature(PackageManager.FEATURE_SECURE_LOCK_SCREEN));
 
         final List<SensorProperties> strongFingerprintSensorProperties =
                 filterStrongFingerprintSensorProperties(mSensorProperties);
