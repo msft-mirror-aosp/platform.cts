@@ -36,7 +36,7 @@ public class CtsContentSafetyIsolatedService extends ContentSafetySandboxedServi
     static final String TAG = "SampleCtsContentSafetyIsolatedService";
 
     @Override
-    public void onCheckContent(
+    public void onCheckContentRequest(
             int featureType,
             @NonNull Map<Integer, List<ParcelFileDescriptor>> contentPayloadMap,
             @Nullable CancellationSignal cancellationSignal,
@@ -51,7 +51,7 @@ public class CtsContentSafetyIsolatedService extends ContentSafetySandboxedServi
     }
 
     @Override
-    public void onLoadFeature(
+    public void onLoadFeatureRequest(
             @NonNull Map<String, ParcelFileDescriptor> features,
             @Nullable CancellationSignal cancellationSignal,
             @NonNull OutcomeReceiver<Void, ContentSafetyException> callback) {

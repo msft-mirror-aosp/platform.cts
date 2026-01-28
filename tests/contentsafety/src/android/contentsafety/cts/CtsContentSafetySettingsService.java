@@ -30,7 +30,7 @@ public class CtsContentSafetySettingsService extends ContentSafetySettingsServic
     static final String TAG = "SampleContentSafetySettingsService";
 
     @Override
-    public void onIsFeatureEnabled(
+    public void onIsFeatureEnabledRequest(
             int featureType,
             @NonNull UserHandle userId,
             @Nullable CancellationSignal cancellationSignal,
