@@ -84,6 +84,7 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     private static final long UNLOCK_BROADCAST_WAIT_SECONDS = 10;
     private static final long DEVICE_SETUP_WAIT_MS = 15_000;
     private static final long LOCK_SCREEN_WAIT_MS = 500;
+    private static final long NETWORK_CONNECTIVITY_WAIT_MS = 10_000;
 
     // This is the PIN set in EncryptionAppTest.testSetUp()
     private static final String DEFAULT_PIN = "1234";
@@ -105,7 +106,7 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     public void setUp() throws Exception {
         assertNotNull(getAbi());
         assertNotNull(getBuild());
-        assertTrue("Resume on reboot needs network connectivity", getDevice().checkConnectivity());
+        assertNetworkConnectivity();
 
         mSupportsSecondaryUsers =
                 getDevice().getMaxNumberOfUsersSupported("android.os.usertype.full.SECONDARY") > 0;
@@ -129,9 +130,11 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
         removeTestPackages();
         deviceCleanupServerBasedParameter();
         if (mOriginalVerifyAdbInstallerSetting != null) {
-            getDevice().setSetting(
-                    "global", "verifier_verify_adb_installs",
-                    mOriginalVerifyAdbInstallerSetting);
+            getDevice()
+                    .setSetting(
+                            "global",
+                            "verifier_verify_adb_installs",
+                            mOriginalVerifyAdbInstallerSetting);
         }
         setScreenStayOnValue(false);
         resetBatteryOverride();
@@ -221,6 +224,7 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             runDeviceTestsAsUser("testVerifyLockedAndDismiss", secondaryUser);
         } finally {
             runTestTearDownForUsers(users);
+            switchUser(initialUser);
             deviceClearLskf();
         }
     }
@@ -269,6 +273,7 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             runDeviceTestsAsUser("testVerifyUnlockedAndDismiss", secondaryUser);
         } finally {
             runTestTearDownForUsers(users);
+            switchUser(initialUser);
             deviceClearLskf();
         }
     }
@@ -397,14 +402,13 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
 
     private void deviceCleanupServerBasedParameter() throws Exception {
         getDevice().executeShellCommand("device_config put ota server_based_ror_enabled false");
-        String res = getDevice().executeShellCommand(
-                "device_config get ota server_based_ror_enabled");
+        String res =
+                getDevice().executeShellCommand("device_config get ota server_based_ror_enabled");
         if (res == null || !res.contains("false")) {
             fail("could not clean up server based ror");
         }
 
-        getDevice().executeShellCommand(
-                "cmd lock_settings set-resume-on-reboot-provider-package ");
+        getDevice().executeShellCommand("cmd lock_settings set-resume-on-reboot-provider-package ");
     }
 
     private void deviceSetup(int userId) throws Exception {
@@ -552,7 +556,7 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
                         String.format(
                                 Locale.ENGLISH,
                                 "Current user (%d) is not %d after switch (most likely switch"
-                                  + " failed because the current user is locked)",
+                                        + " failed because the current user is locked)",
                                 device.getCurrentUser(),
                                 userId),
                 USER_SWITCH_TIMEOUT_SECONDS,
@@ -590,17 +594,25 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     private int getUserIdFromCreateUserCommandOutput(String commandOutput) {
         // Extract the id of the new user.
         String[] tokens = commandOutput.split("\\s+");
-        assertThat(commandOutput + " expected to have format \"Success: {USER_ID}\"",
-                tokens.length, greaterThan(0));
-        assertThat("Command output should start with \"Success\"" + commandOutput, tokens[0],
+        assertThat(
+                commandOutput + " expected to have format \"Success: {USER_ID}\"",
+                tokens.length,
+                greaterThan(0));
+        assertThat(
+                "Command output should start with \"Success\"" + commandOutput,
+                tokens[0],
                 is("Success:"));
         return Integer.parseInt(tokens[tokens.length - 1]);
     }
 
     private String getCreateManagedProfileCommandOutput(int parentUserId)
             throws DeviceNotAvailableException {
-        String command = "pm create-user --profileOf " + parentUserId + " --managed "
-                + "TestProfile_" + System.currentTimeMillis();
+        String command =
+                "pm create-user --profileOf "
+                        + parentUserId
+                        + " --managed "
+                        + "TestProfile_"
+                        + System.currentTimeMillis();
         CLog.d("Starting command %s", command);
         String commandOutput = getDevice().executeShellCommand(command);
         CLog.d("Output for command %s: %s", command, commandOutput);
@@ -630,14 +642,13 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             switchUser(userId);
             runDeviceTestsAsUser("testTearDown", userId);
         }
-
-        switchUser(currentUserId);
     }
 
     private boolean isSupportedSDevice() throws Exception {
         // The following tests targets API level >= S.
-        boolean isAtleastS = ApiLevelUtil.isAfter(getDevice(), 30 /* BUILD.VERSION_CODES.R */)
-                || ApiLevelUtil.codenameEquals(getDevice(), "S");
+        boolean isAtleastS =
+                ApiLevelUtil.isAfter(getDevice(), 30 /* BUILD.VERSION_CODES.R */)
+                        || ApiLevelUtil.codenameEquals(getDevice(), "S");
 
         return isAtleastS && getDevice().hasFeature(FEATURE_SECURE_LOCK_SCREEN);
     }
@@ -664,16 +675,18 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     private void unplugBattery() throws DeviceNotAvailableException {
         CommandResult result = getDevice().executeShellV2Command("cmd battery unplug");
         if (result.getStatus() != CommandStatus.SUCCESS) {
-            CLog.w("Could not set device to battery-unplugged state"
-                    + generateErrorStringFromCommandResult(result));
+            CLog.w(
+                    "Could not set device to battery-unplugged state"
+                            + generateErrorStringFromCommandResult(result));
         }
     }
 
     private void resetBatteryOverride() throws DeviceNotAvailableException {
         CommandResult result = getDevice().executeShellV2Command("cmd battery reset");
         if (result.getStatus() != CommandStatus.SUCCESS) {
-            fail("Could not reset device battery state override: "
-                    + generateErrorStringFromCommandResult(result));
+            fail(
+                    "Could not reset device battery state override: "
+                            + generateErrorStringFromCommandResult(result));
         }
     }
 
@@ -684,8 +697,12 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
 
         for (int userId : userIds) {
             CommandResult lockScreenDisabledResult =
-                    getDevice().executeShellV2Command(
-                            "locksettings get-disabled --old " + DEFAULT_PIN + " --user " + userId);
+                    getDevice()
+                            .executeShellV2Command(
+                                    "locksettings get-disabled --old "
+                                            + DEFAULT_PIN
+                                            + " --user "
+                                            + userId);
             if (lockScreenDisabledResult.getStatus() != CommandStatus.SUCCESS) {
                 CLog.w(
                         "Couldn't check whether there's already a PIN on the device for user %d:"
@@ -694,8 +711,12 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
             }
             if ("false".equals(lockScreenDisabledResult.getStdout().trim())) {
                 CommandResult unsetPinResult =
-                        getDevice().executeShellV2Command(
-                                "locksettings clear --old " + DEFAULT_PIN + " --user " + userId);
+                        getDevice()
+                                .executeShellV2Command(
+                                        "locksettings clear --old "
+                                                + DEFAULT_PIN
+                                                + " --user "
+                                                + userId);
                 if (unsetPinResult.getStatus() != CommandStatus.SUCCESS) {
                     CLog.w(
                             "Couldn't unset existing PIN on device for user %d (%s). Test might not"
@@ -707,8 +728,12 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
     }
 
     private static String generateErrorStringFromCommandResult(CommandResult result) {
-        return "Status code: " + result.getStatus() + ", Exit code: " + result.getExitCode()
-                + ", Error: " + result.getStderr();
+        return "Status code: "
+                + result.getStatus()
+                + ", Exit code: "
+                + result.getExitCode()
+                + ", Error: "
+                + result.getStderr();
     }
 
     private String executeShellCommandWithLogging(String command)
@@ -723,13 +748,21 @@ public final class ResumeOnRebootHostTest extends BaseHostJUnit4Test {
         int[] preparedUsers = Utils.prepareMultipleFullUsers(getDevice(), count);
 
         Assert.assertTrue(
-            String.format("Only %d users were prepared instead of %d", preparedUsers.length, count),
-            preparedUsers.length == count);
+                String.format(
+                        "Only %d users were prepared instead of %d", preparedUsers.length, count),
+                preparedUsers.length == count);
 
         return preparedUsers;
     }
 
     private void assumeSupportsSecondaryUsers() {
         assumeTrue("Device doesn't support multi-user", mSupportsSecondaryUsers);
+    }
+
+    private void assertNetworkConnectivity() throws DeviceNotAvailableException  {
+        HostSideTestUtils.waitUntil(
+                () -> "Resume on reboot needs network connectivity",
+                NETWORK_CONNECTIVITY_WAIT_MS,
+                () -> getDevice().checkConnectivity());
     }
 }
