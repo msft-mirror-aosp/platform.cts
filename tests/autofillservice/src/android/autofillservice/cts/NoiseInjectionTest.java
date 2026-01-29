@@ -36,6 +36,8 @@ import android.view.autofill.AutofillManager;
 import android.view.autofill.AutofillNoiseInjectedData;
 
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.UiDevice;
 
 import org.junit.Test;
 
@@ -304,6 +306,17 @@ public class NoiseInjectionTest extends AutoFillServiceTestCase.ManualActivityLa
 
         mUiBot.selectByRelativeId("cancel");
         mUiBot.waitForIdle();
+
+        // Autofill may block the button ui, ensure the activity is finished.
+        UiDevice device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+        if (device.findObject(By.res(Helper.MY_PACKAGE, Helper.ID_USERNAME)) != null) {
+            CustomPasswordViewLoginActivity activity =
+                    CustomPasswordViewLoginActivity.getCurrentActivity();
+            if (activity != null) {
+                activity.syncRunOnUiThread(() -> activity.finish());
+                mUiBot.waitForIdle();
+            }
+        }
 
         return Helper.findNodeByResourceId(structure, "username_label");
     }
