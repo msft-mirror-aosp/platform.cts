@@ -1505,7 +1505,6 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
     }
 
     @Test
-    @Ignore("b/415783046")
     public void testSystemGalleryCanRenameImagesAndVideos() throws Exception {
         final File otherAppVideoFile = new File(getDcimDir(), "other_" + VIDEO_FILE_NAME);
         final File imageFile = new File(getPicturesDir(), IMAGE_FILE_NAME);

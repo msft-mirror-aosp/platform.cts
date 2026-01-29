@@ -39,6 +39,9 @@
     <option name="compatibility:test-arg" value="com.android.tradefed.testtype.AndroidJUnitTest:exclude-annotation:android.platform.test.annotations.AsbSecurityTest" />
     <option name="compatibility:test-arg" value="com.android.compatibility.common.tradefed.testtype.JarHostTest:exclude-annotation:android.platform.test.annotations.AsbSecurityTest" />
 
+    <!-- b/415783046 remove from cts till the fix lands -->
+    <option name="compatibility:exclude-filter" value="CtsScopedStorageDeviceOnlyTest android.scopedstorage.cts.device.ScopedStorageDeviceTest#testSystemGalleryCanRenameImageAndVideoDirs" />
+
     <!-- Exclude JvmtiHostTest911 as it's tested in MTS and depends on implementation details of the ART module. http://b/286797612 -->
     <option name="compatibility:exclude-filter" value="CtsJvmtiRunTest911HostTestCases" />
     <!-- Exclude few tests as it depends on implementation details of the ART module. b/287732826 -->
