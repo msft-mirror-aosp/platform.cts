@@ -1822,6 +1822,44 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_RESTRICT_VISIBILITY_ON_EMPTY_PERMISSIONS)
+    public void testGlobalSearch_withEmptyRequiredPermissions_isNotAccessible() throws Exception {
+        indexGloballySearchableDocument(
+                PKG_B, DB_NAME, NAMESPACE_NAME, "id1", ImmutableSet.of(ImmutableSet.of()));
+
+        mGlobalSearchSession = createAndLogGlobalSearchSessionAsync(mContext);
+        SearchResultsShim searchResults =
+                mGlobalSearchSession.search(
+                        /* queryExpression= */ "subject",
+                        new SearchSpec.Builder()
+                                .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                                .addFilterPackageNames(PKG_B)
+                                .build());
+        List<SearchResult> page = searchResults.getNextPageAsync().get();
+
+        assertThat(page).isEmpty();
+    }
+
+    @Test
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_RESTRICT_VISIBILITY_ON_EMPTY_PERMISSIONS)
+    public void testGlobalSearch_withEmptyRequiredPermissions_isAccessible() throws Exception {
+        indexGloballySearchableDocument(
+                PKG_B, DB_NAME, NAMESPACE_NAME, "id1", ImmutableSet.of(ImmutableSet.of()));
+
+        mGlobalSearchSession = createAndLogGlobalSearchSessionAsync(mContext);
+        SearchResultsShim searchResults =
+                mGlobalSearchSession.search(
+                        /* queryExpression= */ "subject",
+                        new SearchSpec.Builder()
+                                .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                                .addFilterPackageNames(PKG_B)
+                                .build());
+        List<SearchResult> page = searchResults.getNextPageAsync().get();
+
+        assertThat(page).hasSize(1);
+    }
+
+    @Test
     public void testGlobalGetSchema_packageAccess_defaultAccess() throws Exception {
         // 1. Create a schema in the test with default (no) access.
         mDb.setSchemaAsync(
