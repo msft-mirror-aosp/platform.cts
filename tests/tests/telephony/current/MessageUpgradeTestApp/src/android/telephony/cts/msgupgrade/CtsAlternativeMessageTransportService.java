@@ -16,6 +16,7 @@
 
 package android.telephony.cts.msgupgrade;
 
+import android.content.Intent;
 import android.net.Uri;
 import android.service.messaging.AlternativeMessageTransportService;
 import android.util.Log;
@@ -29,6 +30,9 @@ import java.util.function.Consumer;
 
 public class CtsAlternativeMessageTransportService extends AlternativeMessageTransportService {
     private static final String TAG = CtsAlternativeMessageTransportService.class.getSimpleName();
+    private static final String ACTION_MESSAGE_UPGRADE_RECEIVED =
+            "android.telephony.cts.msgupgrade.ACTION_MESSAGE_UPGRADE_RECEIVED";
+    private static final String EXTRA_MESSAGE_URI = "message_uri";
 
     @Override
     public void onMessageUpgradeRequested(
@@ -38,6 +42,12 @@ public class CtsAlternativeMessageTransportService extends AlternativeMessageTra
         delayedExecutor.execute(
                 () -> {
                     upgradeStatus.accept(UPGRADE_STATUS_ACCEPTED);
+
+                    // Send broadcast to notify test after accepting the request
+                    Intent intent = new Intent(ACTION_MESSAGE_UPGRADE_RECEIVED);
+                    intent.putExtra(EXTRA_MESSAGE_URI, contentUri);
+                    intent.setPackage("android.telephony.cts");
+                    sendBroadcast(intent);
                 });
     }
 }
