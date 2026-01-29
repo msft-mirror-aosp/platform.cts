@@ -26,6 +26,11 @@
             android:name=".services.EmptyPccService"
             android:exported="true"
             android:privateComputeCore="true"/>
+        <service android:name=".services.MigrationTestService" android:exported="true" android:permission="android.permission.BIND_DATA_MIGRATION_FOR_PRIVATECOMPUTE">
+            <intent-filter>
+                <action android:name="android.app.privatecompute.DataMigrationToPccService" />
+            </intent-filter>
+        </service>
     </application>
 
     <instrumentation
