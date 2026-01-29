@@ -31,11 +31,13 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
+import android.annotation.FlaggedApi;
 import android.annotation.Nullable;
 import android.app.AppOpsManager;
 import android.app.UiAutomation;
@@ -69,6 +71,7 @@ import android.telephony.ims.ImsManager;
 import android.telephony.ims.ImsMmTelManager;
 import android.telephony.ims.ImsRcsManager;
 import android.telephony.ims.RcsUceAdapter;
+import android.text.TextUtils;
 
 import androidx.test.InstrumentationRegistry;
 
@@ -2343,5 +2346,90 @@ public class SubscriptionManagerTest {
         } catch (SecurityException e) {
             // Success
         }
+    }
+
+    @Test
+    @FlaggedApi(Flags.FLAG_ENABLE_NEW_DISPLAY_NAME_APIS)
+    public void testSetDisplayName_success() {
+        if (!isSupported()) return;
+
+        String newName = "Test Display Name " + System.nanoTime();
+
+        // 1. Set Display Name with MODIFY_PHONE_STATE permission
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mSm,
+                (sm) -> sm.setDisplayName(mSubId, newName,
+                        SubscriptionManager.NAME_SOURCE_USER_INPUT));
+
+        // 2. Verify the change
+        SubscriptionInfo info = mSm.getActiveSubscriptionInfo(mSubId);
+        assertNotNull("SubscriptionInfo should not be null", info);
+        assertEquals("Display name should match set value", newName,
+                info.getDisplayName().toString());
+        assertEquals("Name source should match set value",
+                SubscriptionManager.NAME_SOURCE_USER_INPUT, info.getDisplayNameSource());
+    }
+
+    @Test
+    @FlaggedApi(Flags.FLAG_ENABLE_NEW_DISPLAY_NAME_APIS)
+    public void testClearDisplayName_success() {
+        if (!isSupported()) return;
+
+        // 1. Set a custom name first
+        String customName = "Temporary Name";
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mSm,
+                (sm) -> sm.setDisplayName(mSubId, customName,
+                        SubscriptionManager.NAME_SOURCE_USER_INPUT));
+
+        // Verify it was set
+        assertEquals(customName,
+                mSm.getActiveSubscriptionInfo(mSubId).getDisplayName().toString());
+
+        // 2. Clear the display name
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mSm,
+                (sm) -> sm.clearDisplayName(mSubId, SubscriptionManager.NAME_SOURCE_USER_INPUT));
+
+        // 3. Verify it reset to default (non-empty, but not our custom name)
+        String currentName = mSm.getActiveSubscriptionInfo(mSubId).getDisplayName().toString();
+        assertNotEquals("Display name should have been reset", customName, currentName);
+        assertFalse("Display name should not be empty after reset", TextUtils.isEmpty(currentName));
+    }
+
+    @Test
+    @FlaggedApi(Flags.FLAG_ENABLE_NEW_DISPLAY_NAME_APIS)
+    public void testSetDisplayName_noPermission() {
+        if (!isSupported()) return;
+
+        // Try to set name without adopting Shell permissions
+        assertThrows(SecurityException.class, () ->
+                mSm.setDisplayName(mSubId, "Hacker Name",
+                        SubscriptionManager.NAME_SOURCE_USER_INPUT));
+    }
+
+    @Test
+    @FlaggedApi(Flags.FLAG_ENABLE_NEW_DISPLAY_NAME_APIS)
+    public void testClearDisplayName_noPermission() {
+        if (!isSupported()) return;
+
+        // Try to clear name without adopting Shell permissions
+        assertThrows(SecurityException.class, () ->
+                mSm.clearDisplayName(mSubId, SubscriptionManager.NAME_SOURCE_USER_INPUT));
+    }
+
+    @Test
+    @FlaggedApi(Flags.FLAG_ENABLE_NEW_DISPLAY_NAME_APIS)
+    public void testSetDisplayName_validation() {
+        if (!isSupported()) return;
+
+        // 1. Test Null Name (NPE)
+        assertThrows(NullPointerException.class, () ->
+                ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mSm,
+                        (sm) -> sm.setDisplayName(mSubId, null,
+                                SubscriptionManager.NAME_SOURCE_USER_INPUT)));
+
+        // 2. Test Invalid SubId (IAE)
+        assertThrows(IllegalArgumentException.class, () ->
+                ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mSm,
+                        (sm) -> sm.setDisplayName(SubscriptionManager.INVALID_SUBSCRIPTION_ID,
+                                "Valid Name", SubscriptionManager.NAME_SOURCE_USER_INPUT)));
     }
 }
