@@ -54,7 +54,8 @@ public abstract class DeviceAndProfileOwnerTestApi25 extends BaseDeviceOwnerTest
     // (in this case targeting preQ)
     public void testPermissionGrantPreMApp() throws Exception {
         installAppAsUser(SIMPLE_PRE_M_APP_APK, mUserId);
-
+        // wait until idle to ensure appops has received the PACKAGE_ADDED broadcast
+        waitForBroadcastIdle();
         runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".PermissionsTest",
                 "testPermissionGrantState_preMApp_preQDeviceAdmin", mUserId);
     }
