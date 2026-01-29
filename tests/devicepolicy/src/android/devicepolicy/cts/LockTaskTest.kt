@@ -19,6 +19,7 @@ import android.Manifest
 import android.app.ActivityManager
 import android.app.ActivityManager.LOCK_TASK_MODE_LOCKED
 import android.app.ActivityOptions
+import android.app.role.RoleManager
 import android.app.StatusBarManager
 import android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN
 import android.app.admin.DevicePolicyIdentifiers.LOCK_TASK_POLICY
@@ -441,6 +442,12 @@ class LockTaskTest {
         android.permission.flags.Flags.FLAG_ENABLE_SYSTEM_SUPERVISION_ROLE_BEHAVIOR
     )
     fun setLockTaskFeatures_quickSettingsFeatureMissingRequiredRole_throwsException() {
+        // Setting LOCK_TASK_FEATURE_QUICK_SETTINGS et al. will throw exception when attempted by
+        // admins who are not system supervision apps.
+        // Skip permission parameterization runs when the permission is acquired via the system
+        // supervision role.
+        assumeFalse(deviceState.dpc().pkg().isRoleHolder(RoleManager.ROLE_SYSTEM_SUPERVISION));
+
         try {
             assertThrows(SecurityException::class.java) {
                 deviceState.dpc().devicePolicyManager().setLockTaskFeatures(

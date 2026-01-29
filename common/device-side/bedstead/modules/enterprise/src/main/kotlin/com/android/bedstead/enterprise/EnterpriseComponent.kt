@@ -20,11 +20,14 @@ import android.os.UserHandle
 import android.util.Log
 import com.android.bedstead.nene.utils.ShellCommand
 
+import android.app.supervision.SupervisionManager
+import android.content.Context
 import com.android.bedstead.accounts.AccountsComponent
 import com.android.bedstead.enterprise.annotations.EnsureBackupNotActive
 import com.android.bedstead.enterprise.annotations.EnsureHasDelegate
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceController
 import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder
+import com.android.bedstead.enterprise.annotations.EnsureHasSystemSupervisionRoleHolder
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDelegate
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.enterprise.annotations.EnsureTestAppInstalledAsPrimaryDPC
@@ -35,6 +38,7 @@ import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.harrier.components.UserTypeResolver
 import com.android.bedstead.multiuser.UsersComponent
+import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.TestApis.users
 import com.android.bedstead.nene.devicepolicy.DeviceAdmin
@@ -44,6 +48,7 @@ import com.android.bedstead.remotedpc.RemoteDelegate
 import com.android.bedstead.remotedpc.RemoteDevicePolicyManagerRoleHolder
 import com.android.bedstead.remotedpc.RemoteDpc
 import com.android.bedstead.remotedpc.RemotePolicyManager
+import com.android.bedstead.remotedpc.RemoteSystemSupervisionRoleHolder
 import com.android.bedstead.remotedpc.RemoteTestApp
 import com.android.bedstead.testapp.TestAppInstance
 import com.android.bedstead.testapp.TestAppProvider
@@ -64,6 +69,7 @@ class EnterpriseComponent(locator: BedsteadServiceLocator) : DeviceStateComponen
     private val accountsComponent: AccountsComponent by locator
     private val userTypeResolver: UserTypeResolver by locator
     private var devicePolicyManagerRoleHolder: RemoteDevicePolicyManagerRoleHolder? = null
+    private var systemSupervisionRoleHolder: RemoteSystemSupervisionRoleHolder? = null
     private var delegateDpc: RemotePolicyManager? = null
     var primaryPolicyManager: RemotePolicyManager? = null
 
@@ -129,6 +135,36 @@ class EnterpriseComponent(locator: BedsteadServiceLocator) : DeviceStateComponen
         }
     }
 
+    /**
+     * See [EnsureHasSystemSupervisionRoleHolder]
+     */
+    fun ensureHasSystemSupervisionRoleHolder(onUser: UserType, isPrimary: Boolean) {
+        val user: UserReference = userTypeResolver.toUser(onUser)
+        testAppsComponent.ensureTestAppInstalled(
+            DELEGATE_KEY,
+            RemoteDelegate.sTestApp,
+            user
+        )
+
+        devicePolicy().setSystemSupervisionRoleHolder(
+            RemoteDelegate.sTestApp.pkg(),
+            user
+        )
+        systemSupervisionRoleHolder = RemoteSystemSupervisionRoleHolder(
+            RemoteDelegate.sTestApp, user)
+        if (isPrimary) {
+            // We will override the existing primary
+            if (primaryPolicyManager != null) {
+                Log.i(
+                    LOG_TAG,
+                    "Overriding primary policy manager $primaryPolicyManager" +
+                            " with $systemSupervisionRoleHolder"
+                )
+            }
+            primaryPolicyManager = systemSupervisionRoleHolder
+        }
+    }
+
     override fun teardownNonShareableState() {
         devicePolicyManagerRoleHolder?.let {
             devicePolicy().unsetDevicePolicyManagementRoleHolder(
@@ -136,6 +172,13 @@ class EnterpriseComponent(locator: BedsteadServiceLocator) : DeviceStateComponen
                 it.user()
             )
             devicePolicyManagerRoleHolder = null
+        }
+        systemSupervisionRoleHolder?.let {
+            devicePolicy().unsetSystemSupervisionRoleHolder(
+                it.testApp().pkg(),
+                it.user()
+            )
+            systemSupervisionRoleHolder = null
         }
         delegateDpc = null
         primaryPolicyManager = null

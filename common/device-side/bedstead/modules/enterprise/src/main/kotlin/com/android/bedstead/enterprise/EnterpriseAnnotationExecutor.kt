@@ -30,6 +30,7 @@ import com.android.bedstead.enterprise.annotations.EnsureHasNoTestDeviceAdmin
 import com.android.bedstead.enterprise.annotations.EnsureHasNoUserController
 import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
+import com.android.bedstead.enterprise.annotations.EnsureHasSystemSupervisionRoleHolder
 import com.android.bedstead.enterprise.annotations.EnsureHasUserController
 import com.android.bedstead.enterprise.annotations.EnsureHasUserRestriction
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
@@ -63,6 +64,8 @@ class EnterpriseAnnotationExecutor(locator: BedsteadServiceLocator) : Annotation
             is EnsureHasDelegate -> enterpriseComponent.ensureHasDelegate(this)
             is EnsureHasDevicePolicyManagerRoleHolder ->
                 enterpriseComponent.ensureHasDevicePolicyManagerRoleHolder(onUser, isPrimary)
+            is EnsureHasSystemSupervisionRoleHolder ->
+                enterpriseComponent.ensureHasSystemSupervisionRoleHolder(onUser, isPrimary)
 
             is EnsureHasDeviceOwner ->
                 deviceOwnerComponent.ensureHasDeviceOwner(

@@ -21,7 +21,9 @@ import android.annotation.TargetApi
 import android.app.admin.DevicePolicyManager
 import android.app.admin.EnforcingAdmin
 import android.app.role.RoleManager
+import android.app.supervision.SupervisionManager
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.cts.testapisreflection.*
 import android.os.Build
@@ -43,11 +45,14 @@ import com.android.bedstead.nene.utils.ShellCommand
 import com.android.bedstead.nene.utils.ShellCommandUtils
 import com.android.bedstead.nene.utils.Versions
 import com.android.bedstead.permissions.CommonPermissions
+import com.android.bedstead.permissions.CommonPermissions.BYPASS_ROLE_QUALIFICATION
 import com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL
 import com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_STORAGE_LIMIT
 import com.android.bedstead.permissions.CommonPermissions.NOTIFY_PENDING_SYSTEM_UPDATE
 import com.android.bedstead.permissions.CommonPermissions.QUERY_ADMIN_POLICY
+import com.android.bedstead.permissions.CommonPermissions.QUERY_USERS
 import com.android.bedstead.permissions.CommonPermissions.READ_NEARBY_STREAMING_POLICY
+import com.android.compatibility.common.util.SystemUtil
 import com.google.errorprone.annotations.CanIgnoreReturnValue
 import java.lang.reflect.InvocationTargetException
 import java.time.Duration
@@ -555,6 +560,24 @@ object DevicePolicy {
         return pkg.setAsRoleHolder(RoleManager.ROLE_DEVICE_POLICY_MANAGEMENT, user)
     }
 
+    /**
+     * Sets the provided `packageName` as a system supervision role holder.
+     */
+    @CanIgnoreReturnValue
+    @TargetApi(Build.VERSION_CODES.TIRAMISU)
+    @Experimental
+    @JvmOverloads
+    fun setSystemSupervisionRoleHolder(pkg: Package, user: UserReference = TestApis.users().instrumented()): RoleContext {
+        Versions.requireMinimumVersion(Build.VERSION_CODES.TIRAMISU)
+        TestApis.roles().setBypassingRoleQualification(true)
+        val context: Context = TestApis.context().instrumentedContext()
+        val supervisionManager = context.getSystemService(SupervisionManager::class.java)!!
+        SystemUtil.runWithShellPermissionIdentity( {
+            supervisionManager.setShouldAllowBypassingSupervisionRoleQualification(true)
+        }, BYPASS_ROLE_QUALIFICATION, QUERY_USERS)
+        return pkg.setAsRoleHolder(RoleManager.ROLE_SYSTEM_SUPERVISION, user)
+    }
+
     private fun nonTestNonPrecreatedUsersExist(): Boolean {
         val expectedPrecreatedUsers = if (TestApis.users().isHeadlessSystemUserMode) 2 else 1
         return TestApis.users().all().stream()
@@ -571,6 +594,23 @@ object DevicePolicy {
     fun unsetDevicePolicyManagementRoleHolder(pkg: Package, user: UserReference = TestApis.users().instrumented()) {
         Versions.requireMinimumVersion(Build.VERSION_CODES.TIRAMISU)
         pkg.removeAsRoleHolder(RoleManager.ROLE_DEVICE_POLICY_MANAGEMENT, user)
+    }
+
+    /**
+     * Unsets the provided `packageName` as a supervision role holder.
+     */
+    @TargetApi(Build.VERSION_CODES.TIRAMISU)
+    @Experimental
+    @JvmOverloads
+    fun unsetSystemSupervisionRoleHolder(pkg: Package, user: UserReference = TestApis.users().instrumented()) {
+        Versions.requireMinimumVersion(Build.VERSION_CODES.TIRAMISU)
+        pkg.removeAsRoleHolder(RoleManager.ROLE_SYSTEM_SUPERVISION, user)
+
+        val context: Context = TestApis.context().instrumentedContext()
+        val supervisionManager = context.getSystemService(SupervisionManager::class.java)!!
+        SystemUtil.runWithShellPermissionIdentity( {
+            supervisionManager.setShouldAllowBypassingSupervisionRoleQualification(false)
+        }, BYPASS_ROLE_QUALIFICATION, QUERY_USERS)
     }
 
     /**
