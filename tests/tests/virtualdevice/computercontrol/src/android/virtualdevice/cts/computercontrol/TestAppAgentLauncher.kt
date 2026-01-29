@@ -33,17 +33,15 @@ class TestAppAgentLauncher {
     fun launch(sessionName: String, packageName: String, className: String? = null): TestAppAgent {
         Log.d(TAG, "Requesting ComputerControlSession")
         val session = requestComputerControlSession(sessionName, listOf(packageName))
-        assertNotNull(session)
-        val testAppAgent = TestAppAgent(context, session!!, packageName, className)
-        return testAppAgent
+        return TestAppAgent(context, session, packageName, className)
     }
 
     fun requestComputerControlSession(
         sessionName: String,
         packageNames: List<String>,
         onClose: (() -> Unit)? = null,
-    ): ComputerControlSession? {
-        val future = CompletableFuture<ComputerControlSession?>()
+    ): ComputerControlSession {
+        val future = CompletableFuture<Result<ComputerControlSession>>()
         val extension = ComputerControlExtensions.getInstance(context)
         assumeNotNull(extension)
         val params =
@@ -56,27 +54,43 @@ class TestAppAgentLauncher {
             Executors.newSingleThreadExecutor(),
             object : ComputerControlSession.Callback {
                 override fun onSessionPending(intentSender: IntentSender) {
-                    Log.d(TAG, "Session Pending, starting IntentSender")
+                    Log.d(TAG, "Session Pending")
+                    future.complete(
+                        Result.failure(
+                            RuntimeException(
+                                "ComputerControlSession creation failed: Session pending"
+                            )
+                        )
+                    )
                 }
 
                 override fun onSessionCreated(session: ComputerControlSession) {
                     Log.d(TAG, "Session Created")
-                    future.complete(session)
+                    future.complete(Result.success(session))
                 }
 
                 override fun onSessionCreationFailed(errorCode: Int) {
-                    Log.d(TAG, "Session Creation Failed, errorCode: $errorCode")
-                    future.complete(null)
+                    val errorMsg =
+                        "ComputerControlSession creation failed with error code: $errorCode"
+                    Log.d(TAG, errorMsg)
+                    future.complete(Result.failure(RuntimeException(errorMsg)))
                 }
 
                 override fun onSessionClosed() {
                     Log.d(TAG, "Session Closed")
                     onClose?.invoke()
-                    future.complete(null)
+                    future.complete(
+                        Result.failure(
+                            RuntimeException(
+                                "ComputerControlSession closed before creation completed"
+                            )
+                        )
+                    )
                 }
             },
         )
         return future.get(TestAppAgent.SESSION_CREATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .getOrThrow()
     }
 
     companion object {
