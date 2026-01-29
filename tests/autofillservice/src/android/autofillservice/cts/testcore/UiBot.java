@@ -160,6 +160,7 @@ public class UiBot {
     private static final String RESOURCE_ID_FILL_DIALOG_DATASET = "autofill_dialog_list";
     private static final String RESOURCE_ID_FILL_DIALOG_BUTTON_NO = "autofill_dialog_no";
     private static final String RESOURCE_ID_FILL_DIALOG_BUTTON_YES = "autofill_dialog_yes";
+    private static final String RESOURCE_ID_AUTOFILL_CLOSE_BUTTON = "closeButton";
 
     // TODO: figure out a more reliable solution that does not depend on SystemUI resources.
     private static final String SPLIT_WINDOW_DIVIDER_ID =
@@ -1611,6 +1612,16 @@ public class UiBot {
                         getString(RESOURCE_STRING_CONTINUE_BUTTON_YES).toUpperCase());
     }
 
+    /** Asserts close button in the fill dialog. */
+    public void assertFillDialogCloseButton() throws Exception {
+        final UiObject2 picker = findFillDialogPicker();
+
+        // Close button shown
+        final UiObject2 closeButton =
+                picker.findObject(By.res("android", RESOURCE_ID_AUTOFILL_CLOSE_BUTTON));
+        assertWithMessage("No close button in fill dialog").that(closeButton).isNotNull();
+    }
+
     /**
      * Asserts there is no accept button in the fill dialog.
      */
@@ -1676,6 +1687,25 @@ public class UiBot {
         final UiObject2 noButton =
                 picker.findObject(By.res("android", RESOURCE_ID_FILL_DIALOG_BUTTON_NO));
         noButton.click();
+    }
+
+    /** click close button on the fill dialog. */
+    public void clickFillDialogClose() throws Exception {
+        Log.v(TAG, "dismissedFillDialog()");
+        final UiObject2 picker = findFillDialogPicker();
+        final UiObject2 closeButton =
+                picker.findObject(By.res("android", RESOURCE_ID_AUTOFILL_CLOSE_BUTTON));
+        closeButton.click();
+    }
+
+    /** click close button on the save dialog. */
+    public void clickSaveDialogClose() throws Exception {
+        Log.v(TAG, "dismissedSaveDialog()");
+        final UiObject2 picker = waitForObject(mSaveUiSelector, SAVE_TIMEOUT);
+        Log.v(TAG, "got picker: " + picker);
+        final UiObject2 closeButton =
+                picker.findObject(By.res("android", RESOURCE_ID_AUTOFILL_CLOSE_BUTTON));
+        closeButton.click();
     }
 
     /** click continue button of the fill dialog. */

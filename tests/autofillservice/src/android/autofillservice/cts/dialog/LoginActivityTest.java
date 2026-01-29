@@ -518,7 +518,74 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         // Verify the content of fill dialog, and then select dataset in fill dialog
         mUiBot.assertFillDialogHeader("Dialog Header");
         mUiBot.assertExpressiveFillDialogRejectButton();
-        mUiBot.assertFillDialogAcceptButton();
+        mUiBot.assertFillDialogCloseButton();
+        // In expressive fill dialog, the header becomes part of the list.
+        final UiObject2 picker =
+                mUiBot.assertFillDialogDatasets("Dialog Header", "Dialog Presentation");
+
+        // Set expected value, then select dataset
+        activity.expectAutoFill("dude", "sweet");
+        mUiBot.selectDataset(picker, "Dialog Presentation");
+
+        // Check the results.
+        activity.assertAutoFilled();
+    }
+
+    @RequiresFlagsEnabled("android.service.autofill.expressive_fill_dialog")
+    @Test
+    public void testShowExpressiveFillDialog_touchOutside_dialogDoesNotDismiss() throws Exception {
+        // TODO(b/420943436): Skip this test in Automotive with multi-window until b/420943436 is
+        // fixed.
+        assumeFalse(
+                "Skipping test on Automotive with multi-window",
+                isAutomotiveWithMultiWindow(sContext));
+
+        // Enable the test service
+        enableFillDialogImprovements(sContext);
+        enableService();
+
+        // Set response with a dataset > fill dialog should have two buttons
+        final CannedFillResponse.Builder builder =
+                new CannedFillResponse.Builder()
+                        .addDataset(
+                                new CannedDataset.Builder()
+                                        .setField(ID_USERNAME, "dude")
+                                        .setField(ID_PASSWORD, "sweet")
+                                        .setPresentation(
+                                                createPresentation("Dropdown Presentation"))
+                                        .setDialogPresentation(
+                                                createPresentation("Dialog Presentation"))
+                                        .build())
+                        .setDialogHeader(createPresentation("Dialog Header"))
+                        .setDialogTriggerIds(ID_PASSWORD);
+        sReplier.addResponse(builder.build());
+
+        // Start activity and autofill
+        LoginActivity activity = startLoginActivity();
+        mUiBot.waitForIdleSync();
+
+        // Assert there is no pre-triggered fill request
+        sReplier.assertOnFillRequestNotCalled();
+
+        // Click on password field
+        mUiBot.selectByRelativeId(ID_PASSWORD);
+        // Waits a while
+        mUiBot.waitForIdleSync();
+
+        sReplier.getNextFillRequest();
+        mUiBot.waitForIdleSync();
+
+        // Verify the content of fill dialog, and then select dataset in fill dialog
+        mUiBot.assertFillDialogHeader("Dialog Header");
+        mUiBot.assertExpressiveFillDialogRejectButton();
+        mUiBot.assertFillDialogCloseButton();
+
+        // Touch outside, and verify the fill dialog still shows and the content keep the same.
+        mUiBot.touchOutsideDialog();
+        mUiBot.assertFillDialogHeader("Dialog Header");
+        mUiBot.assertExpressiveFillDialogRejectButton();
+        mUiBot.assertFillDialogCloseButton();
+
         // In expressive fill dialog, the header becomes part of the list.
         final UiObject2 picker =
                 mUiBot.assertFillDialogDatasets("Dialog Header", "Dialog Presentation");
@@ -716,8 +783,9 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         // In expressive fill dialog, the header becomes part of the list.
         mUiBot.assertFillDialogDatasets("Dialog Header", "Dialog Presentation");
 
-        // Hide fill dialog via touch outside, but ime will appear. to hide IME before next test.
-        mUiBot.touchOutsideDialog();
+        // Hide fill dialog via clicking on close button, but ime will appear. to hide IME before
+        // next test.
+        mUiBot.clickFillDialogClose();
         mUiBot.waitForIdleSync();
 
         assertMockImeStatus(activity, true);
@@ -748,6 +816,7 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         activity.assertAutoFilled();
     }
 
+    @RequiresFlagsDisabled("android.service.autofill.expressive_fill_dialog")
     @Test
     public void testSingleItemFillDialog_fillByContinueButton() throws Exception {
         // TODO(b/420943436): Skip this test in Automotive with multi-window until b/420943436 is
@@ -1536,8 +1605,8 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         // list.
         mUiBot.assertFillDialogDatasets("Dialog Header", "Dialog Presentation");
 
-        // Touch outside to cancel the fill dialog, should back to dropdown UI
-        mUiBot.touchOutsideDialog();
+        // Click close button to dismiss the fill dialog, should back to dropdown UI
+        mUiBot.clickFillDialogClose();
         mUiBot.waitForIdle();
 
         mUiBot.assertDatasets("Dropdown Presentation");

@@ -116,6 +116,8 @@ import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.autofill.FillContext;
@@ -1706,11 +1708,20 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         saveGoesAway(DismissType.BACK_BUTTON);
     }
 
+    @RequiresFlagsDisabled("android.service.autofill.expressive_save_dialog")
     @AutofillCriticalInternal
     @Test
     public void testSaveGoesAwayWhenTouchingOutside() throws Exception {
         mUiBot.assumeMinimumResolution(500);
         saveGoesAway(DismissType.TOUCH_OUTSIDE);
+    }
+
+    @RequiresFlagsEnabled("android.service.autofill.expressive_save_dialog")
+    @AutofillCriticalInternal
+    @Test
+    public void testSaveGoesAwayWhenTappingCloseButton() throws Exception {
+        mUiBot.assumeMinimumResolution(500);
+        saveGoesAway(DismissType.CLOSE_BUTTON);
     }
 
     private void saveGoesAway(DismissType dismissType) throws Exception {
@@ -1757,6 +1768,10 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
             case TOUCH_OUTSIDE:
                 when = "touched outside";
                 mUiBot.touchOutsideSaveDialog();
+                break;
+            case CLOSE_BUTTON:
+                when = "close button tapped";
+                mUiBot.clickSaveDialogClose();
                 break;
             default:
                 throw new IllegalArgumentException("invalid dismiss type: " + dismissType);
