@@ -44,6 +44,7 @@ public class MockMediaParserOutputConsumer implements MediaParser.OutputConsumer
     private final boolean mUsingInBandCryptoInfo;
     private final FakeExtractorOutput mFakeExtractorOutput;
     private final Map<Integer, TrackOutput> mTrackOutputs;
+    private final Map<Integer, Long> mTrackDurations;
 
     @Nullable private MediaParser.SeekMap mSeekMap;
     private int mCompletedSampleCount;
@@ -62,6 +63,7 @@ public class MockMediaParserOutputConsumer implements MediaParser.OutputConsumer
                                 new FakeTrackOutput(
                                         type, /* deduplicateConsecutiveFormats= */ true));
         mTrackOutputs = new HashMap<>();
+        mTrackDurations = new HashMap<>();
     }
 
     public int getCompletedSampleCount() {
@@ -114,7 +116,15 @@ public class MockMediaParserOutputConsumer implements MediaParser.OutputConsumer
         if (!mTrackOutputs.containsKey(trackIndex)) {
             mTrackOutputs.put(trackIndex, mFakeExtractorOutput.track(trackIndex, C.TRACK_TYPE_UNKNOWN));
         }
-        mTrackOutputs.get(trackIndex).format(toMedia3Format(trackData));
+        TrackOutput trackOutput = mTrackOutputs.get(trackIndex);
+        trackOutput.format(toMedia3Format(trackData));
+
+        MediaFormat mediaFormat = trackData.mediaFormat;
+        if (mediaFormat.containsKey(MediaFormat.KEY_DURATION)) {
+            long durationUs = mediaFormat.getLong(MediaFormat.KEY_DURATION);
+            trackOutput.durationUs(durationUs);
+            mTrackDurations.put(trackIndex, durationUs);
+        }
     }
 
     @Override
@@ -350,6 +360,13 @@ public class MockMediaParserOutputConsumer implements MediaParser.OutputConsumer
 
     public Set<Integer> getTrackIndices() {
         return mTrackOutputs.keySet();
+    }
+
+    public long getTrackDuration(int trackIndex) {
+        if (mTrackDurations.containsKey(trackIndex)) {
+            return mTrackDurations.get(trackIndex);
+        }
+        return C.TIME_UNSET;
     }
 
     // Internal classes.

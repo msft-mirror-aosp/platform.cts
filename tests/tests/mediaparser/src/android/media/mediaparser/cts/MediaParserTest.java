@@ -283,6 +283,25 @@ public class MediaParserTest {
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIAPARSER_EMIT_TRACK_DURATION)
+    public void testTrackDurationEmission() throws IOException {
+        MockMediaParserOutputConsumer outputConsumer = new MockMediaParserOutputConsumer();
+        MockMediaParserInputReader inputReader = getInputReader("media/mp4/sample.mp4");
+        MediaParser mediaParser = MediaParser.create(outputConsumer);
+        try {
+            while (mediaParser.advance(inputReader)) {}
+
+            assertThat(outputConsumer.getTrackCount()).isEqualTo(2);
+            for (int trackIndex : outputConsumer.getTrackIndices()) {
+                long durationUs = outputConsumer.getTrackDuration(trackIndex);
+                assertThat(durationUs).isGreaterThan(0L);
+            }
+        } finally {
+            mediaParser.release();
+        }
+    }
+
     // OGG.
 
     @Test
