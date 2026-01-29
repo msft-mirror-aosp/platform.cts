@@ -24,6 +24,7 @@ import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.T
 import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.TOKEN_INFO_COUNT_KEY;
 import static android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest.TOKEN_INFO_PARAMS_KEY;
 
+import android.app.ondeviceintelligence.Content;
 import android.app.ondeviceintelligence.Feature;
 import android.app.ondeviceintelligence.InferenceInfo;
 import android.app.ondeviceintelligence.OnDeviceIntelligenceException;
@@ -36,6 +37,7 @@ import android.app.ondeviceintelligence.embedding.EmbeddingResponse;
 import android.app.ondeviceintelligence.embedding.EmbeddingVector;
 import android.app.ondeviceintelligence.imagedescription.ImageDescriptionRequest;
 import android.app.ondeviceintelligence.imagedescription.ImageDescriptionResponse;
+import android.app.ondeviceintelligence.imagedescription.ImageDescriptionCallback;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.CancellationSignal;
@@ -90,12 +92,14 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
     }
 
     public static EmbeddingResponse getSampleEmbeddingResponse() {
-        return new EmbeddingResponse(List.of(new EmbeddingVector(new float[]{0.1f, 0.2f, 0.3f})));
+        return new EmbeddingResponse(List.of(new EmbeddingVector(
+                new float[]{0.1f, 0.2f, 0.3f},
+                new int[]{1, 3})));
     }
 
     public static ImageDescriptionResponse getSampleImageDescriptionResponse() {
-        return new ImageDescriptionResponse(
-                new ImageDescriptionResponse.ImageDescription("test-description", 0.9f));
+        return new ImageDescriptionResponse(List.of(
+                new ImageDescriptionResponse.ImageDescription("test-description", 0.9f)));
     }
 
     @NonNull
@@ -110,6 +114,15 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
             @NonNull OutcomeReceiver<TokenInfo, OnDeviceIntelligenceException> callback) {
         callback.onResult(constructTokenInfo(request.getInt(TOKEN_INFO_COUNT_KEY),
                 request.getParcelable(TOKEN_INFO_PARAMS_KEY, PersistableBundle.class)));
+    }
+
+    @Override
+    public void onTokenInfoRequest(
+            int callerUid, @NonNull Feature feature,
+            @NonNull Content request,
+            @Nullable CancellationSignal cancellationSignal,
+            @NonNull OutcomeReceiver<TokenInfo, OnDeviceIntelligenceException> callback) {
+        callback.onResult(new TokenInfo(request.getParts().size()));
     }
 
     @Override
@@ -414,9 +427,7 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
             @NonNull Feature feature,
             @NonNull ImageDescriptionRequest request,
             @Nullable CancellationSignal cancellationSignal,
-            @NonNull
-                    OutcomeReceiver<ImageDescriptionResponse, OnDeviceIntelligenceException>
-                            callback) {
+            @NonNull ImageDescriptionCallback callback) {
         callback.onResult(getSampleImageDescriptionResponse());
     }
 
