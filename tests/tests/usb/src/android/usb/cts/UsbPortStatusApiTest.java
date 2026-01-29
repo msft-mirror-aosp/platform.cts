@@ -17,6 +17,8 @@
 package android.usb.cts;
 
 import static android.Manifest.permission.MANAGE_USB;
+import static android.hardware.usb.PowerProfileInfo.POWER_PROFILE_ERROR_FIELD_NOT_SUPPORTED;
+import static android.hardware.usb.PowerProfileInfo.POWER_PROFILE_TYPE_FIXED;
 import static android.hardware.usb.UsbPortStatus.DATA_STATUS_DISABLED_DOCK;
 import static android.hardware.usb.UsbPortStatus.DATA_STATUS_DISABLED_DOCK_DEVICE_MODE;
 import static android.hardware.usb.UsbPortStatus.DATA_STATUS_DISABLED_DOCK_HOST_MODE;
@@ -32,6 +34,7 @@ import android.app.UiAutomation;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.hardware.usb.DisplayPortAltModeInfo;
+import android.hardware.usb.PowerProfileInfo;
 import android.hardware.usb.UsbManager;
 import android.hardware.usb.UsbPort;
 import android.hardware.usb.UsbPortStatus;
@@ -56,6 +59,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
@@ -66,6 +70,9 @@ import java.util.function.Consumer;
 @RunWith(BedsteadJUnit4.class)
 public class UsbPortStatusApiTest {
     private static final String TAG = UsbPortStatusApiTest.class.getSimpleName();
+
+    private static final int POWER_PROFILE_FIXED_PD_DEFAULT_MAX_VOLTAGE_MV = 5000;
+    private static final int POWER_PROFILE_FIXED_PD_DEFAULT_MAX_CURRENT_MA = 3000;
 
     private Context mContext;
 
@@ -304,12 +311,88 @@ public class UsbPortStatusApiTest {
         }
     }
 
+    /** Adds a USB PD Fixed Power Profile to a given port at 5V and 3A */
+    void addFixedPowerProfileToPortSink(String portId) {
+        SystemUtil.runShellCommand(
+                "dumpsys usb add-power-profile "
+                        + portId
+                        + " true true --type 6 --maxVoltage 5000 --maxCurrent 3000",
+                null);
+    }
+
+    /** Adds a empty PowerProfileInfo to a given port */
+    void addEmptyPowerProfileToPartnerSource(String portId) {
+        SystemUtil.runShellCommand(
+                "dumpsys usb add-power-profile " + portId + " false false --type 0", null);
+    }
+
+    /** Clears PowerProfileInfo arrays on a given simulated port */
+    void clearPowerProfiles(String portId) {
+        SystemUtil.runShellCommand("dumpsys usb clear-power-profiles " + portId, null);
+    }
+
+    /**
+     * Verify that PowerProfileInfo methods can validate a USB PD Fixed Power Profile with 5V and
+     * 3A. This test also tests getMatching* API against an invalid PowerProfileInfo.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_POWER_PROFILE_REPORTING)
+    public void test_UsbApiForPowerProfileInfoMethods() throws Exception {
+        final String portId = "ctstest-powerprofile-methods";
+
+        // Adopt MANAGE_USB permission to access UsbPort and UsbPortStatus
+        try (PermissionContext p = TestApis.permissions().withPermission(MANAGE_USB)) {
+            UsbPort port = setupSimulatedPort(portId);
+            addFixedPowerProfileToPortSink(portId);
+            addEmptyPowerProfileToPartnerSource(portId);
+
+            UsbPortStatus portStatus = port.getStatus();
+            List<PowerProfileInfo> portSinkProfiles = portStatus.getPortSinkPowerProfiles();
+            List<PowerProfileInfo> partnerSourceProfiles =
+                    portStatus.getPartnerSourcePowerProfiles();
+            assertEquals(portSinkProfiles.size(), 1);
+            assertEquals(partnerSourceProfiles.size(), 1);
+            PowerProfileInfo profile = portSinkProfiles.get(0);
+            PowerProfileInfo profileEmpty = partnerSourceProfiles.get(0);
+            assertEquals(profile.getName().length(), 0);
+            assertEquals(profile.getPowerProfileType(), POWER_PROFILE_TYPE_FIXED);
+            assertEquals(profile.getMinVoltageMv(), POWER_PROFILE_ERROR_FIELD_NOT_SUPPORTED);
+            assertEquals(profile.getMaxVoltageMv(), POWER_PROFILE_FIXED_PD_DEFAULT_MAX_VOLTAGE_MV);
+            assertEquals(profile.getMinCurrentMa(), POWER_PROFILE_ERROR_FIELD_NOT_SUPPORTED);
+            assertEquals(profile.getMaxCurrentMa(), POWER_PROFILE_FIXED_PD_DEFAULT_MAX_CURRENT_MA);
+            assertEquals(profile.getMaxPowerMw(), POWER_PROFILE_ERROR_FIELD_NOT_SUPPORTED);
+            assertEquals(profile.getMatchingPartnerProfiles().size(), 0);
+            assertEquals(profileEmpty.getPowerProfileType(), 0);
+            assertEquals(
+                    profile.getMatchingMinVoltageMv(profileEmpty),
+                    POWER_PROFILE_ERROR_FIELD_NOT_SUPPORTED);
+            assertEquals(
+                    profile.getMatchingMaxVoltageMv(profileEmpty),
+                    POWER_PROFILE_ERROR_FIELD_NOT_SUPPORTED);
+            assertEquals(
+                    profile.getMatchingMinCurrentMa(profileEmpty),
+                    POWER_PROFILE_ERROR_FIELD_NOT_SUPPORTED);
+            assertEquals(
+                    profile.getMatchingMaxCurrentMa(profileEmpty),
+                    POWER_PROFILE_ERROR_FIELD_NOT_SUPPORTED);
+            assertEquals(
+                    profile.getMatchingMaxPowerMw(profileEmpty),
+                    POWER_PROFILE_ERROR_FIELD_NOT_SUPPORTED);
+        } finally {
+            clearPowerProfiles(portId);
+            removeSimulatedPort(portId);
+        }
+    }
+
     /**
      * Sets up a simulated UsbPort with full functionality.
      */
     UsbPort setupSimulatedPort(String portId) {
-        SystemUtil.runShellCommand("dumpsys usb add-port " + portId
-                + " dual --compliance-warnings --displayport", null);
+        SystemUtil.runShellCommand(
+                "dumpsys usb add-port "
+                        + portId
+                        + " dual --compliance-warnings --displayport --power-profiles",
+                null);
 
         for (UsbPort p : mUsbManagerSys.getPorts()) {
             if (p.getId().equals(portId)) {
