@@ -18,6 +18,7 @@
     <include name="everything" />
     <include name="cts-v-host-known-failures" />
     <include name="cts-v-host-preconditions" />
+    <include name="cts-v-host-interactive-settings" />
 
     <option name="plan" value="cts-v-host" />
 
