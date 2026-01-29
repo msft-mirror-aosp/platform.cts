@@ -2118,7 +2118,7 @@ public final class ActivityManagerAppExitInfoTest {
         List<ApplicationExitInfo> list = new ArrayList<>();
         PollingCheck.check(
                 "Failed to get ApplicationExitInfo for pid " + pid + " from AMS",
-                WAITFOR_SETTLE_DOWN,
+                WAITFOR_MSEC,
                 () -> {
                     final List<ApplicationExitInfo> result =
                             mActivityManager.getHistoricalProcessExitReasons(null, pid, 1);
