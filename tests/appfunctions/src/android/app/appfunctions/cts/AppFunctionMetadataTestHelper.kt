@@ -77,7 +77,6 @@ class AppFunctionMetadataTestHelper {
                             .build(),
                         AppFunctionPackageMetadata.create(PACKAGE_NAME, listOf()),
                     )
-                    .setEnabled(true)
                     .build()
 
             val ADD_DISABLED_BY_DEFAULT =
@@ -105,7 +104,6 @@ class AppFunctionMetadataTestHelper {
                             .build(),
                         AppFunctionPackageMetadata.create(PACKAGE_NAME, listOf()),
                     )
-                    .setEnabled(false)
                     .build()
         }
     }
@@ -225,7 +223,6 @@ class AppFunctionMetadataTestHelper {
                             .build(),
                         PackageMetadata.DYNAMIC_SCHEMA_PACKAGE_METADATA,
                     )
-                    .setEnabled(true)
                     .build()
 
             val DISABLED_BY_DEFAULT_NO_SCHEMA =
@@ -252,7 +249,6 @@ class AppFunctionMetadataTestHelper {
                             .build(),
                         PackageMetadata.DYNAMIC_SCHEMA_PACKAGE_METADATA,
                     )
-                    .setEnabled(false)
                     .build()
 
             val HIGH_SCHEMA_VERSION =
@@ -279,7 +275,6 @@ class AppFunctionMetadataTestHelper {
                             .build(),
                         PackageMetadata.DYNAMIC_SCHEMA_PACKAGE_METADATA,
                     )
-                    .setEnabled(true)
                     .build()
         }
 
@@ -339,7 +334,6 @@ class AppFunctionMetadataTestHelper {
                             .build(),
                         PackageMetadata.PACKAGE_METADATA,
                     )
-                    .setEnabled(true)
                     .build()
         }
 
