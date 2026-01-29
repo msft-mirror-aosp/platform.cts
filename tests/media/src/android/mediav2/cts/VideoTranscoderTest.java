@@ -18,6 +18,7 @@ package android.mediav2.cts;
 
 import static android.media.codec.Flags.apvSupport;
 import static android.mediav2.common.cts.CodecEncoderTestBase.ACCEPTABLE_WIRELESS_TX_QUALITY;
+import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AT_LEAST_202504;
 import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.FIRST_SDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_B;
@@ -29,6 +30,7 @@ import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.media.MediaFormat;
 import android.mediav2.common.cts.CodecEncoderSurfaceTestBase;
@@ -182,6 +184,9 @@ public class VideoTranscoderTest extends CodecEncoderSurfaceTestBase {
 
     @Before
     public void setUp() throws IOException {
+        // This test was introduced in Android 16 and hence limiting to board SDK >= 202504.
+        assumeTrue("Skipping! applicable for devices with board sdk at least 202504",
+                BOARD_SDK_IS_AT_LEAST_202504);
         ArrayList<MediaFormat> formatList = new ArrayList<>();
         formatList.add(mEncoderFormat);
         SupportClass supportRequirements = mEncMediaType.equals(MediaFormat.MIMETYPE_VIDEO_APV)
