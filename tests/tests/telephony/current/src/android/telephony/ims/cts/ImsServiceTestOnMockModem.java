@@ -20,10 +20,9 @@ import static android.telephony.ims.cts.TestImsRegistration.LATCH_TRIGGER_DEREGI
 import static android.telephony.ims.stub.ImsRegistrationImplBase.REASON_SIM_REFRESH;
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_CHT;
 
-import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertTrue;
-
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
@@ -94,7 +93,8 @@ public class ImsServiceTestOnMockModem {
         MockModemManager.enforceMockModemDeveloperSetting();
         sMockModemManager = new MockModemManager();
         assertNotNull(sMockModemManager);
-        assertTrue(sMockModemManager.connectMockModemService(MOCK_SIM_PROFILE_ID_TWN_CHT));
+        assertTrue("Failed to connect to mock modem service",
+                sMockModemManager.connectMockModemService(MOCK_SIM_PROFILE_ID_TWN_CHT));
 
         TimeUnit.MILLISECONDS.sleep(WAIT_SIM_STATE_TIMEOUT_MS);
 
@@ -137,7 +137,8 @@ public class ImsServiceTestOnMockModem {
 
         // Rebind all interfaces which is binding to MockModemService to default.
         if (sMockModemManager != null) {
-            assertTrue(sMockModemManager.disconnectMockModemService());
+            assertTrue("Failed to disconnect from mock modem service",
+                    sMockModemManager.disconnectMockModemService());
             sMockModemManager = null;
 
             TimeUnit.MILLISECONDS.sleep(WAIT_SIM_STATE_TIMEOUT_MS);
@@ -189,11 +190,12 @@ public class ImsServiceTestOnMockModem {
         sServiceConnector.getCarrierService().getImsRegistration()
                 .resetDeregistrationTriggeredByRadio();
 
-        assertTrue(sMockModemManager.triggerImsDeregistration(sTestSlot, REASON_SIM_REFRESH));
+        assertTrue("Failed to trigger IMS deregistration",
+                sMockModemManager.triggerImsDeregistration(sTestSlot, REASON_SIM_REFRESH));
         sServiceConnector.getCarrierService().getImsRegistration().waitForLatchCountDown(
                 LATCH_TRIGGER_DEREGISTRATION_BY_RADIO, WAIT_UPDATE_TIMEOUT_MS);
 
-        assertTrue(sServiceConnector.getCarrierService()
+        assertTrue("Deregistration should be triggered by radio", sServiceConnector.getCarrierService()
                 .getImsRegistration().isDeregistrationTriggeredByRadio());
         assertEquals(REASON_SIM_REFRESH,
                 sServiceConnector.getCarrierService()
@@ -201,10 +203,12 @@ public class ImsServiceTestOnMockModem {
     }
 
     private void triggerFrameworkConnectToCarrierImsService(long capabilities) throws Exception {
-        assertTrue(sServiceConnector.connectCarrierImsServiceLocally());
+        assertTrue("Failed to connect to carrier ImsService locally",
+                sServiceConnector.connectCarrierImsServiceLocally());
         sServiceConnector.getCarrierService().addCapabilities(capabilities);
         // Connect to the ImsService with the MmTel feature.
-        assertTrue(sServiceConnector.triggerFrameworkConnectionToCarrierImsService(
+        assertTrue("Failed to trigger framework connection to carrier ImsService for MMTEL",
+                sServiceConnector.triggerFrameworkConnectionToCarrierImsService(
                 new ImsFeatureConfiguration.Builder()
                 .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL)
                 .build()));

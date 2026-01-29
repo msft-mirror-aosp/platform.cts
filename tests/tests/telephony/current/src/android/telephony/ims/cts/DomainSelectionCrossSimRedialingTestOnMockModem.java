@@ -41,9 +41,9 @@ import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_FET;
 
 import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertTrue;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.annotation.NonNull;
@@ -154,7 +154,8 @@ public class DomainSelectionCrossSimRedialingTestOnMockModem extends ImsCallingB
         MockModemManager.enforceMockModemDeveloperSetting();
         sMockModemManager = new MockModemManager();
         assertNotNull(sMockModemManager);
-        assertTrue(sMockModemManager.connectMockModemService(MOCK_SIM_PROFILE_ID_TWN_CHT));
+        assertTrue("Failed to connect to mock modem service",
+                sMockModemManager.connectMockModemService(MOCK_SIM_PROFILE_ID_TWN_CHT));
 
         TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
 
@@ -170,7 +171,8 @@ public class DomainSelectionCrossSimRedialingTestOnMockModem extends ImsCallingB
         sTestSub = ImsUtils.getPreferredActiveSubId();
 
         // Insert a SIM
-        assertTrue(sMockModemManager.insertSimCard(sOtherSlot, MOCK_SIM_PROFILE_ID_TWN_FET));
+        assertTrue("Failed to insert SIM card",
+                sMockModemManager.insertSimCard(sOtherSlot, MOCK_SIM_PROFILE_ID_TWN_FET));
 
         TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
 
@@ -183,7 +185,8 @@ public class DomainSelectionCrossSimRedialingTestOnMockModem extends ImsCallingB
             sTestSub = sub;
         }
 
-        assertTrue(sMockModemManager.changeNetworkService(sTestSlot, 310260, true));
+        assertTrue("Failed to change network service",
+                sMockModemManager.changeNetworkService(sTestSlot, 310260, true));
 
         TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
 
@@ -227,7 +230,8 @@ public class DomainSelectionCrossSimRedialingTestOnMockModem extends ImsCallingB
 
         // Rebind all interfaces which is binding to MockModemService to default.
         if (sMockModemManager != null) {
-            assertTrue(sMockModemManager.disconnectMockModemService());
+            assertTrue("Failed to disconnect from mock modem service",
+                    sMockModemManager.disconnectMockModemService());
             sMockModemManager = null;
 
             TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
@@ -316,14 +320,16 @@ public class DomainSelectionCrossSimRedialingTestOnMockModem extends ImsCallingB
 
         placeOutgoingCall(TEST_EMERGENCY_NUMBER);
 
-        assertTrue(waitForVoiceLatchCountdown(sTestSlot, LATCH_EMERGENCY_DIAL));
+        assertTrue("Timed out waiting for emergency dial latch on slot " + sTestSlot,
+                waitForVoiceLatchCountdown(sTestSlot, LATCH_EMERGENCY_DIAL));
 
         clearAllCalls(sTestSlot, DisconnectCause.EMERGENCY_TEMP_FAILURE);
         waitForVoiceLatchCountdown(sTestSlot, LATCH_GET_LAST_CALL_FAIL_CAUSE);
 
         TimeUnit.MILLISECONDS.sleep(WAIT_REQUEST_TIMEOUT_MS);
 
-        assertTrue(waitForVoiceLatchCountdown(sOtherSlot, LATCH_EMERGENCY_DIAL));
+        assertTrue("Timed out waiting for emergency dial latch on slot " + sOtherSlot,
+                waitForVoiceLatchCountdown(sOtherSlot, LATCH_EMERGENCY_DIAL));
     }
 
     private void placeOutgoingCall(String address) throws Exception {
@@ -339,7 +345,8 @@ public class DomainSelectionCrossSimRedialingTestOnMockModem extends ImsCallingB
 
     public void bindImsServiceUnregistered() throws Exception  {
         // Connect to the ImsService with the MmTel feature.
-        assertTrue(sServiceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
+        assertTrue("Failed to connect to carrier ImsService",
+                sServiceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
                 .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL)
                 .addFeature(sTestSlot, ImsFeature.FEATURE_EMERGENCY_MMTEL)
                 .build()));
@@ -436,7 +443,8 @@ public class DomainSelectionCrossSimRedialingTestOnMockModem extends ImsCallingB
         if (noAssert) {
             sMockModemManager.unsolBarringInfoChanged(slotId, serviceInfos);
         } else {
-            assertTrue(sMockModemManager.unsolBarringInfoChanged(slotId, serviceInfos));
+            assertTrue("Failed to update barring info",
+                    sMockModemManager.unsolBarringInfoChanged(slotId, serviceInfos));
         }
     }
 
