@@ -331,7 +331,7 @@ public final class KeyManagementTest {
 
     @Postsubmit(reason = "new test")
     @PolicyAppliesTest(policy = KeyManagementWithAdminReceiver.class)
-    @RequireFlagsEnabled(Flags.FLAG_KEYCHAIN_SUPPRESS_CERTIFICATE_SELECTION)
+    @RequireFlagsEnabled(Flags.FLAG_KEYCHAIN_SUPPRESS_CERTIFICATE_SELECTIONS)
     public void
             choosePrivateKeyAlias_suppressCertificateSelection_aliasIsSelectedByAdmin_returnAlias()
                     throws Exception {
@@ -375,7 +375,7 @@ public final class KeyManagementTest {
 
     @Postsubmit(reason = "new test")
     @PolicyAppliesTest(policy = KeyManagementWithAdminReceiver.class)
-    @RequireFlagsEnabled(Flags.FLAG_KEYCHAIN_SUPPRESS_CERTIFICATE_SELECTION)
+    @RequireFlagsEnabled(Flags.FLAG_KEYCHAIN_SUPPRESS_CERTIFICATE_SELECTIONS)
     public void
             choosePrivateKeyAlias_suppressCertificateSelection_NonexistentAliasSelectedByAdmin_returnNull()
                     throws Exception {
@@ -407,7 +407,7 @@ public final class KeyManagementTest {
 
     @Postsubmit(reason = "new test")
     @PolicyAppliesTest(policy = KeyManagementWithAdminReceiver.class)
-    @RequireFlagsEnabled(Flags.FLAG_KEYCHAIN_SUPPRESS_CERTIFICATE_SELECTION)
+    @RequireFlagsEnabled(Flags.FLAG_KEYCHAIN_SUPPRESS_CERTIFICATE_SELECTIONS)
     public void choosePrivateKeyAlias_suppressCertificateSelection_adminDenySelection_returnNull()
             throws Exception {
         // Test doesn't apply to HSUM DO case as no app on that user is expected to request keypair.
@@ -452,7 +452,7 @@ public final class KeyManagementTest {
 
     @Postsubmit(reason = "new test")
     @PolicyAppliesTest(policy = KeyManagementWithAdminReceiver.class)
-    @RequireFlagsEnabled(Flags.FLAG_KEYCHAIN_SUPPRESS_CERTIFICATE_SELECTION)
+    @RequireFlagsEnabled(Flags.FLAG_KEYCHAIN_SUPPRESS_CERTIFICATE_SELECTIONS)
     public void
             choosePrivateKeyAlias_suppressCertificateSelection_nonUserSelectedAliasIsSelectedByAdmin_returnAlias()
                     throws Exception {
@@ -485,7 +485,7 @@ public final class KeyManagementTest {
 
     @Postsubmit(reason = "new test")
     @PolicyAppliesTest(policy = KeyManagementWithAdminReceiver.class)
-    @RequireFlagsEnabled(Flags.FLAG_KEYCHAIN_SUPPRESS_CERTIFICATE_SELECTION)
+    @RequireFlagsEnabled(Flags.FLAG_KEYCHAIN_SUPPRESS_CERTIFICATE_SELECTIONS)
     public void choosePrivateKeyAlias_suppressCertificateSelection_noAdminSelectableKey_returnNull()
             throws Exception {
         assumeFalse(isHeadlessDoMode());

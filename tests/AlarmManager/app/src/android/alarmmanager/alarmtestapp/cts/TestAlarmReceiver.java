@@ -16,32 +16,36 @@
 
 package android.alarmmanager.alarmtestapp.cts;
 
+import static android.alarmmanager.alarmtestapp.cts.TestAlarmScheduler.EXTRA_ALARM_ID;
+
 import android.alarmmanager.alarmtestapp.cts.common.FgsTester;
+import android.app.AlarmManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
-public class TestAlarmReceiver extends BroadcastReceiver{
+public class TestAlarmReceiver extends BroadcastReceiver {
     private static final String TAG = TestAlarmReceiver.class.getSimpleName();
     private static final String PACKAGE_NAME = "android.alarmmanager.alarmtestapp.cts";
     private static final String INSTRUMENTATION_PACKAGE = "android.alarmmanager.cts";
 
     public static final String ACTION_REPORT_ALARM_EXPIRED = PACKAGE_NAME + ".action.ALARM_EXPIRED";
     public static final String EXTRA_ALARM_COUNT = PACKAGE_NAME + ".extra.ALARM_COUNT";
-    public static final String EXTRA_ID = PACKAGE_NAME + ".extra.ID";
 
     @Override
     public void onReceive(Context context, Intent intent) {
         final int count = intent.getIntExtra(Intent.EXTRA_ALARM_COUNT, 1);
-        final long id = intent.getLongExtra(EXTRA_ID, -1);
-        Log.d(TAG, "Alarm " + id + " expired " + count + " times");
+        final long alarmId = intent.getLongExtra(EXTRA_ALARM_ID, -1L);
+        Log.d(TAG, "Alarm " + alarmId + " expired " + count + " times");
 
-        final Intent reportAlarmIntent = new Intent(ACTION_REPORT_ALARM_EXPIRED)
-                .putExtra(EXTRA_ALARM_COUNT, count)
-                .setPackage(INSTRUMENTATION_PACKAGE)
-                .addFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY)
-                .addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
+        final Intent reportAlarmIntent =
+                new Intent(ACTION_REPORT_ALARM_EXPIRED)
+                        .putExtra(EXTRA_ALARM_COUNT, count)
+                        .putExtra(EXTRA_ALARM_ID, alarmId)
+                        .setPackage(INSTRUMENTATION_PACKAGE)
+                        .addFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY)
+                        .addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
 
         if (intent.getBooleanExtra(TestAlarmScheduler.EXTRA_TEST_FGS, false)) {
             final String result = FgsTester.tryStartingFgs(context);
@@ -49,5 +53,14 @@ public class TestAlarmReceiver extends BroadcastReceiver{
             reportAlarmIntent.putExtra(FgsTester.EXTRA_FGS_START_RESULT, result);
         }
         context.sendBroadcast(reportAlarmIntent);
+    }
+
+    static AlarmManager.OnAlarmListener createListener(long alarmId, Context context) {
+        return () -> {
+            final TestAlarmReceiver alarmReceiver = new TestAlarmReceiver();
+            final Intent intent = new Intent();
+            intent.putExtra(EXTRA_ALARM_ID, alarmId);
+            alarmReceiver.onReceive(context, intent);
+        };
     }
 }

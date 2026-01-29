@@ -159,10 +159,7 @@ public class MediaRouter2DeviceTest {
                 () -> MediaRouter2.getInstance(mContext, MEDIA_ROUTER_PROVIDER_1_PACKAGE));
     }
 
-    @RequiresFlagsEnabled({
-        Flags.FLAG_ENABLE_CROSS_USER_ROUTING_IN_MEDIA_ROUTER2,
-        Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL
-    })
+    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL})
     @Test
     public void getInstance_withinUser_withMediaRoutingControl_flagEnabled_returnsInstance() {
         mInstrumentation
@@ -180,10 +177,7 @@ public class MediaRouter2DeviceTest {
         }
     }
 
-    @RequiresFlagsEnabled({
-        Flags.FLAG_ENABLE_CROSS_USER_ROUTING_IN_MEDIA_ROUTER2,
-        Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL
-    })
+    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL})
     @Test
     public void getInstance_withinUser_withoutMediaRoutingControl_throwsSecurityException() {
         assertThat(mContext.checkCallingOrSelfPermission(Manifest.permission.MEDIA_ROUTING_CONTROL))

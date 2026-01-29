@@ -32,6 +32,7 @@ abstract class BiometricDeviceTestCase extends DeviceTestCase implements IBuildR
 
     private static final String FEATURE_FINGERPRINT = "android.hardware.fingerprint";
     private static final String FEATURE_FACE = "android.hardware.biometrics.face";
+    private static final String FEATURE_SECURE_LOCK_SCREEN = "android.software.secure_lock_screen";
 
     protected IBuildInfo mCtsBuild;
 
@@ -43,6 +44,11 @@ abstract class BiometricDeviceTestCase extends DeviceTestCase implements IBuildR
     /** If any AIDL biometric feature is present. */
     protected boolean hasAidlBiometrics() throws Exception {
         return hasFeatureFace(true /* aidlOnly */) || hasFeatureFingerprint(true /* aidlOnly */);
+    }
+
+    /** If secure lockscreen feature is present. */
+    protected boolean hasSecureLockscreen() throws Exception {
+        return DeviceUtils.hasFeature(getDevice(), FEATURE_SECURE_LOCK_SCREEN);
     }
 
     /** {@see PackageManager.FEATURE_FACE}. */

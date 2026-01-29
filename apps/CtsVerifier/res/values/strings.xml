@@ -67,7 +67,7 @@
     <string name="audio_communication_latency_test">Audio Communication Latency Test</string>
     <string name="audio_communication_latency_test_info">
         This test measures audio device switching latency
-        (e.g. speaker, earpiece, Bluetooth, USB).
+        (e.g. speaker, earpiece, wired headset, USB).
         Low latency is crucial for calls.
         \n\nInstructions:
         \n1. A list of supported audio communication devices will be shown.
@@ -102,13 +102,11 @@
     <string name="audio_communication_latency_device_speaker">Built-In Speaker</string>
     <string name="audio_communication_latency_device_earpiece">Earpiece</string>
     <string name="audio_communication_latency_device_wired_headset">Wired Headset</string>
-    <string name="audio_communication_latency_device_bt_sco">Bluetooth SCO</string>
     <string name="audio_communication_latency_device_usb_headset">USB Headset</string>
     <string name="audio_communication_latency_device_unknown">Unknown Device</string>
     <string name="audio_communication_latency_device_instructions_speaker">Ensure nothing is plugged into the audio jack or USB port.</string>
     <string name="audio_communication_latency_device_instructions_earpiece">Ensure nothing is plugged into the audio jack or USB port.</string>
     <string name="audio_communication_latency_device_instructions_wired_headset">Plug in a wired headset.</string>
-    <string name="audio_communication_latency_device_instructions_bt_sco">Connect a Bluetooth headset that supports SCO.</string>
     <string name="audio_communication_latency_device_instructions_usb_headset">Connect a USB headset.</string>
     <string name="audio_communication_latency_already_comm_device">%s is already the communication device. Trying to switch to speaker to proceed with the test.</string>
     <string name="audio_communication_latency_setting_speaker">Setting speaker as communication device.</string>

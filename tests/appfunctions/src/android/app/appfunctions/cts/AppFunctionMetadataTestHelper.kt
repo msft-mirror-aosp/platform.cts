@@ -192,7 +192,8 @@ class AppFunctionMetadataTestHelper {
                         GenericDocument.Builder<GenericDocument.Builder<*>>(
                                 "app_functions",
                                 "$PACKAGE_NAME/appFunctionEnabledByDefault",
-                                "AppFunctionStaticMetadata-android.app.appfunctions.cts.dynamic.schema",
+                                "AppFunctionStaticMetadata-android.app.appfunctions.cts" +
+                                    ".dynamic.schema",
                             )
                             .setPropertyString(
                                 "packageName",
@@ -214,7 +215,8 @@ class AppFunctionMetadataTestHelper {
                                         "android.app.appfunctions.cts.dynamic.schema/" +
                                             "appFunctionEnabledByDefault/" +
                                             "nestedDocumentProperty",
-                                        "NestedDocument-android.app.appfunctions.cts.dynamic.schema",
+                                        "NestedDocument-android.app.appfunctions.cts" +
+                                            ".dynamic.schema",
                                     )
                                     .setPropertyString("nestedRepeatedString", "value 1", "value 2")
                                     .build(),
@@ -231,7 +233,8 @@ class AppFunctionMetadataTestHelper {
                         GenericDocument.Builder<GenericDocument.Builder<*>>(
                                 "app_functions",
                                 "$PACKAGE_NAME/" + "appFunctionDisabledByDefault_noSchema",
-                                "AppFunctionStaticMetadata-android.app.appfunctions.cts.dynamic.schema",
+                                "AppFunctionStaticMetadata-android.app.appfunctions.cts" +
+                                    ".dynamic.schema",
                             )
                             .setPropertyBoolean(
                                 AppFunctionStaticMetadataHelper.STATIC_PROPERTY_ENABLED_BY_DEFAULT,
@@ -257,7 +260,8 @@ class AppFunctionMetadataTestHelper {
                         GenericDocument.Builder<GenericDocument.Builder<*>>(
                                 "app_functions",
                                 "$PACKAGE_NAME/appFunctionWithHighSchemaVersion",
-                                "AppFunctionStaticMetadata-android.app.appfunctions.cts.dynamic.schema",
+                                "AppFunctionStaticMetadata-android.app.appfunctions.cts" +
+                                    ".dynamic.schema",
                             )
                             .setPropertyString("functionId", "appFunctionWithHighSchemaVersion")
                             .setPropertyString(
@@ -341,6 +345,24 @@ class AppFunctionMetadataTestHelper {
 
         object PackageMetadata {
             val PACKAGE_METADATA = AppFunctionPackageMetadata.create(PACKAGE_NAME, listOf())
+        }
+    }
+
+    object UpdatableHelperApp {
+        const val PACKAGE_NAME: String = "com.android.cts.appsearch.indexertestapp.a"
+
+        object ApkPaths {
+            private const val TEST_APP_ROOT_FOLDER: String = "/data/local/tmp/cts/appfunctions/"
+            const val BASE_APP: String = TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppAV2.apk"
+
+            const val NO_FUNCTIONS: String =
+                TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppAV1.apk"
+
+            const val STATIC_ONLY_FUNCTIONS: String =
+                TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppAV3.apk"
+
+            const val DYNAMIC_ONLY_FUNCTIONS =
+                TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppAAppLevelFunctionsReg.apk"
         }
     }
 

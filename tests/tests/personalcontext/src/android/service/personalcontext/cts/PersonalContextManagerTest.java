@@ -18,6 +18,8 @@ package android.service.personalcontext.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertThrows;
+
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -31,6 +33,8 @@ import android.service.personalcontext.hint.ContextHintWithSignature;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Before;
@@ -67,11 +71,7 @@ public class PersonalContextManagerTest {
         final List<ContextHint> hints =
                 List.of(new BundleHint.Builder().build(), new BundleHint.Builder().build());
 
-        final List<RenderToken> renderTokens =
-                List.of(
-                        new RenderToken.RenderTokenBuilder()
-                                .setRendererComponentId(UUID.randomUUID())
-                                .build());
+        final List<RenderToken> renderTokens = List.of(new RenderToken(UUID.randomUUID()));
 
         mPersonalContextManager.publishTriggeringHint(hints, renderTokens);
         // TODO: Check that hints are received by service.
@@ -88,11 +88,7 @@ public class PersonalContextManagerTest {
         final List<ContextHint> attributionHints =
                 List.of(new BundleHint.Builder().build(), new BundleHint.Builder().build());
 
-        final List<RenderToken> renderTokens =
-                List.of(
-                        new RenderToken.RenderTokenBuilder()
-                                .setRendererComponentId(UUID.randomUUID())
-                                .build());
+        final List<RenderToken> renderTokens = List.of(new RenderToken(UUID.randomUUID()));
 
         mPersonalContextManager.publishTriggeringHint(mainHints, renderTokens, attributionHints);
         // TODO: Check that hints are received by service.
@@ -117,5 +113,46 @@ public class PersonalContextManagerTest {
                         signedHint.getAttributionHints().stream()
                                 .map(chws -> chws.getContextHint().getHintId()))
                 .containsExactly(attributionHint1.getHintId(), attributionHint2.getHintId());
+    }
+
+    @ApiTest(
+            apis = {
+                "android.service.personalcontext.PersonalContextManager#isEnabled",
+                "android.service.personalcontext.PersonalContextManager#setEnabled",
+            })
+    @Test
+    public void testIsEnabled() {
+        try (PermissionContext ignored =
+                TestApis.permissions()
+                        .withPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS)
+                        .withPermission(android.Manifest.permission.INTERACT_ACROSS_USERS)) {
+            mPersonalContextManager.setEnabled(true);
+            assertThat(mPersonalContextManager.isEnabled()).isTrue();
+        }
+    }
+
+    @ApiTest(
+            apis = {
+                "android.service.personalcontext.PersonalContextManager#isEnabled",
+                "android.service.personalcontext.PersonalContextManager#setEnabled",
+            })
+    @Test
+    public void testIsDisabled() {
+        try (PermissionContext ignored =
+                TestApis.permissions()
+                        .withPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS)
+                        .withPermission(android.Manifest.permission.INTERACT_ACROSS_USERS)) {
+            mPersonalContextManager.setEnabled(false);
+            assertThat(mPersonalContextManager.isEnabled()).isFalse();
+        }
+    }
+
+    @ApiTest(
+            apis = {
+                "android.service.personalcontext.PersonalContextManager#setEnabled",
+            })
+    @Test
+    public void testSetEnabledNoPermissions() {
+        assertThrows(SecurityException.class, () -> mPersonalContextManager.setEnabled(true));
     }
 }

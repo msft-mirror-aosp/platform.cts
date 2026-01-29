@@ -483,6 +483,15 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       if not fov_match:
         e_msg.append('Device fails the FOV match check.')
 
+      if first_api_level >= its_session_utils.ANDROID17_API_LEVEL:
+        sysprop_enabled_output = self.dut.adb.shell(
+            ['getprop', 'ro.camera.default_app_social_media_parity_enabled']
+        )
+        sysprop_enabled = str(sysprop_enabled_output.decode('utf-8')).strip()
+        logging.debug('sysprop_enabled: %s', sysprop_enabled)
+        if sysprop_enabled.lower() != 'true':
+          raise AssertionError(
+              'Android 17 and above requires sysprop enabled.')
       if e_msg:
         if first_api_level <= its_session_utils.ANDROID17_API_LEVEL:
           raise AssertionError(

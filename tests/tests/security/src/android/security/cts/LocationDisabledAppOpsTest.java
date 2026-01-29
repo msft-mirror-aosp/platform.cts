@@ -29,10 +29,14 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
+import android.location.flags.Flags;
 import android.os.PackageTagsList;
 import android.os.Process;
 import android.os.UserHandle;
 import android.platform.test.annotations.AsbSecurityTest;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -41,6 +45,7 @@ import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -55,6 +60,9 @@ public class LocationDisabledAppOpsTest extends StsExtraBusinessLogicTestCase {
     private AppOpsManager mAom;
     private boolean mIsAutomotive;
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Before
     public void setUp() {
         mLm = mContext.getSystemService(LocationManager.class);
@@ -65,6 +73,7 @@ public class LocationDisabledAppOpsTest extends StsExtraBusinessLogicTestCase {
 
     @Test
     @AsbSecurityTest(cveBugId = 231496105)
+    @RequiresFlagsEnabled(Flags.FLAG_CHANGE_GET_ADAS_ALLOWLIST_FROM_HIDDEN_TO_SYSTEM)
     public void testLocationAppOpIsIgnoredForAppsWhenLocationIsDisabled() {
         PackageTagsList ignoreList = mLm.getIgnoreSettingsAllowlist();
         PackageTagsList[] adasAllowlist = new PackageTagsList[1];

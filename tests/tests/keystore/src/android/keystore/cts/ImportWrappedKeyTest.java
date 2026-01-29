@@ -54,12 +54,16 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.keystore.cts.util.TestUtils;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.security.keystore.SecureKeyImportUnavailableException;
@@ -67,6 +71,8 @@ import android.security.keystore.WrappedKeyEntry;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.CddTest;
 
 import org.bouncycastle.asn1.ASN1Encoding;
 import org.bouncycastle.asn1.ASN1EncodableVector;
@@ -76,6 +82,7 @@ import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.DERSet;
 import org.bouncycastle.asn1.DERTaggedObject;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -116,6 +123,10 @@ public class ImportWrappedKeyTest {
     private Context getContext() {
         return InstrumentationRegistry.getInstrumentation().getTargetContext();
     }
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private int removeTagType(int tag) {
         int kmTagTypeMask = 0x0FFFFFFF;
@@ -448,6 +459,85 @@ public class ImportWrappedKeyTest {
         assertTrue(s.verify(signature));
     }
 
+    @Test
+    @CddTest(requirements = {"9.11/C-1-2"})
+    @RequiresFlagsEnabled(android.security.keystore2.Flags.FLAG_MLDSA_SUPPORT)
+    public void testKeyStore_ImportWrappedKey_MlDsa() throws Exception {
+        TestUtils.assumeMlDsaSupported(/* useStrongBox= */ false);
+        testMlDsaWrappedKeyImport("ML-DSA-65", /* isStrongBox= */ false, /* expectSuccess= */ true);
+        testMlDsaWrappedKeyImport("ML-DSA-87", /* isStrongBox= */ false, /* expectSuccess= */ true);
+    }
+
+    @Test
+    @CddTest(requirements = {"9.11/C-1-2"})
+    @RequiresFlagsEnabled(android.security.keystore2.Flags.FLAG_MLDSA_SUPPORT)
+    public void testKeyStore_ImportWrappedKey_MlDsa_StrongBox() throws Exception {
+        // We intentionally don't call `TestUtils.assumeMlDsaSupported(true)` here, because we
+        // expect StrongBox not to support ML-DSA regardless of which KeyMint version it's running.
+        testMlDsaWrappedKeyImport("ML-DSA-65", /* isStrongBox= */ true, /* expectSuccess= */ false);
+        testMlDsaWrappedKeyImport("ML-DSA-87", /* isStrongBox= */ true, /* expectSuccess= */ false);
+    }
+
+    private void testMlDsaWrappedKeyImport(
+            String keyAlgorithm, boolean isStrongBox, boolean expectSuccess) throws Exception {
+        if (isStrongBox) {
+            TestUtils.assumeStrongBox();
+        }
+
+        if (expectSuccess) {
+            PublicKey publicKey = tryImportingWrappedMlDsaKey(keyAlgorithm, isStrongBox);
+            // Load the key.
+            KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
+            keyStore.load(null, null);
+            assertTrue("Failed to load key after wrapped import", keyStore.containsAlias(ALIAS));
+
+            Key importedKey = keyStore.getKey(ALIAS, null);
+            assertTrue(importedKey instanceof PrivateKey);
+
+            // Sign a message with the private key imported into Android Keystore, then verify with
+            // the local public key from Conscrypt.
+            byte[] data = "hello world".getBytes();
+            Signature s = Signature.getInstance(keyAlgorithm);
+            s.initSign((PrivateKey) importedKey);
+            s.update(data);
+            byte[] signature = s.sign();
+            s.initVerify(publicKey);
+            s.update(data);
+            assertTrue(s.verify(signature));
+        } else {
+            assertThrows(
+                    KeyStoreException.class,
+                    () -> tryImportingWrappedMlDsaKey(keyAlgorithm, isStrongBox));
+        }
+    }
+
+    // Generates an ML-DSA key pair using Conscrypt, then imports the wrapped private key.
+    // Returns the public key if the import succeeds, otherwise throws an exception.
+    private PublicKey tryImportingWrappedMlDsaKey(String keyAlgorithm, boolean isStrongBox)
+            throws Exception {
+        // Generate an ML-DSA key pair using Conscrypt.
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance(keyAlgorithm);
+        KeyPair kp = kpg.generateKeyPair();
+        PublicKey publicKey = kp.getPublic();
+        PrivateKey privateKey = kp.getPrivate();
+        assertEquals(privateKey.getFormat(), "PKCS#8");
+
+        byte[] keyMaterial = privateKey.getEncoded();
+        byte[] mask = new byte[32]; // Zero mask
+
+        // Try to import the wrapped key, but don't catch the exception if it fails.
+        importWrappedKey(
+                wrapKey(
+                        genKeyPair(WRAPPING_KEY_ALIAS, isStrongBox).getPublic(),
+                        keyMaterial,
+                        mask,
+                        KM_KEY_FORMAT_PKCS8,
+                        makeMlDsaAuthList()));
+
+        // If we get here, the import succeeded and we can return the public key.
+        return publicKey;
+    }
+
     public void importWrappedKey(byte[] wrappedKey, String wrappingKeyAlias) throws Exception {
         KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
         keyStore.load(null, null);
@@ -663,6 +753,37 @@ public class ImportWrappedKeyTest {
         allItems.add(purpose);
         allItems.add(algorithm);
         allItems.add(keySize);
+        allItems.add(digest);
+        allItems.add(noAuthRequired);
+
+        return new DERSequence(allItems);
+    }
+
+    private DERSequence makeMlDsaAuthList() {
+        ASN1EncodableVector allPurposes = new ASN1EncodableVector();
+        allPurposes.add(new ASN1Integer(KM_PURPOSE_SIGN));
+        allPurposes.add(new ASN1Integer(KM_PURPOSE_VERIFY));
+        DERSet purposeSet = new DERSet(allPurposes);
+        DERTaggedObject purpose =
+                new DERTaggedObject(true, removeTagType(KM_TAG_PURPOSE), purposeSet);
+
+        DERTaggedObject algorithm =
+                new DERTaggedObject(true, removeTagType(KM_TAG_ALGORITHM),
+                                    new ASN1Integer(KeyProperties.KM_ALGORITHM_ML_DSA));
+
+        ASN1EncodableVector allDigests = new ASN1EncodableVector();
+        allDigests.add(new ASN1Integer(KM_DIGEST_NONE));
+        DERSet digestSet = new DERSet(allDigests);
+        DERTaggedObject digest =
+                new DERTaggedObject(true, removeTagType(KM_TAG_DIGEST), digestSet);
+
+        DERTaggedObject noAuthRequired =
+                new DERTaggedObject(true, removeTagType(KM_TAG_NO_AUTH_REQUIRED), DERNull.INSTANCE);
+
+        // Build sequence
+        ASN1EncodableVector allItems = new ASN1EncodableVector();
+        allItems.add(purpose);
+        allItems.add(algorithm);
         allItems.add(digest);
         allItems.add(noAuthRequired);
 

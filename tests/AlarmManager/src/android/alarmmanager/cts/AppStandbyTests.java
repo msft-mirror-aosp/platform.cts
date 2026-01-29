@@ -29,6 +29,7 @@ import android.alarmmanager.alarmtestapp.cts.TestAlarmScheduler;
 import android.alarmmanager.util.AlarmManagerDeviceConfigHelper;
 import android.alarmmanager.util.Utils;
 import android.app.Activity;
+import android.app.Flags;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -37,6 +38,9 @@ import android.content.IntentFilter;
 import android.os.BatteryManager;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.util.LongArray;
 
@@ -59,7 +63,7 @@ import org.junit.runner.RunWith;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
 
 /**
@@ -103,6 +107,9 @@ public class AppStandbyTests {
     };
 
     @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Rule
     public DumpLoggerRule mFailLoggerRule =
             new DumpLoggerRule(TAG) {
                 @Override
@@ -133,19 +140,24 @@ public class AppStandbyTests {
 
     private final ComponentName mAlarmScheduler = new ComponentName(TEST_APP_PACKAGE,
             TEST_APP_RECEIVER);
-    private final AtomicInteger mAlarmCount = new AtomicInteger(0);
+    private final AtomicLong mLastAlarmId = new AtomicLong(-1);
+
     private final AlarmManagerDeviceConfigHelper mConfigHelper =
             new AlarmManagerDeviceConfigHelper();
 
-    private final BroadcastReceiver mAlarmStateReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            mAlarmCount.getAndAdd(intent.getIntExtra(TestAlarmReceiver.EXTRA_ALARM_COUNT, 1));
-            final long nowElapsed = SystemClock.elapsedRealtime();
-            sAlarmHistory.addTime(nowElapsed);
-            Log.d(TAG, "No. of expirations: " + mAlarmCount + " elapsed: " + nowElapsed);
-        }
-    };
+    private final BroadcastReceiver mAlarmStateReceiver =
+            new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    final long nowElapsed = SystemClock.elapsedRealtime();
+                    sAlarmHistory.addTime(nowElapsed);
+                    mLastAlarmId.set(
+                            intent.getLongExtra(TestAlarmScheduler.EXTRA_ALARM_ID, -1L));
+                    Log.d(TAG, "Listener alarm with id: " + mLastAlarmId
+                            + " received, elapsed: " + nowElapsed);
+
+                }
+            };
 
     @BeforeClass
     public static void setUpTests() {
@@ -175,25 +187,59 @@ public class AppStandbyTests {
         updateAlarmManagerConstants();
     }
 
-    private void scheduleAlarm(long triggerMillis, long interval) throws InterruptedException {
+    private void schedulePIAlarm(long triggerMillis, long interval) throws InterruptedException {
         final Intent setAlarmIntent = new Intent(TestAlarmScheduler.ACTION_SET_ALARM);
-        setAlarmIntent.setComponent(mAlarmScheduler);
+        setAlarmIntent.putExtra(TestAlarmScheduler.EXTRA_ALARM_ID, triggerMillis);
         setAlarmIntent.putExtra(TestAlarmScheduler.EXTRA_TYPE, ELAPSED_REALTIME_WAKEUP);
         setAlarmIntent.putExtra(TestAlarmScheduler.EXTRA_TRIGGER_TIME, triggerMillis);
         setAlarmIntent.putExtra(TestAlarmScheduler.EXTRA_WINDOW_LENGTH, MIN_WINDOW);
         setAlarmIntent.putExtra(TestAlarmScheduler.EXTRA_REPEAT_INTERVAL, interval);
-        setAlarmIntent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
-        final CountDownLatch resultLatch = new CountDownLatch(1);
-        sContext.sendOrderedBroadcast(setAlarmIntent, null, new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                resultLatch.countDown();
-            }
-        }, null, Activity.RESULT_CANCELED, null, null);
-        assertTrue("Request did not complete", resultLatch.await(10, TimeUnit.SECONDS));
+
+        sendBroadcastAndWait(setAlarmIntent);
     }
 
-    public void testSimpleQuotaDeferral(int bucketIndex) throws Exception {
+    private void scheduleExactAndAwiCallbackAlarm(long triggerMillis, long interval)
+            throws InterruptedException {
+        final Intent setAlarmIntent =
+                new Intent(TestAlarmScheduler.ACTION_SET_EXACT_AND_AWI_CALLBACK_ALARM);
+        setAlarmIntent.putExtra(TestAlarmScheduler.EXTRA_ALARM_ID, triggerMillis);
+        setAlarmIntent.putExtra(TestAlarmScheduler.EXTRA_TYPE, ELAPSED_REALTIME_WAKEUP);
+        setAlarmIntent.putExtra(TestAlarmScheduler.EXTRA_TRIGGER_TIME, triggerMillis);
+        setAlarmIntent.putExtra(TestAlarmScheduler.EXTRA_REPEAT_INTERVAL, interval);
+
+        sendBroadcastAndWait(setAlarmIntent);
+    }
+
+    private void sendBroadcastAndWait(Intent intent) throws InterruptedException {
+        intent.setComponent(mAlarmScheduler);
+        intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
+        final CountDownLatch resultLatch = new CountDownLatch(1);
+        sContext.sendOrderedBroadcast(intent, null,
+                new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        resultLatch.countDown();
+                    }
+                }, null, Activity.RESULT_CANCELED, null, null);
+        assertTrue(
+                "Request did not complete for action: " + intent.getAction(),
+                resultLatch.await(10, TimeUnit.SECONDS));
+    }
+
+    private long getInitialAlarmStartTime() {
+        long startElapsed = SystemClock.elapsedRealtime();
+        // Ensure no alarms in the recent history to have a clean App StandBy window for test.
+        final long freshWindowPoint =
+                sAlarmHistory.getLastOrDefault(startElapsed) + APP_STANDBY_WINDOW;
+        if (freshWindowPoint > startElapsed) {
+            SystemClock.sleep(freshWindowPoint - startElapsed);
+            return freshWindowPoint;
+        }
+        return startElapsed;
+    }
+
+    public void testSimpleQuotaDeferral(int bucketIndex, boolean isExactAndAwiCallbackAlarm)
+            throws Exception {
         // Duration between start timestamp and the first scheduled alarm.
         final int startToFirstDelta = 4_000;
 
@@ -203,14 +249,8 @@ public class AppStandbyTests {
         setTestAppStandbyBucket(APP_BUCKET_TAGS[bucketIndex]);
         final int quota = APP_STANDBY_QUOTAS[bucketIndex];
 
-        long startElapsed = SystemClock.elapsedRealtime();
-        final long freshWindowPoint = sAlarmHistory.getLastOrDefault(startElapsed)
-                + APP_STANDBY_WINDOW;
-        if (freshWindowPoint > startElapsed) {
-            SystemClock.sleep(freshWindowPoint - startElapsed);
-            startElapsed = freshWindowPoint;
-            // Now we should have no alarms in the past APP_STANDBY_WINDOW
-        }
+        long startElapsed = getInitialAlarmStartTime();
+
         final long desiredOutOfQuotaTrigger = startElapsed + APP_STANDBY_WINDOW;
         final long firstTrigger = startElapsed + startToFirstDelta;
         assertTrue("Quota too large for test",
@@ -226,23 +266,44 @@ public class AppStandbyTests {
             } else {
                 trigger = nowElapsed + minFuturityHere;
             }
-            scheduleAlarm(trigger, 0);
+            if (isExactAndAwiCallbackAlarm) {
+                scheduleExactAndAwiCallbackAlarm(trigger, 0);
+            } else {
+                schedulePIAlarm(trigger, 0);
+            }
             SystemClock.sleep(trigger - nowElapsed);
-            assertTrue("Alarm within quota not firing as expected", waitForAlarm());
+            assertTrue("Alarm within quota not firing as expected", waitForAlarm(trigger));
         }
+
         // Now quota is reached, any subsequent alarm should get deferred.
-        scheduleAlarm(desiredOutOfQuotaTrigger, 0);
+        if (isExactAndAwiCallbackAlarm) {
+            scheduleExactAndAwiCallbackAlarm(desiredOutOfQuotaTrigger, 0);
+        } else {
+            schedulePIAlarm(desiredOutOfQuotaTrigger, 0);
+        }
+
         long nowElapsed = SystemClock.elapsedRealtime();
         // Ensure we are not too late for a reliable test because of delayed alarms.
         assertTrue("Alarms within quota consumed the full window",
                 desiredOutOfQuotaTrigger >= nowElapsed);
         SystemClock.sleep(desiredOutOfQuotaTrigger - nowElapsed);
-        assertFalse("Alarm exceeding quota not deferred", waitForAlarm());
+        assertFalse("Alarm exceeding quota not deferred", waitForAlarm(desiredOutOfQuotaTrigger));
         final long minTrigger = firstTrigger + APP_STANDBY_WINDOW;
         nowElapsed = SystemClock.elapsedRealtime();
         assertTrue(minTrigger >= nowElapsed);
         SystemClock.sleep(minTrigger - nowElapsed);
-        assertTrue("Alarm exceeding quota not delivered after expected delay", waitForAlarm());
+        assertTrue(
+                "Alarm exceeding quota not delivered after expected delay",
+                waitForAlarm(desiredOutOfQuotaTrigger));
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ALLOW_LISTENERS_WHILE_IDLE,
+        Flags.FLAG_ALLOW_ALARMS_WITH_RELAXED_QUOTA
+    })
+    public void testAppStandByQuotaOfExactAwiCallbackAlarms() throws Exception {
+        testSimpleQuotaDeferral(WORKING_INDEX, true);
     }
 
     @Test
@@ -250,35 +311,37 @@ public class AppStandbyTests {
         setTestAppStandbyBucket("active");
         long nextTrigger = SystemClock.elapsedRealtime() + MIN_FUTURITY;
         for (int i = 0; i < 3; i++) {
-            scheduleAlarm(nextTrigger, 0);
+            schedulePIAlarm(nextTrigger, 0);
             SystemClock.sleep(MIN_FUTURITY);
-            assertTrue("Alarm not received as expected when app is in active", waitForAlarm());
+            assertTrue(
+                    "Alarm not received as expected when app is in active",
+                    waitForAlarm(nextTrigger));
             nextTrigger += MIN_FUTURITY;
         }
     }
 
     @Test
     public void testWorkingQuota() throws Exception {
-        testSimpleQuotaDeferral(WORKING_INDEX);
+        testSimpleQuotaDeferral(WORKING_INDEX, false);
     }
 
     @Test
     public void testFrequentQuota() throws Exception {
-        testSimpleQuotaDeferral(FREQUENT_INDEX);
+        testSimpleQuotaDeferral(FREQUENT_INDEX, false);
     }
 
     @Test
     public void testRareQuota() throws Exception {
-        testSimpleQuotaDeferral(RARE_INDEX);
+        testSimpleQuotaDeferral(RARE_INDEX, false);
     }
 
     @Test
     public void testNeverQuota() throws Exception {
         setTestAppStandbyBucket("never");
         final long expectedTrigger = SystemClock.elapsedRealtime() + MIN_FUTURITY;
-        scheduleAlarm(expectedTrigger, 0);
+        schedulePIAlarm(expectedTrigger, 0);
         SystemClock.sleep(10_000);
-        assertFalse("Alarm received when app was in never bucket", waitForAlarm());
+        assertFalse("Alarm received when app was in never bucket", waitForAlarm(expectedTrigger));
     }
 
     @Test
@@ -286,9 +349,11 @@ public class AppStandbyTests {
         setTestAppStandbyBucket(APP_BUCKET_TAGS[RARE_INDEX]);
         setPowerAllowlisted(true);
         final long triggerTime = SystemClock.elapsedRealtime() + MIN_FUTURITY;
-        scheduleAlarm(triggerTime, 0);
+        schedulePIAlarm(triggerTime, 0);
         SystemClock.sleep(MIN_FUTURITY);
-        assertTrue("Alarm did not go off for whitelisted app in rare bucket", waitForAlarm());
+        assertTrue(
+                "Alarm did not go off for whitelisted app in rare bucket",
+                waitForAlarm(triggerTime));
         setPowerAllowlisted(false);
     }
 
@@ -357,9 +422,9 @@ public class AppStandbyTests {
         return output;
     }
 
-    private boolean waitForAlarm() {
-        final boolean success = waitUntil(() -> (mAlarmCount.get() == 1), DEFAULT_WAIT);
-        mAlarmCount.set(0);
+    private boolean waitForAlarm(long alarmId) {
+        final boolean success = waitUntil(() -> (mLastAlarmId.get() == alarmId), DEFAULT_WAIT);
+        mLastAlarmId.set(-1);
         return success;
     }
 

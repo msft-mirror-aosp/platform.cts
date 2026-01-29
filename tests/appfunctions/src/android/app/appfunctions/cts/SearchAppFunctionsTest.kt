@@ -25,6 +25,7 @@ import android.app.appfunctions.AppFunctionSearchSpec
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.CtsApp
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.DynamicSchemaHelperApp
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.LegacySchemaHelperApp
+import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.UpdatableHelperApp
 import android.app.appfunctions.cts.AppFunctionUtils.getAllRuntimeMetadataPackages
 import android.app.appfunctions.cts.AppFunctionUtils.getAllStaticMetadataPackages
 import android.app.appfunctions.cts.AppFunctionUtils.installExistingPackageAsUser
@@ -92,7 +93,7 @@ class SearchAppFunctionsTest {
     fun setup() = doBlocking {
         setTestPageSize(2)
 
-        uninstallPackage(TEST_APP_A_PKG)
+        uninstallPackage(UpdatableHelperApp.PACKAGE_NAME)
 
         TestAppFunctionServiceLifecycleReceiver.reset()
         val manager = context.getSystemService(AppFunctionManager::class.java)
@@ -130,7 +131,7 @@ class SearchAppFunctionsTest {
             "using Bedstead"
     )
     fun searchAppFunctions_withoutAnyPermission_shouldOnlySeeSelfFunctions() = doBlocking {
-        installPackage(TEST_APP_A_PATH)
+        installPackage(UpdatableHelperApp.ApkPaths.BASE_APP)
         try {
             val searchSpec = AppFunctionSearchSpec.Builder().build()
 
@@ -156,7 +157,7 @@ class SearchAppFunctionsTest {
                     CtsApp.FunctionNames.CONTEXT,
                 )
         } finally {
-            uninstallPackage(TEST_APP_A_PKG)
+            uninstallPackage(UpdatableHelperApp.PACKAGE_NAME)
         }
     }
 
@@ -176,7 +177,7 @@ class SearchAppFunctionsTest {
     )
     fun searchAppFunctions_withoutExecuteAppFunctionPermission_shouldOnlySeeSelfFunctions() =
         doBlocking {
-            installPackage(TEST_APP_A_PATH)
+            installPackage(UpdatableHelperApp.ApkPaths.BASE_APP)
             try {
                 val searchSpec = AppFunctionSearchSpec.Builder().build()
 
@@ -202,7 +203,7 @@ class SearchAppFunctionsTest {
                         CtsApp.FunctionNames.CONTEXT,
                     )
             } finally {
-                uninstallPackage(TEST_APP_A_PKG)
+                uninstallPackage(UpdatableHelperApp.PACKAGE_NAME)
             }
         }
 
@@ -221,7 +222,7 @@ class SearchAppFunctionsTest {
             "when using Bedstead"
     )
     fun searchAppFunctions_noPermissions_shouldReturnEmpty_whenTargetOtherPackages() = doBlocking {
-        installPackage(TEST_APP_A_PATH)
+        installPackage(UpdatableHelperApp.ApkPaths.BASE_APP)
         try {
             val searchSpec =
                 AppFunctionSearchSpec.Builder()
@@ -232,7 +233,7 @@ class SearchAppFunctionsTest {
 
             assertThat(resultAppFunctions).isEmpty()
         } finally {
-            uninstallPackage(TEST_APP_A_PKG)
+            uninstallPackage(UpdatableHelperApp.PACKAGE_NAME)
         }
     }
 
@@ -252,7 +253,7 @@ class SearchAppFunctionsTest {
     )
     fun searchAppFunctions_noPermissions_shouldReturnEmpty_whenTargetOtherPackagesFunctions() =
         doBlocking {
-            installPackage(TEST_APP_A_PATH)
+            installPackage(UpdatableHelperApp.ApkPaths.BASE_APP)
             try {
                 val searchSpec =
                     AppFunctionSearchSpec.Builder()
@@ -265,7 +266,7 @@ class SearchAppFunctionsTest {
 
                 assertThat(resultAppFunctions).isEmpty()
             } finally {
-                uninstallPackage(TEST_APP_A_PKG)
+                uninstallPackage(UpdatableHelperApp.PACKAGE_NAME)
             }
         }
 
@@ -282,7 +283,7 @@ class SearchAppFunctionsTest {
     )
     fun searchAppFunctions_searchAllWithExecuteAppFunctionPermission_shouldSeeAllVisiblePackages() =
         doBlocking {
-            installPackage(TEST_APP_A_PATH)
+            installPackage(UpdatableHelperApp.ApkPaths.BASE_APP)
             try {
                 val searchSpec = AppFunctionSearchSpec.Builder().build()
 
@@ -291,7 +292,7 @@ class SearchAppFunctionsTest {
 
                 assertThat(functionsGroupByPackage.keys).containsAnyIn(getVisiblePackages())
             } finally {
-                uninstallPackage(TEST_APP_A_PKG)
+                uninstallPackage(UpdatableHelperApp.PACKAGE_NAME)
             }
         }
 
@@ -305,7 +306,7 @@ class SearchAppFunctionsTest {
         Manifest.permission.QUERY_ALL_PACKAGES,
     )
     fun searchAppFunctions_searchAllWithAllPermission_shouldSeeAllPackages() = doBlocking {
-        installPackage(TEST_APP_A_PATH)
+        installPackage(UpdatableHelperApp.ApkPaths.BASE_APP)
         try {
             val searchSpec = AppFunctionSearchSpec.Builder().build()
 
@@ -322,7 +323,7 @@ class SearchAppFunctionsTest {
                 )
                 .containsExactlyElementsIn(DynamicSchemaHelperApp.FunctionNames.ALL_FUNCTIONS)
         } finally {
-            uninstallPackage(TEST_APP_A_PKG)
+            uninstallPackage(UpdatableHelperApp.PACKAGE_NAME)
         }
     }
 
@@ -335,9 +336,9 @@ class SearchAppFunctionsTest {
         Manifest.permission.DISCOVER_APP_FUNCTIONS,
         Manifest.permission.QUERY_ALL_PACKAGES,
     )
-    fun searchAppFunctions_searchAllQueryAndReadAppFunctionMetadataPermission_shouldSeeAllPackages() =
+    fun searchAppFunctions_hasQueryAllAndReadAppFunctionMetadataPermission_shouldSeeAllPackages() =
         doBlocking {
-            installPackage(TEST_APP_A_PATH)
+            installPackage(UpdatableHelperApp.ApkPaths.BASE_APP)
             try {
                 val searchSpec = AppFunctionSearchSpec.Builder().build()
 
@@ -358,7 +359,7 @@ class SearchAppFunctionsTest {
                     )
                     .containsExactlyElementsIn(DynamicSchemaHelperApp.FunctionNames.ALL_FUNCTIONS)
             } finally {
-                uninstallPackage(TEST_APP_A_PKG)
+                uninstallPackage(UpdatableHelperApp.PACKAGE_NAME)
             }
         }
 
@@ -371,9 +372,9 @@ class SearchAppFunctionsTest {
         Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM,
         Manifest.permission.QUERY_ALL_PACKAGES,
     )
-    fun searchAppFunctions_searchAllQueryAndExecuteAppFunctionsSystemPermission_shouldSeeAllPackages() =
+    fun searchAppFunctions_hasQueryAllAndExecuteSystemPermission_shouldSeeAllPackages() =
         doBlocking {
-            installPackage(TEST_APP_A_PATH)
+            installPackage(UpdatableHelperApp.ApkPaths.BASE_APP)
             try {
                 val searchSpec = AppFunctionSearchSpec.Builder().build()
 
@@ -394,7 +395,7 @@ class SearchAppFunctionsTest {
                     )
                     .containsExactlyElementsIn(DynamicSchemaHelperApp.FunctionNames.ALL_FUNCTIONS)
             } finally {
-                uninstallPackage(TEST_APP_A_PKG)
+                uninstallPackage(UpdatableHelperApp.PACKAGE_NAME)
             }
         }
 
@@ -861,7 +862,7 @@ class SearchAppFunctionsTest {
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
-    fun searchAppFunctions_changeDynamicFunctionEnabledState_reflectsInSearchResult() = doBlocking {
+    fun searchAppFunctions_registerAppFunction_reflectsInSearchResult() = doBlocking {
         val searchSpec =
             AppFunctionSearchSpec.Builder()
                 .setFunctionNames(
@@ -1042,7 +1043,7 @@ class SearchAppFunctionsTest {
                         .setPackageNames(
                             listOf(
                                 LegacySchemaHelperApp
-                                    .PACKAGE_NAME, // Does not installed on secondary user
+                                    .PACKAGE_NAME, // Not installed on secondary user
                                 DynamicSchemaHelperApp.PACKAGE_NAME,
                             )
                         )
@@ -1095,9 +1096,14 @@ class SearchAppFunctionsTest {
             .isEqualTo("Success\n")
 
         // Blocked until the AppFunctions are indexed too
-        retryAssert { getAllStaticMetadataPackages(context).contains(TEST_APP_A_PKG) }
+        retryAssert {
+            getAllStaticMetadataPackages(context).contains(UpdatableHelperApp.PACKAGE_NAME)
+        }
         runWithShellPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS) {
-            retryAssert { assertThat(getAllRuntimeMetadataPackages()).contains(TEST_APP_A_PKG) }
+            retryAssert {
+                assertThat(getAllRuntimeMetadataPackages())
+                    .contains(UpdatableHelperApp.PACKAGE_NAME)
+            }
         }
     }
 
@@ -1178,10 +1184,5 @@ class SearchAppFunctionsTest {
 
     private companion object {
         @JvmField @ClassRule @Rule val sDeviceState: DeviceState = DeviceState()
-
-        const val TEST_APP_ROOT_FOLDER: String = "/data/local/tmp/cts/appfunctions/"
-        const val TEST_APP_A_PATH: String =
-            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppAV2.apk"
-        const val TEST_APP_A_PKG: String = "com.android.cts.appsearch.indexertestapp.a"
     }
 }

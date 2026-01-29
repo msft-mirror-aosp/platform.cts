@@ -17,14 +17,26 @@
 package android.app.cts;
 
 
+import static com.google.common.truth.Truth.assertThat;
+
+import android.app.Flags;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.os.UserHandle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.notification.Adjustment;
-import android.test.AndroidTestCase;
 import android.util.Log;
 
-public class AdjustmentTest extends AndroidTestCase {
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
+@RunWith(JUnit4.class)
+public class AdjustmentTest {
     private static final String ADJ_PACKAGE = "com.foo.bar";
     private static final String ADJ_KEY = "foo_key";
     private static final String ADJ_EXPLANATION = "I just feel like adjusting this";
@@ -34,53 +46,81 @@ public class AdjustmentTest extends AndroidTestCase {
 
     private Adjustment mAdjustment;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
+    @Before
+    public void setUp() throws Exception {
         mSignals.putString("foobar", "Hello, world!");
         mSignals.putInt("chirp", 47);
         mAdjustment = new Adjustment(ADJ_PACKAGE, ADJ_KEY, mSignals, ADJ_EXPLANATION, ADJ_USER);
     }
 
+    @Test
     public void testGetPackage() {
-        assertEquals(ADJ_PACKAGE, mAdjustment.getPackage());
+        assertThat(mAdjustment.getPackage()).isEqualTo(ADJ_PACKAGE);
     }
 
+    @Test
     public void testGetKey() {
-        assertEquals(ADJ_KEY, mAdjustment.getKey());
+        assertThat(mAdjustment.getKey()).isEqualTo(ADJ_KEY);
     }
 
+    @Test
     public void testGetExplanation() {
-        assertEquals(ADJ_EXPLANATION, mAdjustment.getExplanation());
+        assertThat(mAdjustment.getExplanation().toString()).isEqualTo(ADJ_EXPLANATION);
     }
 
+    @Test
     public void testGetUser() {
-        assertEquals(ADJ_USER, mAdjustment.getUserHandle());
+        assertThat(mAdjustment.getUserHandle()).isEqualTo(ADJ_USER);
     }
 
+    @Test
     public void testGetSignals() {
-        assertEquals(mSignals, mAdjustment.getSignals());
-        assertEquals("Hello, world!", mAdjustment.getSignals().getString("foobar"));
-        assertEquals(47, mAdjustment.getSignals().getInt("chirp"));
+        assertThat(mAdjustment.getSignals()).isEqualTo(mSignals);
+        assertThat(mAdjustment.getSignals().getString("foobar")).isEqualTo("Hello, world!");
+        assertThat(mAdjustment.getSignals().getInt("chirp")).isEqualTo(47);
     }
 
+    @Test
     public void testDescribeContents() {
-        assertEquals(0, mAdjustment.describeContents());
+        assertThat(mAdjustment.describeContents()).isEqualTo(0);
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NM_CONTEXTUAL_DISPLAY_LAUNCH)
+    public void testOriginatingRuleData() {
+        mAdjustment.setOriginatingRuleId(101);
+        mAdjustment.setOriginatingRuleOrder(6);
+
+        assertThat(mAdjustment.getOriginatingRuleId()).isEqualTo(101);
+        assertThat(mAdjustment.getOriginatingRuleOrder()).isEqualTo(6);
+    }
+
+    @Test
     public void testParcelling() {
+        if (android.app.Flags.nmContextualDisplayLaunch()) {
+            mAdjustment.setOriginatingRuleId(101);
+            mAdjustment.setOriginatingRuleOrder(6);
+        }
+
         final Parcel outParcel = Parcel.obtain();
         mAdjustment.writeToParcel(outParcel, 0);
         outParcel.setDataPosition(0);
         final Adjustment unparceled = Adjustment.CREATOR.createFromParcel(outParcel);
 
-        assertEquals(mAdjustment.getPackage(), unparceled.getPackage());
-        assertEquals(mAdjustment.getKey(), unparceled.getKey());
-        assertEquals(mAdjustment.getExplanation(), unparceled.getExplanation());
-        assertEquals(mAdjustment.getUserHandle(), unparceled.getUserHandle());
+        assertThat(unparceled.getPackage()).isEqualTo(mAdjustment.getPackage());
+        assertThat(unparceled.getKey()).isEqualTo(mAdjustment.getKey());
+        assertThat(unparceled.getExplanation().toString()).isEqualTo(mAdjustment.getExplanation());
+        assertThat(unparceled.getUserHandle()).isEqualTo(mAdjustment.getUserHandle());
 
-        assertEquals("Hello, world!", unparceled.getSignals().getString("foobar"));
-        assertEquals(47, unparceled.getSignals().getInt("chirp"));
+        assertThat(unparceled.getSignals().getString("foobar")).isEqualTo("Hello, world!");
+        assertThat(unparceled.getSignals().getInt("chirp")).isEqualTo(47);
+
+        if (android.app.Flags.nmContextualDisplayLaunch()) {
+            assertThat(unparceled.getOriginatingRuleId()).isEqualTo(101);
+            assertThat(unparceled.getOriginatingRuleOrder()).isEqualTo(6);
+        }
     }
 }

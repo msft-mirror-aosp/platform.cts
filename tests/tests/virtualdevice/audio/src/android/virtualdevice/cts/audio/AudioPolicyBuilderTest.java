@@ -44,7 +44,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
+import com.android.media.mediatestutils.PermissionUpdateBarrierRule;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -58,15 +60,20 @@ import org.junit.runner.RunWith;
 @RequiresFlagsEnabled(Flags.FLAG_AUDIO_POLICY_BUILDERS_API)
 public class AudioPolicyBuilderTest {
 
-    @Rule
+    @Rule(order = 1)
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    @Rule
+    @Rule(order = 2)
     public final AdoptShellPermissionsRule mPermissionRule =
             new AdoptShellPermissionsRule(
                     InstrumentationRegistry.getInstrumentation().getUiAutomation(),
                     MODIFY_AUDIO_ROUTING,
                     RECORD_AUDIO);
+
+    @Rule(order = 3)
+    public final PermissionUpdateBarrierRule mBarrierRule =
+            new PermissionUpdateBarrierRule(
+                    InstrumentationRegistry.getInstrumentation().getContext());
 
     private Context mContext;
     private AudioPolicy mAudioPolicy;
@@ -98,6 +105,13 @@ public class AudioPolicyBuilderTest {
         assumeNotNull(mAudioManager);
 
         setupAudioPolicy();
+    }
+
+    @After
+    public void tearDown() {
+        if (mAudioPolicy != null) {
+            mAudioManager.unregisterAudioPolicy(mAudioPolicy);
+        }
     }
 
     private void setupAudioPolicy() {

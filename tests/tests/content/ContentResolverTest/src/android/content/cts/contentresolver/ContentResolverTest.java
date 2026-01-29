@@ -33,6 +33,7 @@ import android.content.ContentResolver.MimeTypeInfo;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.flags.Flags;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
 import android.database.ContentObserver;
@@ -49,6 +50,9 @@ import android.os.RemoteException;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -62,6 +66,7 @@ import com.android.internal.util.ArrayUtils;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -183,6 +188,9 @@ public final class ContentResolverTest {
     private Context mContext;
     private ContentResolver mContentResolver;
     private Cursor mCursor;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -1713,6 +1721,46 @@ public final class ContentResolverTest {
         // within 10 seconds; if our Binder thread hasn't been freed, then we
         // fail with a timeout.
         latch.await(10, TimeUnit.SECONDS);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONTENT_PROVIDER_CLIENT_ANR_ON_CANCEL)
+    public void testHangOnCancelRecover() throws Exception {
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(android.Manifest.permission.REMOVE_TASKS);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        final CancellationSignal signal = new CancellationSignal();
+        new Thread(
+                        () -> {
+                            try (ContentProviderClient client =
+                                    mContentResolver.acquireUnstableContentProviderClient(
+                                            REMOTE_AUTHORITY)) {
+                                client.setDetectNotRespondingOnCancel(200, 1_000);
+                                try {
+                                    client.query(REMOTE_HANG_URI, null, null, null, null, signal);
+                                    assertWithMessage("Unexpected successful call").fail();
+                                } catch (RemoteException e) {
+                                    latch.countDown();
+                                }
+                            }
+                        })
+                .start();
+
+        // Give it some time to start the query and hang.
+        SystemClock.sleep(400);
+        // The call should still be in progress, the latch should not have been
+        // released.
+        assertThat(latch.await(2, TimeUnit.SECONDS)).isFalse();
+
+        signal.cancel();
+
+        // The remote process should have been killed after the ANR was
+        // detected after the cancellation, causing our pending call to return
+        // and release our latches above within 10 seconds; if our Binder
+        // thread hasn't been freed, then we fail with a timeout.
+        assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
     }
 
     @Test

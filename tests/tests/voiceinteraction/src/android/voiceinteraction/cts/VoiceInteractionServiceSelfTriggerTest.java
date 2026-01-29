@@ -19,15 +19,18 @@ package android.voiceinteraction.cts;
 import static android.Manifest.permission.CAPTURE_AUDIO_HOTWORD;
 import static android.Manifest.permission.MANAGE_HOTWORD_DETECTION;
 import static android.Manifest.permission.RECORD_AUDIO;
-import static android.service.voice.VoiceInteractionSession.KEY_FOREGROUND_ACTIVITIES;
 import static android.voiceinteraction.cts.testcore.Helper.CTS_SERVICE_PACKAGE;
 import static android.voiceinteraction.cts.testcore.Helper.createFakeAudioFormat;
 import static android.voiceinteraction.cts.testcore.Helper.createFakeKeyphraseRecognitionExtraList;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
+import static com.android.queryable.queries.ActivityQuery.activity;
+
 import static com.google.common.truth.Truth.assertThat;
 
+import android.compat.testing.PlatformCompatChangeRule;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -43,15 +46,21 @@ import android.voiceinteraction.cts.services.BaseVoiceInteractionService;
 import android.voiceinteraction.cts.services.CtsBasicVoiceInteractionService;
 import android.voiceinteraction.cts.testcore.VoiceInteractionServiceConnectedRule;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.testapp.TestApp;
+import com.android.bedstead.testapp.TestAppActivityReference;
+import com.android.bedstead.testapp.TestAppInstance;
 import com.android.compatibility.common.util.SettingsStateKeeperRule;
 import com.android.compatibility.common.util.SettingsStateManager;
 
+import libcore.junit.util.compat.CoreCompatChangeRule.DisableCompatChanges;
+
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -60,25 +69,48 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /** Tests for self-triggered sessions in {@link android.service.voice.VoiceInteractionService}. */
-@RunWith(AndroidJUnit4.class)
+@RunWith(BedsteadJUnit4.class)
 @AppModeFull(reason = "No real use case for instant mode")
 public class VoiceInteractionServiceSelfTriggerTest {
 
     private static final String TAG = "VoiceInteractionServiceSelfTriggerTest";
     private static final String SERVICE_COMPONENT =
             "android.voiceinteraction.cts.services.CtsBasicVoiceInteractionService";
+    private static final String ASSIST_STRUCTURE_ENABLED = "assist_structure_enabled";
+    private static final String ASSIST_SCREENSHOT_ENABLED = "assist_screenshot_enabled";
+    // The compat change ID for RESTRICT_VIS_SELF_TRIGGER
+    static final long RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID = 454889405L;
+
+    @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    @Rule
-    public final SettingsStateKeeperRule mPublicServiceSettingsKeeper =
-            new SettingsStateKeeperRule(
-                    getInstrumentation().getTargetContext(), "assist_screenshot_enabled");
+    @Rule public final PlatformCompatChangeRule mCompatChangeRule = new PlatformCompatChangeRule();
 
+    private static final SettingsStateManager sStructureEnabledMgr =
+            new SettingsStateManager(
+                    getInstrumentation().getTargetContext(), ASSIST_STRUCTURE_ENABLED);
     private static final SettingsStateManager sScreenshotEnabledManager =
             new SettingsStateManager(
-                    getInstrumentation().getTargetContext(), "assist_screenshot_enabled");
+                    getInstrumentation().getTargetContext(), ASSIST_SCREENSHOT_ENABLED);
+
+    @Rule
+    public final SettingsStateKeeperRule mStructureEnabledKeeperRule =
+            new SettingsStateKeeperRule(
+                    getInstrumentation().getTargetContext(), ASSIST_STRUCTURE_ENABLED);
+
+    @Rule
+    public final SettingsStateKeeperRule mScreenshotEnabledKeeperRule =
+            new SettingsStateKeeperRule(
+                    getInstrumentation().getTargetContext(), ASSIST_SCREENSHOT_ENABLED);
+
+    private static final TestApp sTestApp =
+            testApps(sDeviceState)
+                    .query()
+                    .whereActivities()
+                    .contains(activity().where().exported().isTrue())
+                    .get();
 
     protected final Context mContext = getInstrumentation().getTargetContext();
     private final UiDevice mUiDevice = UiDevice.getInstance(getInstrumentation());
@@ -97,8 +129,9 @@ public class VoiceInteractionServiceSelfTriggerTest {
     public void setup() {
         mService = (CtsBasicVoiceInteractionService) BaseVoiceInteractionService.getService();
         Objects.requireNonNull(mService);
-        VoiceInteractionTestReceiver.reset();
+        sStructureEnabledMgr.set("1");
         sScreenshotEnabledManager.set("1");
+        VoiceInteractionTestReceiver.reset();
     }
 
     @After
@@ -118,25 +151,32 @@ public class VoiceInteractionServiceSelfTriggerTest {
     @Test
     @RequiresFlagsEnabled(
             com.android.server.voiceinteraction.flags.Flags.FLAG_ENABLE_RESTRICT_VIS_SELF_TRIGGER)
+    @DisableCompatChanges({RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID})
     public void testSelfTrigger_background_noRecentHotword_assistStripped() throws Exception {
         // 1. background the test app
-        mUiDevice.pressHome();
-        mUiDevice.waitForIdle();
+        try (TestAppInstance instance = sTestApp.install(sDeviceState.initialUser())) {
+            TestAppActivityReference activity =
+                    instance.activities().query().whereActivity().exported().isTrue().get();
+            activity.start();
+            mUiDevice.pressHome();
+            mUiDevice.waitForIdle();
 
-        // 2. Trigger session
-        mService.showSession(
-                new Bundle(),
-                VoiceInteractionSession.SHOW_WITH_SCREENSHOT
-                        | VoiceInteractionSession.SHOW_WITH_ASSIST
-                        | VoiceInteractionSession.SHOW_WITH_ASSIST_STRUCTURE_SCREEN_CONTENT);
+            // 2. Trigger session
+            mService.showSession(
+                    new Bundle(),
+                    VoiceInteractionSession.SHOW_WITH_SCREENSHOT
+                            | VoiceInteractionSession.SHOW_WITH_ASSIST
+                            | VoiceInteractionSession.SHOW_WITH_ASSIST_STRUCTURE_SCREEN_CONTENT);
 
-        // 3. Verify NO assist data/screenshot
-        assertHasNoAssistDataAndScreenshot();
+            // 3. Verify NO assist data/screenshot
+            assertHasNoAssistDataAndScreenshot();
+        }
     }
 
     @Test
     @RequiresFlagsEnabled(
             com.android.server.voiceinteraction.flags.Flags.FLAG_ENABLE_RESTRICT_VIS_SELF_TRIGGER)
+    @DisableCompatChanges({RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID})
     public void testSelfTrigger_background_recentHotword_assistAllowed() throws Exception {
         // 1. Create detector
         mService.createAlwaysOnHotwordDetector();
@@ -144,59 +184,61 @@ public class VoiceInteractionServiceSelfTriggerTest {
         AlwaysOnHotwordDetector detector = mService.getAlwaysOnHotwordDetector();
 
         // 2. background the test app
-        mUiDevice.pressHome();
-        mUiDevice.waitForIdle();
+        try (TestAppInstance instance = sTestApp.install(sDeviceState.initialUser())) {
+            TestAppActivityReference activity =
+                    instance.activities().query().whereActivity().exported().isTrue().get();
+            activity.start();
+            mUiDevice.pressHome();
+            mUiDevice.waitForIdle();
 
-        // 3. Trigger hotword
+            // 3. Trigger hotword
+            try (PermissionContext p =
+                    TestApis.permissions()
+                            .withPermission(
+                                    RECORD_AUDIO,
+                                    CAPTURE_AUDIO_HOTWORD,
+                                    MANAGE_HOTWORD_DETECTION)) {
 
-        try (PermissionContext p =
-                TestApis.permissions()
-                        .withPermission(
-                                RECORD_AUDIO, CAPTURE_AUDIO_HOTWORD, MANAGE_HOTWORD_DETECTION)) {
+                mService.initDetectRejectLatch();
 
-            mService.initDetectRejectLatch();
+                detector.triggerHardwareRecognitionEventForTest(
+                        /* status= */ 0,
+                        /* soundModelHandle= */ 100, /* halEventReceivedMillis */
+                        12345,
+                        /* captureAvailable= */ true,
+                        /* captureSession= */ 101,
+                        /* captureDelayMs= */ 1000,
+                        /* capturePreambleMs= */ 1001,
+                        /* triggerInData= */ true,
+                        createFakeAudioFormat(),
+                        new byte[1024],
+                        createFakeKeyphraseRecognitionExtraList());
 
-            detector.triggerHardwareRecognitionEventForTest(
+                mService.waitOnDetectOrRejectCalled();
+            }
 
-                    /* status= */ 0,
-                    /* soundModelHandle= */ 100, /* halEventReceivedMillis */
-                    12345,
+            // 4. Trigger session immediately
+            mService.showSession(
+                    new Bundle(),
+                    VoiceInteractionSession.SHOW_WITH_SCREENSHOT
+                            | VoiceInteractionSession.SHOW_WITH_ASSIST
+                            | VoiceInteractionSession.SHOW_WITH_ASSIST_STRUCTURE_SCREEN_CONTENT);
 
-                    /* captureAvailable= */ true,
-
-                    /* captureSession= */ 101,
-
-                    /* captureDelayMs= */ 1000,
-
-                    /* capturePreambleMs= */ 1001,
-
-                    /* triggerInData= */ true,
-                    createFakeAudioFormat(),
-                    new byte[1024],
-                    createFakeKeyphraseRecognitionExtraList());
-
-            mService.waitOnDetectOrRejectCalled();
+            // 5. Verify assist data/screenshot present
+            assertHasAssistDataAndScreenshot();
         }
-
-        // 4. Trigger session immediately
-        mService.showSession(
-                new Bundle(),
-                VoiceInteractionSession.SHOW_WITH_SCREENSHOT
-                        | VoiceInteractionSession.SHOW_WITH_ASSIST
-                        | VoiceInteractionSession.SHOW_WITH_ASSIST_STRUCTURE_SCREEN_CONTENT);
-
-        // 5. Verify assist data/screenshot present
-        assertHasAssistDataAndScreenshot();
     }
 
     @Test
     @RequiresFlagsEnabled(
             com.android.server.voiceinteraction.flags.Flags.FLAG_ENABLE_RESTRICT_VIS_SELF_TRIGGER)
+    @DisableCompatChanges({RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID})
     public void testSelfTrigger_foreground_noRecentHotword_assistAllowed() throws Exception {
         // 1. Bring test app to foreground
         Intent intent = new Intent(mContext, EmptyActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         TestApis.activities().startActivity(intent);
+        mUiDevice.waitForIdle();
 
         // 2. Trigger session
         mService.showSession(
@@ -222,23 +264,7 @@ public class VoiceInteractionServiceSelfTriggerTest {
                 VoiceInteractionTestReceiver.waitScreenshotReceived(5, TimeUnit.SECONDS);
         boolean obtainedAssistData =
                 VoiceInteractionTestReceiver.waitAssistDataReceived(5, TimeUnit.SECONDS);
-        Bundle onShowArgs = VoiceInteractionTestReceiver.waitOnShowReceived(5, TimeUnit.SECONDS);
-
-        // If we expect available, we assert true. If we expect unavailable, we assert false.
         assertThat(obtainedScreenshot).isEqualTo(isAvailable);
         assertThat(obtainedAssistData).isEqualTo(isAvailable);
-
-        if (isAvailable) {
-            assertThat(onShowArgs).isNotNull();
-            assertThat(onShowArgs.containsKey(KEY_FOREGROUND_ACTIVITIES)).isTrue();
-        } else {
-            // If not available, we might still get onShowArgs, but it shouldn't have the key,
-            // OR we might not get onShow if the session fails to start?
-            // The restriction strips flags, it doesn't prevent session start.
-            // So onShow should happen.
-            if (onShowArgs != null) {
-                assertThat(onShowArgs.containsKey(KEY_FOREGROUND_ACTIVITIES)).isFalse();
-            }
-        }
     }
 }

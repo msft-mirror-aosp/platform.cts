@@ -96,6 +96,12 @@ public class AudioDeviceInfoTest {
         if (Flags.enableMultichannelGroupDevice()) {
             OUTPUT_TYPES.add(AudioDeviceInfo.TYPE_MULTICHANNEL_GROUP);
         }
+
+        if (Flags.blePeripheralDevices()) {
+            INPUT_TYPES.add(AudioDeviceInfo.TYPE_BLE_CENTRAL);
+            INPUT_TYPES.add(AudioDeviceInfo.TYPE_BLE_CENTRAL_BROADCAST);
+            OUTPUT_TYPES.add(AudioDeviceInfo.TYPE_BLE_CENTRAL);
+        }
     }
 
     private static int MAX_TYPE;
