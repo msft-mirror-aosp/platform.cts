@@ -29,7 +29,11 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.app.ActivityManager;
+import android.app.WallpaperManager;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
@@ -302,6 +306,7 @@ public abstract class CodecTestBase {
             Math.max(MAX_DISPLAY_WIDTH_CURRENT, MAX_DISPLAY_HEIGHT_CURRENT);
     public static final int MAX_DISPLAY_HEIGHT_LAND =
             Math.min(MAX_DISPLAY_WIDTH_CURRENT, MAX_DISPLAY_HEIGHT_CURRENT);
+    private static final WallpaperManager WM = WallpaperManager.getInstance(getContext());
 
     public static final String HDR10_INFO_SCENE_A =
             "b5 00 3c 00 01 04 00 40  00 0c 80 4e 20 27 10 00"
@@ -1004,6 +1009,31 @@ public abstract class CodecTestBase {
             codec.reset();
         } else {
             codec.stop();
+        }
+    }
+
+    public static void setWallpaperToSolidColor() {
+        if (WM != null) {
+            int width = WM.getDesiredMinimumWidth();
+            int height = WM.getDesiredMinimumHeight();
+            Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            new Canvas(bitmap).drawColor(Color.BLACK);
+            try {
+                int flags = WallpaperManager.FLAG_SYSTEM | WallpaperManager.FLAG_LOCK;
+                WM.setBitmap(bitmap, null, true, flags);
+            } catch (IOException e) {
+                Log.e(LOG_TAG, "Failed to set solid color", e);
+            }
+        }
+    }
+
+    public static void setWallpaperToSystemDefault() {
+        if (WM != null) {
+            try {
+                WM.clear(WallpaperManager.FLAG_SYSTEM | WallpaperManager.FLAG_LOCK);
+            } catch (IOException e) {
+                Log.e(LOG_TAG, "Failed to set wallpaper to system default ", e);
+            }
         }
     }
 

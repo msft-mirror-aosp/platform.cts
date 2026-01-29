@@ -64,9 +64,11 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.VsrTest;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -168,6 +170,16 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
     @Rule
     public ActivityScenarioRule<CodecDynamicTestActivity> mActivityRule =
             new ActivityScenarioRule<>(CodecDynamicTestActivity.class);
+
+    @BeforeClass
+    public static void setUpDeviceForTest() {
+        setWallpaperToSolidColor();
+    }
+
+    @AfterClass
+    public static void tearDownTestSettings() {
+        setWallpaperToSystemDefault();
+    }
 
     @After
     public void VideoDecoderAvailabilityTestTearDown() {
