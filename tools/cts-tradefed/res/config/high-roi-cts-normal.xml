@@ -3475,7 +3475,6 @@
     <option name="compatibility:include-filter" value="CtsRoleMultiUserTestCases android.app.rolemultiuser.cts.RoleManagerMultiUserTest#cannotSetActiveUserForRoleToUserNotInProfileGroup"/>
     <option name="compatibility:include-filter" value="CtsRoleMultiUserTestCases android.app.rolemultiuser.cts.RoleManagerMultiUserTest#setAndGetActiveUserForRoleSetCurrentUserEnsureRoleNotHeldByInactiveUser"/>
     <!-- CtsRoleTestCases -->
-    <option name="compatibility:include-filter" value="CtsRoleTestCases android.app.role.cts.RequestAssistStructureTest#startRequestAssistStructureActivity_finishIfUnrequestable"/>
     <option name="compatibility:include-filter" value="CtsRoleTestCases android.app.role.cts.RoleManagerTest#openDefaultAppListAndSetDefaultAppThenIsDefaultAppForPrivateSpace"/>
     <!-- CtsRollbackManagerHostTestCases -->
     <option name="compatibility:include-filter" value="CtsRollbackManagerHostTestCases com.android.cts.rollback.host.RollbackManagerHostTest#testPackageRollbackInfoApisWithApkOnlyUpdates"/>
