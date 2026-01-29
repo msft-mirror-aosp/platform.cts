@@ -258,6 +258,20 @@ class AppFunctionRegistrationTest {
     }
 
     @Test
+    @Throws(Exception::class)
+    fun createRegisterAppFunctionRequest_gettersAreCorrect() {
+        val concatStrings = ConcatStrings()
+        val request = RegisterAppFunctionRequest(
+            CONCAT_STRINGS_FUNCTION_ID,
+            executionExecutor,
+            concatStrings
+        )
+        assertThat(request.functionIdentifier).isEqualTo(CONCAT_STRINGS_FUNCTION_ID)
+        assertThat(request.appFunction).isEqualTo(concatStrings)
+        assertThat(request.executor).isEqualTo(executionExecutor)
+    }
+
+    @Test
     @IncludeRunOnPrimaryUser
     @IncludeRunOnSecondaryUser
     @Throws(Exception::class)
