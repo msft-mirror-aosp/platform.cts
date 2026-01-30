@@ -43,6 +43,7 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.hardware.display.AmbientDisplayConfiguration;
 import android.hardware.display.DisplayManager;
+import android.os.SystemClock;
 import android.view.Display;
 
 import androidx.annotation.NonNull;
@@ -168,6 +169,21 @@ public class LockScreenSession implements AutoCloseable {
      * {#unlock()} instead.
      */
     public LockScreenSession enterLockCredentialAndConfirm() {
+        return enterLockCredentialAndConfirm(LOCK_CREDENTIAL);
+    }
+
+    /**
+     * Enters and confirms a wrong lock credential.
+     *
+     * @param suffix a non-negative integer used as a suffix for the wrong credential. The same
+     *     value used twice will result in a duplicate wrong credential confirmed.
+     */
+    public LockScreenSession enterWrongCredentialAndConfirm(int suffix) {
+        return enterLockCredentialAndConfirm(LOCK_CREDENTIAL + suffix);
+    }
+
+    /** Enters a credential. */
+    private LockScreenSession enterLockCredentialAndConfirm(String credential) {
         if (!mLockCredentialSet) {
             throw new IllegalStateException(
                     "Requested to enter credential without setting lock credential.");
@@ -178,9 +194,11 @@ public class LockScreenSession implements AutoCloseable {
         mTouchHelper.touchAndCancelOnDisplayCenterSync(DEFAULT_DISPLAY);
         mWmState.waitForNonActivityWindowFocused();
 
+        log("Entering credential: " + credential);
+
         waitForDeviceIdle(3000);
         SystemUtil.runWithShellPermissionIdentity(
-                () -> mInstrumentation.sendStringSync(LOCK_CREDENTIAL));
+                () -> mInstrumentation.sendStringSync(credential));
         pressEnterButton();
         return this;
     }
@@ -298,7 +316,21 @@ public class LockScreenSession implements AutoCloseable {
         boolean wasDeviceLocked = false;
         if (mLockCredentialSet) {
             wasDeviceLocked = mKm != null && mKm.isDeviceLocked();
-            removeLockCredential();
+            long firstRemovalAttempt = -1;
+            // The first 2 lockouts in the recommended lockout schedule are at 60s and 5m.
+            // KeyguardLockedTests#testKeyguardStaysLocked_afterWrongCredentials may cause the
+            // device to be stuck in a lockout state. Keep retrying the correct credential, but only
+            // for 1m to cover the first lockout, as CTS tests time out in 5 minutes anyway.
+            do {
+                if (firstRemovalAttempt > 0) {
+                    SystemClock.sleep(2000);
+                }
+                removeLockCredential();
+                if (firstRemovalAttempt == -1) {
+                    firstRemovalAttempt = SystemClock.elapsedRealtime();
+                }
+            } while (mKm.isDeviceSecure()
+                    && SystemClock.elapsedRealtime() - firstRemovalAttempt < 60000);
             mLockCredentialSet = false;
         }
 
