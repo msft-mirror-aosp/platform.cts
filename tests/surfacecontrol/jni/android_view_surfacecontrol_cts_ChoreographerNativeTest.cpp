@@ -576,7 +576,8 @@ android_view_surfacecontrol_cts_ChoreographerNativeTest_testRefreshRateCallbacks
             ASSERT(j < numTries - 1, "No callback observed for run: %d", i);
         }
     }
-    AChoreographer_unregisterRefreshRateCallback(choreographer, refreshRateCallback, &cb);
+    AChoreographer_unregisterRefreshRateCallback(choreographer,
+                                                 refreshRateCallbackWithDisplayManager, &cb);
 }
 
 static JNINativeMethod gMethods[] = {
