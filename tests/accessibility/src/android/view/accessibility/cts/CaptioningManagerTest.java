@@ -21,8 +21,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.anyFloat;
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyFloat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -35,9 +36,13 @@ import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.content.res.Resources;
 import android.os.ParcelFileDescriptor;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.accessibility.CaptioningManager;
 import android.view.accessibility.CaptioningManager.CaptionStyle;
 import android.view.accessibility.CaptioningManager.CaptioningChangeListener;
+import android.view.accessibility.Flags;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -59,6 +64,9 @@ import java.util.Locale;
  */
 @RunWith(AndroidJUnit4.class)
 public class CaptioningManagerTest {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Rule
     public final AccessibilityDumpOnFailureRule mDumpOnFailureRule =
@@ -85,6 +93,9 @@ public class CaptioningManagerTest {
         putSecureSetting("odi_captions_enabled", "0");
         putSecureSetting("odi_captions_volume_ui_enabled", "0");
         putSecureSetting("accessibility_captioning_enabled", "0");
+        putSecureSetting("accessibility_captioning_easy_reader_enabled", "0");
+
+        deleteSecureSetting("accessibility_captioning_locale");
 
         // Remove all system dialogs and go back home
         ActivityLaunchUtils.homeScreenOrBust(mInstrumentation.getContext(), mUiAutomation);
@@ -222,6 +233,107 @@ public class CaptioningManagerTest {
             mUiAutomation.dropShellPermissionIdentity();
             putSecureSetting("odi_captions_enabled", "0");
             putSecureSetting("odi_captions_volume_ui_enabled", "0");
+        }
+    }
+
+    private boolean isEasyReaderSupported() {
+        Resources resources = mInstrumentation.getTargetContext().getResources();
+        int resourceId =
+                resources.getIdentifier("config_easyReaderCaptionsSupported", "bool", "android");
+        boolean isEasyReaderSupported = false;
+        try {
+            isEasyReaderSupported = resources.getBoolean(resourceId);
+        } catch (Resources.NotFoundException e) {
+            // If the resource isn't defined then the return value should be false
+        }
+        return isEasyReaderSupported;
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CAPTIONS_EASY_READER)
+    public void testEasyReaderCaptions_getLocale_singleVariant() {
+        assumeTrue(isEasyReaderSupported());
+
+        Locale locale;
+        putSecureSetting("accessibility_captioning_locale", "ja_JP");
+
+        // Easy Reader enabled.
+        putSecureSetting("accessibility_captioning_easy_reader_enabled", "1");
+        locale = mManager.getLocale();
+        assertNotNull(locale);
+        assertEquals("simple", locale.getVariant());
+
+        // Easy Reader disabled.
+        putSecureSetting("accessibility_captioning_easy_reader_enabled", "0");
+        locale = mManager.getLocale();
+        assertNotNull(locale);
+        assertEquals("", locale.getVariant());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CAPTIONS_EASY_READER)
+    public void testEasyReaderCaptions_getLocale_singleVariant_defaultLanguage() {
+        assumeTrue(isEasyReaderSupported());
+
+        Locale locale;
+        // Not setting a language = default/system language.
+        assertNull(mManager.getLocale());
+
+        // Easy Reader enabled.
+        putSecureSetting("accessibility_captioning_easy_reader_enabled", "1");
+        locale = mManager.getLocale();
+        assertNotNull(locale);
+        assertEquals("simple", locale.getVariant());
+
+        // Easy Reader disabled.
+        putSecureSetting("accessibility_captioning_easy_reader_enabled", "0");
+        locale = mManager.getLocale();
+        // No locale should be set if the default locale is used.
+        assertNull(locale);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CAPTIONS_EASY_READER)
+    public void testEasyReaderCaptions_getLocale_multipleVariants() {
+        assumeTrue(isEasyReaderSupported());
+
+        Locale locale;
+        putSecureSetting("accessibility_captioning_locale", "de_DE_1996");
+
+        // Easy Reader enabled.
+        putSecureSetting("accessibility_captioning_easy_reader_enabled", "1");
+        locale = mManager.getLocale();
+        assertNotNull(locale);
+        assertEquals("1996_simple", locale.getVariant());
+
+        // Easy Reader disabled.
+        putSecureSetting("accessibility_captioning_easy_reader_enabled", "0");
+        locale = mManager.getLocale();
+        assertNotNull(locale);
+        assertEquals("1996", locale.getVariant());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CAPTIONS_EASY_READER)
+    public void testEasyReaderCaptions_changeListener_getLocaleUpdate() {
+        assumeTrue(isEasyReaderSupported());
+
+        putSecureSetting("accessibility_captioning_locale", "ja_JP");
+
+        CaptioningChangeListener mockListener = mock(CaptioningChangeListener.class);
+        mManager.addCaptioningChangeListener(mockListener);
+
+        try {
+            // Easy Reader disabled.
+            putSecureSetting("accessibility_captioning_easy_reader_enabled", "1");
+            verify(mockListener, timeout(LISTENER_TIMEOUT)).onLocaleChanged(any());
+            Mockito.clearInvocations(mockListener);
+
+            // Easy Reader disabled.
+            putSecureSetting("accessibility_captioning_easy_reader_enabled", "0");
+            verify(mockListener, timeout(LISTENER_TIMEOUT)).onLocaleChanged(any());
+        } finally {
+            mManager.removeCaptioningChangeListener(mockListener);
         }
     }
 
