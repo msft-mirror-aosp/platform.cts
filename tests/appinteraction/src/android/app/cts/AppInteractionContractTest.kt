@@ -20,6 +20,7 @@ import android.Manifest
 import android.app.AppInteractionContract
 import android.app.UiAutomation
 import android.app.appfunctions.flags.Flags.FLAG_ENABLE_APP_INTERACTION_API
+import android.app.appfunctions.flags.Flags.FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2
 import android.content.ContentResolver
 import android.content.Context
 import android.content.pm.ApplicationInfo
@@ -67,9 +68,9 @@ class AppInteractionContractTest {
         uiAutomation = InstrumentationRegistry.getInstrumentation().uiAutomation
     }
 
-    @ApiTest(apis = ["android.app.AppInteractionContracts#getInteractionHistoryUriAsUser"])
+    @ApiTest(apis = ["android.app.AppInteractionContract#getInteractionHistoryUriAsUser"])
     @EnsureDoesNotHavePermission(
-        value = [READ_APP_INTERACTION_PERMISSION, INTERACT_ACROSS_USERS_FULL_PERMISSION]
+        value = [Manifest.permission.READ_APP_INTERACTION, Manifest.permission.INTERACT_ACROSS_USERS_FULL]
     )
     @Test
     fun queryAppInteractionHistory_withoutReadPermission_shouldFail() = doBlocking {
@@ -80,8 +81,8 @@ class AppInteractionContractTest {
         }
     }
 
-    @ApiTest(apis = ["android.app.AppInteractionContracts#getInteractionHistoryUriAsUser"])
-    @EnsureHasPermission(READ_APP_INTERACTION_PERMISSION)
+    @ApiTest(apis = ["android.app.AppInteractionContract#getInteractionHistoryUriAsUser"])
+    @EnsureHasPermission(Manifest.permission.READ_APP_INTERACTION)
     @Test
     fun queryAppInteractionHistory_withInvalidUriType_shouldFail() = doBlocking {
         assertFailsWith<IllegalArgumentException> {
@@ -110,9 +111,9 @@ class AppInteractionContractTest {
         }
     }
 
-    @ApiTest(apis = ["android.app.AppInteractionContracts#getInteractionHistoryUriAsUser"])
-    @EnsureHasPermission(READ_APP_INTERACTION_PERMISSION)
-    @EnsureDoesNotHavePermission(INTERACT_ACROSS_USERS_FULL_PERMISSION)
+    @ApiTest(apis = ["android.app.AppInteractionContract#getInteractionHistoryUriAsUser"])
+    @EnsureHasPermission(Manifest.permission.READ_APP_INTERACTION)
+    @EnsureDoesNotHavePermission(Manifest.permission.INTERACT_ACROSS_USERS_FULL)
     @EnsureHasNoDeviceOwner
     @EnsureHasAdditionalUser
     @IncludeRunOnPrimaryUser
@@ -132,7 +133,50 @@ class AppInteractionContractTest {
         }
     }
 
-    @ApiTest(apis = ["android.app.AppInteractionContracts#getDeviceAssistancePackageNames"])
+    @ApiTest(apis = ["android.app.AppInteractionContract#getDeviceAssistancePackageNames"])
+    @EnsureDoesNotHavePermission(
+        value =
+            [
+                Manifest.permission.EXECUTE_APP_FUNCTIONS,
+                Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM,
+                Manifest.permission.READ_APP_INTERACTION,
+            ]
+    )
+    @Test
+    fun getDeviceAssistancePackageNames_withoutPermission_shouldFail() = doBlocking {
+        assertFailsWith<SecurityException> {
+            val unused = AppInteractionContract.getDeviceAssistancePackageNames(context)
+        }
+    }
+
+    @ApiTest(apis = ["android.app.AppInteractionContract#getDeviceAssistancePackageNames"])
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
+    @Test
+    fun getDeviceAssistancePackageNames_withExecuteAppFunctionsPermission_shouldSucceed() {
+        getDeviceAssistancePackageNames_withPermission_shouldSucceed_base()
+    }
+
+    @ApiTest(apis = ["android.app.AppInteractionContract#getDeviceAssistancePackageNames"])
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM)
+    @RequiresFlagsEnabled(FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
+    @Test
+    fun getDeviceAssistancePackageNames_withExecuteAppFunctionsSystemPermission_shouldSucceed() {
+        getDeviceAssistancePackageNames_withPermission_shouldSucceed_base()
+    }
+
+    @ApiTest(apis = ["android.app.AppInteractionContract#getDeviceAssistancePackageNames"])
+    @EnsureHasPermission(Manifest.permission.READ_APP_INTERACTION)
+    @Test
+    fun getDeviceAssistancePackageNames_withReadAppInteractionPermission_shouldSucceed() {
+        getDeviceAssistancePackageNames_withPermission_shouldSucceed_base()
+    }
+
+    fun getDeviceAssistancePackageNames_withPermission_shouldSucceed_base() {
+        val unused = AppInteractionContract.getDeviceAssistancePackageNames(context)
+    }
+
+    @ApiTest(apis = ["android.app.AppInteractionContract#getDeviceAssistancePackageNames"])
+    @EnsureHasPermission(Manifest.permission.READ_APP_INTERACTION)
     @Test
     fun getDeviceAssistancePackageNames_shouldAllBeSystemApps() {
         val packages: List<String> = AppInteractionContract.getDeviceAssistancePackageNames(context)
@@ -169,9 +213,5 @@ class AppInteractionContractTest {
 
     private companion object {
         @JvmField @ClassRule @Rule val sDeviceState: DeviceState = DeviceState()
-
-        const val READ_APP_INTERACTION_PERMISSION = Manifest.permission.READ_APP_INTERACTION
-        const val INTERACT_ACROSS_USERS_FULL_PERMISSION =
-            Manifest.permission.INTERACT_ACROSS_USERS_FULL
     }
 }
