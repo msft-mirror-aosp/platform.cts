@@ -285,6 +285,24 @@ public class CarrierConfigManagerTest {
             assertFalse("KEY_EMERGENCY_MESSAGING_SUPPORTED_BOOL "
                             + "doesn't match static default.",
                     config.getBoolean(KEY_EMERGENCY_MESSAGING_SUPPORTED_BOOL));
+            if (Flags.emergencyMessagingRoutingForInternationalRoaming()) {
+                PersistableBundle emergencyMessagingProviderBundle =
+                        config.getPersistableBundle(
+                                CarrierConfigManager
+                                        .KEY_CARRIER_ROAMING_SATELLITE_EMERGENCY_MESSAGING_PROVIDER_PER_COUNTRY_BUNDLE);
+                assertTrue(
+                        "KEY_CARRIER_ROAMING_SATELLITE_EMERGENCY_MESSAGING_PROVIDER_PER_COUNTRY_BUNDLE"
+                            + " doesn't match static default.",
+                        emergencyMessagingProviderBundle.isEmpty());
+
+                assertEquals(
+                        "KEY_CARRIER_ROAMING_SATELLITE_EMERGENCY_MESSAGING_REDIRECTION_DESTINATION_STRINGdoesn't"
+                            + " match static default.",
+                        config.getString(
+                                CarrierConfigManager
+                                        .KEY_CARRIER_ROAMING_SATELLITE_EMERGENCY_MESSAGING_REDIRECTION_DESTINATION_STRING),
+                        "");
+            }
             assertEquals("KEY_EMERGENCY_CALL_TO_SATELLITE_T911_HANDOVER_TIMEOUT_MILLIS_INT "
                             + "doesn't match static default.",
                     config.getInt(KEY_EMERGENCY_CALL_TO_SATELLITE_T911_HANDOVER_TIMEOUT_MILLIS_INT),
