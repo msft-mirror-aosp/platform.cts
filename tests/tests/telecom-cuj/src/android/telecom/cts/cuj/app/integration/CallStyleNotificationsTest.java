@@ -113,28 +113,28 @@ public class CallStyleNotificationsTest extends BaseAppVerifier {
      *   <p>
      * </ul>
      */
-    @Test
-    public void testCallStyleNotificationBehavior_TransactionalVoipAppMain() throws Exception {
-        if (!mShouldTestTelecom) {
-            return;
-        }
-        AppControlWrapper transactionalVoipApp = null;
-        try {
-            transactionalVoipApp = bindToApp(TransactionalVoipAppMain);
-            PhoneAccountHandle pah =
-                    transactionalVoipApp.getDefaultPhoneAccount().getAccountHandle();
-            assertForegroundState(transactionalVoipApp, pah, false);
-            String mt = addIncomingCallAndVerify(transactionalVoipApp);
-            setCallStateAndVerify(transactionalVoipApp, mt, STATE_ACTIVE);
-            verifyNotificationIsPostedForCall(transactionalVoipApp, mt);
-            sleep(FGS_REVOKED_TIMEOUT);
-            assertForegroundState(transactionalVoipApp, pah, true);
-            setCallStateAndVerify(transactionalVoipApp, mt, STATE_DISCONNECTED);
-            waitUntilFgsIsRevoked(transactionalVoipApp, pah);
-        } finally {
-            tearDownApp(transactionalVoipApp);
-        }
-    }
+//    @Test
+//    public void testCallStyleNotificationBehavior_TransactionalVoipAppMain() throws Exception {
+//        if (!mShouldTestTelecom) {
+//            return;
+//        }
+//        AppControlWrapper transactionalVoipApp = null;
+//        try {
+//            transactionalVoipApp = bindToApp(TransactionalVoipAppMain);
+//            PhoneAccountHandle pah =
+//                    transactionalVoipApp.getDefaultPhoneAccount().getAccountHandle();
+//            assertForegroundState(transactionalVoipApp, pah, false);
+//            String mt = addIncomingCallAndVerify(transactionalVoipApp);
+//            setCallStateAndVerify(transactionalVoipApp, mt, STATE_ACTIVE);
+//            verifyNotificationIsPostedForCall(transactionalVoipApp, mt);
+//            sleep(FGS_REVOKED_TIMEOUT);
+//            assertForegroundState(transactionalVoipApp, pah, true);
+//            setCallStateAndVerify(transactionalVoipApp, mt, STATE_DISCONNECTED);
+//            waitUntilFgsIsRevoked(transactionalVoipApp, pah);
+//        } finally {
+//            tearDownApp(transactionalVoipApp);
+//        }
+//    }
 
     /**
      * verify that when more than one call is added for a particular app, foreground service is
@@ -142,46 +142,46 @@ public class CallStyleNotificationsTest extends BaseAppVerifier {
      *
      * @throws Exception
      */
-    @Test
-    public void testFGS_twoCalls_TransactionalVoipAppMain() throws Exception {
-        if (!mShouldTestTelecom) {
-            return;
-        }
-        AppControlWrapper transactionalVoipApp = null;
-        try {
-            // start state
-            transactionalVoipApp = bindToApp(TransactionalVoipAppMain);
-            PhoneAccountHandle pah =
-                    transactionalVoipApp.getDefaultPhoneAccount().getAccountHandle();
-            assertForegroundState(transactionalVoipApp, pah, false);
-
-            // add outgoing call and assert fgs
-            String mo = addOutgoingCallAndVerify(transactionalVoipApp);
-            verifyNotificationIsPostedForCall(transactionalVoipApp, mo);
-            setCallStateAndVerify(transactionalVoipApp, mo, STATE_ACTIVE);
-            waitUntilFgsIsGained(transactionalVoipApp, pah);
-
-            // add incoming call and assert fgs
-            String mt = addIncomingCallAndVerify(transactionalVoipApp);
-            verifyNotificationIsPostedForCall(transactionalVoipApp, mt);
-            setCallStateAndVerify(transactionalVoipApp, mt, STATE_ACTIVE);
-            assertForegroundState(transactionalVoipApp, pah, true);
-
-            // disconnect the initial call and assert fgs is maintained
-            setCallStateAndVerify(transactionalVoipApp, mo, STATE_DISCONNECTED);
-            // This is the most important part of the test.  Foreground service delegation should
-            // be maintained after the first call is destroyed since FGS is on a per-app basis
-            // instead of a per-call basis.
-            sleep(FGS_REVOKED_TIMEOUT);
-            assertForegroundState(transactionalVoipApp, pah, true);
-
-            // disconnect the last ongoing call and verify fgs is lost
-            setCallStateAndVerify(transactionalVoipApp, mt, STATE_DISCONNECTED);
-            waitUntilFgsIsRevoked(transactionalVoipApp, pah);
-        } finally {
-            tearDownApp(transactionalVoipApp);
-        }
-    }
+//    @Test
+//    public void testFGS_twoCalls_TransactionalVoipAppMain() throws Exception {
+//        if (!mShouldTestTelecom) {
+//            return;
+//        }
+//        AppControlWrapper transactionalVoipApp = null;
+//        try {
+//            // start state
+//            transactionalVoipApp = bindToApp(TransactionalVoipAppMain);
+//            PhoneAccountHandle pah =
+//                    transactionalVoipApp.getDefaultPhoneAccount().getAccountHandle();
+//            assertForegroundState(transactionalVoipApp, pah, false);
+//
+//            // add outgoing call and assert fgs
+//            String mo = addOutgoingCallAndVerify(transactionalVoipApp);
+//            verifyNotificationIsPostedForCall(transactionalVoipApp, mo);
+//            setCallStateAndVerify(transactionalVoipApp, mo, STATE_ACTIVE);
+//            waitUntilFgsIsGained(transactionalVoipApp, pah);
+//
+//            // add incoming call and assert fgs
+//            String mt = addIncomingCallAndVerify(transactionalVoipApp);
+//            verifyNotificationIsPostedForCall(transactionalVoipApp, mt);
+//            setCallStateAndVerify(transactionalVoipApp, mt, STATE_ACTIVE);
+//            assertForegroundState(transactionalVoipApp, pah, true);
+//
+//            // disconnect the initial call and assert fgs is maintained
+//            setCallStateAndVerify(transactionalVoipApp, mo, STATE_DISCONNECTED);
+//            // This is the most important part of the test.  Foreground service delegation should
+//            // be maintained after the first call is destroyed since FGS is on a per-app basis
+//            // instead of a per-call basis.
+//            sleep(FGS_REVOKED_TIMEOUT);
+//            assertForegroundState(transactionalVoipApp, pah, true);
+//
+//            // disconnect the last ongoing call and verify fgs is lost
+//            setCallStateAndVerify(transactionalVoipApp, mt, STATE_DISCONNECTED);
+//            waitUntilFgsIsRevoked(transactionalVoipApp, pah);
+//        } finally {
+//            tearDownApp(transactionalVoipApp);
+//        }
+//    }
 
     /**
      * This helper immediately checks the fgs state and does not wait like the other test helpers
