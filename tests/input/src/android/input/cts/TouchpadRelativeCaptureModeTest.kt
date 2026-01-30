@@ -87,7 +87,6 @@ class TouchpadRelativeCaptureModeTest {
 
         WindowUtil.waitForFocus(activity)
         activity.ensurePointerCaptured(View.POINTER_CAPTURE_MODE_RELATIVE)
-        // TODO(b/411389468): enable InputVerifier to check the captured pointer events produced.
     }
 
     @After

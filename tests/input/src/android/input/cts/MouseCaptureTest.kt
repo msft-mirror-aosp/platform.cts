@@ -82,7 +82,6 @@ class MouseCaptureTest {
 
         WindowUtil.waitForFocus(activity)
         activity.ensurePointerCaptured()
-        // TODO(b/411389468): enable InputVerifier to check the captured pointer events produced.
     }
 
     @After
