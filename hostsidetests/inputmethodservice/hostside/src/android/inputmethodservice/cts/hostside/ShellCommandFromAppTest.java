@@ -43,6 +43,7 @@ public class ShellCommandFromAppTest extends BaseHostJUnit4Test {
     private void runDeviceTestMethodWithoutHiddenApiCheck(TestInfo testInfo, boolean instant)
             throws Exception {
         if (instant) {
+            uninstallPackage(DeviceTestConstants.PACKAGE);
             installPackage(DeviceTestConstants.APK, "-r", "--instant");
         } else {
             installPackage(DeviceTestConstants.APK, "-r");
