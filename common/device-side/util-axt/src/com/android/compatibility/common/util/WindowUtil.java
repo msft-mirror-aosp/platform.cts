@@ -19,6 +19,11 @@ package com.android.compatibility.common.util;
 import android.app.Activity;
 import android.view.Window;
 
+import androidx.annotation.NonNull;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class WindowUtil {
     /**
      * The timeout in milliseconds to wait for window focus in
@@ -35,7 +40,12 @@ public class WindowUtil {
         PollingCheck.waitFor(
                 WINDOW_FOCUS_TIMEOUT_MILLIS,
                 activity::hasWindowFocus,
-                "Timed out waiting for activity " + activity.getComponentName() + " to gain focus");
+                () ->
+                        "Timed out waiting for activity "
+                                + activity.getComponentName()
+                                + " to gain focus; "
+                                + getFocusedWindowName(activity.getDisplayId())
+                                + " was focused instead");
     }
 
     /**
@@ -46,8 +56,41 @@ public class WindowUtil {
         PollingCheck.waitFor(
                 WINDOW_FOCUS_TIMEOUT_MILLIS,
                 window.getDecorView()::hasWindowFocus,
-                "Timed out waiting for window "
-                        + window.getAttributes().getTitle()
-                        + " to gain focus");
+                () ->
+                        "Timed out waiting for window "
+                                + window.getAttributes().getTitle()
+                                + " to gain focus; "
+                                + getFocusedWindowName(window.getContext().getDisplayId())
+                                + " was focused instead");
+    }
+
+    /**
+     * Parses the Input Dispatcher dump to determine what window currently has focus.
+     *
+     * @param displayId the ID of the display to query
+     * @return a window name, or a comma-separated list of window names if there are multiple
+     *     displays.
+     */
+    private static @NonNull String getFocusedWindowName(int displayId) {
+        String dumpsysInput = SystemUtil.runShellCommandOrThrow("dumpsys input");
+        Pattern startLinePattern = Pattern.compile("\\s*FocusedWindows:");
+        Pattern displayLinePattern = Pattern.compile("\\s*displayId=(\\d+), name='([^']*)'");
+        boolean inSection = false;
+        for (String line : dumpsysInput.split("\\n")) {
+            if (inSection) {
+                Matcher match = displayLinePattern.matcher(line);
+                if (!match.matches()) {
+                    // We've reached the end of the section.
+                    break;
+                }
+                if (Integer.parseInt(match.group(1)) == displayId) {
+                    String name = match.group(2);
+                    return name != null ? name : "<unnamed window>";
+                }
+            } else if (startLinePattern.matcher(line).matches()) {
+                inSection = true;
+            }
+        }
+        return "<no window>";
     }
 }
