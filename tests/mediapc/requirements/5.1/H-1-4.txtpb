@@ -18,6 +18,46 @@ id: "5.1/H-1-4"
 name: "Concurrent Video Encoder Sessions"
 description: "Concurrent video encoder sessions"
 specs {
+  key: 10
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_10
+    specification:
+      "MUST support 2 instances of hardware video encoder sessions (AVC or "
+      "HEVC) in any codec combination running concurrently at 720p "
+      "resolution@30 fps."
+    required_values {
+      key: "concurrent_fps"
+      value {
+        double_value: 57.0
+      }
+    }
+    required_values {
+      key: "resolution"
+      value {
+        int_value: 720
+      }
+    }
+    variant_specs {
+      key: "byte_buffer_mode"
+      value {
+        required_values {
+          key: "concurrent_fps"
+          value {
+            double_value: 0.0
+          }
+        }
+        required_values {
+          key: "resolution"
+          value {
+            int_value: 720
+          }
+        }
+      }
+    }
+    test_config_id: "720p"
+  }
+}
+specs {
   key: 30
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_11

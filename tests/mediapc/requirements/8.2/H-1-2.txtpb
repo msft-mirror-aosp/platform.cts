@@ -18,6 +18,19 @@ id: "8.2/H-1-2"
 name: "Random Write"
 description: "- Random write"
 specs {
+  key: 10
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_10
+    specification: "MUST ensure a random write performance of at least 5 MB/s."
+    required_values {
+      key: "filesystem_io_rate_mbps"
+      value {
+        double_value: 5.0
+      }
+    }
+  }
+}
+specs {
   key: 30
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_11
