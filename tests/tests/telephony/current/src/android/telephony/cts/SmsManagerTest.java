@@ -207,6 +207,10 @@ public class SmsManagerTest {
                     INTERACT_ACROSS_USERS,
                     MANAGE_PROFILE_AND_DEVICE_OWNERS);
 
+    // Stores Uri of all the messages which are inserted into the DB during the tests and used to
+    // clean up these messages after tests.
+    private List<Uri> mInsertedMessageUris = new ArrayList<>();
+
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
@@ -305,6 +309,9 @@ public class SmsManagerTest {
         }
         if (!TextUtils.isEmpty(mOriginalDefaultSmsApp)) {
             assertTrue(DefaultSmsAppHelper.setDefaultSmsApp(getContext(), mOriginalDefaultSmsApp));
+        }
+        if (!mInsertedMessageUris.isEmpty()) {
+            cleanupMessages(mInsertedMessageUris);
         }
     }
 
@@ -562,6 +569,7 @@ public class SmsManagerTest {
 
     private Uri insertTextMessage(String text) {
         try {
+            // Set default SMS app so that we can write the message to the DB.
             DefaultSmsAppHelper.ensureDefaultSmsApp();
             ContentValues values = new ContentValues();
             values.put(Telephony.Sms.ADDRESS, mDestAddr);
@@ -569,9 +577,30 @@ public class SmsManagerTest {
             Uri messageUri =
                     mContext.getContentResolver().insert(Telephony.Sms.Draft.CONTENT_URI, values);
             assertNotNull("Failed to insert SMS into provider", messageUri);
+            mInsertedMessageUris.add(messageUri);
             return messageUri;
         } finally {
+            // Remove SMS role after attempting to write the message to the draft folder.
             DefaultSmsAppHelper.stopBeingDefaultSmsApp();
+        }
+    }
+
+    private void cleanupMessages(List<Uri> messageUris) {
+        try {
+            // Set default SMS app so that we can delete the messages from the DB.
+            DefaultSmsAppHelper.ensureDefaultSmsApp();
+            ContentResolver contentResolver = mContext.getContentResolver();
+            int deletedRows = 0;
+            for (Uri messageUri : messageUris) {
+                deletedRows += contentResolver.delete(messageUri, null, null);
+            }
+            if (deletedRows != messageUris.size()) {
+                Log.e(TAG, "Failed to delete " + (messageUris.size() - deletedRows) + " messages");
+            }
+        } finally {
+            // Remove SMS role after deleting the messages from the db.
+            DefaultSmsAppHelper.stopBeingDefaultSmsApp();
+            messageUris.clear();
         }
     }
 
