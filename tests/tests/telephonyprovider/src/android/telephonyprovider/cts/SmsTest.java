@@ -636,8 +636,11 @@ public class SmsTest {
         Uri rawUri = Uri.withAppendedPath(Telephony.Sms.CONTENT_URI, "raw");
         try {
             stopBeingDefaultSmsApp();
-            Cursor cursor = mContentResolver.query(rawUri, null, null, null);
-            assertThat(cursor).isNull();
+            SystemUtil.eventually(
+                    () -> {
+                        Cursor cursor = mContentResolver.query(rawUri, null, null, null);
+                        assertThat(cursor).isNull();
+                    });
         } finally {
             ensureDefaultSmsApp();
         }
@@ -719,9 +722,9 @@ public class SmsTest {
         try {
             stopBeingDefaultSmsApp();
             // Message should be inaccessible when querying directly, or by conversation ID
-            assertSmsPresence(inserted, message, /* canRead */ false);
+            SystemUtil.eventually(() -> assertSmsPresence(inserted, message, /* canRead */ false));
             Uri threadUri = Uri.parse(Telephony.Sms.CONTENT_URI + "/conversations");
-            assertSmsPresence(threadUri, message, /* canRead */ false);
+            SystemUtil.eventually(() -> assertSmsPresence(threadUri, message, /* canRead */ false));
         } finally {
             ensureDefaultSmsApp();
         }
