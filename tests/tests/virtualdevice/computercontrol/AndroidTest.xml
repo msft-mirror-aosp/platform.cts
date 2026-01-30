@@ -59,5 +59,6 @@
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.virtualdevice.cts.computercontrol" />
         <option name="runner" value="androidx.test.runner.AndroidJUnitRunner" />
+        <option name="test-timeout" value="5m" />
     </test>
 </configuration>
