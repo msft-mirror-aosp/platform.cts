@@ -113,7 +113,7 @@ package android.telecom {
     method @Deprecated public final long getConnectTimeMillis();
     method public android.telecom.Connection getPrimaryConnection();
     method @NonNull public final String getTelecomCallId();
-    method @FlaggedApi("android.telecom.flags.telecom_mainline_api") public boolean isConferenceState();
+    method @FlaggedApi("android.telecom.flags.telecom_mainline_api") public boolean isMultiparty();
     method @Deprecated public void onAudioStateChanged(android.telecom.AudioState);
     method @RequiresPermission(android.Manifest.permission.MODIFY_PHONE_STATE) public final void setAddress(@NonNull android.net.Uri, int);
     method @FlaggedApi("android.telecom.flags.telecom_mainline_api") @RequiresPermission(android.Manifest.permission.MODIFY_PHONE_STATE) public final void setCallDirection(int);
@@ -136,6 +136,7 @@ package android.telecom {
     method @RequiresPermission(android.Manifest.permission.MODIFY_PHONE_STATE) public final void setConnectTimeMillis(@IntRange(from=0) long);
     method @RequiresPermission(android.Manifest.permission.MODIFY_PHONE_STATE) public final void setConnectionStartElapsedRealtimeMillis(long);
     method public void setPhoneAccountHandle(@NonNull android.telecom.PhoneAccountHandle);
+    method @FlaggedApi("android.telecom.flags.telecom_mainline_api") public final void setSupportedAudioRoutes(int);
     method public void setTelecomCallId(@NonNull String);
     field public static final int CAPABILITY_CONFERENCE_HAS_NO_CHILDREN = 2097152; // 0x200000
     field public static final int CAPABILITY_SPEED_UP_MT_AUDIO = 262144; // 0x40000
