@@ -17,9 +17,9 @@
 package android.telephony.cts;
 
 import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertTrue;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import android.app.Instrumentation;
 import android.app.UiAutomation;
@@ -152,8 +152,10 @@ public class DomainSelectionCallingBase {
         // Remove live DomainSelectionService until after these tests are done
         sServiceConnector.clearActiveDomainSelectionService();
 
-        assertTrue(sServiceConnector.connectTestDomainSelectionServiceLocally());
-        assertTrue(sServiceConnector.triggerFrameworkConnectionToTestDomainSelectionService());
+        assertTrue("Failed to connect to test DomainSelectionService locally",
+                sServiceConnector.connectTestDomainSelectionServiceLocally());
+        assertTrue("Failed to trigger framework connection to test DomainSelectionService",
+                sServiceConnector.triggerFrameworkConnectionToTestDomainSelectionService());
 
         UiAutomation ui = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {

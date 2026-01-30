@@ -22,9 +22,9 @@ import static android.telephony.satellite.SatelliteManager.EMERGENCY_CALL_TO_SAT
 import static android.telephony.satellite.SatelliteManager.EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_T911;
 
 import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertTrue;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import android.app.Instrumentation;
 import android.app.PendingIntent;
@@ -272,7 +272,7 @@ public class SatelliteImsCallingBase extends CarrierRoamingSatelliteTestBase {
             + ", radioTech=" + radioTech + ", capabilities=" + capabilities);
         int subId = SubscriptionManager.getSubscriptionId(slotId);
         // Connect to the ImsService with the MmTel feature.
-        assertTrue(
+        assertTrue("Failed to connect to carrier ImsService",
                 sServiceConnector.connectCarrierImsService(
                         new ImsFeatureConfiguration.Builder()
                                 .addFeature(slotId, ImsFeature.FEATURE_MMTEL)
@@ -330,7 +330,8 @@ public class SatelliteImsCallingBase extends CarrierRoamingSatelliteTestBase {
 
     public void isCallActive(Call call, TestImsCallSessionImpl callsession) {
         if (call.getDetails().getState() != Call.STATE_ACTIVE) {
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_ACTIVE, WAIT_FOR_CALL_STATE));
+            assertTrue("Timed out waiting for call state to be Active",
+                    callingTestLatchCountdown(LATCH_IS_CALL_ACTIVE, WAIT_FOR_CALL_STATE));
         }
         assertNotNull("Unable to get callSession, its null", callsession);
 
@@ -354,7 +355,8 @@ public class SatelliteImsCallingBase extends CarrierRoamingSatelliteTestBase {
     }
 
     public void isCallDisconnected(Call call, TestImsCallSessionImpl callsession) {
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTED, WAIT_FOR_CALL_STATE));
+        assertTrue("Timed out waiting for call state to be Disconnected",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTED, WAIT_FOR_CALL_STATE));
         assertNotNull("Unable to get callSession, its null", callsession);
 
         waitUntilConditionIsTrueOrTimeout(
@@ -377,7 +379,8 @@ public class SatelliteImsCallingBase extends CarrierRoamingSatelliteTestBase {
     }
 
     public void isCallHolding(Call call, TestImsCallSessionImpl callsession) {
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_HOLDING, WAIT_FOR_CALL_STATE));
+        assertTrue("Timed out waiting for call state to be Holding",
+                callingTestLatchCountdown(LATCH_IS_CALL_HOLDING, WAIT_FOR_CALL_STATE));
         assertNotNull("Unable to get callSession, its null", callsession);
         waitUntilConditionIsTrueOrTimeout(
                 new Condition() {

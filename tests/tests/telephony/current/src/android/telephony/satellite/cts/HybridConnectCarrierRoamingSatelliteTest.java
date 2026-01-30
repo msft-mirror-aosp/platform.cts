@@ -20,11 +20,10 @@ import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN
 import static android.telephony.satellite.cts.ManualConnectCarrierRoamingSatelliteTest.addCtsPackageToSupportedSmsApps;
 import static android.telephony.satellite.cts.ManualConnectCarrierRoamingSatelliteTest.shouldTestManualConnectCarrierRoaming;
 
-import static junit.framework.Assert.assertTrue;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Notification;
@@ -137,9 +136,13 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
 
         addCtsPackageToSupportedSmsApps(sEsosSubId);
 
-        assertTrue(sMockSatelliteServiceManager.setSatelliteIgnoreCellularServiceState(true));
-        assertTrue(sMockSatelliteServiceManager.setSatelliteTnScanningSupport(false, false, true));
         assertTrue(
+                "Failed to set satellite ignore cellular service state",
+                sMockSatelliteServiceManager.setSatelliteIgnoreCellularServiceState(true));
+        assertTrue(
+                "Failed to set satellite TN scanning support",
+                sMockSatelliteServiceManager.setSatelliteTnScanningSupport(false, false, true));
+        assertTrue("Failed to set support disable satellite while enable in progress",
                 sMockSatelliteServiceManager.setSupportDisableSatelliteWhileEnableInProgress(
                         false, true));
         sMockSatelliteServiceManager.setErrorCode(SatelliteResult.SATELLITE_RESULT_SUCCESS);
@@ -159,9 +162,13 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
         if (!shouldTestManualConnectCarrierRoaming()) return;
         assumeTrue(sMockSatelliteServiceManager != null);
 
-        assertTrue(sMockSatelliteServiceManager.setSatelliteIgnoreCellularServiceState(false));
-        assertTrue(sMockSatelliteServiceManager.setSatelliteTnScanningSupport(true, false, false));
         assertTrue(
+                "Failed to reset satellite ignore cellular service state",
+                sMockSatelliteServiceManager.setSatelliteIgnoreCellularServiceState(false));
+        assertTrue(
+                "Failed to reset satellite TN scanning support",
+                sMockSatelliteServiceManager.setSatelliteTnScanningSupport(true, false, false));
+        assertTrue("Failed to reset support disable satellite while enable in progress",
                 sMockSatelliteServiceManager.setSupportDisableSatelliteWhileEnableInProgress(
                         true, false));
 
@@ -195,15 +202,15 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
                 sSatelliteManager.registerForModemStateChanged(
                         getContext().getMainExecutor(), callback);
         assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
-        assertTrue(callback.waitUntilResult(1));
+        assertTrue("Timed out waiting for modem state change result", callback.waitUntilResult(1));
         callback.clearModemStates();
 
         adoptShellIdentity();
         sTelephonyManager.registerTelephonyCallback(getContext().getMainExecutor(), listener);
         try {
             // Get NTN mode immediately after registering
-            assertTrue(listener.waitForModeChanged(1));
-            assertTrue(listener.getNtnMode());
+            assertTrue("Timed out waiting for NTN mode change", listener.waitForModeChanged(1));
+            assertTrue("Failed to verify NTN mode is enabled", listener.getNtnMode());
             assertEquals(SatelliteModemState.SATELLITE_MODEM_STATE_OFF, callback.modemState);
             listener.clearModeChanges();
 
@@ -214,14 +221,16 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
             listener.clearModeChanges();
 
             // Callback is received after hysteresis timeout
-            assertTrue(listener.waitForModeChanged(1));
+            assertTrue(
+                    "Timed out waiting for NTN mode change after hysteresis",
+                    listener.waitForModeChanged(1));
             assertFalse(listener.getNtnMode());
             assertEquals(SatelliteModemState.SATELLITE_MODEM_STATE_OFF, callback.modemState);
 
             // Move back to satellite in service mode
             sMockModemManager.changeNetworkService(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_FET, true);
-            assertTrue(listener.waitForModeChanged(1));
-            assertTrue(listener.getNtnMode());
+            assertTrue("Timed out waiting for NTN mode change", listener.waitForModeChanged(1));
+            assertTrue("Failed to verify NTN mode is enabled", listener.getNtnMode());
             assertEquals(SatelliteModemState.SATELLITE_MODEM_STATE_OFF, callback.modemState);
             listener.clearModeChanges();
         } finally {
@@ -248,7 +257,7 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
                 sSatelliteManager.registerForModemStateChanged(
                         getContext().getMainExecutor(), callback);
         assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
-        assertTrue(callback.waitUntilResult(1));
+        assertTrue("Timed out waiting for modem state change result", callback.waitUntilResult(1));
         callback.clearModemStates();
 
         adoptShellIdentity();
@@ -260,9 +269,10 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
             // Send satellite modem to in service
             sMockSatelliteServiceManager.sendOnSatelliteModemStateChanged(
                     SatelliteModemState.SATELLITE_MODEM_STATE_IN_SERVICE);
-            assertTrue(callback.waitUntilResult(1));
-            assertTrue(listener.waitForModeChanged(1));
-            assertTrue(listener.getNtnMode());
+            assertTrue(
+                    "Timed out waiting for modem state change result", callback.waitUntilResult(1));
+            assertTrue("Timed out waiting for NTN mode change", listener.waitForModeChanged(1));
+            assertTrue("Failed to verify NTN mode is enabled", listener.getNtnMode());
             listener.clearModeChanges();
             assertEquals(SatelliteModemState.SATELLITE_MODEM_STATE_IN_SERVICE, callback.modemState);
 
@@ -274,7 +284,8 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
                     SatelliteModemState.SATELLITE_MODEM_STATE_OUT_OF_SERVICE);
 
             // Callback is received after hysteresis timeout
-            assertTrue(callback.waitUntilResult(1));
+            assertTrue(
+                    "Timed out waiting for modem state change result", callback.waitUntilResult(1));
             //            assertTrue(listener.waitForModeChanged(1));
             assertFalse(listener.getNtnMode());
             assertEquals(
@@ -283,7 +294,7 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
             // Clean up
             listener.clearModeChanges();
             moveSatelliteToOffState();
-            assertTrue(callback.waitUntilModemOff());
+            assertTrue("Timed out waiting for modem to power off", callback.waitUntilModemOff());
             assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
         } finally {
             sTelephonyManager.unregisterTelephonyCallback(listener);
@@ -311,8 +322,10 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
                         getContext().getMainExecutor(), ntnStateListener);
 
                 setUp_AutoConnect(true);
-                assertTrue(ntnStateListener.waitForModeChanged(1));
-                assertTrue(ntnStateListener.getNtnMode());
+                assertTrue(
+                        "Timed out waiting for NTN mode change",
+                        ntnStateListener.waitForModeChanged(1));
+                assertTrue("Failed to verify NTN mode is enabled", ntnStateListener.getNtnMode());
 
                 Context context = getContext();
                 String expectedTitle = context.getString(R.string.satellite_notification_title);
@@ -373,8 +386,10 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
                     getContext().getMainExecutor(), ntnStateListener);
 
             setUp_AutoConnect(true);
-            assertTrue(ntnStateListener.waitForModeChanged(1));
-            assertTrue(ntnStateListener.getNtnMode());
+            assertTrue(
+                    "Timed out waiting for NTN mode change",
+                    ntnStateListener.waitForModeChanged(1));
+            assertTrue("Failed to verify NTN mode is enabled", ntnStateListener.getNtnMode());
             ntnStateListener.clearModeChanges();
             // triggers the satellite notification
 
@@ -404,7 +419,9 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
             ntnStateListener.clearModeChanges();
 
             // Callback is received after hysteresis timeout
-            assertTrue(ntnStateListener.waitForModeChanged(1));
+            assertTrue(
+                    "Timed out waiting for NTN mode change after hysteresis",
+                    ntnStateListener.waitForModeChanged(1));
             assertFalse(ntnStateListener.getNtnMode());
 
             try (NotificationListener dismissListener = TestApis.notifications().createListener()) {

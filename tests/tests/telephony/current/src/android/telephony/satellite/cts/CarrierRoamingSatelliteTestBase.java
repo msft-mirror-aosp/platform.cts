@@ -23,12 +23,11 @@ import static com.android.internal.telephony.satellite.SatelliteController.TIMEO
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static junit.framework.Assert.assertTrue;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
@@ -219,7 +218,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         MockModemManager.enforceMockModemDeveloperSetting();
         sMockModemManager = new MockModemManager();
         assertNotNull(sMockModemManager);
-        assertTrue(sMockModemManager.connectMockModemService());
+        assertTrue("Failed to connect to mock modem service",
+                sMockModemManager.connectMockModemService());
 
         sWifiStateReceiver = new WifiStateReceiver();
         IntentFilter wifiStateIntentFilter = new IntentFilter();
@@ -231,7 +231,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         logd(TAG, "afterAllCarrierRoamingTestsBase");
 
         if (sMockModemManager != null) {
-            assertTrue(sMockModemManager.disconnectMockModemService());
+            assertTrue("Failed to disconnect from mock modem service",
+                    sMockModemManager.disconnectMockModemService());
             sMockModemManager = null;
             TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
         }
@@ -551,7 +552,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         logd(TAG, "setUpAutoConnectTestEnvironment() slotId:" + slotId
             + " profile:" + profile);
 
-        assertTrue(sMockModemManager.insertSimCard(slotId, profile));
+        assertTrue("Failed to insert SIM card",
+                sMockModemManager.insertSimCard(slotId, profile));
         TimeUnit.MILLISECONDS.sleep(TIMEOUT);
 
         int subId = SubscriptionManager.getSubscriptionId(slotId);
@@ -567,7 +569,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
 
             // Enter service
             sMockModemManager.changeNetworkService(slotId, profile, true);
-            assertTrue(serviceStateListener.waitUntilNonTerrestrialNetworkConnected());
+            assertTrue("Timed out waiting for NTN connection",
+                    serviceStateListener.waitUntilNonTerrestrialNetworkConnected());
 
             sTelephonyManager.unregisterTelephonyCallback(serviceStateListener);
         }
@@ -584,7 +587,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
                         + " profile:"
                         + profile);
 
-        assertTrue(sMockModemManager.insertSimCard(slotId, profile));
+        assertTrue("Failed to insert SIM card",
+                sMockModemManager.insertSimCard(slotId, profile));
         TimeUnit.MILLISECONDS.sleep(TIMEOUT);
 
         int subId = SubscriptionManager.getSubscriptionId(slotId);
@@ -601,7 +605,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
 
             // Enter service
             sMockModemManager.changeNetworkService(slotId, profile, true);
-            assertTrue(serviceStateListener.waitUntilNonTerrestrialNetworkConnected());
+            assertTrue("Timed out waiting for NTN connection",
+                    serviceStateListener.waitUntilNonTerrestrialNetworkConnected());
 
             sTelephonyManager.unregisterTelephonyCallback(serviceStateListener);
         }
@@ -622,7 +627,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
                         + ", eSosSimProfileId="
                         + profile);
         // Insert sim card
-        assertTrue(sMockModemManager.insertSimCard(slotId, profile));
+        assertTrue("Failed to insert SIM card",
+                sMockModemManager.insertSimCard(slotId, profile));
         TimeUnit.MILLISECONDS.sleep(TIMEOUT);
 
         logd("HybridTest: insert sim done");
@@ -646,20 +652,22 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
             setupMockSatelliteService();
             sMockSatelliteServiceManager.setSupportedRadioTechnologies(
                     new int[] {NTRadioTechnology.NB_IOT_NTN});
-            assertTrue(sMockSatelliteServiceManager.connectExternalSatelliteGatewayService());
+            assertTrue("Failed to connect to external satellite gateway service",
+                    sMockSatelliteServiceManager.connectExternalSatelliteGatewayService());
             sMockSatelliteServiceManager.setDatagramControllerBooleanConfig(
                     false,
                     DatagramController.BOOLEAN_TYPE_WAIT_FOR_DEVICE_ALIGNMENT_IN_DEMO_DATAGRAM,
                     true);
         }
-        assertTrue(
+        assertTrue("Failed to set satellite controller timeout duration",
                 sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(
                         false,
                         TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS,
                         5));
 
         // Enable CTS mode to ignore the requests from SG-APK and real Pointing UI app.
-        assertTrue(sMockSatelliteServiceManager.setCtsMode(true));
+        assertTrue("Failed to set CTS mode",
+                sMockSatelliteServiceManager.setCtsMode(true));
         sSatelliteManager.setNtnSmsSupported(true);
         setUpSatelliteAccessAllowedAtDefaultTestLocation();
         setUpEsosSubscription(supportCtsSmsApp);
@@ -677,16 +685,19 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
                         sSatelliteManager.registerForModemStateChanged(
                                 getContext().getMainExecutor(), callback);
                 assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
-                assertTrue(callback.waitUntilResult(1));
+                assertTrue("Timed out waiting for modem state change callback",
+                        callback.waitUntilResult(1));
                 requestSatelliteEnabledwithEmergencyMode(
                         true, false, true, SATELLITE_RESULT_SUCCESS);
-                assertTrue(callback.waitUntilModemIdleOrNotConnected());
-                assertTrue(isSatelliteEnabled());
+                assertTrue("Timed out waiting for modem to be idle or not connected",
+                        callback.waitUntilModemIdleOrNotConnected());
+                assertTrue("Satellite should be enabled", isSatelliteEnabled());
                 sSatelliteManager.unregisterForModemStateChanged(callback);
             }
             // Enter service
             sMockModemManager.changeNetworkService(slotId, profile, true);
-            assertTrue(serviceStateListener.waitUntilNonTerrestrialNetworkConnected());
+            assertTrue("Timed out waiting for NTN connection",
+                    serviceStateListener.waitUntilNonTerrestrialNetworkConnected());
 
             sTelephonyManager.unregisterTelephonyCallback(serviceStateListener);
         }
@@ -697,13 +708,15 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         logd(TAG, "setUpMockSim: slotId=" + slotId
             + ", simProfileId=" + simProfileId + ", phoneNumber=" + phoneNumber);
         // Insert sim card
-        assertTrue(sMockModemManager.insertSimCard(slotId, simProfileId));
+        assertTrue("Failed to insert SIM card",
+                sMockModemManager.insertSimCard(slotId, simProfileId));
         TimeUnit.MILLISECONDS.sleep(TIMEOUT);
 
         int subId = SubscriptionManager.getSubscriptionId(slotId);
-        assertTrue(subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+        assertTrue("Subscription ID should be valid",
+                subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
         setPhoneNumber(subId, phoneNumber);
-        assertTrue(isSimReady(slotId));
+        assertTrue("SIM should be ready", isSimReady(slotId));
     }
 
     protected static void cleanUpMockSim(int slotId, int profile,
@@ -738,7 +751,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
                         + connectType
                         + " subId:"
                         + subId);
-        assertTrue(isActiveSubId(subId));
+        assertTrue("Subscription should be active", isActiveSubId(subId));
 
         String satellitePlmn =
                 sMockModemManager.getSimInfo(
@@ -823,7 +836,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
                         + connectType
                         + " subId:"
                         + subId);
-        assertTrue(isActiveSubId(subId));
+        assertTrue("Subscription should be active", isActiveSubId(subId));
 
         String satellitePlmn =
                 sMockModemManager.getSimInfo(
@@ -924,7 +937,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
     protected static void enableSatelliteEntitlementSupport(int subId)
             throws Exception {
         logd(TAG, "enableSatelliteEntitlementSupport subId:" + subId);
-        assertTrue(isActiveSubId(subId));
+        assertTrue("Subscription should be active", isActiveSubId(subId));
 
         PersistableBundle bundle = new PersistableBundle();
         bundle.putBoolean(
@@ -940,7 +953,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
             @NonNull Map<String, List<Integer>> supportedDisasterServices) throws Exception {
         int subId = SubscriptionManager.getSubscriptionId(slotId);
         logd(TAG, "enableEmergencyAndDisasterPlmnsSupport subId:" + subId);
-        assertTrue(isActiveSubId(subId));
+        assertTrue("Subscription should be active", isActiveSubId(subId));
 
         String carrierPlmn = sMockModemManager.getSimInfo(slotId,
                 MockModemConfigBase.SimInfoChangedResult.SIM_INFO_TYPE_MCC_MNC);
@@ -1125,7 +1138,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         logd(TAG, "setUpManualConnectTestEnvironment: eSosSlotId=" + eSosSlotId
             + ", eSosSimProfileId=" + eSosSimProfileId);
         // Insert sim card
-        assertTrue(sMockModemManager.insertSimCard(eSosSlotId, eSosSimProfileId));
+        assertTrue("Failed to insert SIM card",
+                sMockModemManager.insertSimCard(eSosSlotId, eSosSimProfileId));
         TimeUnit.MILLISECONDS.sleep(TIMEOUT);
         if (shouldMoveSimToInService) {
             moveSimToInService(eSosSlotId, eSosSimProfileId);
@@ -1145,18 +1159,19 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
             setupMockSatelliteService();
             sMockSatelliteServiceManager.setSupportedRadioTechnologies(
                 new int[]{NTRadioTechnology.NB_IOT_NTN});
-            assertTrue(
+            assertTrue("Failed to connect to external satellite gateway service",
                 sMockSatelliteServiceManager.connectExternalSatelliteGatewayService());
             sMockSatelliteServiceManager.setDatagramControllerBooleanConfig(
                 false,
                 DatagramController.BOOLEAN_TYPE_WAIT_FOR_DEVICE_ALIGNMENT_IN_DEMO_DATAGRAM,
                 true);
         }
-        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+        assertTrue("Failed to set satellite controller timeout duration",
+                sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
                 TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 5));
 
         // Enable CTS mode to ignore the requests from SG-APK and real Pointing UI app.
-        assertTrue(sMockSatelliteServiceManager.setCtsMode(true));
+        assertTrue("Failed to set CTS mode", sMockSatelliteServiceManager.setCtsMode(true));
         sSatelliteManager.setNtnSmsSupported(true);
         setUpSatelliteAccessAllowedAtDefaultTestLocation();
 
@@ -1177,18 +1192,20 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         long registerResult = sSatelliteManager.registerForModemStateChanged(
                 getContext().getMainExecutor(), callback);
         assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
-        assertTrue(callback.waitUntilResult(1));
+        assertTrue("Timed out waiting for modem state change callback", callback.waitUntilResult(1));
 
         if (isSatelliteEnabled()) {
             logd(TAG, "Disable satellite");
             // Disable satellite modem to clean up all pending resources and reset telephony states.
             requestSatelliteEnabled(false);
-            assertTrue(callback.waitUntilModemOff());
+            assertTrue("Timed out waiting for modem to turn off", callback.waitUntilModemOff());
             assertFalse(isSatelliteEnabled());
         }
 
-        assertTrue(sMockSatelliteServiceManager.restoreSatelliteGatewayServicePackageName());
-        assertTrue(sMockSatelliteServiceManager.restoreSatelliteServicePackageName());
+        assertTrue("Failed to restore gateway service package name",
+                sMockSatelliteServiceManager.restoreSatelliteGatewayServicePackageName());
+        assertTrue("Failed to restore satellite service package name",
+                sMockSatelliteServiceManager.restoreSatelliteServicePackageName());
         waitFor(2000);
         sSatelliteManager.unregisterForModemStateChanged(callback);
         resetSatelliteAccessControlOverlayConfigs();
@@ -1196,13 +1213,15 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         restoreSupportedMsgAppsForSatelliteSubscriptions();
         restoreProvisionedStates();
         restoreEsosSupportForActiveSubscriptions();
-        assertTrue(sMockSatelliteServiceManager
+        assertTrue("Failed to set satellite communication allowed cache",
+                sMockSatelliteServiceManager
                 .setIsSatelliteCommunicationAllowedForCurrentLocationCache(
                         "cache_clear_and_not_allowed"));
         // Disable CTS mode to accept the requests from SG-APK and real Pointing UI app.
-        assertTrue(sMockSatelliteServiceManager.setCtsMode(false));
+        assertTrue("Failed to disable CTS mode", sMockSatelliteServiceManager.setCtsMode(false));
         sSatelliteManager.setNtnSmsSupported(false);
-        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+        assertTrue("Failed to restore satellite controller timeout duration",
+                sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
                 TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 0));
         revokeSatellitePermission();
 
@@ -1229,7 +1248,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
                 logd(TAG, "SIM slot is already in service");
             } else {
                 sMockModemManager.changeNetworkService(slotId, simProfileId, true);
-                assertTrue(serviceStateListener.waitUntilInService());
+                assertTrue("Timed out waiting for service state to be IN_SERVICE",
+                        serviceStateListener.waitUntilInService());
             }
         } finally {
             TelephonyManager telephonyManager = sTelephonyManager.createForSubscriptionId(subId);
@@ -1349,7 +1369,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         @CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_TYPE int connectType) throws Exception {
         logd(TAG, "testQuerySatelliteEntitlementService_success: slotId=" + slotId);
 
-        assertTrue(sMockSatelliteServiceManager
+        assertTrue("Failed to override entitlement query conditions",
+                sMockSatelliteServiceManager
                 .overrideSatelliteEntilementQueryConditions(true, true));
         sMockSatelliteServiceManager.setMaxAllowedDataModeForCtsTest(
             SatelliteManager.SATELLITE_DATA_SUPPORT_UNCONSTRAINED);
@@ -1438,7 +1459,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         // Arg 2 (ignoreRefreshCondition = FALSE): ENFORCE the timeout logic.
         // We need to prove that our API explicitly requests a bypass; if we set this to true,
         // the test would pass even if the bypass logic was broken.
-        assertTrue(
+        assertTrue("Failed to override entitlement query conditions",
                 sMockSatelliteServiceManager.overrideSatelliteEntilementQueryConditions(
                         true, false));
 
@@ -1601,7 +1622,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
     public void testNotifyEntitlementStatusChanged(int slotId) throws Exception {
         logd(TAG, "testNotifyEntitlementStatusChanged: slotId = " + slotId);
 
-        assertTrue(
+        assertTrue("Failed to override entitlement query conditions",
                 sMockSatelliteServiceManager.overrideSatelliteEntilementQueryConditions(
                         true, false));
 
@@ -1731,7 +1752,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
 
         logd(TAG, "testSatelliteConstrainedNetwork: slotId=" + slotId);
 
-        assertTrue(sMockSatelliteServiceManager
+        assertTrue("Failed to override entitlement query conditions",
+                sMockSatelliteServiceManager
                 .overrideSatelliteEntilementQueryConditions(true, true));
         sMockSatelliteServiceManager.setMaxAllowedDataModeForCtsTest(
                 SatelliteManager.SATELLITE_DATA_SUPPORT_CONSTRAINED);
@@ -1817,7 +1839,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
             throws Exception {
         logd(TAG, "testNoConstrainedNetworkConnection: slotId=" + slotId);
 
-        assertTrue(sMockSatelliteServiceManager
+        assertTrue("Failed to override entitlement query conditions",
+                sMockSatelliteServiceManager
                 .overrideSatelliteEntilementQueryConditions(true, true));
         sMockSatelliteServiceManager.setMaxAllowedDataModeForCtsTest(
                 SatelliteManager.SATELLITE_DATA_SUPPORT_RESTRICTED);
@@ -1891,7 +1914,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
             throws Exception {
         logd(TAG, "testNoConstrainedNetworkConnection: slotId=" + slotId);
 
-        assertTrue(sMockSatelliteServiceManager
+        assertTrue("Failed to override entitlement query conditions",
+                sMockSatelliteServiceManager
                 .overrideSatelliteEntilementQueryConditions(true, true));
         sMockSatelliteServiceManager.setMaxAllowedDataModeForCtsTest(
                 SatelliteManager.SATELLITE_DATA_SUPPORT_UNCONSTRAINED);
@@ -1947,7 +1971,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         entilementStatusResponseGenerator.setEntitlementStatus(
                 EntilementStatusResponseGenerator.SATELLITE_ENTITLEMENT_STATUS_DISABLED);
         String t43Response = entilementStatusResponseGenerator.createTS43Response();
-        assertTrue(sMockSatelliteServiceManager
+        assertTrue("Failed to override entitlement status response",
+                sMockSatelliteServiceManager
                 .overrideSatelliteEntilementStatusResponseForCtsTest(t43Response, false));
         return entilementStatusResponseGenerator;
     }
@@ -1966,7 +1991,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         List<String> barredPlmnList = ImmutableList.of("46601", "46602");
         entilementStatusResponseGenerator.setBarredPlmns(barredPlmnList);
         String t43Response = entilementStatusResponseGenerator.createTS43Response();
-        assertTrue(sMockSatelliteServiceManager
+        assertTrue("Failed to override entitlement status response",
+                sMockSatelliteServiceManager
                 .overrideSatelliteEntilementStatusResponseForCtsTest(t43Response, false));
         return entilementStatusResponseGenerator;
     }
@@ -1978,7 +2004,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         int i = 0;
         int maxRetry = 5;
         for (; i < maxRetry; i++) {
-            assertTrue(waitForEventOnSetSatelliteEnabledForCarrier(1));
+            assertTrue("Timed out waiting for event on set satellite enabled for carrier",
+                    waitForEventOnSetSatelliteEnabledForCarrier(1));
             Set<Integer> restrictionReasons =
                 sSatelliteManager.getAttachRestrictionReasonsForCarrier(subId);
             logd(TAG, "testQuerySatelliteEntitlementService_success: restrictionReasons="
@@ -1997,7 +2024,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         int i = 0;
         int maxRetry = 5;
         for (; i < maxRetry; i++) {
-            assertTrue(waitForEventOnSetSatelliteEnabledForCarrier(1));
+            assertTrue("Timed out waiting for event on set satellite enabled for carrier",
+                    waitForEventOnSetSatelliteEnabledForCarrier(1));
             Set<Integer> restrictionReasons =
                 sSatelliteManager.getAttachRestrictionReasonsForCarrier(subId);
             logd(TAG, "testQuerySatelliteEntitlementService_success: restrictionReasons="
@@ -2018,7 +2046,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         int i = 0;
         int maxRetry = 5;
         for (; i < maxRetry; i++) {
-            assertTrue(waitForEventOnSatelliteEnabledForCarrierStateChanged(1));
+            assertTrue("Timed out waiting for satellite enabled state change",
+                    waitForEventOnSatelliteEnabledForCarrierStateChanged(1));
             if (getIsSatelliteEnabledForCarrierInMockService(slotId)) {
                 break;
             }
@@ -2035,7 +2064,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         int i = 0;
         int maxRetry = 5;
         for (; i < maxRetry; i++) {
-            assertTrue(waitForEventOnSatelliteEnabledForCarrierStateChanged(1));
+            assertTrue("Timed out waiting for satellite enabled state change",
+                    waitForEventOnSatelliteEnabledForCarrierStateChanged(1));
             if (!getIsSatelliteEnabledForCarrierInMockService(slotId)) {
                 break;
             }
@@ -2050,7 +2080,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         int i = 0;
         int maxRetry = 5;
         for (; i < maxRetry; i++) {
-            assertTrue(waitForEventOnSetSatellitePlmn(1));
+            assertTrue("Timed out waiting for set satellite PLMN event",
+                    waitForEventOnSetSatellitePlmn(1));
             List<String> carrierPlmnListConfigured = getCarrierPlmnListConfigured(slotId);
             logd(TAG, "carrierPlmnListConfigured=" + carrierPlmnListConfigured);
             if (expectedCarrierPlmnList.size() == carrierPlmnListConfigured.size()
@@ -2081,7 +2112,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
     protected static void setUpNtnOnlyTestEnvironment(int slotId, int simProfileId,
             String phoneNumber) throws Exception {
         logd(TAG, "setUpNtnOnlyTestEnvironment");
-        assertTrue(sMockModemManager.insertSimCard(slotId, simProfileId));
+        assertTrue("Failed to insert SIM card",
+                sMockModemManager.insertSimCard(slotId, simProfileId));
         TimeUnit.MILLISECONDS.sleep(TIMEOUT);
         moveSimToInService(slotId, simProfileId);
         sNtnOnlySubId = SubscriptionManager.getSubscriptionId(slotId);

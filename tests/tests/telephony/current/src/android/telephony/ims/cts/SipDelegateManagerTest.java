@@ -17,10 +17,10 @@
 package android.telephony.ims.cts;
 
 import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertTrue;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
@@ -146,7 +146,7 @@ public class SipDelegateManagerTest {
         }
 
         public void connect() throws Exception {
-            assertTrue(sServiceConnector.setDefaultSmsApp());
+            assertTrue("Failed to set the default SMS app", sServiceConnector.setDefaultSmsApp());
             connectTestImsServiceWithSipTransportAndConfig();
 
             transport = sServiceConnector.getCarrierService().getSipTransport();
@@ -428,7 +428,7 @@ public class SipDelegateManagerTest {
         ifaces.delegateConn.setOperationCountDownLatch(1);
         ifaces.delegateConn.waitForCountDown(1000);
         // SipDialog Confirmed
-        assertTrue(sUpdatedState);
+        assertTrue("Failed to verify confirmed SIP dialog state", sUpdatedState);
         // Send ACK
         sendAck(attr, ifaces);
         // Send BYE
@@ -480,7 +480,7 @@ public class SipDelegateManagerTest {
         };
 
         SipDelegateManager manager = getSipDelegateManager();
-        assertTrue(sServiceConnector.setDefaultSmsApp());
+        assertTrue("Failed to set the default SMS app", sServiceConnector.setDefaultSmsApp());
         connectTestImsServiceWithSipTransportAndConfig();
         TestSipTransport transportImpl = sServiceConnector.getCarrierService().getSipTransport();
         TestImsRegistration regImpl = sServiceConnector.getCarrierService().getImsRegistration();
@@ -682,14 +682,18 @@ public class SipDelegateManagerTest {
         b.putBoolean(CarrierConfigManager.Ims.KEY_IMS_SINGLE_REGISTRATION_REQUIRED_BOOL, true);
         overrideCarrierConfig(b);
 
-        assertTrue(sServiceConnector.connectCarrierImsServiceLocally());
+        assertTrue(
+                "Failed to connect Carrier ImsService locally",
+                sServiceConnector.connectCarrierImsServiceLocally());
         // set SipTransport as supported with RCS only attached.
         sServiceConnector.getCarrierService().addCapabilities(
                 ImsService.CAPABILITY_SIP_DELEGATE_CREATION);
         sServiceConnector.getCarrierService().setSipTransportImplemented();
 
         ImsFeatureConfiguration c = getConfigForRcs();
-        assertTrue(sServiceConnector.triggerFrameworkConnectionToCarrierImsService(c));
+        assertTrue(
+                "Failed to trigger framework connection to Carrier ImsService",
+                sServiceConnector.triggerFrameworkConnectionToCarrierImsService(c));
         verifyImsServiceState(c);
 
         Boolean result = callUntilImsServiceIsAvailable(() ->
@@ -711,12 +715,16 @@ public class SipDelegateManagerTest {
         b.putBoolean(CarrierConfigManager.Ims.KEY_IMS_SINGLE_REGISTRATION_REQUIRED_BOOL, true);
         overrideCarrierConfig(b);
 
-        assertTrue(sServiceConnector.connectCarrierImsServiceLocally());
+        assertTrue(
+                "Failed to connect Carrier ImsService locally",
+                sServiceConnector.connectCarrierImsServiceLocally());
         // SipTransport set as capable, but no SipTransport implementation is returned.
         sServiceConnector.getCarrierService().addCapabilities(
                 ImsService.CAPABILITY_SIP_DELEGATE_CREATION);
         ImsFeatureConfiguration c = getConfigForMmTelAndRcs();
-        assertTrue(sServiceConnector.triggerFrameworkConnectionToCarrierImsService(c));
+        assertTrue(
+                "Failed to trigger framework connection to Carrier ImsService",
+                sServiceConnector.triggerFrameworkConnectionToCarrierImsService(c));
         verifyImsServiceState(c);
 
         Boolean result = callUntilImsServiceIsAvailable(() ->
@@ -737,11 +745,15 @@ public class SipDelegateManagerTest {
         b.putBoolean(CarrierConfigManager.Ims.KEY_IMS_SINGLE_REGISTRATION_REQUIRED_BOOL, true);
         overrideCarrierConfig(b);
 
-        assertTrue(sServiceConnector.connectCarrierImsServiceLocally());
+        assertTrue(
+                "Failed to connect Carrier ImsService locally",
+                sServiceConnector.connectCarrierImsServiceLocally());
         // SipTransport is set as Implemented, but not Capable
         sServiceConnector.getCarrierService().setSipTransportImplemented();
         ImsFeatureConfiguration c = getConfigForMmTelAndRcs();
-        assertTrue(sServiceConnector.triggerFrameworkConnectionToCarrierImsService(c));
+        assertTrue(
+                "Failed to trigger framework connection to Carrier ImsService",
+                sServiceConnector.triggerFrameworkConnectionToCarrierImsService(c));
         verifyImsServiceState(c);
 
         Boolean result = callUntilImsServiceIsAvailable(() ->
@@ -762,10 +774,14 @@ public class SipDelegateManagerTest {
         b.putBoolean(CarrierConfigManager.Ims.KEY_IMS_SINGLE_REGISTRATION_REQUIRED_BOOL, true);
         overrideCarrierConfig(b);
 
-        assertTrue(sServiceConnector.connectCarrierImsServiceLocally());
+        assertTrue(
+                "Failed to connect Carrier ImsService locally",
+                sServiceConnector.connectCarrierImsServiceLocally());
         // Not Implemented/capable
         ImsFeatureConfiguration c = getConfigForMmTelAndRcs();
-        assertTrue(sServiceConnector.triggerFrameworkConnectionToCarrierImsService(c));
+        assertTrue(
+                "Failed to trigger framework connection to Carrier ImsService",
+                sServiceConnector.triggerFrameworkConnectionToCarrierImsService(c));
         verifyImsServiceState(c);
 
         Boolean result = callUntilImsServiceIsAvailable(() ->
@@ -829,7 +845,7 @@ public class SipDelegateManagerTest {
         if (!ImsUtils.shouldTestImsService()) {
             return;
         }
-        assertTrue(sServiceConnector.setDefaultSmsApp());
+        assertTrue("Failed to set the default SMS app", sServiceConnector.setDefaultSmsApp());
         connectTestImsServiceWithSipTransportAndConfig();
 
         TestSipTransport transportImpl = sServiceConnector.getCarrierService().getSipTransport();
@@ -1004,7 +1020,7 @@ public class SipDelegateManagerTest {
         if (!ImsUtils.shouldTestImsService()) {
             return;
         }
-        assertTrue(sServiceConnector.setDefaultSmsApp());
+        assertTrue("Failed to set the default SMS app", sServiceConnector.setDefaultSmsApp());
         connectTestImsServiceWithSipTransportAndConfig();
         TestSipTransport transportImpl = sServiceConnector.getCarrierService().getSipTransport();
         TestImsRegistration regImpl = sServiceConnector.getCarrierService().getImsRegistration();
@@ -1075,9 +1091,12 @@ public class SipDelegateManagerTest {
 
         // Make this app the DMA
         regImpl.resetLatch(TestImsRegistration.LATCH_TRIGGER_DEREGISTRATION, 1);
-        assertTrue(sServiceConnector.setDefaultSmsApp());
-        assertTrue(regImpl.waitForLatchCountDown(TestImsRegistration.LATCH_TRIGGER_DEREGISTRATION,
-                ImsUtils.TEST_TIMEOUT_MS));
+        assertTrue("Failed to set the default SMS app", sServiceConnector.setDefaultSmsApp());
+        assertTrue(
+                "Timed out waiting for deregistration trigger",
+                regImpl.waitForLatchCountDown(
+                        TestImsRegistration.LATCH_TRIGGER_DEREGISTRATION,
+                        ImsUtils.TEST_TIMEOUT_MS));
         TestSipDelegate delegate = getSipDelegate(transportImpl, Collections.emptySet(), 0);
         verifyUpdateRegistrationCalled(regImpl);
         InetSocketAddress localAddr = new InetSocketAddress(
@@ -1106,7 +1125,7 @@ public class SipDelegateManagerTest {
         // Move DMA to another app, we should receive a registration update.
         ifaces.reg.resetLatch(TestImsRegistration.LATCH_TRIGGER_DEREGISTRATION, 1);
         sServiceConnector.restoreDefaultSmsApp();
-        assertTrue(ifaces.reg.waitForLatchCountDown(
+        assertTrue("Timed out waiting for deregistration trigger", ifaces.reg.waitForLatchCountDown(
                 TestImsRegistration.LATCH_TRIGGER_DEREGISTRATION, ImsUtils.TEST_TIMEOUT_MS));
         // we should get another reg update with all tags denied.
         ifaces.delegateConn.setOperationCountDownLatch(1);
@@ -1188,8 +1207,8 @@ public class SipDelegateManagerTest {
         assertEquals(80, c.getLocalAddress().getPort());
         assertEquals("2.2.2.2", c.getSipServerAddress().getAddress().getHostAddress());
         assertEquals(81, c.getSipServerAddress().getPort());
-        assertTrue(c.isSipCompactFormEnabled());
-        assertTrue(c.isSipKeepaliveEnabled());
+        assertTrue("Failed to verify SIP compact form is enabled", c.isSipCompactFormEnabled());
+        assertTrue("Failed to verify SIP keepalive is enabled", c.isSipKeepaliveEnabled());
         assertEquals(508, c.getMaxUdpPayloadSizeBytes());
         assertEquals("test1", c.getPublicUserIdentifier());
         assertEquals("test2", c.getPrivateUserIdentifier());
@@ -1222,7 +1241,7 @@ public class SipDelegateManagerTest {
         SipDialogState state = new SipDialogState.Builder(SipDialogState.STATE_CONFIRMED).build();
         assertNotNull(state);
         int describe = state.describeContents();
-        assertTrue(describe == 0);
+        assertTrue("Failed to verify describeContents returns 0", describe == 0);
     }
 
     @Test
@@ -1250,8 +1269,10 @@ public class SipDelegateManagerTest {
         assertEquals("2.2.2.2",
                 configInc.getSipServerAddress().getAddress().getHostAddress());
         assertEquals(81, configInc.getSipServerAddress().getPort());
-        assertTrue(configInc.isSipCompactFormEnabled());
-        assertTrue(configInc.isSipKeepaliveEnabled());
+        assertTrue(
+                "Failed to verify SIP compact form is enabled",
+                configInc.isSipCompactFormEnabled());
+        assertTrue("Failed to verify SIP keepalive is enabled", configInc.isSipKeepaliveEnabled());
         assertEquals(508, configInc.getMaxUdpPayloadSizeBytes());
         assertEquals("test1", configInc.getPublicUserIdentifier());
         assertEquals("test2", configInc.getPrivateUserIdentifier());
@@ -1303,7 +1324,9 @@ public class SipDelegateManagerTest {
         assertEquals(m, unparcel);
         assertEquals(m.getStartLine(), unparcel.getStartLine());
         assertEquals(m.getHeaderSection(), unparcel.getHeaderSection());
-        assertTrue(Arrays.equals(m.getContent(), unparcel.getContent()));
+        assertTrue(
+                "Failed to verify SIP message content",
+                Arrays.equals(m.getContent(), unparcel.getContent()));
         assertEquals(branch, m.getViaBranchParameter());
         assertEquals(callId, m.getCallIdParameter());
         assertEquals(m.getViaBranchParameter(), unparcel.getViaBranchParameter());
@@ -1334,7 +1357,9 @@ public class SipDelegateManagerTest {
         SipMessage decodedMsg = generateSipMessage(decodedStr);
         assertEquals(decodedMsg.getStartLine(), m.getStartLine());
         assertEquals(decodedMsg.getHeaderSection(), m.getHeaderSection());
-        assertTrue(Arrays.equals(decodedMsg.getContent(), m.getContent()));
+        assertTrue(
+                "Failed to verify decoded SIP message content",
+                Arrays.equals(decodedMsg.getContent(), m.getContent()));
 
         // Test empty content
         m = new SipMessage(startLine, header, content2);
@@ -1343,7 +1368,9 @@ public class SipDelegateManagerTest {
         decodedMsg = generateSipMessage(decodedStr);
         assertEquals(decodedMsg.getStartLine(), m.getStartLine());
         assertEquals(decodedMsg.getHeaderSection(), m.getHeaderSection());
-        assertTrue(Arrays.equals(decodedMsg.getContent(), m.getContent()));
+        assertTrue(
+                "Failed to verify decoded SIP message content",
+                Arrays.equals(decodedMsg.getContent(), m.getContent()));
     }
 
     @Test
@@ -1353,7 +1380,7 @@ public class SipDelegateManagerTest {
         }
 
         setFeatureTagsCarrierAllowed(new String[]{FILE_TRANSFER_HTTP_TAG});
-        assertTrue(sServiceConnector.setDefaultSmsApp());
+        assertTrue("Failed to set the default SMS app", sServiceConnector.setDefaultSmsApp());
         connectTestImsServiceWithSipTransportAndConfig();
         TestSipTransport transportImpl = sServiceConnector.getCarrierService().getSipTransport();
         SipDelegateManager manager = getSipDelegateManager();
@@ -1397,8 +1424,11 @@ public class SipDelegateManagerTest {
         // Registration state will change to deregistering during this time.
         ifaces.delegateConn.setOperationCountDownLatch(1);
         ifaces.delegateConn.waitForCountDown(ImsUtils.TEST_TIMEOUT_MS);
-        assertTrue(ifaces.delegateConn.verifyDeregisteringStateContains(ONE_TO_ONE_CHAT_TAG,
-                DelegateRegistrationState.DEREGISTERING_REASON_DESTROY_PENDING));
+        assertTrue(
+                "Failed to verify deregistering state contains tag",
+                ifaces.delegateConn.verifyDeregisteringStateContains(
+                        ONE_TO_ONE_CHAT_TAG,
+                        DelegateRegistrationState.DEREGISTERING_REASON_DESTROY_PENDING));
         // receive 200 OK
         receive200OkResponse(attr, ifaces);
         // Send ACK
@@ -1442,8 +1472,11 @@ public class SipDelegateManagerTest {
         // Registration state will change to deregistering during this time.
         ifaces.delegateConn.setOperationCountDownLatch(1);
         ifaces.delegateConn.waitForCountDown(ImsUtils.TEST_TIMEOUT_MS);
-        assertTrue(ifaces.delegateConn.verifyDeregisteringStateContains(ONE_TO_ONE_CHAT_TAG,
-                DelegateRegistrationState.DEREGISTERING_REASON_DESTROY_PENDING));
+        assertTrue(
+                "Failed to verify deregistering state contains tag",
+                ifaces.delegateConn.verifyDeregisteringStateContains(
+                        ONE_TO_ONE_CHAT_TAG,
+                        DelegateRegistrationState.DEREGISTERING_REASON_DESTROY_PENDING));
         // Send 200 OK
         send200OkResponse(attr, ifaces);
         // receive ACK
@@ -1483,8 +1516,11 @@ public class SipDelegateManagerTest {
         // Registration state will change to deregistering during this time.
         ifaces.delegateConn.setOperationCountDownLatch(1);
         ifaces.delegateConn.waitForCountDown(ImsUtils.TEST_TIMEOUT_MS);
-        assertTrue(ifaces.delegateConn.verifyDeregisteringStateContains(ONE_TO_ONE_CHAT_TAG,
-                DelegateRegistrationState.DEREGISTERING_REASON_DESTROY_PENDING));
+        assertTrue(
+                "Failed to verify deregistering state contains tag",
+                ifaces.delegateConn.verifyDeregisteringStateContains(
+                        ONE_TO_ONE_CHAT_TAG,
+                        DelegateRegistrationState.DEREGISTERING_REASON_DESTROY_PENDING));
         // receive 200 OK
         receive200OkResponse(attr, ifaces);
         // Send ACK
@@ -1541,8 +1577,11 @@ public class SipDelegateManagerTest {
         // Registration state will change to deregistering during this time.
         ifaces.delegateConn.setOperationCountDownLatch(1);
         ifaces.delegateConn.waitForCountDown(ImsUtils.TEST_TIMEOUT_MS);
-        assertTrue(ifaces.delegateConn.verifyDeregisteringStateContains(ONE_TO_ONE_CHAT_TAG,
-                DelegateRegistrationState.DEREGISTERING_REASON_DESTROY_PENDING));
+        assertTrue(
+                "Failed to verify deregistering state contains tag",
+                ifaces.delegateConn.verifyDeregisteringStateContains(
+                        ONE_TO_ONE_CHAT_TAG,
+                        DelegateRegistrationState.DEREGISTERING_REASON_DESTROY_PENDING));
         // waiting for delegate connection onDestroy to be called.
         ifaces.delegateConn.setOperationCountDownLatch(1);
         // no cleanupSession called, so cleanup session should be called from internal and then
@@ -1583,8 +1622,11 @@ public class SipDelegateManagerTest {
         // Registration state will change to deregistering during this time.
         ifaces.delegateConn.setOperationCountDownLatch(1);
         ifaces.delegateConn.waitForCountDown(ImsUtils.TEST_TIMEOUT_MS);
-        assertTrue(ifaces.delegateConn.verifyDeregisteringStateContains(ONE_TO_ONE_CHAT_TAG,
-                DelegateRegistrationState.DEREGISTERING_REASON_DESTROY_PENDING));
+        assertTrue(
+                "Failed to verify deregistering state contains tag",
+                ifaces.delegateConn.verifyDeregisteringStateContains(
+                        ONE_TO_ONE_CHAT_TAG,
+                        DelegateRegistrationState.DEREGISTERING_REASON_DESTROY_PENDING));
         // waiting for delegate connection onDestroy to be called.
         ifaces.delegateConn.setOperationCountDownLatch(1);
         // no cleanupSession called, so cleanup session should be called from internal and then
@@ -1630,8 +1672,11 @@ public class SipDelegateManagerTest {
         // Registration state will change to deregistering during this time.
         ifaces.delegateConn.setOperationCountDownLatch(1);
         ifaces.delegateConn.waitForCountDown(ImsUtils.TEST_TIMEOUT_MS);
-        assertTrue(ifaces.delegateConn.verifyDeregisteringStateContains(ONE_TO_ONE_CHAT_TAG,
-                DelegateRegistrationState.DEREGISTERING_REASON_DESTROY_PENDING));
+        assertTrue(
+                "Failed to verify deregistering state contains tag",
+                ifaces.delegateConn.verifyDeregisteringStateContains(
+                        ONE_TO_ONE_CHAT_TAG,
+                        DelegateRegistrationState.DEREGISTERING_REASON_DESTROY_PENDING));
         // waiting for delegate connection onDestroy to be called.
         ifaces.delegateConn.setOperationCountDownLatch(1);
         // no cleanupSession called, so cleanup session should be called from internal and then
@@ -1673,8 +1718,11 @@ public class SipDelegateManagerTest {
         // Registration state will change to deregistering during this time.
         ifaces.delegateConn.setOperationCountDownLatch(1);
         ifaces.delegateConn.waitForCountDown(ImsUtils.TEST_TIMEOUT_MS);
-        assertTrue(ifaces.delegateConn.verifyDeregisteringStateContains(ONE_TO_ONE_CHAT_TAG,
-                DelegateRegistrationState.DEREGISTERING_REASON_DESTROY_PENDING));
+        assertTrue(
+                "Failed to verify deregistering state contains tag",
+                ifaces.delegateConn.verifyDeregisteringStateContains(
+                        ONE_TO_ONE_CHAT_TAG,
+                        DelegateRegistrationState.DEREGISTERING_REASON_DESTROY_PENDING));
         // waiting for delegate connection onDestroy to be called.
         ifaces.delegateConn.setOperationCountDownLatch(1);
         // Send the cleanup, which will trigger destroy to complete.
@@ -1709,8 +1757,11 @@ public class SipDelegateManagerTest {
         // Registration state will change to deregistering during this time.
         ifaces.delegateConn.setOperationCountDownLatch(1);
         ifaces.delegateConn.waitForCountDown(ImsUtils.TEST_TIMEOUT_MS);
-        assertTrue(ifaces.delegateConn.verifyDeregisteringStateContains(ONE_TO_ONE_CHAT_TAG,
-                DelegateRegistrationState.DEREGISTERING_REASON_FEATURE_TAGS_CHANGING));
+        assertTrue(
+                "Failed to verify deregistering state contains tag",
+                ifaces.delegateConn.verifyDeregisteringStateContains(
+                        ONE_TO_ONE_CHAT_TAG,
+                        DelegateRegistrationState.DEREGISTERING_REASON_FEATURE_TAGS_CHANGING));
         // Don't send BYE or cleanup, session should still be cleaned up.
         assertFalse(ifaces.transport.isLatchCountDownFinished(
                 TestSipTransport.LATCH_DESTROY_DELEGATE));
@@ -1747,8 +1798,11 @@ public class SipDelegateManagerTest {
         // Registration state will change to deregistering during this time.
         ifaces.delegateConn.setOperationCountDownLatch(1);
         ifaces.delegateConn.waitForCountDown(ImsUtils.TEST_TIMEOUT_MS);
-        assertTrue(ifaces.delegateConn.verifyDeregisteringStateContains(ONE_TO_ONE_CHAT_TAG,
-                DelegateRegistrationState.DEREGISTERING_REASON_FEATURE_TAGS_CHANGING));
+        assertTrue(
+                "Failed to verify deregistering state contains tag",
+                ifaces.delegateConn.verifyDeregisteringStateContains(
+                        ONE_TO_ONE_CHAT_TAG,
+                        DelegateRegistrationState.DEREGISTERING_REASON_FEATURE_TAGS_CHANGING));
         // BYE should still be able to be sent
         sendByeRequest(attr, ifaces);
         assertFalse(ifaces.transport.isLatchCountDownFinished(
@@ -2201,8 +2255,10 @@ public class SipDelegateManagerTest {
         regImpl.resetLatch(TestImsRegistration.LATCH_UPDATE_REGISTRATION, 1);
         // it is okay to reset and wait here (without race conditions) because there is a
         // second delay between triggering update registration and the latch being triggered.
-        assertTrue(regImpl.waitForLatchCountDown(TestImsRegistration.LATCH_UPDATE_REGISTRATION,
-                ImsUtils.TEST_TIMEOUT_MS));
+        assertTrue(
+                "Timed out waiting for update registration latch",
+                regImpl.waitForLatchCountDown(
+                        TestImsRegistration.LATCH_UPDATE_REGISTRATION, ImsUtils.TEST_TIMEOUT_MS));
     }
 
     private void sendRestrictedRequestsAndVerifyFailed(
@@ -2384,23 +2440,31 @@ public class SipDelegateManagerTest {
         b.putBoolean(CarrierConfigManager.Ims.KEY_IMS_SINGLE_REGISTRATION_REQUIRED_BOOL, true);
         overrideCarrierConfig(b);
 
-        assertTrue(sServiceConnector.connectCarrierImsServiceLocally());
+        assertTrue(
+                "Failed to connect Carrier ImsService locally",
+                sServiceConnector.connectCarrierImsServiceLocally());
         sServiceConnector.getCarrierService().addCapabilities(
                 ImsService.CAPABILITY_SIP_DELEGATE_CREATION);
         sServiceConnector.getCarrierService().setSipTransportImplemented();
         ImsFeatureConfiguration c = getConfigForMmTelAndRcs();
-        assertTrue(sServiceConnector.triggerFrameworkConnectionToCarrierImsService(c));
+        assertTrue(
+                "Failed to trigger framework connection to Carrier ImsService",
+                sServiceConnector.triggerFrameworkConnectionToCarrierImsService(c));
         verifyImsServiceState(c);
     }
 
 
     private void connectTestImsServiceWithSipTransport() throws Exception {
-        assertTrue(sServiceConnector.connectCarrierImsServiceLocally());
+        assertTrue(
+                "Failed to connect Carrier ImsService locally",
+                sServiceConnector.connectCarrierImsServiceLocally());
         sServiceConnector.getCarrierService().addCapabilities(
                 ImsService.CAPABILITY_SIP_DELEGATE_CREATION);
         sServiceConnector.getCarrierService().setSipTransportImplemented();
         ImsFeatureConfiguration c = getConfigForMmTelAndRcs();
-        assertTrue(sServiceConnector.triggerFrameworkConnectionToCarrierImsService(c));
+        assertTrue(
+                "Failed to trigger framework connection to Carrier ImsService",
+                sServiceConnector.triggerFrameworkConnectionToCarrierImsService(c));
         verifyImsServiceState(c);
     }
 

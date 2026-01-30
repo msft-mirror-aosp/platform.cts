@@ -28,9 +28,9 @@ import static android.telephony.ims.stub.ImsRegistrationImplBase.REGISTRATION_TE
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertNull;
-import static junit.framework.Assert.assertTrue;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.fail;
@@ -454,9 +454,10 @@ public class ImsServiceTest {
             return;
         }
         // Connect to the ImsService with the RCS feature.
-        assertTrue(sServiceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
-                .addFeature(sTestSlot, ImsFeature.FEATURE_RCS)
-                .build()));
+        assertTrue("Failed to connect to the Carrier ImsService with RCS feature",
+                sServiceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
+                        .addFeature(sTestSlot, ImsFeature.FEATURE_RCS)
+                        .build()));
         // The RcsFeature is created when the ImsService is bound. If it wasn't created, then the
         // Framework did not call it.
         sServiceConnector.getCarrierService().waitForLatchCountdown(
@@ -474,9 +475,10 @@ public class ImsServiceTest {
         }
         sServiceConnector.setExecutorTestType(true);
         // Connect to the ImsService with the RCS feature.
-        assertTrue(sServiceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
-                .addFeature(sTestSlot, ImsFeature.FEATURE_RCS)
-                .build()));
+        assertTrue("Failed to connect to the Carrier ImsService with RCS feature",
+                sServiceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
+                        .addFeature(sTestSlot, ImsFeature.FEATURE_RCS)
+                        .build()));
         // The RcsFeature is created when the ImsService is bound. If it wasn't created, then the
         // Framework did not call it.
         sServiceConnector.getCarrierService().waitForLatchCountdown(
@@ -491,9 +493,10 @@ public class ImsServiceTest {
             return;
         }
         // Connect to the ImsService with the MmTel feature.
-        assertTrue(sServiceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
-                .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL)
-                .build()));
+        assertTrue("Failed to bind Carrier ImsService for MMTEL",
+                sServiceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
+                        .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL)
+                        .build()));
         // The MmTelFeature is created when the ImsService is bound. If it wasn't created, then the
         // Framework did not call it.
         assertTrue("Timed out waiting for createMmTelFeature to be called",
@@ -515,26 +518,33 @@ public class ImsServiceTest {
             return;
         }
         // Connect to the ImsService with the RCS feature.
-        assertTrue(sServiceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
-                .addFeature(sTestSlot, ImsFeature.FEATURE_RCS)
-                .build()));
+        assertTrue(
+                "Failed to connect to the Carrier ImsService with RCS feature",
+                sServiceConnector.connectCarrierImsService(
+                        new ImsFeatureConfiguration.Builder()
+                                .addFeature(sTestSlot, ImsFeature.FEATURE_RCS)
+                                .build()));
         // The RcsFeature is created when the ImsService is bound. If it wasn't created, then the
         // Framework did not call it.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_CREATE_RCS));
+        assertTrue("Timed out waiting for RCS feature creation",
+                sServiceConnector.getCarrierService().waitForLatchCountdown(
+                        TestImsService.LATCH_CREATE_RCS));
 
         //Enable IMS and ensure that we receive the call to enable IMS in the ImsService.
         sServiceConnector.enableImsService(sTestSlot);
         // Wait for command in ImsService
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_ENABLE_IMS));
-        assertTrue(sServiceConnector.getCarrierService().isEnabled());
+        assertTrue("Timed out waiting for IMS enable command",
+                sServiceConnector.getCarrierService().waitForLatchCountdown(
+                        TestImsService.LATCH_ENABLE_IMS));
+        assertTrue("ImsService should be enabled after enableImsService call",
+                sServiceConnector.getCarrierService().isEnabled());
 
         //Disable IMS and ensure that we receive the call to enable IMS in the ImsService.
         sServiceConnector.disableImsService(sTestSlot);
         // Wait for command in ImsService
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_DISABLE_IMS));
+        assertTrue("Timed out waiting for IMS disable command",
+                sServiceConnector.getCarrierService().waitForLatchCountdown(
+                        TestImsService.LATCH_DISABLE_IMS));
         assertFalse(sServiceConnector.getCarrierService().isEnabled());
         assertTrue("Not expected subId received!",
                 isExpectedSubId(sServiceConnector.getCarrierService().getSubIDs()));
@@ -546,26 +556,31 @@ public class ImsServiceTest {
             return;
         }
         // Connect to the ImsService with the RCS feature.
-        assertTrue(sServiceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
+        assertTrue("Failed to bind Carrier ImsService for RCS",
+                sServiceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
                 .addFeature(sTestSlot, ImsFeature.FEATURE_RCS)
                 .build()));
+
         // The RcsFeature is created when the ImsService is bound. If it wasn't created, then the
         // Framework did not call it.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
+        assertTrue("Timed out waiting for RCS feature creation",
+                sServiceConnector.getCarrierService().waitForLatchCountdown(
                 TestImsService.LATCH_CREATE_RCS));
 
-        // Change the supported feature to MMTEl
+        // Change the supported feature to MMTEL
         sServiceConnector.getCarrierService().getImsService().onUpdateSupportedImsFeatures(
                 new ImsFeatureConfiguration.Builder()
                 .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL).build());
 
         // createMmTelFeature should be called.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
+        assertTrue("Timed out waiting for MMTEL feature creation",
+                sServiceConnector.getCarrierService().waitForLatchCountdown(
                 TestImsService.LATCH_CREATE_MMTEL));
 
         // Wait for the framework to set the capabilities on the ImsService
         sServiceConnector.getCarrierService().waitForLatchCountdown(
                 TestImsService.LATCH_MMTEL_CAP_SET);
+
         assertTrue("Not expected subId received!",
                 isExpectedSubId(sServiceConnector.getCarrierService().getSubIDs()));
     }
@@ -579,23 +594,28 @@ public class ImsServiceTest {
         ImsFeatureConfiguration config = new ImsFeatureConfiguration.Builder()
                 .addFeature(sTestSlot, ImsFeature.FEATURE_RCS)
                 .build();
-        assertTrue(sServiceConnector.connectCarrierImsServiceLocally());
+        assertTrue("Failed to connect to local ImsService",
+                sServiceConnector.connectCarrierImsServiceLocally());
         sServiceConnector.getCarrierService().resetState();
         // Set the flag for ImsService compatibility test.
         sServiceConnector.getCarrierService().setImsServiceCompat();
-        assertTrue(sServiceConnector.triggerFrameworkConnectionToCarrierImsService(config));
+        assertTrue("Failed to trigger framework connection for RCS",
+                sServiceConnector.triggerFrameworkConnectionToCarrierImsService(config));
+
         // The RcsFeature is created when the ImsService is bound. If it wasn't created, then the
         // Framework did not call it.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
+        assertTrue("Timed out waiting for RCS feature creation",
+                sServiceConnector.getCarrierService().waitForLatchCountdown(
                 TestImsService.LATCH_CREATE_RCS));
 
-        // Change the supported feature to MMTEl
+        // Change the supported feature to MMTEL
         sServiceConnector.getCarrierService().getImsServiceCompat().onUpdateSupportedImsFeatures(
                 new ImsFeatureConfiguration.Builder()
                 .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL).build());
 
         // createMmTelFeature should be called.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
+        assertTrue("Timed out waiting for MMTEL feature creation",
+                sServiceConnector.getCarrierService().waitForLatchCountdown(
                 TestImsService.LATCH_CREATE_MMTEL));
 
         // Wait for the framework to set the capabilities on the ImsService
@@ -609,13 +629,17 @@ public class ImsServiceTest {
             return;
         }
         // Connect to the ImsService with the MMTEL feature.
-        assertTrue(sServiceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
-                .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL)
-                .build()));
+        assertTrue("Failed to bind Carrier ImsService for MMTEL",
+                sServiceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
+                        .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL)
+                        .build()));
+
         // The MmTelFeature is created when the ImsService is bound. If it wasn't created, then the
         // Framework did not call it.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_CREATE_MMTEL));
+        assertTrue("Timed out waiting for MMTEL feature creation",
+                sServiceConnector.getCarrierService().waitForLatchCountdown(
+                        TestImsService.LATCH_CREATE_MMTEL));
+
         // Wait for the framework to set the capabilities on the ImsService
         sServiceConnector.getCarrierService().waitForLatchCountdown(
                 TestImsService.LATCH_MMTEL_CAP_SET);
@@ -627,14 +651,16 @@ public class ImsServiceTest {
             return;
         }
         // Connect to the ImsService with the MMTEL feature.
-        assertTrue(sServiceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
-                .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL)
-                .addFeature(sTestSlot, ImsFeature.FEATURE_EMERGENCY_MMTEL)
-                .build()));
+        assertTrue("Failed to bind Carrier ImsService for MMTEL and Emergency features",
+                sServiceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
+                        .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL)
+                        .addFeature(sTestSlot, ImsFeature.FEATURE_EMERGENCY_MMTEL)
+                        .build()));
         // The MmTelFeature is created when the ImsService is bound. If it wasn't created, then the
         // Framework did not call it.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_CREATE_MMTEL));
+        assertTrue("Timed out waiting for MMTEL feature creation",
+                sServiceConnector.getCarrierService().waitForLatchCountdown(
+                        TestImsService.LATCH_CREATE_MMTEL));
         // Wait for the framework to set the capabilities on the ImsService
         sServiceConnector.getCarrierService().waitForLatchCountdown(
                 TestImsService.LATCH_MMTEL_CAP_SET);
@@ -651,14 +677,17 @@ public class ImsServiceTest {
         ImsFeatureConfiguration config = new ImsFeatureConfiguration.Builder()
                 .addFeature(sTestSlot, ImsFeature.FEATURE_RCS)
                 .build();
-        assertTrue(sServiceConnector.connectCarrierImsServiceLocally());
+        assertTrue("Failed to connect to local ImsService",
+                sServiceConnector.connectCarrierImsServiceLocally());
         sServiceConnector.getCarrierService().resetState();
         sServiceConnector.getCarrierService().setNullRcsBinding();
-        assertTrue(sServiceConnector.triggerFrameworkConnectionToCarrierImsService(config));
+        assertTrue("Failed to trigger framework connection for RCS",
+                sServiceConnector.triggerFrameworkConnectionToCarrierImsService(config));
 
         // The RcsFeature is created when the ImsService is bound. If it wasn't created, then the
         // Framework did not call it.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
+        assertTrue("Timed out waiting for RCS feature creation",
+                sServiceConnector.getCarrierService().waitForLatchCountdown(
                 TestImsService.LATCH_CREATE_RCS));
         // Check to see if telephony state was reset at some point due to a crash and fail if so
         assertFalse("ImsService should not crash if there is a null ImsFeature returned",
@@ -666,23 +695,24 @@ public class ImsServiceTest {
                         !sServiceConnector.isCarrierServiceStillConfigured(),
                 5000 /*test timeout*/, 5 /*num times*/));
     }
-
     @Test
     public void testDeviceImsServiceBindRcsFeature() throws Exception {
         if (!ImsUtils.shouldTestImsService()) {
             return;
         }
         // Connect to the ImsService with the RCS feature.
-        assertTrue(sServiceConnector.connectDeviceImsService(new ImsFeatureConfiguration.Builder()
+        assertTrue("Failed to bind Device ImsService for RCS",
+                sServiceConnector.connectDeviceImsService(new ImsFeatureConfiguration.Builder()
                 .addFeature(sTestSlot, ImsFeature.FEATURE_RCS)
                 .build()));
         // The RcsFeature is created when the ImsService is bound. If it wasn't created, then the
         // Framework did not call it.
-        assertTrue(sServiceConnector.getExternalService().waitForLatchCountdown(
+        assertTrue("Timed out waiting for RCS feature creation on device ImsService",
+                sServiceConnector.getExternalService().waitForLatchCountdown(
                 TestImsService.LATCH_CREATE_RCS));
         // Make sure the RcsFeature was created in the test service.
         assertTrue("Device ImsService created, but TestDeviceImsService#createRcsFeature was not"
-                        + "called!", sServiceConnector.getExternalService().isRcsFeatureCreated());
+                        + " called!", sServiceConnector.getExternalService().isRcsFeatureCreated());
     }
 
     @Test
@@ -691,23 +721,27 @@ public class ImsServiceTest {
             return;
         }
         // Connect to Device the ImsService with the MMTEL/EMERGENCY_MMTEL feature.
-        assertTrue(sServiceConnector.connectDeviceImsService(new ImsFeatureConfiguration.Builder()
+        assertTrue("Failed to bind Device ImsService for MMTEL and Emergency features",
+                sServiceConnector.connectDeviceImsService(new ImsFeatureConfiguration.Builder()
                 .addFeature(sTestSlot, ImsFeature.FEATURE_EMERGENCY_MMTEL)
                 .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL)
                 .build()));
-        // Connect to Device the ImsService with the RCS feature.
-        assertTrue(sServiceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
+        // Connect to Carrier the ImsService with the RCS feature.
+        assertTrue("Failed to bind Carrier ImsService for RCS",
+                sServiceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
                 .addFeature(sTestSlot, ImsFeature.FEATURE_RCS)
                 .build()));
         // The MmTelFeature is created when the ImsService is bound. If it wasn't created, then the
         // Framework did not call it.
-        assertTrue(sServiceConnector.getExternalService().waitForLatchCountdown(
+        assertTrue("Timed out waiting for MMTEL feature creation on Device ImsService",
+                sServiceConnector.getExternalService().waitForLatchCountdown(
                 TestImsService.LATCH_CREATE_MMTEL));
         // Make sure the MmTelFeature was created in the test service.
         assertTrue("Device ImsService created, but TestDeviceImsService#createMmTelFeature was"
-                + "not called!", sServiceConnector.getExternalService().isMmTelFeatureCreated());
+                + " not called!", sServiceConnector.getExternalService().isMmTelFeatureCreated());
 
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
+        assertTrue("Timed out waiting for RCS feature creation on Carrier ImsService",
+                sServiceConnector.getCarrierService().waitForLatchCountdown(
                 TestImsService.LATCH_CREATE_RCS));
         assertNotNull("ImsService created, but ImsService#createRcsFeature was not called!",
                 sServiceConnector.getCarrierService().getRcsFeature());
@@ -718,31 +752,36 @@ public class ImsServiceTest {
         if (!ImsUtils.shouldTestImsService()) {
             return;
         }
-        // Connect to Device the ImsService with the RCS feature.
-        assertTrue(sServiceConnector.connectDeviceImsService(new ImsFeatureConfiguration.Builder()
+        // Connect to Device the ImsService with the MMTEL feature.
+        assertTrue("Failed to bind Device ImsService for MMTEL",
+                sServiceConnector.connectDeviceImsService(new ImsFeatureConfiguration.Builder()
                 .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL)
                 .build()));
 
         //First MMTEL feature is created on device ImsService.
-        assertTrue(sServiceConnector.getExternalService().waitForLatchCountdown(
+        assertTrue("Timed out waiting for MMTEL creation on Device ImsService",
+                sServiceConnector.getExternalService().waitForLatchCountdown(
                 TestImsService.LATCH_CREATE_MMTEL));
         assertTrue("Device ImsService created, but TestDeviceImsService#createMmTelFeature was "
                 + "not called!", sServiceConnector.getExternalService().isMmTelFeatureCreated());
 
         // Connect to Device the ImsService with the MMTEL feature.
-        assertTrue(sServiceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
+        assertTrue("Failed to bind Carrier ImsService for MMTEL and Emergency",
+                sServiceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
                 .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL)
                 .addFeature(sTestSlot, ImsFeature.FEATURE_EMERGENCY_MMTEL)
                 .build()));
 
         // Next MMTEL feature is created on carrier ImsService (and unbound on device)
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
+        assertTrue("Timed out waiting for MMTEL creation on Carrier ImsService",
+                sServiceConnector.getCarrierService().waitForLatchCountdown(
                 TestImsService.LATCH_CREATE_MMTEL));
         assertNotNull("ImsService created, but ImsService#createRcsFeature was not called!",
                 sServiceConnector.getCarrierService().getMmTelFeature());
 
         // Ensure that the MmTelFeature was removed on the device ImsService.
-        assertTrue(sServiceConnector.getExternalService().waitForLatchCountdown(
+        assertTrue("Timed out waiting for MMTEL removal on Device ImsService",
+                sServiceConnector.getExternalService().waitForLatchCountdown(
                 TestImsService.LATCH_REMOVE_MMTEL));
         assertFalse("Device ImsService was never removed when carrier ImsService took MMTEL."
                 + "feature.", sServiceConnector.getExternalService().isMmTelFeatureCreated());
@@ -754,23 +793,27 @@ public class ImsServiceTest {
             return;
         }
         // Connect to Device the ImsService with the MMTEL feature.
-        assertTrue(sServiceConnector.connectDeviceImsService(new ImsFeatureConfiguration.Builder()
+        assertTrue("Failed to bind Device ImsService for MMTEL",
+                sServiceConnector.connectDeviceImsService(new ImsFeatureConfiguration.Builder()
                 .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL)
                 .build()));
 
         //First MMTEL feature is created on device ImsService.
-        assertTrue(sServiceConnector.getExternalService().waitForLatchCountdown(
+        assertTrue("Timed out waiting for MMTEL creation on Device ImsService",
+                sServiceConnector.getExternalService().waitForLatchCountdown(
                 TestImsService.LATCH_CREATE_MMTEL));
         assertTrue("Device ImsService created, but TestDeviceImsService#createMmTelFeature was"
                 + "not called!", sServiceConnector.getExternalService().isMmTelFeatureCreated());
 
         // Connect to Device the ImsService with the RCS feature.
-        assertTrue(sServiceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
+        assertTrue("Failed to bind Carrier ImsService for RCS",
+                sServiceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
                 .addFeature(sTestSlot, ImsFeature.FEATURE_RCS)
                 .build()));
 
-        // Next Rcs feature is created on carrier ImsService
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
+        // Next RCS feature is created on carrier ImsService
+        assertTrue("Timed out waiting for RCS creation on Carrier ImsService",
+                sServiceConnector.getCarrierService().waitForLatchCountdown(
                 TestImsService.LATCH_CREATE_RCS));
         assertNotNull("ImsService created, but ImsService#createRcsFeature was not called!",
                 sServiceConnector.getCarrierService().getRcsFeature());
@@ -783,19 +826,24 @@ public class ImsServiceTest {
                         .build());
 
         // MMTEL feature is created on carrier ImsService
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_CREATE_MMTEL));
+        assertTrue(
+                "Timed out waiting for MMTEL creation on Carrier ImsService",
+                sServiceConnector
+                        .getCarrierService()
+                        .waitForLatchCountdown(TestImsService.LATCH_CREATE_MMTEL));
         assertNotNull("ImsService created, but ImsService#createMmTelFeature was not called!",
                 sServiceConnector.getCarrierService().getMmTelFeature());
 
         // Ensure that the MmTelFeature was removed on the device ImsService.
-        assertTrue(sServiceConnector.getExternalService().waitForLatchCountdown(
+        assertTrue("Timed out waiting for MMTEL removal on Device ImsService",
+                sServiceConnector.getExternalService().waitForLatchCountdown(
                 TestImsService.LATCH_REMOVE_MMTEL));
         assertFalse("Device ImsService was never removed when carrier ImsService took MMTEL."
                 + "feature.", sServiceConnector.getExternalService().isMmTelFeatureCreated());
 
         // Ensure that the RcsFeature was removed on the carrier ImsService.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
+        assertTrue("Timed out waiting for RCS removal on Carrier ImsService",
+                sServiceConnector.getCarrierService().waitForLatchCountdown(
                 TestImsService.LATCH_REMOVE_RCS));
         assertNull(sServiceConnector.getCarrierService().getRcsFeature());
     }
@@ -812,7 +860,8 @@ public class ImsServiceTest {
         SmsManager.getSmsManagerForSubscriptionId(sTestSub).sendTextMessage(SRC_NUMBER,
                 DEST_NUMBER, MSG_CONTENTS, SmsReceiverHelper.getMessageSentPendingIntent(
                         InstrumentationRegistry.getInstrumentation().getTargetContext()), null);
-        assertTrue(sServiceConnector.getCarrierService().getMmTelFeature()
+        assertTrue("Timed out waiting for SMS to be sent via ImsService",
+                sServiceConnector.getCarrierService().getMmTelFeature()
                 .getSmsImplementation().waitForMessageSentLatch());
 
         // Wait for send PendingIntent
@@ -843,7 +892,8 @@ public class ImsServiceTest {
         SmsManager.getSmsManagerForSubscriptionId(sTestSub).sendTextMessage(SRC_NUMBER,
                 DEST_NUMBER, MSG_CONTENTS, null, SmsReceiverHelper.getMessageDeliveredPendingIntent(
                         InstrumentationRegistry.getInstrumentation().getTargetContext()));
-        assertTrue(sServiceConnector.getCarrierService().getMmTelFeature()
+        assertTrue("Timed out waiting for SMS to be sent via ImsService",
+                sServiceConnector.getCarrierService().getMmTelFeature()
                 .getSmsImplementation().waitForMessageSentLatch());
 
         // Ensure we receive correct PDU on the other side.
@@ -883,7 +933,8 @@ public class ImsServiceTest {
         SmsManager.getSmsManagerForSubscriptionId(sTestSub).sendTextMessage(SRC_NUMBER,
                 DEST_NUMBER, MSG_CONTENTS, null, SmsReceiverHelper.getMessageDeliveredPendingIntent(
                         InstrumentationRegistry.getInstrumentation().getTargetContext()));
-        assertTrue(sServiceConnector.getCarrierService().getMmTelFeature()
+        assertTrue("Timed out waiting for SMS to be sent via ImsService",
+                sServiceConnector.getCarrierService().getMmTelFeature()
                 .getSmsImplementation().waitForMessageSentLatch());
 
         // Ensure we receive correct PDU on the other side.
@@ -925,7 +976,8 @@ public class ImsServiceTest {
                 DEST_NUMBER, MSG_CONTENTS, SmsReceiverHelper.getMessageSentPendingIntent(
                         InstrumentationRegistry.getInstrumentation().getTargetContext()), null);
         // Use R specific API for sending SMS result
-        assertTrue(sServiceConnector.getCarrierService().getMmTelFeature()
+        assertTrue("Timed out waiting for SMS success report via ImsService",
+                sServiceConnector.getCarrierService().getMmTelFeature()
                 .getSmsImplementation().waitForMessageSentLatchSuccess());
         Intent intent = AsyncSmsMessageListener.getInstance().waitForMessageSentIntent(
                 ImsUtils.TEST_TIMEOUT_MS);
@@ -954,7 +1006,8 @@ public class ImsServiceTest {
         SmsManager.getSmsManagerForSubscriptionId(sTestSub).sendTextMessage(SRC_NUMBER,
                 DEST_NUMBER, MSG_CONTENTS, SmsReceiverHelper.getMessageSentPendingIntent(
                         InstrumentationRegistry.getInstrumentation().getContext()), null);
-        assertTrue(sServiceConnector.getCarrierService().getMmTelFeature()
+        assertTrue("Timed out waiting for SMS network error report via ImsService",
+                sServiceConnector.getCarrierService().getMmTelFeature()
                 .getSmsImplementation().waitForMessageSentLatchError(
                         SmsManager.RESULT_ERROR_GENERIC_FAILURE, 41));
         Intent intent = AsyncSmsMessageListener.getInstance().waitForMessageSentIntent(
@@ -1006,9 +1059,11 @@ public class ImsServiceTest {
 
             SmsManager.getSmsManagerForSubscriptionId(sTestSub)
                         .setStorageMonitorMemoryStatusOverride(true);
-            assertTrue(sServiceConnector.getCarrierService().getMmTelFeature()
+            assertTrue("Timed out waiting for memory availability notification via IMS",
+                    sServiceConnector.getCarrierService().getMmTelFeature()
                     .getSmsImplementation().waitForOnMemoryAvailableLatch());
-            assertTrue(sServiceConnector.getCarrierService().getMmTelFeature()
+            assertTrue("Memory availability event was not received by the ImsService",
+                    sServiceConnector.getCarrierService().getMmTelFeature()
                     .getSmsImplementation().mMemoryEventReceived);
         } catch (SecurityException se) {
             fail("Caller with MODIFY_PHONE_STATE should be able to call API");
@@ -1512,8 +1567,8 @@ public class ImsServiceTest {
                 new LinkedBlockingQueue<>();
         RcsUceAdapter.OnPublishStateChangedListener addedNewPublishStateCallback =
                 new RcsUceAdapter.OnPublishStateChangedListener() {
-                    public void onPublishStateChange(int state) {
-                    }
+                    public void onPublishStateChange(int state) {}
+
                     public void onPublishStateChange(PublishAttributes attributes) {
                         addedNewPublishStateQueue.offer(attributes);
                     }
@@ -1539,7 +1594,7 @@ public class ImsServiceTest {
                 waitForIntResult(unregisteredPublishStateQueue));
         PublishAttributes attr = waitForResult(addedNewPublishStateQueue);
         assertNull(attr.getSipDetails());
-        assertTrue(attr.getPresenceTuples().isEmpty());
+        assertTrue("Failed to verify empty presence tuples", attr.getPresenceTuples().isEmpty());
         assertEquals(RcsUceAdapter.PUBLISH_STATE_NOT_PUBLISHED, attr.getPublishState());
         publishStateQueue.clear();
         unregisteredPublishStateQueue.clear();
@@ -1597,21 +1652,28 @@ public class ImsServiceTest {
                 RcsUceAdapter.CAPABILITY_UPDATE_TRIGGER_MOVE_TO_WLAN);
 
         // Verify ImsService receive the publish request from framework.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_UCE_REQUEST_PUBLISH));
+        assertTrue(
+                "Failed to receive UCE publish request",
+                sServiceConnector
+                        .getCarrierService()
+                        .waitForLatchCountdown(TestImsService.LATCH_UCE_REQUEST_PUBLISH));
 
         assertEquals(RcsUceAdapter.PUBLISH_STATE_PUBLISHING, waitForIntResult(publishStateQueue));
         attr = waitForResult(addedNewPublishStateQueue);
         assertEquals(RcsUceAdapter.PUBLISH_STATE_PUBLISHING, attr.getPublishState());
         assertNull(attr.getSipDetails());
-        assertTrue(attr.getPresenceTuples().isEmpty());
+        assertTrue(
+                "Failed to verify empty presence tuples during publishing",
+                attr.getPresenceTuples().isEmpty());
 
         assertEquals(RcsUceAdapter.PUBLISH_STATE_OK, waitForIntResult(publishStateQueue));
         attr = waitForResult(addedNewPublishStateQueue);
         assertEquals(RcsUceAdapter.PUBLISH_STATE_OK, attr.getPublishState());
         assertNotNull(attr.getSipDetails());
         assertEquals(200, attr.getSipDetails().getResponseCode());
-        assertTrue(attr.getSipDetails().getResponsePhrase().isEmpty());
+        assertTrue(
+                "Failed to verify empty response phrase",
+                attr.getSipDetails().getResponsePhrase().isEmpty());
         publishStateQueue.clear();
         addedNewPublishStateQueue.clear();
         // Verify the value of getting from the API is PUBLISH_STATE_OK
@@ -1636,8 +1698,11 @@ public class ImsServiceTest {
                 RcsUceAdapter.CAPABILITY_UPDATE_TRIGGER_MOVE_TO_WLAN);
 
         // Verify ImsService receive the publish request from framework.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_UCE_REQUEST_PUBLISH));
+        assertTrue(
+                "Failed to receive UCE publish request",
+                sServiceConnector
+                        .getCarrierService()
+                        .waitForLatchCountdown(TestImsService.LATCH_UCE_REQUEST_PUBLISH));
 
         assertEquals(RcsUceAdapter.PUBLISH_STATE_PUBLISHING, waitForIntResult(publishStateQueue));
         assertEquals(RcsUceAdapter.PUBLISH_STATE_OK, waitForIntResult(publishStateQueue));
@@ -1685,8 +1750,11 @@ public class ImsServiceTest {
         eventListener.onRequestPublishCapabilities(
                 RcsUceAdapter.CAPABILITY_UPDATE_TRIGGER_MOVE_TO_WLAN);
 
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_UCE_REQUEST_PUBLISH));
+        assertTrue(
+                "Failed to receive UCE publish request",
+                sServiceConnector
+                        .getCarrierService()
+                        .waitForLatchCountdown(TestImsService.LATCH_UCE_REQUEST_PUBLISH));
 
         assertEquals(RcsUceAdapter.PUBLISH_STATE_PUBLISHING, waitForIntResult(publishStateQueue));
         assertEquals(RcsUceAdapter.PUBLISH_STATE_OK, waitForIntResult(publishStateQueue));
@@ -1697,8 +1765,11 @@ public class ImsServiceTest {
                 .setFeatureState(ImsFeature.STATE_UNAVAILABLE);
 
         // Verify the RcsCapabilityExchangeImplBase will be removed.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_UCE_LISTENER_SET));
+        assertTrue(
+                "Failed to verify UCE listener removal",
+                sServiceConnector
+                        .getCarrierService()
+                        .waitForLatchCountdown(TestImsService.LATCH_UCE_LISTENER_SET));
 
         overrideCarrierConfig(null);
     }
@@ -1755,7 +1826,7 @@ public class ImsServiceTest {
         // Verify receiving the publish state callback immediately after registering the callback.
         PublishAttributes attr = waitForResult(publishStateQueue);
         assertNull(attr.getSipDetails());
-        assertTrue(attr.getPresenceTuples().isEmpty());
+        assertTrue("Failed to verify empty presence tuples", attr.getPresenceTuples().isEmpty());
         assertEquals(RcsUceAdapter.PUBLISH_STATE_NOT_PUBLISHED, attr.getPublishState());
         publishStateQueue.clear();
 
@@ -1803,8 +1874,11 @@ public class ImsServiceTest {
                 RcsUceAdapter.CAPABILITY_UPDATE_TRIGGER_MOVE_TO_WLAN);
 
         // Verify ImsService receive the publish request from framework.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_UCE_REQUEST_PUBLISH));
+        assertTrue(
+                "Timed out waiting for UCE publish request",
+                sServiceConnector
+                        .getCarrierService()
+                        .waitForLatchCountdown(TestImsService.LATCH_UCE_REQUEST_PUBLISH));
 
         attr = waitForResult(publishStateQueue);
         assertEquals(RcsUceAdapter.PUBLISH_STATE_PUBLISHING, attr.getPublishState());
@@ -1819,7 +1893,9 @@ public class ImsServiceTest {
         assertEquals(200, details.getResponseCode());
         assertEquals("OK", details.getResponsePhrase());
         assertEquals(0, details.getReasonHeaderCause());
-        assertTrue(details.getReasonHeaderText().isEmpty());
+        assertTrue(
+                "Failed to verify empty reason header text",
+                details.getReasonHeaderText().isEmpty());
         assertEquals("TestCallId", details.getCallId());
         publishStateQueue.clear();
 
@@ -1837,8 +1913,11 @@ public class ImsServiceTest {
                 RcsUceAdapter.CAPABILITY_UPDATE_TRIGGER_MOVE_TO_WLAN);
 
         // Verify ImsService receive the publish request from framework.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_UCE_REQUEST_PUBLISH));
+        assertTrue(
+                "Timed out waiting for UCE publish request",
+                sServiceConnector
+                        .getCarrierService()
+                        .waitForLatchCountdown(TestImsService.LATCH_UCE_REQUEST_PUBLISH));
 
         attr = waitForResult(publishStateQueue);
         assertEquals(RcsUceAdapter.PUBLISH_STATE_PUBLISHING, attr.getPublishState());
@@ -1900,8 +1979,11 @@ public class ImsServiceTest {
         eventListener.onRequestPublishCapabilities(
                 RcsUceAdapter.CAPABILITY_UPDATE_TRIGGER_MOVE_TO_WLAN);
 
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_UCE_REQUEST_PUBLISH));
+        assertTrue(
+                "Timed out waiting for UCE publish request",
+                sServiceConnector
+                        .getCarrierService()
+                        .waitForLatchCountdown(TestImsService.LATCH_UCE_REQUEST_PUBLISH));
 
         attr = waitForResult(publishStateQueue);
         assertEquals(RcsUceAdapter.PUBLISH_STATE_PUBLISHING, attr.getPublishState());
@@ -1917,8 +1999,11 @@ public class ImsServiceTest {
                 .setFeatureState(ImsFeature.STATE_UNAVAILABLE);
 
         // Verify the RcsCapabilityExchangeImplBase will be removed.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_UCE_LISTENER_SET));
+        assertTrue(
+                "Failed to verify UCE listener removal",
+                sServiceConnector
+                        .getCarrierService()
+                        .waitForLatchCountdown(TestImsService.LATCH_UCE_LISTENER_SET));
 
         overrideCarrierConfig(null);
     }
@@ -2023,7 +2108,8 @@ public class ImsServiceTest {
                 RcsUceAdapter.CAPABILITY_UPDATE_TRIGGER_MOVE_TO_WLAN);
 
         // Verify that the publish is triggered and receive the publish state changed callback.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
+        assertTrue("Timed out waiting for UCE publish request",
+                sServiceConnector.getCarrierService().waitForLatchCountdown(
                 TestImsService.LATCH_UCE_REQUEST_PUBLISH));
 
         assertEquals(RcsUceAdapter.PUBLISH_STATE_PUBLISHING, waitForIntResult(publishStateQueue));
@@ -2072,7 +2158,8 @@ public class ImsServiceTest {
                 .setFeatureState(ImsFeature.STATE_UNAVAILABLE);
 
         // Verify the RcsCapabilityExchangeImplBase will be removed.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
+        assertTrue("Failed to verify UCE listener removal",
+                sServiceConnector.getCarrierService().waitForLatchCountdown(
                 TestImsService.LATCH_UCE_LISTENER_SET));
 
         overrideCarrierConfig(null);
@@ -2185,7 +2272,8 @@ public class ImsServiceTest {
                 RcsUceAdapter.CAPABILITY_UPDATE_TRIGGER_MOVE_TO_WLAN);
 
         // Verify ImsService receive the publish request from framework.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
+        assertTrue("Timed out waiting for UCE publish request",
+                sServiceConnector.getCarrierService().waitForLatchCountdown(
                 TestImsService.LATCH_UCE_REQUEST_PUBLISH));
 
         // Verify that the ImsService has received the publish request and the received PIDF does
@@ -2210,13 +2298,15 @@ public class ImsServiceTest {
                 RcsUceAdapter.CAPABILITY_UPDATE_TRIGGER_MOVE_TO_WLAN);
 
         // Verify ImsService receive the publish request from framework.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
+        assertTrue("Timed out waiting for UCE publish request",
+                sServiceConnector.getCarrierService().waitForLatchCountdown(
                 TestImsService.LATCH_UCE_REQUEST_PUBLISH));
 
         // Verify that the ImsService has received the publish request and the received PIDF
         // contains the associated URI.
         assertFalse(receivedPidfXml.isEmpty());
-        assertTrue(receivedPidfXml.get(0).contains(expectedUriString));
+        assertTrue("PIDF does not contain the expected associated URI",
+                receivedPidfXml.get(0).contains(expectedUriString));
 
         // Reset the received pidf xml data
         receivedPidfXml.clear();
@@ -2299,8 +2389,11 @@ public class ImsServiceTest {
                 RcsUceAdapter.CAPABILITY_UPDATE_TRIGGER_MOVE_TO_WLAN);
 
         // Verify the ImsService receive the publish request from framework.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_UCE_REQUEST_PUBLISH));
+        assertTrue(
+                "Timed out waiting for UCE publish request",
+                sServiceConnector
+                        .getCarrierService()
+                        .waitForLatchCountdown(TestImsService.LATCH_UCE_REQUEST_PUBLISH));
 
         assertEquals(RcsUceAdapter.PUBLISH_STATE_PUBLISHING, waitForIntResult(publishStateQueue));
         assertEquals(RcsUceAdapter.PUBLISH_STATE_OK, waitForIntResult(publishStateQueue));
@@ -2328,8 +2421,11 @@ public class ImsServiceTest {
                 RcsUceAdapter.CAPABILITY_UPDATE_TRIGGER_MOVE_TO_WLAN);
 
         // Verify ImsService receive the publish request from framework.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_UCE_REQUEST_PUBLISH));
+        assertTrue(
+                "Timed out waiting for UCE publish request",
+                sServiceConnector
+                        .getCarrierService()
+                        .waitForLatchCountdown(TestImsService.LATCH_UCE_REQUEST_PUBLISH));
 
         // Verify that receive the publish failed callback
         assertEquals(RcsUceAdapter.PUBLISH_STATE_PUBLISHING, waitForIntResult(publishStateQueue));
@@ -2437,7 +2533,8 @@ public class ImsServiceTest {
                 RcsUceAdapter.CAPABILITY_UPDATE_TRIGGER_MOVE_TO_WLAN);
 
         // Verify that ImsService received the first PUBLISH
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
+        assertTrue("Failed to receive the first UCE publish request",
+                sServiceConnector.getCarrierService().waitForLatchCountdown(
                 TestImsService.LATCH_UCE_REQUEST_PUBLISH));
 
         assertEquals(RcsUceAdapter.PUBLISH_STATE_PUBLISHING, waitForIntResult(publishStateQueue));
@@ -2469,7 +2566,8 @@ public class ImsServiceTest {
                 RcsUceAdapter.CAPABILITY_UPDATE_TRIGGER_MOVE_TO_WLAN);
 
         // Verify the ImsService receive the publish request
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
+        assertTrue("Failed to receive the second UCE publish request",
+                sServiceConnector.getCarrierService().waitForLatchCountdown(
                 TestImsService.LATCH_UCE_REQUEST_PUBLISH, 3000 /* Wait up to 3 seconds */));
 
         overrideCarrierConfig(null);
@@ -2596,8 +2694,11 @@ public class ImsServiceTest {
                 RcsUceAdapter.CAPABILITY_UPDATE_TRIGGER_MOVE_TO_WLAN);
 
         // Verify that ImsService received the first PUBLISH
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_UCE_REQUEST_PUBLISH));
+        assertTrue(
+                "Failed to receive UCE publish request",
+                sServiceConnector
+                        .getCarrierService()
+                        .waitForLatchCountdown(TestImsService.LATCH_UCE_REQUEST_PUBLISH));
 
         // Verify that the publish state should be changed from NOT_PUBLISHED to OK
         try {
@@ -2691,8 +2792,11 @@ public class ImsServiceTest {
                 RcsUceAdapter.CAPABILITY_UPDATE_TRIGGER_MOVE_TO_WLAN);
 
         // Verify ImsService receive the publish request from framework.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_UCE_REQUEST_PUBLISH));
+        assertTrue(
+                "Failed to receive UCE publish request",
+                sServiceConnector
+                        .getCarrierService()
+                        .waitForLatchCountdown(TestImsService.LATCH_UCE_REQUEST_PUBLISH));
 
         try {
             // Verify the publish state callback is received.
@@ -2721,8 +2825,11 @@ public class ImsServiceTest {
                 RcsUceAdapter.CAPABILITY_UPDATE_TRIGGER_MOVE_TO_WLAN);
 
         // Verify ImsService receive the publish request from framework.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_UCE_REQUEST_PUBLISH));
+        assertTrue(
+                "Failed to receive UCE publish request",
+                sServiceConnector
+                        .getCarrierService()
+                        .waitForLatchCountdown(TestImsService.LATCH_UCE_REQUEST_PUBLISH));
 
         try {
             // Verify the publish state callback is received.
@@ -2752,8 +2859,11 @@ public class ImsServiceTest {
                 RcsUceAdapter.CAPABILITY_UPDATE_TRIGGER_MOVE_TO_WLAN);
 
         // Verify ImsService receive the publish request from framework.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_UCE_REQUEST_PUBLISH));
+        assertTrue(
+                "Failed to receive UCE publish request",
+                sServiceConnector
+                        .getCarrierService()
+                        .waitForLatchCountdown(TestImsService.LATCH_UCE_REQUEST_PUBLISH));
 
         try {
             // Verify the publish state callback is received.
@@ -2840,8 +2950,11 @@ public class ImsServiceTest {
         eventListener.onRequestPublishCapabilities(
                 RcsUceAdapter.CAPABILITY_UPDATE_TRIGGER_MOVE_TO_WLAN);
         // Verify ImsService receive the publish request from framework.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_UCE_REQUEST_PUBLISH));
+        assertTrue(
+                "Failed to receive UCE publish request",
+                sServiceConnector
+                        .getCarrierService()
+                        .waitForLatchCountdown(TestImsService.LATCH_UCE_REQUEST_PUBLISH));
 
         // Verify the publish state callback is received.
         assertEquals(RcsUceAdapter.PUBLISH_STATE_PUBLISHING,
@@ -2977,8 +3090,11 @@ public class ImsServiceTest {
 
         // Verify ImsService receive the publish request from framework.
         // Sending Publish means that notifyPendingPublicRequest() has been processed.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_UCE_REQUEST_PUBLISH));
+        assertTrue(
+                "Failed to receive UCE publish request",
+                sServiceConnector
+                        .getCarrierService()
+                        .waitForLatchCountdown(TestImsService.LATCH_UCE_REQUEST_PUBLISH));
 
         // Since framework compatibility is disabled, the newly added publishing state should
         // not be set and should be set to PUBLISH_STATE_OK
@@ -2998,8 +3114,11 @@ public class ImsServiceTest {
         eventListener.onRequestPublishCapabilities(
                 RcsUceAdapter.CAPABILITY_UPDATE_TRIGGER_MOVE_TO_WLAN);
         // Verify ImsService receive the publish request from framework.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_UCE_REQUEST_PUBLISH));
+        assertTrue(
+                "Failed to receive UCE publish request",
+                sServiceConnector
+                        .getCarrierService()
+                        .waitForLatchCountdown(TestImsService.LATCH_UCE_REQUEST_PUBLISH));
 
         // Since framework compatibility is disabled, the newly added publishing state should
         // not be set and should be set to PUBLISH_STATE_OK
@@ -3036,8 +3155,11 @@ public class ImsServiceTest {
 
         // Verify ImsService receive the publish request from framework.
         // Sending Publish means that notifyPendingPublicRequest() has been processed.
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_UCE_REQUEST_PUBLISH));
+        assertTrue(
+                "Failed to receive UCE publish request",
+                sServiceConnector
+                        .getCarrierService()
+                        .waitForLatchCountdown(TestImsService.LATCH_UCE_REQUEST_PUBLISH));
 
         assertEquals(RcsUceAdapter.PUBLISH_STATE_NOT_PUBLISHED,
                 waitForIntResult(publishStateQueue));
@@ -3131,7 +3253,7 @@ public class ImsServiceTest {
 
         // Verify it's not registered
         assertEquals(ImsReasonInfo.CODE_LOCAL_NOT_REGISTERED, waitForIntResult(mQueue));
-        assertTrue(mDeregiQueue.isEmpty());
+        assertTrue("Failed to verify empty de-registration queue", mDeregiQueue.isEmpty());
 
         // Start registration
         sServiceConnector.getCarrierService().getImsRegistration().onRegistering(
@@ -3289,8 +3411,9 @@ public class ImsServiceTest {
         bundle.putBoolean(CarrierConfigManager.Ims.KEY_ENABLE_PRESENCE_PUBLISH_BOOL, true);
         overrideCarrierConfig(bundle);
 
-        sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_RCS_CAP_SET);
+        assertTrue("Timed out waiting for RCS capabilities to be set",
+                sServiceConnector.getCarrierService().waitForLatchCountdown(
+                TestImsService.LATCH_RCS_CAP_SET));
 
         // Start de-registered
         sServiceConnector.getCarrierService().getImsRegistration().onDeregistered(
@@ -3472,11 +3595,13 @@ public class ImsServiceTest {
                         MmTelFeature.MmTelCapabilities.CAPABILITY_TYPE_VOICE));
         capCb = waitForResult(mQueue);
         assertNotNull(capCb);
-        assertTrue(capCb.isCapable(MmTelFeature.MmTelCapabilities.CAPABILITY_TYPE_VOICE));
+        assertTrue("Failed to verify voice capability is enabled",
+                capCb.isCapable(MmTelFeature.MmTelCapabilities.CAPABILITY_TYPE_VOICE));
 
         try {
             automan.adoptShellPermissionIdentity();
-            assertTrue(ImsUtils.retryUntilTrue(() -> mmTelManager.isAvailable(
+            assertTrue("Failed to verify voice availability via retry",
+                    ImsUtils.retryUntilTrue(() -> mmTelManager.isAvailable(
                     MmTelFeature.MmTelCapabilities.CAPABILITY_TYPE_VOICE,
                     IMS_REGI_TECH_LTE)));
 
@@ -3565,7 +3690,8 @@ public class ImsServiceTest {
                 MmTelFeature.MmTelCapabilities.CAPABILITY_TYPE_CALL_COMPOSER));
         capCb = waitForResult(mQueue);
         assertNotNull(capCb);
-        assertTrue(capCb.isCapable(MmTelFeature.MmTelCapabilities.CAPABILITY_TYPE_CALL_COMPOSER));
+        assertTrue("Failed to verify call composer capability is enabled",
+                capCb.isCapable(MmTelFeature.MmTelCapabilities.CAPABILITY_TYPE_CALL_COMPOSER));
         if (com.android.server.telecom.flags.Flags.businessCallComposer()) {
             assertFalse(capCb.isCapable(
                     MmTelFeature.MmTelCapabilities.CAPABILITY_TYPE_CALL_COMPOSER_BUSINESS_ONLY));
@@ -3573,7 +3699,8 @@ public class ImsServiceTest {
 
         try {
             automan.adoptShellPermissionIdentity();
-            assertTrue(ImsUtils.retryUntilTrue(() -> mmTelManager.isAvailable(
+            assertTrue("Failed to verify call composer availability via retry",
+                    ImsUtils.retryUntilTrue(() -> mmTelManager.isAvailable(
                     MmTelFeature.MmTelCapabilities.CAPABILITY_TYPE_CALL_COMPOSER,
                     IMS_REGI_TECH_LTE)));
         } finally {
@@ -3588,14 +3715,16 @@ public class ImsServiceTest {
                                     .CAPABILITY_TYPE_CALL_COMPOSER_BUSINESS_ONLY));
             capCb = waitForResult(mQueue);
             assertNotNull(capCb);
-            assertTrue(capCb.isCapable(MmTelFeature.MmTelCapabilities
+            assertTrue("Failed to verify business call composer capability is enabled",
+                    capCb.isCapable(MmTelFeature.MmTelCapabilities
                     .CAPABILITY_TYPE_CALL_COMPOSER_BUSINESS_ONLY));
             assertFalse(capCb.isCapable(MmTelFeature.MmTelCapabilities
                     .CAPABILITY_TYPE_CALL_COMPOSER));
 
             try {
                 automan.adoptShellPermissionIdentity();
-                assertTrue(ImsUtils.retryUntilTrue(() -> mmTelManager.isAvailable(
+                assertTrue("Failed to verify business call composer availability via retry",
+                        ImsUtils.retryUntilTrue(() -> mmTelManager.isAvailable(
                         MmTelFeature.MmTelCapabilities.CAPABILITY_TYPE_CALL_COMPOSER_BUSINESS_ONLY,
                         IMS_REGI_TECH_LTE)));
                 mmTelManager.unregisterMmTelCapabilityCallback(callback);
@@ -3699,7 +3828,9 @@ public class ImsServiceTest {
                         MmTelFeature.MmTelCapabilities.CAPABILITY_TYPE_VOICE));
         Boolean isAvailableAfterStatusChange = waitForResult(voiceIsAvailable);
         assertNotNull(isAvailableAfterStatusChange);
-        assertTrue(isAvailableAfterStatusChange);
+        assertTrue(
+                "Failed to verify voice availability after status change",
+                isAvailableAfterStatusChange);
 
         synchronized (lockObj) {
             try {
@@ -3762,10 +3893,14 @@ public class ImsServiceTest {
         try {
             automan.adoptShellPermissionIdentity();
             // Checked by isCapable api to make sure RcsFeature#changeEnabledCapabilities is called
-            assertTrue(ImsUtils.retryUntilTrue(() ->
-                    imsRcsManager.isCapable(RCS_CAP_OPTIONS, registrationTech)));
-            assertTrue(ImsUtils.retryUntilTrue(() ->
-                    imsRcsManager.isCapable(RCS_CAP_PRESENCE, registrationTech)));
+            assertTrue(
+                    "Failed to verify RCS OPTIONS capability is enabled",
+                    ImsUtils.retryUntilTrue(
+                            () -> imsRcsManager.isCapable(RCS_CAP_OPTIONS, registrationTech)));
+            assertTrue(
+                    "Failed to verify RCS PRESENCE capability is enabled",
+                    ImsUtils.retryUntilTrue(
+                            () -> imsRcsManager.isCapable(RCS_CAP_PRESENCE, registrationTech)));
         } finally {
             automan.dropShellPermissionIdentity();
         }
@@ -3815,7 +3950,9 @@ public class ImsServiceTest {
         availabilityChanged.clear();
         try {
             automan.adoptShellPermissionIdentity();
-            assertTrue(imsRcsManager.isAvailable(RCS_CAP_OPTIONS, radioTechLTE));
+            assertTrue(
+                    "Failed to verify RCS OPTIONS availability",
+                    imsRcsManager.isAvailable(RCS_CAP_OPTIONS, radioTechLTE));
         } finally {
             automan.dropShellPermissionIdentity();
         }
@@ -3831,7 +3968,9 @@ public class ImsServiceTest {
         availabilityChanged.clear();
         try {
             automan.adoptShellPermissionIdentity();
-            assertTrue(imsRcsManager.isAvailable(RCS_CAP_PRESENCE, radioTechLTE));
+            assertTrue(
+                    "Failed to verify RCS PRESENCE availability",
+                    imsRcsManager.isAvailable(RCS_CAP_PRESENCE, radioTechLTE));
         } finally {
             automan.dropShellPermissionIdentity();
         }
@@ -3882,13 +4021,15 @@ public class ImsServiceTest {
                     callback);
 
             provisioningManager.setProvisioningIntValue(TEST_CONFIG_KEY, TEST_CONFIG_VALUE_INT);
-            assertTrue(waitForParam(mIntQueue, new Pair<>(TEST_CONFIG_KEY, TEST_CONFIG_VALUE_INT)));
+            assertTrue("Failed to wait for integer provisioning configuration change",
+                    waitForParam(mIntQueue, new Pair<>(TEST_CONFIG_KEY, TEST_CONFIG_VALUE_INT)));
             assertEquals(TEST_CONFIG_VALUE_INT,
                     provisioningManager.getProvisioningIntValue(TEST_CONFIG_KEY));
 
             provisioningManager.setProvisioningStringValue(TEST_CONFIG_KEY,
                     TEST_CONFIG_VALUE_STRING);
-            assertTrue(waitForParam(mStringQueue,
+            assertTrue("Failed to wait for string provisioning configuration change",
+                    waitForParam(mStringQueue,
                     new Pair<>(TEST_CONFIG_KEY, TEST_CONFIG_VALUE_STRING)));
             assertEquals(TEST_CONFIG_VALUE_STRING,
                     provisioningManager.getProvisioningStringValue(TEST_CONFIG_KEY));
@@ -3976,16 +4117,18 @@ public class ImsServiceTest {
             mIntQueue.clear();
             mOnFeatureChangedQueue.clear();
 
-            // test get/setProvisioningStatusForCapability for VoLTE
-            assertTrue(provisioningManager.isProvisioningRequiredForCapability(
+            assertTrue("Failed to verify provisioning required for VoLTE",
+                    provisioningManager.isProvisioningRequiredForCapability(
                     MMTEL_CAP_VOICE, IMS_REGI_TECH_LTE));
             boolean isProvisioned = provisioningManager
                     .getProvisioningStatusForCapability(MMTEL_CAP_VOICE, IMS_REGI_TECH_LTE);
             provisioningManager.setProvisioningStatusForCapability(MMTEL_CAP_VOICE,
                     IMS_REGI_TECH_LTE, !isProvisioned);
-            assertTrue(waitForParam(mOnFeatureChangedQueue,
+            assertTrue("Failed to wait for feature provisioning change for VoLTE",
+                    waitForParam(mOnFeatureChangedQueue,
                     new Pair<>(MMTEL_CAP_VOICE, new Pair<>(IMS_REGI_TECH_LTE, !isProvisioned))));
-            assertTrue(waitForParam(mIntQueue,
+            assertTrue("Failed to wait for VoLTE provisioning status change",
+                    waitForParam(mIntQueue,
                     new Pair<>(KEY_VOLTE_PROVISIONING_STATUS, !isProvisioned ? 1 : 0)));
             assertEquals(!isProvisioned, provisioningManager
                     .getProvisioningStatusForCapability(MMTEL_CAP_VOICE, IMS_REGI_TECH_LTE));
@@ -3993,15 +4136,17 @@ public class ImsServiceTest {
             mOnFeatureChangedQueue.clear();
             provisioningManager.setProvisioningStatusForCapability(MMTEL_CAP_VOICE,
                     IMS_REGI_TECH_LTE, isProvisioned);
-            assertTrue(waitForParam(mOnFeatureChangedQueue,
+            assertTrue("Failed to wait for feature provisioning change for VoLTE",
+                    waitForParam(mOnFeatureChangedQueue,
                     new Pair<>(MMTEL_CAP_VOICE, new Pair<>(IMS_REGI_TECH_LTE, isProvisioned))));
-            assertTrue(waitForParam(mIntQueue,
+            assertTrue("Failed to wait for VoLTE provisioning status change",
+                    waitForParam(mIntQueue,
                     new Pair<>(KEY_VOLTE_PROVISIONING_STATUS, isProvisioned ? 1 : 0)));
             assertEquals(isProvisioned, provisioningManager
                     .getProvisioningStatusForCapability(MMTEL_CAP_VOICE, IMS_REGI_TECH_LTE));
 
-            // test get/setProvisioningStatusForCapability for VoWIFI
-            assertTrue(provisioningManager.isProvisioningRequiredForCapability(
+            assertTrue("Failed to verify provisioning required for VoWIFI",
+                    provisioningManager.isProvisioningRequiredForCapability(
                     MMTEL_CAP_VOICE, IMS_REGI_TECH_IWLAN));
             isProvisioned = provisioningManager
                     .getProvisioningStatusForCapability(MMTEL_CAP_VOICE, IMS_REGI_TECH_IWLAN);
@@ -4009,9 +4154,11 @@ public class ImsServiceTest {
             mOnFeatureChangedQueue.clear();
             provisioningManager.setProvisioningStatusForCapability(MMTEL_CAP_VOICE,
                     IMS_REGI_TECH_IWLAN, !isProvisioned);
-            assertTrue(waitForParam(mOnFeatureChangedQueue,
+            assertTrue("Failed to wait for feature provisioning change for VoWIFI",
+                    waitForParam(mOnFeatureChangedQueue,
                     new Pair<>(MMTEL_CAP_VOICE, new Pair<>(IMS_REGI_TECH_IWLAN, !isProvisioned))));
-            assertTrue(waitForParam(mIntQueue,
+            assertTrue("Failed to wait for VoWIFI provisioning status change",
+                    waitForParam(mIntQueue,
                     new Pair<>(KEY_VOICE_OVER_WIFI_ENABLED_OVERRIDE, !isProvisioned ? 1 : 0)));
             assertEquals(!isProvisioned, provisioningManager
                     .getProvisioningStatusForCapability(MMTEL_CAP_VOICE, IMS_REGI_TECH_IWLAN));
@@ -4019,15 +4166,17 @@ public class ImsServiceTest {
             mOnFeatureChangedQueue.clear();
             provisioningManager.setProvisioningStatusForCapability(MMTEL_CAP_VOICE,
                     IMS_REGI_TECH_IWLAN, isProvisioned);
-            assertTrue(waitForParam(mOnFeatureChangedQueue,
+            assertTrue("Failed to wait for feature provisioning change for VoWIFI",
+                    waitForParam(mOnFeatureChangedQueue,
                     new Pair<>(MMTEL_CAP_VOICE, new Pair<>(IMS_REGI_TECH_IWLAN, isProvisioned))));
-            assertTrue(waitForParam(mIntQueue,
+            assertTrue("Failed to wait for VoWIFI provisioning status change",
+                    waitForParam(mIntQueue,
                     new Pair<>(KEY_VOICE_OVER_WIFI_ENABLED_OVERRIDE, isProvisioned ? 1 : 0)));
             assertEquals(isProvisioned, provisioningManager
                     .getProvisioningStatusForCapability(MMTEL_CAP_VOICE, IMS_REGI_TECH_IWLAN));
 
-            // test get/setProvisioningStatusForCapability for VT
-            assertTrue(provisioningManager.isProvisioningRequiredForCapability(
+            assertTrue("Failed to verify provisioning required for VT",
+                    provisioningManager.isProvisioningRequiredForCapability(
                     MMTEL_CAP_VIDEO, IMS_REGI_TECH_LTE));
             isProvisioned = provisioningManager
                     .getProvisioningStatusForCapability(MMTEL_CAP_VIDEO, IMS_REGI_TECH_LTE);
@@ -4035,9 +4184,11 @@ public class ImsServiceTest {
             mOnFeatureChangedQueue.clear();
             provisioningManager.setProvisioningStatusForCapability(MMTEL_CAP_VIDEO,
                     IMS_REGI_TECH_LTE, !isProvisioned);
-            assertTrue(waitForParam(mOnFeatureChangedQueue,
+            assertTrue("Failed to wait for feature provisioning change for VT",
+                    waitForParam(mOnFeatureChangedQueue,
                     new Pair<>(MMTEL_CAP_VIDEO, new Pair<>(IMS_REGI_TECH_LTE, !isProvisioned))));
-            assertTrue(waitForParam(mIntQueue,
+            assertTrue("Failed to wait for VT provisioning status change",
+                    waitForParam(mIntQueue,
                     new Pair<>(KEY_VT_PROVISIONING_STATUS, !isProvisioned ? 1 : 0)));
             assertEquals(!isProvisioned, provisioningManager
                     .getProvisioningStatusForCapability(MMTEL_CAP_VIDEO, IMS_REGI_TECH_LTE));
@@ -4045,9 +4196,11 @@ public class ImsServiceTest {
             mOnFeatureChangedQueue.clear();
             provisioningManager.setProvisioningStatusForCapability(MMTEL_CAP_VIDEO,
                     IMS_REGI_TECH_LTE, isProvisioned);
-            assertTrue(waitForParam(mOnFeatureChangedQueue,
+            assertTrue("Failed to wait for feature provisioning change for VT",
+                    waitForParam(mOnFeatureChangedQueue,
                     new Pair<>(MMTEL_CAP_VIDEO, new Pair<>(IMS_REGI_TECH_LTE, isProvisioned))));
-            assertTrue(waitForParam(mIntQueue,
+            assertTrue("Failed to wait for VT provisioning status change",
+                    waitForParam(mIntQueue,
                     new Pair<>(KEY_VT_PROVISIONING_STATUS, isProvisioned ? 1 : 0)));
             assertEquals(isProvisioned, provisioningManager
                     .getProvisioningStatusForCapability(MMTEL_CAP_VIDEO, IMS_REGI_TECH_LTE));
@@ -4065,7 +4218,8 @@ public class ImsServiceTest {
             mOnFeatureChangedQueue.clear();
             provisioningManager.setProvisioningStatusForCapability(
                     MMTEL_CAP_VOICE, IMS_REGI_TECH_LTE, !isProvisioned);
-            assertTrue(waitForParam(mIntQueue,
+            assertTrue("Failed to wait for VoLTE provisioning status change",
+                    waitForParam(mIntQueue,
                     new Pair<>(KEY_VOLTE_PROVISIONING_STATUS, !isProvisioned ? 1 : 0)));
             assertEquals(!isProvisioned,
                     provisioningManager.getProvisioningStatusForCapability(
@@ -4076,7 +4230,8 @@ public class ImsServiceTest {
             mOnFeatureChangedQueue.clear();
             provisioningManager.setProvisioningStatusForCapability(
                     MMTEL_CAP_VOICE, IMS_REGI_TECH_IWLAN, !isProvisioned);
-            assertTrue(waitForParam(mIntQueue,
+            assertTrue("Failed to wait for VoWIFI provisioning status change",
+                    waitForParam(mIntQueue,
                     new Pair<>(KEY_VOICE_OVER_WIFI_ENABLED_OVERRIDE, !isProvisioned ? 1 : 0)));
             assertEquals(!isProvisioned,
                     provisioningManager.getProvisioningStatusForCapability(
@@ -4088,7 +4243,8 @@ public class ImsServiceTest {
             mOnFeatureChangedQueue.clear();
             provisioningManager.setProvisioningStatusForCapability(
                     MMTEL_CAP_VIDEO, IMS_REGI_TECH_LTE, !isProvisioned);
-            assertTrue(waitForParam(mIntQueue,
+            assertTrue("Failed to wait for VT provisioning status change",
+                    waitForParam(mIntQueue,
                     new Pair<>(KEY_VT_PROVISIONING_STATUS, !isProvisioned ? 1 : 0)));
             assertEquals(!isProvisioned,
                     provisioningManager.getProvisioningStatusForCapability(
@@ -4169,37 +4325,46 @@ public class ImsServiceTest {
 
             // isProvisioningRequiredForCapability should return false because provision is not
             // required
-            assertTrue(!provisioningManager.isProvisioningRequiredForCapability(
+            assertTrue("Failed to verify provisioning not required for VoLTE",
+                    !provisioningManager.isProvisioningRequiredForCapability(
                     MMTEL_CAP_VOICE, IMS_REGI_TECH_LTE));
             // However, getProvisioningStatusForCapability() should return true because it does not
             // require provision
-            assertTrue(provisioningManager.getProvisioningStatusForCapability(
+            assertTrue("Failed to verify VoLTE is provisioned",
+                    provisioningManager.getProvisioningStatusForCapability(
                     MMTEL_CAP_VOICE, IMS_REGI_TECH_LTE));
             // put opposite value to check if the key is changed or not
             provisioningManager.setProvisioningStatusForCapability(
                     MMTEL_CAP_VOICE, IMS_REGI_TECH_LTE, false);
             // key value should not be changed whatever value is set
-            assertTrue(provisioningManager.getProvisioningStatusForCapability(
+            assertTrue("Failed to verify VoLTE provisioned status is unchanged",
+                    provisioningManager.getProvisioningStatusForCapability(
                     MMTEL_CAP_VOICE, IMS_REGI_TECH_LTE));
 
             // test case for VoWIFI
-            assertTrue(!provisioningManager.isProvisioningRequiredForCapability(
+            assertTrue("Failed to verify provisioning not required for VoWIFI",
+                    !provisioningManager.isProvisioningRequiredForCapability(
                     MMTEL_CAP_VOICE, IMS_REGI_TECH_IWLAN));
-            assertTrue(provisioningManager.getProvisioningStatusForCapability(
+            assertTrue("Failed to verify VoWIFI is provisioned",
+                    provisioningManager.getProvisioningStatusForCapability(
                     MMTEL_CAP_VOICE, IMS_REGI_TECH_IWLAN));
             provisioningManager.setProvisioningStatusForCapability(
                     MMTEL_CAP_VOICE, IMS_REGI_TECH_IWLAN, false);
-            assertTrue(provisioningManager.getProvisioningStatusForCapability(
+            assertTrue("Failed to verify VoWIFI provisioned status is unchanged",
+                    provisioningManager.getProvisioningStatusForCapability(
                     MMTEL_CAP_VOICE, IMS_REGI_TECH_IWLAN));
 
             // test case for VT
-            assertTrue(!provisioningManager.isProvisioningRequiredForCapability(
+            assertTrue("Failed to verify provisioning not required for VT",
+                    !provisioningManager.isProvisioningRequiredForCapability(
                     MMTEL_CAP_VIDEO, IMS_REGI_TECH_LTE));
-            assertTrue(provisioningManager.getProvisioningStatusForCapability(
+            assertTrue("Failed to verify VT is provisioned",
+                    provisioningManager.getProvisioningStatusForCapability(
                     MMTEL_CAP_VIDEO, IMS_REGI_TECH_LTE));
             provisioningManager.setProvisioningStatusForCapability(
                     MMTEL_CAP_VIDEO, IMS_REGI_TECH_LTE, false);
-            assertTrue(provisioningManager.getProvisioningStatusForCapability(
+            assertTrue("Failed to verify VT provisioned status is unchanged",
+                    provisioningManager.getProvisioningStatusForCapability(
                     MMTEL_CAP_VIDEO, IMS_REGI_TECH_LTE));
 
             automan.adoptShellPermissionIdentity();
@@ -4284,14 +4449,18 @@ public class ImsServiceTest {
 
             // Verify notification initial provisioning status when the callback registered
             // Voice(3) - LTE, IWLAN, NR
-            assertTrue(waitForParam(mOnFeatureChangedQueue,
+            assertTrue("Failed to verify initial VoLTE provisioning notification",
+                    waitForParam(mOnFeatureChangedQueue,
                     new Pair<>(MMTEL_CAP_VOICE, new Pair<>(IMS_REGI_TECH_LTE, true))));
-            assertTrue(waitForParam(mOnFeatureChangedQueue,
+            assertTrue("Failed to verify initial VoWIFI provisioning notification",
+                    waitForParam(mOnFeatureChangedQueue,
                     new Pair<>(MMTEL_CAP_VOICE, new Pair<>(IMS_REGI_TECH_IWLAN, true))));
-            assertTrue(waitForParam(mOnFeatureChangedQueue,
+            assertTrue("Failed to verify initial VoNR provisioning notification",
+                    waitForParam(mOnFeatureChangedQueue,
                     new Pair<>(MMTEL_CAP_VOICE, new Pair<>(IMS_REGI_TECH_NR, false))));
             // Video(1) - LTE
-            assertTrue(waitForParam(mOnFeatureChangedQueue,
+            assertTrue("Failed to verify initial VT over LTE provisioning notification",
+                    waitForParam(mOnFeatureChangedQueue,
                     new Pair<>(MMTEL_CAP_VIDEO, new Pair<>(IMS_REGI_TECH_LTE, true))));
 
             mOnFeatureChangedQueue.clear();
@@ -4376,7 +4545,8 @@ public class ImsServiceTest {
             provisioningManager.registerFeatureProvisioningChangedCallback(
                     getContext().getMainExecutor(), featureProvisioningCallback);
             // Wait until callback is received
-            assertTrue(waitForParam(mOnFeatureChangedQueue,
+            assertTrue("Failed to wait for initial VT over LTE provisioning notification",
+                    waitForParam(mOnFeatureChangedQueue,
                     new Pair<>(MMTEL_CAP_VIDEO, new Pair<>(IMS_REGI_TECH_LTE, true))));
             // Clear Q : delete provisioning value received when registering callback
             mOnFeatureChangedQueue.clear();
@@ -4386,15 +4556,22 @@ public class ImsServiceTest {
 
             // Verify notification initial provisioning status when ImsService connected
             // Voice(3) - LTE, IWLAN, NR
-            assertTrue(waitForParam(mOnFeatureChangedQueue,
+            assertTrue("Failed to verify initial VoLTE provisioning notification after connection",
+                    waitForParam(mOnFeatureChangedQueue,
                     new Pair<>(MMTEL_CAP_VOICE, new Pair<>(IMS_REGI_TECH_LTE, true))));
-            assertTrue(waitForParam(mOnFeatureChangedQueue,
+            assertTrue("Failed to verify initial VoWIFI provisioning notification after connection",
+                    waitForParam(mOnFeatureChangedQueue,
                     new Pair<>(MMTEL_CAP_VOICE, new Pair<>(IMS_REGI_TECH_IWLAN, true))));
-            assertTrue(waitForParam(mOnFeatureChangedQueue,
+            assertTrue("Failed to verify initial VoNR provisioning notification after connection",
+                    waitForParam(mOnFeatureChangedQueue,
                     new Pair<>(MMTEL_CAP_VOICE, new Pair<>(IMS_REGI_TECH_NR, false))));
             // Video(1) - LTE
-            assertTrue(waitForParam(mOnFeatureChangedQueue,
-                    new Pair<>(MMTEL_CAP_VIDEO, new Pair<>(IMS_REGI_TECH_LTE, true))));
+            assertTrue(
+                    "Failed to verify initial VT over LTE provisioning notification after"
+                        + " connection",
+                    waitForParam(
+                            mOnFeatureChangedQueue,
+                            new Pair<>(MMTEL_CAP_VIDEO, new Pair<>(IMS_REGI_TECH_LTE, true))));
 
             mOnFeatureChangedQueue.clear();
             provisioningManager.unregisterFeatureProvisioningChangedCallback(
@@ -4479,14 +4656,22 @@ public class ImsServiceTest {
                     TelephonyUtils.CTS_APP_PACKAGE,
                     SUPPORT_PROVISION_STATUS_FOR_CAPABILITY_STRING);
 
-            assertTrue(provisioningManager.isRcsProvisioningRequiredForCapability(
-                    RCS_CAP_PRESENCE, IMS_REGI_TECH_LTE));
-            assertTrue(provisioningManager.isRcsProvisioningRequiredForCapability(
-                    RCS_CAP_PRESENCE, IMS_REGI_TECH_IWLAN));
-            assertTrue(provisioningManager.isRcsProvisioningRequiredForCapability(
-                    RCS_CAP_PRESENCE, IMS_REGI_TECH_CROSS_SIM));
-            assertTrue(provisioningManager.isRcsProvisioningRequiredForCapability(
-                    RCS_CAP_PRESENCE, IMS_REGI_TECH_NR));
+            assertTrue(
+                    "Failed to verify RCS provisioning required for LTE",
+                    provisioningManager.isRcsProvisioningRequiredForCapability(
+                            RCS_CAP_PRESENCE, IMS_REGI_TECH_LTE));
+            assertTrue(
+                    "Failed to verify RCS provisioning required for IWLAN",
+                    provisioningManager.isRcsProvisioningRequiredForCapability(
+                            RCS_CAP_PRESENCE, IMS_REGI_TECH_IWLAN));
+            assertTrue(
+                    "Failed to verify RCS provisioning required for CROSS_SIM",
+                    provisioningManager.isRcsProvisioningRequiredForCapability(
+                            RCS_CAP_PRESENCE, IMS_REGI_TECH_CROSS_SIM));
+            assertTrue(
+                    "Failed to verify RCS provisioning required for NR",
+                    provisioningManager.isRcsProvisioningRequiredForCapability(
+                            RCS_CAP_PRESENCE, IMS_REGI_TECH_NR));
 
             // Clear Q before testing
             // When Callback registered the initial provisioning value can be notified.
@@ -4498,9 +4683,14 @@ public class ImsServiceTest {
                     RCS_CAP_PRESENCE, IMS_REGI_TECH_LTE);
             provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
                     IMS_REGI_TECH_LTE, !isProvisioned);
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_LTE, !isProvisioned))));
-            assertTrue(waitForParam(mIntQueue,
+            assertTrue(
+                    "Failed to wait for RCS feature provisioning change",
+                    waitForParam(
+                            mOnRcsFeatureChangedQueue,
+                            new Pair<>(
+                                    RCS_CAP_PRESENCE,
+                                    new Pair<>(IMS_REGI_TECH_LTE, !isProvisioned))));
+            assertTrue("Failed to wait for EAB provisioning status change", waitForParam(mIntQueue,
                     new Pair<>(KEY_EAB_PROVISIONING_STATUS, !isProvisioned ? 1 : 0)));
 
             // Wait until framework finishes running
@@ -4511,9 +4701,14 @@ public class ImsServiceTest {
 
             provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
                     IMS_REGI_TECH_LTE, isProvisioned);
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_LTE, isProvisioned))));
-            assertTrue(waitForParam(mIntQueue,
+            assertTrue(
+                    "Failed to wait for RCS feature provisioning change",
+                    waitForParam(
+                            mOnRcsFeatureChangedQueue,
+                            new Pair<>(
+                                    RCS_CAP_PRESENCE,
+                                    new Pair<>(IMS_REGI_TECH_LTE, isProvisioned))));
+            assertTrue("Failed to wait for EAB provisioning status change", waitForParam(mIntQueue,
                     new Pair<>(KEY_EAB_PROVISIONING_STATUS, isProvisioned ? 1 : 0)));
 
             // TODO : work for OPTIONS case
@@ -4588,52 +4783,60 @@ public class ImsServiceTest {
                     TelephonyUtils.CTS_APP_PACKAGE,
                     SUPPORT_PROVISION_STATUS_FOR_CAPABILITY_STRING);
 
-            assertTrue(!provisioningManager.isRcsProvisioningRequiredForCapability(
-                    RCS_CAP_PRESENCE, IMS_REGI_TECH_LTE));
-            assertTrue(!provisioningManager.isRcsProvisioningRequiredForCapability(
-                    RCS_CAP_PRESENCE, IMS_REGI_TECH_IWLAN));
-            assertTrue(!provisioningManager.isRcsProvisioningRequiredForCapability(
-                    RCS_CAP_PRESENCE, IMS_REGI_TECH_CROSS_SIM));
-            assertTrue(!provisioningManager.isRcsProvisioningRequiredForCapability(
-                    RCS_CAP_PRESENCE, IMS_REGI_TECH_NR));
+            assertTrue(
+                    "Failed to verify RCS provisioning not required for LTE",
+                    !provisioningManager.isRcsProvisioningRequiredForCapability(
+                            RCS_CAP_PRESENCE, IMS_REGI_TECH_LTE));
+            assertTrue(
+                    "Failed to verify RCS provisioning not required for IWLAN",
+                    !provisioningManager.isRcsProvisioningRequiredForCapability(
+                            RCS_CAP_PRESENCE, IMS_REGI_TECH_IWLAN));
+            assertTrue(
+                    "Failed to verify RCS provisioning not required for CROSS_SIM",
+                    !provisioningManager.isRcsProvisioningRequiredForCapability(
+                            RCS_CAP_PRESENCE, IMS_REGI_TECH_CROSS_SIM));
+            assertTrue(
+                    "Failed to verify RCS provisioning not required for NR",
+                    !provisioningManager.isRcsProvisioningRequiredForCapability(
+                            RCS_CAP_PRESENCE, IMS_REGI_TECH_NR));
 
             // However, getRcsProvisioningStatusForCapability() should return true because it does
             // not require provision
-            assertTrue(
+            assertTrue("Failed to verify RCS is provisioned for LTE",
                     provisioningManager.getRcsProvisioningStatusForCapability(
                             RCS_CAP_PRESENCE, IMS_REGI_TECH_LTE));
             // put opposite value to check if the key is changed or not
             provisioningManager.setRcsProvisioningStatusForCapability(
                     RCS_CAP_PRESENCE, IMS_REGI_TECH_LTE, false);
             // key value should not be changed whatever value is set
-            assertTrue(
+            assertTrue("Failed to verify RCS provisioned status is unchanged for LTE",
                     provisioningManager.getRcsProvisioningStatusForCapability(
                             RCS_CAP_PRESENCE, IMS_REGI_TECH_LTE));
 
-            assertTrue(
+            assertTrue("Failed to verify RCS is provisioned for IWLAN",
                     provisioningManager.getRcsProvisioningStatusForCapability(
                             RCS_CAP_PRESENCE, IMS_REGI_TECH_IWLAN));
             provisioningManager.setRcsProvisioningStatusForCapability(
                     RCS_CAP_PRESENCE, IMS_REGI_TECH_IWLAN, false);
-            assertTrue(
+            assertTrue("Failed to verify RCS provisioned status is unchanged for IWLAN",
                     provisioningManager.getRcsProvisioningStatusForCapability(
                             RCS_CAP_PRESENCE, IMS_REGI_TECH_IWLAN));
 
-            assertTrue(
+            assertTrue("Failed to verify RCS is provisioned for CROSS_SIM",
                     provisioningManager.getRcsProvisioningStatusForCapability(
                             RCS_CAP_PRESENCE, IMS_REGI_TECH_CROSS_SIM));
             provisioningManager.setRcsProvisioningStatusForCapability(
                     RCS_CAP_PRESENCE, IMS_REGI_TECH_CROSS_SIM, false);
-            assertTrue(
+            assertTrue("Failed to verify RCS provisioned status is unchanged for CROSS_SIM",
                     provisioningManager.getRcsProvisioningStatusForCapability(
                             RCS_CAP_PRESENCE, IMS_REGI_TECH_CROSS_SIM));
 
-            assertTrue(
+            assertTrue("Failed to verify RCS is provisioned for NR",
                     provisioningManager.getRcsProvisioningStatusForCapability(
                             RCS_CAP_PRESENCE, IMS_REGI_TECH_NR));
             provisioningManager.setRcsProvisioningStatusForCapability(
                     RCS_CAP_PRESENCE, IMS_REGI_TECH_NR, false);
-            assertTrue(
+            assertTrue("Failed to verify RCS provisioned status is unchanged for NR",
                     provisioningManager.getRcsProvisioningStatusForCapability(
                             RCS_CAP_PRESENCE, IMS_REGI_TECH_NR));
 
@@ -4723,14 +4926,27 @@ public class ImsServiceTest {
 
             // Verify notification initial provisioning status when the callback registered
             // PRESENCE (4) - LTE, IWLAN, CROSS_SIM, NR
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_LTE, true))));
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_IWLAN, true))));
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_CROSS_SIM, false))));
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_NR, true))));
+            assertTrue(
+                    "Failed to verify initial RCS provisioning notification for LTE",
+                    waitForParam(
+                            mOnRcsFeatureChangedQueue,
+                            new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_LTE, true))));
+            assertTrue(
+                    "Failed to verify initial RCS provisioning notification for IWLAN",
+                    waitForParam(
+                            mOnRcsFeatureChangedQueue,
+                            new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_IWLAN, true))));
+            assertTrue(
+                    "Failed to verify initial RCS provisioning notification for CROSS_SIM",
+                    waitForParam(
+                            mOnRcsFeatureChangedQueue,
+                            new Pair<>(
+                                    RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_CROSS_SIM, false))));
+            assertTrue(
+                    "Failed to verify initial RCS provisioning notification for NR",
+                    waitForParam(
+                            mOnRcsFeatureChangedQueue,
+                            new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_NR, true))));
 
             mOnRcsFeatureChangedQueue.clear();
             provisioningManager.unregisterFeatureProvisioningChangedCallback(
@@ -4815,8 +5031,11 @@ public class ImsServiceTest {
                     getContext().getMainExecutor(), featureProvisioningCallback);
 
             // Wait until callback is received
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_NR, true))));
+            assertTrue(
+                    "Failed to wait for initial RCS provisioning notification",
+                    waitForParam(
+                            mOnRcsFeatureChangedQueue,
+                            new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_NR, true))));
             // Clear Q : delete provisioning value received when registering callback
             mOnRcsFeatureChangedQueue.clear();
 
@@ -4825,14 +5044,31 @@ public class ImsServiceTest {
 
             // Verify notification initial provisioning status when ImsService connected
             // PRESENCE (4) - LTE, IWLAN, CROSS_SIM, NR
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_LTE, true))));
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_IWLAN, true))));
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_CROSS_SIM, false))));
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_NR, true))));
+            assertTrue(
+                    "Failed to verify initial RCS provisioning notification after connection for"
+                        + " LTE",
+                    waitForParam(
+                            mOnRcsFeatureChangedQueue,
+                            new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_LTE, true))));
+            assertTrue(
+                    "Failed to verify initial RCS provisioning notification after connection for"
+                        + " IWLAN",
+                    waitForParam(
+                            mOnRcsFeatureChangedQueue,
+                            new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_IWLAN, true))));
+            assertTrue(
+                    "Failed to verify initial RCS provisioning notification after connection for"
+                        + " CROSS_SIM",
+                    waitForParam(
+                            mOnRcsFeatureChangedQueue,
+                            new Pair<>(
+                                    RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_CROSS_SIM, false))));
+            assertTrue(
+                    "Failed to verify initial RCS provisioning notification after connection for"
+                        + " NR",
+                    waitForParam(
+                            mOnRcsFeatureChangedQueue,
+                            new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_NR, true))));
 
             mOnRcsFeatureChangedQueue.clear();
             provisioningManager.unregisterFeatureProvisioningChangedCallback(
@@ -5186,7 +5422,9 @@ public class ImsServiceTest {
         assertEquals(res, RCS_CONFIG_CB_CHANGED);
         RcsProvisioningCallbackParams params = waitForResult(paramsQueue);
         assertNotNull(params);
-        assertTrue(Arrays.equals(params.mConfig, TEST_RCS_CONFIG_DEFAULT.getBytes()));
+        assertTrue(
+                "Failed to verify default RCS config",
+                Arrays.equals(params.mConfig, TEST_RCS_CONFIG_DEFAULT.getBytes()));
 
         //verify callback when rcs configuration removed
         config.getIImsConfig().notifyRcsAutoConfigurationRemoved();
@@ -5201,7 +5439,9 @@ public class ImsServiceTest {
         assertEquals(res, RCS_CONFIG_CB_CHANGED);
         params = waitForResult(paramsQueue);
         assertNotNull(params);
-        assertTrue(Arrays.equals(params.mConfig, TEST_RCS_CONFIG_DEFAULT.getBytes()));
+        assertTrue(
+                "Failed to verify default RCS config after compression",
+                Arrays.equals(params.mConfig, TEST_RCS_CONFIG_DEFAULT.getBytes()));
 
         //verify callback when auto config error received
         config.notifyAutoConfigurationErrorReceived(errorCode, errorString);
@@ -5209,8 +5449,12 @@ public class ImsServiceTest {
         assertEquals(res, RCS_CONFIG_CB_ERROR);
         params = waitForResult(paramsQueue);
         assertNotNull(params);
-        assertTrue(params.mErrorCode != null && params.mErrorCode == errorCode);
-        assertTrue(errorString.equals(params.mErrorString));
+        assertTrue(
+                "Failed to verify auto config error code",
+                params.mErrorCode != null && params.mErrorCode == errorCode);
+        assertTrue(
+                "Failed to verify auto config error string",
+                errorString.equals(params.mErrorString));
 
         //verify callback when config removed
         config.getIImsConfig().notifyRcsAutoConfigurationRemoved();
@@ -5224,7 +5468,9 @@ public class ImsServiceTest {
         assertEquals(res, RCS_CONFIG_CB_PREPROV);
         params = waitForResult(paramsQueue);
         assertNotNull(params);
-        assertTrue(Arrays.equals(params.mConfig, TEST_RCS_PRE_CONFIG.getBytes()));
+        assertTrue(
+                "Failed to verify RCS pre-provisioning config",
+                Arrays.equals(params.mConfig, TEST_RCS_PRE_CONFIG.getBytes()));
 
         //unregister callback and verify not to receive callback any more
         try {
@@ -5283,8 +5529,10 @@ public class ImsServiceTest {
         assertEquals(res, RCS_CONFIG_CB_CHANGED);
         RcsProvisioningCallbackParams params = waitForResult(paramsQueue);
         assertNotNull(params);
-        assertTrue(Arrays.equals(params.mConfig, configStr.getBytes()));
-        assertTrue(Arrays.equals(
+        assertTrue(
+                "Failed to verify received RCS config",
+                Arrays.equals(params.mConfig, configStr.getBytes()));
+        assertTrue("Failed to verify client RCS config", Arrays.equals(
                 configStr.getBytes(), TestAcsClient.getInstance().getConfig()));
 
         configStr = TEST_RCS_CONFIG_SINGLE_REGISTRATION_DISABLED;
@@ -5300,11 +5548,13 @@ public class ImsServiceTest {
         assertEquals(res, RCS_CONFIG_CB_CHANGED);
         params = waitForResult(paramsQueue);
         assertNotNull(params);
-        assertTrue(Arrays.equals(params.mConfig, configStr.getBytes()));
+        assertTrue(
+                "Failed to verify updated RCS config",
+                Arrays.equals(params.mConfig, configStr.getBytes()));
 
         res = waitForIntResult(TestAcsClient.getInstance().getActionQueue());
         assertEquals(res, TestAcsClient.ACTION_CONFIG_CHANGED);
-        assertTrue(Arrays.equals(
+        assertTrue("Failed to verify client updated RCS config", Arrays.equals(
                 configStr.getBytes(), TestAcsClient.getInstance().getConfig()));
     }
 
@@ -5523,7 +5773,7 @@ public class ImsServiceTest {
             Set<RtpHeaderExtensionType> extensions = sServiceConnector.getCarrierService()
                     .getMmTelFeature().getOfferedRtpHeaderExtensionTypes();
 
-            assertTrue(extensions.size() > 0);
+            assertTrue("Failed to verify offered RTP header extensions", extensions.size() > 0);
         } finally {
             sServiceConnector.setDeviceToDeviceCommunicationEnabled(false);
             overrideCarrierConfig(null);
@@ -5599,12 +5849,14 @@ public class ImsServiceTest {
         }
 
         int reason = waitForIntResult(stateQueue);
-        assertTrue(reason == ImsStateCallback.REASON_UNKNOWN_TEMPORARY_ERROR
-                || reason == ImsStateCallback.REASON_UNKNOWN_PERMANENT_ERROR
-                || reason == ImsStateCallback.REASON_IMS_SERVICE_DISCONNECTED
-                || reason == ImsStateCallback.REASON_NO_IMS_SERVICE_CONFIGURED
-                || reason == ImsStateCallback.REASON_SUBSCRIPTION_INACTIVE
-                || reason == ImsStateCallback.REASON_IMS_SERVICE_NOT_READY);
+        assertTrue(
+                "Failed to verify initial unavailable reason",
+                reason == ImsStateCallback.REASON_UNKNOWN_TEMPORARY_ERROR
+                        || reason == ImsStateCallback.REASON_UNKNOWN_PERMANENT_ERROR
+                        || reason == ImsStateCallback.REASON_IMS_SERVICE_DISCONNECTED
+                        || reason == ImsStateCallback.REASON_NO_IMS_SERVICE_CONFIGURED
+                        || reason == ImsStateCallback.REASON_SUBSCRIPTION_INACTIVE
+                        || reason == ImsStateCallback.REASON_IMS_SERVICE_NOT_READY);
 
         mmTelManager.unregisterImsStateCallback(callback);
 
@@ -5676,20 +5928,24 @@ public class ImsServiceTest {
         }
 
         int reason = waitForIntResult(rcsQueue);
-        assertTrue(reason == ImsStateCallback.REASON_UNKNOWN_TEMPORARY_ERROR
-                || reason == ImsStateCallback.REASON_UNKNOWN_PERMANENT_ERROR
-                || reason == ImsStateCallback.REASON_IMS_SERVICE_DISCONNECTED
-                || reason == ImsStateCallback.REASON_NO_IMS_SERVICE_CONFIGURED
-                || reason == ImsStateCallback.REASON_SUBSCRIPTION_INACTIVE
-                || reason == ImsStateCallback.REASON_IMS_SERVICE_NOT_READY);
+        assertTrue(
+                "Failed to verify initial RCS unavailable reason",
+                reason == ImsStateCallback.REASON_UNKNOWN_TEMPORARY_ERROR
+                        || reason == ImsStateCallback.REASON_UNKNOWN_PERMANENT_ERROR
+                        || reason == ImsStateCallback.REASON_IMS_SERVICE_DISCONNECTED
+                        || reason == ImsStateCallback.REASON_NO_IMS_SERVICE_CONFIGURED
+                        || reason == ImsStateCallback.REASON_SUBSCRIPTION_INACTIVE
+                        || reason == ImsStateCallback.REASON_IMS_SERVICE_NOT_READY);
 
         reason = waitForIntResult(sipQueue);
-        assertTrue(reason == ImsStateCallback.REASON_UNKNOWN_TEMPORARY_ERROR
-                || reason == ImsStateCallback.REASON_UNKNOWN_PERMANENT_ERROR
-                || reason == ImsStateCallback.REASON_IMS_SERVICE_DISCONNECTED
-                || reason == ImsStateCallback.REASON_NO_IMS_SERVICE_CONFIGURED
-                || reason == ImsStateCallback.REASON_SUBSCRIPTION_INACTIVE
-                || reason == ImsStateCallback.REASON_IMS_SERVICE_NOT_READY);
+        assertTrue(
+                "Failed to verify initial SIP unavailable reason",
+                reason == ImsStateCallback.REASON_UNKNOWN_TEMPORARY_ERROR
+                        || reason == ImsStateCallback.REASON_UNKNOWN_PERMANENT_ERROR
+                        || reason == ImsStateCallback.REASON_IMS_SERVICE_DISCONNECTED
+                        || reason == ImsStateCallback.REASON_NO_IMS_SERVICE_CONFIGURED
+                        || reason == ImsStateCallback.REASON_SUBSCRIPTION_INACTIVE
+                        || reason == ImsStateCallback.REASON_IMS_SERVICE_NOT_READY);
 
         imsRcsManager.unregisterImsStateCallback(rcsCallback);
         imsSipManager.unregisterImsStateCallback(sipCallback);
@@ -6296,7 +6552,9 @@ public class ImsServiceTest {
                     SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
 
             // verify Ims phone number
-            assertTrue("447539447777".equals(phoneNumber) || "+447539447777".equals(phoneNumber));
+            assertTrue(
+                    "Failed to verify phone number in non-global format",
+                    "447539447777".equals(phoneNumber) || "+447539447777".equals(phoneNumber));
         } finally {
             automan.dropShellPermissionIdentity();
         }
@@ -6418,7 +6676,9 @@ public class ImsServiceTest {
             LinkedBlockingQueue<Pair<Integer, Integer>> intQueue, int key, int value)
             throws Exception {
         pm.setProvisioningIntValue(key, value);
-        assertTrue(waitForParam(intQueue, new Pair<>(key, value)));
+        assertTrue(
+                "Failed to wait for integer provisioning change",
+                waitForParam(intQueue, new Pair<>(key, value)));
         assertEquals(value, pm.getProvisioningIntValue(key));
     }
 
@@ -6426,7 +6686,9 @@ public class ImsServiceTest {
             LinkedBlockingQueue<Pair<Integer, String>> strQueue, int key, String value)
             throws Exception {
         pm.setProvisioningStringValue(key, value);
-        assertTrue(waitForParam(strQueue, new Pair<>(key, value)));
+        assertTrue(
+                "Failed to wait for string provisioning change",
+                waitForParam(strQueue, new Pair<>(key, value)));
         assertEquals(value, pm.getProvisioningStringValue(key));
     }
 
@@ -6434,21 +6696,35 @@ public class ImsServiceTest {
         MmTelFeature.MmTelCapabilities capabilities = new MmTelFeature.MmTelCapabilities(
                 MmTelFeature.MmTelCapabilities.CAPABILITY_TYPE_SMS);
         // Set up MMTEL
-        assertTrue(sServiceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
-                .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL)
-                .build()));
+        assertTrue(
+                "Failed to connect Carrier ImsService",
+                sServiceConnector.connectCarrierImsService(
+                        new ImsFeatureConfiguration.Builder()
+                                .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL)
+                                .build()));
         // Wait until MMTEL is created and onFeatureReady is called
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_CREATE_MMTEL));
-        assertTrue(sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_MMTEL_READY));
+        assertTrue(
+                "Timed out waiting for MMTEL creation",
+                sServiceConnector
+                        .getCarrierService()
+                        .waitForLatchCountdown(TestImsService.LATCH_CREATE_MMTEL));
+        assertTrue(
+                "Timed out waiting for MMTEL ready",
+                sServiceConnector
+                        .getCarrierService()
+                        .waitForLatchCountdown(TestImsService.LATCH_MMTEL_READY));
         int serviceSlot = sServiceConnector.getCarrierService().getMmTelFeature().getSlotIndex();
         assertEquals("The slot specified for the test (" + sTestSlot + ") does not match the "
                         + "assigned slot (" + serviceSlot + "+ for the associated MmTelFeature",
                 sTestSlot, serviceSlot);
         // Wait until ImsSmsDispatcher connects and calls onReady.
-        assertTrue(sServiceConnector.getCarrierService().getMmTelFeature().getSmsImplementation()
-                .waitForOnReadyLatch());
+        assertTrue(
+                "Timed out waiting for SMS implementation ready",
+                sServiceConnector
+                        .getCarrierService()
+                        .getMmTelFeature()
+                        .getSmsImplementation()
+                        .waitForOnReadyLatch());
         // Set Registered and SMS capable
         sServiceConnector.getCarrierService().getMmTelFeature().setCapabilities(capabilities);
         sServiceConnector.getCarrierService().getImsService()
@@ -6465,9 +6741,12 @@ public class ImsServiceTest {
 
     private void triggerFrameworkConnectToLocalImsServiceBindRcsFeature() throws Exception {
         // Connect to the ImsService with the RCS feature.
-        assertTrue(sServiceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
-                .addFeature(sTestSlot, ImsFeature.FEATURE_RCS)
-                .build()));
+        assertTrue(
+                "Failed to bind Carrier ImsService for RCS",
+                sServiceConnector.connectCarrierImsService(
+                        new ImsFeatureConfiguration.Builder()
+                                .addFeature(sTestSlot, ImsFeature.FEATURE_RCS)
+                                .build()));
         // The RcsFeature is created when the ImsService is bound. If it wasn't created, then the
         // Framework did not call it.
         assertTrue("Did not receive createRcsFeature", sServiceConnector.getCarrierService()
@@ -6485,10 +6764,13 @@ public class ImsServiceTest {
 
     private void triggerFrameworkConnectToImsServiceBindMmTelAndRcsFeature() throws Exception {
         // Connect to the ImsService with the RCS feature.
-        assertTrue(sServiceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
-                .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL)
-                .addFeature(sTestSlot, ImsFeature.FEATURE_RCS)
-                .build()));
+        assertTrue(
+                "Failed to bind Carrier ImsService for MMTEL and RCS",
+                sServiceConnector.connectCarrierImsService(
+                        new ImsFeatureConfiguration.Builder()
+                                .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL)
+                                .addFeature(sTestSlot, ImsFeature.FEATURE_RCS)
+                                .build()));
 
         // The MmTelFeature is created when the ImsService is bound. If it wasn't created, then the
         // Framework did not call it.
@@ -6523,9 +6805,12 @@ public class ImsServiceTest {
 
     private void triggerFrameworkConnectToCarrierImsService() throws Exception {
         // Connect to the ImsService with the MmTel feature.
-        assertTrue(sServiceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
-                .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL)
-                .build()));
+        assertTrue(
+                "Failed to bind Carrier ImsService for MMTEL",
+                sServiceConnector.connectCarrierImsService(
+                        new ImsFeatureConfiguration.Builder()
+                                .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL)
+                                .build()));
         // The MmTelFeature is created when the ImsService is bound. If it wasn't created, then the
         // Framework did not call it.
         assertTrue("Did not receive createMmTelFeature", sServiceConnector.getCarrierService()
@@ -6615,7 +6900,7 @@ public class ImsServiceTest {
     private void verifyRegistrationState(ImsRcsManager regManager, int expectedState)
             throws Exception {
         LinkedBlockingQueue<Integer> mQueue = new LinkedBlockingQueue<>();
-        assertTrue(ImsUtils.retryUntilTrue(() -> {
+        assertTrue("Failed to verify registration state", ImsUtils.retryUntilTrue(() -> {
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(regManager,
                     (m) -> m.getRegistrationState(getContext().getMainExecutor(), mQueue::offer),
                     "android.permission.READ_PRECISE_PHONE_STATE");
@@ -6638,7 +6923,7 @@ public class ImsServiceTest {
     private void verifyRegistrationState(RegistrationManager regManager, int expectedState)
             throws Exception {
         LinkedBlockingQueue<Integer> mQueue = new LinkedBlockingQueue<>();
-        assertTrue(ImsUtils.retryUntilTrue(() -> {
+        assertTrue("Failed to verify registration state", ImsUtils.retryUntilTrue(() -> {
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(regManager,
                     (m) -> m.getRegistrationState(getContext().getMainExecutor(), mQueue::offer));
             return waitForIntResult(mQueue) == expectedState;

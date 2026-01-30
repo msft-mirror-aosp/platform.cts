@@ -38,9 +38,9 @@ import static android.telephony.mockmodem.IRadioVoiceImpl.LATCH_GET_LAST_CALL_FA
 import static android.telephony.mockmodem.MockNetworkService.LATCH_TRIGGER_EMERGENCY_SCAN;
 
 import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertTrue;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeTrue;
 
@@ -139,7 +139,8 @@ public class DomainSelectionServiceTestOnMockModem extends DomainSelectionCallin
         MockModemManager.enforceMockModemDeveloperSetting();
         sMockModemManager = new MockModemManager();
         assertNotNull(sMockModemManager);
-        assertTrue(sMockModemManager.connectMockModemService());
+        assertTrue(
+                "Connect mock modem service failed", sMockModemManager.connectMockModemService());
 
         TimeUnit.MILLISECONDS.sleep(WAIT_SIM_STATE_TIMEOUT_MS);
 
@@ -162,7 +163,9 @@ public class DomainSelectionServiceTestOnMockModem extends DomainSelectionCallin
 
         // Rebind all interfaces which is binding to MockModemService to default.
         if (sMockModemManager != null) {
-            assertTrue(sMockModemManager.disconnectMockModemService());
+            assertTrue(
+                    "Disconnect mock modem service failed",
+                    sMockModemManager.disconnectMockModemService());
             sMockModemManager = null;
 
             TimeUnit.MILLISECONDS.sleep(WAIT_SIM_STATE_TIMEOUT_MS);
@@ -229,17 +232,23 @@ public class DomainSelectionServiceTestOnMockModem extends DomainSelectionCallin
         Call call = placeOutgoingCall(TEST_EMERGENCY_NUMBER);
 
         // onDomainSelection()
-        assertTrue(testService.waitForLatchCountdown(LATCH_ON_DOMAIN_SELECTION));
+        assertTrue(
+                "Timeout waiting for onDomainSelection",
+                testService.waitForLatchCountdown(LATCH_ON_DOMAIN_SELECTION));
         assertNotNull(testService.getTransportSelectorCallback());
 
         call.disconnect();
 
         // onCreated
-        assertTrue(testService.onCreated());
+        assertTrue("onCreated failed", testService.onCreated());
 
         // finishSelection()
-        assertTrue(testService.waitForLatchCountdown(LATCH_ON_FINISH_SELECTION));
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Timeout waiting for finishSelection",
+                testService.waitForLatchCountdown(LATCH_ON_FINISH_SELECTION));
+        assertTrue(
+                "Timeout waiting for call disconnected",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTED, WAIT_FOR_CALL_STATE));
     }
 
     @Test
@@ -254,12 +263,18 @@ public class DomainSelectionServiceTestOnMockModem extends DomainSelectionCallin
         placeOutgoingCall(TEST_EMERGENCY_NUMBER);
 
         // onDomainSelection()
-        assertTrue(testService.waitForLatchCountdown(LATCH_ON_DOMAIN_SELECTION));
+        assertTrue(
+                "Timeout waiting for onDomainSelection",
+                testService.waitForLatchCountdown(LATCH_ON_DOMAIN_SELECTION));
         assertNotNull(testService.getTransportSelectorCallback());
 
         // onSelectionTerminated()
-        assertTrue(testService.terminateSelection(DisconnectCause.POWER_OFF));
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "terminateSelection failed",
+                testService.terminateSelection(DisconnectCause.POWER_OFF));
+        assertTrue(
+                "Timeout waiting for call disconnected",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTED, WAIT_FOR_CALL_STATE));
     }
 
     @Test
@@ -276,33 +291,49 @@ public class DomainSelectionServiceTestOnMockModem extends DomainSelectionCallin
         placeOutgoingCall(TEST_EMERGENCY_NUMBER);
 
         // onDomainSelection()
-        assertTrue(testService.waitForLatchCountdown(LATCH_ON_DOMAIN_SELECTION));
+        assertTrue(
+                "Timeout waiting for onDomainSelection",
+                testService.waitForLatchCountdown(LATCH_ON_DOMAIN_SELECTION));
         assertNotNull(testService.getTransportSelectorCallback());
-        assertTrue(testService.waitForLatchCountdown(LATCH_ON_SERVICE_STATE_UPDATED));
-        assertTrue(testService.waitForLatchCountdown(LATCH_ON_BARRING_INFO_UPDATED));
+        assertTrue(
+                "Timeout waiting for service state updated",
+                testService.waitForLatchCountdown(LATCH_ON_SERVICE_STATE_UPDATED));
+        assertTrue(
+                "Timeout waiting for barring info updated",
+                testService.waitForLatchCountdown(LATCH_ON_BARRING_INFO_UPDATED));
 
-        assertTrue(testService.onCreated());
+        assertTrue("onCreated failed", testService.onCreated());
 
         // onWwanSelected()
-        assertTrue(testService.onWwanSelected());
-        assertTrue(testService.waitForLatchCountdown(LATCH_ON_WWAN_SELECTOR_CALLBACK));
+        assertTrue("onWwanSelected failed", testService.onWwanSelected());
+        assertTrue(
+                "Timeout waiting for wwan selector callback",
+                testService.waitForLatchCountdown(LATCH_ON_WWAN_SELECTOR_CALLBACK));
         assertNotNull(testService.getWwanSelectorCallback());
 
         // onDomainSelected(DOMAIN_CS)
-        assertTrue(testService.onDomainSelected(DOMAIN_CS));
-        assertTrue(waitForVoiceLatchCountdown(LATCH_EMERGENCY_DIAL));
+        assertTrue("onDomainSelected failed", testService.onDomainSelected(DOMAIN_CS));
+        assertTrue(
+                "Timeout waiting for emergency dial",
+                waitForVoiceLatchCountdown(LATCH_EMERGENCY_DIAL));
 
         // call disconnected
         sMockModemManager.clearAllCalls(sTestSlot, DisconnectCause.ERROR_UNSPECIFIED);
 
-        assertTrue(waitForVoiceLatchCountdown(LATCH_GET_LAST_CALL_FAIL_CAUSE));
+        assertTrue(
+                "Timeout waiting for last call fail cause",
+                waitForVoiceLatchCountdown(LATCH_GET_LAST_CALL_FAIL_CAUSE));
 
         // reselectDomain()
-        assertTrue(testService.waitForLatchCountdown(LATCH_ON_RESELECTION));
+        assertTrue(
+                "Timeout waiting for reselection",
+                testService.waitForLatchCountdown(LATCH_ON_RESELECTION));
 
         // dial CS again
-        assertTrue(testService.onDomainSelected(DOMAIN_CS));
-        assertTrue(waitForVoiceLatchCountdown(LATCH_EMERGENCY_DIAL));
+        assertTrue("onDomainSelected failed", testService.onDomainSelected(DOMAIN_CS));
+        assertTrue(
+                "Timeout waiting for emergency dial",
+                waitForVoiceLatchCountdown(LATCH_EMERGENCY_DIAL));
     }
 
     @Test
@@ -319,36 +350,50 @@ public class DomainSelectionServiceTestOnMockModem extends DomainSelectionCallin
         placeOutgoingCall(TEST_EMERGENCY_NUMBER);
 
         // onDomainSelection()
-        assertTrue(testService.waitForLatchCountdown(LATCH_ON_DOMAIN_SELECTION));
+        assertTrue(
+                "Timeout waiting for onDomainSelection",
+                testService.waitForLatchCountdown(LATCH_ON_DOMAIN_SELECTION));
         assertNotNull(testService.getTransportSelectorCallback());
-        assertTrue(testService.waitForLatchCountdown(LATCH_ON_SERVICE_STATE_UPDATED));
-        assertTrue(testService.waitForLatchCountdown(LATCH_ON_BARRING_INFO_UPDATED));
+        assertTrue(
+                "Timeout waiting for service state updated",
+                testService.waitForLatchCountdown(LATCH_ON_SERVICE_STATE_UPDATED));
+        assertTrue(
+                "Timeout waiting for barring info updated",
+                testService.waitForLatchCountdown(LATCH_ON_BARRING_INFO_UPDATED));
 
         SelectionAttributes attr = testService.getSelectionAttributes();
         assertNotNull(attr);
         assertEquals(SELECTOR_TYPE_CALLING, attr.getSelectorType());
-        assertTrue(attr.isEmergency());
+        assertTrue("SelectionAttributes should be for emergency", attr.isEmergency());
         assertNotNull(attr.getAddress());
         assertNotNull(attr.getAddress().getSchemeSpecificPart());
         assertEquals(TEST_EMERGENCY_NUMBER, attr.getAddress().getSchemeSpecificPart());
-        assertTrue(attr.getCsDisconnectCause() == NOT_VALID
-                || attr.getCsDisconnectCause() == NO_DISCONNECT_CAUSE_AVAILABLE);
+        assertTrue(
+                "CsDisconnectCause should be NOT_VALID or NO_DISCONNECT_CAUSE_AVAILABLE",
+                attr.getCsDisconnectCause() == NOT_VALID
+                        || attr.getCsDisconnectCause() == NO_DISCONNECT_CAUSE_AVAILABLE);
         assertNotNull(attr.getEmergencyRegistrationResult());
 
-        assertTrue(testService.onCreated());
+        assertTrue("onCreated failed", testService.onCreated());
 
         // onWwanSelected()
-        assertTrue(testService.onWwanSelected());
-        assertTrue(testService.waitForLatchCountdown(LATCH_ON_WWAN_SELECTOR_CALLBACK));
+        assertTrue("onWwanSelected failed", testService.onWwanSelected());
+        assertTrue(
+                "Timeout waiting for wwan selector callback",
+                testService.waitForLatchCountdown(LATCH_ON_WWAN_SELECTOR_CALLBACK));
         assertNotNull(testService.getWwanSelectorCallback());
 
         // onDomainSelected(DOMAIN_CS)
-        assertTrue(testService.onDomainSelected(DOMAIN_CS));
-        assertTrue(waitForVoiceLatchCountdown(LATCH_EMERGENCY_DIAL));
+        assertTrue("onDomainSelected failed", testService.onDomainSelected(DOMAIN_CS));
+        assertTrue(
+                "Timeout waiting for emergency dial",
+                waitForVoiceLatchCountdown(LATCH_EMERGENCY_DIAL));
 
         // CS call state will be changed to ACTIVE in MockModem automatically.
         // finishSelection()
-        assertTrue(testService.waitForLatchCountdown(LATCH_ON_FINISH_SELECTION));
+        assertTrue(
+                "Timeout waiting for finishSelection",
+                testService.waitForLatchCountdown(LATCH_ON_FINISH_SELECTION));
     }
 
     @Test
@@ -362,26 +407,34 @@ public class DomainSelectionServiceTestOnMockModem extends DomainSelectionCallin
 
         placeOutgoingCall(TEST_EMERGENCY_NUMBER);
 
-        assertTrue(testService.waitForLatchCountdown(LATCH_ON_DOMAIN_SELECTION));
-        assertTrue(testService.onCreated());
-        assertTrue(testService.onWwanSelected());
-        assertTrue(testService.waitForLatchCountdown(LATCH_ON_WWAN_SELECTOR_CALLBACK));
+        assertTrue(
+                "Timeout waiting for onDomainSelection",
+                testService.waitForLatchCountdown(LATCH_ON_DOMAIN_SELECTION));
+        assertTrue("onCreated failed", testService.onCreated());
+        assertTrue("onWwanSelected failed", testService.onWwanSelected());
+        assertTrue(
+                "Timeout waiting for wwan selector callback",
+                testService.waitForLatchCountdown(LATCH_ON_WWAN_SELECTOR_CALLBACK));
 
         // onRequestEmergencyNetworkScan
         List<Integer> preferredNetworks = new ArrayList<>();
         preferredNetworks.add(Integer.valueOf(EUTRAN));
         preferredNetworks.add(Integer.valueOf(UTRAN));
 
-        assertTrue(testService.requestEmergencyNetworkScan(
+        assertTrue("requestEmergencyNetworkScan failed", testService.requestEmergencyNetworkScan(
                 preferredNetworks, SCAN_TYPE_NO_PREFERENCE));
-        assertTrue(waitForNetworkLatchCountdown(LATCH_TRIGGER_EMERGENCY_SCAN));
+        assertTrue(
+                "Timeout waiting for emergency scan",
+                waitForNetworkLatchCountdown(LATCH_TRIGGER_EMERGENCY_SCAN));
 
         MockEmergencyRegResult regResult = getEmergencyRegResult(UTRAN,
                 REGISTRATION_STATE_UNKNOWN, NetworkRegistrationInfo.DOMAIN_CS,
                 false, false, 0, 0, "310", "260");
         sMockModemManager.unsolEmergencyNetworkScanResult(sTestSlot, regResult);
 
-        assertTrue(testService.waitForLatchCountdown(LATCH_ON_EMERGENCY_REG_RESULT));
+        assertTrue(
+                "Timeout waiting for emergency reg result",
+                testService.waitForLatchCountdown(LATCH_ON_EMERGENCY_REG_RESULT));
 
         EmergencyRegistrationResult receivedResult = testService.getEmergencyRegResult();
 
@@ -410,12 +463,16 @@ public class DomainSelectionServiceTestOnMockModem extends DomainSelectionCallin
 
         // Place outgoing call
         telecomManager.placeCall(imsUri, extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Timeout waiting for call added",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         Call call = getCall(getCurrentCallId());
 
         assertNotNull(call);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Timeout waiting for call dialing",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
         return call;
     }
@@ -426,7 +483,9 @@ public class DomainSelectionServiceTestOnMockModem extends DomainSelectionCallin
             serviceInfos.put(BARRING_SERVICE_TYPE_EMERGENCY,
                     new BarringInfo.BarringServiceInfo(BARRING_TYPE_UNCONDITIONAL, false, 0, 0));
         }
-        assertTrue(sMockModemManager.unsolBarringInfoChanged(sTestSlot, serviceInfos));
+        assertTrue(
+                "unsolBarringInfoChanged failed",
+                sMockModemManager.unsolBarringInfoChanged(sTestSlot, serviceInfos));
     }
 
     private static MockEmergencyRegResult getEmergencyRegResult(
