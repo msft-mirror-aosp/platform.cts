@@ -355,17 +355,76 @@ public class AccessibilityNodeInfoTest {
         AccessibilityNodeInfo b = new AccessibilityNodeInfo(new View(getContext()));
         b.setText("b");
         AccessibilityNodeInfo info = new AccessibilityNodeInfo(new View(getContext()));
+
         // Test null selection.
         assertThat(info.getTextSelectionStart()).isEqualTo(-1);
         assertThat(info.getTextSelectionEnd()).isEqualTo(-1);
+
         AccessibilityNodeInfo.Selection selection =
                 new AccessibilityNodeInfo.Selection(
                         new AccessibilityNodeInfo.SelectionPosition(a, 1),
                         new AccessibilityNodeInfo.SelectionPosition(b, 2));
         info.setSelection(selection);
+
         // Test multi node selection can not be converted to text selection.
         assertThat(info.getTextSelectionStart()).isEqualTo(-1);
         assertThat(info.getTextSelectionEnd()).isEqualTo(-1);
+    }
+
+    @SmallTest
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityNodeInfo#getSelection",
+                "android.view.accessibility.AccessibilityNodeInfo#Selection",
+            })
+    @RequiresFlagsEnabled({
+        Flags.FLAG_A11Y_SELECTION_API,
+        Flags.FLAG_A11Y_SELECTION_API_INVALID_TEXT_SELECTION
+    })
+    public void textSelectionInteropNullSelection() {
+        AccessibilityNodeInfo info = new AccessibilityNodeInfo(new View(getContext()));
+        info.setText("Hello World");
+
+        // Set invalid text selections.
+        info.setTextSelection(-1, -1);
+        assertThat(info.getSelection()).isNull();
+
+        info.setTextSelection(0, -1);
+        assertThat(info.getSelection()).isNull();
+
+        info.setTextSelection(-1, 0);
+        assertThat(info.getSelection()).isNull();
+    }
+
+    @SmallTest
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityNodeInfo#getSelection",
+                "android.view.accessibility.AccessibilityNodeInfo#Selection",
+            })
+    @RequiresFlagsEnabled({
+        Flags.FLAG_A11Y_SELECTION_API,
+        Flags.FLAG_A11Y_SELECTION_API_INVALID_TEXT_SELECTION
+    })
+    public void textSelectionInteropResetNullSelection() {
+        AccessibilityNodeInfo info = new AccessibilityNodeInfo(new View(getContext()));
+        info.setText("Hello World");
+        info.setTextSelection(0, 3);
+        assertThat(info.getSelection()).isNotNull();
+
+        // Selection should be set to null if setTextSelection is called with an invalid end index.
+        info.setTextSelection(0, -1);
+        assertThat(info.getSelection()).isNull();
+
+        info.setTextSelection(0, 3);
+        assertThat(info.getSelection()).isNotNull();
+
+        // Selection should be set to null if setTextSelection is called with an invalid start
+        // index.
+        info.setTextSelection(-1, 0);
+        assertThat(info.getSelection()).isNull();
     }
 
     @SmallTest
@@ -380,6 +439,7 @@ public class AccessibilityNodeInfoTest {
         AccessibilityNodeInfo info = new AccessibilityNodeInfo(new View(getContext()));
         info.setText("Hello World");
         info.setTextSelection(0, 3);
+
         assertThat(info.getSelection()).isNotNull();
         final AccessibilityNodeInfo.Selection selection = info.getSelection();
         assertThat(selection.getStart().getOffset()).isEqualTo(0);
