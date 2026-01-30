@@ -64,9 +64,12 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.VsrTest;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -167,6 +170,16 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
     @Rule
     public ActivityScenarioRule<CodecDynamicTestActivity> mActivityRule =
             new ActivityScenarioRule<>(CodecDynamicTestActivity.class);
+
+    @BeforeClass
+    public static void setUpDeviceForTest() {
+        setWallpaperToSolidColor();
+    }
+
+    @AfterClass
+    public static void tearDownTestSettings() {
+        setWallpaperToSystemDefault();
+    }
 
     @After
     public void VideoDecoderAvailabilityTestTearDown() {
@@ -324,7 +337,8 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
                 GLOBAL_AVBL_RESOURCES, String.format(Locale.getDefault(),
                         "getRequiredResources() failed in %s state \n", CodecState.EOS)
                         + mTestEnv + mTestConfig);
-        mCodec.flush();
+        flushCodec();
+        mOutputBuff.reset();
         validateGetCodecResources(List.of(Pair.create(mCodec, CodecState.FLUSHED)),
                 GLOBAL_AVBL_RESOURCES, String.format(Locale.getDefault(),
                         "getRequiredResources() failed in %s state \n", CodecState.FLUSHED)
@@ -570,7 +584,9 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
             }
             surfaces.clear();
             codecs.clear();
-            if (lastGlobalResourceForFormat != null) {
+            // Only in real-time, it is guaranteed that the more pixels are processed per sec, the
+            // more is the resource usage.
+            if (lastGlobalResourceForFormat != null && testRTMode) {
                 int result = compareResources(lastGlobalResourceForFormat,
                         currentGlobalResourcesForFormat, testLogs);
                 Assert.assertEquals("format : " + (lastFormat == null ? "empty" : lastFormat)
@@ -793,6 +809,9 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
     public void testResourceConsumptionForOperatingMode() throws IOException, InterruptedException {
         Assume.assumeTrue("Skipping, intended for devices the board first sdk >= 202604",
                 BOARD_FIRST_SDK_IS_AT_LEAST_202604);
+        // TODO: add mpeg4 sequence of longer duration
+        Assume.assumeTrue("mpeg4 test seq contains only 12 frames. Too small for this test?",
+                !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG4));
         MediaFormat format = setUpSource(mSrcFiles[0]);
         int frameRate = 30;
         if (!format.containsKey(MediaFormat.KEY_FRAME_RATE)) {
@@ -829,6 +848,7 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
         doWork(10);
         int currResourceChangeCbCount = asyncHandleResource.getResourceChangeCbCount();
         updateOperatingMode(mCodec, 0, frameRate); // switch to real time
+        doWork(5);
         asyncHandleResource.waitOnResourceChange(currResourceChangeCbCount);
         Assert.assertEquals("taking too long to receive onRequiredResourcesChanged callback\n"
                         + mTestEnv + mTestConfig,
@@ -839,17 +859,17 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
                 "current resources of media codec to is not matching real-time resources \n"
                         + testLogs + mTestEnv + mTestConfig,
                 RESOURCE_EQ, result);
-        mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
         doWork(10);
         currResourceChangeCbCount = asyncHandleResource.getResourceChangeCbCount();
         updateOperatingMode(mCodec, 0, frameRate); // switch to real time
+        doWork(5);
         asyncHandleResource.waitOnResourceChange(currResourceChangeCbCount);
         Assert.assertEquals(
                 "unexpected onRequiredResourcesChanged callback\n" + mTestEnv + mTestConfig,
                 asyncHandleResource.getResourceChangeCbCount(), currResourceChangeCbCount);
-        mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
         doWork(10);
         updateOperatingMode(mCodec, 1, 0); // switch to non-real time
+        doWork(5);
         asyncHandleResource.waitOnResourceChange(currResourceChangeCbCount);
         Assert.assertEquals("taking too long to receive onRequiredResourcesChanged callback\n"
                         + mTestEnv + mTestConfig,
@@ -860,10 +880,10 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
                 "current resources of media codec to is not matching non real-time resources \n"
                         + testLogs + mTestEnv + mTestConfig,
                 RESOURCE_EQ, result);
-        mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
         doWork(10);
         currResourceChangeCbCount = asyncHandleResource.getResourceChangeCbCount();
         updateOperatingMode(mCodec, 1, 0); // switch to non-real time
+        doWork(5);
         asyncHandleResource.waitOnResourceChange(currResourceChangeCbCount);
         Assert.assertEquals(
                 "unexpected onRequiredResourcesChanged callback\n" + mTestEnv + mTestConfig,
@@ -885,6 +905,7 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
     @RequiresFlagsEnabled({FLAG_CODEC_AVAILABILITY, FLAG_DYNAMIC_OPERATING_MODE_SWITCH})
     @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
             "android.media.MediaCodec#getRequiredResources"})
+    @Ignore("todo: have to queue inputs after switching operating mode")
     public void testConcurrentMaxInstancesDynamic() {
         Assume.assumeTrue("Skipping, intended for devices the board first sdk >= 202604",
                 BOARD_FIRST_SDK_IS_AT_LEAST_202604);

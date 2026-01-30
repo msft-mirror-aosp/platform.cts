@@ -26,6 +26,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
+import android.app.ActivityManager;
 import android.app.Instrumentation;
 import android.content.ComponentName;
 import android.content.Context;
@@ -204,6 +205,8 @@ public class PackageInstallerCujTestBase {
         uninstallTestPackage();
         // to avoid any UI is still on the screen
         pressBack();
+        // Package install can trigger settings launch, to avoid settings remaining active kill app.
+        forceStopPackage(getSettingsPackageName(getPackageManager()));
     }
 
     /** Assert the target package that is the version 1 is installed. */
@@ -402,8 +405,8 @@ public class PackageInstallerCujTestBase {
 
         // x is the center of the dialog
         int x = (bound.left + bound.right) / 2;
-        // The default value of y is the (minTop + maxTop) / 2
-        int y = (minTop + maxTop) / 2;
+        // The default value of y is the furthest point from the top outside the dialog.
+        int y = maxTop;
         if (minTop > maxTop) {
             // the maximum of bottom is the minimum of (display height * 9 / 10) and
             // the display height - the bottom of the insets - 24 * dp
@@ -416,7 +419,7 @@ public class PackageInstallerCujTestBase {
                 pressBack();
                 throw new AssumptionViolatedException("There is no space to touch outside!");
             }
-            y = (minBottom + maxBottom) / 2;
+            y = minBottom;
         }
 
         Log.d(TAG, "touchOutside x = " + x + ", y = " + y);
@@ -573,6 +576,16 @@ public class PackageInstallerCujTestBase {
         SystemUtil.runShellCommand(String.format("pm uninstall %s", packageName));
     }
 
+    /** Force stop the package with {@code packageName}. */
+    public static void forceStopPackage(String packageName) {
+        SystemUtil.runWithShellPermissionIdentity(
+                () ->
+                        getInstrumentation()
+                                .getContext()
+                                .getSystemService(ActivityManager.class)
+                                .forceStopPackage(packageName));
+    }
+
     /**
      * Install the test apk with update-ownership.
      */
@@ -618,6 +631,15 @@ public class PackageInstallerCujTestBase {
     public static void installNoLauncherActivityTestPackage() throws IOException {
         installPackage(TEST_NO_LAUNCHER_ACTIVITY_APK_NAME);
         assertTestPackageInstalled();
+    }
+
+    /** Return the packing name for the associated settings application. */
+    public static @NonNull String getSettingsPackageName(@NonNull final PackageManager pm) {
+        final Intent settingsIntent = new Intent(Settings.ACTION_SETTINGS);
+        final ComponentName settingsComponent = settingsIntent.resolveActivity(pm);
+        return settingsComponent != null
+                ? settingsComponent.getPackageName()
+                : "com.android.settings";
     }
 
     /**

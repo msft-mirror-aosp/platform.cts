@@ -16,6 +16,9 @@
 
 package com.android.cts.verifier.audio;
 
+import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
+import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
+
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -26,6 +29,7 @@ import android.media.AudioManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -37,10 +41,18 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.android.compatibility.common.util.ResultType;
+import com.android.compatibility.common.util.ResultUnit;
+import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
+import com.android.cts.verifier.audio.reportlog.TestStatus;
 
 import com.google.common.collect.ImmutableList;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -54,11 +66,24 @@ import java.util.stream.DoubleStream;
 
 /** CTS Verifier test to measure communication device switching latency. */
 public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity {
+    private static final String TAG = "AudioCommunicationLatencyActivity";
     private static final Duration LATENCY_MUST_THRESHOLD = Duration.ofMillis(1500);
+    private static final float LATENCY_MUST_REPORT = (float) LATENCY_MUST_THRESHOLD.toMillis();
     private static final Duration CALLBACK_WAIT_TIME = Duration.ofSeconds(2);
     private static final int NUM_TEST_RUNS = 10;
+    // ReportLog Schema
+    private static final String KEY_DEVICE_NAME = "device_name";
+    private static final String KEY_DEVICE_TYPE = "device_type";
+    private static final String KEY_NUM_TEST_RUNS = "num_test_runs";
+    private static final String KEY_TEST_STATUS = "test_status";
+    private static final String KEY_LATENCY_AVERAGE_MS = "latency_average_ms";
+    private static final String KEY_LATENCY_MIN_MS = "latency_min_ms";
+    private static final String KEY_LATENCY_MAX_MS = "latency_max_ms";
+    private static final String KEY_STD_DEV_LATENCY_MS = "latency_std_dev_ms";
+    private static final String KEY_AVG_THRESHOLD_MS = "latency_average_ms_threshold";
+    private static final String KEY_LATENCY_RESULTS = "latency_results";
+    private static final String KEY_OVERALL_STATUS = "overall_status";
 
-    // Using standard Google Java Style for field naming (no 'm' prefix).
     private final Handler mMainHandler = new Handler(Looper.getMainLooper());
     private final ExecutorService mExecutor = Executors.newSingleThreadExecutor();
 
@@ -153,11 +178,21 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
         // Add supported devices in order.
         for (int deviceType : REQUIRED_DEVICES) {
             boolean isSupported = supportedDeviceTypes.contains(deviceType);
-            boolean isAvailable =
-                    availableDevices.stream().anyMatch(d -> d.getType() == deviceType);
+            AudioDeviceInfo deviceInfo =
+                    availableDevices.stream()
+                            .filter(d -> d.getType() == deviceType)
+                            .findFirst()
+                            .orElse(null);
+            boolean isAvailable = (deviceInfo != null);
+
+            String name =
+                    (deviceInfo != null)
+                            ? getDescriptiveDeviceName(deviceInfo)
+                            : getDeviceName(deviceType);
+
             mDeviceList.add(
                     new DeviceData(
-                            getDeviceName(deviceType),
+                            name,
                             deviceType,
                             getDeviceInstruction(deviceType),
                             isSupported,
@@ -251,7 +286,7 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
                     }
 
                     StringBuilder results = new StringBuilder();
-                    boolean success = testDevice(deviceToTest, results);
+                    boolean success = testDevice(deviceData, deviceToTest, results);
                     runOnUiThread(
                             () -> {
                                 deviceData.mTestResultText = results.toString();
@@ -432,7 +467,8 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
         return TestLoopAction.PROCEED; // Successfully completed one test run.
     }
 
-    private boolean runTestLoop(AudioDeviceInfo device, StringBuilder results) {
+    private boolean runTestLoop(
+            DeviceData deviceData, AudioDeviceInfo device, StringBuilder results) {
         List<Long> latenciesMs = new ArrayList<>();
         TestOnCommunicationDeviceChangedListener callback =
                 new TestOnCommunicationDeviceChangedListener();
@@ -462,18 +498,26 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
         }
 
         DoubleStream doubleLatencyStream = latenciesMs.stream().mapToDouble(Long::doubleValue);
-        double average = doubleLatencyStream.average().orElse(0.0);
-        double stdDev =
+        Double average = doubleLatencyStream.average().orElse(0.0);
+        Double stdDevDouble =
                 Math.sqrt(
                         latenciesMs.stream()
-                                .mapToDouble(l -> Math.pow(l - average, 2))
+                                .mapToDouble(
+                                        l ->
+                                                (l.doubleValue() - average)
+                                                        * (l.doubleValue() - average))
                                 .average()
                                 .orElse(0.0));
-        long min = latenciesMs.stream().mapToLong(Long::longValue).min().orElse(0);
-        long max = latenciesMs.stream().mapToLong(Long::longValue).max().orElse(0);
+        Long min = latenciesMs.stream().mapToLong(Long::longValue).min().orElse(0);
+        Long max = latenciesMs.stream().mapToLong(Long::longValue).max().orElse(0);
+
+        deviceData.mAverageLatency = average.floatValue();
+        deviceData.mStdDevLatency = stdDevDouble.floatValue();
+        deviceData.mMinLatency = min.floatValue();
+        deviceData.mMaxLatency = max.floatValue();
 
         results.append(getString(R.string.audio_communication_latency_avg, average)).append("\n");
-        results.append(getString(R.string.audio_communication_latency_std_dev, stdDev))
+        results.append(getString(R.string.audio_communication_latency_std_dev, stdDevDouble))
                 .append("\n");
         results.append(getString(R.string.audio_communication_latency_min, min)).append("\n");
         results.append(getString(R.string.audio_communication_latency_max, max)).append("\n");
@@ -487,11 +531,12 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
         return false;
     }
 
-    private boolean testDevice(AudioDeviceInfo device, StringBuilder results) {
+    private boolean testDevice(
+            DeviceData deviceData, AudioDeviceInfo device, StringBuilder results) {
         String deviceName = getDescriptiveDeviceName(device);
         results.append(getString(R.string.audio_communication_latency_testing_device, deviceName))
                 .append("\n");
-        return runTestLoop(device, results);
+        return runTestLoop(deviceData, device, results);
     }
 
     private String getDescriptiveDeviceName(AudioDeviceInfo device) {
@@ -504,6 +549,57 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
         } else {
             return String.format("%s (%s)", getDeviceName(device.getType()), productName);
         }
+    }
+
+    @Override
+    public String getTestId() {
+        return setTestNameSuffix(sCurrentDisplayMode, getClass().getName());
+    }
+
+    @Override
+    public boolean requiresReportLog() {
+        return true;
+    }
+
+    @Override
+    public String getReportFileName() {
+        return PassFailButtons.AUDIO_TESTS_REPORT_LOG_NAME;
+    }
+
+    @Override
+    public final String getReportSectionName() {
+        return setTestNameSuffix(sCurrentDisplayMode, "audio_communication_latency_activity");
+    }
+
+    @Override
+    public void recordTestResults() {
+        CtsVerifierReportLog reportLog = getReportLog();
+        JSONArray resultsArray = new JSONArray();
+        TestStatus status = TestStatus.TEST_STATUS_PASSED;
+        int notSupportedCount = 0;
+
+        for (DeviceData deviceData : mDeviceList) {
+            boolean notSupported = deviceData.mTestResult == TestResult.NOT_SUPPORTED;
+            if (notSupported) {
+                notSupportedCount++;
+            } else if (deviceData.mTestResult != TestResult.PASS) {
+                status = TestStatus.TEST_STATUS_FAILED;
+            }
+
+            try {
+                resultsArray.put(deviceData.toJson());
+            } catch (JSONException e) {
+                Log.e(TAG, "Error building report JSON", e);
+            }
+        }
+        // For the cases when there is less than one supported device,
+        // there are not enough devices to run the test thus not supported.
+        if (notSupportedCount >= mDeviceList.size() - 1) {
+            status = TestStatus.TEST_STATUS_SKIPPED_UNSUPPORTED_DEVICE;
+        }
+        reportLog.addValues(KEY_LATENCY_RESULTS, resultsArray);
+        reportLog.addValue(KEY_OVERALL_STATUS, status.name(), ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.submit();
     }
 
     private boolean hasValidCommunication() {
@@ -611,6 +707,10 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
         boolean mIsAvailable;
         TestResult mTestResult = TestResult.NOT_TESTED;
         String mTestResultText = "";
+        float mAverageLatency;
+        float mStdDevLatency;
+        float mMinLatency;
+        float mMaxLatency;
 
         DeviceData(
                 String name,
@@ -630,6 +730,36 @@ public class AudioCommunicationLatencyActivity extends PassFailButtons.Activity 
 
         boolean isSupported() {
             return mIsSupported;
+        }
+
+        JSONObject toJson() throws JSONException {
+            JSONObject json = new JSONObject();
+            json.put(KEY_DEVICE_NAME, mName);
+            json.put(KEY_DEVICE_TYPE, mDeviceType);
+            json.put(KEY_NUM_TEST_RUNS, NUM_TEST_RUNS);
+            json.put(KEY_TEST_STATUS, getTestStatusFromCurrentResults());
+
+            if (mTestResult == TestResult.PASS || mTestResult == TestResult.FAIL) {
+                json.put(KEY_LATENCY_AVERAGE_MS, mAverageLatency);
+                json.put(KEY_LATENCY_MIN_MS, mMinLatency);
+                json.put(KEY_LATENCY_MAX_MS, mMaxLatency);
+                json.put(KEY_STD_DEV_LATENCY_MS, mStdDevLatency);
+                // Reporting latency threshold since we may change this in the future,
+                // but furthermore this may be device type dependent depending on future test
+                // results.
+                json.put(KEY_AVG_THRESHOLD_MS, LATENCY_MUST_REPORT);
+            }
+            return json;
+        }
+
+        private TestStatus getTestStatusFromCurrentResults() {
+            return switch (mTestResult) {
+                case NOT_TESTED -> TestStatus.TEST_STATUS_NOT_RUN;
+                case FAIL -> TestStatus.TEST_STATUS_FAILED;
+                case PASS -> TestStatus.TEST_STATUS_PASSED;
+                case NOT_SUPPORTED -> TestStatus.TEST_STATUS_SKIPPED_UNSUPPORTED_DEVICE;
+                default -> TestStatus.TEST_STATUS_UNSPECIFIED;
+            };
         }
     }
 

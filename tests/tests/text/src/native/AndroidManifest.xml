@@ -15,27 +15,21 @@
 -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.android.cts.pcc.featuretests">
+    package="android.text.cts.nativeservice">
+    <uses-sdk android:minSdkVersion="37" android:targetSdkVersion="37" />
     <application>
-        <uses-library android:name="android.test.runner" />
-
-        <!-- Standard Android Service -->
-        <service android:name=".services.NonPccStorageService" android:exported="false" />
-
-        <service
-            android:name=".services.EmptyPccService"
-            android:exported="true"
-            android:privateComputeCore="true"/>
-        <service android:name=".services.MigrationTestService" android:exported="true" android:permission="android.permission.BIND_DATA_MIGRATION_FOR_PRIVATECOMPUTE">
-            <intent-filter>
-                <action android:name="android.app.privatecompute.DataMigrationToPccService" />
-            </intent-filter>
+        <service android:name=".GTestNativeService"
+                 android:isolatedProcess="true"
+                 android:nativeService="true"
+                 android:exported="false">
+            <property android:name="android.app.PROPERTY_NATIVE_SERVICE_LIBRARY_NAME"
+                        android:value="libcts_text_nativeservice.so" />
+            <property android:name="android.app.PROPERTY_NATIVE_SERVICE_FUNCTION_NAME"
+                        android:value="native_gtest_runner_service_createService" />
         </service>
     </application>
-
     <instrumentation
         android:name="androidx.test.runner.AndroidJUnitRunner"
-        android:targetPackage="com.android.cts.pcc.featuretests"
-        android:label="CTS tests for PCC features not instrumented to run in PCC" />
+        android:targetPackage="android.text.cts.nativeservice"
+        android:label="Running the specified GTest in a native service" />
 </manifest>
-

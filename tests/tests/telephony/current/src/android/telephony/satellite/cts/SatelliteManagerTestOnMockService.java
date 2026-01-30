@@ -52,6 +52,7 @@ import static org.junit.Assume.assumeTrue;
 import android.Manifest;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
+import android.app.PendingIntent;
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
@@ -65,6 +66,7 @@ import android.net.ConnectivityManager;
 import android.net.wifi.WifiManager;
 import android.nfc.NfcAdapter;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.OutcomeReceiver;
 import android.os.PersistableBundle;
@@ -84,6 +86,7 @@ import android.telephony.satellite.AntennaPosition;
 import android.telephony.satellite.EarfcnRange;
 import android.telephony.satellite.NtnSignalStrength;
 import android.telephony.satellite.PointingInfo;
+import android.telephony.satellite.PointingUiAppLaunchIntentAttributes;
 import android.telephony.satellite.SatelliteAccessConfiguration;
 import android.telephony.satellite.SatelliteCapabilities;
 import android.telephony.satellite.SatelliteDatagram;
@@ -1770,6 +1773,69 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
         sSatelliteManager.requestCapabilities(getContext().getMainExecutor(), receiver);
 
         revokeSatellitePermission();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SYSTEM_SELECTION_SPECIFIER_ENHANCEMENT)
+    public void testRequestPointingUiAppLaunchIntent() throws Exception {
+        if (!shouldTestSatelliteWithMockService()) {
+            logd("testRequestPointingUiAppLaunchIntent: skipping test due to mock service not"
+                    + " available");
+            return;
+        }
+
+        logd("testRequestPointingUiAppLaunchIntent: start");
+        try {
+            grantSatellitePermission();
+
+            PointingUiAppLaunchIntentAttributes attributes =
+                    new PointingUiAppLaunchIntentAttributes(true, false, true);
+            final AtomicReference<PendingIntent> pendingIntent = new AtomicReference<>();
+            final AtomicReference<Integer> errorCode = new AtomicReference<>();
+            CountDownLatch latch = new CountDownLatch(1);
+
+            OutcomeReceiver<PendingIntent, SatelliteManager.SatelliteException> receiver =
+                    new OutcomeReceiver<>() {
+                        @Override
+                        public void onResult(PendingIntent result) {
+                            pendingIntent.set(result);
+                            latch.countDown();
+                        }
+
+                        @Override
+                        public void onError(SatelliteManager.SatelliteException exception) {
+                            errorCode.set(exception.getErrorCode());
+                            latch.countDown();
+                        }
+                    };
+
+            sSatelliteManager.requestPointingUiAppLaunchIntent(
+                    attributes, getContext().getMainExecutor(), receiver);
+
+            assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+            assertNotNull(pendingIntent.get());
+            assertNull(errorCode.get());
+
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .adoptShellPermissionIdentity("android.permission.GET_INTENT_SENDER_INTENT");
+
+            Intent intent = pendingIntent.get().getIntent();
+            assertNotNull(intent);
+            assertEquals(MockSatelliteServiceManager.PACKAGE,
+                    intent.getComponent().getPackageName());
+            assertEquals(MockPointingUiActivity.class.getName(),
+                    intent.getComponent().getClassName());
+            assertEquals(Intent.FLAG_ACTIVITY_NO_USER_ACTION | Intent.FLAG_ACTIVITY_CLEAR_TOP,
+                    intent.getFlags());
+
+            Bundle bundle = intent.getExtras();
+            assertNotNull(bundle);
+            assertTrue(bundle.getBoolean("needFullScreen", true));
+            assertFalse(bundle.getBoolean("isDemoMode", false));
+            assertTrue(bundle.getBoolean("isEmergency", true));
+        } finally {
+            revokeSatellitePermission();
+        }
     }
 
     @Test

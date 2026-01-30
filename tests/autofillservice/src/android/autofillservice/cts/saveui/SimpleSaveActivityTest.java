@@ -68,6 +68,8 @@ import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.service.autofill.BatchUpdates;
 import android.service.autofill.CustomDescription;
 import android.service.autofill.FillContext;
@@ -771,12 +773,51 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
         dismissSaveTest(DismissType.HOME_BUTTON);
     }
 
+    @RequiresFlagsDisabled("android.service.autofill.expressive_save_dialog")
     @Presubmit
     @Test
     @AutofillCriticalInternal
     public void testDismissSave_byTouchingOutside() throws Exception {
         startActivity();
         dismissSaveTest(DismissType.TOUCH_OUTSIDE);
+    }
+
+    @RequiresFlagsEnabled("android.service.autofill.expressive_save_dialog")
+    @Presubmit
+    @Test
+    @AutofillCriticalInternal
+    public void testDismissSave_byTappingCloseButton() throws Exception {
+        startActivity();
+        dismissSaveTest(DismissType.CLOSE_BUTTON);
+    }
+
+    @RequiresFlagsEnabled("android.service.autofill.expressive_save_dialog")
+    @Presubmit
+    @Test
+    @AutofillCriticalInternal
+    public void testShowExpressiveSaveDialog_touchOutside_dialogDoesNotDismiss() throws Exception {
+        startActivity();
+        // Set service.
+        enableService();
+
+        // Set expectations.
+        sReplier.addResponse(
+                new CannedFillResponse.Builder()
+                        .setRequiredSavableIds(SAVE_DATA_TYPE_GENERIC, ID_INPUT)
+                        .build());
+
+        // Trigger autofill.
+        mActivity.syncRunOnUiThread(() -> mActivity.mInput.requestFocus());
+        sReplier.getNextFillRequest();
+
+        // Trigger save.
+        mActivity.setTextAndWaitTextChange(/* input= */ "108", /* password= */ null);
+        mActivity.syncRunOnUiThread(() -> mActivity.mCommit.performClick());
+        mUiBot.assertSaveShowing(SAVE_DATA_TYPE_GENERIC);
+
+        // Tap outside, and verify the save dialog does not dismiss.
+        mUiBot.touchOutsideSaveDialog();
+        mUiBot.assertSaveShowing(SAVE_DATA_TYPE_GENERIC);
     }
 
     private void dismissSaveTest(DismissType dismissType) throws Exception {
@@ -809,6 +850,9 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
                 break;
             case TOUCH_OUTSIDE:
                 mUiBot.touchOutsideSaveDialog();
+                break;
+            case CLOSE_BUTTON:
+                mUiBot.clickSaveDialogClose();
                 break;
             default:
                 throw new IllegalArgumentException("invalid dismiss type: " + dismissType);
@@ -1044,6 +1088,9 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
                 mUiBot.saveForAutofill(true, SAVE_DATA_TYPE_GENERIC);
                 final SaveRequest saveRequest = sReplier.getNextSaveRequest();
                 assertTextAndValue(findNodeByResourceId(saveRequest.structure, ID_INPUT), "108");
+                break;
+            case TAP_CLOSE_BUTTON:
+                mUiBot.clickSaveDialogClose();
                 break;
             default:
                 throw new IllegalArgumentException("invalid action: " + action);

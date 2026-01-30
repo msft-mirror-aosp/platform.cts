@@ -28,6 +28,7 @@ import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.mediav2.common.cts.CodecDynamicTestActivity;
+import android.mediav2.common.cts.CodecTestBase;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Surface;
@@ -39,6 +40,8 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -59,6 +62,16 @@ public class MediaCodecInstancesTest {
     @Rule
     public ActivityScenarioRule<CodecDynamicTestActivity> mActivityRule =
             new ActivityScenarioRule<>(CodecDynamicTestActivity.class);
+
+    @BeforeClass
+    public static void setUpDeviceForTest() {
+        CodecTestBase.setWallpaperToSolidColor();
+    }
+
+    @AfterClass
+    public static void tearDownTestSettings() {
+        CodecTestBase.setWallpaperToSystemDefault();
+    }
 
     private static MediaFormat createMinFormat(String mime, MediaCodecInfo.CodecCapabilities caps) {
         MediaFormat format;

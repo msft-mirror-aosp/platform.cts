@@ -2700,6 +2700,95 @@ public final class ServiceTest {
         assertThat(updateableFlags.getValue()).isEqualTo(expectedFlags);
     }
 
+    /** Test UpdateBindingParams's getters when initialized as a rebind request. */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_UPDATE_SERVICE_BINDINGS)
+    public void testUpdateBindingParams_gettersAsRebindRequest() {
+        final LatchedConnection conn = new LatchedConnection(new CountDownLatch(1));
+        final long testFlags = Context.BIND_AUTO_CREATE | Context.BIND_IMPORTANT;
+        final Context.BindServiceFlags bindFlags = Context.BindServiceFlags.of(testFlags);
+
+        Context.UpdateBindingParams params =
+                new Context.UpdateBindingParams.Builder(conn, bindFlags).build();
+
+        assertThat(params.getConnection()).isEqualTo(conn);
+        assertThat(params.getFlags()).isNotNull();
+        assertThat(params.getFlags().getValue()).isEqualTo(testFlags);
+        assertThat(params.isRebind()).isTrue();
+        assertThat(params.isUnbind()).isFalse();
+    }
+
+    /** Test UpdateBindingParams's getters when initialized as an unbind request. */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_UPDATE_SERVICE_BINDINGS)
+    public void testUpdateBindingParams_gettersAsUnbindRequest() {
+        final LatchedConnection conn = new LatchedConnection(new CountDownLatch(1));
+
+        Context.UpdateBindingParams params = new Context.UpdateBindingParams.Builder(conn).build();
+
+        assertThat(params.getConnection()).isEqualTo(conn);
+        assertThat(params.getFlags()).isNull();
+        assertThat(params.isRebind()).isFalse();
+        assertThat(params.isUnbind()).isTrue();
+    }
+
+    /** Test UpdateBindingParams's getters after changing between rebind and unbind request. */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_UPDATE_SERVICE_BINDINGS)
+    public void testUpdateBindingParams_changingFromRebindToUnbindRequest() {
+        final LatchedConnection conn = new LatchedConnection(new CountDownLatch(1));
+        final long testFlags = Context.BIND_AUTO_CREATE | Context.BIND_IMPORTANT;
+        final Context.BindServiceFlags bindFlags = Context.BindServiceFlags.of(testFlags);
+
+        Context.UpdateBindingParams params =
+                new Context.UpdateBindingParams.Builder(conn, bindFlags).build();
+
+        assertThat(params.getConnection()).isEqualTo(conn);
+        assertThat(params.getFlags()).isNotNull();
+        assertThat(params.getFlags().getValue()).isEqualTo(testFlags);
+        assertThat(params.isRebind()).isTrue();
+        assertThat(params.isUnbind()).isFalse();
+
+        params.setUnbind();
+        assertThat(params.getFlags()).isNull();
+        assertThat(params.isRebind()).isFalse();
+        assertThat(params.isUnbind()).isTrue();
+
+        params.setRebind(bindFlags);
+        assertThat(params.getFlags()).isNotNull();
+        assertThat(params.getFlags().getValue()).isEqualTo(testFlags);
+        assertThat(params.isRebind()).isTrue();
+        assertThat(params.isUnbind()).isFalse();
+    }
+
+    /** Test that building multiple times from the same builder yields consistent results. */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_UPDATE_SERVICE_BINDINGS)
+    public void testUpdateBindingParamsBuilder_multipleBuilds() {
+        final LatchedConnection conn = new LatchedConnection(new CountDownLatch(1));
+        final long testFlags = Context.BIND_WAIVE_PRIORITY;
+        final Context.BindServiceFlags bindFlags = Context.BindServiceFlags.of(testFlags);
+
+        Context.UpdateBindingParams.Builder builder =
+                new Context.UpdateBindingParams.Builder(conn, bindFlags);
+
+        Context.UpdateBindingParams params1 = builder.build();
+        assertThat(params1.getConnection()).isEqualTo(conn);
+        assertThat(params1.getFlags()).isNotNull();
+        assertThat(params1.getFlags().getValue()).isEqualTo(testFlags);
+        assertThat(params1.isRebind()).isTrue();
+        assertThat(params1.isUnbind()).isFalse();
+
+        Context.UpdateBindingParams params2 = builder.build();
+        assertThat(params2.getConnection()).isEqualTo(conn);
+        assertThat(params2.getFlags()).isNotNull();
+        assertThat(params2.getFlags().getValue()).isEqualTo(testFlags);
+        assertThat(params2.isRebind()).isTrue();
+        assertThat(params2.isUnbind()).isFalse();
+
+        assertThat(params1).isNotSameInstanceAs(params2);
+    }
+
     @Test
     public void testLruWhenSwitchingBetweenAppsInFreeFormWindows() {
         assumeTrue("Multi window is not supported",

@@ -28,6 +28,7 @@ import android.app.ondeviceintelligence.OnDeviceIntelligenceException;
 import android.app.ondeviceintelligence.embedding.EmbeddingModel;
 import android.app.ondeviceintelligence.imagedescription.ImageDescriptionModel;
 import android.content.Intent;
+import android.os.LocaleList;
 import android.os.CancellationSignal;
 import android.os.Bundle;
 import android.os.Looper;
@@ -99,13 +100,17 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
                 getSampleFeature(3),
                 "test-embedding-model",
                 /* embeddingDimension= */ 128,
-                List.of(EmbeddingModel.MODALITY_TEXT));
+                List.of(EmbeddingModel.MODALITY_TEXT),
+                /* maxTokenLimit= */ 1024,
+                LocaleList.getEmptyLocaleList());
     }
 
     public static ImageDescriptionModel getSampleImageDescriptionModel() {
         return new ImageDescriptionModel(
                 getSampleFeature(4),
-                "test-image-description-model");
+                "test-image-description-model",
+                /* maxTokenLimit= */ 1024,
+                LocaleList.getEmptyLocaleList());
     }
 
     static final String TAG = "CtsIntelligenceService";
@@ -258,10 +263,21 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
     @Override
     public void onFetchImageDescriptionModel(
             int callerUid,
+            @NonNull String modelSignature,
             @NonNull
                     OutcomeReceiver<ImageDescriptionModel, OnDeviceIntelligenceException>
                             callback) {
         callback.onResult(getSampleImageDescriptionModel());
+    }
+
+    @Override
+    public void onListImageDescriptionModels(
+            int callerUid,
+            @NonNull OutcomeReceiver<List<ImageDescriptionModel>, OnDeviceIntelligenceException>
+            callback) {
+        List<ImageDescriptionModel> list = new ArrayList<>();
+        list.add(getSampleImageDescriptionModel());
+        callback.onResult(list);
     }
 
     /**

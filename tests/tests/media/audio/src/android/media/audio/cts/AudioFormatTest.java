@@ -16,16 +16,31 @@
 
 package android.media.audio.cts;
 
-import static org.testng.Assert.assertThrows;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 import android.media.AudioFormat;
+import android.media.audio.Flags;
 import android.os.Parcel;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
-import com.android.compatibility.common.util.CtsAndroidTestCase;
+import androidx.test.runner.AndroidJUnit4;
+
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 @FrameworkSpecificTest
-public class AudioFormatTest extends CtsAndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public class AudioFormatTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     // -----------------------------------------------------------------
     // AUDIOFORMAT TESTS:
@@ -36,6 +51,7 @@ public class AudioFormatTest extends CtsAndroidTestCase {
     // ----------------------------------
 
     // Test case 1: Use Builder to duplicate an AudioFormat with all fields supplied
+    @Test
     public void testBuilderForCopy() throws Exception {
         final int TEST_ENCODING = AudioFormat.ENCODING_PCM_16BIT;
         final int TEST_SR = 48000;
@@ -65,6 +81,7 @@ public class AudioFormatTest extends CtsAndroidTestCase {
     }
 
     // Test case 2: Use Builder to duplicate an AudioFormat with only encoding supplied
+    @Test
     public void testPartialFormatBuilderForCopyEncoding() throws Exception {
         final int TEST_ENCODING = AudioFormat.ENCODING_PCM_16BIT;
 
@@ -86,6 +103,7 @@ public class AudioFormatTest extends CtsAndroidTestCase {
     }
 
     // Test case 3: Use Builder to duplicate an AudioFormat with only sample rate supplied
+    @Test
     public void testPartialFormatBuilderForCopyRate() throws Exception {
         final int TEST_SR = 48000;
 
@@ -107,6 +125,7 @@ public class AudioFormatTest extends CtsAndroidTestCase {
     }
 
     // Test case 4: Use Builder to duplicate an AudioFormat with only channel mask supplied
+    @Test
     public void testPartialFormatBuilderForCopyChanMask() throws Exception {
         final int TEST_CONF_POS = AudioFormat.CHANNEL_OUT_5POINT1;
 
@@ -127,8 +146,8 @@ public class AudioFormatTest extends CtsAndroidTestCase {
                 AudioFormat.CHANNEL_INVALID, copiedFormat.getChannelIndexMask());
     }
 
-
     // Test case 5: Use Builder to duplicate an AudioFormat with only channel index mask supplied
+    @Test
     public void testPartialFormatBuilderForCopyChanIdxMask() throws Exception {
         final int TEST_CONF_IDX = 0x30;
 
@@ -151,6 +170,7 @@ public class AudioFormatTest extends CtsAndroidTestCase {
 
     // Test case 6: create an instance, marshall it and create a new instance,
     //      check for equality
+    @Test
     public void testParcel() throws Exception {
         final int TEST_ENCODING = AudioFormat.ENCODING_PCM_16BIT;
         final int TEST_SR = 48000;
@@ -179,6 +199,7 @@ public class AudioFormatTest extends CtsAndroidTestCase {
     }
 
     // Test case 7: Check frame size for compressed, float formats.
+    @Test
     public void testFrameSize() throws Exception {
         int[] encodings = {
             AudioFormat.ENCODING_MP3,
@@ -218,6 +239,7 @@ public class AudioFormatTest extends CtsAndroidTestCase {
     }
 
     // Test case 8: Check setting valid encodings
+    @Test
     public void testValidEncodings() throws Exception {
         int[] encodings = {
             AudioFormat.ENCODING_DEFAULT,
@@ -270,9 +292,8 @@ public class AudioFormatTest extends CtsAndroidTestCase {
         return Integer.bitCount(a ^ b) == Integer.bitCount(b) - Integer.bitCount(a);
     }
 
-    /**
-     * Test case 8: Check validity of channel masks
-     */
+    /** Test case 8: Check validity of channel masks */
+    @Test
     public void testChannelMasks() throws Exception {
         // Channel count check.
         int[][] maskCount = new int[][] {
@@ -337,6 +358,7 @@ public class AudioFormatTest extends CtsAndroidTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testAudioFormatBuilderError() throws Exception {
         final int BIGNUM = Integer.MAX_VALUE;
 
@@ -362,5 +384,169 @@ public class AudioFormatTest extends CtsAndroidTestCase {
                         .build();
             });
         }
+    }
+
+    // -----------------------------------------------------------------
+    // ACN Channel Mask Tests
+    // ----------------------------------
+
+    // Test case: Verify channel counts for ACN masks
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_AMBISONICS_SUPPORT_API)
+    public void testAcnChannelMasks() throws Exception {
+        assertEquals(
+                "ACN Order 0 should have 1 channel",
+                1,
+                AudioFormat.channelCountFromAcnChannelMask(AudioFormat.CHANNEL_ACN_ORDER_0));
+        assertEquals(
+                "ACN Order 1 should have 4 channels",
+                4,
+                AudioFormat.channelCountFromAcnChannelMask(AudioFormat.CHANNEL_ACN_ORDER_1));
+        assertEquals(
+                "ACN Order 2 should have 9 channels",
+                9,
+                AudioFormat.channelCountFromAcnChannelMask(AudioFormat.CHANNEL_ACN_ORDER_2));
+        assertEquals(
+                "ACN Order 3 should have 16 channels",
+                16,
+                AudioFormat.channelCountFromAcnChannelMask(AudioFormat.CHANNEL_ACN_ORDER_3));
+
+        // Horizontal-only masks
+        assertEquals(
+                "ACN Order 0 HRZ should have 1 channel",
+                1,
+                AudioFormat.channelCountFromAcnChannelMask(AudioFormat.CHANNEL_ACN_ORDER_0_HRZ));
+        assertEquals(
+                "ACN Order 1 HRZ should have 3 channels",
+                3,
+                AudioFormat.channelCountFromAcnChannelMask(AudioFormat.CHANNEL_ACN_ORDER_1_HRZ));
+        assertEquals(
+                "ACN Order 2 HRZ should have 5 channels",
+                5,
+                AudioFormat.channelCountFromAcnChannelMask(AudioFormat.CHANNEL_ACN_ORDER_2_HRZ));
+        assertEquals(
+                "ACN Order 3 HRZ should have 7 channels",
+                7,
+                AudioFormat.channelCountFromAcnChannelMask(AudioFormat.CHANNEL_ACN_ORDER_3_HRZ));
+    }
+
+    // Test case: Use Builder to create AudioFormat with ACN mask
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_AMBISONICS_SUPPORT_API)
+    public void testBuilderAcnMask() throws Exception {
+        final int testAcnMask = AudioFormat.CHANNEL_ACN_ORDER_1; // 4 channels
+        final int testEncoding = AudioFormat.ENCODING_PCM_16BIT;
+        final int testSampleRate = 48000;
+
+        final AudioFormat format =
+                new AudioFormat.Builder()
+                        .setChannelAcnMask(testAcnMask)
+                        .setEncoding(testEncoding)
+                        .setSampleRate(testSampleRate)
+                        .build();
+
+        assertNotNull(format);
+        assertEquals("AudioFormat has wrong ACN mask", testAcnMask, format.getChannelAcnMask());
+        assertEquals("AudioFormat has wrong encoding", testEncoding, format.getEncoding());
+        assertEquals("AudioFormat has wrong sample rate", testSampleRate, format.getSampleRate());
+        assertEquals("AudioFormat has wrong channel count", 4, format.getChannelCount());
+
+        // Verify frame size calculation (4 channels * 2 bytes)
+        assertEquals("AudioFormat has wrong frame size", 8, format.getFrameSizeInBytes());
+    }
+
+    // Test case: Use Builder to duplicate an AudioFormat with ACN mask
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_AMBISONICS_SUPPORT_API)
+    public void testBuilderForCopyAcnMask() throws Exception {
+        final int testAcnMask = AudioFormat.CHANNEL_ACN_ORDER_2; // 9 channels
+
+        final AudioFormat formatToCopy =
+                new AudioFormat.Builder().setChannelAcnMask(testAcnMask).build();
+        assertNotNull("Failure to create the AudioFormat to copy", formatToCopy);
+
+        final AudioFormat copiedFormat = new AudioFormat.Builder(formatToCopy).build();
+        assertNotNull("Failure to create AudioFormat copy with Builder", copiedFormat);
+        assertEquals(
+                "Copied AudioFormat has wrong ACN mask",
+                testAcnMask,
+                copiedFormat.getChannelAcnMask());
+        assertEquals(
+                "Copied AudioFormat has wrong channel count", 9, copiedFormat.getChannelCount());
+    }
+
+    // Test case: create an instance with ACN mask, marshall it and create a new instance
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_AMBISONICS_SUPPORT_API)
+    public void testParcelAcnMask() throws Exception {
+        final int testAcnMask = AudioFormat.CHANNEL_ACN_ORDER_1; // 4 channels
+        final int testEncoding = AudioFormat.ENCODING_PCM_FLOAT;
+        final int testSampleRate = 44100;
+
+        final AudioFormat formatToMarshall =
+                new AudioFormat.Builder()
+                        .setChannelAcnMask(testAcnMask)
+                        .setEncoding(testEncoding)
+                        .setSampleRate(testSampleRate)
+                        .build();
+        assertNotNull(formatToMarshall);
+
+        final Parcel srcParcel = Parcel.obtain();
+        final Parcel dstParcel = Parcel.obtain();
+
+        formatToMarshall.writeToParcel(srcParcel, 0);
+        final byte[] mbytes = srcParcel.marshall();
+        dstParcel.unmarshall(mbytes, 0, mbytes.length);
+        dstParcel.setDataPosition(0);
+        final AudioFormat unmarshalledFormat = AudioFormat.CREATOR.createFromParcel(dstParcel);
+
+        assertNotNull("Failure to unmarshall AudioFormat", unmarshalledFormat);
+        assertEquals(
+                "Source and destination AudioFormat not equal",
+                formatToMarshall,
+                unmarshalledFormat);
+        assertEquals(
+                "Unmarshalled AudioFormat has wrong ACN mask",
+                testAcnMask,
+                unmarshalledFormat.getChannelAcnMask());
+    }
+
+    // Test case: Test AudioFormat Builder error handling for ACN masks
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_AMBISONICS_SUPPORT_API)
+    public void testBuilderAcnMaskError() throws Exception {
+        // ACN Order 0 has 1 channel
+        final int testAcnMask1ch = AudioFormat.CHANNEL_ACN_ORDER_0;
+        // Index mask 0x3 has 2 channels (bits 0 and 1 set)
+        final int testIndexMask2ch = 0x3;
+
+        // 1. Set ACN first (1ch), then Index (2ch) -> Should fail
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> {
+                    new AudioFormat.Builder()
+                            .setChannelAcnMask(testAcnMask1ch)
+                            .setChannelIndexMask(testIndexMask2ch);
+                });
+
+        // 2. Set Index first (2ch), then ACN (1ch) -> Should fail
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> {
+                    new AudioFormat.Builder()
+                            .setChannelIndexMask(testIndexMask2ch)
+                            .setChannelAcnMask(testAcnMask1ch);
+                });
+
+        // 3. Verify compatible masks do not throw
+        // Index mask 0x1 has 1 channel, matches ACN Order 0
+        final AudioFormat format =
+                new AudioFormat.Builder()
+                        .setChannelAcnMask(testAcnMask1ch)
+                        .setChannelIndexMask(0x1)
+                        .build();
+        assertNotNull(format);
+        assertEquals(testAcnMask1ch, format.getChannelAcnMask());
+        assertEquals(0x1, format.getChannelIndexMask());
     }
 }

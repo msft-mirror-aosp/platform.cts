@@ -33,7 +33,7 @@ public class CtsContentSafetyService extends ContentSafetyService {
     static final String TAG = "SampleContentSafetyService";
 
     @Override
-    public void onGetFeature(
+    public void onGetFeatureRequest(
             int featureType,
             @Nullable CancellationSignal cancellationSignal,
             @NonNull

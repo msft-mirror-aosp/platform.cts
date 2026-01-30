@@ -22,6 +22,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import android.app.privatecompute.MigrationRequestResult;
+import android.app.privatecompute.MigrationRequestResultReceiver;
 import android.app.privatecompute.PccSandboxManager;
 import android.content.Context;
 import android.os.PersistableBundle;
@@ -36,12 +38,16 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
+import com.android.cts.pcc.featuretests.services.MigrationTestService;
 
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 @RunWith(BedsteadJUnit4.class)
 @RequiresFlagsEnabled(FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT)
@@ -114,4 +120,62 @@ public class PccSandboxManagerTest {
         // By design, this API does not provide any feedback to the caller.
         // We are just checking that it does not throw an exception.
     }
+
+    @Test
+    public void testStartNonPccProcessForDataMigration_triggersService() throws Exception {
+        MigrationTestService.reset();
+        CountDownLatch resultLatch = new CountDownLatch(1);
+
+        mPccSandboxManager.startNonPccProcessForDataMigration(
+                mContext.getMainExecutor(),
+                new MigrationRequestResultReceiver() {
+                    @Override
+                    public void onResult(MigrationRequestResult result) {
+                        if (result.getStatus()
+                                == MigrationRequestResult.MIGRATION_REQUEST_ACCEPTED) {
+                            resultLatch.countDown();
+                        }
+                    }
+
+                    @Override
+                    public void onError(int errorCode, String errorMessage) {}
+                });
+
+        assertTrue(
+                "Migration service should have been triggered",
+                MigrationTestService.waitForMigration(5, TimeUnit.SECONDS));
+        assertTrue(
+                "Migration result should have been received",
+                resultLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testStartNonPccProcessForDataMigration_serviceRejects() throws Exception {
+        MigrationTestService.reset();
+        MigrationTestService.sResponseStatus = MigrationRequestResult.MIGRATION_REQUEST_REJECTED;
+        CountDownLatch resultLatch = new CountDownLatch(1);
+
+        mPccSandboxManager.startNonPccProcessForDataMigration(
+                mContext.getMainExecutor(),
+                new MigrationRequestResultReceiver() {
+                    @Override
+                    public void onResult(MigrationRequestResult result) {
+                        if (result.getStatus()
+                                == MigrationRequestResult.MIGRATION_REQUEST_REJECTED) {
+                            resultLatch.countDown();
+                        }
+                    }
+
+                    @Override
+                    public void onError(int errorCode, String errorMessage) {}
+                });
+
+        assertTrue(
+                "Migration service should have been triggered",
+                MigrationTestService.waitForMigration(5, TimeUnit.SECONDS));
+        assertTrue(
+                "Migration rejection should have been received",
+                resultLatch.await(5, TimeUnit.SECONDS));
+    }
 }
+

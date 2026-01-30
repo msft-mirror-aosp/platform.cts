@@ -28,12 +28,13 @@ import android.autofillservice.cts.testcore.Helper;
 import android.autofillservice.cts.testcore.Timeouts;
 import android.autofillservice.cts.testcore.UiBot;
 import android.content.Intent;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.service.autofill.CustomDescription;
 import android.widget.RemoteViews;
 
 import androidx.annotation.NonNull;
 import androidx.test.filters.FlakyTest;
-import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiObject2;
 
 import org.junit.Test;
@@ -140,11 +141,25 @@ public abstract class CustomDescriptionWithLinkTestCase<A extends AbstractAutoFi
      *
      * <p>Then user starts a new session by focusing in a field.
      */
+    @RequiresFlagsDisabled("android.service.autofill.expressive_save_dialog")
     @Test
-    public final void testTapLink_tapBack_thenStartOverByTouchOutsideAndFocus()
-              throws Exception {
+    public final void testTapLink_tapBack_thenStartOverByTouchOutsideAndFocus() throws Exception {
       mUiBot.assumeMinimumResolution(500);
       tapLinkThenTapBackThenStartOverTest(PostSaveLinkTappedAction.TOUCH_OUTSIDE, false);
+    }
+
+    /**
+     * Tests scenarios when user taps a link in the custom description, taps back to return to the
+     * activity with the Save UI, and click the close button to dismiss it.
+     *
+     * <p>Then user starts a new session by focusing in a field.
+     */
+    @RequiresFlagsEnabled("android.service.autofill.expressive_save_dialog")
+    @Test
+    public final void testTapLink_tapBack_thenStartOverByTappingCloseButtonAndFocus()
+            throws Exception {
+        mUiBot.assumeMinimumResolution(500);
+        tapLinkThenTapBackThenStartOverTest(PostSaveLinkTappedAction.TAP_CLOSE_BUTTON, false);
     }
 
     /**
@@ -153,11 +168,25 @@ public abstract class CustomDescriptionWithLinkTestCase<A extends AbstractAutoFi
      *
      * <p>Then user starts a new session by forcing autofill.
      */
+    @RequiresFlagsDisabled("android.service.autofill.expressive_save_dialog")
     @Test
-    public void testTapLink_tapBack_thenStartOverByTouchOutsideAndManualRequest()
-            throws Exception {
+    public void testTapLink_tapBack_thenStartOverByTouchOutsideAndManualRequest() throws Exception {
       mUiBot.assumeMinimumResolution(500);
       tapLinkThenTapBackThenStartOverTest(PostSaveLinkTappedAction.TOUCH_OUTSIDE, true);
+    }
+
+    /**
+     * Tests scenarios when user taps a link in the custom description, taps back to return to the
+     * activity with the Save UI, and click the close button to dismiss it.
+     *
+     * <p>Then user starts a new session by forcing autofill.
+     */
+    @RequiresFlagsEnabled("android.service.autofill.expressive_save_dialog")
+    @Test
+    public void testTapLink_tapBack_thenStartOverByTappingCloseButtonAndManualRequest()
+            throws Exception {
+        mUiBot.assumeMinimumResolution(500);
+        tapLinkThenTapBackThenStartOverTest(PostSaveLinkTappedAction.TAP_CLOSE_BUTTON, true);
     }
 
     /**
@@ -273,7 +302,8 @@ public abstract class CustomDescriptionWithLinkTestCase<A extends AbstractAutoFi
         LAUNCH_PREVIOUS_ACTIVITY,
         TOUCH_OUTSIDE,
         TAP_NO_ON_SAVE_UI,
-        TAP_YES_ON_SAVE_UI
+        TAP_YES_ON_SAVE_UI,
+        TAP_CLOSE_BUTTON
     }
 
     protected final void startActivityOnNewTask(Class<?> clazz) {

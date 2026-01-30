@@ -38,11 +38,13 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import android.Manifest;
+import android.app.ondeviceintelligence.Content;
 import android.app.ondeviceintelligence.DownloadCallback;
 import android.app.ondeviceintelligence.Feature;
 import android.app.ondeviceintelligence.InferenceInfo;
 import android.app.ondeviceintelligence.OnDeviceIntelligenceException;
 import android.app.ondeviceintelligence.OnDeviceIntelligenceManager;
+import android.app.ondeviceintelligence.Part;
 import android.app.ondeviceintelligence.ProcessingCallback;
 import android.app.ondeviceintelligence.ProcessingSignal;
 import android.app.ondeviceintelligence.StreamingProcessingCallback;
@@ -51,6 +53,7 @@ import android.app.ondeviceintelligence.embedding.EmbeddingModel;
 import android.app.ondeviceintelligence.embedding.EmbeddingRequest;
 import android.app.ondeviceintelligence.embedding.EmbeddingResponse;
 import android.app.ondeviceintelligence.imagedescription.ImageDescriptionModel;
+import android.app.ondeviceintelligence.imagedescription.ImageDescriptionCallback;
 import android.app.ondeviceintelligence.imagedescription.ImageDescriptionRequest;
 import android.app.ondeviceintelligence.imagedescription.ImageDescriptionResponse;
 import android.content.BroadcastReceiver;
@@ -110,6 +113,7 @@ import java.util.function.Consumer;
  * Test the OnDeviceIntelligenceManager API. Run with "atest OnDeviceIntelligenceManagerTest".
  *
  * TODO:b/458658574 - Add coverage tests for the new APIs.
+ * TODO:b/458658574 - Please consider using Bedstead permissions APIs.
  * .
  */
 @RunWith(AndroidJUnit4.class)
@@ -639,6 +643,45 @@ public class OnDeviceIntelligenceManagerTest {
                     statusLatch.countDown();
                 });
         assertThat(statusLatch.await(1, SECONDS)).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_26Q2)
+    public void resultPopulatedWhenCountTokens() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch statusLatch = new CountDownLatch(1);
+        mOnDeviceIntelligenceManager.listEmbeddingModels(
+                EXECUTOR,
+                new OutcomeReceiver<List<EmbeddingModel>, OnDeviceIntelligenceException>() {
+                    @Override
+                    public void onResult(List<EmbeddingModel> result) {
+                        EmbeddingModel model = result.get(0);
+                        Content request = new Content(List.of(Part.createText("test")));
+                        model.countTokens(
+                                request,
+                                EXECUTOR,
+                                new OutcomeReceiver<Long, OnDeviceIntelligenceException>() {
+                                    @Override
+                                    public void onResult(Long result) {
+                                        assertThat(result).isEqualTo(1L);
+                                        statusLatch.countDown();
+                                    }
+
+                                    @Override
+                                    public void onError(OnDeviceIntelligenceException error) {
+                                        fail("onError called: " + error);
+                                    }
+                                });
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        fail("listEmbeddingModels failed: " + error);
+                    }
+                });
+        assertThat(statusLatch.await(5, SECONDS)).isTrue();
     }
 
     @Test
@@ -1569,11 +1612,38 @@ public class OnDeviceIntelligenceManagerTest {
                 .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
         CountDownLatch statusLatch = new CountDownLatch(1);
         mOnDeviceIntelligenceManager.fetchImageDescriptionModel(
+                "test-image-description-model",
                 EXECUTOR,
-                new OutcomeReceiver<>() {
+                new OutcomeReceiver<ImageDescriptionModel, OnDeviceIntelligenceException>() {
                     @Override
                     public void onResult(ImageDescriptionModel result) {
                         assertThat(result.getModelSignature()).isEqualTo(
+                                "test-image-description-model");
+                        statusLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        fail("onError called: " + error);
+                    }
+                });
+        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_26Q2)
+    public void testListImageDescriptionModels() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch statusLatch = new CountDownLatch(1);
+        mOnDeviceIntelligenceManager.listImageDescriptionModels(
+                EXECUTOR,
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(List<ImageDescriptionModel> result) {
+                        assertThat(result).hasSize(1);
+                        assertThat(result.get(0).getModelSignature()).isEqualTo(
                                 "test-image-description-model");
                         statusLatch.countDown();
                     }
@@ -1593,27 +1663,39 @@ public class OnDeviceIntelligenceManagerTest {
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
         CountDownLatch statusLatch = new CountDownLatch(1);
-        Feature feature = CtsIntelligenceService.getSampleFeature(3);
-        mOnDeviceIntelligenceManager.generateEmbeddings(
-                feature,
-                new EmbeddingRequest("test text"),
-                null,
+        mOnDeviceIntelligenceManager.listEmbeddingModels(
                 EXECUTOR,
-                new OutcomeReceiver<>() {
+                new OutcomeReceiver<List<EmbeddingModel>, OnDeviceIntelligenceException>() {
                     @Override
-                    public void onResult(EmbeddingResponse result) {
-                        assertThat(result.getEmbeddings()).hasSize(1);
-                        assertThat(result.getEmbeddings().get(0).getVector()).isEqualTo(
-                                new float[]{0.1f, 0.2f, 0.3f});
-                        statusLatch.countDown();
+                    public void onResult(List<EmbeddingModel> result) {
+                        EmbeddingModel model = result.get(0);
+                        model.generateEmbeddings(
+                                new EmbeddingRequest(
+                                        List.of(new Content(List.of(Part.createText("test text"))))),
+                                null,
+                                EXECUTOR,
+                                new OutcomeReceiver<EmbeddingResponse, OnDeviceIntelligenceException>() {
+                                    @Override
+                                    public void onResult(EmbeddingResponse result) {
+                                        assertThat(result.getEmbeddings()).hasSize(1);
+                                        assertThat(result.getEmbeddings().get(0).getVector())
+                                                .isEqualTo(new float[] {0.1f, 0.2f, 0.3f});
+                                        statusLatch.countDown();
+                                    }
+
+                                    @Override
+                                    public void onError(OnDeviceIntelligenceException error) {
+                                        fail("onError called: " + error);
+                                    }
+                                });
                     }
 
                     @Override
                     public void onError(OnDeviceIntelligenceException error) {
-                        fail("onError called: " + error);
+                        fail("listEmbeddingModels failed: " + error);
                     }
                 });
-        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+        assertThat(statusLatch.await(5, SECONDS)).isTrue();
     }
 
     @Test
@@ -1623,28 +1705,250 @@ public class OnDeviceIntelligenceManagerTest {
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
         CountDownLatch statusLatch = new CountDownLatch(1);
-        Feature feature = CtsIntelligenceService.getSampleFeature(4);
-        android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(100, 100,
-                android.graphics.Bitmap.Config.ARGB_8888);
-        mOnDeviceIntelligenceManager.generateImageDescription(
-                feature,
-                new ImageDescriptionRequest(bitmap, null),
-                null,
+        mOnDeviceIntelligenceManager.listImageDescriptionModels(
                 EXECUTOR,
-                new OutcomeReceiver<>() {
+                new OutcomeReceiver<List<ImageDescriptionModel>, OnDeviceIntelligenceException>() {
                     @Override
-                    public void onResult(ImageDescriptionResponse result) {
-                        assertThat(result.getImageDescription().getDescription()).isEqualTo(
-                                "test-description");
-                        statusLatch.countDown();
+                    public void onResult(List<ImageDescriptionModel> result) {
+                        ImageDescriptionModel model = result.get(0);
+                        android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(100,
+                                100,
+                                android.graphics.Bitmap.Config.ARGB_8888);
+                        model.generateImageDescription(
+                                new ImageDescriptionRequest(bitmap, /* prompt= */
+                                        null, java.util.Locale.US),
+                                /* cancellationSignal= */ null,
+                                EXECUTOR,
+                                new ImageDescriptionCallback() {
+                                    @Override
+                                    public void onNewText(@NonNull String text) {
+                                    }
+
+                                    @Override
+                                    public void onResult(ImageDescriptionResponse result) {
+                                        assertThat(result.getImageDescriptions().get(0)
+                                                .getDescription().toString())
+                                                .isEqualTo("test-description");
+                                        statusLatch.countDown();
+                                    }
+
+                                    @Override
+                                    public void onError(@NonNull OnDeviceIntelligenceException error) {
+                                        fail("onError called: " + error);
+                                    }
+                                });
                     }
 
                     @Override
                     public void onError(OnDeviceIntelligenceException error) {
-                        fail("onError called: " + error);
+                        fail("listImageDescriptionModels failed: " + error);
                     }
                 });
-        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+        assertThat(statusLatch.await(5, SECONDS)).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_26Q2)
+    public void testGenerateEmbeddings_requestTooLarge() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch statusLatch = new CountDownLatch(1);
+
+        mOnDeviceIntelligenceManager.listEmbeddingModels(
+                EXECUTOR,
+                new OutcomeReceiver<List<EmbeddingModel>, OnDeviceIntelligenceException>() {
+                    @Override
+                    public void onResult(List<EmbeddingModel> result) {
+                        EmbeddingModel model = result.get(0);
+                        // Create a large string (approx 1.1MB) to trigger TransactionTooLargeException
+                        StringBuilder sb = new StringBuilder();
+                        for (int i = 0; i < 1100000; i++) {
+                            sb.append("a");
+                        }
+                        String largeText = sb.toString();
+
+                        model.generateEmbeddings(
+                                new EmbeddingRequest(
+                                        List.of(new Content(List.of(Part.createText(largeText))))),
+                                null,
+                                EXECUTOR,
+                                new OutcomeReceiver<EmbeddingResponse, OnDeviceIntelligenceException>() {
+                                    @Override
+                                    public void onResult(EmbeddingResponse result) {
+                                        fail("Should have failed with REQUEST_TOO_LARGE");
+                                    }
+
+                                    @Override
+                                    public void onError(OnDeviceIntelligenceException error) {
+                                        assertThat(error.getErrorCode()).isEqualTo(
+                                                OnDeviceIntelligenceException.PROCESSING_ERROR_REQUEST_TOO_LARGE);
+                                        statusLatch.countDown();
+                                    }
+                                });
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        fail("listEmbeddingModels failed: " + error);
+                    }
+                });
+        assertThat(statusLatch.await(5, SECONDS)).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_26Q2)
+    public void testGenerateImageDescription_requestTooLarge() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch statusLatch = new CountDownLatch(1);
+
+        mOnDeviceIntelligenceManager.listImageDescriptionModels(
+                EXECUTOR,
+                new OutcomeReceiver<List<ImageDescriptionModel>, OnDeviceIntelligenceException>() {
+                    @Override
+                    public void onResult(List<ImageDescriptionModel> result) {
+                        ImageDescriptionModel model = result.get(0);
+                        // Create a large text prompt to trigger TransactionTooLargeException
+                        StringBuilder sb = new StringBuilder();
+                        for (int i = 0; i < 1100000; i++) {
+                            sb.append("a");
+                        }
+                        String largeText = sb.toString();
+                        android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(100,
+                                100,
+                                android.graphics.Bitmap.Config.ARGB_8888);
+
+                        model.generateImageDescription(
+                                new ImageDescriptionRequest(bitmap, largeText),
+                                null,
+                                EXECUTOR,
+                                new ImageDescriptionCallback() {
+                                    @Override
+                                    public void onNewText(@NonNull String text) {
+                                    }
+
+                                    @Override
+                                    public void onResult(ImageDescriptionResponse result) {
+                                        fail("Should have failed with REQUEST_TOO_LARGE");
+                                    }
+
+                                    @Override
+                                    public void onError(@NonNull OnDeviceIntelligenceException error) {
+                                        assertThat(error.getErrorCode()).isEqualTo(
+                                                OnDeviceIntelligenceException.PROCESSING_ERROR_REQUEST_TOO_LARGE);
+                                        statusLatch.countDown();
+                                    }
+                                });
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        fail("listImageDescriptionModels failed: " + error);
+                    }
+                });
+        assertThat(statusLatch.await(5, SECONDS)).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_26Q2)
+    public void testGenerateEmbeddings_serviceNotConfigured() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        // Set invalid service names to trigger IllegalStateException in validateServiceElevated
+        setTestableOnDeviceIntelligenceServiceNames(
+                new String[]{"invalid_component", "invalid_component"});
+
+        CountDownLatch statusLatch = new CountDownLatch(1);
+        mOnDeviceIntelligenceManager.listEmbeddingModels(
+                EXECUTOR,
+                new OutcomeReceiver<List<EmbeddingModel>, OnDeviceIntelligenceException>() {
+                    @Override
+                    public void onResult(List<EmbeddingModel> result) {
+                        EmbeddingModel model = result.get(0);
+                        model.generateEmbeddings(
+                                new EmbeddingRequest(
+                                        List.of(new Content(List.of(Part.createText("test"))))),
+                                null,
+                                EXECUTOR,
+                                new OutcomeReceiver<EmbeddingResponse, OnDeviceIntelligenceException>() {
+                                    @Override
+                                    public void onResult(EmbeddingResponse result) {
+                                        fail("Should have failed with SERVICE_NOT_CONFIGURED");
+                                    }
+
+                                    @Override
+                                    public void onError(OnDeviceIntelligenceException error) {
+                                        assertThat(error.getErrorCode()).isEqualTo(
+                                                OnDeviceIntelligenceException.PROCESSING_ERROR_SERVICE_NOT_CONFIGURED);
+                                        statusLatch.countDown();
+                                    }
+                                });
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        assertThat(error.getErrorCode()).isEqualTo(
+                                OnDeviceIntelligenceException.PROCESSING_ERROR_SERVICE_NOT_CONFIGURED);
+                        statusLatch.countDown();
+                    }
+                });
+        assertThat(statusLatch.await(5, SECONDS)).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_26Q2)
+    public void testGenerateImageDescription_serviceNotConfigured() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        // Set invalid service names to trigger IllegalStateException in validateServiceElevated
+        setTestableOnDeviceIntelligenceServiceNames(
+                new String[]{"invalid_component", "invalid_component"});
+
+        CountDownLatch statusLatch = new CountDownLatch(1);
+        mOnDeviceIntelligenceManager.listImageDescriptionModels(
+                EXECUTOR,
+                new OutcomeReceiver<List<ImageDescriptionModel>, OnDeviceIntelligenceException>() {
+                    @Override
+                    public void onResult(List<ImageDescriptionModel> result) {
+                        ImageDescriptionModel model = result.get(0);
+                        android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(100,
+                                100,
+                                android.graphics.Bitmap.Config.ARGB_8888);
+                        model.generateImageDescription(
+                                new ImageDescriptionRequest(bitmap, null),
+                                null,
+                                EXECUTOR,
+                                new ImageDescriptionCallback() {
+                                    @Override
+                                    public void onNewText(@NonNull String text) {
+                                    }
+
+                                    @Override
+                                    public void onResult(ImageDescriptionResponse result) {
+                                        fail("Should have failed with SERVICE_NOT_CONFIGURED");
+                                    }
+
+                                    @Override
+                                    public void onError(@NonNull OnDeviceIntelligenceException error) {
+                                        assertThat(error.getErrorCode()).isEqualTo(
+                                                OnDeviceIntelligenceException.PROCESSING_ERROR_SERVICE_NOT_CONFIGURED);
+                                        statusLatch.countDown();
+                                    }
+                                });
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        assertThat(error.getErrorCode()).isEqualTo(
+                                OnDeviceIntelligenceException.PROCESSING_ERROR_SERVICE_NOT_CONFIGURED);
+                        statusLatch.countDown();
+                    }
+                });
+        assertThat(statusLatch.await(5, SECONDS)).isTrue();
     }
 
     public static void clearTestableOnDeviceIntelligenceService() {

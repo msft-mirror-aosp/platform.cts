@@ -1,4 +1,4 @@
-// Copyright (C) 2019 The Android Open Source Project
+// Copyright (C) 2025 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,28 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package {
-    default_applicable_licenses: ["Android-Apache-2.0"],
-    default_team: "trendy_team_search_allapps",
+cc_library_shared {
+    name: "libcts_text_nativeservice",
+    cflags: [
+        "-Wall",
+        "-Werror",
+    ],
+    srcs: ["NativeSystemFontTest.cpp"],
+    shared_libs: [
+        "libandroid",
+        "libgtest_native_service",
+    ],
+    static_libs: [
+        "libgtest",
+    ],
 }
 
 android_test {
-    name: "CtsSearchUiServiceTestCases",
-    defaults: ["cts_defaults"],
+    name: "CtsTextNativeTestCases",
     static_libs: [
-        "android.app.search.flags-aconfig-java",
-        "androidx.annotation_annotation",
-        "androidx.test.ext.junit",
-        "compatibility-device-util-axt",
-        "ctstestrunner-axt",
-        "testng",
-        "truth",
+        "libnative_service_gtest_runner",
     ],
-    srcs: ["src/**/*.java"],
-    // Tag this module as a cts test artifact
+    jni_libs: [
+        "libcts_text_nativeservice",
+    ],
     test_suites: [
-        "cts",
         "general-tests",
     ],
-    sdk_version: "test_current",
+    manifest: "AndroidManifest.xml",
+    use_embedded_native_libs: true,
 }

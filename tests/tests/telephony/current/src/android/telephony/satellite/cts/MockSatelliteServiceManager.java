@@ -70,7 +70,7 @@ import java.util.stream.Collectors;
  */
 class MockSatelliteServiceManager {
     private static final String TAG = "MockSatelliteServiceManager";
-    private static final String PACKAGE = "android.telephony.cts";
+    public static final String PACKAGE = "android.telephony.cts";
     private static final String EXTERNAL_SATELLITE_GATEWAY_PACKAGE =
             ExternalMockSatelliteGatewayService.class.getPackage().getName();
     private static final String EXTERNAL_SATELLITE_PACKAGE =

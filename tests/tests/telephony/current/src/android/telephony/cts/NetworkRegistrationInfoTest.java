@@ -423,5 +423,8 @@ public class NetworkRegistrationInfoTest {
                         .setSatelliteTechnology(SatelliteManager.NT_RADIO_TECHNOLOGY_LTE_DTC)
                         .build();
         assertEquals(SatelliteManager.NT_RADIO_TECHNOLOGY_LTE_DTC, nri.getSatelliteTechnology());
+
+        nri.setSatelliteTechnology(SatelliteManager.NT_RADIO_TECHNOLOGY_NR_NTN);
+        assertEquals(SatelliteManager.NT_RADIO_TECHNOLOGY_NR_NTN, nri.getSatelliteTechnology());
     }
 }

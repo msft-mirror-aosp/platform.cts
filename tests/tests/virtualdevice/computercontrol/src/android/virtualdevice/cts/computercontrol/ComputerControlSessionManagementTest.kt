@@ -142,7 +142,7 @@ class ComputerControlSessionManagementTest {
     ): TestAppAgent {
         return TestAppAgent(
             context,
-            launcher.requestComputerControlSession(testName.methodName, packageNames)!!,
+            launcher.requestComputerControlSession(testName.methodName, packageNames),
         )
     }
 
@@ -157,7 +157,7 @@ class ComputerControlSessionManagementTest {
                 methodName,
                 packageNames,
                 onClose = { sessionClosedFuture.complete(null) },
-            )!!
+            )
         session.use { block(it) }
         sessionClosedFuture.get(TestAppAgent.SESSION_CLOSE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
     }

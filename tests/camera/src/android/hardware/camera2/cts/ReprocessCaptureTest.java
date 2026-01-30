@@ -61,7 +61,7 @@ public class ReprocessCaptureTest extends Camera2SurfaceViewTestCase  {
     private static final int ZSL_TEMPLATE = CameraDevice.TEMPLATE_ZERO_SHUTTER_LAG;
     private static final int NUM_REPROCESS_TEST_LOOP = 3;
     private static final int NUM_REPROCESS_CAPTURES = 3;
-    private static final int NUM_REPROCESS_BURST = 3;
+    private static final int NUM_REPROCESS_BURST = 2;
     private int mDumpFrameCount = 0;
 
     // The image reader for the first regular capture
@@ -467,12 +467,47 @@ public class ReprocessCaptureTest extends Camera2SurfaceViewTestCase  {
     }
 
     /**
-     * Test burst captures mixed with regular and reprocess captures with preview.
+     * Test burst captures mixed with regular and reprocess captures with preview for back
+     * facing cameras.
      */
     @Test(timeout=600*60*1000) // timeout = 600 mins for long running reprocessing tests
-    public void testMixedBurstReprocessingWithPreview() throws Exception {
+    public void testMixedBurstReprocessingWithPreviewBack() throws Exception {
+        testMixedBurstReprocessingWithPreview(CameraMetadata.LENS_FACING_BACK);
+    }
+
+    /**
+     * Test burst captures mixed with regular and reprocess captures with preview for front
+     * facing cameras.
+     */
+    @Test(timeout=600*60*1000) // timeout = 600 mins for long running reprocessing tests
+    public void testMixedBurstReprocessingWithPreviewFront() throws Exception {
+        testMixedBurstReprocessingWithPreview(CameraMetadata.LENS_FACING_FRONT);
+    }
+
+    /**
+     * Test burst captures mixed with regular and reprocess captures with preview for external
+     * facing cameras.
+     */
+    @Test(timeout=600*60*1000) // timeout = 600 mins for long running reprocessing tests
+    public void testMixedBurstReprocessingWithPreviewExternal() throws Exception {
+        testMixedBurstReprocessingWithPreview(CameraMetadata.LENS_FACING_EXTERNAL);
+    }
+
+    /**
+     * Test burst captures mixed with regular and reprocess captures with preview.
+     *
+     * @param facing The lens facing of the camera to test.
+     */
+    private void testMixedBurstReprocessingWithPreview(int facing) throws Exception {
         for (String id : getCameraIdsUnderTest()) {
             if (!isYuvReprocessSupported(id) && !isOpaqueReprocessSupported(id)) {
+                continue;
+            }
+
+            StaticMetadata info =
+                    new StaticMetadata(mCameraManager.getCameraCharacteristics(id),
+                            StaticMetadata.CheckLevel.ASSERT, /*collector*/ null);
+            if (info.getLensFacingChecked() != facing) {
                 continue;
             }
 

@@ -103,6 +103,7 @@ public class CtsConfigLoadingTest {
                             "uitoolkit",
                             "uwb",
                             "vr",
+                            "webapp",
                             "webview",
                             "wifi"));
     private static final Set<String> KNOWN_MISC_MODULES =

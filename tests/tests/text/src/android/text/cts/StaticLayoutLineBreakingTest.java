@@ -22,13 +22,10 @@ import android.content.Context;
 import android.graphics.Typeface;
 import android.text.Layout;
 import android.text.Layout.Alignment;
-import android.text.SpannableStringBuilder;
-import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextDirectionHeuristics;
 import android.text.TextPaint;
 import android.text.TextUtils;
-import android.text.style.MetricAffectingSpan;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -41,9 +38,6 @@ import org.junit.runner.RunWith;
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class StaticLayoutLineBreakingTest {
-    // Span test are currently not supported because text measurement uses the MeasuredText
-    // internal mWorkPaint instead of the provided MockTestPaint.
-    private static final boolean SPAN_TESTS_SUPPORTED = false;
     private static final boolean DEBUG = false;
 
     private static final float SPACE_MULTI = 1.0f;
@@ -84,10 +78,6 @@ public class StaticLayoutLineBreakingTest {
                 .setIncludePad(false)
                 .setBreakStrategy(breakStrategy)
                 .build();
-    }
-
-    private static int[] getBreaks(CharSequence source) {
-        return getBreaks(source, WIDTH, Layout.BREAK_STRATEGY_SIMPLE);
     }
 
     private static int[] getBreaks(CharSequence source, int width, int breakStrategy) {
@@ -180,52 +170,6 @@ public class StaticLayoutLineBreakingTest {
         }
     }
 
-    private static final int MAX_SPAN_COUNT = 10;
-    private static final int[] sSpanStarts = new int[MAX_SPAN_COUNT];
-    private static final int[] sSpanEnds = new int[MAX_SPAN_COUNT];
-
-    private static MetricAffectingSpan getMetricAffectingSpan() {
-        return new MetricAffectingSpan() {
-            @Override
-            public void updateDrawState(TextPaint tp) { /* empty */ }
-
-            @Override
-            public void updateMeasureState(TextPaint p) { /* empty */ }
-        };
-    }
-
-    /**
-     * Replaces the "<...>" blocks by spans, assuming non overlapping, correctly defined spans
-     * @param text
-     * @return A CharSequence with '<' '>' replaced by MetricAffectingSpan
-     */
-    private static CharSequence spanify(String text) {
-        int startIndex = text.indexOf('<');
-        if (startIndex < 0) return text;
-
-        int spanCount = 0;
-        do {
-            int endIndex = text.indexOf('>');
-            if (endIndex < 0) throw new IllegalArgumentException("Unbalanced span markers");
-
-            text = text.substring(0, startIndex) + text.substring(startIndex + 1, endIndex)
-                    + text.substring(endIndex + 1);
-
-            sSpanStarts[spanCount] = startIndex;
-            sSpanEnds[spanCount] = endIndex - 2;
-            spanCount++;
-
-            startIndex = text.indexOf('<');
-        } while (startIndex >= 0);
-
-        SpannableStringBuilder result = new SpannableStringBuilder(text);
-        for (int i = 0; i < spanCount; i++) {
-            result.setSpan(getMetricAffectingSpan(), sSpanStarts[i], sSpanEnds[i],
-                    Spanned.SPAN_INCLUSIVE_INCLUSIVE);
-        }
-        return result;
-    }
-
     @Test
     public void testNoLineBreak() {
         // Width lower than WIDTH
@@ -304,91 +248,6 @@ public class StaticLayoutLineBreakingTest {
         layout("___X_X_X_X_X_X_X_X_X_X___", NO_BREAK);
         layout("C_X", new int[] {2});
         layout("C__X", new int[] {3});
-    }
-
-    /**
-     * Note that when the text has spans, StaticLayout does not use the provided TextPaint to
-     * measure text runs anymore. This is probably a bug.
-     * To be able to use the fake sTextPaint and make this test pass, use mPaint instead of
-     * mWorkPaint in MeasuredText#addStyleRun
-     */
-    @Test
-    public void testWithSpans() {
-        if (!SPAN_TESTS_SUPPORTED) return;
-
-        layout(spanify("<012 456 89>"), NO_BREAK);
-        layout(spanify("012 <456> 89"), NO_BREAK);
-        layout(spanify("<012> <456>< 89>"), NO_BREAK);
-        layout(spanify("<012> <456> <89>"), NO_BREAK);
-
-        layout(spanify("<012> <456> <89>012"), new int[] {8});
-        layout(spanify("<012> <456> 89<012>"), new int[] {8});
-        layout(spanify("<012> <456> <89><012>"), new int[] {8});
-        layout(spanify("<012> <456> 89 <123>"), new int[] {11});
-        layout(spanify("<012> <456> 89< 123>"), new int[] {11});
-        layout(spanify("<012> <456> <89> <123>"), new int[] {11});
-        layout(spanify("012 456 89 <LXX> XX XX"), new int[] {11, 18});
-    }
-
-    /*
-     * Adding a span to the string should not change the layout, since the metrics are unchanged.
-     */
-    @Test
-    public void testWithOneSpan() {
-        if (!SPAN_TESTS_SUPPORTED) return;
-
-        String[] texts = new String[] { "0123", "012 456", "012 456 89 123", "012 45678 012",
-                "012 456 89012 456 89012", "0123456789012" };
-
-        MetricAffectingSpan metricAffectingSpan = getMetricAffectingSpan();
-
-        for (String text : texts) {
-            // Get the line breaks without any span
-            int[] breaks = getBreaks(text);
-
-            // Add spans on all possible offsets
-            for (int spanStart = 0; spanStart < text.length(); spanStart++) {
-                for (int spanEnd = spanStart; spanEnd < text.length(); spanEnd++) {
-                    SpannableStringBuilder ssb = new SpannableStringBuilder(text);
-                    ssb.setSpan(metricAffectingSpan, spanStart, spanEnd,
-                            Spanned.SPAN_INCLUSIVE_INCLUSIVE);
-                    layout(ssb, breaks);
-                }
-            }
-        }
-    }
-
-    @Test
-    public void testWithTwoSpans() {
-        if (!SPAN_TESTS_SUPPORTED) return;
-
-        String[] texts = new String[] { "0123", "012 456", "012 456 89 123", "012 45678 012",
-                "012 456 89012 456 89012", "0123456789012" };
-
-        MetricAffectingSpan metricAffectingSpan1 = getMetricAffectingSpan();
-        MetricAffectingSpan metricAffectingSpan2 = getMetricAffectingSpan();
-
-        for (String text : texts) {
-            // Get the line breaks without any span
-            int[] breaks = getBreaks(text);
-
-            // Add spans on all possible offsets
-            for (int spanStart1 = 0; spanStart1 < text.length(); spanStart1++) {
-                for (int spanEnd1 = spanStart1; spanEnd1 < text.length(); spanEnd1++) {
-                    SpannableStringBuilder ssb = new SpannableStringBuilder(text);
-                    ssb.setSpan(metricAffectingSpan1, spanStart1, spanEnd1,
-                            Spanned.SPAN_INCLUSIVE_INCLUSIVE);
-
-                    for (int spanStart2 = 0; spanStart2 < text.length(); spanStart2++) {
-                        for (int spanEnd2 = spanStart2; spanEnd2 < text.length(); spanEnd2++) {
-                            ssb.setSpan(metricAffectingSpan2, spanStart2, spanEnd2,
-                                    Spanned.SPAN_INCLUSIVE_INCLUSIVE);
-                            layout(ssb, breaks);
-                        }
-                    }
-                }
-            }
-        }
     }
 
     public static String replace(String string, char c, char r) {
