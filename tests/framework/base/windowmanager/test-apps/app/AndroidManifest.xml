@@ -350,6 +350,9 @@
         <activity android:name=".DisplayAccessCheckEmbeddingActivity"
              android:allowEmbedded="true"
              android:exported="true"/>
+        <activity android:name=".RecreateOnKeyboardChangeActivity"
+            android:recreateOnConfigChanges="keyboard|keyboardHidden"
+            android:exported="true"/>
         <receiver android:name=".LaunchBroadcastReceiver"
              android:enabled="true"
              android:exported="true">
