@@ -24,6 +24,8 @@ import static android.app.ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NE
 import static android.app.ActivityManager.PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK;
 import static android.app.ActivityManager.STOP_USER_ON_SWITCH_DEFAULT;
 import static android.app.ActivityManager.STOP_USER_ON_SWITCH_FALSE;
+import static android.app.ActivityManager.UidFrozenStateChangedCallback.UID_FROZEN_STATE_FROZEN;
+import static android.app.ActivityManager.UidFrozenStateChangedCallback.UID_FROZEN_STATE_UNFROZEN;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.app.usage.UsageStatsManager.STANDBY_BUCKET_RESTRICTED;
 import static android.content.ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN;
@@ -2356,6 +2358,50 @@ public final class ActivityManagerTest {
                         mActivityManager.forceStopPackage(PACKAGE_NAME_APP1);
                         mActivityManager.forceStopPackage(PACKAGE_NAME_APP2);
                     });
+        }
+    }
+
+    @Test
+    public void testGetUidFrozenState() throws Exception {
+        PermissionUtils.grantPermission(STUB_PACKAGE_NAME, Manifest.permission.PACKAGE_USAGE_STATS);
+        final ApplicationInfo appInfo =
+                mTargetContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        final int uid = appInfo.uid;
+        final WatchUidRunner watcher = new WatchUidRunner(mInstrumentation, uid, WAITFOR_MSEC);
+        try (AutoCloseable unused =
+                     CtsAppTestUtils.allowBackgroundActivityLaunch(PACKAGE_NAME_APP1)) {
+            // Start an activity to make sure the process is running.
+            CommandReceiver.sendCommand(mTargetContext, CommandReceiver.COMMAND_START_ACTIVITY,
+                    PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
+            watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_TOP, null);
+
+            // Freeze the process.
+            runShellCommand(mInstrumentation, "am freeze " + PACKAGE_NAME_APP1);
+            // Wait for the state to propagate.
+            SystemUtil.eventually(
+                    () -> {
+                        int[] frozenState = mActivityManager.getUidFrozenState(new int[]{uid});
+                        assertThat(frozenState).isNotNull();
+                        assertThat(frozenState.length).isEqualTo(1);
+                        assertThat(frozenState[0]).isEqualTo(UID_FROZEN_STATE_FROZEN);
+                    });
+
+            // Unfreeze the process.
+            runShellCommand(mInstrumentation, "am unfreeze " + PACKAGE_NAME_APP1);
+            // Wait for the state to propagate.
+            SystemUtil.eventually(
+                    () -> {
+                        int[] frozenState = mActivityManager.getUidFrozenState(new int[]{uid});
+                        assertThat(frozenState).isNotNull();
+                        assertThat(frozenState.length).isEqualTo(1);
+                        assertThat(frozenState[0]).isEqualTo(UID_FROZEN_STATE_UNFROZEN);
+                    });
+        } finally {
+            watcher.finish();
+            PermissionUtils.revokePermission(STUB_PACKAGE_NAME,
+                    Manifest.permission.PACKAGE_USAGE_STATS);
+            runWithShellPermissionIdentity(
+                    () -> mActivityManager.forceStopPackage(PACKAGE_NAME_APP1));
         }
     }
 
