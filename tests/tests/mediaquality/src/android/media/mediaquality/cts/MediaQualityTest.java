@@ -33,6 +33,9 @@ import android.media.quality.ActiveProcessingPicture;
 import android.media.quality.AmbientBacklightEvent;
 import android.media.quality.AmbientBacklightMetadata;
 import android.media.quality.AmbientBacklightSettings;
+import android.media.quality.EqualizerBand;
+import android.media.quality.EqualizerCapabilities;
+import android.media.quality.EqualizerSettings;
 import android.media.quality.IMediaQualityManager;
 import android.media.quality.MediaQualityContract;
 import android.media.quality.MediaQualityContract.PictureQuality;
@@ -955,6 +958,88 @@ public class MediaQualityTest {
                     mManager.usesDisplayTechnology(MediaQualityContract.PANEL_TECHNOLOGY_OLED));
 
             Mockito.verify(mockService, Mockito.times(2)).usesDisplayTechnology(anyInt(), anyInt());
+        } finally {
+            mServiceField.set(mManager, mOriginalService);
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW_C)
+    @Test
+    public void testGetEqualizerCapabilities() throws Exception {
+        assumeTrue(mMediaQuality != null);
+        IMediaQualityManager mockService = Mockito.mock(IMediaQualityManager.class);
+
+        int expectedMin = -15;
+        int expectedMax = 15;
+        List<Integer> expectedFreqs = List.of(60, 230, 910, 3600, 14000);
+        boolean expectedQ = true;
+
+        EqualizerCapabilities realCaps =
+                new EqualizerCapabilities(expectedMin, expectedMax, expectedFreqs, expectedQ);
+
+        Mockito.when(mockService.getEqualizerCapabilities(anyInt())).thenReturn(realCaps);
+
+        mServiceField.set(mManager, mockService);
+        try {
+            EqualizerCapabilities result = mManager.getEqualizerCapabilities();
+            Assert.assertNotNull("Capabilities should not be null", result);
+
+            Assert.assertEquals("MinLevelDb should match", expectedMin, result.getMinLevelDb());
+            Assert.assertEquals("MaxLevelDb should match", expectedMax, result.getMaxLevelDb());
+            Assert.assertEquals(
+                    "Frequencies should match", expectedFreqs, result.getSupportedFrequenciesHz());
+            Assert.assertEquals("AdjustableQ should match", expectedQ, result.hasAdjustableQ());
+
+            Mockito.verify(mockService).getEqualizerCapabilities(anyInt());
+        } finally {
+            mServiceField.set(mManager, mOriginalService);
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW_C)
+    @Test
+    public void testGetEqualizerSettings() throws Exception {
+        assumeTrue(mMediaQuality != null);
+        EqualizerBand testBand = new EqualizerBand(1000, 5, 1.2f);
+        List<EqualizerBand> bands = new ArrayList<>();
+        bands.add(testBand);
+        IMediaQualityManager mockService = Mockito.mock(IMediaQualityManager.class);
+
+        EqualizerSettings realSettings = new EqualizerSettings.Builder().setBands(bands).build();
+
+        Mockito.when(mockService.getEqualizerSettings(anyInt())).thenReturn(realSettings);
+
+        mServiceField.set(mManager, mockService);
+        try {
+            EqualizerSettings result = mManager.getEqualizerSettings();
+            Assert.assertNotNull("Settings should not be null", result);
+
+            Assert.assertEquals("Should return the settings from service", realSettings, result);
+            Assert.assertEquals("Band count mismatch", 1, result.getBands().size());
+            Assert.assertEquals(
+                    "Frequency mismatch", 1000, result.getBands().getFirst().getFrequencyHz());
+
+            Mockito.verify(mockService).getEqualizerSettings(anyInt());
+        } finally {
+            mServiceField.set(mManager, mOriginalService);
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW_C)
+    @Test
+    public void testSetEqualizerSettings() throws Exception {
+        assumeTrue(mMediaQuality != null);
+        IMediaQualityManager mockService = Mockito.mock(IMediaQualityManager.class);
+
+        EqualizerBand band = new EqualizerBand(1000, 5, 1.2f);
+        List<EqualizerBand> bands = new ArrayList<>();
+        bands.add(band);
+
+        EqualizerSettings detailToSet = new EqualizerSettings.Builder().setBands(bands).build();
+        mServiceField.set(mManager, mockService);
+        try {
+            mManager.setEqualizerSettings(detailToSet);
+            Mockito.verify(mockService).setEqualizerSettings(Mockito.eq(detailToSet), anyInt());
         } finally {
             mServiceField.set(mManager, mOriginalService);
         }
