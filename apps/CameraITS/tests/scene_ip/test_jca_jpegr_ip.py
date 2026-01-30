@@ -50,24 +50,37 @@ _KNOWN_ISSUE_398591036 = 398591036
 class JcaJpegRImageParityClassTest(its_base_test.ItsBaseTest):
   """Test for JCA preview and captured image parity."""
 
-  # TODO(ruchamk): Move the setup_gen2rig method in a util classto reduce code
+  # TODO(ruchamk): Move the setup_gen2rig method in a util class to reduce code
   # duplication.
   def _setup_gen2rig(self):
     logging.debug('Setting up gen2 rig')
     # Configure and setup gen2 rig
-    self.motor_channel = int(self.rotator_ch)
-    lights_channel = int(self.lighting_ch)
-    lights_port = gen2_rig_controller_utils.find_serial_port(self.lighting_cntl)
-    if lights_port:
-      sensor_fusion_utils.establish_serial_comm(lights_port)
-      gen2_rig_controller_utils.set_lighting_state(
-          lights_port, lights_channel, 'ON')
-    self.motor_port = gen2_rig_controller_utils.find_serial_port(
-        self.rotator_cntl)
-    if self.motor_port:
-      gen2_rig_controller_utils.configure_rotator(
-          self.motor_port, self.motor_channel)
-      gen2_rig_controller_utils.rotate(self.motor_port, self.motor_channel)
+    if self.rotator_cntl == 'None':
+      logging.debug('Gen2 rig motor is not available.')
+      self.motor_port = None
+      self.motor_channel = None
+    else:
+      self.motor_channel = int(self.rotator_ch)
+      self.motor_port = gen2_rig_controller_utils.find_serial_port(
+          self.rotator_cntl)
+      if self.motor_port:
+        gen2_rig_controller_utils.configure_rotator(
+            self.motor_port, self.motor_channel)
+        gen2_rig_controller_utils.rotate(self.motor_port, self.motor_channel)
+        logging.debug('Successfully configured and rotated the gen2 rig.')
+
+    if self.lighting_cntl == 'None':
+      logging.debug('Gen2 rig lights is not available.')
+      self.lighting_port = None
+      self.lighting_channel = None
+    else:
+      lights_channel = int(self.lighting_ch)
+      lights_port = gen2_rig_controller_utils.find_serial_port(self.lighting_cntl)
+      if lights_port:
+        sensor_fusion_utils.establish_serial_comm(lights_port)
+        gen2_rig_controller_utils.set_lighting_state(
+            lights_port, lights_channel, 'ON')
+        logging.debug('Successfully configured and turned ON the gen2 rig lights.')
 
   def setup_class(self):
     super().setup_class()
@@ -135,13 +148,8 @@ class JcaJpegRImageParityClassTest(its_base_test.ItsBaseTest):
       cam.close_camera()
       device_id = self.dut.serial
 
-      # Set up gen2 rig controllers
-      if self.rotator_cntl == 'None' or self.lighting_cntl == 'None':
-        self.motor_port = None
-        self.motor_channel = None
-        logging.debug('Gen2 rig is not available.')
-      else:
-        self._setup_gen2rig()
+      # Set up gen2 rig
+      self._setup_gen2rig()
 
       camera_ids = cam.get_camera_ids()
       logging.debug('Camera ids on device: %s', camera_ids)
