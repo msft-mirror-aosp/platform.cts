@@ -689,20 +689,47 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
-    public void testSetAutoPictureQualityEnabled() throws RemoteException {
+    public void testSetAutoPictureQualityEnabled() throws Exception {
         assumeTrue(mMediaQuality != null);
-        when(mMediaQuality.isAutoPqSupported()).thenReturn(true);
-        doNothing().when(mMediaQuality).setAutoPqEnabled(anyBoolean());
-        mManager.setAutoPictureQualityEnabled(false);
+        IMediaQualityManager mockService = Mockito.mock(IMediaQualityManager.class);
+
+        mServiceField.set(mManager, mockService);
+
+        try {
+            mManager.setAutoPictureQualityEnabled(true);
+            Mockito.verify(mockService).setAutoPictureQualityEnabled(Mockito.eq(true), anyInt());
+
+            mManager.setAutoPictureQualityEnabled(false);
+            Mockito.verify(mockService).setAutoPictureQualityEnabled(Mockito.eq(false), anyInt());
+        } finally {
+            mServiceField.set(mManager, mOriginalService);
+        }
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
-    public void testIsAutoPictureQualityEnabled() throws RemoteException {
+    public void testIsAutoPictureQualityEnabled() throws Exception {
         assumeTrue(mMediaQuality != null);
-        when(mMediaQuality.isAutoPqSupported()).thenReturn(true);
-        when(mMediaQuality.getAutoPqEnabled()).thenReturn(false);
-        assertFalse(mManager.isAutoPictureQualityEnabled());
+        IMediaQualityManager mockService = Mockito.mock(IMediaQualityManager.class);
+
+        mServiceField.set(mManager, mockService);
+
+        try {
+            Mockito.when(mockService.isAutoPictureQualityEnabled(anyInt())).thenReturn(true);
+            Assert.assertTrue(
+                    "Should return true when service returns true",
+                    mManager.isAutoPictureQualityEnabled());
+            Mockito.verify(mockService).isAutoPictureQualityEnabled(anyInt());
+
+            Mockito.when(mockService.isAutoPictureQualityEnabled(anyInt())).thenReturn(false);
+            Assert.assertFalse(
+                    "Should return false when service returns false",
+                    mManager.isAutoPictureQualityEnabled());
+
+            Mockito.verify(mockService, Mockito.times(2)).isAutoPictureQualityEnabled(anyInt());
+        } finally {
+            mServiceField.set(mManager, mOriginalService);
+        }
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW_C)
