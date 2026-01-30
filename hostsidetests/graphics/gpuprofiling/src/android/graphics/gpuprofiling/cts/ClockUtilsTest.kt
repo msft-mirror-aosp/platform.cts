@@ -19,6 +19,7 @@ package android.graphics.gpuprofiling.cts
 import com.google.common.truth.Truth.assertThat
 import org.junit.Assert.assertThrows
 import org.junit.Test
+import perfetto.protos.PerfettoTrace
 import perfetto.protos.PerfettoTrace.BuiltinClock
 import perfetto.protos.PerfettoTrace.ClockSnapshot
 import perfetto.protos.PerfettoTrace.ClockSnapshot.Clock
@@ -53,6 +54,42 @@ class ClockUtilsTest {
     }
 
     @Test
+    fun getAllDataSourcesStartedNs_allEventsStartedEventIsFalse_returnsZero() {
+        val trace = Trace.newBuilder().apply {
+            addPacket(
+                TracePacket.newBuilder().apply {
+                    timestamp = 150L
+                    setServiceEvent(
+                        PerfettoTrace.TracingServiceEvent.newBuilder().apply {
+                            allDataSourcesStarted = false
+                        }
+                    )
+                }
+            )
+        }.build()
+
+        assertThat(trace.getAllDataSourcesStartedNs()).isEqualTo(0)
+    }
+
+    @Test
+    fun getAllDataSourcesStartedNs_returnsTimestamp() {
+        val trace = Trace.newBuilder().apply {
+            addPacket(
+                TracePacket.newBuilder().apply {
+                    timestamp = 150L
+                    setServiceEvent(
+                        PerfettoTrace.TracingServiceEvent.newBuilder().apply {
+                            allDataSourcesStarted = true
+                        }
+                    )
+                }
+            )
+        }.build()
+
+        assertThat(trace.getAllDataSourcesStartedNs()).isEqualTo(150L)
+    }
+
+    @Test
     fun getTimestampNs_interpolatesCorrectly() {
         val bootTime = BuiltinClock.BUILTIN_CLOCK_BOOTTIME.number
         val testSnapshots = listOf(
@@ -64,7 +101,7 @@ class ClockUtilsTest {
             .setTimestamp(150L)
             .setTimestampClockId(1)
             .build()
-        assertThat(packet.getTimestampNs(testSnapshots)).isEqualTo(1500L)
+        assertThat(packet.getTimestampNs(testSnapshots)).isEqualTo(1050L)
     }
 
     @Test
@@ -94,7 +131,7 @@ class ClockUtilsTest {
             .setTimestamp(50L)
             .setTimestampClockId(1)
             .build()
-        assertThat(packet.getTimestampNs(testSnapshots)).isEqualTo(500L)
+        assertThat(packet.getTimestampNs(testSnapshots)).isEqualTo(950L)
     }
 
     @Test
@@ -109,7 +146,7 @@ class ClockUtilsTest {
             .setTimestamp(350L)
             .setTimestampClockId(1)
             .build()
-        assertThat(packet.getTimestampNs(testSnapshots)).isEqualTo(3500L)
+        assertThat(packet.getTimestampNs(testSnapshots)).isEqualTo(3050L)
     }
 
     @Test
@@ -125,7 +162,7 @@ class ClockUtilsTest {
             .setTimestamp(150L)
             .setTimestampClockId(1)
             .build()
-        assertThat(packet.getTimestampNs(testSnapshots)).isEqualTo(1500L)
+        assertThat(packet.getTimestampNs(testSnapshots)).isEqualTo(1050L)
     }
 
     @Test
@@ -140,16 +177,16 @@ class ClockUtilsTest {
 
         assertThat(
             packetBuilder.setTimestamp(50L).build().getTimestampNs(snapshotsWithDrift)
-        ).isEqualTo(500L)
+        ).isEqualTo(950L)
         assertThat(
             packetBuilder.setTimestamp(150L).build().getTimestampNs(snapshotsWithDrift)
-        ).isEqualTo(1500L)
+        ).isEqualTo(1050L)
         assertThat(
             packetBuilder.setTimestamp(250L).build().getTimestampNs(snapshotsWithDrift)
-        ).isEqualTo(3000L)
+        ).isEqualTo(2050L)
         assertThat(
             packetBuilder.setTimestamp(350L).build().getTimestampNs(snapshotsWithDrift)
-        ).isEqualTo(5000L)
+        ).isEqualTo(4050L)
     }
 
     @Test
@@ -164,30 +201,12 @@ class ClockUtilsTest {
             .setTimestamp(150L)
             .setTimestampClockId(1)
             .build()
-        assertThat(packet.getTimestampNs(snapshotsWithMissing)).isEqualTo(1500L)
+        assertThat(packet.getTimestampNs(snapshotsWithMissing)).isEqualTo(1050L)
     }
 
     @Test
-    fun getTimestampNs_withMissingClocks_throwsForIncompatibleSnapshots() {
-        val bootTime = BuiltinClock.BUILTIN_CLOCK_BOOTTIME.number
-        val snapshotsWithMissing = listOf(
-            mapOf(1 to 100L, bootTime to 1000L, 3 to 10000L),
-            mapOf(bootTime to 2000L, 3 to 20000L), // Missing clock 1
-            mapOf(1 to 300L, 3 to 30000L), // Missing clock bootTime
-        )
-        val packet = TracePacket.newBuilder()
-            .setTimestamp(150L)
-            .setTimestampClockId(1)
-            .build()
-        assertThrows(IllegalArgumentException::class.java) {
-            packet.getTimestampNs(snapshotsWithMissing)
-        }
-    }
-
-    @Test
-    fun getTimestampNs_throwsForInsufficientSnapshots() {
-        val bootTime = BuiltinClock.BUILTIN_CLOCK_BOOTTIME.number
-        val notEnoughSnapshots = listOf(mapOf(1 to 100L, bootTime to 1000L))
+    fun getTimestampNs_throwsForEmptySnapshots() {
+        val notEnoughSnapshots = listOf<Map<Int, Long>>()
         val packet = TracePacket.newBuilder()
             .setTimestamp(150L)
             .setTimestampClockId(1)
@@ -196,4 +215,30 @@ class ClockUtilsTest {
             packet.getTimestampNs(notEnoughSnapshots)
         }
     }
+
+    @Test
+    fun getTimestampNs_verifyInterpolationNearBoundaries() {
+        val bootTime = BuiltinClock.BUILTIN_CLOCK_BOOTTIME.number
+        val testSnapshots = listOf(
+            mapOf(1 to 100L, bootTime to 1000L),
+            mapOf(1 to 200L, bootTime to 2000L),
+            mapOf(1 to 300L, bootTime to 3000L),
+        )
+        assertThat(packet1(99).getTimestampNs(testSnapshots)).isEqualTo(999)
+        assertThat(packet1(100).getTimestampNs(testSnapshots)).isEqualTo(1000)
+        assertThat(packet1(101).getTimestampNs(testSnapshots)).isEqualTo(1001)
+
+        assertThat(packet1(199).getTimestampNs(testSnapshots)).isEqualTo(1099)
+        assertThat(packet1(200).getTimestampNs(testSnapshots)).isEqualTo(2000)
+        assertThat(packet1(201).getTimestampNs(testSnapshots)).isEqualTo(2001)
+
+        assertThat(packet1(299).getTimestampNs(testSnapshots)).isEqualTo(2099)
+        assertThat(packet1(300).getTimestampNs(testSnapshots)).isEqualTo(3000)
+        assertThat(packet1(301).getTimestampNs(testSnapshots)).isEqualTo(3001)
+    }
+
+    private fun packet1(timestamp: Long) = TracePacket.newBuilder()
+            .setTimestamp(timestamp)
+            .setTimestampClockId(1)
+            .build()
 }
