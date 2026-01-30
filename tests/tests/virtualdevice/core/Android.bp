@@ -29,6 +29,7 @@ android_test {
 
     static_libs: [
         "CtsVirtualDeviceCommonLib",
+        "display_flags_lib",
         "junit-params",
     ],
 
