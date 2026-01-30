@@ -106,7 +106,11 @@ public class VoiceInteractionServiceTest {
     public static final DeviceState sDeviceState = new DeviceState();
 
     @Rule
-    public final SettingsStateKeeperRule mPublicServiceSettingsKeeper =
+    public final SettingsStateKeeperRule mStructureEnabledSettingsKeeper =
+            new SettingsStateKeeperRule(getInstrumentation().getTargetContext(),
+                    "assist_structure_enabled");
+    @Rule
+    public final SettingsStateKeeperRule mScreenshotEnabledSettingsKeeper =
             new SettingsStateKeeperRule(getInstrumentation().getTargetContext(),
                     "assist_screenshot_enabled");
 
