@@ -25,7 +25,7 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_test {
+android_test_helper_app {
     name: "CtsSignatureQueryServiceTest",
     defaults: ["cts_support_defaults"],
     compile_multilib: "both",
@@ -41,7 +41,6 @@ android_test {
         "android.test.base.stubs",
     ],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     certificate: ":ec-p256",
@@ -55,7 +54,7 @@ android_test {
 
 // This is the instrumentation test package signed with the same signing key and
 // lineage as v2 and v3 of the CtsSignatureQueryService test app.
-android_test {
+android_test_helper_app {
     name: "CtsSignatureQueryServiceTest_v2",
     defaults: ["cts_support_defaults"],
     manifest: "AndroidManifest_v2.xml",
@@ -72,7 +71,6 @@ android_test {
         "android.test.base.stubs",
     ],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     certificate: ":ec-p256_2",
@@ -89,7 +87,7 @@ android_test {
 // This is the instrumentation test package signed with the same signing key and
 // lineage as v2 and v3 of the CtsSignatureQueryService test app with rotation
 // targeting SDK version 33.
-android_test {
+android_test_helper_app {
     name: "CtsSignatureQueryServiceTest_v2-tgt-33",
     defaults: ["cts_support_defaults"],
     manifest: "AndroidManifest_v2.xml",
@@ -107,7 +105,6 @@ android_test {
         "android.test.base.stubs",
     ],
     test_suites: [
-        "cts",
         "general-tests",
     ],
     certificate: ":ec-p256_2",
