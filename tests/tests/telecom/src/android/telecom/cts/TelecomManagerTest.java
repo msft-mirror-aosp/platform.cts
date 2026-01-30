@@ -26,6 +26,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.content.pm.PermissionInfo;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.net.Uri;
@@ -45,6 +46,8 @@ public class TelecomManagerTest extends BaseTelecomTestWithMockServices {
     private static final String TEST_EMERGENCY_NUMBER = "5553637";
     private static final Uri TEST_EMERGENCY_URI = Uri.fromParts("tel", TEST_EMERGENCY_NUMBER, null);
     private static final String CTS_TELECOM_PKG = TelecomManagerTest.class.getPackage().getName();
+    private static final String THIRD_PARTY_HANDLE_CALL_INTENT_ACTION =
+            "android.telecom.cts.thirdptycallintent.ACTION_HANDLE_CALL_INTENT";
 
     public void testGetCurrentTtyMode() {
         if (!mShouldTestTelecom) {
@@ -281,6 +284,54 @@ public class TelecomManagerTest extends BaseTelecomTestWithMockServices {
         Intent intent = new Intent(TelecomManager.ACTION_CONFIGURE_CALL_LOG_INTEGRATION);
         PackageManager pm = mContext.getPackageManager();
         assertNotNull(pm.resolveActivity(intent, PackageManager.MATCH_ALL));
+    }
+
+    public void testHandleCallIntentPermission() {
+        if (!mShouldTestTelecom || !android.telecom.flags.Flags.telecomMainlineApi()) {
+            return;
+        }
+
+        // Verify the Telecom signature permission info for android.permission.HANDLE_CALL_INTENT.
+        PackageManager pm = mContext.getPackageManager();
+        try {
+            PermissionInfo info = pm.getPermissionInfo(
+                    "android.permission.HANDLE_CALL_INTENT", 0);
+            assertEquals(PermissionInfo.PROTECTION_SIGNATURE, info.getProtection());
+        } catch (PackageManager.NameNotFoundException e) {
+            fail("Could not find \"android.permission.HANDLE_CALL_INTENT\".");
+        }
+
+        Intent actionCallIntent = new Intent(Intent.ACTION_CALL);
+        String callingPackageName = mContext.getPackageName();
+        Uri address = Uri.fromParts("tel", "*1234#", null);
+        try {
+            setupConnectionService(null, FLAG_REGISTER | FLAG_ENABLE);
+        } catch (Exception e) {
+            fail("Exception thrown while setting up connection service");
+        }
+
+        // Verify that no exception is thrown when invoking ACTION_CALL from Telecom CTS
+        // directly. This should work as the permission is enforced internally and Telecom is
+        // already granted the permission
+        startCallTo(address, TestUtils.TEST_PHONE_ACCOUNT_HANDLE);
+
+        try {
+            // Now register the ThirdPartCallIntentTestApp to verify that the CTS runner (attacker)
+            // is not able to access handleCallIntent b/c it lacks the signature permission, which
+            // is gated by the activity. This simulates callers not being able to directly call
+            // TelecomServiceImpl#handleCallIntent via TelecomManager#handleCallIntent. Even though
+            // the CTS runner has tried to grant the permission (refer to AndroidManifest.xml file),
+            // because this is a signature level permission, it's not granted.
+            Intent appIntent = new Intent(THIRD_PARTY_HANDLE_CALL_INTENT_ACTION);
+            appIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            mContext.startActivity(appIntent);
+            fail("Failed to throw SecurityException for malicious app accessing handle "
+                    + "call intent without android.permission.HANDLE_CALL_INTENT.");
+        } catch (SecurityException e) {
+            // Expected
+        } catch (Exception e) {
+            fail("Exception encountered while calling handleCallIntent from 3P app: " + e);
+        }
     }
 
     private boolean isWiredHeadsetPluggedIn() {
