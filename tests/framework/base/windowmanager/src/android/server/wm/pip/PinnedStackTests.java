@@ -124,7 +124,6 @@ import android.content.res.Configuration;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.RemoteCallback;
-import android.os.UserManager;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsDisabled;
@@ -207,7 +206,6 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     public void setUp() throws Exception {
         super.setUp();
         assumeTrue(supportsPip());
-        assumeFalse("PiP in HSUM not supported", UserManager.isHeadlessSystemUserMode());
     }
 
     @After
