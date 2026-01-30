@@ -23,6 +23,7 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.compat.testing.PlatformCompatChangeRule;
 import android.content.Context;
 import android.os.Bundle;
 import android.platform.test.annotations.AppModeFull;
@@ -34,6 +35,8 @@ import android.voiceinteraction.cts.services.NoSessionVoiceInteractionService;
 import android.voiceinteraction.cts.testcore.VoiceInteractionServiceConnectedRule;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+
+import libcore.junit.util.compat.CoreCompatChangeRule.EnableCompatChanges;
 
 import org.junit.After;
 import org.junit.Before;
@@ -60,6 +63,8 @@ public class VoiceInteractionServiceNoExistingSessionServiceTest {
 
     private NoSessionVoiceInteractionService mService;
 
+    @Rule public final PlatformCompatChangeRule mCompatChangeRule = new PlatformCompatChangeRule();
+
     @Rule
     public VoiceInteractionServiceConnectedRule mConnectedRule =
             new VoiceInteractionServiceConnectedRule(mContext, getTestVoiceInteractionService());
@@ -83,6 +88,7 @@ public class VoiceInteractionServiceNoExistingSessionServiceTest {
         mService = null;
     }
 
+    @EnableCompatChanges({VoiceInteractionCompat.RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID})
     @Test
     public void testShowSessionWithNullArgs_onShowSessionFailedCalledHasId() throws Exception {
         BaseVoiceInteractionService.initShowSessionLatch();
@@ -94,6 +100,7 @@ public class VoiceInteractionServiceNoExistingSessionServiceTest {
         assertThat(resultArgs.containsKey(KEY_SHOW_SESSION_ID)).isTrue();
     }
 
+    @EnableCompatChanges({VoiceInteractionCompat.RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID})
     @Test
     public void testShowSession_onShowSessionFailedCalled() throws Exception {
         final Bundle args = new Bundle();

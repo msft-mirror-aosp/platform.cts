@@ -78,8 +78,6 @@ public class VoiceInteractionServiceSelfTriggerTest {
             "android.voiceinteraction.cts.services.CtsBasicVoiceInteractionService";
     private static final String ASSIST_STRUCTURE_ENABLED = "assist_structure_enabled";
     private static final String ASSIST_SCREENSHOT_ENABLED = "assist_screenshot_enabled";
-    // The compat change ID for RESTRICT_VIS_SELF_TRIGGER
-    static final long RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID = 454889405L;
 
     @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
 
@@ -151,7 +149,7 @@ public class VoiceInteractionServiceSelfTriggerTest {
     @Test
     @RequiresFlagsEnabled(
             com.android.server.voiceinteraction.flags.Flags.FLAG_ENABLE_RESTRICT_VIS_SELF_TRIGGER)
-    @DisableCompatChanges({RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID})
+    @DisableCompatChanges({VoiceInteractionCompat.RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID})
     public void testSelfTrigger_background_noRecentHotword_assistStripped() throws Exception {
         // 1. background the test app
         try (TestAppInstance instance = sTestApp.install(sDeviceState.initialUser())) {
@@ -176,7 +174,7 @@ public class VoiceInteractionServiceSelfTriggerTest {
     @Test
     @RequiresFlagsEnabled(
             com.android.server.voiceinteraction.flags.Flags.FLAG_ENABLE_RESTRICT_VIS_SELF_TRIGGER)
-    @DisableCompatChanges({RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID})
+    @DisableCompatChanges({VoiceInteractionCompat.RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID})
     public void testSelfTrigger_background_recentHotword_assistAllowed() throws Exception {
         // 1. Create detector
         mService.createAlwaysOnHotwordDetector();
@@ -232,7 +230,7 @@ public class VoiceInteractionServiceSelfTriggerTest {
     @Test
     @RequiresFlagsEnabled(
             com.android.server.voiceinteraction.flags.Flags.FLAG_ENABLE_RESTRICT_VIS_SELF_TRIGGER)
-    @DisableCompatChanges({RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID})
+    @DisableCompatChanges({VoiceInteractionCompat.RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID})
     public void testSelfTrigger_foreground_noRecentHotword_assistAllowed() throws Exception {
         // 1. Bring test app to foreground
         Intent intent = new Intent(mContext, EmptyActivity.class);
