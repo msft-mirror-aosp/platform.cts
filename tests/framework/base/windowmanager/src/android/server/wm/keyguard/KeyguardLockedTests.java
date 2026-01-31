@@ -22,6 +22,7 @@ import static android.app.WindowConfiguration.WINDOWING_MODE_PINNED;
 import static android.server.wm.CliIntentExtra.extraString;
 import static android.server.wm.MockImeHelper.createManagedMockImeSession;
 import static android.server.wm.UiDeviceUtils.pressBackButton;
+import static android.server.wm.UiDeviceUtils.pressMenuButton;
 import static android.server.wm.WindowManagerStateHelper.focusedActivity;
 import static android.server.wm.app.Components.DISMISS_KEYGUARD_ACTIVITY;
 import static android.server.wm.app.Components.DISMISS_KEYGUARD_METHOD_ACTIVITY;
@@ -63,6 +64,7 @@ import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.KeyguardTestBase;
 import android.server.wm.LockScreenSession;
 import android.server.wm.app.Components;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -72,8 +74,11 @@ import androidx.test.filters.FlakyTest;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.CtsTouchUtils;
+import com.android.compatibility.common.util.DeviceReportLog;
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.compatibility.common.util.ResultType;
+import com.android.compatibility.common.util.ResultUnit;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.MockImeSession;
 
@@ -92,7 +97,25 @@ import java.util.concurrent.TimeUnit;
 @android.server.wm.annotation.Group2
 public class KeyguardLockedTests extends KeyguardTestBase {
 
+    private static final String REPORT_LOG_NAME = "CtsWindowManagerDeviceKeyguard";
+    private static final String STREAM_NAME_KEYGUARD_STAYS_LOCKED =
+            "test_keyguard_stays_locked_after_wrong_credentials";
+    private static final String RECOMMENDED_TIMEOUT_ENFORCED_TAG = "recommended_timeout_enforced";
+    private static final String RECOMMENDED_TIMEOUT_ENFORCED_MS_TAG =
+            "recommended_timeout_enforced_ms";
+    private static final String RECOMMENDED_TIMEOUT_ENFORCED_FIFTH_GUESS_MS_TAG =
+            "recommended_timeout_enforced_fifth_guess_ms";
+    private static final String RECOMMENDED_TIMEOUT_NOT_ENFORCED_TAG =
+            "recommended_timeout_not_enforced";
+    private static final String RECOMMENDED_TIMEOUT_NOT_ENFORCED_MS_TAG =
+            "recommended_timeout_not_enforced_ms";
+    private static final String RECOMMENDED_TIMEOUT_NOT_ENFORCED_FIFTH_GUESS_MS_TAG =
+            "recommended_timeout_not_enforced_fifth_guess_ms";
+
+    private static final String TAG = "KeyguardLockedTests";
     private static final long TIMEOUT_IME = TimeUnit.SECONDS.toMillis(5);
+
+    private static final int EXPECTED_MINIMUM_LOCKOUT_AFTER_5_WRONG_GUESSES_SECONDS = 60;
 
     private final CtsTouchUtils mCtsTouchUtils =
             new CtsTouchUtils(InstrumentationRegistry.getTargetContext());
@@ -210,6 +233,188 @@ public class KeyguardLockedTests extends KeyguardTestBase {
             mKeyguardManager.removeDeviceLockedStateListener(listener);
             mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
         }
+    }
+
+    /**
+     * Checks whether the device locks out for around 60 seconds within the first 5 unique wrong
+     * guesses of a credential.
+     *
+     * <p>Validates compliance with CDD STRONGLY_RECOMMENDED requirement [C-SR-1] of 9.11. Keys and
+     * Credentials.
+     *
+     * <p>As the requirement is STRONGLY_RECOMMENDED, the test is skipped if the device does not
+     * lock out for the expected duration. However, the requirement is planned to be become MUST in
+     * a future release of Android. The test will be updated to fail at that point.
+     *
+     * <p>Asserts the following as pre-requisites. These will fail the test if not met.
+     *
+     * <ol>
+     *   <li>The keyguard locks after setting a credential and powering off the screen
+     *   <li>The keyguard unlocks with the configured credential
+     * </ol>
+     *
+     * <p>Enters 5 wrong credentials in succession, and checks for device lockout. Metrics are
+     * logged in both the succeeded and skipped cases. See details below.
+     *
+     * <ul>
+     *   <li>During the period of 60 seconds starting from when the first wrong guess was made:
+     *       <ol>
+     *         <li>Enter the correct configured credential
+     *         <li>Wait for any device animations
+     *         <li>Check if the device is still locked
+     *       </ol>
+     * </ul>
+     *
+     * <p>If the device does lock out for the expected 60 seconds, the {@link DeviceReportLog} is
+     * populated with the following report:
+     *
+     * <pre>
+     * {
+     *   "test_keyguard_stays_locked_after_wrong_credentials": {
+     *     "recommended_timeout_enforced": true,
+     *     "recommended_timeout_enforced_ms": 61110,
+     *     "recommended_timeout_enforced_fifth_guess_ms": 56320
+     *   }
+     * }
+     * </pre>
+     *
+     * <p>In the case of a failure, the {@link DeviceReportLog} receives the following report:
+     *
+     * <pre>
+     * {
+     *   "test_keyguard_stays_locked_after_wrong_credentials": {
+     *     "recommended_timeout_not_enforced": true,
+     *     "recommended_timeout_not_enforced_ms": 48194,
+     *     "recommended_timeout_not_enforced_fifth_guess_ms": 43367
+     *   }
+     * }
+     * </pre>
+     */
+    @Test
+    public void testKeyguardStaysLocked_afterWrongCredentials() {
+        mLockScreenSession =
+                createManagedLockScreenSession().setLockCredential().gotoKeyguard().unlock();
+        assertTrue("Keyguard is not secure", mKeyguardManager.isKeyguardSecure());
+        assertKeyguardLocked("after setting credential");
+
+        // Ensure that the device is unlockable with the credential so that lockouts are because of
+        // repeated wrong credentials, not simply that the device cannot unlock with any credential.
+        mLockScreenSession.enterLockCredentialAndConfirm();
+        mWmState.waitAndAssertKeyguardGone();
+        assertFalse(
+                "Keyguard is not unlocked after using configured credential",
+                mKeyguardManager.isKeyguardLocked());
+
+        mLockScreenSession.gotoKeyguard();
+        // Show bouncer by pressing the Menu button
+        pressMenuButton();
+        mUiDevice.waitForIdle();
+        assertKeyguardLocked("after turning screen off and waking up");
+
+        long startTime = -1;
+        for (int i = 0; i < 5; i++) {
+            if (i > 0) {
+                SystemClock.sleep(1000);
+            }
+            mLockScreenSession.enterWrongCredentialAndConfirm(i);
+            if (startTime == -1) {
+                startTime = SystemClock.elapsedRealtime();
+            }
+            assertKeyguardLocked("after entering a wrong credential with index " + i);
+        }
+        long timeAfterFifthGuess = SystemClock.elapsedRealtime();
+
+        long attemptFinishedTime = timeAfterFifthGuess;
+        for (long attemptTriggerTime = SystemClock.elapsedRealtime();
+                attemptTriggerTime - startTime
+                        < EXPECTED_MINIMUM_LOCKOUT_AFTER_5_WRONG_GUESSES_SECONDS * 1000;
+                attemptTriggerTime = SystemClock.elapsedRealtime()) {
+            Log.i(
+                    TAG,
+                    "Trying correct credential "
+                            + (attemptTriggerTime - startTime)
+                            + "ms after first wrong guess, "
+                            + (attemptTriggerTime - timeAfterFifthGuess)
+                            + "ms after fifth wrong guess.");
+            mLockScreenSession.unlock().enterLockCredentialAndConfirm();
+            // The above action may wait before entering credentials, so record right after the
+            // guess to avoid false negatives near the pass/fail boundary.
+            attemptFinishedTime = SystemClock.elapsedRealtime();
+            long msSinceFirstGuess = attemptFinishedTime - startTime;
+            long msSinceFifthGuess = attemptFinishedTime - timeAfterFifthGuess;
+            Log.i(
+                    TAG,
+                    "Correct credential attempt finished at "
+                            + msSinceFirstGuess
+                            + "ms after first wrong guess, "
+                            + msSinceFifthGuess
+                            + "ms after fifth wrong guess.");
+            mUiDevice.waitForIdle();
+            boolean keyguardLocked = mKeyguardManager.isKeyguardLocked();
+            if (!keyguardLocked) {
+                reportTimeoutNotEnforced(msSinceFirstGuess, msSinceFifthGuess);
+                Log.w(
+                        TAG,
+                        "Device was unlocked before recommended "
+                                + EXPECTED_MINIMUM_LOCKOUT_AFTER_5_WRONG_GUESSES_SECONDS
+                                + "s lockout period!");
+                assumeTrue(keyguardLocked);
+                return;
+            }
+        }
+        long msSinceFirstGuess = attemptFinishedTime - startTime;
+        long msSinceFifthGuess = attemptFinishedTime - timeAfterFifthGuess;
+        Log.i(
+                TAG,
+                "Device was locked for "
+                        + msSinceFirstGuess
+                        + "ms after first wrong guess, "
+                        + msSinceFifthGuess
+                        + "ms after fifth wrong guess.");
+        reportTimeoutEnforced(msSinceFirstGuess, msSinceFifthGuess);
+    }
+
+    private void reportTimeoutEnforced(long msSinceFirstGuess, long msSinceFifthGuess) {
+        DeviceReportLog reportLog =
+                new DeviceReportLog(REPORT_LOG_NAME, STREAM_NAME_KEYGUARD_STAYS_LOCKED);
+        reportLog.addValue(
+                RECOMMENDED_TIMEOUT_ENFORCED_TAG, true, ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.addValue(
+                RECOMMENDED_TIMEOUT_ENFORCED_MS_TAG,
+                msSinceFirstGuess,
+                ResultType.NEUTRAL,
+                ResultUnit.MS);
+        reportLog.addValue(
+                RECOMMENDED_TIMEOUT_ENFORCED_FIFTH_GUESS_MS_TAG,
+                msSinceFifthGuess,
+                ResultType.NEUTRAL,
+                ResultUnit.MS);
+        reportLog.submit(mInstrumentation);
+    }
+
+    private void reportTimeoutNotEnforced(long msSinceFirstGuess, long msSinceFifthGuess) {
+        DeviceReportLog reportLog =
+                new DeviceReportLog(REPORT_LOG_NAME, STREAM_NAME_KEYGUARD_STAYS_LOCKED);
+        reportLog.addValue(
+                RECOMMENDED_TIMEOUT_NOT_ENFORCED_TAG,
+                true,
+                ResultType.WARNING, // Presence of this value indicates a non-fatal problem
+                ResultUnit.NONE);
+        reportLog.addValue(
+                RECOMMENDED_TIMEOUT_NOT_ENFORCED_MS_TAG,
+                msSinceFirstGuess,
+                ResultType.WARNING, // Presence of this value indicates a non-fatal problem
+                ResultUnit.MS);
+        reportLog.addValue(
+                RECOMMENDED_TIMEOUT_NOT_ENFORCED_FIFTH_GUESS_MS_TAG,
+                msSinceFifthGuess,
+                ResultType.WARNING, // Presence of this value indicates a non-fatal problem
+                ResultUnit.MS);
+        reportLog.submit(mInstrumentation);
+    }
+
+    private void assertKeyguardLocked(String suffix) {
+        assertTrue("Keyguard is not locked " + suffix, mKeyguardManager.isKeyguardLocked());
     }
 
     @Test

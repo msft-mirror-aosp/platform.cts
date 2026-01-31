@@ -46,6 +46,7 @@ import android.provider.Telephony.Sms;
 import android.telephony.cts.util.DefaultSmsAppHelper;
 import android.text.TextUtils;
 import android.util.Log;
+import com.android.internal.telephony.flags.Flags;
 
 import androidx.test.filters.SmallTest;
 
@@ -119,6 +120,131 @@ public class MmsTest {
         cursor.moveToNext();
         String actualSubject = cursor.getString(cursor.getColumnIndex(Telephony.Mms.SUBJECT));
         assertThat(actualSubject).isEqualTo(expectedSubject);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
+    public void testMmsInsert_withRestrictedBitSetToTrue_verifyRestrictedBitIsSet() {
+        Uri uri = insertIntoMmsTable("subject", Sms.MESSAGE_TYPE_SENT, /* isRestricted= */ true);
+
+        Cursor cursor = mContentResolver.query(uri, null, null, null);
+
+        cursor.moveToNext();
+        String restrictedBit = cursor.getString(cursor.getColumnIndex(
+                Telephony.ReadRestriction.RESTRICTED));
+        assertThat(restrictedBit).isEqualTo("1");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
+    public void testMmsInsert_withRestrictedBitSetToFalse_verifyRestrictedBitIsNotSet() {
+        Uri uri = insertIntoMmsTable("subject", Sms.MESSAGE_TYPE_SENT, /* isRestricted= */ false);
+
+        Cursor cursor = mContentResolver.query(uri, null, null, null);
+
+        cursor.moveToNext();
+        String restrictedBit = cursor.getString(cursor.getColumnIndex(
+                Telephony.ReadRestriction.RESTRICTED));
+        assertThat(restrictedBit).isEqualTo("0");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
+    public void testMmsInsert_withRestictionBitNotSet_verifyRestrictedBitIsNotSet() {
+        Uri uri = insertIntoMmsTable("subject", Sms.MESSAGE_TYPE_SENT);
+
+        Cursor cursor = mContentResolver.query(uri, null, null, null);
+
+        cursor.moveToNext();
+        String restrictedBit = cursor.getString(cursor.getColumnIndex(
+                Telephony.ReadRestriction.RESTRICTED));
+        assertThat(restrictedBit).isEqualTo("0");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
+    public void queryMms_withRestictionBitNotSet_readRestritionColumnIsHidden() {
+        Uri uri = insertIntoMmsTable("subject", Sms.MESSAGE_TYPE_SENT);
+
+        Cursor cursor = mContentResolver.query(uri, null, null, null);
+
+        cursor.moveToNext();
+
+        assertThat(cursor.getColumnIndex(Telephony.ReadRestriction.READ_RESTRICTION_COLUMN_NAME))
+                .isEqualTo(-1);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
+    public void updateUnRestrictedMms_toRestricted_failsWithUnsupportedOperation() {
+        Uri uri = insertIntoMmsTable("subject", Sms.MESSAGE_TYPE_SENT, /* isRestricted= */ false);
+        ContentValues values = new ContentValues();
+        values.put(Telephony.ReadRestriction.RESTRICTED, true);
+
+        assertThrows(UnsupportedOperationException.class, () -> mContentResolver.update(
+                uri, values, null, null));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
+    public void updateRestrictedMms_toUnRestricted_updatesTheRestrictedBit() {
+        Uri uri = insertIntoMmsTable("subject", Sms.MESSAGE_TYPE_SENT, /* isRestricted= */ true);
+
+        ContentValues values = new ContentValues();
+        values.put(Telephony.ReadRestriction.RESTRICTED, false);
+        mContentResolver.update(uri, values, null, null);
+
+        Cursor cursor = mContentResolver.query(uri, null, null, null);
+        cursor.moveToNext();
+        String restrictedBit = cursor.getString(cursor.getColumnIndex(
+                Telephony.ReadRestriction.RESTRICTED));
+        assertThat(restrictedBit).isEqualTo("0");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
+    public void insertMms_withReadRestriction_throwsException() {
+        final ContentValues mmsValues = new ContentValues();
+        mmsValues.put(Telephony.Mms.TEXT_ONLY, 1);
+        mmsValues.put(Telephony.Mms.MESSAGE_TYPE, Sms.MESSAGE_TYPE_SENT);
+        mmsValues.put(Telephony.Mms.SUBJECT, "subject");
+        mmsValues.put(Telephony.ReadRestriction.READ_RESTRICTION_COLUMN_NAME, "0");
+
+        assertThrows(UnsupportedOperationException.class,
+            () -> mContentResolver.insert(Telephony.Mms.CONTENT_URI, mmsValues));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
+    public void queryMms_byRestrictedColumn_returnsMatchingResults() {
+        insertIntoMmsTable("subject", Sms.MESSAGE_TYPE_SENT, /* isRestricted= */ false);
+        insertIntoMmsTable("subject", Sms.MESSAGE_TYPE_SENT, /* isRestricted= */ false);
+        insertIntoMmsTable("subject", Sms.MESSAGE_TYPE_SENT, /* isRestricted= */ true);
+
+        Cursor restrictedMmsCursor = mContentResolver.query(Telephony.Mms.CONTENT_URI, null,
+                Telephony.ReadRestriction.RESTRICTED + "=1", null, null);
+        Cursor unRestrictedMmsCursor = mContentResolver.query(Telephony.Mms.CONTENT_URI, null,
+                Telephony.ReadRestriction.RESTRICTED + "=0", null, null);
+
+        assertThat(restrictedMmsCursor.getCount()).isEqualTo(1);
+        assertThat(unRestrictedMmsCursor.getCount()).isEqualTo(2);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
+    public void selectionWithReadRestriction_throwsException() {
+        Uri uri = insertIntoMmsTable("subject", Sms.MESSAGE_TYPE_SENT, /* isRestricted= */ false);
+
+        String selection = "read_restriction=?";
+        String[] selectionArgs = new String[]{"0"};
+
+        assertThrows(IllegalArgumentException.class, () ->
+                mContentResolver.query(uri, null, selection, selectionArgs, null));
+        assertThrows(IllegalArgumentException.class, () ->
+                mContentResolver.update(uri, new ContentValues(), selection,
+                selectionArgs));
+        assertThrows(IllegalArgumentException.class, () ->
+                mContentResolver.delete(uri, selection, selectionArgs));
     }
 
     @Test
@@ -427,6 +553,16 @@ public class MmsTest {
         assertThat(mmsUri).isNotNull();
         mmsUri = insertIntoMmsTable(MMS_SUBJECT_TWO, Sms.MESSAGE_TYPE_QUEUED);
         assertThat(mmsUri).isNotNull();
+    }
+
+    private Uri insertIntoMmsTable(String subject, int messageType, boolean isRestricted) {
+        final ContentValues mmsValues = new ContentValues();
+        mmsValues.put(Telephony.Mms.TEXT_ONLY, 1);
+        mmsValues.put(Telephony.Mms.MESSAGE_TYPE, messageType);
+        mmsValues.put(Telephony.Mms.SUBJECT, subject);
+        mmsValues.put(Telephony.ReadRestriction.RESTRICTED, isRestricted ? "1" : "0");
+        final Uri mmsUri = mContentResolver.insert(Telephony.Mms.CONTENT_URI, mmsValues);
+        return mmsUri;
     }
 
     private Uri insertIntoMmsTable(String subject, int messageType) {

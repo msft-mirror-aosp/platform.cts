@@ -20,6 +20,21 @@ description:
   "Minimum memory available to the kernel as reported by "
   "ActivityManager.MemoryInfo.totalMemory"
 specs {
+  key: 10
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_10
+    specification:
+      "MUST have at least 3.2 GiB available to the kernel as reported by "
+      "android.app.ActivityManager.MemoryInfo."
+    required_values {
+      key: "physical_memory_mb"
+      value {
+        long_value: 3200
+      }
+    }
+  }
+}
+specs {
   key: 31
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_12

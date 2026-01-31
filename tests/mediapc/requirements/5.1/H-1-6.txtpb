@@ -18,6 +18,51 @@ id: "5.1/H-1-6"
 name: "Concurrent Video Transcoding Sessions"
 description: "Concurrent video transcoding sessions"
 specs {
+  key: 10
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_10
+    specification:
+      "MUST support 3 instances of hardware video decoder and hardware video "
+      "encoder sessions (AVC or HEVC) in any codec combination running "
+      "concurrently at 720p@30fps resolution."
+    required_values {
+      key: "concurrent_fps"
+      value {
+        double_value: 85.5
+      }
+    }
+    required_values {
+      key: "resolution"
+      value {
+        int_value: 720
+      }
+    }
+    variant_specs {
+      key: "AV1"
+      value {
+        required_values {
+          key: "resolution"
+          value {
+            int_value: 720
+          }
+        }
+      }
+    }
+    variant_specs {
+      key: "VP9"
+      value {
+        required_values {
+          key: "resolution"
+          value {
+            int_value: 720
+          }
+        }
+      }
+    }
+    test_config_id: "720p"
+  }
+}
+specs {
   key: 30
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_11

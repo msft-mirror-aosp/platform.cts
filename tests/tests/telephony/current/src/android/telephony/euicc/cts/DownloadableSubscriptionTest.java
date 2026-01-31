@@ -18,7 +18,6 @@ package android.telephony.euicc.cts;
 
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -27,70 +26,109 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.service.carrier.CarrierIdentifier;
+import android.telephony.UiccAccessRule;
 import android.telephony.euicc.DownloadableSubscription;
 
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.internal.telephony.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @RunWith(AndroidJUnit4.class)
 public class DownloadableSubscriptionTest {
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String ACTIVATION_CODE =
             "1$SMDP.GSMA.COM$04386-AGYFT-A74Y8-3F815$1.3.6.1.4.1.31746";
 
+    private static final CarrierIdentifier CARRIER_IDENTIFIER =
+            new CarrierIdentifier(
+                    "123" /*MCC*/, "456" /*MNC*/,
+                    "Android" /*SPN*/, "8675309" /*IMSI*/,
+                    "111" /*GID1*/, "222" /*GID2*/);
+
+    private static final String CONFIRMATION_CODE = "fake confirmation code";
+
     private DownloadableSubscription mDownloadableSubscription;
+
+    private static final String CARRIER_NAME = "Test carrier Name";
+
+    // Note: a null list is converted to an empty list during parceling.
+    // Accordingly, an empty list is used here for cleanliness.
+    private static final List<UiccAccessRule> EMPTY_ACCESS_RULES = new ArrayList<>();
 
     @Before
     public void setUp() throws Exception {
-        assumeTrue("Device does not have Euicc feature", EuiccUtil.hasEuiccFeature());
-        mDownloadableSubscription = DownloadableSubscription.forActivationCode(ACTIVATION_CODE);
+        DownloadableSubscription.Builder dsb =
+                new DownloadableSubscription.Builder(ACTIVATION_CODE);
+
+        dsb.setConfirmationCode(CONFIRMATION_CODE);
+        dsb.setAccessRules(EMPTY_ACCESS_RULES);
+        dsb.setCarrierName(CARRIER_NAME);
+
+        if (Flags.downloadableSubscriptionIncludeCarrierIdentifierInternal()) {
+            dsb.setCarrierIdentifier(CARRIER_IDENTIFIER);
+        }
+        mDownloadableSubscription = dsb.build();
     }
 
     @Test
     public void testDownloadableSubscriptionBuilder() {
-        final String confirmationCode = "fake confirmation code";
-        DownloadableSubscription downloadableSubscription =
-                new DownloadableSubscription.Builder(ACTIVATION_CODE)
-                        .setConfirmationCode(confirmationCode)
-                        .build();
-
-        assertNotNull(downloadableSubscription);
-        assertEquals(ACTIVATION_CODE, downloadableSubscription.getEncodedActivationCode());
-        assertEquals(confirmationCode, downloadableSubscription.getConfirmationCode());
-    }
-
-    @Test
-    public void testGetEncodedActivationCode() {
-        assertNotNull(mDownloadableSubscription);
-        assertEquals(ACTIVATION_CODE, mDownloadableSubscription.getEncodedActivationCode());
+        assertEqualsDefaults(mDownloadableSubscription);
     }
 
     @Test
     public void testDescribeContents() {
-        assertNotNull(mDownloadableSubscription);
         int bitmask = mDownloadableSubscription.describeContents();
         assertTrue(bitmask == 0 || bitmask == Parcelable.CONTENTS_FILE_DESCRIPTOR);
     }
 
     @Test
-    public void testGetConfirmationCode() throws NoSuchFieldException, IllegalAccessException {
-        // There is no way to set DownloadableSubscription#confirmationCode from here because
-        // Android P doesn't allow accessing a platform class's @hide methods or private fields
-        // through reflection.. so let's just verify confirmationCode is null.
-        assertNotNull(mDownloadableSubscription);
-        assertNull(mDownloadableSubscription.getConfirmationCode());
+    public void testWriteEmptyParcel() {
+        DownloadableSubscription emptySubscription = new DownloadableSubscription.Builder().build();
+
+        assertNull(emptySubscription.getEncodedActivationCode());
+        assertNull(emptySubscription.getConfirmationCode());
+        assertNull(emptySubscription.getCarrierName());
+
+        if (Flags.downloadableSubscriptionIncludeCarrierIdentifierInternal()) {
+            assertNull(emptySubscription.getCarrierIdentifier());
+        }
+
+        Parcel parcel = Parcel.obtain();
+        emptySubscription.writeToParcel(parcel, emptySubscription.describeContents());
+
+        // extract object from parcel
+        parcel.setDataPosition(0 /* pos */);
+        DownloadableSubscription downloadableSubscriptionFromParcel =
+                DownloadableSubscription.CREATOR.createFromParcel(parcel);
+
+        assertNull(downloadableSubscriptionFromParcel.getEncodedActivationCode());
+        assertNull(downloadableSubscriptionFromParcel.getConfirmationCode());
+        assertNull(downloadableSubscriptionFromParcel.getCarrierName());
+
+        // Yes this is unfortunate that the behavior could be null or empty. It's not
+        // specified, but because the values are nullable, it can return either.
+        assertTrue(
+                downloadableSubscriptionFromParcel.getAccessRules() == null
+                        || downloadableSubscriptionFromParcel.getAccessRules().isEmpty());
+
+        if (Flags.downloadableSubscriptionIncludeCarrierIdentifierInternal()) {
+            assertNull(downloadableSubscriptionFromParcel.getCarrierIdentifier());
+        }
     }
 
     @Test
     public void testWriteToParcel() {
-        assertNotNull(mDownloadableSubscription);
-
         // write object to parcel
         Parcel parcel = Parcel.obtain();
         mDownloadableSubscription.writeToParcel(
@@ -100,15 +138,36 @@ public class DownloadableSubscriptionTest {
         parcel.setDataPosition(0 /* pos */);
         DownloadableSubscription downloadableSubscriptionFromParcel =
                 DownloadableSubscription.CREATOR.createFromParcel(parcel);
-        assertEquals(
-                ACTIVATION_CODE, downloadableSubscriptionFromParcel.getEncodedActivationCode());
 
-        // There is no way to set DownloadableSubscription#confirmationCode from here because
-        // Android P doesn't allow accessing a platform class's @hide methods or private fields
-        // through reflection.. so let's just verify confirmationCode is null.
-        assertNull(downloadableSubscriptionFromParcel.getConfirmationCode());
+        assertEqualsDefaults(downloadableSubscriptionFromParcel);
+    }
 
-        // Similarly there is no way to get DownloadableSubscription#carrierName or
-        // DownloadableSubscription#accessRules on Android P so we can't verify them here.
+    @Test
+    public void testWriteToParcelManually() {
+        assumeTrue(Flags.downloadableSubscriptionIncludeCarrierIdentifierInternal());
+        // write object to parcel
+        Parcel parcel = Parcel.obtain();
+        parcel.writeString(ACTIVATION_CODE);
+        parcel.writeString(CONFIRMATION_CODE);
+        parcel.writeString(CARRIER_NAME);
+        parcel.writeTypedList(EMPTY_ACCESS_RULES);
+        parcel.writeParcelable(CARRIER_IDENTIFIER, CARRIER_IDENTIFIER.describeContents());
+
+        // extract object from parcel
+        parcel.setDataPosition(0 /* pos */);
+        DownloadableSubscription downloadableSubscriptionFromParcel =
+                DownloadableSubscription.CREATOR.createFromParcel(parcel);
+        assertEqualsDefaults(downloadableSubscriptionFromParcel);
+    }
+
+    void assertEqualsDefaults(DownloadableSubscription ds) {
+        assertEquals(ACTIVATION_CODE, ds.getEncodedActivationCode());
+        assertEquals(CONFIRMATION_CODE, ds.getConfirmationCode());
+        assertEquals(CARRIER_NAME, ds.getCarrierName());
+        assertEquals(EMPTY_ACCESS_RULES, ds.getAccessRules());
+
+        if (Flags.downloadableSubscriptionIncludeCarrierIdentifierInternal()) {
+            assertEquals(CARRIER_IDENTIFIER, ds.getCarrierIdentifier());
+        }
     }
 }

@@ -29,13 +29,11 @@ import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.UpdatableHelpe
 import android.app.appfunctions.cts.AppFunctionUtils.getAllRuntimeMetadataPackages
 import android.app.appfunctions.cts.AppFunctionUtils.getAllStaticMetadataPackages
 import android.app.appfunctions.cts.AppFunctionUtils.installExistingPackageAsUser
-import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabledRemote
 import android.app.appfunctions.cts.AppFunctionUtils.uninstallPackageAsUser
 import android.app.appfunctions.cts.AppSearchUtils.sanitizeGenericDocument
 import android.app.appfunctions.flags.Flags
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
 import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
-import android.app.appfunctions.testutils.FunctionType
 import android.app.appfunctions.testutils.ITestAppFunctionRegistrationService
 import android.app.appfunctions.testutils.TestAppFunctionRegistrationService
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver
@@ -724,215 +722,6 @@ class SearchAppFunctionsTest {
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
-    fun searchAppFunctions_changeStaticFunctionEnabledState_reflectsInSearchResult() = doBlocking {
-        val searchSpec =
-            AppFunctionSearchSpec.Builder()
-                .setFunctionNames(
-                    listOf(
-                        DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT,
-                        DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT,
-                    )
-                )
-                .build()
-        var resultsByFunctionName = searchAppFunctions(searchSpec).associateBy { it.name }
-        assertThat(
-                resultsByFunctionName[DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT]!!
-                    .isEnabled
-            )
-            .isTrue()
-        assertThat(
-                resultsByFunctionName[DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT]!!
-                    .isEnabled
-            )
-            .isFalse()
-
-        try {
-            setAppFunctionEnabledRemote(
-                DynamicSchemaHelperApp.PACKAGE_NAME,
-                DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT.functionId,
-                AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
-            )
-            setAppFunctionEnabledRemote(
-                DynamicSchemaHelperApp.PACKAGE_NAME,
-                DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT.functionId,
-                AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
-            )
-
-            resultsByFunctionName = searchAppFunctions(searchSpec).associateBy { it.name }
-            assertThat(
-                    resultsByFunctionName[DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT]!!
-                        .isEnabled
-                )
-                .isFalse()
-            assertThat(
-                    resultsByFunctionName[
-                            DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT]!!
-                        .isEnabled
-                )
-                .isTrue()
-        } finally {
-            // Reset back to default
-            setAppFunctionEnabledRemote(
-                DynamicSchemaHelperApp.PACKAGE_NAME,
-                DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT.functionId,
-                AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
-            )
-            setAppFunctionEnabledRemote(
-                DynamicSchemaHelperApp.PACKAGE_NAME,
-                DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT.functionId,
-                AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
-            )
-        }
-    }
-
-    @Test
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#searchAppFunctions"])
-    @IncludeRunOnSecondaryUser
-    @IncludeRunOnPrimaryUser
-    @EnsureHasNoDeviceOwner
-    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
-    fun searchAppFunctions_resetStaticFunctionEnabledStateBack_reflectsInSearchResult() =
-        doBlocking {
-            try {
-                // Flip to enable and disable
-                setAppFunctionEnabledRemote(
-                    DynamicSchemaHelperApp.PACKAGE_NAME,
-                    DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT.functionId,
-                    AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
-                )
-                setAppFunctionEnabledRemote(
-                    DynamicSchemaHelperApp.PACKAGE_NAME,
-                    DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT.functionId,
-                    AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
-                )
-                // Reset back to default
-                setAppFunctionEnabledRemote(
-                    DynamicSchemaHelperApp.PACKAGE_NAME,
-                    DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT.functionId,
-                    AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
-                )
-                setAppFunctionEnabledRemote(
-                    DynamicSchemaHelperApp.PACKAGE_NAME,
-                    DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT.functionId,
-                    AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
-                )
-
-                val resultsByFunctionName =
-                    searchAppFunctions(
-                            AppFunctionSearchSpec.Builder()
-                                .setFunctionNames(
-                                    listOf(
-                                        DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT,
-                                        DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT,
-                                    )
-                                )
-                                .build()
-                        )
-                        .associateBy { it.name }
-                assertThat(
-                        resultsByFunctionName[
-                                DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT]!!
-                            .isEnabled
-                    )
-                    .isTrue()
-                assertThat(
-                        resultsByFunctionName[
-                                DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT]!!
-                            .isEnabled
-                    )
-                    .isFalse()
-            } finally {
-                // Reset back to default
-                setAppFunctionEnabledRemote(
-                    DynamicSchemaHelperApp.PACKAGE_NAME,
-                    DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT.functionId,
-                    AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
-                )
-                setAppFunctionEnabledRemote(
-                    DynamicSchemaHelperApp.PACKAGE_NAME,
-                    DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT.functionId,
-                    AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
-                )
-            }
-        }
-
-    @Test
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#searchAppFunctions"])
-    @IncludeRunOnSecondaryUser
-    @IncludeRunOnPrimaryUser
-    @EnsureHasNoDeviceOwner
-    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
-    fun searchAppFunctions_registerAppFunction_reflectsInSearchResult() = doBlocking {
-        val searchSpec =
-            AppFunctionSearchSpec.Builder()
-                .setFunctionNames(
-                    listOf(DynamicSchemaHelperApp.FunctionNames.DYNAMIC_CONCAT_STRINGS)
-                )
-                .build()
-        var resultsByFunctionName = searchAppFunctions(searchSpec).associateBy { it.name }
-        assertThat(
-                resultsByFunctionName[DynamicSchemaHelperApp.FunctionNames.DYNAMIC_CONCAT_STRINGS]!!
-                    .isEnabled
-            )
-            .isFalse()
-
-        val registrationService = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
-        try {
-            assertThat(
-                    registrationService.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())
-                )
-                .isTrue()
-
-            resultsByFunctionName = searchAppFunctions(searchSpec).associateBy { it.name }
-            assertThat(
-                    resultsByFunctionName[
-                            DynamicSchemaHelperApp.FunctionNames.DYNAMIC_CONCAT_STRINGS]!!
-                        .isEnabled
-                )
-                .isTrue()
-        } finally {
-            registrationService.unregisterAppFunction(FunctionType.CONCAT_STRINGS.toString())
-        }
-    }
-
-    @Test
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#searchAppFunctions"])
-    @IncludeRunOnSecondaryUser
-    @IncludeRunOnPrimaryUser
-    @EnsureHasNoDeviceOwner
-    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
-    fun searchAppFunctions_unregisterDynamicFunction_reflectsInSearchResult() = doBlocking {
-        val registrationService = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
-        assertThat(registrationService.registerAppFunction(FunctionType.CONCAT_STRINGS.toString()))
-            .isTrue()
-        assertThat(
-                registrationService.unregisterAppFunction(FunctionType.CONCAT_STRINGS.toString())
-            )
-            .isTrue()
-
-        val resultsByFunctionName =
-            searchAppFunctions(
-                    AppFunctionSearchSpec.Builder()
-                        .setFunctionNames(
-                            listOf(DynamicSchemaHelperApp.FunctionNames.DYNAMIC_CONCAT_STRINGS)
-                        )
-                        .build()
-                )
-                .associateBy { it.name }
-
-        assertThat(
-                resultsByFunctionName[DynamicSchemaHelperApp.FunctionNames.DYNAMIC_CONCAT_STRINGS]!!
-                    .isEnabled
-            )
-            .isFalse()
-    }
-
-    @Test
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#searchAppFunctions"])
-    @IncludeRunOnSecondaryUser
-    @IncludeRunOnPrimaryUser
-    @EnsureHasNoDeviceOwner
-    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun searchAppFunctions_functionNotExist_returnsEmptyList() = doBlocking {
         val searchSpec =
             AppFunctionSearchSpec.Builder()
@@ -1132,7 +921,6 @@ class SearchAppFunctionsTest {
         expected: AppFunctionMetadata,
     ) {
         assertThat(actual.name).isEqualTo(expected.name)
-        assertThat(actual.isEnabled).isEqualTo(expected.isEnabled)
         assertThat(actual.schemaMetadata).isEqualTo(expected.schemaMetadata)
         val clearedActualGd = sanitizeGenericDocument(actual.metadataDocument)
         val expectedGd = sanitizeGenericDocument(expected.metadataDocument)

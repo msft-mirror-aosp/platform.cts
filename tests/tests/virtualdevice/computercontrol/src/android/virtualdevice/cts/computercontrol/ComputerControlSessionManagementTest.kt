@@ -477,6 +477,28 @@ class ComputerControlSessionManagementTest {
         }
     }
 
+    @Test
+    fun testE2E_multipleLaunchAndCloseSession() {
+        // Launch the test app, tap on the screen and close the session.
+        launchTestAppAgent().use { testAppAgent ->
+            testAppAgent.launchApplication(TEST_APP_PACKAGE_NAME)
+            waitAndAssertActivityResumed(TEST_APP_COMPONENT_NAME)
+            testAppAgent.tap(0, 0)
+            val tap = testAppAgent.nextAction(Action.Tap::class.java)
+            assertThat(tap).isNotNull()
+            testAppAgent.close()
+        }
+        // Launch the test app, tap on the screen and close the session again.
+        launchTestAppAgent().use { testAppAgent ->
+            testAppAgent.launchApplication(TEST_APP_PACKAGE_NAME)
+            waitAndAssertActivityResumed(TEST_APP_COMPONENT_NAME)
+            testAppAgent.tap(0, 0)
+            val tap = testAppAgent.nextAction(Action.Tap::class.java)
+            assertThat(tap).isNotNull()
+            testAppAgent.close()
+        }
+    }
+
     companion object {
         private const val TAG = "ComputerControlSessionManagementTest"
         private const val TEST_APP_PACKAGE_NAME = "android.computercontrol.testapp"

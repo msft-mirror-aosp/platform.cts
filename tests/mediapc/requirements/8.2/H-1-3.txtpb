@@ -18,6 +18,19 @@ id: "8.2/H-1-3"
 name: "Sequential Read"
 description: "- Sequential read"
 specs {
+  key: 10
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_10
+    specification: "MUST ensure a sequential read performance of at least 200 MB/s."
+    required_values {
+      key: "filesystem_io_rate_mbps"
+      value {
+        double_value: 200.0
+      }
+    }
+  }
+}
+specs {
   key: 30
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_11
