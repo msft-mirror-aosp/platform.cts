@@ -333,10 +333,6 @@ TEST_P(AAudioInputStreamTest, testPauseAndFlushNotSupported) {
 }
 
 TEST_P(AAudioInputStreamTest, testFlushFromFrame) {
-    if (!mmapPcmOffloadSupport()) {
-        // No need to run the test if the flag is not enabled.
-        return;
-    }
     if (!mSetupSuccessful) return;
     mHelper->startStream();
     int64_t position = 0;
@@ -347,10 +343,6 @@ TEST_P(AAudioInputStreamTest, testFlushFromFrame) {
 }
 
 TEST_P(AAudioInputStreamTest, testPlaybackParameters) {
-    if (!mmapPcmOffloadSupport()) {
-        // No need to run the test if the flag is not enabled.
-        return;
-    }
     if (!mSetupSuccessful) return;
     AAudioPlaybackParameters parameters;
     EXPECT_EQ(AAUDIO_ERROR_ILLEGAL_ARGUMENT,
@@ -617,10 +609,6 @@ TEST_P(AAudioOutputStreamTest, testGetTimestamp) {
 }
 
 TEST_P(AAudioOutputStreamTest, testFlushFromFrame) {
-    if (!mmapPcmOffloadSupport()) {
-        // No need to run the test if the flag is not enabled.
-        return;
-    }
     if (!mSetupSuccessful) return;
     mHelper->startStream();
     int64_t position = 0;
@@ -631,10 +619,6 @@ TEST_P(AAudioOutputStreamTest, testFlushFromFrame) {
 }
 
 TEST_P(AAudioOutputStreamTest, testPlaybackParameters) {
-    if (!mmapPcmOffloadSupport()) {
-        // No need to run the test if the flag is not enabled.
-        return;
-    }
     if (!mSetupSuccessful) return;
     AAudioPlaybackParameters parameters;
     aaudio_result_t result = AAudioStream_getPlaybackParameters(stream(), &parameters);

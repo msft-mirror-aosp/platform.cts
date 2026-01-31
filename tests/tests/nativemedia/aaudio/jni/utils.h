@@ -293,8 +293,6 @@ int getVersionCodeFullBaklava();
 
 void permissionBarrier();
 
-bool mmapPcmOffloadSupport();
-
 class AAudioTestEnvironment : public ::testing::Environment {
 public:
     void SetUp() override { permissionBarrier(); }
