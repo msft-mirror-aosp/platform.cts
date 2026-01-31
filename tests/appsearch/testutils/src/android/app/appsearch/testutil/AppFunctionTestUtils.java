@@ -31,6 +31,7 @@ import android.app.appsearch.SearchResultsShim;
 import android.app.appsearch.SearchSpec;
 import android.content.ComponentName;
 import android.content.Context;
+import android.os.Build;
 import android.util.ArrayMap;
 
 import androidx.annotation.NonNull;
@@ -274,7 +275,7 @@ public final class AppFunctionTestUtils {
                         .setPropertyString(
                                 "mobileApplicationQualifiedId",
                                 "android$apps-db/apps#" + TEST_APP_A_PKG);
-        if (android.app.appfunctions.flags.Flags.enableDynamicAppFunctions()) {
+        if (isAppLevelAppFunctionsEnabled()) {
             builder.setPropertyString(
                     "serviceName", "com.android.cts.appsearch.indexertestapp.a.AppFunctionService");
         }
@@ -298,7 +299,7 @@ public final class AppFunctionTestUtils {
                                 "mobileApplicationQualifiedId",
                                 "android$apps-db/apps#" + TEST_APP_B_PKG);
 
-        if (android.app.appfunctions.flags.Flags.enableDynamicAppFunctions()) {
+        if (isAppLevelAppFunctionsEnabled()) {
             builder.setPropertyString("serviceName", TEST_APP_FUNCTIONS_SERVICE);
         }
 
@@ -408,7 +409,7 @@ public final class AppFunctionTestUtils {
                 .setPropertyString(
                         "mobileApplicationQualifiedId", "android$apps-db/apps#" + packageName);
 
-        if (android.app.appfunctions.flags.Flags.enableDynamicAppFunctions()) {
+        if (isAppLevelAppFunctionsEnabled()) {
             builder.setPropertyString(PROPERTY_SERVICE_NAME, serviceName);
         }
 
@@ -570,6 +571,11 @@ public final class AppFunctionTestUtils {
         builder.setPropertyDocument("components", components);
 
         return builder.build();
+    }
+
+    private static boolean isAppLevelAppFunctionsEnabled() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA
+                && android.app.appfunctions.flags.Flags.enableDynamicAppFunctions();
     }
 
     private AppFunctionTestUtils() {}

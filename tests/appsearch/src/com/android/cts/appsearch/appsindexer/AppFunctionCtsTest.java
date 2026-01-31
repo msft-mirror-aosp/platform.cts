@@ -624,7 +624,7 @@ public class AppFunctionCtsTest {
         Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER,
         FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS
     })
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     @Test
     public void indexApp_updateToAppWithAppLevelFunctions() throws Throwable {
         {
@@ -664,7 +664,7 @@ public class AppFunctionCtsTest {
         Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER,
         FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS
     })
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
     @Test
     public void indexApp_withAppLevelFunctions_updateToAppWithoutAppLevelFunctions()
             throws Throwable {
