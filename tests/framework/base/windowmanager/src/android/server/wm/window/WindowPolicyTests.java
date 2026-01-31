@@ -17,6 +17,7 @@
 package android.server.wm.window;
 
 import static android.content.res.Resources.ID_NULL;
+import static android.os.Build.VERSION_CODES.VANILLA_ICE_CREAM;
 import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
 import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT;
 import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER;
@@ -28,11 +29,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Insets;
 import android.graphics.Rect;
+import android.os.Build;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -60,6 +63,22 @@ import java.util.concurrent.TimeUnit;
 @Presubmit
 public class WindowPolicyTests extends WindowManagerTestBase {
 
+    private static final String AUTOMOTIVE_OPTED_OUT_MESSAGE
+        = "Automotive devices are exempted from edge-to-edge enforcement in Android 15.";
+
+    /**
+     * Android 15's default edge-to-edge is unsuitable for Android
+     * Automotive OS, where large, opaque system bars can permanently obscure
+     * app content, creating usability and safety risks.
+     * Future Android Automotive OS versions (16 and higher) support edge-to-edge
+     * using a new default windowing configuration that doesn't intersect
+     * system bars.
+     */
+    private boolean isAutomotiveOptedOut() {
+        return isAutomotive()
+            && Build.VERSION.SDK_INT == VANILLA_ICE_CREAM;
+    }
+
     @Override
     public void setUp() throws Exception {
         super.setUp();
@@ -71,6 +90,8 @@ public class WindowPolicyTests extends WindowManagerTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testWindowInsets() {
+        assumeFalse(AUTOMOTIVE_OPTED_OUT_MESSAGE, isAutomotiveOptedOut());
+
         final TestActivity activity = startActivitySync(TestActivity.class);
 
         getInstrumentation().runOnMainSync(() -> {
@@ -107,6 +128,8 @@ public class WindowPolicyTests extends WindowManagerTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_unspecified() {
+        assumeFalse(AUTOMOTIVE_OPTED_OUT_MESSAGE, isAutomotiveOptedOut());
+
         TestActivity.sStyleId = R.style.LayoutInDisplayCutoutModeUnspecified;
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
@@ -114,6 +137,7 @@ public class WindowPolicyTests extends WindowManagerTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_never() {
+        assumeFalse(AUTOMOTIVE_OPTED_OUT_MESSAGE, isAutomotiveOptedOut());
         TestActivity.sStyleId = R.style.LayoutInDisplayCutoutModeNever;
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
@@ -121,6 +145,7 @@ public class WindowPolicyTests extends WindowManagerTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_default() {
+        assumeFalse(AUTOMOTIVE_OPTED_OUT_MESSAGE, isAutomotiveOptedOut());
         TestActivity.sStyleId = R.style.LayoutInDisplayCutoutModeDefault;
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
@@ -128,6 +153,7 @@ public class WindowPolicyTests extends WindowManagerTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_shortEdges() {
+        assumeFalse(AUTOMOTIVE_OPTED_OUT_MESSAGE, isAutomotiveOptedOut());
         TestActivity.sStyleId = R.style.LayoutInDisplayCutoutModeShortEdges;
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
@@ -135,6 +161,7 @@ public class WindowPolicyTests extends WindowManagerTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_always() {
+        assumeFalse(AUTOMOTIVE_OPTED_OUT_MESSAGE, isAutomotiveOptedOut());
         TestActivity.sStyleId = R.style.LayoutInDisplayCutoutModeAlways;
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
@@ -142,12 +169,14 @@ public class WindowPolicyTests extends WindowManagerTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_unspecified() {
+        assumeFalse(AUTOMOTIVE_OPTED_OUT_MESSAGE, isAutomotiveOptedOut());
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_never() {
+        assumeFalse(AUTOMOTIVE_OPTED_OUT_MESSAGE, isAutomotiveOptedOut());
         TestActivity.sLayoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER;
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
@@ -155,6 +184,7 @@ public class WindowPolicyTests extends WindowManagerTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_default() {
+        assumeFalse(AUTOMOTIVE_OPTED_OUT_MESSAGE, isAutomotiveOptedOut());
         TestActivity.sLayoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT;
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
@@ -162,6 +192,7 @@ public class WindowPolicyTests extends WindowManagerTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_shortEdges() {
+        assumeFalse(AUTOMOTIVE_OPTED_OUT_MESSAGE, isAutomotiveOptedOut());
         TestActivity.sLayoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
@@ -169,6 +200,7 @@ public class WindowPolicyTests extends WindowManagerTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_always() {
+        assumeFalse(AUTOMOTIVE_OPTED_OUT_MESSAGE, isAutomotiveOptedOut());
         TestActivity.sLayoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
@@ -224,6 +256,7 @@ public class WindowPolicyTests extends WindowManagerTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testSystemBarColor() {
+        assumeFalse(AUTOMOTIVE_OPTED_OUT_MESSAGE, isAutomotiveOptedOut());
         TestActivity.sStyleId = R.style.BlackSystemBars;
         final TestActivity activity = startActivitySync(TestActivity.class);
         getInstrumentation().runOnMainSync(() -> {
