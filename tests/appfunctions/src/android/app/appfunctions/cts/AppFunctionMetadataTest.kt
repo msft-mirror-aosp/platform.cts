@@ -49,7 +49,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assume.assumeNotNull
-import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Rule
@@ -101,37 +100,32 @@ class AppFunctionMetadataTest {
     @Test
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
-    fun createAppFunctionStaticMetadata() =
-        doBlockingWithPermissions {
-            installPackage(TEST_APP_A_V2_PATH)
-            val packageName = TEST_APP_A_PKG
-            val functionId = "com.example.utils#print1"
-            val packageMetadata =
-                AppFunctionPackageMetadata.create(
-                    TEST_APP_A_PKG,
-                    listOf(
-                        GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                            .setPropertyString("exampleProperty", "exampleValue")
-                            .build()
-                    ),
-                )
-
-            retryAssert {
-                val afStaticMetadataGd = queryAppFunctionStaticMetadata(packageName, functionId)
-                val appFunctionMetadata =
-                    AppFunctionMetadata.Builder(afStaticMetadataGd, packageMetadata)
-                        .setEnabled(false)
+    fun createAppFunctionStaticMetadata() = doBlockingWithPermissions {
+        installPackage(TEST_APP_A_V2_PATH)
+        val packageName = TEST_APP_A_PKG
+        val functionId = "com.example.utils#print1"
+        val packageMetadata =
+            AppFunctionPackageMetadata.create(
+                TEST_APP_A_PKG,
+                listOf(
+                    GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                        .setPropertyString("exampleProperty", "exampleValue")
                         .build()
+                ),
+            )
 
-                assertThat(appFunctionMetadata.name)
-                    .isEqualTo(AppFunctionName(packageName, functionId))
-                assertThat(appFunctionMetadata.schemaMetadata)
-                    .isEqualTo(AppFunctionSchemaMetadata("utils", "print", 1L))
-                assertThat(appFunctionMetadata.isEnabled).isFalse()
-                assertThat(appFunctionMetadata.metadataDocument).isEqualTo(afStaticMetadataGd)
-                assertThat(appFunctionMetadata.packageMetadata).isEqualTo(packageMetadata)
-            }
+        retryAssert {
+            val afStaticMetadataGd = queryAppFunctionStaticMetadata(packageName, functionId)
+            val appFunctionMetadata =
+                AppFunctionMetadata.Builder(afStaticMetadataGd, packageMetadata).build()
+
+            assertThat(appFunctionMetadata.name).isEqualTo(AppFunctionName(packageName, functionId))
+            assertThat(appFunctionMetadata.schemaMetadata)
+                .isEqualTo(AppFunctionSchemaMetadata("utils", "print", 1L))
+            assertThat(appFunctionMetadata.metadataDocument).isEqualTo(afStaticMetadataGd)
+            assertThat(appFunctionMetadata.packageMetadata).isEqualTo(packageMetadata)
         }
+    }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @Test
@@ -154,21 +148,14 @@ class AppFunctionMetadataTest {
 
             retryAssert {
                 val afStaticMetadataGd = queryAppFunctionStaticMetadata(packageName, functionId)
-                val afRuntimeMetadataGd =
-                    queryAppFunctionRuntimeMetadata(packageName).single {
-                        it.id == String.format("%s/%s", packageName, functionId)
-                    }
                 val originalMetadata =
-                    AppFunctionMetadata.Builder(afStaticMetadataGd, packageMetadata)
-                        .setEnabled(true)
-                        .build()
+                    AppFunctionMetadata.Builder(afStaticMetadataGd, packageMetadata).build()
 
                 val restoredMetadata = parcelAndUnparcelAppFunctionMetadata(originalMetadata)
 
                 assertThat(restoredMetadata.name).isEqualTo(originalMetadata.name)
                 assertThat(restoredMetadata.schemaMetadata)
                     .isEqualTo(originalMetadata.schemaMetadata)
-                assertThat(restoredMetadata.isEnabled).isEqualTo(originalMetadata.isEnabled)
                 assertThat(restoredMetadata.metadataDocument)
                     .isEqualTo(originalMetadata.metadataDocument)
                 assertThat(restoredMetadata.packageMetadata)
@@ -188,19 +175,12 @@ class AppFunctionMetadataTest {
 
             retryAssert {
                 val afStaticMetadataGd = queryAppFunctionStaticMetadata(packageName, functionId)
-                val afRuntimeMetadataGd =
-                    queryAppFunctionRuntimeMetadata(packageName).single {
-                        it.id == String.format("%s/%s", packageName, functionId)
-                    }
                 val originalMetadata =
-                    AppFunctionMetadata.Builder(afStaticMetadataGd, packageMetadata)
-                        .setEnabled(true)
-                        .build()
+                    AppFunctionMetadata.Builder(afStaticMetadataGd, packageMetadata).build()
                 val restoredMetadata = parcelAndUnparcelAppFunctionMetadata(originalMetadata)
 
                 assertThat(restoredMetadata.name).isEqualTo(originalMetadata.name)
                 assertThat(restoredMetadata.schemaMetadata).isNull()
-                assertThat(restoredMetadata.isEnabled).isEqualTo(originalMetadata.isEnabled)
                 assertThat(restoredMetadata.metadataDocument)
                     .isEqualTo(originalMetadata.metadataDocument)
                 assertThat(restoredMetadata.packageMetadata)
@@ -228,10 +208,7 @@ class AppFunctionMetadataTest {
         doBlockingWithPermissions {
             installPackage(TEST_APP_A_V2_PATH)
 
-            retryAssert {
-                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG))
-                    .isEmpty()
-            }
+            retryAssert { assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG)).isEmpty() }
         }
 
     @Test
@@ -445,11 +422,6 @@ class AppFunctionMetadataTest {
         return collectAllSearchResults(searchResults)
     }
 
-    private fun checkAppFunctionAccessEnabled(): Boolean {
-        return android.permission.flags.Flags.appFunctionAccessApiEnabled() &&
-            android.permission.flags.Flags.appFunctionAccessServiceEnabled()
-    }
-
     private fun queryRuntimeAppFunctionInfos(packageName: String): List<AppFunctionInfo> {
         return queryAppFunctionRuntimeMetadata(packageName).map {
             AppFunctionInfo(
@@ -483,7 +455,7 @@ class AppFunctionMetadataTest {
     ) =
         runBlocking<Unit> {
             if (permissions.isNotEmpty()) {
-                runWithShellPermission(* permissions) { block() }
+                runWithShellPermission(*permissions) { block() }
             } else {
                 block()
             }
