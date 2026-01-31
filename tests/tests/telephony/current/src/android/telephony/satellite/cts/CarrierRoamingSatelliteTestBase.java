@@ -244,6 +244,32 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         afterAllTestsBase();
     }
 
+    /**
+     * Clear MockModemManager and MockSatelliteServiceManager states for satellite events before
+     * each test to prevent test failures due to state leaking
+     */
+    protected void clearAllEventsInMockServiceManagers() {
+        // MockModemManager states
+        sMockModemManager.clearEventOnSetSatellitePlmn();
+        sMockModemManager.clearEventOnSetSatelliteEnabledForCarrier();
+        sMockModemManager.clearEventOnSatelliteEnabledForCarrierStateChanged();
+
+        // MockSatelliteServiceManager states
+        sMockSatelliteServiceManager.clearEventOnSetSatellitePlmn();
+        sMockSatelliteServiceManager.clearEventOnSetSatelliteEnabledForCarrier();
+        sMockSatelliteServiceManager.clearEventOnSatelliteEnabledForCarrierStateChanged();
+        sMockSatelliteServiceManager.clearSentSatelliteDatagramInfo();
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        sMockSatelliteServiceManager.clearListeningEnabledList();
+        sMockSatelliteServiceManager.clearMockPointingUiActivityStatusChanges();
+        sMockSatelliteServiceManager.clearRemoteGatewayServiceConnectedStatusChanges();
+        sMockSatelliteServiceManager.clearRemoteGatewayServiceDisconnectedStatusChanges();
+        sMockSatelliteServiceManager.clearStopPointingUiActivity();
+        sMockSatelliteServiceManager.clearPollPendingDatagramPermits();
+        sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
+        sMockSatelliteServiceManager.clearSatelliteEnabledForCarrier();
+    }
+
     protected static class ServiceStateListenerTest extends TelephonyCallback
             implements TelephonyCallback.ServiceStateListener {
 
@@ -1611,9 +1637,12 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         final int subId = SubscriptionManager.getSubscriptionId(slotId);
 
         try {
+            logd(TAG, "testNotifyEntitlementStatusChanged: test entitlement disabled");
+
             prepareValidDisabledEntitlementStatus();
             enableSatelliteEntitlementSupport(subId);
-
+            waitForAccessRestrictionReason(
+                    subId, SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_ENTITLEMENT);
             waitForSatelliteDisabledForCarrier(slotId);
 
             sMockModemManager.clearEventOnSetSatellitePlmn();
@@ -1636,9 +1665,11 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
                                     entitlementStatusChangedAppIds,
                                     entitlementStatusChangedTime),
                     "android.permission.MODIFY_PHONE_STATE");
+            adoptShellIdentity();
 
             // Verify that Telephony has updated its internal state correctly.
             waitForCarrierPlmnListConfigured(slotId, allowedPlmnList);
+            waitForCarrierPlmnListAvailableInTelephony(subId, allowedPlmnList);
         } finally {
             sMockSatelliteServiceManager.overrideSatelliteEntilementQueryConditions(false, false);
             sMockSatelliteServiceManager.overrideSatelliteEntilementStatusResponseForCtsTest(

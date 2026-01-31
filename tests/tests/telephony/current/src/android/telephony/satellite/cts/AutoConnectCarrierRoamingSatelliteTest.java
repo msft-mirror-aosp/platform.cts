@@ -125,6 +125,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
         if (!shouldTestSatelliteWithMockService()) return;
         setUpAutoConnectTestEnvironment(
                 SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT, PHONE_NUMBER_0, true);
+        clearAllEventsInMockServiceManagers();
     }
 
     @After

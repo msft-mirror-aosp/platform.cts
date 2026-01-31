@@ -418,6 +418,8 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
         }
         logd("Satellite enabled");
 
+        clearAllEventsInMockServiceManagers();
+
         revokeSatellitePermission();
     }
 
