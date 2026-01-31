@@ -69,6 +69,7 @@ object Components : ComponentsProvider() {
     @JvmField val LAUNCH_INTO_PIP_HOST_ACTIVITY = component("LaunchIntoPipHostActivity")
     @JvmField val LAUNCH_INTO_PIP_CONTAINER_ACTIVITY = component("LaunchIntoPipContainerActivity")
     @JvmField val PORTRAIT_ORIENTATION_ACTIVITY = component("PortraitOrientationActivity")
+    @JvmField val RECREATE_ON_KEYBOARD_CHANGE_ACTIVITY = component("RecreateOnKeyboardChangeActivity")
     @JvmField val RECURSIVE_ACTIVITY = component("RecursiveActivity")
     @JvmField val REPORT_FULLY_DRAWN_ACTIVITY = component("ReportFullyDrawnActivity")
     @JvmField val RESIZEABLE_ACTIVITY = component("ResizeableActivity")

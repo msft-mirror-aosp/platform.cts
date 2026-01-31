@@ -32,13 +32,12 @@ import static android.telephony.ims.stub.RcsCapabilityExchangeImplBase.COMMAND_C
 import static android.telephony.ims.stub.RcsCapabilityExchangeImplBase.COMMAND_CODE_SERVICE_UNAVAILABLE;
 import static android.telephony.ims.stub.RcsCapabilityExchangeImplBase.COMMAND_CODE_SERVICE_UNKNOWN;
 
-import static junit.framework.Assert.assertTrue;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.content.BroadcastReceiver;
@@ -797,7 +796,7 @@ public class RcsUceAdapterTest {
         // Verify the URIs in original and retry request.
         assertEquals(contacts.size(), retryUri.size());
         for (Uri uri : retryUri) {
-            assertTrue(contacts.contains(uri));
+            assertTrue("retryUri should contain " + uri, contacts.contains(uri));
         }
 
         overrideCarrierConfig(null);
@@ -2142,7 +2141,7 @@ public class RcsUceAdapterTest {
                 if (sipCode == sipCodeForbidden) {
                     assertEquals(0L, retryAfterMillis);
                 } else if (sipCode == sipCodeBadEvent) {
-                    assertTrue(retryAfterMillis > 0L);
+                    assertTrue("retryAfterMillis should be > 0", retryAfterMillis > 0L);
                 }
             } catch (Exception e) {
                 fail("testForbiddenResponseToCapabilitiesRequest with command error failed: " + e);
@@ -2321,7 +2320,7 @@ public class RcsUceAdapterTest {
         verifyCapabilities(numbers, getCapabilities(capabilityQueue, numbers.size()),
                 SOURCE_TYPE_NETWORK, REQUEST_RESULT_FOUND, contactExpectedMedia);
 
-        assertTrue(waitForResult(completeQueue));
+        assertTrue("The request should be completed", waitForResult(completeQueue));
 
         errorQueue.clear();
         errorRetryQueue.clear();
@@ -2985,7 +2984,9 @@ public class RcsUceAdapterTest {
             verifyCapabilities(numbers, getCapabilities(capabilityQueue, numbers.size()),
                     SOURCE_TYPE_NETWORK, REQUEST_RESULT_NOT_FOUND, contactExpectedMedia);
             // Verity the ImsService received the request.
-            assertTrue(subscribeRequestCount.get() > 0);
+            assertTrue(
+                    "The subscribe request should have been received",
+                    subscribeRequestCount.get() > 0);
         } catch (Exception e) {
             fail("testContactsInThrottlingState with command error failed: " + e);
         } finally {
@@ -3032,7 +3033,9 @@ public class RcsUceAdapterTest {
                     REQUEST_RESULT_NOT_FOUND, contactExpectedMedia.get(sTestNumberUri).first,
                     contactExpectedMedia.get(sTestNumberUri).second);
             // Verity the ImsService received the request.
-            assertTrue(subscribeRequestCount.get() > 0);
+            assertTrue(
+                    "The availability request should have been received",
+                    subscribeRequestCount.get() > 0);
         } catch (Exception e) {
             fail("requestAvailability with command error failed: " + e);
         } finally {
@@ -3168,7 +3171,9 @@ public class RcsUceAdapterTest {
             assertEquals(0L, waitForLongResult(errorRetryQueue));
             verifyCapabilities(numbers, getCapabilities(capabilityQueue, numbers.size()),
                     SOURCE_TYPE_NETWORK, REQUEST_RESULT_NOT_FOUND, contactExpectedMedia);
-            assertTrue(subscribeRequestCount.get() > 0);
+            assertTrue(
+                    "The subscribe request should have been received",
+                    subscribeRequestCount.get() > 0);
         } catch (Exception e) {
             fail("testRequestResultInconclusive with command error failed: " + e);
         } finally {
@@ -3661,8 +3666,11 @@ public class RcsUceAdapterTest {
             int expectedResult, List<String> expectedFeatureTags) {
         assertEquals(resultCapList.size(), expectedUriList.size());
 
-        assertTrue(resultCapList.stream().map(capability -> capability.getContactUri())
-                .anyMatch(expectedUriList::contains));
+        assertTrue(
+                "The result capabilities should contain the expected contact URI",
+                resultCapList.stream()
+                        .map(capability -> capability.getContactUri())
+                        .anyMatch(expectedUriList::contains));
 
         resultCapList.stream().map(capability -> capability.getSourceType())
                 .forEach(sourceType -> assertEquals((int) sourceType, (int) expectedSourceType));
@@ -3673,11 +3681,16 @@ public class RcsUceAdapterTest {
         resultCapList.stream().map(capability -> capability.getRequestResult())
                 .forEach(result -> assertEquals((int) result, (int) expectedResult));
 
-        resultCapList.stream().map(capability -> capability.getFeatureTags())
-                .forEach(featureTags -> {
-                    assertEquals((int) featureTags.size(), (int) expectedFeatureTags.size());
-                    assertTrue(featureTags.containsAll(expectedFeatureTags));
-                });
+        resultCapList.stream()
+                .map(capability -> capability.getFeatureTags())
+                .forEach(
+                        featureTags -> {
+                            assertEquals(
+                                    (int) featureTags.size(), (int) expectedFeatureTags.size());
+                            assertTrue(
+                                    "The feature tags should contain all expected tags",
+                                    featureTags.containsAll(expectedFeatureTags));
+                        });
     }
 
     private void registerUceObserver(Consumer<Uri> resultConsumer) {
@@ -3716,10 +3729,13 @@ public class RcsUceAdapterTest {
     }
 
     private void connectTestImsService() throws Exception {
-        assertTrue(sServiceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
-                .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL)
-                .addFeature(sTestSlot, ImsFeature.FEATURE_RCS)
-                .build()));
+        assertTrue(
+                "ImsService should be connected",
+                sServiceConnector.connectCarrierImsService(
+                        new ImsFeatureConfiguration.Builder()
+                                .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL)
+                                .addFeature(sTestSlot, ImsFeature.FEATURE_RCS)
+                                .build()));
 
         // The RcsFeature is created when the ImsService is bound. If it wasn't created, then the
         // Framework did not call it.

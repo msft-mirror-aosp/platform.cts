@@ -538,4 +538,112 @@ public class MediaRoute2InfoTest {
                         .build();
         assertThat(routeInfo.describeContents()).isEqualTo(0);
     }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DEVICE_MANUFACTURER_AND_MODEL_INFO)
+    @Test
+    public void testManufacturerAndModelInfo_withEmptyValues() {
+        MediaRoute2Info original =
+                new MediaRoute2Info.Builder(TEST_ID, TEST_NAME)
+                        .addFeature(TEST_ROUTE_TYPE_0)
+                        .build();
+
+        MediaRoute2Info copy = new MediaRoute2Info.Builder(original).build();
+        Parcel parcel = Parcel.obtain();
+        parcel.writeParcelable(original, 0);
+        parcel.setDataPosition(0);
+        MediaRoute2Info fromParcel =
+                parcel.readParcelable(/* loader= */ null, MediaRoute2Info.class);
+        parcel.recycle();
+
+        assertThat(original.getDeviceManufacturer()).isEmpty();
+        assertThat(original.getDeviceModel()).isEmpty();
+        assertThat(copy.getDeviceManufacturer()).isEmpty();
+        assertThat(copy.getDeviceModel()).isEmpty();
+        assertThat(fromParcel.getDeviceManufacturer()).isEmpty();
+        assertThat(fromParcel.getDeviceModel()).isEmpty();
+        assertThat(original).isEqualTo(copy);
+        assertThat(original).isEqualTo(fromParcel);
+        assertThat(original.hashCode()).isEqualTo(copy.hashCode());
+        assertThat(original.hashCode()).isEqualTo(fromParcel.hashCode());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DEVICE_MANUFACTURER_AND_MODEL_INFO)
+    @Test
+    public void testManufacturerAndModelInfo_parcelling() {
+        String manufacturer = "test_manufacturer";
+        String model = "test_model";
+        MediaRoute2Info original =
+                new MediaRoute2Info.Builder(TEST_ID, TEST_NAME)
+                        .addFeature(TEST_ROUTE_TYPE_0)
+                        .setDeviceManufacturer(manufacturer)
+                        .setDeviceModel(model)
+                        .build();
+
+        Parcel parcel = Parcel.obtain();
+        parcel.writeParcelable(original, 0);
+        parcel.setDataPosition(0);
+        MediaRoute2Info fromParcel =
+                parcel.readParcelable(/* loader= */ null, MediaRoute2Info.class);
+        parcel.recycle();
+
+        assertThat(original.getDeviceManufacturer()).isEqualTo(manufacturer);
+        assertThat(original.getDeviceModel()).isEqualTo(model);
+        assertThat(fromParcel.getDeviceManufacturer()).isEqualTo(manufacturer);
+        assertThat(fromParcel.getDeviceModel()).isEqualTo(model);
+        assertThat(original).isEqualTo(fromParcel);
+        assertThat(original.hashCode()).isEqualTo(fromParcel.hashCode());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DEVICE_MANUFACTURER_AND_MODEL_INFO)
+    @Test
+    public void testManufacturerAndModelInfo_copying() {
+        String manufacturer = "test_manufacturer";
+        String model = "test_model";
+        MediaRoute2Info original =
+                new MediaRoute2Info.Builder(TEST_ID, TEST_NAME)
+                        .addFeature(TEST_ROUTE_TYPE_0)
+                        .setDeviceManufacturer(manufacturer)
+                        .setDeviceModel(model)
+                        .build();
+
+        MediaRoute2Info copy = new MediaRoute2Info.Builder(original).build();
+        Parcel parcel = Parcel.obtain();
+        parcel.writeParcelable(original, 0);
+        parcel.setDataPosition(0);
+        parcel.recycle();
+
+        assertThat(original.getDeviceManufacturer()).isEqualTo(manufacturer);
+        assertThat(original.getDeviceModel()).isEqualTo(model);
+        assertThat(copy.getDeviceManufacturer()).isEqualTo(manufacturer);
+        assertThat(copy.getDeviceModel()).isEqualTo(model);
+        assertThat(original).isEqualTo(copy);
+        assertThat(original.hashCode()).isEqualTo(copy.hashCode());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DEVICE_MANUFACTURER_AND_MODEL_INFO)
+    @Test
+    public void testManufacturerAndModelInfo_inequality() {
+        String manufacturer = "test_manufacturer";
+        String model = "test_model";
+        MediaRoute2Info original =
+                new MediaRoute2Info.Builder(TEST_ID, TEST_NAME)
+                        .addFeature(TEST_ROUTE_TYPE_0)
+                        .setDeviceManufacturer(manufacturer)
+                        .setDeviceModel(model)
+                        .build();
+
+        MediaRoute2Info withChangedManufacturer =
+                new MediaRoute2Info.Builder(original)
+                        .setDeviceManufacturer("a real manufacturer")
+                        .build();
+        MediaRoute2Info withChangedModel =
+                new MediaRoute2Info.Builder(original).setDeviceModel("a real model").build();
+
+        assertThat(original).isNotEqualTo(withChangedManufacturer);
+        assertThat(original.hashCode()).isNotEqualTo(withChangedManufacturer.hashCode());
+        assertThat(original).isNotEqualTo(withChangedModel);
+        assertThat(original.hashCode()).isNotEqualTo(withChangedModel.hashCode());
+        assertThat(withChangedModel).isNotEqualTo(withChangedManufacturer);
+        assertThat(withChangedModel.hashCode()).isNotEqualTo(withChangedManufacturer.hashCode());
+    }
 }

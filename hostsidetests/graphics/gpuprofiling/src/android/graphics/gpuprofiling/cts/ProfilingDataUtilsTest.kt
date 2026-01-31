@@ -562,7 +562,7 @@ class GpuCountersTest {
 
         val gpuCounters = GpuCounters(trace)
 
-        assertThat(gpuCounters.counterValues[10]).containsExactly(GpuCounterValue(15L, 123.0))
+        assertThat(gpuCounters.counterValues[10]).containsExactly(GpuCounterValue(60L, 123.0))
     }
 
     private fun buildCounterPacket(timestamp: Long, counterId: Int, value: Double): TracePacket {

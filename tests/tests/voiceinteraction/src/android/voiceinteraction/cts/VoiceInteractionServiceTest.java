@@ -39,6 +39,7 @@ import static org.junit.Assert.assertThrows;
 
 import android.app.Application;
 import android.app.UiAutomation;
+import android.compat.testing.PlatformCompatChangeRule;
 import android.content.ComponentName;
 import android.content.Context;
 import android.os.Bundle;
@@ -82,6 +83,8 @@ import com.android.compatibility.common.util.SettingsStateKeeperRule;
 import com.android.compatibility.common.util.SettingsStateManager;
 import com.android.compatibility.common.util.SystemUtil;
 
+import libcore.junit.util.compat.CoreCompatChangeRule.EnableCompatChanges;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -106,12 +109,18 @@ public class VoiceInteractionServiceTest {
     public static final DeviceState sDeviceState = new DeviceState();
 
     @Rule
-    public final SettingsStateKeeperRule mPublicServiceSettingsKeeper =
+    public final SettingsStateKeeperRule mStructureEnabledSettingsKeeper =
+            new SettingsStateKeeperRule(getInstrumentation().getTargetContext(),
+                    "assist_structure_enabled");
+    @Rule
+    public final SettingsStateKeeperRule mScreenshotEnabledSettingsKeeper =
             new SettingsStateKeeperRule(getInstrumentation().getTargetContext(),
                     "assist_screenshot_enabled");
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Rule public final PlatformCompatChangeRule mCompatChangeRule = new PlatformCompatChangeRule();
 
     private static final SettingsStateManager sStructureEnabledMgr =
             new SettingsStateManager(
@@ -162,11 +171,13 @@ public class VoiceInteractionServiceTest {
         mService = null;
     }
 
-    @ApiTest(apis = {
-            "android.service.voice.VoiceInteractionSession#onHandleScreenshot",
-            "android.service.voice.VoiceInteractionSession#onHandleAssist",
-            "android.service.voice.VoiceInteractionSession#onShow"
-    })
+    @ApiTest(
+            apis = {
+                "android.service.voice.VoiceInteractionSession#onHandleScreenshot",
+                "android.service.voice.VoiceInteractionSession#onHandleAssist",
+                "android.service.voice.VoiceInteractionSession#onShow"
+            })
+    @EnableCompatChanges({VoiceInteractionCompat.RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID})
     @Test
     public void onHandleScreenShotAndAssist_initialUser_success() throws Exception {
         try (TestAppInstance unused = startActivityAndShowSession(
@@ -175,12 +186,14 @@ public class VoiceInteractionServiceTest {
         }
     }
 
-    @ApiTest(apis = {
-            "android.service.voice.VoiceInteractionSession#onHandleScreenshot",
-            "android.service.voice.VoiceInteractionSession#onHandleAssist",
-            "android.service.voice.VoiceInteractionSession#onShow"
-    })
+    @ApiTest(
+            apis = {
+                "android.service.voice.VoiceInteractionSession#onHandleScreenshot",
+                "android.service.voice.VoiceInteractionSession#onHandleAssist",
+                "android.service.voice.VoiceInteractionSession#onShow"
+            })
     @EnsureHasPrivateProfile
+    @EnableCompatChanges({VoiceInteractionCompat.RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID})
     @Test
     public void onHandleScreenShotAndAssist_privateProfile_failed() throws Exception {
         try (TestAppInstance unused = startActivityAndShowSession(
@@ -189,12 +202,14 @@ public class VoiceInteractionServiceTest {
         }
     }
 
-    @ApiTest(apis = {
-            "android.service.voice.VoiceInteractionSession#onHandleScreenshot",
-            "android.service.voice.VoiceInteractionSession#onHandleAssist",
-            "android.service.voice.VoiceInteractionSession#onShow"
-    })
+    @ApiTest(
+            apis = {
+                "android.service.voice.VoiceInteractionSession#onHandleScreenshot",
+                "android.service.voice.VoiceInteractionSession#onHandleAssist",
+                "android.service.voice.VoiceInteractionSession#onShow"
+            })
     @EnsureHasWorkProfile
+    @EnableCompatChanges({VoiceInteractionCompat.RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID})
     @Test
     public void onHandleScreenShotAndAssist_workProfileWithoutDisallowPolicy_success()
             throws Exception {
@@ -204,13 +219,15 @@ public class VoiceInteractionServiceTest {
         }
     }
 
-    @ApiTest(apis = {
-            "android.service.voice.VoiceInteractionSession#onHandleScreenshot",
-            "android.service.voice.VoiceInteractionSession#onHandleAssist",
-            "android.service.voice.VoiceInteractionSession#onShow"
-    })
+    @ApiTest(
+            apis = {
+                "android.service.voice.VoiceInteractionSession#onHandleScreenshot",
+                "android.service.voice.VoiceInteractionSession#onHandleAssist",
+                "android.service.voice.VoiceInteractionSession#onShow"
+            })
     @EnsureHasWorkProfile
     @EnsureHasUserRestriction(value = DISALLOW_ASSIST_CONTENT, onUser = WORK_PROFILE)
+    @EnableCompatChanges({VoiceInteractionCompat.RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID})
     @Test
     public void onHandleScreenShotAndAssist_workProfileWithDisallowPolicy_failed()
             throws Exception {
@@ -220,13 +237,15 @@ public class VoiceInteractionServiceTest {
         }
     }
 
-    @ApiTest(apis = {
-            "android.service.voice.VoiceInteractionSession#onHandleScreenshot",
-            "android.service.voice.VoiceInteractionSession#onHandleAssist",
-            "android.service.voice.VoiceInteractionSession#onShow"
-    })
+    @ApiTest(
+            apis = {
+                "android.service.voice.VoiceInteractionSession#onHandleScreenshot",
+                "android.service.voice.VoiceInteractionSession#onHandleAssist",
+                "android.service.voice.VoiceInteractionSession#onShow"
+            })
     @EnsureHasWorkProfile
     @EnsureHasUserRestriction(value = DISALLOW_ASSIST_CONTENT, onUser = WORK_PROFILE)
+    @EnableCompatChanges({VoiceInteractionCompat.RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID})
     @Test
     public void onHandleScreenShotAndAssist_workProfileWithDisallowPolicy_successInInitialUser()
             throws Exception {
@@ -260,6 +279,7 @@ public class VoiceInteractionServiceTest {
 
     private TestAppInstance startActivityAndShowSession(UserReference userToStartActivity) {
         sScreenshotEnabledManager.set("1");
+        sStructureEnabledMgr.set("1");
         TestAppInstance instance = sTestApp.install(userToStartActivity);
         TestAppActivityReference activityReference =
                 instance.activities().query().whereActivity().exported().isTrue().get();
@@ -269,12 +289,14 @@ public class VoiceInteractionServiceTest {
         return instance;
     }
 
+    @EnableCompatChanges({VoiceInteractionCompat.RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID})
     @Test
     public void testVoiceInteractionSession_startAssistantActivityWithActivityOptions()
             throws Exception {
         startSessionForStartAssistantActivity(/* useActivityOptions= */ true);
     }
 
+    @EnableCompatChanges({VoiceInteractionCompat.RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID})
     @Test
     public void testVoiceInteractionSession_startAssistantActivityWithoutActivityOptions()
             throws Exception {
@@ -316,6 +338,7 @@ public class VoiceInteractionServiceTest {
         }
     }
 
+    @EnableCompatChanges({VoiceInteractionCompat.RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID})
     @Test
     public void testShowSession_onPrepareToShowSessionCalled() throws Exception {
         final Bundle args = new Bundle();
@@ -334,6 +357,7 @@ public class VoiceInteractionServiceTest {
         assertThat(mService.getPrepareToShowSessionFlags()).isEqualTo(flags);
     }
 
+    @EnableCompatChanges({VoiceInteractionCompat.RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID})
     @Test
     public void testShowSessionWithNullArgs_onPrepareToShowSessionCalledHasId() throws Exception {
         final int flags = VoiceInteractionSession.SHOW_WITH_ASSIST;
@@ -348,6 +372,7 @@ public class VoiceInteractionServiceTest {
         assertThat(mService.getPrepareToShowSessionFlags()).isEqualTo(flags);
     }
 
+    @EnableCompatChanges({VoiceInteractionCompat.RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID})
     @Test
     public void testShowSession_onPrepareToShowSessionCalledTwiceIdIsDifferent() throws Exception {
         final Bundle args = new Bundle();

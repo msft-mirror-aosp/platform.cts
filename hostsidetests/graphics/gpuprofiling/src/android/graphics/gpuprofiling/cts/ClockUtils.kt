@@ -45,6 +45,19 @@ fun Trace.getTraceClockSnapshots(): List<Map<Int, Long>> {
     return snapshots
 }
 
+fun Trace.getAllDataSourcesStartedNs(): Long {
+    val packetList: List<TracePacket> = this.packetList
+    for (packet in packetList) {
+        if (!packet.hasServiceEvent()) continue
+
+        if (packet.serviceEvent.hasAllDataSourcesStarted() &&
+            packet.serviceEvent.allDataSourcesStarted) {
+            return packet.timestamp
+        }
+    }
+    return 0
+}
+
 fun TracePacket.getTimestampNs(clockSnapshots: List<Map<Int, Long>>): Long {
     if (!this.hasTimestampClockId()) {
         return this.timestamp
@@ -66,24 +79,19 @@ private fun convertTimestamp(
         it.containsKey(sourceClockId) && it.containsKey(destClockId)
     }.distinctBy { it[sourceClockId] }.sortedBy { it[sourceClockId] }
 
-    if (relevantSnapshots.size < 2) {
+    if (relevantSnapshots.isEmpty()) {
         throw IllegalArgumentException(
-            "Need at least two snapshots with both clocks for interpolation"
+            "Need at least one snapshot with both clocks"
         )
     }
 
     val searchResult = relevantSnapshots.map { it[sourceClockId]!! }.binarySearch(timestamp)
     if (searchResult >= 0) return relevantSnapshots[searchResult][destClockId]!!
 
-    val index2 = searchResult.inv().coerceIn(1, relevantSnapshots.lastIndex)
-    val index1 = index2 - 1
+    // Use the snapshot immediately preceding the timestamp
+    val index = (searchResult.inv() - 1).coerceAtLeast(0)
+    val snapshot = relevantSnapshots[index]
 
-    // Interpolate between the two closest snapshots
-    val sourceDiff = relevantSnapshots[index2][sourceClockId]!! -
-            relevantSnapshots[index1][sourceClockId]!!
-    val destDiff = relevantSnapshots[index2][destClockId]!! -
-            relevantSnapshots[index1][destClockId]!!
-    val timeOffset = timestamp - relevantSnapshots[index1][sourceClockId]!!
-
-    return relevantSnapshots[index1][destClockId]!! + (timeOffset * destDiff / sourceDiff)
+    // Apply the constant offset from that snapshot.
+    return timestamp + (snapshot[destClockId]!! - snapshot[sourceClockId]!!)
 }

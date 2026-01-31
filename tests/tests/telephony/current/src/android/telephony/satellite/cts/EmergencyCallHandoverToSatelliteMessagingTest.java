@@ -49,9 +49,8 @@ import static android.telephony.satellite.SatelliteManager.EMERGENCY_CALL_TO_SAT
 
 import static com.android.internal.telephony.satellite.SatelliteController.TIMEOUT_TYPE_EMERGENCY_CALL_MONITORING_DURATION_MILLIS;
 
-import static junit.framework.Assert.assertTrue;
-
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
@@ -146,8 +145,10 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
 
         grantSatellitePermission();
         setupMockSatelliteService();
-        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
-                TIMEOUT_TYPE_EMERGENCY_CALL_MONITORING_DURATION_MILLIS, 500));
+        assertTrue(
+                "Failed to set satellite controller timeout duration",
+                sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(
+                        false, TIMEOUT_TYPE_EMERGENCY_CALL_MONITORING_DURATION_MILLIS, 500));
         sIsMultiSimDevice = sTelephonyManager.isMultiSimEnabled();
     }
 
@@ -155,12 +156,16 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
     public static void afterAllTests() throws Exception {
         logd(LOG_TAG, "afterAllTests");
         if (!shouldTestSatelliteWithMockService()) return;
-        assertTrue(sMockSatelliteServiceManager.setCtsMode(false));
-        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
-                TIMEOUT_TYPE_EMERGENCY_CALL_MONITORING_DURATION_MILLIS, 0));
+        assertTrue("Failed to set CTS mode", sMockSatelliteServiceManager.setCtsMode(false));
+        assertTrue(
+                "Failed to set satellite controller timeout duration",
+                sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(
+                        true, TIMEOUT_TYPE_EMERGENCY_CALL_MONITORING_DURATION_MILLIS, 0));
         unregisterTestLocationProvider();
         resetSatelliteAccessControlOverlayConfigs();
-        assertTrue(sMockSatelliteServiceManager.restoreSatelliteServicePackageName());
+        assertTrue(
+                "Failed to restore satellite service package name",
+                sMockSatelliteServiceManager.restoreSatelliteServicePackageName());
         waitFor(2000);
         afterAllCarrierRoamingTestsBase();
         sServiceConnector = null;
@@ -235,7 +240,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     "NTN-only subscription not found",
                     sNtnOnlySubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
             setUpSatelliteAccessAllowedAtDefaultTestLocation();
-            assertTrue(sMockSatelliteServiceManager.setCtsMode(true));
+            assertTrue("Failed to set CTS mode", sMockSatelliteServiceManager.setCtsMode(true));
             setUpNtnOnlySubscription();
 
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
@@ -243,7 +248,9 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
 
             testCb.setTestEmergencyNumber(sTestEmergencyNumbers[0]);
             setupForEmergencyCalling(MANUAL_CONNECT_SLOT_ID, sTestEmergencyNumbers[0]);
-            assertTrue(testCb.waitForTestEmergencyNumberConfigured());
+            assertTrue(
+                    "Timed out waiting for test emergency number configuration",
+                    testCb.waitForTestEmergencyNumberConfigured());
 
             logd(LOG_TAG, "testE911ToEsosHandover_NtnOnly: bind to InCallService");
             bindImsService(MANUAL_CONNECT_SLOT_ID);
@@ -259,16 +266,24 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     .getImsCallsession();
             callSession.addTestType(TestImsCallSessionImpl.TEST_TYPE_MO_STAY_AT_ESTABLISHING);
 
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call added",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
             Call call = getCall(mCurrentCallId);
 
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call dialing",
+                    callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
             // Wait for outgoing emergency call
-            assertTrue(testCb.waitForOutgoingEmergencyCall(sTestEmergencyNumbers[0]));
+            assertTrue(
+                    "Timed out waiting for outgoing emergency call",
+                    testCb.waitForOutgoingEmergencyCall(sTestEmergencyNumbers[0]));
             // Wait for the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE sent to Dialer.
-            assertTrue(callingTestLatchCountdown(
-                        LATCH_EVENT_DISPLAY_EMERGENCY_MESSAGE_RECEIVED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for emergency message connection event",
+                    callingTestLatchCountdown(
+                            LATCH_EVENT_DISPLAY_EMERGENCY_MESSAGE_RECEIVED, WAIT_FOR_CALL_STATE));
             Pair<String, String> eSosApp = readSatelliteHandoverAppFromOverlayConfig();
             String action = sMockSatelliteServiceManager.readStringFromOverlayConfig(
                     "config_satellite_test_with_esp_replies_intent_action");
@@ -276,9 +291,13 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     eSosApp.second, action, "", MANUAL_CONNECT_SLOT_ID);
 
             call.disconnect();
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call disconnecting",
+                    callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call removed",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
             waitForUnboundService();
         } finally {
             logd(LOG_TAG, "testE911ToEsosHandover_NtnOnly: clean up test environment");
@@ -327,14 +346,16 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                 PHONE_NUMBER_0, true);
             setUpImsCallingTestEnvironment(SLOT_ID_0);
             setUpSatelliteAccessAllowedAtDefaultTestLocation();
-            assertTrue(sMockSatelliteServiceManager.setCtsMode(true));
+            assertTrue("Failed to set CTS mode", sMockSatelliteServiceManager.setCtsMode(true));
 
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
                     sTelephonyManager, (tm) -> tm.registerTelephonyCallback(Runnable::run, testCb));
 
             testCb.setTestEmergencyNumber(sTestEmergencyNumbers[1]);
             setupForEmergencyCalling(SLOT_ID_0, sTestEmergencyNumbers[1]);
-            assertTrue(testCb.waitForTestEmergencyNumberConfigured());
+            assertTrue(
+                    "Timed out waiting for test emergency number configuration",
+                    testCb.waitForTestEmergencyNumberConfigured());
 
             logd(LOG_TAG, "testE911ToT911Handover_AutoConnect: bind to InCallService");
             bindImsService(SLOT_ID_0);
@@ -350,16 +371,24 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     .getImsCallsession();
             callSession.addTestType(TestImsCallSessionImpl.TEST_TYPE_MO_STAY_AT_ESTABLISHING);
 
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call added",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
             Call call = getCall(mCurrentCallId);
 
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call dialing",
+                    callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
             // Wait for outgoing emergency call
-            assertTrue(testCb.waitForOutgoingEmergencyCall(sTestEmergencyNumbers[1]));
+            assertTrue(
+                    "Timed out waiting for outgoing emergency call",
+                    testCb.waitForOutgoingEmergencyCall(sTestEmergencyNumbers[1]));
             // Wait for the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE sent to Dialer.
-            assertTrue(callingTestLatchCountdown(
-                        LATCH_EVENT_DISPLAY_EMERGENCY_MESSAGE_RECEIVED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for emergency message connection event",
+                    callingTestLatchCountdown(
+                            LATCH_EVENT_DISPLAY_EMERGENCY_MESSAGE_RECEIVED, WAIT_FOR_CALL_STATE));
             Pair<String, String> defaultSmsApp = getDefaultSmsApp();
             String action = Intent.ACTION_SENDTO;
             String uri = "smsto:" + sTestEmergencyNumbers[1];
@@ -367,9 +396,13 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     defaultSmsApp.first, defaultSmsApp.second, action, uri, SLOT_ID_0);
 
             call.disconnect();
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call disconnecting",
+                    callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call removed",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
             waitForUnboundService();
         } finally {
             logd(LOG_TAG, "testE911ToT911Handover_AutoConnect: clean up test environment");
@@ -419,7 +452,9 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
 
             testCb.setTestEmergencyNumber(sTestEmergencyNumbers[2]);
             setupForEmergencyCalling(MANUAL_CONNECT_SLOT_ID, sTestEmergencyNumbers[2]);
-            assertTrue(testCb.waitForTestEmergencyNumberConfigured());
+            assertTrue(
+                    "Timed out waiting for test emergency number configuration",
+                    testCb.waitForTestEmergencyNumberConfigured());
 
             logd(LOG_TAG, "testE911ToEsosHandover_Coex: bind to InCallService");
             bindImsService(MANUAL_CONNECT_SLOT_ID);
@@ -435,16 +470,24 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     .getImsCallsession();
             callSession.addTestType(TestImsCallSessionImpl.TEST_TYPE_MO_STAY_AT_ESTABLISHING);
 
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call added",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
             Call call = getCall(mCurrentCallId);
 
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call dialing",
+                    callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
             // Wait for outgoing emergency call
-            assertTrue(testCb.waitForOutgoingEmergencyCall(sTestEmergencyNumbers[2]));
+            assertTrue(
+                    "Timed out waiting for outgoing emergency call",
+                    testCb.waitForOutgoingEmergencyCall(sTestEmergencyNumbers[2]));
             // Wait for the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE sent to Dialer.
-            assertTrue(callingTestLatchCountdown(
-                        LATCH_EVENT_DISPLAY_EMERGENCY_MESSAGE_RECEIVED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for emergency message connection event",
+                    callingTestLatchCountdown(
+                            LATCH_EVENT_DISPLAY_EMERGENCY_MESSAGE_RECEIVED, WAIT_FOR_CALL_STATE));
             Pair<String, String> eSosApp = readSatelliteHandoverAppFromOverlayConfig();
             String action = sMockSatelliteServiceManager.readStringFromOverlayConfig(
                     "config_satellite_test_with_esp_replies_intent_action");
@@ -452,9 +495,13 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     eSosApp.second, action, "", MANUAL_CONNECT_SLOT_ID);
 
             call.disconnect();
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call disconnecting",
+                    callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call removed",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
             waitForUnboundService();
         } finally {
             logd(LOG_TAG, "testE911ToEsosHandover_Coex: clean up test environments");
@@ -506,7 +553,9 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
 
             testCb.setTestEmergencyNumber(sTestEmergencyNumbers[3]);
             setupForEmergencyCalling(AUTO_CONNECT_SLOT_ID, sTestEmergencyNumbers[3]);
-            assertTrue(testCb.waitForTestEmergencyNumberConfigured());
+            assertTrue(
+                    "Timed out waiting for test emergency number configuration",
+                    testCb.waitForTestEmergencyNumberConfigured());
 
             logd(LOG_TAG, "testE911ToT911Handover_Coex: bind to InCallService");
             bindImsService(AUTO_CONNECT_SLOT_ID);
@@ -522,16 +571,24 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     .getImsCallsession();
             callSession.addTestType(TestImsCallSessionImpl.TEST_TYPE_MO_STAY_AT_ESTABLISHING);
 
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call added",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
             Call call = getCall(mCurrentCallId);
 
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call dialing",
+                    callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
             // Wait for outgoing emergency call
-            assertTrue(testCb.waitForOutgoingEmergencyCall(sTestEmergencyNumbers[3]));
+            assertTrue(
+                    "Timed out waiting for outgoing emergency call",
+                    testCb.waitForOutgoingEmergencyCall(sTestEmergencyNumbers[3]));
             // Wait for the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE sent to Dialer.
-            assertTrue(callingTestLatchCountdown(
-                        LATCH_EVENT_DISPLAY_EMERGENCY_MESSAGE_RECEIVED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for emergency message connection event",
+                    callingTestLatchCountdown(
+                            LATCH_EVENT_DISPLAY_EMERGENCY_MESSAGE_RECEIVED, WAIT_FOR_CALL_STATE));
             Pair<String, String> defaultSmsApp = getDefaultSmsApp();
             String action = Intent.ACTION_SENDTO;
             String uri = "smsto:" + sTestEmergencyNumbers[3];
@@ -539,9 +596,13 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     defaultSmsApp.first, defaultSmsApp.second, action, uri, AUTO_CONNECT_SLOT_ID);
 
             call.disconnect();
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call disconnecting",
+                    callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call removed",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
             waitForUnboundService();
         } finally {
             logd(LOG_TAG, "testE911ToT911Handover_Coex: clean up test environments");
@@ -591,7 +652,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     "NTN-only subscription not found",
                     sNtnOnlySubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
             setUpSatelliteAccessAllowedAtDefaultTestLocation();
-            assertTrue(sMockSatelliteServiceManager.setCtsMode(true));
+            assertTrue("Failed to set CTS mode", sMockSatelliteServiceManager.setCtsMode(true));
             setUpNtnOnlySubscription();
 
             mmTelManager = imsManager.getImsMmTelManager(sNtnOnlySubId);
@@ -615,7 +676,9 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
 
             testCb.setTestEmergencyNumber(sTestEmergencyNumbers[0]);
             setupForEmergencyCalling(MANUAL_CONNECT_SLOT_ID, sTestEmergencyNumbers[0]);
-            assertTrue(testCb.waitForTestEmergencyNumberConfigured());
+            assertTrue(
+                    "Timed out waiting for test emergency number configuration",
+                    testCb.waitForTestEmergencyNumberConfigured());
 
             logd(LOG_TAG, "testE911ToEsosHandover_NtnOnly_DS: bind to InCallService");
             bindImsService(MANUAL_CONNECT_SLOT_ID);
@@ -631,15 +694,23 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     .getImsCallsession();
             callSession.addTestType(TestImsCallSessionImpl.TEST_TYPE_MO_STAY_AT_ESTABLISHING);
 
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call added",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
             Call call = getCall(mCurrentCallId);
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call dialing",
+                    callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
             // Wait for outgoing emergency call
-            assertTrue(testCb.waitForOutgoingEmergencyCall(sTestEmergencyNumbers[0]));
+            assertTrue(
+                    "Timed out waiting for outgoing emergency call",
+                    testCb.waitForOutgoingEmergencyCall(sTestEmergencyNumbers[0]));
             // Wait for the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE sent to Dialer.
-            assertTrue(callingTestLatchCountdown(
-                        LATCH_EVENT_DISPLAY_EMERGENCY_MESSAGE_RECEIVED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for emergency message connection event",
+                    callingTestLatchCountdown(
+                            LATCH_EVENT_DISPLAY_EMERGENCY_MESSAGE_RECEIVED, WAIT_FOR_CALL_STATE));
             Pair<String, String> eSosApp = readSatelliteHandoverAppFromOverlayConfig();
             String action = sMockSatelliteServiceManager.readStringFromOverlayConfig(
                     "config_satellite_test_with_esp_replies_intent_action");
@@ -647,9 +718,13 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     eSosApp.second, action, "", MANUAL_CONNECT_SLOT_ID);
 
             call.disconnect();
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call disconnecting",
+                    callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call removed",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
             waitForUnboundService();
         } finally {
             logd(LOG_TAG, "testE911ToEsosHandover_NtnOnly_DS: clean up test environments");
@@ -704,7 +779,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                 PHONE_NUMBER_0, true);
             setUpImsCallingTestEnvironment(SLOT_ID_0);
             setUpSatelliteAccessAllowedAtDefaultTestLocation();
-            assertTrue(sMockSatelliteServiceManager.setCtsMode(true));
+            assertTrue("Failed to set CTS mode", sMockSatelliteServiceManager.setCtsMode(true));
 
             int subId = SubscriptionManager.getSubscriptionId(SLOT_ID_0);
             assumeTrue(
@@ -731,7 +806,9 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
 
             testCb.setTestEmergencyNumber(sTestEmergencyNumbers[1]);
             setupForEmergencyCalling(SLOT_ID_0, sTestEmergencyNumbers[1]);
-            assertTrue(testCb.waitForTestEmergencyNumberConfigured());
+            assertTrue(
+                    "Timed out waiting for test emergency number configuration",
+                    testCb.waitForTestEmergencyNumberConfigured());
 
             logd(LOG_TAG, "testE911ToT911Handover_AutoConnect_DS: bind to InCallService");
             bindImsService(SLOT_ID_0);
@@ -747,16 +824,24 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     .getImsCallsession();
             callSession.addTestType(TestImsCallSessionImpl.TEST_TYPE_MO_STAY_AT_ESTABLISHING);
 
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call added",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
             Call call = getCall(mCurrentCallId);
 
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call dialing",
+                    callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
             // Wait for outgoing emergency call
-            assertTrue(testCb.waitForOutgoingEmergencyCall(sTestEmergencyNumbers[1]));
+            assertTrue(
+                    "Timed out waiting for outgoing emergency call",
+                    testCb.waitForOutgoingEmergencyCall(sTestEmergencyNumbers[1]));
             // Wait for the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE sent to Dialer.
-            assertTrue(callingTestLatchCountdown(
-                        LATCH_EVENT_DISPLAY_EMERGENCY_MESSAGE_RECEIVED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for emergency message connection event",
+                    callingTestLatchCountdown(
+                            LATCH_EVENT_DISPLAY_EMERGENCY_MESSAGE_RECEIVED, WAIT_FOR_CALL_STATE));
             Pair<String, String> defaultSmsApp = getDefaultSmsApp();
             String action = Intent.ACTION_SENDTO;
             String uri = "smsto:" + sTestEmergencyNumbers[1];
@@ -764,9 +849,13 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     defaultSmsApp.first, defaultSmsApp.second, action, uri, SLOT_ID_0);
 
             call.disconnect();
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call disconnecting",
+                    callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call removed",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
             waitForUnboundService();
         } finally {
             logd(LOG_TAG, "testE911ToT911Handover_AutoConnect_DS: clean up test environments");
@@ -821,7 +910,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
 
             setUpImsCallingTestEnvironment(SLOT_ID_0);
             setUpSatelliteAccessAllowedAtDefaultTestLocation();
-            assertTrue(sMockSatelliteServiceManager.setCtsMode(true));
+            assertTrue("Failed to set CTS mode", sMockSatelliteServiceManager.setCtsMode(true));
 
             int subId = SubscriptionManager.getSubscriptionId(SLOT_ID_0);
             assumeTrue(
@@ -857,7 +946,9 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
 
             testCb.setTestEmergencyNumber(sTestEmergencyNumbers[1]);
             setupForEmergencyCalling(SLOT_ID_0, sTestEmergencyNumbers[1]);
-            assertTrue(testCb.waitForTestEmergencyNumberConfigured());
+            assertTrue(
+                    "Timed out waiting for test emergency number configuration",
+                    testCb.waitForTestEmergencyNumberConfigured());
 
             logd(LOG_TAG, "testE911ToT911Handover_Hybrid_AutoConnect_DS: bind to InCallService");
             bindImsService(SLOT_ID_0);
@@ -875,15 +966,21 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
             callSession.addTestType(TestImsCallSessionImpl.TEST_TYPE_MO_STAY_AT_ESTABLISHING);
 
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call added",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
             Call call = getCall(mCurrentCallId);
 
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call dialing",
+                    callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
             // Wait for outgoing emergency call
-            assertTrue(testCb.waitForOutgoingEmergencyCall(sTestEmergencyNumbers[1]));
-            // Wait for the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE sent to Dialer.
             assertTrue(
+                    "Timed out waiting for outgoing emergency call",
+                    testCb.waitForOutgoingEmergencyCall(sTestEmergencyNumbers[1]));
+            // Wait for the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE sent to Dialer.
+            assertTrue("Timed out waiting for emergency message connection event",
                     callingTestLatchCountdown(
                             LATCH_EVENT_DISPLAY_EMERGENCY_MESSAGE_RECEIVED, WAIT_FOR_CALL_STATE));
             Pair<String, String> defaultSmsApp = getDefaultSmsApp();
@@ -898,9 +995,13 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     SLOT_ID_0);
 
             call.disconnect();
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call disconnecting",
+                    callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call removed",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
             waitForUnboundService();
         } finally {
             logd(LOG_TAG, "estE911ToT911Handover_AutoConnect_DS: clean up test environments");
@@ -966,7 +1067,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
 
             setUpImsCallingTestEnvironment(SLOT_ID_0);
             setUpSatelliteAccessAllowedAtDefaultTestLocation();
-            assertTrue(sMockSatelliteServiceManager.setCtsMode(true));
+            assertTrue("Failed to set CTS mode", sMockSatelliteServiceManager.setCtsMode(true));
 
             int subId = SubscriptionManager.getSubscriptionId(SLOT_ID_0);
             assumeTrue(
@@ -1002,14 +1103,16 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
 
             testCb.setTestEmergencyNumber(sTestEmergencyNumbers[1]);
             setupForEmergencyCalling(SLOT_ID_0, sTestEmergencyNumbers[1]);
-            assertTrue(testCb.waitForTestEmergencyNumberConfigured());
+            assertTrue(
+                    "Timed out waiting for test emergency number configuration",
+                    testCb.waitForTestEmergencyNumberConfigured());
 
             logd(LOG_TAG, "testE911ToT911Handover_Hybrid_AutoConnect_DS: bind to InCallService");
             bindImsService(SLOT_ID_0);
             mServiceCallBack = new ServiceCallBack();
             InCallServiceStateValidator.setCallbacks(mServiceCallBack);
 
-            assertTrue(ntnStateListener.getNtnMode());
+            assertTrue("Failed to verify NTN mode", ntnStateListener.getNtnMode());
             ntnStateListener.clearModeChanges();
 
             // for in auto connect check
@@ -1024,15 +1127,21 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
             callSession.addTestType(TestImsCallSessionImpl.TEST_TYPE_MO_STAY_AT_ESTABLISHING);
 
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call added",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
             Call call = getCall(mCurrentCallId);
 
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call dialing",
+                    callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
             // Wait for outgoing emergency call
-            assertTrue(testCb.waitForOutgoingEmergencyCall(sTestEmergencyNumbers[1]));
-            // Wait for the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE sent to Dialer.
             assertTrue(
+                    "Timed out waiting for outgoing emergency call",
+                    testCb.waitForOutgoingEmergencyCall(sTestEmergencyNumbers[1]));
+            // Wait for the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE sent to Dialer.
+            assertTrue("Timed out waiting for emergency message connection event",
                     callingTestLatchCountdown(
                             LATCH_EVENT_DISPLAY_EMERGENCY_MESSAGE_RECEIVED, WAIT_FOR_CALL_STATE));
             Pair<String, String> defaultSmsApp = getDefaultSmsApp();
@@ -1047,9 +1156,13 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     SLOT_ID_0);
 
             call.disconnect();
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call disconnecting",
+                    callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call removed",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
             waitForUnboundService();
 
             initializeLatches();
@@ -1065,12 +1178,16 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
             // Go from auto connect to Out of service state
             ServiceStateListenerTest serviceStateListener = registerServiceStateListener(subId);
             sMockModemManager.changeNetworkService(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_FET, false);
-            assertTrue(serviceStateListener.waitUntilOutOfService());
+            assertTrue(
+                    "Timed out waiting for device to go out of service",
+                    serviceStateListener.waitUntilOutOfService());
             assertFalse(ntnStateListener.getNtnMode());
 
             testCb.setTestEmergencyNumber(sTestEmergencyNumbers[1]);
             setupForEmergencyCalling(SLOT_ID_0, sTestEmergencyNumbers[1]);
-            assertTrue(testCb.waitForTestEmergencyNumberConfigured());
+            assertTrue(
+                    "Timed out waiting for test emergency number configuration",
+                    testCb.waitForTestEmergencyNumberConfigured());
             bindImsService(SLOT_ID_0);
             mServiceCallBack = new ServiceCallBack();
             InCallServiceStateValidator.setCallbacks(mServiceCallBack);
@@ -1085,15 +1202,21 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
             callSession.addTestType(TestImsCallSessionImpl.TEST_TYPE_MO_STAY_AT_ESTABLISHING);
 
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call added",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
             call = getCall(mCurrentCallId);
 
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call dialing",
+                    callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
             // Wait for outgoing emergency call
-            assertTrue(testCb.waitForOutgoingEmergencyCall(sTestEmergencyNumbers[1]));
-            // Wait for the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE sent to Dialer.
             assertTrue(
+                    "Timed out waiting for outgoing emergency call",
+                    testCb.waitForOutgoingEmergencyCall(sTestEmergencyNumbers[1]));
+            // Wait for the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE sent to Dialer.
+            assertTrue("Timed out waiting for emergency message connection event",
                     callingTestLatchCountdown(
                             LATCH_EVENT_DISPLAY_EMERGENCY_MESSAGE_RECEIVED, WAIT_FOR_CALL_STATE));
             Pair<String, String> eSosApp = readSatelliteHandoverAppFromOverlayConfig();
@@ -1109,9 +1232,13 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     SLOT_ID_0);
 
             call.disconnect();
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call disconnecting",
+                    callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call removed",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
             waitForUnboundService();
             sTelephonyManager.unregisterTelephonyCallback(serviceStateListener);
 
@@ -1207,7 +1334,9 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
 
             testCb.setTestEmergencyNumber(sTestEmergencyNumbers[1]);
             setupForEmergencyCalling(MANUAL_CONNECT_SLOT_ID, sTestEmergencyNumbers[1]);
-            assertTrue(testCb.waitForTestEmergencyNumberConfigured());
+            assertTrue(
+                    "Timed out waiting for test emergency number configuration",
+                    testCb.waitForTestEmergencyNumberConfigured());
 
             logd(LOG_TAG, "testE911ToeSOSHandover_Hybrid_ManualConnect_DS: bind to InCallService");
             bindImsService(MANUAL_CONNECT_SLOT_ID);
@@ -1226,15 +1355,21 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
             callSession.addTestType(TestImsCallSessionImpl.TEST_TYPE_MO_STAY_AT_ESTABLISHING);
 
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call added",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
             Call call = getCall(mCurrentCallId);
 
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call dialing",
+                    callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
             // Wait for outgoing emergency call
-            assertTrue(testCb.waitForOutgoingEmergencyCall(sTestEmergencyNumbers[1]));
-            // Wait for the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE sent to Dialer.
             assertTrue(
+                    "Timed out waiting for outgoing emergency call",
+                    testCb.waitForOutgoingEmergencyCall(sTestEmergencyNumbers[1]));
+            // Wait for the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE sent to Dialer.
+            assertTrue("Timed out waiting for emergency message connection event",
                     callingTestLatchCountdown(
                             LATCH_EVENT_DISPLAY_EMERGENCY_MESSAGE_RECEIVED, WAIT_FOR_CALL_STATE));
             Pair<String, String> eSosApp = readSatelliteHandoverAppFromOverlayConfig();
@@ -1250,9 +1385,13 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     MANUAL_CONNECT_SLOT_ID);
 
             call.disconnect();
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call disconnecting",
+                    callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call removed",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
             waitForUnboundService();
         } finally {
             logd(LOG_TAG, "testE911ToEsosHandover_Coex_DS: clean up test environments");
@@ -1336,7 +1475,9 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
 
             testCb.setTestEmergencyNumber(sTestEmergencyNumbers[2]);
             setupForEmergencyCalling(MANUAL_CONNECT_SLOT_ID, sTestEmergencyNumbers[2]);
-            assertTrue(testCb.waitForTestEmergencyNumberConfigured());
+            assertTrue(
+                    "Timed out waiting for test emergency number configuration",
+                    testCb.waitForTestEmergencyNumberConfigured());
 
             logd(LOG_TAG, "testE911ToEsosHandover_Coex_DS: bind to InCallService");
             bindImsService(MANUAL_CONNECT_SLOT_ID);
@@ -1352,16 +1493,24 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     .getImsCallsession();
             callSession.addTestType(TestImsCallSessionImpl.TEST_TYPE_MO_STAY_AT_ESTABLISHING);
 
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call added",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
             Call call = getCall(mCurrentCallId);
 
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call dialing",
+                    callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
             // Wait for outgoing emergency call
-            assertTrue(testCb.waitForOutgoingEmergencyCall(sTestEmergencyNumbers[2]));
+            assertTrue(
+                    "Timed out waiting for outgoing emergency call",
+                    testCb.waitForOutgoingEmergencyCall(sTestEmergencyNumbers[2]));
             // Wait for the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE sent to Dialer.
-            assertTrue(callingTestLatchCountdown(
-                        LATCH_EVENT_DISPLAY_EMERGENCY_MESSAGE_RECEIVED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for emergency message connection event",
+                    callingTestLatchCountdown(
+                            LATCH_EVENT_DISPLAY_EMERGENCY_MESSAGE_RECEIVED, WAIT_FOR_CALL_STATE));
             Pair<String, String> eSosApp = readSatelliteHandoverAppFromOverlayConfig();
             String action = sMockSatelliteServiceManager.readStringFromOverlayConfig(
                     "config_satellite_test_with_esp_replies_intent_action");
@@ -1369,9 +1518,13 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     eSosApp.second, action, "", MANUAL_CONNECT_SLOT_ID);
 
             call.disconnect();
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call disconnecting",
+                    callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call removed",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
             waitForUnboundService();
         } finally {
             logd(LOG_TAG, "testE911ToEsosHandover_Coex_DS: clean up test environments");
@@ -1451,7 +1604,9 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
 
             testCb.setTestEmergencyNumber(sTestEmergencyNumbers[3]);
             setupForEmergencyCalling(AUTO_CONNECT_SLOT_ID, sTestEmergencyNumbers[3]);
-            assertTrue(testCb.waitForTestEmergencyNumberConfigured());
+            assertTrue(
+                    "Timed out waiting for test emergency number configuration",
+                    testCb.waitForTestEmergencyNumberConfigured());
 
             logd(LOG_TAG, "testE911ToT911Handover_Coex_DS: bind to InCallService");
             bindImsService(AUTO_CONNECT_SLOT_ID);
@@ -1467,16 +1622,24 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     .getImsCallsession();
             callSession.addTestType(TestImsCallSessionImpl.TEST_TYPE_MO_STAY_AT_ESTABLISHING);
 
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call added",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
             Call call = getCall(mCurrentCallId);
 
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call dialing",
+                    callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
             // Wait for outgoing emergency call
-            assertTrue(testCb.waitForOutgoingEmergencyCall(sTestEmergencyNumbers[3]));
+            assertTrue(
+                    "Timed out waiting for outgoing emergency call",
+                    testCb.waitForOutgoingEmergencyCall(sTestEmergencyNumbers[3]));
             // Wait for the connection event EVENT_DISPLAY_EMERGENCY_MESSAGE sent to Dialer.
-            assertTrue(callingTestLatchCountdown(
-                        LATCH_EVENT_DISPLAY_EMERGENCY_MESSAGE_RECEIVED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for emergency message connection event",
+                    callingTestLatchCountdown(
+                            LATCH_EVENT_DISPLAY_EMERGENCY_MESSAGE_RECEIVED, WAIT_FOR_CALL_STATE));
             Pair<String, String> defaultSmsApp = getDefaultSmsApp();
             String action = Intent.ACTION_SENDTO;
             String uri = "smsto:" + sTestEmergencyNumbers[3];
@@ -1484,9 +1647,13 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     defaultSmsApp.first, defaultSmsApp.second, action, uri, AUTO_CONNECT_SLOT_ID);
 
             call.disconnect();
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call disconnecting",
+                    callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Timed out waiting for call removed",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
             waitForUnboundService();
         } finally {
             logd(LOG_TAG, "testE911ToT911Handover_Coex_DS: clean up test environments");

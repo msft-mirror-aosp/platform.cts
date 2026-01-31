@@ -135,6 +135,7 @@ android_test {
         "CarModeTestAppSelfManaged/**/*.java",
         "CarModeTestAppTwo/**/*.java",
         "SelfManagedCSTestAppOne/**/*.java",
+        "ThirdPartyCallIntentTestApp/**/*.java",
     ],
     exclude_srcs: [
         "src/android/telecom/cts/SelfManagedConnection.java",
@@ -171,6 +172,7 @@ android_test {
         ":CarModeTestAppSelfManaged",
         ":CallScreeningServiceTestApp",
         ":CallStreamingServiceTestApp",
+        ":ThirdPartyCallIntentTestApp",
     ],
     per_testcase_directory: true,
     lint: {

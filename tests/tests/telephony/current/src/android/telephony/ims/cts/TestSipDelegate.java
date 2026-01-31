@@ -16,10 +16,9 @@
 
 package android.telephony.ims.cts;
 
-import static junit.framework.Assert.assertTrue;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import android.telephony.ims.DelegateMessageCallback;
 import android.telephony.ims.DelegateRegistrationState;
@@ -103,10 +102,11 @@ public class TestSipDelegate implements SipDelegate {
         for (int i = 0; i < callIdsToVerify.length; i++) {
             String requestedCallId = mCleanupSipSessionRequests.poll(ImsUtils.TEST_TIMEOUT_MS,
                     TimeUnit.MILLISECONDS);
-            assertTrue(ids.contains(requestedCallId));
+            assertTrue("Cleanup session called for unknown ID: " + requestedCallId,
+                    ids.contains(requestedCallId));
             ids.remove(requestedCallId);
         }
-        assertTrue(ids.isEmpty());
+        assertTrue("Cleanup session not called for IDs: " + ids, ids.isEmpty());
     }
 
     public void setSendMessageDenyReason(int reason) {

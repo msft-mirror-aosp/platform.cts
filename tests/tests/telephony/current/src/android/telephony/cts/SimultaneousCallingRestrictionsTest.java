@@ -22,9 +22,9 @@ import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN
 import static com.android.internal.telephony.RILConstants.RIL_REQUEST_RADIO_POWER;
 
 import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertTrue;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
@@ -162,7 +162,9 @@ public class SimultaneousCallingRestrictionsTest {
         try {
             sMockModemManager = new MockModemManager();
             assertNotNull(sMockModemManager);
-            assertTrue(sMockModemManager.connectMockModemService());
+            assertTrue(
+                    "Failed to connect to MockModemService",
+                    sMockModemManager.connectMockModemService());
             sMockModemManager.insertSimCard(TEST_SLOT_0, MOCK_SIM_PROFILE_ID_TWN_CHT);
             waitForSimStateReadyOrTimeout(TEST_SLOT_0);
             sMockModemManager.insertSimCard(TEST_SLOT_1, MOCK_SIM_PROFILE_ID_TWN_FET);
@@ -694,20 +696,44 @@ public class SimultaneousCallingRestrictionsTest {
         Pair<PhoneAccount, PhoneAccount> accts = getDsdaPhoneAccounts();
         if (simultaneousCallingEnabled) {
             // Check that the simultaneous calling restrictions were set for each phone account:
-            assertTrue(accts.first.hasSimultaneousCallingRestriction());
-            assertTrue(accts.second.hasSimultaneousCallingRestriction());
-            assertEquals(1, accts.first.getSimultaneousCallingRestriction().size());
-            assertEquals(1, accts.second.getSimultaneousCallingRestriction().size());
-            Assert.assertTrue(accts.first.getSimultaneousCallingRestriction().contains(
-                    accts.second.getAccountHandle()));
-            Assert.assertTrue(accts.second.getSimultaneousCallingRestriction().contains(
-                    accts.first.getAccountHandle()));
+            assertTrue("PhoneAccount 0 should have simultaneous calling restrictions configured",
+                    accts.first.hasSimultaneousCallingRestriction());
+            assertTrue("PhoneAccount 1 should have simultaneous calling restrictions configured",
+                    accts.second.hasSimultaneousCallingRestriction());
+            assertEquals("PhoneAccount 0 should have exactly 1 restriction defined",
+                    1, accts.first.getSimultaneousCallingRestriction().size());
+            assertEquals("PhoneAccount 1 should have exactly 1 restriction defined",
+                    1, accts.second.getSimultaneousCallingRestriction().size());
+            assertTrue(
+                    "PhoneAccount 0 restriction should contain PhoneAccount 1 handle",
+                    accts.first
+                            .getSimultaneousCallingRestriction()
+                            .contains(accts.second.getAccountHandle()));
+            assertTrue(
+                    "PhoneAccount 1 restriction should contain PhoneAccount 0 handle",
+                    accts.second
+                            .getSimultaneousCallingRestriction()
+                            .contains(accts.first.getAccountHandle()));
         } else {
             // Check that simultaneous calling is disabled for both phone accounts:
-            assertTrue(accts.first.hasSimultaneousCallingRestriction());
-            assertTrue(accts.second.hasSimultaneousCallingRestriction());
-            assertEquals(0, accts.first.getSimultaneousCallingRestriction().size());
-            assertEquals(0, accts.second.getSimultaneousCallingRestriction().size());
+            assertTrue(
+                    "PhoneAccount 0 should have simultaneous calling restrictions object (even if"
+                        + " disabled)",
+                    accts.first.hasSimultaneousCallingRestriction());
+            assertTrue(
+                    "PhoneAccount 1 should have simultaneous calling restrictions object (even if"
+                        + " disabled)",
+                    accts.second.hasSimultaneousCallingRestriction());
+            assertEquals(
+                    "PhoneAccount 0 should have 0 restrictions when simultaneous calling is"
+                        + " disabled",
+                    0,
+                    accts.first.getSimultaneousCallingRestriction().size());
+            assertEquals(
+                    "PhoneAccount 1 should have 0 restrictions when simultaneous calling is"
+                        + " disabled",
+                    0,
+                    accts.second.getSimultaneousCallingRestriction().size());
         }
     }
 
@@ -791,15 +817,18 @@ public class SimultaneousCallingRestrictionsTest {
         Log.i(TAG, "triggerFrameworkConnectToCarrierImsService: slotId = " + slotId);
 
         // Add the simultaneous calling capability to the ImsService.
-        assertTrue(serviceConnector.connectCarrierImsServiceLocally());
+        assertTrue("Failed to connect to carrier ImsService locally",
+                serviceConnector.connectCarrierImsServiceLocally());
+
         serviceConnector.getCarrierService().addCapabilities(
                 ImsService.CAPABILITY_SUPPORTS_SIMULTANEOUS_CALLING);
 
         // Connect to the ImsService with the MmTel feature.
-        assertTrue(serviceConnector.triggerFrameworkConnectionToCarrierImsService(
-                new ImsFeatureConfiguration.Builder()
-                        .addFeature(slotId, ImsFeature.FEATURE_MMTEL)
-                        .build()));
+        assertTrue("Failed to trigger framework connection to carrier ImsService",
+                serviceConnector.triggerFrameworkConnectionToCarrierImsService(
+                        new ImsFeatureConfiguration.Builder()
+                                .addFeature(slotId, ImsFeature.FEATURE_MMTEL)
+                                .build()));
         // The MmTelFeature is created when the ImsService is bound. If it wasn't created, then the
         // Framework did not call it.
         assertTrue("Did not receive createMmTelFeature", serviceConnector.getCarrierService()
@@ -819,14 +848,17 @@ public class SimultaneousCallingRestrictionsTest {
         Log.i(TAG, "triggerFrameworkConnectToDeviceImsService: slotId = " + slotId);
 
         // Connect to Device the ImsService with the MmTel feature and simultaneous call cap.
-        assertTrue(serviceConnector.connectDeviceImsService(
-                ImsService.CAPABILITY_SUPPORTS_SIMULTANEOUS_CALLING,
-                new ImsFeatureConfiguration.Builder()
-                .addFeature(slotId, ImsFeature.FEATURE_MMTEL)
-                .build()));
-        //First MMTEL feature is created on device ImsService.
-        assertTrue(serviceConnector.getExternalService().waitForLatchCountdown(
-                TestImsService.LATCH_CREATE_MMTEL));
+        assertTrue("Failed to connect to device ImsService with simultaneous calling capability",
+                serviceConnector.connectDeviceImsService(
+                        ImsService.CAPABILITY_SUPPORTS_SIMULTANEOUS_CALLING,
+                        new ImsFeatureConfiguration.Builder()
+                                .addFeature(slotId, ImsFeature.FEATURE_MMTEL)
+                                .build()));
+
+        // First MMTEL feature is created on device ImsService.
+        assertTrue("Timed out waiting for MmTel feature creation on device ImsService",
+                serviceConnector.getExternalService().waitForLatchCountdown(
+                        TestImsService.LATCH_CREATE_MMTEL));
         assertTrue("Device ImsService created, but TestDeviceImsService#createMmTelFeature was "
                 + "not called!", serviceConnector.getExternalService().isMmTelFeatureCreated());
     }

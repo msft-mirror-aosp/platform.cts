@@ -122,9 +122,9 @@ class RenderStagesChecksTest {
     fun checkQueueSubmitsStrictlyMonotonicallyIncreasing_increasing_passes() {
         val fakeCollector = FakeErrorCollector()
         val list = listOf(
-            QueueSubmitEvent(1, 1),
-            QueueSubmitEvent(2, 2),
-            QueueSubmitEvent(3, 3)
+            QueueSubmitEvent(1, 1, 100),
+            QueueSubmitEvent(2, 2, 100),
+            QueueSubmitEvent(3, 3, 100)
         )
 
         checkQueueSubmitsStrictlyMonotonicallyIncreasing(fakeCollector, list)
@@ -136,9 +136,9 @@ class RenderStagesChecksTest {
     fun checkQueueSubmitsStrictlyMonotonicallyIncreasing_duplicates_fails() {
         val fakeCollector = FakeErrorCollector()
         val list = listOf(
-            QueueSubmitEvent(1, 1),
-            QueueSubmitEvent(2, 1), // Duplicate
-            QueueSubmitEvent(3, 2)
+            QueueSubmitEvent(1, 1, 100),
+            QueueSubmitEvent(2, 1, 100), // Duplicate
+            QueueSubmitEvent(3, 2, 100)
         )
 
         checkQueueSubmitsStrictlyMonotonicallyIncreasing(fakeCollector, list)
@@ -380,5 +380,53 @@ class RenderStagesChecksTest {
         assertThat(
             fakeCollector.getErrorMessages()
         ).containsExactly("Found mismatched queue submits and/or render stages.")
+    }
+
+    @Test
+    fun checkQueueSubmitsMatchAppLogs_matches_passes() {
+        val fakeCollector = FakeErrorCollector()
+        val queueSubmits = listOf(
+            QueueSubmitEvent(100, 1, 10), // should discard
+            QueueSubmitEvent(200, 2, 20),
+            QueueSubmitEvent(300, 3, 30) // should discard
+        )
+        val appQueueSubmits = listOf(AppQueueSubmitEvent(199, 230))
+
+        checkQueueSubmitsMatchAppLogs(fakeCollector, queueSubmits, appQueueSubmits)
+
+        fakeCollector.assertSuccess()
+    }
+
+    @Test
+    fun checkQueueSubmitsMatchAppLogs_durationMismatch_fails() {
+        val fakeCollector = FakeErrorCollector()
+        val queueSubmits = listOf(QueueSubmitEvent(200, 2, 20))
+        val appQueueSubmits = listOf(AppQueueSubmitEvent(199, 209))
+
+        checkQueueSubmitsMatchAppLogs(fakeCollector, queueSubmits, appQueueSubmits)
+
+        fakeCollector.assertFailure()
+        assertThat(
+            fakeCollector.getErrorMessages()
+        ).containsExactly("Reported VkQueueSubmit event timing does not match app's Atrace logs.")
+    }
+
+    @Test
+    fun checkQueueSubmitsMatchAppLogs_timestampMismatch_fails() {
+        val fakeCollector = FakeErrorCollector()
+        val queueSubmits = listOf(QueueSubmitEvent(200, 2, 20))
+        val appQueueSubmits = listOf(
+            AppQueueSubmitEvent(100, 110),
+            AppQueueSubmitEvent(300, 310)
+        )
+
+        checkQueueSubmitsMatchAppLogs(fakeCollector, queueSubmits, appQueueSubmits)
+
+        fakeCollector.assertFailure()
+        assertThat(
+            fakeCollector.getErrorMessages()
+        ).containsExactly(
+            "The number of reported VkQueueSubmits does not match the app's Atrace logs."
+        )
     }
 }

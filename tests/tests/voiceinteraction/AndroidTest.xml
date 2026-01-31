@@ -44,13 +44,6 @@
         <option name="run-command" value="am compat enable ALLOW_TEST_API_ACCESS android.voiceinteraction.service" />
         <option name="teardown-command" value="rm -rf /data/user/0/android.voiceinteraction.cts/files/*"/>
         <option name="teardown-command" value="am compat reset ALLOW_TEST_API_ACCESS android.voiceinteraction.service" />
-        <!-- Enable self-trigger bypass for the voice interaction services used in tests -->
-        <option name="run-command" value="am compat enable BYPASS_SELF_TRIGGER_ASSIST_RESTRICTION android.voiceinteraction.service" />
-        <option name="run-command" value="am compat enable BYPASS_SELF_TRIGGER_ASSIST_RESTRICTION android.voiceinteraction.norecognition" />
-        <option name="run-command" value="am compat enable BYPASS_SELF_TRIGGER_ASSIST_RESTRICTION android.voiceinteraction.cts" />
-        <option name="teardown-command" value="am compat reset BYPASS_SELF_TRIGGER_ASSIST_RESTRICTION android.voiceinteraction.service" />
-        <option name="teardown-command" value="am compat reset BYPASS_SELF_TRIGGER_ASSIST_RESTRICTION android.voiceinteraction.norecognition" />
-        <option name="teardown-command" value="am compat reset BYPASS_SELF_TRIGGER_ASSIST_RESTRICTION android.voiceinteraction.cts" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >

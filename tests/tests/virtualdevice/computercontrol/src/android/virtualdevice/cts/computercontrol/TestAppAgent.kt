@@ -174,8 +174,8 @@ class TestAppAgent(private val context: Context, private val session: ComputerCo
                 }
             },
         )
-        action()
         try {
+            action()
             Log.d("TestAppAgent", "Waiting for session to be stable")
             future.get(5, TimeUnit.SECONDS)
             Log.d("TestAppAgent", "Session is stable")

@@ -45,9 +45,9 @@ import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN
 
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertTrue;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
@@ -175,7 +175,8 @@ public class MmTelFeatureTestOnMockModem {
         MockModemManager.enforceMockModemDeveloperSetting();
         sMockModemManager = new MockModemManager();
         assertNotNull(sMockModemManager);
-        assertTrue(sMockModemManager.connectMockModemService(MOCK_SIM_PROFILE_ID_TWN_CHT));
+        assertTrue("Failed to connect to mock modem service",
+                sMockModemManager.connectMockModemService(MOCK_SIM_PROFILE_ID_TWN_CHT));
 
         TimeUnit.MILLISECONDS.sleep(WAIT_SIM_STATE_TIMEOUT_MS);
 
@@ -191,7 +192,9 @@ public class MmTelFeatureTestOnMockModem {
         sTestSub = ImsUtils.getPreferredActiveSubId();
 
         int subId = SubscriptionManager.getSubscriptionId(sTestSlot);
-        assertTrue(SubscriptionManager.isValidSubscriptionId(subId));
+        assertTrue(
+                "Subscription ID should be valid",
+                SubscriptionManager.isValidSubscriptionId(subId));
         sTestSub = subId;
 
         sServiceConnector = new ImsServiceConnector(InstrumentationRegistry.getInstrumentation());
@@ -239,7 +242,8 @@ public class MmTelFeatureTestOnMockModem {
         // Rebind all interfaces which is binding to MockModemService to default.
         if (sMockModemManager != null) {
             //assertNotNull(sMockModemManager);
-            assertTrue(sMockModemManager.disconnectMockModemService());
+            assertTrue("Failed to disconnect from mock modem service",
+                    sMockModemManager.disconnectMockModemService());
             sMockModemManager = null;
 
             TimeUnit.MILLISECONDS.sleep(WAIT_SIM_STATE_TIMEOUT_MS);
@@ -325,7 +329,8 @@ public class MmTelFeatureTestOnMockModem {
                 .getTerminalBasedCallWaitingLatch().await(WAIT_UPDATE_TIMEOUT_MS,
                         TimeUnit.MILLISECONDS);
 
-        assertTrue(sServiceConnector.getCarrierService()
+        assertTrue("Terminal based call waiting should be notified",
+                sServiceConnector.getCarrierService()
                 .getMmTelFeature().isTerminalBasedCallWaitingNotified());
 
         boolean enabled = sServiceConnector.getCarrierService()
@@ -352,7 +357,8 @@ public class MmTelFeatureTestOnMockModem {
                     .getTerminalBasedCallWaitingLatch().await(WAIT_UPDATE_TIMEOUT_MS,
                             TimeUnit.MILLISECONDS);
 
-            assertTrue(sServiceConnector.getCarrierService()
+            assertTrue("Terminal based call waiting should be notified",
+                    sServiceConnector.getCarrierService()
                     .getMmTelFeature().isTerminalBasedCallWaitingNotified());
 
             enabled = sServiceConnector.getCarrierService()
@@ -415,14 +421,16 @@ public class MmTelFeatureTestOnMockModem {
 
         sServiceConnector.getCarrierService().getMmTelFeature().triggerEpsFallback(
                 EPS_FALLBACK_REASON_NO_NETWORK_TRIGGER);
-        assertTrue(waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_TRIGGER_EPS_FALLBACK));
+        assertTrue("Timed out waiting for EPS fallback trigger",
+                waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_TRIGGER_EPS_FALLBACK));
 
         assertEquals(EPS_FALLBACK_REASON_NO_NETWORK_TRIGGER,
                 sMockModemManager.getEpsFallbackReason(sTestSlot));
 
         sServiceConnector.getCarrierService().getMmTelFeature().triggerEpsFallback(
                 EPS_FALLBACK_REASON_NO_NETWORK_RESPONSE);
-        assertTrue(waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_TRIGGER_EPS_FALLBACK));
+        assertTrue("Timed out waiting for EPS fallback trigger",
+                waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_TRIGGER_EPS_FALLBACK));
 
         assertEquals(EPS_FALLBACK_REASON_NO_NETWORK_RESPONSE,
                 sMockModemManager.getEpsFallbackReason(sTestSlot));
@@ -451,11 +459,14 @@ public class MmTelFeatureTestOnMockModem {
         sServiceConnector.getCarrierService().getMmTelFeature().startImsTrafficSession(
                 IMS_TRAFFIC_TYPE_EMERGENCY, EUTRAN, IMS_TRAFFIC_DIRECTION_OUTGOING,
                 getContext().getMainExecutor(), callback);
-        assertTrue(waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_START_IMS_TRAFFIC));
+        assertTrue("Timed out waiting for start IMS traffic",
+                waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_START_IMS_TRAFFIC));
 
-        assertTrue(sMockModemManager.isImsTrafficStarted(sTestSlot, IMS_TRAFFIC_TYPE_EMERGENCY));
+        assertTrue("IMS traffic (Emergency) should be started",
+                sMockModemManager.isImsTrafficStarted(sTestSlot, IMS_TRAFFIC_TYPE_EMERGENCY));
 
-        assertTrue(sMockModemManager.sendStartImsTrafficResponse(sTestSlot,
+        assertTrue("Failed to send start IMS traffic response",
+                sMockModemManager.sendStartImsTrafficResponse(sTestSlot,
                 IMS_TRAFFIC_TYPE_EMERGENCY, 0, 0, 0));
 
         ConnectionFailureInfo result = waitForResult(resultQueue);
@@ -464,7 +475,8 @@ public class MmTelFeatureTestOnMockModem {
         assertEquals(0, result.getReason());
 
         sServiceConnector.getCarrierService().getMmTelFeature().stopImsTrafficSession(callback);
-        assertTrue(waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_STOP_IMS_TRAFFIC));
+        assertTrue("Timed out waiting for stop IMS traffic",
+                waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_STOP_IMS_TRAFFIC));
 
         assertFalse(sMockModemManager.isImsTrafficStarted(sTestSlot, IMS_TRAFFIC_TYPE_EMERGENCY));
 
@@ -475,16 +487,19 @@ public class MmTelFeatureTestOnMockModem {
         sServiceConnector.getCarrierService().getMmTelFeature().startImsTrafficSession(
                 IMS_TRAFFIC_TYPE_VOICE, EUTRAN, IMS_TRAFFIC_DIRECTION_OUTGOING,
                 getContext().getMainExecutor(), voiceCallback);
-        assertTrue(waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_START_IMS_TRAFFIC));
+        assertTrue("Timed out waiting for start IMS traffic",
+                waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_START_IMS_TRAFFIC));
 
-        assertTrue(sMockModemManager.isImsTrafficStarted(sTestSlot, IMS_TRAFFIC_TYPE_VOICE));
+        assertTrue("IMS traffic (Voice) should be started",
+                sMockModemManager.isImsTrafficStarted(sTestSlot, IMS_TRAFFIC_TYPE_VOICE));
         assertFalse(sMockModemManager.isImsTrafficStarted(sTestSlot,
                 IMS_TRAFFIC_TYPE_REGISTRATION));
 
         // handover of voice traffic
         sServiceConnector.getCarrierService().getMmTelFeature().modifyImsTrafficSession(
                 IWLAN, voiceCallback);
-        assertTrue(waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_START_IMS_TRAFFIC));
+        assertTrue("Timed out waiting for start IMS traffic",
+                waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_START_IMS_TRAFFIC));
 
         LinkedBlockingQueue<ConnectionFailureInfo> regResultQueue = new LinkedBlockingQueue<>();
         ImsTrafficSessionCallback regCallback = buildImsTrafficSessionCallback(regResultQueue);
@@ -492,12 +507,16 @@ public class MmTelFeatureTestOnMockModem {
         sServiceConnector.getCarrierService().getMmTelFeature().startImsTrafficSession(
                 IMS_TRAFFIC_TYPE_REGISTRATION, EUTRAN, IMS_TRAFFIC_DIRECTION_OUTGOING,
                 getContext().getMainExecutor(), regCallback);
-        assertTrue(waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_START_IMS_TRAFFIC));
+        assertTrue("Timed out waiting for start IMS traffic",
+                waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_START_IMS_TRAFFIC));
 
-        assertTrue(sMockModemManager.isImsTrafficStarted(sTestSlot, IMS_TRAFFIC_TYPE_VOICE));
-        assertTrue(sMockModemManager.isImsTrafficStarted(sTestSlot, IMS_TRAFFIC_TYPE_REGISTRATION));
+        assertTrue("IMS traffic (Voice) should be started",
+                sMockModemManager.isImsTrafficStarted(sTestSlot, IMS_TRAFFIC_TYPE_VOICE));
+        assertTrue("IMS traffic (Registration) should be started",
+                sMockModemManager.isImsTrafficStarted(sTestSlot, IMS_TRAFFIC_TYPE_REGISTRATION));
 
-        assertTrue(sMockModemManager.sendStartImsTrafficResponse(sTestSlot,
+        assertTrue("Failed to send start IMS traffic response",
+                sMockModemManager.sendStartImsTrafficResponse(sTestSlot,
                 IMS_TRAFFIC_TYPE_VOICE, 0, 0, 0));
 
         result = waitForResult(voiceResultQueue);
@@ -507,12 +526,15 @@ public class MmTelFeatureTestOnMockModem {
 
         sServiceConnector.getCarrierService().getMmTelFeature()
                 .stopImsTrafficSession(voiceCallback);
-        assertTrue(waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_STOP_IMS_TRAFFIC));
+        assertTrue("Timed out waiting for stop IMS traffic",
+                waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_STOP_IMS_TRAFFIC));
 
         assertFalse(sMockModemManager.isImsTrafficStarted(sTestSlot, IMS_TRAFFIC_TYPE_VOICE));
-        assertTrue(sMockModemManager.isImsTrafficStarted(sTestSlot, IMS_TRAFFIC_TYPE_REGISTRATION));
+        assertTrue("IMS traffic (Registration) should be started",
+                sMockModemManager.isImsTrafficStarted(sTestSlot, IMS_TRAFFIC_TYPE_REGISTRATION));
 
-        assertTrue(sMockModemManager.sendStartImsTrafficResponse(sTestSlot,
+        assertTrue("Failed to send start IMS traffic response",
+                sMockModemManager.sendStartImsTrafficResponse(sTestSlot,
                 IMS_TRAFFIC_TYPE_REGISTRATION, 0, 0, 0));
 
         result = waitForResult(regResultQueue);
@@ -521,7 +543,8 @@ public class MmTelFeatureTestOnMockModem {
         assertEquals(0, result.getReason());
 
         sServiceConnector.getCarrierService().getMmTelFeature().stopImsTrafficSession(regCallback);
-        assertTrue(waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_STOP_IMS_TRAFFIC));
+        assertTrue("Timed out waiting for stop IMS traffic",
+                waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_STOP_IMS_TRAFFIC));
 
         assertFalse(sMockModemManager.isImsTrafficStarted(sTestSlot, IMS_TRAFFIC_TYPE_VOICE));
         assertFalse(sMockModemManager.isImsTrafficStarted(sTestSlot,
@@ -534,11 +557,14 @@ public class MmTelFeatureTestOnMockModem {
         sServiceConnector.getCarrierService().getMmTelFeature().startImsTrafficSession(
                 IMS_TRAFFIC_TYPE_SMS, EUTRAN, IMS_TRAFFIC_DIRECTION_OUTGOING,
                 getContext().getMainExecutor(), callback);
-        assertTrue(waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_START_IMS_TRAFFIC));
+        assertTrue("Timed out waiting for start IMS traffic",
+                waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_START_IMS_TRAFFIC));
 
-        assertTrue(sMockModemManager.isImsTrafficStarted(sTestSlot, IMS_TRAFFIC_TYPE_SMS));
+        assertTrue("IMS traffic (SMS) should be started",
+                sMockModemManager.isImsTrafficStarted(sTestSlot, IMS_TRAFFIC_TYPE_SMS));
 
-        assertTrue(sMockModemManager.sendStartImsTrafficResponse(sTestSlot,
+        assertTrue("Failed to send start IMS traffic response",
+                sMockModemManager.sendStartImsTrafficResponse(sTestSlot,
                 IMS_TRAFFIC_TYPE_SMS, REASON_RF_BUSY, 0, -1));
 
         result = waitForResult(resultQueue);
@@ -549,7 +575,8 @@ public class MmTelFeatureTestOnMockModem {
         assertEquals(-1, result.getWaitTimeMillis());
 
         sServiceConnector.getCarrierService().getMmTelFeature().stopImsTrafficSession(callback);
-        assertTrue(waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_STOP_IMS_TRAFFIC));
+        assertTrue("Timed out waiting for stop IMS traffic",
+                waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_STOP_IMS_TRAFFIC));
 
         assertFalse(sMockModemManager.isImsTrafficStarted(sTestSlot, IMS_TRAFFIC_TYPE_SMS));
 
@@ -560,11 +587,14 @@ public class MmTelFeatureTestOnMockModem {
         sServiceConnector.getCarrierService().getMmTelFeature().startImsTrafficSession(
                 IMS_TRAFFIC_TYPE_VIDEO, EUTRAN, IMS_TRAFFIC_DIRECTION_OUTGOING,
                 getContext().getMainExecutor(), callback);
-        assertTrue(waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_START_IMS_TRAFFIC));
+        assertTrue("Timed out waiting for start IMS traffic",
+                waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_START_IMS_TRAFFIC));
 
-        assertTrue(sMockModemManager.isImsTrafficStarted(sTestSlot, IMS_TRAFFIC_TYPE_VIDEO));
+        assertTrue("IMS traffic (Video) should be started",
+                sMockModemManager.isImsTrafficStarted(sTestSlot, IMS_TRAFFIC_TYPE_VIDEO));
 
-        assertTrue(sMockModemManager.sendStartImsTrafficResponse(sTestSlot,
+        assertTrue("Failed to send start IMS traffic response",
+                sMockModemManager.sendStartImsTrafficResponse(sTestSlot,
                 IMS_TRAFFIC_TYPE_VIDEO, 0, 0, 0));
 
         result = waitForResult(resultQueue);
@@ -572,7 +602,8 @@ public class MmTelFeatureTestOnMockModem {
         assertNotNull(result);
         assertEquals(0, result.getReason());
 
-        assertTrue(sMockModemManager.sendConnectionFailureInfo(sTestSlot, IMS_TRAFFIC_TYPE_VIDEO,
+        assertTrue("Failed to send connection failure info",
+                sMockModemManager.sendConnectionFailureInfo(sTestSlot, IMS_TRAFFIC_TYPE_VIDEO,
                 REASON_RRC_TIMEOUT, 99, 1000));
 
         result = waitForResult(resultQueue);
@@ -583,7 +614,8 @@ public class MmTelFeatureTestOnMockModem {
         assertEquals(1000, result.getWaitTimeMillis());
 
         sServiceConnector.getCarrierService().getMmTelFeature().stopImsTrafficSession(callback);
-        assertTrue(waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_STOP_IMS_TRAFFIC));
+        assertTrue("Timed out waiting for stop IMS traffic",
+                waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_STOP_IMS_TRAFFIC));
 
         assertFalse(sMockModemManager.isImsTrafficStarted(sTestSlot, IMS_TRAFFIC_TYPE_VIDEO));
     }
@@ -611,7 +643,8 @@ public class MmTelFeatureTestOnMockModem {
         sServiceConnector.getCarrierService().getMmTelFeature().startImsTrafficSession(
                 IMS_TRAFFIC_TYPE_EMERGENCY, EUTRAN, IMS_TRAFFIC_DIRECTION_OUTGOING,
                 getContext().getMainExecutor(), callback);
-        assertTrue(waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_START_IMS_TRAFFIC));
+        assertTrue("Timed out waiting for start IMS traffic",
+                waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_START_IMS_TRAFFIC));
 
         // Voice call traffic
         LinkedBlockingQueue<ConnectionFailureInfo> voiceResultQueue = new LinkedBlockingQueue<>();
@@ -620,7 +653,8 @@ public class MmTelFeatureTestOnMockModem {
         sServiceConnector.getCarrierService().getMmTelFeature().startImsTrafficSession(
                 IMS_TRAFFIC_TYPE_VOICE, EUTRAN, IMS_TRAFFIC_DIRECTION_OUTGOING,
                 getContext().getMainExecutor(), voiceCallback);
-        assertTrue(waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_START_IMS_TRAFFIC));
+        assertTrue("Timed out waiting for start IMS traffic",
+                waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_START_IMS_TRAFFIC));
 
         // Registration traffic
         LinkedBlockingQueue<ConnectionFailureInfo> regResultQueue = new LinkedBlockingQueue<>();
@@ -629,11 +663,15 @@ public class MmTelFeatureTestOnMockModem {
         sServiceConnector.getCarrierService().getMmTelFeature().startImsTrafficSession(
                 IMS_TRAFFIC_TYPE_REGISTRATION, EUTRAN, IMS_TRAFFIC_DIRECTION_OUTGOING,
                 getContext().getMainExecutor(), regCallback);
-        assertTrue(waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_START_IMS_TRAFFIC));
+        assertTrue("Timed out waiting for start IMS traffic",
+                waitForMockImsStateLatchCountdown(LATCH_WAIT_FOR_START_IMS_TRAFFIC));
 
-        assertTrue(sMockModemManager.isImsTrafficStarted(sTestSlot, IMS_TRAFFIC_TYPE_EMERGENCY));
-        assertTrue(sMockModemManager.isImsTrafficStarted(sTestSlot, IMS_TRAFFIC_TYPE_VOICE));
-        assertTrue(sMockModemManager.isImsTrafficStarted(sTestSlot, IMS_TRAFFIC_TYPE_REGISTRATION));
+        assertTrue("IMS traffic (Emergency) should be started",
+                sMockModemManager.isImsTrafficStarted(sTestSlot, IMS_TRAFFIC_TYPE_EMERGENCY));
+        assertTrue("IMS traffic (Voice) should be started",
+                sMockModemManager.isImsTrafficStarted(sTestSlot, IMS_TRAFFIC_TYPE_VOICE));
+        assertTrue("IMS traffic (Registration) should be started",
+                sMockModemManager.isImsTrafficStarted(sTestSlot, IMS_TRAFFIC_TYPE_REGISTRATION));
 
         // Unbind the GTS ImsService
         sServiceConnector.disconnectCarrierImsService();
@@ -646,10 +684,12 @@ public class MmTelFeatureTestOnMockModem {
     }
 
     private void triggerFrameworkConnectToCarrierImsService(long capabilities) throws Exception {
-        assertTrue(sServiceConnector.connectCarrierImsServiceLocally());
+        assertTrue("Failed to connect to carrier ImsService locally",
+                sServiceConnector.connectCarrierImsServiceLocally());
         sServiceConnector.getCarrierService().addCapabilities(capabilities);
         // Connect to the ImsService with the MmTel feature.
-        assertTrue(sServiceConnector.triggerFrameworkConnectionToCarrierImsService(
+        assertTrue("Failed to trigger framework connection to carrier ImsService for MMTEL",
+                sServiceConnector.triggerFrameworkConnectionToCarrierImsService(
                 new ImsFeatureConfiguration.Builder()
                 .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL)
                 .build()));
@@ -706,7 +746,9 @@ public class MmTelFeatureTestOnMockModem {
     }
 
     private void verifySrvccStateChange(int state) throws Exception {
-        assertTrue(sMockModemManager.srvccStateNotify(sTestSlot, state));
+        assertTrue(
+                "Failed to notify SRVCC state",
+                sMockModemManager.srvccStateNotify(sTestSlot, state));
         sServiceConnector.getCarrierService().getMmTelFeature()
                 .getSrvccStateLatch().await(WAIT_UPDATE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
 

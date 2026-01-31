@@ -17,9 +17,9 @@
 package android.telephony.ims.cts;
 
 import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertTrue;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import android.app.Instrumentation;
 import android.app.UiAutomation;
@@ -328,7 +328,7 @@ public class ImsCallingBase {
     public void bindImsServiceForCapabilities(int radioTech, MmTelCapabilities capabilities)
             throws Exception {
         // Connect to the ImsService with the MmTel feature.
-        assertTrue(
+        assertTrue("Failed to connect to carrier ImsService",
                 sServiceConnector.connectCarrierImsService(
                         new ImsFeatureConfiguration.Builder()
                                 .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL)
@@ -386,7 +386,8 @@ public class ImsCallingBase {
 
     public void isCallActive(Call call, TestImsCallSessionImpl callsession) {
         if (call.getDetails().getState() != Call.STATE_ACTIVE) {
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_ACTIVE, WAIT_FOR_CALL_STATE));
+            assertTrue("Timed out waiting for call state to be Active",
+                    callingTestLatchCountdown(LATCH_IS_CALL_ACTIVE, WAIT_FOR_CALL_STATE));
         }
         assertNotNull("Unable to get callSession, its null", callsession);
 
@@ -410,7 +411,8 @@ public class ImsCallingBase {
     }
 
     public void isCallDisconnected(Call call, TestImsCallSessionImpl callsession) {
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTED, WAIT_FOR_CALL_STATE));
+        assertTrue("Timed out waiting for call state to be Disconnected",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTED, WAIT_FOR_CALL_STATE));
         assertNotNull("Unable to get callSession, its null", callsession);
 
         waitUntilConditionIsTrueOrTimeout(
@@ -433,7 +435,8 @@ public class ImsCallingBase {
     }
 
     public void isCallHolding(Call call, TestImsCallSessionImpl callsession) {
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_HOLDING, WAIT_FOR_CALL_STATE));
+        assertTrue("Timed out waiting for call state to be Holding",
+                callingTestLatchCountdown(LATCH_IS_CALL_HOLDING, WAIT_FOR_CALL_STATE));
         assertNotNull("Unable to get callSession, its null", callsession);
         waitUntilConditionIsTrueOrTimeout(
                 new Condition() {

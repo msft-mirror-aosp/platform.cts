@@ -20,6 +20,7 @@ import static android.autofillservice.cts.testcore.Helper.ID_PASSWORD;
 import static android.autofillservice.cts.testcore.Helper.ID_USERNAME;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.app.assist.AssistStructure;
 import android.autofillservice.cts.activities.CustomPasswordViewLoginActivity;
@@ -36,6 +37,8 @@ import android.view.autofill.AutofillManager;
 import android.view.autofill.AutofillNoiseInjectedData;
 
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.UiDevice;
 
 import org.junit.Test;
 
@@ -177,9 +180,14 @@ public class NoiseInjectionTest extends AutoFillServiceTestCase.ManualActivityLa
     public void testSensitiveText_sameNoiseForSameView() throws Exception {
         enableService();
 
+        final Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        final AutofillManager afm = context.getSystemService(AutofillManager.class);
+
+        final String masterSeed1 = afm.getNoiseInjectionMasterSeed();
         final AssistStructure.ViewNode usernameLabelNode1 =
                 fetchAssistStructureAndCancelLogin("sensitive_text");
         // Do one round on the same activity
+        final String masterSeed2 = afm.getNoiseInjectionMasterSeed();
         final AssistStructure.ViewNode usernameLabelNode2 =
                 fetchAssistStructureAndCancelLogin("sensitive_text");
 
@@ -192,7 +200,17 @@ public class NoiseInjectionTest extends AutoFillServiceTestCase.ManualActivityLa
                 .isEqualTo(usernameLabelNode2.getAutofillNoiseInjectedData().getRetainedBitMask());
         // They should have the same payload, since it's on the same activity's same view, where
         // the same randomization seed is used.
-        assertThat(usernameLabelNode1.getAutofillNoiseInjectedData().getNoiseInjectedPayload())
+        final String failureMsg =
+                "MasterSeed1: "
+                        + masterSeed1
+                        + ", MasterSeed2: "
+                        + masterSeed2
+                        + ", AutofillId1: "
+                        + usernameLabelNode1.getAutofillId()
+                        + ", AutofillId2: "
+                        + usernameLabelNode2.getAutofillId();
+        assertWithMessage(failureMsg)
+                .that(usernameLabelNode1.getAutofillNoiseInjectedData().getNoiseInjectedPayload())
                 .isEqualTo(
                         usernameLabelNode2
                                 .getAutofillNoiseInjectedData()
@@ -304,6 +322,17 @@ public class NoiseInjectionTest extends AutoFillServiceTestCase.ManualActivityLa
 
         mUiBot.selectByRelativeId("cancel");
         mUiBot.waitForIdle();
+
+        // Autofill may block the button ui, ensure the activity is finished.
+        UiDevice device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+        if (device.findObject(By.res(Helper.MY_PACKAGE, Helper.ID_USERNAME)) != null) {
+            CustomPasswordViewLoginActivity activity =
+                    CustomPasswordViewLoginActivity.getCurrentActivity();
+            if (activity != null) {
+                activity.syncRunOnUiThread(() -> activity.finish());
+                mUiBot.waitForIdle();
+            }
+        }
 
         return Helper.findNodeByResourceId(structure, "username_label");
     }

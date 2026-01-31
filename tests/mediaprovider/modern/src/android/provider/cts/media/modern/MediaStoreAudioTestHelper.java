@@ -25,12 +25,8 @@ import android.provider.MediaStore.Audio.Media;
 
 import androidx.annotation.RequiresApi;
 import androidx.test.filters.SdkSuppress;
-import androidx.test.runner.AndroidJUnit4;
 
 import junit.framework.Assert;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -55,8 +51,6 @@ import java.io.IOException;
  * @see MediaStore_Audio_Artists_AlbumsTest
  * @see MediaStore_Audio_AlbumsTest
  */
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.R)
-@RunWith(AndroidJUnit4.class)
 public class MediaStoreAudioTestHelper {
     public abstract static class MockAudioMediaInfo {
         public abstract ContentValues getContentValues(String volumeName);
@@ -323,11 +317,6 @@ public class MediaStoreAudioTestHelper {
             values.put(Media.BITS_PER_SAMPLE, BITS_PER_SAMPLE);
             return values;
         }
-    }
-
-    @Test
-    public void testStub() {
-        // No-op test here to keep atest happy
     }
 
     // These constants are not part of the public API

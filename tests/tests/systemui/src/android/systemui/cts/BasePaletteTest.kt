@@ -91,6 +91,9 @@ open class BasePaletteTest {
             deviceLocalPath = outDir.path,
             pathConfig =
                 PathConfig(
+                    PathElementNoContext("platform", true) {
+                        if (FeatureUtil.isWatch()) "wear" else "default"
+                    },
                     PathElementNoContext("spec", true) {
                         if (isOldSpec) "libmonet_2021" else "libmonet_2025"
                     }
@@ -159,9 +162,11 @@ open class BasePaletteTest {
 
         val isDynamicColorSupported: Boolean
             get() {
-                return !(FeatureUtil.isAutomotive() ||
-                        FeatureUtil.isTV() ||
-                        FeatureUtil.isWatch())
+                if (FeatureUtil.isWatch()) {
+                    return android.server.Flags.enableThemeService() &&
+                        android.server.Flags.enableWearThemeService()
+                }
+                return !(FeatureUtil.isAutomotive() || FeatureUtil.isTV())
             }
 
         fun isSupportedStyle(@ThemeStyle.Type style: Int): Boolean {

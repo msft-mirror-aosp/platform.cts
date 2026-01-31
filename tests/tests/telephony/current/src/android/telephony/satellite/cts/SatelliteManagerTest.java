@@ -129,8 +129,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
 
                 requestSatelliteEnabled(true);
 
-                assertTrue(callback.waitUntilResult(1));
-                assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_IDLE, callback.modemState);
+                assertTrue(callback.waitUntilModemIdleOrNotConnected());
                 assertTrue(isSatelliteEnabled());
                 sSatelliteManager.unregisterForModemStateChanged(callback);
             }

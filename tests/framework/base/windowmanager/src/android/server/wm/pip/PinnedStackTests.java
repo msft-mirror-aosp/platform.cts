@@ -124,7 +124,6 @@ import android.content.res.Configuration;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.RemoteCallback;
-import android.os.UserManager;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsDisabled;
@@ -207,7 +206,6 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     public void setUp() throws Exception {
         super.setUp();
         assumeTrue(supportsPip());
-        assumeFalse("PiP in HSUM not supported", UserManager.isHeadlessSystemUserMode());
     }
 
     @After
@@ -1005,6 +1003,10 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         // Launch a task behind home to assert that the next fullscreen task isn't visible when
         // leaving PiP.
         launchActivity(TEST_ACTIVITY);
+        int windowingMode = mWmState.getTaskByActivity(TEST_ACTIVITY).getWindowingMode();
+        // Skip the test if freeform since in certain desktop scenarios, launching new freeform
+        // tasks may bring forward all existing freeform tasks.
+        assumeFalse(windowingMode == WINDOWING_MODE_FREEFORM);
         // Go home
         launchHomeActivity();
         // Launch an auto pip activity
@@ -1073,13 +1075,13 @@ public class PinnedStackTests extends ActivityManagerTestBase {
 
     @Test
     public void testRemovePipWithHiddenFullscreenOrFreeformStack() {
-        // Launch a fullscreen/freeform activity, return home and while the fullscreen/freeform
-        // stack is hidden, launch a pip activity over home
+        // Launch a fullscreen/freeform activity and pip activity, and enter PiP.
+        // Then, launch home so that only the fullscreen/freeform activity is behind home.
         launchActivity(TEST_ACTIVITY);
-        launchHomeActivity();
         launchActivity(PIP_ACTIVITY);
         int windowingMode = mWmState.getTaskByActivity(PIP_ACTIVITY).getWindowingMode();
         enterPipAndAssertPinnedTaskExists(PIP_ACTIVITY);
+        launchHomeActivity();
 
         // Remove the stack and ensure that the task is placed on top of the hidden
         // fullscreen/freeform stack, but that the home stack is still focused
@@ -1120,13 +1122,13 @@ public class PinnedStackTests extends ActivityManagerTestBase {
 
     @Test
     public void testMovePipToBackWithHiddenFullscreenOrFreeformStack() {
-        // Launch a fullscreen/freeform activity, return home and while the fullscreen/freeform
-        // stack is hidden, launch a pip activity over home
+        // Launch a fullscreen/freeform activity and pip activity, and enter PiP.
+        // Then, launch home so that only the fullscreen/freeform activity is behind home.
         launchActivity(TEST_ACTIVITY);
-        launchHomeActivity();
         launchActivity(PIP_ACTIVITY);
         int windowingMode = mWmState.getTaskByActivity(PIP_ACTIVITY).getWindowingMode();
         enterPipAndAssertPinnedTaskExists(PIP_ACTIVITY);
+        launchHomeActivity();
 
         // Remove the stack and ensure that the task is placed on top of the hidden
         // fullscreen/freeform stack, but that the home stack is still focused
@@ -1366,7 +1368,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     public void testConfigurationChangeOrderDuringTransition() {
         // Launch a PiP activity and ensure configuration change only happened once, and that the
         // configuration change happened after the picture-in-picture and multi-window callbacks
-        launchActivity(PIP_ACTIVITY, WINDOWING_MODE_FULLSCREEN);
+        launchActivity(PIP_ACTIVITY);
         separateTestJournal();
         int windowingMode = mWmState.getTaskByActivity(PIP_ACTIVITY).getWindowingMode();
         enterPipAndAssertPinnedTaskExists(PIP_ACTIVITY);

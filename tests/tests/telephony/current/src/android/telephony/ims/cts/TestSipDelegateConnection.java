@@ -16,12 +16,11 @@
 
 package android.telephony.ims.cts;
 
-import static junit.framework.Assert.assertTrue;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import android.telephony.ims.DelegateRegistrationState;
 import android.telephony.ims.DelegateRequest;
@@ -219,17 +218,24 @@ public class TestSipDelegateConnection implements DelegateConnectionStateCallbac
         notRegistered.removeAll(regState.getRegisteredFeatureTags());
         assertTrue("Not all requested features were registered: " + notRegistered,
                 notRegistered.isEmpty());
-        assertTrue(regState.getDeregisteringFeatureTags().isEmpty());
-        assertTrue(regState.getDeregisteredFeatureTags().isEmpty());
-        assertTrue(regState.getRegisteringFeatureTags().isEmpty());
+        assertTrue("Deregistering features should be empty",
+                regState.getDeregisteringFeatureTags().isEmpty());
+        assertTrue("Deregistered features should be empty",
+                regState.getDeregisteredFeatureTags().isEmpty());
+        assertTrue("Registering features should be empty",
+                regState.getRegisteringFeatureTags().isEmpty());
     }
 
     public void verifyRegistrationStateEmpty() {
         assertNotNull(regState);
-        assertTrue(regState.getRegisteredFeatureTags().isEmpty());
-        assertTrue(regState.getDeregisteringFeatureTags().isEmpty());
-        assertTrue(regState.getDeregisteredFeatureTags().isEmpty());
-        assertTrue(regState.getRegisteringFeatureTags().isEmpty());
+        assertTrue("Registered features should be empty",
+                regState.getRegisteredFeatureTags().isEmpty());
+        assertTrue("Deregistering features should be empty",
+                regState.getDeregisteringFeatureTags().isEmpty());
+        assertTrue("Deregistered features should be empty",
+                regState.getDeregisteredFeatureTags().isEmpty());
+        assertTrue("Registering features should be empty",
+                regState.getRegisteringFeatureTags().isEmpty());
     }
 
     public void verifyRegistrationStateEquals(DelegateRegistrationState s) {
@@ -255,7 +261,7 @@ public class TestSipDelegateConnection implements DelegateConnectionStateCallbac
 
     public void verifyNoneDenied() {
         assertNotNull(deniedTags);
-        assertTrue(deniedTags.isEmpty());
+        assertTrue("Denied tags should be empty", deniedTags.isEmpty());
     }
 
     public void verifyDenied(Set<FeatureTagState> denied) {
@@ -267,7 +273,8 @@ public class TestSipDelegateConnection implements DelegateConnectionStateCallbac
         assertNotNull(deniedTags);
         // Ensure that if the request is empty, the denied tags are also empty.
         if (delegateRequest.getFeatureTags().isEmpty()) {
-            assertTrue(deniedTags.isEmpty());
+            assertTrue("Denied tags should be empty when request tags are empty",
+                    deniedTags.isEmpty());
         }
         // All should be denied with the same reason.
         FeatureTagState incorrectReason = deniedTags.stream().filter((t) -> t.getState() != reason)

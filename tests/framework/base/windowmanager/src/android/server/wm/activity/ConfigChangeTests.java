@@ -25,6 +25,7 @@ import static android.server.wm.app.Components.FONT_SCALE_NO_RELAUNCH_ACTIVITY;
 import static android.server.wm.app.Components.FontScaleActivity.EXTRA_FONT_ACTIVITY_DPI;
 import static android.server.wm.app.Components.FontScaleActivity.EXTRA_FONT_PIXEL_SIZE;
 import static android.server.wm.app.Components.NO_RELAUNCH_ACTIVITY;
+import static android.server.wm.app.Components.RECREATE_ON_KEYBOARD_CHANGE_ACTIVITY;
 import static android.server.wm.app.Components.TEST_ACTIVITY;
 import static android.view.Surface.ROTATION_0;
 import static android.view.Surface.ROTATION_180;
@@ -34,6 +35,7 @@ import static android.view.Surface.ROTATION_90;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -41,10 +43,15 @@ import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
 import android.content.ComponentName;
+import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Rect;
+import android.hardware.input.InputManager;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.CommandSession.ActivityCallback;
 import android.server.wm.Condition;
@@ -52,16 +59,26 @@ import android.server.wm.CountSpec;
 import android.server.wm.RotationSession;
 import android.server.wm.TestJournalProvider.TestJournalContainer;
 import android.server.wm.app.Components;
+import android.view.InputDevice;
 
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import com.android.compatibility.common.util.ApiTest;
+import com.android.cts.input.UinputKeyboard;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
+import com.android.window.flags.Flags;
+
+import libcore.junit.util.compat.CoreCompatChangeRule.EnableCompatChanges;
 
 import org.junit.After;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.List;
 
 /**
  * Build/Install/Run:
@@ -76,6 +93,9 @@ public class ConfigChangeTests extends ActivityManagerTestBase {
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @After
     public void tearDown() {
@@ -348,5 +368,73 @@ public class ConfigChangeTests extends ActivityManagerTestBase {
 
         assertRelaunchOrConfigChanged(NO_RELAUNCH_ACTIVITY, 0 /* numRelaunch */,
                 1 /* numConfigChange */);
+    }
+
+    /**
+     * Verifies that an activity without "keyboard" or "keyboardHidden" defined in the
+     * {@code android:recreateOnConfigChanges} attribute is not relaunched and receives the
+     * {@link android.app.Activity#onConfigurationChanged} callback instead when a keyboard
+     * configuration change occurs.
+     */
+    @Test
+    @ApiTest(apis = {"android.R.attr#configChanges", "android.R.attr#recreateOnConfigChanges"})
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_LESS_ACTIVITY_RECREATION_ON_CONFIG_CHANGE)
+    @EnableCompatChanges(ActivityInfo.SKIP_ACTIVITY_RECREATION_ON_CONFIG_CHANGE)
+    public void testKeyboardConfigChange_noRelaunch() {
+        testKeyboardConfigChange(TEST_ACTIVITY, 0 /* numRelaunch */, 1 /* numConfigChange */);
+    }
+
+    /**
+     * Verifies that an activity with "keyboard" or "keyboardHidden" explicitly defined in the
+     * {@code android:recreateOnConfigChanges} attribute is relaunched and does not receive the
+     * {@link android.app.Activity#onConfigurationChanged} callback when a keyboard configuration
+     * change occurs.
+     */
+    @Test
+    @ApiTest(apis = {"android.R.attr#configChanges", "android.R.attr#recreateOnConfigChanges"})
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_LESS_ACTIVITY_RECREATION_ON_CONFIG_CHANGE)
+    @EnableCompatChanges(ActivityInfo.SKIP_ACTIVITY_RECREATION_ON_CONFIG_CHANGE)
+    public void testKeyboardConfigChange_relaunch() {
+        testKeyboardConfigChange(RECREATE_ON_KEYBOARD_CHANGE_ACTIVITY, 1 /* numRelaunch */,
+                0 /* numConfigChange */);
+    }
+
+    private void testKeyboardConfigChange(ComponentName activityName,  int numRelaunch,
+            int numConfigChange) {
+        // TODO: Disable any keyboard device and remove this.
+        assumeTrue(hasNoKeyboardDevice());
+
+        launchActivity(activityName);
+        waitAndAssertResumedActivity(activityName, "Activity must be resumed");
+        separateTestJournal();
+
+        // Check the activity state when connect a new keyboard device.
+        try (UinputKeyboard keyboardDevice = new UinputKeyboard(
+                InstrumentationRegistry.getInstrumentation(),
+                List.of("KEY_Q", "KEY_W"),
+                0xabcd /* productId */)) {
+            assertRelaunchOrConfigChanged(activityName, numRelaunch, numConfigChange);
+            separateTestJournal();
+        }
+
+        // Check the activity state after automatically disconnecting the new keyboard device.
+        assertRelaunchOrConfigChanged(activityName, numRelaunch, numConfigChange);
+    }
+
+    private boolean hasNoKeyboardDevice() {
+        InputManager inputManager = InstrumentationRegistry.getInstrumentation().getTargetContext()
+                .getSystemService(InputManager.class);
+        assertNotNull(inputManager);
+
+        final int[] inputDeviceIds = inputManager.getInputDeviceIds();
+        for (int inputDeviceId : inputDeviceIds) {
+            final InputDevice inputDevice = inputManager.getInputDevice(inputDeviceId);
+            if (inputDevice.getKeyboardType() == InputDevice.KEYBOARD_TYPE_ALPHABETIC
+                    && inputDevice.isEnabled()
+                    && !inputDevice.isVirtual()) {
+                return false;
+            }
+        }
+        return true;
     }
 }

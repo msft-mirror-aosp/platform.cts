@@ -22,6 +22,7 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.WindowUtil
 import com.android.cts.input.BlockingQueueEventVerifier
 import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_LEFT
@@ -43,6 +44,7 @@ import org.junit.Test
 import org.junit.rules.TestName
 import org.junit.runner.RunWith
 
+@ApiTest(apis = ["android.view.View#requestPointerCapture"])
 @MediumTest
 @RunWith(AndroidJUnit4::class)
 class MouseCaptureTest {
@@ -80,7 +82,6 @@ class MouseCaptureTest {
 
         WindowUtil.waitForFocus(activity)
         activity.ensurePointerCaptured()
-        // TODO(b/411389468): enable InputVerifier to check the captured pointer events produced.
     }
 
     @After

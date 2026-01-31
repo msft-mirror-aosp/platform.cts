@@ -83,7 +83,6 @@ public class HifiUltrasoundSpeakerTestActivity extends PassFailButtons.Activity 
   private static final String KEY_RECORD_DATA = "record_data";
   private static final String KEY_RECORD_SAMPLE_RATE = "recording_sample_rate";
   private static final String KEY_RECORD_SILENCE_THRESHOLD = "recording_silence_threshold";
-  private static final String KEY_RECORD_POWER_VALUES = "record_power_values";
   private static final String KEY_TEST_RESULT = "test_result";
   private static final String KEY_AUDIO_TRACK_STREAM_TYPE = "audio_track_stream_type";
   private static final String KEY_AUDIO_TRACK_SAMPLE_RATE = "audio_track_sample_rate";
@@ -445,22 +444,6 @@ public class HifiUltrasoundSpeakerTestActivity extends PassFailButtons.Activity 
                   mWavAnalyzerTask.getSampleRate(),
                   ResultType.NEUTRAL,
                   ResultUnit.NONE);
-          try {
-              double[][] power = mWavAnalyzerTask.getPower();
-              if (power != null) {
-                  JSONArray powerJson = new JSONArray();
-                  for (double[] row : power) {
-                      JSONArray rowJson = new JSONArray();
-                      for (double v : row) {
-                          rowJson.put(v);
-                      }
-                      powerJson.put(rowJson);
-                  }
-                  reportLog.addValues(KEY_RECORD_POWER_VALUES, powerJson);
-              }
-          } catch (JSONException e) {
-              Log.e(TAG, "Error logging power data", e);
-          }
       }
 
       if (audioTrack != null) {

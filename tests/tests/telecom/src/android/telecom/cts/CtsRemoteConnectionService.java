@@ -182,4 +182,16 @@ public class CtsRemoteConnectionService extends ConnectionService {
     public static ConnectionRequest getConnectionRequest() {
         return sConnectionRequest;
     }
+
+    @Override
+    public void onDestroy() {
+        synchronized (sLock) {
+            Log.i(LOG_TAG, "Service destroyed");
+            sTelecomConnectionService = null;
+            sConnectionService = null;
+            sConnectionRequest = null;
+            mIsServiceUnbound = false;
+        }
+        super.onDestroy();
+    }
 }

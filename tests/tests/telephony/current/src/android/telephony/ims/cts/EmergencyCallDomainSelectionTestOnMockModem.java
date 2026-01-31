@@ -54,9 +54,9 @@ import static android.telephony.mockmodem.MockNetworkService.LATCH_TRIGGER_EMERG
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_CHT;
 
 import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertTrue;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.annotation.NonNull;
@@ -192,7 +192,9 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         MockModemManager.enforceMockModemDeveloperSetting();
         sMockModemManager = new MockModemManager();
         assertNotNull(sMockModemManager);
-        assertTrue(sMockModemManager.connectMockModemService(MOCK_SIM_PROFILE_ID_TWN_CHT));
+        assertTrue(
+                "Failed to connect to MockModemService",
+                sMockModemManager.connectMockModemService(MOCK_SIM_PROFILE_ID_TWN_CHT));
 
         TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
 
@@ -212,7 +214,9 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
             sTestSub = sub;
         }
 
-        assertTrue(sMockModemManager.changeNetworkService(sTestSlot, 310260, true));
+        assertTrue(
+                "Failed to change network service",
+                sMockModemManager.changeNetworkService(sTestSlot, 310260, true));
 
         TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
 
@@ -252,7 +256,9 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
 
         // Rebind all interfaces which is binding to MockModemService to default.
         if (sMockModemManager != null) {
-            assertTrue(sMockModemManager.disconnectMockModemService());
+            assertTrue(
+                    "Failed to disconnect MockModemService",
+                    sMockModemManager.disconnectMockModemService());
             sMockModemManager = null;
 
             TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
@@ -988,9 +994,13 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
 
         placeOutgoingCall(TEST_EMERGENCY_NUMBER);
 
-        assertTrue(waitForNetworkLatchCountdown(LATCH_TRIGGER_EMERGENCY_SCAN));
+        assertTrue(
+                "Timed out waiting for emergency scan trigger",
+                waitForNetworkLatchCountdown(LATCH_TRIGGER_EMERGENCY_SCAN));
         assertEquals(EMERGENCY_MODE_WWAN, sMockModemManager.getEmergencyMode(sTestSlot));
-        assertTrue(waitForNetworkLatchCountdown(LATCH_CANCEL_EMERGENCY_SCAN));
+        assertTrue(
+                "Timed out waiting for emergency scan cancel",
+                waitForNetworkLatchCountdown(LATCH_CANCEL_EMERGENCY_SCAN));
 
         TimeUnit.MILLISECONDS.sleep(WAIT_REQUEST_TIMEOUT_MS);
 
@@ -1019,9 +1029,13 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
 
         placeOutgoingCall(TEST_EMERGENCY_NUMBER);
 
-        assertTrue(waitForNetworkLatchCountdown(LATCH_TRIGGER_EMERGENCY_SCAN));
+        assertTrue(
+                "Timed out waiting for emergency scan trigger",
+                waitForNetworkLatchCountdown(LATCH_TRIGGER_EMERGENCY_SCAN));
         assertEquals(EMERGENCY_MODE_WWAN, sMockModemManager.getEmergencyMode(sTestSlot));
-        assertTrue(waitForNetworkLatchCountdown(LATCH_CANCEL_EMERGENCY_SCAN));
+        assertTrue(
+                "Timed out waiting for emergency scan cancel",
+                waitForNetworkLatchCountdown(LATCH_CANCEL_EMERGENCY_SCAN));
 
         TimeUnit.MILLISECONDS.sleep(WAIT_REQUEST_TIMEOUT_MS);
 
@@ -1050,7 +1064,9 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
 
         placeOutgoingCall(TEST_EMERGENCY_NUMBER);
 
-        assertTrue(waitForVoiceLatchCountdown(LATCH_EMERGENCY_DIAL));
+        assertTrue(
+                "Timed out waiting for emergency dial",
+                waitForVoiceLatchCountdown(LATCH_EMERGENCY_DIAL));
 
         sMockModemManager.clearAllCalls(sTestSlot, DisconnectCause.CONGESTION);
         unsolBarringInfoChanged(false, true);
@@ -1058,7 +1074,9 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
 
         TimeUnit.MILLISECONDS.sleep(WAIT_REQUEST_TIMEOUT_MS);
 
-        assertTrue(sMockModemManager.isEmergencyNetworkScanTriggered(sTestSlot));
+        assertTrue(
+                "Emergency network scan was not triggered",
+                sMockModemManager.isEmergencyNetworkScanTriggered(sTestSlot));
 
         unsolEmergencyNetworkScanResult(EUTRAN);
     }
@@ -1112,21 +1130,31 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         placeOutgoingCall(TEST_EMERGENCY_NUMBER);
         TimeUnit.MILLISECONDS.sleep(WAIT_REQUEST_TIMEOUT_MS);
 
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Timed out waiting for call added",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
         Call call = getCall(mCurrentCallId);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Timed out waiting for call dialing",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
-        assertTrue(testCb.waitForOutgoingEmergencyCall(TEST_EMERGENCY_NUMBER));
-        assertTrue(testCb.waitForCallActive());
+        assertTrue(
+                "Failed to verify outgoing emergency call",
+                testCb.waitForOutgoingEmergencyCall(TEST_EMERGENCY_NUMBER));
+        assertTrue("Timed out waiting for active call state", testCb.waitForCallActive());
 
         TestImsCallSessionImpl callSession = sServiceConnector.getCarrierService().getMmTelFeature()
                 .getImsCallsession();
         isCallActive(call, callSession);
 
         call.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Timed out waiting for call disconnecting",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(call, callSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Timed out waiting for call removed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
 
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
@@ -1161,12 +1189,18 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         placeOutgoingCall(TEST_EMERGENCY_NUMBER);
         TimeUnit.MILLISECONDS.sleep(WAIT_REQUEST_TIMEOUT_MS);
 
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Timed out waiting for call added",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
         Call call = getCall(mCurrentCallId);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Timed out waiting for call dialing",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
-        assertTrue(testCb.waitForOutgoingEmergencyCall(TEST_EMERGENCY_NUMBER));
-        assertTrue(testCb.waitForCallActive());
+        assertTrue(
+                "Failed to verify outgoing emergency call",
+                testCb.waitForOutgoingEmergencyCall(TEST_EMERGENCY_NUMBER));
+        assertTrue("Timed out waiting for active call state", testCb.waitForCallActive());
 
         TestImsCallSessionImpl callSession = sServiceConnector.getCarrierService().getMmTelFeature()
                 .getImsCallsession();
@@ -1178,9 +1212,13 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         isCallActive(call, callSession);
 
         call.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Timed out waiting for call disconnecting",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(call, callSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Timed out waiting for call removed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
 
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
@@ -1260,7 +1298,7 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
 
     private void verifyCsDialed() throws Exception {
         placeOutgoingCall(TEST_EMERGENCY_NUMBER);
-        assertTrue(isCsDialing());
+        assertTrue("Failed to verify CS dialing", isCsDialing());
     }
 
     private boolean isCsDialing() throws Exception {
@@ -1278,7 +1316,7 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
     private void verifyPsDialed() throws Exception {
         placeOutgoingCall(TEST_EMERGENCY_NUMBER);
         TimeUnit.MILLISECONDS.sleep(WAIT_REQUEST_TIMEOUT_MS);
-        assertTrue(isPsDialing());
+        assertTrue("Failed to verify PS dialing", isPsDialing());
     }
 
     private boolean isPsDialing() throws Exception {
@@ -1313,7 +1351,9 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         if (dial) {
             placeOutgoingCall(TEST_EMERGENCY_NUMBER);
         }
-        assertTrue(waitForNetworkLatchCountdown(LATCH_TRIGGER_EMERGENCY_SCAN));
+        assertTrue(
+                "Timed out waiting for emergency scan trigger",
+                waitForNetworkLatchCountdown(LATCH_TRIGGER_EMERGENCY_SCAN));
 
         int scanType = sMockModemManager.getEmergencyNetworkScanType(sTestSlot);
         int[] accessNetwork = sMockModemManager.getEmergencyNetworkScanAccessNetwork(sTestSlot);
@@ -1357,7 +1397,7 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
                     false, false, 0, 0, "", "");
             sMockModemManager.unsolEmergencyNetworkScanResult(sTestSlot, regResult);
             boolean isDialing = waitForVoiceLatchCountdown(LATCH_EMERGENCY_DIAL);
-            if (!noAssert) assertTrue(isDialing);
+            if (!noAssert) assertTrue("Failed to verify emergency dial", isDialing);
         }
     }
 
@@ -1374,10 +1414,13 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
 
     public void bindImsServiceUnregistered() throws Exception  {
         // Connect to the ImsService with the MmTel feature.
-        assertTrue(sServiceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
-                .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL)
-                .addFeature(sTestSlot, ImsFeature.FEATURE_EMERGENCY_MMTEL)
-                .build()));
+        assertTrue(
+                "Failed to bind Carrier ImsService",
+                sServiceConnector.connectCarrierImsService(
+                        new ImsFeatureConfiguration.Builder()
+                                .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL)
+                                .addFeature(sTestSlot, ImsFeature.FEATURE_EMERGENCY_MMTEL)
+                                .build()));
         sIsBound = true;
         // The MmTelFeature is created when the ImsService is bound. If it wasn't created, then the
         // Framework did not call it.
@@ -1521,7 +1564,9 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         if (noAssert) {
             sMockModemManager.unsolBarringInfoChanged(sTestSlot, serviceInfos);
         } else {
-            assertTrue(sMockModemManager.unsolBarringInfoChanged(sTestSlot, serviceInfos));
+            assertTrue(
+                    "Failed to update barring info",
+                    sMockModemManager.unsolBarringInfoChanged(sTestSlot, serviceInfos));
         }
     }
 

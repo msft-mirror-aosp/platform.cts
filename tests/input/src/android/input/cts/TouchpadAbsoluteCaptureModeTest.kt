@@ -26,6 +26,7 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.WindowUtil
 import com.android.cts.input.BlockingQueueEventVerifier
 import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_LEFT
@@ -58,6 +59,7 @@ import org.junit.Test
 import org.junit.rules.TestName
 import org.junit.runner.RunWith
 
+@ApiTest(apis = ["android.view.View#requestPointerCapture"])
 @MediumTest
 @RequiresFlagsEnabled(com.android.hardware.input.Flags.FLAG_POINTER_CAPTURE_MODES)
 @RunWith(AndroidJUnit4::class)
@@ -82,7 +84,6 @@ class TouchpadAbsoluteCaptureModeTest {
 
         WindowUtil.waitForFocus(activity)
         activity.ensurePointerCaptured(View.POINTER_CAPTURE_MODE_ABSOLUTE)
-        // TODO(b/411389468): enable InputVerifier to check the captured pointer events produced.
     }
 
     @After

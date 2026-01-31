@@ -30,11 +30,11 @@ import static android.telephony.mockmodem.MockImsService.LATCH_WAIT_FOR_SRVCC_CA
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_CHT;
 
 import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertTrue;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
@@ -269,11 +269,15 @@ public class ImsCallingTest extends ImsCallingBase {
 
         // Place outgoing call
         telecomManager.placeCall(imsUri, extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         Call call = getCall(mCurrentCallId);
         waitForCallSessionToNotBe(null);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call dialing latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
         TestImsCallSessionImpl callSession = sServiceConnector.getCarrierService().getMmTelFeature()
                 .getImsCallsession();
@@ -281,9 +285,13 @@ public class ImsCallingTest extends ImsCallingBase {
         isCallActive(call, callSession);
         call.disconnect();
 
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(call, callSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -305,7 +313,9 @@ public class ImsCallingTest extends ImsCallingBase {
 
         // Place outgoing call
         telecomManager.placeCall(imsUri, extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         Call call = getCall(mCurrentCallId);
 
@@ -315,9 +325,13 @@ public class ImsCallingTest extends ImsCallingBase {
         assertNotNull("Unable to get callSession, its null", callSession);
         callSession.addTestType(TestImsCallSessionImpl.TEST_TYPE_MO_FAILED);
 
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call dialing latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(call, callSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -332,7 +346,9 @@ public class ImsCallingTest extends ImsCallingBase {
 
         Bundle extras = new Bundle();
         sServiceConnector.getCarrierService().getMmTelFeature().onIncomingCallReceived(extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         Call call = getCall(mCurrentCallId);
         if (call.getDetails().getState() == Call.STATE_RINGING) {
@@ -347,7 +363,9 @@ public class ImsCallingTest extends ImsCallingBase {
         callSession.terminateIncomingCall();
 
         isCallDisconnected(call, callSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -399,7 +417,9 @@ public class ImsCallingTest extends ImsCallingBase {
         mConferenceCall.disconnect();
         assertParticiapantAddedToConference(0);
         isCallDisconnected(mConferenceCall, mConfCallSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
         overrideCarrierConfig(null);
     }
@@ -416,7 +436,9 @@ public class ImsCallingTest extends ImsCallingBase {
 
         Bundle extras = new Bundle();
         sServiceConnector.getCarrierService().getMmTelFeature().onIncomingCallReceived(extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         Call call = getCall(mCurrentCallId);
         if (call.getDetails().getState() == Call.STATE_RINGING) {
@@ -450,7 +472,9 @@ public class ImsCallingTest extends ImsCallingBase {
         // End the conference call and ensure it is cleaned up correctly:
         callSession.terminateIncomingCall();
         isCallDisconnected(call, callSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -469,7 +493,9 @@ public class ImsCallingTest extends ImsCallingBase {
 
             Bundle extras = new Bundle();
             sServiceConnector.getCarrierService().getMmTelFeature().onIncomingCallReceived(extras);
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Call added latch countdown failed",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
             Call call = getCall(mCurrentCallId);
             if (call.getDetails().getState() == Call.STATE_RINGING) {
@@ -499,12 +525,15 @@ public class ImsCallingTest extends ImsCallingBase {
             // End the call and ensure it is cleaned up correctly:
             callSession.terminateIncomingCall();
             isCallDisconnected(call, callSession);
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Call removed latch countdown failed",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
             waitForUnboundService();
         } finally {
             overrideCarrierConfig(null);
         }
     }
+
 
     @Test
     public void testIncomingCallReturnListener() throws Exception {
@@ -519,7 +548,9 @@ public class ImsCallingTest extends ImsCallingBase {
         ImsCallSessionListener isl = sServiceConnector.getCarrierService().getMmTelFeature()
                 .onIncomingCallReceivedReturnListener(extras);
         assertTrue("failed to get ImsCallSessionListener..", Objects.nonNull(isl));
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         Call call = getCall(mCurrentCallId);
         if (call.getDetails().getState() == Call.STATE_RINGING) {
@@ -534,7 +565,9 @@ public class ImsCallingTest extends ImsCallingBase {
         callSession.terminateIncomingCall();
 
         isCallDisconnected(call, callSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -549,7 +582,9 @@ public class ImsCallingTest extends ImsCallingBase {
 
         Bundle extras = new Bundle();
         sServiceConnector.getCarrierService().getMmTelFeature().onIncomingCallReceived(extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         Call call = getCall(mCurrentCallId);
         if (call.getDetails().getState() == Call.STATE_RINGING) {
@@ -561,7 +596,9 @@ public class ImsCallingTest extends ImsCallingBase {
                 sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
 
         isCallDisconnected(call, callSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -585,10 +622,14 @@ public class ImsCallingTest extends ImsCallingBase {
 
         // Place outgoing call
         telecomManager.placeCall(imsUri, extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         Call call = getCall(mCurrentCallId);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call dialing latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
         waitForCallSessionToNotBe(null);
         TestImsCallSessionImpl callSession =
@@ -597,9 +638,13 @@ public class ImsCallingTest extends ImsCallingBase {
         isCallActive(call, callSession);
         call.disconnect();
 
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(call, callSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -621,10 +666,14 @@ public class ImsCallingTest extends ImsCallingBase {
 
         // Place outgoing call
         telecomManager.placeCall(imsUri, extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         Call call = getCall(mCurrentCallId);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call dialing latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
         waitForCallSessionToNotBe(null);
         TestImsCallSessionImpl callSession =
@@ -634,7 +683,9 @@ public class ImsCallingTest extends ImsCallingBase {
 
         // Put on hold
         call.hold();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_HOLDING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call holding latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_HOLDING, WAIT_FOR_CALL_STATE));
 
         ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
         // Put on resume
@@ -642,9 +693,13 @@ public class ImsCallingTest extends ImsCallingBase {
         isCallActive(call, callSession);
         call.disconnect();
 
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(call, callSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -666,10 +721,14 @@ public class ImsCallingTest extends ImsCallingBase {
 
         // Place outgoing call
         telecomManager.placeCall(imsUri, extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         Call call = getCall(mCurrentCallId);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call dialing latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
         waitForCallSessionToNotBe(null);
         TestImsCallSessionImpl callSession =
@@ -685,9 +744,13 @@ public class ImsCallingTest extends ImsCallingBase {
 
         call.disconnect();
 
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(call, callSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -709,10 +772,14 @@ public class ImsCallingTest extends ImsCallingBase {
 
         // Place outgoing call
         telecomManager.placeCall(imsUri, extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         Call call = getCall(mCurrentCallId);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call dialing latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
         waitForCallSessionToNotBe(null);
         TestImsCallSessionImpl callSession =
@@ -722,7 +789,9 @@ public class ImsCallingTest extends ImsCallingBase {
 
         // Put on hold
         call.hold();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_HOLDING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call holding latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_HOLDING, WAIT_FOR_CALL_STATE));
 
         callSession.addTestType(TestImsCallSessionImpl.TEST_TYPE_RESUME_FAILED);
         ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
@@ -732,9 +801,13 @@ public class ImsCallingTest extends ImsCallingBase {
 
         call.disconnect();
 
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(call, callSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -755,10 +828,14 @@ public class ImsCallingTest extends ImsCallingBase {
         Bundle extras = new Bundle();
 
         telecomManager.placeCall(imsUri, extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         Call call = getCall(mCurrentCallId);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call dialing latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
         waitForCallSessionToNotBe(null);
         TestImsCallSessionImpl callSession =
@@ -770,21 +847,27 @@ public class ImsCallingTest extends ImsCallingBase {
         callSession.sendHoldReceived();
         assertTrue("Call is not in Active State", (call.getDetails().getState()
                 == Call.STATE_ACTIVE));
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOTELY_HELD, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call remotely held latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOTELY_HELD, WAIT_FOR_CALL_STATE));
 
         // received resume and checking it is still active and received the connection event
         // EVENT_CALL_REMOTELY_UNHELD
         callSession.sendResumeReceived();
         assertTrue("Call is not in Active State", (call.getDetails().getState()
                 == Call.STATE_ACTIVE));
-        assertTrue(
+        assertTrue("Call remotely unheld latch countdown failed",
                 callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOTELY_UNHELD, WAIT_FOR_CALL_STATE));
 
         call.disconnect();
 
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(call, callSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -806,10 +889,14 @@ public class ImsCallingTest extends ImsCallingBase {
 
         // Place outgoing call
         telecomManager.placeCall(imsUri, extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         Call moCall = getCall(mCurrentCallId);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call dialing latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
         waitForCallSessionToNotBe(null);
         TestImsCallSessionImpl moCallSession =
@@ -823,7 +910,9 @@ public class ImsCallingTest extends ImsCallingBase {
         extras.putString("android:imsCallID", String.valueOf(++sCounter));
         extras.putLong("android:phone_id", 123456);
         sServiceConnector.getCarrierService().getMmTelFeature().onIncomingCallReceived(extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         Call mtCall = null;
         if (mCurrentCallId != null) {
@@ -833,7 +922,9 @@ public class ImsCallingTest extends ImsCallingBase {
             }
         }
 
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_HOLDING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call holding latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_HOLDING, WAIT_FOR_CALL_STATE));
         waitForCallSessionToNotBe(null);
         TestImsCallSessionImpl mtCallSession = sServiceConnector.getCarrierService()
                 .getMmTelFeature().getImsCallsession();
@@ -842,18 +933,26 @@ public class ImsCallingTest extends ImsCallingBase {
                 == Call.STATE_ACTIVE));
 
         mtCall.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(mtCall, mtCallSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
 
         isCallActive(moCall, moCallSession);
         assertTrue("Call is not in Active State", (moCall.getDetails().getState()
                 == Call.STATE_ACTIVE));
 
         moCall.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(moCall, moCallSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
 
         waitForUnboundService();
     }
@@ -876,10 +975,14 @@ public class ImsCallingTest extends ImsCallingBase {
 
         // Place outgoing call
         telecomManager.placeCall(imsUri, extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         Call moCall = getCall(mCurrentCallId);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call dialing latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
         waitForCallSessionToNotBe(null);
         TestImsCallSessionImpl moCallSession =
@@ -893,7 +996,9 @@ public class ImsCallingTest extends ImsCallingBase {
         extras.putString("android:imsCallID", String.valueOf(++sCounter));
         extras.putLong("android:phone_id", 123456);
         sServiceConnector.getCarrierService().getMmTelFeature().onIncomingCallReceived(extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
         waitForCallSessionToNotBe(null);
         TestImsCallSessionImpl mtCallSession =
                 sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
@@ -912,7 +1017,9 @@ public class ImsCallingTest extends ImsCallingBase {
         // simulate user hanging up the MT call at the same time as accept.
         mtCallSession.terminateIncomingCall();
         isCallDisconnected(mtCall, mtCallSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
 
         // then send hold response, which should be reversed, since MT call was disconnected.
         moCallSession.sendHoldResponse();
@@ -923,9 +1030,13 @@ public class ImsCallingTest extends ImsCallingBase {
                 == Call.STATE_ACTIVE));
 
         moCall.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(moCall, moCallSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
 
         waitForUnboundService();
     }
@@ -947,10 +1058,14 @@ public class ImsCallingTest extends ImsCallingBase {
         Bundle extras = new Bundle();
 
         telecomManager.placeCall(imsUri, extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         Call moCall = getCall(mCurrentCallId);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call dialing latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
         waitForCallSessionToNotBe(null);
         TestImsCallSessionImpl moCallSession =
@@ -960,7 +1075,9 @@ public class ImsCallingTest extends ImsCallingBase {
                 == Call.STATE_ACTIVE));
 
         sServiceConnector.getCarrierService().getMmTelFeature().onIncomingCallReceived(extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
         waitForCallSessionToNotBe(null);
         TestImsCallSessionImpl mtCallSession =
                 sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
@@ -978,7 +1095,9 @@ public class ImsCallingTest extends ImsCallingBase {
         // received holdFailed because the other party of the outgoing call terminated the call
         waitCallRenegotiating(moCallSession);
         moCallSession.sendHoldFailRemoteTerminated();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         isCallDisconnected(moCall, moCallSession);
 
         // incoming call accept again
@@ -988,9 +1107,13 @@ public class ImsCallingTest extends ImsCallingBase {
                 == Call.STATE_ACTIVE));
 
         mtCall.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(mtCall, mtCallSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -1008,16 +1131,22 @@ public class ImsCallingTest extends ImsCallingBase {
         // Swap the call
         ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
         mCall1.unhold();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_HOLDING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call holding latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_HOLDING, WAIT_FOR_CALL_STATE));
         assertTrue("Call is not in Hold State", (mCall2.getDetails().getState()
                 == Call.STATE_HOLDING));
         isCallActive(mCall1, mCallSession1);
 
         // After successful call swap disconnect the call
         mCall1.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(mCall1, mCallSession1);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
 
         //Wait till second call is in active state
         waitUntilConditionIsTrueOrTimeout(
@@ -1036,9 +1165,13 @@ public class ImsCallingTest extends ImsCallingBase {
 
         isCallActive(mCall2, mCallSession2);
         mCall2.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(mCall2, mCallSession2);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -1057,7 +1190,9 @@ public class ImsCallingTest extends ImsCallingBase {
         // Swap the call
         ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
         mCall1.unhold();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_HOLDING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call holding latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_HOLDING, WAIT_FOR_CALL_STATE));
         assertTrue("Call is not in Hold State", (mCall1.getDetails().getState()
                 == Call.STATE_HOLDING));
 
@@ -1079,16 +1214,24 @@ public class ImsCallingTest extends ImsCallingBase {
         isCallActive(mCall2, mCallSession2);
         mCallSession1.removeTestType(TestImsCallSessionImpl.TEST_TYPE_RESUME_FAILED);
         mCall2.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(mCall2, mCallSession2);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
 
         // Wait till second call is in active state
         isCallActive(mCall1, mCallSession1);
         mCall1.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(mCall1, mCallSession1);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -1110,7 +1253,9 @@ public class ImsCallingTest extends ImsCallingBase {
         //Verify conference participant connections are disconnected.
         assertParticiapantAddedToConference(0);
         isCallDisconnected(mConferenceCall, mConfCallSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -1136,16 +1281,24 @@ public class ImsCallingTest extends ImsCallingBase {
                 == Call.STATE_HOLDING));
 
         mCall2.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(mCall2, mCallSession2);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
 
         //Wait till background call is in active state
         isCallActive(mCall1, mCallSession1);
         mCall1.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(mCall1, mCallSession1);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -1179,9 +1332,13 @@ public class ImsCallingTest extends ImsCallingBase {
                 == Call.STATE_DISCONNECTED));
 
         mCall2.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(mCall2, mCallSession2);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -1202,7 +1359,9 @@ public class ImsCallingTest extends ImsCallingBase {
 
         mCall3.conference(mConferenceCall);
         // Wait for merge complete for the third call:
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_MERGE_COMPLETE, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Merge complete latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_MERGE_COMPLETE, WAIT_FOR_CALL_STATE));
         isCallActive(mConferenceCall, mConfCallSession);
 
         ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
@@ -1216,7 +1375,9 @@ public class ImsCallingTest extends ImsCallingBase {
 
         assertParticiapantAddedToConference(0);
         isCallDisconnected(mConferenceCall, mConfCallSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -1248,15 +1409,23 @@ public class ImsCallingTest extends ImsCallingBase {
 
         // merge call
         mConferenceCall.conference(mCall3);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_MERGE_START, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Merge start latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_MERGE_START, WAIT_FOR_CALL_STATE));
 
         // verify third call disconnected.
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         assertParticipantDisconnected(mCall3);
 
         // verify conference participant connections are connected.
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_MERGE_COMPLETE, WAIT_FOR_CALL_STATE));
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CHILDREN_CHANGED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Merge complete latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_MERGE_COMPLETE, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Children changed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CHILDREN_CHANGED, WAIT_FOR_CALL_STATE));
         assertParticiapantAddedToConference(3);
 
         isCallActive(mConferenceCall, mConfCallSession);
@@ -1267,7 +1436,9 @@ public class ImsCallingTest extends ImsCallingBase {
         // verify conference participant connections are disconnected.
         assertParticiapantAddedToConference(0);
         isCallDisconnected(mConferenceCall, mConfCallSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -1314,14 +1485,20 @@ public class ImsCallingTest extends ImsCallingBase {
         // verify conference participant connections are disconnected.
         assertParticiapantAddedToConference(0);
         isCallDisconnected(mConferenceCall, mConfCallSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
 
         // verify third call is active
         isCallActive(mCall3, mCallSession3);
         mCall3.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(mCall3, mCallSession3);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -1348,10 +1525,14 @@ public class ImsCallingTest extends ImsCallingBase {
 
         // Place outgoing call
         telecomManager.placeCall(imsUri, extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         Call call = getCall(mCurrentCallId);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call dialing latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
         waitForCallSessionToNotBe(null);
         TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
@@ -1369,14 +1550,20 @@ public class ImsCallingTest extends ImsCallingBase {
         assertEquals(AudioManager.MODE_IN_COMMUNICATION, mAudioManager.getMode());
 
         call.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
 
         // Place the 2nd outgoing call
         telecomManager.placeCall(imsUri, extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         call = getCall(mCurrentCallId);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call dialing latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
         waitForCallSessionToNotBe(null);
         TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
@@ -1393,9 +1580,13 @@ public class ImsCallingTest extends ImsCallingBase {
 
         call.disconnect();
 
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(call, callSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -1417,10 +1608,14 @@ public class ImsCallingTest extends ImsCallingBase {
 
         // Place outgoing call
         telecomManager.placeCall(imsUri, extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         Call call = getCall(mCurrentCallId);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call dialing latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
         waitForCallSessionToNotBe(null);
         TestImsCallSessionImpl callSession =
@@ -1477,9 +1672,13 @@ public class ImsCallingTest extends ImsCallingBase {
 
         call.disconnect();
 
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(call, callSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -1501,10 +1700,14 @@ public class ImsCallingTest extends ImsCallingBase {
 
         // Place outgoing call
         telecomManager.placeCall(imsUri, extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         Call call = getCall(mCurrentCallId);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call dialing latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
         waitForCallSessionToNotBe(null);
         TestImsCallSessionImpl callSession =
@@ -1558,9 +1761,13 @@ public class ImsCallingTest extends ImsCallingBase {
 
         call.disconnect();
 
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(call, callSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -1586,7 +1793,9 @@ public class ImsCallingTest extends ImsCallingBase {
 
         testCb.setTestEmergencyNumber(TEST_EMERGENCY_NUMBER);
         setupForEmergencyCalling(TEST_EMERGENCY_NUMBER);
-        assertTrue(testCb.waitForTestEmergencyNumberConfigured());
+        assertTrue(
+                "Failed to receive test emergency number configured",
+                testCb.waitForTestEmergencyNumberConfigured());
 
         bindImsService();
         mServiceCallBack = new ServiceCallBack();
@@ -1609,22 +1818,32 @@ public class ImsCallingTest extends ImsCallingBase {
         // Place outgoing emergency call
         telecomManager.placeCall(TEST_EMERGENCY_URI, new Bundle());
 
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
         Call call = getCall(mCurrentCallId);
         waitForCallSessionToNotBe(null);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call dialing latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
-        assertTrue(testCb.waitForOutgoingEmergencyCall(TEST_EMERGENCY_NUMBER));
-        assertTrue(testCb.waitForCallActive());
+        assertTrue(
+                "Failed to receive outgoing emergency call",
+                testCb.waitForOutgoingEmergencyCall(TEST_EMERGENCY_NUMBER));
+        assertTrue("Failed to receive call active state", testCb.waitForCallActive());
 
         TestImsCallSessionImpl callSession = sServiceConnector.getCarrierService().getMmTelFeature()
                 .getImsCallsession();
         isCallActive(call, callSession);
 
         call.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(call, callSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -1653,7 +1872,9 @@ public class ImsCallingTest extends ImsCallingBase {
 
         testCb.setTestEmergencyNumber(TEST_EMERGENCY_NUMBER);
         setupForEmergencyCalling(TEST_EMERGENCY_NUMBER);
-        assertTrue(testCb.waitForTestEmergencyNumberConfigured());
+        assertTrue(
+                "Failed to receive test emergency number configured",
+                testCb.waitForTestEmergencyNumberConfigured());
 
         bindImsService();
         mServiceCallBack = new ServiceCallBack();
@@ -1676,13 +1897,19 @@ public class ImsCallingTest extends ImsCallingBase {
         // Place outgoing emergency call
         telecomManager.placeCall(TEST_EMERGENCY_URI, new Bundle());
 
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
         Call call = getCall(mCurrentCallId);
         waitForCallSessionToNotBe(null);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call dialing latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
-        assertTrue(testCb.waitForOutgoingEmergencyCall(TEST_EMERGENCY_NUMBER));
-        assertTrue(testCb.waitForCallActive());
+        assertTrue(
+                "Failed to receive outgoing emergency call",
+                testCb.waitForOutgoingEmergencyCall(TEST_EMERGENCY_NUMBER));
+        assertTrue("Failed to receive call active state", testCb.waitForCallActive());
 
         TestImsCallSessionImpl callSession = sServiceConnector.getCarrierService().getMmTelFeature()
                 .getImsCallsession();
@@ -1695,9 +1922,13 @@ public class ImsCallingTest extends ImsCallingBase {
         isCallActive(call, callSession);
 
         call.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(call, callSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -1736,12 +1967,16 @@ public class ImsCallingTest extends ImsCallingBase {
                 }, WAIT_FOR_CALL_STATE_ACTIVE, "Notify IMS call session transfer result");
 
         isCallDisconnected(mCall1, mCallSession1);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
 
         // Terminate the other call to mimic network behavior after the call transfer
         mCallSession2.terminate(ImsReasonInfo.CODE_USER_TERMINATED);
         isCallDisconnected(mCall2, mCallSession2);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
 
         waitForUnboundService();
     }
@@ -1781,14 +2016,22 @@ public class ImsCallingTest extends ImsCallingBase {
                 }, WAIT_FOR_CONDITION, "Notify IMS call session transfer result");
 
         mCall2.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(mCall2, mCallSession2);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
 
         mCall1.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(mCall1, mCallSession1);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
 
         waitForUnboundService();
     }
@@ -1803,7 +2046,9 @@ public class ImsCallingTest extends ImsCallingBase {
         // Place outgoing call
         Call call = placeOutgoingCall();
 
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call dialing latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
         TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
         TestImsCallSessionImpl callSession =
@@ -1835,9 +2080,13 @@ public class ImsCallingTest extends ImsCallingBase {
         ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
         call.disconnect();
 
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(call, callSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -1852,7 +2101,9 @@ public class ImsCallingTest extends ImsCallingBase {
         // Place outgoing call
         Call call = placeOutgoingCall();
 
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call dialing latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
         TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
         TestImsCallSessionImpl callSession =
@@ -1887,7 +2138,9 @@ public class ImsCallingTest extends ImsCallingBase {
         // Place outgoing call
         Call call = placeOutgoingCall();
 
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call dialing latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
         TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
         TestImsCallSessionImpl callSession =
@@ -1896,7 +2149,7 @@ public class ImsCallingTest extends ImsCallingBase {
         isCallActive(call, callSession);
 
         callSession.resetAnbrValues();
-        assertTrue(sMockModemManager.notifyAnbr(sTestSlot, 2, 1, 24400));
+        assertTrue("Notify ANBR failed", sMockModemManager.notifyAnbr(sTestSlot, 2, 1, 24400));
         TimeUnit.MILLISECONDS.sleep(500);
 
         int[] retValues = callSession.getAnbrValues();
@@ -1920,7 +2173,9 @@ public class ImsCallingTest extends ImsCallingBase {
 
         Bundle extras = new Bundle();
         sServiceConnector.getCarrierService().getMmTelFeature().onIncomingCallReceived(extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         Call call = getCall(mCurrentCallId);
         if (call.getDetails().getState() == call.STATE_RINGING) {
@@ -1970,7 +2225,9 @@ public class ImsCallingTest extends ImsCallingBase {
         callSession.terminateIncomingCall();
 
         isCallDisconnected(call, callSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -2019,7 +2276,9 @@ public class ImsCallingTest extends ImsCallingBase {
         // Place outgoing call
         Call call = placeOutgoingCall();
 
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call dialing latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
         TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
         TestImsCallSessionImpl callSession =
@@ -2030,7 +2289,9 @@ public class ImsCallingTest extends ImsCallingBase {
         ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
         // Put on hold
         call.hold();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_HOLDING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call holding latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_HOLDING, WAIT_FOR_CALL_STATE));
 
         List<SrvccCall> profiles = new ArrayList<>();
         List<SrvccCall> effectiveProfiles = new ArrayList<>();
@@ -2065,9 +2326,13 @@ public class ImsCallingTest extends ImsCallingBase {
         ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
         call.disconnect();
 
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(call, callSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 
@@ -2218,7 +2483,9 @@ public class ImsCallingTest extends ImsCallingBase {
             // Set up incoming call
             Bundle extras = new Bundle();
             sServiceConnector.getCarrierService().getMmTelFeature().onIncomingCallReceived(extras);
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Call added latch countdown failed",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
             Call call = getCall(mCurrentCallId);
             waitForCallState(call, Call.STATE_RINGING);
@@ -2235,7 +2502,9 @@ public class ImsCallingTest extends ImsCallingBase {
             assertTrue("EXTRA_DO_NOT_LOG_CALL should be present",
                     callDetailsExtras.getBoolean(TelecomManager.EXTRA_DO_NOT_LOG_CALL));
 
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Call removed latch countdown failed",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
             waitForUnboundService();
         } finally {
             // Cleanup
@@ -2264,7 +2533,9 @@ public class ImsCallingTest extends ImsCallingBase {
             // Set up incoming call
             Bundle extras = new Bundle();
             sServiceConnector.getCarrierService().getMmTelFeature().onIncomingCallReceived(extras);
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Call added latch countdown failed",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
             Call call = getCall(mCurrentCallId);
             waitForCallState(call, Call.STATE_RINGING);
@@ -2283,7 +2554,9 @@ public class ImsCallingTest extends ImsCallingBase {
                     callDetailsExtras != null && callDetailsExtras.containsKey(
                             TelecomManager.EXTRA_DO_NOT_LOG_CALL));
 
-            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+            assertTrue(
+                    "Call removed latch countdown failed",
+                    callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
             waitForUnboundService();
         } finally {
             // Cleanup
@@ -2310,10 +2583,14 @@ public class ImsCallingTest extends ImsCallingBase {
 
         // Place outgoing call
         telecomManager.placeCall(imsUri, extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         Call call = getCall(mCurrentCallId);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call dialing latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
         waitForCallSessionToNotBe(null);
         TestImsCallSessionImpl callSession =
@@ -2329,8 +2606,9 @@ public class ImsCallingTest extends ImsCallingBase {
 
         // The transferor call had to be terminated
         isCallDisconnected(call, callSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
-
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
     }
 
     @Test
@@ -2353,10 +2631,14 @@ public class ImsCallingTest extends ImsCallingBase {
 
         // Place outgoing call
         telecomManager.placeCall(imsUri, extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         Call call = getCall(mCurrentCallId);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call dialing latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
         waitForCallSessionToNotBe(null);
         TestImsCallSessionImpl callSession =
@@ -2373,7 +2655,9 @@ public class ImsCallingTest extends ImsCallingBase {
         // The transferor call had to be terminated in order to
         // mimic network behavior after the call transfer
         isCallDisconnected(call, callSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
 
         waitForUnboundService();
 
@@ -2398,10 +2682,14 @@ public class ImsCallingTest extends ImsCallingBase {
 
         // Place outgoing call
         telecomManager.placeCall(imsUri, extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         Call call = getCall(mCurrentCallId);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call dialing latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
 
         waitForCallSessionToNotBe(null);
         TestImsCallSessionImpl callSession =
@@ -2420,9 +2708,13 @@ public class ImsCallingTest extends ImsCallingBase {
         isCallActive(call, callSession);
 
         call.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(call, callSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
 
         waitForUnboundService();
     }
@@ -2463,12 +2755,16 @@ public class ImsCallingTest extends ImsCallingBase {
 
         // Verify if both the calls are disconnected from Transferor point of view.
         isCallDisconnected(mCall2, mCallSession2);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
 
         mCallSession1.terminate(ImsReasonInfo.CODE_USER_TERMINATED);
 
         isCallDisconnected(mCall1, mCallSession1);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
 
         waitForUnboundService();
     }
@@ -2516,20 +2812,29 @@ public class ImsCallingTest extends ImsCallingBase {
 
         // Disconnect both the calls.
         mCall2.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(mCall2, mCallSession2);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
 
         mCall1.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call disconnecting latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(mCall1, mCallSession1);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
 
         waitForUnboundService();
     }
 
     private void verifySrvccStateChange(int state) throws Exception {
-        assertTrue(sMockModemManager.srvccStateNotify(sTestSlot, state));
+        assertTrue(
+                "SRVCC state notify failed", sMockModemManager.srvccStateNotify(sTestSlot, state));
         sServiceConnector
                 .getCarrierService()
                 .getMmTelFeature()
@@ -2584,7 +2889,9 @@ public class ImsCallingTest extends ImsCallingBase {
 
         // Place outgoing call
         telecomManager.placeCall(imsUri, extras);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         Call call = getCall(mCurrentCallId);
 
@@ -2806,10 +3113,14 @@ public class ImsCallingTest extends ImsCallingBase {
         Bundle extras1 = new Bundle();
 
         telecomManager.placeCall(imsUri1, extras1);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         mCall1 = getCall(mCurrentCallId);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call dialing latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
         waitForCallSessionToNotBe(null);
         mCallSession1 = sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
         isCallActive(mCall1, mCallSession1);
@@ -2822,11 +3133,17 @@ public class ImsCallingTest extends ImsCallingBase {
         Bundle extras2 = new Bundle();
 
         telecomManager.placeCall(imsUri2, extras2);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
 
         mCall2 = getCall(mCurrentCallId);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_HOLDING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call dialing latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call holding latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_HOLDING, WAIT_FOR_CALL_STATE));
         assertTrue("Call is not in Hold State", (mCall1.getDetails().getState()
                 == Call.STATE_HOLDING));
 
@@ -2847,12 +3164,18 @@ public class ImsCallingTest extends ImsCallingBase {
         Bundle extras3 = new Bundle();
 
         telecomManager.placeCall(imsUri3, extras3);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call added latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
         waitNextCallAdded(String.valueOf(sCounter));
 
         mCall3 = getCall(mCurrentCallId);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_HOLDING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call dialing latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_DIALING, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call holding latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_CALL_HOLDING, WAIT_FOR_CALL_STATE));
         assertTrue("Call is not in Hold State", (mConferenceCall.getDetails().getState()
                 == Call.STATE_HOLDING));
 
@@ -2945,15 +3268,19 @@ public class ImsCallingTest extends ImsCallingBase {
                     @Override
                     public Object actual() {
                         if (!actualUri[0].contains(expectedUri)) {
-                            assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_ADDED,
-                                    WAIT_FOR_CALL_STATE));
-                            actualUri[0] = getCall(
-                                    mCurrentCallId).getDetails().getHandle().toString();
+                            assertTrue(
+                                    "Call added latch countdown failed",
+                                    callingTestLatchCountdown(
+                                            LATCH_IS_ON_CALL_ADDED, WAIT_FOR_CALL_STATE));
+                            actualUri[0] =
+                                    getCall(mCurrentCallId).getDetails().getHandle().toString();
                             return false;
                         }
                         return true;
                     }
-                }, WAIT_FOR_CONDITION, "Next Call added");
+                },
+                WAIT_FOR_CONDITION,
+                "Next Call added");
     }
 
     private void waitCallRenegotiating(TestImsCallSessionImpl callSession) {
@@ -2983,15 +3310,21 @@ public class ImsCallingTest extends ImsCallingBase {
         addConferenceCall(mCall1, mCall2);
 
         // Wait for merge start first and second call
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_MERGE_START, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Merge start latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_MERGE_START, WAIT_FOR_CALL_STATE));
         // Wait for merge complete background call:
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_MERGE_COMPLETE, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Merge complete latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_MERGE_COMPLETE, WAIT_FOR_CALL_STATE));
         // Wait for remove first call
         callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE);
         // Wait for merge complete foreground call:
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_MERGE_COMPLETE, WAIT_FOR_CALL_STATE));
-        // Wait for conference call added
         assertTrue(
+                "Merge complete latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_MERGE_COMPLETE, WAIT_FOR_CALL_STATE));
+        // Wait for conference call added
+        assertTrue("Conference call added latch countdown failed",
                 callingTestLatchCountdown(LATCH_IS_ON_CONFERENCE_CALL_ADDED, WAIT_FOR_CALL_STATE));
         // Wait for remove second call
         callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE);
@@ -3013,8 +3346,10 @@ public class ImsCallingTest extends ImsCallingBase {
         assertParticipantDisconnected(mCall1);
         assertParticipantDisconnected(mCall2);
 
-        //Verify conference participant connections are connected.
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CHILDREN_CHANGED, WAIT_FOR_CALL_STATE));
+        // Verify conference participant connections are connected.
+        assertTrue(
+                "Children changed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CHILDREN_CHANGED, WAIT_FOR_CALL_STATE));
         assertParticiapantAddedToConference(2);
 
         // Since the conference call has been made, remove session1&2 from the confHelper session.
@@ -3071,7 +3406,7 @@ public class ImsCallingTest extends ImsCallingBase {
         if (enableAutoUnhold) {
             isCallActive(firstCall, firstCallSession);
         } else {
-            assertTrue(
+            assertTrue("Call should be in holding state",
                     firstCallSession.isSessionOnHold()
                             && firstCall.getDetails().getState() == Call.STATE_HOLDING);
         }
@@ -3120,7 +3455,9 @@ public class ImsCallingTest extends ImsCallingBase {
 
         mConferenceCall.disconnect();
         isCallDisconnected(mConferenceCall, mConfCallSession);
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        assertTrue(
+                "Call removed latch countdown failed",
+                callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
     }
 }
