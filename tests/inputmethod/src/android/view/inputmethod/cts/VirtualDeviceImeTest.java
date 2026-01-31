@@ -46,6 +46,7 @@ import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.inputmethodservice.InputMethodService;
 import android.os.Bundle;
+import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.server.wm.BuildUtils;
 import android.server.wm.Condition;
@@ -121,7 +122,7 @@ public class VirtualDeviceImeTest {
         assumeTrue(FeatureUtil.hasSystemFeature(PackageManager.FEATURE_INPUT_METHODS));
         assumeFalse(new UserHelper(mContext).isVisibleBackgroundUser());
 
-        mUserId = android.os.Process.myUserHandle().getIdentifier();
+        mUserId = UserHandle.myUserId();
 
         DefaultDeviceTestIme.sImeListener = mDefaultDeviceImeListener;
         VirtualDeviceTestIme.sImeListener = mVirtualDeviceImeListener;
@@ -136,6 +137,7 @@ public class VirtualDeviceImeTest {
         DefaultDeviceTestIme.sImeListener = null;
         VirtualDeviceTestIme.sImeListener = null;
         mInputMethodManager.resetInputMethodsForTesting(mUserId);
+        mVirtualDisplayId = Display.INVALID_DISPLAY;
     }
 
     /** The virtualDeviceOnly attribute is propagated to InputMethodInfo. */
