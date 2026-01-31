@@ -18,6 +18,25 @@ id: "7.1.1.1/H-2-1"
 name: "Screen Resolution"
 description: "- Screen resolution"
 specs {
+  key: 10
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_10
+    specification: "MUST have screen resolution of at least 720p."
+    required_values {
+      key: "long_resolution_pixels"
+      value {
+        int_value: 1280
+      }
+    }
+    required_values {
+      key: "short_resolution_pixels"
+      value {
+        int_value: 720
+      }
+    }
+  }
+}
+specs {
   key: 31
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_12

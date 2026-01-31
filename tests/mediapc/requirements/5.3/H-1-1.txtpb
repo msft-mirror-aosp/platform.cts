@@ -18,6 +18,36 @@ id: "5.3/H-1-1"
 name: "Frame drop"
 description: "- Decoder frame drops"
 specs {
+  key: 10
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_10
+    specification:
+      "MUST NOT drop more than 1 frame in 10 seconds (i.e less than 0.333 "
+      "percent frame drop) for a 1080p 30 fps video session under load. Load "
+      "is defined as a concurrent 1080p to 720p video-only transcoding session "
+      "using hardware video codecs, as well as a 128 kbps AAC audio playback."
+    required_values {
+      key: "frame_drops_per_30sec"
+      value {
+        int_value: 3
+      }
+    }
+    required_values {
+      key: "frame_rate"
+      value {
+        double_value: 30.0
+      }
+    }
+    required_values {
+      key: "resolution"
+      value {
+        int_value: 1080
+      }
+    }
+    test_config_id: "1080p_30fps"
+  }
+}
+specs {
   key: 30
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_11

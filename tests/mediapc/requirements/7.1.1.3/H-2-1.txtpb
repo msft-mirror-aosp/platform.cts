@@ -18,6 +18,19 @@ id: "7.1.1.3/H-2-1"
 name: "Screen Density"
 description: "- Screen density"
 specs {
+  key: 10
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_10
+    specification: "MUST have screen density of at least 240 dpi."
+    required_values {
+      key: "display_density_dpi"
+      value {
+        int_value: 240
+      }
+    }
+  }
+}
+specs {
   key: 31
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_12
