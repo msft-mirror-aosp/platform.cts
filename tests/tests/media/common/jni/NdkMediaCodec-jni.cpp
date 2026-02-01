@@ -76,40 +76,40 @@ extern "C" jboolean Java_android_media_cts_NdkMediaCodec_AMediaCodecStop(
 }
 
 extern "C" jboolean Java_android_media_cts_NdkMediaCodec_AMediaCodecConfigure(
-        JNIEnv *env,
-        jclass /*clazz*/,
-        jlong codec,
-        jstring mime,
-        jint width,
-        jint height,
-        jint colorFormat,
-        jint bitRate,
-        jint frameRate,
-        jint iFrameInterval,
-        jobject csd0,
-        jobject csd1,
-        jint flags,
-        jint lowLatency,
-        jobject surface,
-        jint range,
-        jint standard,
-        jint transfer) {
-
+        JNIEnv* env, jclass /*clazz*/, jlong codec, jstring mime, jint width, jint height,
+        jint colorFormat, jint bitRate, jint frameRate, jint iFrameInterval, jobject csd0,
+        jobject csd1, jint flags, jint lowLatency, jobject surface, jint range, jint standard,
+        jint transfer, jstring temporalLayering, jstring videoBitrateLayering,
+        jint temporalLayerId) {
     AMediaFormat* format = AMediaFormat_new();
     if (format == NULL) {
         return false;
     }
 
-    const char *tmp = env->GetStringUTFChars(mime, NULL);
-    if (tmp == NULL) {
-        AMediaFormat_delete(format);
-        return false;
+    const char* strKeys[] = {
+            AMEDIAFORMAT_KEY_MIME,
+            AMEDIAFORMAT_KEY_TEMPORAL_LAYERING,
+            // need to specify the actual string, since this test needs
+            // to run on API 37, where the symbol doesn't exist
+            "video-bitrate-layering", // AMEDIAFORMAT_KEY_VIDEO_BITRATE_LAYERING,
+    };
+    jstring* strValues[] = {&mime, &temporalLayering, &videoBitrateLayering};
+    for (size_t i = 0; i < sizeof(strKeys) / sizeof(strKeys[0]); i++) {
+        if ((*strValues[i]) == NULL) {
+            continue;
+        }
+
+        const char* tmp = env->GetStringUTFChars(*strValues[i], NULL);
+        if (tmp == NULL) {
+            AMediaFormat_delete(format);
+            return false;
+        }
+
+        AMediaFormat_setString(format, strKeys[i], tmp);
+        env->ReleaseStringUTFChars(*strValues[i], tmp);
     }
 
-    AMediaFormat_setString(format, AMEDIAFORMAT_KEY_MIME, tmp);
-    env->ReleaseStringUTFChars(mime, tmp);
-
-    const char *keys[] = {
+    const char* keys[] = {
             AMEDIAFORMAT_KEY_WIDTH,
             AMEDIAFORMAT_KEY_HEIGHT,
             AMEDIAFORMAT_KEY_COLOR_FORMAT,
@@ -122,10 +122,11 @@ extern "C" jboolean Java_android_media_cts_NdkMediaCodec_AMediaCodecConfigure(
             AMEDIAFORMAT_KEY_COLOR_RANGE,
             AMEDIAFORMAT_KEY_COLOR_STANDARD,
             AMEDIAFORMAT_KEY_COLOR_TRANSFER,
+            AMEDIAFORMAT_KEY_TEMPORAL_LAYER_ID,
     };
 
-    jint values[] = {width, height, colorFormat, bitRate, frameRate, iFrameInterval, lowLatency,
-                     range, standard, transfer};
+    jint values[] = {width,      height, colorFormat, bitRate,  frameRate,      iFrameInterval,
+                     lowLatency, range,  standard,    transfer, temporalLayerId};
     for (size_t i = 0; i < sizeof(values) / sizeof(values[0]); i++) {
         if (values[i] >= 0) {
             AMediaFormat_setInt32(format, keys[i], values[i]);
@@ -153,7 +154,6 @@ extern "C" jboolean Java_android_media_cts_NdkMediaCodec_AMediaCodecConfigure(
 
     AMediaFormat_delete(format);
     return err == AMEDIA_OK;
-
 }
 
 extern "C" jboolean Java_android_media_cts_NdkMediaCodec_AMediaCodecSetInputSurface(
@@ -217,6 +217,22 @@ extern "C" jstring Java_android_media_cts_NdkMediaCodec_AMediaCodecGetOutputForm
     AMediaFormat_delete(format);
     return jstr;
 
+}
+
+extern "C" jint Java_android_media_cts_NdkMediaCodec_AMediaCodecGetOutputFormatInt(
+        JNIEnv* env, jclass /*clazz*/, jlong codec, jint index, jstring jkey) {
+    AMediaFormat* format =
+            AMediaCodec_getBufferFormat(reinterpret_cast<AMediaCodec*>(codec), index);
+    int32_t value = -1;
+    const char* key = env->GetStringUTFChars(jkey, NULL);
+    if (key == NULL) {
+        AMediaFormat_delete(format);
+        return -1;
+    }
+    AMediaFormat_getInt32(format, key, &value);
+    env->ReleaseStringUTFChars(jkey, key);
+    AMediaFormat_delete(format);
+    return value;
 }
 
 extern "C" jboolean Java_android_media_cts_NdkMediaCodec_AMediaCodecSignalEndOfInputStream(
@@ -344,5 +360,53 @@ extern "C" jboolean Java_android_media_cts_NdkMediaCodec_AMediaCodecSetParameter
     env->ReleaseStringUTFChars(jkey, key);
     AMediaFormat_delete(params);
     return err == AMEDIA_OK;
+}
 
+extern "C" jboolean Java_android_media_cts_NdkMediaCodec_AMediaCodecSetParameters(
+        JNIEnv* env, jclass /*clazz*/, jlong codec, jobjectArray jkeys, jintArray jvalues,
+        jobjectArray jStringKeys, jobjectArray jStringValues) {
+    AMediaFormat* params = AMediaFormat_new();
+    if (params == NULL) {
+        return false;
+    }
+
+    if (jkeys != NULL && jvalues != NULL) {
+        jsize len = env->GetArrayLength(jkeys);
+        jint* values = env->GetIntArrayElements(jvalues, NULL);
+        for (jsize i = 0; i < len; i++) {
+            jstring jkey = (jstring)env->GetObjectArrayElement(jkeys, i);
+            jint value = values[i];
+
+            const char* key = env->GetStringUTFChars(jkey, NULL);
+            if (key != NULL) {
+                AMediaFormat_setInt32(params, key, value);
+                env->ReleaseStringUTFChars(jkey, key);
+            }
+            env->DeleteLocalRef(jkey);
+        }
+        env->ReleaseIntArrayElements(jvalues, values, 0);
+    }
+
+    if (jStringKeys != NULL && jStringValues != NULL) {
+        jsize len = env->GetArrayLength(jStringKeys);
+        for (jsize i = 0; i < len; i++) {
+            jstring jkey = (jstring)env->GetObjectArrayElement(jStringKeys, i);
+            jstring jvalue = (jstring)env->GetObjectArrayElement(jStringValues, i);
+
+            const char* key = env->GetStringUTFChars(jkey, NULL);
+            const char* value = env->GetStringUTFChars(jvalue, NULL);
+            if (key != NULL && value != NULL) {
+                AMediaFormat_setString(params, key, value);
+            }
+            if (key != NULL) env->ReleaseStringUTFChars(jkey, key);
+            if (value != NULL) env->ReleaseStringUTFChars(jvalue, value);
+
+            env->DeleteLocalRef(jkey);
+            env->DeleteLocalRef(jvalue);
+        }
+    }
+
+    media_status_t err = AMediaCodec_setParameters(reinterpret_cast<AMediaCodec*>(codec), params);
+    AMediaFormat_delete(params);
+    return err == AMEDIA_OK;
 }
