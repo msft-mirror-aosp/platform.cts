@@ -44,21 +44,46 @@ public class NdkMediaCodec implements MediaCodecWrapper {
     }
 
     private static native long AMediaCodecCreateCodecByName(String name);
+
     private static native boolean AMediaCodecDelete(long ndkMediaCodec);
+
     private static native boolean AMediaCodecStart(long ndkMediaCodec);
+
     private static native boolean AMediaCodecStop(long ndkMediaCodec);
+
     private static native String AMediaCodecGetOutputFormatString(long ndkMediaCodec);
+
+    private static native int AMediaCodecGetOutputFormatInt(
+            long ndkMediaCodec, int index, String key);
+
     private static native boolean AMediaCodecSetInputSurface(long ndkMediaCodec, Surface surface);
-    private static native boolean AMediaCodecSetNativeInputSurface(long ndkMediaCodec, long aNativeWindow);
+
+    private static native boolean AMediaCodecSetNativeInputSurface(
+            long ndkMediaCodec, long aNativeWindow);
+
     private static native long AMediaCodecCreateInputSurface(long ndkMediaCodec);
+
     private static native long AMediaCodecCreatePersistentInputSurface();
+
     private static native boolean AMediaCodecSignalEndOfInputStream(long ndkMediaCodec);
-    private static native boolean AMediaCodecReleaseOutputBuffer(long ndkMediaCodec, int index, boolean render);
+
+    private static native boolean AMediaCodecReleaseOutputBuffer(
+            long ndkMediaCodec, int index, boolean render);
+
     private static native ByteBuffer AMediaCodecGetOutputBuffer(long ndkMediaCodec, int index);
+
     private static native long[] AMediaCodecDequeueOutputBuffer(long ndkMediaCodec, long timeoutUs);
+
     private static native ByteBuffer AMediaCodecGetInputBuffer(long ndkMediaCodec, int index);
+
     private static native int AMediaCodecDequeueInputBuffer(long ndkMediaCodec, long timeoutUs);
-    private static native boolean AMediaCodecSetParameter(long ndkMediaCodec, String key, int value);
+
+    private static native boolean AMediaCodecSetParameters(
+            long ndkMediaCodec,
+            String[] intKeys,
+            int[] intValues,
+            String[] stringKeys,
+            String[] stringValues);
 
     private static native boolean AMediaCodecConfigure(
             long ndkMediaCodec,
@@ -76,7 +101,10 @@ public class NdkMediaCodec implements MediaCodecWrapper {
             Surface surface,
             int range,
             int standard,
-            int transfer);
+            int transfer,
+            String temporalLayering,
+            String videoBitrateLayering,
+            int temporalLayerId);
 
     private static native boolean AMediaCodecQueueInputBuffer(
             long ndkMediaCodec,
@@ -126,8 +154,10 @@ public class NdkMediaCodec implements MediaCodecWrapper {
         int bitRate = format.getInteger(MediaFormat.KEY_BIT_RATE, -1);
         int frameRate = format.getInteger(MediaFormat.KEY_FRAME_RATE, -1);
         int iFrameInterval = format.getInteger(MediaFormat.KEY_I_FRAME_INTERVAL, -1);
-        int lowLatency = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.R) ?
-                format.getInteger(MediaFormat.KEY_LOW_LATENCY, -1) : -1;
+        int lowLatency =
+                ApiLevelUtil.isAtLeast(Build.VERSION_CODES.R)
+                        ? format.getInteger(MediaFormat.KEY_LOW_LATENCY, -1)
+                        : -1;
         int range = format.getInteger(MediaFormat.KEY_COLOR_RANGE, -1);
         int standard = format.getInteger(MediaFormat.KEY_COLOR_STANDARD, -1);
         int transfer = format.getInteger(MediaFormat.KEY_COLOR_TRANSFER, -1);
@@ -161,7 +191,7 @@ public class NdkMediaCodec implements MediaCodecWrapper {
                 colorFormat,
                 bitRate,
                 frameRate,
-                iFrameInterval ,
+                iFrameInterval,
                 csd0BufCopy,
                 csd1BufCopy,
                 flags,
@@ -169,7 +199,10 @@ public class NdkMediaCodec implements MediaCodecWrapper {
                 surface,
                 range,
                 standard,
-                transfer);
+                transfer,
+                format.getString(MediaFormat.KEY_TEMPORAL_LAYERING),
+                format.getString(MediaFormat.KEY_VIDEO_BITRATE_LAYERING),
+                format.getInteger(MediaFormat.KEY_TEMPORAL_LAYER_ID, -1));
     }
 
     @Override
@@ -198,12 +231,12 @@ public class NdkMediaCodec implements MediaCodecWrapper {
     public int dequeueOutputBuffer(BufferInfo info, long timeoutUs) {
         long[] ret = AMediaCodecDequeueOutputBuffer(mNdkMediaCodec, timeoutUs);
         if (ret[0] >= 0) {
-            info.offset = (int)ret[1];
-            info.size = (int)ret[2];
+            info.offset = (int) ret[1];
+            info.size = (int) ret[2];
             info.presentationTimeUs = ret[3];
-            info.flags = (int)ret[4];
+            info.flags = (int) ret[4];
         }
-        return (int)ret[0];
+        return (int) ret[0];
     }
 
     @Override
@@ -227,6 +260,18 @@ public class NdkMediaCodec implements MediaCodecWrapper {
     }
 
     @Override
+    public MediaFormat getOutputFormat(int index) {
+        MediaFormat mediaFormat = new MediaFormat();
+        int temporalLayerIndex =
+                AMediaCodecGetOutputFormatInt(
+                        mNdkMediaCodec, index, MediaFormat.KEY_TEMPORAL_LAYER_ID);
+        if (temporalLayerIndex >= 0) {
+            mediaFormat.setInteger(MediaFormat.KEY_TEMPORAL_LAYER_ID, temporalLayerIndex);
+        }
+        return mediaFormat;
+    }
+
+    @Override
     public ByteBuffer[] getOutputBuffers() {
         return null;
     }
@@ -243,14 +288,9 @@ public class NdkMediaCodec implements MediaCodecWrapper {
 
     @Override
     public void queueInputBuffer(
-            int index,
-            int offset,
-            int size,
-            long presentationTimeUs,
-            int flags) {
+            int index, int offset, int size, long presentationTimeUs, int flags) {
 
         AMediaCodecQueueInputBuffer(mNdkMediaCodec, index, offset, size, presentationTimeUs, flags);
-
     }
 
     @Override
@@ -260,18 +300,47 @@ public class NdkMediaCodec implements MediaCodecWrapper {
 
     @Override
     public void setParameters(Bundle params) {
+        String[] intKeysToCheck =
+                new String[] {
+                    MediaCodec.PARAMETER_KEY_REQUEST_SYNC_FRAME,
+                    MediaCodec.PARAMETER_KEY_VIDEO_BITRATE,
+                    MediaFormat.KEY_TEMPORAL_LAYER_ID,
+                };
 
-        String keys[] = new String[] {
-                MediaCodec.PARAMETER_KEY_REQUEST_SYNC_FRAME,
-                MediaCodec.PARAMETER_KEY_VIDEO_BITRATE};
+        String[] stringKeysToCheck =
+                new String[] {
+                    MediaFormat.KEY_TEMPORAL_LAYERING, "video-bitrate-layering",
+                };
 
-        for (String key : keys) {
+        java.util.ArrayList<String> intKeys = new java.util.ArrayList<>();
+        java.util.ArrayList<Integer> intValues = new java.util.ArrayList<>();
+        for (String key : intKeysToCheck) {
             if (params.containsKey(key)) {
-                int value = params.getInt(key);
-                AMediaCodecSetParameter(mNdkMediaCodec, key, value);
+                intKeys.add(key);
+                intValues.add(params.getInt(key));
             }
         }
 
+        java.util.ArrayList<String> stringKeys = new java.util.ArrayList<>();
+        java.util.ArrayList<String> stringValues = new java.util.ArrayList<>();
+        for (String key : stringKeysToCheck) {
+            if (params.containsKey(key)) {
+                stringKeys.add(key);
+                stringValues.add(params.getString(key));
+            }
+        }
+
+        int[] intValuesArray = new int[intValues.size()];
+        for (int i = 0; i < intValues.size(); i++) {
+            intValuesArray[i] = intValues.get(i);
+        }
+
+        AMediaCodecSetParameters(
+                mNdkMediaCodec,
+                intKeys.toArray(new String[0]),
+                intValuesArray,
+                stringKeys.toArray(new String[0]),
+                stringValues.toArray(new String[0]));
     }
 
     @Override
