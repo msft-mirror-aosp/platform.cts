@@ -282,7 +282,6 @@ static const VpPropertyDesc propertyDesc = {
                     s->properties.limits.maxViewportDimensions[1] = 4096;
                     s->properties.limits.maxViewports = 1;
                     s->properties.limits.minInterpolationOffset = -0.5f;
-                    s->properties.limits.minMemoryMapAlignment = 4096;
                     s->properties.limits.minStorageBufferOffsetAlignment = 256;
                     s->properties.limits.minTexelBufferOffsetAlignment = 256;
                     s->properties.limits.minTexelOffset = -8;
@@ -372,8 +371,6 @@ static const VpPropertyDesc propertyDesc = {
                     ret = ret && (s->properties.limits.maxViewportDimensions[1] >= 4096);
                     ret = ret && (s->properties.limits.maxViewports >= 1);
                     ret = ret && (s->properties.limits.minInterpolationOffset <= -0.5);
-                    ret = ret && (s->properties.limits.minMemoryMapAlignment <= 4096);
-                    ret = ret && ((s->properties.limits.minMemoryMapAlignment & (s->properties.limits.minMemoryMapAlignment - 1)) == 0);
                     ret = ret && (s->properties.limits.minStorageBufferOffsetAlignment <= 256);
                     ret = ret && ((s->properties.limits.minStorageBufferOffsetAlignment & (s->properties.limits.minStorageBufferOffsetAlignment - 1)) == 0);
                     ret = ret && (s->properties.limits.minTexelBufferOffsetAlignment <= 256);
@@ -2866,7 +2863,6 @@ static const VpPropertyDesc propertyDesc = {
                     s->properties.limits.maxViewportDimensions[1] = 4096;
                     s->properties.limits.maxViewports = 1;
                     s->properties.limits.minInterpolationOffset = -0.5f;
-                    s->properties.limits.minMemoryMapAlignment = 4096;
                     s->properties.limits.minStorageBufferOffsetAlignment = 256;
                     s->properties.limits.minTexelBufferOffsetAlignment = 256;
                     s->properties.limits.minTexelOffset = -8;
@@ -2955,8 +2951,6 @@ static const VpPropertyDesc propertyDesc = {
                     ret = ret && (s->properties.limits.maxViewportDimensions[1] >= 4096);
                     ret = ret && (s->properties.limits.maxViewports >= 1);
                     ret = ret && (s->properties.limits.minInterpolationOffset <= -0.5);
-                    ret = ret && (s->properties.limits.minMemoryMapAlignment <= 4096);
-                    ret = ret && ((s->properties.limits.minMemoryMapAlignment & (s->properties.limits.minMemoryMapAlignment - 1)) == 0);
                     ret = ret && (s->properties.limits.minStorageBufferOffsetAlignment <= 256);
                     ret = ret && ((s->properties.limits.minStorageBufferOffsetAlignment & (s->properties.limits.minStorageBufferOffsetAlignment - 1)) == 0);
                     ret = ret && (s->properties.limits.minTexelBufferOffsetAlignment <= 256);
