@@ -61,7 +61,7 @@ open class BaseSupervisionTest {
     fun withSupervisingUser(
         supervisionEnabled: Boolean = true,
         hasPin: Boolean = true,
-        action: () -> Unit,
+        action: () -> Unit = {},
     ) {
         setSupervisionEnabled(supervisionEnabled)
 
