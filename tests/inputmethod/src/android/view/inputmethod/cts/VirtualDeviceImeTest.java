@@ -49,8 +49,10 @@ import android.os.Bundle;
 import android.platform.test.annotations.AppModeFull;
 import android.server.wm.BuildUtils;
 import android.server.wm.Condition;
+import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
@@ -528,15 +530,45 @@ public class VirtualDeviceImeTest {
     }
 
     /**
+     * No-op IME implementation used for logging purposes only. Initial IME lifecycle callbacks are
+     * logged for better debugging.
+     */
+    abstract static class LoggingInputMethodService extends InputMethodService {
+
+        String getTag() {
+            return getClass().getSimpleName();
+        }
+
+        @Override
+        public void onCreate() {
+            super.onCreate();
+            Log.d(getTag(), "onCreate");
+        }
+
+        @Override
+        public void onStartInput(EditorInfo attribute, boolean restarting) {
+            super.onStartInput(attribute, restarting);
+            Log.d(getTag(), "onStartInput(attribute=" + attribute + ")");
+        }
+
+        @Override
+        public void onStartInputView(EditorInfo editorInfo, boolean restarting) {
+            super.onStartInputView(editorInfo, restarting);
+            Log.d(getTag(), "onStartInputView");
+        }
+    }
+
+    /**
      * Simple IME implementation forwarding the show input requests to a listener along with a
      * display id.
      */
-    public static class DefaultDeviceTestIme extends InputMethodService {
+    public static class DefaultDeviceTestIme extends LoggingInputMethodService {
 
         static ImeListener sImeListener = null;
 
         @Override
         public boolean onShowInputRequested(int flags, boolean configChange) {
+            Log.d(getTag(), "onShowInputRequested (sImeListener=" + sImeListener + ")");
             if (sImeListener != null) {
                 sImeListener.onShow(getWindow().getContext().getDisplay().getDisplayId());
             }
@@ -548,12 +580,13 @@ public class VirtualDeviceImeTest {
      * Simple IME implementation forwarding the show input requests to a listener along with a
      * display id.
      */
-    public static class VirtualDeviceTestIme extends InputMethodService {
+    public static class VirtualDeviceTestIme extends LoggingInputMethodService {
 
         static ImeListener sImeListener = null;
 
         @Override
         public boolean onShowInputRequested(int flags, boolean configChange) {
+            Log.d(getTag(), "onShowInputRequested (sImeListener=" + sImeListener + ")");
             if (sImeListener != null) {
                 sImeListener.onShow(getWindow().getContext().getDisplay().getDisplayId());
             }
