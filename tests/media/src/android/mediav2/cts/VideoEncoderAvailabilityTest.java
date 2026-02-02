@@ -265,8 +265,8 @@ class CodecEncoderGLSurface extends CodecTestBase {
 
     @Override
     protected void doWork(int frameLimit) throws InterruptedException {
-        while (!mAsyncHandle.hasSeenError() && !mSawInputEOS &&
-                mInputCount < frameLimit) {
+        int frameCount = 0;
+        while (!mAsyncHandle.hasSeenError() && !mSawInputEOS && frameCount < frameLimit) {
             if (mInputCount - mOutputCount > mLatency) {
                 tryEncoderOutput();
             }
@@ -277,6 +277,7 @@ class CodecEncoderGLSurface extends CodecTestBase {
             mEGLWindowInpSurface.swapBuffers();
             mOutputBuff.saveInPTS(pts);
             mInputCount++;
+            frameCount++;
         }
     }
 
@@ -288,6 +289,18 @@ class CodecEncoderGLSurface extends CodecTestBase {
         MediaFormat format = mEncCfgParams.getFormat();
         configureCodec(format, true, false, true, MediaCodec.CONFIGURE_FLAG_ENCODE);
         mCodec.start();
+    }
+
+    public List<CodecResource> getRequiredResources() {
+        return getCodecRequiredResources(mCodec);
+    }
+
+    public int getResourceChangeCbCount() {
+        return ((CodecAsyncHandlerResource) mAsyncHandle).getResourceChangeCbCount();
+    }
+
+    public void waitOnResourceChange(int currResourceChangeCbCount) throws InterruptedException {
+        ((CodecAsyncHandlerResource) mAsyncHandle).waitOnResourceChange(currResourceChangeCbCount);
     }
 
     public void updateOpMode(int priority, int operatingRate) {
@@ -505,9 +518,19 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
 
     private void validateMaxInstances(String codecName, String mediaType, boolean testRTMode,
             boolean testOperatingModeSwitch) throws CloneNotSupportedException {
+        // FIXME: While switching between non-realtime and realtime, the resource adjustment
+        // (relinquishing or committing) MUST happen on the next frame being processed. This would
+        // mean that the test must queue inputs for processing after a call to setParameters().
+        // Once this method is updated to queue inputs remove the below check
+        if (testOperatingModeSwitch) {
+            Assert.fail("Update test to handle this scenario");
+        }
+        // TODO:
         // if multiple instances are started in nrt mode until resource exhaustion, switching a
         // codec to rt mode may or may not succeed due to lack of resources. In this scenario,
-        // should an nrt resource be auto released so that it can make way for rt?
+        // - should an nrt resource be auto released so that it can make way for rt? or
+        // - should there be an error and the session has to end? or
+        // - should the codec be continuing to operate in nrt mode?
         if (testOperatingModeSwitch && !testRTMode) {
             Assert.fail("Update test to handle this scenario");
         }
@@ -707,7 +730,8 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
              "android.media.MediaCodec#getRequiredResources",
              "android.media.MediaCodec.Callback#onRequiredResourcesChanged",
              "android.media.MediaFormat#KEY_PRIORITY"})
-    public void testResourceConsumptionForOperatingMode() throws IOException, InterruptedException {
+    public void testResourceConsumptionForOperatingMode()
+            throws IOException, InterruptedException, CloneNotSupportedException {
         Assume.assumeTrue("Skipping, intended for devices the board first sdk >= 202604",
                 BOARD_FIRST_SDK_IS_AT_LEAST_202604);
         MediaFormat format = mEncCfgParams.getFormat();
@@ -715,79 +739,105 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
         formats.add(format);
         Assume.assumeTrue("Codec: " + mCodecName + " doesn't support format: " + format,
                 areFormatsSupported(mCodecName, mMediaType, formats));
-        mCodec = MediaCodec.createByCodecName(mCodecName);
-        CodecAsyncHandlerResource asyncHandleResource = new CodecAsyncHandlerResource();
-        mAsyncHandle = asyncHandleResource;
-        mOutputBuff = new OutputManager();
+
         final int OPERATING_RATE = mEncCfgParams.mFrameRate;
+        EncoderConfigParams rtConfig =
+                mEncCfgParams.getBuilder().clone().setPriority(0).setOperatingRate(OPERATING_RATE)
+                        .build();
+        EncoderConfigParams nrtConfig =
+                mEncCfgParams.getBuilder().clone().setPriority(1).setOperatingRate(0).build();
+
         // get real time resource requirements
-        format.setInteger(MediaFormat.KEY_PRIORITY, 0);
-        format.setInteger(MediaFormat.KEY_OPERATING_RATE, OPERATING_RATE);
-        configureCodec(format, true, false, true, MediaCodec.CONFIGURE_FLAG_ENCODE);
-        List<CodecResource> rtResources = getCodecRequiredResources(mCodec);
-        mCodec.reset();
+        CodecEncoderGLSurface codec =
+                new CodecEncoderGLSurface(mCodecName, mMediaType, rtConfig, mAllTestParams);
+        codec.launchInstance();
+        codec.doWork(5);
+        codec.queueEOS();
+        codec.waitForAllOutputs();
+        List<CodecResource> rtResources = codec.getRequiredResources();
+        codec.stopInstance();
+        codec.releaseInstance();
+
         // get non real time resource requirements
-        format.setInteger(MediaFormat.KEY_PRIORITY, 1);
-        format.setInteger(MediaFormat.KEY_OPERATING_RATE, 0);
-        configureCodec(format, true, false, true, MediaCodec.CONFIGURE_FLAG_ENCODE);
-        List<CodecResource> nrtResources = getCodecRequiredResources(mCodec);
+        codec = new CodecEncoderGLSurface(mCodecName, mMediaType, nrtConfig, mAllTestParams);
+        codec.launchInstance();
+        codec.doWork(5);
+        codec.queueEOS();
+        codec.waitForAllOutputs();
+        List<CodecResource> nrtResources = codec.getRequiredResources();
+        codec.stopInstance();
+        codec.releaseInstance();
+
         StringBuilder testLogs = new StringBuilder();
         int result = compareResources(rtResources, nrtResources, testLogs);
         Assert.assertEquals("required resources for media codec to operate in real time must be "
                         + "greater than non-real time \n" + testLogs + mTestEnv + mTestConfig,
                 LHS_RESOURCE_GE, result);
-        mCodec.start();
-        doWork(mInputCount + 10);
-        int currResourceChangeCbCount = asyncHandleResource.getResourceChangeCbCount();
-        updateOperatingMode(mCodec, 0, OPERATING_RATE); // switch to real time
-        // MediaCodec.setParameters() is expected to take effect with the next enqueue call. In
-        // surface mode, this synchronization is not guaranteed and there could be a delay. So
-        // instead of checking for a callback on the immediate enqueue, queue multiple inputs and
-        // check.
-        doWork(mInputCount + 5);
-        asyncHandleResource.waitOnResourceChange(currResourceChangeCbCount);
-        Assert.assertEquals("taking too long to receive onRequiredResourcesChanged callback\n"
-                        + mTestEnv + mTestConfig,
-                asyncHandleResource.getResourceChangeCbCount(), currResourceChangeCbCount + 1);
-        List<CodecResource> resources = getCodecRequiredResources(mCodec);
-        result = compareResources(resources, rtResources, testLogs);
-        Assert.assertEquals(
-                "current resources of media codec to is not matching real-time resources \n"
-                        + testLogs + mTestEnv + mTestConfig,
-                RESOURCE_EQ, result);
-        doWork(mInputCount + 10);
-        currResourceChangeCbCount = asyncHandleResource.getResourceChangeCbCount();
-        updateOperatingMode(mCodec, 0, OPERATING_RATE); // switch to real time
-        doWork(mInputCount + 5);
-        asyncHandleResource.waitOnResourceChange(currResourceChangeCbCount);
-        Assert.assertEquals(
-                "unexpected onRequiredResourcesChanged callback\n" + mTestEnv + mTestConfig,
-                asyncHandleResource.getResourceChangeCbCount(), currResourceChangeCbCount);
-        doWork(mInputCount + 10);
-        updateOperatingMode(mCodec, 1, 0); // switch to non-real time
-        doWork(mInputCount + 5);
-        asyncHandleResource.waitOnResourceChange(currResourceChangeCbCount);
-        Assert.assertEquals("taking too long to receive onRequiredResourcesChanged callback\n"
-                        + mTestEnv + mTestConfig,
-                asyncHandleResource.getResourceChangeCbCount(), currResourceChangeCbCount + 1);
-        resources = getCodecRequiredResources(mCodec);
+
+        // launch codec in nrt mode
+        codec = new CodecEncoderGLSurface(mCodecName, mMediaType, nrtConfig, mAllTestParams);
+        codec.launchInstance();
+        codec.doWork(10);
+
+        // The required resources may be updated after the start() call. Wait for callback.
+        int currResourceChangeCbCount = codec.getResourceChangeCbCount();
+        codec.waitOnResourceChange(currResourceChangeCbCount);
+        List<CodecResource> resources = codec.getRequiredResources();
         result = compareResources(resources, nrtResources, testLogs);
         Assert.assertEquals(
                 "current resources of media codec to is not matching non real-time resources \n"
                         + testLogs + mTestEnv + mTestConfig,
                 RESOURCE_EQ, result);
-        doWork(mInputCount + 10);
-        currResourceChangeCbCount = asyncHandleResource.getResourceChangeCbCount();
-        updateOperatingMode(mCodec, 1, 0); // switch to non-real time
-        doWork(mInputCount + 5);
-        asyncHandleResource.waitOnResourceChange(currResourceChangeCbCount);
+        currResourceChangeCbCount = codec.getResourceChangeCbCount();
+        codec.updateOpMode(0, OPERATING_RATE); // switch to real time
+        // MediaCodec.setParameters() is expected to take effect with the next enqueue call. In
+        // surface mode, this synchronization is not guaranteed and there could be a delay. So
+        // instead of checking for a callback on the immediate enqueue, queue multiple inputs and
+        // check.
+        codec.doWork(5);
+        codec.waitOnResourceChange(currResourceChangeCbCount);
+        Assert.assertEquals("taking too long to receive onRequiredResourcesChanged callback\n"
+                        + mTestEnv + mTestConfig,
+                codec.getResourceChangeCbCount(), currResourceChangeCbCount + 1);
+        resources = codec.getRequiredResources();
+        result = compareResources(resources, rtResources, testLogs);
+        Assert.assertEquals(
+                "current resources of media codec to is not matching real-time resources \n"
+                        + testLogs + mTestEnv + mTestConfig,
+                RESOURCE_EQ, result);
+        codec.doWork(10);
+        currResourceChangeCbCount = codec.getResourceChangeCbCount();
+        codec.updateOpMode(0, OPERATING_RATE); // switch to real time
+        codec.doWork(5);
+        codec.waitOnResourceChange(currResourceChangeCbCount);
         Assert.assertEquals(
                 "unexpected onRequiredResourcesChanged callback\n" + mTestEnv + mTestConfig,
-                asyncHandleResource.getResourceChangeCbCount(), currResourceChangeCbCount);
-        queueEOS();
-        waitForAllOutputs();
-        mCodec.stop();
-        mCodec.release();
+                codec.getResourceChangeCbCount(), currResourceChangeCbCount);
+        codec.doWork(10);
+        codec.updateOpMode(1, 0); // switch to non-real time
+        codec.doWork(5);
+        codec.waitOnResourceChange(currResourceChangeCbCount);
+        Assert.assertEquals("taking too long to receive onRequiredResourcesChanged callback\n"
+                        + mTestEnv + mTestConfig,
+                codec.getResourceChangeCbCount(), currResourceChangeCbCount + 1);
+        resources = codec.getRequiredResources();
+        result = compareResources(resources, nrtResources, testLogs);
+        Assert.assertEquals(
+                "current resources of media codec to is not matching non real-time resources \n"
+                        + testLogs + mTestEnv + mTestConfig,
+                RESOURCE_EQ, result);
+        codec.doWork(10);
+        currResourceChangeCbCount = codec.getResourceChangeCbCount();
+        codec.updateOpMode(1, 0); // switch to non-real time
+        codec.doWork(5);
+        codec.waitOnResourceChange(currResourceChangeCbCount);
+        Assert.assertEquals(
+                "unexpected onRequiredResourcesChanged callback\n" + mTestEnv + mTestConfig,
+                codec.getResourceChangeCbCount(), currResourceChangeCbCount);
+        codec.queueEOS();
+        codec.waitForAllOutputs();
+        codec.stopInstance();
+        codec.releaseInstance();
     }
 
     /**
