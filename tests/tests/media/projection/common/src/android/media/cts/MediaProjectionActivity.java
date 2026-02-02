@@ -248,11 +248,18 @@ public class MediaProjectionActivity extends Activity {
         uiDevice.waitForIdle();
 
         BySelector shareTabSelector = By.res(SHARE_TAB_TEST_TAG);
+        BySelector shareAppSelector = By.res(SHARE_APP_WINDOW_TEST_TAG);
+        BySelector shareEntireSelector = By.res(SHARE_ENTIRE_SCREEN_TEST_TAG);
+
         boolean isNewUiPresent =
-                uiDevice.wait(Until.hasObject(shareTabSelector), PERMISSION_DIALOG_WAIT_MS);
+                uiDevice.wait(Until.hasObject(shareTabSelector), PERMISSION_DIALOG_WAIT_MS)
+                        || uiDevice.wait(
+                                Until.hasObject(shareAppSelector), PERMISSION_DIALOG_WAIT_MS)
+                        || uiDevice.wait(
+                                Until.hasObject(shareEntireSelector), PERMISSION_DIALOG_WAIT_MS);
 
         if (isNewUiPresent) {
-            Log.d(TAG, "Compose permission UI detected via testTag: " + SHARE_TAB_TEST_TAG);
+            Log.d(TAG, "Compose permission UI detected.");
             dismissNewComposePermissionDialog(uiDevice, displayName);
         } else {
             Log.d(TAG, "Old AlertDialog permission UI detected.");
