@@ -134,6 +134,9 @@ class AppFunctionMetadataTestHelper {
             val DYNAMIC_STOP_PROCESS = AppFunctionName(PACKAGE_NAME, "contextStopProcess")
             val DYNAMIC_GET_URIS = AppFunctionName(PACKAGE_NAME, "contextGetUris")
 
+            val GLOBAL_SCOPE = AppFunctionName(PACKAGE_NAME, "appFunctionGlobalScope")
+            val ACTIVITY_SCOPE = AppFunctionName(PACKAGE_NAME, "appFunctionActivityScope")
+
             val APP_LEVEL_FUNCTIONS: Set<AppFunctionName> =
                 setOf(
                     DYNAMIC_CONCAT_STRINGS,
@@ -144,12 +147,17 @@ class AppFunctionMetadataTestHelper {
                     DYNAMIC_STOP_PROCESS,
                     DYNAMIC_STOP_PROCESS,
                     DYNAMIC_GET_URIS,
+                    GLOBAL_SCOPE,
+                    ACTIVITY_SCOPE,
                 )
 
             val SERVICE_LEVEL_FUNCTIONS: Set<AppFunctionName> =
                 setOf(HIGH_SCHEMA_VERSION, ENABLED_BY_DEFAULT, DISABLED_BY_DEFAULT)
 
             val ALL_FUNCTIONS = APP_LEVEL_FUNCTIONS + SERVICE_LEVEL_FUNCTIONS
+
+            // TODO: update this once the indexer change is in.
+            val ALL_GLOBAL_FUNCTIONS = setOf(GLOBAL_SCOPE)
         }
 
         object Components {

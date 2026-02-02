@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,6 +16,7 @@
 
 package android.app.appfunctions.cts
 
+import android.app.appfunctions.AppFunctionMetadata
 import android.app.appfunctions.AppFunctionName
 import android.app.appfunctions.AppFunctionSearchSpec
 import android.app.appfunctions.flags.Flags
@@ -24,8 +25,8 @@ import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.compatibility.common.util.ApiTest
 import com.google.common.truth.Truth.assertThat
+import org.junit.Assert.assertThrows
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -34,25 +35,9 @@ import org.junit.runner.RunWith
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
 class AppFunctionSearchSpecTest {
 
-    @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+    @get:Rule
+    val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
-    @ApiTest(
-        apis =
-            [
-                "android.app.appfunctions.AppFunctionSearchSpec.Builder#Builder",
-                "android.app.appfunctions.AppFunctionSearchSpec.Builder#setPackageNames",
-                "android.app.appfunctions.AppFunctionSearchSpec.Builder#setFunctionNames",
-                "android.app.appfunctions.AppFunctionSearchSpec.Builder#setSchemaCategory",
-                "android.app.appfunctions.AppFunctionSearchSpec.Builder#setSchemaName",
-                "android.app.appfunctions.AppFunctionSearchSpec.Builder#setMinSchemaVersion",
-                "android.app.appfunctions.AppFunctionSearchSpec.Builder#build",
-                "android.app.appfunctions.AppFunctionSearchSpec#getPackageNames",
-                "android.app.appfunctions.AppFunctionSearchSpec#getFunctionNames",
-                "android.app.appfunctions.AppFunctionSearchSpec#getSchemaCategory",
-                "android.app.appfunctions.AppFunctionSearchSpec#getSchemaName",
-                "android.app.appfunctions.AppFunctionSearchSpec#getMinSchemaVersion",
-            ]
-    )
     @Test
     fun create() {
         val packageNames = listOf("pkg1", "pkg2")
@@ -60,15 +45,16 @@ class AppFunctionSearchSpecTest {
         val schemaCategory = "category"
         val schemaName = "name"
         val minSchemaVersion = 2L
+        val scopes = listOf(AppFunctionMetadata.SCOPE_GLOBAL)
 
-        val spec =
-            AppFunctionSearchSpec.Builder()
-                .setPackageNames(packageNames)
-                .setFunctionNames(functionNames)
-                .setSchemaCategory(schemaCategory)
-                .setSchemaName(schemaName)
-                .setMinSchemaVersion(minSchemaVersion)
-                .build()
+        val spec = AppFunctionSearchSpec.Builder()
+            .setPackageNames(packageNames)
+            .setFunctionNames(functionNames)
+            .setSchemaCategory(schemaCategory)
+            .setSchemaName(schemaName)
+            .setMinSchemaVersion(minSchemaVersion)
+            .setScopes(scopes)
+            .build()
 
         assertThat(spec.packageNames).containsExactlyElementsIn(packageNames).inOrder()
         assertThat(spec.functionNames).containsExactlyElementsIn(functionNames).inOrder()
@@ -77,65 +63,78 @@ class AppFunctionSearchSpecTest {
         assertThat(spec.minSchemaVersion).isEqualTo(minSchemaVersion)
     }
 
-    @ApiTest(
-        apis =
-            [
-                "android.app.appfunctions.AppFunctionSearchSpec#writeToParcel",
-                "android.app.appfunctions.AppFunctionSearchSpec#CREATOR",
-            ]
-    )
     @Test
-    fun parcelAndUnparcel() {
-        val original =
-            AppFunctionSearchSpec.Builder()
-                .setPackageNames(listOf("pkg1", "pkg2"))
-                .setFunctionNames(
-                    listOf(AppFunctionName("pkg1", "id1"), AppFunctionName("pkg2", "id2"))
-                )
-                .setSchemaCategory("category")
-                .setSchemaName("name")
-                .setMinSchemaVersion(2L)
-                .build()
+    fun parcelAndUnparcel_allFieldsSet() {
+        val original = SEARCH_SPEC_WITH_ALL_PROPERTIES
 
         val restored = parcelAndUnparcel(original)
 
         assertThat(restored).isEqualTo(original)
-        assertThat(restored.packageNames).isEqualTo(original.packageNames)
-        assertThat(restored.functionNames).isEqualTo(original.functionNames)
-        assertThat(restored.schemaCategory).isEqualTo(original.schemaCategory)
-        assertThat(restored.schemaName).isEqualTo(original.schemaName)
-        assertThat(restored.minSchemaVersion).isEqualTo(original.minSchemaVersion)
     }
 
-    @ApiTest(
-        apis =
-            [
-                "android.app.appfunctions.AppFunctionSearchSpec#equals",
-                "android.app.appfunctions.AppFunctionSearchSpec#hashCode",
-            ]
-    )
+    @Test
+    fun parcelAndUnparcel_minimalFields() {
+        val original = AppFunctionSearchSpec.Builder().build()
+
+        val restored = parcelAndUnparcel(original)
+
+        assertThat(restored).isEqualTo(original)
+    }
+
     @Test
     fun equalsAndHashCode() {
-        val spec1 =
-            AppFunctionSearchSpec.Builder()
-                .setPackageNames(listOf("pkg"))
-                .setSchemaCategory("cat")
+        val base = SEARCH_SPEC_WITH_ALL_PROPERTIES
+
+        val sameAsBase = AppFunctionSearchSpec.Builder()
+            .setPackageNames(listOf("testPackage1", "testPackage2"))
+            .setFunctionNames(
+                listOf(
+                    AppFunctionName("testPackage1", "id1"),
+                    AppFunctionName("testPackage2", "id2")
+                )
+            )
+            .setSchemaCategory("testCategory")
+            .setSchemaName("testName")
+            .setMinSchemaVersion(1L)
+            .setScopes(listOf(AppFunctionMetadata.SCOPE_GLOBAL, AppFunctionMetadata.SCOPE_ACTIVITY))
+            .build()
+
+        val differentPackage =
+            AppFunctionSearchSpec.Builder(base).setPackageNames(listOf("other")).build()
+        val differentFunction =
+            AppFunctionSearchSpec.Builder(base)
+                .setFunctionNames(listOf(AppFunctionName("p", "i")))
                 .build()
-        val spec2 =
-            AppFunctionSearchSpec.Builder()
-                .setPackageNames(listOf("pkg"))
-                .setSchemaCategory("cat")
-                .build()
-        val spec3 =
-            AppFunctionSearchSpec.Builder()
-                .setPackageNames(listOf("pkg2"))
-                .setSchemaCategory("cat")
+        val differentCategory =
+            AppFunctionSearchSpec.Builder(base).setSchemaCategory("other").build()
+        val differentName = AppFunctionSearchSpec.Builder(base).setSchemaName("other").build()
+        val differentVersion = AppFunctionSearchSpec.Builder(base).setMinSchemaVersion(99L).build()
+        val differentScopes =
+            AppFunctionSearchSpec.Builder(base)
+                .setScopes(listOf(AppFunctionMetadata.SCOPE_GLOBAL))
                 .build()
 
-        assertThat(spec1).isEqualTo(spec2)
-        assertThat(spec1.hashCode()).isEqualTo(spec2.hashCode())
-        assertThat(spec1).isNotEqualTo(spec3)
-        assertThat(spec1.hashCode()).isNotEqualTo(spec3.hashCode())
+        assertThat(base).isEqualTo(sameAsBase)
+        assertThat(base.hashCode()).isEqualTo(sameAsBase.hashCode())
+
+        assertThat(base).isNotEqualTo(differentPackage)
+        assertThat(base).isNotEqualTo(differentFunction)
+        assertThat(base).isNotEqualTo(differentCategory)
+        assertThat(base).isNotEqualTo(differentName)
+        assertThat(base).isNotEqualTo(differentVersion)
+        assertThat(base).isNotEqualTo(differentScopes)
+
+        assertThat(base.hashCode()).isNotEqualTo(differentPackage.hashCode())
+    }
+
+    @Test
+    fun builder_emptyCollections_throwsException() {
+        assertThrows(IllegalArgumentException::class.java) {
+            AppFunctionSearchSpec.Builder().setPackageNames(emptyList())
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            AppFunctionSearchSpec.Builder().setFunctionNames(emptyList())
+        }
     }
 
     private fun parcelAndUnparcel(original: AppFunctionSearchSpec): AppFunctionSearchSpec {
@@ -147,5 +146,27 @@ class AppFunctionSearchSpecTest {
         } finally {
             parcel.recycle()
         }
+    }
+
+    companion object {
+        private val SEARCH_SPEC_WITH_ALL_PROPERTIES =
+            AppFunctionSearchSpec.Builder()
+                .setPackageNames(listOf("testPackage1", "testPackage2"))
+                .setFunctionNames(
+                    listOf(
+                        AppFunctionName("testPackage1", "id1"),
+                        AppFunctionName("testPackage2", "id2"),
+                    )
+                )
+                .setSchemaCategory("testCategory")
+                .setSchemaName("testName")
+                .setMinSchemaVersion(1L)
+                .setScopes(
+                    listOf(
+                        AppFunctionMetadata.SCOPE_GLOBAL,
+                        AppFunctionMetadata.SCOPE_ACTIVITY
+                    )
+                )
+                .build()
     }
 }

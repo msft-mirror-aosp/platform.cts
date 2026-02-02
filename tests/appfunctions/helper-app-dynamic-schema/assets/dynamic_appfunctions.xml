@@ -50,4 +50,16 @@
         <function_id>contextGetUris</function_id>
         <enabled_by_default>true</enabled_by_default>
     </appfunction>
+    <appfunction>
+        <id>appFunctionGlobalScope</id>
+        <function_id>appFunctionGlobalScope</function_id>
+        <scope>global</scope>
+        <enabled_by_default>true</enabled_by_default>
+    </appfunction>
+    <appfunction>
+        <id>appFunctionActivityScope</id>
+        <function_id>appFunctionActivityScope</function_id>
+        <scope>activity</scope>
+        <enabled_by_default>true</enabled_by_default>
+    </appfunction>
 </appfunctions>
