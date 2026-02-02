@@ -18,6 +18,7 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.android.bedstead.testapp.SupervisionApp">
+    <uses-permission android:name="android.permission.MANAGE_SUPERVISION" />
     <application android:testOnly="true" android:label="SupervisionApp">
             <!-- Target to-be-bound service. -->
             <service android:name=".BaseTestSupervisionAppService"
