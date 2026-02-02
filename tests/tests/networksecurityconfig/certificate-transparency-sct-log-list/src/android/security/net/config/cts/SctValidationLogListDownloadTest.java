@@ -28,7 +28,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Instrumentation;
@@ -122,7 +121,7 @@ public class SctValidationLogListDownloadTest extends BaseTestCase {
                 assertThrows(SSLHandshakeException.class, () -> urlConnection.connect());
 
         assertThat(expected.getCause()).isInstanceOf(CertificateException.class);
-        assertTrue(expected.getMessage().contains("NOT_ENOUGH_SCTS"));
+        assertThat(expected.getMessage()).contains("NOT_ENOUGH_SCTS");
     }
 
     private void assumeLogListPresent() throws InterruptedException {
