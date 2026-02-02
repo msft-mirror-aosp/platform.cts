@@ -238,11 +238,6 @@
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerTest#isAppFunctionEnabled_otherPackage_hasExecuteAppFunctionPermission[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerTest#isAppFunctionEnabled_otherPackage_noPermission[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerTest#setAppFunctionEnabled_functionDefaultDisabled[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionMetadataTest#installTwoPackageWithAppFunctions_runtimeMetadataExist[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionMetadataTest#twoPackagesInstalled_uninstallOneOfThem_runtimeMetadataUpdated[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionMetadataTest#twoPackagesInstalled_updateOneOfThem_runtimeMetadataUpdated[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionMetadataTest#uninstallPackageWithAppFunctions_runtimeMetadataRemoved[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionMetadataTest#updatePackage_runtimeMetadataUpdated[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionNameTest#create"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionNameTest#equalsAndHashCode"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionNameTest#parcelAndUnparcel"/>
@@ -288,9 +283,6 @@
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.SidecarManagerTest#isAppFunctionEnabled_sidecar[IncludeRunOnPrimaryUser]"/>
     <!-- CtsAppFunctionTestCases[run-on-secondary-user] -->
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.AppFunctionManagerTest#checkManagerNotNull[IncludeRunOnSecondaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.AppFunctionMetadataTest#createAppFunctionStaticMetadata[IncludeRunOnSecondaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.AppFunctionMetadataTest#installPackageWithAppFunction_runtimeMetadataVisible_withOnlyExecuteAppFunctionSystemPermission[IncludeRunOnSecondaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.AppFunctionMetadataTest#installTwoPackageWithAppFunctions_runtimeMetadataExist[IncludeRunOnSecondaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.AppFunctionRegistrationTest#execute_batchRegistration_canExecuteBothFunctions[IncludeRunOnSecondaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.AppFunctionRegistrationTest#register_sameIdInDifferentProcessAfterBatchedRegistration_fail[IncludeRunOnSecondaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.AppFunctionRegistrationTest#register_theSameIdTwiceDifferentProcesses_failAllBatchRegistration[IncludeRunOnSecondaryUser]"/>
