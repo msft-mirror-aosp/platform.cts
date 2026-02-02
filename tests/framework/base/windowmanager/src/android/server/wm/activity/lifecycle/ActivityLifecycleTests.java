@@ -812,6 +812,8 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
         // Launch the activity that will recreate itself
         final Activity recreatingActivity = new Launcher(SingleTopActivity.class)
                 .launch();
+        final int windowingModeOfRecreatingActivity =
+                mWmState.getWindowState(recreatingActivity.getComponentName()).getWindowingMode();
 
         // Retrieve the activity Task Display Area.
         int recreatingActivityTDAFeatureId = mWmState.getTaskDisplayAreaFeatureId(recreatingActivity
@@ -833,6 +835,11 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
             waitAndAssertActivityStates(state(recreatingActivity, ON_STOP));
         }
 
+        final ActivityOptions optionsForRelaunch = ActivityOptions.makeBasic();
+        // Keep the original windowing mode to prevent the activity lifecycle from being affected
+        // by the windowing mode change.
+        optionsForRelaunch.setLaunchWindowingMode(windowingModeOfRecreatingActivity);
+
         // Launch the activity again to recreate
         getTransitionLog().clear();
         new Launcher(SingleTopActivity.class)
@@ -841,6 +848,7 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
                 // There is no guarantee that the activity will be relaunched after on top resume
                 // state received. Skip recording the top resume state to simplify the verification.
                 .setSkipTopResumedStateCheck()
+                .setOptions(optionsForRelaunch)
                 .launch();
 
         // Wait for activity to relaunch and resume
@@ -887,6 +895,8 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
         // Launch a singleTop activity
         final Activity singleTopActivity = launchActivityAndWait(SingleTopActivity.class);
         TransitionVerifier.assertLaunchSequence(SingleTopActivity.class, getTransitionLog());
+        final int windowingModeOfSingleTopActivity =
+                mWmState.getWindowState(singleTopActivity.getComponentName()).getWindowingMode();
 
         int singleTopActivityTDAFeatureId = mWmState.getTaskDisplayAreaFeatureId(singleTopActivity
                 .getComponentName());
@@ -908,11 +918,17 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
             waitAndAssertActivityStates(state(singleTopActivity, ON_STOP));
         }
 
+        final ActivityOptions optionsForRelaunch = ActivityOptions.makeBasic();
+        // Keep the original windowing mode to prevent the activity lifecycle from being affected
+        // by the windowing mode change.
+        optionsForRelaunch.setLaunchWindowingMode(windowingModeOfSingleTopActivity);
+
         // Try to launch again
         getTransitionLog().clear();
         new Launcher(SingleTopActivity.class)
                 .setFlags(FLAG_ACTIVITY_NEW_TASK)
                 .setNoInstance()
+                .setOptions(optionsForRelaunch)
                 .launch();
 
         // Verify that the first activity was restarted, new intent was delivered and resumed again
