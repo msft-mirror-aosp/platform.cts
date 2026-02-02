@@ -662,6 +662,10 @@ public class SmsTest {
             FLAG_REDACT_OTP_SMS, FLAG_REDACT_OTP_SMS_API, FLAG_REDACT_OTP_APP_COMPAT_API})
     @EnsureHasNoDeviceOwner
     public void testOtpSms_roleHoldingAppCanRead() throws Exception {
+        assumeTrue("Skipping test: Not a Voice Capable Device",
+            mContext.getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+
         final String message = getSmsRetrieverOtpMessage();
         List<String> smsOtpReadingRoles =
                 List.of(RoleManager.ROLE_ASSISTANT, RoleManager.ROLE_DIALER);
