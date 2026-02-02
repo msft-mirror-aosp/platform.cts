@@ -129,6 +129,7 @@ class ObserveAppFunctionsTest {
 
             assertThat(observer.updatedPackagesHistory).isEmpty()
             assertThat(observer.updatedFunctionsHistory).isEmpty()
+            assertThat(observer.updatedFunctionStatesHistory).isEmpty()
         } finally {
             observation?.cancel()
             uninstallPackage(UpdatableHelperApp.PACKAGE_NAME, context, checkIndexation = true)
@@ -259,6 +260,7 @@ class ObserveAppFunctionsTest {
             retryAssert {
                 assertThat(observer.updatedPackagesHistory).hasSize(1)
                 assertThat(observer.updatedFunctionsHistory).isEmpty()
+                assertThat(observer.updatedFunctionStatesHistory).isEmpty()
                 assertThat(observer.updatedPackagesHistory.flatten())
                     .containsExactly(UpdatableHelperApp.PACKAGE_NAME)
             }
@@ -321,8 +323,9 @@ class ObserveAppFunctionsTest {
 
             retryAssert {
                 assertThat(observer.updatedPackagesHistory).isEmpty()
-                assertThat(observer.updatedFunctionsHistory).hasSize(2)
-                assertThat(observer.updatedFunctionsHistory.flatten())
+                assertThat(observer.updatedFunctionsHistory).isEmpty()
+                assertThat(observer.updatedFunctionStatesHistory).hasSize(2)
+                assertThat(observer.updatedFunctionStatesHistory.flatten())
                     .containsExactly(
                         CtsApp.FunctionNames.ADD_DISABLED_BY_DEFAULT,
                         CtsApp.FunctionNames.ADD,
@@ -393,8 +396,9 @@ class ObserveAppFunctionsTest {
 
             retryAssert {
                 assertThat(observer.updatedPackagesHistory).isEmpty()
-                assertThat(observer.updatedFunctionsHistory).hasSize(1)
-                assertThat(observer.updatedFunctionsHistory.flatten())
+                assertThat(observer.updatedFunctionsHistory).isEmpty()
+                assertThat(observer.updatedFunctionStatesHistory).hasSize(1)
+                assertThat(observer.updatedFunctionStatesHistory.flatten())
                     .containsExactly(CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS)
             }
         } finally {
@@ -440,8 +444,9 @@ class ObserveAppFunctionsTest {
 
             retryAssert {
                 assertThat(observer.updatedPackagesHistory).isEmpty()
-                assertThat(observer.updatedFunctionsHistory).hasSize(1)
-                assertThat(observer.updatedFunctionsHistory.flatten())
+                assertThat(observer.updatedFunctionsHistory).isEmpty()
+                assertThat(observer.updatedFunctionStatesHistory).hasSize(1)
+                assertThat(observer.updatedFunctionStatesHistory.flatten())
                     .containsExactly(CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS)
             }
         } finally {
@@ -485,8 +490,9 @@ class ObserveAppFunctionsTest {
             registration.unregister()
             retryAssert {
                 assertThat(observer.updatedPackagesHistory).isEmpty()
-                assertThat(observer.updatedFunctionsHistory).hasSize(1)
-                assertThat(observer.updatedFunctionsHistory.flatten())
+                assertThat(observer.updatedFunctionsHistory).isEmpty()
+                assertThat(observer.updatedFunctionStatesHistory).hasSize(1)
+                assertThat(observer.updatedFunctionStatesHistory.flatten())
                     .containsExactly(CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS)
             }
         } finally {
@@ -601,6 +607,7 @@ class ObserveAppFunctionsTest {
             retryAssert {
                 assertThat(observer.updatedPackagesHistory).hasSize(1)
                 assertThat(observer.updatedFunctionsHistory).isEmpty()
+                assertThat(observer.updatedFunctionStatesHistory).isEmpty()
                 assertThat(observer.updatedPackagesHistory.flatten())
                     .containsExactly(DynamicSchemaHelperApp.PACKAGE_NAME)
             }
@@ -642,6 +649,7 @@ class ObserveAppFunctionsTest {
 
             assertThat(observer.updatedPackagesHistory).isEmpty()
             assertThat(observer.updatedFunctionsHistory).isEmpty()
+            assertThat(observer.updatedFunctionStatesHistory).isEmpty()
         } finally {
             observation?.cancel()
             uninstallPackage(UpdatableHelperApp.PACKAGE_NAME, context, checkIndexation = true)
@@ -690,6 +698,7 @@ class ObserveAppFunctionsTest {
 
             assertThat(observer.updatedPackagesHistory).isEmpty()
             assertThat(observer.updatedFunctionsHistory).isEmpty()
+            assertThat(observer.updatedFunctionStatesHistory).isEmpty()
         } finally {
             observation?.cancel()
             setAppFunctionEnabled(
@@ -724,6 +733,7 @@ class ObserveAppFunctionsTest {
     class TestClientObserver : AppFunctionObserver {
         val updatedPackagesHistory: MutableSet<List<String>> = mutableSetOf()
         val updatedFunctionsHistory: MutableSet<List<AppFunctionName>> = mutableSetOf()
+        val updatedFunctionStatesHistory: MutableSet<List<AppFunctionName>> = mutableSetOf()
 
         override fun onAppFunctionsChanged(appFunctions: List<AppFunctionName>) {
             updatedFunctionsHistory.add(appFunctions)
@@ -731,6 +741,10 @@ class ObserveAppFunctionsTest {
 
         override fun onPackagesChanged(packageNames: List<String>) {
             updatedPackagesHistory.add(packageNames)
+        }
+
+        override fun onAppFunctionStatesChanged(appFunctions: List<AppFunctionName>) {
+            updatedFunctionStatesHistory.add(appFunctions)
         }
     }
 
