@@ -19,7 +19,6 @@ package android.mediav2.cts;
 import static android.media.MediaCodecInfo.CodecProfileLevel.AACObjectELD;
 import static android.media.MediaCodecInfo.CodecProfileLevel.AACObjectHE;
 import static android.media.MediaCodecInfo.CodecProfileLevel.AACObjectLC;
-import static android.media.MediaCodecInfo.CodecProfileLevel.AACObjectXHE;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_DEFAULT;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 
@@ -267,17 +266,11 @@ public class AudioEncoderTest extends CodecEncoderTestBase {
         int expSampleRate = mMediaType.equals(MediaFormat.MIMETYPE_AUDIO_OPUS) ? 48000 :
                 inpFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE, -1);
         int gotSampleRate = outFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE, -1);
-        // The xHE-AAC encoder can have a different output sample rate than the input one.
-        int profile = mOutFormat.getInteger(MediaFormat.KEY_PROFILE, 0);
-        boolean isXheAac = mMediaType.equals(MediaFormat.MIMETYPE_AUDIO_AAC) &&
-                (profile == AACObjectXHE);
-        if (!isXheAac) {
-            assertEquals(String.format(
-                    "mismatch in sample rate. exp / got : %d / %d, \n encoder input format :"
-                            + "%s, \n decoder output format : %s \n %s %s \n",
-                    expSampleRate, gotSampleRate, inpFormat, outFormat, mTestConfig.toString(),
-                    mTestEnv.toString()), expSampleRate, gotSampleRate);
-        }
+        assertEquals(String.format(
+                "mismatch in sample rate. exp / got : %d / %d, \n encoder input format : %s, \n"
+                        + "decoder output format : %s \n %s %s \n",
+                expSampleRate, gotSampleRate, inpFormat, outFormat, mTestConfig.toString(),
+                mTestEnv.toString()), expSampleRate, gotSampleRate);
         int expChannelCount = inpFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT, -1);
         int gotChannelCount = outFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT, -1);
         if (expChannelCount != gotChannelCount) {
