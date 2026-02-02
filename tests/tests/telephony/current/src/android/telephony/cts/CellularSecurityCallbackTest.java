@@ -113,12 +113,16 @@ public class CellularSecurityCallbackTest {
     @AfterClass
     public static void afterAllTests() throws Exception {
         logd(TAG, "afterAllTests");
-        sTelephonyManager = null;
         if (sMockModemManager != null) {
+            if (Flags.networkSecurityEventIndications()) {
+                // Clear the network security events to avoid leaking state to other tests.
+                sMockModemManager.unsolOnNetworkSecurityEvents(SLOT_ID_0, new ArraySet<>());
+            }
             sMockModemManager.changeNetworkService(SLOT_ID_0, MOCK_SIM_PROFILE_ID_US_FI, false);
             assertTrue(sMockModemManager.disconnectMockModemService());
             sMockModemManager = null;
         }
+        sTelephonyManager = null;
     }
 
     private void registerTelephonyCallbackWithPermission(@NonNull TelephonyCallback callback) {
