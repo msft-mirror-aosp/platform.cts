@@ -1,0 +1,2 @@
+# App Lock
+include platform/frameworks/base:/core/java/android/content/pm/APP_LOCK_OWNERS
