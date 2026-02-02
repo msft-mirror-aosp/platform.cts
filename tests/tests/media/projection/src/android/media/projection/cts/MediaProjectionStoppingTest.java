@@ -29,6 +29,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.media.cts.MediaProjectionRule;
 import android.media.projection.MediaProjection;
+import android.media.projection.MediaProjectionConfig;
 import android.os.HandlerThread;
 import android.os.UserHandle;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -163,7 +164,8 @@ public class MediaProjectionStoppingTest {
         HandlerThread handlerThread = new HandlerThread("VirtualDisplayHandlerForTest");
         try {
             handlerThread.start();
-            mMediaProjectionRule.startMediaProjection(displays.getFirst());
+            mMediaProjectionRule.startMediaProjection(
+                    MediaProjectionConfig.createConfigForDefaultDisplay(), displays.getFirst());
             mMediaProjectionRule.createVirtualDisplay();
 
             CountDownLatch latch = new CountDownLatch(1);
