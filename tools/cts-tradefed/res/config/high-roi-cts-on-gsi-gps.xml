@@ -16,24 +16,24 @@
 <configuration description="Run high ROI CTS-ON-GSI gps tests.">
     <include name="cts-on-gsi"/>
     <!-- CtsLocationGnssTestCases -->
-    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssLocationRateChangeTest#testVariedRates"/>
-    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssLocationRateChangeTest#testVariedRatesOnOff"/>
-    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssLocationRateChangeTest#testVariedRatesRepetitive"/>
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssLocationUpdateIntervalTest#testTimeDriftBetweenUtcTimeAndElapsedRealtime"/>
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssLocationValuesTest#testAccuracyFields"/>
-    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssLocationValuesTest#testLocationRegularFields"/>
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssLocationValuesTest#testRequestWhenLocationSettingOff"/>
-    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssMeasurementRegistrationTest#testGnssMeasurementRegistration"/>
-    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssMeasurementRegistrationTest#testGnssMeasurementRegistration_2secInterval"/>
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssMeasurementRegistrationTest#testGnssMeasurementRegistration_enableFullTracking"/>
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssMeasurementRegistrationTest#testGnssMeasurementRegistration_passiveListenerAndNonPassiveListener"/>
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssMeasurementValuesTest#testListenForGnssMeasurements"/>
+    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssMeasurementWhenNoLocationTest#testGnssMeasurementWhenNoLocation"/>
+    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssMeasurementsConstellationTest#testGnssMultiConstellationSupported"/>
+    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssNavigationMessageRegistrationTest#testGnssNavigationMessageRegistration"/>
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssPseudorangeVerificationTest#testPseudoPosition"/>
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssStatusTest#testGnssStatusChanges"/>
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssStatusTest#testGnssStatusValues"/>
+    <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssStatusTest#testGnssStatusValuesWithCodetype"/>
     <option name="compatibility:include-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssTtffTests#testTtffWithNetwork"/>
     <!-- CtsLocationPrivilegedTestCases -->
     <option name="compatibility:include-filter" value="CtsLocationPrivilegedTestCases android.location.cts.privileged.GnssLocationValuesTest#testLowPowerModeGnssLocation"/>
     <option name="compatibility:include-filter" value="CtsLocationPrivilegedTestCases android.location.cts.privileged.GnssMeasurementCorrectionsInjectionTest#testInjectGnssMeasurementCorrections"/>
+    <option name="compatibility:include-filter" value="CtsLocationPrivilegedTestCases android.location.cts.privileged.GnssMeasurementRegistrationTest#testGnssMeasurementRegistration_enableCorrelationOutputs"/>
+    <option name="compatibility:include-filter" value="CtsLocationPrivilegedTestCases android.location.cts.privileged.GnssMeasurementRegistrationTest#testGnssMeasurementRegistration_enableFullTracking"/>
     <option name="compatibility:include-filter" value="CtsLocationPrivilegedTestCases android.location.cts.privileged.GnssMeasurementValuesTest#testListenForGnssMeasurements"/>
 </configuration>
