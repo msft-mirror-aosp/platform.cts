@@ -97,15 +97,12 @@ class FakeAssociationRule extends ExternalResource {
                 + mCompanionDeviceManager.getMyAssociations().size());
         reset(mOnAssociationsChangedListener);
         mRoleManager.setBypassingRoleQualification(true);
-        SystemUtil.runShellCommandOrThrow(
-                String.format(
-                        Locale.getDefault(Locale.Category.FORMAT),
-                        "cmd companiondevice associate %d %s --mac-address %s --profile %s"
-                                + " --self-managed true",
-                        getInstrumentation().getContext().getUserId(),
-                        mContext.getPackageName(),
-                        deviceAddress,
-                        DEVICE_PROFILE));
+        SystemUtil.runShellCommandOrThrow(String.format(Locale.getDefault(Locale.Category.FORMAT),
+                "cmd companiondevice associate %d %s %s %s true",
+                getInstrumentation().getContext().getUserId(),
+                mContext.getPackageName(),
+                deviceAddress,
+                DEVICE_PROFILE));
         verifyAssociationsChanged();
         mRoleManager.setBypassingRoleQualification(false);
 

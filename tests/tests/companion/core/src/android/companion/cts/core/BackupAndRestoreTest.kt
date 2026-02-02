@@ -201,7 +201,7 @@ class BackupAndRestoreTest : CoreTestBase() {
 
     @Test
     fun test_applyRestoredPayload_nonProfile_grantsExtraPermissions() = with (testApp) {
-        associate(MAC_ADDRESS_A, permissions = PERMISSION_GROUP_NEARBY)
+        associate(MAC_ADDRESS_A, "null", PERMISSION_GROUP_NEARBY)
 
         val payload = getBackupPayload(userId)
         assertNotNull(payload)
@@ -221,7 +221,7 @@ class BackupAndRestoreTest : CoreTestBase() {
     @Test
     fun test_applyRestoredPayload_nonProfile_grantsExtraPermissionsToFuturePackage() =
         with (testApp) {
-            associate(MAC_ADDRESS_A, permissions = PERMISSION_GROUP_NEARBY)
+            associate(MAC_ADDRESS_A, "null", PERMISSION_GROUP_NEARBY)
             val payload = getBackupPayload(userId)
             assertNotNull(payload)
 

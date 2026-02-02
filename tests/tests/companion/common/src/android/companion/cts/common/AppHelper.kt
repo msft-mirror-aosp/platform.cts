@@ -28,15 +28,11 @@ class AppHelper(
 ) {
     fun associate(
         macAddress: MacAddress,
-        role: String? = null,
+        role: String = "null",
         permissions: String? = null,
         isRemoteAiAgentSupported: Boolean = false
     ) {
-        var cmd = "cmd companiondevice associate $userId $packageName --mac-address $macAddress" +
-                " --self-managed false"
-        if (role != null) {
-            cmd += " --profile $role"
-        }
+        var cmd = "cmd companiondevice associate $userId $packageName $macAddress $role false"
         if (permissions != null) {
             cmd += " --extra-permissions $permissions"
         }
@@ -48,15 +44,11 @@ class AppHelper(
 
     fun associateSelfManaged(macAddress: MacAddress, role: String) =
         runShellCommand(
-            "cmd companiondevice associate $userId $packageName --mac-address $macAddress" +
-                    " --profile $role --self-managed true"
+            "cmd companiondevice associate $userId $packageName $macAddress $role true"
         )
 
     fun disassociate(macAddress: MacAddress) =
-            runShellCommand(
-                "cmd companiondevice disassociate $userId $packageName" +
-                    " --mac-address $macAddress"
-            )
+            runShellCommand("cmd companiondevice disassociate $userId $packageName $macAddress")
 
     fun disassociateAll() =
             runShellCommand("cmd companiondevice disassociate-all $userId $packageName")
