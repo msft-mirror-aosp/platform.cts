@@ -17,6 +17,7 @@
 package android.mediav2.cts;
 
 import static android.media.audio.Flags.iamfDefinitionsApi;
+import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AT_LEAST_202604;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ANY;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_DEFAULT;
@@ -741,27 +742,31 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
                         null, -1.0f, -1L, 44100, 2, -1, -1, CODEC_DEFAULT},
                 {MEDIA_TYPE_AAC, new String[]{"audio/bbb_2ch_48kHz_usac.m4a"},
                         null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_DEFAULT},
-
-                // ac3
-                {MEDIA_TYPE_AC3, new String[]{"audio/ac3_200_48kHz_128.mp4"},
-                    null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
-                {MEDIA_TYPE_AC3, new String[]{"audio/ac3_200_48kHz_256.mp4"},
-                    null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
-
-                // ac4
-                {MEDIA_TYPE_AC4, new String[]{"audio/ac4_200_48kHz_48.mp4"},
-                    null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
-                {MEDIA_TYPE_AC4, new String[]{"audio/ac4_510_48kHz_96.mp4"},
-                    null, -1.0f, -1L, 48000, 6, -1, -1, CODEC_OPTIONAL},
-                {MEDIA_TYPE_AC4, new String[]{"audio/ac4_510_48kHz_128.mp4"},
-                    null, -1.0f, -1L, 48000, 6, -1, -1, CODEC_OPTIONAL},
-
-                // eac3
-                {MEDIA_TYPE_EAC3, new String[]{"audio/eac3_200_48kHz_128.mp4"},
-                    null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
-                {MEDIA_TYPE_EAC3, new String[]{"audio/eac3_200_48kHz_256.mp4"},
-                    null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
         }));
+
+        if (BOARD_SDK_IS_AT_LEAST_202604) {
+            exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
+                    // ac3
+                    {MEDIA_TYPE_AC3, new String[]{"audio/ac3_200_48kHz_128.mp4"},
+                        null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
+                    {MEDIA_TYPE_AC3, new String[]{"audio/ac3_200_48kHz_256.mp4"},
+                        null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
+
+                    // ac4
+                    {MEDIA_TYPE_AC4, new String[]{"audio/ac4_200_48kHz_48.mp4"},
+                        null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
+                    {MEDIA_TYPE_AC4, new String[]{"audio/ac4_510_48kHz_96.mp4"},
+                        null, -1.0f, -1L, 48000, 6, -1, -1, CODEC_OPTIONAL},
+                    {MEDIA_TYPE_AC4, new String[]{"audio/ac4_510_48kHz_128.mp4"},
+                        null, -1.0f, -1L, 48000, 6, -1, -1, CODEC_OPTIONAL},
+
+                    // eac3
+                    {MEDIA_TYPE_EAC3, new String[]{"audio/eac3_200_48kHz_128.mp4"},
+                        null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
+                    {MEDIA_TYPE_EAC3, new String[]{"audio/eac3_200_48kHz_256.mp4"},
+                        null, -1.0f, -1L, 48000, 2, -1, -1, CODEC_OPTIONAL},
+            }));
+        }
         if (IS_AT_LEAST_U) {
             exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
                     // Support for 176kHz and 192kHz for c2.android.raw.decoder was added in
