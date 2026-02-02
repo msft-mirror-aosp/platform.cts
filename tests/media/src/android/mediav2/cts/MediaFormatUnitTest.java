@@ -22,7 +22,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.ModuleSpecificTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,7 +32,7 @@ import org.junit.runner.RunWith;
 import java.util.concurrent.TimeUnit;
 
 @SmallTest
-@ModuleSpecificTest
+@FrameworkSpecificTest
 @RunWith(AndroidJUnit4.class)
 public class MediaFormatUnitTest {
     static final int PER_TEST_TIMEOUT_MS = 10000;

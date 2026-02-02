@@ -40,7 +40,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
-import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
 
 import org.junit.Test;
@@ -51,12 +50,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Checks if all required codecs are listed in media codec list. The scope of this test is to
- * only check if the device has advertised all the required codecs. Their functionality and other
- * cdd requirements are not verified.
+ * Checks if all required codecs are listed in media codec list. The scope of this test is to only
+ * check if the device has advertised all the required codecs. Their functionality and other cdd
+ * requirements are not verified.
  */
 @SmallTest
-@FrameworkSpecificTest
+/**
+ * The tests of this class verify device requirements and not component requirements. It collects
+ * all components present on the device - both mainline and vendor - evaluates their capabilities,
+ * and validates compliance with CDD requirements. Because the test assesses the complete device
+ * configuration, it cannot be executed with component filtering for CTS or MCTS modes. It cannot be
+ * annotated as ModuleSpecific or FrameworkSpecific.
+ */
 @RunWith(AndroidJUnit4.class)
 public class CodecListTest {
     static final String MEDIA_TYPE_PREFIX_KEY = "media-type-prefix";
@@ -112,8 +117,6 @@ public class CodecListTest {
     @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#profileLevels"})
     public void testHDRDisplayCapabilities() {
         assumeTrue("Test needs Android 13", CodecTestBase.IS_AT_LEAST_T);
-        assumeTrue("Test needs VNDK Android 13", CodecTestBase.VNDK_IS_AT_LEAST_T);
-        assumeTrue("Test needs First SDK Android 13", CodecTestBase.FIRST_SDK_IS_AT_LEAST_T);
 
         DisplayManager dm = CodecTestBase.getContext().getSystemService(DisplayManager.class);
         int[] hdrTypes = dm.getDisplay(Display.DEFAULT_DISPLAY).getMode().getSupportedHdrTypes();
