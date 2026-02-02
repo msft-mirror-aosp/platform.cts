@@ -74,6 +74,7 @@ class AppFunctionMetadataTestHelper {
                             .setPropertyLong("displayNameStringRes", 10)
                             .setPropertyBoolean("restrictCallersWithExecuteAppFunctions", true)
                             .setPropertyString("serviceName", TEST_SERVICE_NAME)
+                            .setPropertyString("scope", "global")
                             .build(),
                         AppFunctionPackageMetadata.create(PACKAGE_NAME, listOf()),
                     )
@@ -101,6 +102,7 @@ class AppFunctionMetadataTestHelper {
                             .setPropertyLong("displayNameStringRes", 10)
                             .setPropertyBoolean("restrictCallersWithExecuteAppFunctions", true)
                             .setPropertyString("serviceName", TEST_SERVICE_NAME)
+                            .setPropertyString("scope", "global")
                             .build(),
                         AppFunctionPackageMetadata.create(PACKAGE_NAME, listOf()),
                     )
@@ -228,6 +230,7 @@ class AppFunctionMetadataTestHelper {
                                     .build(),
                             )
                             .setPropertyString("serviceName", TEST_SERVICE_NAME)
+                            .setPropertyString("scope", "global")
                             .build(),
                         PackageMetadata.DYNAMIC_SCHEMA_PACKAGE_METADATA,
                     )
@@ -254,6 +257,7 @@ class AppFunctionMetadataTestHelper {
                                 "android.app.appfunctions.cts.dynamic.schema",
                             )
                             .setPropertyString("serviceName", TEST_SERVICE_NAME)
+                            .setPropertyString("scope", "global")
                             .build(),
                         PackageMetadata.DYNAMIC_SCHEMA_PACKAGE_METADATA,
                     )
@@ -280,6 +284,7 @@ class AppFunctionMetadataTestHelper {
                             .setPropertyString(PROPERTY_SCHEMA_NAME, "testSchema")
                             .setPropertyLong(PROPERTY_SCHEMA_VERSION, 7L)
                             .setPropertyString("serviceName", TEST_SERVICE_NAME)
+                            .setPropertyString("scope", "global")
                             .build(),
                         PackageMetadata.DYNAMIC_SCHEMA_PACKAGE_METADATA,
                     )
@@ -339,6 +344,7 @@ class AppFunctionMetadataTestHelper {
                             .setPropertyLong("displayNameStringRes", 10)
                             .setPropertyBoolean("restrictCallersWithExecuteAppFunctions", true)
                             .setPropertyString("serviceName", TEST_SERVICE_NAME)
+                            .setPropertyString("scope", "global")
                             .build(),
                         PackageMetadata.PACKAGE_METADATA,
                     )
