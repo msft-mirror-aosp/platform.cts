@@ -33,21 +33,32 @@ public class CtsAlternativeMessageTransportService extends AlternativeMessageTra
     private static final String ACTION_MESSAGE_UPGRADE_RECEIVED =
             "android.telephony.cts.msgupgrade.ACTION_MESSAGE_UPGRADE_RECEIVED";
     private static final String EXTRA_MESSAGE_URI = "message_uri";
+    private static final String EXTRA_UPGRADE_STATUS =
+            "android.telephony.cts.msgupgrade.EXTRA_UPGRADE_STATUS";
 
     @Override
     public void onMessageUpgradeRequested(
             @NonNull Uri contentUri, @NonNull final Consumer<Integer> upgradeStatus) {
         Log.d(TAG, "Received new message upgrade request.");
-        Executor delayedExecutor = CompletableFuture.delayedExecutor(1000, TimeUnit.MILLISECONDS);
+        MessageTestParamsHelper params = new MessageTestParamsHelper(getContentResolver());
+        MessageTestParamsHelper.UpgradeParams upgradeParams =
+                params.getUpgradeParamsIfAvailable(contentUri);
+        Executor delayedExecutor =
+                CompletableFuture.delayedExecutor(upgradeParams.delayMs(), TimeUnit.MILLISECONDS);
         delayedExecutor.execute(
                 () -> {
-                    upgradeStatus.accept(UPGRADE_STATUS_ACCEPTED);
+                    if (upgradeParams instanceof MessageTestParamsHelper.UpgradeReady) {
+                        int status =
+                                ((MessageTestParamsHelper.UpgradeReady) upgradeParams).status();
+                        upgradeStatus.accept(status);
 
-                    // Send broadcast to notify test after accepting the request
-                    Intent intent = new Intent(ACTION_MESSAGE_UPGRADE_RECEIVED);
-                    intent.putExtra(EXTRA_MESSAGE_URI, contentUri);
-                    intent.setPackage("android.telephony.cts");
-                    sendBroadcast(intent);
+                        // Send broadcast to notify test after accepting the request
+                        Intent intent = new Intent(ACTION_MESSAGE_UPGRADE_RECEIVED);
+                        intent.putExtra(EXTRA_MESSAGE_URI, contentUri);
+                        intent.putExtra(EXTRA_UPGRADE_STATUS, status);
+                        intent.setPackage("android.telephony.cts");
+                        sendBroadcast(intent);
+                    }
                 });
     }
 }
