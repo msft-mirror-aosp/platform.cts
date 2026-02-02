@@ -1702,13 +1702,13 @@ public class SmsManagerTest {
 
     private void associateCdm() {
         runShellCommand(
-                "cmd companiondevice associate %s %s 00:00:00:00:00:AA",
+                "cmd companiondevice associate %s %s --mac-address 00:00:00:00:00:AA",
                 Process.myUserHandle().getIdentifier(), mContext.getPackageName());
     }
 
     private void disassociateCdm() {
         runShellCommand(
-                "cmd companiondevice disassociate %s %s 00:00:00:00:00:AA",
+                "cmd companiondevice disassociate %s %s --mac-address 00:00:00:00:00:AA",
                 Process.myUserHandle().getIdentifier(), mContext.getPackageName());
     }
 
