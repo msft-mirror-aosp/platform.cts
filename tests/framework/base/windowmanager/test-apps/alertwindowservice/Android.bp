@@ -25,7 +25,7 @@ filegroup {
     visibility: ["//cts/tests/framework/base/windowmanager"],
 }
 
-android_test {
+android_test_helper_app {
     name: "CtsAlertWindowService",
     defaults: ["cts_support_defaults"],
 
@@ -35,7 +35,6 @@ android_test {
     sdk_version: "test_current",
 
     test_suites: [
-        "cts",
         "general-tests",
         "sts",
     ],

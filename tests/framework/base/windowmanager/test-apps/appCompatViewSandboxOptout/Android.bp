@@ -16,7 +16,7 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_test {
+android_test_helper_app {
     name: "CtsPropertyCompatOptOutSandboxingViewBoundsApisApp",
     defaults: ["cts_support_defaults"],
 
@@ -31,7 +31,6 @@ android_test {
     target_sdk_version: "35",
 
     test_suites: [
-        "cts",
         "general-tests",
         "sts",
     ],
