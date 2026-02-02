@@ -27,6 +27,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import com.android.compatibility.common.util.AdoptShellPermissionsRule
 import com.google.common.truth.Truth.assertThat
+import org.junit.Assert.assertThrows
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestName
@@ -55,6 +56,32 @@ class ComputerControlInteractionTest {
             .getSystemService(WindowManager::class.java)
             .currentWindowMetrics
             .bounds
+
+    private val edgeCoordinates =
+        listOf(
+            Pair(0, 0), // Top-left
+            Pair(bounds.width() - 1, 0), // Top-right
+            Pair(0, bounds.height() - 1), // Bottom-left
+            Pair(bounds.width() - 1, bounds.height() - 1), // Bottom-right
+            Pair(bounds.width() / 2, 0), // Top-middle
+            Pair(bounds.width() / 2, bounds.height() - 1), // Bottom-middle
+            Pair(0, bounds.height() / 2), // Left-middle
+            Pair(bounds.width() - 1, bounds.height() / 2), // Right-middle
+        )
+
+    private val outOfBoundsCoordinates =
+        listOf(
+            // Positive out of bounds
+            Pair(bounds.width(), 0),
+            Pair(0, bounds.height()),
+            Pair(bounds.width(), bounds.height()),
+            Pair(bounds.width() + 100, bounds.height() + 100),
+            // Negative coordinates
+            Pair(-1, -1),
+            Pair(-1, 0),
+            Pair(0, -1),
+            Pair(-100, -100),
+        )
 
     fun launchTestApp(className: String? = null): TestAppAgent {
         // TODO(b/463464798): Added failure test case to verify the behavior
@@ -99,6 +126,30 @@ class ComputerControlInteractionTest {
     }
 
     @Test
+    fun testLongPress_edge() = launchTestApp().use { testAppAgent ->
+        // Test long pressing at the corners and edges of the screen.
+        for ((x, y) in edgeCoordinates) {
+            testAppAgent.longPress(x, y)
+            Log.d(TAG, "Long pressed at edge: ($x, $y)")
+
+            val longPress = testAppAgent.nextAction(Action.LongPress::class.java)
+            assertThat(longPress).isNotNull()
+            longPress!!
+            Log.d(TAG, "Long press from TestApp: (${longPress.x}, ${longPress.y})")
+            assertThat(longPress.x).isEqualTo(x)
+            assertThat(longPress.y).isEqualTo(y)
+        }
+    }
+
+    @Test
+    fun testLongPress_outOfBounds() = launchTestApp().use { testAppAgent ->
+        // Test long pressing outside the screen bounds.
+        for ((x, y) in outOfBoundsCoordinates) {
+            assertThrows(IllegalArgumentException::class.java) { testAppAgent.longPress(x, y) }
+        }
+    }
+
+    @Test
     fun testSwipe() = launchTestApp().use { testAppAgent ->
         val x1 = bounds.width() / 2
         val y1 = bounds.height() / 2
@@ -115,6 +166,77 @@ class ComputerControlInteractionTest {
         assertThat(swipe.y1).isEqualTo(y1)
         assertThat(swipe.x2).isEqualTo(x2)
         assertThat(swipe.y2).isEqualTo(y2)
+    }
+
+    @Test
+    fun testSwipe_edge() = launchTestApp().use { testAppAgent ->
+        val centerX = bounds.width() / 2
+        val centerY = bounds.height() / 2
+
+        // Test swiping from/to the corners and edges of the screen.
+        val testCases =
+            edgeCoordinates.flatMap { (x, y) ->
+                listOf(
+                    // From center to edge and back
+                    arrayOf(centerX, centerY, x, y),
+                    arrayOf(x, y, centerX, centerY)
+                )
+            } +
+                listOf(
+                    // Edge to edge
+                    arrayOf(0, centerY, bounds.width() - 1, centerY), // Left to Right
+                    arrayOf(bounds.width() - 1, centerY, 0, centerY), // Right to Left
+                    arrayOf(centerX, 0, centerX, bounds.height() - 1), // Top to Bottom
+                    arrayOf(centerX, bounds.height() - 1, centerX, 0) // Bottom to Top
+                )
+
+        for (coords in testCases) {
+            val (x1, y1, x2, y2) = coords
+            testAppAgent.swipe(x1, y1, x2, y2)
+            Log.d(TAG, "Swiped from ($x1, $y1) to ($x2, $y2)")
+
+            val swipe = testAppAgent.nextAction(Action.Swipe::class.java)
+            assertThat(swipe).isNotNull()
+            swipe!!
+            Log.d(
+                TAG,
+                "Swipe from TestApp: (${swipe.x1}, ${swipe.y1}) to (${swipe.x2}, ${swipe.y2})"
+            )
+            assertThat(swipe.x1).isEqualTo(x1)
+            assertThat(swipe.y1).isEqualTo(y1)
+            assertThat(swipe.x2).isEqualTo(x2)
+            assertThat(swipe.y2).isEqualTo(y2)
+        }
+    }
+
+    @Test
+    fun testSwipe_outOfBounds() = launchTestApp().use { testAppAgent ->
+        val centerX = bounds.width() / 2
+        val centerY = bounds.height() / 2
+
+        // Swipes that are not entirely within the display bounds should be rejected.
+        val outOfBoundsTestCases =
+            outOfBoundsCoordinates.flatMap { (x, y) ->
+                listOf(
+                    // From center to out-of-bounds and back
+                    arrayOf(centerX, centerY, x, y),
+                    arrayOf(x, y, centerX, centerY)
+                )
+            } +
+                listOf(
+                    // From one out-of-bounds point to another, intersecting the screen
+                    arrayOf(outOfBoundsCoordinates[5].first, centerY,
+                            outOfBoundsCoordinates[0].first, centerY), // Horizontal
+                    arrayOf(centerX, outOfBoundsCoordinates[6].second,
+                            centerX, outOfBoundsCoordinates[1].second)  // Vertical
+                )
+
+        for (coords in outOfBoundsTestCases) {
+            val (x1, y1, x2, y2) = coords
+            assertThrows(IllegalArgumentException::class.java) {
+                testAppAgent.swipe(x1, y1, x2, y2)
+            }
+        }
     }
 
     @Test
@@ -139,23 +261,8 @@ class ComputerControlInteractionTest {
 
     @Test
     fun testTap_edge() = launchTestApp().use { testAppAgent ->
-        val width = bounds.width()
-        val height = bounds.height()
-
         // Test tapping at the corners and edges of the screen.
-        val testCases =
-            listOf(
-                Pair(0, 0), // Top-left
-                Pair(width - 1, 0), // Top-right
-                Pair(0, height - 1), // Bottom-left
-                Pair(width - 1, height - 1), // Bottom-right
-                Pair(width / 2, 0), // Top-middle
-                Pair(width / 2, height - 1), // Bottom-middle
-                Pair(0, height / 2), // Left-middle
-                Pair(width - 1, height / 2) // Right-middle
-            )
-
-        for ((x, y) in testCases) {
+        for ((x, y) in edgeCoordinates) {
             testAppAgent.tap(x, y)
             Log.d(TAG, "Tapped at edge: ($x, $y)")
 
@@ -165,6 +272,14 @@ class ComputerControlInteractionTest {
             Log.d(TAG, "Tap from TestApp: (${tap.x}, ${tap.y})")
             assertThat(tap.x).isEqualTo(x)
             assertThat(tap.y).isEqualTo(y)
+        }
+    }
+
+    @Test
+    fun testTap_outOfBounds() = launchTestApp().use { testAppAgent ->
+        // Test tapping outside the screen bounds.
+        for ((x, y) in outOfBoundsCoordinates) {
+            assertThrows(IllegalArgumentException::class.java) { testAppAgent.tap(x, y) }
         }
     }
 
@@ -212,6 +327,20 @@ class ComputerControlInteractionTest {
         Log.d(TAG, "InsertText from TestApp: ${insertText2.text}")
         assertThat(insertText2.textFieldId).isEqualTo(Constants.TEXT_FIELD_2)
         assertThat(insertText2.text).isEqualTo(text2)
+    }
+
+    @Test
+    fun testLaunchMultipleTimes() {
+        for (i in 1..5) {
+            Log.d(TAG, "Launch iteration $i")
+            launchTestApp().use { testAppAgent ->
+                assertThat(testAppAgent).isNotNull()
+                // Perform a simple action to ensure session is usable.
+                val displaySize = testAppAgent.getDisplaySize()
+                assertThat(displaySize.width).isGreaterThan(0)
+                assertThat(displaySize.height).isGreaterThan(0)
+            }
+        }
     }
 
     companion object {
