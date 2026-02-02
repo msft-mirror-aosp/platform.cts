@@ -19,7 +19,6 @@ package com.android.bedstead.remoteframeworkclasses.processor;
 import com.android.bedstead.remoteframeworkclasses.processor.annotations.RemoteFrameworkClasses;
 import com.android.bedstead.testapis.parser.TestApisParser;
 import com.android.bedstead.testapis.parser.signatures.ClassSignature;
-
 import com.google.android.enterprise.connectedapps.annotations.CrossUser;
 import com.google.auto.service.AutoService;
 import com.google.common.collect.ImmutableSet;
@@ -30,7 +29,8 @@ import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.TypeSpec;
-
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
@@ -44,7 +44,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Generated;
 import javax.annotation.processing.RoundEnvironment;
@@ -77,6 +76,10 @@ import javax.tools.JavaFileObject;
 })
 @AutoService(javax.annotation.processing.Processor.class)
 public final class Processor extends AbstractProcessor {
+
+    // Set to true to write a copy of the generated files in the /tmp/remoteframeworkclasses folder.
+    // Useful for debugging.
+    private static final boolean WRITE_DEBUG_COPY_OF_GENERATED_FILES = false;
 
     private static final ImmutableSet<String> FRAMEWORK_CLASSES =
             loadList("/apis/framework-classes.txt");
@@ -253,13 +256,11 @@ public final class Processor extends AbstractProcessor {
             throw new IllegalStateException("Could not parse wrapper " + className, e);
         }
 
+        String qualifiedClassName = className.packageName() + "." + className.simpleName();
+
         JavaFileObject builderFile;
         try {
-            builderFile =
-                    processingEnv
-                            .getFiler()
-                            .createSourceFile(
-                                    className.packageName() + "." + className.simpleName());
+            builderFile = processingEnv.getFiler().createSourceFile(qualifiedClassName);
         } catch (IOException e) {
             throw new IllegalStateException(
                     "Could not write parcelablewrapper for " + className, e);
@@ -270,6 +271,10 @@ public final class Processor extends AbstractProcessor {
         } catch (IOException e) {
             throw new IllegalStateException(
                     "Could not write parcelablewrapper for " + className, e);
+        }
+
+        if (WRITE_DEBUG_COPY_OF_GENERATED_FILES) {
+            writeCopyOfFileForDebugging(qualifiedClassName, contents);
         }
     }
 
@@ -434,7 +439,7 @@ public final class Processor extends AbstractProcessor {
                                 .addMember(
                                         "parcelableWrappers",
                                         "{$T.class, $T.class, $T.class, $T.class, $T.class,"
-                                            + " $T.class}",
+                                                + " $T.class}",
                                         NULL_PARCELABLE_REMOTE_DEVICE_POLICY_MANAGER_CLASSNAME,
                                         NULL_PARCELABLE_REMOTE_CONTENT_RESOLVER_CLASSNAME,
                                         NULL_PARCELABLE_REMOTE_BLUETOOTH_ADAPTER_CLASSNAME,
@@ -857,8 +862,37 @@ public final class Processor extends AbstractProcessor {
             try (PrintWriter out = new PrintWriter(builderFile.openWriter())) {
                 javaFile.writeTo(out);
             }
+
+            if (WRITE_DEBUG_COPY_OF_GENERATED_FILES) {
+                writeCopyOfFileForDebugging(qualifiedClassName, javaFile.toString());
+            }
         } catch (IOException e) {
             throw new IllegalStateException("Error writing " + qualifiedClassName + " to file", e);
+        }
+    }
+
+    /**
+     * Write a copy of the given file to /tmp/remoteframeworkclasses. Useful during debugging, since
+     * generated files that do not compile are otherwise never written to the disk.
+     */
+    private void writeCopyOfFileForDebugging(String qualifiedName, String content) {
+        if (!WRITE_DEBUG_COPY_OF_GENERATED_FILES) {
+            return;
+        }
+        try {
+            String debugFileName = qualifiedName.replace('.', '/') + ".java";
+            File debugFile = new File("/tmp/remoteframeworkclasses/", debugFileName);
+
+            // Ensure directory exists
+            debugFile.getParentFile().mkdirs();
+
+            try (FileWriter fw = new FileWriter(debugFile)) {
+                fw.write(content);
+            }
+
+            System.err.println("[Debug] Wrote generated file to: " + debugFile.getAbsolutePath());
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to write debug file: " + e);
         }
     }
 
