@@ -93,8 +93,7 @@ public class DecoderPushBlankBufferOnStopTest extends CodecDecoderTestBase {
                 exhaustiveArgsList.add(testArgs);
             }
         }
-        return prepareParamList(exhaustiveArgsList, false, false, true, false,
-                ComponentClass.SOFTWARE);
+        return prepareParamList(exhaustiveArgsList, false, false, true, false);
     }
 
     private boolean isBlankFrame(ImageSurface.ImageAndAttributes image) {
