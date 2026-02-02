@@ -22,7 +22,6 @@ android_test_import {
     apk: "compressed_Q.apk",
     presigned: true,
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -33,7 +32,6 @@ android_test_import {
     preprocessed: true,
     presigned: true,
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -46,7 +44,6 @@ android_test_import {
     // So the build system doesn't check that this apk is aligned
     skip_preprocessed_apk_checks: true,
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -59,7 +56,6 @@ android_test_import {
     // So the build system doesn't check that this apk is aligned
     skip_preprocessed_apk_checks: true,
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }

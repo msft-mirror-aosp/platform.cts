@@ -23,7 +23,6 @@ android_test_import {
     preprocessed: true,
     presigned: true,
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -34,7 +33,6 @@ android_test_import {
     preprocessed: true,
     presigned: true,
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }
@@ -45,7 +43,6 @@ android_test_import {
     preprocessed: true,
     presigned: true,
     test_suites: [
-        "cts",
         "general-tests",
     ],
 }

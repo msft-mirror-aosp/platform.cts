@@ -22,7 +22,6 @@ android_test_import {
     apk: "apk/b213323615_DifferentPermissionGroup.apk",
     presigned: true,
     test_suites: [
-        "cts",
         "sts",
         "general-tests",
     ],
