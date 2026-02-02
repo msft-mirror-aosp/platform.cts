@@ -150,6 +150,7 @@ java_defaults {
         ":CtsDeviceDeprecatedSdkApp",
         ":CtsDeviceDeskResourcesApp",
         ":CtsDeviceDisplaySizeApp",
+        ":CtsDeviceKeyboardResourcesApp",
         ":CtsDevicePrereleaseSdkApp",
         ":CtsDeviceProfileableApp",
         ":CtsMockInputMethod",
