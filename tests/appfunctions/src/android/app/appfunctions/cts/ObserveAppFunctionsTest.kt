@@ -115,7 +115,7 @@ class ObserveAppFunctionsTest {
             observation =
                 observeAppFunctions(
                     AppFunctionSearchSpec.Builder()
-                        .setPackageNames(listOf(UpdatableHelperApp.PACKAGE_NAME))
+                        .setPackageNames(setOf(UpdatableHelperApp.PACKAGE_NAME))
                         .build(),
                     observer,
                 )
@@ -154,7 +154,7 @@ class ObserveAppFunctionsTest {
             observation =
                 observeAppFunctions(
                     AppFunctionSearchSpec.Builder()
-                        .setPackageNames(listOf(UpdatableHelperApp.PACKAGE_NAME))
+                        .setPackageNames(setOf(UpdatableHelperApp.PACKAGE_NAME))
                         .build(),
                     observer,
                 )
@@ -201,7 +201,7 @@ class ObserveAppFunctionsTest {
             observation =
                 observeAppFunctions(
                     AppFunctionSearchSpec.Builder()
-                        .setPackageNames(listOf(UpdatableHelperApp.PACKAGE_NAME))
+                        .setPackageNames(setOf(UpdatableHelperApp.PACKAGE_NAME))
                         .build(),
                     observer,
                 )
@@ -249,7 +249,7 @@ class ObserveAppFunctionsTest {
             observation =
                 observeAppFunctions(
                     AppFunctionSearchSpec.Builder()
-                        .setPackageNames(listOf(UpdatableHelperApp.PACKAGE_NAME))
+                        .setPackageNames(setOf(UpdatableHelperApp.PACKAGE_NAME))
                         .build(),
                     observer,
                 )
@@ -287,7 +287,7 @@ class ObserveAppFunctionsTest {
                 observeAppFunctions(
                     AppFunctionSearchSpec.Builder()
                         // TODO(b/478810311): test with non-root package
-                        .setPackageNames(listOf(CtsApp.PACKAGE_NAME))
+                        .setPackageNames(setOf(CtsApp.PACKAGE_NAME))
                         .build(),
                     observer,
                 )
@@ -373,7 +373,7 @@ class ObserveAppFunctionsTest {
             observation =
                 observeAppFunctions(
                     AppFunctionSearchSpec.Builder()
-                        .setPackageNames(listOf(CtsApp.PACKAGE_NAME))
+                        .setPackageNames(setOf(CtsApp.PACKAGE_NAME))
                         .build(),
                     observer,
                 )
@@ -426,7 +426,7 @@ class ObserveAppFunctionsTest {
         val searchSpec =
             AppFunctionSearchSpec.Builder()
                 // TODO(b/478810311): test with non-root package
-                .setFunctionNames(listOf(CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS))
+                .setFunctionNames(setOf(CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS))
                 .build()
         val observer = TestClientObserver()
         observation = observeAppFunctions(searchSpec, observer)
@@ -481,7 +481,7 @@ class ObserveAppFunctionsTest {
             observation =
                 observeAppFunctions(
                     AppFunctionSearchSpec.Builder()
-                        .setPackageNames(listOf(CtsApp.PACKAGE_NAME))
+                        .setPackageNames(setOf(CtsApp.PACKAGE_NAME))
                         .build(),
                     observer,
                 )
@@ -536,7 +536,7 @@ class ObserveAppFunctionsTest {
             ) {
                 observeAppFunctions(
                     AppFunctionSearchSpec.Builder()
-                        .setPackageNames(listOf(DynamicSchemaHelperApp.PACKAGE_NAME))
+                        .setPackageNames(setOf(DynamicSchemaHelperApp.PACKAGE_NAME))
                         .build(),
                     TestClientObserver(),
                 )
@@ -633,7 +633,7 @@ class ObserveAppFunctionsTest {
             observation =
                 observeAppFunctions(
                     AppFunctionSearchSpec.Builder()
-                        .setPackageNames(listOf(UpdatableHelperApp.PACKAGE_NAME))
+                        .setPackageNames(setOf(UpdatableHelperApp.PACKAGE_NAME))
                         .build(),
                     observer,
                 )
@@ -673,7 +673,7 @@ class ObserveAppFunctionsTest {
                 observeAppFunctions(
                     AppFunctionSearchSpec.Builder()
                         // TODO(b/478810311): test with non-root package
-                        .setPackageNames(listOf(CtsApp.PACKAGE_NAME))
+                        .setPackageNames(setOf(CtsApp.PACKAGE_NAME))
                         .build(),
                     observer,
                 )

@@ -158,8 +158,7 @@ class AppFunctionMetadataTestHelper {
 
             val ALL_FUNCTIONS = APP_LEVEL_FUNCTIONS + SERVICE_LEVEL_FUNCTIONS
 
-            // TODO: update this once the indexer change is in.
-            val ALL_GLOBAL_FUNCTIONS = setOf(GLOBAL_SCOPE)
+            val ALL_GLOBAL_FUNCTIONS = ALL_FUNCTIONS - ACTIVITY_SCOPE
         }
 
         object Components {
