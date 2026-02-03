@@ -24,12 +24,13 @@ import android.view.InputDevice
 import android.view.InputEvent
 import android.view.KeyEvent
 import android.view.MotionEvent
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.FlakyTest
+import junitparams.JUnitParamsRunner
+import junitparams.Parameters
 import org.junit.Test
 import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
+@RunWith(JUnitParamsRunner::class)
 class VirtualNavigationTouchpadTest : VirtualDeviceTestCase() {
     private lateinit var mVirtualNavigationTouchpad: VirtualNavigationTouchpad
 
@@ -41,22 +42,13 @@ class VirtualNavigationTouchpadTest : VirtualDeviceTestCase() {
     }
 
     @Test
-    fun sendTouchEvent() {
+    @Parameters(method = "allFinalActions")
+    fun sendTouchEvents_withFinalAction(finalAction: Int) {
         val axisSize = 1f
         val x = 30f
         val y = 30f
-        mVirtualNavigationTouchpad.sendTouchEvent(
-            VirtualTouchEvent.Builder()
-                .setAction(VirtualTouchEvent.ACTION_DOWN)
-                .setPointerId(1)
-                .setX(x)
-                .setY(y)
-                .setPressure(255f)
-                .setMajorAxisSize(axisSize)
-                .setToolType(VirtualTouchEvent.TOOL_TYPE_FINGER)
-                .build()
-        )
-        sendVirtualNavigationTouchEvent(x, y, VirtualTouchEvent.ACTION_UP)
+        sendVirtualNavigationTouchEvent(x, y, VirtualTouchEvent.ACTION_DOWN, axisSize)
+        sendVirtualNavigationTouchEvent(x, y, finalAction, axisSize)
         // Convert the input axis size to its equivalent fraction of the total touchpad size.
         val size = axisSize / (TOUCHPAD_WIDTH - 1f)
 
@@ -70,7 +62,7 @@ class VirtualNavigationTouchpadTest : VirtualDeviceTestCase() {
                     axisSize
                 ),
                 VirtualInputEventCreator.createNavigationTouchpadMotionEvent(
-                    MotionEvent.ACTION_UP,
+                    finalAction,
                     x,
                     y,
                     size,
@@ -78,6 +70,12 @@ class VirtualNavigationTouchpadTest : VirtualDeviceTestCase() {
                 )
             )
         )
+    }
+
+    @Test
+    fun sendTouchEvents_afterCancelledMotion() {
+        sendTouchEvents_withFinalAction(MotionEvent.ACTION_CANCEL)
+        sendTouchEvents_withFinalAction(MotionEvent.ACTION_UP)
     }
 
     @Test
@@ -260,15 +258,35 @@ class VirtualNavigationTouchpadTest : VirtualDeviceTestCase() {
         )
     }
 
-    private fun sendVirtualNavigationTouchEvent(x: Float, y: Float, action: Int) {
+    private fun sendVirtualNavigationTouchEvent(
+        x: Float,
+        y: Float,
+        action: Int,
+        majorAxisSize: Float = 1f
+    ) {
         mVirtualNavigationTouchpad.sendTouchEvent(
             VirtualTouchEvent.Builder()
                 .setAction(action)
                 .setPointerId(1)
                 .setX(x)
                 .setY(y)
-                .setPressure(if (action == VirtualTouchEvent.ACTION_UP) 0f else 255f)
-                .setToolType(VirtualTouchEvent.TOOL_TYPE_FINGER)
+                .setPressure(
+                    if (action == VirtualTouchEvent.ACTION_UP ||
+                        action == VirtualTouchEvent.ACTION_CANCEL
+                    ) {
+                        0f
+                    } else {
+                        255f
+                    }
+                )
+                .setMajorAxisSize(majorAxisSize)
+                .setToolType(
+                    if (action == VirtualTouchEvent.ACTION_CANCEL) {
+                        VirtualTouchEvent.TOOL_TYPE_PALM
+                    } else {
+                        VirtualTouchEvent.TOOL_TYPE_FINGER
+                    }
+                )
                 .build()
         )
     }
@@ -279,6 +297,11 @@ class VirtualNavigationTouchpadTest : VirtualDeviceTestCase() {
         event.displayId = mVirtualDisplay.display.displayId
         return event
     }
+
+    private fun allFinalActions(): Array<Int> = arrayOf(
+        MotionEvent.ACTION_UP,
+        MotionEvent.ACTION_CANCEL,
+    )
 
     companion object {
         private const val DEVICE_NAME = "CtsVirtualNavigationTouchpadTestDevice"
