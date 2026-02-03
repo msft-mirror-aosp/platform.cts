@@ -22,6 +22,7 @@ import static android.content.pm.ActivityInfo.FORCE_RESIZE_APP;
 import static android.content.pm.ActivityInfo.OVERRIDE_CAMERA_COMPAT_DISABLE_SIMULATE_REQUESTED_ORIENTATION;
 import static android.content.pm.ActivityInfo.OVERRIDE_ENABLE_COMPAT_FAKE_FOCUS;
 import static android.content.pm.ActivityInfo.OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED;
+import static android.content.pm.ActivityInfo.OVERRIDE_ENABLE_VIRTUAL_GAMEPAD;
 import static android.content.pm.ActivityInfo.OVERRIDE_EXCLUDE_CAPTION_INSETS_FROM_APP_BOUNDS;
 import static android.content.pm.ActivityInfo.OVERRIDE_MIN_ASPECT_RATIO;
 import static android.content.pm.ActivityInfo.OVERRIDE_MIN_ASPECT_RATIO_LARGE_VALUE;
@@ -55,6 +56,8 @@ import static android.server.wm.allowuseraspectratiofullscreenoverrideoptin.Comp
 import static android.server.wm.allowuseraspectratiofullscreenoverrideoptout.Components.ALLOW_USER_ASPECT_RATIO_FULLSCREEN_OVERRIDE_OPT_OUT_ACTIVITY;
 import static android.server.wm.allowuseraspectratiooverrideoptin.Components.ALLOW_USER_ASPECT_RATIO_OVERRIDE_OPT_IN_ACTIVITY;
 import static android.server.wm.allowuseraspectratiooverrideoptout.Components.ALLOW_USER_ASPECT_RATIO_OVERRIDE_OPT_OUT_ACTIVITY;
+import static android.server.wm.allowvirtualgamepadoverrideoptin.Components.ALLOW_VIRTUAL_GAMEPAD_OVERRIDE_OPT_IN_ACTIVITY;
+import static android.server.wm.allowvirtualgamepadoverrideoptout.Components.ALLOW_VIRTUAL_GAMEPAD_OVERRIDE_OPT_OUT_ACTIVITY;
 import static android.server.wm.enablefakefocusoptin.Components.ENABLE_FAKE_FOCUS_OPT_IN_LEFT_ACTIVITY;
 import static android.server.wm.enablefakefocusoptin.Components.ENABLE_FAKE_FOCUS_OPT_IN_RIGHT_ACTIVITY;
 import static android.server.wm.enablefakefocusoptout.Components.ENABLE_FAKE_FOCUS_OPT_OUT_LEFT_ACTIVITY;
@@ -219,6 +222,8 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
         android.server.wm.alloworientationoverride.Components.forceStopPackage();
         android.server.wm.allowresizeableactivityoverridesoptin.Components.forceStopPackage();
         android.server.wm.allowresizeableactivityoverridesoptout.Components.forceStopPackage();
+        android.server.wm.allowvirtualgamepadoverrideoptin.Components.forceStopPackage();
+        android.server.wm.allowvirtualgamepadoverrideoptout.Components.forceStopPackage();
         android.server.wm.allowsandboxingviewboundsapis.Components.forceStopPackage();
         android.server.wm.allowuseraspectratiofullscreenoverrideoptin.Components.forceStopPackage();
         android.server.wm.allowuseraspectratiofullscreenoverrideoptout.Components
@@ -1056,6 +1061,84 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
             // Activity with property unset and override disabled. Activity should not be forced to
             // be resizeable.
             assertFalse(session.getActivityState().getShouldOverrideForceResizeApp());
+        }
+    }
+
+    /**
+     * Test that an activity is forced to be resizeable when {@link
+     * ActivityInfo#OVERRIDE_ENABLE_VIRTUAL_GAMEPAD} is enabled and {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_VIRTUAL_GAMEPAD_OVERRIDE} is set to true.
+     */
+    @Test
+    @ApiTest(
+            apis = {
+                "android.content.pm.ActivityInfo#OVERRIDE_ENABLE_VIRTUAL_GAMEPAD",
+                "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_VIRTUAL_GAMEPAD_OVERRIDE"
+            })
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_GAMEPAD_DEVELOPER_OPT_OUT)
+    public void testOverrideVirtualGamepad_propertyTrue_overrideEnabled_overrideApplied() {
+        try (var compatChange =
+                        new CompatChangeCloseable(
+                                OVERRIDE_ENABLE_VIRTUAL_GAMEPAD,
+                                ALLOW_VIRTUAL_GAMEPAD_OVERRIDE_OPT_IN_ACTIVITY.getPackageName());
+                var session =
+                        new ActivitySessionCloseable(
+                                ALLOW_VIRTUAL_GAMEPAD_OVERRIDE_OPT_IN_ACTIVITY)) {
+            // Activity with property set to true and override enabled. Activity should be forced to
+            // be resizeable.
+            assertTrue(session.getActivityState().getShouldOverrideForceResizeApp());
+        }
+    }
+
+    /**
+     * Test that an activity is not forced to be resizeable when {@link
+     * ActivityInfo#OVERRIDE_ENABLE_VIRTUAL_GAMEPAD} is enabled but {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_VIRTUAL_GAMEPAD_OVERRIDE} is set to false.
+     */
+    @Test
+    @ApiTest(
+            apis = {
+                "android.content.pm.ActivityInfo#OVERRIDE_ENABLE_VIRTUAL_GAMEPAD",
+                "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_VIRTUAL_GAMEPAD_OVERRIDE"
+            })
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_GAMEPAD_DEVELOPER_OPT_OUT)
+    public void testOverrideVirtualGamepad_propertyFalse_overrideEnabled_overrideNotApplied() {
+        try (var compatChange =
+                        new CompatChangeCloseable(
+                                OVERRIDE_ENABLE_VIRTUAL_GAMEPAD,
+                                ALLOW_VIRTUAL_GAMEPAD_OVERRIDE_OPT_OUT_ACTIVITY.getPackageName());
+                var session =
+                        new ActivitySessionCloseable(
+                                ALLOW_VIRTUAL_GAMEPAD_OVERRIDE_OPT_OUT_ACTIVITY)) {
+            // Activity with property set to false and override enabled. Activity should not be
+            // forced to be resizeable.
+            assertFalse(session.getActivityState().getShouldOverrideForceResizeApp());
+        }
+    }
+
+    /**
+     * Test that an activity is forced to be resizeable when {@link
+     * ActivityInfo#OVERRIDE_ENABLE_VIRTUAL_GAMEPAD} is enabled and {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_VIRTUAL_GAMEPAD_OVERRIDE} is unset.
+     */
+    @Test
+    @ApiTest(
+            apis = {
+                "android.content.pm.ActivityInfo#OVERRIDE_ENABLE_VIRTUAL_GAMEPAD",
+                "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_VIRTUAL_GAMEPAD_OVERRIDE"
+            })
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_GAMEPAD_DEVELOPER_OPT_OUT)
+    public void testOverrideVirtualGamepad_propertyUnset_overrideEnabled_overrideApplied() {
+        try (var compatChange =
+                        new CompatChangeCloseable(
+                                OVERRIDE_ENABLE_VIRTUAL_GAMEPAD,
+                                NON_RESIZEABLE_NON_FIXED_ORIENTATION_ACTIVITY.getPackageName());
+                var session =
+                        new ActivitySessionCloseable(
+                                NON_RESIZEABLE_NON_FIXED_ORIENTATION_ACTIVITY)) {
+            // Activity with property unset and override enabled. Property will default to true.
+            // Activity should be forced to be resizeable.
+            assertTrue(session.getActivityState().getShouldOverrideForceResizeApp());
         }
     }
 
