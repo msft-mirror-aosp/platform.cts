@@ -105,20 +105,6 @@ public class OpportunisticMockModemTestBase extends MockModemTestBase {
 
             removeSimCard(OPPT_SIM_SLOT_INDEX);
             removeSimCard(PRIMARY_SIM_SLOT_INDEX);
-
-            // Remove SIMs from database, otherwise changes to test setup may not take.
-            // TODO(b/457756111): Migrate to Bedstead.
-            InstrumentationRegistry.getInstrumentation()
-                    .getUiAutomation()
-                    .adoptShellPermissionIdentity();
-            try {
-                sSubscriptionManager.removeSubscriptionInfoRecord(primarySubIccid, 0);
-                sSubscriptionManager.removeSubscriptionInfoRecord(opptSubIccid, 0);
-            } finally {
-                InstrumentationRegistry.getInstrumentation()
-                        .getUiAutomation()
-                        .dropShellPermissionIdentity();
-            }
         }
 
         MockModemTestBase.afterAllTestsBase();
