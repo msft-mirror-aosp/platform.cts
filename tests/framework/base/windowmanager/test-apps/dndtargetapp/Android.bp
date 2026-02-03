@@ -16,7 +16,7 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_test {
+android_test_helper_app {
     name: "CtsDragAndDropTargetApp",
     defaults: ["cts_support_defaults"],
 
@@ -28,7 +28,6 @@ android_test {
     sdk_version: "current",
 
     test_suites: [
-        "cts",
         "general-tests",
         "sts",
     ],

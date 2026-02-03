@@ -17,7 +17,10 @@ package com.android.contactspicker.cts.sdk36;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.os.SystemClock;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -40,6 +43,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.List;
+
 /** CTS tests for launching the Contacts Picker activity from targetSdk < 37 apps. */
 @RunWith(AndroidJUnit4.class)
 public final class ContactsPickerInvocationSdk36Test {
@@ -47,12 +52,14 @@ public final class ContactsPickerInvocationSdk36Test {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
+    private Context mContext;
     private UiDevice mUiDevice;
     private static final String CONTACTS_PICKER_PACKAGE = "com.android.contactspicker";
     private static final int TIMEOUT_MS = 5000;
 
     @Before
     public void setUp() {
+        mContext = InstrumentationRegistry.getInstrumentation().getContext();
         mUiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         mUiDevice.pressHome();
     }
@@ -68,6 +75,13 @@ public final class ContactsPickerInvocationSdk36Test {
     public void actionPick_doesNotLaunchSystemPicker() throws Exception {
         Intent intent = new Intent(Intent.ACTION_PICK);
         intent.setType(ContactsContract.CommonDataKinds.Email.CONTENT_TYPE);
+
+        // If no handlers for the intent are present - on GSI-without gms for ex, let's exit.
+        PackageManager pm = mContext.getPackageManager();
+        List<ResolveInfo> handlers = pm.queryIntentActivities(intent, 0);
+        if (handlers.isEmpty()) {
+            return;
+        }
 
         // Launch the TestActivity
         try (ActivityScenario<TestActivity> scenario =

@@ -17,7 +17,7 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_test {
+android_test_helper_app {
     name: "CtsLocationPolicyApp",
     defaults: ["cts_defaults"],
     libs: [
@@ -31,7 +31,6 @@ android_test {
     srcs: ["src/**/*.java"],
     platform_apis: true,
     test_suites: [
-        "cts",
         "sts",
         "general-tests",
     ],

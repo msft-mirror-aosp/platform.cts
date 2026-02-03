@@ -233,6 +233,7 @@ android_test {
         "src/android/content/pm/**/*.aidl",
     ],
     data: [
+        ":CtsAppLockSupportedTestApp",
         ":CtsContentEmptyTestApp",
         ":CtsContentLongPackageNameTestApp",
         ":CtsContentLongSharedUserIdTestApp",
@@ -474,6 +475,7 @@ android_ravenwood_test {
         "src/android/content/pm/cts/ResolveInfoTest.java",
         "src/android/content/pm/cts/ServiceInfoTest.java",
         "src/android/content/pm/cts/SignatureTest.java",
+        "src/android/content/pm/cts/util/*.java",
     ],
     auto_gen_config: true,
 }

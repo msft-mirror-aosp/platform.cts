@@ -59,6 +59,9 @@
     <!-- Used to give permission to the dependency installer role in PackageManager tests -->
     <uses-permission android:name="android.permission.INSTALL_DEPENDENCY_SHARED_LIBRARIES" />
 
+    <!-- Used for PackageManager tests of the App Lock feature -->
+    <uses-permission android:name="android.permission.LOCK_APPS" />
+
     <!-- Used for PackageManager test, don't delete this permission-tree -->
     <permission-tree android:name="android.content.cts.permission.TEST_DYNAMIC"
          android:label="Test Tree"/>

@@ -189,6 +189,13 @@ class AppFunctionInteractionHistoryTest {
                     ),
                 )
 
+                // Assert that no interaction history is created in the current user's context.
+                assertInteractionHistoryContainsExactly(
+                    after = testStartTime,
+                    currentContext = context,
+                    targetContext = context,
+                    expected = arrayOf(),
+                )
                 assertInteractionHistoryContainsExactly(
                     after = testStartTime,
                     currentContext = context,

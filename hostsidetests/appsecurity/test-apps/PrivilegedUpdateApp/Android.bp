@@ -38,7 +38,6 @@ android_test_import {
     presigned: true,
     preprocessed: true,
     test_suites: [
-        "cts",
         "general-tests",
     ],
     // The 'arm' apk has both arm and arm64 so's. Same for x86/x86_64.
@@ -70,7 +69,6 @@ android_test_import {
     presigned: true,
     preprocessed: true,
     test_suites: [
-        "cts",
         "general-tests",
     ],
     arch: {

@@ -27,6 +27,7 @@ import static android.server.wm.app.Components.FontScaleActivity.EXTRA_FONT_PIXE
 import static android.server.wm.app.Components.NO_RELAUNCH_ACTIVITY;
 import static android.server.wm.app.Components.RECREATE_ON_KEYBOARD_CHANGE_ACTIVITY;
 import static android.server.wm.app.Components.TEST_ACTIVITY;
+import static android.server.wm.keyboardresources.Components.KEYBOARD_RESOURCES_ACTIVITY;
 import static android.view.Surface.ROTATION_0;
 import static android.view.Surface.ROTATION_180;
 import static android.view.Surface.ROTATION_270;
@@ -396,6 +397,21 @@ public class ConfigChangeTests extends ActivityManagerTestBase {
     @EnableCompatChanges(ActivityInfo.SKIP_ACTIVITY_RECREATION_ON_CONFIG_CHANGE)
     public void testKeyboardConfigChange_relaunch() {
         testKeyboardConfigChange(RECREATE_ON_KEYBOARD_CHANGE_ACTIVITY, 1 /* numRelaunch */,
+                0 /* numConfigChange */);
+    }
+
+    /**
+     * Verifies that if the app provides resources for a specific keyboard configuration, the
+     * activity is relaunched and does not receive the
+     * {@link android.app.Activity#onConfigurationChanged} callback when a keyboard configuration
+     * change occurs.
+     */
+    @Test
+    @ApiTest(apis = {"android.R.attr#configChanges", "android.R.attr#recreateOnConfigChanges"})
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_LESS_ACTIVITY_RECREATION_ON_CONFIG_CHANGE)
+    @EnableCompatChanges(ActivityInfo.SKIP_ACTIVITY_RECREATION_ON_CONFIG_CHANGE)
+    public void testKeyboardConfigChange_keyboardResources_relaunch() {
+        testKeyboardConfigChange(KEYBOARD_RESOURCES_ACTIVITY, 1 /* numRelaunch */,
                 0 /* numConfigChange */);
     }
 

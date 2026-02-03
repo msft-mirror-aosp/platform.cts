@@ -31,6 +31,7 @@ import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.compatibility.common.util.UiAutomatorUtils2
 import com.google.common.truth.Truth.assertThat
+import com.google.common.truth.Truth.assertWithMessage
 import com.google.common.util.concurrent.MoreExecutors.directExecutor
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -66,6 +67,9 @@ class SerialApiTest {
         mContext = ApplicationProvider.getApplicationContext()
         mSerialManager = mContext!!.getSystemService(SerialManager::class.java)
 
+        // PTY is hidden by default
+        setExposePty(false)
+
         // Clear previous user access choices
         SystemUtil.runShellCommand("cmd serial clear-user-access")
 
@@ -86,7 +90,8 @@ class SerialApiTest {
     fun test_getPorts_isEmpty() {
         val ports = mSerialManager!!.getPorts()
 
-        assertThat(ports).isEmpty()
+        val portNames = ports.map { it.name }.joinToString()
+        assertWithMessage("Expected no ports by default, but got $portNames").that(ports).isEmpty()
     }
 
     @ApiTest(apis = ["android.hardware.serial.SerialManager#getPorts"])

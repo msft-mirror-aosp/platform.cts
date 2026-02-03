@@ -299,7 +299,7 @@ public class BasicBluetoothGattTest {
         String packageName = mContext.getOpPackageName();
         runShellCommand(
                 String.format(
-                        "cmd companiondevice associate %d %s %s",
+                        "cmd companiondevice associate %d %s --mac-address %s",
                         userId, packageName, TEST_DEVICE_ADDRESS));
         String output = runShellCommand("dumpsys companiondevice");
         assertThat(output).contains(packageName);
@@ -311,7 +311,7 @@ public class BasicBluetoothGattTest {
         String packageName = mContext.getOpPackageName();
         runShellCommand(
                 String.format(
-                        "cmd companiondevice disassociate %d %s %s",
+                        "cmd companiondevice disassociate %d %s --mac-address %s",
                         userId, packageName, TEST_DEVICE_ADDRESS));
     }
 }

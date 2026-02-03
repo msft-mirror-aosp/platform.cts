@@ -21,6 +21,13 @@ import static android.content.pm.ApplicationInfo.CATEGORY_MAPS;
 import static android.content.pm.ApplicationInfo.CATEGORY_PRODUCTIVITY;
 import static android.content.pm.ApplicationInfo.CATEGORY_UNDEFINED;
 import static android.content.pm.ApplicationInfo.FLAG_SUPPORTS_RTL;
+import static android.content.pm.cts.util.PackageTestUtils.APP_LOCK_SUPPORTED_APK;
+import static android.content.pm.cts.util.PackageTestUtils.APP_LOCK_SUPPORTED_PACKAGE_NAME;
+import static android.content.pm.cts.util.PackageTestUtils.hasLockAppsPermission;
+import static android.content.pm.cts.util.PackageTestUtils.installPackageScoped;
+import static android.content.pm.cts.util.PackageTestUtils.setHomeRoleHolderScoped;
+
+import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -29,6 +36,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNotNull;
@@ -38,6 +46,8 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.pm.cts.util.AppLockSupportRule;
+import android.content.pm.cts.util.RequiresAppLockSupported;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Parcel;
@@ -53,6 +63,7 @@ import android.util.StringBuilderPrinter;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.Rule;
@@ -67,6 +78,9 @@ import org.junit.runner.RunWith;
 public class ApplicationInfoTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Rule
+    public final AppLockSupportRule mAppLockSupportRule = new AppLockSupportRule();
 
     private static final String SYNC_ACCOUNT_ACCESS_STUB_PACKAGE_NAME = "com.android.cts.stub";
     private static final String DIRECT_BOOT_UNAWARE_PACKAGE_NAME =
@@ -188,11 +202,6 @@ public class ApplicationInfoTest {
         int flags = FLAG_SUPPORTS_RTL;
         assertEquals(flags, applicationInfo.flags & flags);
         assertEquals(CATEGORY_PRODUCTIVITY, applicationInfo.category);
-    }
-
-    private void installPackage(String apkPath) {
-        assertEquals("Success\n", SystemUtil.runShellCommand(
-                "pm install -t " + apkPath));
     }
 
     @Test
@@ -411,6 +420,72 @@ public class ApplicationInfoTest {
         final PackageInfo info = getContext().getPackageManager().getPackageInfo(
                 packageName.trim(), PackageManager.PackageInfoFlags.of(0));
         assertTrue(packageName + " is not oem package.", info.applicationInfo.isOem());
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(
+            apis = {
+                "android.content.pm.PackageManager#getApplicationInfo",
+                "android.content.pm.PackageManager#GET_APP_LOCK_INFO",
+            })
+    public void
+            testGetApplicationInfo_getAppLockInfoFlag_withoutPermission_throwsSecurityException()
+                    throws Exception {
+        final Context context = getContext();
+        final PackageManager packageManager = context.getPackageManager();
+
+        try (AutoCloseable withAppLockSupportedApp =
+                installPackageScoped(APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME)) {
+            assertThat(hasLockAppsPermission(context)).isFalse();
+
+            // Without LOCK_APPS, GET_APP_LOCK_INFO should throw SecurityException
+            assertThrows(
+                    SecurityException.class,
+                    () -> {
+                        packageManager.getApplicationInfo(
+                                APP_LOCK_SUPPORTED_PACKAGE_NAME,
+                                PackageManager.ApplicationInfoFlags.of(
+                                        PackageManager.GET_APP_LOCK_INFO));
+                    });
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(
+            apis = {
+                "android.content.pm.PackageManager#getApplicationInfo",
+                "android.content.pm.PackageManager#GET_APP_LOCK_INFO",
+            })
+    public void testGetApplicationInfo_getAppLockInfoFlag_withPermission_returnsCorrectInfo()
+            throws Exception {
+        final Context context = getContext();
+        final PackageManager packageManager = context.getPackageManager();
+
+        try (AutoCloseable withAppLockSupportedApp =
+                        installPackageScoped(
+                                APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME);
+                AutoCloseable withLockAppsPermission = setHomeRoleHolderScoped(context)) {
+            assertThat(hasLockAppsPermission(context)).isTrue();
+
+            // With LOCK_APPS, GET_APP_LOCK_INFO should return correct info
+            ApplicationInfo infoWithPermission =
+                    packageManager.getApplicationInfo(
+                            APP_LOCK_SUPPORTED_PACKAGE_NAME,
+                            PackageManager.ApplicationInfoFlags.of(
+                                    PackageManager.GET_APP_LOCK_INFO));
+            assertThat(infoWithPermission.isAppLockSupported).isTrue();
+            assertThat(infoWithPermission.isAppLockEnabled).isFalse();
+        }
+    }
+
+    private void installPackage(String apkPath) {
+        assertEquals("Success\n", SystemUtil.runShellCommand("pm install -t " + apkPath));
     }
 
     private String getPartitionFirstPackageName(final String system, final String partition)

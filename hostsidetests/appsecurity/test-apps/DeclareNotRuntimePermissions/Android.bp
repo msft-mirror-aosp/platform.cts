@@ -19,12 +19,11 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_test {
+android_test_helper_app {
     name: "CtsDeclareNonRuntimePermissions",
     defaults: ["cts_support_defaults"],
     sdk_version: "current",
     test_suites: [
-        "cts",
         "vts",
         "general-tests",
         "mts",

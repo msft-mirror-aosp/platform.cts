@@ -125,9 +125,20 @@ class ComputerControlExtensionsTest {
     }
 
     @Test
-    fun testGetInstance_withoutPermission_returnsNull() {
+    fun testGetInstance_withoutPermission_returnsNonNull() {
         getInstrumentation().uiAutomation.dropShellPermissionIdentity()
-        assertThat(ComputerControlExtensions.getInstance(context)).isNull()
+        assertThat(ComputerControlExtensions.getInstance(context)).isNotNull()
+    }
+
+    @Test
+    fun isSessionCreationAvailable_returnsTrue() {
+        assertThat(ComputerControlExtensions.isSessionCreationAvailable(context)).isTrue()
+    }
+
+    @Test
+    fun isSessionCreationAvailable_withoutPermission_returnsFalse() {
+        getInstrumentation().uiAutomation.dropShellPermissionIdentity()
+        assertThat(ComputerControlExtensions.isSessionCreationAvailable(context)).isFalse()
     }
 
     @Test
