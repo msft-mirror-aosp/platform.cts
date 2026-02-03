@@ -62,7 +62,6 @@ import android.app.ActivityManager.RunningAppProcessInfo;
 import android.app.ActivityManager.RunningServiceInfo;
 import android.app.ActivityManager.RunningTaskInfo;
 import android.app.ActivityOptions;
-import android.app.Flags;
 import android.app.HomeVisibilityListener;
 import android.app.Instrumentation;
 import android.app.Instrumentation.ActivityMonitor;
@@ -2405,7 +2404,6 @@ public final class ActivityManagerTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_UID_IMPORTANCE_LISTENER_FOR_UIDS)
     @Test
     public void testAddOnUidImportanceListener() throws Exception {
         final ApplicationInfo ai1 =
