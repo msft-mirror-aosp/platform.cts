@@ -37,7 +37,7 @@ specs {
 specs {
   key: 31
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_12
+    mpc: MEDIA_PERFORMANCE_CLASS_31
     specification: "MUST have at least 6 GB of physical memory."
     required_values {
       key: "physical_memory_mb"
@@ -50,7 +50,7 @@ specs {
 specs {
   key: 33
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_13
+    mpc: MEDIA_PERFORMANCE_CLASS_33
     specification: "MUST have at least 8 GB of physical memory."
     required_values {
       key: "physical_memory_mb"
@@ -63,7 +63,7 @@ specs {
 specs {
   key: 34
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_14
+    mpc: MEDIA_PERFORMANCE_CLASS_34
     specification: "MUST have at least 8 GB of physical memory."
     required_values {
       key: "physical_memory_mb"
@@ -76,7 +76,7 @@ specs {
 specs {
   key: 35
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_15
+    mpc: MEDIA_PERFORMANCE_CLASS_35
     specification:
       "MUST have at least 8&nbsp;GB of physical memory, with at least "
       "6.64&nbsp;GB available to the kernel as reported by "
@@ -92,7 +92,7 @@ specs {
 specs {
   key: 37
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_17
+    mpc: MEDIA_PERFORMANCE_CLASS_37
     specification:
       "MUST have at least 8.0 GiB available to the kernel as reported by "
       "android.app.ActivityManager.MemoryInfo."

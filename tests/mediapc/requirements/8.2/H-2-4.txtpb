@@ -20,7 +20,7 @@ description: "- Random read"
 specs {
   key: 31
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_12
+    mpc: MEDIA_PERFORMANCE_CLASS_31
     specification: "MUST ensure a random read performance of at least 40 MB/s."
     required_values {
       key: "filesystem_io_rate_mbps"

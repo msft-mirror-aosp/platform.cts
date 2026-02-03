@@ -20,7 +20,7 @@ description: "Test the ability to switch audio loads without glitching."
 specs {
   key: 37
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_17
+    mpc: MEDIA_PERFORMANCE_CLASS_37
     specification:
       "MUST be able to handle switching from playing 1 sine wave to 50 sine "
       "waves with no underrun of audio buffers."

@@ -18,7 +18,7 @@ id: "5.1/H-SR-1"
 specs {
   key: 33
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_13
+    mpc: MEDIA_PERFORMANCE_CLASS_33
     specification: "Are STRONGLY RECOMMENDED to support Film Grain for AV1 hardware decoder."
   }
 }

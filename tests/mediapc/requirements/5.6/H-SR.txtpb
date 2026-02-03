@@ -18,7 +18,7 @@ id: "5.6/H-SR"
 specs {
   key: 34
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_14
+    mpc: MEDIA_PERFORMANCE_CLASS_34
     specification:
       "Are STRONGLY RECOMMENDED to support 24 channel mixing with at least "
       "support for 9.1.6 and 22.2 channel masks."
@@ -27,7 +27,7 @@ specs {
 specs {
   key: 35
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_15
+    mpc: MEDIA_PERFORMANCE_CLASS_35
     specification:
       "Are STRONGLY RECOMMENDED to support 24 channel mixing with at least "
       "support for 9.1.6 and 22.2 channel masks."
@@ -36,7 +36,7 @@ specs {
 specs {
   key: 37
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_17
+    mpc: MEDIA_PERFORMANCE_CLASS_37
     specification:
       "Are STRONGLY RECOMMENDED to support 24 channel mixing with at least "
       "support for 9.1.6 and 22.2 channel masks."

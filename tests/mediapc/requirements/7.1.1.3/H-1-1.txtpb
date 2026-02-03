@@ -20,7 +20,7 @@ description: "- Screen density"
 specs {
   key: 30
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_11
+    mpc: MEDIA_PERFORMANCE_CLASS_30
     specification: "MUST have screen density of at least 400 dpi."
     required_values {
       key: "display_density_dpi"

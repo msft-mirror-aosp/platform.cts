@@ -20,7 +20,7 @@ description: "Ultra HDR support for primary camera"
 specs {
   key: 35
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_15
+    mpc: MEDIA_PERFORMANCE_CLASS_35
     specification:
       "MUST by default output JPEG_R for the primary rear and primary front "
       "cameras in the native camera app."
@@ -41,7 +41,7 @@ specs {
 specs {
   key: 37
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_17
+    mpc: MEDIA_PERFORMANCE_CLASS_37
     specification:
       "MUST by default output JPEG_R for the primary rear and primary front "
       "cameras in the native camera app."
