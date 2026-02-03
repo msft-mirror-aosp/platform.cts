@@ -2326,32 +2326,36 @@ public final class ActivityManagerTest {
                         latchHolder[0].countDown();
                     }
                 };
+        PermissionUtils.grantPermission(STUB_PACKAGE_NAME, Manifest.permission.PACKAGE_USAGE_STATS);
         try (AutoCloseable unused =
                 CtsAppTestUtils.allowBackgroundActivityLaunch(PACKAGE_NAME_APP1)) {
             // If we didn't specify the target UID, we should be able to listen on all UID events.
             mActivityManager.addOnUidImportanceListener(listener,
                     RunningAppProcessInfo.IMPORTANCE_FOREGROUND);
+            try {
+                latchHolder[0] = new CountDownLatch(1);
+                expectedUidHolder[0] = ai1.uid;
+                CommandReceiver.sendCommand(mTargetContext,
+                        CommandReceiver.COMMAND_START_ACTIVITY,
+                        PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
+                assertWithMessage("Failed to receive the UID importance changes")
+                        .that(latchHolder[0].await(WAITFOR_MSEC * 2, TimeUnit.MILLISECONDS))
+                        .isTrue();
 
-            latchHolder[0] = new CountDownLatch(1);
-            expectedUidHolder[0] = ai1.uid;
-            CommandReceiver.sendCommand(mTargetContext,
-                    CommandReceiver.COMMAND_START_ACTIVITY,
-                    PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
-            assertWithMessage("Failed to receive the UID importance changes")
-                    .that(latchHolder[0].await(WAITFOR_MSEC * 2, TimeUnit.MILLISECONDS))
-                    .isTrue();
-
-            latchHolder[0] = new CountDownLatch(1);
-            expectedUidHolder[0] = ai2.uid;
-            CommandReceiver.sendCommand(mTargetContext,
-                    CommandReceiver.COMMAND_START_ACTIVITY,
-                    PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, 0, null);
-            assertWithMessage("Failed to receive the UID importance changes")
-                    .that(latchHolder[0].await(WAITFOR_MSEC * 2, TimeUnit.MILLISECONDS))
-                    .isTrue();
+                latchHolder[0] = new CountDownLatch(1);
+                expectedUidHolder[0] = ai2.uid;
+                CommandReceiver.sendCommand(mTargetContext,
+                        CommandReceiver.COMMAND_START_ACTIVITY,
+                        PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, 0, null);
+                assertWithMessage("Failed to receive the UID importance changes")
+                        .that(latchHolder[0].await(WAITFOR_MSEC * 2, TimeUnit.MILLISECONDS))
+                        .isTrue();
+            } finally {
+                mActivityManager.removeOnUidImportanceListener(listener);
+            }
         } finally {
-            mActivityManager.removeOnUidImportanceListener(listener);
-
+            PermissionUtils.revokePermission(STUB_PACKAGE_NAME,
+                    Manifest.permission.PACKAGE_USAGE_STATS);
             runWithShellPermissionIdentity(
                     () -> {
                         // force stop test package; the whole test process group will be killed.
@@ -2420,32 +2424,36 @@ public final class ActivityManagerTest {
                         latchHolder[0].countDown();
                     }
                 };
+        PermissionUtils.grantPermission(STUB_PACKAGE_NAME, Manifest.permission.PACKAGE_USAGE_STATS);
         try (AutoCloseable unused =
                 CtsAppTestUtils.allowBackgroundActivityLaunch(PACKAGE_NAME_APP1)) {
             // Listen on the APP1's UID importance changes only.
             mActivityManager.addOnUidImportanceListener(listener,
                     RunningAppProcessInfo.IMPORTANCE_FOREGROUND, new int[] {ai1.uid});
+            try {
+                latchHolder[0] = new CountDownLatch(1);
+                expectedUidHolder[0] = ai1.uid;
+                CommandReceiver.sendCommand(mTargetContext,
+                        CommandReceiver.COMMAND_START_ACTIVITY,
+                        PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
+                assertWithMessage("Failed to receive the UID importance changes")
+                        .that(latchHolder[0].await(WAITFOR_MSEC, TimeUnit.MILLISECONDS))
+                        .isTrue();
 
-            latchHolder[0] = new CountDownLatch(1);
-            expectedUidHolder[0] = ai1.uid;
-            CommandReceiver.sendCommand(mTargetContext,
-                    CommandReceiver.COMMAND_START_ACTIVITY,
-                    PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
-            assertWithMessage("Failed to receive the UID importance changes")
-                    .that(latchHolder[0].await(WAITFOR_MSEC, TimeUnit.MILLISECONDS))
-                    .isTrue();
-
-            latchHolder[0] = new CountDownLatch(1);
-            expectedUidHolder[0] = ai2.uid;
-            CommandReceiver.sendCommand(mTargetContext,
-                    CommandReceiver.COMMAND_START_ACTIVITY,
-                    PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, 0, null);
-            assertWithMessage("It should not receive the UID importance changes")
-                    .that(latchHolder[0].await(WAITFOR_MSEC, TimeUnit.MILLISECONDS))
-                    .isFalse();
+                latchHolder[0] = new CountDownLatch(1);
+                expectedUidHolder[0] = ai2.uid;
+                CommandReceiver.sendCommand(mTargetContext,
+                        CommandReceiver.COMMAND_START_ACTIVITY,
+                        PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, 0, null);
+                assertWithMessage("It should not receive the UID importance changes")
+                        .that(latchHolder[0].await(WAITFOR_MSEC, TimeUnit.MILLISECONDS))
+                        .isFalse();
+            } finally {
+                mActivityManager.removeOnUidImportanceListener(listener);
+            }
         } finally {
-            mActivityManager.removeOnUidImportanceListener(listener);
-
+            PermissionUtils.revokePermission(STUB_PACKAGE_NAME,
+                    Manifest.permission.PACKAGE_USAGE_STATS);
             runWithShellPermissionIdentity(
                     () -> {
                         // force stop test package; the whole test process group will be killed.
