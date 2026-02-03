@@ -564,7 +564,7 @@ public class BaseHdmiCecCtsTest extends BaseHostJUnit4Test {
             TimeUnit.SECONDS.sleep(HdmiCecConstants.SLEEP_TIMESTEP_SECONDS);
             waitTimeSeconds += HdmiCecConstants.SLEEP_TIMESTEP_SECONDS;
             actualWakefulness =
-                    device.executeShellCommand("dumpsys power | grep mWakefulness=")
+                    device.executeShellCommand("dumpsys power | grep 'mWakefulness=[A-Za-z]'")
                             .trim().replace("mWakefulness=", "");
         } while (!actualWakefulness.equals(wakefulness)
                 && waitTimeSeconds <= HdmiCecConstants.MAX_SLEEP_TIME_SECONDS);
