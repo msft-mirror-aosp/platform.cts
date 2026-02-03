@@ -39,6 +39,7 @@ android_test {
         "ActivityContext",
         "TestApp",
         "android.multiuser.flags-aconfig-java",
+        "cts-mediaprojection-common",
     ],
     aidl: {
         local_include_dirs: [
