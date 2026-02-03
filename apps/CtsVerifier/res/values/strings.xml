@@ -7996,6 +7996,7 @@ You should be prompted to select credentials; choose the ones you just installed
         <!-- Interactive modules -->
         <item>CtsNotificationSizeVerifierHostTest</item>
         <item>CtsSysuiInteractiveTestCases</item>
+        <item>CtsUsbTypecTestCases</item>
     </string-array>
 
     <!-- Strings for Audio Workload Test. -->
