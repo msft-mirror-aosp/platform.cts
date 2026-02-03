@@ -116,10 +116,7 @@ public class MediaRouter2DeviceTest {
         }
     }
 
-    @RequiresFlagsEnabled({
-        Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING,
-        Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL
-    })
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL)
     @Test
     public void requestScan_withScreenOnScanning_triggersScanning() throws InterruptedException {
         loadScreenOnActivity();
@@ -165,7 +162,6 @@ public class MediaRouter2DeviceTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING)
     @Test
     public void cancelScanRequest_callTwice_throwsIllegalArgumentException() {
         MediaRouter2 instance = MediaRouter2.getInstance(mContext, mContext.getPackageName());
@@ -175,7 +171,6 @@ public class MediaRouter2DeviceTest {
         assertThrows(IllegalArgumentException.class, () -> instance.cancelScanRequest(token));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING)
     @Test
     public void cancelScanRequest_screenOnScanning_unbindsSelfScanProvider() {
         loadScreenOnActivity();
