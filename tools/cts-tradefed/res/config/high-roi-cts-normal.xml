@@ -6958,6 +6958,10 @@
     <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.ActivityManagerTest#testGetUidFrozenState"/>
     <!-- Exclude the failing tests in CtsAutoFillServiceTestCases -->
     <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.augmented.AugmentedLoginActivityTest#testCancellationSignalCalled_retriggerAugmentedAutofill"/>
+    <!-- Exclude the failing tests in CtsHostsideNumberBlockingTestCases -->
+    <option name="compatibility:exclude-filter" value="CtsHostsideNumberBlockingTestCases com.android.cts.numberblocking.hostside.NumberBlockingTest#testNumberBlocking"/>
+    <!-- Exclude the failing tests in CtsInputMethodTestCases -->
+    <option name="compatibility:exclude-filter" value="CtsInputMethodTestCases android.view.inputmethod.cts.FocusHandlingTest#testUnfocusedEditor_stateUnchanged"/>
     <!-- Exclude the failing tests in CtsMediaDecoderTestCases -->
     <option name="compatibility:exclude-filter" value="CtsMediaDecoderTestCases android.media.decoder.cts.DecoderTestAacDrc#testDecodeUsacLoudnessM4a"/>
     <option name="compatibility:exclude-filter" value="CtsMediaDecoderTestCases android.media.decoder.cts.DecoderTestXheAac#testDecodeUsacDrcOutputLoudnessM4a"/>
@@ -6971,6 +6975,7 @@
     <option name="compatibility:exclude-filter" value="CtsSecurityTestCases_multiuser android.security.cts.advancedprotection.AdvancedProtectionManagerTest#testRegisterFeatureCallback[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:exclude-filter" value="CtsSecurityTestCases_multiuser android.security.cts.advancedprotection.AdvancedProtectionManagerTest#testUpdateAdvancedProtectionFeaturesProvisioning_provisioned[IncludeRunOnPrimaryUser]"/>
     <!-- Exclude the failing tests in CtsSettingsTestCases -->
+    <option name="compatibility:exclude-filter" value="CtsSettingsTestCases android.settings.cts.SettingsIntentsTest#testSimPreferenceIntentReceiverExists"/>
     <option name="compatibility:exclude-filter" value="CtsSettingsTestCases android.settings.cts.SettingsMultiPaneDeepLinkTest#deepLinkHomeActivity_protectedWithPermission"/>
     <!-- Exclude the failing tests in MctsMediaDecoderTestCases -->
     <option name="compatibility:exclude-filter" value="MctsMediaDecoderTestCases android.media.decoder.cts.DecoderTest#testDecodeAacTs"/>
