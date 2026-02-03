@@ -2,3 +2,4 @@ per-file deviceadmin/* = file:/common/device-side/bedstead/ENTERPRISE_OWNERS
 per-file DeviceAdminManifest.xml = file:/common/device-side/bedstead/ENTERPRISE_OWNERS
 per-file DevicePolicyManagementRoleHolderManifest.xml = file:/common/device-side/bedstead/ENTERPRISE_OWNERS
 per-file LockTaskAppManifest.xml = file:/common/device-side/bedstead/ENTERPRISE_OWNERS
+per-file SupervisionAppManifest.xml = file:platform/frameworks/base:/core/java/android/app/supervision/OWNERS
