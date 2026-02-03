@@ -1142,8 +1142,14 @@ public class WindowManagerState {
         return mFocusedDisplayId;
     }
 
+    /** Checks whether the default display is fixed to user rotation or not. */
     public boolean isFixedToUserRotation() {
-        return getDisplay(DEFAULT_DISPLAY).mIsFixedToUserRotation;
+        return isFixedToUserRotation(DEFAULT_DISPLAY);
+    }
+
+    /** Checks whether a given display is fixed to user rotation or not. */
+    public boolean isFixedToUserRotation(int displayId) {
+        return getDisplay(displayId).mIsFixedToUserRotation;
     }
 
     public static class DisplayContent extends DisplayArea {

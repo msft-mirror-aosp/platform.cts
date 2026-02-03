@@ -514,7 +514,6 @@ public class VirtualDisplayTest {
 
     @Test
     public void testVirtualDisplayRotatesWithContent() throws Exception {
-        assumeTrue(supportsRotation());
         assumeTrue(supportsActivitiesOnSecondaryDisplays());
 
         VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(NAME,
@@ -529,6 +528,7 @@ public class VirtualDisplayTest {
         assertEquals(Surface.ROTATION_0, display.getRotation());
         try (IgnoreOrientationRequestSession unused =
                      new IgnoreOrientationRequestSession(/* enable= */ false)) {
+            assumeTrue(supportsRotation(virtualDisplay.getDisplay().getDisplayId()));
             SimpleActivity activity = launchTestActivityOnDisplay(display.getDisplayId());
             {
                 DisplayChangeWaiter waiter = new DisplayChangeWaiter(display);
@@ -770,13 +770,14 @@ public class VirtualDisplayTest {
                 PackageManager.FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS);
     }
 
-    private boolean supportsRotation() {
+    private boolean supportsRotation(int displayId) {
         final boolean supportsLandscape = mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_SCREEN_LANDSCAPE);
         final boolean supportsPortrait = mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_SCREEN_PORTRAIT);
         mWindowManagerStateHelper.computeState();
-        final boolean isFixedToUserRotation = mWindowManagerStateHelper.isFixedToUserRotation();
+        final boolean isFixedToUserRotation =
+                mWindowManagerStateHelper.isFixedToUserRotation(displayId);
         return (supportsLandscape && supportsPortrait && !isFixedToUserRotation)
                 || (!supportsLandscape && !supportsPortrait && !isFixedToUserRotation);
     }
