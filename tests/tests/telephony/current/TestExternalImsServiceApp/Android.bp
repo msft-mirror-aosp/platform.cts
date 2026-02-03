@@ -22,7 +22,6 @@ android_test_helper_app {
     // remove when ImsConferenceState constructor is not hidden
     platform_apis: true,
     test_suites: [
-        "cts",
         "general-tests",
         "mts",
     ],
