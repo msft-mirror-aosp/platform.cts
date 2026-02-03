@@ -23,8 +23,11 @@ android_test {
     name: "CtsUsbManagerTestCases",
     defaults: ["cts_defaults"],
     static_libs: [
+        "bedstead-enterprise",
         "ctstestrunner-axt",
         "CtsMockInputMethodLib",
+        "flag-junit",
+        "platform-test-annotations",
     ],
     libs: [
         "android.test.runner.stubs.system",

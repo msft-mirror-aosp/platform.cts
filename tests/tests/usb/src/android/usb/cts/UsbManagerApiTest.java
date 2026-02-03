@@ -18,42 +18,49 @@ package android.usb.cts;
 
 import static android.Manifest.permission.MANAGE_USB;
 
-import com.android.compatibility.common.util.SystemUtil;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 import android.app.UiAutomation;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.hardware.usb.IDisplayPortAltModeInfoListener;
-import android.hardware.usb.UsbManager;
-import android.hardware.usb.UsbManager.DisplayPortAltModeInfoListener;
 import android.hardware.usb.DisplayPortAltModeInfo;
+import android.hardware.usb.UsbManager;
+import android.hardware.usb.UsbManager.Bc12TypeListener;
+import android.hardware.usb.UsbManager.DisplayPortAltModeInfoListener;
+import android.hardware.usb.UsbManager.PowerProfileInfoListener;
+import android.hardware.usb.UsbPort;
+import android.hardware.usb.UsbPortStatus;
+import android.hardware.usb.flags.Flags;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.PermissionContext;
+import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.Assert;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.ArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+
 /**
- * Unit tests for {@link android.hardware.usb.UsbManager}.
- * Note: MUST claimed MANAGE_USB permission in Manifest
+ * Unit tests for {@link android.hardware.usb.UsbManager}. Note: MUST claimed MANAGE_USB permission
+ * in Manifest
  */
-@RunWith(AndroidJUnit4.class)
+@RunWith(BedsteadJUnit4.class)
 public class UsbManagerApiTest {
     private static final String TAG = UsbManagerApiTest.class.getSimpleName();
 
@@ -68,6 +75,9 @@ public class UsbManagerApiTest {
 
     private Context mContext;
     private Executor mExecutor;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() {
@@ -311,6 +321,168 @@ public class UsbManagerApiTest {
         public void onDisplayPortAltModeInfoChanged(String portId,
                     DisplayPortAltModeInfo dpInfo) {
             mLatch.countDown();
+        }
+    }
+
+    /**
+     * Verify NO SecurityException when the MANAGE_USB is held, and verify that SecurityException is
+     * thrown when MANAGE_USB is not held.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_POWER_PROFILE_REPORTING)
+    public void test_UsbApiForBc12TypeRegisterSecurity() throws Exception {
+        // Adopt MANAGE_USB permission.
+        try (PermissionContext p = TestApis.permissions().withPermission(MANAGE_USB)) {
+            // Should pass with permission
+            final Bc12TypeListener bc12TypeListener =
+                    new Bc12TypeListener() {
+                        public void onPartnerBc12TypeChanged(UsbPort port, int partnerBc12Type) {
+                            Log.d(TAG, "test_UsbApiForBc12TypeRegisterSecurity listener called");
+                        }
+                    };
+
+            try {
+                mUsbManagerSys.registerBc12TypeListener(mExecutor, bc12TypeListener);
+            } catch (SecurityException e) {
+                Assert.fail(
+                        "registerBc12TypeListener failed with SecurityException when MANAGE_USB is"
+                                + " held.");
+            }
+
+            try {
+                mUsbManagerSys.unregisterBc12TypeListener(bc12TypeListener);
+            } catch (SecurityException e) {
+                Assert.fail(
+                        "unregisterBc12TypeListener failed with SecurityException when MANAGE_USB"
+                                + " is held.");
+            }
+
+            // Drop MANAGE_USB permission.
+            try (PermissionContext p2 = TestApis.permissions().withoutPermission(MANAGE_USB)) {
+                assertThrows(
+                        SecurityException.class,
+                        () -> mUsbManagerSys.registerBc12TypeListener(mExecutor, bc12TypeListener));
+            }
+        }
+    }
+
+    /**
+     * Verify NO SecurityException when the MANAGE_USB is held, and verify that SecurityException is
+     * thrown when MANAGE_USB is not held.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_POWER_PROFILE_REPORTING)
+    public void test_UsbApiForBc12TypeUnregisterSecurity() throws Exception {
+        // Adopt MANAGE_USB permission.
+        try (PermissionContext p = TestApis.permissions().withPermission(MANAGE_USB)) {
+            // Should pass with permission
+            final Bc12TypeListener bc12TypeListener =
+                    new Bc12TypeListener() {
+                        public void onPartnerBc12TypeChanged(UsbPort port, int partnerBc12Type) {
+                            Log.d(TAG, "test_UsbApiForBc12TypeUnregisterSecurity listener called");
+                        }
+                    };
+
+            try {
+                mUsbManagerSys.registerBc12TypeListener(mExecutor, bc12TypeListener);
+            } catch (SecurityException e) {
+                Assert.fail(
+                        "registerBc12TypeListener failed with SecurityException when MANAGE_USB is"
+                                + " held.");
+            }
+
+            // Drop MANAGE_USB permission.
+            try (PermissionContext p2 = TestApis.permissions().withoutPermission(MANAGE_USB)) {
+                assertThrows(
+                        SecurityException.class,
+                        () -> mUsbManagerSys.unregisterBc12TypeListener(bc12TypeListener));
+            }
+        }
+    }
+
+    /**
+     * Verify NO SecurityException when the MANAGE_USB is held, and verify that SecurityException is
+     * thrown when MANAGE_USB is not held.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_POWER_PROFILE_REPORTING)
+    public void test_UsbApiForPowerProfileInfoRegisterSecurity() throws Exception {
+        // Adopt MANAGE_USB permission.
+        try (PermissionContext p = TestApis.permissions().withPermission(MANAGE_USB)) {
+            // Should pass with permission
+            final PowerProfileInfoListener powerProfileListener =
+                    new PowerProfileInfoListener() {
+                        public void onPowerProfileInfoChanged(
+                                UsbPort port, UsbPortStatus portStatus) {
+                            Log.d(
+                                    TAG,
+                                    "test_UsbApiForPowerProfileInfoRegisterSecurity listener"
+                                            + " called");
+                        }
+                    };
+
+            try {
+                mUsbManagerSys.registerPowerProfileInfoListener(mExecutor, powerProfileListener);
+            } catch (SecurityException e) {
+                Assert.fail(
+                        "registerPowerProfileInfoListener failed with SecurityException when"
+                                + " MANAGE_USB is held.");
+            }
+
+            try {
+                mUsbManagerSys.unregisterPowerProfileInfoListener(powerProfileListener);
+            } catch (SecurityException e) {
+                Assert.fail(
+                        "unregisterPowerProfileInfoListener failed with SecurityException when"
+                                + " MANAGE_USB is held.");
+            }
+
+            try (PermissionContext p2 = TestApis.permissions().withoutPermission(MANAGE_USB)) {
+                assertThrows(
+                        SecurityException.class,
+                        () ->
+                                mUsbManagerSys.registerPowerProfileInfoListener(
+                                        mExecutor, powerProfileListener));
+            }
+        }
+    }
+
+    /**
+     * Verify NO SecurityException when the MANAGE_USB is held, and verify that SecurityException is
+     * thrown when MANAGE_USB is not held.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_POWER_PROFILE_REPORTING)
+    public void test_UsbApiForPowerProfileInfoUnregisterSecurity() throws Exception {
+        // Adopt MANAGE_USB permission.
+        try (PermissionContext p = TestApis.permissions().withPermission(MANAGE_USB)) {
+            // Should pass with permission
+            final PowerProfileInfoListener powerProfileListener =
+                    new PowerProfileInfoListener() {
+                        public void onPowerProfileInfoChanged(
+                                UsbPort port, UsbPortStatus portStatus) {
+                            Log.d(
+                                    TAG,
+                                    "test_UsbApiForPowerProfileInfoUnregisterSecurity listener"
+                                            + " called");
+                        }
+                    };
+
+            try {
+                mUsbManagerSys.registerPowerProfileInfoListener(mExecutor, powerProfileListener);
+            } catch (SecurityException e) {
+                Assert.fail(
+                        "registerPowerProfileInfoListener failed with SecurityException when"
+                                + " MANAGE_USB is held.");
+            }
+
+            try (PermissionContext p2 = TestApis.permissions().withoutPermission(MANAGE_USB)) {
+                assertThrows(
+                        SecurityException.class,
+                        () ->
+                                mUsbManagerSys.unregisterPowerProfileInfoListener(
+                                        powerProfileListener));
+            }
         }
     }
 }
