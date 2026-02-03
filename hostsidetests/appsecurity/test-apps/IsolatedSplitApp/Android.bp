@@ -19,15 +19,9 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-TARGET_TEST_SUITES = [
-    "cts",
-    "general-tests",
-]
-
 android_test_helper_app {
     name: "CtsIsolatedSplitApp",
     defaults: ["cts_support_defaults"],
-    test_suites: TARGET_TEST_SUITES,
     sdk_version: "current",
     // Feature splits are dependent on this base, so it must be exported.
     export_package_resources: true,
@@ -47,7 +41,6 @@ android_test_helper_app {
 android_test_helper_app {
     name: "CtsIsolatedSplitAppExtractNativeLibsTrue",
     defaults: ["cts_support_defaults"],
-    test_suites: TARGET_TEST_SUITES,
     sdk_version: "current",
     // Feature splits are dependent on this base, so it must be exported.
     export_package_resources: true,

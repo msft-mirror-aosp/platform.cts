@@ -33,7 +33,6 @@ java_defaults {
     // TODO(b/179744452): Please add the following properties in individual modules because these
     //                    properties can't inherit from java_defaults.
     use_embedded_native_libs: false, // android:extractNativeLibs="true"
-    test_suites: TARGET_TEST_SUITES,
 }
 
 /**
@@ -46,7 +45,6 @@ android_test_helper_app {
     jni_libs: ["libsplitappjni_isolated"],
     use_embedded_native_libs: false, // android:extractNativeLibs="true"
     srcs: ["src/**/*.java"],
-    test_suites: TARGET_TEST_SUITES,
     sdk_version: "test_current",
 }
 
@@ -56,7 +54,6 @@ android_test_helper_app {
     manifest: "AndroidManifest_isolated_number_provider_a.xml",
     jni_libs: ["libsplitapp_number_provider_a"],
     use_embedded_native_libs: false, // android:extractNativeLibs="true"
-    test_suites: TARGET_TEST_SUITES,
     sdk_version: "test_current",
 }
 
@@ -66,7 +63,6 @@ android_test_helper_app {
     manifest: "AndroidManifest_isolated_number_provider_b.xml",
     jni_libs: ["libsplitapp_number_provider_b"],
     use_embedded_native_libs: false, // android:extractNativeLibs="true"
-    test_suites: TARGET_TEST_SUITES,
     sdk_version: "test_current",
 }
 
@@ -76,7 +72,6 @@ android_test_helper_app {
     manifest: "AndroidManifest_isolated_number_proxy.xml",
     jni_libs: ["libsplitapp_number_proxy"],
     use_embedded_native_libs: false, // android:extractNativeLibs="true"
-    test_suites: TARGET_TEST_SUITES,
     sdk_version: "test_current",
 }
 
@@ -90,7 +85,6 @@ android_test_helper_app {
     jni_libs: ["libsplitappjni_isolated"],
     use_embedded_native_libs: true, // android:extractNativeLibs="false"
     srcs: ["src/**/*.java"],
-    test_suites: TARGET_TEST_SUITES,
     sdk_version: "test_current",
 }
 
@@ -100,7 +94,6 @@ android_test_helper_app {
     manifest: "AndroidManifest_isolated_number_provider_a.xml",
     jni_libs: ["libsplitapp_number_provider_a"],
     use_embedded_native_libs: true, // android:extractNativeLibs="false"
-    test_suites: TARGET_TEST_SUITES,
     sdk_version: "test_current",
 }
 
@@ -110,7 +103,6 @@ android_test_helper_app {
     manifest: "AndroidManifest_isolated_number_provider_b.xml",
     jni_libs: ["libsplitapp_number_provider_b"],
     use_embedded_native_libs: true, // android:extractNativeLibs="false"
-    test_suites: TARGET_TEST_SUITES,
     sdk_version: "test_current",
 }
 
@@ -120,6 +112,5 @@ android_test_helper_app {
     manifest: "AndroidManifest_isolated_number_proxy.xml",
     jni_libs: ["libsplitapp_number_proxy"],
     use_embedded_native_libs: true, // android:extractNativeLibs="false"
-    test_suites: TARGET_TEST_SUITES,
     sdk_version: "test_current",
 }

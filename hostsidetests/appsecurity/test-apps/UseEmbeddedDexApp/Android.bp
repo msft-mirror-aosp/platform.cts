@@ -24,10 +24,6 @@ java_defaults {
     defaults: ["cts_support_defaults"],
     srcs: ["src/**/*.java"],
     sdk_version: "current",
-    test_suites: [
-        "cts",
-        "general-tests",
-    ],
     static_libs: [
         "androidx.test.rules",
         "compatibility-device-util-axt",
