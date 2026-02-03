@@ -15,6 +15,7 @@
  */
 package android.hardware.input.cts.tests.virtualdevices
 
+import android.annotation.SuppressLint
 import android.hardware.input.InputManager
 import android.hardware.input.VirtualKeyEvent
 import android.hardware.input.VirtualKeyboard
@@ -31,6 +32,7 @@ import org.junit.Assert.assertThrows
 import org.junit.Test
 import org.junit.runner.RunWith
 
+@SuppressLint("MissingCheckFlagsRule") // TODO: b/463342925 - remove once fixed
 @SmallTest
 @RunWith(AndroidJUnit4::class)
 class VirtualKeyboardTest : VirtualDeviceTestCase() {
@@ -45,7 +47,7 @@ class VirtualKeyboardTest : VirtualDeviceTestCase() {
 
     @RequiresFlagsEnabled(com.android.hardware.input.Flags.FLAG_CREATE_VIRTUAL_KEYBOARD_API)
     @Test
-    fun hasInputDeviceId() {
+    fun hasAssociatedDisplayId() {
         val inputManager: InputManager =
             mInstrumentation.context.getSystemService(InputManager::class.java)
         val keyboardId: Int = mVirtualKeyboard.inputDeviceId

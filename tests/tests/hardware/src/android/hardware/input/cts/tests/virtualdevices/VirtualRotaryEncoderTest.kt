@@ -15,20 +15,25 @@
  */
 package android.hardware.input.cts.tests.virtualdevices
 
+import android.annotation.SuppressLint
 import android.companion.virtualdevice.flags.Flags
+import android.hardware.input.InputManager
 import android.hardware.input.VirtualRotaryEncoder
 import android.hardware.input.VirtualRotaryEncoderScrollEvent
 import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator
 import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator
 import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.annotations.RequiresFlagsEnabled
+import android.view.InputDevice
 import android.view.InputEvent
 import androidx.test.filters.SmallTest
+import com.google.common.truth.Truth.assertThat
 import junitparams.JUnitParamsRunner
 import junitparams.Parameters
 import org.junit.Test
 import org.junit.runner.RunWith
 
+@SuppressLint("MissingCheckFlagsRule") // TODO: b/463342925 - remove once fixed
 @SmallTest
 @RunWith(JUnitParamsRunner::class)
 class VirtualRotaryEncoderTest : VirtualDeviceTestCase() {
@@ -53,6 +58,19 @@ class VirtualRotaryEncoderTest : VirtualDeviceTestCase() {
     @Parameters(method = "allHighResScrollValues")
     fun sendHighResScrollEvent(scrollAmount: Float) {
         verifyScrollEvent(scrollAmount)
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.hardware.input.Flags.FLAG_CREATE_VIRTUAL_KEYBOARD_API)
+    fun hasAssociatedDisplayId() {
+        val inputManager: InputManager =
+            mInstrumentation.context.getSystemService(InputManager::class.java)
+        val rotaryEncoderId: Int = mVirtualRotary.inputDeviceId
+        assertThat(inputManager.inputDeviceIds.asList()).contains(rotaryEncoderId)
+
+        val inputDevice: InputDevice = inputManager.getInputDevice(rotaryEncoderId)!!
+        assertThat(inputDevice.name).isEqualTo(DEVICE_NAME)
+        assertThat(inputDevice.associatedDisplayId).isEqualTo(mVirtualDisplay.display.displayId)
     }
 
     private fun verifyScrollEvent(scrollAmount: Float) {
