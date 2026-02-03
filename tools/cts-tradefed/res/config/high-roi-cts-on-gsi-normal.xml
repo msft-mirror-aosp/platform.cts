@@ -85,8 +85,6 @@
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerTest#executeAppFunction_platformManager_platformAppFunctionService_success_nonParam"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerTest#executeAppFunction_withExecuteAppFunctionPermission_functionMetadataNotFound_failsWithInvalidArgument[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerTest#isAppFunctionEnabled_otherPackage_noPermission[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionMetadataTest#installPackageWithAppFunction_runtimeMetadataVisible_withOnlyExecuteAppFunctionSystemPermission[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionMetadataTest#updatePackage_runtimeMetadataUpdated[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionNameTest#create"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionNameTest#equalsAndHashCode"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionNameTest#parcelAndUnparcel"/>
