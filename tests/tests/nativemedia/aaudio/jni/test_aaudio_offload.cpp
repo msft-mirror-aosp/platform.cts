@@ -129,10 +129,6 @@ int32_t AAudioOffloadTest::MyPartialDataCallbackProc(AAudioStream *stream, void 
 }
 
 TEST_P(AAudioOffloadTest, testOffload) {
-    if (!mmapPcmOffloadSupport()) {
-        // No need to run the test if the flag is not enabled.
-        return;
-    }
     if (mStream == nullptr) {
         // Offload is not supported for the requested configuration, no need to run the test.
         return;
@@ -159,10 +155,6 @@ TEST_P(AAudioOffloadTest, testOffload) {
 }
 
 TEST_P(AAudioOffloadTest, testFlushFromFrame) {
-    if (!mmapPcmOffloadSupport()) {
-        // No need to run the test if the flag is not enabled.
-        return;
-    }
     if (mStream == nullptr) {
         // Offload is not supported for the requested configuration, no need to run the test.
         return;
@@ -222,10 +214,6 @@ TEST_P(AAudioOffloadTest, testFlushFromFrame) {
 }
 
 TEST_P(AAudioOffloadTest, testPlaybackParameters) {
-    if (!mmapPcmOffloadSupport()) {
-        // No need to run the test if the flag is not enabled.
-        return;
-    }
     if (mStream == nullptr) {
         // Offload is not supported for the requested configuration, no need to run the test.
         return;
