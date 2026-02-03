@@ -1065,6 +1065,29 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     }
 
     /**
+     * Tests that all labels on /data have the core_data_file_type attribute, except for
+     * /data/vendor*.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testCoreDataTypeViolators() throws Exception {
+        assertSepolicyTests("TestCoreDataTypeViolations", "/sepolicy_tests", true);
+    }
+
+    /**
+     * Tests that all labels on /data, /vendor, /odm, and /product don't have the app_data_file_type
+     * attribute. App data files under /data/data/package.name is assigned via seapp_contexts, not
+     * file_contexts.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testAppDataTypeViolators() throws Exception {
+        assertSepolicyTests("TestAppDataTypeViolations", "/sepolicy_tests", true);
+    }
+
+    /**
      * Tests that the policy defines no booleans (runtime conditional policy).
      *
      * @throws Exception
