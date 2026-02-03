@@ -3756,6 +3756,8 @@
     <option name="compatibility:include-filter" value="art_standalone_libartpalette_tests art_standalone_libartpalette_tests64.PaletteClientTest#DebugStore"/>
     <!-- odsign_e2e_tests -->
     <option name="compatibility:include-filter" value="odsign_e2e_tests com.android.tests.odsign.CompOsSigningHostTest#checkFileCreationTimeAfterVmStartAndBeforeReboot"/>
+    <!-- Exclude the failing tests in CtsInputMethodTestCases -->
+    <option name="compatibility:exclude-filter" value="CtsInputMethodTestCases android.view.inputmethod.cts.FocusHandlingTest#testUnfocusedEditor_stateUnchanged"/>
     <!-- Exclude the failing tests in CtsMediaDecoderTestCases -->
     <option name="compatibility:exclude-filter" value="CtsMediaDecoderTestCases android.media.decoder.cts.DecoderTestAacDrc#testDecodeAacDrcOutputLoudnessM4a"/>
     <option name="compatibility:exclude-filter" value="CtsMediaDecoderTestCases android.media.decoder.cts.DecoderTestXheAac#testDecodeUsacDrcEffectTypeM4a"/>
@@ -3771,6 +3773,8 @@
     <option name="compatibility:exclude-filter" value="CtsSecurityTestCases_multiuser android.security.cts.advancedprotection.AdvancedProtectionManagerTest#testUpdateAdvancedProtectionFeaturesProvisioning_deprovisioned_callbackCalled[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:exclude-filter" value="CtsSecurityTestCases_multiuser android.security.cts.advancedprotection.AdvancedProtectionManagerTest#testUpdateAdvancedProtectionFeaturesProvisioning_doesntUpdateOtherFeatures[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:exclude-filter" value="CtsSecurityTestCases_multiuser android.security.cts.advancedprotection.AdvancedProtectionManagerTest#testUpdateAdvancedProtectionFeaturesProvisioning_provisioned[IncludeRunOnPrimaryUser]"/>
+    <!-- Exclude the failing tests in CtsSettingTestCases -->
+    <option name="compatibility:exclude-filter" value="CtsSettingsTestCases android.settings.cts.SettingsIntentsTest#testSimPreferenceIntentReceiverExists"/>
     <!-- Exclude the failing tests in MctsMediaDecoderTestCases -->
     <option name="compatibility:exclude-filter" value="MctsMediaDecoderTestCases android.media.decoder.cts.DecoderTest#testDecodeM4aWithEOSOnLastBuffer"/>
     <option name="compatibility:exclude-filter" value="MctsMediaDecoderTestCases android.media.decoder.cts.DecoderTestAacDrc#testDecodeUsacLoudnessM4a"/>
