@@ -17,6 +17,7 @@
 package android.companion.cts.common
 
 import android.app.Instrumentation
+import android.companion.Flags
 import android.net.MacAddress
 
 /** Utility class for interacting with applications via Shell */
@@ -28,27 +29,57 @@ class AppHelper(
 ) {
     fun associate(
         macAddress: MacAddress,
-        role: String = "null",
+        role: String? = null,
         permissions: String? = null,
         isRemoteAiAgentSupported: Boolean = false
     ) {
-        var cmd = "cmd companiondevice associate $userId $packageName $macAddress $role false"
-        if (permissions != null) {
-            cmd += " --extra-permissions $permissions"
-        }
-        if (isRemoteAiAgentSupported) {
-            cmd += " --ai-agent $isRemoteAiAgentSupported"
+        var cmd = ""
+        if (Flags.cmdOptions()) {
+            cmd =
+                "cmd companiondevice associate $userId $packageName --mac-address $macAddress"
+            if (role != null) {
+                cmd += " --profile $role"
+            }
+            if (permissions != null) {
+                cmd += " --extra-permissions $permissions"
+            }
+            if (isRemoteAiAgentSupported) {
+                cmd += " --ai-agent $isRemoteAiAgentSupported"
+            }
+        } else {
+            cmd = "cmd companiondevice associate $userId $packageName $macAddress $role false"
+            if (permissions != null) {
+                cmd += " --extra-permissions $permissions"
+            }
+            if (isRemoteAiAgentSupported) {
+                cmd += " --ai-agent $isRemoteAiAgentSupported"
+            }
         }
         runShellCommand(cmd)
     }
 
-    fun associateSelfManaged(macAddress: MacAddress, role: String) =
-        runShellCommand(
-            "cmd companiondevice associate $userId $packageName $macAddress $role true"
-        )
+    fun associateSelfManaged(macAddress: MacAddress, role: String) {
+        if (Flags.cmdOptions()) {
+            runShellCommand(
+                "cmd companiondevice associate $userId $packageName --mac-address $macAddress" +
+                        " --profile $role --self-managed true"
+            )
+        } else {
+            runShellCommand(
+                "cmd companiondevice associate $userId $packageName $macAddress $role true"
+            )
+        }
+    }
 
-    fun disassociate(macAddress: MacAddress) =
+    fun disassociate(macAddress: MacAddress) {
+        if (Flags.cmdOptions()) {
+            runShellCommand(
+                "cmd companiondevice disassociate $userId $packageName --mac-address $macAddress"
+            )
+        } else {
             runShellCommand("cmd companiondevice disassociate $userId $packageName $macAddress")
+        }
+    }
 
     fun disassociateAll() =
             runShellCommand("cmd companiondevice disassociate-all $userId $packageName")

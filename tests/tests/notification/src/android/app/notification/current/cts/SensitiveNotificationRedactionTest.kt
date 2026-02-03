@@ -372,10 +372,17 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
         val cdmManager = mContext.getSystemService(CompanionDeviceManager::class.java)!!
         val macAddress = MacAddress.fromString("00:00:00:00:00:AA")
         try {
-            runShellCommand(
-                "cmd companiondevice associate " +
-                        "${mContext.userId} ${mContext.packageName} $macAddress"
-            )
+            if (android.companion.Flags.cmdOptions()) {
+                runShellCommand(
+                    "cmd companiondevice associate " +
+                            "${mContext.userId} ${mContext.packageName} --mac-address $macAddress"
+                )
+            } else {
+                runShellCommand(
+                    "cmd companiondevice associate " +
+                            "${mContext.userId} ${mContext.packageName} $macAddress"
+                )
+            }
             // Trusted status is cached on helper enable, so disable + enable the listener
             mNotificationHelper.disableListener(STUB_PACKAGE_NAME)
             mNotificationHelper.enableListener(STUB_PACKAGE_NAME)

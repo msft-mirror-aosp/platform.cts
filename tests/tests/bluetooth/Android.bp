@@ -23,6 +23,7 @@ android_test {
     static_libs: [
         "androidx.test.espresso.intents",
         "androidx.test.rules",
+        "android.companion.flags-aconfig-java",
         "bluetooth-test-util-lib",
         "bluetooth_exported_flags_java_lib",
         "compatibility-device-util-axt-minus-dexmaker",

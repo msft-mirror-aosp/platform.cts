@@ -1175,15 +1175,29 @@ public class SmsTest {
     }
 
     private void associateCdm() {
-        runShellCommand(
-                "cmd companiondevice associate %s %s 00:00:00:00:00:AA",
-                android.os.Process.myUserHandle().getIdentifier(), getContext().getPackageName());
+        if (android.companion.Flags.cmdOptions()) {
+            runShellCommand(
+                    "cmd companiondevice associate %s %s --mac-address 00:00:00:00:00:AA",
+                    android.os.Process.myUserHandle().getIdentifier(),
+                    getContext().getPackageName());
+        } else {
+            runShellCommand(
+                    "cmd companiondevice associate %s %s 00:00:00:00:00:AA",
+                    android.os.Process.myUserHandle().getIdentifier(),
+                    getContext().getPackageName());
+        }
     }
 
     private void disassociateCdm() {
-        runShellCommand(
-                "cmd companiondevice disassociate %s %s 00:00:00:00:00:AA",
-                android.os.Process.myUserHandle().getIdentifier(), mContext.getPackageName());
+        if (android.companion.Flags.cmdOptions()) {
+            runShellCommand(
+                    "cmd companiondevice disassociate %s %s --mac-address 00:00:00:00:00:AA",
+                    android.os.Process.myUserHandle().getIdentifier(), mContext.getPackageName());
+        } else {
+            runShellCommand(
+                    "cmd companiondevice disassociate %s %s 00:00:00:00:00:AA",
+                    android.os.Process.myUserHandle().getIdentifier(), mContext.getPackageName());
+        }
     }
 
     @SuppressLint("MissingPermission")
