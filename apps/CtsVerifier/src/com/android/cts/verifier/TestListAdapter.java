@@ -272,7 +272,13 @@ public abstract class TestListAdapter extends BaseAdapter {
         new ClearTestResultsTask().execute();
     }
 
-    public void setTestResult(TestResult testResult) {
+    /**
+     * Updates test result for a test case.
+     *
+     * @param testResult         The {@code TestResult} object containing the test result metadata.
+     * @param updateResultStatus Indicates whether the execution status should be updated.
+     */
+    public void setTestResult(TestResult testResult, boolean updateResultStatus) {
         String name = testResult.getName();
 
         // Append existing history
@@ -280,13 +286,13 @@ public abstract class TestListAdapter extends BaseAdapter {
         histories.merge(null, mHistories.get(name));
 
         new SetTestResultTask(
-                        name,
-                        testResult.getResult(),
-                        testResult.getDetails(),
-                        testResult.getReportLog(),
-                        histories,
-                        mScreenshotsMetadata.get(name))
-                .execute();
+                name,
+                updateResultStatus ? testResult.getResult() : getTestResult(name),
+                testResult.getDetails(),
+                testResult.getReportLog(),
+                histories,
+                mScreenshotsMetadata.get(name)
+        ).execute();
     }
 
     void setTestFilter(String testFilter) {
