@@ -1143,7 +1143,6 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
         // assertEquals(JobScheduler.RESULT_FAILURE, mJobScheduler.schedule(ji));
     }
 
-    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_ADD_TYPE_INFO_TO_WAKELOCK_TAG)
     @Test
     public void testJobWakelockTag() throws Exception {
         // Regular job
