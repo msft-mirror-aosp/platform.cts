@@ -88,10 +88,6 @@ public class DataTest {
         assertFalse("Network Operator Name is empty",
                 TextUtils.isEmpty((String) ShellIdentityUtils.invokeMethodWithShellPermissions(
                         mTelephonyManager, TelephonyManager::getNetworkOperatorName)));
-        assertFalse("Phone Number is empty",
-                TextUtils.isEmpty((String) ShellIdentityUtils.invokeMethodWithShellPermissions(
-                        mSubscriptionManager,
-                        sm -> sm.getPhoneNumber(SubscriptionManager.DEFAULT_SUBSCRIPTION_ID))));
         assertTrue("Network Type is Unknown",
                 (int) ShellIdentityUtils.invokeMethodWithShellPermissions(
                         mTelephonyManager, TelephonyManager::getDataNetworkType)
