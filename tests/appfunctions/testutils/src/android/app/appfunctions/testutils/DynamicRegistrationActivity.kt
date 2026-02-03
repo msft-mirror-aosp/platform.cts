@@ -26,7 +26,6 @@ import java.util.UUID
 
 /** An activity that registers an AppFunction based on Intent actions. */
 class DynamicRegistrationActivity : Activity() {
-    // TODO(b/478873466): add cross app test
     private lateinit var manager: AppFunctionManager
     private var registration: AppFunctionRegistration? = null
     private lateinit var instanceId: String
@@ -39,38 +38,45 @@ class DynamicRegistrationActivity : Activity() {
         instanceId = UUID.randomUUID().toString()
         manager = getSystemService(AppFunctionManager::class.java)
         Log.d(TAG, "[$instanceId] onCreate")
+        handleIntent(intent)
     }
 
-    fun handleIntent(intent: Intent?) {
-        if (intent == null) {
-            return
-        }
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        Log.d(TAG, "[$instanceId] onNewIntent")
+        handleIntent(intent)
+    }
 
-        Log.d(TAG, "[$instanceId] handleIntent with action: ${intent.action}")
-        when (intent.action) {
-            ACTION_REGISTER_APP_FUNCTION -> {
-                try {
-                    val functionId = intent.getStringExtra(EXTRA_FUNCTION_ID)!!
-                    registration = manager.registerAppFunction(
-                            functionId,
-                            mainExecutor,
-                            ConcatStrings()
-                    )
-                    Log.d(TAG, "[$instanceId] successfully registered a function.")
-                } catch (e: Exception) {
-                    Log.e(TAG, "[$instanceId] failed to register function.", e)
-                    registration = null
-                }
-            }
-            ACTION_UNREGISTER_APP_FUNCTION -> {
-                if (registration != null) {
-                    registration!!.unregister()
-                    registration = null
-                    Log.d(TAG, "[$instanceId] successfully unregistered a function.")
-                } else {
-                    Log.d(TAG, "[$instanceId] couldn't unregister a function, not registered.")
-                }
-            }
+    fun handleIntent(intent: Intent) {
+        Log.d(TAG, "[$instanceId] handleIntent")
+        val action = intent.action
+        if (action == ACTION_REGISTER_APP_FUNCTION) {
+            val functionId = intent.getStringExtra(EXTRA_FUNCTION_ID)!!
+            registerAppFunction(functionId)
+        }
+    }
+
+    fun registerAppFunction(functionId: String) {
+        try {
+            registration = manager.registerAppFunction(
+                functionId,
+                mainExecutor,
+                ConcatStrings()
+            )
+            Log.d(TAG, "[$instanceId] successfully registered a function.")
+        } catch (e: Exception) {
+            Log.e(TAG, "[$instanceId] failed to register function.", e)
+            registration = null
+        }
+    }
+
+    fun unregisterAppFunction() {
+        if (registration != null) {
+            registration!!.unregister()
+            registration = null
+            Log.d(TAG, "[$instanceId] successfully unregistered a function.")
+        } else {
+            Log.d(TAG, "[$instanceId] couldn't unregister a function, not registered.")
         }
     }
 
@@ -85,8 +91,7 @@ class DynamicRegistrationActivity : Activity() {
 
     companion object {
         private const val TAG = "AppFunctionDynamicRegistrationActivity"
+        const val ACTION_REGISTER_APP_FUNCTION = "android.cts.appfunctions.REGISTER_APP_FUNCTION"
         const val EXTRA_FUNCTION_ID = "FUNCTION_ID"
-        const val ACTION_REGISTER_APP_FUNCTION = "REGISTER_APP_FUNCTION"
-        const val ACTION_UNREGISTER_APP_FUNCTION = "UNREGISTER_APP_FUNCTION"
     }
 }
