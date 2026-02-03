@@ -23,13 +23,14 @@ import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator
 import android.view.InputDevice
 import android.view.InputEvent
 import android.view.MotionEvent
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
+import junitparams.JUnitParamsRunner
+import junitparams.Parameters
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @SmallTest
-@RunWith(AndroidJUnit4::class)
+@RunWith(JUnitParamsRunner::class)
 class VirtualTouchscreenTest : VirtualDeviceTestCase() {
     private lateinit var mVirtualTouchscreen: VirtualTouchscreen
 
@@ -40,7 +41,8 @@ class VirtualTouchscreenTest : VirtualDeviceTestCase() {
     }
 
     @Test
-    fun sendTouchEvent() {
+    @Parameters(method = "allFinalActions")
+    fun sendTouchEvents_withFinalAction(finalAction: Int) {
         val inputSize = 1f
         // Convert the input axis size to its equivalent fraction of the total screen.
         val computedSize = (inputSize /
@@ -105,14 +107,21 @@ class VirtualTouchscreenTest : VirtualDeviceTestCase() {
 
         mVirtualTouchscreen.sendTouchEvent(
             builder
-                .setAction(VirtualTouchEvent.ACTION_UP)
+                .setAction(finalAction)
+                .setToolType(
+                    if (finalAction == MotionEvent.ACTION_UP) {
+                        VirtualTouchEvent.TOOL_TYPE_FINGER
+                    } else {
+                        VirtualTouchEvent.TOOL_TYPE_PALM
+                    }
+                )
                 .setX((point.x + moveEventCount).toFloat())
                 .setY((point.y + moveEventCount).toFloat())
                 .build()
         )
         expectedEvents.add(
             VirtualInputEventCreator.createTouchscreenEvent(
-                MotionEvent.ACTION_UP,
+                finalAction,
                 (point.x + moveEventCount).toFloat(),
                 (point.y + moveEventCount).toFloat(),
                 pressure = 1f,
@@ -122,6 +131,12 @@ class VirtualTouchscreenTest : VirtualDeviceTestCase() {
         )
 
         verifyEvents(expectedEvents)
+    }
+
+    @Test
+    fun sendTouchEvents_afterCancelledMotion() {
+        sendTouchEvents_withFinalAction(MotionEvent.ACTION_CANCEL)
+        sendTouchEvents_withFinalAction(MotionEvent.ACTION_UP)
     }
 
     @Test
@@ -188,6 +203,11 @@ class VirtualTouchscreenTest : VirtualDeviceTestCase() {
             axisSize = 0f
         )
     }
+
+    private fun allFinalActions(): Array<Int> = arrayOf(
+        MotionEvent.ACTION_UP,
+        MotionEvent.ACTION_CANCEL,
+    )
 
     companion object {
         private const val DEVICE_NAME = "CtsVirtualTouchscreenTestDevice"
