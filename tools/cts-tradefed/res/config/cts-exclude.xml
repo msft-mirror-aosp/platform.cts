@@ -38,4 +38,7 @@
     <!-- Exclude @SecurityTest tests from CTS. These are tested in STS. b/180417031-->
     <option name="compatibility:test-arg" value="com.android.tradefed.testtype.AndroidJUnitTest:exclude-annotation:android.platform.test.annotations.AsbSecurityTest" />
     <option name="compatibility:test-arg" value="com.android.compatibility.common.tradefed.testtype.JarHostTest:exclude-annotation:android.platform.test.annotations.AsbSecurityTest" />
+
+    <!-- b/415783046 remove from cts till the fix lands -->
+    <option name="compatibility:exclude-filter" value="CtsScopedStorageDeviceOnlyTest android.scopedstorage.cts.device.ScopedStorageDeviceTest#testSystemGalleryCanRenameImageAndVideoDirs" />
 </configuration>
