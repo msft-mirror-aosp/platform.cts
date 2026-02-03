@@ -81,6 +81,7 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -630,6 +631,41 @@ public class SurfaceViewTests extends ActivityTestBase {
         } finally {
             activity.reset();
         }
+    }
+
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.RoundedRectBlurRegion#RoundedRectBlurRegion",
+                "android.view.RoundedRectBlurRegion#copy",
+                "android.view.RoundedRectBlurRegion#getAlpha",
+                "android.view.RoundedRectBlurRegion#getBlurRadius",
+                "android.view.RoundedRectBlurRegion#getBounds",
+                "android.view.RoundedRectBlurRegion#getCornerRadii",
+                "android.view.RoundedRectBlurRegion#setAlpha",
+                "android.view.RoundedRectBlurRegion#setBlurRadius",
+                "android.view.RoundedRectBlurRegion#setBounds",
+                "android.view.RoundedRectBlurRegion#setCornerRadii"
+            })
+    @RequiresFlagsEnabled(FLAG_SURFACE_VIEW_SET_BLUR_REGIONS)
+    public void testRoundedRectBlurRegionAttributes() {
+        RectF rect = new RectF(0.0f, 0.0f, TEST_WIDTH, TEST_HEIGHT);
+        float[] cornerRadius = new float[8];
+        Arrays.fill(cornerRadius, 1.0f);
+
+        RoundedRectBlurRegion blurRegionOne = new RoundedRectBlurRegion();
+        blurRegionOne.setAlpha(1.0f);
+        blurRegionOne.setBlurRadius(10.0f);
+        blurRegionOne.setBounds(rect);
+        blurRegionOne.setCornerRadii(cornerRadius);
+        Assert.assertEquals(1.0f, blurRegionOne.getAlpha(), 0.0f);
+        Assert.assertEquals(10.0f, blurRegionOne.getBlurRadius(), 0.0f);
+        Assert.assertEquals(rect, blurRegionOne.getBounds());
+        Assert.assertArrayEquals(cornerRadius, blurRegionOne.getCornerRadii(), 0.0f);
+        RoundedRectBlurRegion blurRegionTwo = blurRegionOne.copy();
+        Assert.assertEquals(blurRegionTwo, blurRegionOne);
+        blurRegionTwo.setCornerRadii(0.0f);
+        Assert.assertArrayEquals(new float[8], blurRegionTwo.getCornerRadii(), 0.0f);
     }
 
     @Test
