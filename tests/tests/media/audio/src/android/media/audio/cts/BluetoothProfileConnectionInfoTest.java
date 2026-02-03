@@ -16,6 +16,7 @@
 
 package android.media.audio.cts;
 
+import static android.media.audio.Flags.FLAG_BLE_PERIPHERAL_DEVICES;
 import static android.media.audio.Flags.FLAG_SCO_MANAGED_BY_AUDIO;
 
 import static org.junit.Assert.assertEquals;
@@ -95,6 +96,19 @@ public class BluetoothProfileConnectionInfoTest {
         final BluetoothProfileConnectionInfo info = BluetoothProfileConnectionInfo
                 .createHfpInfo();
         assertEquals(info.getProfile(), BluetoothProfile.HEADSET);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_BLE_PERIPHERAL_DEVICES)
+    public void testCoverageLePeripheral() {
+        final BluetoothProfileConnectionInfo infoOutput =
+                BluetoothProfileConnectionInfo.createLeAudioPeripheralInfo(true);
+        assertEquals(infoOutput.getProfile(), BluetoothProfile.LE_AUDIO_PERIPHERAL);
+        assertEquals(infoOutput.isLeOutput(), true);
+        final BluetoothProfileConnectionInfo infoInput =
+                BluetoothProfileConnectionInfo.createLeAudioPeripheralInfo(false);
+        assertEquals(infoInput.getProfile(), BluetoothProfile.LE_AUDIO_PERIPHERAL);
+        assertEquals(infoInput.isLeOutput(), false);
     }
 
     @Test
