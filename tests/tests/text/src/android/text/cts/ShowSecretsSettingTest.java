@@ -57,8 +57,8 @@ public class ShowSecretsSettingTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    private static final String TEXT_SHOW_PASSWORD_TOUCH = "show_passwords_touch";
-    private static final String TEXT_SHOW_PASSWORD_PHYSICAL = "show_passwords_physical";
+    private static final String TEXT_SHOW_PASSWORD_TOUCH = "show_password_touch";
+    private static final String TEXT_SHOW_PASSWORD_PHYSICAL = "show_password_physical";
     private UserHelper mUserHelper;
     private ContentResolver mContentResolver;
     private String mOriginalTouchValue;
