@@ -22,7 +22,7 @@ description:
 specs {
   key: 30
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_11
+    mpc: MEDIA_PERFORMANCE_CLASS_30
     specification: "MUST have at least 6 GB of physical memory."
     required_values {
       key: "physical_memory_mb"

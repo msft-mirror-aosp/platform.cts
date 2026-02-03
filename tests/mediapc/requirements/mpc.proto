@@ -27,28 +27,36 @@ option go_package = "cts/test/mediapc/requirements/mpc_go_proto";
 // (version 30). The special value of 0 designates that the device is not of a
 // media performance class.
 enum MediaPerformanceClass {
+  option allow_alias = true;
+
   MEDIA_PERFORMANCE_CLASS_UNSPECIFIED = 0
       ;
   MEDIA_PERFORMANCE_CLASS_INVALID = -1;
   MEDIA_PERFORMANCE_CLASS_10 = 10;
   // As specified in
   // https://source.android.com/docs/compatibility/11/android-11-cdd#227_handheld_media_performance_class
+  MEDIA_PERFORMANCE_CLASS_30 = 30;
   MEDIA_PERFORMANCE_CLASS_11 = 30;
   // As specified in
   // https://source.android.com/docs/compatibility/12/android-12-cdd#227_handheld_media_performance_class
+  MEDIA_PERFORMANCE_CLASS_31 = 31;
   MEDIA_PERFORMANCE_CLASS_12 = 31;
   // As specified in
   // https://source.android.com/docs/compatibility/13/android-13-cdd#227_handheld_media_performance_class
+  MEDIA_PERFORMANCE_CLASS_33 = 33;
   MEDIA_PERFORMANCE_CLASS_13 = 33;
   // As specified in
   // https://source.android.com/docs/compatibility/14/android-14-cdd#227_handheld_media_performance_class
+  MEDIA_PERFORMANCE_CLASS_34 = 34;
   MEDIA_PERFORMANCE_CLASS_14 = 34;
   // As specified in
   // https://source.android.com/docs/compatibility/15/android-15-cdd#227_handheld_media_performance_class
+  MEDIA_PERFORMANCE_CLASS_35 = 35;
   MEDIA_PERFORMANCE_CLASS_15 = 35;
   // There is no MPC 16.
   reserved 36;
   // As specified in
   // https://source.android.com/docs/compatibility/17/android-17-cdd#227_handheld_media_performance_class
+  MEDIA_PERFORMANCE_CLASS_37 = 37;
   MEDIA_PERFORMANCE_CLASS_17 = 37;
 }

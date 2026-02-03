@@ -20,7 +20,7 @@ description: "Must support vulkan physical device protected memory and global pr
 specs {
   key: 35
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_15
+    mpc: MEDIA_PERFORMANCE_CLASS_35
     specification:
       "MUST support VkPhysicalDeviceProtectedMemoryFeatures.protectedMemory "
       "and VK_KHR_global_priority."
@@ -47,7 +47,7 @@ specs {
 specs {
   key: 37
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_17
+    mpc: MEDIA_PERFORMANCE_CLASS_37
     specification:
       "MUST support VkPhysicalDeviceProtectedMemoryFeatures.protectedMemory "
       "and VK_KHR_global_priority."

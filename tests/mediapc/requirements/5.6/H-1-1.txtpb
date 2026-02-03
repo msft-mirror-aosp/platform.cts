@@ -41,7 +41,7 @@ specs {
 specs {
   key: 30
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_11
+    mpc: MEDIA_PERFORMANCE_CLASS_30
     specification:
       "MUST have a tap-to-tone latency of less than 100 milliseconds using the "
       "OboeTester tap-to-tone test or CTS Verifier tap-to-tone test."
@@ -62,7 +62,7 @@ specs {
 specs {
   key: 31
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_12
+    mpc: MEDIA_PERFORMANCE_CLASS_31
     specification:
       "MUST have a tap-to-tone latency of less than 100 milliseconds using the "
       "OboeTester tap-to-tone test or CTS Verifier tap-to-tone test."
@@ -83,7 +83,7 @@ specs {
 specs {
   key: 33
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_13
+    mpc: MEDIA_PERFORMANCE_CLASS_33
     specification:
       "MUST have a tap-to-tone latency of 80 milliseconds or less using the "
       "OboeTester tap-to-tone test or CTS Verifier tap-to-tone test."
@@ -104,7 +104,7 @@ specs {
 specs {
   key: 34
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_14
+    mpc: MEDIA_PERFORMANCE_CLASS_34
     specification:
       "MUST have a tap-to-tone latency of 80 milliseconds or less using the "
       "CTS Verifier tap-to-tone test."
@@ -125,7 +125,7 @@ specs {
 specs {
   key: 35
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_15
+    mpc: MEDIA_PERFORMANCE_CLASS_35
     specification:
       "MUST have a tap-to-tone latency of 80 milliseconds or less using the "
       "CTS Verifier tap-to-tone test."
@@ -146,7 +146,7 @@ specs {
 specs {
   key: 37
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_17
+    mpc: MEDIA_PERFORMANCE_CLASS_37
     specification:
       "MUST have a tap-to-tone latency of 50 milliseconds or less using the "
       "CTS Verifier tap-to-tone test."

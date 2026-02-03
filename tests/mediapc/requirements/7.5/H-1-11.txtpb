@@ -20,7 +20,7 @@ description: "Concurrent camera front-back streaming"
 specs {
   key: 33
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_13
+    mpc: MEDIA_PERFORMANCE_CLASS_33
     specification: "MUST implement concurrent front-back streaming on primary cameras."
     required_values {
       key: "rear_front_concurrent_camera"
@@ -33,7 +33,7 @@ specs {
 specs {
   key: 34
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_14
+    mpc: MEDIA_PERFORMANCE_CLASS_34
     specification: "MUST implement concurrent front-back streaming on primary cameras."
     required_values {
       key: "rear_front_concurrent_camera"
@@ -46,7 +46,7 @@ specs {
 specs {
   key: 35
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_15
+    mpc: MEDIA_PERFORMANCE_CLASS_35
     specification: "MUST implement concurrent front-back streaming on primary cameras."
     required_values {
       key: "rear_front_concurrent_camera"
@@ -59,7 +59,7 @@ specs {
 specs {
   key: 37
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_17
+    mpc: MEDIA_PERFORMANCE_CLASS_37
     specification: "MUST implement concurrent front-back streaming on primary cameras."
     required_values {
       key: "rear_front_concurrent_camera"

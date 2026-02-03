@@ -20,7 +20,7 @@ description: "Video codec dynamic color aspect"
 specs {
   key: 35
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_15
+    mpc: MEDIA_PERFORMANCE_CLASS_35
     specification:
       "MUST support `FEATURE_DynamicColorAspect` for all hardware video "
       "decoders (AVC, HEVC, VP9, AV1, or later). Note: This means applications "
@@ -40,7 +40,7 @@ specs {
 specs {
   key: 37
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_17
+    mpc: MEDIA_PERFORMANCE_CLASS_37
     specification:
       "MUST support FEATURE_DynamicColorAspect for all hardware video decoders "
       "(AVC, HEVC, VP9, AV1, or later). Note: This means applications can "
