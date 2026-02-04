@@ -55,17 +55,17 @@ class JpegCaptureSPerfClassTest(its_base_test.ItsBaseTest):
 
     jpeg_capture_ms = cam.measure_camera_1080p_jpeg_capture_ms()
 
+    # Log jpeg capture time so that the corresponding MPC level can be written
+    # to report log. Text must match MPC12_JPEG_CAPTURE_PATTERN in
+    # ItsTestActivity.java.
+    print(f'1080p_jpeg_capture_time_ms:{jpeg_capture_ms}')
+
     # Assert jpeg capture time if device claims performance class
     if (cam.is_performance_class() and
         jpeg_capture_ms >= _JPEG_CAPTURE_S_PERFORMANCE_CLASS_THRESHOLD):
       raise AssertionError(f'1080p_jpeg_capture_time_ms: {jpeg_capture_ms}, '
                            f'THRESH: '
                            f'{_JPEG_CAPTURE_S_PERFORMANCE_CLASS_THRESHOLD}')
-
-    # Log jpeg capture time so that the corresponding MPC level can be written
-    # to report log. Text must match MPC12_JPEG_CAPTURE_PATTERN in
-    # ItsTestActivity.java.
-    print(f'1080p_jpeg_capture_time_ms:{jpeg_capture_ms}')
 
 if __name__ == '__main__':
   test_runner.main()
