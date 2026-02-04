@@ -25,10 +25,13 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Resources;
 import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.TypeSpec;
+import com.squareup.javapoet.TypeName;
+import com.squareup.javapoet.TypeVariableName;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -46,12 +49,14 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Generated;
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
@@ -108,6 +113,23 @@ public final class Processor extends AbstractProcessor {
                     "android.bluetooth.BluetoothAdapter",
                     "getDefaultAdapter",
                     List.of());
+
+    // Methods of which the return value is modified in the generated framework interface and
+    // framework impl files.
+    private static Map<MethodSignature, ClassName> FRAMEWORK_SIGNATURE_RETURN_OVERRIDES =
+            Map.ofEntries(
+                    Map.entry(
+                            PARENT_PROFILE_INSTANCE,
+                            ClassName.get("android.app.admin", "RemoteDevicePolicyManager")),
+                    Map.entry(
+                            GET_CONTENT_RESOLVER,
+                            ClassName.get("android.content", "RemoteContentResolver")),
+                    Map.entry(
+                            GET_ADAPTER,
+                            ClassName.get("android.bluetooth", "RemoteBluetoothAdapter")),
+                    Map.entry(
+                            GET_DEFAULT_ADAPTER,
+                            ClassName.get("android.bluetooth", "RemoteBluetoothAdapter")));
 
     private static final ImmutableSet<String> BLOCKLISTED_TYPES =
             loadList("/apis/type-blocklist.txt");
@@ -212,6 +234,14 @@ public final class Processor extends AbstractProcessor {
             ClassName.get(
                     "com.android.bedstead.remoteframeworkclasses", "AccountManagerFutureWrapper");
 
+    private Elements mElementUtils;
+
+    @Override
+    public synchronized void init(ProcessingEnvironment processingEnv) {
+        super.init(processingEnv);
+        mElementUtils = processingEnv.getElementUtils();
+    }
+
     @Override
     public SourceVersion getSupportedSourceVersion() {
         return SourceVersion.latest();
@@ -224,10 +254,8 @@ public final class Processor extends AbstractProcessor {
                     new HashSet<>(Arrays.asList(ALLOWLISTED_METHODS));
 
             for (String systemService : FRAMEWORK_CLASSES) {
-                TypeElement typeElement =
-                        processingEnv.getElementUtils().getTypeElement(systemService);
-                generateRemoteSystemService(
-                        typeElement, allowListedMethods, processingEnv.getElementUtils());
+                TypeElement typeElement = mElementUtils.getTypeElement(systemService);
+                generateRemoteSystemService(typeElement, allowListedMethods);
             }
 
             generateWrappers();
@@ -279,20 +307,17 @@ public final class Processor extends AbstractProcessor {
     }
 
     private void generateRemoteSystemService(
-            TypeElement frameworkClass,
-            Set<MethodSignature> allowListedMethods,
-            Elements elements) {
+            TypeElement frameworkClass, Set<MethodSignature> allowListedMethods) {
         Set<Api> apis =
                 filterMethods(
                                 frameworkClass,
-                                getMethods(frameworkClass, processingEnv.getElementUtils()),
+                                getMethods(frameworkClass),
                                 Apis.forClass(
                                         frameworkClass.getQualifiedName().toString(),
                                         processingEnv.getTypeUtils(),
-                                        processingEnv.getElementUtils()),
-                                elements)
+                                        mElementUtils))
                         .stream()
-                        .filter(api -> !usesBlocklistedType(api, allowListedMethods, elements))
+                        .filter(api -> !usesBlocklistedType(api, allowListedMethods))
                         .filter(api -> !parametersHaveWildcards(api.method))
                         .collect(Collectors.toSet());
 
@@ -305,49 +330,19 @@ public final class Processor extends AbstractProcessor {
         }
     }
 
-    private static String removeTypeArguments(TypeMirror type) {
-        if (type instanceof DeclaredType) {
-            return ((DeclaredType) type).asElement().asType().toString().split("<", 2)[0];
-        }
-        return type.toString();
+    private boolean hasWildcard(TypeName type) {
+        return type.toString().contains("?");
     }
 
-    public static List<TypeMirror> extractTypeArguments(TypeMirror type) {
-        if (!(type instanceof DeclaredType)) {
-            return new ArrayList<>();
-        }
-
-        return new ArrayList<>(((DeclaredType) type).getTypeArguments());
-    }
-
-    private boolean hasWildcard(TypeMirror type) {
-        if (type.getKind() == TypeKind.WILDCARD) {
-            return true;
-        }
-        if (type.getKind() == TypeKind.DECLARED) {
-            DeclaredType declaredtype = (DeclaredType) type;
-
-            List<? extends TypeMirror> typeArguments = declaredtype.getTypeArguments();
-
-            for (TypeMirror arg : typeArguments) {
-                return hasWildcard(arg);
-            }
-        }
-
-        return false;
-    }
-
-    private boolean parametersHaveWildcards(ExecutableElement method) {
+    private boolean parametersHaveWildcards(MethodSpec method) {
         // getSystemServiceName returns a Class<?> which still works
         // with @CrossUser and is used.
-        if (method.getSimpleName().toString().equals("getSystemServiceName")) {
+        if (method.name.equals("getSystemServiceName")) {
             return false;
         }
 
-        List<? extends VariableElement> parameters = method.getParameters();
-
-        for (VariableElement parameter : parameters) {
-            if (hasWildcard(parameter.asType())) {
+        for (ParameterSpec parameter : method.parameters) {
+            if (hasWildcard(parameter.type)) {
                 return true;
             }
         }
@@ -355,43 +350,47 @@ public final class Processor extends AbstractProcessor {
         return false;
     }
 
-    private boolean isBlocklistedType(TypeMirror typeMirror) {
-        if (BLOCKLISTED_TYPES.contains(removeTypeArguments(typeMirror))) {
+    private boolean isBlocklistedType(TypeName typeName) {
+        if (BLOCKLISTED_TYPES.contains(typeName.toString())) {
             return true;
         }
 
-        for (TypeMirror t : extractTypeArguments(typeMirror)) {
-            if (isBlocklistedType(t)) {
+        if (typeName instanceof ParameterizedTypeName) {
+            ParameterizedTypeName parameterizedTypeName = (ParameterizedTypeName) typeName;
+            if (BLOCKLISTED_TYPES.contains(parameterizedTypeName.rawType.toString())) {
                 return true;
             }
+            for (TypeName typeArgument : parameterizedTypeName.typeArguments) {
+                if (isBlocklistedType(typeArgument)) {
+                    return true;
+                }
+            }
         }
-
         return false;
     }
 
-    private boolean usesBlocklistedType(
-            Api api, Set<MethodSignature> allowListedMethods, Elements elements) {
-        ExecutableElement method = api.method;
-        if (allowListedMethods.contains(MethodSignature.forMethod(method, elements))) {
+    private boolean usesBlocklistedType(Api api, Set<MethodSignature> allowListedMethods) {
+        MethodSpec method = api.method;
+        if (allowListedMethods.contains(MethodSignature.forMethodSpec(method))) {
             return false; // Special case hacked in methods
         }
 
-        if (isBlocklistedType(method.getReturnType())) {
+        if (isBlocklistedType(method.returnType)) {
             return true;
         }
 
-        for (int i = 0; i < method.getParameters().size(); i++) {
+        for (int i = 0; i < method.parameters.size(); i++) {
             if (i == 0 && api.isTestApi) {
                 // if it is a TestApi, ignore the first parameter as that is the kotlin
                 // extension receiver parameter.
                 continue;
             }
-            if (isBlocklistedType(method.getParameters().get(i).asType())) {
+            if (isBlocklistedType(method.parameters.get(i).type)) {
                 return true;
             }
         }
 
-        for (TypeMirror exception : method.getThrownTypes()) {
+        for (TypeName exception : method.exceptions) {
             if (isBlocklistedType(exception)) {
                 return true;
             }
@@ -401,17 +400,6 @@ public final class Processor extends AbstractProcessor {
     }
 
     private void generateFrameworkInterface(TypeElement frameworkClass, Set<Api> apis) {
-        Map<MethodSignature, ClassName> signatureReturnOverrides = new HashMap<>();
-        signatureReturnOverrides.put(
-                PARENT_PROFILE_INSTANCE,
-                ClassName.get("android.app.admin", "RemoteDevicePolicyManager"));
-        signatureReturnOverrides.put(
-                GET_CONTENT_RESOLVER, ClassName.get("android.content", "RemoteContentResolver"));
-        signatureReturnOverrides.put(
-                GET_ADAPTER, ClassName.get("android.bluetooth", "RemoteBluetoothAdapter"));
-        signatureReturnOverrides.put(
-                GET_DEFAULT_ADAPTER, ClassName.get("android.bluetooth", "RemoteBluetoothAdapter"));
-
         String packageName = frameworkClass.getEnclosingElement().toString();
         ClassName className =
                 ClassName.get(packageName, "Remote" + frameworkClass.getSimpleName().toString());
@@ -453,48 +441,33 @@ public final class Processor extends AbstractProcessor {
                                 .build());
 
         for (Api api : apis) {
-            ExecutableElement method = api.method;
+            MethodSpec method = api.method;
+            MethodSignature signature = MethodSignature.forMethodSpec(method);
 
             MethodSpec.Builder methodBuilder =
-                    MethodSpec.methodBuilder(method.getSimpleName().toString())
-                            .returns(ClassName.get(method.getReturnType()))
+                    MethodSpec.methodBuilder(method.name)
+                            .returns(method.returnType)
                             .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
-                            .addAnnotation(CrossUser.class);
+                            .addAnnotation(CrossUser.class)
+                            .addExceptions(method.exceptions);
 
-            MethodSignature signature =
-                    MethodSignature.forMethod(method, processingEnv.getElementUtils());
-
-            if (signatureReturnOverrides.containsKey(signature)) {
-                methodBuilder.returns(signatureReturnOverrides.get(signature));
+            if (FRAMEWORK_SIGNATURE_RETURN_OVERRIDES.containsKey(signature)) {
+                methodBuilder.returns(FRAMEWORK_SIGNATURE_RETURN_OVERRIDES.get(signature));
             }
 
             methodBuilder.addJavadoc(
-                    "See {@link $T#$L}.",
-                    ClassName.get(frameworkClass.asType()),
-                    method.getSimpleName());
+                    "See {@link $T#$L}.", ClassName.get(frameworkClass.asType()), method.name);
 
-            for (TypeMirror thrownType : method.getThrownTypes()) {
-                methodBuilder.addException(ClassName.get(thrownType));
-            }
-
-            List<? extends VariableElement> parameters;
+            List<ParameterSpec> parameters;
             if (api.isTestApi) {
                 // This is a kotlin extension method. Kotlin extension methods when converted to
                 // java code have the receiver as the first argument. We need to drop this argument.
-                parameters = method.getParameters().subList(1, method.getParameters().size());
+                parameters = method.parameters.subList(1, method.parameters.size());
             } else {
-                parameters = method.getParameters();
+                parameters = method.parameters;
             }
 
-            for (VariableElement param : parameters) {
-                ParameterSpec parameterSpec =
-                        ParameterSpec.builder(
-                                        ClassName.get(param.asType()),
-                                        param.getSimpleName().toString())
-                                .build();
-
-                methodBuilder.addParameter(parameterSpec);
-            }
+            methodBuilder.addParameters(parameters);
 
             classBuilder.addMethod(methodBuilder.build());
         }
@@ -533,42 +506,31 @@ public final class Processor extends AbstractProcessor {
                         .build());
 
         for (Api api : apis) {
-            ExecutableElement method = api.method;
+            MethodSpec method = api.method;
+            MethodSignature signature = MethodSignature.forMethodSpec(method);
 
             MethodSpec.Builder methodBuilder =
-                    MethodSpec.methodBuilder(method.getSimpleName().toString())
-                            .returns(ClassName.get(method.getReturnType()))
+                    MethodSpec.methodBuilder(method.name)
+                            .returns(method.returnType)
                             .addModifiers(Modifier.PUBLIC)
-                            .addAnnotation(CrossUser.class);
-
-            MethodSignature signature =
-                    MethodSignature.forMethod(method, processingEnv.getElementUtils());
-
-            for (TypeMirror thrownType : method.getThrownTypes()) {
-                methodBuilder.addException(ClassName.get(thrownType));
-            }
+                            .addAnnotation(CrossUser.class)
+                            .addExceptions(method.exceptions);
 
             methodBuilder.addParameter(COMPONENT_NAME_CLASSNAME, "profileOwnerComponentName");
 
-            List<? extends VariableElement> parameters;
+            List<ParameterSpec> parameters;
             if (api.isTestApi) {
                 // This is a kotlin extension method. Kotlin extension methods when converted to
                 // java code have the receiver as the first argument. We need to drop this argument.
-                parameters = method.getParameters().subList(1, method.getParameters().size());
+                parameters = method.parameters.subList(1, method.parameters.size());
             } else {
-                parameters = method.getParameters();
+                parameters = method.parameters;
             }
 
-            List<String> paramNames = new ArrayList<>(parameters.size());
-            for (VariableElement param : parameters) {
-                String paramName = param.getSimpleName().toString();
-                ParameterSpec parameterSpec =
-                        ParameterSpec.builder(ClassName.get(param.asType()), paramName).build();
+            methodBuilder.addParameters(parameters);
 
-                paramNames.add(paramName);
-
-                methodBuilder.addParameter(parameterSpec);
-            }
+            List<String> paramNames =
+                    parameters.stream().map(p -> p.name).collect(Collectors.toList());
 
             if (signature.equals(PARENT_PROFILE_INSTANCE)) {
                 // Special case, we want to return a RemoteDevicePolicyManager instead
@@ -577,32 +539,32 @@ public final class Processor extends AbstractProcessor {
                 methodBuilder.addStatement(
                         "mFrameworkClass.getParentProfileInstance(profileOwnerComponentName).$L"
                                 + "($L)",
-                        method.getSimpleName(),
+                        method.name,
                         String.join(", ", paramNames));
                 methodBuilder.addStatement(
                         "throw new $T($S)",
                         UnsupportedOperationException.class,
                         "TestApp does not support calling .getParentProfileInstance() on a parent"
                                 + ".");
-            } else if (method.getReturnType().getKind().equals(TypeKind.VOID)) {
+            } else if (method.returnType.equals(TypeName.VOID)) {
                 if (api.isTestApi) {
                     if (paramNames.isEmpty()) {
                         methodBuilder.addStatement(
                                 "$L.$L(mFrameworkClass.getParentProfileInstance(profileOwnerComponentName))",
                                 TEST_APIS_REFLECTION_FILE,
-                                method.getSimpleName());
+                                method.name);
                     } else {
                         methodBuilder.addStatement(
                                 "$L.$L(mFrameworkClass.getParentProfileInstance(profileOwnerComponentName),"
                                     + " $L)",
                                 TEST_APIS_REFLECTION_FILE,
-                                method.getSimpleName(),
+                                method.name,
                                 String.join(", ", paramNames));
                     }
                 } else {
                     methodBuilder.addStatement(
                             "mFrameworkClass.getParentProfileInstance(profileOwnerComponentName).$L($L)",
-                            method.getSimpleName(),
+                            method.name,
                             String.join(", ", paramNames));
                 }
             } else {
@@ -612,21 +574,21 @@ public final class Processor extends AbstractProcessor {
                                 "return"
                                     + " $L.$L(mFrameworkClass.getParentProfileInstance(profileOwnerComponentName))",
                                 TEST_APIS_REFLECTION_FILE,
-                                method.getSimpleName());
+                                method.name);
                     } else {
                         methodBuilder.addStatement(
                                 "return"
                                     + " $L.$L(mFrameworkClass.getParentProfileInstance(profileOwnerComponentName),"
                                     + " $L)",
                                 TEST_APIS_REFLECTION_FILE,
-                                method.getSimpleName(),
+                                method.name,
                                 String.join(", ", paramNames));
                     }
                 } else {
                     methodBuilder.addStatement(
                             "return mFrameworkClass.getParentProfileInstance"
                                     + "(profileOwnerComponentName).$L($L)",
-                            method.getSimpleName(),
+                            method.name,
                             String.join(", ", paramNames));
                 }
             }
@@ -638,17 +600,6 @@ public final class Processor extends AbstractProcessor {
     }
 
     private void generateFrameworkImpl(TypeElement frameworkClass, Set<Api> apis) {
-        Map<MethodSignature, ClassName> signatureReturnOverrides = new HashMap<>();
-        signatureReturnOverrides.put(
-                PARENT_PROFILE_INSTANCE,
-                ClassName.get("android.app.admin", "RemoteDevicePolicyManager"));
-        signatureReturnOverrides.put(
-                GET_CONTENT_RESOLVER, ClassName.get("android.content", "RemoteContentResolver"));
-        signatureReturnOverrides.put(
-                GET_ADAPTER, ClassName.get("android.bluetooth", "RemoteBluetoothAdapter"));
-        signatureReturnOverrides.put(
-                GET_DEFAULT_ADAPTER, ClassName.get("android.bluetooth", "RemoteBluetoothAdapter"));
-
         String packageName = frameworkClass.getEnclosingElement().toString();
         ClassName interfaceClassName =
                 ClassName.get(packageName, "Remote" + frameworkClass.getSimpleName().toString());
@@ -681,52 +632,39 @@ public final class Processor extends AbstractProcessor {
                         .build());
 
         for (Api api : apis) {
-            ExecutableElement method = api.method;
+            MethodSpec method = api.method;
+            MethodSignature signature = MethodSignature.forMethodSpec(method);
 
             MethodSpec.Builder methodBuilder =
-                    MethodSpec.methodBuilder(method.getSimpleName().toString())
-                            .returns(ClassName.get(method.getReturnType()))
+                    MethodSpec.methodBuilder(method.name)
+                            .returns(method.returnType)
                             .addModifiers(Modifier.PUBLIC)
-                            .addAnnotation(Override.class);
+                            .addAnnotation(Override.class)
+                            .addExceptions(method.exceptions);
 
-            MethodSignature signature =
-                    MethodSignature.forMethod(method, processingEnv.getElementUtils());
-
-            for (TypeMirror thrownType : method.getThrownTypes()) {
-                methodBuilder.addException(ClassName.get(thrownType));
-            }
-
-            List<? extends VariableElement> parameters;
+            List<ParameterSpec> parameters;
             if (api.isTestApi) {
                 // This is a kotlin extension method. Kotlin extension methods when converted to
                 // java code have the receiver as the first argument. We need to drop this argument.
-                parameters = method.getParameters().subList(1, method.getParameters().size());
+                parameters = method.parameters.subList(1, method.parameters.size());
             } else {
-                parameters = method.getParameters();
+                parameters = method.parameters;
             }
 
-            List<String> paramNames = new ArrayList<>(parameters.size());
-            for (VariableElement param : parameters) {
-                String paramName = param.getSimpleName().toString();
+            methodBuilder.addParameters(parameters);
 
-                ParameterSpec parameterSpec =
-                        ParameterSpec.builder(ClassName.get(param.asType()), paramName).build();
-
-                paramNames.add(paramName);
-
-                methodBuilder.addParameter(parameterSpec);
-            }
+            List<String> paramNames = parameters.stream().map(p -> p.name).toList();
 
             String frameworkClassName = "mFrameworkClass";
 
-            if (method.getModifiers().contains(Modifier.STATIC)) {
+            if (method.modifiers.contains(Modifier.STATIC)) {
                 frameworkClassName = frameworkClass.getQualifiedName().toString();
             }
 
-            if (signatureReturnOverrides.containsKey(signature)) {
-                methodBuilder.returns(signatureReturnOverrides.get(signature));
+            if (FRAMEWORK_SIGNATURE_RETURN_OVERRIDES.containsKey(signature)) {
+                methodBuilder.returns(FRAMEWORK_SIGNATURE_RETURN_OVERRIDES.get(signature));
 
-                ClassName iClassName = signatureReturnOverrides.get(signature);
+                ClassName iClassName = FRAMEWORK_SIGNATURE_RETURN_OVERRIDES.get(signature);
                 ClassName implClassName =
                         ClassName.get(iClassName.packageName(), iClassName.simpleName() + "Impl");
 
@@ -734,23 +672,23 @@ public final class Processor extends AbstractProcessor {
                         "$1T ret = new $1T($2L.$3L($4L))",
                         implClassName,
                         frameworkClassName,
-                        method.getSimpleName(),
+                        signature.getName(),
                         String.join(", ", paramNames));
                 // We assume all replacements are null-only
                 methodBuilder.addStatement("return null");
-            } else if (method.getReturnType().getKind().equals(TypeKind.VOID)) {
+            } else if (method.returnType.equals(TypeName.VOID)) {
                 if (api.isTestApi) {
                     if (paramNames.isEmpty()) {
                         methodBuilder.addStatement(
                                 "$L.$L($L)",
                                 TEST_APIS_REFLECTION_FILE,
-                                method.getSimpleName(),
+                                signature.getName(),
                                 "mFrameworkClass");
                     } else {
                         methodBuilder.addStatement(
                                 "$L.$L($L, $L)",
                                 TEST_APIS_REFLECTION_FILE,
-                                method.getSimpleName(),
+                                signature.getName(),
                                 "mFrameworkClass",
                                 String.join(", ", paramNames));
                     }
@@ -758,7 +696,7 @@ public final class Processor extends AbstractProcessor {
                     methodBuilder.addStatement(
                             "$L.$L($L)",
                             frameworkClassName,
-                            method.getSimpleName(),
+                            signature.getName(),
                             String.join(", ", paramNames));
                 }
             } else {
@@ -767,13 +705,13 @@ public final class Processor extends AbstractProcessor {
                         methodBuilder.addStatement(
                                 "return $L.$L($L)",
                                 TEST_APIS_REFLECTION_FILE,
-                                method.getSimpleName(),
+                                signature.getName(),
                                 "mFrameworkClass");
                     } else {
                         methodBuilder.addStatement(
                                 "return $L.$L($L, $L)",
                                 TEST_APIS_REFLECTION_FILE,
-                                method.getSimpleName(),
+                                signature.getName(),
                                 "mFrameworkClass",
                                 String.join(", ", paramNames));
                     }
@@ -781,7 +719,7 @@ public final class Processor extends AbstractProcessor {
                     methodBuilder.addStatement(
                             "return $L.$L($L)",
                             frameworkClassName,
-                            method.getSimpleName(),
+                            signature.getName(),
                             String.join(", ", paramNames));
                 }
             }
@@ -793,33 +731,29 @@ public final class Processor extends AbstractProcessor {
     }
 
     private Set<Api> filterMethods(
-            TypeElement frameworkClass,
-            Set<ExecutableElement> allMethods,
-            Apis validApis,
-            Elements elements) {
+            TypeElement frameworkClass, Set<ExecutableElement> allMethods, Apis validApis) {
         Set<Api> filteredMethods = new HashSet<>();
 
         for (ExecutableElement method : allMethods) {
-            MethodSignature methodSignature = MethodSignature.forMethod(method, elements);
+            MethodSignature methodSignature = MethodSignature.forMethod(method, mElementUtils);
             if (validApis.methods().contains(methodSignature)) {
                 if (method.getModifiers().contains(Modifier.PROTECTED)) {
                     System.out.println(methodSignature + " is protected. Dropping");
                 } else {
-                    filteredMethods.add(new Api(method, /* isTestApi= */ false));
+                    filteredMethods.add(new Api(toMethodSpec(method), /* isTestApi= */ false));
                 }
             }
         }
 
-        filterValidTestApis(filteredMethods, frameworkClass, elements);
+        filterValidTestApis(filteredMethods, frameworkClass);
 
         return filteredMethods;
     }
 
-    private void filterValidTestApis(
-            Set<Api> filteredMethods, TypeElement frameworkClass, Elements elements) {
+    private void filterValidTestApis(Set<Api> filteredMethods, TypeElement frameworkClass) {
         Set<ExecutableElement> testMethods = new HashSet<>();
         TypeElement testApisReflectionTypeElement =
-                processingEnv.getElementUtils().getTypeElement(TEST_APIS_REFLECTION_FILE);
+                mElementUtils.getTypeElement(TEST_APIS_REFLECTION_FILE);
 
         testApisReflectionTypeElement.getEnclosedElements().stream()
                 .filter(e -> e instanceof ExecutableElement)
@@ -828,7 +762,7 @@ public final class Processor extends AbstractProcessor {
                 .forEach(e -> testMethods.add(e));
 
         for (ExecutableElement method : testMethods) {
-            MethodSignature methodSignature = MethodSignature.forMethod(method, elements);
+            MethodSignature methodSignature = MethodSignature.forMethod(method, mElementUtils);
 
             if (!methodSignature
                     .getParameterTypes()
@@ -837,11 +771,11 @@ public final class Processor extends AbstractProcessor {
                 continue;
             }
 
-            Api testApi = new Api(method, /* isTestApi= */ true);
+            Api testApi = new Api(toMethodSpec(method), /* isTestApi= */ true);
             if (filteredMethods.contains(testApi)) {
                 System.out.println(
                         "Api "
-                                + methodSignature.getMName()
+                                + methodSignature.getName()
                                 + " is already added, "
                                 + "probably because it is marked as another type of Api as well.");
                 continue;
@@ -896,14 +830,13 @@ public final class Processor extends AbstractProcessor {
         }
     }
 
-    private Set<ExecutableElement> getMethods(TypeElement interfaceClass, Elements elements) {
+    private Set<ExecutableElement> getMethods(TypeElement interfaceClass) {
         Map<String, ExecutableElement> methods = new HashMap<>();
-        getMethods(methods, interfaceClass, elements);
+        getMethods(methods, interfaceClass);
         return new HashSet<>(methods.values());
     }
 
-    private void getMethods(
-            Map<String, ExecutableElement> methods, TypeElement interfaceClass, Elements elements) {
+    private void getMethods(Map<String, ExecutableElement> methods, TypeElement interfaceClass) {
 
         interfaceClass.getEnclosedElements().stream()
                 .filter(e -> e instanceof ExecutableElement)
@@ -913,15 +846,15 @@ public final class Processor extends AbstractProcessor {
                 .forEach(e -> methods.put(methodHash(e), e));
 
         interfaceClass.getInterfaces().stream()
-                .map(m -> elements.getTypeElement(m.toString()))
-                .forEach(m -> getMethods(methods, m, elements));
+                .map(m -> mElementUtils.getTypeElement(m.toString()))
+                .forEach(m -> getMethods(methods, m));
 
         TypeElement superclassElement =
                 (TypeElement)
                         processingEnv.getTypeUtils().asElement(interfaceClass.getSuperclass());
 
         if (superclassElement != null) {
-            getMethods(methods, superclassElement, elements);
+            getMethods(methods, superclassElement);
         }
     }
 
@@ -953,10 +886,10 @@ public final class Processor extends AbstractProcessor {
     }
 
     private static class Api {
-        private final ExecutableElement method;
+        private final MethodSpec method;
         private final boolean isTestApi;
 
-        private Api(ExecutableElement method, boolean isTestApi) {
+        private Api(MethodSpec method, boolean isTestApi) {
             this.method = method;
             this.isTestApi = isTestApi;
         }
@@ -966,28 +899,32 @@ public final class Processor extends AbstractProcessor {
             if (this == o) return true;
             if (!(o instanceof Api)) return false;
             Api that = (Api) o;
-            if (Objects.equals(method.getSimpleName(), that.method.getSimpleName())) {
-                if (isTestApi) {
-                    // when comparing a TestApi with a non-TestApi we need to ignore the first
-                    // parameter in the TestApi as that parameter is the kotlin extension receiver
-                    // parameter
-                    if (method.getParameters().size() == that.method.getParameters().size() + 1) {
-                        for (int i = 1; i < method.getParameters().size(); i++) {
-                            String thisIthParameter =
-                                    method.getParameters().get(i).asType().toString();
-                            String thatIthParameter =
-                                    that.method.getParameters().get(i - 1).asType().toString();
-                            if (!thisIthParameter.equals(thatIthParameter)) {
-                                return false;
-                            }
-                        }
-                        return true;
-                    }
-                } else {
-                    return method.getParameters().equals(that.method.getParameters());
+
+            if (!Objects.equals(this.method.name, that.method.name)) {
+                return false;
+            }
+
+            List<ParameterSpec> thisParams = this.method.parameters;
+            List<ParameterSpec> thatParams = that.method.parameters;
+
+            int thisStart = this.isTestApi ? 1 : 0;
+            int thatStart = that.isTestApi ? 1 : 0;
+
+            int thisEffectiveSize = thisParams.size() - thisStart;
+            int thatEffectiveSize = thatParams.size() - thatStart;
+
+            if (thisEffectiveSize != thatEffectiveSize) {
+                return false;
+            }
+
+            for (int i = 0; i < thisEffectiveSize; i++) {
+                TypeName thisType = thisParams.get(i + thisStart).type;
+                TypeName thatType = thatParams.get(i + thatStart).type;
+                if (!thisType.equals(thatType)) {
+                    return false;
                 }
             }
-            return false;
+            return true;
         }
 
         @Override
@@ -1000,11 +937,33 @@ public final class Processor extends AbstractProcessor {
                 // parameter
                 index = 1;
             }
-            for (int i = index; i < method.getParameters().size(); i++) {
-                params.append(method.getParameters().get(i).asType().toString());
+            for (int i = index; i < method.parameters.size(); i++) {
+                params.append(method.parameters.get(i).type.toString());
             }
 
-            return Objects.hash(method.getSimpleName().toString(), params.toString());
+            return Objects.hash(method.name.toString(), params.toString());
         }
+    }
+
+    // Convert the {@code ExecutableElement} to a {@code MethodSpec}.
+    private MethodSpec toMethodSpec(ExecutableElement element) {
+        var builder = MethodSpec.methodBuilder(element.getSimpleName().toString());
+
+        builder.addModifiers(element.getModifiers());
+        builder.returns(TypeName.get(element.getReturnType()));
+
+        for (TypeParameterElement typeParam : element.getTypeParameters()) {
+            builder.addTypeVariable(TypeVariableName.get(typeParam));
+        }
+
+        for (VariableElement parameter : element.getParameters()) {
+            builder.addParameter(ParameterSpec.get(parameter));
+        }
+
+        for (TypeMirror thrownType : element.getThrownTypes()) {
+            builder.addException(TypeName.get(thrownType));
+        }
+
+        return builder.build();
     }
 }

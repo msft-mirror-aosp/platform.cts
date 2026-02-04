@@ -22,7 +22,9 @@ import com.android.tools.metalava.model.MethodItem
 import com.android.tools.metalava.model.PrimitiveTypeItem
 import com.android.tools.metalava.model.ReferenceTypeItem
 import com.android.tools.metalava.model.TypeItem
-import java.util.Objects
+import com.squareup.javapoet.MethodSpec
+import com.squareup.javapoet.ParameterizedTypeName
+import com.squareup.javapoet.TypeName
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.Modifier
 import javax.lang.model.type.DeclaredType
@@ -32,12 +34,12 @@ import javax.lang.model.util.Elements
 import javax.lang.model.util.Types
 
 /** Represents a minimal representation of a method for comparison purposes */
-class MethodSignature(
-    private val mVisibility: Visibility,
-    private val mReturnType: String,
-    val mName: String,
-    private val mParameterTypes: List<String>,
-    private val mExceptions: Set<String>,
+data class MethodSignature(
+    val visibility: Visibility,
+    val returnType: String,
+    val name: String,
+    val parameterTypes: List<String>,
+    val exceptions: Set<String>,
 ) {
     constructor(
         visibility: Visibility,
@@ -58,70 +60,34 @@ class MethodSignature(
         PROTECTED,
     }
 
-    public fun getParameterTypes(): List<String> {
-        return mParameterTypes
-    }
-
-    override fun equals(o: Any?): Boolean {
-        if (this === o) return true
-        if (o !is MethodSignature) return false
-        val that = o
-        return mVisibility == that.mVisibility &&
-            this.mReturnType == that.mReturnType &&
-            this.mName == that.mName &&
-            mParameterTypes == that.mParameterTypes &&
-            mExceptions == that.mExceptions
-    }
-
-    override fun hashCode(): Int {
-        return Objects.hash(mVisibility, this.mReturnType, this.mName, mParameterTypes, mExceptions)
-    }
-
-    override fun toString(): String {
-        return ("MethodSignature{" +
-            "mVisibility=" +
-            mVisibility +
-            ", mReturnType='" +
-            this.mReturnType +
-            '\'' +
-            ", mName='" +
-            this.mName +
-            '\'' +
-            ", mParameterTypes=" +
-            mParameterTypes +
-            ", mExceptions=" +
-            mExceptions +
-            '}')
-    }
-
     companion object {
         @JvmStatic
         fun forHardcoded(
             visibility: Visibility,
-            mReturnType: String,
-            mName: String,
-            mParameterTypes: List<String>,
-            mExceptions: Set<String>,
+            returnType: String,
+            name: String,
+            parameterTypes: List<String>,
+            exceptions: Set<String>,
         ): MethodSignature {
-            return MethodSignature(visibility, mReturnType, mName, mParameterTypes, mExceptions)
+            return MethodSignature(visibility, returnType, name, parameterTypes, exceptions)
         }
 
         @JvmStatic
         fun forHardcoded(
             visibility: Visibility,
-            mReturnType: String,
-            mName: String,
-            mParameterTypes: List<String>,
+            returnType: String,
+            name: String,
+            parameterTypes: List<String>,
         ): MethodSignature {
-            return MethodSignature(visibility, mReturnType, mName, mParameterTypes, setOf())
+            return MethodSignature(visibility, returnType, name, parameterTypes, setOf())
         }
 
         /** Create a [MethodSignature] for the given [ExecutableElement]. */
         @JvmStatic
-        fun forMethod(method: ExecutableElement, elements: Elements): MethodSignature {
-            val parameters = method.parameters.map { it.asType() }.map { rawType(it, elements) }
+        fun forMethod(method: ExecutableElement, elementUtils: Elements): MethodSignature {
+            val parameters = method.parameters.map { it.asType() }.map { rawType(it, elementUtils) }
 
-            val exceptions = method.thrownTypes.map { rawType(it, elements) }
+            val exceptions = method.thrownTypes.map { rawType(it, elementUtils) }
 
             val visibility =
                 when {
@@ -131,20 +97,20 @@ class MethodSignature(
                         throw IllegalArgumentException("Method $method must be public or private")
                 }
 
-            val returnType = rawType(method.returnType, elements = elements)
+            val returnType = rawType(method.returnType, elementUtils = elementUtils)
 
             val name = method.simpleName.toString()
 
             return MethodSignature(visibility, returnType, name, parameters, exceptions.toSet())
         }
 
-        private fun rawType(type: TypeMirror?, elements: Elements): TypeMirror {
+        private fun rawType(type: TypeMirror?, elementUtils: Elements): TypeMirror {
             var type = type
             if (type is DeclaredType) {
                 val t = type
                 if (!t.typeArguments.isEmpty()) {
                     type =
-                        elements
+                        elementUtils
                             .getTypeElement(
                                 t.toString().split("<".toRegex(), limit = 2).toTypedArray()[0]
                             )
@@ -169,9 +135,45 @@ class MethodSignature(
             return foundVarArgs
         }
 
+        // Bug-compatible with how `forMethod` handles templated arguments:
+        //      List<String> -> List<V>.
+        // Should eventually be replaced by simply `typeName.toString()`.
+        private fun typeNameToString(typeName: TypeName): String {
+            return when (typeName) {
+                is ParameterizedTypeName -> {
+                    val rawType = typeName.rawType.toString()
+                    "$rawType<V>"
+                }
+                else -> typeName.toString()
+            }
+        }
+
         @JvmStatic
-        fun forApi(method: MethodItem, types: Types, elements: Elements): MethodSignature? {
-            // TODO(b/337769574): Add support for generic types.
+        fun forMethodSpec(method: MethodSpec): MethodSignature {
+            val parameterTypes = method.parameters.map { typeNameToString(it.type) }
+            val exceptionTypes = method.exceptions.map { typeNameToString(it) }.toSet()
+            val returnType = typeNameToString(method.returnType)
+
+            val visibility =
+                when {
+                    method.modifiers.contains(Modifier.PUBLIC) -> Visibility.PUBLIC
+                    method.modifiers.contains(Modifier.PROTECTED) -> Visibility.PROTECTED
+                    else ->
+                        throw IllegalArgumentException("Method $method must be public or protected")
+                }
+
+            return MethodSignature(
+                visibility,
+                returnType,
+                method.name,
+                parameterTypes,
+                exceptionTypes,
+            )
+        }
+
+        @JvmStatic
+        fun forApi(method: MethodItem, typeUtils: Types, elementUtils: Elements): MethodSignature? {
+            // TODO(b/337769574): Add support for generic typeUtils.
             if (method.typeParameterList.isNotEmpty()) {
                 return null
             }
@@ -191,14 +193,15 @@ class MethodSignature(
 
             val name = method.name()
 
-            val returnType = typeForApi(method.returnType(), types, elements)
-            val parameters = method.parameters().map { typeForApi(it.type(), types, elements) }
-            val throws = method.throwsTypes().map { typeForApi(it, types, elements) }
+            val returnType = typeForApi(method.returnType(), typeUtils, elementUtils)
+            val parameters =
+                method.parameters().map { typeForApi(it.type(), typeUtils, elementUtils) }
+            val throws = method.throwsTypes().map { typeForApi(it, typeUtils, elementUtils) }
 
             return MethodSignature(visibility, returnType, name, parameters, throws.toSet())
         }
 
-        private fun typeForApi(type: PrimitiveTypeItem, types: Types): TypeMirror {
+        private fun typeForApi(type: PrimitiveTypeItem, typeUtils: Types): TypeMirror {
             val kind =
                 when (type.kind) {
                     PrimitiveTypeItem.Primitive.BOOLEAN -> TypeKind.BOOLEAN
@@ -209,25 +212,29 @@ class MethodSignature(
                     PrimitiveTypeItem.Primitive.INT -> TypeKind.INT
                     PrimitiveTypeItem.Primitive.LONG -> TypeKind.LONG
                     PrimitiveTypeItem.Primitive.SHORT -> TypeKind.SHORT
-                    PrimitiveTypeItem.Primitive.VOID -> return types.getNoType(TypeKind.VOID)
+                    PrimitiveTypeItem.Primitive.VOID -> return typeUtils.getNoType(TypeKind.VOID)
                 }
 
-            return types.getPrimitiveType(kind)
+            return typeUtils.getPrimitiveType(kind)
         }
 
-        private fun typeForApi(type: TypeItem, types: Types, elements: Elements): TypeMirror {
+        private fun typeForApi(
+            type: TypeItem,
+            typeUtils: Types,
+            elementUtils: Elements,
+        ): TypeMirror {
             return when (type) {
-                is PrimitiveTypeItem -> typeForApi(type, types)
+                is PrimitiveTypeItem -> typeForApi(type, typeUtils)
                 is ArrayTypeItem ->
-                    types.getArrayType(typeForApi(type.componentType, types, elements))
+                    typeUtils.getArrayType(typeForApi(type.componentType, typeUtils, elementUtils))
                 is ReferenceTypeItem -> {
                     var typeName = type.toErasedTypeString()
 
-                    if (isTestClass(typeName, elements)) {
+                    if (isTestClass(typeName, elementUtils)) {
                         typeName = proxyType(typeName)
                     }
 
-                    val typeElement = elements.getTypeElement(typeName)
+                    val typeElement = elementUtils.getTypeElement(typeName)
                     checkNotNull(typeElement) { "Unknown type: $typeName" }
                     typeElement.asType()
                 }
@@ -242,14 +249,14 @@ class MethodSignature(
          * identify them so that we can replace them with proxy classes generated by the
          * TestApisReflection module.
          */
-        private fun isTestClass(typeName: String?, elements: Elements): Boolean {
+        private fun isTestClass(typeName: String?, elementUtils: Elements): Boolean {
             val isListedInTestCurrentFile =
                 Processor.CLASSES_LISTED_IN_TEST_CURRENT_FILE.stream().anyMatch { c: ClassSignature?
                     ->
                     c!!.name == typeName
                 }
             // wouldn't be accessible when test sdk is disabled.
-            val isNotAccessible = elements.getTypeElement(typeName) == null
+            val isNotAccessible = elementUtils.getTypeElement(typeName) == null
             return isListedInTestCurrentFile && isNotAccessible
         }
 
