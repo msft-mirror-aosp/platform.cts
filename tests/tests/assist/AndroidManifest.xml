@@ -22,7 +22,7 @@
     <uses-permission android:name="android.permission.BIND_VOICE_INTERACTION"/>
     <uses-permission android:name="android.permission.INTERNET"/>
 
-    <application>
+    <application android:debuggable="true">
       <uses-library android:name="android.test.runner"/>
       <!-- resizeableActivity makes the TestStartActivity run on Primary display to accommodate
                      stack behavior assumptions in this test. See b/70032125 -->
