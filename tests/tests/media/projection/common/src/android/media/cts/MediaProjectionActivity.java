@@ -333,7 +333,7 @@ public class MediaProjectionActivity extends Activity {
 
         // Attempt specific search if name is provided.
         if (displayName != null) {
-            displayToClick = contentList.findObject(By.textContains(displayName));
+            displayToClick = contentList.findObject(By.descContains(displayName));
         }
 
         // Fallback to first clickable if name search failed or was skipped.
