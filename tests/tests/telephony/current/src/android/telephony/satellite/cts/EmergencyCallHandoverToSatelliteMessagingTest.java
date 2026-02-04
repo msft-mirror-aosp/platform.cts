@@ -140,8 +140,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
     @BeforeClass
     public static void beforeAllTests() throws Exception {
         logd(LOG_TAG, "beforeAllTests");
-        if (!ImsUtils.shouldTestImsCall()) return;
-        if (!shouldTestSatelliteWithMockService()) return;
+        if (!shouldTestEmergencyHandoverToSatelliteMessaging()) return;
         beforeAllCarrierRoamingTestsBase();
         sServiceConnector = new ImsServiceConnector(InstrumentationRegistry.getInstrumentation());
 
@@ -157,7 +156,7 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
     @AfterClass
     public static void afterAllTests() throws Exception {
         logd(LOG_TAG, "afterAllTests");
-        if (!shouldTestSatelliteWithMockService()) return;
+        if (!shouldTestEmergencyHandoverToSatelliteMessaging()) return;
         assertTrue("Failed to set CTS mode", sMockSatelliteServiceManager.setCtsMode(false));
         assertTrue(
                 "Failed to set satellite controller timeout duration",
