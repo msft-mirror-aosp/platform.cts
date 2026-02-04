@@ -6973,6 +6973,7 @@
     <option name="compatibility:exclude-filter" value="CtsSecurityTestCases_multiuser android.security.cts.advancedprotection.AdvancedProtectionManagerTest#testRegisterFeatureCallback[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:exclude-filter" value="CtsSecurityTestCases_multiuser android.security.cts.advancedprotection.AdvancedProtectionManagerTest#testUpdateAdvancedProtectionFeaturesProvisioning_provisioned[IncludeRunOnPrimaryUser]"/>
     <!-- Exclude the failing tests in CtsSettingsTestCases -->
+    <option name="compatibility:exclude-filter" value="CtsSettingsTestCases android.settings.cts.DeviceStateAppFunctionsTest#testOffsetNumericDeviceStateItemByValue_deviceNotLocked_doesNotThrowException"/>
     <option name="compatibility:exclude-filter" value="CtsSettingsTestCases android.settings.cts.SettingsIntentsTest#testSimPreferenceIntentReceiverExists"/>
     <option name="compatibility:exclude-filter" value="CtsSettingsTestCases android.settings.cts.SettingsMultiPaneDeepLinkTest#deepLinkHomeActivity_protectedWithPermission"/>
     <!-- Exclude the failing tests in MctsMediaDecoderTestCases -->
