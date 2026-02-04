@@ -55,9 +55,6 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.platform.test.annotations.AsbSecurityTest;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.server.wm.IgnoreOrientationRequestSession;
 import android.server.wm.UiDeviceUtils;
@@ -153,9 +150,6 @@ public class VirtualDisplayTest {
     public StateKeeperRule<DisplayStateManager.DisplayState> mDisplayManagerStateKeeper =
             new StateKeeperRule<>(new DisplayStateManager(
                     InstrumentationRegistry.getInstrumentation().getTargetContext()));
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -587,8 +581,6 @@ public class VirtualDisplayTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(
-            android.companion.virtualdevice.flags.Flags.FLAG_VIRTUAL_DISPLAY_ROTATION_API)
     public void testRotateVirtualDisplay_invalidRotationValue_throws() {
         VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(NAME,
                 WIDTH, HEIGHT, DENSITY, mSurface, /* flags= */ 0);
@@ -604,8 +596,6 @@ public class VirtualDisplayTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(
-            android.companion.virtualdevice.flags.Flags.FLAG_VIRTUAL_DISPLAY_ROTATION_API)
     public void testRotateVirtualDisplay() throws Exception {
         assumeTrue(supportsActivitiesOnSecondaryDisplays());
 
