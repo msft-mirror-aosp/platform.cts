@@ -318,6 +318,7 @@ class AppFunctionMetadataTestHelper {
             val LONG_RUNNING_FUNCTION = AppFunctionName(PACKAGE_NAME, "longRunningFunction")
             val NO_SCHEMA = AppFunctionName(PACKAGE_NAME, "noSchema")
             val CONTEXT = AppFunctionName(PACKAGE_NAME, "contextDisabledByDefault")
+            val ACTIVITY_CONCAT_STRINGS = AppFunctionName(PACKAGE_NAME, "activityConcatStrings")
         }
 
         object FunctionMetadata {

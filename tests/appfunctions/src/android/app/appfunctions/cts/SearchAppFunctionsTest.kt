@@ -153,6 +153,7 @@ class SearchAppFunctionsTest {
                     CtsApp.FunctionNames.LONG_RUNNING_FUNCTION,
                     CtsApp.FunctionNames.NO_SCHEMA,
                     CtsApp.FunctionNames.CONTEXT,
+                    CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS,
                 )
         } finally {
             uninstallPackage(UpdatableHelperApp.PACKAGE_NAME)
@@ -199,6 +200,7 @@ class SearchAppFunctionsTest {
                         CtsApp.FunctionNames.LONG_RUNNING_FUNCTION,
                         CtsApp.FunctionNames.NO_SCHEMA,
                         CtsApp.FunctionNames.CONTEXT,
+                        CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS,
                     )
             } finally {
                 uninstallPackage(UpdatableHelperApp.PACKAGE_NAME)
