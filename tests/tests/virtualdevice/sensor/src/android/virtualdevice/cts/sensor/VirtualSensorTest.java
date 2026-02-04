@@ -202,7 +202,6 @@ public class VirtualSensorTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
     public void getSensorList_virtualDeviceClosed_returnsEmptyList() {
         setUpVirtualSensor(
                 new VirtualSensorConfig.Builder(TYPE_ACCELEROMETER, VIRTUAL_SENSOR_NAME)
@@ -215,7 +214,6 @@ public class VirtualSensorTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
     public void getDefaultSensor_virtualDeviceClosed_returnsNull() {
         mVirtualSensor =
                 setUpVirtualSensor(
@@ -227,7 +225,6 @@ public class VirtualSensorTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
     public void createDirectChannel_withMemoryFile_virtualDeviceClosed_throwsException() {
         setUpVirtualSensor(
                 new VirtualSensorConfig.Builder(TYPE_ACCELEROMETER, VIRTUAL_SENSOR_NAME)
@@ -244,7 +241,6 @@ public class VirtualSensorTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
     public void createDirectChannel_withHardwareBuffer_virtualDeviceClosed_throwsException() {
         setUpVirtualSensor(
                 new VirtualSensorConfig.Builder(TYPE_ACCELEROMETER, VIRTUAL_SENSOR_NAME)
