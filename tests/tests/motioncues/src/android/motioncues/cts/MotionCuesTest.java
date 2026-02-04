@@ -97,11 +97,15 @@ public class MotionCuesTest {
         return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
     }
 
+    private boolean isTv() {
+        return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK);
+    }
+
     @Before
     public void setUp() {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
-        // Motion cues is not supported on automotive or watch.
-        Assume.assumeFalse(isAutomotive() || isWatch());
+        // Motion cues is not supported on automotive, watch, or TV.
+        Assume.assumeFalse(isAutomotive() || isWatch() || isTv());
 
         mStatusBarManager = mContext.getSystemService(StatusBarManager.class);
         assertThat(mStatusBarManager).isNotNull();
