@@ -60,6 +60,8 @@
 {{- define "VersionCode" -}}
     {{- if eq . 10 -}}
     10
+    {{- else if eq . 20 -}}
+    20
     {{- else if  eq . 30 -}}
     VERSION_CODES.R
     {{- else if eq . 31 -}}
