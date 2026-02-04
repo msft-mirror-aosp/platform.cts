@@ -35,26 +35,26 @@ import org.junit.runner.RunWith
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
 class AppFunctionSearchSpecTest {
 
-    @get:Rule
-    val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+    @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @Test
     fun create() {
-        val packageNames = listOf("pkg1", "pkg2")
-        val functionNames = listOf(AppFunctionName("pkg1", "id1"), AppFunctionName("pkg2", "id2"))
+        val packageNames = setOf("pkg1", "pkg2")
+        val functionNames = setOf(AppFunctionName("pkg1", "id1"), AppFunctionName("pkg2", "id2"))
         val schemaCategory = "category"
         val schemaName = "name"
         val minSchemaVersion = 2L
-        val scopes = listOf(AppFunctionMetadata.SCOPE_GLOBAL)
+        val scopes = setOf(AppFunctionMetadata.SCOPE_GLOBAL)
 
-        val spec = AppFunctionSearchSpec.Builder()
-            .setPackageNames(packageNames)
-            .setFunctionNames(functionNames)
-            .setSchemaCategory(schemaCategory)
-            .setSchemaName(schemaName)
-            .setMinSchemaVersion(minSchemaVersion)
-            .setScopes(scopes)
-            .build()
+        val spec =
+            AppFunctionSearchSpec.Builder()
+                .setPackageNames(packageNames)
+                .setFunctionNames(functionNames)
+                .setSchemaCategory(schemaCategory)
+                .setSchemaName(schemaName)
+                .setMinSchemaVersion(minSchemaVersion)
+                .setScopes(scopes)
+                .build()
 
         assertThat(spec.packageNames).containsExactlyElementsIn(packageNames).inOrder()
         assertThat(spec.functionNames).containsExactlyElementsIn(functionNames).inOrder()
@@ -85,25 +85,28 @@ class AppFunctionSearchSpecTest {
     fun equalsAndHashCode() {
         val base = SEARCH_SPEC_WITH_ALL_PROPERTIES
 
-        val sameAsBase = AppFunctionSearchSpec.Builder()
-            .setPackageNames(listOf("testPackage1", "testPackage2"))
-            .setFunctionNames(
-                listOf(
-                    AppFunctionName("testPackage1", "id1"),
-                    AppFunctionName("testPackage2", "id2")
+        val sameAsBase =
+            AppFunctionSearchSpec.Builder()
+                .setPackageNames(setOf("testPackage1", "testPackage2"))
+                .setFunctionNames(
+                    setOf(
+                        AppFunctionName("testPackage1", "id1"),
+                        AppFunctionName("testPackage2", "id2"),
+                    )
                 )
-            )
-            .setSchemaCategory("testCategory")
-            .setSchemaName("testName")
-            .setMinSchemaVersion(1L)
-            .setScopes(listOf(AppFunctionMetadata.SCOPE_GLOBAL, AppFunctionMetadata.SCOPE_ACTIVITY))
-            .build()
+                .setSchemaCategory("testCategory")
+                .setSchemaName("testName")
+                .setMinSchemaVersion(1L)
+                .setScopes(
+                    setOf(AppFunctionMetadata.SCOPE_GLOBAL, AppFunctionMetadata.SCOPE_ACTIVITY)
+                )
+                .build()
 
         val differentPackage =
-            AppFunctionSearchSpec.Builder(base).setPackageNames(listOf("other")).build()
+            AppFunctionSearchSpec.Builder(base).setPackageNames(setOf("other")).build()
         val differentFunction =
             AppFunctionSearchSpec.Builder(base)
-                .setFunctionNames(listOf(AppFunctionName("p", "i")))
+                .setFunctionNames(setOf(AppFunctionName("p", "i")))
                 .build()
         val differentCategory =
             AppFunctionSearchSpec.Builder(base).setSchemaCategory("other").build()
@@ -111,7 +114,7 @@ class AppFunctionSearchSpecTest {
         val differentVersion = AppFunctionSearchSpec.Builder(base).setMinSchemaVersion(99L).build()
         val differentScopes =
             AppFunctionSearchSpec.Builder(base)
-                .setScopes(listOf(AppFunctionMetadata.SCOPE_GLOBAL))
+                .setScopes(setOf(AppFunctionMetadata.SCOPE_GLOBAL))
                 .build()
 
         assertThat(base).isEqualTo(sameAsBase)
@@ -130,10 +133,10 @@ class AppFunctionSearchSpecTest {
     @Test
     fun builder_emptyCollections_throwsException() {
         assertThrows(IllegalArgumentException::class.java) {
-            AppFunctionSearchSpec.Builder().setPackageNames(emptyList())
+            AppFunctionSearchSpec.Builder().setPackageNames(emptySet())
         }
         assertThrows(IllegalArgumentException::class.java) {
-            AppFunctionSearchSpec.Builder().setFunctionNames(emptyList())
+            AppFunctionSearchSpec.Builder().setFunctionNames(emptySet())
         }
     }
 
@@ -151,9 +154,9 @@ class AppFunctionSearchSpecTest {
     companion object {
         private val SEARCH_SPEC_WITH_ALL_PROPERTIES =
             AppFunctionSearchSpec.Builder()
-                .setPackageNames(listOf("testPackage1", "testPackage2"))
+                .setPackageNames(setOf("testPackage1", "testPackage2"))
                 .setFunctionNames(
-                    listOf(
+                    setOf(
                         AppFunctionName("testPackage1", "id1"),
                         AppFunctionName("testPackage2", "id2"),
                     )
@@ -162,10 +165,7 @@ class AppFunctionSearchSpecTest {
                 .setSchemaName("testName")
                 .setMinSchemaVersion(1L)
                 .setScopes(
-                    listOf(
-                        AppFunctionMetadata.SCOPE_GLOBAL,
-                        AppFunctionMetadata.SCOPE_ACTIVITY
-                    )
+                    setOf(AppFunctionMetadata.SCOPE_GLOBAL, AppFunctionMetadata.SCOPE_ACTIVITY)
                 )
                 .build()
     }
