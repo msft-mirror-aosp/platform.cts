@@ -238,8 +238,7 @@ public class VirtualDevicePowerTest {
         createVirtualDeviceAndDisplay();
 
         mVirtualDeviceRule.startActivityOnDisplaySync(mDisplay.getDisplayId(), Activity.class);
-        int resumed = Flags.correctVirtualDisplayPowerState() ? 1 : 0;
-        verify(mVirtualDisplayCallback, timeout(CALLBACK_TIMEOUT_MS).times(resumed)).onResumed();
+        verify(mVirtualDisplayCallback, timeout(CALLBACK_TIMEOUT_MS).times(1)).onResumed();
         assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
 
         mVirtualDevice.goToSleep();
@@ -250,7 +249,7 @@ public class VirtualDevicePowerTest {
         assertThat(mVirtualDisplayPowerManager.isInteractive()).isFalse();
 
         mVirtualDevice.wakeUp();
-        verify(mVirtualDisplayCallback, timeout(CALLBACK_TIMEOUT_MS).times(++resumed)).onResumed();
+        verify(mVirtualDisplayCallback, timeout(CALLBACK_TIMEOUT_MS).times(2)).onResumed();
 
         assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
         assertThat(mVirtualDisplayPowerManager.isInteractive()).isTrue();
@@ -294,8 +293,7 @@ public class VirtualDevicePowerTest {
         createVirtualDeviceAndDisplay();
 
         mVirtualDeviceRule.startActivityOnDisplaySync(mDisplay.getDisplayId(), Activity.class);
-        int resumed = Flags.correctVirtualDisplayPowerState() ? 1 : 0;
-        verify(mVirtualDisplayCallback, timeout(CALLBACK_TIMEOUT_MS).times(resumed)).onResumed();
+        verify(mVirtualDisplayCallback, timeout(CALLBACK_TIMEOUT_MS).times(1)).onResumed();
         assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
 
         mVirtualDevice.goToSleep();
@@ -308,7 +306,7 @@ public class VirtualDevicePowerTest {
 
         mVirtualDeviceRule.startActivityOnDisplaySync(
                 mDisplay.getDisplayId(), TurnScreenOnShowWhenLockedActivity.class);
-        verify(mVirtualDisplayCallback, timeout(CALLBACK_TIMEOUT_MS).times(++resumed)).onResumed();
+        verify(mVirtualDisplayCallback, timeout(CALLBACK_TIMEOUT_MS).times(2)).onResumed();
         assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
 
         assertThat(mVirtualDisplayPowerManager.isInteractive()).isTrue();
@@ -322,8 +320,7 @@ public class VirtualDevicePowerTest {
                 .build());
 
         mVirtualDeviceRule.startActivityOnDisplaySync(mDisplay.getDisplayId(), Activity.class);
-        int resumed = Flags.correctVirtualDisplayPowerState() ? 1 : 0;
-        verify(mVirtualDisplayCallback, timeout(CALLBACK_TIMEOUT_MS).times(resumed)).onResumed();
+        verify(mVirtualDisplayCallback, timeout(CALLBACK_TIMEOUT_MS).times(1)).onResumed();
         assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
 
         mVirtualDevice.goToSleep();
@@ -335,7 +332,7 @@ public class VirtualDevicePowerTest {
 
         mVirtualDeviceRule.startActivityOnDisplaySync(
                 mDisplay.getDisplayId(), TurnScreenOnActivity.class);
-        verify(mVirtualDisplayCallback, timeout(CALLBACK_TIMEOUT_MS).times(++resumed)).onResumed();
+        verify(mVirtualDisplayCallback, timeout(CALLBACK_TIMEOUT_MS).times(2)).onResumed();
         assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
 
         assertThat(mVirtualDisplayPowerManager.isInteractive()).isTrue();
