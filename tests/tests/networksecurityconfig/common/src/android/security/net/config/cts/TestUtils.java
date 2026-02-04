@@ -33,6 +33,8 @@ import android.text.format.DateUtils;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.params.HttpParams;
+import org.apache.http.params.HttpConnectionParams;
 import org.junit.AssumptionViolatedException;
 
 import java.io.IOException;
@@ -76,9 +78,19 @@ public final class TestUtils {
 
     /** Asserts that TLS connections to {@code host} on {@code port} succeed */
     public static void assertTlsConnectionSucceeds(String host, int port) throws Exception {
-        assertSslSocketSucceeds(host, port);
-        assertHttpClientSucceeds(host, port, true /* https */);
-        assertUrlConnectionSucceeds(host, port, true /* https */);
+        assertTlsConnectionSucceeds(host, port, DEFAULT_CONNECTION_TIMEOUT);
+    }
+
+    /**
+     * Asserts that TLS connections to {@code host} on {@code port} succeed.
+     *
+     * @param timeout timeout in milliseconds for each connection attempt.
+     */
+    public static void assertTlsConnectionSucceeds(String host, int port, int timeout)
+            throws Exception {
+        assertSslSocketSucceeds(host, port, timeout);
+        assertHttpClientSucceeds(host, port, /* https= */ true, timeout);
+        assertUrlConnectionSucceeds(host, port, /* https= */ true, timeout);
     }
 
     /** Asserts that TLS connections on port 443 to {@code host} fail */
@@ -89,8 +101,8 @@ public final class TestUtils {
     /** Asserts that TLS connections to {@code host} on {@code port} fail */
     public static void assertTlsConnectionFails(String host, int port) throws Exception {
         assertSslSocketFails(host, port);
-        assertHttpClientFails(host, port, true /* https */);
-        assertUrlConnectionFails(host, port, true /* https */);
+        assertHttpClientFails(host, port, /* https= */ true);
+        assertUrlConnectionFails(host, port, /* https= */ true);
     }
 
     /** Asserts that cleartext connections on port 80 to {@code host} succeed */
@@ -100,8 +112,8 @@ public final class TestUtils {
 
     /** Asserts that cleartext connections to {@code host} on {@code port} succeed */
     public static void assertCleartextConnectionSucceeds(String host, int port) throws Exception {
-        assertHttpClientSucceeds(host, port, false /* http */);
-        assertUrlConnectionSucceeds(host, port, false /* http */);
+        assertHttpClientSucceeds(host, port, /* https= */ false);
+        assertUrlConnectionSucceeds(host, port, /* https= */ false);
     }
 
     /** Asserts that cleartext connections on port 80 to {@code host} fail */
@@ -111,8 +123,8 @@ public final class TestUtils {
 
     /** Asserts that cleartext connections to {@code host} on {@code port} fail */
     public static void assertCleartextConnectionFails(String host, int port) throws Exception {
-        assertHttpClientFails(host, port, false /* http */);
-        assertUrlConnectionFails(host, port, false /* http */);
+        assertHttpClientFails(host, port, /* https= */ false);
+        assertUrlConnectionFails(host, port, /* https= */ false);
     }
 
     public static X509TrustManager getDefaultTrustManager() throws Exception {
@@ -237,13 +249,24 @@ public final class TestUtils {
     }
 
     private static void assertSslSocketSucceeds(String host, int port) throws Exception {
-        assertSslSocketSucceeds(SSLContext.getDefault(), host, port);
+        assertSslSocketSucceeds(host, port, DEFAULT_CONNECTION_TIMEOUT);
+    }
+
+    private static void assertSslSocketSucceeds(String host, int port, int timeout)
+            throws Exception {
+        assertSslSocketSucceeds(SSLContext.getDefault(), host, port, timeout);
     }
 
     public static void assertSslSocketSucceeds(SSLContext sslContext, String host, int port)
             throws IOException {
+        assertSslSocketSucceeds(sslContext, host, port, DEFAULT_CONNECTION_TIMEOUT);
+    }
+
+    public static void assertSslSocketSucceeds(
+            SSLContext sslContext, String host, int port, int timeout) throws IOException {
         try {
-            SSLSocket s = (SSLSocket) sslContext.getSocketFactory().createSocket(host, port);
+            SSLSocket s = (SSLSocket) sslContext.getSocketFactory().createSocket();
+            s.connect(new java.net.InetSocketAddress(host, port), timeout);
             s.startHandshake();
         } catch (UnknownHostException e) {
             throw new AssumptionViolatedException("Unable to resolve " + host, e);
@@ -265,9 +288,16 @@ public final class TestUtils {
 
     private static void assertUrlConnectionSucceeds(String host, int port, boolean https)
             throws Exception {
+        assertUrlConnectionSucceeds(host, port, https, DEFAULT_CONNECTION_TIMEOUT);
+    }
+
+    private static void assertUrlConnectionSucceeds(
+            String host, int port, boolean https, int timeout) throws Exception {
         try {
             URL url = new URL((https ? "https://" : "http://") + host + ":" + port);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setConnectTimeout(timeout);
+            connection.setReadTimeout(timeout);
             connection.connect();
         } catch (UnknownHostException e) {
             throw new AssumptionViolatedException("Unable to resolve " + host, e);
@@ -276,9 +306,17 @@ public final class TestUtils {
 
     private static void assertHttpClientSucceeds(String host, int port, boolean https)
             throws Exception {
+        assertHttpClientSucceeds(host, port, https, DEFAULT_CONNECTION_TIMEOUT);
+    }
+
+    private static void assertHttpClientSucceeds(
+            String host, int port, boolean https, int timeout) throws Exception {
         URL url = new URL((https ? "https://" : "http://") + host + ":" + port);
         AndroidHttpClient httpClient = AndroidHttpClient.newInstance(null);
         try {
+            HttpParams params = httpClient.getParams();
+            HttpConnectionParams.setConnectionTimeout(params, timeout);
+            HttpConnectionParams.setSoTimeout(params, timeout);
             HttpResponse response = httpClient.execute(new HttpGet(url.toString()));
         } catch (UnknownHostException e) {
             throw new AssumptionViolatedException("Unable to resolve " + host, e);
@@ -329,7 +367,8 @@ public final class TestUtils {
                 actual);
     }
 
-    private static final long DOWNLOAD_MANAGER_TIMEOUT = 10 * DateUtils.SECOND_IN_MILLIS;
+    private static final int DEFAULT_CONNECTION_TIMEOUT = (int) (20 * DateUtils.SECOND_IN_MILLIS);
+    private static final long DOWNLOAD_MANAGER_TIMEOUT = 20 * DateUtils.SECOND_IN_MILLIS;
 
     /** Asserts that the DownloadManager is able to retrieve the root of a webserver on port 80 */
     public static void assertCleartextDownloadManagerSucceeds(Context ctx, String host)
