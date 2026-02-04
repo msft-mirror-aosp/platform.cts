@@ -16,16 +16,27 @@
 
 package android.media.router.cts;
 
+import static android.media.cts.MediaRouterTestConstants.OSW_COMMON_DEDUPLICATION_ID_ACROSS_PROVIDER;
+import static android.media.cts.MediaRouterTestConstants.OSW_COMMON_DEDUPLICATION_ID_SAME_PROVIDER;
+import static android.media.cts.MediaRouterTestConstants.OSW_DIFFERENT_DEDUPLICATION_ID_SAME_NAME_1;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_DEDUPLICATION_ID_1;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_DEDUPLICATION_ID_3;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_2_ROUTE_1;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_2_ROUTE_2;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_2_ROUTE_3;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_2_ROUTE_4;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_OSW_DEDUPLICATION_PROVIDER_2;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_OSW_DEDUPLICATION_SAME_PROVIDER_NON_SYSTEM;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_OSW_DEDUPLICATION_SAME_PROVIDER_SYSTEM;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_OSW_DIFFERENT_DEDUPLICATION_ID_SAME_NAME_1;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_1;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_2;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_3;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_4;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_OSW_DEDUPLICATION_PROVIDER_2;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_OSW_DEDUPLICATION_SAME_PROVIDER_NON_SYSTEM;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_OSW_DEDUPLICATION_SAME_PROVIDER_SYSTEM;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_OSW_DIFFERENT_DEDUPLICATION_ID_SAME_NAME;
 
 import android.media.MediaRoute2Info;
 
@@ -46,6 +57,26 @@ public final class FakeMediaRoute2ProviderService2 extends BaseFakeRouteProvider
                         ROUTE_NAME_3,
                         MediaRoute2Info.TYPE_UNKNOWN,
                         /* deduplicationIds...= */ ROUTE_DEDUPLICATION_ID_3),
+                createPublicRoute(
+                        ROUTE_ID_OSW_DEDUPLICATION_PROVIDER_2,
+                        ROUTE_NAME_OSW_DEDUPLICATION_PROVIDER_2,
+                        MediaRoute2Info.TYPE_UNKNOWN,
+                        /* deduplicationIds...= */ OSW_COMMON_DEDUPLICATION_ID_ACROSS_PROVIDER),
+                createSystemRoute(
+                        ROUTE_ID_OSW_DEDUPLICATION_SAME_PROVIDER_SYSTEM,
+                        ROUTE_NAME_OSW_DEDUPLICATION_SAME_PROVIDER_SYSTEM,
+                        /* isSystem= */ true,
+                        /* deduplicationIds...= */ OSW_COMMON_DEDUPLICATION_ID_SAME_PROVIDER),
+                createSystemRoute(
+                        ROUTE_ID_OSW_DEDUPLICATION_SAME_PROVIDER_NON_SYSTEM,
+                        ROUTE_NAME_OSW_DEDUPLICATION_SAME_PROVIDER_NON_SYSTEM,
+                        /* isSystem= */ false,
+                        /* deduplicationIds...= */ OSW_COMMON_DEDUPLICATION_ID_SAME_PROVIDER),
+                createPublicRoute(
+                        ROUTE_ID_OSW_DIFFERENT_DEDUPLICATION_ID_SAME_NAME_1,
+                        ROUTE_NAME_OSW_DIFFERENT_DEDUPLICATION_ID_SAME_NAME,
+                        MediaRoute2Info.TYPE_UNKNOWN,
+                        /* deduplicationIds...= */ OSW_DIFFERENT_DEDUPLICATION_ID_SAME_NAME_1),
                 createPrivateRoute(ROUTE_ID_APP_2_ROUTE_4, ROUTE_NAME_4));
     }
 }

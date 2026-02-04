@@ -32,10 +32,14 @@
     <target_preparer class="com.android.cts.devicepolicy.user.DevicePolicyUsersPreparer" />
 
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <!-- Enabling ALLOW_TEST_API_ACCESS allows that package to access @TestApi methods -->
+        <option name="run-command" value="am compat enable ALLOW_TEST_API_ACCESS android.media.router.cts.provider2" />
         <!-- Disables StatsD logging control-->
         <option name="run-command" value="cmd stats logging-control 0" />
         <!-- Delay 30 seconds to allow StatsD process above command-->
         <option name="delay-after-commands" value="30000" />
         <option name="teardown-command" value="cmd stats logging-control 1" />
+        <!-- Reset the compat changes on teardown -->
+        <option name="teardown-command" value="am compat reset ALLOW_TEST_API_ACCESS android.media.router.cts.provider2" />
     </target_preparer>
 </configuration>

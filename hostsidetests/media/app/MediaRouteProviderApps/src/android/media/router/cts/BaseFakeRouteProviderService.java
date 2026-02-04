@@ -60,6 +60,15 @@ public abstract class BaseFakeRouteProviderService extends MediaRoute2ProviderSe
                 .build();
     }
 
+    protected static MediaRoute2Info createSystemRoute(
+            String id, String name, boolean isSystem, String... deduplicationIds) {
+        return new MediaRoute2Info.Builder(id, name)
+                .addFeature(FEATURE_SAMPLE)
+                .setDeduplicationIds(Set.of(deduplicationIds))
+                .setSystemRoute(isSystem)
+                .build();
+    }
+
     protected static MediaRoute2Info createRestrictedRoute(
             String id, String name, Set<String> allowedPackages, String... deduplicationIds) {
         return new MediaRoute2Info.Builder(id, name)
