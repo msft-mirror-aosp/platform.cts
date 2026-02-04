@@ -478,6 +478,7 @@ class VirtualDeviceMirrorDisplayTest : InputTestCase() {
                 mVirtualDevice,
                 DEVICE_NAME,
                 mVirtualDisplay.display,
+                null,
                 touchPadWidth,
                 touchPadHeight
             ).device
