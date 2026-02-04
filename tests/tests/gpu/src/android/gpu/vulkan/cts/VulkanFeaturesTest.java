@@ -116,6 +116,9 @@ public class VulkanFeaturesTest {
     private static final int DEQP_LEVEL_FOR_R = 0x7E40301;
     private static final int DEQP_LEVEL_BEFORE_R = 0;
 
+    // Mapping from deqp levels to the list of KHR, ANDROID, or GOOGLE
+    // device extensions which gain "reasonable" test coverage at
+    // that level.
     private static final Map<Integer, String[]> DEQP_EXTENSIONS_MAP = new ArrayMap<>();
     static {
         DEQP_EXTENSIONS_MAP.put(
@@ -161,11 +164,7 @@ public class VulkanFeaturesTest {
                     "VK_KHR_video_decode_h265",
                     "VK_KHR_video_decode_queue",
                     "VK_KHR_video_queue",
-                    "VK_GOOGLE_user_type",
-                    // Note: while the KHR version of this extension is actually much newer,
-                    // test coverage is provided by the same set of tests used for the EXT
-                    // version of the extension, which were introduced with Android U (2023)
-                    "VK_KHR_swapchain_maintenance1"});
+                    "VK_GOOGLE_user_type"});
         DEQP_EXTENSIONS_MAP.put(
                 DEQP_LEVEL_FOR_T,
                 new String[] {
@@ -174,8 +173,6 @@ public class VulkanFeaturesTest {
                     "VK_KHR_global_priority",
                     "VK_KHR_maintenance4",
                     "VK_KHR_portability_subset",
-                    "VK_KHR_present_id",
-                    "VK_KHR_present_wait",
                     "VK_KHR_shader_subgroup_uniform_control_flow",
                     "VK_KHR_portability_enumeration"});
         DEQP_EXTENSIONS_MAP.put(
@@ -196,8 +193,6 @@ public class VulkanFeaturesTest {
         DEQP_EXTENSIONS_MAP.put(
                 DEQP_LEVEL_FOR_R,
                 new String[] {
-                    "VK_KHR_swapchain",
-                    "VK_KHR_swapchain_mutable_format",
                     "VK_KHR_display_swapchain",
                     "VK_KHR_sampler_mirror_clamp_to_edge",
                     "VK_KHR_external_memory_win32",
@@ -207,10 +202,8 @@ public class VulkanFeaturesTest {
                     "VK_KHR_external_semaphore_fd",
                     "VK_KHR_push_descriptor",
                     "VK_KHR_shader_float16_int8",
-                    "VK_KHR_incremental_present",
                     "VK_KHR_8bit_storage",
                     "VK_KHR_create_renderpass2",
-                    "VK_KHR_shared_presentable_image",
                     "VK_KHR_external_fence_win32",
                     "VK_KHR_external_fence_fd",
                     "VK_KHR_image_format_list",
@@ -270,10 +263,25 @@ public class VulkanFeaturesTest {
                     "VK_KHR_external_memory_capabilities",
                     "VK_KHR_external_semaphore_capabilities",
                     "VK_KHR_external_fence_capabilities",
-                    "VK_KHR_present_id2",
-                    "VK_ANDROID_external_memory_android_hardware_buffer",
-                    "VK_GOOGLE_display_timing"});
+                    "VK_ANDROID_external_memory_android_hardware_buffer"});
     }
+
+    // Extensions that are implemented by the Vulkan loader
+    // in the platform, rather than by the vendor's driver.
+    // These should always be allowed regardless of the driver's
+    // claimed dEQP version.
+    private String[] LOADER_IMPLEMENTED_EXTENSIONS = new String[] {
+        "VK_GOOGLE_display_timing",
+        "VK_KHR_incremental_present",
+        "VK_KHR_present_id",
+        "VK_KHR_present_id2",
+        "VK_KHR_present_wait",
+        "VK_KHR_present_wait2",
+        "VK_KHR_shared_presentable_image",
+        "VK_KHR_swapchain",
+        "VK_KHR_swapchain_maintenance1",
+        "VK_KHR_swapchain_mutable_format",
+    };
 
     private PackageManager mPm;
     private FeatureInfo mVulkanHardwareLevel = null;
@@ -526,6 +534,10 @@ public class VulkanFeaturesTest {
             }
         }
 
+        // Also add all the loader-implemented extensions. These do not depend
+        // on the device's claimed deqp level.
+        allowedDeviceExtensions.addAll(Arrays.asList(LOADER_IMPLEMENTED_EXTENSIONS));
+
         // Get the set of all device-side extensions exposed by the device
         final JSONArray deviceExtensions = mBestDevice.getJSONArray("extensions");
         // Search for any device extensions that should not be exposed
@@ -715,7 +727,7 @@ public class VulkanFeaturesTest {
             VULKAN_1_1,
             VULKAN_1_2,
             VULKAN_1_3,
-	    VULKAN_1_4,
+            VULKAN_1_4,
         };
         for (int expected : ALLOWED_HARDWARE_VERSIONS) {
             if (actual == expected) {
