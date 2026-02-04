@@ -82,6 +82,9 @@ public final class MaximumTimeOffTest {
             assertBlockedByAdminDialogAppears();
         } finally {
             workProfile(sDeviceState).setQuietMode(false);
+            dpc(sDeviceState)
+                    .devicePolicyManager()
+                    .setPersonalAppsSuspended(dpc(sDeviceState).componentName(), false);
             dpc(sDeviceState).devicePolicyManager().setManagedProfileMaximumTimeOff(
                     dpc(sDeviceState).componentName(), /* timeoutMs= */ originalMaximumTimeOff);
         }
@@ -115,6 +118,9 @@ public final class MaximumTimeOffTest {
             ).wasPosted();
         } finally {
             workProfile(sDeviceState).setQuietMode(false);
+            dpc(sDeviceState)
+                    .devicePolicyManager()
+                    .setPersonalAppsSuspended(dpc(sDeviceState).componentName(), false);
             dpc(sDeviceState).devicePolicyManager().setManagedProfileMaximumTimeOff(
                     dpc(sDeviceState).componentName(), /* timeoutMs= */ originalMaximumTimeOff);
         }
