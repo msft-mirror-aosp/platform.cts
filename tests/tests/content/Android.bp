@@ -344,6 +344,9 @@ android_test {
         ":CtsAllowComponentAccessTargetNoTag",
         ":CtsAllowComponentAccessTargetBlock",
         ":CtsAllowComponentAccessTargetAllow",
+        ":CtsAllowComponentAccessSourceAllowCertPrimary",
+        ":CtsAllowComponentAccessSourceAllowCertAdditional",
+        ":CtsAllowComponentAccessSourceBlockCertWrong",
     ],
     java_resources: [
         ":PackagePropertyTestApp1",

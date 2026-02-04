@@ -6,6 +6,9 @@
         <package android:name="com.android.cts.allowcomponentaccess.source_notag" />
         <package android:name="com.android.cts.allowcomponentaccess.source_allow" />
         <package android:name="com.android.cts.allowcomponentaccess.source_block" />
+        <package android:name="com.android.cts.allowcomponentaccess.source_allow_cert_primary" />
+        <package android:name="com.android.cts.allowcomponentaccess.source_allow_cert_additional" />
+        <package android:name="com.android.cts.allowcomponentaccess.source_block_cert_wrong" />
     </allow-component-access>
 
     <application android:label="CtsServerAllow">
