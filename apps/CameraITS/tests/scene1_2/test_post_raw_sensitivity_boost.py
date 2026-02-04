@@ -51,6 +51,8 @@ def create_requests(cam, props, log_path):
     raw_format = 'raw10'
   elif camera_properties_utils.raw12(props):
     raw_format = 'raw12'
+  elif camera_properties_utils.raw14(props):
+    raw_format = 'raw14'
   else:  # should not reach here
     raise error_util.Error('Cannot find available RAW output format')
 

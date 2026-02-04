@@ -252,7 +252,7 @@ def convert_raw_capture_to_rgb_image(cap_raw, props, raw_fmt,
   Args:
     cap_raw: A RAW capture object as returned by its_session_utils.do_capture.
     props: camera properties object (of static values).
-    raw_fmt: string of type 'raw', 'raw10', 'raw12'.
+    raw_fmt: string of type 'raw', 'raw10', 'raw12', 'raw14'.
     log_path_with_name: string with test name and save location.
 
   Returns:
@@ -330,6 +330,10 @@ def convert_capture_to_rgb_image(cap,
   if cap['format'] == 'raw12':
     assert_props_is_not_none(props)
     cap = unpack_raw12_capture(cap)
+
+  if cap['format'] == 'raw14':
+    assert_props_is_not_none(props)
+    cap = unpack_raw14_capture(cap)
 
   if cap['format'] == 'yuv':
     y = cap['data'][0: w * h]
@@ -456,6 +460,77 @@ def unpack_raw12_image(img):
   lsbs = lsbs.reshape(h, w)
   # Fuse the MSBs and LSBs back together
   img16 = numpy.bitwise_or(msbs, lsbs).reshape(h, w)
+  return img16
+
+
+def unpack_raw14_capture(cap):
+  """Unpack a raw-14 capture to a raw-16 capture.
+
+  Args:
+    cap: A raw-14 capture object.
+
+  Returns:
+     New capture object with raw-16 data.
+  """
+  # Data is packed as 4x14b pixels in 7 bytes, with the first 4 bytes holding
+  # the MSBs of the pixels, and the last 3 byte holding 4x6b LSBs.
+  w, h = cap['width'], cap['height']
+  if w % 4 != 0:
+    raise error_util.CameraItsError('Invalid raw-14 buffer width')
+  cap = copy.deepcopy(cap)
+  cap['data'] = unpack_raw14_image(cap['data'].reshape(h, w * 7 // 4))
+  cap['format'] = 'raw'
+  return cap
+
+
+def unpack_raw14_image(img):
+  """Unpack a raw-14 image to a raw-16 image.
+
+  Output image will have the 14 LSBs filled in each 16b word, and the 4 MSBs
+  will be set to zero.
+
+  Args:
+   img: A raw-14 image, as a uint8 numpy array.
+
+  Returns:
+    Image as a uint16 numpy array, with all row padding stripped.
+  """
+  if img.shape[1] % 7 != 0:
+    raise error_util.CameraItsError('Invalid raw-14 buffer width')
+  w = img.shape[1] * 4 // 7
+  h = img.shape[0]
+  # Cut out the 4x8b MSBs and shift to bits [13:6] in 16b words.
+  img_grouped = img.reshape(h, w // 4, 7)
+  # Select the first 4 columns (MSBs) from each group
+  msbs_grouped = img_grouped[:, :, 0:4]
+  # Reshape to the final unpacked width
+  msbs = msbs_grouped.reshape(h, w)
+  msbs = msbs.astype(numpy.uint16)
+  msbs = numpy.left_shift(msbs, 6)
+  msbs = msbs.reshape(h, w)
+  # Cut out the 4x6b LSBs and put each in bits [5:0] of their own 8b words.
+  lsbs_packed = img_grouped[:, :, 4:7]
+  reversed_bytes = lsbs_packed[:, :, ::-1]
+  # Reversed Array:
+  # [[[[p3[5], p3[4], p3[3], p3[2], p3[1], p3[0], p2[5], p2[4]],    # Byte 6
+  #    [p2[3], p2[2], p2[1], p2[0], p1[5], p1[4], p1[3], p1[2]],    # Byte 5
+  #    [p1[1], p1[0], p0[5], p0[4], p0[3], p0[2], p0[1], p0[0]]]]]  # Byte 4
+  unpacked = numpy.unpackbits(reversed_bytes)
+  unpacked_lsbs = unpacked.reshape(h, w // 4, 24)
+  p0_lsbs = unpacked_lsbs[:, :, 18:24]
+  p1_lsbs = unpacked_lsbs[:, :, 12:18]
+  p2_lsbs = unpacked_lsbs[:, :, 6:12]
+  p3_lsbs = unpacked_lsbs[:, :, 0:6]
+  p0 = (numpy.packbits(p0_lsbs, axis=2) >> 2).squeeze(axis=2)
+  p1 = (numpy.packbits(p1_lsbs, axis=2) >> 2).squeeze(axis=2)
+  p2 = (numpy.packbits(p2_lsbs, axis=2) >> 2).squeeze(axis=2)
+  p3 = (numpy.packbits(p3_lsbs, axis=2) >> 2).squeeze(axis=2)
+  # Pair the LSB bits group to pixel 0 instead of pixel 1
+  lsbs = numpy.stack([p0, p1, p2, p3], axis=2)
+  lsbs = lsbs.reshape(h, w)
+  lsbs = lsbs.astype(numpy.uint16)
+  # Fuse the MSBs and LSBs back together
+  img16 = numpy.bitwise_or(msbs, lsbs)
   return img16
 
 
@@ -642,13 +717,13 @@ def convert_capture_to_planes(cap, props=None):
         Returns Y,U,V planes, where the Y plane is full-res and the U,V planes
         are each 1/2 x 1/2 of the full res.
 
-    For standard Bayer or quad Bayer captures ("raw", "raw10", "raw12",
+    For standard Bayer or quad Bayer captures ("raw", "raw10", "raw12", "raw14",
     "rawQuadBayer", "rawStats", "rawQuadBayerStats", "raw10QuadBayer",
     "raw10Stats", "raw10QuadBayerStats"):
         Returns planes in the order R, Gr, Gb, B, regardless of the Bayer
         pattern layout.
         For full-res raw images ("raw", "rawQuadBayer", "raw10",
-        "raw10QuadBayer", "raw12"), each plane is 1/2 x 1/2 of the full res.
+        "raw10QuadBayer", "raw12", "raw14"), each plane is 1/2 x 1/2 of the full res.
         For standard Bayer stats images, the mean image is returned.
         For quad Bayer stats images, the average mean image is returned.
 
@@ -674,6 +749,9 @@ def convert_capture_to_planes(cap, props=None):
   if cap['format'] == 'raw12':
     assert_props_is_not_none(props)
     cap = unpack_raw12_capture(cap)
+  if cap['format'] == 'raw14':
+    assert_props_is_not_none(props)
+    cap = unpack_raw14_capture(cap)
   if cap['format'] == 'yuv':
     y = cap['data'][0:w * h]
     u = cap['data'][w * h:w * h * 5 // 4]

@@ -143,6 +143,11 @@ public class ItsUtils {
         return getOutputSizes(ccs, ImageFormat.RAW12, false);
     }
 
+    public static Size[] getRaw14OutputSizes(CameraCharacteristics ccs)
+            throws ItsException {
+        return getOutputSizes(ccs, ImageFormat.RAW14, false);
+    }
+
     public static Size[] getJpegOutputSizes(CameraCharacteristics ccs)
             throws ItsException {
         return getOutputSizes(ccs, ImageFormat.JPEG, false);
@@ -301,7 +306,7 @@ public class ItsUtils {
             return data;
         } else if (format == ImageFormat.YUV_420_888 || format == ImageFormat.RAW_SENSOR
                 || format == ImageFormat.RAW10 || format == ImageFormat.RAW12
-                || format == ImageFormat.Y8) {
+                || format == ImageFormat.RAW14 || format == ImageFormat.Y8) {
             int offset = 0;
             int dataSize = width * height * ImageFormat.getBitsPerPixel(format) / 8;
             if (quota != null) {
@@ -387,6 +392,7 @@ public class ItsUtils {
             case ImageFormat.RAW_SENSOR:
             case ImageFormat.RAW10:
             case ImageFormat.RAW12:
+            case ImageFormat.RAW14:
             case ImageFormat.JPEG:
             case ImageFormat.JPEG_R:
             case ImageFormat.HEIC_ULTRAHDR:
