@@ -503,14 +503,12 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
     public void testPendingJobReasons_noJob() {
         assertThat(mJobScheduler.getPendingJobReasons(JOB_ID))
                 .isEqualTo(new int[] {JobScheduler.PENDING_JOB_REASON_INVALID_JOB_ID});
     }
 
     @Test
-    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_HISTORY_API)
     public void testPendingJobReasonsHistory_noJob() {
         assertThrows(
                 "Expected IllegalArgumentException for an invalid job id",
@@ -542,7 +540,6 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
     public void testPendingJobReasons_alreadyRunning() throws Exception {
         JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setExpedited(true)
@@ -576,7 +573,6 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
                 .isEqualTo(JobScheduler.PENDING_JOB_REASON_CONSTRAINT_BATTERY_NOT_LOW);
     }
 
-    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
     @Test
     public void testPendingJobReasons_batteryNotLow() throws Exception {
         if (!BatteryUtils.hasBattery()) {
@@ -613,7 +609,6 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
                 .isEqualTo(JobScheduler.PENDING_JOB_REASON_CONSTRAINT_CHARGING);
     }
 
-    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
     @Test
     public void testPendingJobReasons_charging() throws Exception {
         if (!BatteryUtils.hasBattery()) {
@@ -655,7 +650,6 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
         }
     }
 
-    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
     @Test
     public void testPendingJobReasons_connectivity() throws Exception {
         final NetworkingHelper networkingHelper =
@@ -693,7 +687,6 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
                 .isEqualTo(JobScheduler.PENDING_JOB_REASON_CONSTRAINT_CONTENT_TRIGGER);
     }
 
-    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
     @Test
     public void testPendingJobReasons_contentTrigger() {
         JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
@@ -718,7 +711,6 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
                 .isEqualTo(JobScheduler.PENDING_JOB_REASON_CONSTRAINT_MINIMUM_LATENCY);
     }
 
-    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
     @Test
     public void testPendingJobReasons_minimumLatency() {
         JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
@@ -744,7 +736,6 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
                 .isEqualTo(JobScheduler.PENDING_JOB_REASON_CONSTRAINT_STORAGE_NOT_LOW);
     }
 
-    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
     @Test
     public void testPendingJobReasons_storageNotLow() throws Exception {
         setStorageStateLow(true);
@@ -801,7 +792,6 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
     }
 
     /** Verify that any caching isn't JobScheduler doesn't result in returning invalid reasons. */
-    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
     @Test
     public void testPendingJobReasons_reasonCanChange() throws Exception {
         assertThat(mJobScheduler.getPendingJobReasons(JOB_ID))
@@ -840,7 +830,6 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
                 .isEqualTo(new int[] {JobScheduler.PENDING_JOB_REASON_CONSTRAINT_STORAGE_NOT_LOW});
     }
 
-    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
     @Test
     public void testPendingJobReasons_idleChargingLatency() throws Exception {
         if (!BatteryUtils.hasBattery()) {
@@ -865,7 +854,6 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
                         });
     }
 
-    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
     @Test
     public void testPendingJobReasons_deadlineAndLatency() throws Exception {
         JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
@@ -882,7 +870,6 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
                         });
     }
 
-    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
     @RequiresFlagsDisabled(android.app.job.Flags.FLAG_ENHANCED_PENDING_AND_STOP_REASONS_API)
     @Test
     public void testPendingJobReasons_thermal() throws Exception {
@@ -1013,7 +1000,6 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
         }
     }
 
-    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_HISTORY_API)
     @Test
     public void testPendingJobReasonsHistory_updatesCorrectly() throws Exception {
         if (!BatteryUtils.hasBattery()) {
@@ -1053,7 +1039,6 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
         }
     }
 
-    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_HISTORY_API)
     @Test
     public void testPendingJobReasonsHistory_trimsToSize() throws Exception {
         if (!BatteryUtils.hasBattery()) {
