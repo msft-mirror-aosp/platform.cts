@@ -146,13 +146,13 @@ public class MediaProjectionCompatChangeTest {
 
     private boolean testMediaProjectionPermissionDialog(
             MediaProjectionConfig config, String expectedSpinnerString) throws Exception {
-        mMediaProjectionRule.showMediaProjectionConsent(config);
-        sDevice.waitForIdle();
-
         // TODO(b/468405990) Add tests for the new Compose MediaProjection UI.
         // This test currently targets only the old UI. Early return if the new Compose UI
         // is detected.
         assumeFalse(MediaProjectionActivity.isComposeUI(sDevice));
+
+        mMediaProjectionRule.showMediaProjectionConsent(config);
+        sDevice.waitForIdle();
 
         // check if we can find a view which has the expected default option
         boolean foundOptionString =
