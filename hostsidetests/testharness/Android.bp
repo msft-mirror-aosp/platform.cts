@@ -30,4 +30,7 @@ java_test_host {
         "tradefed",
         "compatibility-host-util",
     ],
+    device_common_data: [
+        ":CtsTestHarnessModeDeviceApp",
+    ],
 }

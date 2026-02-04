@@ -99,7 +99,7 @@ android_test_helper_app {
     ],
 }
 
-android_test {
+android_test_helper_app {
     name: "CtsAppTestStubsApp2",
     defaults: ["cts_support_defaults"],
     libs: [
@@ -129,7 +129,6 @@ android_test {
     ],
     // Tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
         "sts",
     ],
