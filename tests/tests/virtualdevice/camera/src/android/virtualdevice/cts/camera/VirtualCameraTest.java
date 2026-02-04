@@ -341,7 +341,6 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
     public void getCameraIdList_withInvalidDeviceIdInContext_returnsEmptyList() throws Exception {
         setupVirtualDeviceCameraManager();
         mVirtualDevice.close();
@@ -351,7 +350,6 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
     public void getCameraIdListNoLazy_withInvalidDeviceIdInContext_returnsEmptyList()
             throws Exception {
         setupVirtualDeviceCameraManager();
@@ -362,7 +360,6 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
     public void getConcurrentCameraIds_withInvalidDeviceIdInContext_returnsEmptySet()
             throws Exception {
         setupVirtualDeviceCameraManager();
@@ -373,7 +370,6 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
     @Parameters(method = "getAllCameraIds")
     public void openCamera_withInvalidDeviceIdInContext_throwsException(String cameraId) {
         setupVirtualDeviceCameraManager();
@@ -385,7 +381,6 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
     @Parameters(method = "getAllCameraIds")
     public void getCameraCharacteristics_withInvalidDeviceIdInContext_throwsException(
             String cameraId) {
@@ -398,7 +393,6 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
     @Parameters(method = "getAllCameraIds")
     public void isCameraDeviceSetupSupported_withInvalidDeviceIdInContext_throwsException(
             String cameraId) {
@@ -411,7 +405,6 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
     @Parameters(method = "getAllCameraIds")
     public void getCameraDeviceSetup_withInvalidDeviceIdInContext_throwsException(String cameraId) {
         setupVirtualDeviceCameraManager();
@@ -423,7 +416,6 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
     @Parameters(method = "getAllCameraIds")
     public void isCameraDeviceSharingSupported_withInvalidDeviceIdInContext_throwsException(
             String cameraId) {
@@ -436,7 +428,6 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
     @Parameters(method = "getAllCameraIds")
     public void setTorchMode_withInvalidDeviceIdInContext_throwsException(String cameraId) {
         setupVirtualDeviceCameraManager();
@@ -448,7 +439,6 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
     @Parameters(method = "getAllCameraIds")
     public void turnOnTorchWithStrengthLevel_withInvalidDeviceIdInContext_throwsException(
             String cameraId) {
@@ -461,7 +451,6 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
     public void getNumberOfCameras_withInvalidDeviceIdInContext_throwsException() {
         mVirtualDevice = mRule.createManagedVirtualDevice();
         Context vdContext =
@@ -472,7 +461,6 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
     @Parameters(method = "getAllLegacyCameraIds")
     public void getCameraInfo_withInvalidDeviceIdInContext_throwsException(int cameraId) {
         mVirtualDevice = mRule.createManagedVirtualDevice();
@@ -489,7 +477,6 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
     @Parameters(method = "getAllLegacyCameraIds")
     public void open_withInvalidDeviceIdInContext_throwsException(int cameraId) {
         mVirtualDevice = mRule.createManagedVirtualDevice();

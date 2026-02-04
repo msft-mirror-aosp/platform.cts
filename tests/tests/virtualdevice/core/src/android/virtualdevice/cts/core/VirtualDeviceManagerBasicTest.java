@@ -60,7 +60,6 @@ import android.graphics.ImageFormat;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.display.VirtualDisplay;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.wm.Condition;
 import android.view.Display;
@@ -481,22 +480,6 @@ public class VirtualDeviceManagerBasicTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
-    public void getDevicePolicy_virtualDeviceClosed_shouldReturnDefault() {
-        VirtualDeviceManager.VirtualDevice virtualDevice = mRule.createManagedVirtualDevice(
-                new VirtualDeviceParams.Builder()
-                        .setDevicePolicy(POLICY_TYPE_SENSORS, DEVICE_POLICY_CUSTOM)
-                        .build());
-        virtualDevice.close();
-
-        assertThat(
-                mVirtualDeviceManager.getDevicePolicy(virtualDevice.getDeviceId(),
-                        POLICY_TYPE_SENSORS))
-                .isEqualTo(DEVICE_POLICY_DEFAULT);
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_INVALID_DEVICE_ID)
     @Parameters(method = "allValidDevicePolicies")
     public void getDevicePolicy_virtualDeviceClosed_shouldReturnInvalid(int policy) {
         VirtualDeviceManager.VirtualDevice virtualDevice =
