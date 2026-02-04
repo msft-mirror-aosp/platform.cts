@@ -34,29 +34,31 @@ import kotlinx.coroutines.withTimeoutOrNull
 fun withSystemSupervisionRoleHeld(action: () -> Unit) =
     withRoleHeld(ROLE_SYSTEM_SUPERVISION, action)
 
-fun withSystemSupervisionRoleHeld(packageName: String, action: () -> Unit) =
-    withRoleHeld(ROLE_SYSTEM_SUPERVISION, action, packageName)
+fun withSupervisionRoleHeld(action: () -> Unit) =
+    withRoleHeld(ROLE_SUPERVISION, action)
 
-fun withSupervisionRoleHeld(action: () -> Unit) = withRoleHeld(ROLE_SUPERVISION, action)
+fun withSupervisionRoleHeld(packageNames: List<String>, action: () -> Unit) =
+    withRoleHeld(ROLE_SUPERVISION, action, packageNames)
 
 /**
- * Executes the given [action] while this package holds the specified [roleName].
+ * Executes the given [action] while the specified [packages] hold the [roleName].
  *
- * This method utilizes the role bypassing mechanism available to the shell via the
- * `BYPASS_ROLE_QUALIFICATION` permission. It disables supervision and verifies that role bypassing
- * is available.
+ * This method disables supervision and utilizes the `BYPASS_ROLE_QUALIFICATION` permission to grant
+ * the role. Once the [action] is completed, it automatically removes the role holders and restores
+ * the supervision state.
  */
-private fun withRoleHeld(roleName: String, action: () -> Unit, packageName: String? = null) {
+private fun withRoleHeld(roleName: String, action: () -> Unit, packages: List<String>? = null) {
     val context = InstrumentationRegistry.getInstrumentation().getTargetContext()
     val roleManager = context.getSystemService(RoleManager::class.java)
     val supervisionManager = context.getSystemService(SupervisionManager::class.java)
+    val roleHolderPackages = packages ?: listOf(context.packageName)
     try {
         supervisionManager.setShouldAllowBypassingSupervisionRoleQualification(true)
         assertThat(supervisionManager.shouldAllowBypassingSupervisionRoleQualification()).isTrue()
-        roleManager.addRoleHolder(context, roleName, packageName ?: context.packageName)
+        roleHolderPackages.forEach { roleManager.addRoleHolder(context, roleName, it) }
         action()
     } finally {
-        roleManager.removeRoleHolder(context, roleName, packageName ?: context.packageName)
+        roleHolderPackages.forEach { roleManager.removeRoleHolder(context, roleName, it) }
         supervisionManager.setShouldAllowBypassingSupervisionRoleQualification(false)
         assertThat(supervisionManager.shouldAllowBypassingSupervisionRoleQualification()).isFalse()
         supervisionManager.setSupervisionEnabled(false)

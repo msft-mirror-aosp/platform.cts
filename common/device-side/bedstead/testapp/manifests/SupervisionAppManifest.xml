@@ -22,6 +22,7 @@
     <application android:testOnly="true" android:label="SupervisionApp">
             <!-- Target to-be-bound service. -->
             <service android:name=".BaseTestSupervisionAppService"
+                android:persistent="true"
                 android:exported="true"
                 android:process=":remote"
                 android:permission="android.permission.BIND_SUPERVISION_APP_SERVICE">

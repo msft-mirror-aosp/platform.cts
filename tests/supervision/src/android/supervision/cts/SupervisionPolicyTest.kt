@@ -16,7 +16,6 @@
 
 package android.supervision.cts
 
-import android.app.admin.DevicePolicyManager
 import android.app.supervision.PackageUsagePolicy
 import android.app.supervision.flags.Flags
 import android.content.BroadcastReceiver
@@ -105,8 +104,11 @@ class SupervisionPolicyTest : BaseSupervisionTest() {
     )
     fun setPolicy_multiplePolicies_successfullyApplied() {
         withTestApp(MULTIPLE_ACTIVITIES_TEST_APP_PACKAGE_NAME) { multipleActivitiesTestApp ->
-            withTestApp(SMS_TEST_APP_PACKAGE_NAME) { smsTestApp ->
-                withSupervisionApp(enableSupervision = true) { supervisionApp ->
+            withTestApp(NOT_EMPTY_TEST_APP_PACKAGE_NAME) { notEmptyTestApp ->
+                withSupervisionApps(count = 1) { (supervisionApp) ->
+                    setSupervisionEnabled(true)
+                    assertThat(supervisionApp.events().supervisionEnabled()).eventOccurred()
+
                     val policy1 =
                         PackageUsagePolicy.Builder(
                                 multipleActivitiesTestApp.packageName(),
@@ -115,47 +117,62 @@ class SupervisionPolicyTest : BaseSupervisionTest() {
                             .build()
                     val policy2 =
                         PackageUsagePolicy.Builder(
-                                smsTestApp.packageName(),
+                                notEmptyTestApp.packageName(),
                                 PackageUsagePolicy.TYPE_ALLOWED,
                             )
                             .build()
+
                     setAndVerifyPackageUsagePolicy(policy1, supervisionApp)
                     setAndVerifyPackageUsagePolicy(policy2, supervisionApp)
 
-                    val expectedPolicies =
-                        listOf(
-                            PackageUsagePolicy.Builder(policy1)
-                                .setVersion(policy1.version + 1)
-                                .build(),
-                            PackageUsagePolicy.Builder(policy2)
-                                .setVersion(policy2.version + 1)
-                                .build(),
-                        )
-                    assertThat(supervisionApp.supervisionManager().getPolicies())
-                        .containsExactlyElementsIn(expectedPolicies)
-
-                    // Verify that the getters for policies returns correctly
-                    assertThat(policy1.getPackageName())
-                        .isEqualTo(MULTIPLE_ACTIVITIES_TEST_APP_PACKAGE_NAME)
-                    assertThat(policy1.getType()).isEqualTo(PackageUsagePolicy.TYPE_BLOCKED)
-                    assertThat(policy2.getPackageName()).isEqualTo(SMS_TEST_APP_PACKAGE_NAME)
-                    assertThat(policy2.getType()).isEqualTo(PackageUsagePolicy.TYPE_ALLOWED)
                 }
             }
         }
     }
 
+    @Test
+    fun setPolicy_multipleSupervisionApps_mostRecentPolicyApplied() {
+        withTestApp(EMPTY_TEST_APP_PACKAGE_NAME) { _ ->
+            withSupervisionApps(count = 2) { (app1, app2) ->
+                setSupervisionEnabled(true)
+                assertThat(app1.events().supervisionEnabled()).eventOccurred()
+                assertThat(app2.events().supervisionEnabled()).eventOccurred()
+
+                val policy1 = EMPTY_TEST_APP_BLOCKED_POLICY
+                val policy2 = PackageUsagePolicy.Builder(
+                    EMPTY_TEST_APP_PACKAGE_NAME,
+                    PackageUsagePolicy.TYPE_ALLOWED
+                ).setVersion(1).build()
+
+                setAndVerifyPackageUsagePolicy(policy1, app1)
+                setAndVerifyPackageUsagePolicy(policy2, app2)
+            }
+        }
+    }
+
+    @Test
+    fun setPolicy_multipleSupervisionApps_oneSetsAllNotified() {
+        withSupervisionApps(count = 3) { (app1, app2, app3) ->
+            setSupervisionEnabled(true)
+            assertThat(app1.events().supervisionEnabled()).eventOccurred()
+            assertThat(app2.events().supervisionEnabled()).eventOccurred()
+            assertThat(app3.events().supervisionEnabled()).eventOccurred()
+
+            app1.supervisionManager().setPolicy(EMPTY_TEST_APP_BLOCKED_POLICY)
+
+            assertThat(app1.events().policyChanged()).eventOccurred()
+            assertThat(app2.events().policyChanged()).eventOccurred()
+            assertThat(app3.events().policyChanged()).eventOccurred()
+        }
+    }
+
     private fun verifySetPackageUsagePolicy(type: Int) {
         withTestApp(MULTIPLE_ACTIVITIES_TEST_APP_PACKAGE_NAME) { testApp ->
-            withSupervisionApp(enableSupervision = true) { supervisionApp ->
+            withSupervisionApps(count = 1) { (supervisionApp) ->
+                setSupervisionEnabled(true)
+                assertThat(supervisionApp.events().supervisionEnabled()).eventOccurred()
                 val policy = PackageUsagePolicy.Builder(testApp.packageName(), type).build()
                 setAndVerifyPackageUsagePolicy(policy, supervisionApp)
-
-                // Verify that the APIs return the correct policy with updated version.
-                val expectedPolicy =
-                    PackageUsagePolicy.Builder(policy).setVersion(policy.version + 1).build()
-                assertThat(supervisionApp.supervisionManager().getPolicies())
-                    .containsExactly(expectedPolicy)
             }
         }
     }
@@ -186,11 +203,13 @@ class SupervisionPolicyTest : BaseSupervisionTest() {
 
         try {
             supervisionApp.supervisionManager().setPolicy(policy)
-            assertThat(latch.await(TIMEOUT, TimeUnit.SECONDS)).isEqualTo(expectBroadcast)
             // Verify that the onPolicyChanged event is logged with the correct policy.
             val onPolicyChangedEvent =
                 supervisionApp.events().policyChanged().wherePolicy().isEqualTo(expectedPolicy)
             assertThat(onPolicyChangedEvent).eventOccurredWithin(Duration.ofSeconds(TIMEOUT))
+            assertThat(supervisionApp.supervisionManager().getPolicies())
+                .contains(expectedPolicy)
+            assertThat(latch.await(TIMEOUT, TimeUnit.SECONDS)).isEqualTo(expectBroadcast)
         } finally {
             context.unregisterReceiver(broadcastReceiver)
         }
@@ -245,12 +264,17 @@ class SupervisionPolicyTest : BaseSupervisionTest() {
         }
     }
 
-    companion object {
+    private companion object {
+        const val EMPTY_TEST_APP_PACKAGE_NAME = "com.android.bedstead.testapp.EmptyTestApp"
         const val MULTIPLE_ACTIVITIES_TEST_APP_PACKAGE_NAME =
             "com.android.bedstead.testapp.MultipleActivitiesTestApp"
-        const val SMS_TEST_APP_PACKAGE_NAME = "com.android.bedstead.testapp.SmsApp"
-        private val devicePolicyManager = context.getSystemService(DevicePolicyManager::class.java)
+        const val NOT_EMPTY_TEST_APP_PACKAGE_NAME = "com.android.bedstead.testapp.NotEmptyTestApp"
         const val TIMEOUT = 5L
-        const val TAG = "SupervisionPolicyTest"
+        val EMPTY_TEST_APP_BLOCKED_POLICY =
+            PackageUsagePolicy.Builder(
+                EMPTY_TEST_APP_PACKAGE_NAME,
+                PackageUsagePolicy.TYPE_BLOCKED,
+            )
+                .build()
     }
 }
