@@ -50,9 +50,9 @@ public class PhotoPickerUiCustomizationParamsTest {
         PhotoPickerUiCustomizationParams params =
                 new PhotoPickerUiCustomizationParams.Builder().build();
 
-        assertWithMessage("Default aspect ratio should be SQUARE_1_1")
+        assertWithMessage("Default aspect ratio should be undefined")
                 .that(params.getAspectRatio())
-                .isEqualTo(PhotoPickerUiCustomizationParams.ASPECT_RATIO_SQUARE_1_1);
+                .isEqualTo(PhotoPickerUiCustomizationParams.ASPECT_RATIO_UNDEFINED);
     }
 
     @Test
@@ -65,19 +65,6 @@ public class PhotoPickerUiCustomizationParamsTest {
         assertWithMessage("Aspect ratio should be PORTRAIT_9_16 after setter")
                 .that(params.getAspectRatio())
                 .isEqualTo(PhotoPickerUiCustomizationParams.ASPECT_RATIO_PORTRAIT_9_16);
-    }
-
-    @Test
-    public void testBuilder_clearMethods() {
-        PhotoPickerUiCustomizationParams params =
-                new PhotoPickerUiCustomizationParams.Builder()
-                        .setAspectRatio(PhotoPickerUiCustomizationParams.ASPECT_RATIO_PORTRAIT_9_16)
-                        .clearAspectRatio()
-                        .build();
-
-        assertWithMessage("Aspect ratio should be reset to SQUARE_1_1 after clear")
-                .that(params.getAspectRatio())
-                .isEqualTo(PhotoPickerUiCustomizationParams.ASPECT_RATIO_SQUARE_1_1);
     }
 
     @Test
