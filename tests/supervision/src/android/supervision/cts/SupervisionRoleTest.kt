@@ -21,8 +21,10 @@ import android.Manifest.permission.MANAGE_ROLE_HOLDERS
 import android.app.supervision.flags.Flags
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
+import com.android.bedstead.nene.TestApis
 import com.android.compatibility.common.util.ApiTest
 import com.google.common.truth.Truth.assertThat
+import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.testng.Assert.assertThrows
@@ -38,6 +40,13 @@ import org.testng.Assert.assertThrows
 )
 class SupervisionRoleTest : BaseSupervisionTest() {
 
+    @After
+    fun tearDown() {
+        callWithShellPermissionIdentity(BYPASS_ROLE_QUALIFICATION) {
+            supervisionManager.setShouldAllowBypassingSupervisionRoleQualification(false)
+        }
+    }
+
     @Test
     fun setShouldAllowBypassingSupervisionRoleQualification_noPermission_throwsException() {
         assertThrows(SecurityException::class.java) {
@@ -47,14 +56,46 @@ class SupervisionRoleTest : BaseSupervisionTest() {
 
     @Test
     fun setShouldAllowBypassingSupervisionRoleQualification_succeeds() {
+        verifySetShouldAllowBypassingSupervisionRoleQualification()
+    }
+
+    @Test
+    fun setShouldAllowBypassingSupervisionRoleQualification_withNonTestUsers_returnsFalse() {
+        verifySetShouldAllowBypassingSupervisionRoleQualification()
+        withUser {
+            assertThat(supervisionManager.shouldAllowBypassingSupervisionRoleQualification())
+                .isFalse()
+        }
+    }
+
+    @Test
+    fun setShouldAllowBypassingSupervisionRoleQualification_withTestUsers_returnsTrue() {
+        verifySetShouldAllowBypassingSupervisionRoleQualification()
+        withUserTestUser {
+            assertThat(supervisionManager.shouldAllowBypassingSupervisionRoleQualification())
+                .isTrue()
+        }
+    }
+
+    private fun verifySetShouldAllowBypassingSupervisionRoleQualification() {
         callWithShellPermissionIdentity(BYPASS_ROLE_QUALIFICATION, MANAGE_ROLE_HOLDERS) {
             supervisionManager.setShouldAllowBypassingSupervisionRoleQualification(true)
             assertThat(supervisionManager.shouldAllowBypassingSupervisionRoleQualification())
                 .isTrue()
-
-            supervisionManager.setShouldAllowBypassingSupervisionRoleQualification(false)
-            assertThat(supervisionManager.shouldAllowBypassingSupervisionRoleQualification())
-                .isFalse()
         }
+    }
+
+    private fun withUser(forTesting: Boolean = false, action: () -> Unit) {
+        TestApis.users().createUser().forTesting(forTesting).create().use { user ->
+            try {
+                callWithShellPermissionIdentity(MANAGE_ROLE_HOLDERS) { action() }
+            } finally {
+                user.remove()
+            }
+        }
+    }
+
+    private fun withUserTestUser(action: () -> Unit) {
+        withUser(true, action)
     }
 }
