@@ -32,9 +32,15 @@ public class DreamProxyService extends Service {
 
     // A list of active listeners who should be informed when a dream is published.
     private HashSet<IDreamListener> mListeners = new HashSet<IDreamListener>();
+
+    // The currently active dream.
+    private IControlledDream mCurrentDream;
+
     private IDreamProxy mDreamControllerImpl = new IDreamProxy.Stub() {
         @Override
         public void publishDream(IControlledDream dream) {
+            Log.d(TAG, "publishDream: dream=" + dream + ", listeners=" + mListeners.size());
+            mCurrentDream = dream;
             for (IDreamListener listener : mListeners) {
                 try {
                     listener.onDreamPublished(dream);
@@ -45,16 +51,26 @@ public class DreamProxyService extends Service {
         }
 
         public void registerListener(IDreamListener listener) {
+            Log.d(TAG, "registerListener: " + listener);
             mListeners.add(listener);
+            if (mCurrentDream != null) {
+                try {
+                    listener.onDreamPublished(mCurrentDream);
+                } catch (RemoteException e) {
+                    Log.e(TAG, "could not publish dream", e);
+                }
+            }
         }
 
         public void unregisterListener(IDreamListener listener) {
+            Log.d(TAG, "unregisterListener: " + listener);
             mListeners.remove(listener);
         }
     };
 
     @Override
     public IBinder onBind(Intent intent) {
+        Log.d(TAG, "onBind: " + intent);
         return mDreamControllerImpl.asBinder();
     }
 }

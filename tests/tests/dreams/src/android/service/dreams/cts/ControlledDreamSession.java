@@ -17,6 +17,7 @@
 package android.service.dreams.cts;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.annotation.IntDef;
 import android.app.dream.cts.app.IControlledDream;
@@ -232,8 +233,11 @@ public class ControlledDreamSession {
                         cleanup(true);
                     }
                 });
-        mContext.bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
-        assertThat(countDownLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();
+        final boolean bindResult = mContext.bindService(intent, mServiceConnection,
+                Context.BIND_AUTO_CREATE);
+        assertWithMessage("Failed to bind to dream proxy service").that(bindResult).isTrue();
+        assertWithMessage("Timeout waiting for dream proxy service connection")
+                .that(countDownLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();
 
         final CountDownLatch dreamConnectLatch = new CountDownLatch(1);
         final IDreamListener dreamConnectListener = new IDreamListener.Stub() {
@@ -251,7 +255,8 @@ public class ControlledDreamSession {
         mDreamCoordinator.startDream();
 
         // Wait for dream to connect to the DreamController
-        assertThat(dreamConnectLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();
+        assertWithMessage("Timeout waiting for dream to connect to proxy")
+                .that(dreamConnectLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();
         mControlledDream.registerLifecycleListener(mLifecycleListener);
         mServiceConnection.getProxy().unregisterListener(dreamConnectListener);
 
@@ -311,7 +316,9 @@ public class ControlledDreamSession {
                 return;
             }
 
-            assertThat(latch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();
+            assertWithMessage("Timeout waiting for lifecycle state: "
+                    + lifecycleToString(targetLifecycle))
+                    .that(latch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();
         } finally {
             mLifecycleConsumers.remove(consumer);
         }
