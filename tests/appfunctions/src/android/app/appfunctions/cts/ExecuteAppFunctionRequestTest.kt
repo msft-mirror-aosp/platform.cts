@@ -17,13 +17,15 @@
 package android.app.appfunctions.cts
 
 import android.app.AppInteractionAttribution
+import android.app.appfunctions.AppFunctionActivityId
+import android.app.appfunctions.AppFunctionName
 import android.app.appfunctions.ExecuteAppFunctionRequest
-import android.app.appfunctions.flags.Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER
+import android.app.appfunctions.flags.Flags
 import android.app.appsearch.GenericDocument
 import android.net.Uri
+import android.os.Binder
 import android.os.Bundle
 import android.os.Parcel
-import android.permission.flags.Flags.FLAG_APP_FUNCTION_ACCESS_API_ENABLED
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -36,7 +38,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-@RequiresFlagsEnabled(FLAG_ENABLE_GENERIC_DOCUMENT_OVER_IPC, FLAG_ENABLE_APP_FUNCTION_MANAGER)
+@RequiresFlagsEnabled(FLAG_ENABLE_GENERIC_DOCUMENT_OVER_IPC, Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER)
 class ExecuteAppFunctionRequestTest {
     @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
@@ -123,7 +125,7 @@ class ExecuteAppFunctionRequestTest {
             ]
     )
     @Test
-    @RequiresFlagsEnabled(FLAG_APP_FUNCTION_ACCESS_API_ENABLED)
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_INTERACTION_API)
     fun build_withoutAttribution() {
         val extras = Bundle()
         extras.putString("extra", "value")
@@ -164,7 +166,7 @@ class ExecuteAppFunctionRequestTest {
             ]
     )
     @Test
-    @RequiresFlagsEnabled(FLAG_APP_FUNCTION_ACCESS_API_ENABLED)
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_INTERACTION_API)
     fun build_withAttribution() {
         val extras = Bundle()
         extras.putString("extra", "value")
@@ -192,6 +194,82 @@ class ExecuteAppFunctionRequestTest {
         assertThat(restoredRequest.extras.size()).isEqualTo(1)
         assertThat(restoredRequest.extras.getString("extra")).isEqualTo("value")
         assertThat(restoredRequest.attribution).isEqualTo(attribution)
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
+    fun build_withoutActivityId() {
+        val extras = Bundle()
+        extras.putString("extra", "value")
+        val parameters: GenericDocument =
+            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                .setPropertyLong("testLong", 23)
+                .build()
+        val request =
+            ExecuteAppFunctionRequest.Builder("targetPkg", "targetFunctionId")
+                .setParameters(parameters)
+                .setExtras(extras)
+                .build()
+
+        val restoredRequest: ExecuteAppFunctionRequest = parcelAndUnparcel(request)
+
+        assertThat(restoredRequest.targetPackageName).isEqualTo("targetPkg")
+        assertThat(restoredRequest.functionIdentifier).isEqualTo("targetFunctionId")
+        assertThat(restoredRequest.parameters).isEqualTo(parameters)
+        assertThat(restoredRequest.extras.size()).isEqualTo(1)
+        assertThat(restoredRequest.extras.getString("extra")).isEqualTo("value")
+        assertThat(restoredRequest.activityId).isEqualTo(null)
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
+    fun build_withActivityId() {
+        val extras = Bundle()
+        extras.putString("extra", "value")
+        val parameters: GenericDocument =
+            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                .setPropertyLong("testLong", 23)
+                .build()
+        val activityId = AppFunctionActivityId(Binder())
+        val request =
+            ExecuteAppFunctionRequest.Builder("targetPkg", "targetFunctionId")
+                .setParameters(parameters)
+                .setExtras(extras)
+                .setActivityId(activityId)
+                .build()
+
+        val restoredRequest: ExecuteAppFunctionRequest = parcelAndUnparcel(request)
+
+        assertThat(restoredRequest.targetPackageName).isEqualTo("targetPkg")
+        assertThat(restoredRequest.functionIdentifier).isEqualTo("targetFunctionId")
+        assertThat(restoredRequest.parameters).isEqualTo(parameters)
+        assertThat(restoredRequest.extras.size()).isEqualTo(1)
+        assertThat(restoredRequest.extras.getString("extra")).isEqualTo("value")
+        assertThat(restoredRequest.activityId).isEqualTo(activityId)
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
+    fun build_withFunctionName() {
+        val extras = Bundle()
+        extras.putString("extra", "value")
+        val parameters: GenericDocument =
+            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                .setPropertyLong("testLong", 23)
+                .build()
+        val request =
+            ExecuteAppFunctionRequest.Builder(AppFunctionName("targetPkg", "targetFunctionId"))
+                .setParameters(parameters)
+                .setExtras(extras)
+                .build()
+
+        val restoredRequest: ExecuteAppFunctionRequest = parcelAndUnparcel(request)
+
+        assertThat(restoredRequest.targetPackageName).isEqualTo("targetPkg")
+        assertThat(restoredRequest.functionIdentifier).isEqualTo("targetFunctionId")
+        assertThat(restoredRequest.parameters).isEqualTo(parameters)
+        assertThat(restoredRequest.extras.size()).isEqualTo(1)
+        assertThat(restoredRequest.extras.getString("extra")).isEqualTo("value")
     }
 
     private fun parcelAndUnparcel(original: ExecuteAppFunctionRequest): ExecuteAppFunctionRequest {
