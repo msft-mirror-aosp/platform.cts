@@ -22,7 +22,8 @@ android_test {
     defaults: ["cts_defaults"],
     static_libs: [
         "android.service.personalcontext.flags-aconfig-java",
-        "bedstead-enterprise",
+        "bedstead",
+        "bedstead-testapps",
         "compatibility-device-util-axt",
         "cts_app_test_shared_lib",
         "ctstestrunner-axt",
@@ -43,7 +44,6 @@ android_test {
     ],
     data: [
         ":CtsAppTestStubs",
-        ":CtsDeviceServicesTestApp",
     ],
     instrumentation_for: "CtsAppTestStubs",
     lint: {

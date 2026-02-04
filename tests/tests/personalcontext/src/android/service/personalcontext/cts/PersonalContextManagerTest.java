@@ -16,12 +16,15 @@
 
 package android.service.personalcontext.cts;
 
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApp;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
+import android.app.Instrumentation;
 import android.content.ComponentName;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -40,15 +43,20 @@ import android.view.autofill.AutofillValue;
 import android.view.inputmethod.InlineSuggestionsRequest;
 import android.widget.inline.InlinePresentationSpec;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
+import com.android.bedstead.testapp.TestAppInstance;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -61,14 +69,17 @@ import java.util.UUID;
 
 /** Build/Install/Run: atest CtsPersonalContextTestCases:PersonalContextManagerTest */
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PERSONAL_CONTEXT_SERVICE)
-@RunWith(AndroidJUnit4.class)
+@RunWith(BedsteadJUnit4.class)
 public class PersonalContextManagerTest {
+    @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
 
     private static final InlinePresentationSpec INLINE_PRESENTATION_SPEC =
             new InlinePresentationSpec.Builder(new Size(100, 100), new Size(100, 100)).build();
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
 
     @Mock private AutofillInlineRequestHint.AugmentedAutofillProxy mAugmentedAutofillProxy;
     private AutoCloseable mMockCloseable;
@@ -80,9 +91,7 @@ public class PersonalContextManagerTest {
         mMockCloseable = MockitoAnnotations.openMocks(this);
 
         mPersonalContextManager =
-                InstrumentationRegistry.getInstrumentation()
-                        .getTargetContext()
-                        .getSystemService(PersonalContextManager.class);
+                mInstrumentation.getTargetContext().getSystemService(PersonalContextManager.class);
     }
 
     @After
@@ -225,5 +234,86 @@ public class PersonalContextManagerTest {
                 .setAugmentedAutofillProxy(mAugmentedAutofillProxy)
                 .setFillEventHistory(fillEventHistory)
                 .build();
+    }
+
+    @ApiTest(
+            apis = {
+                "android.service.personalcontext.PersonalContextManager"
+                        + "#isPersonalContextModeEnabled",
+            })
+    @EnsureTestAppInstalled
+    @Test
+    public void testPersonalContextMode_defaultValue() {
+        try (TestAppInstance testApp = testApp(sDeviceState)) {
+            // Default value is enabled.
+            assertThat(mPersonalContextManager.isPersonalContextModeEnabled(testApp.packageName()))
+                    .isEqualTo(true);
+        }
+    }
+
+    @ApiTest(
+            apis = {
+                "android.service.personalcontext.PersonalContextManager"
+                        + "#isPersonalContextModeEnabled",
+                "android.service.personalcontext.PersonalContextManager"
+                        + "#setPersonalContextModeEnabled",
+            })
+    @EnsureTestAppInstalled
+    @Test
+    public void testPersonalContextMode_noPermissions_fails() {
+        try (TestAppInstance testApp = testApp(sDeviceState)) {
+            assertThrows(
+                    SecurityException.class,
+                    () ->
+                            mPersonalContextManager.setPersonalContextModeEnabled(
+                                    testApp.packageName(), false));
+
+            // Value has not changed since the call failed.
+            assertThat(mPersonalContextManager.isPersonalContextModeEnabled(testApp.packageName()))
+                    .isEqualTo(true);
+        }
+    }
+
+    @ApiTest(
+            apis = {
+                "android.service.personalcontext.PersonalContextManager"
+                        + "#isPersonalContextModeEnabled",
+                "android.service.personalcontext.PersonalContextManager"
+                        + "#setPersonalContextModeEnabled",
+            })
+    @EnsureTestAppInstalled
+    @EnsureHasPermission(android.Manifest.permission.CHANGE_PERSONAL_CONTEXT_MODE)
+    @Test
+    public void testPersonalContextMode_setPersonalContextModeEnabled_succeeds() {
+        try (TestAppInstance testApp = testApp(sDeviceState)) {
+            boolean updatedValue = false;
+            mPersonalContextManager.setPersonalContextModeEnabled(
+                    testApp.packageName(), updatedValue);
+
+            // Value that is set is read back.
+            assertThat(mPersonalContextManager.isPersonalContextModeEnabled(testApp.packageName()))
+                    .isEqualTo(updatedValue);
+        }
+    }
+
+    @ApiTest(
+            apis = {
+                "android.service.personalcontext.PersonalContextManager"
+                        + "#isPersonalContextModeEnabled",
+                "android.service.personalcontext.PersonalContextManager"
+                        + "#setPersonalContextModeEnabled",
+            })
+    @EnsureTestAppInstalled
+    @EnsureHasPermission(android.Manifest.permission.CHANGE_PERSONAL_CONTEXT_MODE)
+    @Test
+    public void testPersonalContextMode_setPersonalContextModeEnabled_toggle() {
+        try (TestAppInstance testApp = testApp(sDeviceState)) {
+            mPersonalContextManager.setPersonalContextModeEnabled(testApp.packageName(), false);
+            mPersonalContextManager.setPersonalContextModeEnabled(testApp.packageName(), true);
+
+            // Value is set back to true.
+            assertThat(mPersonalContextManager.isPersonalContextModeEnabled(testApp.packageName()))
+                    .isEqualTo(true);
+        }
     }
 }
