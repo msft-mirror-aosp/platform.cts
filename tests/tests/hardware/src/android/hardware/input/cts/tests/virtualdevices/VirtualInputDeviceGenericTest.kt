@@ -281,7 +281,7 @@ class VirtualInputDeviceGenericTest {
     )
     @Parameters(method = "inputDevicesWithMotionRange")
     @Test
-    fun inputDevice_withMotionRange_withoutViewBehavior(factory: VirtualInputDeviceFactory<*>) {
+    fun inputDevice_withMotionRange_withDefaultViewBehavior(factory: VirtualInputDeviceFactory<*>) {
         val display: VirtualDisplay = mRule.createManagedVirtualDisplay(
             mVirtualDevice,
             VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder()
@@ -303,7 +303,9 @@ class VirtualInputDeviceGenericTest {
     )
     @Parameters(method = "inputDevicesWithoutMotionRange")
     @Test
-    fun inputDevice_withoutMotionRange_withoutViewBehavior(factory: VirtualInputDeviceFactory<*>) {
+    fun inputDevice_withoutMotionRange_withDefaultViewBehavior(
+        factory: VirtualInputDeviceFactory<*>
+    ) {
         val display: VirtualDisplay = mRule.createManagedVirtualDisplay(
             mVirtualDevice,
             VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder()
@@ -322,7 +324,9 @@ class VirtualInputDeviceGenericTest {
     )
     @Parameters(method = "inputDevicesWithMotionRange")
     @Test
-    fun inputDevice_withMotionRange_withViewBehavior(factory: VirtualInputDeviceFactory<*>) {
+    fun inputDevice_withMotionRange_withNonDefaultViewBehavior(
+        factory: VirtualInputDeviceFactory<*>
+    ) {
         val display: VirtualDisplay = mRule.createManagedVirtualDisplay(
             mVirtualDevice,
             VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder()
@@ -355,7 +359,9 @@ class VirtualInputDeviceGenericTest {
     )
     @Parameters(method = "inputDevicesWithoutMotionRange")
     @Test
-    fun inputDevice_withoutMotionRange_withViewBehavior(factory: VirtualInputDeviceFactory<*>) {
+    fun inputDevice_withoutMotionRange_withNonDefaultViewBehavior(
+        factory: VirtualInputDeviceFactory<*>
+    ) {
         val display: VirtualDisplay = mRule.createManagedVirtualDisplay(
             mVirtualDevice,
             VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder()
