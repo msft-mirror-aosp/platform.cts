@@ -793,6 +793,7 @@ public final class Permissions {
                 String message = "Expected all of the following permissions to be adopted but "
                         + "were not: " + permissions + ". Actual adopted permissions: " +
                         adoptedPermissions + ". See the stacktrace to find the caller.";
+                Log.e(LOG_TAG, message);
                 throw new NeneException(message);
             }
         }
