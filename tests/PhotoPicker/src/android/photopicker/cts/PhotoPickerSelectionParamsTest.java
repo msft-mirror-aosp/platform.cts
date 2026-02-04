@@ -37,6 +37,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
@@ -48,17 +49,27 @@ public class PhotoPickerSelectionParamsTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
+    private static final long MAX_MEDIA_ITEM_SIZE_BYTES = 1000L;
+    private static final Duration MAX_VIDEO_DURATION = Duration.ofSeconds(60);
+    private static final Duration MIN_VIDEO_DURATION = Duration.ofSeconds(10);
+    private static final long MAX_RESOLUTION_PIXELS = 2000L;
+    private static final long MIN_RESOLUTION_PIXELS = 500L;
+    private static final List<String> MIME_TYPES = List.of("image/jpeg", "video/mp4");
+    private static final long MAX_SELECTION_BATCH_SIZE_BYTES = 5000L;
+
+    private static final long DEFAULT_LONG_VALUE = -1L;
+
     @Test
     public void testPhotoPickerSelectionParams_writeToParcel() {
         PhotoPickerSelectionParams originalSelectionParams =
                 new PhotoPickerSelectionParams.Builder()
-                        .setMaxMediaItemSizeInBytes(1000L)
-                        .setMaxVideoDurationInSeconds(60L)
-                        .setMinVideoDurationInSeconds(10L)
-                        .setMaxMediaItemResolutionInPixels(2000L)
-                        .setMinMediaItemResolutionInPixels(500L)
-                        .setMimeTypes(List.of("image/jpeg", "video/mp4"))
-                        .setMaxSelectionBatchSizeInBytes(5000L)
+                        .setMaxMediaItemSizeInBytes(MAX_MEDIA_ITEM_SIZE_BYTES)
+                        .setMaxVideoDuration(MAX_VIDEO_DURATION)
+                        .setMinVideoDuration(MIN_VIDEO_DURATION)
+                        .setMaxMediaItemResolutionInPixels(MAX_RESOLUTION_PIXELS)
+                        .setMinMediaItemResolutionInPixels(MIN_RESOLUTION_PIXELS)
+                        .setMimeTypes(MIME_TYPES)
+                        .setMaxSelectionBatchSizeInBytes(MAX_SELECTION_BATCH_SIZE_BYTES)
                         .build();
 
         Parcel parcel = Parcel.obtain();
@@ -73,11 +84,11 @@ public class PhotoPickerSelectionParamsTest {
                 .that(createdSelectionParams.getMaxMediaItemSizeInBytes())
                 .isEqualTo(originalSelectionParams.getMaxMediaItemSizeInBytes());
         assertWithMessage("selection params Max video duration should be preserved")
-                .that(createdSelectionParams.getMaxVideoDurationInSeconds())
-                .isEqualTo(originalSelectionParams.getMaxVideoDurationInSeconds());
+                .that(createdSelectionParams.getMaxVideoDuration())
+                .isEqualTo(originalSelectionParams.getMaxVideoDuration());
         assertWithMessage("selection params Min video duration should be preserved")
-                .that(createdSelectionParams.getMinVideoDurationInSeconds())
-                .isEqualTo(originalSelectionParams.getMinVideoDurationInSeconds());
+                .that(createdSelectionParams.getMinVideoDuration())
+                .isEqualTo(originalSelectionParams.getMinVideoDuration());
         assertWithMessage("selection params Max media item resolution should be preserved")
                 .that(createdSelectionParams.getMaxMediaItemResolutionInPixels())
                 .isEqualTo(originalSelectionParams.getMaxMediaItemResolutionInPixels());
@@ -106,82 +117,74 @@ public class PhotoPickerSelectionParamsTest {
 
         assertWithMessage("selection params Default max media item size should be -1")
                 .that(selectionParams.getMaxMediaItemSizeInBytes())
-                .isEqualTo(-1L);
-        assertWithMessage("selection params Default max video duration should be -1")
-                .that(selectionParams.getMaxVideoDurationInSeconds())
-                .isEqualTo(-1L);
-        assertWithMessage("selection params Default min video duration should be -1")
-                .that(selectionParams.getMinVideoDurationInSeconds())
-                .isEqualTo(-1L);
+                .isEqualTo(DEFAULT_LONG_VALUE);
+        assertWithMessage("selection params Default max video duration should be null")
+                .that(selectionParams.getMaxVideoDuration())
+                .isNull();
+        assertWithMessage("selection params Default min video duration should be null")
+                .that(selectionParams.getMinVideoDuration())
+                .isNull();
         assertWithMessage("selection params Default max media item resolution should be -1")
                 .that(selectionParams.getMaxMediaItemResolutionInPixels())
-                .isEqualTo(-1L);
+                .isEqualTo(DEFAULT_LONG_VALUE);
         assertWithMessage("selection params Default min media item resolution should be -1")
                 .that(selectionParams.getMinMediaItemResolutionInPixels())
-                .isEqualTo(-1L);
+                .isEqualTo(DEFAULT_LONG_VALUE);
         assertWithMessage("selection params Default mime types should be empty")
                 .that(selectionParams.getMimeTypes())
                 .isEmpty();
         assertWithMessage("selection params Default max selection batch size should be -1")
                 .that(selectionParams.getMaxSelectionBatchSizeInBytes())
-                .isEqualTo(-1L);
+                .isEqualTo(DEFAULT_LONG_VALUE);
     }
 
     @Test
     public void testBuilder_setters() {
-        long maxMediaSize = 1000L;
-        long maxDuration = 60L;
-        long minDuration = 10L;
-        long maxResolution = 1080L * 1920L;
-        long minResolution = 480L * 320L;
-        List<String> mimeTypes = List.of("image/png", "video/mp4");
-        long maxBatchSize = 5000L;
-
         PhotoPickerSelectionParams selectionParams =
                 new PhotoPickerSelectionParams.Builder()
-                        .setMaxMediaItemSizeInBytes(maxMediaSize)
-                        .setMaxVideoDurationInSeconds(maxDuration)
-                        .setMinVideoDurationInSeconds(minDuration)
-                        .setMaxMediaItemResolutionInPixels(maxResolution)
-                        .setMinMediaItemResolutionInPixels(minResolution)
-                        .setMimeTypes(mimeTypes)
-                        .setMaxSelectionBatchSizeInBytes(maxBatchSize)
+                        .setMaxMediaItemSizeInBytes(MAX_MEDIA_ITEM_SIZE_BYTES)
+                        .setMaxVideoDuration(MAX_VIDEO_DURATION)
+                        .setMinVideoDuration(MIN_VIDEO_DURATION)
+                        .setMaxMediaItemResolutionInPixels(MAX_RESOLUTION_PIXELS)
+                        .setMinMediaItemResolutionInPixels(MIN_RESOLUTION_PIXELS)
+                        .setMimeTypes(MIME_TYPES)
+                        .setMaxSelectionBatchSizeInBytes(MAX_SELECTION_BATCH_SIZE_BYTES)
                         .build();
 
         assertWithMessage("selection params Max media item size should match set value")
                 .that(selectionParams.getMaxMediaItemSizeInBytes())
-                .isEqualTo(maxMediaSize);
+                .isEqualTo(MAX_MEDIA_ITEM_SIZE_BYTES);
         assertWithMessage("selection params Max video duration should match set value")
-                .that(selectionParams.getMaxVideoDurationInSeconds())
-                .isEqualTo(maxDuration);
+                .that(selectionParams.getMaxVideoDuration())
+                .isEqualTo(MAX_VIDEO_DURATION);
         assertWithMessage("selection params Min video duration should match set value")
-                .that(selectionParams.getMinVideoDurationInSeconds())
-                .isEqualTo(minDuration);
+                .that(selectionParams.getMinVideoDuration())
+                .isEqualTo(MIN_VIDEO_DURATION);
         assertWithMessage("selection params Max media item resolution should match set value")
                 .that(selectionParams.getMaxMediaItemResolutionInPixels())
-                .isEqualTo(maxResolution);
+                .isEqualTo(MAX_RESOLUTION_PIXELS);
         assertWithMessage("selection params Min media item resolution should match set value")
                 .that(selectionParams.getMinMediaItemResolutionInPixels())
-                .isEqualTo(minResolution);
+                .isEqualTo(MIN_RESOLUTION_PIXELS);
         assertWithMessage("selection params Mime types should match set value")
                 .that(selectionParams.getMimeTypes())
-                .isEqualTo(mimeTypes);
+                .isEqualTo(MIME_TYPES);
         assertWithMessage("selection params Max selection batch size should match set value")
                 .that(selectionParams.getMaxSelectionBatchSizeInBytes())
-                .isEqualTo(maxBatchSize);
+                .isEqualTo(MAX_SELECTION_BATCH_SIZE_BYTES);
     }
 
     @Test
     public void testBuilder_clearMethods_unsetsConstraints() {
         PhotoPickerSelectionParams clearedSelectionParams =
                 new PhotoPickerSelectionParams.Builder()
-                        .setMaxMediaItemSizeInBytes(2024L)
-                        .setMaxVideoDurationInSeconds(100L)
-                        .setMinVideoDurationInSeconds(10L)
-                        .setMaxMediaItemResolutionInPixels(10000L)
-                        .setMinMediaItemResolutionInPixels(1000L)
-                        .setMimeTypes(List.of("image/png"))
-                        .setMaxSelectionBatchSizeInBytes(100000L)
+                        .setMaxMediaItemSizeInBytes(MAX_MEDIA_ITEM_SIZE_BYTES)
+                        .setMaxVideoDuration(MAX_VIDEO_DURATION)
+                        .setMinVideoDuration(MIN_VIDEO_DURATION)
+                        .setMaxMediaItemResolutionInPixels(MAX_RESOLUTION_PIXELS)
+                        .setMinMediaItemResolutionInPixels(MIN_RESOLUTION_PIXELS)
+                        .setMimeTypes(MIME_TYPES)
+                        .setMaxSelectionBatchSizeInBytes(MAX_SELECTION_BATCH_SIZE_BYTES)
                         .clearMaxMediaItemSize()
                         .clearMaxVideoDuration()
                         .clearMinVideoDuration()
@@ -191,27 +194,27 @@ public class PhotoPickerSelectionParamsTest {
                         .clearMaxSelectionBatchSize()
                         .build();
 
-        assertWithMessage("selection params Cleared Max media item size, it should be -1")
+        assertWithMessage("selection params cleared Max media item size, it should be -1")
                 .that(clearedSelectionParams.getMaxMediaItemSizeInBytes())
-                .isEqualTo(-1L);
-        assertWithMessage("selection params Cleared Max video duration, it should be -1")
-                .that(clearedSelectionParams.getMaxVideoDurationInSeconds())
-                .isEqualTo(-1L);
-        assertWithMessage("selection params Cleared Min video duration, it should be -1")
-                .that(clearedSelectionParams.getMinVideoDurationInSeconds())
-                .isEqualTo(-1L);
-        assertWithMessage("selection params Cleared Max media item resolution, it should be -1")
+                .isEqualTo(DEFAULT_LONG_VALUE);
+        assertWithMessage("selection params cleared Max video duration, it should be null")
+                .that(clearedSelectionParams.getMaxVideoDuration())
+                .isNull();
+        assertWithMessage("selection params cleared Min video duration, it should be null")
+                .that(clearedSelectionParams.getMinVideoDuration())
+                .isNull();
+        assertWithMessage("selection params cleared Max media item resolution, it should be -1")
                 .that(clearedSelectionParams.getMaxMediaItemResolutionInPixels())
-                .isEqualTo(-1L);
-        assertWithMessage("selection params Cleared Min media item resolution, it should be -1")
+                .isEqualTo(DEFAULT_LONG_VALUE);
+        assertWithMessage("selection params cleared Min media item resolution, it should be -1")
                 .that(clearedSelectionParams.getMinMediaItemResolutionInPixels())
-                .isEqualTo(-1L);
-        assertWithMessage("selection params Cleared Mime types, it should be empty")
+                .isEqualTo(DEFAULT_LONG_VALUE);
+        assertWithMessage("selection params cleared Mime types, it should be empty")
                 .that(clearedSelectionParams.getMimeTypes())
                 .isEmpty();
-        assertWithMessage("selection params Cleared Max selection batch size, it should be -1")
+        assertWithMessage("selection params cleared Max selection batch size, it should be -1")
                 .that(clearedSelectionParams.getMaxSelectionBatchSizeInBytes())
-                .isEqualTo(-1L);
+                .isEqualTo(DEFAULT_LONG_VALUE);
     }
 
     @Test
@@ -220,8 +223,8 @@ public class PhotoPickerSelectionParamsTest {
                 IllegalArgumentException.class,
                 () ->
                         new PhotoPickerSelectionParams.Builder()
-                                .setMinVideoDurationInSeconds(60L)
-                                .setMaxVideoDurationInSeconds(30L) // Less than min
+                                .setMinVideoDuration(Duration.ofSeconds(60))
+                                .setMaxVideoDuration(Duration.ofSeconds(30)) // Less than min
                                 .build(),
                 "Expected exception when max video duration is less than min");
     }
@@ -240,26 +243,28 @@ public class PhotoPickerSelectionParamsTest {
 
     @Test
     public void testBuilder_minMaxEqual_isAllowed() {
+        Duration duration = Duration.ofSeconds(30);
+        long resolution = 1080L;
         PhotoPickerSelectionParams params =
                 new PhotoPickerSelectionParams.Builder()
-                        .setMinVideoDurationInSeconds(30L)
-                        .setMaxVideoDurationInSeconds(30L)
-                        .setMinMediaItemResolutionInPixels(1080L)
-                        .setMaxMediaItemResolutionInPixels(1080L)
+                        .setMinVideoDuration(duration)
+                        .setMaxVideoDuration(duration)
+                        .setMinMediaItemResolutionInPixels(resolution)
+                        .setMaxMediaItemResolutionInPixels(resolution)
                         .build();
 
-        assertWithMessage("Min video duration should be 30L")
-                .that(params.getMinVideoDurationInSeconds())
-                .isEqualTo(30L);
-        assertWithMessage("Max video duration should be 30L")
-                .that(params.getMaxVideoDurationInSeconds())
-                .isEqualTo(30L);
-        assertWithMessage("Min media item resolution should be 1080L")
+        assertWithMessage("Min video duration should match")
+                .that(params.getMinVideoDuration())
+                .isEqualTo(duration);
+        assertWithMessage("Max video duration should match")
+                .that(params.getMaxVideoDuration())
+                .isEqualTo(duration);
+        assertWithMessage("Min media item resolution should match")
                 .that(params.getMinMediaItemResolutionInPixels())
-                .isEqualTo(1080L);
-        assertWithMessage("Max media item resolution should be 1080L")
+                .isEqualTo(resolution);
+        assertWithMessage("Max media item resolution should match")
                 .that(params.getMaxMediaItemResolutionInPixels())
-                .isEqualTo(1080L);
+                .isEqualTo(resolution);
     }
 
     @Test
@@ -315,26 +320,48 @@ public class PhotoPickerSelectionParamsTest {
     }
 
     @Test
-    public void testSetMaxVideoDurationInSeconds_negative_throwsException() {
+    public void testSetMaxVideoDuration_negative_throwsException() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new PhotoPickerSelectionParams.Builder().setMaxVideoDurationInSeconds(-1L),
+                () ->
+                        new PhotoPickerSelectionParams.Builder()
+                                .setMaxVideoDuration(Duration.ofSeconds(-1)),
                 "Expected exception when setting negative max video duration");
     }
 
     @Test
-    public void testSetMaxVideoDurationInSeconds_zero_throwsException() {
+    public void testSetMaxVideoDuration_zero_throwsException() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new PhotoPickerSelectionParams.Builder().setMaxVideoDurationInSeconds(0),
+                () ->
+                        new PhotoPickerSelectionParams.Builder()
+                                .setMaxVideoDuration(Duration.ofSeconds(0)),
                 "Expected exception when setting negative max video duration");
     }
 
     @Test
-    public void testSetMinVideoDurationInSeconds_negative_throwsException() {
+    public void testSetMaxVideoDuration_null_throwsException() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new PhotoPickerSelectionParams.Builder().setMinVideoDurationInSeconds(-1L),
+                () -> new PhotoPickerSelectionParams.Builder().setMaxVideoDuration(null),
+                "Expected exception when setting null max video duration");
+    }
+
+    @Test
+    public void testSetMinVideoDuration_null_throwsException() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new PhotoPickerSelectionParams.Builder().setMinVideoDuration(null),
+                "Expected exception when setting null min video duration");
+    }
+
+    @Test
+    public void testSetMinVideoDuration_negative_throwsException() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        new PhotoPickerSelectionParams.Builder()
+                                .setMinVideoDuration(Duration.ofSeconds(-1)),
                 "Expected exception when setting negative min video duration");
     }
 
