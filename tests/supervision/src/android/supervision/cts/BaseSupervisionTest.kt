@@ -98,7 +98,6 @@ open class BaseSupervisionTest {
             }
 
         try {
-            app.pkg().setAllowTestApiAccess(true)
             callWithShellPermissionIdentity(
                 BYPASS_ROLE_QUALIFICATION,
                 MANAGE_ROLE_HOLDERS,
