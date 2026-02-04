@@ -8062,8 +8062,9 @@ You should be prompted to select credentials; choose the ones you just installed
     </string>
     <string name="sysui_smt_decoration_visibility_info_dialog_title">Verification needed</string>
     <string name="sysui_smt_decoration_visibility_info_dialog_content">
-        If the new window is presented with a distinguishable persistent decoration (e.g. caption
-        bar), please click the "Proceed" button.
+        If the new window shows a caption bar without auto-hide (or any similar always-visible
+        window decoration UI that is clearly distinguishable from the app content area marked with
+        purple lattice), please click the Proceed button.
         Otherwise, please click the Fail button.
         \n\nThe app-controlled screen surface is marked with a purple lattice. The new window should
         show a distinguishable, always-visible decoration (e.g., a horizontal bar anchored to the
@@ -8071,8 +8072,9 @@ You should be prompted to select credentials; choose the ones you just installed
     </string>
     <string name="sysui_smt_close_task_info_dialog_title">Verification needed</string>
     <string name="sysui_smt_close_task_info_dialog_content">
-        Please close the test window (not this one) WITHOUT using any elements of the
-        distinguishable persistent decoration that you identified in the previous step.
+        Please close the test window (not this one) WITHOUT using the close button from the caption
+        bar (if it exists) and WITHOUT using any other UI elements of the always-visible window
+        decoration.
         If you succeed and the window closes, please click the Pass button.
         If this is not possible, please click the Fail button.
         \n\nTry exploring the task bar, usually located at the bottom of the screen, if it exists,
