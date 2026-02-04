@@ -143,9 +143,8 @@ public class CarrierApiTest extends BaseCarrierApiTest {
     private static final int MAX_RETRIES = 10;
     // The minimum allocatable logical channel number, per TS 102 221 Section 11.1.17.1
     private static final int MIN_LOGICAL_CHANNEL = 1;
-    // The maximum allocatable logical channel number in the standard range, per TS 102 221 Section
-    // 11.1.17.1
-    private static final int MAX_LOGICAL_CHANNEL = 3;
+    // The maximum allocatable logical channel number in the extended range (1-19), per TS 102 221
+    // Section 11.1.17.1
     private static final int MAX_LOGICAL_CHANNEL_EXTENDED = 19;
     // Class bytes. The logical channel used should be included for bits b2b1. TS 102 221 Table 11.5
     private static final int CLA_GET_RESPONSE = 0x00;
@@ -1637,7 +1636,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
 
         // The assigned channel should be between the min and max allowed channel numbers
         int channel = response.getChannel();
-        assertThat(channel).isIn(Range.closed(MIN_LOGICAL_CHANNEL, MAX_LOGICAL_CHANNEL));
+        assertThat(channel).isIn(Range.closed(MIN_LOGICAL_CHANNEL, MAX_LOGICAL_CHANNEL_EXTENDED));
     }
 
     private void removeSubscriptionsFromGroup(ParcelUuid uuid) {
