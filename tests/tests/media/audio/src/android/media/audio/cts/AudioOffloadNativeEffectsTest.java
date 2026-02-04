@@ -18,7 +18,6 @@ package android.media.audio.cts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
@@ -56,6 +55,7 @@ public class AudioOffloadNativeEffectsTest {
     private static final String TAG = "AudioOffloadNativeEffectsTest";
 
     private static final int STATUS_OK = 0;
+    private static final int AAUDIO_POLICY_ALWAYS = 3;
     private static final float AUDIOTRACK_DEFAULT_FREQUENCY_HZ = 910.0f;
     private static final float AUDIOTRACK_TEST_FREQUENCY_HZ = 100.0f;
     private static final int AUDIOTRACK_DEFAULT_SAMPLE_RATE = 48000;
@@ -67,6 +67,8 @@ public class AudioOffloadNativeEffectsTest {
 
     private final int mStreamType = AudioManager.STREAM_MUSIC;
     private AudioManager mAudioManager = null;
+    private boolean mMMapPolicyOverridden = false;
+    private int mOriginalMMapPolicy;
     private int mOriginalVolume;
     private int mSessionId = 0;
     private long mStreamHandle = 0;
@@ -112,8 +114,15 @@ public class AudioOffloadNativeEffectsTest {
                 mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC) / 2,
                 /* flag= */ 0);
 
+        mOriginalMMapPolicy = nativeGetMMapPolicy();
+        nativeSetMMapPolicy(AAUDIO_POLICY_ALWAYS);
+        mMMapPolicyOverridden = true;
+
         mStreamHandle = nativeOpenStream(supportedOffloadFormat);
-        assertTrue("Failed to open native stream", mStreamHandle != 0);
+        assumeTrue("Failed to open native stream", mStreamHandle != 0);
+
+        // Ideally, openStream() should return an error if MMAP is unavailable or not used
+        assumeTrue("Skipping test, MMAP data path not used", nativeIsMmapUsed(mStreamHandle));
 
         mSessionId = nativeGetSessionId(mStreamHandle);
         assumeTrue("Failed to get a valid session ID", mSessionId > 0);
@@ -123,6 +132,9 @@ public class AudioOffloadNativeEffectsTest {
     public void teardown() {
         if (mAudioManager != null) {
             mAudioManager.setStreamVolume(mStreamType, mOriginalVolume, /* flag */ 0);
+        }
+        if (mMMapPolicyOverridden) {
+            nativeSetMMapPolicy(mOriginalMMapPolicy);
         }
         if (mBassBoost != null) {
             mBassBoost.release();
@@ -424,6 +436,12 @@ public class AudioOffloadNativeEffectsTest {
         // Run the test for the Post-Equalizer stage
         runDynamicsProcessingEqStageTest(false);
     }
+
+    private static native int nativeGetMMapPolicy();
+
+    private static native void nativeSetMMapPolicy(int policy);
+
+    private static native boolean nativeIsMmapUsed(long streamHandle);
 
     private static native long nativeOpenStream(int supportedOffloadFormat);
 

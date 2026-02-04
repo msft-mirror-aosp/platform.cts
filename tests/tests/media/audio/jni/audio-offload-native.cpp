@@ -169,6 +169,45 @@ aaudio_result_t generateSineWaveAndWrite24Bit(AAudioStream* stream, float freque
 }
 
 /**
+ * @brief Gets the current global AAudio MMAP policy.
+ * @return The current aaudio_policy_t value (e.g., AAUDIO_POLICY_NEVER, ALWAYS).
+ */
+extern "C" JNIEXPORT jint JNICALL
+Java_android_media_audio_cts_AudioOffloadNativeEffectsTest_nativeGetMMapPolicy(JNIEnv* /*env*/,
+                                                                               jclass /*clazz*/) {
+    return static_cast<jint>(AAudio_getMMapPolicy());
+}
+
+/**
+ * @brief Sets the global AAudio MMAP policy.
+ * @param policy The aaudio_policy_t value to set.
+ */
+extern "C" JNIEXPORT void JNICALL
+Java_android_media_audio_cts_AudioOffloadNativeEffectsTest_nativeSetMMapPolicy(JNIEnv* /*env*/,
+                                                                               jclass /*clazz*/,
+                                                                               jint policy) {
+    AAudio_setMMapPolicy(static_cast<aaudio_policy_t>(policy));
+}
+
+/**
+ * @brief Checks if the given AAudio stream is using the MMAP data path.
+ *
+ * @param streamHandle The jlong handle to the AAudioStream.
+ * @return JNI_TRUE if the stream is using MMAP, JNI_FALSE otherwise.
+ */
+extern "C" JNIEXPORT jboolean JNICALL
+Java_android_media_audio_cts_AudioOffloadNativeEffectsTest_nativeIsMmapUsed(JNIEnv* /*env*/,
+                                                                            jclass /*clazz*/,
+                                                                            jlong streamHandle) {
+    AAudioStream* stream = nativeHandleToStream(streamHandle);
+    if (stream == nullptr) {
+        ALOGE("nativeIsMmapUsed: Invalid stream handle.");
+        return JNI_FALSE;
+    }
+    return AAudioStream_isMMapUsed(stream) ? JNI_TRUE : JNI_FALSE;
+}
+
+/**
  * @brief Opens and configures an AAudio stream for offloaded playback.
  * This function creates a stream with properties suitable for power-saving offload mode.
  *
@@ -271,10 +310,6 @@ Java_android_media_audio_cts_AudioOffloadNativeEffectsTest_nativePlayAndSignalEn
 
     int32_t capacityFrames = AAudioStream_getBufferCapacityInFrames(stream);
     ALOGV("actual capacity in frames: %d", capacityFrames);
-
-    if (!AAudioStream_isMMapUsed(stream)) {
-        ALOGI("MMap not used by the stream");
-    }
 
     // Start the stream
     aaudio_result_t result = AAudioStream_requestStart(stream);
