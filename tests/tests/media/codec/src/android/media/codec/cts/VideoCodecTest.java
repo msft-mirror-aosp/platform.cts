@@ -25,9 +25,12 @@ import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.media.cts.MediaHeavyPresubmitTest;
 import android.media.cts.TestArgs;
+import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
 import android.util.Pair;
+
+import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.MediaUtils;
@@ -1124,6 +1127,7 @@ public class VideoCodecTest extends VideoCodecTestBase {
                 "android.media.MediaFormat#KEY_TEMPORAL_LAYER_ID"
             })
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.CINNAMON_BUN)
     public void testTemporalLayerEncode() throws Exception {
         internalTestTemporalLayerEncode(mCodecName, mCodecMimeType, mBitRateMode, false, false);
     }
@@ -1135,6 +1139,7 @@ public class VideoCodecTest extends VideoCodecTestBase {
                 "android.media.MediaFormat#KEY_TEMPORAL_LAYER_ID"
             })
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.CINNAMON_BUN)
     public void testTemporalLayerEncodeNdk() throws Exception {
         internalTestTemporalLayerEncode(mCodecName, mCodecMimeType, mBitRateMode, false, true);
     }
@@ -1146,6 +1151,7 @@ public class VideoCodecTest extends VideoCodecTestBase {
                 "android.media.MediaFormat#KEY_TEMPORAL_LAYER_ID"
             })
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.CINNAMON_BUN)
     public void testDynamicBitrateLayeringChange() throws Exception {
         internalTestTemporalLayerEncode(mCodecName, mCodecMimeType, mBitRateMode, true, false);
     }
@@ -1157,6 +1163,7 @@ public class VideoCodecTest extends VideoCodecTestBase {
                 "android.media.MediaFormat#KEY_TEMPORAL_LAYER_ID"
             })
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.CINNAMON_BUN)
     public void testDynamicBitrateLayeringChangeNdk() throws Exception {
         internalTestTemporalLayerEncode(mCodecName, mCodecMimeType, mBitRateMode, true, true);
     }
