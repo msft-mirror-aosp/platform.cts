@@ -2980,8 +2980,6 @@
     <option name="compatibility:include-filter" value="CtsNdkBinderTestCases android.binder.cts.JavaClientTest#testDump[class android.binder.cts.NativeService$Local]"/>
     <!-- CtsNearbyFastPairTestCases -->
     <option name="compatibility:include-filter" value="CtsNearbyFastPairTestCases android.nearby.cts.NearbyManagerTest#test_stopScan_noPrivilegedPermission"/>
-    <!-- CtsNetAtomHostTestCases -->
-    <option name="compatibility:include-filter" value="CtsNetAtomHostTestCases android.cts.statsdatom.net.BytesTransferredTest#testMobileBytesTransferByFgBg"/>
     <!-- CtsNetHttpTestCases -->
     <option name="compatibility:include-filter" value="CtsNetHttpTestCases android.net.http.cts.BidirectionalStreamTest#testBidirectionalStream_GetStream_CompletesSuccessfully"/>
     <option name="compatibility:include-filter" value="CtsNetHttpTestCases android.net.http.cts.HttpEngineTest#testHttpEngine_setProxyOptions_unreachableProxyFails"/>

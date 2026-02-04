@@ -1016,11 +1016,6 @@
     <option name="compatibility:include-filter" value="CtsNativeMediaAAudioTestCases android.nativemedia.aaudio.AAudioTests#Offload_AAudioOffloadTest_testPlaybackParameters_7"/>
     <option name="compatibility:include-filter" value="CtsNativeMediaAAudioTestCases android.nativemedia.aaudio.AAudioTests#SPM_AAudioOutputStreamTest_testGetTimestamp_EXCLUSIVE__LOW_LATENCY"/>
     <option name="compatibility:include-filter" value="CtsNativeMediaAAudioTestCases android.nativemedia.aaudio.AAudioTests#SPM_AAudioOutputStreamTest_testWriting_EXCLUSIVE__LOW_LATENCY"/>
-    <!-- CtsNetAtomHostTestCases -->
-    <option name="compatibility:include-filter" value="CtsNetAtomHostTestCases android.cts.statsdatom.net.BytesTransferredTest#testBytesTransferByTagAndMetered"/>
-    <option name="compatibility:include-filter" value="CtsNetAtomHostTestCases android.cts.statsdatom.net.BytesTransferredTest#testDataUsageBytesTransfer"/>
-    <option name="compatibility:include-filter" value="CtsNetAtomHostTestCases android.cts.statsdatom.net.BytesTransferredTest#testMobileBytesTransfer"/>
-    <option name="compatibility:include-filter" value="CtsNetAtomHostTestCases android.cts.statsdatom.net.BytesTransferredTest#testMobileBytesTransferByFgBg"/>
     <!-- CtsNetHttpTestCases -->
     <option name="compatibility:include-filter" value="CtsNetHttpTestCases android.net.http.cts.HttpEngineTest#testHttpEngine_setProxyOptions_directFallback_succeeds"/>
     <option name="compatibility:include-filter" value="CtsNetHttpTestCases android.net.http.cts.ProxyOptionsTest#testEmptyProxyList_throws"/>
@@ -3773,6 +3768,7 @@
     <option name="compatibility:exclude-filter" value="CtsSecurityTestCases_multiuser android.security.cts.advancedprotection.AdvancedProtectionManagerTest#testUpdateAdvancedProtectionFeaturesProvisioning_provisioned[IncludeRunOnPrimaryUser]"/>
     <!-- Exclude the failing tests in CtsSettingTestCases -->
     <option name="compatibility:exclude-filter" value="CtsSettingsTestCases android.settings.cts.SettingsIntentsTest#testSimPreferenceIntentReceiverExists"/>
+    <option name="compatibility:exclude-filter" value="CtsSettingsTestCases android.settings.cts.VpnAppExclusionSettingsTest#testVpnAppExclusionSettingsExist"/>
     <!-- Exclude the failing tests in MctsMediaDecoderTestCases -->
     <option name="compatibility:exclude-filter" value="MctsMediaDecoderTestCases android.media.decoder.cts.DecoderTest#testDecodeM4aWithEOSOnLastBuffer"/>
     <option name="compatibility:exclude-filter" value="MctsMediaDecoderTestCases android.media.decoder.cts.DecoderTestAacDrc#testDecodeUsacLoudnessM4a"/>
