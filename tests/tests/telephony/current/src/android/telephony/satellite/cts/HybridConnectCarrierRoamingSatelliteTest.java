@@ -97,6 +97,7 @@ public class HybridConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
     public void setUp() throws Exception {
         logd(TAG, "setUp()");
         if (!shouldTestHybridConnectCarrierRoamingSatellite()) return;
+        clearAllEventsInMockServiceManagers();
     }
 
     @After

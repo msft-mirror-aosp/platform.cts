@@ -126,6 +126,8 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
         assumeTrue(shouldTestManualConnectCarrierRoaming());
         assumeTrue(sMockSatelliteServiceManager != null);
 
+        clearAllEventsInMockServiceManagers();
+
         setUpEsosSubscription(true);
         enableCarrierRoamingSatelliteConfigs(
                 ESOS_SLOT_ID, CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_MANUAL);
