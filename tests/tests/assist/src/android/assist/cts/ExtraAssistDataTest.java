@@ -23,12 +23,15 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assume.assumeFalse;
 
+import android.app.appfunctions.AppFunctionActivityId;
 import android.assist.common.AutoResetLatch;
 import android.assist.common.Utils;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+
+import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Test;
 
@@ -107,6 +110,47 @@ public class ExtraAssistDataTest extends AssistTestBase {
         verifyActivityIdNullness(/* isActivityIdNull = */ false);
         verifyAssistDataNullness(true, true, true, true);
         assertThat(mOnShowArgs.containsKey(KEY_FOREGROUND_ACTIVITIES)).isFalse();
+    }
+
+    @Test
+    @ApiTest(apis = {"android.service.voice.VoiceInteractionSession#getAppFunctionActivityId"})
+    public void testAppFunctionActivityIdSameForSameActivity() throws Exception {
+        assumeIsNotLowRamDevice();
+        startTest(TEST_CASE_TYPE);
+        waitForAssistantToBeReady();
+        start3pApp(TEST_CASE_TYPE);
+
+        // First session
+        final AutoResetLatch latch1 = startSession();
+        waitForContext(latch1);
+        AppFunctionActivityId activityId1 = mAppFunctionActivityId;
+        // Second session, same activity
+        final AutoResetLatch latch2 = startSession();
+        waitForContext(latch2);
+        AppFunctionActivityId activityId2 = mAppFunctionActivityId;
+
+        assertThat(activityId1).isEqualTo(activityId2);
+    }
+
+    @Test
+    @ApiTest(apis = {"android.service.voice.VoiceInteractionSession#getAppFunctionActivityId"})
+    public void testAppFunctionActivityIdDifferentForDifferentActivities() throws Exception {
+        assumeIsNotLowRamDevice();
+        startTest(TEST_CASE_TYPE);
+        waitForAssistantToBeReady();
+
+        // First activity
+        start3pApp(TEST_CASE_TYPE);
+        final AutoResetLatch latch1 = startSession();
+        waitForContext(latch1);
+        AppFunctionActivityId activityId1 = mAppFunctionActivityId;
+        // Second activity
+        start3pApp(TEST_CASE_TYPE);
+        final AutoResetLatch latch2 = startSession();
+        waitForContext(latch2);
+        AppFunctionActivityId activityId2 = mAppFunctionActivityId;
+
+        assertThat(activityId1).isNotEqualTo(activityId2);
     }
 
     private void assumeIsNotAutomotive() {

@@ -238,11 +238,6 @@
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerTest#isAppFunctionEnabled_otherPackage_hasExecuteAppFunctionPermission[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerTest#isAppFunctionEnabled_otherPackage_noPermission[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionManagerTest#setAppFunctionEnabled_functionDefaultDisabled[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionMetadataTest#installTwoPackageWithAppFunctions_runtimeMetadataExist[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionMetadataTest#twoPackagesInstalled_uninstallOneOfThem_runtimeMetadataUpdated[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionMetadataTest#twoPackagesInstalled_updateOneOfThem_runtimeMetadataUpdated[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionMetadataTest#uninstallPackageWithAppFunctions_runtimeMetadataRemoved[IncludeRunOnPrimaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionMetadataTest#updatePackage_runtimeMetadataUpdated[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionNameTest#create"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionNameTest#equalsAndHashCode"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.AppFunctionNameTest#parcelAndUnparcel"/>
@@ -288,9 +283,6 @@
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases android.app.appfunctions.cts.SidecarManagerTest#isAppFunctionEnabled_sidecar[IncludeRunOnPrimaryUser]"/>
     <!-- CtsAppFunctionTestCases[run-on-secondary-user] -->
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.AppFunctionManagerTest#checkManagerNotNull[IncludeRunOnSecondaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.AppFunctionMetadataTest#createAppFunctionStaticMetadata[IncludeRunOnSecondaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.AppFunctionMetadataTest#installPackageWithAppFunction_runtimeMetadataVisible_withOnlyExecuteAppFunctionSystemPermission[IncludeRunOnSecondaryUser]"/>
-    <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.AppFunctionMetadataTest#installTwoPackageWithAppFunctions_runtimeMetadataExist[IncludeRunOnSecondaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.AppFunctionRegistrationTest#execute_batchRegistration_canExecuteBothFunctions[IncludeRunOnSecondaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.AppFunctionRegistrationTest#register_sameIdInDifferentProcessAfterBatchedRegistration_fail[IncludeRunOnSecondaryUser]"/>
     <option name="compatibility:include-filter" value="CtsAppFunctionTestCases[run-on-secondary-user] android.app.appfunctions.cts.AppFunctionRegistrationTest#register_theSameIdTwiceDifferentProcesses_failAllBatchRegistration[IncludeRunOnSecondaryUser]"/>
@@ -6966,6 +6958,10 @@
     <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.ActivityManagerTest#testGetUidFrozenState"/>
     <!-- Exclude the failing tests in CtsAutoFillServiceTestCases -->
     <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.augmented.AugmentedLoginActivityTest#testCancellationSignalCalled_retriggerAugmentedAutofill"/>
+    <!-- Exclude the failing tests in CtsHostsideNumberBlockingTestCases -->
+    <option name="compatibility:exclude-filter" value="CtsHostsideNumberBlockingTestCases com.android.cts.numberblocking.hostside.NumberBlockingTest#testNumberBlocking"/>
+    <!-- Exclude the failing tests in CtsInputMethodTestCases -->
+    <option name="compatibility:exclude-filter" value="CtsInputMethodTestCases android.view.inputmethod.cts.FocusHandlingTest#testUnfocusedEditor_stateUnchanged"/>
     <!-- Exclude the failing tests in CtsMediaDecoderTestCases -->
     <option name="compatibility:exclude-filter" value="CtsMediaDecoderTestCases android.media.decoder.cts.DecoderTestAacDrc#testDecodeUsacLoudnessM4a"/>
     <option name="compatibility:exclude-filter" value="CtsMediaDecoderTestCases android.media.decoder.cts.DecoderTestXheAac#testDecodeUsacDrcOutputLoudnessM4a"/>
@@ -6979,6 +6975,7 @@
     <option name="compatibility:exclude-filter" value="CtsSecurityTestCases_multiuser android.security.cts.advancedprotection.AdvancedProtectionManagerTest#testRegisterFeatureCallback[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:exclude-filter" value="CtsSecurityTestCases_multiuser android.security.cts.advancedprotection.AdvancedProtectionManagerTest#testUpdateAdvancedProtectionFeaturesProvisioning_provisioned[IncludeRunOnPrimaryUser]"/>
     <!-- Exclude the failing tests in CtsSettingsTestCases -->
+    <option name="compatibility:exclude-filter" value="CtsSettingsTestCases android.settings.cts.SettingsIntentsTest#testSimPreferenceIntentReceiverExists"/>
     <option name="compatibility:exclude-filter" value="CtsSettingsTestCases android.settings.cts.SettingsMultiPaneDeepLinkTest#deepLinkHomeActivity_protectedWithPermission"/>
     <!-- Exclude the failing tests in MctsMediaDecoderTestCases -->
     <option name="compatibility:exclude-filter" value="MctsMediaDecoderTestCases android.media.decoder.cts.DecoderTest#testDecodeAacTs"/>

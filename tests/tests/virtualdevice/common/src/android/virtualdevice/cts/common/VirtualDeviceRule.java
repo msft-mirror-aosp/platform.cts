@@ -17,13 +17,13 @@
 package android.virtualdevice.cts.common;
 
 import static android.content.pm.PackageManager.FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS;
-import static android.content.pm.PackageManager.FEATURE_PC;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow;
+
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
@@ -37,16 +37,21 @@ import android.companion.virtual.VirtualDeviceParams;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.hardware.display.VirtualDisplayConfig;
 import android.media.ImageReader;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.UserHandle;
+import android.os.UserManager;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.server.wm.BuildUtils;
 import android.server.wm.Condition;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerStateHelper;
+import android.util.ArraySet;
 import android.view.Display;
 import android.view.Surface;
 
@@ -57,6 +62,7 @@ import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.FeatureUtil;
+import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
@@ -66,6 +72,7 @@ import org.junit.runners.model.Statement;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -91,6 +98,9 @@ import java.util.stream.Stream;
  */
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName = "VanillaIceCream")
 public class VirtualDeviceRule implements TestRule {
+
+    private static final long CAR_ASSIGN_EXTRA_DISPLAY_TIMEOUT =
+            TimeUnit.SECONDS.toMillis(5) * BuildUtils.HW_TIMEOUT_MULTIPLIER;
 
     /** General permissions needed for creating virtual devices and displays. */
     private static final String[] REQUIRED_PERMISSIONS =
@@ -123,6 +133,8 @@ public class VirtualDeviceRule implements TestRule {
     private final Context mContext = getInstrumentation().getTargetContext();
     private final VirtualDeviceManager mVirtualDeviceManager =
             mContext.getSystemService(VirtualDeviceManager.class);
+    private final UserManager mUserManager = mContext.getSystemService(UserManager.class);
+
     private final WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
 
     /** A default virtual device for tests that only use the rule to access VDM functionality. */
@@ -243,11 +255,34 @@ public class VirtualDeviceRule implements TestRule {
         final VirtualDisplay virtualDisplay = virtualDevice.createVirtualDisplay(
                 builder.setSurface(surface).build(), Runnable::run, callback);
         if (virtualDisplay != null) {
-            assertDisplayExists(virtualDisplay.getDisplay().getDisplayId());
+            final int displayId = virtualDisplay.getDisplay().getDisplayId();
+            assertDisplayExists(displayId);
+            if (isAutomotiveMultiUserMultiDisplay()) {
+                assignTestUserToCarExtraDisplay(displayId);
+            }
             // There's no need to track managed virtual displays to have them released on tear-down
             // because they will be released automatically when the VirtualDevice is closed.
         }
         return virtualDisplay;
+    }
+
+    private boolean isAutomotiveMultiUserMultiDisplay() {
+        return FeatureUtil.hasSystemFeature((PackageManager.FEATURE_AUTOMOTIVE))
+                && mUserManager.isVisibleBackgroundUsersSupported();
+    }
+
+    private void assignTestUserToCarExtraDisplay(final int displayId) {
+        final int userId = UserHandle.myUserId();
+        runShellCommandOrThrow("cmd car_service assign-extra-display " + userId + " " + displayId);
+        PollingCheck.waitFor(
+                CAR_ASSIGN_EXTRA_DISPLAY_TIMEOUT,
+                () -> {
+                    final String output =
+                            runShellCommandOrThrow(
+                                    "cmd car_service get-user-by-display " + displayId);
+                    return output.contains(Integer.toString(userId));
+                });
+        mTrackerRule.mCarAssignedDisplayIds.add(displayId);
     }
 
     /**
@@ -282,8 +317,12 @@ public class VirtualDeviceRule implements TestRule {
                 mContext.getSystemService(DisplayManager.class).createVirtualDisplay(
                         builder.setSurface(surface).build());
         if (virtualDisplay != null) {
-            assertDisplayExists(virtualDisplay.getDisplay().getDisplayId());
+            final int displayId = virtualDisplay.getDisplay().getDisplayId();
+            assertDisplayExists(displayId);
             mTrackerRule.mVirtualDisplays.add(virtualDisplay);
+            if (isAutomotiveMultiUserMultiDisplay()) {
+                assignTestUserToCarExtraDisplay(displayId);
+            }
         }
         return virtualDisplay;
     }
@@ -550,6 +589,7 @@ public class VirtualDeviceRule implements TestRule {
         final ArrayList<VirtualDisplay> mVirtualDisplays = new ArrayList<>();
         final ArrayList<Activity> mActivities = new ArrayList<>();
         final ArrayList<ImageReader> mImageReaders = new ArrayList<>();
+        final ArraySet<Integer> mCarAssignedDisplayIds = new ArraySet<>();
 
         @Override
         protected void after() {
@@ -569,8 +609,19 @@ public class VirtualDeviceRule implements TestRule {
             for (ImageReader imageReader : mImageReaders) {
                 imageReader.close();
             }
+            mCarAssignedDisplayIds.forEach(
+                    displayId -> unassignTestUserToCarExtraDisplay(displayId));
+            mCarAssignedDisplayIds.clear();
             mImageReaders.clear();
             super.after();
         }
+    }
+
+    private static void unassignTestUserToCarExtraDisplay(int displayId) {
+        runShellCommandOrThrow(
+                "cmd car_service unassign-extra-display "
+                        + UserHandle.myUserId()
+                        + " "
+                        + displayId);
     }
 }

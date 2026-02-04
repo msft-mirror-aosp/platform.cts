@@ -51,12 +51,14 @@ private fun withRoleHeld(roleName: String, action: () -> Unit, packageName: Stri
     val roleManager = context.getSystemService(RoleManager::class.java)
     val supervisionManager = context.getSystemService(SupervisionManager::class.java)
     try {
-        supervisionManager.setSupervisionEnabled(false)
+        supervisionManager.setShouldAllowBypassingSupervisionRoleQualification(true)
         assertThat(supervisionManager.shouldAllowBypassingSupervisionRoleQualification()).isTrue()
         roleManager.addRoleHolder(context, roleName, packageName ?: context.packageName)
         action()
     } finally {
         roleManager.removeRoleHolder(context, roleName, packageName ?: context.packageName)
+        supervisionManager.setShouldAllowBypassingSupervisionRoleQualification(false)
+        assertThat(supervisionManager.shouldAllowBypassingSupervisionRoleQualification()).isFalse()
         supervisionManager.setSupervisionEnabled(false)
     }
 }

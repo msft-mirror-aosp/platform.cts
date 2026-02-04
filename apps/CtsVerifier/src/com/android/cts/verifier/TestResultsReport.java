@@ -33,13 +33,10 @@ import com.android.compatibility.common.util.TestStatus;
 import com.android.cts.verifier.TestListActivity.DisplayMode;
 import com.android.cts.verifier.TestListAdapter.TestListItem;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -48,24 +45,7 @@ import java.util.Set;
  */
 class TestResultsReport {
 
-    /** Version of the test report. Increment whenever adding new tags and attributes. */
-    private static final int REPORT_VERSION = 2;
-
-    /** Format of the report's creation time. Maintain the same format at CTS. */
-    private static DateFormat DATE_FORMAT =
-            new SimpleDateFormat("EEE MMM dd HH:mm:ss z yyyy", Locale.ENGLISH);
-
     private static final String PREFIX_TAG = "build_";
-    private static final String TEST_RESULTS_REPORT_TAG = "test-results-report";
-    private static final String VERIFIER_INFO_TAG = "verifier-info";
-    private static final String DEVICE_INFO_TAG = "device-info";
-    private static final String BUILD_INFO_TAG = "build-info";
-    private static final String TEST_RESULTS_TAG = "test-results";
-    private static final String TEST_TAG = "test";
-    private static final String TEST_DETAILS_TAG = "details";
-
-    private static final String TEST_CASE_NAME = "manualTests";
-    private static final String HOST_TEST_CASE_NAME = "hostTests";
 
     private final Context mContext;
 
@@ -84,8 +64,6 @@ class TestResultsReport {
         String versionSecurityPatch = null;
         String versionRelease = null;
         IInvocationResult result = new InvocationResult();
-        IModuleResult moduleResult = result.getOrCreateModule(
-                mContext.getResources().getString(R.string.module_id));
 
         // Collect build fields available in API level 21
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -148,70 +126,160 @@ class TestResultsReport {
         }
 
         // Get test result, including test name, result, report log, details and histories.
-        getCaseResult(moduleResult);
-        getHostCaseResult(moduleResult);
+        getCaseResult(result);
+        getHostCaseResult(result);
 
         return result;
     }
 
-    String getContents() {
-        // TODO: remove getContents and everything that depends on it
-        return "Report viewing is deprecated. See contents on the SD Card.";
-    }
-
     /**
-     * Get case results per test, including result, report log, details and histories.
+     * Creates results for all non-host test cases.
      *
-     * @param IModuleResult The module result bound with {@link IInvocationResult}.
+     * <p>Tests are structured via "Category" (Module) -> "Test Item" (Case) -> "Sub Test" (Test).
+     * Only tests that have been executed (have history) are included.
+     *
+     * @param result The invocation result to populate.
      */
-    private void getCaseResult(IModuleResult moduleResult) {
-        ICaseResult caseResult = moduleResult.getOrCreateResult(TEST_CASE_NAME);
+    private void getCaseResult(IInvocationResult result) {
         String hostTestTitle = mContext.getResources().getString(R.string.host_tests_title);
-        int notExecutedCount = 0;
-        for (DisplayMode mode: DisplayMode.values()) {
+        List<TestListItem> allItems = new ArrayList<>();
+
+        // Filter and collect all relevant test items across all DisplayModes
+        for (DisplayMode mode : DisplayMode.values()) {
             String displayMode = mode.toString();
             int count = mAdapter.getCount(displayMode);
             for (int i = 0; i < count; i++) {
                 TestListItem item = mAdapter.getItem(displayMode, i);
-                String testName = item.testName;
-                if (item.isTest() && !item.title.equals(hostTestTitle)) {
-                    createTestResult(caseResult, testName, testName);
-                    if (mAdapter.getTestResult(testName) == TestResult.TEST_RESULT_NOT_EXECUTED) {
-                        ++notExecutedCount;
-                    }
+                // Only include items that are actual tests and not part of the Host Test category
+                if (item.category != null
+                        && item.isTest()
+                        && !item.title.equals(hostTestTitle)) {
+                    allItems.add(item);
                 }
             }
         }
-        moduleResult.setDone(true);
-        moduleResult.setNotExecuted(notExecutedCount);
+
+        // Identify "active" categories/modules. A module is initialized in the report if it
+        // contains at least one item with run histories.
+        Set<String> activeCategories = new HashSet<>();
+        for (TestListItem item : allItems) {
+            if (shouldShownInReport(item) && !activeCategories.contains(item.category)) {
+                activeCategories.add(item.category);
+                IModuleResult moduleResult = result.getOrCreateModule(getModuleId(item.category));
+                // Initialize as 'done', will be updated based on individual test results
+                moduleResult.setDone(true);
+            }
+        }
+
+        // Populate test results and update module 'done' status.
+        for (TestListItem item : allItems) {
+            if (activeCategories.contains(item.category)) {
+                IModuleResult moduleResult = result.getOrCreateModule(getModuleId(item.category));
+                // A module is considered 'done' only if all its constituent tests have passed.
+                boolean isPassed =
+                        mAdapter.getTestResult(item.testName) == TestResult.TEST_RESULT_PASSED;
+                moduleResult.setDone(moduleResult.isDone() && isPassed);
+                if (shouldShownInReport(item)) {
+                    createCaseResult(moduleResult, item);
+                }
+            }
+        }
+    }
+
+    /**
+     * Creates the detailed result structure for a single TestListItem.
+     *
+     * <p>This processes the execution history to generate results for sub-tests.
+     *
+     * @param moduleResult The parent module.
+     * @param testItem The test item definition.
+     */
+    private void createCaseResult(IModuleResult moduleResult, TestListItem testItem) {
+        String testName = testItem.testName;
+        ICaseResult caseResult = moduleResult.getOrCreateResult(testName);
+        TestResultHistoryCollection historyCollection = mAdapter.getHistoryCollection(testName);
+        if (historyCollection == null) {
+            return;
+        }
+        List<TestResultHistory> leafTestHistories = getTestResultHistories(historyCollection);
+        for (TestResultHistory history : leafTestHistories) {
+            createTestResult(caseResult, history, testItem);
+        }
+    }
+
+    /**
+     * Creates a single test result entry.
+     *
+     * @param caseResult The parent case result.
+     * @param history The history record for the sub-test.
+     * @param testItem The parent test item.
+     */
+    private void createTestResult(
+            ICaseResult caseResult, TestResultHistory history, TestListItem testItem) {
+        // Resolve the actual internal name of the sub-test
+        String subTestName = getSubTestName(history.getTestName());
+        if (subTestName == null) {
+            return;
+        }
+
+        // Format the name for the report (removing parent prefixes if necessary)
+        String subTestNameInReport = getSubTestNameInReport(history.getTestName(), testItem);
+        ITestResult currentTestResult = caseResult.getOrCreateResult(subTestNameInReport);
+
+        fillTestResult(currentTestResult, subTestName, subTestNameInReport, history);
     }
 
     /**
      * Get case results per host test, including result, report log, details and histories.
      *
-     * @param moduleResult The module result bound with {@link IInvocationResult}.
+     * @param result The result bound with {@link IInvocationResult}.
      */
-    private void getHostCaseResult(IModuleResult moduleResult) {
-        ICaseResult caseResult = moduleResult.getOrCreateResult(HOST_TEST_CASE_NAME);
+    private void getHostCaseResult(IInvocationResult result) {
         for (String module : mContext.getResources().getStringArray(R.array.host_modules)) {
             for (String testName : mAdapter.getTestResultNames()) {
-                if (!testName.startsWith(module)) {
-                    continue;
+                if (testName.startsWith(module)) {
+                    String[] parts = testName.split(HostTestsActivity.TEST_ID_SEPARATOR, 3);
+                    if (parts.length < 3) {
+                        continue;
+                    }
+                    IModuleResult moduleResult = result.getOrCreateModule(getModuleId(parts[0]));
+                    moduleResult.setDone(true);
+                    ICaseResult caseResult = moduleResult.getOrCreateResult(parts[1]);
+                    createHostTestResult(caseResult, testName, parts[2]);
                 }
-                // Split Module and Class#TestCase
-                String[] parts = testName.split(HostTestsActivity.TEST_ID_SEPARATOR, 2);
-                if (parts.length < 2 || !parts[1].contains(HostTestsActivity.TEST_ID_SEPARATOR)) {
-                    continue;
-                }
-                createTestResult(caseResult, testName, parts[1]);
             }
         }
     }
 
-    private void createTestResult(ICaseResult caseResult, String testName, String resultName) {
-        ITestResult currentTestResult = caseResult.getOrCreateResult(resultName);
-        TestStatus resultStatus = getTestResultStatus(mAdapter.getTestResult(testName));
+    private void createHostTestResult(
+            ICaseResult caseResult, String fullTestName, String testName) {
+        ITestResult currentTestResult = caseResult.getOrCreateResult(testName);
 
+        TestResultHistory resultHistory = null;
+        TestResultHistoryCollection historyCollection = mAdapter.getHistoryCollection(fullTestName);
+
+        if (historyCollection != null && !historyCollection.asSet().isEmpty()) {
+            // For host side tests, there should only be one history.
+            resultHistory = historyCollection.asSet().iterator().next();
+        }
+
+        fillTestResult(currentTestResult, fullTestName, testName, resultHistory);
+    }
+
+    /**
+     * Populates a {@link ITestResult} object with detailed result metadata.
+     *
+     * @param currentTestResult The object to populate.
+     * @param testName The internal test ID.
+     * @param testNameInReport The name to display in the report.
+     * @param history The execution history associated with this result.
+     */
+    private void fillTestResult(
+            ITestResult currentTestResult,
+            String testName,
+            String testNameInReport,
+            TestResultHistory history) {
+        TestStatus resultStatus = getTestResultStatus(mAdapter.getTestResult(testName));
         currentTestResult.setResultStatus(resultStatus);
         // TODO: report test details with Extended Device Info (EDI) or CTS metrics
         String details = mAdapter.getTestDetails(testName);
@@ -222,15 +290,15 @@ class TestResultsReport {
             currentTestResult.setReportLog(reportLog);
         }
 
-        TestResultHistoryCollection historyCollection = mAdapter.getHistoryCollection(testName);
-        if (historyCollection != null) {
-            List<TestResultHistory> leafTestHistories = getTestResultHistories(historyCollection);
-            currentTestResult.setTestResultHistories(leafTestHistories);
-        }
-
         TestScreenshotsMetadata screenshotsMetadata = mAdapter.getScreenshotsMetadata(testName);
         if (screenshotsMetadata != null) {
             currentTestResult.setTestScreenshotsMetadata(screenshotsMetadata);
+        }
+        if (history != null) {
+            currentTestResult.setTestResultHistories(
+                    List.of(
+                            new TestResultHistory(
+                                    testNameInReport, history.getExecutionRecords())));
         }
     }
 
@@ -243,7 +311,7 @@ class TestResultsReport {
                 return TestStatus.FAIL;
 
             case TestResult.TEST_RESULT_NOT_EXECUTED:
-                return null;
+                return TestStatus.INCOMPLETE;
 
             default:
                 throw new IllegalArgumentException("Unknown test result: " + testResult);
@@ -253,30 +321,65 @@ class TestResultsReport {
     /**
      * Get test histories per test by filtering out non-leaf histories.
      *
-     * @param TestResultHistoryCollection The raw test history collection.
+     * @param historyCollection The raw test history collection.
      * @return A list containing test result histories per test.
      */
     @SuppressWarnings("ReturnValueIgnored")
     private List<TestResultHistory> getTestResultHistories(
-        TestResultHistoryCollection historyCollection) {
+            TestResultHistoryCollection historyCollection) {
         // Get non-terminal prefixes.
         Set<String> prefixes = new HashSet<>();
         for (TestResultHistory history : historyCollection.asSet()) {
             Arrays.stream(history.getTestName().split(":")).reduce(
-                (total, current) -> {
-                    prefixes.add(total);
-                    return total + ":" + current;
-                });
+                    (total, current) -> {
+                        prefixes.add(total);
+                        return total + ":" + current;
+                    });
         }
 
         // Filter out non-leaf test histories.
-        List<TestResultHistory> leafTestHistories =
-            new ArrayList<TestResultHistory>();
+        List<TestResultHistory> leafTestHistories = new ArrayList<>();
         for (TestResultHistory history : historyCollection.asSet()) {
             if (!prefixes.contains(history.getTestName())) {
                 leafTestHistories.add(history);
             }
         }
         return leafTestHistories;
+    }
+
+    private static String getModuleId(String category) {
+        return "noabi " + category.replaceAll(" ", "");
+    }
+
+    /** Resolves the real test name by handling nested naming conventions.*/
+    private String getSubTestName(String testName) {
+        String currentKey = testName;
+        while (currentKey != null) {
+            if (mAdapter.getTestResultNames().contains(currentKey)) {
+                return currentKey;
+            }
+
+            int idx = currentKey.indexOf(':');
+            if (idx == -1) break;
+            currentKey = currentKey.substring(idx + 1);
+        }
+        return null;
+    }
+
+    /** Formats the sub-test name for display in the report. */
+    private String getSubTestNameInReport(String subTestName, TestListItem testItem) {
+        String testName = testItem.testName;
+        if (subTestName.startsWith(testName)) {
+            if (subTestName.equals(testName)) {
+                return testItem.title.replaceAll(" ", "");
+            }
+            return subTestName.substring(testName.length() + 1);
+        }
+        return subTestName;
+    }
+
+    /** Determines if a test item should be included in the report.*/
+    private boolean shouldShownInReport(TestListItem testItem) {
+        return mAdapter.getHistoryCollection(testItem.testName) != null;
     }
 }

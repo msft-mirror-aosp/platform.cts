@@ -50,6 +50,7 @@ public class Utils {
     public static final String ASSIST_BUNDLE_KEY = "assist_bundle";
     public static final String SESSION_BUNDLE_KEY = "session_bundle";
     public static final String ASSIST_IS_ACTIVITY_ID_NULL = "assist_is_activity_id_null";
+    public static final String APP_FUNCTION_ACTIVITY_ID_KEY = "app_function_activity_id";
     public static final String ASSIST_SCREENSHOT_KEY = "assist_screenshot";
     public static final String SCREENSHOT_COLOR_KEY = "set_screenshot_color";
     public static final String COMPARE_SCREENSHOT_KEY = "compare_screenshot";

@@ -38,6 +38,15 @@ public class TestResultHistoryCollection implements Serializable {
     }
 
     /**
+     * Add a empty test result history with test name.
+     *
+     * @param test a string of test name.
+     */
+    public void addEmptyTestResultHistory(String test) {
+        mHistoryCollection.add(new TestResultHistory(test, new HashSet<>()));
+    }
+
+    /**
      * Add test result histories for tests containing test name and a set of ExecutionRecords
      *
      * @param test test name.

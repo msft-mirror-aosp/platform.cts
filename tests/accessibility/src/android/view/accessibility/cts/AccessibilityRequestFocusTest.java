@@ -16,14 +16,11 @@
 
 package android.view.accessibility.cts;
 
-import static android.view.accessibility.Flags.FLAG_A11Y_SEQUENTIAL_FOCUS_STARTING_POINT;
-
 import static com.google.common.truth.Truth.assertThat;
 
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.KeyEvent;
@@ -177,7 +174,6 @@ public class AccessibilityRequestFocusTest {
 
     @Test
     @LargeTest
-    @RequiresFlagsEnabled(FLAG_A11Y_SEQUENTIAL_FOCUS_STARTING_POINT)
     public void test() throws Throwable {
         // Focus moves directionally [up/down, left/right, tab/shift-tab] from top left, bottom
         // left, top right, bottom right.

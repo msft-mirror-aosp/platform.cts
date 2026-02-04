@@ -20,6 +20,7 @@ import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
 import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
 
 import android.app.ActionBar;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.ContentResolver;
@@ -42,6 +43,7 @@ import android.widget.Toast;
 import android.webkit.WebView;
 
 import com.android.compatibility.common.util.ReportLog;
+import com.android.compatibility.common.util.TestResultHistory;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -576,6 +578,23 @@ public class PassFailButtons {
         @Override
         public void recordTestResults() {
             // default - NOP
+        }
+
+        @Override
+        public void onBackPressed() {
+            TestResultHistoryCollection historyCollection = getHistoryCollection();
+            if (!historyCollection.asSet().isEmpty()) {
+                this.setResult(
+                        android.app.Activity.RESULT_OK,
+                        TestResult.createResult(
+                                this,
+                                TestResult.TEST_RESULT_NOT_EXECUTED,
+                                getTestId(),
+                                getTestDetails(),
+                                getReportLog(),
+                                getHistoryCollection()));
+            }
+            super.onBackPressed();
         }
     } // class PassFailButtons.TestListActivity
 

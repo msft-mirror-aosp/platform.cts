@@ -16,13 +16,16 @@
 
 package android.app.appfunctions.cts
 
+import android.app.appfunctions.AppFunctionActivityId
 import android.app.appfunctions.AppFunctionName
 import android.app.appfunctions.AppFunctionState
 import android.app.appfunctions.flags.Flags
+import android.os.Binder
 import android.os.Parcel
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import android.util.ArraySet
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.compatibility.common.util.ApiTest
 import com.google.common.truth.Truth.assertThat
@@ -42,6 +45,7 @@ class AppFunctionStateTest {
                 "android.app.appfunctions.AppFunctionState#AppFunctionState",
                 "android.app.appfunctions.AppFunctionState#getFunctionName",
                 "android.app.appfunctions.AppFunctionState#isEnabled",
+                "android.app.appfunctions.AppFunctionState#getActivityIds",
                 "android.app.appfunctions.AppFunctionState#writeToParcel",
                 "android.app.appfunctions.AppFunctionState#CREATOR",
                 "android.app.appfunctions.AppFunctionState#equals",
@@ -52,13 +56,15 @@ class AppFunctionStateTest {
     fun constructor_andGetters_enabled() {
         val functionName = AppFunctionName("com.example.package", "testFunctionId")
         val isEnabled = true
+        val activityIds = ArraySet(listOf(AppFunctionActivityId(Binder())))
 
-        val state = AppFunctionState(functionName, isEnabled)
+        val state = AppFunctionState(functionName, isEnabled, activityIds)
 
         val restoredState = parcelAndUnparcel(state)
 
         assertThat(restoredState.functionName).isEqualTo(functionName)
         assertThat(restoredState.isEnabled).isTrue()
+        assertThat(restoredState.activityIds).isEqualTo(activityIds)
         assertThat(restoredState).isEqualTo(state)
         assertThat(restoredState.hashCode()).isEqualTo(state.hashCode())
     }
@@ -77,13 +83,15 @@ class AppFunctionStateTest {
     fun constructor_andGetters_disabled() {
         val functionName = AppFunctionName("com.example.package", "testFunctionId")
         val isEnabled = false
+        val activityIds: ArraySet<AppFunctionActivityId>? = null
 
-        val state = AppFunctionState(functionName, isEnabled)
+        val state = AppFunctionState(functionName, isEnabled, activityIds)
 
         val restoredState = parcelAndUnparcel(state)
 
         assertThat(restoredState.functionName).isEqualTo(functionName)
         assertThat(restoredState.isEnabled).isFalse()
+        assertThat(restoredState.activityIds).isNull()
     }
 
     @ApiTest(
@@ -97,21 +105,31 @@ class AppFunctionStateTest {
     fun equals_andHashCode() {
         val name1 = AppFunctionName("com.example", "func1")
         val name2 = AppFunctionName("com.example", "func2")
+        val activityId1 = AppFunctionActivityId(Binder())
+        val activityId2 = AppFunctionActivityId(Binder())
 
-        val state1 = AppFunctionState(name1, true)
-        val state1Copy = AppFunctionState(name1, true)
-        val state2 = AppFunctionState(name2, true)
-        val state3 = AppFunctionState(name1, false)
+        val state = AppFunctionState(name1, true, ArraySet(listOf(activityId1)))
+        val sameState = AppFunctionState(name1, true, ArraySet(listOf(activityId1)))
+        val differentName = AppFunctionState(name2, true, ArraySet(listOf(activityId1)))
+        val differentEnabled = AppFunctionState(name1, false, ArraySet(listOf(activityId1)))
+        val differentActivityId = AppFunctionState(name1, true, ArraySet(listOf(activityId2)))
+        val nullActivityIds = AppFunctionState(name1, true, null)
 
-        assertThat(state1).isEqualTo(state1)
+        assertThat(state).isEqualTo(state) // Same instance.
 
-        assertThat(state1).isEqualTo(state1Copy)
-        assertThat(state1.hashCode()).isEqualTo(state1Copy.hashCode())
+        assertThat(state).isEqualTo(sameState)
+        assertThat(state.hashCode()).isEqualTo(sameState.hashCode())
 
-        assertThat(state1).isNotEqualTo(state2)
-        assertThat(state1.hashCode()).isNotEqualTo(state2.hashCode())
-        assertThat(state1).isNotEqualTo(state3)
-        assertThat(state1.hashCode()).isNotEqualTo(state3.hashCode())
+        assertThat(state).isNotEqualTo(differentName)
+        assertThat(state.hashCode()).isNotEqualTo(differentName.hashCode())
+        assertThat(state).isNotEqualTo(differentEnabled)
+        assertThat(state.hashCode()).isNotEqualTo(differentEnabled.hashCode())
+        assertThat(state).isNotEqualTo(differentActivityId)
+        assertThat(state.hashCode()).isNotEqualTo(differentActivityId.hashCode())
+        assertThat(state).isNotEqualTo(nullActivityIds)
+        assertThat(state.hashCode()).isNotEqualTo(nullActivityIds.hashCode())
+        assertThat(nullActivityIds).isEqualTo(nullActivityIds)
+        assertThat(nullActivityIds.hashCode()).isEqualTo(nullActivityIds.hashCode())
     }
 
     private fun parcelAndUnparcel(original: AppFunctionState): AppFunctionState {

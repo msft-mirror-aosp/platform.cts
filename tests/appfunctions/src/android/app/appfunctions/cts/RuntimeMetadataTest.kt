@@ -57,9 +57,10 @@ import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER)
-class AppFunctionMetadataTest {
+class RuntimeMetadataTest {
 
-    @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+    @get:Rule
+    val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     private val context: Context
         get() = ApplicationProvider.getApplicationContext()
@@ -127,67 +128,6 @@ class AppFunctionMetadataTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
-    @Test
-    @IncludeRunOnSecondaryUser
-    @IncludeRunOnPrimaryUser
-    fun parcelAndUnparcelMetadata_allFieldsSet() =
-        doBlockingWithPermissions(Manifest.permission.EXECUTE_APP_FUNCTIONS) {
-            installPackage(TEST_APP_A_V2_PATH)
-            val packageName = TEST_APP_A_PKG
-            val functionId = "com.example.utils#print1"
-            val packageMetadata =
-                AppFunctionPackageMetadata.create(
-                    TEST_APP_A_PKG,
-                    listOf(
-                        GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                            .setPropertyString("exampleProperty", "exampleValue")
-                            .build()
-                    ),
-                )
-
-            retryAssert {
-                val afStaticMetadataGd = queryAppFunctionStaticMetadata(packageName, functionId)
-                val originalMetadata =
-                    AppFunctionMetadata.Builder(afStaticMetadataGd, packageMetadata).build()
-
-                val restoredMetadata = parcelAndUnparcelAppFunctionMetadata(originalMetadata)
-
-                assertThat(restoredMetadata.name).isEqualTo(originalMetadata.name)
-                assertThat(restoredMetadata.schemaMetadata)
-                    .isEqualTo(originalMetadata.schemaMetadata)
-                assertThat(restoredMetadata.metadataDocument)
-                    .isEqualTo(originalMetadata.metadataDocument)
-                assertThat(restoredMetadata.packageMetadata)
-                    .isEqualTo(originalMetadata.packageMetadata)
-            }
-        }
-
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
-    @Test
-    @IncludeRunOnSecondaryUser
-    @IncludeRunOnPrimaryUser
-    fun parcelAndUnparcelMetadata_nullSchema() =
-        doBlockingWithPermissions(Manifest.permission.EXECUTE_APP_FUNCTIONS) {
-            val packageName = "android.app.appfunctions.cts"
-            val functionId = "noSchema"
-            val packageMetadata = AppFunctionPackageMetadata.create(packageName, listOf())
-
-            retryAssert {
-                val afStaticMetadataGd = queryAppFunctionStaticMetadata(packageName, functionId)
-                val originalMetadata =
-                    AppFunctionMetadata.Builder(afStaticMetadataGd, packageMetadata).build()
-                val restoredMetadata = parcelAndUnparcelAppFunctionMetadata(originalMetadata)
-
-                assertThat(restoredMetadata.name).isEqualTo(originalMetadata.name)
-                assertThat(restoredMetadata.schemaMetadata).isNull()
-                assertThat(restoredMetadata.metadataDocument)
-                    .isEqualTo(originalMetadata.metadataDocument)
-                assertThat(restoredMetadata.packageMetadata)
-                    .isEqualTo(originalMetadata.packageMetadata)
-            }
-        }
-
     @Test
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
@@ -208,7 +148,9 @@ class AppFunctionMetadataTest {
         doBlockingWithPermissions {
             installPackage(TEST_APP_A_V2_PATH)
 
-            retryAssert { assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG)).isEmpty() }
+            retryAssert {
+                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG)).isEmpty()
+            }
         }
 
     @Test
@@ -235,7 +177,10 @@ class AppFunctionMetadataTest {
 
             retryAssert {
                 assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG))
-                    .containsExactly(AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print1"))
+                    .containsExactly(AppFunctionInfo(
+                        TEST_APP_A_PKG,
+                        "com.example.utils#print1"
+                    ))
             }
         }
 
@@ -357,14 +302,14 @@ class AppFunctionMetadataTest {
 
     private fun installPackage(path: String) {
         assertThat(
-                SystemUtil.runShellCommand(
-                    java.lang.String.format(
-                        "pm install -r -i %s -t -g %s",
-                        context.packageName,
-                        path,
-                    )
+            SystemUtil.runShellCommand(
+                java.lang.String.format(
+                    "pm install -r -i %s -t -g %s",
+                    context.packageName,
+                    path,
                 )
             )
+        )
             .isEqualTo("Success\n")
     }
 
@@ -434,7 +379,10 @@ class AppFunctionMetadataTest {
     data class AppFunctionInfo(val packageName: String, val functionId: String)
 
     private companion object {
-        @JvmField @ClassRule @Rule val sDeviceState: DeviceState = DeviceState()
+        @JvmField
+        @ClassRule
+        @Rule
+        val sDeviceState: DeviceState = DeviceState()
 
         const val TEST_APP_ROOT_FOLDER: String = "/data/local/tmp/cts/appfunctions/"
         const val TEST_APP_A_V2_PATH: String =

@@ -39,6 +39,8 @@
         <xs:element name="displayNameStringRes" type="xs:long" cardinality="2" />
         <xs:element name="mobileApplicationQualifiedId" type="xs:string" cardinality="2"
             joinableValueType="1" />
+        <xs:element name="scope" cardinality="2" indexingType="1" tokenizerType="2"
+            type="xs:string" />
 
         <xs:element name="customIntProperty" cardinality="2" type="xs:int" />
         <xs:element name="nestedDocumentProperty" cardinality="2" type="appfn:NestedDocument"/>

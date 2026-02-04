@@ -32,6 +32,7 @@ import static org.junit.Assert.fail;
 
 import android.app.ActivityManager;
 import android.app.ActivityOptions;
+import android.app.appfunctions.AppFunctionActivityId;
 import android.app.assist.AssistContent;
 import android.app.assist.AssistStructure;
 import android.app.assist.AssistStructure.ViewNode;
@@ -147,6 +148,7 @@ abstract class AssistTestBase {
     protected boolean mIsActivityIdNull;
     protected AssistContent mAssistContent;
     protected AssistStructure mAssistStructure;
+    @Nullable protected AppFunctionActivityId mAppFunctionActivityId;
     protected boolean mScreenshot;
     protected Bundle mAssistBundle;
     protected Bundle mSessionBundle;
@@ -156,7 +158,7 @@ abstract class AssistTestBase {
     private AutoResetLatch mHas3pResumedLatch = new AutoResetLatch(1);
     private AutoResetLatch mHasTestDestroyedLatch = new AutoResetLatch(1);
     private AutoResetLatch mSessionCompletedLatch = new AutoResetLatch(1);
-    protected AutoResetLatch mAssistDataReceivedLatch = new AutoResetLatch();
+    protected AutoResetLatch mAssistDataReceivedLatch = new AutoResetLatch(1);
     protected AutoResetLatch mSessionDataReceivedLatch = new AutoResetLatch(1);
 
     protected ActionLatchReceiver mActionLatchReceiver;
@@ -193,6 +195,7 @@ abstract class AssistTestBase {
         mAssistStructure = null;
         mAssistContent = null;
         mAssistBundle = null;
+        mAppFunctionActivityId = null;
         mSessionBundle = null;
         mIsActivityIdNull = false;
 
@@ -778,6 +781,7 @@ abstract class AssistTestBase {
         mAssistBundle = assistData.getBundle(Utils.ASSIST_BUNDLE_KEY);
         mAssistStructure = assistData.getParcelable(Utils.ASSIST_STRUCTURE_KEY);
         mAssistContent = assistData.getParcelable(Utils.ASSIST_CONTENT_KEY);
+        mAppFunctionActivityId = assistData.getParcelable(Utils.APP_FUNCTION_ACTIVITY_ID_KEY);
 
         mScreenshot = assistData.getBoolean(Utils.ASSIST_SCREENSHOT_KEY, false);
 

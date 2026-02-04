@@ -107,7 +107,6 @@ class PinnedWindowingLayerTests : WindowingLayerTestBase() {
      */
     @Test
     fun normalLayerRequests_whenWindowIsNotPinned_isAlwaysSuccessful() = runBlocking {
-        assumeFalse(isAutomotive()); // b/475160661 - not supported on automotive yet
         launchTestActivity()
         val result = requestWindowingLayer(AppTask.WINDOWING_LAYER_NORMAL_APP)
         assertSuccess(result, AppTask.WINDOWING_LAYER_NORMAL_APP)

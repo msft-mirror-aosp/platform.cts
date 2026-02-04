@@ -74,6 +74,7 @@ class AppFunctionMetadataTestHelper {
                             .setPropertyLong("displayNameStringRes", 10)
                             .setPropertyBoolean("restrictCallersWithExecuteAppFunctions", true)
                             .setPropertyString("serviceName", TEST_SERVICE_NAME)
+                            .setPropertyString("scope", "global")
                             .build(),
                         AppFunctionPackageMetadata.create(PACKAGE_NAME, listOf()),
                     )
@@ -101,6 +102,7 @@ class AppFunctionMetadataTestHelper {
                             .setPropertyLong("displayNameStringRes", 10)
                             .setPropertyBoolean("restrictCallersWithExecuteAppFunctions", true)
                             .setPropertyString("serviceName", TEST_SERVICE_NAME)
+                            .setPropertyString("scope", "global")
                             .build(),
                         AppFunctionPackageMetadata.create(PACKAGE_NAME, listOf()),
                     )
@@ -134,6 +136,9 @@ class AppFunctionMetadataTestHelper {
             val DYNAMIC_STOP_PROCESS = AppFunctionName(PACKAGE_NAME, "contextStopProcess")
             val DYNAMIC_GET_URIS = AppFunctionName(PACKAGE_NAME, "contextGetUris")
 
+            val GLOBAL_SCOPE = AppFunctionName(PACKAGE_NAME, "appFunctionGlobalScope")
+            val ACTIVITY_SCOPE = AppFunctionName(PACKAGE_NAME, "appFunctionActivityScope")
+
             val APP_LEVEL_FUNCTIONS: Set<AppFunctionName> =
                 setOf(
                     DYNAMIC_CONCAT_STRINGS,
@@ -144,12 +149,17 @@ class AppFunctionMetadataTestHelper {
                     DYNAMIC_STOP_PROCESS,
                     DYNAMIC_STOP_PROCESS,
                     DYNAMIC_GET_URIS,
+                    GLOBAL_SCOPE,
+                    ACTIVITY_SCOPE,
                 )
 
             val SERVICE_LEVEL_FUNCTIONS: Set<AppFunctionName> =
                 setOf(HIGH_SCHEMA_VERSION, ENABLED_BY_DEFAULT, DISABLED_BY_DEFAULT)
 
             val ALL_FUNCTIONS = APP_LEVEL_FUNCTIONS + SERVICE_LEVEL_FUNCTIONS
+
+            // TODO: update this once the indexer change is in.
+            val ALL_GLOBAL_FUNCTIONS = setOf(GLOBAL_SCOPE)
         }
 
         object Components {
@@ -220,6 +230,7 @@ class AppFunctionMetadataTestHelper {
                                     .build(),
                             )
                             .setPropertyString("serviceName", TEST_SERVICE_NAME)
+                            .setPropertyString("scope", "global")
                             .build(),
                         PackageMetadata.DYNAMIC_SCHEMA_PACKAGE_METADATA,
                     )
@@ -246,6 +257,7 @@ class AppFunctionMetadataTestHelper {
                                 "android.app.appfunctions.cts.dynamic.schema",
                             )
                             .setPropertyString("serviceName", TEST_SERVICE_NAME)
+                            .setPropertyString("scope", "global")
                             .build(),
                         PackageMetadata.DYNAMIC_SCHEMA_PACKAGE_METADATA,
                     )
@@ -272,6 +284,7 @@ class AppFunctionMetadataTestHelper {
                             .setPropertyString(PROPERTY_SCHEMA_NAME, "testSchema")
                             .setPropertyLong(PROPERTY_SCHEMA_VERSION, 7L)
                             .setPropertyString("serviceName", TEST_SERVICE_NAME)
+                            .setPropertyString("scope", "global")
                             .build(),
                         PackageMetadata.DYNAMIC_SCHEMA_PACKAGE_METADATA,
                     )
@@ -331,6 +344,7 @@ class AppFunctionMetadataTestHelper {
                             .setPropertyLong("displayNameStringRes", 10)
                             .setPropertyBoolean("restrictCallersWithExecuteAppFunctions", true)
                             .setPropertyString("serviceName", TEST_SERVICE_NAME)
+                            .setPropertyString("scope", "global")
                             .build(),
                         PackageMetadata.PACKAGE_METADATA,
                     )

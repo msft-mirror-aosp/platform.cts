@@ -23,8 +23,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static org.junit.Assume.assumeFalse;
 import android.content.ContentResolver;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import androidx.annotation.NonNull;
 import android.content.ComponentName;
 import android.content.Context;
@@ -68,12 +70,14 @@ public class CtsSharesheetTapToShareServiceTest {
     private static final int TIMEOUT_MS = 5000;
 
     private Context mContext;
+    private PackageManager mPackageManager;
     private TapToShareClient mClient;
     private final Executor mExecutor = Executors.newSingleThreadExecutor();
 
     @Before
     public void setUp() {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
+        mPackageManager = mContext.getPackageManager();
         mClient = new TapToShareClient(mContext);
         CtsSharesheetTapToShareService.reset();
     }
@@ -218,6 +222,8 @@ public class CtsSharesheetTapToShareServiceTest {
 
     @Test
     public void testTapToShare_launchesFulfillmentActivity() throws Exception {
+        assumeHandheldDevice();
+
         final CountDownLatch intentLatch = new CountDownLatch(1);
         final AtomicReference<Intent> receivedIntent = new AtomicReference<>();
         CtsGestureExchangeActivity.setOnIntentReceivedConsumer(intent -> {
@@ -257,5 +263,14 @@ public class CtsSharesheetTapToShareServiceTest {
             Settings.Secure.putString(resolver, TAP_SHARE_FULFILLMENT_ACTIVITY_COMPONENT, oldActivity);
             mContext.sendBroadcast(new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS));
         }
+    }
+
+    private void assumeHandheldDevice() {
+        assumeFalse("This test only runs on handheld devices with a standard Sharesheet",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
+                || mPackageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)
+                || mPackageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+                || mPackageManager.hasSystemFeature(PackageManager.FEATURE_EMBEDDED)
+                || mPackageManager.hasSystemFeature(PackageManager.FEATURE_PC));
     }
 }

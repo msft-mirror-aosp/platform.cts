@@ -18,6 +18,8 @@ package android.app.appfunctions.cts
 import android.Manifest
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.AppFunctionMetadata
+import android.app.appfunctions.AppFunctionMetadata.SCOPE_ACTIVITY
+import android.app.appfunctions.AppFunctionMetadata.SCOPE_GLOBAL
 import android.app.appfunctions.AppFunctionName
 import android.app.appfunctions.AppFunctionPackageMetadata
 import android.app.appfunctions.AppFunctionSchemaMetadata
@@ -323,6 +325,56 @@ class SearchAppFunctionsTest {
         } finally {
             uninstallPackage(UpdatableHelperApp.PACKAGE_NAME)
         }
+    }
+
+    @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    @EnsureHasPermission(
+        Manifest.permission.EXECUTE_APP_FUNCTIONS,
+        Manifest.permission.QUERY_ALL_PACKAGES,
+    )
+    fun searchAppFunctions_searchByScopeWithSingleScope_seeFilteredResult() = doBlocking {
+        val searchSpec =
+            AppFunctionSearchSpec.Builder()
+                .setScopes(listOf(AppFunctionMetadata.SCOPE_GLOBAL))
+                .build()
+
+        val results: List<AppFunctionMetadata> = searchAppFunctions(searchSpec)
+        val functionsGroupByPackage = results.groupBy { it.packageMetadata.packageName }
+
+        assertThat(functionsGroupByPackage[DynamicSchemaHelperApp.PACKAGE_NAME]!!.map { it.name })
+            .containsExactlyElementsIn(DynamicSchemaHelperApp.FunctionNames.ALL_GLOBAL_FUNCTIONS)
+    }
+
+    @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    @EnsureHasPermission(
+        Manifest.permission.EXECUTE_APP_FUNCTIONS,
+        Manifest.permission.QUERY_ALL_PACKAGES,
+    )
+    fun searchAppFunctions_searchByScopeWithTwoScopes_seeFilteredResult() = doBlocking {
+        val searchSpec =
+            AppFunctionSearchSpec.Builder()
+                .setScopes(
+                    listOf(AppFunctionMetadata.SCOPE_GLOBAL, AppFunctionMetadata.SCOPE_ACTIVITY)
+                )
+                .build()
+
+        val results: List<AppFunctionMetadata> = searchAppFunctions(searchSpec)
+        val functionsGroupByPackage = results.groupBy { it.packageMetadata.packageName }
+
+        // TODO: Update this to be ALL_FUNCTIONS once the indexer change is in.
+        assertThat(functionsGroupByPackage[DynamicSchemaHelperApp.PACKAGE_NAME]!!.map { it.name })
+            .containsExactlyElementsIn(
+                listOf(
+                    DynamicSchemaHelperApp.FunctionNames.GLOBAL_SCOPE,
+                    DynamicSchemaHelperApp.FunctionNames.ACTIVITY_SCOPE
+                )
+            )
     }
 
     @Test
@@ -747,7 +799,7 @@ class SearchAppFunctionsTest {
         )
         installExistingPackageAsUser(CtsApp.PACKAGE_NAME, secondaryUser)
         installExistingPackageAsUser(DynamicSchemaHelperApp.PACKAGE_NAME, secondaryUser)
-        retryAssert {
+        retryAssert(maxIntervals = 20) {
             runWithShellPermission(Manifest.permission.INTERACT_ACROSS_USERS_FULL) {
                 assertThat(
                         getAllStaticMetadataPackages(

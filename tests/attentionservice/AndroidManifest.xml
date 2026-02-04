@@ -16,7 +16,11 @@
   -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-     package="android.attentionservice.cts">
+     package="android.attentionservice.cts"
+     android:sharedUserId="android.uid.system">
+
+    <uses-permission android:name="android.permission.ACCESS_ATTENTION_LISTENER" />
+    <uses-permission android:name="android.permission.CREATE_VIRTUAL_DEVICE" />
 
     <application>
         <uses-library android:name="android.test.runner"/>

@@ -86,6 +86,7 @@ public final class AppFunctionTestUtils {
     public static final String PROPERTY_ENABLED_BY_DEFAULT = "enabledByDefault";
     public static final String PROPERTY_RESTRICT_CALLERS_WITH_EXECUTE_APP_FUNCTIONS =
             "restrictCallersWithExecuteAppFunctions";
+    public static final String PROPERTY_SCOPE = "scope";
 
     /** Print app function generic document as defined in the appfunctions.xml of App A V2. */
     public static final GenericDocument APP_A_V2_PRINT_APP_FUNCTION =
@@ -99,14 +100,14 @@ public final class AppFunctionTestUtils {
      * test app A.
      */
     public static final GenericDocument APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION =
-            buildAppFunctionDocument(TEST_APP_A_PKG, "print1", TEST_APP_FUNCTIONS_SERVICE);
+            buildAppFunctionDocument(TEST_APP_A_PKG, "print1", TEST_APP_FUNCTIONS_SERVICE, "global");
 
     /**
      * Print app function generic document as defined in the app_appfunctions_v2.xml of dynamic
      * schema test app A.
      */
     public static final GenericDocument APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION =
-            buildAppFunctionDocument(TEST_APP_A_PKG, "appPrint1", "@null");
+            buildAppFunctionDocument(TEST_APP_A_PKG, "appPrint1", "@null", "activity");
 
     /**
      * Print app function generic document as defined in the appfunctions_v2.xml of dynamic schema
@@ -157,7 +158,7 @@ public final class AppFunctionTestUtils {
      * test app B.
      */
     public static final GenericDocument APP_B_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION =
-            buildAppFunctionDocument(TEST_APP_B_PKG, "print1", TEST_APP_FUNCTIONS_SERVICE);
+            buildAppFunctionDocument(TEST_APP_B_PKG, "print1", TEST_APP_FUNCTIONS_SERVICE, "global");
 
     /** Updates the enabled state of the AppFunctionService for a given package. */
     public static void updateAppFunctionServiceEnabledState(
@@ -278,6 +279,7 @@ public final class AppFunctionTestUtils {
         if (isAppLevelAppFunctionsEnabled()) {
             builder.setPropertyString(
                     "serviceName", "com.android.cts.appsearch.indexertestapp.a.AppFunctionService");
+            builder.setPropertyString("scope", "global");
         }
         return builder.build();
     }
@@ -301,6 +303,7 @@ public final class AppFunctionTestUtils {
 
         if (isAppLevelAppFunctionsEnabled()) {
             builder.setPropertyString("serviceName", TEST_APP_FUNCTIONS_SERVICE);
+            builder.setPropertyString("scope", "global");
         }
 
         return builder.build();
@@ -389,7 +392,7 @@ public final class AppFunctionTestUtils {
      * </ul>
      */
     private static GenericDocument buildAppFunctionDocument(
-            String packageName, String functionSuffix, String serviceName) {
+            String packageName, String functionSuffix, String serviceName, String scope) {
         GenericDocument.Builder builder =
                 new GenericDocument.Builder<>(
                                 NAMESPACE_APP_FUNCTIONS,
@@ -411,6 +414,7 @@ public final class AppFunctionTestUtils {
 
         if (isAppLevelAppFunctionsEnabled()) {
             builder.setPropertyString(PROPERTY_SERVICE_NAME, serviceName);
+            builder.setPropertyString(PROPERTY_SCOPE, scope);
         }
 
         GenericDocument schemaMetadata =

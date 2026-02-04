@@ -37,7 +37,7 @@ class SupervisingProfileTest : BaseSupervisionTest() {
     @EnsureHasPermission(MANAGE_USERS, CREATE_USERS, QUERY_USERS)
     @RequireRootInstrumentation(reason = "Use of MANAGE_USERS")
     fun canCreateSupervisingProfile_atMaxSecondaryUsers() {
-        withMaxSwitchableUsers { withSupervisingUser {} }
+        withMaxSwitchableUsers { withSupervisingUser(supervisionEnabled = false, hasPin = false) }
     }
 
     private fun withMaxSwitchableUsers(action: () -> Unit) {

@@ -134,9 +134,9 @@ public class TestResult {
      * Convert the test activity's result into a {@link TestResult}. Only meant to be used by
      * {@link TestListActivity}.
      */
-    static TestResult fromActivityResult(int resultCode, Intent data) {
+    static TestResult fromActivityResult(Intent data) {
         String name = setTestNameSuffix(sCurrentDisplayMode, data.getStringExtra(TEST_NAME));
-        return fromActivityResultWithTestName(resultCode, data, name);
+        return fromActivityResultWithTestName(data, name);
     }
 
     /**
@@ -144,7 +144,7 @@ public class TestResult {
      * Only meant to be used by {@link TestResult}.
      */
     static TestResult fromActivityResultWithTestName(
-            int resultCode, Intent data, String name) {
+            Intent data, String name) {
         int result = data.getIntExtra(TEST_RESULT, TEST_RESULT_NOT_EXECUTED);
         String details = data.getStringExtra(TEST_DETAILS);
         ReportLog reportLog = (ReportLog) data.getSerializableExtra(TEST_METRICS);
@@ -157,17 +157,14 @@ public class TestResult {
      * Convert the test activity's result into a {@link TestResult} with the given display mode.
      * Only meant to be used by {@link TestListActivity}.
      */
-    static TestResult fromActivityResultWithDisplayMode(
-            int resultCode, Intent data, String mode) {
+    static TestResult fromActivityResultWithDisplayMode(Intent data, String mode) {
         if (mode.equalsIgnoreCase(DisplayMode.UNFOLDED.toString())) {
             return fromActivityResultWithTestName(
-                    resultCode,
                     data,
                     removeTestNameSuffix(mode, data.getStringExtra(TEST_NAME))
             );
         }
         return fromActivityResultWithTestName(
-                resultCode,
                 data,
                 setTestNameSuffix(mode, data.getStringExtra(TEST_NAME))
         );

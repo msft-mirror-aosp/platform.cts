@@ -388,12 +388,10 @@ public class SubscriptionManagerTest {
         mSm.setSubscriptionPlans(mSubId, Arrays.asList(plan));
         final SubscriptionPlan returnedPlan = mSm.getSubscriptionPlans(mSubId).get(0);
         assertEquals(plan, returnedPlan);
-        if (Flags.subscriptionPlanAllowStatusAndEndDate()) {
-            assertNull(returnedPlan.getPlanEndDate());
-            assertEquals(
-                    SubscriptionPlan.SUBSCRIPTION_STATUS_ACTIVE,
-                    returnedPlan.getSubscriptionStatus());
-        }
+        assertNull(returnedPlan.getPlanEndDate());
+        assertEquals(
+                SubscriptionPlan.SUBSCRIPTION_STATUS_ACTIVE,
+                returnedPlan.getSubscriptionStatus());
 
         if (Flags.subscriptionPlanEnhancement()) {
             assertEquals(DOWNLINK_KBPS, returnedPlan.getStreamingAppMaxDownlinkKbps());
@@ -417,9 +415,7 @@ public class SubscriptionManagerTest {
         mSm.setSubscriptionPlans(mSubId, Arrays.asList(planNonRecurring));
         final SubscriptionPlan returnedPlanNonRecurring = mSm.getSubscriptionPlans(mSubId).get(0);
         assertEquals(planNonRecurring, returnedPlanNonRecurring);
-        if (Flags.subscriptionPlanAllowStatusAndEndDate()) {
-            assertEquals(end, returnedPlanNonRecurring.getPlanEndDate());
-        }
+        assertEquals(end, returnedPlanNonRecurring.getPlanEndDate());
 
         // Now revoke our access
         setSubPlanOwner(mSubId, null);
@@ -1032,9 +1028,8 @@ public class SubscriptionManagerTest {
                 .setDataUsage(500_000_000, time)
                 .resetNetworkTypes();
 
-        if (Flags.subscriptionPlanAllowStatusAndEndDate()) {
-            builder.setSubscriptionStatus(SubscriptionPlan.SUBSCRIPTION_STATUS_ACTIVE);
-        }
+        builder.setSubscriptionStatus(SubscriptionPlan.SUBSCRIPTION_STATUS_ACTIVE);
+
         if (Flags.subscriptionPlanEnhancement()) {
             builder.setStreamingAppMaxDownlinkKbps(DOWNLINK_KBPS);
             builder.setStreamingAppMaxUplinkKbps(UPLINK_KBPS);
@@ -2128,9 +2123,7 @@ public class SubscriptionManagerTest {
                 .setDataLimit(1_000_000_000, SubscriptionPlan.LIMIT_BEHAVIOR_DISABLED)
                 .setDataUsage(500_000_000, dataUsageTime);
 
-        if (Flags.subscriptionPlanAllowStatusAndEndDate()) {
-            builder.setSubscriptionStatus(SubscriptionPlan.SUBSCRIPTION_STATUS_ACTIVE);
-        }
+        builder.setSubscriptionStatus(SubscriptionPlan.SUBSCRIPTION_STATUS_ACTIVE);
 
         if (Flags.subscriptionPlanEnhancement()) {
             builder.setStreamingAppMaxDownlinkKbps(DOWNLINK_KBPS);

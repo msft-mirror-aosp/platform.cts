@@ -505,6 +505,7 @@ public class ItsTestActivity extends DialogTestListActivity {
                     }
                 }
 
+                setNotExecutedTestResults(mAdapter);
                 try {
                     /* Sample JSON results string
                     {

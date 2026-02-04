@@ -97,8 +97,7 @@ public class ExcessiveBroadcastsTest extends BaseBroadcastTest {
                                     mAm.getHistoricalProcessExitReasons(
                                             HELPER_PKG1, ANY_PID, 1 /* maxNum */));
             assertThat(appExitInfos).hasSize(1);
-            assertThat(appExitInfos.get(0).getReason())
-                    .isEqualTo(ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE);
+            assertThat(appExitInfos.get(0).getReason()).isEqualTo(ApplicationExitInfo.REASON_CRASH);
             assertThat(appExitInfos.get(0).getSubReason())
                     .isEqualTo(ApplicationExitInfo.SUBREASON_EXCESSIVE_ENQUEUED_BROADCASTS_COUNT);
 
