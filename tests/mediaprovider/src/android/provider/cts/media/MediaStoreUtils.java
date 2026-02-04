@@ -19,7 +19,6 @@ package android.provider.cts.media;
 import android.content.ContentValues;
 import android.content.Context;
 import android.net.Uri;
-import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.provider.MediaStore.DownloadColumns;
@@ -29,20 +28,12 @@ import android.text.format.DateUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.test.filters.SdkSuppress;
-
-import org.junit.Test;
 
 import java.io.FileNotFoundException;
 import java.io.OutputStream;
 import java.util.Objects;
 
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.R)
 public class MediaStoreUtils {
-    @Test
-    public void testStub() {
-    }
-
     /**
      * Create a new pending media item using the given parameters. Pending items
      * are expected to have a short lifetime, and owners should either
