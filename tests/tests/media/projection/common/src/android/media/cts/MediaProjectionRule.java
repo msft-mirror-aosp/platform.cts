@@ -196,13 +196,19 @@ public class MediaProjectionRule implements TestRule {
      * Start a MediaProjection session on the provided display. This will enable the consent flow.
      */
     public MediaProjection startMediaProjection(int displayId) throws Exception {
+        return startMediaProjection(null, displayId);
+    }
+
+    /** Start a MediaProjection session on the provided display with a custom config. */
+    public MediaProjection startMediaProjection(MediaProjectionConfig config, int displayId)
+            throws Exception {
         if (displayId != Display.DEFAULT_DISPLAY) {
             // Need to enable consent flow so the external display is selected
             enableConsentFlow();
         }
         DisplayManager displayManager = mContext.getSystemService(DisplayManager.class);
         String displayName = Objects.requireNonNull(displayManager).getDisplay(displayId).getName();
-        return startMediaProjection(null, null, null, false, displayName);
+        return startMediaProjection(config, null, null, false, displayName);
     }
 
     /** Start a MediaProjection session (with a custom foregroundService class). */
