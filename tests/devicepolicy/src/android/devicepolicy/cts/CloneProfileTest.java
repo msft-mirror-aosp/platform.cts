@@ -26,7 +26,9 @@ import android.os.UserManager;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.multiuser.annotations.EnsureCanAddUser;
 import com.android.bedstead.multiuser.annotations.EnsureHasNoCloneProfile;
+import com.android.bedstead.nene.users.UserType;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
@@ -43,6 +45,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RequireNotHeadlessSystemUserMode(reason = "Requires full system user")
+@EnsureCanAddUser(UserType.CLONE_PROFILE_TYPE_NAME)
 @RunWith(BedsteadJUnit4.class)
 public final class CloneProfileTest {
     @ClassRule
