@@ -32,6 +32,7 @@ android_test {
     ],
     static_libs: [
         "android.app.privatecompute.flags-aconfig-java",
+        "android.app.flags-aconfig-java",
         "bedstead",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
@@ -46,7 +47,10 @@ android_test {
     host_common_data: [
         ":CtsBackupHostTestCases",
     ],
-    srcs: ["src/**/*.java"],
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.kt",
+    ],
     test_suites: [
         "cts",
         "general-tests",
@@ -66,6 +70,7 @@ android_test {
         ":CtsRestrictedModeOptedOutApp",
         ":CtsRestrictedModeNoActionApp1",
         ":CtsRestrictedModeNoActionApp2",
+        ":CtsBackupFactoryApp",
     ],
     per_testcase_directory: true,
 }
