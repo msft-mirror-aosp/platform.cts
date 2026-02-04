@@ -1461,6 +1461,30 @@ class ProvisioningTest {
             ).isEqualTo(DevicePolicyManager.STATUS_USER_SETUP_COMPLETED)
         }
 
+    @Postsubmit(reason = "New test")
+    @EnsureHasNoDpc
+    @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
+    @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING)
+    @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
+    @RequireRunOnSystemUser()
+    @RequireResourcesBooleanValue(
+        configName = "config_enableMultiUserManagement",
+        requiredValue = false
+    )
+    @ApiTest(
+        apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPreCondition",
+            "android.app.admin.DevicePolicyManager#ACTION_PROVISION_MULTI_USER_DEVICE"]
+    )
+    fun checkProvisioningPreCondition_multiUserDC_configNotEnabled_returnsDeviceDoesntSupport() =
+        withIncompleteSetupOnAllUsers {
+            assertThat(
+                localDevicePolicyManager.checkProvisioningPrecondition(
+                    DevicePolicyManager.ACTION_PROVISION_MULTI_USER_DEVICE,
+                    DEVICE_ADMIN_COMPONENT_NAME.packageName
+                )
+            ).isEqualTo(DevicePolicyManager.STATUS_MULTI_USER_MANAGEMENT_NOT_SUPPORTED)
+        }
+
     // TODO(b/208843126): add more CTS coverage for setUserProvisioningState
     @Postsubmit(reason = "New test")
     @Test
