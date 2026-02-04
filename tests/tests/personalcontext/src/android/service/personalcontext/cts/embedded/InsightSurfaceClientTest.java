@@ -88,6 +88,8 @@ public class InsightSurfaceClientTest {
                         + "#setNestedScrollAxes",
                 "android.service.personalcontext.embedded.InsightSurfaceClient.Builder"
                         + "#setNestedScrollAxisLocked",
+                "android.service.personalcontext.embedded.InsightSurfaceClient.Builder"
+                        + "#setThemeResourceName",
                 "android.service.personalcontext.embedded.InsightSurfaceClient.Builder#addReceiver",
                 "android.service.personalcontext.embedded.InsightSurfaceClient.Builder#addHint",
                 "android.service.personalcontext.embedded.InsightSurfaceClient.Builder#build",
@@ -99,6 +101,8 @@ public class InsightSurfaceClientTest {
                 "android.service.personalcontext.embedded.InsightSurfaceClient"
                         + "#isNestedScrollAxisLocked",
                 "android.service.personalcontext.embedded.InsightSurfaceClient#shouldBlur",
+                "android.service.personalcontext.embedded.InsightSurfaceClient"
+                        + "#getThemeResourceName",
                 "android.service.personalcontext.embedded.InsightSurfaceClient#getHints",
                 "android.service.personalcontext.embedded.InsightSurfaceClient#getReceivers",
             })
@@ -112,6 +116,7 @@ public class InsightSurfaceClientTest {
         final int nestedScrollAxes = View.SCROLL_AXIS_HORIZONTAL | View.SCROLL_AXIS_VERTICAL;
         final boolean isNestedScrollAxisLocked = true;
         final boolean shouldBlur = true;
+        final String themeResourceName = "theme";
         final InsightSurfaceClient client =
                 new InsightSurfaceClient.Builder(mContext, mExecutor, mClientCallbacks)
                         .setMeasureSpecs(widthMeasureSpec, heightMeasureSpec)
@@ -119,6 +124,7 @@ public class InsightSurfaceClientTest {
                         .setNestedScrollAxes(nestedScrollAxes)
                         .setNestedScrollAxisLocked(isNestedScrollAxisLocked)
                         .setShouldBlur(shouldBlur)
+                        .setThemeResourceName(themeResourceName)
                         .addReceiver(mInsightReceiver)
                         .addHint(mHint)
                         .build();
@@ -129,6 +135,7 @@ public class InsightSurfaceClientTest {
         assertThat(client.getNestedScrollAxes()).isEqualTo(nestedScrollAxes);
         assertThat(client.isNestedScrollAxisLocked()).isEqualTo(isNestedScrollAxisLocked);
         assertThat(client.shouldBlur()).isEqualTo(shouldBlur);
+        assertThat(client.getThemeResourceName()).isEqualTo(themeResourceName);
         assertThat(client.getHints()).contains(mHint);
         assertThat(client.getReceivers()).contains(mInsightReceiver);
     }
