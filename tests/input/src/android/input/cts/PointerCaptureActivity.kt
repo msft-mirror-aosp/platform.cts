@@ -19,14 +19,20 @@ package android.input.cts
 import com.android.cts.input.CaptureEventActivity
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 
 /** A test activity for capturing events when the pointer is captured. */
 class PointerCaptureActivity : CaptureEventActivity() {
-    private var latch: CountDownLatch? = null
+    private var captureLatch: CountDownLatch? = null
+    private var releaseLatch: CountDownLatch? = null
 
     override fun onPointerCaptureChanged(hasCapture: Boolean) {
-        latch?.takeIf { hasCapture }?.countDown()
+        if (hasCapture) {
+            captureLatch?.countDown()
+        } else {
+            releaseLatch?.countDown()
+        }
     }
 
     /** Requests pointer capture, then blocks until it is granted. */
@@ -40,17 +46,33 @@ class PointerCaptureActivity : CaptureEventActivity() {
     }
 
     fun ensurePointerCapturedImpl(requestCapture: Runnable) {
-        latch = CountDownLatch(1)
+        captureLatch = CountDownLatch(1)
         runOnUiThread(requestCapture)
         try {
-            check(latch!!.await(60, TimeUnit.SECONDS)) {
+            check(captureLatch!!.await(60, TimeUnit.SECONDS)) {
                 "Did not receive callback after enabling pointer capture."
             }
         } catch (e: InterruptedException) {
             throw IllegalStateException("Interrupted while waiting for the pointer to be captured.")
         } finally {
-            latch = null
+            captureLatch = null
         }
         assertTrue("The view did not capture the pointer.", window.decorView.hasPointerCapture())
+    }
+
+    /** Requests that pointer capture be released, then blocks until it is. */
+    fun ensurePointerReleased() {
+        releaseLatch = CountDownLatch(1)
+        runOnUiThread { window.decorView.releasePointerCapture() }
+        try {
+            check(releaseLatch!!.await(60, TimeUnit.SECONDS)) {
+                "Did not receive callback after releasing pointer capture."
+            }
+        } catch (e: InterruptedException) {
+            throw IllegalStateException("Interrupted while waiting for the pointer to be released.")
+        } finally {
+            releaseLatch = null
+        }
+        assertFalse("The view did not release the pointer.", window.decorView.hasPointerCapture())
     }
 }
