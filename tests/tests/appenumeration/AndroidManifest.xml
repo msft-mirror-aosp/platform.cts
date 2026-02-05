@@ -33,6 +33,7 @@
         <package android:name="com.android.cts.mockspellchecker" />
         <package android:name="android.inputmethodservice.cts.ime1" />
         <package android:name="com.android.cts.norestart" />
+        <package android:name="android.appenumeration.applocksupportedtestapp" />
     </queries>
 
     <permission android:name="android.appenumeration.cts.permission.TEST_PERMISSION"
@@ -41,9 +42,20 @@
     <!-- It's merged from Harrier library. Remove it since this test should not hold it. -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:node="remove" />
 
+    <!-- Used for LauncherApps tests of the App Lock feature -->
+    <uses-permission android:name="android.permission.LOCK_APPS" />
+
     <application>
         <service android:name="android.appenumeration.cts.TestPmComponentDiscoveryService"
                  android:exported="false"/>
+        <activity android:name="android.appenumeration.cts.LauncherMockActivity"
+             android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.HOME"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </activity>
 
       <uses-library android:name="android.test.runner" />
     </application>

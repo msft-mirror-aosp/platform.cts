@@ -37,6 +37,17 @@ java_library {
     ],
 }
 
+java_library {
+    name: "CtsContentPackageManagerUtils",
+    srcs: [
+        "src/android/content/pm/cts/util/**/*.java",
+    ],
+    static_libs: [
+        "compatibility-device-util-axt",
+        "androidx.test.rules",
+    ],
+}
+
 java_defaults {
     name: "cts_content_resources_defaults",
 

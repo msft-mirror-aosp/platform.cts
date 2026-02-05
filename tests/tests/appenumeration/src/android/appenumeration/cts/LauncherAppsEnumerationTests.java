@@ -36,6 +36,8 @@ import static android.appenumeration.cts.Constants.QUERIES_NOTHING;
 import static android.appenumeration.cts.Constants.QUERIES_NOTHING_PERM;
 import static android.appenumeration.cts.Constants.QUERIES_NOTHING_Q;
 import static android.appenumeration.cts.Constants.QUERIES_PACKAGE;
+import static android.appenumeration.cts.Constants.TARGET_APP_LOCK_SUPPORTED_APP;
+import static android.appenumeration.cts.Constants.TARGET_APP_LOCK_SUPPORTED_APK;
 import static android.appenumeration.cts.Constants.TARGET_FILTERS;
 import static android.appenumeration.cts.Constants.TARGET_FILTERS_APK;
 import static android.appenumeration.cts.Constants.TARGET_NO_API;
@@ -53,6 +55,9 @@ import static android.appenumeration.cts.Utils.suspendPackages;
 import static android.appenumeration.cts.Utils.suspendPackagesForUser;
 import static android.appenumeration.cts.Utils.uninstallPackage;
 import static android.content.Intent.EXTRA_PACKAGES;
+import static android.content.pm.cts.util.PackageTestUtils.hasLockAppsPermission;
+import static android.content.pm.cts.util.PackageTestUtils.installPackageScoped;
+import static android.content.pm.cts.util.PackageTestUtils.setHomeRoleHolderScoped;
 import static android.os.Process.INVALID_UID;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -67,21 +72,30 @@ import static org.junit.Assert.assertTrue;
 import android.Manifest;
 import android.content.ComponentName;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.LauncherApps;
 import android.content.pm.PackageInstaller;
 import android.content.pm.PackageManager;
+import android.content.pm.cts.util.RequiresAppLockSupported;
 import android.os.Bundle;
 import android.os.Process;
+import android.platform.test.annotations.DisabledOnRavenwood;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 
 import com.android.bedstead.nene.users.UserReference;
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.install.lib.Install;
 import com.android.cts.install.lib.TestApp;
+import com.android.sts.common.LockSettingsUtil;
 
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -91,6 +105,8 @@ import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
 public class LauncherAppsEnumerationTests extends AppEnumerationTestsBase {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @LargeTest
     @Test
@@ -172,6 +188,69 @@ public class LauncherAppsEnumerationTests extends AppEnumerationTestsBase {
         assertThat(response.getInt(EXTRA_FLAGS), equalTo(CALLBACK_EVENT_PACKAGE_CHANGED));
         assertThat(response.getStringArray(EXTRA_PACKAGES),
                 arrayContainingInAnyOrder(new String[]{TARGET_FILTERS}));
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresAppLockSupported
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @ApiTest(apis = { "android.content.pm.LauncherApps#onPackageChanged" })
+    public void callback_appLockStateChanged_visibleReceives() throws Exception {
+        try (AutoCloseable withAppLockSupportedApp = installPackageScoped(
+                    TARGET_APP_LOCK_SUPPORTED_APK, TARGET_APP_LOCK_SUPPORTED_APP);
+                AutoCloseable withLockAppsPermission = setHomeRoleHolderScoped(sContext);
+                AutoCloseable withLockScreen = new LockSettingsUtil(sContext).withLockScreen()) {
+            assertThat(hasLockAppsPermission(sContext), is(true));
+            assertAppLockStateChangeResults(QUERIES_NOTHING_PERM, /* newAppLockState= */ true,
+                    /* expectVisible= */ true);
+            assertAppLockStateChangeResults(QUERIES_NOTHING_PERM, /* newAppLockState= */ false,
+                    /* expectVisible= */ true);
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresAppLockSupported
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @ApiTest(apis = { "android.content.pm.LauncherApps#onPackageChanged" })
+    public void callback_appLockStateChanged_notVisibleNotReceives() throws Exception {
+        try (AutoCloseable withAppLockSupportedApp = installPackageScoped(
+                    TARGET_APP_LOCK_SUPPORTED_APK, TARGET_APP_LOCK_SUPPORTED_APP);
+                AutoCloseable withLockAppsPermission = setHomeRoleHolderScoped(sContext);
+                AutoCloseable withLockScreen = new LockSettingsUtil(sContext).withLockScreen()) {
+            assertThat(hasLockAppsPermission(sContext), is(true));
+            assertAppLockStateChangeResults(QUERIES_NOTHING, /* newAppLockState= */ true,
+                    /* expectVisible= */ false);
+            assertAppLockStateChangeResults(QUERIES_NOTHING, /* newAppLockState= */ false,
+                    /* expectVisible= */ false);
+        }
+    }
+
+    private void assertAppLockStateChangeResults(String sourcePackageName, boolean newAppLockState,
+            boolean expectVisible) throws Exception {
+        final Result result = sendCommandAndWaitForLauncherAppsCallback(sourcePackageName,
+                CALLBACK_EVENT_PACKAGE_CHANGED, new String[]{TARGET_APP_LOCK_SUPPORTED_APP});
+
+        // Trigger the App Lock state change
+        SystemUtil.runWithShellPermissionIdentity(() -> {
+            sContext.getPackageManager().setPackageAppLockEnabled(TARGET_APP_LOCK_SUPPORTED_APP,
+                    newAppLockState);
+        }, Manifest.permission.TEST_LOCK_APPS);
+
+        final ApplicationInfo applicationInfo = sContext.getPackageManager().getApplicationInfo(
+                TARGET_APP_LOCK_SUPPORTED_APP, PackageManager.ApplicationInfoFlags.of(
+                        PackageManager.GET_APP_LOCK_INFO));
+        assertThat(applicationInfo.isAppLockEnabled, is(newAppLockState));
+
+        final Bundle response = result.await();
+        if (expectVisible) {
+            assertThat(response.getInt(EXTRA_FLAGS), equalTo(CALLBACK_EVENT_PACKAGE_CHANGED));
+            assertThat(response.getStringArray(EXTRA_PACKAGES),
+                    arrayContainingInAnyOrder(new String[]{TARGET_APP_LOCK_SUPPORTED_APP}));
+        } else {
+            assertThat(response.getInt(EXTRA_FLAGS), equalTo(CALLBACK_EVENT_INVALID));
+            assertThat(response.getStringArray(EXTRA_PACKAGES), emptyArray());
+        }
     }
 
     @LargeTest
