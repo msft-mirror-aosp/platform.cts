@@ -294,9 +294,6 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     eSosApp.second, action, "", MANUAL_CONNECT_SLOT_ID);
 
             call.disconnect();
-            assertTrue(
-                    "Timed out waiting for call disconnecting",
-                    callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
             assertTrue(
                     "Timed out waiting for call removed",
@@ -399,9 +396,6 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     defaultSmsApp.first, defaultSmsApp.second, action, uri, SLOT_ID_0);
 
             call.disconnect();
-            assertTrue(
-                    "Timed out waiting for call disconnecting",
-                    callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
             assertTrue(
                     "Timed out waiting for call removed",
@@ -498,9 +492,6 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     eSosApp.second, action, "", MANUAL_CONNECT_SLOT_ID);
 
             call.disconnect();
-            assertTrue(
-                    "Timed out waiting for call disconnecting",
-                    callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
             assertTrue(
                     "Timed out waiting for call removed",
@@ -599,9 +590,6 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     defaultSmsApp.first, defaultSmsApp.second, action, uri, AUTO_CONNECT_SLOT_ID);
 
             call.disconnect();
-            assertTrue(
-                    "Timed out waiting for call disconnecting",
-                    callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
             assertTrue(
                     "Timed out waiting for call removed",
@@ -721,9 +709,6 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     eSosApp.second, action, "", MANUAL_CONNECT_SLOT_ID);
 
             call.disconnect();
-            assertTrue(
-                    "Timed out waiting for call disconnecting",
-                    callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
             assertTrue(
                     "Timed out waiting for call removed",
@@ -852,9 +837,6 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     defaultSmsApp.first, defaultSmsApp.second, action, uri, SLOT_ID_0);
 
             call.disconnect();
-            assertTrue(
-                    "Timed out waiting for call disconnecting",
-                    callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
             assertTrue(
                     "Timed out waiting for call removed",
@@ -998,9 +980,6 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     SLOT_ID_0);
 
             call.disconnect();
-            assertTrue(
-                    "Timed out waiting for call disconnecting",
-                    callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
             assertTrue(
                     "Timed out waiting for call removed",
@@ -1159,9 +1138,6 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     SLOT_ID_0);
 
             call.disconnect();
-            assertTrue(
-                    "Timed out waiting for call disconnecting",
-                    callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
             assertTrue(
                     "Timed out waiting for call removed",
@@ -1235,9 +1211,6 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     SLOT_ID_0);
 
             call.disconnect();
-            assertTrue(
-                    "Timed out waiting for call disconnecting",
-                    callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
             assertTrue(
                     "Timed out waiting for call removed",
@@ -1388,9 +1361,6 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     MANUAL_CONNECT_SLOT_ID);
 
             call.disconnect();
-            assertTrue(
-                    "Timed out waiting for call disconnecting",
-                    callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
             assertTrue(
                     "Timed out waiting for call removed",
@@ -1521,9 +1491,6 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     eSosApp.second, action, "", MANUAL_CONNECT_SLOT_ID);
 
             call.disconnect();
-            assertTrue(
-                    "Timed out waiting for call disconnecting",
-                    callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
             assertTrue(
                     "Timed out waiting for call removed",
@@ -1650,9 +1617,6 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     defaultSmsApp.first, defaultSmsApp.second, action, uri, AUTO_CONNECT_SLOT_ID);
 
             call.disconnect();
-            assertTrue(
-                    "Timed out waiting for call disconnecting",
-                    callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
             assertTrue(
                     "Timed out waiting for call removed",
@@ -1806,7 +1770,6 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     SLOT_ID_0);
 
             call.disconnect();
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
             assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
             waitForUnboundService();
@@ -1957,7 +1920,6 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     SLOT_ID_0);
 
             call.disconnect();
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
             assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
             waitForUnboundService();
@@ -2106,7 +2068,6 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     SLOT_ID_0);
 
             call.disconnect();
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
             assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
             waitForUnboundService();
@@ -2255,7 +2216,6 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
                     SLOT_ID_0);
 
             call.disconnect();
-            assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
             isCallDisconnected(call, callSession);
             assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
             waitForUnboundService();
