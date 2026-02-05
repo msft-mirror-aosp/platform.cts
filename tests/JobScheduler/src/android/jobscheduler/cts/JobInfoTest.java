@@ -27,7 +27,6 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assert.assertThrows;
 
 import android.app.compat.CompatChanges;
-import android.app.job.Flags;
 import android.app.job.JobInfo;
 import android.content.ClipData;
 import android.content.Intent;
@@ -36,16 +35,12 @@ import android.net.NetworkRequest;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.PersistableBundle;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.ContactsContract;
 import android.provider.MediaStore;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import org.junit.After;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -60,9 +55,6 @@ public class JobInfoTest extends BaseJobSchedulerTest {
 
     private static final long REJECT_NEGATIVE_DELAYS_AND_DEADLINES = 323349338L;
     private static final long THROW_ON_UNSUPPORTED_BIAS_USAGE = 300477393L;
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Override
     @After
@@ -174,7 +166,6 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         mJobScheduler.schedule(ji);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_JOB_DEBUG_INFO_APIS)
     @Test
     public void testDebugTags() {
         // Confirm defaults
@@ -853,7 +844,6 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         mJobScheduler.schedule(ji);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_JOB_DEBUG_INFO_APIS)
     @Test
     public void testTraceTag() {
         // Confirm defaults
