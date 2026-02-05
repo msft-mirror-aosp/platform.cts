@@ -16,9 +16,11 @@
 package android.contextualsearch.caller
 
 import android.app.Activity
+import android.app.contextualsearch.ContextualSearchConfig
 import android.app.contextualsearch.ContextualSearchManager
 import android.os.Bundle
 import android.util.Log
+import android.view.Display
 import com.android.compatibility.common.util.BroadcastMessenger
 import java.util.concurrent.CountDownLatch
 
@@ -37,7 +39,7 @@ class BackgroundCallerActivity : Activity() {
         BroadcastMessenger.send(
             this,
             RESUMED_TAG,
-            ContextualSearchMessage(ContextualSearchMessage.RESULT_OK)
+            ContextualSearchMessage(ContextualSearchMessage.RESULT_OK),
         )
         WATCHER?.resumed?.countDown()
     }
@@ -47,17 +49,35 @@ class BackgroundCallerActivity : Activity() {
         Log.d(TAG, "onStop")
         val manager = getSystemService(ContextualSearchManager::class.java)
         try {
-            manager.startContextualSearch(this, null)
+            if (intent.getBooleanExtra(ContextualSearchExtras.EXTRA_USE_CONFIG_ONLY_API, false)) {
+                val config =
+                    intent.getParcelableExtra(
+                        ContextualSearchExtras.EXTRA_CONTEXTUAL_SEARCH_CONFIG,
+                        ContextualSearchConfig::class.java,
+                    )
+                val configWithDisplay =
+                    if (config == null || config.displayId == Display.INVALID_DISPLAY) {
+                        val builder =
+                            if (config != null) ContextualSearchConfig.Builder(config)
+                            else ContextualSearchConfig.Builder()
+                        builder.setDisplayId(display!!.displayId).build()
+                    } else {
+                        config
+                    }
+                manager.startContextualSearch(configWithDisplay)
+            } else {
+                manager.startContextualSearch(this, null)
+            }
             BroadcastMessenger.send(
                 this,
                 ContextualSearchMessage.TAG,
-                ContextualSearchMessage(ContextualSearchMessage.RESULT_OK)
+                ContextualSearchMessage(ContextualSearchMessage.RESULT_OK),
             )
         } catch (e: SecurityException) {
             BroadcastMessenger.send(
                 this,
                 ContextualSearchMessage.TAG,
-                ContextualSearchMessage(ContextualSearchMessage.RESULT_EXCEPTION)
+                ContextualSearchMessage(ContextualSearchMessage.RESULT_EXCEPTION),
             )
         }
         finish()

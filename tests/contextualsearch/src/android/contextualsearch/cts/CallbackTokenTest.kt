@@ -17,9 +17,7 @@
 package android.contextualsearch.cts
 
 import android.app.contextualsearch.CallbackToken
-import android.app.contextualsearch.flags.Flags
 import android.os.Parcel
-import android.platform.test.annotations.RequiresFlagsEnabled
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test

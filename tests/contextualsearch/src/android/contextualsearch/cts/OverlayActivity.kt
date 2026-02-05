@@ -62,7 +62,7 @@ open class OverlayActivity : Activity() {
             val windowParams =
                 WindowManager.LayoutParams(
                     WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                    WindowManager.LayoutParams.FLAG_SECURE
+                    WindowManager.LayoutParams.FLAG_SECURE,
                 )
 
             windowManager.addView(overlayView, windowParams)

@@ -35,8 +35,7 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class ContextualSearchStateTest {
-    @get:Rule
-    val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+    @get:Rule val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DESKTOP_WINDOWING_APP_TO_WEB_EDUCATION)
@@ -94,10 +93,11 @@ class ContextualSearchStateTest {
 
         private val testUri = Uri.parse("example.com")
         private val testSessionTransferUri = Uri.parse("example2.com")
-        private val testAssistContent = AssistContent().apply {
-            webUri = testUri
-            sessionTransferUri = testSessionTransferUri
-        }
+        private val testAssistContent =
+            AssistContent().apply {
+                webUri = testUri
+                sessionTransferUri = testSessionTransferUri
+            }
         private val testExtras = Bundle().apply { putString("key", "value") }
 
         private val TAG = ContextualSearchStateTest::class.java.simpleName
