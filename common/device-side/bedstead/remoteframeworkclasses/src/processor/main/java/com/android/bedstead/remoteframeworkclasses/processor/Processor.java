@@ -40,6 +40,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -308,7 +309,7 @@ public final class Processor extends AbstractProcessor {
     }
 
     private void generateRemoteSystemService(TypeElement frameworkClass) {
-        Set<Api> apis =
+        List<Api> apis =
                 filterMethods(
                                 frameworkClass,
                                 getMethods(frameworkClass),
@@ -318,7 +319,8 @@ public final class Processor extends AbstractProcessor {
                         .stream()
                         .filter(api -> !usesBlocklistedType(api))
                         .filter(api -> !parametersHaveWildcards(api.method))
-                        .collect(Collectors.toSet());
+                        .sorted(Comparator.comparing(api -> api.method.name))
+                        .collect(Collectors.toList());
 
         generateFrameworkInterface(frameworkClass, apis);
         generateFrameworkImpl(frameworkClass, apis);
@@ -397,7 +399,7 @@ public final class Processor extends AbstractProcessor {
         return false;
     }
 
-    private void generateFrameworkInterface(TypeElement frameworkClass, Set<Api> apis) {
+    private void generateFrameworkInterface(TypeElement frameworkClass, List<Api> apis) {
         String packageName = frameworkClass.getEnclosingElement().toString();
         ClassName className =
                 ClassName.get(packageName, "Remote" + frameworkClass.getSimpleName().toString());
@@ -473,7 +475,7 @@ public final class Processor extends AbstractProcessor {
         writeClassToFile(packageName, classBuilder.build());
     }
 
-    private void generateDpmParent(TypeElement frameworkClass, Set<Api> apis) {
+    private void generateDpmParent(TypeElement frameworkClass, List<Api> apis) {
         String packageName = frameworkClass.getEnclosingElement().toString();
         ClassName className =
                 ClassName.get(packageName, "Remote" + frameworkClass.getSimpleName() + "Parent");
@@ -597,7 +599,7 @@ public final class Processor extends AbstractProcessor {
         writeClassToFile(packageName, classBuilder.build());
     }
 
-    private void generateFrameworkImpl(TypeElement frameworkClass, Set<Api> apis) {
+    private void generateFrameworkImpl(TypeElement frameworkClass, List<Api> apis) {
         String packageName = frameworkClass.getEnclosingElement().toString();
         ClassName interfaceClassName =
                 ClassName.get(packageName, "Remote" + frameworkClass.getSimpleName().toString());
@@ -835,7 +837,6 @@ public final class Processor extends AbstractProcessor {
     }
 
     private void getMethods(Map<String, ExecutableElement> methods, TypeElement interfaceClass) {
-
         interfaceClass.getEnclosedElements().stream()
                 .filter(e -> e instanceof ExecutableElement)
                 .map(e -> (ExecutableElement) e)
