@@ -49,7 +49,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.telecom.PhoneAccount;
 import android.telecom.TelecomManager;
 import android.telephony.AccessNetworkConstants;
@@ -70,7 +69,6 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
-import com.android.internal.telephony.flags.Flags;
 import com.android.internal.telephony.uicc.IccUtils;
 
 import org.junit.After;
@@ -1034,7 +1032,6 @@ public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
     /**
      * Verifies the API CarrierRestrictionRules#setCarrierRestrictionStatus
      */
-    @RequiresFlagsEnabled(Flags.FLAG_SET_CARRIER_RESTRICTION_STATUS)
     @Test
     public void setCarrierRestrictionStatus() {
         CarrierRestrictionRules crr = new CarrierRestrictionRules.Builder()
