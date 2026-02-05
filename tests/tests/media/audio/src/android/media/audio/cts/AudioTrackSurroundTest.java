@@ -24,7 +24,7 @@ import android.media.AudioManager;
 import android.media.AudioProfile;
 import android.media.AudioTimestamp;
 import android.media.AudioTrack;
-import android.media.audio.cts.R;
+import android.media.cts.AudioHelper;
 import android.util.Log;
 
 import com.android.compatibility.common.util.CtsAndroidTestCase;
@@ -294,6 +294,12 @@ public class AudioTrackSurroundTest extends CtsAndroidTestCase {
             // Use first and last timestamp to get the most accurate rate.
             AudioTimestamp first = mTimestamps.get(0);
             AudioTimestamp last = mTimestamps.get(mTimestamps.size() - 1);
+            if (AudioHelper.isDesktopDevice()) {
+                // Use the fourth timestamps to get a more stable rate on desktop devices.
+                int size = mTimestamps.size();
+                assertTrue("expect at least 4 timestamps for desktop, got " + size, size >= 4);
+                first = mTimestamps.get(3);
+            }
             return calculateSampleRate(first, last);
         }
 

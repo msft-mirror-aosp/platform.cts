@@ -30,12 +30,12 @@ import android.media.AudioTimestamp;
 import android.media.AudioTrack;
 import android.os.Looper;
 import android.os.PersistableBundle;
+import android.os.SystemProperties;
 import android.util.Log;
 
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.DeviceReportLog;
@@ -221,6 +221,10 @@ public class AudioHelper {
 
     public static int frameCountFromMsec(int ms, AudioFormat format) {
         return ms * format.getSampleRate() / 1000;
+    }
+
+    public static boolean isDesktopDevice() {
+        return "desktop".equals(SystemProperties.get("ro.build.characteristics"));
     }
 
     public static class Statistics {
