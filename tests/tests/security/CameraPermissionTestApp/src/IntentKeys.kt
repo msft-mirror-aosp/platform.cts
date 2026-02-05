@@ -82,4 +82,10 @@ class IntentKeys(private val packageName: String) {
 
   val pid: String
     get() = "$packageName.PID"
+
+  val startInBackground: String
+    get() = "$packageName.START_IN_BACKGROUND"
+
+  val backgroundCameraOpenFinished: String
+    get() = "$packageName.BACKGROUND_CAMERA_OPEN_FINISHED"
 }
