@@ -165,6 +165,8 @@ public final class StableUrisTest extends ScopedStorageBaseDeviceTest {
     }
 
     @Test
+    @FlakyTest(bugId = 481968315)
+    @Ignore
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NEXT_GENERATION_NUMBER)
     public void testGenerationModifiedIsMonotonicallyIncreasing() throws Exception {
         assumeTrue(Flags.enableNextGenerationNumber());
