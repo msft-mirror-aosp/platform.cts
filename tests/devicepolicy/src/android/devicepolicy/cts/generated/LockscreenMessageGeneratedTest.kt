@@ -80,7 +80,7 @@ public final class LockscreenMessagePolicyScopeParentUser
             "android.app.admin.PolicyIdentifier#LOCKSCREEN_MESSAGE",
         ]
 )
-class LockscreenMessageTest : CommonPolicyTests<String>() {
+class LockscreenMessageGeneratedTest : CommonPolicyTests<String>() {
 
     override val policyIdentifier = PolicyIdentifier.LOCKSCREEN_MESSAGE
 
