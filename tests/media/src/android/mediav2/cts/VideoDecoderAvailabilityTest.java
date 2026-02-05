@@ -462,9 +462,21 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
 
     private void validateMaxInstances(String codecName, String mediaType, boolean testRTMode,
             boolean testOperatingModeSwitch) {
+        // FIXME: While switching between non-realtime and realtime, the resource adjustment
+        // (relinquishing or committing) MUST happen on the next frame being processed. This would
+        // mean that the test must queue inputs for processing after a call to setParameters().
+        // Currently this method is using mock media formats for testing. So it won't be able to
+        // queue valid inputs for processing. Once this method is updated to use media extractor +
+        // media file, then this can be achieved. Until then add a safe check to avoid testing.
+        if (testOperatingModeSwitch) {
+            Assert.fail("Update test to handle this scenario");
+        }
+        // TODO:
         // if multiple instances are started in nrt mode until resource exhaustion, switching a
         // codec to rt mode may or may not succeed due to lack of resources. In this scenario,
-        // should an nrt resource be auto released so that it can make way for rt?
+        // - should an nrt resource be auto released so that it can make way for rt? or
+        // - should there be an error and the session has to end? or
+        // - should the codec be continuing to operate in nrt mode?
         if (testOperatingModeSwitch && !testRTMode) {
             Assert.fail("Update test to handle this scenario");
         }
@@ -830,30 +842,58 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
         // get real time resource requirements
         format.setInteger(MediaFormat.KEY_PRIORITY, 0);
         format.setInteger(MediaFormat.KEY_OPERATING_RATE, frameRate);
+        mOutputBuff.reset();
         configureCodec(format, true, false, false);
+        mCodec.start();
+        mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+        doWork(5);
+        queueEOS();
+        waitForAllOutputs();
         List<CodecResource> rtResources = getCodecRequiredResources(mCodec);
         mCodec.reset();
         // get non real time resource requirements
         format.setInteger(MediaFormat.KEY_PRIORITY, 1);
         format.setInteger(MediaFormat.KEY_OPERATING_RATE, 0);
+        mOutputBuff.reset();
         configureCodec(format, true, false, false);
+        mCodec.start();
+        mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+        doWork(5);
+        queueEOS();
+        waitForAllOutputs();
         List<CodecResource> nrtResources = getCodecRequiredResources(mCodec);
+        mCodec.reset();
         StringBuilder testLogs = new StringBuilder();
         int result = compareResources(rtResources, nrtResources, testLogs);
         Assert.assertEquals("required resources for media codec to operate in real time must be "
                         + "greater than non-real time \n" + testLogs + mTestEnv + mTestConfig,
                 LHS_RESOURCE_GE, result);
+
+        // launch codec in nrt mode
+        mOutputBuff.reset();
+        configureCodec(format, true, false, false);
         mCodec.start();
         mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
         doWork(10);
+        // parsing csd / frame header may generate resources required change callback if the
+        // required resources is different from resources estimated based on settings of configure
+        // format. so waiting for callback.
         int currResourceChangeCbCount = asyncHandleResource.getResourceChangeCbCount();
+        asyncHandleResource.waitOnResourceChange(currResourceChangeCbCount);
+        List<CodecResource> resources = getCodecRequiredResources(mCodec);
+        result = compareResources(resources, nrtResources, testLogs);
+        Assert.assertEquals(
+                "current resources of media codec to is not matching non real-time resources \n"
+                        + testLogs + mTestEnv + mTestConfig,
+                RESOURCE_EQ, result);
+        currResourceChangeCbCount = asyncHandleResource.getResourceChangeCbCount();
         updateOperatingMode(mCodec, 0, frameRate); // switch to real time
         doWork(5);
         asyncHandleResource.waitOnResourceChange(currResourceChangeCbCount);
         Assert.assertEquals("taking too long to receive onRequiredResourcesChanged callback\n"
                         + mTestEnv + mTestConfig,
                 asyncHandleResource.getResourceChangeCbCount(), currResourceChangeCbCount + 1);
-        List<CodecResource> resources = getCodecRequiredResources(mCodec);
+        resources = getCodecRequiredResources(mCodec);
         result = compareResources(resources, rtResources, testLogs);
         Assert.assertEquals(
                 "current resources of media codec to is not matching real-time resources \n"
