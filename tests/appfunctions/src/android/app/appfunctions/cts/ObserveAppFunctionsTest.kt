@@ -536,7 +536,7 @@ class ObserveAppFunctionsTest {
 
         val observer = TestClientObserver()
         try {
-            observation = observeAppFunctions(emptySet(), observer)
+            observation = observeAppFunctions(/* packageNames= */ null, observer)
             installExistingPackageAsUser(
                 DynamicSchemaHelperApp.PACKAGE_NAME,
                 secondaryUser,
@@ -641,7 +641,7 @@ class ObserveAppFunctionsTest {
     }
 
     private fun observeAppFunctions(
-        packageNames: Set<String>,
+        packageNames: Set<String>?,
         observer: TestClientObserver,
     ): AppFunctionObservation {
         return manager.observeAppFunctions(packageNames, context.mainExecutor, observer)
