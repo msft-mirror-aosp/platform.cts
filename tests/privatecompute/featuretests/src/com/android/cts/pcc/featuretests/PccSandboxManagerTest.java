@@ -22,10 +22,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import android.app.privatecompute.MigrationException;
 import android.app.privatecompute.MigrationRequestResult;
-import android.app.privatecompute.MigrationRequestResultReceiver;
 import android.app.privatecompute.PccSandboxManager;
 import android.content.Context;
+import android.os.OutcomeReceiver;
 import android.os.PersistableBundle;
 import android.os.Process;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -128,7 +129,7 @@ public class PccSandboxManagerTest {
 
         mPccSandboxManager.startNonPccProcessForDataMigration(
                 mContext.getMainExecutor(),
-                new MigrationRequestResultReceiver() {
+                new OutcomeReceiver<MigrationRequestResult, MigrationException>() {
                     @Override
                     public void onResult(MigrationRequestResult result) {
                         if (result.getStatus()
@@ -138,7 +139,7 @@ public class PccSandboxManagerTest {
                     }
 
                     @Override
-                    public void onError(int errorCode, String errorMessage) {}
+                    public void onError(MigrationException error) {}
                 });
 
         assertTrue(
@@ -157,7 +158,7 @@ public class PccSandboxManagerTest {
 
         mPccSandboxManager.startNonPccProcessForDataMigration(
                 mContext.getMainExecutor(),
-                new MigrationRequestResultReceiver() {
+                new OutcomeReceiver<MigrationRequestResult, MigrationException>() {
                     @Override
                     public void onResult(MigrationRequestResult result) {
                         if (result.getStatus()
@@ -167,7 +168,7 @@ public class PccSandboxManagerTest {
                     }
 
                     @Override
-                    public void onError(int errorCode, String errorMessage) {}
+                    public void onError(MigrationException error) {}
                 });
 
         assertTrue(
