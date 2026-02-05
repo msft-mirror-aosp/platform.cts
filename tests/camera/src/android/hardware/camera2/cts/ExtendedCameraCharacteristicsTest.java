@@ -3670,10 +3670,7 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
         pce.submitAndCheck();
     }
 
-    /**
-     * Check camera characteristics for Performance class requirements as specified in CDD camera
-     * section 7.5 H-1-1
-     */
+    /** [7-5/H-1-1] Check primary rear camera resolution and frame rate. */
     @Test
     @AppModeFull(reason = "DeviceStateManager is not accessible to instant apps")
     @CddTest(requirements = {"2.2.7.2/7.5/H-1-1"})
@@ -3687,21 +3684,31 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 mOverrideCameraId == null);
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PrimaryRearCameraResolutionAndFrameRateRequirement primaryRearReq =
-                Requirements.addR7_5__H_1_1().to(pce);
-
         String primaryRearId =
                 CameraTestUtils.getPrimaryRearCamera(mCameraManager, getCameraIdsUnderTest());
 
-        verifyPrimaryRearCameraResolutionAndFrameRate(primaryRearId, primaryRearReq);
+        PrimaryRearCameraResolutionAndFrameRateRequirement defaultRearReq =
+                Requirements.addR7_5__H_1_1().to(pce);
+        // A rear camera is optional for some MPC levels like MPC 10.
+        // The variant with no rear camera passes the test even when there is no rear camera.
+        PrimaryRearCameraResolutionAndFrameRateRequirement optionalRearReq;
+        if (primaryRearId == null) {
+            optionalRearReq =
+                    Requirements.addR7_5__H_1_1()
+                            .withConfigOptionalRearCamera()
+                            .withVariantNoRearCamera()
+                            .to(pce);
+        } else {
+            optionalRearReq = Requirements.addR7_5__H_1_1().withConfigOptionalRearCamera().to(pce);
+        }
+
+        verifyPrimaryRearCameraResolutionAndFrameRate(primaryRearId, defaultRearReq);
+        verifyPrimaryRearCameraResolutionAndFrameRate(primaryRearId, optionalRearReq);
 
         pce.submitAndCheck();
     }
 
-    /**
-     * Check camera characteristics for Performance class requirements as specified in CDD camera
-     * section 7.5 H-1-2
-     */
+    /** [7-5/H-1-2] Check primary front camera resolution and frame rate. */
     @Test
     @AppModeFull(reason = "DeviceStateManager is not accessible to instant apps")
     @CddTest(requirements = {"2.2.7.2/7.5/H-1-2"})
@@ -3715,13 +3722,27 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 mOverrideCameraId == null);
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PrimaryFrontCameraResolutionAndFrameRateRequirement primaryFrontReq =
-                Requirements.addR7_5__H_1_2().to(pce);
-
         String primaryFrontId =
                 CameraTestUtils.getPrimaryFrontCamera(mCameraManager, getCameraIdsUnderTest());
 
-        verifyPrimaryFrontCameraResolutionAndFrameRate(primaryFrontId, primaryFrontReq);
+        PrimaryFrontCameraResolutionAndFrameRateRequirement defaultFrontReq =
+                Requirements.addR7_5__H_1_2().to(pce);
+        // A front camera is optional for some MPC levels like MPC 10.
+        // The variant with no front camera passes the test even when there is no front camera.
+        PrimaryFrontCameraResolutionAndFrameRateRequirement optionalFrontReq;
+        if (primaryFrontId == null) {
+            optionalFrontReq =
+                    Requirements.addR7_5__H_1_2()
+                            .withConfigOptionalFrontCamera()
+                            .withVariantNoFrontCamera()
+                            .to(pce);
+        } else {
+            optionalFrontReq =
+                    Requirements.addR7_5__H_1_2().withConfigOptionalFrontCamera().to(pce);
+        }
+
+        verifyPrimaryFrontCameraResolutionAndFrameRate(primaryFrontId, defaultFrontReq);
+        verifyPrimaryFrontCameraResolutionAndFrameRate(primaryFrontId, optionalFrontReq);
 
         pce.submitAndCheck();
     }
