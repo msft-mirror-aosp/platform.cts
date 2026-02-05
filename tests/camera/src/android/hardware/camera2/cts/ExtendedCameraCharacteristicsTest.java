@@ -91,7 +91,6 @@ import android.mediapc.cts.common.Requirements.PrimaryRearCameraResolutionAndFra
 import android.mediapc.cts.common.Requirements.TimestampSourceRealtimeRequirement;
 import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.ArraySet;
@@ -137,7 +136,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 
 /**
  * Extended tests for static camera characteristics.
@@ -1457,7 +1455,9 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                     CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_BACKWARD_COMPATIBLE);
 
             if(haveBurstCapability && !haveBC) {
-                fail("Must have BACKWARD_COMPATIBLE capability if BURST_CAPTURE capability is defined");
+                fail(
+                        "Must have BACKWARD_COMPATIBLE capability if BURST_CAPTURE capability is"
+                                + " defined");
             }
 
             if (!haveBC) continue;
@@ -1549,7 +1549,8 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 (maxSyncLatency <= MAX_LATENCY_BOUND) && (maxSyncLatency >= 0);
 
             if (haveBurstCapability) {
-                assertTrue("Must have slow YUV size array when BURST_CAPTURE capability is defined!",
+                assertTrue(
+                        "Must have slow YUV size array when BURST_CAPTURE capability is defined!",
                         slowYuvSizes != null);
                 assertTrue(
                         String.format("BURST-capable camera device %s does not have maximum YUV " +
@@ -1574,8 +1575,9 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                                 allCameraIds[i], minYuvFps),
                         haveFastAeTargetFps);
                 assertTrue(
-                        String.format("BURST-capable camera device %s YUV sync latency is too long" +
-                                "(%d frames reported, [0, %d] frames expected)",
+                        String.format(
+                                "BURST-capable camera device %s YUV sync latency is too long"
+                                        + "(%d frames reported, [0, %d] frames expected)",
                                 allCameraIds[i], maxSyncLatency, MAX_LATENCY_BOUND),
                         haveFastSyncLatency);
                 assertTrue(
@@ -1931,7 +1933,8 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 if (hasDepth16) {
                     Size[] depthSizes = configs.getOutputSizes(ImageFormat.DEPTH16);
                     Size[] jpegSizes = configs.getOutputSizes(ImageFormat.JPEG);
-                    mCollector.expectTrue("Supports DEPTH_OUTPUT but no sizes for DEPTH16 supported!",
+                    mCollector.expectTrue(
+                            "Supports DEPTH_OUTPUT but no sizes for DEPTH16 supported!",
                             depthSizes != null && depthSizes.length > 0);
                     if (depthSizes != null) {
                         for (Size depthSize : depthSizes) {
@@ -2042,7 +2045,8 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                     (distortion != null) && (depthIsExclusive != null);
 
                 mCollector.expectTrue(
-                        "All necessary depth fields defined, but DEPTH_OUTPUT capability is not listed",
+                        "All necessary depth fields defined, but DEPTH_OUTPUT capability is not"
+                                + " listed",
                         !hasFields);
 
                 boolean reportCalibration = poseTranslation != null ||
@@ -2277,11 +2281,16 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
     }
 
     @Test
-    @ApiTest(apis = {
-            "android.hardware.camera2.params.ColorSpaceProfiles#getSupportedColorSpaces",
-            "android.hardware.camera2.params.ColorSpaceProfiles#getSupportedColorSpacesForDynamicRange",
-            "android.hardware.camera2.params.ColorSpaceProfiles#getSupportedImageFormatsForColorSpace",
-            "android.hardware.camera2.params.ColorSpaceProfiles#getSupportedDynamicRangeProfiles"})
+    @ApiTest(
+            apis = {
+                "android.hardware.camera2.params.ColorSpaceProfiles#getSupportedColorSpaces",
+                "android.hardware.camera2.params.ColorSpaceProfiles"
+                        + "#getSupportedColorSpacesForDynamicRange",
+                "android.hardware.camera2.params.ColorSpaceProfiles"
+                        + "#getSupportedImageFormatsForColorSpace",
+                "android.hardware.camera2.params.ColorSpaceProfiles"
+                        + "#getSupportedDynamicRangeProfiles"
+            })
     public void test8BitColorSpaceOutputCharacteristics() throws Exception {
         final Set<ColorSpace.Named> sdrColorSpaces = new ArraySet<>();
         sdrColorSpaces.add(ColorSpace.Named.SRGB);
@@ -2363,11 +2372,16 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
     }
 
     @Test
-    @ApiTest(apis = {
-            "android.hardware.camera2.params.ColorSpaceProfiles#getSupportedColorSpaces",
-            "android.hardware.camera2.params.ColorSpaceProfiles#getSupportedColorSpacesForDynamicRange",
-            "android.hardware.camera2.params.ColorSpaceProfiles#getSupportedImageFormatsForColorSpace",
-            "android.hardware.camera2.params.ColorSpaceProfiles#getSupportedDynamicRangeProfiles"})
+    @ApiTest(
+            apis = {
+                "android.hardware.camera2.params.ColorSpaceProfiles#getSupportedColorSpaces",
+                "android.hardware.camera2.params.ColorSpaceProfiles"
+                        + "#getSupportedColorSpacesForDynamicRange",
+                "android.hardware.camera2.params.ColorSpaceProfiles"
+                        + "#getSupportedImageFormatsForColorSpace",
+                "android.hardware.camera2.params.ColorSpaceProfiles"
+                        + "#getSupportedDynamicRangeProfiles"
+            })
     public void test10BitColorSpaceOutputCharacteristics() throws Exception {
         final Set<ColorSpace.Named> sdrColorSpaces = new ArraySet<>();
         sdrColorSpaces.add(ColorSpace.Named.SRGB);
@@ -2660,10 +2674,13 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 assertTrue("JPEG must be supported",
                     config.isOutputSupportedFor(ImageFormat.JPEG));
             } else {
-                assertTrue("YUV_420_88 may not be supported if BACKWARD_COMPATIBLE capability is not listed",
-                    !config.isOutputSupportedFor(ImageFormat.YUV_420_888));
-                assertTrue("JPEG may not be supported if BACKWARD_COMPATIBLE capability is not listed",
-                    !config.isOutputSupportedFor(ImageFormat.JPEG));
+                assertTrue(
+                        "YUV_420_88 may not be supported if BACKWARD_COMPATIBLE capability is not"
+                                + " listed",
+                        !config.isOutputSupportedFor(ImageFormat.YUV_420_888));
+                assertTrue(
+                        "JPEG may not be supported if BACKWARD_COMPATIBLE capability is not listed",
+                        !config.isOutputSupportedFor(ImageFormat.JPEG));
             }
 
             // Check RAW
