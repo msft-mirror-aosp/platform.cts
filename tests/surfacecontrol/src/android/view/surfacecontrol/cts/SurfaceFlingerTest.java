@@ -125,10 +125,7 @@ public class SurfaceFlingerTest {
     }
 
     /** Test that synthetic vsync is not enabled while the virtual display is OFF. */
-    @RequiresFlagsEnabled({
-        Flags.FLAG_DISABLE_SYNTHETIC_VSYNC_FOR_PERFORMANCE,
-        android.companion.virtualdevice.flags.Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER
-    })
+    @RequiresFlagsEnabled(Flags.FLAG_DISABLE_SYNTHETIC_VSYNC_FOR_PERFORMANCE)
     @Test
     @CtsDownstreamingTest
     public void virtualDisplayOff_syntheticVsyncEnabled() {

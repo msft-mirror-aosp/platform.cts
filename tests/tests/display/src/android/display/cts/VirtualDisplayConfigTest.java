@@ -27,16 +27,12 @@ import android.graphics.SurfaceTexture;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplayConfig;
 import android.os.Parcel;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.DisplayMetrics;
 import android.view.DisplayCutout;
 import android.view.Surface;
 
 import androidx.test.runner.AndroidJUnit4;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -55,15 +51,10 @@ public class VirtualDisplayConfigTest {
     private static final int FLAGS = DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
             | DisplayManager.VIRTUAL_DISPLAY_FLAG_SECURE;
 
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
     @Test
     public void parcelAndUnparcel_matches() {
         final boolean forceAppUniversalResizableEnabled =
                 com.android.window.flags.Flags.vdmForceAppUniversalResizableApi();
-        final boolean isDeviceAwareDisplayPowerEnabled =
-                android.companion.virtualdevice.flags.Flags.deviceAwareDisplayPower();
         DisplayCutout displayCutout = new DisplayCutout(
                 /* safeInsets= */ Insets.of(1, 2, 3, 4),
                 /* boundLeft= */ new Rect(5, 6, 7, 8),
@@ -80,13 +71,11 @@ public class VirtualDisplayConfigTest {
                         .addDisplayCategory("C3")
                         .setRequestedRefreshRate(REQUESTED_REFRESH_RATE)
                         .setDisplayCutout(displayCutout)
+                        .setDefaultBrightness(DEFAULT_BRIGHTNESS)
+                        .setDimBrightness(DIM_BRIGHTNESS)
                         .setHomeSupported(true);
         if (forceAppUniversalResizableEnabled) {
             builder.setIgnoreActivitySizeRestrictions(true);
-        }
-        if (isDeviceAwareDisplayPowerEnabled) {
-            builder.setDefaultBrightness(DEFAULT_BRIGHTNESS);
-            builder.setDimBrightness(DIM_BRIGHTNESS);
         }
         final VirtualDisplayConfig originalConfig = builder.build();
 
@@ -100,12 +89,10 @@ public class VirtualDisplayConfigTest {
         assertThat(originalConfig.getRequestedRefreshRate()).isEqualTo(REQUESTED_REFRESH_RATE);
         assertThat(originalConfig.isHomeSupported()).isEqualTo(true);
         assertThat(originalConfig.getDisplayCutout()).isEqualTo(displayCutout);
+        assertThat(originalConfig.getDefaultBrightness()).isEqualTo(DEFAULT_BRIGHTNESS);
+        assertThat(originalConfig.getDimBrightness()).isEqualTo(DIM_BRIGHTNESS);
         if (forceAppUniversalResizableEnabled) {
             assertThat(originalConfig.isIgnoreActivitySizeRestrictions()).isEqualTo(true);
-        }
-        if (isDeviceAwareDisplayPowerEnabled) {
-            assertThat(originalConfig.getDefaultBrightness()).isEqualTo(DEFAULT_BRIGHTNESS);
-            assertThat(originalConfig.getDimBrightness()).isEqualTo(DIM_BRIGHTNESS);
         }
 
         final Parcel parcel = Parcel.obtain();
@@ -124,6 +111,8 @@ public class VirtualDisplayConfigTest {
         assertThat(recreatedConfig.getRequestedRefreshRate()).isEqualTo(REQUESTED_REFRESH_RATE);
         assertThat(recreatedConfig.isHomeSupported()).isEqualTo(true);
         assertThat(recreatedConfig.getDisplayCutout()).isEqualTo(displayCutout);
+        assertThat(recreatedConfig.getDefaultBrightness()).isEqualTo(DEFAULT_BRIGHTNESS);
+        assertThat(recreatedConfig.getDimBrightness()).isEqualTo(DIM_BRIGHTNESS);
         if (forceAppUniversalResizableEnabled) {
             assertThat(recreatedConfig.isIgnoreActivitySizeRestrictions()).isEqualTo(true);
         }
@@ -140,11 +129,9 @@ public class VirtualDisplayConfigTest {
         assertThat(config.getRequestedRefreshRate()).isEqualTo(0.0f);
         assertThat(config.isHomeSupported()).isFalse();
         assertThat(config.getDisplayCutout()).isNull();
+        assertThat(config.getDefaultBrightness()).isEqualTo(0.0f);
         if (com.android.window.flags.Flags.vdmForceAppUniversalResizableApi()) {
             assertThat(config.isIgnoreActivitySizeRestrictions()).isFalse();
-        }
-        if (android.companion.virtualdevice.flags.Flags.deviceAwareDisplayPower()) {
-            assertThat(config.getDefaultBrightness()).isEqualTo(0.0f);
         }
     }
 
@@ -200,8 +187,6 @@ public class VirtualDisplayConfigTest {
         });
     }
 
-    @RequiresFlagsEnabled(
-            android.companion.virtualdevice.flags.Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
     @Test
     public void virtualDisplayConfig_invalidDefaultBrightness_throwsException() {
         assertThrows(IllegalArgumentException.class, () -> {
@@ -214,8 +199,6 @@ public class VirtualDisplayConfigTest {
         });
     }
 
-    @RequiresFlagsEnabled(
-            android.companion.virtualdevice.flags.Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
     @Test
     public void virtualDisplayConfig_invalidDimBrightness_throwsException() {
         assertThrows(IllegalArgumentException.class, () -> {
@@ -228,8 +211,6 @@ public class VirtualDisplayConfigTest {
         });
     }
 
-    @RequiresFlagsEnabled(
-            android.companion.virtualdevice.flags.Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
     @Test
     public void virtualDisplayConfig_dimBrightnessGreaterThanDefault_throwsException() {
         assertThrows(IllegalArgumentException.class, () -> {
