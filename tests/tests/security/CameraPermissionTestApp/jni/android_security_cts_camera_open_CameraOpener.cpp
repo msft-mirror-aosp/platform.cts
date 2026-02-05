@@ -254,6 +254,13 @@ public:
               failure->wasImageCaptured);
     }
 
+    static void closeSession(ACameraCaptureSession* session) {
+        if (session != nullptr) {
+            ACameraCaptureSession_abortCaptures(session);
+            ACameraCaptureSession_close(session);
+        }
+    }
+
     static bool checkNullObj(void* obj, const char* func) {
         if (obj == nullptr) {
             ALOGE("%s: null obj", func);
@@ -503,6 +510,8 @@ private:
         return ACAMERA_OK;
     }
 
+    std::mutex mMutex;
+    std::condition_variable mStateChanged;
     Auto<ACameraManager, ACameraManager_delete> mCameraManager;
     Auto<ACameraIdList, ACameraManager_deleteCameraIdList> mCameraIdList;
     CameraDeviceListener mCameraDeviceListener;
@@ -515,18 +524,16 @@ private:
     AImageReader_ImageListener mImgReaderCb;
     Auto<ACaptureSessionOutputContainer, ACaptureSessionOutputContainer_free> mOutputContainer;
     Auto<ACaptureSessionOutput, ACaptureSessionOutput_free> mOutput;
-    Auto<ACameraCaptureSession, ACameraCaptureSession_close> mCaptureSession;
     CaptureSessionListener mCaptureSessionListener;
     ACameraCaptureSession_stateCallbacks mCaptureSessionCb;
     Auto<ACaptureRequest, ACaptureRequest_free> mCaptureRequest;
     Auto<ACameraOutputTarget, ACameraOutputTarget_free> mOutputTarget;
     CaptureResultListener mCaptureResultListener;
     ACameraCaptureSession_captureCallbacks mCaptureResultCb;
-    std::mutex mMutex;
-    std::condition_variable mStateChanged;
     bool mFirstCaptureCompleted = false;
     bool mStoppedRepeating = false;
     int mErrorCode = 0;
+    Auto<ACameraCaptureSession, CameraOpenerJni::closeSession> mCaptureSession;
 };
 
 static std::unique_ptr<CameraOpenerJni> sThis = nullptr;
