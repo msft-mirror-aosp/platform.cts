@@ -102,12 +102,24 @@ public final class AppFunctionTestUtils {
     public static final GenericDocument APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION =
             buildAppFunctionDocument(TEST_APP_A_PKG, "print1", TEST_APP_FUNCTIONS_SERVICE, "global");
 
+    public static final GenericDocument APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES =
+            buildAppFunctionDocument(TEST_APP_A_PKG, "print1", TEST_APP_FUNCTIONS_SERVICE, "global", /* addAppLevelProperties= */ true);
+
     /**
      * Print app function generic document as defined in the app_appfunctions_v2.xml of dynamic
      * schema test app A.
      */
     public static final GenericDocument APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION =
             buildAppFunctionDocument(TEST_APP_A_PKG, "appPrint1", "@null", "activity");
+
+    public static final GenericDocument
+            APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES =
+                    buildAppFunctionDocument(
+                            TEST_APP_A_PKG,
+                            "appPrint1",
+                            "@null",
+                            "activity",
+                            /* addAppLevelProperties= */ true);
 
     /**
      * Print app function generic document as defined in the appfunctions_v2.xml of dynamic schema
@@ -259,6 +271,10 @@ public final class AppFunctionTestUtils {
     }
 
     private static GenericDocument createAppAV2PrintAppFunction() {
+        return createAppAV2PrintAppFunction(false);
+    }
+
+    private static GenericDocument createAppAV2PrintAppFunction(boolean addAppLevelProperties) {
         GenericDocument.Builder builder =
                 new GenericDocument.Builder<>(
                                 NAMESPACE_APP_FUNCTIONS,
@@ -276,7 +292,7 @@ public final class AppFunctionTestUtils {
                         .setPropertyString(
                                 "mobileApplicationQualifiedId",
                                 "android$apps-db/apps#" + TEST_APP_A_PKG);
-        if (isAppLevelAppFunctionsEnabled()) {
+        if (addAppLevelProperties) {
             builder.setPropertyString(
                     "serviceName", "com.android.cts.appsearch.indexertestapp.a.AppFunctionService");
             builder.setPropertyString("scope", "global");
@@ -285,6 +301,10 @@ public final class AppFunctionTestUtils {
     }
 
     private static GenericDocument createAppBPrintFunction() {
+        return createAppBPrintFunction(false);
+    }
+
+    private static GenericDocument createAppBPrintFunction(boolean addAppLevelProperties) {
         GenericDocument.Builder builder =
                 new GenericDocument.Builder<>(
                                 NAMESPACE_APP_FUNCTIONS,
@@ -301,7 +321,7 @@ public final class AppFunctionTestUtils {
                                 "mobileApplicationQualifiedId",
                                 "android$apps-db/apps#" + TEST_APP_B_PKG);
 
-        if (isAppLevelAppFunctionsEnabled()) {
+        if (addAppLevelProperties) {
             builder.setPropertyString("serviceName", TEST_APP_FUNCTIONS_SERVICE);
             builder.setPropertyString("scope", "global");
         }
@@ -393,6 +413,15 @@ public final class AppFunctionTestUtils {
      */
     private static GenericDocument buildAppFunctionDocument(
             String packageName, String functionSuffix, String serviceName, String scope) {
+        return buildAppFunctionDocument(packageName, functionSuffix, serviceName, scope, false);
+    }
+
+    private static GenericDocument buildAppFunctionDocument(
+            String packageName,
+            String functionSuffix,
+            String serviceName,
+            String scope,
+            boolean addAppLevelProperties) {
         GenericDocument.Builder builder =
                 new GenericDocument.Builder<>(
                                 NAMESPACE_APP_FUNCTIONS,
@@ -412,7 +441,7 @@ public final class AppFunctionTestUtils {
                 .setPropertyString(
                         "mobileApplicationQualifiedId", "android$apps-db/apps#" + packageName);
 
-        if (isAppLevelAppFunctionsEnabled()) {
+        if (addAppLevelProperties) {
             builder.setPropertyString(PROPERTY_SERVICE_NAME, serviceName);
             builder.setPropertyString(PROPERTY_SCOPE, scope);
         }
@@ -577,10 +606,7 @@ public final class AppFunctionTestUtils {
         return builder.build();
     }
 
-    private static boolean isAppLevelAppFunctionsEnabled() {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA
-                && android.app.appfunctions.flags.Flags.enableDynamicAppFunctions();
-    }
+
 
     private AppFunctionTestUtils() {}
 }
