@@ -22,7 +22,6 @@ import android.hardware.input.VirtualRotaryEncoder
 import android.hardware.input.VirtualRotaryEncoderScrollEvent
 import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator
 import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator
-import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.view.InputDevice
 import android.view.InputEvent
@@ -46,14 +45,6 @@ class VirtualRotaryEncoderTest : VirtualDeviceTestCase() {
         ).device
     }
 
-    @RequiresFlagsDisabled(Flags.FLAG_HIGH_RESOLUTION_SCROLL)
-    @Test
-    @Parameters(method = "allScrollValues")
-    fun sendScrollEvent(scrollAmount: Float) {
-        verifyScrollEvent(scrollAmount)
-    }
-
-    @RequiresFlagsEnabled(Flags.FLAG_HIGH_RESOLUTION_SCROLL)
     @Test
     @Parameters(method = "allHighResScrollValues")
     fun sendHighResScrollEvent(scrollAmount: Float) {
