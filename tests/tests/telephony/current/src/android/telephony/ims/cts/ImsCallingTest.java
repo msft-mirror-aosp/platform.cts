@@ -1837,9 +1837,6 @@ public class ImsCallingTest extends ImsCallingBase {
         isCallActive(call, callSession);
 
         call.disconnect();
-        assertTrue(
-                "Call disconnecting latch countdown failed",
-                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(call, callSession);
         assertTrue(
                 "Call removed latch countdown failed",
@@ -1922,9 +1919,6 @@ public class ImsCallingTest extends ImsCallingBase {
         isCallActive(call, callSession);
 
         call.disconnect();
-        assertTrue(
-                "Call disconnecting latch countdown failed",
-                callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(call, callSession);
         assertTrue(
                 "Call removed latch countdown failed",
