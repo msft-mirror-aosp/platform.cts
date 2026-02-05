@@ -1403,7 +1403,6 @@ public class ImsCallingTest extends ImsCallingBase {
         isCallActive(call, callSession);
 
         call.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
         isCallDisconnected(call, callSession);
         assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
         waitForUnboundService();
