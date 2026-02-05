@@ -149,14 +149,12 @@ private fun generateTestFile(
       @ApiTest(
           apis = ${formatArray(apisUnderTest.quoteAll().sorted(), "              ")}
       )
-      class ${policyName}Test : CommonPolicyTests<${valueType}>() {
+      class ${policyName}GeneratedTest : CommonPolicyTests<${valueType}>() {
 
           override val policyIdentifier = PolicyIdentifier.${identifier}
 
-          // TODO: Add other meaningful valid values here (if any). Remove this TODO before committing.
           override val validValues = ${formatList(validValues, indent="              ")}
 
-          // TODO: Add other meaningful invalid values here (if any). Remove this TODO before committing.
           override val invalidValueTestCases = ${formatList(invalidValueTestCases, indent="              ", addCommas=false)}
       }
 
