@@ -41,6 +41,7 @@ enum class FunctionType {
     STOP_PROCESS,
     DISABLED_BY_DEFAULT,
     GET_URIS,
+    ACTIVITY_CONCAT_STRINGS
 }
 
 object TestAppFunctionFactory {
@@ -54,6 +55,7 @@ object TestAppFunctionFactory {
             FunctionType.STOP_PROCESS -> StopProcess()
             FunctionType.DISABLED_BY_DEFAULT -> DisabledByDefault()
             FunctionType.GET_URIS -> GetUris()
+            FunctionType.ACTIVITY_CONCAT_STRINGS -> ConcatStrings()
         }
     }
 
@@ -70,6 +72,8 @@ object TestAppFunctionFactory {
             FunctionType.STOP_PROCESS -> StopProcess.STOP_PROCESS_FUNCTION_ID
             FunctionType.DISABLED_BY_DEFAULT -> DisabledByDefault.DISABLED_BY_DEFAULT_FUNCTION_ID
             FunctionType.GET_URIS -> GetUris.GET_URIS_FUNCTION_ID
+            FunctionType.ACTIVITY_CONCAT_STRINGS ->
+                ConcatStrings.ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
         }
     }
 
@@ -138,6 +142,7 @@ class ConcatStrings() : AppFunction {
 
     companion object {
         const val CONCAT_STRINGS_FUNCTION_ID = "contextConcatStrings"
+        const val ACTIVITY_CONCAT_STRINGS_FUNCTION_ID = "activityConcatStrings"
     }
 }
 

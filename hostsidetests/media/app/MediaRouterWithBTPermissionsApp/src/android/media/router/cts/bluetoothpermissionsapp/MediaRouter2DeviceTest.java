@@ -234,10 +234,7 @@ public class MediaRouter2DeviceTest {
                 .isEqualTo(MediaRoute2Info.TYPE_UNKNOWN);
     }
 
-    @RequiresFlagsEnabled({
-        Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING,
-        Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL
-    })
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL)
     @Test
     public void requestScan_withOffScreenScan_triggersScanning() throws InterruptedException {
         mUiAutomation.adoptShellPermissionIdentity(Manifest.permission.MEDIA_ROUTING_CONTROL);
@@ -274,7 +271,6 @@ public class MediaRouter2DeviceTest {
         }
     }
 
-    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING})
     @Test
     public void requestScan_withOnScreenScan_triggersScanning() throws InterruptedException {
         launchScreenOnActivity();

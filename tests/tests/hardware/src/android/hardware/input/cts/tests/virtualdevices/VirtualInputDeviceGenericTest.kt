@@ -16,15 +16,21 @@
 package android.hardware.input.cts.tests.virtualdevices
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.companion.virtual.VirtualDeviceManager
+import android.companion.virtualdevice.flags.Flags
 import android.content.Context
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.hardware.input.InputManager
+import android.hardware.input.ViewBehaviorConfig
 import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator
 import android.os.Handler
 import android.os.Looper
+import android.platform.test.annotations.RequiresFlagsEnabled
 import android.view.Display
+import android.view.InputDevice
+import android.view.MotionEvent
 import android.virtualdevice.cts.common.VirtualDeviceRule
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry
@@ -40,6 +46,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
+@SuppressLint("MissingCheckFlagsRule") // TODO: b/463342925 - remove once fixed
 @SmallTest
 @RunWith(JUnitParamsRunner::class)
 class VirtualInputDeviceGenericTest {
@@ -56,8 +63,17 @@ class VirtualInputDeviceGenericTest {
         fun create(
             virtualDevice: VirtualDeviceManager.VirtualDevice,
             name: String,
-            display: Display
+            display: Display,
+            viewBehaviorConfig: ViewBehaviorConfig?
         ): VirtualInputDeviceCreator.InputDeviceHolder<T>
+    }
+
+    fun <T : Closeable> VirtualInputDeviceFactory<T>.create(
+        virtualDevice: VirtualDeviceManager.VirtualDevice,
+        name: String,
+        display: Display
+    ): VirtualInputDeviceCreator.InputDeviceHolder<T> {
+        return this.create(virtualDevice, name, display, null)
     }
 
     @Before
@@ -70,10 +86,21 @@ class VirtualInputDeviceGenericTest {
     }
 
     private fun allInputDevices(): List<VirtualInputDeviceFactory<*>> {
+        return inputDevicesWithoutMotionRange() + inputDevicesWithMotionRange()
+    }
+
+    private fun inputDevicesWithoutMotionRange(): List<VirtualInputDeviceFactory<*>> {
         val deviceFactories =
             mutableListOf<VirtualInputDeviceFactory<*>>(
                 VirtualInputDeviceFactory(VirtualInputDeviceCreator::createAndPrepareDpad),
                 VirtualInputDeviceFactory(VirtualInputDeviceCreator::createAndPrepareKeyboard),
+            )
+        return deviceFactories
+    }
+
+    private fun inputDevicesWithMotionRange(): List<VirtualInputDeviceFactory<*>> {
+        val deviceFactories =
+            mutableListOf<VirtualInputDeviceFactory<*>>(
                 VirtualInputDeviceFactory(VirtualInputDeviceCreator::createAndPrepareMouse),
                 VirtualInputDeviceFactory(
                     VirtualInputDeviceCreator::createAndPrepareTouchscreen
@@ -85,6 +112,22 @@ class VirtualInputDeviceGenericTest {
                 VirtualInputDeviceFactory(VirtualInputDeviceCreator::createAndPrepareRotary),
             )
         return deviceFactories
+    }
+
+    private fun assertShouldSmoothScroll(
+        shouldSmoothScroll: Boolean,
+        inputDeviceId: Int,
+        viewBehavior: InputDevice.ViewBehavior
+    ) {
+        val inputDevice = mInputManager.getInputDevice(inputDeviceId)
+        val motionRanges = inputDevice!!.motionRanges
+        assertThat(motionRanges).isNotEmpty()
+        val motionRange = motionRanges.first()
+        assertThat(
+            viewBehavior.shouldSmoothScroll(motionRange.axis, motionRange.source)
+        ).isEqualTo(
+            shouldSmoothScroll
+        )
     }
 
     @Parameters(method = "allInputDevices")
@@ -230,6 +273,110 @@ class VirtualInputDeviceGenericTest {
             )
         )
             .isNotNull()
+    }
+
+    @RequiresFlagsEnabled(
+        Flags.FLAG_VIRTUAL_INPUT_VIEW_BEHAVIOR,
+        com.android.input.flags.Flags.FLAG_INPUT_DEVICE_PRIMARY_DIRECTIONAL_MOTION_AXIS_API
+    )
+    @Parameters(method = "inputDevicesWithMotionRange")
+    @Test
+    fun inputDevice_withMotionRange_withoutViewBehavior(factory: VirtualInputDeviceFactory<*>) {
+        val display: VirtualDisplay = mRule.createManagedVirtualDisplay(
+            mVirtualDevice,
+            VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder()
+        )!!
+        val inputDeviceId = factory.create(mVirtualDevice, DEVICE_NAME, display.display).deviceId
+
+        val actualBehavior = mInputManager.getInputDeviceViewBehavior(inputDeviceId)
+        assertThat(actualBehavior!!.hasPrimaryDirectionalMotionAxis()).isFalse()
+        assertShouldSmoothScroll(
+            false,
+            inputDeviceId,
+            actualBehavior
+        )
+    }
+
+    @RequiresFlagsEnabled(
+        Flags.FLAG_VIRTUAL_INPUT_VIEW_BEHAVIOR,
+        com.android.input.flags.Flags.FLAG_INPUT_DEVICE_PRIMARY_DIRECTIONAL_MOTION_AXIS_API
+    )
+    @Parameters(method = "inputDevicesWithoutMotionRange")
+    @Test
+    fun inputDevice_withoutMotionRange_withoutViewBehavior(factory: VirtualInputDeviceFactory<*>) {
+        val display: VirtualDisplay = mRule.createManagedVirtualDisplay(
+            mVirtualDevice,
+            VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder()
+        )!!
+        val inputDeviceId = factory.create(mVirtualDevice, DEVICE_NAME, display.display).deviceId
+
+        val actualBehavior = mInputManager.getInputDeviceViewBehavior(inputDeviceId)
+        assertThat(actualBehavior!!.hasPrimaryDirectionalMotionAxis()).isFalse()
+        val inputDevice = mInputManager.getInputDevice(inputDeviceId)
+        assertThat(inputDevice!!.motionRanges).isEmpty()
+    }
+
+    @RequiresFlagsEnabled(
+        Flags.FLAG_VIRTUAL_INPUT_VIEW_BEHAVIOR,
+        com.android.input.flags.Flags.FLAG_INPUT_DEVICE_PRIMARY_DIRECTIONAL_MOTION_AXIS_API
+    )
+    @Parameters(method = "inputDevicesWithMotionRange")
+    @Test
+    fun inputDevice_withMotionRange_withViewBehavior(factory: VirtualInputDeviceFactory<*>) {
+        val display: VirtualDisplay = mRule.createManagedVirtualDisplay(
+            mVirtualDevice,
+            VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder()
+        )!!
+        val viewBehaviorConfig = ViewBehaviorConfig.Builder()
+            .setPrimaryDirectionalMotionAxis(MotionEvent.AXIS_Y)
+            .setShouldSmoothScroll(true)
+            .build()
+        val inputDeviceId =
+            factory.create(
+                mVirtualDevice,
+                DEVICE_NAME,
+                display.display,
+                viewBehaviorConfig
+            ).deviceId
+
+        val actualBehavior = mInputManager.getInputDeviceViewBehavior(inputDeviceId)
+        assertThat(actualBehavior!!.primaryDirectionalMotionAxis)
+            .isEqualTo(viewBehaviorConfig.primaryDirectionalMotionAxis)
+        assertShouldSmoothScroll(
+            true,
+            inputDeviceId,
+            actualBehavior
+        )
+    }
+
+    @RequiresFlagsEnabled(
+        Flags.FLAG_VIRTUAL_INPUT_VIEW_BEHAVIOR,
+        com.android.input.flags.Flags.FLAG_INPUT_DEVICE_PRIMARY_DIRECTIONAL_MOTION_AXIS_API
+    )
+    @Parameters(method = "inputDevicesWithoutMotionRange")
+    @Test
+    fun inputDevice_withoutMotionRange_withViewBehavior(factory: VirtualInputDeviceFactory<*>) {
+        val display: VirtualDisplay = mRule.createManagedVirtualDisplay(
+            mVirtualDevice,
+            VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder()
+        )!!
+        val viewBehaviorConfig = ViewBehaviorConfig.Builder()
+            .setPrimaryDirectionalMotionAxis(MotionEvent.AXIS_Y)
+            .setShouldSmoothScroll(true)
+            .build()
+        val inputDeviceId =
+            factory.create(
+                mVirtualDevice,
+                DEVICE_NAME,
+                display.display,
+                viewBehaviorConfig
+            ).deviceId
+
+        val actualBehavior = mInputManager.getInputDeviceViewBehavior(inputDeviceId)
+        assertThat(actualBehavior!!.primaryDirectionalMotionAxis)
+            .isEqualTo(viewBehaviorConfig.primaryDirectionalMotionAxis)
+        val inputDevice = mInputManager.getInputDevice(inputDeviceId)
+        assertThat(inputDevice!!.motionRanges).isEmpty()
     }
 
     /** Utility to verify that the input devices with given IDs have been removed.  */

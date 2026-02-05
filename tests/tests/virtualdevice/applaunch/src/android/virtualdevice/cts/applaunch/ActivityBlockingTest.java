@@ -17,6 +17,7 @@
 package android.virtualdevice.cts.applaunch;
 
 import static android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED;
+import static android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOW_ALWAYS;
 import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_CUSTOM;
 import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_DEFAULT;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_ACTIVITY;
@@ -51,6 +52,7 @@ import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.os.Bundle;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.virtualdevice.cts.applaunch.AppComponents.EmptyActivity;
 import android.virtualdevice.cts.common.StreamedAppConstants;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
@@ -621,6 +623,50 @@ public class ActivityBlockingTest {
                 mRule.startActivityOnDisplaySync(mVirtualDisplay, EmptyActivity.class);
         Intent blockedIntent = new Intent(mContext, CannotDisplayOnRemoteActivity.class);
         emptyActivity.startActivity(blockedIntent);
+
+        var intentSender = ArgumentCaptor.forClass(IntentSender.class);
+        verify(mActivityListener, timeout(TIMEOUT_MILLIS)).onActivityLaunchBlocked(
+                eq(mVirtualDisplay.getDisplay().getDisplayId()),
+                eq(blockedIntent.getComponent()), any(), intentSender.capture());
+        assertThat(intentSender.getValue()).isNotNull();
+        assertThat(intentSender.getValue().getCreatorPackage())
+                .isEqualTo(mContext.getPackageName());
+        assertThat(intentSender.getValue().getCreatorUserHandle()).isEqualTo(mContext.getUser());
+
+        // Ensure that the intent can be sent to another display. For this it needs to go into a
+        // new task.
+        Intent fillInIntent = new Intent().addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        Bundle activityOptions = ActivityOptions.makeBasic()
+                .setPendingIntentBackgroundActivityStartMode(MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
+                .setLaunchDisplayId(DEFAULT_DISPLAY)
+                .toBundle();
+        try {
+            emptyActivity.startIntentSender(intentSender.getValue(), fillInIntent,
+                    /* flagsMask= */ 0, /* flagsValues= */ 0, /* extraFlags= */ 0, activityOptions);
+        } catch (IntentSender.SendIntentException e) {
+            fail("No exception expected: " + e);
+        }
+        mRule.waitAndAssertActivityResumed(blockedIntent.getComponent(), DEFAULT_DISPLAY);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_REMOVE_START_MODE_FROM_BLOCKED_INTENTS)
+    public void blockedActivity_startModeSetToAllowed_passedToListener() {
+        createVirtualDeviceAndTrustedDisplay();
+        Bundle options =
+                ActivityOptions.makeBasic()
+                        .setLaunchDisplayId(mVirtualDisplay.getDisplay().getDisplayId())
+                        .setPendingIntentBackgroundActivityStartMode(
+                                MODE_BACKGROUND_ACTIVITY_START_ALLOW_ALWAYS)
+                        .toBundle();
+        EmptyActivity emptyActivity =
+                mRule.startActivityOnDisplaySync(mVirtualDisplay.getDisplay().getDisplayId(),
+                        new Intent(mContext, EmptyActivity.class)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                                        | Intent.FLAG_ACTIVITY_CLEAR_TASK),
+                        options);
+        Intent blockedIntent = new Intent(mContext, CannotDisplayOnRemoteActivity.class);
+        emptyActivity.startActivity(blockedIntent, options);
 
         var intentSender = ArgumentCaptor.forClass(IntentSender.class);
         verify(mActivityListener, timeout(TIMEOUT_MILLIS)).onActivityLaunchBlocked(

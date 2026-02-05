@@ -4630,11 +4630,12 @@ public class VehiclePropertyVerifier<T> {
 
     /**
      * Safely checks if a feature flag is enabled, returning false if the flag doesn't exist on the
-     * current platform.
+     * current platform. Feature flags were introduced in Android V, so this method returns false
+     * for older versions.
      */
     private static boolean isFeatureFlagEnabledSafe(String flagName) {
         try {
-            return sFlagsValueProvider.getBoolean(flagName);
+            return isAtLeastV() && sFlagsValueProvider.getBoolean(flagName);
         } catch (FlagReadException e) {
             Log.i(TAG, "Feature flag '" + flagName + "' not found. Assuming feature is disabled.");
             return false;

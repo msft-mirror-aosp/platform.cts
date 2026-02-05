@@ -20,7 +20,7 @@ description: "Supports EGL_IMG_context_priority and EGL_EXT_protected_content ex
 specs {
   key: 35
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_15
+    mpc: MEDIA_PERFORMANCE_CLASS_35
     specification:
       "MUST support the EGL_IMG_context_priority and EGL_EXT_protected_content "
       "extensions."
@@ -41,7 +41,7 @@ specs {
 specs {
   key: 37
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_17
+    mpc: MEDIA_PERFORMANCE_CLASS_37
     specification:
       "MUST support the EGL_IMG_context_priority and EGL_EXT_protected_content "
       "extensions."

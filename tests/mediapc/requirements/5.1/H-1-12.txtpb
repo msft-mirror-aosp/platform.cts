@@ -20,7 +20,7 @@ description: "Video decoder initialization latency"
 specs {
   key: 33
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_13
+    mpc: MEDIA_PERFORMANCE_CLASS_33
     specification:
       "MUST have a codec initialization latency of 40 ms or less for a 1080p "
       "or smaller video decoding session for all hardware video decoders when "
@@ -50,7 +50,7 @@ specs {
 specs {
   key: 34
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_14
+    mpc: MEDIA_PERFORMANCE_CLASS_34
     specification:
       "MUST have a codec initialization latency of 40 ms or less for a 1080p "
       "or smaller video decoding session for all hardware video decoders when "
@@ -80,7 +80,7 @@ specs {
 specs {
   key: 35
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_15
+    mpc: MEDIA_PERFORMANCE_CLASS_35
     specification:
       "MUST have a codec initialization latency of 40 ms or less for a 1080p "
       "or smaller video decoding session for all hardware video decoders when "
@@ -110,7 +110,7 @@ specs {
 specs {
   key: 37
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_17
+    mpc: MEDIA_PERFORMANCE_CLASS_37
     specification:
       "MUST have a codec initialization latency of 40 ms or less for a 1080p "
       "or smaller video decoding session for all hardware video decoders when "

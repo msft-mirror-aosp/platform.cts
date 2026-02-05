@@ -42,7 +42,7 @@ specs {
 specs {
   key: 30
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_11
+    mpc: MEDIA_PERFORMANCE_CLASS_30
     specification:
       "MUST have camera2 JPEG capture latency < 1000 ms for 1080p resolution "
       "as measured by the CTS camera PerformanceTest under ITS lighting "
@@ -64,7 +64,7 @@ specs {
 specs {
   key: 31
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_12
+    mpc: MEDIA_PERFORMANCE_CLASS_31
     specification:
       "MUST have camera2 JPEG capture latency < 1000 ms for 1080p resolution "
       "as measured by the CTS camera PerformanceTest under ITS lighting "
@@ -86,7 +86,7 @@ specs {
 specs {
   key: 33
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_13
+    mpc: MEDIA_PERFORMANCE_CLASS_33
     specification:
       "MUST have camera2 JPEG capture latency < 1000 ms for 1080p resolution "
       "as measured by the CTS camera PerformanceTest under ITS lighting "
@@ -108,7 +108,7 @@ specs {
 specs {
   key: 34
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_14
+    mpc: MEDIA_PERFORMANCE_CLASS_34
     specification:
       "MUST have camera2 JPEG capture latency < 1000 ms for 1080p resolution "
       "as measured by the CTS camera PerformanceTest under ITS lighting "
@@ -130,7 +130,7 @@ specs {
 specs {
   key: 35
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_15
+    mpc: MEDIA_PERFORMANCE_CLASS_35
     specification:
       "MUST have camera2 JPEG capture latency < 1000 ms for 1080p resolution "
       "as measured by the CTS camera PerformanceTest under ITS lighting "
@@ -152,7 +152,7 @@ specs {
 specs {
   key: 37
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_17
+    mpc: MEDIA_PERFORMANCE_CLASS_37
     specification:
       "MUST have camera2 JPEG capture latency < 1000 ms for 1080p resolution "
       "as measured by the CTS camera PerformanceTest under ITS lighting "

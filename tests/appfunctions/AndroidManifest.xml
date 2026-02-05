@@ -59,6 +59,11 @@
                 <action android:name="android.app.appfunctions.AppFunctionCallbackService"/>
             </intent-filter>
         </service>
+        <activity
+            android:name="android.app.appfunctions.testutils.DynamicRegistrationActivity"
+            android:launchMode="standard"
+            android:exported="true">
+        </activity>
         <receiver
             android:name="android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver"
             android:exported="true"/>

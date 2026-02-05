@@ -15,6 +15,8 @@
  */
 package android.hardware.input.cts.tests.virtualdevices
 
+import android.companion.virtualdevice.flags.Flags
+import android.hardware.input.ViewBehaviorConfig
 import android.hardware.input.VirtualDpadConfig
 import android.hardware.input.VirtualKeyboardConfig
 import android.hardware.input.VirtualMouseConfig
@@ -24,8 +26,10 @@ import android.hardware.input.VirtualStylusConfig
 import android.hardware.input.VirtualTouchscreenConfig
 import android.os.Parcel
 import android.platform.test.annotations.RequiresFlagsDisabled
+import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import android.view.MotionEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import com.google.common.truth.Truth
@@ -40,16 +44,15 @@ class VirtualInputDeviceConfigTest {
     @get:Rule
     val mCheckFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
-    private fun createVirtualDpadConfig(): VirtualDpadConfig {
+    private fun createVirtualDpadConfigBuilder(): VirtualDpadConfig.Builder {
         return VirtualDpadConfig.Builder()
             .setInputDeviceName(DEVICE_NAME)
             .setVendorId(VENDOR_ID)
             .setProductId(PRODUCT_ID)
             .setAssociatedDisplayId(DISPLAY_ID)
-            .build()
     }
 
-    private fun createVirtualKeyboardConfig(): VirtualKeyboardConfig {
+    private fun createVirtualKeyboardConfigBuilder(): VirtualKeyboardConfig.Builder {
         return VirtualKeyboardConfig.Builder()
             .setInputDeviceName(DEVICE_NAME)
             .setVendorId(VENDOR_ID)
@@ -57,57 +60,52 @@ class VirtualInputDeviceConfigTest {
             .setAssociatedDisplayId(DISPLAY_ID)
             .setLanguageTag(VirtualKeyboardConfig.DEFAULT_LANGUAGE_TAG)
             .setLayoutType(VirtualKeyboardConfig.DEFAULT_LAYOUT_TYPE)
-            .build()
     }
 
-    private fun createVirtualMouseConfig(): VirtualMouseConfig {
+    private fun createVirtualMouseConfigBuilder(): VirtualMouseConfig.Builder {
         return VirtualMouseConfig.Builder()
             .setInputDeviceName(DEVICE_NAME)
             .setVendorId(VENDOR_ID)
             .setProductId(PRODUCT_ID)
             .setAssociatedDisplayId(DISPLAY_ID)
-            .build()
     }
 
-    private fun createVirtualTouchscreenConfig(): VirtualTouchscreenConfig {
+    private fun createVirtualTouchscreenConfigBuilder(): VirtualTouchscreenConfig.Builder {
         return VirtualTouchscreenConfig.Builder(WIDTH, HEIGHT)
             .setInputDeviceName(DEVICE_NAME)
             .setVendorId(VENDOR_ID)
             .setProductId(PRODUCT_ID)
             .setAssociatedDisplayId(DISPLAY_ID)
-            .build()
     }
 
-    private fun createVirtualStylusConfig(): VirtualStylusConfig {
+    private fun createVirtualStylusConfigBuilder(): VirtualStylusConfig.Builder {
         return VirtualStylusConfig.Builder(WIDTH, HEIGHT)
             .setInputDeviceName(DEVICE_NAME)
             .setVendorId(VENDOR_ID)
             .setProductId(PRODUCT_ID)
             .setAssociatedDisplayId(DISPLAY_ID)
-            .build()
     }
 
-    private fun createVirtualRotaryEncoderConfig(): VirtualRotaryEncoderConfig {
+    private fun createVirtualRotaryEncoderConfigBuilder(): VirtualRotaryEncoderConfig.Builder {
         return VirtualRotaryEncoderConfig.Builder()
             .setInputDeviceName(DEVICE_NAME)
             .setVendorId(VENDOR_ID)
             .setProductId(PRODUCT_ID)
             .setAssociatedDisplayId(DISPLAY_ID)
-            .build()
     }
 
-    private fun createVirtualNavigationTouchpadConfig(): VirtualNavigationTouchpadConfig {
+    private fun createVirtualNavigationTouchpadConfigBuilder():
+            VirtualNavigationTouchpadConfig.Builder {
         return VirtualNavigationTouchpadConfig.Builder(WIDTH, HEIGHT)
             .setInputDeviceName(DEVICE_NAME)
             .setVendorId(VENDOR_ID)
             .setProductId(PRODUCT_ID)
             .setAssociatedDisplayId(DISPLAY_ID)
-            .build()
     }
 
     @Test
     fun testConstructorAndGetters_virtualDpadConfig() {
-        val config: VirtualDpadConfig = createVirtualDpadConfig()
+        val config: VirtualDpadConfig = createVirtualDpadConfigBuilder().build()
         Truth.assertThat(config.inputDeviceName).isEqualTo(DEVICE_NAME)
         Truth.assertThat(config.vendorId).isEqualTo(VENDOR_ID)
         Truth.assertThat(config.productId).isEqualTo(PRODUCT_ID)
@@ -116,7 +114,7 @@ class VirtualInputDeviceConfigTest {
 
     @Test
     fun testParcel_virtualDpadConfig() {
-        val config: VirtualDpadConfig = createVirtualDpadConfig()
+        val config: VirtualDpadConfig = createVirtualDpadConfigBuilder().build()
         val parcel: Parcel = Parcel.obtain()
         config.writeToParcel(parcel, 0)
         parcel.setDataPosition(0)
@@ -130,7 +128,7 @@ class VirtualInputDeviceConfigTest {
 
     @Test
     fun testConstructorAndGetters_virtualKeyboardConfig() {
-        val config: VirtualKeyboardConfig = createVirtualKeyboardConfig()
+        val config: VirtualKeyboardConfig = createVirtualKeyboardConfigBuilder().build()
         Truth.assertThat(config.inputDeviceName).isEqualTo(DEVICE_NAME)
         Truth.assertThat(config.vendorId).isEqualTo(VENDOR_ID)
         Truth.assertThat(config.productId).isEqualTo(PRODUCT_ID)
@@ -141,7 +139,7 @@ class VirtualInputDeviceConfigTest {
 
     @Test
     fun testParcel_virtualKeyboardConfig() {
-        val config: VirtualKeyboardConfig = createVirtualKeyboardConfig()
+        val config: VirtualKeyboardConfig = createVirtualKeyboardConfigBuilder().build()
         val parcel: Parcel = Parcel.obtain()
         config.writeToParcel(parcel, 0)
         parcel.setDataPosition(0)
@@ -157,7 +155,7 @@ class VirtualInputDeviceConfigTest {
     }
 
     @Test
-    fun testBuilder_virtualKeyboardConfig_defaultValuedUsed() {
+    fun testBuilder_virtualKeyboardConfig_defaultValuesUsed() {
         // TODO(b/262924887): Add end-to-end tests for selecting virtual keyboard layout.
         val config: VirtualKeyboardConfig = VirtualKeyboardConfig.Builder()
             .setInputDeviceName(DEVICE_NAME)
@@ -188,7 +186,7 @@ class VirtualInputDeviceConfigTest {
 
     @Test
     fun testConstructorAndGetters_virtualMouseConfig() {
-        val config: VirtualMouseConfig = createVirtualMouseConfig()
+        val config: VirtualMouseConfig = createVirtualMouseConfigBuilder().build()
         Truth.assertThat(config.inputDeviceName).isEqualTo(DEVICE_NAME)
         Truth.assertThat(config.vendorId).isEqualTo(VENDOR_ID)
         Truth.assertThat(config.productId).isEqualTo(PRODUCT_ID)
@@ -197,7 +195,7 @@ class VirtualInputDeviceConfigTest {
 
     @Test
     fun testParcel_virtualMouseConfig() {
-        val config: VirtualMouseConfig = createVirtualMouseConfig()
+        val config: VirtualMouseConfig = createVirtualMouseConfigBuilder().build()
         val parcel: Parcel = Parcel.obtain()
         config.writeToParcel(parcel, 0)
         parcel.setDataPosition(0)
@@ -212,7 +210,7 @@ class VirtualInputDeviceConfigTest {
 
     @Test
     fun testConstructorAndGetters_virtualTouchscreenConfig() {
-        val config: VirtualTouchscreenConfig = createVirtualTouchscreenConfig()
+        val config: VirtualTouchscreenConfig = createVirtualTouchscreenConfigBuilder().build()
         Truth.assertThat(config.inputDeviceName).isEqualTo(DEVICE_NAME)
         Truth.assertThat(config.vendorId).isEqualTo(VENDOR_ID)
         Truth.assertThat(config.productId).isEqualTo(PRODUCT_ID)
@@ -223,7 +221,7 @@ class VirtualInputDeviceConfigTest {
 
     @Test
     fun testParcel_virtualTouchscreenConfig() {
-        val config: VirtualTouchscreenConfig = createVirtualTouchscreenConfig()
+        val config: VirtualTouchscreenConfig = createVirtualTouchscreenConfigBuilder().build()
         val parcel: Parcel = Parcel.obtain()
         config.writeToParcel(parcel, 0)
         parcel.setDataPosition(0)
@@ -240,7 +238,7 @@ class VirtualInputDeviceConfigTest {
 
     @Test
     fun testConstructorAndGetters_virtualStylusConfig() {
-        val config: VirtualStylusConfig = createVirtualStylusConfig()
+        val config: VirtualStylusConfig = createVirtualStylusConfigBuilder().build()
         Truth.assertThat(config.inputDeviceName).isEqualTo(DEVICE_NAME)
         Truth.assertThat(config.vendorId).isEqualTo(VENDOR_ID)
         Truth.assertThat(config.productId).isEqualTo(PRODUCT_ID)
@@ -251,7 +249,7 @@ class VirtualInputDeviceConfigTest {
 
     @Test
     fun testParcel_virtualStylusConfig() {
-        val config: VirtualStylusConfig = createVirtualStylusConfig()
+        val config: VirtualStylusConfig = createVirtualStylusConfigBuilder().build()
         val parcel: Parcel = Parcel.obtain()
         config.writeToParcel(parcel, 0)
         parcel.setDataPosition(0)
@@ -268,7 +266,7 @@ class VirtualInputDeviceConfigTest {
 
     @Test
     fun testConstructorAndGetters_virtualRotaryConfig() {
-        val config: VirtualRotaryEncoderConfig = createVirtualRotaryEncoderConfig()
+        val config: VirtualRotaryEncoderConfig = createVirtualRotaryEncoderConfigBuilder().build()
         Truth.assertThat(config.inputDeviceName).isEqualTo(DEVICE_NAME)
         Truth.assertThat(config.vendorId).isEqualTo(VENDOR_ID)
         Truth.assertThat(config.productId).isEqualTo(PRODUCT_ID)
@@ -277,7 +275,7 @@ class VirtualInputDeviceConfigTest {
 
     @Test
     fun testParcel_virtualRotaryConfig() {
-        val config: VirtualRotaryEncoderConfig = createVirtualRotaryEncoderConfig()
+        val config: VirtualRotaryEncoderConfig = createVirtualRotaryEncoderConfigBuilder().build()
         val parcel: Parcel = Parcel.obtain()
         config.writeToParcel(parcel, 0)
         parcel.setDataPosition(0)
@@ -292,7 +290,8 @@ class VirtualInputDeviceConfigTest {
 
     @Test
     fun testConstructorAndGetters_virtualNavigationTouchpadConfig() {
-        val config: VirtualNavigationTouchpadConfig = createVirtualNavigationTouchpadConfig()
+        val config: VirtualNavigationTouchpadConfig =
+            createVirtualNavigationTouchpadConfigBuilder().build()
         Truth.assertThat(config.inputDeviceName).isEqualTo(DEVICE_NAME)
         Truth.assertThat(config.vendorId).isEqualTo(VENDOR_ID)
         Truth.assertThat(config.productId).isEqualTo(PRODUCT_ID)
@@ -303,7 +302,8 @@ class VirtualInputDeviceConfigTest {
 
     @Test
     fun testParcel_virtualNavigationTouchpadConfig() {
-        val config: VirtualNavigationTouchpadConfig = createVirtualNavigationTouchpadConfig()
+        val config: VirtualNavigationTouchpadConfig =
+            createVirtualNavigationTouchpadConfigBuilder().build()
         val parcel: Parcel = Parcel.obtain()
         config.writeToParcel(parcel, 0)
         parcel.setDataPosition(0)
@@ -651,6 +651,226 @@ class VirtualInputDeviceConfigTest {
                 .setInputDeviceName(DEVICE_NAME)
                 .build()
         }
+    }
+
+    // TODO: b/434658418 - Once the flag FLAG_VIRTUAL_INPUT_VIEW_BEHAVIOR gets cleaned up, remove
+    // the following tests for viewBehavior and merge them with the existing tests for builder and
+    // parcelling/unparcelling.
+
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_INPUT_VIEW_BEHAVIOR)
+    @Test
+    fun testVirtualDpadConfig_withViewBehavior() {
+        val viewBehavior = ViewBehaviorConfig.Builder()
+            .setPrimaryDirectionalMotionAxis(MotionEvent.AXIS_HAT_X)
+            .setShouldSmoothScroll(true)
+            .build()
+        val config = createVirtualDpadConfigBuilder()
+            .setViewBehaviorConfig(viewBehavior)
+            .build()
+
+        Truth.assertThat(config.viewBehaviorConfig?.primaryDirectionalMotionAxis)
+            .isEqualTo(MotionEvent.AXIS_HAT_X)
+        Truth.assertThat(config.viewBehaviorConfig?.shouldSmoothScroll()).isTrue()
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_INPUT_VIEW_BEHAVIOR)
+    @Test
+    fun testVirtualDpadConfig_parcel_withViewBehavior() {
+        val viewBehavior = ViewBehaviorConfig.Builder()
+            .setPrimaryDirectionalMotionAxis(MotionEvent.AXIS_Y)
+            .build()
+        val config = createVirtualDpadConfigBuilder()
+            .setViewBehaviorConfig(viewBehavior)
+            .build()
+
+        val parcel = Parcel.obtain()
+        config.writeToParcel(parcel, 0)
+        parcel.setDataPosition(0)
+        val configFromParcel = VirtualDpadConfig.CREATOR.createFromParcel(parcel)
+
+        Truth.assertThat(configFromParcel.viewBehaviorConfig?.primaryDirectionalMotionAxis)
+            .isEqualTo(MotionEvent.AXIS_Y)
+        Truth.assertThat(configFromParcel.viewBehaviorConfig?.shouldSmoothScroll()).isFalse()
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_INPUT_VIEW_BEHAVIOR)
+    @Test
+    fun testVirtualTouchscreenConfig_withViewBehavior() {
+        val viewBehavior = ViewBehaviorConfig.Builder()
+            .setPrimaryDirectionalMotionAxis(MotionEvent.AXIS_HAT_X)
+            .setShouldSmoothScroll(true)
+            .build()
+        val config = createVirtualTouchscreenConfigBuilder()
+            .setViewBehaviorConfig(viewBehavior)
+            .build()
+
+        Truth.assertThat(config.viewBehaviorConfig?.primaryDirectionalMotionAxis)
+            .isEqualTo(MotionEvent.AXIS_HAT_X)
+        Truth.assertThat(config.viewBehaviorConfig?.shouldSmoothScroll()).isTrue()
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_INPUT_VIEW_BEHAVIOR)
+    @Test
+    fun testVirtualTouchscreenConfig_parcel_withViewBehavior() {
+        val viewBehavior = ViewBehaviorConfig.Builder()
+            .setPrimaryDirectionalMotionAxis(MotionEvent.AXIS_Y)
+            .build()
+        val config = createVirtualTouchscreenConfigBuilder()
+            .setViewBehaviorConfig(viewBehavior)
+            .build()
+
+        val parcel = Parcel.obtain()
+        config.writeToParcel(parcel, 0)
+        parcel.setDataPosition(0)
+        val configFromParcel = VirtualDpadConfig.CREATOR.createFromParcel(parcel)
+
+        Truth.assertThat(configFromParcel.viewBehaviorConfig?.primaryDirectionalMotionAxis)
+            .isEqualTo(MotionEvent.AXIS_Y)
+        Truth.assertThat(configFromParcel.viewBehaviorConfig?.shouldSmoothScroll()).isFalse()
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_INPUT_VIEW_BEHAVIOR)
+    @Test
+    fun testVirtualNavigationTouchpadConfig_withViewBehavior() {
+        val viewBehavior = ViewBehaviorConfig.Builder()
+            .setPrimaryDirectionalMotionAxis(MotionEvent.AXIS_HAT_X)
+            .setShouldSmoothScroll(true)
+            .build()
+        val config = createVirtualNavigationTouchpadConfigBuilder()
+            .setViewBehaviorConfig(viewBehavior)
+            .build()
+
+        Truth.assertThat(config.viewBehaviorConfig?.primaryDirectionalMotionAxis)
+            .isEqualTo(MotionEvent.AXIS_HAT_X)
+        Truth.assertThat(config.viewBehaviorConfig?.shouldSmoothScroll()).isTrue()
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_INPUT_VIEW_BEHAVIOR)
+    @Test
+    fun testVirtualNavigationTouchpadConfig_parcel_withViewBehavior() {
+        val viewBehavior = ViewBehaviorConfig.Builder()
+            .setPrimaryDirectionalMotionAxis(MotionEvent.AXIS_Y)
+            .build()
+        val config = createVirtualNavigationTouchpadConfigBuilder()
+            .setViewBehaviorConfig(viewBehavior)
+            .build()
+
+        val parcel = Parcel.obtain()
+        config.writeToParcel(parcel, 0)
+        parcel.setDataPosition(0)
+        val configFromParcel = VirtualDpadConfig.CREATOR.createFromParcel(parcel)
+
+        Truth.assertThat(configFromParcel.viewBehaviorConfig?.primaryDirectionalMotionAxis)
+            .isEqualTo(MotionEvent.AXIS_Y)
+        Truth.assertThat(configFromParcel.viewBehaviorConfig?.shouldSmoothScroll()).isFalse()
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_INPUT_VIEW_BEHAVIOR)
+    @Test
+    fun testVirtualMouseConfig_withViewBehavior() {
+        val viewBehavior = ViewBehaviorConfig.Builder()
+            .setPrimaryDirectionalMotionAxis(MotionEvent.AXIS_HAT_X)
+            .setShouldSmoothScroll(true)
+            .build()
+        val config = createVirtualMouseConfigBuilder()
+            .setViewBehaviorConfig(viewBehavior)
+            .build()
+
+        Truth.assertThat(config.viewBehaviorConfig?.primaryDirectionalMotionAxis)
+            .isEqualTo(MotionEvent.AXIS_HAT_X)
+        Truth.assertThat(config.viewBehaviorConfig?.shouldSmoothScroll()).isTrue()
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_INPUT_VIEW_BEHAVIOR)
+    @Test
+    fun testVirtualMouseConfig_parcel_withViewBehavior() {
+        val viewBehavior = ViewBehaviorConfig.Builder()
+            .setPrimaryDirectionalMotionAxis(MotionEvent.AXIS_Y)
+            .build()
+        val config = createVirtualMouseConfigBuilder()
+            .setViewBehaviorConfig(viewBehavior)
+            .build()
+
+        val parcel = Parcel.obtain()
+        config.writeToParcel(parcel, 0)
+        parcel.setDataPosition(0)
+        val configFromParcel = VirtualDpadConfig.CREATOR.createFromParcel(parcel)
+
+        Truth.assertThat(configFromParcel.viewBehaviorConfig?.primaryDirectionalMotionAxis)
+            .isEqualTo(MotionEvent.AXIS_Y)
+        Truth.assertThat(configFromParcel.viewBehaviorConfig?.shouldSmoothScroll()).isFalse()
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_INPUT_VIEW_BEHAVIOR)
+    @Test
+    fun testVirtualStylusConfig_withViewBehavior() {
+        val viewBehavior = ViewBehaviorConfig.Builder()
+            .setPrimaryDirectionalMotionAxis(MotionEvent.AXIS_HAT_X)
+            .setShouldSmoothScroll(true)
+            .build()
+        val config = createVirtualStylusConfigBuilder()
+            .setViewBehaviorConfig(viewBehavior)
+            .build()
+
+        Truth.assertThat(config.viewBehaviorConfig?.primaryDirectionalMotionAxis)
+            .isEqualTo(MotionEvent.AXIS_HAT_X)
+        Truth.assertThat(config.viewBehaviorConfig?.shouldSmoothScroll()).isTrue()
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_INPUT_VIEW_BEHAVIOR)
+    @Test
+    fun testVirtualStylusConfig_parcel_withViewBehavior() {
+        val viewBehavior = ViewBehaviorConfig.Builder()
+            .setPrimaryDirectionalMotionAxis(MotionEvent.AXIS_Y)
+            .build()
+        val config = createVirtualStylusConfigBuilder()
+            .setViewBehaviorConfig(viewBehavior)
+            .build()
+
+        val parcel = Parcel.obtain()
+        config.writeToParcel(parcel, 0)
+        parcel.setDataPosition(0)
+        val configFromParcel = VirtualDpadConfig.CREATOR.createFromParcel(parcel)
+
+        Truth.assertThat(configFromParcel.viewBehaviorConfig?.primaryDirectionalMotionAxis)
+            .isEqualTo(MotionEvent.AXIS_Y)
+        Truth.assertThat(configFromParcel.viewBehaviorConfig?.shouldSmoothScroll()).isFalse()
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_INPUT_VIEW_BEHAVIOR)
+    @Test
+    fun testVirtualRotaryEncoderConfig_withViewBehavior() {
+        val viewBehavior = ViewBehaviorConfig.Builder()
+            .setPrimaryDirectionalMotionAxis(MotionEvent.AXIS_HAT_X)
+            .setShouldSmoothScroll(true)
+            .build()
+        val config = createVirtualRotaryEncoderConfigBuilder()
+            .setViewBehaviorConfig(viewBehavior)
+            .build()
+
+        Truth.assertThat(config.viewBehaviorConfig?.primaryDirectionalMotionAxis)
+            .isEqualTo(MotionEvent.AXIS_HAT_X)
+        Truth.assertThat(config.viewBehaviorConfig?.shouldSmoothScroll()).isTrue()
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_INPUT_VIEW_BEHAVIOR)
+    @Test
+    fun testVirtualRotaryEncoderConfig_parcel_withViewBehavior() {
+        val viewBehavior = ViewBehaviorConfig.Builder()
+            .setPrimaryDirectionalMotionAxis(MotionEvent.AXIS_Y)
+            .build()
+        val config = createVirtualRotaryEncoderConfigBuilder()
+            .setViewBehaviorConfig(viewBehavior)
+            .build()
+
+        val parcel = Parcel.obtain()
+        config.writeToParcel(parcel, 0)
+        parcel.setDataPosition(0)
+        val configFromParcel = VirtualDpadConfig.CREATOR.createFromParcel(parcel)
+
+        Truth.assertThat(configFromParcel.viewBehaviorConfig?.primaryDirectionalMotionAxis)
+            .isEqualTo(MotionEvent.AXIS_Y)
+        Truth.assertThat(configFromParcel.viewBehaviorConfig?.shouldSmoothScroll()).isFalse()
     }
 
     companion object {

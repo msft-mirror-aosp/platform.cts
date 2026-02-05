@@ -15,28 +15,33 @@
  */
 package android.hardware.input.cts.tests.virtualdevices
 
+import android.annotation.SuppressLint
+import android.hardware.input.InputManager
 import android.hardware.input.VirtualNavigationTouchpad
 import android.hardware.input.VirtualTouchEvent
 import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator
 import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator
 import android.os.SystemClock
+import android.platform.test.annotations.RequiresFlagsEnabled
 import android.view.InputDevice
 import android.view.InputEvent
 import android.view.KeyEvent
 import android.view.MotionEvent
 import androidx.test.filters.FlakyTest
+import com.google.common.truth.Truth.assertThat
 import junitparams.JUnitParamsRunner
 import junitparams.Parameters
 import org.junit.Test
 import org.junit.runner.RunWith
 
+@SuppressLint("MissingCheckFlagsRule") // TODO: b/463342925 - remove once fixed
 @RunWith(JUnitParamsRunner::class)
 class VirtualNavigationTouchpadTest : VirtualDeviceTestCase() {
     private lateinit var mVirtualNavigationTouchpad: VirtualNavigationTouchpad
 
     override fun onSetUpVirtualInputDevice() {
         mVirtualNavigationTouchpad = VirtualInputDeviceCreator.createAndPrepareNavigationTouchpad(
-            mVirtualDevice, DEVICE_NAME, mVirtualDisplay.display, TOUCHPAD_WIDTH,
+            mVirtualDevice, DEVICE_NAME, mVirtualDisplay.display, null, TOUCHPAD_WIDTH,
             TOUCHPAD_HEIGHT
         ).device
     }
@@ -223,6 +228,19 @@ class VirtualNavigationTouchpadTest : VirtualDeviceTestCase() {
                 createKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_DOWN)
             )
         )
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.hardware.input.Flags.FLAG_CREATE_VIRTUAL_KEYBOARD_API)
+    fun hasAssociatedDisplayId() {
+        val inputManager: InputManager =
+            mInstrumentation.context.getSystemService(InputManager::class.java)
+        val navigationTouchpadId: Int = mVirtualNavigationTouchpad.inputDeviceId
+        assertThat(inputManager.inputDeviceIds.asList()).contains(navigationTouchpadId)
+
+        val inputDevice: InputDevice = inputManager.getInputDevice(navigationTouchpadId)!!
+        assertThat(inputDevice.name).isEqualTo(DEVICE_NAME)
+        assertThat(inputDevice.associatedDisplayId).isEqualTo(mVirtualDisplay.display.displayId)
     }
 
     private fun sendFlingEvents(startX: Float, startY: Float, diffX: Float, diffY: Float) {

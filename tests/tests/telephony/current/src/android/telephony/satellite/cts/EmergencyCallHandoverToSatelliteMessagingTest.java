@@ -183,6 +183,8 @@ public class EmergencyCallHandoverToSatelliteMessagingTest extends SatelliteImsC
         if (sMockModemManager != null) {
             sMockModemManager.resetImsAllLatchCountdown();
         }
+
+        clearAllEventsInMockServiceManagers();
     }
 
     @After

@@ -34,6 +34,7 @@ import android.stats.devicepolicy.EventId;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.flags.annotations.RequireFlagsEnabled;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsurePasswordNotSet;
@@ -44,6 +45,7 @@ import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.enterprise.policies.LockNow;
 import com.android.bedstead.enterprise.policies.MaximumTimeToLock;
+import com.android.bedstead.enterprise.policies.MaximumTimeToLockMultiUserManagement;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.utils.Poll;
@@ -179,6 +181,34 @@ public class LockTest {
         } finally {
             dpc(sDeviceState).devicePolicyManager().setMaximumTimeToLock(
                     dpc(sDeviceState).componentName(), originalTimeout);
+        }
+    }
+
+    @PolicyAppliesTest(policy = MaximumTimeToLockMultiUserManagement.class)
+    @Postsubmit(reason = "New test")
+    @RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING_MAXIMUM_TIME_TO_LOCK)
+    @ApiTest(
+            apis = {
+                "android.app.admin.DevicePolicyManager#setMaximumTimeToLock",
+                "android.app.admin.DevicePolicyManager#getMaximumTimeToLock"
+            })
+    public void setMaximumTimeToLockMultiUserManagement_maximumTimeToLockIsSet() {
+        long originalTimeout =
+                dpc(sDeviceState)
+                        .devicePolicyManager()
+                        .getMaximumTimeToLock(dpc(sDeviceState).componentName());
+        try {
+            dpc(sDeviceState)
+                    .devicePolicyManager()
+                    .setMaximumTimeToLock(
+                            dpc(sDeviceState).componentName(), originalTimeout + TIMEOUT);
+
+            assertThat(TestApis.devicePolicy().getMaximumTimeToLock())
+                    .isEqualTo(originalTimeout + TIMEOUT);
+        } finally {
+            dpc(sDeviceState)
+                    .devicePolicyManager()
+                    .setMaximumTimeToLock(dpc(sDeviceState).componentName(), originalTimeout);
         }
     }
 

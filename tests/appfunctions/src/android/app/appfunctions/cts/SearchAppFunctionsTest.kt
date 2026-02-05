@@ -18,8 +18,6 @@ package android.app.appfunctions.cts
 import android.Manifest
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.AppFunctionMetadata
-import android.app.appfunctions.AppFunctionMetadata.SCOPE_ACTIVITY
-import android.app.appfunctions.AppFunctionMetadata.SCOPE_GLOBAL
 import android.app.appfunctions.AppFunctionName
 import android.app.appfunctions.AppFunctionPackageMetadata
 import android.app.appfunctions.AppFunctionSchemaMetadata
@@ -226,7 +224,7 @@ class SearchAppFunctionsTest {
         try {
             val searchSpec =
                 AppFunctionSearchSpec.Builder()
-                    .setPackageNames(listOf(DynamicSchemaHelperApp.PACKAGE_NAME))
+                    .setPackageNames(setOf(DynamicSchemaHelperApp.PACKAGE_NAME))
                     .build()
 
             val resultAppFunctions = searchAppFunctions(searchSpec)
@@ -258,7 +256,7 @@ class SearchAppFunctionsTest {
                 val searchSpec =
                     AppFunctionSearchSpec.Builder()
                         .setFunctionNames(
-                            listOf(DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT)
+                            setOf(DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT)
                         )
                         .build()
 
@@ -338,7 +336,7 @@ class SearchAppFunctionsTest {
     fun searchAppFunctions_searchByScopeWithSingleScope_seeFilteredResult() = doBlocking {
         val searchSpec =
             AppFunctionSearchSpec.Builder()
-                .setScopes(listOf(AppFunctionMetadata.SCOPE_GLOBAL))
+                .setScopes(setOf(AppFunctionMetadata.SCOPE_GLOBAL))
                 .build()
 
         val results: List<AppFunctionMetadata> = searchAppFunctions(searchSpec)
@@ -360,21 +358,15 @@ class SearchAppFunctionsTest {
         val searchSpec =
             AppFunctionSearchSpec.Builder()
                 .setScopes(
-                    listOf(AppFunctionMetadata.SCOPE_GLOBAL, AppFunctionMetadata.SCOPE_ACTIVITY)
+                    setOf(AppFunctionMetadata.SCOPE_GLOBAL, AppFunctionMetadata.SCOPE_ACTIVITY)
                 )
                 .build()
 
         val results: List<AppFunctionMetadata> = searchAppFunctions(searchSpec)
         val functionsGroupByPackage = results.groupBy { it.packageMetadata.packageName }
 
-        // TODO: Update this to be ALL_FUNCTIONS once the indexer change is in.
         assertThat(functionsGroupByPackage[DynamicSchemaHelperApp.PACKAGE_NAME]!!.map { it.name })
-            .containsExactlyElementsIn(
-                listOf(
-                    DynamicSchemaHelperApp.FunctionNames.GLOBAL_SCOPE,
-                    DynamicSchemaHelperApp.FunctionNames.ACTIVITY_SCOPE
-                )
-            )
+            .containsExactlyElementsIn(DynamicSchemaHelperApp.FunctionNames.ALL_FUNCTIONS)
     }
 
     @Test
@@ -461,7 +453,7 @@ class SearchAppFunctionsTest {
     fun searchAppFunctionsFromLegacySchema_shouldSucceedWithPermission() = doBlocking {
         val searchSpec =
             AppFunctionSearchSpec.Builder()
-                .setPackageNames(listOf(LegacySchemaHelperApp.PACKAGE_NAME))
+                .setPackageNames(setOf(LegacySchemaHelperApp.PACKAGE_NAME))
                 .build()
 
         val resultAppFunctionsByName: Map<AppFunctionName, AppFunctionMetadata> =
@@ -491,9 +483,9 @@ class SearchAppFunctionsTest {
     fun searchAppFunctionsFromLegacySchema_shouldReturnCorrectMetadata() = doBlocking {
         val searchSpec =
             AppFunctionSearchSpec.Builder()
-                .setPackageNames(listOf(LegacySchemaHelperApp.PACKAGE_NAME))
+                .setPackageNames(setOf(LegacySchemaHelperApp.PACKAGE_NAME))
                 .setFunctionNames(
-                    listOf(
+                    setOf(
                         LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT,
                         LegacySchemaHelperApp.FunctionNames.ADD_DISABLED_BY_DEFAULT,
                     )
@@ -523,8 +515,8 @@ class SearchAppFunctionsTest {
         val schemaMetadata = AppFunctionSchemaMetadata("myUtils", "testSchema", 1)
         val searchSpec =
             AppFunctionSearchSpec.Builder()
-                .setPackageNames(listOf(DynamicSchemaHelperApp.PACKAGE_NAME))
-                .setFunctionNames(listOf(DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT))
+                .setPackageNames(setOf(DynamicSchemaHelperApp.PACKAGE_NAME))
+                .setFunctionNames(setOf(DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT))
                 .setSchemaCategory(schemaMetadata.category)
                 .setSchemaName(schemaMetadata.name)
                 .setMinSchemaVersion(schemaMetadata.version)
@@ -549,9 +541,9 @@ class SearchAppFunctionsTest {
     fun searchAppFunctions_functionNamesStricterThanPackages_noSchema_succeeds() = doBlocking {
         val searchSpec =
             AppFunctionSearchSpec.Builder()
-                .setPackageNames(listOf(CtsApp.PACKAGE_NAME, DynamicSchemaHelperApp.PACKAGE_NAME))
+                .setPackageNames(setOf(CtsApp.PACKAGE_NAME, DynamicSchemaHelperApp.PACKAGE_NAME))
                 .setFunctionNames(
-                    listOf(
+                    setOf(
                         DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT,
                         DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT,
                     )
@@ -585,9 +577,9 @@ class SearchAppFunctionsTest {
     fun searchAppFunctions_packagesStricterThanFunctionNames_noSchema_succeeds() = doBlocking {
         val searchSpec =
             AppFunctionSearchSpec.Builder()
-                .setPackageNames(listOf(CtsApp.PACKAGE_NAME))
+                .setPackageNames(setOf(CtsApp.PACKAGE_NAME))
                 .setFunctionNames(
-                    listOf(
+                    setOf(
                         CtsApp.FunctionNames.ADD,
                         DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT,
                     )
@@ -613,10 +605,10 @@ class SearchAppFunctionsTest {
     fun searchAppFunctions_disjointFunctionNamesAndPackageNames_noResult() = doBlocking {
         val searchSpec =
             AppFunctionSearchSpec.Builder()
-                .setPackageNames(listOf(CtsApp.PACKAGE_NAME))
+                .setPackageNames(setOf(CtsApp.PACKAGE_NAME))
                 .setFunctionNames(
                     // Both functions belongs to a different package
-                    listOf(
+                    setOf(
                         DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT,
                         DynamicSchemaHelperApp.FunctionNames.DISABLED_BY_DEFAULT,
                     )
@@ -711,7 +703,7 @@ class SearchAppFunctionsTest {
     fun searchAppFunctions_packageNamesSpecified_noFunctionNames_succeeds() = doBlocking {
         val searchSpec =
             AppFunctionSearchSpec.Builder()
-                .setPackageNames(listOf(DynamicSchemaHelperApp.PACKAGE_NAME))
+                .setPackageNames(setOf(DynamicSchemaHelperApp.PACKAGE_NAME))
                 .build()
 
         val resultAppFunctionsByName: Map<AppFunctionName, AppFunctionMetadata> =
@@ -743,7 +735,7 @@ class SearchAppFunctionsTest {
         val searchSpec =
             AppFunctionSearchSpec.Builder()
                 .setFunctionNames(
-                    listOf(
+                    setOf(
                         DynamicSchemaHelperApp.FunctionNames.ENABLED_BY_DEFAULT,
                         CtsApp.FunctionNames.ADD,
                     )
@@ -777,8 +769,8 @@ class SearchAppFunctionsTest {
     fun searchAppFunctions_functionNotExist_returnsEmptyList() = doBlocking {
         val searchSpec =
             AppFunctionSearchSpec.Builder()
-                .setPackageNames(listOf("fake.package"))
-                .setFunctionNames(listOf(AppFunctionName("fake.package", "notExist")))
+                .setPackageNames(setOf("fake.package"))
+                .setFunctionNames(setOf(AppFunctionName("fake.package", "notExist")))
                 .build()
 
         assertThat(searchAppFunctions(searchSpec)).isEmpty()
@@ -882,9 +874,8 @@ class SearchAppFunctionsTest {
             searchAppFunctions(
                     AppFunctionSearchSpec.Builder()
                         .setPackageNames(
-                            listOf(
-                                LegacySchemaHelperApp
-                                    .PACKAGE_NAME, // Not installed on secondary user
+                            setOf(
+                                LegacySchemaHelperApp.PACKAGE_NAME, // Not installed on second user
                                 DynamicSchemaHelperApp.PACKAGE_NAME,
                             )
                         )
@@ -915,7 +906,7 @@ class SearchAppFunctionsTest {
     @EnsureHasNoDeviceOwner
     fun testSearchSpecBuilder_emptyPackageNames_throwsIllegalArgumentException() {
         assertThrows(IllegalArgumentException::class.java) {
-            AppFunctionSearchSpec.Builder().setPackageNames(emptyList())
+            AppFunctionSearchSpec.Builder().setPackageNames(emptySet())
         }
     }
 
@@ -926,7 +917,7 @@ class SearchAppFunctionsTest {
     @EnsureHasNoDeviceOwner
     fun testSearchSpecBuilder_emptyFunctionNames_throwsIllegalArgumentException() {
         assertThrows(IllegalArgumentException::class.java) {
-            AppFunctionSearchSpec.Builder().setFunctionNames(emptyList())
+            AppFunctionSearchSpec.Builder().setFunctionNames(emptySet())
         }
     }
 

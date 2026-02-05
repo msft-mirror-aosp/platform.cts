@@ -20,7 +20,7 @@ description: "Wired headsets and USB audio devices support 24-bit audio"
 specs {
   key: 33
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_13
+    mpc: MEDIA_PERFORMANCE_CLASS_33
     specification:
       "MUST support >=24-bit audio for stereo output over 3.5 mm audio jacks "
       "if present and over USB audio if supported through the entire data path "
@@ -42,7 +42,7 @@ specs {
 specs {
   key: 34
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_14
+    mpc: MEDIA_PERFORMANCE_CLASS_34
     specification:
       "MUST support >=24-bit audio for stereo output over 3.5 mm audio jacks "
       "if present and over USB audio if supported through the entire data path "
@@ -64,7 +64,7 @@ specs {
 specs {
   key: 35
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_15
+    mpc: MEDIA_PERFORMANCE_CLASS_35
     specification:
       "MUST support >= 24-bit audio for stereo output over 3.5 mm audio jacks "
       "if present and over USB audio if supported through the entire data path "
@@ -86,7 +86,7 @@ specs {
 specs {
   key: 37
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_17
+    mpc: MEDIA_PERFORMANCE_CLASS_37
     specification:
       "MUST support >= 24-bit audio for stereo output over 3.5 mm audio jacks "
       "if present and over USB audio if supported through the entire data path "

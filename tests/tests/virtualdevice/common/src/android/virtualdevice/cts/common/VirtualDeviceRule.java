@@ -502,9 +502,18 @@ public class VirtualDeviceRule implements TestRule {
      * successfully launched there. The activity will be finished after the test run.
      */
     public <T extends Activity> T startActivityOnDisplaySync(int displayId, Intent intent) {
+        return startActivityOnDisplaySync(displayId, intent, createActivityOptions(displayId));
+    }
+
+    /**
+     * Starts the activity for the given intent with the given options on the given display and
+     * blocks until it is successfully launched there. The activity will be finished after the test
+     * run.
+     */
+    public <T extends Activity> T startActivityOnDisplaySync(
+            int displayId, Intent intent, Bundle options) {
         assumeActivityLaunchSupported(displayId);
-        T activity = (T) getInstrumentation()
-                .startActivitySync(intent, createActivityOptions(displayId));
+        T activity = (T) getInstrumentation().startActivitySync(intent, options);
         mTrackerRule.mActivities.add(activity);
         return activity;
     }

@@ -20,7 +20,7 @@ description: "Preview stabilization for primary rear camera"
 specs {
   key: 33
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_13
+    mpc: MEDIA_PERFORMANCE_CLASS_33
     specification:
       "MUST support `CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION` "
       "for the primary back camera."
@@ -35,7 +35,7 @@ specs {
 specs {
   key: 34
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_14
+    mpc: MEDIA_PERFORMANCE_CLASS_34
     specification:
       "MUST support `CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION` "
       "for the primary back camera."
@@ -50,7 +50,7 @@ specs {
 specs {
   key: 35
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_15
+    mpc: MEDIA_PERFORMANCE_CLASS_35
     specification:
       "MUST support `CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION` "
       "for the primary back camera."
@@ -65,7 +65,7 @@ specs {
 specs {
   key: 37
   value {
-    mpc: MEDIA_PERFORMANCE_CLASS_17
+    mpc: MEDIA_PERFORMANCE_CLASS_37
     specification:
       "MUST support `CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION` "
       "for the primary back camera."

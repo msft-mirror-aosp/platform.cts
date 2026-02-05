@@ -33,6 +33,7 @@ import static com.google.common.truth.Truth.assertThat;
 import android.compat.testing.PlatformCompatChangeRule;
 import android.content.Context;
 import android.content.Intent;
+import android.media.cts.MediaProjectionRule;
 import android.os.Bundle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -85,6 +86,8 @@ public class VoiceInteractionServiceSelfTriggerTest {
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Rule public final PlatformCompatChangeRule mCompatChangeRule = new PlatformCompatChangeRule();
+
+    @Rule public final MediaProjectionRule mMediaProjectionRule = new MediaProjectionRule();
 
     private static final SettingsStateManager sStructureEnabledMgr =
             new SettingsStateManager(
@@ -247,6 +250,34 @@ public class VoiceInteractionServiceSelfTriggerTest {
 
         // 3. Verify assist data/screenshot present
         assertHasAssistDataAndScreenshot();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            com.android.server.voiceinteraction.flags.Flags.FLAG_ENABLE_RESTRICT_VIS_SELF_TRIGGER)
+    @DisableCompatChanges({VoiceInteractionCompat.RESTRICT_VIS_SELF_TRIGGER_COMPAT_ID})
+    public void testSelfTrigger_background_activeMediaProjection_assistAllowed() throws Exception {
+        // 1. background the test app
+        try (TestAppInstance instance = sTestApp.install(sDeviceState.initialUser())) {
+            TestAppActivityReference activity =
+                    instance.activities().query().whereActivity().exported().isTrue().get();
+            activity.start();
+            mUiDevice.pressHome();
+            mUiDevice.waitForIdle();
+
+            // 2. Start MediaProjection session
+            mMediaProjectionRule.startMediaProjection();
+
+            // 3. Trigger session
+            mService.showSession(
+                    new Bundle(),
+                    VoiceInteractionSession.SHOW_WITH_SCREENSHOT
+                            | VoiceInteractionSession.SHOW_WITH_ASSIST
+                            | VoiceInteractionSession.SHOW_WITH_ASSIST_STRUCTURE_SCREEN_CONTENT);
+
+            // 4. Verify assist data/screenshot present
+            assertHasAssistDataAndScreenshot();
+        }
     }
 
     private void assertHasNoAssistDataAndScreenshot() throws InterruptedException {
