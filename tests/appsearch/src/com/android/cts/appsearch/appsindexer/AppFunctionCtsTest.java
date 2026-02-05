@@ -18,10 +18,12 @@ package android.app.appsearch.cts.appsindexer;
 
 import static android.app.appfunctions.flags.Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PRINT_APP_FUNCTION;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_COMMON_SCHEMA_METADATA;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_PRINT_APP_FUNCTION;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION;
+import static android.app.appsearch.testutil.AppFunctionTestUtils.APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.APP_A_V2_PRINT_APP_FUNCTION;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.APP_B_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION;
 import static android.app.appsearch.testutil.AppFunctionTestUtils.APP_B_PRINT_APP_FUNCTION;
@@ -103,6 +105,7 @@ public class AppFunctionCtsTest {
                 });
     }
 
+    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @Test
     public void indexAppFunctions_packageChanges() throws Throwable {
         {
@@ -168,6 +171,7 @@ public class AppFunctionCtsTest {
         }
     }
 
+    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @Test
     public void indexAppFunctions_fullXml() throws Throwable {
         // The XML in A v2 has the full XML which specifies all the properties. Here we verify
@@ -199,6 +203,7 @@ public class AppFunctionCtsTest {
                 });
     }
 
+    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @Test
     public void indexAppFunctions_defaultValue() throws Throwable {
         // The XML in B V1 only have functionId, schema_name, schema_version and schema_category.
@@ -221,6 +226,7 @@ public class AppFunctionCtsTest {
                 });
     }
 
+    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @Test
     public void indexAppFunctions_installAppWithNoAppFunction_retainIndexedFunctions()
             throws Throwable {
@@ -261,6 +267,7 @@ public class AppFunctionCtsTest {
         }
     }
 
+    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @Test
     public void indexAppFunctionsFromTwoApps() throws Throwable {
         // Install the test app B V1 which has one app function. That function should be indexed.
@@ -300,6 +307,7 @@ public class AppFunctionCtsTest {
         }
     }
 
+    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @Test
     public void indexMobileApplicationAndAppFunction_withoutLauncherIcon() throws Throwable {
         {
@@ -325,6 +333,7 @@ public class AppFunctionCtsTest {
         }
     }
 
+    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
@@ -360,7 +369,7 @@ public class AppFunctionCtsTest {
         assertContainsAppFunctionDocument(
                 appFnMap,
                 TEST_APP_A_PKG + "/com.example.utils#print1",
-                APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
+                APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES);
     }
 
     @RequiresFlagsEnabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
@@ -377,7 +386,7 @@ public class AppFunctionCtsTest {
         assertContainsAppFunctionDocument(
                 appFnMap,
                 TEST_APP_A_PKG + "/com.example.utils#appPrint1",
-                APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION);
+                APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES);
     }
 
     @RequiresFlagsEnabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
@@ -392,13 +401,14 @@ public class AppFunctionCtsTest {
         assertContainsAppFunctionDocument(
                 appFnMap,
                 TEST_APP_A_PKG + "/com.example.utils#appPrint1",
-                APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION);
+                APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES);
         assertContainsAppFunctionDocument(
                 appFnMap,
                 TEST_APP_A_PKG + "/com.example.utils#print1",
-                APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
+                APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES);
     }
 
+    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
@@ -427,6 +437,7 @@ public class AppFunctionCtsTest {
                 .isEqualTo(APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_COMMON_SCHEMA_METADATA);
     }
 
+    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
@@ -460,6 +471,7 @@ public class AppFunctionCtsTest {
                 });
     }
 
+    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
@@ -489,6 +501,7 @@ public class AppFunctionCtsTest {
                 .isEqualTo(APP_B_PRINT_APP_FUNCTION);
     }
 
+    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
@@ -532,6 +545,7 @@ public class AppFunctionCtsTest {
         }
     }
 
+    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
@@ -576,6 +590,7 @@ public class AppFunctionCtsTest {
         }
     }
 
+    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
@@ -636,7 +651,7 @@ public class AppFunctionCtsTest {
             assertContainsAppFunctionDocument(
                     appFnMap,
                     TEST_APP_A_PKG + "/com.example.utils#print1",
-                    APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
+                    APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES);
         }
 
         {
@@ -651,11 +666,11 @@ public class AppFunctionCtsTest {
                         assertContainsAppFunctionDocument(
                                 appFnMap,
                                 TEST_APP_A_PKG + "/com.example.utils#appPrint1",
-                                APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION);
+                                APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES);
                         assertContainsAppFunctionDocument(
                                 appFnMap,
                                 TEST_APP_A_PKG + "/com.example.utils#print1",
-                                APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
+                                APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES);
                     });
         }
     }
@@ -677,11 +692,11 @@ public class AppFunctionCtsTest {
             assertContainsAppFunctionDocument(
                     appFnMap,
                     TEST_APP_A_PKG + "/com.example.utils#appPrint1",
-                    APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION);
+                    APP_A_DYNAMIC_SCHEMA_APP_LEVEL_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES);
             assertContainsAppFunctionDocument(
                     appFnMap,
                     TEST_APP_A_PKG + "/com.example.utils#print1",
-                    APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
+                    APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES);
         }
 
         {
@@ -696,11 +711,12 @@ public class AppFunctionCtsTest {
                         assertContainsAppFunctionDocument(
                                 appFnMap,
                                 TEST_APP_A_PKG + "/com.example.utils#print1",
-                                APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
+                                APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION_WITH_APP_LEVEL_PROPERTIES);
                     });
         }
     }
 
+    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
@@ -745,6 +761,7 @@ public class AppFunctionCtsTest {
         }
     }
 
+    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void indexApp_appFunctionServiceEnabledInRuntime_functionsIndexed() throws Throwable {
@@ -782,6 +799,7 @@ public class AppFunctionCtsTest {
     }
 
 
+    @RequiresFlagsDisabled(FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void indexApp_appFunctionServiceDisabledInRuntime_functionsRemoved() throws Throwable {
