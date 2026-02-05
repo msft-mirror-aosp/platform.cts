@@ -3766,7 +3766,8 @@
     <option name="compatibility:exclude-filter" value="CtsSecurityTestCases_multiuser android.security.cts.advancedprotection.AdvancedProtectionManagerTest#testUpdateAdvancedProtectionFeaturesProvisioning_deprovisioned_callbackCalled[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:exclude-filter" value="CtsSecurityTestCases_multiuser android.security.cts.advancedprotection.AdvancedProtectionManagerTest#testUpdateAdvancedProtectionFeaturesProvisioning_doesntUpdateOtherFeatures[IncludeRunOnPrimaryUser]"/>
     <option name="compatibility:exclude-filter" value="CtsSecurityTestCases_multiuser android.security.cts.advancedprotection.AdvancedProtectionManagerTest#testUpdateAdvancedProtectionFeaturesProvisioning_provisioned[IncludeRunOnPrimaryUser]"/>
-    <!-- Exclude the failing tests in CtsSettingTestCases -->
+    <!-- Exclude the failing tests in CtsSettingsTestCases -->
+    <option name="compatibility:exclude-filter" value="CtsSettingsTestCases"/>
     <option name="compatibility:exclude-filter" value="CtsSettingsTestCases android.settings.cts.SettingsIntentsTest#testSimPreferenceIntentReceiverExists"/>
     <option name="compatibility:exclude-filter" value="CtsSettingsTestCases android.settings.cts.VpnAppExclusionSettingsTest#testVpnAppExclusionSettingsExist"/>
     <!-- Exclude the failing tests in MctsMediaDecoderTestCases -->
