@@ -52,5 +52,7 @@
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.virtualdevice.cts.audio" />
         <option name="runtime-hint" value="30s" />
+        <option name="shell-timeout" value="200s" />
+        <option name="test-timeout" value="200s"/>
     </test>
 </configuration>
