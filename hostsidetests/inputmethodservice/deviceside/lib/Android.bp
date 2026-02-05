@@ -24,10 +24,5 @@ java_test_helper_library {
         "androidx.annotation_annotation",
         "CtsInputMethodServiceCommon",
     ],
-    // tag this module as a cts test artifact
-    test_suites: [
-        "cts",
-        "general-tests",
-    ],
     sdk_version: "test_current",
 }
