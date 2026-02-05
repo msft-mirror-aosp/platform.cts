@@ -28,6 +28,7 @@ android_test {
         "truth",
         "ub-uiautomator",
         "platform-test-rules",
+        "Nene",
     ],
     srcs: ["src/**/*.java"],
     test_suites: [
