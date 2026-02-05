@@ -419,6 +419,11 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDeviceOwnerTest {
             // Install and enable assistant, notice that profile can't have assistant.
             installAppAsUser(ASSIST_APP_APK, mInitialUserId);
             waitForBroadcastIdle();
+
+            // Ensure the test voice interaction service is not restricted.
+            executeShellCommand(
+                    "am compat enable BYPASS_SELF_TRIGGER_ASSIST_RESTRICTION %s", ASSIST_APP_PKG);
+
             setVoiceInteractionService(ASSIST_INTERACTION_SERVICE);
             setScreenCaptureDisabled_assist(mUserId, true /* disabled */);
         } finally {
