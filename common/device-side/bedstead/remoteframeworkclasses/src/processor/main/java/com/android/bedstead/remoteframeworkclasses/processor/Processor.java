@@ -314,7 +314,6 @@ public final class Processor extends AbstractProcessor {
                                 getMethods(frameworkClass),
                                 Apis.forClass(
                                         frameworkClass.getQualifiedName().toString(),
-                                        processingEnv.getTypeUtils(),
                                         mElementUtils))
                         .stream()
                         .filter(api -> !usesBlocklistedType(api))
