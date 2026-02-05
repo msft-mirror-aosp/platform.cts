@@ -28,6 +28,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 import android.app.contentsafety.ContentSafetyManager;
 import android.app.contentsafety.FeatureException;
@@ -96,6 +97,7 @@ public class ContentSafetyManagerTest {
 
     private Context mContext;
     private ContentSafetyManager mContentSafetyManager;
+    private PackageManager mPackageManager;
 
     @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
 
@@ -103,6 +105,8 @@ public class ContentSafetyManagerTest {
     public void setUp() throws Exception {
         Log.i(TAG, "SetUp: Start Test Setup");
         mContext = getInstrumentation().getContext();
+        mPackageManager = mContext.getPackageManager();
+        assumeUnhandledDevice();
         mContentSafetyManager = mContext.getSystemService(ContentSafetyManager.class);
         Log.i(TAG, "SetUp: Clear testable services");
         bindToTestableContentSafetyServices();
@@ -285,5 +289,12 @@ public class ContentSafetyManagerTest {
                 serviceNames[2],
                 serviceNames[3],
                 TEMPORARY_SERVICE_DURATION);
+    }
+
+    private void assumeUnhandledDevice() {
+        assumeFalse(
+                "Skipping test on PC (ChromeOS) and Auto devices",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+                        || mPackageManager.hasSystemFeature(PackageManager.FEATURE_PC));
     }
 }
