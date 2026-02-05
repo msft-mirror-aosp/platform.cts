@@ -20,7 +20,6 @@
     <option name="config-descriptor:metadata" key="component" value="sysui" />
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
-    <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
@@ -28,5 +27,6 @@
     </target_preparer>
     <test class="com.android.tradefed.testtype.HostTest" >
         <option name="class" value="android.app.notificationsizeverifier.cts.NotificationSizeVerifierHostTest" />
+        <option name="include-annotation" value="com.android.interactive.annotations.Interactive" />
     </test>
 </configuration>
