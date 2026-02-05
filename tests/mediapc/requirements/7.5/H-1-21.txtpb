@@ -1,0 +1,67 @@
+# Copyright (C) 2025 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# proto-file: cts/tests/mediapc/requirements/requirements.proto
+# proto-message: Requirement
+id: "7.5/H-1-21"
+name: "At least one camera"
+description: "At least one camera"
+specs {
+  key: 10
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_10
+    specification: "MUST have at least one front facing camera or rear facing camera."
+    required_values {
+      key: "front_and_rear_camera_count"
+      value {
+        int_value: 1
+      }
+    }
+  }
+}
+measurements {
+  key: "front_camera_count"
+  value {
+    description: "Count of front cameras."
+    measurement_type: MEASUREMENT_TYPE_INT
+    comparison: COMPARISON_INFO_ONLY
+    proto_field_number: 3
+  }
+}
+measurements {
+  key: "rear_camera_count"
+  value {
+    description: "Count of rear cameras."
+    measurement_type: MEASUREMENT_TYPE_INT
+    comparison: COMPARISON_INFO_ONLY
+    proto_field_number: 4
+  }
+}
+measurements {
+  key: "front_and_rear_camera_count"
+  value {
+    description: "Count of both front and rear cameras."
+    measurement_type: MEASUREMENT_TYPE_INT
+    comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    proto_field_number: 5
+  }
+}
+
+test_configs {
+  key: ""
+  value {
+    description: "Default test config"
+    proto_field_number: 87
+  }
+}
