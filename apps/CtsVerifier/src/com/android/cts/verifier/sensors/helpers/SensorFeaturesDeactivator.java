@@ -178,6 +178,13 @@ public class SensorFeaturesDeactivator {
                     Settings.Global.STAY_ON_WHILE_PLUGGED_IN,
                     defaultValue);
         }
+
+        @Override
+        protected boolean isSettingAvailable() {
+            // STAY_ON_WHILE_PLUGGED_In is not supported in Automotive Settings.
+            return super.isSettingAvailable()
+                    && !mStateContainer.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+        }
     }
 
     private class LocationModeSettingContainer extends SensorSettingContainer {
