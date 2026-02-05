@@ -18,9 +18,7 @@ package android.contextualsearch.caller
 import android.os.Parcel
 import android.os.Parcelable
 
-class ContextualSearchMessage(
-    var result: Int
-) : Parcelable {
+class ContextualSearchMessage(var result: Int) : Parcelable {
 
     override fun describeContents(): Int {
         return 0
