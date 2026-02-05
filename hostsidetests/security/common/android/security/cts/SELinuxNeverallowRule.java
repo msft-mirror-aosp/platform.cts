@@ -46,14 +46,12 @@ record SELinuxNeverallowRule(
         boolean compatiblePropertyOnly,
         boolean userOnly,
         boolean physicalDeviceOnly,
-        boolean launchingWithVsr202604,
         int vendorApiLevel) {
     private static String[] sConditions = {
         "COMPATIBLE_PROPERTY_ONLY",
         "LAUNCHING_WITH_R_ONLY",
         "LAUNCHING_WITH_S_ONLY",
         "PHYSICAL_DEVICE_ONLY", // Equivalent of @RequiresDevice
-        "LAUNCHING_WITH_VSR_202604_ONLY",
     };
     private static String sUserOnlyMarker = "SUPPRESSED_BY_USERDEBUG_OR_ENG";
 
@@ -65,7 +63,6 @@ record SELinuxNeverallowRule(
                 (conditions.getOrDefault("COMPATIBLE_PROPERTY_ONLY", 0) > 0),
                 (conditions.getOrDefault("USER_ONLY", 0) > 0),
                 (conditions.getOrDefault("PHYSICAL_DEVICE_ONLY", 0) > 0),
-                (conditions.getOrDefault("LAUNCHING_WITH_VSR_202604_ONLY", 0) > 0),
                 vendorApiLevel);
     }
 
@@ -101,10 +98,6 @@ record SELinuxNeverallowRule(
         return PropertyUtil.getFirstApiLevel(device) > 30;
     }
 
-    private boolean isDeviceLaunchingWithVsr202604(ITestDevice device) throws Exception {
-        return PropertyUtil.getVsrApiLevel(device) >= 202604;
-    }
-
     private boolean isCompatiblePropertyEnforcedDevice(ITestDevice device) throws Exception {
         return PropertyUtil.propertyEquals(
                 device, "ro.actionable_compatible_property.enabled", "true");
@@ -134,11 +127,6 @@ record SELinuxNeverallowRule(
         }
         if (physicalDeviceOnly && isVirtualDevice(device)) {
             // This test applies to physical devices. Skip on virtual devices (e.g., Cuttlefish).
-            return false;
-        }
-        if ((launchingWithVsr202604) && (!isDeviceLaunchingWithVsr202604(device))) {
-            // This test applies only to devices launching with VSR 202604 or later, but this device
-            // is not one.
             return false;
         }
         if (userOnly && isDebuggableBuild(device)) {
