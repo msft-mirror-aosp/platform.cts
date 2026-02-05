@@ -18,11 +18,11 @@ package com.android.cts.pcc.featuretests.services;
 
 import android.app.privatecompute.DataMigrationToPccService;
 import android.app.privatecompute.MigrationRequestResult;
-import android.app.privatecompute.MigrationRequestResultSender;
 import android.os.PersistableBundle;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /** Service for testing data migration to PCC. */
 public class MigrationTestService extends DataMigrationToPccService {
@@ -34,9 +34,9 @@ public class MigrationTestService extends DataMigrationToPccService {
 
     /** Handles the migration request. */
     @Override
-    public void onMigrationRequested(MigrationRequestResultSender callback) {
+    public void onMigrationRequested(Consumer<MigrationRequestResult> callback) {
         sLatch.countDown();
-        callback.sendResult(new MigrationRequestResult(sResponseStatus, new PersistableBundle()));
+        callback.accept(new MigrationRequestResult(sResponseStatus, new PersistableBundle()));
     }
 
     /** Waits for the migration request to be received. */
