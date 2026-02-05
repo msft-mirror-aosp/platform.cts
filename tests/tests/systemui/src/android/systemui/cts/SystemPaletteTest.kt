@@ -17,67 +17,56 @@
 package android.systemui.cts
 
 import android.R
-import android.app.UiModeManager.MODE_NIGHT_NO
-import android.app.UiModeManager.MODE_NIGHT_YES
 import android.content.Context
 import android.content.theming.ThemeStyle
-import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.Typeface
 import android.platform.test.annotations.DisabledOnRavenwood
 import androidx.annotation.ColorInt
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntRect
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color as ComposeColor
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.graphics.ColorUtils
 import com.android.compatibility.common.util.CddTest
 import com.google.common.truth.Truth.assertWithMessage
 import com.google.ux.material.libmonet.contrast.Contrast
 import com.google.ux.material.libmonet.hct.Hct
-import java.io.Serializable
-import kotlin.math.ceil
 import org.junit.Assert
-import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 
 @RunWith(Parameterized::class)
 @DisabledOnRavenwood(reason = "Cannot instantiate Parameterized runner")
-class SystemPaletteTest(private val params: PaletteParams) : BasePaletteTest() {
-
-    data class PaletteParams(
-        val color: String,
-        val style: Int,
-        val modeName: String,
-        val modeInt: Int
-    ) : Serializable {
-        override fun toString(): String = "${modeName}_${color}_${ThemeStyle.name(style)}"
-    }
+class SystemPaletteTest(params: PaletteParams) : BasePaletteTest(params) {
 
     companion object {
-        @JvmStatic
-        @Parameterized.BeforeParam
-        fun setup(params: PaletteParams) {
-            if (isSupportedStyle(params.style)) {
-                applyTheme(params.color, params.style, 0.0f, params.modeInt)
-            }
-        }
-
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
         fun testData(): Collection<PaletteParams> {
             if (!isDynamicColorSupported) {
-                return listOf(PaletteParams("Existing", ThemeStyle.TONAL_SPOT, "Current", 0))
+                return listOf(PaletteParams(listOf(), ThemeStyle.TONAL_SPOT, "standard", 0.0f))
             }
 
             val dataList = mutableListOf<PaletteParams>()
 
-            COLORS.forEach { color ->
+            getSeedColors().forEach { colors ->
                 STYLES.forEach { style ->
-                    dataList.add(PaletteParams(color, style, "dark", MODE_NIGHT_YES))
-                    dataList.add(PaletteParams(color, style, "light", MODE_NIGHT_NO))
+                    dataList.add(
+                        PaletteParams(colors, style, "standard", 0.0f)
+                    )
                 }
             }
             return dataList
@@ -87,21 +76,16 @@ class SystemPaletteTest(private val params: PaletteParams) : BasePaletteTest() {
     @Test
     @CddTest(requirements = ["3.8.6/C-1-4,C-1-5,C-1-6"])
     fun testSystemPalette() {
-        assumeTrue(isDynamicColorSupported)
-        assumeTrue(isSupportedStyle(params.style))
-        val goldenName = "Palette_$params"
-        val bitmap = generatePaletteBitmap()
-        assertGoldenImage(bitmap, goldenName)
+        assertPaletteGolden("Palette") { SystemPaletteTable(params) }
     }
 
     @Test
     @CddTest(requirements = ["3.8.6/C-1-4,C-1-5,C-1-6"])
     fun testShades0and1000() {
-        assumeTrue(isSupportedStyle(params.style))
         fun assertColor(@ColorInt observed: Int, @ColorInt expected: Int) {
             Assert.assertEquals(
                 "Color = ${Integer.toHexString(observed)}, " +
-                    "${Integer.toHexString(expected)} expected",
+                        "${Integer.toHexString(expected)} expected",
                 expected,
                 observed,
             )
@@ -116,7 +100,6 @@ class SystemPaletteTest(private val params: PaletteParams) : BasePaletteTest() {
     @Test
     @CddTest(requirements = ["3.8.6/C-1-4,C-1-5,C-1-6"])
     fun testColorsMatchExpectedLuminance() {
-        assumeTrue(isSupportedStyle(params.style))
         val labColor = doubleArrayOf(0.0, 0.0, 0.0)
         val expectedL =
             arrayOf(100.0, 99.0, 95.0, 90.0, 80.0, 70.0, 60.0, 49.0, 40.0, 30.0, 20.0, 10.0, 0.0)
@@ -126,9 +109,9 @@ class SystemPaletteTest(private val params: PaletteParams) : BasePaletteTest() {
                 val expectedColor = expectedL[i]
                 ColorUtils.colorToLAB(paletteColor, labColor)
                 assertWithMessage(
-                        "Color ${Integer.toHexString(paletteColor)} at index $i should " +
+                    "Color ${Integer.toHexString(paletteColor)} at index $i should " +
                             "have L $expectedColor in LAB space."
-                    )
+                )
                     .that(labColor[0])
                     .isWithin(3.0)
                     .of(expectedColor)
@@ -139,7 +122,6 @@ class SystemPaletteTest(private val params: PaletteParams) : BasePaletteTest() {
     @Test
     @CddTest(requirements = ["3.8.6/C-1-4,C-1-5,C-1-6"])
     fun testContrastRatio() {
-        assumeTrue(isSupportedStyle(params.style))
         val atLeast4dot45 =
             listOf(
                 Pair(0, 500),
@@ -182,14 +164,14 @@ class SystemPaletteTest(private val params: PaletteParams) : BasePaletteTest() {
                 Contrast.ratioOfTones(Hct.fromInt(foreground).tone, Hct.fromInt(background).tone)
 
             assertWithMessage(
-                    "Shade ${shades.first} (#${Integer.toHexString(background)}) " +
+                "Shade ${shades.first} (#${Integer.toHexString(background)}) " +
                         "should have at least $contrastLevel contrast ratio against " +
                         "${shades.second} (#${
                             Integer.toHexString(
                                 foreground
                             )
                         }), but had $contrast"
-                )
+            )
                 .that(contrast)
                 .isGreaterThan(contrastLevel)
         }
@@ -202,7 +184,6 @@ class SystemPaletteTest(private val params: PaletteParams) : BasePaletteTest() {
 
     @Test
     fun testDynamicColorContrast() {
-        assumeTrue(isSupportedStyle(params.style))
         // Ideally this should be 3.0, but there's colorspace conversion that causes rounding
         // errors.
         val foregroundContrast = 2.9f
@@ -211,17 +192,17 @@ class SystemPaletteTest(private val params: PaletteParams) : BasePaletteTest() {
             BulkContrastTester.of(
                 // Colors against Surface [DARK]
                 ContrastTester.ofBackgrounds(
-                        mContext,
-                        R.color.system_surface_dark,
-                        R.color.system_surface_dim_dark,
-                        R.color.system_surface_bright_dark,
-                        R.color.system_surface_container_dark,
-                        R.color.system_surface_container_high_dark,
-                        R.color.system_surface_container_highest_dark,
-                        R.color.system_surface_container_low_dark,
-                        R.color.system_surface_container_lowest_dark,
-                        R.color.system_surface_variant_dark,
-                    )
+                    mContext,
+                    R.color.system_surface_dark,
+                    R.color.system_surface_dim_dark,
+                    R.color.system_surface_bright_dark,
+                    R.color.system_surface_container_dark,
+                    R.color.system_surface_container_high_dark,
+                    R.color.system_surface_container_highest_dark,
+                    R.color.system_surface_container_low_dark,
+                    R.color.system_surface_container_lowest_dark,
+                    R.color.system_surface_variant_dark,
+                )
                     .andForegrounds(
                         4.5f,
                         R.color.system_on_surface_dark,
@@ -235,17 +216,17 @@ class SystemPaletteTest(private val params: PaletteParams) : BasePaletteTest() {
 
                 // Colors against Surface [LIGHT]
                 ContrastTester.ofBackgrounds(
-                        mContext,
-                        R.color.system_surface_light,
-                        R.color.system_surface_dim_light,
-                        R.color.system_surface_bright_light,
-                        R.color.system_surface_container_light,
-                        R.color.system_surface_container_high_light,
-                        R.color.system_surface_container_highest_light,
-                        R.color.system_surface_container_low_light,
-                        R.color.system_surface_container_lowest_light,
-                        R.color.system_surface_variant_light,
-                    )
+                    mContext,
+                    R.color.system_surface_light,
+                    R.color.system_surface_dim_light,
+                    R.color.system_surface_bright_light,
+                    R.color.system_surface_container_light,
+                    R.color.system_surface_container_high_light,
+                    R.color.system_surface_container_highest_light,
+                    R.color.system_surface_container_low_light,
+                    R.color.system_surface_container_lowest_light,
+                    R.color.system_surface_variant_light,
+                )
                     .andForegrounds(
                         4.5f,
                         R.color.system_on_surface_light,
@@ -287,30 +268,30 @@ class SystemPaletteTest(private val params: PaletteParams) : BasePaletteTest() {
 
                 // Colors against accents [FIXED]
                 ContrastTester.ofBackgrounds(
-                        mContext,
-                        R.color.system_primary_fixed,
-                        R.color.system_primary_fixed_dim,
-                    )
+                    mContext,
+                    R.color.system_primary_fixed,
+                    R.color.system_primary_fixed_dim,
+                )
                     .andForegrounds(
                         4.5f,
                         R.color.system_on_primary_fixed,
                         R.color.system_on_primary_fixed_variant,
                     ),
                 ContrastTester.ofBackgrounds(
-                        mContext,
-                        R.color.system_secondary_fixed,
-                        R.color.system_secondary_fixed_dim,
-                    )
+                    mContext,
+                    R.color.system_secondary_fixed,
+                    R.color.system_secondary_fixed_dim,
+                )
                     .andForegrounds(
                         4.5f,
                         R.color.system_on_secondary_fixed,
                         R.color.system_on_secondary_fixed_variant,
                     ),
                 ContrastTester.ofBackgrounds(
-                        mContext,
-                        R.color.system_tertiary_fixed,
-                        R.color.system_tertiary_fixed_dim,
-                    )
+                    mContext,
+                    R.color.system_tertiary_fixed,
+                    R.color.system_tertiary_fixed_dim,
+                )
                     .andForegrounds(
                         4.5f,
                         R.color.system_on_tertiary_fixed,
@@ -335,110 +316,88 @@ class SystemPaletteTest(private val params: PaletteParams) : BasePaletteTest() {
 
     // Helper methods
 
-    private fun generatePaletteBitmap(): Bitmap {
-        val isDark = params.modeInt == MODE_NIGHT_YES
-        val textSize = 20
-        val swatchWidth = 150
-
-        val chartTextPaint =
-            Paint().apply {
-                color = if (isDark) Color.WHITE else Color.BLACK
-                this.textSize = textSize.toFloat()
-                typeface = Typeface.MONOSPACE
-                isAntiAlias = false // Try avoid errors if this runs in different devices
-            }
-        val swatchNamePaint =
-            Paint().apply {
-                color = Color.BLACK
-                this.textSize = textSize.toFloat()
-                typeface = Typeface.MONOSPACE
-                isAntiAlias = false
-                textAlign = Paint.Align.CENTER
-            }
-        val swatchPaint =
-            Paint().apply {
-                style = Paint.Style.FILL
-                color = Color.BLACK
+    @Composable
+    private fun SystemPaletteTable(params: PaletteParams) {
+        val seedColors = params.colors.map { ComposeColor(Color.parseColor("#$it")) }
+        val titleTextColor =
+            if (Hct.fromInt(seedColors.first().toArgb()).tone > 50) {
+                ComposeColor.Black
+            } else {
+                ComposeColor.White
             }
 
-        val widestShadeText = ceil(chartTextPaint.measureText("1000")).toInt()
-        val spacing = 10
-        val padding = IntRect(50, 50, 50, 50)
-        val shadeHeight = 2000 // Not accounting for the first shade height
-
-        val totalShadeHeight = shadeHeight + textSize // a bit extra for the first (0) shade
-
-        val colorSpan = IntOffset(allColorRes.size * swatchWidth, totalShadeHeight)
-
-        val colorSpanPos =
-            IntOffset(padding.left + widestShadeText + spacing, padding.top + textSize + spacing)
-        val bitmapSize =
-            IntOffset(
-                colorSpanPos.x + colorSpan.x + padding.right,
-                colorSpanPos.y + colorSpan.y + padding.bottom,
+        val headingTextStyle =
+            TextStyle(
+                fontSize = 24.sp,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
             )
 
-        val bitmap = Bitmap.createBitmap(bitmapSize.x, bitmapSize.y, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
+        val infoTextStyle = TextStyle(
+            fontSize = 20.sp,
+            fontFamily = FontFamily.Monospace,
+            textAlign = TextAlign.Center
+        )
 
-        canvas.drawColor(if (isDark) Color.DKGRAY else Color.LTGRAY)
+        val swatchPadding = 15.dp
+        val tablePadding = 20.dp
 
-        var prevX = colorSpanPos.x.toFloat()
+        PaletteTemplate(
+            testName = "SystemPaletteTest",
+            params = params,
+            backgroundColor = seedColors.first(),
+            textColor = titleTextColor
+        ) {
+            Column {
+                listOf("_dark", "_light").forEach { modeSuffix ->
+                    val groupBackgroundColor =
+                        if (modeSuffix == "_dark") ComposeColor.DarkGray else ComposeColor.LightGray
+                    Row(
+                        modifier = Modifier.background(groupBackgroundColor).padding(tablePadding)
+                    ) {
+                        allColorRes.forEach { palette ->
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth()
+                            ) {
+                                palette.forEach { resId ->
+                                    val resName = mContext.resources.getResourceEntryName(resId)
+                                    val resourceName = "${resName}$modeSuffix"
+                                    val colorValue = getColorByName(mContext, resourceName).toArgb()
+                                    val colorHct = Hct.fromInt(colorValue)
+                                    val parts = resName.split("_")
+                                    val paletteName = parts[1]
+                                    val shade = parts.last()
+                                    val abbreviation =
+                                        "${paletteName.first().uppercase()}${paletteName.last()}"
 
-        fun abbreviateResName(name: String): String {
-            val firstLetter = name.firstOrNull()?.uppercase() ?: ""
-            val numberSequenceMatch = Regex("\\d+").find(name)
-            val numberSequence = numberSequenceMatch?.value ?: ""
-            return "$firstLetter$numberSequence"
-        }
-
-        allColorRes.forEachIndexed { paletteIndex, palette ->
-            val newX = colorSpanPos.x + (swatchWidth * paletteIndex) + swatchWidth.toFloat()
-            var prevY = colorSpanPos.y.toFloat()
-
-            palette.forEachIndexed { resIndex, res ->
-                val resName = mContext.resources.getResourceEntryName(res)
-                val shade = resName.substringAfterLast("_").toInt()
-                val newY = colorSpanPos.y + textSize + (shadeHeight / 1000f * shade)
-
-                val centerY = ((prevY + newY) / 2) + (textSize / 2)
-
-                // we should draw a shade label on the left
-                if (paletteIndex == 0) {
-                    canvas.drawText(
-                        shade.toString(),
-                        padding.left.toFloat(),
-                        centerY,
-                        chartTextPaint,
-                    )
+                                    val swatch = SwatchData(
+                                        heading = "$abbreviation-$shade",
+                                        info = "#${
+                                            String.format(
+                                                "%08x",
+                                                colorValue
+                                            ).uppercase()
+                                        } | $colorHct",
+                                        colorValue = colorValue
+                                    )
+                                    SwatchItem(
+                                        swatch,
+                                        headingTextStyle,
+                                        infoTextStyle,
+                                        swatchPadding,
+                                        Modifier.fillMaxWidth()
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
-
-                // we should draw the palette label on top
-                val paletteName = resName.split("_")[1]
-                if (resIndex == 0) {
-                    canvas.drawText(paletteName, prevX, padding.top.toFloat(), chartTextPaint)
-                }
-
-                // now we draw the swatch
-                swatchPaint.color = mContext.getColor(res)
-                canvas.drawRect(prevX, prevY, newX, newY, swatchPaint)
-
-                // draw swatch name abbreviation
-                swatchNamePaint.color = if (shade > 500) Color.WHITE else Color.BLACK
-                canvas.drawText(
-                    "${abbreviateResName(paletteName)}-$shade",
-                    (prevX + newX) / 2,
-                    centerY,
-                    swatchNamePaint,
-                )
-
-                prevY = newY
             }
-
-            prevX = newX
         }
-
-        return bitmap
     }
 
     private fun allPalettes(): List<IntArray> {
@@ -486,12 +445,12 @@ class SystemPaletteTest(private val params: PaletteParams) : BasePaletteTest() {
                             val contrast = ColorUtils.calculateContrast(foreground, background)
                             val msg =
                                 "Background Color '${res.getResourceName(bgRes)}'" +
-                                    "(#${Integer.toHexString(background)}) " +
-                                    "should have at least $mContrasLevel " +
-                                    "contrast ratio against Foreground Color '" +
-                                    res.getResourceName(fgRes) +
-                                    "' (#${Integer.toHexString(foreground)}) " +
-                                    " but had $contrast"
+                                        "(#${Integer.toHexString(background)}) " +
+                                        "should have at least $mContrasLevel " +
+                                        "contrast ratio against Foreground Color '" +
+                                        res.getResourceName(fgRes) +
+                                        "' (#${Integer.toHexString(foreground)}) " +
+                                        " but had $contrast"
 
                             newFailMessages.add(msg)
                         }
