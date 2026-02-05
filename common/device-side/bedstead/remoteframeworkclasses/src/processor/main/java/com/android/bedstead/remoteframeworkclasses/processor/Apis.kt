@@ -107,7 +107,9 @@ class Apis private constructor(private val mMethods: Set<MethodSignature>) {
             val clazz = CODEBASE.findClass(className)
 
             if (clazz == null) {
-                println("Failed to find $className")
+                if (!className.equals("java.lang.Object")) {
+                    println("Failed to find $className")
+                }
                 return listOf()
             }
 

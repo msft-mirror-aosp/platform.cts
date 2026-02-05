@@ -18,16 +18,16 @@ package com.android.bedstead.remoteframeworkclasses.processor
 import com.android.bedstead.testapis.parser.signatures.ClassSignature
 import com.android.tools.metalava.model.ArrayTypeItem
 import com.android.tools.metalava.model.BaseTypeVisitor
+import com.android.tools.metalava.model.ClassTypeItem
 import com.android.tools.metalava.model.MethodItem
+import com.android.tools.metalava.model.ModifierList
 import com.android.tools.metalava.model.PrimitiveTypeItem
-import com.android.tools.metalava.model.ReferenceTypeItem
 import com.android.tools.metalava.model.TypeItem
+import com.android.tools.metalava.model.WildcardTypeItem
 import com.squareup.javapoet.MethodSpec
-import com.squareup.javapoet.ParameterizedTypeName
-import com.squareup.javapoet.TypeName
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.Modifier
-import javax.lang.model.type.DeclaredType
+import javax.lang.model.element.TypeElement
 import javax.lang.model.type.TypeKind
 import javax.lang.model.type.TypeMirror
 import javax.lang.model.util.Elements
@@ -58,6 +58,7 @@ data class MethodSignature(
     public enum class Visibility {
         PUBLIC,
         PROTECTED,
+        PRIVATE,
     }
 
     companion object {
@@ -85,39 +86,17 @@ data class MethodSignature(
         /** Create a [MethodSignature] for the given [ExecutableElement]. */
         @JvmStatic
         fun forMethod(method: ExecutableElement, elementUtils: Elements): MethodSignature {
-            val parameters = method.parameters.map { it.asType() }.map { rawType(it, elementUtils) }
-
-            val exceptions = method.thrownTypes.map { rawType(it, elementUtils) }
-
-            val visibility =
-                when {
-                    method.modifiers.contains(Modifier.PUBLIC) -> Visibility.PUBLIC
-                    method.modifiers.contains(Modifier.PROTECTED) -> Visibility.PROTECTED
-                    else ->
-                        throw IllegalArgumentException("Method $method must be public or private")
-                }
-
-            val returnType = rawType(method.returnType, elementUtils = elementUtils)
-
+            val parameters = method.parameters.map { it.asType() }
+            val exceptions = method.thrownTypes
             val name = method.simpleName.toString()
 
-            return MethodSignature(visibility, returnType, name, parameters, exceptions.toSet())
-        }
-
-        private fun rawType(type: TypeMirror?, elementUtils: Elements): TypeMirror {
-            var type = type
-            if (type is DeclaredType) {
-                val t = type
-                if (!t.typeArguments.isEmpty()) {
-                    type =
-                        elementUtils
-                            .getTypeElement(
-                                t.toString().split("<".toRegex(), limit = 2).toTypedArray()[0]
-                            )
-                            .asType()
-                }
-            }
-            return type!!
+            return MethodSignature(
+                getVisibility(method.modifiers, name),
+                method.returnType,
+                name,
+                parameters,
+                exceptions.toSet(),
+            )
         }
 
         private fun hasVarArgs(item: TypeItem): Boolean {
@@ -135,35 +114,14 @@ data class MethodSignature(
             return foundVarArgs
         }
 
-        // Bug-compatible with how `forMethod` handles templated arguments:
-        //      List<String> -> List<V>.
-        // Should eventually be replaced by simply `typeName.toString()`.
-        private fun typeNameToString(typeName: TypeName): String {
-            return when (typeName) {
-                is ParameterizedTypeName -> {
-                    val rawType = typeName.rawType.toString()
-                    "$rawType<V>"
-                }
-                else -> typeName.toString()
-            }
-        }
-
         @JvmStatic
         fun forMethodSpec(method: MethodSpec): MethodSignature {
-            val parameterTypes = method.parameters.map { typeNameToString(it.type) }
-            val exceptionTypes = method.exceptions.map { typeNameToString(it) }.toSet()
-            val returnType = typeNameToString(method.returnType)
-
-            val visibility =
-                when {
-                    method.modifiers.contains(Modifier.PUBLIC) -> Visibility.PUBLIC
-                    method.modifiers.contains(Modifier.PROTECTED) -> Visibility.PROTECTED
-                    else ->
-                        throw IllegalArgumentException("Method $method must be public or protected")
-                }
+            val parameterTypes = method.parameters.map { it.type.toString() }
+            val exceptionTypes = method.exceptions.map { it.toString() }.toSet()
+            val returnType = method.returnType.toString()
 
             return MethodSignature(
-                visibility,
+                getVisibility(method.modifiers, method.name),
                 returnType,
                 method.name,
                 parameterTypes,
@@ -183,22 +141,19 @@ data class MethodSignature(
                 return null
             }
 
-            val visibility: Visibility =
-                when {
-                    method.modifiers.isPublic() -> Visibility.PUBLIC
-                    method.modifiers.isProtected() -> Visibility.PROTECTED
-                    else ->
-                        throw IllegalStateException("Method $method must be public or protected")
-                }
-
             val name = method.name()
-
             val returnType = typeForApi(method.returnType(), typeUtils, elementUtils)
             val parameters =
                 method.parameters().map { typeForApi(it.type(), typeUtils, elementUtils) }
             val throws = method.throwsTypes().map { typeForApi(it, typeUtils, elementUtils) }
 
-            return MethodSignature(visibility, returnType, name, parameters, throws.toSet())
+            return MethodSignature(
+                getVisibility(method.modifiers, name),
+                returnType,
+                name,
+                parameters,
+                throws.toSet(),
+            )
         }
 
         private fun typeForApi(type: PrimitiveTypeItem, typeUtils: Types): TypeMirror {
@@ -227,19 +182,64 @@ data class MethodSignature(
                 is PrimitiveTypeItem -> typeForApi(type, typeUtils)
                 is ArrayTypeItem ->
                     typeUtils.getArrayType(typeForApi(type.componentType, typeUtils, elementUtils))
-                is ReferenceTypeItem -> {
-                    var typeName = type.toErasedTypeString()
-
-                    if (isTestClass(typeName, elementUtils)) {
-                        typeName = proxyType(typeName)
-                    }
-
-                    val typeElement = elementUtils.getTypeElement(typeName)
-                    checkNotNull(typeElement) { "Unknown type: $typeName" }
-                    typeElement.asType()
-                }
-                else -> throw IllegalArgumentException("Could not convert $type")
+                is ClassTypeItem -> typeForClassType(type, typeUtils, elementUtils)
+                is WildcardTypeItem -> typeForWildcard(type, typeUtils, elementUtils)
+                else ->
+                    throw IllegalArgumentException(
+                        "Could not convert $type of type ${type::class.qualifiedName}"
+                    )
             }
+        }
+
+        private fun typeForClassType(
+            type: ClassTypeItem,
+            typeUtils: Types,
+            elementUtils: Elements,
+        ): TypeMirror {
+            var rawTypeName = type.toErasedTypeString()
+            if (isTestClass(rawTypeName, elementUtils)) {
+                var proxyTypeName = proxyType(rawTypeName)
+                return getTypeElement(proxyTypeName, elementUtils).asType()
+            }
+
+            val typeElement = elementUtils.getTypeElement(type.qualifiedName)
+            return typeUtils.getDeclaredType(
+                typeElement,
+                *getTemplateArgumentTypes(type, typeUtils, elementUtils),
+            )
+        }
+
+        private fun getTypeElement(typeName: String, elementUtils: Elements): TypeElement {
+            val typeElement = elementUtils.getTypeElement(typeName)
+            checkNotNull(typeElement) { "Unknown type: $typeName" }
+            return typeElement
+        }
+
+        private fun getTemplateArgumentTypes(
+            type: ClassTypeItem,
+            typeUtils: Types,
+            elementUtils: Elements,
+        ) =
+            type.arguments
+                .map { typeForApi(it, typeUtils, elementUtils) }
+                .toTypedArray<TypeMirror>()
+
+        private fun typeForWildcard(
+            type: WildcardTypeItem,
+            typeUtils: Types,
+            elementUtils: Elements,
+        ): TypeMirror {
+            val extends =
+                type.extendsBound?.let {
+                    if (it.isJavaLangObject()) {
+                        // Do not generate `? extends Object`, just use `?`.
+                        null
+                    } else {
+                        typeForApi(it, typeUtils, elementUtils)
+                    }
+                }
+            val supers = type.superBound?.let { typeForApi(it, typeUtils, elementUtils) }
+            return typeUtils.getWildcardType(extends, supers)
         }
 
         /**
@@ -272,5 +272,21 @@ data class MethodSignature(
 
             return Processor.TEST_APIS_REFLECTION_PACKAGE + "." + simpleName + "Proxy"
         }
+
+        private fun getVisibility(modifiers: Set<Modifier>, methodName: String) =
+            when {
+                modifiers.contains(Modifier.PUBLIC) -> Visibility.PUBLIC
+                modifiers.contains(Modifier.PROTECTED) -> Visibility.PROTECTED
+                modifiers.contains(Modifier.PRIVATE) -> Visibility.PRIVATE
+                else -> Visibility.PUBLIC
+            }
+
+        private fun getVisibility(modifiers: ModifierList, methodName: String) =
+            when {
+                modifiers.isPublic() -> Visibility.PUBLIC
+                modifiers.isProtected() -> Visibility.PROTECTED
+                modifiers.isPrivate() -> Visibility.PRIVATE
+                else -> Visibility.PUBLIC
+            }
     }
 }
