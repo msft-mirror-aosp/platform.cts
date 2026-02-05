@@ -3506,8 +3506,6 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
     @Test
     @AppModeFull(reason = "DeviceStateManager is not accessible to instant apps")
     @CddTest(requirements = {
-            "2.2.7.2/7.5/H-1-1",
-            "2.2.7.2/7.5/H-1-2",
             "2.2.7.2/7.5/H-1-3",
             "2.2.7.2/7.5/H-1-4",
             "2.2.7.2/7.5/H-1-8",
@@ -3524,10 +3522,6 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 + "to single camera by specifying camera id override.", mOverrideCameraId == null);
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PrimaryRearCameraResolutionAndFrameRateRequirement primaryRearReq =
-                Requirements.addR7_5__H_1_1().to(pce);
-        PrimaryFrontCameraResolutionAndFrameRateRequirement primaryFrontReq =
-                Requirements.addR7_5__H_1_2().to(pce);
         CameraHardwareLevelRequirement hwLevelReq =
                 Requirements.addR7_5__H_1_3().to(pce);
         TimestampSourceRealtimeRequirement timestampSourceReq =
@@ -3563,54 +3557,16 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
             CameraCharacteristics c = mCharacteristics.get(i);
             StaticMetadata staticInfo = mAllStaticInfo.get(cameraId);
 
-            // H-1-1, H-1-2
-            Size pixelArraySize = CameraTestUtils.getValueNotNull(
-                    c, CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE);
-            long sensorResolution = pixelArraySize.getHeight() * pixelArraySize.getWidth();
             StreamConfigurationMap config = staticInfo.getValueFromKeyNonNull(
                     CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             assertNotNull("No stream configuration map found for ID " + cameraId, config);
-            List<Size> videoSizes = CameraTestUtils.getSupportedVideoSizes(cameraId,
-                    mCameraManager, null /*bound*/);
 
             Integer timestampSource = c.get(CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE);
             if (isPrimaryRear) {
                 primaryRearId = cameraId;
-                primaryRearReq.setPrimaryCameraAvailable(true);
-                primaryRearReq.setPrimaryCameraResolution(sensorResolution);
                 hwLevelReq.setRearPrimaryCameraHwlLevel(staticInfo.getHardwareLevelChecked());
                 timestampSourceReq.setRearPrimaryCameraTimestampSource(timestampSource);
 
-                // 4K @ 30fps
-                boolean supportUHD = videoSizes.contains(UHD);
-                boolean supportDC4K = videoSizes.contains(DC4K);
-                boolean support4K = (supportUHD || supportDC4K);
-                boolean supportFullHD = videoSizes.contains(FULLHD);
-                boolean support720p = videoSizes.contains(HD);
-                primaryRearReq.setPrimaryCameraVideoSizeReqSatisfied(support4K);
-                primaryRearReq.setPrimaryCamera720PVideoSizeReqSatisfied(support720p);
-                primaryRearReq.setPrimaryCamera1080PVideoSizeReqSatisfied(supportFullHD);
-                if (support4K) {
-                    long minFrameDuration = config.getOutputMinFrameDuration(
-                            android.media.MediaRecorder.class, supportDC4K ? DC4K : UHD);
-                    primaryRearReq.setPrimaryCameraVideoFps(1e9 / minFrameDuration);
-                } else {
-                    primaryRearReq.setPrimaryCameraVideoFps(-1);
-                }
-                if (supportFullHD) {
-                    long minFrameDuration = config.getOutputMinFrameDuration(
-                            android.media.MediaRecorder.class, FULLHD);
-                    primaryRearReq.setPrimaryCamera1080PVideoFps(1e9 / minFrameDuration);
-                } else {
-                    primaryRearReq.setPrimaryCamera1080PVideoFps(-1);
-                }
-                if (support720p) {
-                    long minFrameDuration = config.getOutputMinFrameDuration(
-                            android.media.MediaRecorder.class, HD);
-                    primaryRearReq.setPrimaryCamera720PVideoFps(1e9 / minFrameDuration);
-                } else {
-                    primaryRearReq.setPrimaryCamera720PVideoFps(-1);
-                }
                 // H-1-9
                 boolean supportHighSpeed = staticInfo.isCapabilitySupported(CONSTRAINED_HIGH_SPEED);
                 boolean support240Fps = false;
@@ -3636,21 +3592,8 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 hfrReq.setRearCamera240FpsSupported(support240Fps);
             } else {
                 primaryFrontId = cameraId;
-                primaryFrontReq.setPrimaryCameraAvailable(true);
-                primaryFrontReq.setPrimaryCameraResolution(sensorResolution);
                 hwLevelReq.setFrontPrimaryCameraHwlLevel(staticInfo.getHardwareLevelChecked());
                 timestampSourceReq.setFrontPrimaryCameraTimestampSource(timestampSource);
-
-                // 1080P @ 30fps
-                boolean supportFULLHD = videoSizes.contains(FULLHD);
-                primaryFrontReq.setPrimaryCameraVideoSizeReqSatisfied(supportFULLHD);
-                if (supportFULLHD) {
-                    long minFrameDuration = config.getOutputMinFrameDuration(
-                            android.media.MediaRecorder.class, FULLHD);
-                    primaryFrontReq.setPrimaryCameraVideoFps(1e9 / minFrameDuration);
-                } else {
-                    primaryFrontReq.setPrimaryCameraVideoFps(-1);
-                }
             }
 
             // H-1-8
@@ -3699,14 +3642,6 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
         }
 
         if (primaryRearId == null) {
-            primaryRearReq.setPrimaryCameraAvailable(false);
-            primaryRearReq.setPrimaryCameraResolution(-1);
-            primaryRearReq.setPrimaryCameraVideoSizeReqSatisfied(false);
-            primaryRearReq.setPrimaryCameraVideoFps(-1);
-            primaryRearReq.setPrimaryCamera1080PVideoFps(-1);
-            primaryRearReq.setPrimaryCamera720PVideoFps(-1);
-            primaryRearReq.setPrimaryCamera720PVideoSizeReqSatisfied(false);
-            primaryRearReq.setPrimaryCamera1080PVideoSizeReqSatisfied(false);
             hwLevelReq.setRearPrimaryCameraHwlLevel(-1);
             timestampSourceReq.setRearPrimaryCameraTimestampSource(
                     CameraMetadata.SENSOR_INFO_TIMESTAMP_SOURCE_UNKNOWN);
@@ -3718,10 +3653,6 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
             streamUseCaseReq.setRearCameraStreamUsecaseSupported(false);
         }
         if (primaryFrontId == null) {
-            primaryFrontReq.setPrimaryCameraAvailable(false);
-            primaryFrontReq.setPrimaryCameraResolution(-1);
-            primaryFrontReq.setPrimaryCameraVideoSizeReqSatisfied(false);
-            primaryFrontReq.setPrimaryCameraVideoFps(-1);
             hwLevelReq.setFrontPrimaryCameraHwlLevel(-1);
             timestampSourceReq.setFrontPrimaryCameraTimestampSource(
                     CameraMetadata.SENSOR_INFO_TIMESTAMP_SOURCE_UNKNOWN);
@@ -3734,6 +3665,62 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
         Set<String> primaryCameras = new HashSet<>(Arrays.asList(primaryRearId, primaryFrontId));
         boolean supportPrimaryFrontBack = concurrentCameraIds.contains(primaryCameras);
         concurrentRearFrontReq.setRearFrontConcurrentCamera(supportPrimaryFrontBack);
+
+        pce.submitAndCheck();
+    }
+
+    /**
+     * Check camera characteristics for Performance class requirements as specified in CDD camera
+     * section 7.5 H-1-1
+     */
+    @Test
+    @AppModeFull(reason = "DeviceStateManager is not accessible to instant apps")
+    @CddTest(requirements = {"2.2.7.2/7.5/H-1-1"})
+    public void testCameraPerfClassH11() throws Exception {
+        assumeFalse(
+                "Media performance class tests not applicable if shell permission is adopted",
+                mAdoptShellPerm);
+        assumeTrue(
+                "Media performance class tests not applicable when test is restricted "
+                        + "to single camera by specifying camera id override.",
+                mOverrideCameraId == null);
+
+        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PrimaryRearCameraResolutionAndFrameRateRequirement primaryRearReq =
+                Requirements.addR7_5__H_1_1().to(pce);
+
+        String primaryRearId =
+                CameraTestUtils.getPrimaryRearCamera(mCameraManager, getCameraIdsUnderTest());
+
+        verifyPrimaryRearCameraResolutionAndFrameRate(primaryRearId, primaryRearReq);
+
+        pce.submitAndCheck();
+    }
+
+    /**
+     * Check camera characteristics for Performance class requirements as specified in CDD camera
+     * section 7.5 H-1-2
+     */
+    @Test
+    @AppModeFull(reason = "DeviceStateManager is not accessible to instant apps")
+    @CddTest(requirements = {"2.2.7.2/7.5/H-1-2"})
+    public void testCameraPerfClassH12() throws Exception {
+        assumeFalse(
+                "Media performance class tests not applicable if shell permission is adopted",
+                mAdoptShellPerm);
+        assumeTrue(
+                "Media performance class tests not applicable when test is restricted "
+                        + "to single camera by specifying camera id override.",
+                mOverrideCameraId == null);
+
+        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PrimaryFrontCameraResolutionAndFrameRateRequirement primaryFrontReq =
+                Requirements.addR7_5__H_1_2().to(pce);
+
+        String primaryFrontId =
+                CameraTestUtils.getPrimaryFrontCamera(mCameraManager, getCameraIdsUnderTest());
+
+        verifyPrimaryFrontCameraResolutionAndFrameRate(primaryFrontId, primaryFrontReq);
 
         pce.submitAndCheck();
     }
@@ -4033,6 +4020,113 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
             req.setRearCameraFaceDetectionSupported(faceDetectionSupported);
         } else {
             req.setFrontCameraFaceDetectionSupported(faceDetectionSupported);
+        }
+    }
+
+    /** Verify primary rear camera resolution and frame rate requirements for H-1-1 */
+    private void verifyPrimaryRearCameraResolutionAndFrameRate(
+            String cameraId, PrimaryRearCameraResolutionAndFrameRateRequirement primaryRearReq)
+            throws Exception {
+        if (cameraId == null) {
+            primaryRearReq.setPrimaryCameraAvailable(false);
+            primaryRearReq.setPrimaryCameraResolution(-1);
+            primaryRearReq.setPrimaryCameraVideoSizeReqSatisfied(false);
+            primaryRearReq.setPrimaryCameraVideoFps(-1);
+            primaryRearReq.setPrimaryCamera1080PVideoFps(-1);
+            primaryRearReq.setPrimaryCamera720PVideoFps(-1);
+            primaryRearReq.setPrimaryCamera720PVideoSizeReqSatisfied(false);
+            primaryRearReq.setPrimaryCamera1080PVideoSizeReqSatisfied(false);
+            return;
+        }
+
+        primaryRearReq.setPrimaryCameraAvailable(true);
+
+        CameraCharacteristics c = mCameraManager.getCameraCharacteristics(cameraId);
+        StaticMetadata staticInfo = mAllStaticInfo.get(cameraId);
+
+        Size pixelArraySize =
+                CameraTestUtils.getValueNotNull(
+                        c, CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE);
+        long sensorResolution = pixelArraySize.getHeight() * pixelArraySize.getWidth();
+        primaryRearReq.setPrimaryCameraResolution(sensorResolution);
+
+        StreamConfigurationMap config =
+                staticInfo.getValueFromKeyNonNull(
+                        CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+        List<Size> videoSizes =
+                CameraTestUtils.getSupportedVideoSizes(cameraId, mCameraManager, null /*bound*/);
+
+        // 4K @ 30fps
+        boolean supportUHD = videoSizes.contains(UHD);
+        boolean supportDC4K = videoSizes.contains(DC4K);
+        boolean support4K = (supportUHD || supportDC4K);
+        boolean supportFullHD = videoSizes.contains(FULLHD);
+        boolean support720p = videoSizes.contains(HD);
+        primaryRearReq.setPrimaryCameraVideoSizeReqSatisfied(support4K);
+        primaryRearReq.setPrimaryCamera720PVideoSizeReqSatisfied(support720p);
+        primaryRearReq.setPrimaryCamera1080PVideoSizeReqSatisfied(supportFullHD);
+        if (support4K) {
+            long minFrameDuration =
+                    config.getOutputMinFrameDuration(
+                            android.media.MediaRecorder.class, supportDC4K ? DC4K : UHD);
+            primaryRearReq.setPrimaryCameraVideoFps(1e9 / minFrameDuration);
+        } else {
+            primaryRearReq.setPrimaryCameraVideoFps(-1);
+        }
+        if (supportFullHD) {
+            long minFrameDuration =
+                    config.getOutputMinFrameDuration(android.media.MediaRecorder.class, FULLHD);
+            primaryRearReq.setPrimaryCamera1080PVideoFps(1e9 / minFrameDuration);
+        } else {
+            primaryRearReq.setPrimaryCamera1080PVideoFps(-1);
+        }
+        if (support720p) {
+            long minFrameDuration =
+                    config.getOutputMinFrameDuration(android.media.MediaRecorder.class, HD);
+            primaryRearReq.setPrimaryCamera720PVideoFps(1e9 / minFrameDuration);
+        } else {
+            primaryRearReq.setPrimaryCamera720PVideoFps(-1);
+        }
+    }
+
+    /** Verify primary front camera resolution and frame rate requirements for H-1-2 */
+    private void verifyPrimaryFrontCameraResolutionAndFrameRate(
+            String cameraId, PrimaryFrontCameraResolutionAndFrameRateRequirement primaryFrontReq)
+            throws Exception {
+        if (cameraId == null) {
+            primaryFrontReq.setPrimaryCameraAvailable(false);
+            primaryFrontReq.setPrimaryCameraResolution(-1);
+            primaryFrontReq.setPrimaryCameraVideoSizeReqSatisfied(false);
+            primaryFrontReq.setPrimaryCameraVideoFps(-1);
+            return;
+        }
+
+        primaryFrontReq.setPrimaryCameraAvailable(true);
+
+        CameraCharacteristics c = mCameraManager.getCameraCharacteristics(cameraId);
+        StaticMetadata staticInfo = mAllStaticInfo.get(cameraId);
+
+        Size pixelArraySize =
+                CameraTestUtils.getValueNotNull(
+                        c, CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE);
+        long sensorResolution = pixelArraySize.getHeight() * pixelArraySize.getWidth();
+        primaryFrontReq.setPrimaryCameraResolution(sensorResolution);
+
+        List<Size> videoSizes =
+                CameraTestUtils.getSupportedVideoSizes(cameraId, mCameraManager, null /*bound*/);
+
+        // 1080P @ 30fps
+        boolean supportFULLHD = videoSizes.contains(FULLHD);
+        primaryFrontReq.setPrimaryCameraVideoSizeReqSatisfied(supportFULLHD);
+        if (supportFULLHD) {
+            StreamConfigurationMap config =
+                    staticInfo.getValueFromKeyNonNull(
+                            CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+            long minFrameDuration =
+                    config.getOutputMinFrameDuration(android.media.MediaRecorder.class, FULLHD);
+            primaryFrontReq.setPrimaryCameraVideoFps(1e9 / minFrameDuration);
+        } else {
+            primaryFrontReq.setPrimaryCameraVideoFps(-1);
         }
     }
 
