@@ -3224,6 +3224,10 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         if (!sWifiManager.isBridgedApConcurrencySupported()) {
             return;
         }
+        // check that tethering is supported by the device
+        if (!sTetheringManager.isTetheringSupported()) {
+            return;
+        }
         runWithScanning(() -> {
             UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation()
                     .getUiAutomation();
@@ -3287,6 +3291,10 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
     public void testTetheredBridgedApWifiForcedChannel() throws Exception {
         // check that softap bridged mode is supported by the device
         if (!sWifiManager.isBridgedApConcurrencySupported()) {
+            return;
+        }
+        // check that tethering is supported by the device
+        if (!sTetheringManager.isTetheringSupported()) {
             return;
         }
         runWithScanning(() -> {
@@ -3487,6 +3495,10 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         if (!sWifiManager.isPortableHotspotSupported()) {
             return;
         }
+        // check that tethering is supported by the device
+        if (!sTetheringManager.isTetheringSupported()) {
+            return;
+        }
         if (shouldSkipCountryCodeDependentTest()) {
             // skip the test  when there is no Country Code available
             return;
@@ -3496,10 +3508,6 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         TestSoftApCallback callback = new TestSoftApCallback(mLock);
         try {
             uiAutomation.adoptShellPermissionIdentity();
-            // check that tethering is supported by the device
-            if (!sTetheringManager.isTetheringSupported()) {
-                return;
-            }
             turnOffWifiAndTetheredHotspotIfEnabled();
             verifyRegisterSoftApCallback(executor, callback);
 
