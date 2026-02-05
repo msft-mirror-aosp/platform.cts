@@ -22,6 +22,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import android.car.cts.builtin.os.DumpDrivingStateServiceCommand;
 import android.car.cts.builtin.os.GetInitialUserInfoCommand;
+import android.car.cts.builtin.os.GetUserHalPropertyCommand;
 
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
@@ -37,6 +38,12 @@ public final class BinderHelperHostTest extends CarBuiltinApiHostCtsBase {
     @Test
     public void testOnTransactForCmd() throws Exception {
         // setup
+        GetUserHalPropertyCommand propertyCmd = new GetUserHalPropertyCommand(getDevice());
+        propertyCmd.executeWith();
+        if (!propertyCmd.returnStartsWith("true")) {
+            // Skip test if User HAL is not supported
+            return;
+        }
         GetInitialUserInfoCommand infoCmd = new GetInitialUserInfoCommand(getDevice());
 
         // execution and assertion

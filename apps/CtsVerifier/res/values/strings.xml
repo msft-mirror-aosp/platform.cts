@@ -6839,6 +6839,7 @@ You should be prompted to select credentials; choose the ones you just installed
       3. Go to Text-to-speech output > Preferred engine.\n
       4. Ensure that two engines are listed, both named "TTS CTS Test Helper App".\n
       5. Ensure that each engine can be selected.
+      If this device does not support installation of third-party TTS engines, please skip this test and mark it passing.
     </string>
     <string name="tts_test_steps">
       1. Install the CtsTtsEngineSelectorTestHelper and CtsTtsEngineSelectorTestHelper2 apps on the device.\n
@@ -6846,6 +6847,7 @@ You should be prompted to select credentials; choose the ones you just installed
       3. Go to Text-to-speech output > Preferred engine.\n
       4. Ensure that two engines are listed, both named "TTS CTS Test Helper App".\n
       5. Ensure that each engine can be selected.
+      If this device does not support installation of third-party TTS engines, please skip this test and mark it passing.
     </string>
     <string name="tts_accessibility_settings_button">Go To Accessibility Settings</string>
 
