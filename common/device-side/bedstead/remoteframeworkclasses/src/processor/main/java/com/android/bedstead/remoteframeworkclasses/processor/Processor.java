@@ -537,11 +537,6 @@ public final class Processor extends AbstractProcessor {
                 methodBuilder.returns(
                         ClassName.get("android.app.admin", "RemoteDevicePolicyManager"));
                 methodBuilder.addStatement(
-                        "mFrameworkClass.getParentProfileInstance(profileOwnerComponentName).$L"
-                                + "($L)",
-                        method.name,
-                        String.join(", ", paramNames));
-                methodBuilder.addStatement(
                         "throw new $T($S)",
                         UnsupportedOperationException.class,
                         "TestApp does not support calling .getParentProfileInstance() on a parent"
@@ -663,17 +658,6 @@ public final class Processor extends AbstractProcessor {
 
             if (FRAMEWORK_SIGNATURE_RETURN_OVERRIDES.containsKey(signature)) {
                 methodBuilder.returns(FRAMEWORK_SIGNATURE_RETURN_OVERRIDES.get(signature));
-
-                ClassName iClassName = FRAMEWORK_SIGNATURE_RETURN_OVERRIDES.get(signature);
-                ClassName implClassName =
-                        ClassName.get(iClassName.packageName(), iClassName.simpleName() + "Impl");
-
-                methodBuilder.addStatement(
-                        "$1T ret = new $1T($2L.$3L($4L))",
-                        implClassName,
-                        frameworkClassName,
-                        signature.getName(),
-                        String.join(", ", paramNames));
                 // We assume all replacements are null-only
                 methodBuilder.addStatement("return null");
             } else if (method.returnType.equals(TypeName.VOID)) {
