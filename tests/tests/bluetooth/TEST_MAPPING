@@ -11,7 +11,39 @@
   ],
   "kernel-presubmit": [
     {
-      "name": "CtsBluetoothTestCases"
+      "name": "CtsBluetoothTestCases",
+      "options": [
+        {
+          "include-filter": "android.bluetooth.cts.BasicBluetoothGattTest"
+        },
+        {
+          "include-filter": "android.bluetooth.cts.BluetoothConfigTest"
+        },
+        {
+          "include-filter": "android.bluetooth.cts.BluetoothDeviceTest"
+        },
+        {
+          "include-filter": "android.bluetooth.cts.BluetoothHeadsetTest"
+        },
+        {
+          "include-filter": "android.bluetooth.cts.BluetoothHidDeviceTest"
+        },
+        {
+          "include-filter": "android.bluetooth.cts.BluetoothLeAudioCodecTest"
+        },
+        {
+          "include-filter": "android.bluetooth.cts.BluetoothLeAudioTest"
+        },
+        {
+          "include-filter": "android.bluetooth.cts.BluetoothLeScanTest"
+        },
+        {
+          "include-filter": "android.bluetooth.cts.BluetoothVolumeControlTest"
+        },
+        {
+          "include-filter": "android.bluetooth.cts.TransportBlockFilterTest"
+        }
+      ]
     }
   ]
 }
