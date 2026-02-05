@@ -1143,7 +1143,7 @@ public class TelephonyCallbackTest {
         assumeTrue(
                 "Device does not have FEATURE_TELEPHONY_RADIO_ACCESS",
                 mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-        assertFalse(mOnDataActivityCalled);
+        assertFalse(mOnCellInfoChangedCalled);
 
         mLocationHelper.enable();
 
