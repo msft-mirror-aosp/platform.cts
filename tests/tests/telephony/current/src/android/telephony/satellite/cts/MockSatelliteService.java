@@ -111,12 +111,12 @@ public class MockSatelliteService extends SatelliteImplBase {
     private android.telephony.satellite.stub.NtnSignalStrength mNtnSignalStrength;
 
     private int[] mSupportedRadioTechnologies;
-    private LinkedList<IIntegerConsumer>
-            mRequestSatelliteEnabledErrorCallbackQueue = new LinkedList<IIntegerConsumer>();
-    private LinkedList<IIntegerConsumer>
-            mRequestSatelliteDisabledErrorCallbackQueue = new LinkedList<IIntegerConsumer>();
+    private LinkedList<IIntegerConsumer> mRequestSatelliteEnabledErrorCallbackQueue =
+            new LinkedList<>();
+    private LinkedList<IIntegerConsumer> mRequestSatelliteDisabledErrorCallbackQueue =
+            new LinkedList<>();
     private final Object mRequestSatelliteEnabledLock = new Object();
-    private boolean mIsEmergnecy;
+    private boolean mIsEmergency;
     private List<SystemSelectionSpecifier> mSystemSelectionSpecifierList = new ArrayList<>();
 
     /**
@@ -131,7 +131,7 @@ public class MockSatelliteService extends SatelliteImplBase {
         mIsSupported = true;
         mModemState = SatelliteModemState.SATELLITE_MODEM_STATE_OFF;
         mSupportedRadioTechnologies = SUPPORTED_RADIO_TECHNOLOGIES;
-        mIsEmergnecy = false;
+        mIsEmergency = false;
     }
 
     /**
@@ -223,7 +223,7 @@ public class MockSatelliteService extends SatelliteImplBase {
         } else {
             disableSatellite(errorCallback);
         }
-        mIsEmergnecy = enableAttributes.isEmergencyMode;
+        mIsEmergency = enableAttributes.isEmergencyMode;
 
         if (mLocalListener != null) {
             runWithExecutor(() -> mLocalListener.onRequestSatelliteEnabled(enableAttributes));
@@ -678,8 +678,9 @@ public class MockSatelliteService extends SatelliteImplBase {
 
     public void sendOnPendingDatagrams() {
         logd("sendOnPendingDatagrams");
-        mRemoteListeners.values().forEach(listener -> runWithExecutor(() ->
-                listener.onPendingDatagrams()));
+        mRemoteListeners
+                .values()
+                .forEach(listener -> runWithExecutor(listener::onPendingDatagrams));
     }
 
     public void sendOnSatellitePositionChanged(PointingInfo pointingInfo) {
@@ -862,8 +863,8 @@ public class MockSatelliteService extends SatelliteImplBase {
      * Get the emergency mode or not
      */
     public boolean getIsEmergency() {
-        logd("getIsEmergency: mIsEmergnecy=" + mIsEmergnecy);
-        return mIsEmergnecy;
+        logd("getIsEmergency: mIsEmergency=" + mIsEmergency);
+        return mIsEmergency;
     }
 
     /**
