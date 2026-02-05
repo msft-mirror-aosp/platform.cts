@@ -31,6 +31,7 @@ import static com.android.cts.netpolicy.hostside.NetworkPolicyTestUtils.getConne
 import static com.android.cts.netpolicy.hostside.NetworkPolicyTestUtils.getContext;
 import static com.android.cts.netpolicy.hostside.NetworkPolicyTestUtils.getInstrumentation;
 import static com.android.cts.netpolicy.hostside.NetworkPolicyTestUtils.isAppStandbySupported;
+import static com.android.cts.netpolicy.hostside.NetworkPolicyTestUtils.isAutomotiveMumd;
 import static com.android.cts.netpolicy.hostside.NetworkPolicyTestUtils.isBatterySaverSupported;
 import static com.android.cts.netpolicy.hostside.NetworkPolicyTestUtils.isDozeModeSupported;
 import static com.android.cts.netpolicy.hostside.NetworkPolicyTestUtils.restrictBackgroundValueToString;
@@ -785,11 +786,25 @@ public abstract class AbstractRestrictBackgroundNetworkTestCase {
 
     protected void turnScreenOff() throws Exception {
         if (!mLock.isHeld()) mLock.acquire();
-        executeSilentShellCommand("input keyevent KEYCODE_SLEEP");
+        if (isAutomotiveMumd()) {
+            // On Automotive MUMD devices, standard KEYCODE_SLEEP only affects the driver's display.
+            // We use 'cmd car_service suspend' to ensure ALL displays (including passenger) are
+            // put to sleep, forcing ActivityTaskManagerService to transition to TOP_SLEEPING.
+            // TODO(b/481831385): Update ATMS to be display-aware so this workaround isn't needed.
+            executeShellCommand("cmd car_service suspend");
+        } else {
+            executeSilentShellCommand("input keyevent KEYCODE_SLEEP");
+        }
     }
 
     protected void turnScreenOn() throws Exception {
-        executeSilentShellCommand("input keyevent KEYCODE_WAKEUP");
+        if (isAutomotiveMumd()) {
+            // Use 'cmd car_service resume' to properly wake up all displays on MUMD devices
+            // after the car_service suspend command used in turnScreenOff().
+            executeShellCommand("cmd car_service resume");
+        } else {
+            executeSilentShellCommand("input keyevent KEYCODE_WAKEUP");
+        }
         if (mLock.isHeld()) mLock.release();
         executeSilentShellCommand("wm dismiss-keyguard");
     }
