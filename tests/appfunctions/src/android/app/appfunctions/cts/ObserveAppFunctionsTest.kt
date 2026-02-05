@@ -113,7 +113,7 @@ class ObserveAppFunctionsTest {
         try {
             val observer = TestClientObserver()
             observation =
-                observeAppFunctions(setOf(UpdatableHelperApp.PACKAGE_NAME), observer)
+                observeAppFunctions(observer)
 
             installPackage(
                 UpdatableHelperApp.ApkPaths.BASE_APP,
@@ -140,13 +140,12 @@ class ObserveAppFunctionsTest {
         Manifest.permission.DISCOVER_APP_FUNCTIONS,
         Manifest.permission.QUERY_ALL_PACKAGES,
     )
-    @Ignore("b/479123842 - Enable after fixing redundant onAppFunctionsChanged callbacks")
     fun packageInstalled_withAllPermissions_seesAllUpdates() = doBlocking {
         var observation: AppFunctionObservation? = null
         try {
             val observer = TestClientObserver()
             observation =
-                observeAppFunctions(setOf(UpdatableHelperApp.PACKAGE_NAME), observer)
+                observeAppFunctions(observer)
 
             assertThat(observer.updatedPackagesHistory).isEmpty()
 
@@ -176,7 +175,7 @@ class ObserveAppFunctionsTest {
         Manifest.permission.DISCOVER_APP_FUNCTIONS,
     )
     @Ignore("b/479123842 - Enable after fixing redundant onAppFunctionsChanged callbacks")
-    fun packageUpdated_callsOnPackageChanged() = doBlocking {
+    fun packageUpdated_callsOnAppFunctionMetadataChanged() = doBlocking {
         var observation: AppFunctionObservation? = null
         try {
             installPackage(
@@ -187,7 +186,7 @@ class ObserveAppFunctionsTest {
             )
             val observer = TestClientObserver()
             observation =
-                observeAppFunctions(setOf(UpdatableHelperApp.PACKAGE_NAME), observer)
+                observeAppFunctions(observer)
             assertThat(observer.updatedPackagesHistory).isEmpty()
 
             // Static metadata is updated for UpdatableHelperApp.PACKAGE_NAME.
@@ -229,7 +228,7 @@ class ObserveAppFunctionsTest {
             )
             val observer = TestClientObserver()
             observation =
-                observeAppFunctions(setOf(UpdatableHelperApp.PACKAGE_NAME), observer)
+                observeAppFunctions(observer)
             assertThat(observer.updatedPackagesHistory).isEmpty()
 
             uninstallPackage(UpdatableHelperApp.PACKAGE_NAME, context, checkIndexation = true)
@@ -261,7 +260,7 @@ class ObserveAppFunctionsTest {
             val observer = TestClientObserver()
             // TODO(b/478810311): test with non-root package
             observation =
-                observeAppFunctions(setOf(CtsApp.PACKAGE_NAME), observer)
+                observeAppFunctions(observer)
 
             setAppFunctionEnabled(
                 manager,
@@ -339,7 +338,7 @@ class ObserveAppFunctionsTest {
 
             val observer = TestClientObserver()
             observation =
-                observeAppFunctions(setOf(CtsApp.PACKAGE_NAME), observer)
+                observeAppFunctions(observer)
 
             setAppFunctionEnabled(
                 manager,
@@ -386,7 +385,7 @@ class ObserveAppFunctionsTest {
         var observation: AppFunctionObservation? = null
         val observer = TestClientObserver()
         // TODO(b/478810311): test with non-root package
-        observation = observeAppFunctions(setOf(CtsApp.PACKAGE_NAME), observer)
+        observation = observeAppFunctions(observer)
 
         var registration: AppFunctionRegistration? = null
         try {
@@ -434,7 +433,7 @@ class ObserveAppFunctionsTest {
 
             val observer = TestClientObserver()
             observation =
-                observeAppFunctions(setOf(CtsApp.PACKAGE_NAME), observer)
+                observeAppFunctions(observer)
 
             registration.unregister()
             retryAssert {
@@ -483,7 +482,6 @@ class ObserveAppFunctionsTest {
                 "Expected observeAppFunctions to throw a security exception without permission"
             ) {
                 observeAppFunctions(
-                    setOf(DynamicSchemaHelperApp.PACKAGE_NAME),
                     TestClientObserver(),
                 )
             }
@@ -536,7 +534,7 @@ class ObserveAppFunctionsTest {
 
         val observer = TestClientObserver()
         try {
-            observation = observeAppFunctions(/* packageNames= */ null, observer)
+            observation = observeAppFunctions(observer)
             installExistingPackageAsUser(
                 DynamicSchemaHelperApp.PACKAGE_NAME,
                 secondaryUser,
@@ -576,7 +574,7 @@ class ObserveAppFunctionsTest {
         try {
             val observer = TestClientObserver()
             observation =
-                observeAppFunctions(setOf(UpdatableHelperApp.PACKAGE_NAME), observer)
+                observeAppFunctions(observer)
             assertThat(observer.updatedPackagesHistory).isEmpty()
 
             observation.cancel()
@@ -610,7 +608,7 @@ class ObserveAppFunctionsTest {
             val observer = TestClientObserver()
             // TODO(b/478810311): test with non-root package
             observation =
-                observeAppFunctions(setOf(CtsApp.PACKAGE_NAME), observer)
+                observeAppFunctions(observer)
             observation.cancel()
 
             setAppFunctionEnabled(
@@ -641,10 +639,9 @@ class ObserveAppFunctionsTest {
     }
 
     private fun observeAppFunctions(
-        packageNames: Set<String>?,
         observer: TestClientObserver,
     ): AppFunctionObservation {
-        return manager.observeAppFunctions(packageNames, context.mainExecutor, observer)
+        return manager.observeAppFunctions(context.mainExecutor, observer)
     }
 
     private suspend fun isAppFunctionEnabled(
