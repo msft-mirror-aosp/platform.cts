@@ -36,6 +36,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.DisconnectCause;
 import android.telephony.SubscriptionManager;
+import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyManager;
 import android.telephony.cts.util.TelephonyUtils;
 import android.telephony.mockmodem.MockModemManager;
@@ -51,6 +52,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 public class DataServiceTestOnMockModem {
@@ -70,6 +73,7 @@ public class DataServiceTestOnMockModem {
     private PackageManager mPackageManager;
     private MockModemManager mMockModemManager;
     private TelephonyManager mTelephonyManager;
+    private ConnectivityManager.NetworkCallback mNetworkCallback;
     private int mTestSub = 0;
 
     private boolean mInitialIsUserDataEnabled = false;
@@ -136,28 +140,79 @@ public class DataServiceTestOnMockModem {
         }
     }
 
+    private void restoreUserDataEnabledWithCallback(boolean targetState) {
+        if (mTelephonyManager.isDataEnabledForReason(TelephonyManager.DATA_ENABLED_REASON_USER)
+                == targetState) {
+            return;
+        }
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+            class DataStateCallback extends TelephonyCallback
+                    implements TelephonyCallback.UserMobileDataStateListener {
+                @Override
+                public void onUserMobileDataStateChanged(boolean enabled) {
+                    if (enabled == targetState) {
+                        latch.countDown();
+                    }
+                }
+            }
+
+        DataStateCallback callback = new DataStateCallback();
+        Executor executor = getContext().getMainExecutor();
+
+        try {
+            mTelephonyManager.registerTelephonyCallback(executor, callback);
+            mTelephonyManager.setDataEnabledForReason(
+                    TelephonyManager.DATA_ENABLED_REASON_USER, targetState);
+
+            boolean success = latch.await(5, TimeUnit.SECONDS);
+            if (!success) {
+                Log.w(LOG_TAG, "Timeout waiting for User Data to restore to: " + targetState);
+            }
+        } catch (Exception e) {
+            Log.w(LOG_TAG, "Exception while restoring User Data state", e);
+        } finally {
+            mTelephonyManager.unregisterTelephonyCallback(callback);
+        }
+    }
+
     @After
     public void afterTest() throws Exception {
         if (!mSupportTelephonyData) return;
+
+        if (mNetworkCallback != null) {
+            ConnectivityManager cm =
+                    (ConnectivityManager) getContext().getSystemService(ConnectivityManager.class);
+            try {
+                cm.unregisterNetworkCallback(mNetworkCallback);
+            } catch (IllegalArgumentException e) {
+                // ignore the case where the callback is already unregistered
+            }
+            mNetworkCallback = null;
+        }
 
         if (mMockModemManager != null) {
             mMockModemManager.clearAllCalls(TEST_SLOT, DisconnectCause.POWER_OFF);
         }
 
         TelephonyUtils.endBlockSuppression(InstrumentationRegistry.getInstrumentation());
+        if (mTelephonyManager != null) {
+            try {
+                restoreUserDataEnabledWithCallback(mInitialIsUserDataEnabled);
+                mTelephonyManager.setDataRoamingEnabled(mInitialIsUserDataRoamingEnabled);
+            } catch (Exception e) {
+                Log.w(LOG_TAG, "Failed to restore data state", e);
+            }
+        }
 
         // Rebind all interfaces which is binding to MockModemService to default.
         if (mMockModemManager != null) {
             assertTrue(mMockModemManager.changeNetworkService(TEST_SLOT, 310260, false));
             assertTrue(mMockModemManager.disconnectMockModemService());
             mMockModemManager = null;
-
             TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
         }
-
-        mTelephonyManager.setDataEnabledForReason(
-                TelephonyManager.DATA_ENABLED_REASON_USER, mInitialIsUserDataEnabled);
-        mTelephonyManager.setDataRoamingEnabled(mInitialIsUserDataRoamingEnabled);
 
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
@@ -206,7 +261,8 @@ public class DataServiceTestOnMockModem {
         NetworkRequest.Builder builder = new NetworkRequest.Builder();
         builder.addCapability(NetworkCapabilities.NET_CAPABILITY_IMS);
         builder.addCapability(NetworkCapabilities.NET_CAPABILITY_MMTEL);
-        connectivityManager.requestNetwork(builder.build(), createSimpleCallback());
+        mNetworkCallback = createSimpleCallback();
+        connectivityManager.requestNetwork(builder.build(), mNetworkCallback);
 
         waitForDataLatchCountdown(LATCH_NOTIFY_IMS_DATA_NETWORK);
         assertTrue(mMockModemManager.getIsImsDataNetworkNotified(TEST_SLOT));
