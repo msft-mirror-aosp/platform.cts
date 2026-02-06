@@ -16,6 +16,7 @@
 
 package android.telephony.satellite.cts;
 
+import static android.telephony.CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC;
 import static android.telephony.CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_MANUAL;
 import static android.telephony.satellite.SatelliteManager.ACTION_SATELLITE_SUBSCRIBER_ID_LIST_CHANGED;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_GEOLOCATION;
@@ -33,7 +34,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.CancellationSignal;
 import android.os.OutcomeReceiver;
-import android.os.Parcel;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
