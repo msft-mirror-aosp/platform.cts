@@ -21,6 +21,8 @@ import static com.android.compatibility.common.util.SystemUtil.runWithShellPermi
 import static com.google.common.truth.Truth.assertThat;
 
 import android.Manifest;
+import android.app.ActivityOptions;
+import android.app.PendingIntent;
 import android.app.role.RoleManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -28,6 +30,12 @@ import android.content.pm.UserInfo;
 import android.os.Process;
 import android.os.UserHandle;
 import android.os.UserManager;
+import android.util.Log;
+
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.BySelector;
+import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.SystemUtil;
 
@@ -38,13 +46,17 @@ import java.util.concurrent.TimeUnit;
 
 public final class PackageTestUtils {
 
+    private static final String TAG = "PackageTestUtils";
     private static final int ROLE_CHANGE_TIMEOUT_SECONDS = 5;
+    private static final int UI_TIMEOUT_MS = 5000;
+    private static final String LOCK_SCREEN_PIN = "1234";
 
     private PackageTestUtils() {}
 
     public static final String SAMPLE_APK_BASE = "/data/local/tmp/cts/content/";
     public static final String APP_LOCK_SUPPORTED_APK =
             SAMPLE_APK_BASE + "CtsAppLockSupportedTestApp.apk";
+    public static final String APP_LOCK_SUPPORTED_APP_LABEL = "CtsAppLockSupportedTestApp";
     public static final String APP_LOCK_SUPPORTED_PACKAGE_NAME =
             "android.content.cts.applocksupportedtestapp";
     public static final String HEADLESS_APK = SAMPLE_APK_BASE + "CtsHeadlessApp.apk";
@@ -199,6 +211,97 @@ public final class PackageTestUtils {
             return false;
         }
         return true;
+    }
+
+    /**
+     * Sets a PIN lock for the device for the duration of the {@link AutoCloseable}, and clears it
+     * afterward.
+     *
+     * <p>This is used for tests that require a secure lock screen (LSKF).
+     *
+     * @return an {@link AutoCloseable} that will clear the PIN.
+     */
+    public static AutoCloseable setLskfScoped() {
+        try {
+            SystemUtil.runShellCommand("locksettings set-pin " + LOCK_SCREEN_PIN);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to set LSKF.", e);
+        }
+        return () -> {
+            try {
+                SystemUtil.runShellCommand("locksettings clear --old " + LOCK_SCREEN_PIN);
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to clear LSKF", e);
+            }
+        };
+    }
+
+    /**
+     * Clears any lock from the device for the duration of the {@link AutoCloseable}.
+     *
+     * <p>This ensures the device is in an insecure state for the duration of the scope.
+     *
+     * @return an {@link AutoCloseable}.
+     */
+    public static AutoCloseable clearLskfScoped() {
+        try {
+            SystemUtil.runShellCommand("locksettings clear --old " + LOCK_SCREEN_PIN);
+            SystemUtil.runShellCommand("locksettings clear");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to clear LSKF", e);
+        }
+        return () -> {};
+    }
+
+    /**
+     * Waits for a UI object to appear and returns whether it was found within the timeout.
+     *
+     * @param uiDevice the {@link UiDevice} instance to use for waiting.
+     * @param selector the {@link BySelector} used to find the object.
+     * @return {@code true} if the object was found within {@link #UI_TIMEOUT_MS}, {@code false}
+     * otherwise.
+     */
+    public static boolean waitForUiObject(UiDevice uiDevice, BySelector selector) {
+        return uiDevice.wait(Until.hasObject(selector), UI_TIMEOUT_MS);
+    }
+
+    /**
+     * Returns retrieved resource name for a framework ID.
+     *
+     * @param idName the name of the ID.
+     * @return the fully qualified resource name.
+     */
+    public static String getSystemResourceName(String idName) {
+        final Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        final int resId = context.getResources().getIdentifier(idName, "id", "android");
+        if (resId == 0) {
+            throw new RuntimeException("Could not find system resource: " + idName);
+        }
+        return context.getResources().getResourceName(resId);
+    }
+
+   /**
+     * Launches the given {@link PendingIntent} with background activity start allowed..
+     *
+     * @param pendingIntent the {@link PendingIntent} to launch.
+     * @throws PendingIntent.CanceledException if the PendingIntent is no longer valid.
+     */
+    public static AutoCloseable launchPendingIntentWithBgStart(UiDevice uiDevice,
+            PendingIntent pendingIntent) throws PendingIntent.CanceledException {
+        uiDevice.pressHome();
+        uiDevice.waitForIdle();
+
+        final ActivityOptions options = ActivityOptions.makeBasic();
+        options.setPendingIntentBackgroundActivityStartMode(
+                ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
+        pendingIntent.send(/* context= */ null, /* code= */ 0, /* intent= */ null,
+                /* onFinished= */ null, /* handler= */ null, /* requiredPermission= */ null,
+                /* options= */ options.toBundle());
+
+        return () -> {
+            uiDevice.pressHome();
+            uiDevice.waitForIdle();
+        };
     }
 
     public static class ScopedSupervisedUser implements AutoCloseable {
