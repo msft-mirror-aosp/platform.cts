@@ -401,6 +401,13 @@ abstract class SensorPrivacyBaseTest(
                 "android:id/button1"
             }
 
+    private fun getDialogNegativeButtonId() =
+            if (packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)) {
+                "com.android.systemui:id/bottom_sheet_negative_button"
+            } else {
+                "android:id/button2"
+            }
+
     @Test
     @AppModeFull(reason = "Uses secondary app, instant apps have no visibility")
     fun testOpNotRunningWhileSensorPrivacyEnabled() {
@@ -452,9 +459,8 @@ abstract class SensorPrivacyBaseTest(
         // Retry camera connection because external cameras are disconnected
         // if sensor privacy is enabled (b/182204067)
         startTestApp(true)
-        UiAutomatorUtils.waitFindObject(By.text(
-                Pattern.compile("Cancel", Pattern.CASE_INSENSITIVE)
-        )).click()
+        val buttonResId = getDialogNegativeButtonId()
+        UiAutomatorUtils.waitFindObject(By.res(buttonResId)).click()
         val before = System.currentTimeMillis()
         setSensor(false)
         eventually {
