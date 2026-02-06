@@ -17,7 +17,7 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_test {
+android_test_helper_app {
     name: "CtsBiometricServiceUtilTestApp",
     defaults: ["cts_support_defaults"],
 
@@ -34,7 +34,6 @@ android_test {
     per_testcase_directory: true,
 
     test_suites: [
-        "cts",
         "sts",
         "vts10",
         "general-tests",
