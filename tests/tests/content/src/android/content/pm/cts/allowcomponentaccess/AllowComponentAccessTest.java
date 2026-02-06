@@ -209,6 +209,43 @@ public class AllowComponentAccessTest {
         assertThat(success).isTrue();
     }
 
+    // --- Certificate Tests ---
+
+    @Test
+    @RequiresFlagsEnabled(android.app.privatecompute.flags.Flags.FLAG_ENABLE_ALLOW_COMPONENT_ACCESS)
+    public void testBindService_sourceAllowCertPrimary_targetAllow_bindSucceed() throws Exception {
+        boolean success =
+                triggerSourceAction(
+                        Constants.PKG_SOURCE_ALLOW_CERT_PRIMARY,
+                        Constants.PKG_TARGET_ALLOW,
+                        Constants.ACTION_TYPE_BIND);
+        assertThat(success).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.privatecompute.flags.Flags.FLAG_ENABLE_ALLOW_COMPONENT_ACCESS)
+    public void testBindService_sourceAllowCertAdditional_targetAllow_bindSucceed()
+            throws Exception {
+        boolean success =
+                triggerSourceAction(
+                        Constants.PKG_SOURCE_ALLOW_CERT_ADDITIONAL,
+                        Constants.PKG_TARGET_ALLOW,
+                        Constants.ACTION_TYPE_BIND);
+        assertThat(success).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.privatecompute.flags.Flags.FLAG_ENABLE_ALLOW_COMPONENT_ACCESS)
+    public void testBindService_sourceBlockCertWrong_targetAllow_bindBlocked() throws Exception {
+        // Association should be DENIED because the certDigest in the manifest is incorrect
+        boolean success =
+                triggerSourceAction(
+                        Constants.PKG_SOURCE_BLOCK_CERT_WRONG,
+                        Constants.PKG_TARGET_ALLOW,
+                        Constants.ACTION_TYPE_BIND);
+        assertThat(success).isFalse();
+    }
+
     /**
      * Helper: Triggers the ActionRelayReceiver in the Source app to attempt a connection to the
      * Target app.
