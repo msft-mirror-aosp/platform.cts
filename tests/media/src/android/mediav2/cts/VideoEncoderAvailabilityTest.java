@@ -67,7 +67,6 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -495,7 +494,8 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
             int currFrameRate = Math.min(frameRate, maxFrameRate - frameRateOffset);
             EncoderConfigParams param =
                     new EncoderConfigParams.Builder(mediaType).setWidth(width).setHeight(height)
-                            .setFrameRate(frameRate).setColorFormat(COLOR_FormatSurface).build();
+                            .setFrameRate(frameRate).setColorFormat(COLOR_FormatSurface)
+                            .setPriority(0).build();
             frameRateOffset += currFrameRate;
             cfgs.add(param);
         } while (frameRateOffset < maxFrameRate);
@@ -517,14 +517,8 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
     }
 
     private void validateMaxInstances(String codecName, String mediaType, boolean testRTMode,
-            boolean testOperatingModeSwitch) throws CloneNotSupportedException {
-        // FIXME: While switching between non-realtime and realtime, the resource adjustment
-        // (relinquishing or committing) MUST happen on the next frame being processed. This would
-        // mean that the test must queue inputs for processing after a call to setParameters().
-        // Once this method is updated to queue inputs remove the below check
-        if (testOperatingModeSwitch) {
-            Assert.fail("Update test to handle this scenario");
-        }
+            boolean testOperatingModeSwitch)
+            throws InterruptedException, CloneNotSupportedException {
         // TODO:
         // if multiple instances are started in nrt mode until resource exhaustion, switching a
         // codec to rt mode may or may not succeed due to lack of resources. In this scenario,
@@ -566,6 +560,9 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
                     codec = new CodecEncoderGLSurface(codecName, mediaType, configParam,
                             mAllTestParams);
                     codec.launchInstance();
+                    codec.doWork(10);
+                    int cbCount = codec.getResourceChangeCbCount();
+                    codec.waitOnResourceChange(cbCount);
                     codecs.add(codec);
                     numInstances++;
                     codec = null;
@@ -605,7 +602,14 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
                 for (int i = 0; i < codecs.size(); ++i) {
                     Log.d(LOG_TAG, "switching to non-real time, codec #" + i);
                     lastGlobalResources = getCurrentGlobalCodecResources();
+                    int cbCount = codecs.get(i).getResourceChangeCbCount();
                     codecs.get(i).updateOpMode(1, 0); // switch to non-real time
+                    codecs.get(i).doWork(5);
+                    codecs.get(i).waitOnResourceChange(cbCount);
+                    Assert.assertEquals(
+                            "taking too long to receive onRequiredResourcesChanged callback\n"
+                                    + mTestEnv + mTestConfig,
+                            codecs.get(i).getResourceChangeCbCount(), cbCount + 1);
                     List<CodecResource> currGlobalResources = getCurrentGlobalCodecResources();
                     int result =
                             compareResources(lastGlobalResources, currGlobalResources, testLogs);
@@ -657,7 +661,8 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
     @RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
     @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
             "android.media.MediaCodec#getRequiredResources"})
-    public void testConcurrentMaxInstances() throws CloneNotSupportedException {
+    public void testConcurrentMaxInstances()
+            throws InterruptedException, CloneNotSupportedException {
         validateMaxInstances(mCodecName, mMediaType, true, false);
         if (BOARD_FIRST_SDK_IS_AT_LEAST_202604) {
             validateMaxInstances(mCodecName, mMediaType, false, false);
@@ -696,7 +701,7 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
             EncoderConfigParams configParam =
                     new EncoderConfigParams.Builder(mMediaType).setWidth(videoSize.getWidth())
                             .setHeight(videoSize.getHeight()).setFrameRate(pp.getMaxFrameRate())
-                            .setColorFormat(COLOR_FormatSurface).build();
+                            .setColorFormat(COLOR_FormatSurface).setPriority(0).build();
             pixelsProcessedPerSec =
                     videoSize.getWidth() * videoSize.getHeight() * pp.getMaxFrameRate();
             CodecEncoderGLSurface codec =
@@ -851,8 +856,8 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
     @RequiresFlagsEnabled({FLAG_CODEC_AVAILABILITY, FLAG_DYNAMIC_OPERATING_MODE_SWITCH})
     @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
             "android.media.MediaCodec#getRequiredResources"})
-    @Ignore("todo: have to queue inputs after switching operating mode")
-    public void testConcurrentMaxInstancesDynamic() throws CloneNotSupportedException {
+    public void testConcurrentMaxInstancesDynamic()
+            throws InterruptedException, CloneNotSupportedException {
         Assume.assumeTrue("Skipping, intended for devices the board first sdk >= 202604",
                 BOARD_FIRST_SDK_IS_AT_LEAST_202604);
         validateMaxInstances(mCodecName, mMediaType, true, true);
