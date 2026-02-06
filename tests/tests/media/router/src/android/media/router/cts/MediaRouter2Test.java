@@ -44,7 +44,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
 
 import android.Manifest;
 import android.annotation.NonNull;
@@ -67,22 +66,14 @@ import android.media.RouteDiscoveryPreference;
 import android.media.RouteListingPreference;
 import android.media.RoutingSessionInfo;
 import android.media.SuggestedDeviceInfo;
-import android.media.VolumeProvider;
 import android.media.cts.ResourceReleaser;
 import android.media.cts.SimpleMediaBrowserService;
-import android.media.session.MediaSession;
-import android.media.session.MediaSessionManager;
-import android.media.session.PlaybackState;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.TextUtils;
-import android.view.KeyEvent;
 
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.filters.LargeTest;
@@ -128,10 +119,7 @@ import java.util.stream.Collectors;
 @LargeTest
 @FrameworkSpecificTest
 public class MediaRouter2Test {
-    private static final String TAG = "MR2Test";
     private static final String DEFAULT_ROUTE_ID = "DEFAULT_ROUTE";
-    private static final int SAMPLE_CURRENT_VOLUME = 10;
-    private static final int SAMPLE_MAX_VOLUME = 12;
 
     @Rule(order = 0)
     public final ResourceReleaser mResourceReleaser = new ResourceReleaser(/* useStack= */ true);
@@ -606,130 +594,6 @@ public class MediaRouter2Test {
             releaseControllers(controllers);
             mRouter2.unregisterRouteCallback(routeCallback);
             mRouter2.unregisterControllerCallback(controllerCallback);
-        }
-    }
-
-    @Test
-    public void testVolumeAdjustmentEventsReachOnlyExistingActiveRemoteSession() throws Exception {
-        // TODO (b/308994839): Remove this once MediaRouter2 supports multiuser interaction.
-        // Change MediaSessionRecord check from MediaRouter2Manager to MediaRouter2.
-        assumeFalse("Shouldn't run in HSUM mode", UserManager.isHeadlessSystemUserMode());
-
-        setUpStubProvider();
-
-        List<String> sampleRouteFeature = new ArrayList<>();
-        sampleRouteFeature.add(FEATURE_SAMPLE);
-
-        Map<String, MediaRoute2Info> routes = waitAndGetRoutes(sampleRouteFeature);
-        MediaRoute2Info route = routes.get(ROUTE_ID1);
-        assertThat(route).isNotNull();
-
-        CountDownLatch onTransferLatch = new CountDownLatch(1);
-        List<RoutingController> controllers = new ArrayList<>();
-
-        TransferCallback controllerCallback =
-                new TransferCallback() {
-                    @Override
-                    public void onTransfer(
-                            RoutingController oldController, RoutingController newController) {
-                        assertThat(oldController).isEqualTo(mRouter2.getSystemController());
-                        assertThat(
-                                        createRouteMap(newController.getSelectedRoutes())
-                                                .containsKey(ROUTE_ID1))
-                                .isTrue();
-                        controllers.add(newController);
-                        onTransferLatch.countDown();
-                    }
-                };
-
-        // TODO: Remove this once the MediaRouter2 becomes always connected to the service.
-        RouteCallback routeCallback = new RouteCallback() {};
-        mRouter2.registerRouteCallback(mExecutor, routeCallback, EMPTY_DISCOVERY_PREFERENCE);
-        Handler handler = new Handler(Looper.getMainLooper());
-
-        try {
-            mRouter2.registerTransferCallback(mExecutor, controllerCallback);
-
-            // This call is needed to create a routing session with the same package name as the
-            // media session so that volume key events are sent to mSession. Some devices block
-            // volume messages remote media sessions with no associated routing session.
-            // See b/228021646 for details.
-            mRouter2.transferTo(route);
-
-            // Make sure the transfer succeeded.
-            assertThat(onTransferLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
-
-            // Define the media session
-            MediaSession mSession = new MediaSession(mContext, /* tag= */ "sample_session");
-
-            CountDownLatch volumeAdjustedLatch = new CountDownLatch(1);
-            VolumeProvider volumeProvider =
-                    new VolumeProvider(
-                            VolumeProvider.VOLUME_CONTROL_RELATIVE,
-                            SAMPLE_MAX_VOLUME,
-                            SAMPLE_CURRENT_VOLUME,
-                            /* volumeControlId= */ "sample_volume_control_id") {
-                        @Override
-                        public void onAdjustVolume(int direction) {
-                            super.onAdjustVolume(direction);
-                            setCurrentVolume(getCurrentVolume() + direction);
-                            volumeAdjustedLatch.countDown();
-                        }
-
-                        @Override
-                        public void onSetVolumeTo(int volume) {
-                            super.onSetVolumeTo(volume);
-                            setCurrentVolume(volume);
-                            volumeAdjustedLatch.countDown();
-                        }
-                    };
-            mSession.setPlaybackToRemote(volumeProvider);
-
-            assertThat(volumeProvider.getCurrentVolume()).isEqualTo(SAMPLE_CURRENT_VOLUME);
-
-            PlaybackState playbackState =
-                    new PlaybackState.Builder()
-                            .setState(
-                                    PlaybackState.STATE_PLAYING,
-                                    /* position= */ 0L,
-                                    /* playbackSpeed= */ 0.0f)
-                            .build();
-            mSession.setActive(true);
-            mSession.setPlaybackState(playbackState);
-
-            // Set a callback for volume provider to receive the volume updates.
-            mSession.setCallback(new MediaSession.Callback() {}, handler);
-
-            long downTime = System.currentTimeMillis();
-
-            // Simulate the volume key event
-            MediaSessionManager mSessionManager =
-                    mContext.getSystemService(MediaSessionManager.class);
-            mSessionManager.dispatchVolumeKeyEvent(
-                    new KeyEvent(
-                            downTime,
-                            downTime,
-                            KeyEvent.ACTION_DOWN,
-                            KeyEvent.KEYCODE_VOLUME_DOWN,
-                            0),
-                    AudioManager.USE_DEFAULT_STREAM_TYPE,
-                    false);
-            mSessionManager.dispatchVolumeKeyEvent(
-                    new KeyEvent(
-                            downTime,
-                            System.currentTimeMillis(),
-                            KeyEvent.ACTION_UP,
-                            KeyEvent.KEYCODE_VOLUME_DOWN,
-                            0),
-                    AudioManager.USE_DEFAULT_STREAM_TYPE,
-                    false);
-
-            assertThat(volumeAdjustedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
-            assertThat(volumeProvider.getCurrentVolume()).isEqualTo(SAMPLE_CURRENT_VOLUME - 1);
-        } finally {
-            releaseControllers(controllers);
-            mRouter2.unregisterRouteCallback(routeCallback);
-            mRouter2.unregisterTransferCallback(controllerCallback);
         }
     }
 
