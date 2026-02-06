@@ -145,8 +145,8 @@ public class SatelliteManagerTestBase {
     protected NfcAdapter mNfcAdapter = null;
     protected BluetoothAdapter mBluetoothAdapter = null;
 
-    protected static List<SatelliteSubscriberInfo> sSatelliteSubscriberInfosToBeDeprovisioned
-        = new ArrayList<>();
+    protected static List<SatelliteSubscriberInfo> sSatelliteSubscriberInfosToBeDeprovisioned =
+            new ArrayList<>();
     protected static List<Integer> sEsosSubIdsToBeRestored = new ArrayList<>();
     protected static List<Integer> sNtnOnlySubIdsToBeRestored = new ArrayList<>();
     protected static Map<Integer, String[]> sOriginalSupportedMsgAppsPerSubId = new HashMap<>();
@@ -310,6 +310,7 @@ public class SatelliteManagerTestBase {
                         Manifest.permission.SEND_SMS,
                         Manifest.permission.DUMP);
     }
+
     protected static class SatelliteTransmissionUpdateCallbackTest implements
             SatelliteTransmissionUpdateCallback {
 
@@ -328,7 +329,8 @@ public class SatelliteManagerTestBase {
                 this.datagramType = DATAGRAM_TYPE_UNKNOWN;
             }
 
-            DatagramStateChangeArgument(int datagramType, int state, int pendingCount, int errorCode) {
+            DatagramStateChangeArgument(
+                    int datagramType, int state, int pendingCount, int errorCode) {
                 this.datagramType = datagramType;
                 this.state = state;
                 this.pendingCount = pendingCount;
@@ -341,7 +343,7 @@ public class SatelliteManagerTestBase {
                 if (other == null || getClass() != other.getClass()) return false;
                 DatagramStateChangeArgument that = (DatagramStateChangeArgument) other;
                 return state == that.state
-                        && pendingCount  == that.pendingCount
+                        && pendingCount == that.pendingCount
                         && errorCode == that.errorCode;
             }
 
@@ -745,7 +747,7 @@ public class SatelliteManagerTestBase {
                             + "releasing mModemOffSemaphore, ex=" + ex);
                 }
             } else if (state == SATELLITE_MODEM_STATE_IDLE
-                           || state == SATELLITE_MODEM_STATE_NOT_CONNECTED) {
+                    || state == SATELLITE_MODEM_STATE_NOT_CONNECTED) {
                 try {
                     mModemIdleOrNotConnectedSemaphore.release();
                 } catch (Exception ex) {
@@ -832,8 +834,10 @@ public class SatelliteManagerTestBase {
                     return false;
                 }
             } catch (Exception ex) {
-                loge("Waiting for satellite modem idle/not_connected event:"
-                    + " Got exception=" + ex);
+                loge(
+                        "Waiting for satellite modem idle/not_connected event:"
+                                + " Got exception="
+                                + ex);
                 return false;
             }
             return true;
@@ -1177,8 +1181,9 @@ public class SatelliteManagerTestBase {
 
         @Override
         public void onSatelliteDisallowedReasonsChanged(@NonNull int[] disallowedReasons) {
-            logd("onSatelliteDisallowedReasonsChanged: disallowedReasons="
-                     + Arrays.toString(disallowedReasons));
+            logd(
+                    "onSatelliteDisallowedReasonsChanged: disallowedReasons="
+                            + Arrays.toString(disallowedReasons));
             mSatelliteDisabledReasons = disallowedReasons;
             try {
                 mSemaphore.release();
@@ -1259,8 +1264,9 @@ public class SatelliteManagerTestBase {
         public boolean setSatelliteModeRadios(String expectedSatelliteModeRadios) {
             logd("setSatelliteModeRadios: expectedSatelliteModeRadios="
                     + expectedSatelliteModeRadios);
-            String originalSatelliteModeRadios =  Settings.Global.getString(
-                    mContext.getContentResolver(), Settings.Global.SATELLITE_MODE_RADIOS);
+            String originalSatelliteModeRadios =
+                    Settings.Global.getString(
+                            mContext.getContentResolver(), Settings.Global.SATELLITE_MODE_RADIOS);
             if (TextUtils.equals(expectedSatelliteModeRadios, originalSatelliteModeRadios)) {
                 logd("setSatelliteModeRadios: satellite radios mode is already as expected");
                 return true;
@@ -1583,7 +1589,7 @@ public class SatelliteManagerTestBase {
         assertEquals(expectedError, (long) errorCode);
     }
 
-    protected static void requestSatelliteEnabledwithEmergencyMode(
+    protected static void requestSatelliteEnabledWithEmergencyMode(
             boolean enabled, boolean demoEnabled, boolean emergencyEnabled, int expectedError) {
         LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
         sSatelliteManager.requestEnabled(
@@ -1774,25 +1780,18 @@ public class SatelliteManagerTestBase {
         private boolean mUwbExpectedState = false;
 
         public String toString(int state) {
-            switch (state) {
-                case UwbManager.AdapterStateCallback.STATE_DISABLED:
-                    return "Disabled";
-
-                case UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE:
-                    return "Inactive";
-
-                case UwbManager.AdapterStateCallback.STATE_ENABLED_ACTIVE:
-                    return "Active";
-
-                default:
-                    return "";
-            }
+            return switch (state) {
+                case UwbManager.AdapterStateCallback.STATE_DISABLED -> "Disabled";
+                case UwbManager.AdapterStateCallback.STATE_ENABLED_INACTIVE -> "Inactive";
+                case UwbManager.AdapterStateCallback.STATE_ENABLED_ACTIVE -> "Active";
+                default -> "";
+            };
         }
 
         @Override
         public void onStateChanged(int state, int reason) {
             logd("UwbAdapterStateCallback onStateChanged() called, state = " + toString(state));
-            logd("Adapter state changed reason " + String.valueOf(reason));
+            logd("Adapter state changed reason " + reason);
 
             synchronized (mUwbExpectedStateLock) {
                 if (mUwbExpectedState == mUwbManager.isUwbEnabled()) {
@@ -2006,9 +2005,9 @@ public class SatelliteManagerTestBase {
         int satelliteModeEnabled = Settings.Global.getInt(getContext().getContentResolver(),
                 Settings.Global.SATELLITE_MODE_ENABLED, 0);
         if (enabled) {
-            assertEquals(satelliteModeEnabled, 1);
+            assertEquals(1, satelliteModeEnabled);
         } else {
-            assertEquals(satelliteModeEnabled, 0);
+            assertEquals(0, satelliteModeEnabled);
         }
         logd("requestSatelliteEnabled: " + enabled
                 + " : satelliteModeEnabled from settings: " + satelliteModeEnabled);
@@ -2050,7 +2049,7 @@ public class SatelliteManagerTestBase {
         // Couldn't resolve a default. We can try to resolve a default using the active
         // subscriptions.
         if (!infos.isEmpty()) {
-            return infos.get(0).getSubscriptionId();
+            return infos.getFirst().getSubscriptionId();
         }
         loge("getActiveSubIDForCarrierSatelliteTest: use invalid subscription ID");
         // There must be at least one active subscription.
@@ -2063,13 +2062,14 @@ public class SatelliteManagerTestBase {
         List<SubscriptionInfo> infoList = ShellIdentityUtils.invokeMethodWithShellPermissions(sm,
                 SubscriptionManager::getAvailableSubscriptionInfoList);
 
-        int subId = infoList.stream()
-                .filter(info -> info.isOnlyNonTerrestrialNetwork())
-                .mapToInt(SubscriptionInfo::getSubscriptionId)
-                .findFirst()
-                .orElse(SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+        int subId =
+                infoList.stream()
+                        .filter(SubscriptionInfo::isOnlyNonTerrestrialNetwork)
+                        .mapToInt(SubscriptionInfo::getSubscriptionId)
+                        .findFirst()
+                        .orElse(SubscriptionManager.INVALID_SUBSCRIPTION_ID);
         if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID && !infoList.isEmpty()) {
-            subId = infoList.get(0).getSubscriptionId();
+            subId = infoList.getFirst().getSubscriptionId();
         }
         logd("getNtnOnlySubscriptionId: subId=" + subId);
         // Restore satellite permission
@@ -2115,9 +2115,9 @@ public class SatelliteManagerTestBase {
 
         Integer error = errorCode.get();
         if (error == null) {
-            return new Pair<>(list.get(), error);
+            return new Pair<>(list.get(), null);
         } else {
-            assertFalse(list.get().size() > 0);
+            assertTrue(list.get().isEmpty());
             return null;
         }
     }
@@ -2317,11 +2317,13 @@ public class SatelliteManagerTestBase {
         SatelliteAccessConfiguration configuration1;
         if (Flags.supportCarrierIdsInGeofence()) {
             List<Integer> carrierIdList1 = new ArrayList<>(List.of(1, 2, 1884));
-            configuration1 = new SatelliteAccessConfiguration(
-                new ArrayList<>(List.of(satelliteInfo1)), tagIdList1, carrierIdList1);
+            configuration1 =
+                    new SatelliteAccessConfiguration(
+                            new ArrayList<>(List.of(satelliteInfo1)), tagIdList1, carrierIdList1);
         } else {
-            configuration1 = new SatelliteAccessConfiguration(
-                new ArrayList<>(List.of(satelliteInfo1)), tagIdList1);
+            configuration1 =
+                    new SatelliteAccessConfiguration(
+                            new ArrayList<>(List.of(satelliteInfo1)), tagIdList1);
         }
 
         UUID uuid2 = UUID.fromString("1dec24f8-9223-4196-ad7a-a03002db7af7");
@@ -2337,11 +2339,13 @@ public class SatelliteManagerTestBase {
                 new ArrayList<>(List.of(satelliteInfo2)), tagIdList2);
         if (Flags.supportCarrierIdsInGeofence()) {
             List<Integer> carrierIdList2 = new ArrayList<>(List.of(3, 4, 5));
-            configuration2 = new SatelliteAccessConfiguration(
-                new ArrayList<>(List.of(satelliteInfo2)), tagIdList2, carrierIdList2);
+            configuration2 =
+                    new SatelliteAccessConfiguration(
+                            new ArrayList<>(List.of(satelliteInfo2)), tagIdList2, carrierIdList2);
         } else {
-            configuration2 = new SatelliteAccessConfiguration(
-                new ArrayList<>(List.of(satelliteInfo2)), tagIdList2);
+            configuration2 =
+                    new SatelliteAccessConfiguration(
+                            new ArrayList<>(List.of(satelliteInfo2)), tagIdList2);
         }
 
         UUID uuid3 = UUID.fromString("f60cb479-d85b-4f4e-b050-cc428f5eb4a4");
@@ -2579,8 +2583,10 @@ public class SatelliteManagerTestBase {
         List<Integer> actualBandList = Arrays.stream(actualSystemSelectionSpecifier.getBands())
                 .boxed().collect(Collectors.toList());
 
-        List<Integer> actualEarfcnList = Arrays.stream(actualSystemSelectionSpecifier.getEarfcns())
-                .boxed().collect(Collectors.toList());
+        List<Integer> actualEarfcnList =
+                Arrays.stream(actualSystemSelectionSpecifier.getEarfcns())
+                        .boxed()
+                        .collect(Collectors.toList());
 
         SatelliteInfo[] expectedSatelliteInfoArray =
                 expectedConfiguration.getSatelliteInfos().toArray(new SatelliteInfo[0]);
@@ -2599,7 +2605,8 @@ public class SatelliteManagerTestBase {
 
     protected static void verifySystemSelectionSpecifier(
             @NonNull SystemSelectionSpecifier actualSystemSelectionSpecifier,
-            @NonNull List<String> expectedMccMncs, @NonNull String expectedIccId,
+            @NonNull List<String> expectedMccMncs,
+            @NonNull String expectedIccId,
             @NonNull String expectedMccMnc) {
         assertEquals(expectedMccMncs, Arrays.asList(actualSystemSelectionSpecifier.getMccMncs()));
         assertEquals(expectedMccMnc, actualSystemSelectionSpecifier.getMccMnc());
@@ -2618,11 +2625,14 @@ public class SatelliteManagerTestBase {
     }
 
     protected static SatelliteSubscriberIdListChangedReceiver
-        registerSatelliteSubscriberIdListChangedReceiver() {
+            registerSatelliteSubscriberIdListChangedReceiver() {
         SatelliteSubscriberIdListChangedReceiver receiver =
-            new SatelliteSubscriberIdListChangedReceiver();
-        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
-                TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 5));
+                new SatelliteSubscriberIdListChangedReceiver();
+        assertTrue(
+                sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(
+                        false,
+                        TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS,
+                        5));
         Context context = getContext();
         assertTrue(sMockSatelliteServiceManager.setSatelliteSubscriberIdListChangedIntentComponent(
                 "package"));
@@ -2634,11 +2644,15 @@ public class SatelliteManagerTestBase {
     }
 
     protected static void unregisterSatelliteSubscriberIdListChangedReceiver(
-        Context context, SatelliteSubscriberIdListChangedReceiver receiver) {
-        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
-                TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 0));
-        assertTrue(sMockSatelliteServiceManager
-                .setSatelliteSubscriberIdListChangedIntentComponent("reset"));
+            Context context, SatelliteSubscriberIdListChangedReceiver receiver) {
+        assertTrue(
+                sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(
+                        true,
+                        TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS,
+                        0));
+        assertTrue(
+                sMockSatelliteServiceManager.setSatelliteSubscriberIdListChangedIntentComponent(
+                        "reset"));
         context.unregisterReceiver(receiver);
     }
 
@@ -2655,11 +2669,12 @@ public class SatelliteManagerTestBase {
         Pair<List<SatelliteSubscriberProvisionStatus>, Integer> pairResult =
                 requestSatelliteSubscriberProvisionStatus();
         if (pairResult == null) {
-            fail("provisionSatelliteSubscription "
-                    + "List<SatelliteSubscriberProvisionStatus> null");
+            fail(
+                    "provisionSatelliteSubscription "
+                            + "List<SatelliteSubscriberProvisionStatus> null");
             return false;
         }
-        if (pairResult.first.size() > 0) {
+        if (!pairResult.first.isEmpty()) {
             List<SatelliteSubscriberInfo> toBeProvisionedSubscriberList = new ArrayList<>();
 
             for (SatelliteSubscriberProvisionStatus provisionStatus : pairResult.first) {
@@ -2674,8 +2689,10 @@ public class SatelliteManagerTestBase {
                 }
             }
             if (toBeProvisionedSubscriberList.isEmpty()) {
-                logd("provisionSatelliteSubscription: subId=" + subId
-                         + " is not a satellite subscription");
+                logd(
+                        "provisionSatelliteSubscription: subId="
+                                + subId
+                                + " is not a satellite subscription");
                 return false;
             }
 
@@ -2683,12 +2700,12 @@ public class SatelliteManagerTestBase {
             Pair<Integer, Integer> selectedSatelliteSubIdPairResult =
                     requestSelectedNbIotSatelliteSubscriptionId();
             boolean shouldWaitForSelectedSatelliteSubChanged =
-                (selectedSatelliteSubIdPairResult.first == null
-                    || selectedSatelliteSubIdPairResult.first
-                    == SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+                    (selectedSatelliteSubIdPairResult.first == null
+                            || selectedSatelliteSubIdPairResult.first
+                                    == SubscriptionManager.INVALID_SUBSCRIPTION_ID);
             SelectedNbIotSatelliteSubscriptionCallbackTest
-                selectedNbIotSatelliteSubscriptionCallbackTest =
-                        new SelectedNbIotSatelliteSubscriptionCallbackTest();
+                    selectedNbIotSatelliteSubscriptionCallbackTest =
+                            new SelectedNbIotSatelliteSubscriptionCallbackTest();
 
             /* Register callback for satellite subscription id changed event */
             registerError =
@@ -2703,19 +2720,23 @@ public class SatelliteManagerTestBase {
                     toBeProvisionedSubscriberList);
             assertTrue(callback.waitUntilResult(1));
             assertTrue(pairResultForProvisionSatellite.first);
-            assertTrue(callback.getResultList().get(0).isProvisioned());
-            sSatelliteSubscriberInfosToBeDeprovisioned.add(toBeProvisionedSubscriberList.get(0));
+            assertTrue(callback.getResultList().getFirst().isProvisioned());
+            sSatelliteSubscriberInfosToBeDeprovisioned.add(
+                    toBeProvisionedSubscriberList.getFirst());
 
             if (shouldWaitForSelectedSatelliteSubChanged) {
                 /* The device should have selected a binding satellite subscription. */
                 assertTrue(selectedNbIotSatelliteSubscriptionCallbackTest.waitUntilResult(1));
-                logd("provisionSatelliteSubscription: selectedSatelliteSubId="
-                         + selectedNbIotSatelliteSubscriptionCallbackTest.mSelectedSubId);
+                logd(
+                        "provisionSatelliteSubscription: selectedSatelliteSubId="
+                                + selectedNbIotSatelliteSubscriptionCallbackTest.mSelectedSubId);
                 assertNotEquals(SubscriptionManager.INVALID_SUBSCRIPTION_ID,
                         selectedNbIotSatelliteSubscriptionCallbackTest.mSelectedSubId);
             } else {
-                logd("provisionSatelliteSubscription: selectedSatelliteSubId="
-                         + selectedSatelliteSubIdPairResult.first + " is valid");
+                logd(
+                        "provisionSatelliteSubscription: selectedSatelliteSubId="
+                                + selectedSatelliteSubIdPairResult.first
+                                + " is valid");
             }
             /* Unregister the callback */
             sSatelliteManager.unregisterForSelectedNbIotSatelliteSubscriptionChanged(
@@ -2744,9 +2765,10 @@ public class SatelliteManagerTestBase {
      * during the test.
      */
     protected static void restoreProvisionedStates() {
-        if (sSatelliteSubscriberInfosToBeDeprovisioned.size() == 0) {
-            logd("restoreProvisionedStates: no provisioned satellite"
-                     + " subscription to be restored");
+        if (sSatelliteSubscriberInfosToBeDeprovisioned.isEmpty()) {
+            logd(
+                    "restoreProvisionedStates: no provisioned satellite"
+                            + " subscription to be restored");
             return;
         }
         logd("restoreProvisionedStates: "
@@ -2756,7 +2778,7 @@ public class SatelliteManagerTestBase {
             logd("SatelliteSubscriberInfo: " + info);
         }
         Pair<Boolean, Integer> pairResult =
-            deprovisionSatellite(sSatelliteSubscriberInfosToBeDeprovisioned);
+                deprovisionSatellite(sSatelliteSubscriberInfosToBeDeprovisioned);
         assertNotNull(pairResult);
         assertTrue(pairResult.first);
         sSatelliteSubscriberInfosToBeDeprovisioned.clear();
@@ -2766,8 +2788,9 @@ public class SatelliteManagerTestBase {
         int i = 0;
         while (i < 10) {
             List<SubscriptionInfo> subscriptionInfoList =
-                ShellIdentityUtils.invokeMethodWithShellPermissions(sSubscriptionManager,
-                    SubscriptionManager::getAvailableSubscriptionInfoList);
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            sSubscriptionManager,
+                            SubscriptionManager::getAvailableSubscriptionInfoList);
             for (SubscriptionInfo info : subscriptionInfoList) {
                 if (info.getSubscriptionId() == subId
                         && info.isOnlyNonTerrestrialNetwork()) {
@@ -2787,11 +2810,10 @@ public class SatelliteManagerTestBase {
     protected static void enableNtnOnlySubscription(int subId) {
         assumeTrue(subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
         boolean isNtnOnly =
-                sSubscriptionManager.getBooleanSubscriptionProperty(subId,
-                        SubscriptionManager.IS_ONLY_NTN,
-                        false,
-                        getContext());
-        logd("enableNtnOnlySubscription: sOriginalNtnOnlyState="
+                SubscriptionManager.getBooleanSubscriptionProperty(
+                        subId, SubscriptionManager.IS_ONLY_NTN, false, getContext());
+        logd(
+                "enableNtnOnlySubscription: sOriginalNtnOnlyState="
                         + isNtnOnly
                         + ", sNtnOnlySubId="
                         + sNtnOnlySubId);
@@ -2803,8 +2825,8 @@ public class SatelliteManagerTestBase {
         UiAutomation ui = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             ui.adoptShellPermissionIdentity();
-            sSubscriptionManager.setSubscriptionProperty(subId,
-                    SubscriptionManager.IS_ONLY_NTN, String.valueOf(1));
+            SubscriptionManager.setSubscriptionProperty(
+                    subId, SubscriptionManager.IS_ONLY_NTN, String.valueOf(1));
         } finally {
             ui.dropShellPermissionIdentity();
         }
@@ -2824,8 +2846,8 @@ public class SatelliteManagerTestBase {
             ui.adoptShellPermissionIdentity();
             for (int subId : sNtnOnlySubIdsToBeRestored) {
                 logd("restoreNtnOnlySubscriptions: subId=" + subId);
-                sSubscriptionManager.setSubscriptionProperty(
-                    subId, SubscriptionManager.IS_ONLY_NTN, "0");
+                SubscriptionManager.setSubscriptionProperty(
+                        subId, SubscriptionManager.IS_ONLY_NTN, "0");
             }
         } finally {
             ui.dropShellPermissionIdentity();
@@ -2836,8 +2858,9 @@ public class SatelliteManagerTestBase {
         int i = 0;
         while (i < 10) {
             List<SubscriptionInfo> subscriptionInfoList =
-                ShellIdentityUtils.invokeMethodWithShellPermissions(sSubscriptionManager,
-                    SubscriptionManager::getAvailableSubscriptionInfoList);
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            sSubscriptionManager,
+                            SubscriptionManager::getAvailableSubscriptionInfoList);
             for (SubscriptionInfo info : subscriptionInfoList) {
                 if (info.getSubscriptionId() == subId
                         && info.isSatelliteESOSSupported()) {
@@ -2872,14 +2895,17 @@ public class SatelliteManagerTestBase {
         assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
                 TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 5));
 
-        boolean isEsosSupported = getConfigForSubId(getContext(), subId,
-                    CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL).getBoolean(
-                    CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, false);
+        boolean isEsosSupported =
+                getConfigForSubId(
+                                getContext(),
+                                subId,
+                                CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL)
+                        .getBoolean(CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, false);
 
         grantSatellitePermission();
         if (!isEsosSupported) {
             SatelliteSubscriberIdListChangedReceiver satelliteSubIdChangedReceiver =
-                registerSatelliteSubscriberIdListChangedReceiver();
+                    registerSatelliteSubscriberIdListChangedReceiver();
             try {
                 satelliteSubIdChangedReceiver.clearQueue();
 
@@ -2892,16 +2918,17 @@ public class SatelliteManagerTestBase {
 
             } finally {
                 unregisterSatelliteSubscriberIdListChangedReceiver(
-                    getContext(), satelliteSubIdChangedReceiver);
+                        getContext(), satelliteSubIdChangedReceiver);
             }
         } else {
-            logd("enableEsosSupportForActiveSubscription: eSOS is already supported for subId="
-                     + subId);
+            logd(
+                    "enableEsosSupportForActiveSubscription: eSOS is already supported for subId="
+                            + subId);
         }
     }
 
     protected static void waitUntilSatelliteSubscriptionAvailable(
-        SatelliteSubscriberIdListChangedReceiver satelliteReceiver) {
+            SatelliteSubscriberIdListChangedReceiver satelliteReceiver) {
         int i = 0;
         for (; i < 3; i++) {
             assertTrue(satelliteReceiver.waitUntilChanged());
@@ -2909,9 +2936,10 @@ public class SatelliteManagerTestBase {
             Pair<List<SatelliteSubscriberProvisionStatus>, Integer> pairResult =
                     requestSatelliteSubscriberProvisionStatus();
             if (pairResult == null) {
-                fail("waitUntilSatelliteSubscriptionAvailable "
-                        + "List<SatelliteSubscriberProvisionStatus> null");
-            } else if (pairResult.first.size() > 0) {
+                fail(
+                        "waitUntilSatelliteSubscriptionAvailable "
+                                + "List<SatelliteSubscriberProvisionStatus> null");
+            } else if (!pairResult.first.isEmpty()) {
                 break;
             }
         }
@@ -2934,8 +2962,11 @@ public class SatelliteManagerTestBase {
         for (int subId : sEsosSubIdsToBeRestored) {
             overrideCarrierConfig(subId, bundle);
         }
-        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
-                    TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 0));
+        assertTrue(
+                sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(
+                        true,
+                        TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS,
+                        0));
         resetSatelliteAccessForSatelliteSubscriptions();
         sEsosSubIdsToBeRestored.clear();
     }
@@ -2950,10 +2981,10 @@ public class SatelliteManagerTestBase {
     }
 
     protected static SelectedNbIotSatelliteSubscriptionCallbackTest
-        registerForSelectedNbIotSatelliteSubscriptionChanged() {
+            registerForSelectedNbIotSatelliteSubscriptionChanged() {
         SelectedNbIotSatelliteSubscriptionCallbackTest
-        selectedNbIotSatelliteSubscriptionCallbackTest =
-                new SelectedNbIotSatelliteSubscriptionCallbackTest();
+                selectedNbIotSatelliteSubscriptionCallbackTest =
+                        new SelectedNbIotSatelliteSubscriptionCallbackTest();
         long registerError =
                 sSatelliteManager.registerForSelectedNbIotSatelliteSubscriptionChanged(
                         getContext().getMainExecutor(),
@@ -2970,8 +3001,9 @@ public class SatelliteManagerTestBase {
         assumeTrue(subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
         String subIdListStr = String.valueOf(subId);
         logd("overrideSatelliteAccessForNtnOnlySubscription: subIdListStr=" + subIdListStr);
-        assertTrue(sMockSatelliteServiceManager.setSatelliteAccessAllowedForSubscriptions(
-                false, subIdListStr));
+        assertTrue(
+                sMockSatelliteServiceManager.setSatelliteAccessAllowedForSubscriptions(
+                        false, subIdListStr));
     }
 
     protected static void enableSatelliteAccessForEsosSubscription(int subId) {
@@ -2979,7 +3011,7 @@ public class SatelliteManagerTestBase {
         grantSatellitePermission();
         // Check if device has selected a binding satellite subscription
         boolean shouldWaitForSelectedSatelliteSubChanged =
-            !isSatelliteSubscriptionSelected() && isSatelliteProvisionedForSubId(subId);
+                !isSatelliteSubscriptionSelected() && isSatelliteProvisionedForSubId(subId);
 
         // Register callback for satellite subscription id changed event
         SelectedNbIotSatelliteSubscriptionCallbackTest selectedNbIotSatelliteSubCallback = null;
@@ -2993,13 +3025,14 @@ public class SatelliteManagerTestBase {
         assertTrue(sMockSatelliteServiceManager.setSatelliteAccessAllowedForSubscriptions(
                 false, subIdListStr));
 
-        if (shouldWaitForSelectedSatelliteSubChanged)  {
-            // Overrding satellite access for a provisioned ESOS subscription should trigger the
+        if (shouldWaitForSelectedSatelliteSubChanged) {
+            // Overriding satellite access for a provisioned ESOS subscription should trigger the
             // selected satellite subscription changed event.
             assertNotNull(selectedNbIotSatelliteSubCallback);
             assertTrue(selectedNbIotSatelliteSubCallback.waitUntilResult(1));
-            logd("overrideSatelliteAccessForEsosSubscription: selectedSatelliteSubId="
-                    + selectedNbIotSatelliteSubCallback.mSelectedSubId);
+            logd(
+                    "overrideSatelliteAccessForEsosSubscription: selectedSatelliteSubId="
+                            + selectedNbIotSatelliteSubCallback.mSelectedSubId);
             assertEquals(subId, selectedNbIotSatelliteSubCallback.mSelectedSubId);
 
             // Unregister the callback
@@ -3010,19 +3043,20 @@ public class SatelliteManagerTestBase {
 
     protected static void resetSatelliteAccessForSatelliteSubscriptions() {
         logd("resetSatelliteAccessForSatelliteSubscriptions");
-        assertTrue(sMockSatelliteServiceManager.setSatelliteAccessAllowedForSubscriptions(true, null));
+        assertTrue(
+                sMockSatelliteServiceManager.setSatelliteAccessAllowedForSubscriptions(true, null));
     }
 
     /**
      * Enables the default SMS app support for an active subscription.
      *
-     * <p> This method should be called only after the binding satellite subscription is selected.
+     * <p>This method should be called only after the binding satellite subscription is selected.
      *
      * @param subId The subscription ID of the active subscription.
      * @param supportCtsSmsApp Whether to support the CTS SMS app.
      */
     protected static void enableDefaultSmsAppSupportForActiveSubscription(
-        int subId, boolean supportCtsSmsApp) {
+            int subId, boolean supportCtsSmsApp) {
         assumeTrue(subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
 
         logd("enableDefaultSmsAppSupportForActiveSubscription: subId=" + subId
@@ -3030,10 +3064,13 @@ public class SatelliteManagerTestBase {
         assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
                 TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 5));
 
-        String[] originalSupportedMsgApps = getConfigForSubId(getContext(), subId,
-            CarrierConfigManager.KEY_SATELLITE_SUPPORTED_MSG_APPS_STRING_ARRAY)
-            .getStringArray(
-                CarrierConfigManager.KEY_SATELLITE_SUPPORTED_MSG_APPS_STRING_ARRAY);
+        String[] originalSupportedMsgApps =
+                getConfigForSubId(
+                                getContext(),
+                                subId,
+                                CarrierConfigManager.KEY_SATELLITE_SUPPORTED_MSG_APPS_STRING_ARRAY)
+                        .getStringArray(
+                                CarrierConfigManager.KEY_SATELLITE_SUPPORTED_MSG_APPS_STRING_ARRAY);
 
         String defaultSmsApp = null;
         ComponentName defaultSmsAppComp =
@@ -3041,9 +3078,13 @@ public class SatelliteManagerTestBase {
         if (defaultSmsAppComp != null) {
             defaultSmsApp = defaultSmsAppComp.getPackageName();
         }
-        logd("enableDefaultSmsAppSupportForActiveSubscription: defaultSmsApp=" + defaultSmsApp
-                 + ", originalSupportedMsgApps=" + (originalSupportedMsgApps == null
-                     ? "null" : Arrays.toString(originalSupportedMsgApps)));
+        logd(
+                "enableDefaultSmsAppSupportForActiveSubscription: defaultSmsApp="
+                        + defaultSmsApp
+                        + ", originalSupportedMsgApps="
+                        + (originalSupportedMsgApps == null
+                                ? "null"
+                                : Arrays.toString(originalSupportedMsgApps)));
 
         int existingLength =
                 originalSupportedMsgApps == null ? 0 : originalSupportedMsgApps.length;
@@ -3054,8 +3095,10 @@ public class SatelliteManagerTestBase {
                     || !containString(originalSupportedMsgApps, defaultSmsApp)) {
                 newLength++;
             } else {
-                logd("enableDefaultSmsAppSupportForActiveSubscription: defaultSmsApp="
-                        + defaultSmsApp + " is already supported");
+                logd(
+                        "enableDefaultSmsAppSupportForActiveSubscription: defaultSmsApp="
+                                + defaultSmsApp
+                                + " is already supported");
                 isDefaultSmsAppSupported = true;
             }
         } else {
@@ -3068,7 +3111,11 @@ public class SatelliteManagerTestBase {
 
         String[] newSupportedMsgApps = new String[newLength];
         if (existingLength > 0) {
-            System.arraycopy(originalSupportedMsgApps, 0, newSupportedMsgApps, 0,
+            System.arraycopy(
+                    originalSupportedMsgApps,
+                    0,
+                    newSupportedMsgApps,
+                    0,
                     originalSupportedMsgApps.length);
         }
         if (newLength > existingLength) {
@@ -3077,17 +3124,18 @@ public class SatelliteManagerTestBase {
                 newSupportedMsgApps[index++] = defaultSmsApp;
             }
             if (supportCtsSmsApp) {
-                newSupportedMsgApps[index]= CTS_SMS_APP_PACKAGE_NAME;
+                newSupportedMsgApps[index] = CTS_SMS_APP_PACKAGE_NAME;
             }
         }
-        logd("enableDefaultSmsAppSupportForActiveSubscription: newSupportedMsgApps="
-                 + Arrays.toString(newSupportedMsgApps));
+        logd(
+                "enableDefaultSmsAppSupportForActiveSubscription: newSupportedMsgApps="
+                        + Arrays.toString(newSupportedMsgApps));
 
         SatelliteDisallowedReasonsCallbackTest disallowedReasonsCallback =
                 registerForSatelliteDisallowedReasonsChanged();
         boolean hasUnsupportedDefaultMsgAppDisallowedReason =
-            disallowedReasonsCallback.hasSatelliteDisabledReason(
-                SATELLITE_DISALLOWED_REASON_UNSUPPORTED_DEFAULT_MSG_APP);
+                disallowedReasonsCallback.hasSatelliteDisabledReason(
+                        SATELLITE_DISALLOWED_REASON_UNSUPPORTED_DEFAULT_MSG_APP);
         disallowedReasonsCallback.drainPermits();
 
         try {
@@ -3098,23 +3146,25 @@ public class SatelliteManagerTestBase {
 
                 PersistableBundle bundle = new PersistableBundle();
                 bundle.putStringArray(
-                    CarrierConfigManager.KEY_SATELLITE_SUPPORTED_MSG_APPS_STRING_ARRAY,
-                    newSupportedMsgApps);
+                        CarrierConfigManager.KEY_SATELLITE_SUPPORTED_MSG_APPS_STRING_ARRAY,
+                        newSupportedMsgApps);
                 overrideCarrierConfig(subId, bundle);
                 sOriginalSupportedMsgAppsPerSubId.put(subId, originalSupportedMsgApps);
 
                 if (hasUnsupportedDefaultMsgAppDisallowedReason) {
                     assertTrue(disallowedReasonsCallback.waitUntilResult(1));
-                    assertFalse(disallowedReasonsCallback.hasSatelliteDisabledReason(
+                    assertFalse(
+                            disallowedReasonsCallback.hasSatelliteDisabledReason(
                                     SATELLITE_DISALLOWED_REASON_UNSUPPORTED_DEFAULT_MSG_APP));
                 }
             } else {
-                logd("enableDefaultSmsAppSupportForActiveSubscription: no need to update default"
+                logd(
+                        "enableDefaultSmsAppSupportForActiveSubscription: no need to update default"
                                 + " SMS app");
             }
         } finally {
             sSatelliteManager.unregisterForSatelliteDisallowedReasonsChanged(
-                disallowedReasonsCallback);
+                    disallowedReasonsCallback);
         }
     }
 
@@ -3147,8 +3197,11 @@ public class SatelliteManagerTestBase {
             overrideCarrierConfig(subId, bundle);
         }
 
-        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
-                TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 0));
+        assertTrue(
+                sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(
+                        true,
+                        TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS,
+                        0));
         sOriginalSupportedMsgAppsPerSubId.clear();
     }
 
@@ -3170,7 +3223,7 @@ public class SatelliteManagerTestBase {
         grantSatellitePermission();
         overrideSatelliteAccessForNtnOnlySubscription(sNtnOnlySubId);
 
-        if (shouldWaitForSelectedSatelliteSubChanged)  {
+        if (shouldWaitForSelectedSatelliteSubChanged) {
             // Enabling NTN only subscription and overriding satellite access for this subscription
             // should trigger the selected satellite subscription changed event.
             assertNotNull(selectedNbIotSatelliteSubCallback);
@@ -3178,8 +3231,9 @@ public class SatelliteManagerTestBase {
                 assertTrue(selectedNbIotSatelliteSubCallback.waitUntilResult(1));
                 logd("setUpNtnOnlySubscription: selectedSatelliteSubId="
                         + selectedNbIotSatelliteSubCallback.mSelectedSubId);
-                assertNotEquals(SubscriptionManager.INVALID_SUBSCRIPTION_ID,
-                    selectedNbIotSatelliteSubCallback.mSelectedSubId);
+                assertNotEquals(
+                        SubscriptionManager.INVALID_SUBSCRIPTION_ID,
+                        selectedNbIotSatelliteSubCallback.mSelectedSubId);
             } finally {
                 // Unregister the callback
                 sSatelliteManager.unregisterForSelectedNbIotSatelliteSubscriptionChanged(
@@ -3191,8 +3245,8 @@ public class SatelliteManagerTestBase {
             SatelliteDisallowedReasonsCallbackTest disallowedReasonsCallback =
                     registerForSatelliteDisallowedReasonsChanged();
             boolean hasNotProvisionedDisallowedReason =
-                disallowedReasonsCallback.hasSatelliteDisabledReason(
-                    SATELLITE_DISALLOWED_REASON_NOT_PROVISIONED);
+                    disallowedReasonsCallback.hasSatelliteDisabledReason(
+                            SATELLITE_DISALLOWED_REASON_NOT_PROVISIONED);
             disallowedReasonsCallback.drainPermits();
 
             logd("setUpNtnOnlySubscription: Provision satellite");
@@ -3202,12 +3256,13 @@ public class SatelliteManagerTestBase {
             try {
                 if (hasNotProvisionedDisallowedReason) {
                     assertTrue(disallowedReasonsCallback.waitUntilResult(1));
-                    assertFalse(disallowedReasonsCallback.hasSatelliteDisabledReason(
+                    assertFalse(
+                            disallowedReasonsCallback.hasSatelliteDisabledReason(
                                     SATELLITE_DISALLOWED_REASON_NOT_PROVISIONED));
                 }
             } finally {
                 sSatelliteManager.unregisterForSatelliteDisallowedReasonsChanged(
-                    disallowedReasonsCallback);
+                        disallowedReasonsCallback);
             }
         } else {
             logd("setUpNtnOnlySubscription: Satellite already provisioned");
@@ -3224,12 +3279,12 @@ public class SatelliteManagerTestBase {
         if (!isSatelliteProvisionedForSubId(sEsosSubId)) {
             logd("setUpEsosSubscription: Provision satellite for subId=" + sEsosSubId);
             SelectedNbIotSatelliteSubscriptionCallbackTest selectedNbIotSatelliteSubCallback =
-                registerForSelectedNbIotSatelliteSubscriptionChanged();
+                    registerForSelectedNbIotSatelliteSubscriptionChanged();
             SatelliteDisallowedReasonsCallbackTest disallowedReasonsCallback =
                     registerForSatelliteDisallowedReasonsChanged();
             boolean hasNotProvisionedDisallowedReason =
-                disallowedReasonsCallback.hasSatelliteDisabledReason(
-                    SATELLITE_DISALLOWED_REASON_NOT_PROVISIONED);
+                    disallowedReasonsCallback.hasSatelliteDisabledReason(
+                            SATELLITE_DISALLOWED_REASON_NOT_PROVISIONED);
             disallowedReasonsCallback.drainPermits();
 
             try {
@@ -3241,18 +3296,18 @@ public class SatelliteManagerTestBase {
 
                 if (hasNotProvisionedDisallowedReason) {
                     assertTrue(disallowedReasonsCallback.waitUntilResult(1));
-                    assertFalse(disallowedReasonsCallback.hasSatelliteDisabledReason(
+                    assertFalse(
+                            disallowedReasonsCallback.hasSatelliteDisabledReason(
                                     SATELLITE_DISALLOWED_REASON_NOT_PROVISIONED));
                 }
             } finally {
                 sSatelliteManager.unregisterForSelectedNbIotSatelliteSubscriptionChanged(
-                    selectedNbIotSatelliteSubCallback);
+                        selectedNbIotSatelliteSubCallback);
                 sSatelliteManager.unregisterForSatelliteDisallowedReasonsChanged(
-                    disallowedReasonsCallback);
+                        disallowedReasonsCallback);
             }
         } else {
-            logd("setUpEsosSubscription: Satellite already provisioned for subId="
-                     + sEsosSubId);
+            logd("setUpEsosSubscription: Satellite already provisioned for subId=" + sEsosSubId);
         }
         // Binding satellite subscription need to be selected before this step
         enableDefaultSmsAppSupportForActiveSubscription(sEsosSubId, supportCtsSmsApp);
@@ -3330,7 +3385,7 @@ public class SatelliteManagerTestBase {
         if (!isSatelliteSupported()) {
             logd("setUpSatelliteAccessAllowedAtDefaultTestLocation: satellite is not supported");
             SatelliteSupportedStateCallbackTest satelliteSupportedStateCallbackTest =
-                new SatelliteSupportedStateCallbackTest();
+                    new SatelliteSupportedStateCallbackTest();
             /* Register callback for satellite supported state changed event */
             @SatelliteManager.SatelliteResult int registerError =
                     sSatelliteManager.registerForSupportedStateChanged(
@@ -3538,7 +3593,7 @@ public class SatelliteManagerTestBase {
     }
 
     protected static boolean isTheSameLocation(
-        @Nullable Location location1, @Nullable Location location2) {
+            @Nullable Location location1, @Nullable Location location2) {
         if (location1 == null && location2 == null) {
             return true;
         }
@@ -3559,7 +3614,7 @@ public class SatelliteManagerTestBase {
     protected static void deprovisionSatelliteForDevice() {
         List<SatelliteSubscriberInfo> provisionedSubscriberList =
                 getSatelliteSubscriberInfoList(true);
-        if (provisionedSubscriberList.size() == 0) {
+        if (provisionedSubscriberList.isEmpty()) {
             logd("Device is not provisioned");
             return;
         }
@@ -3618,7 +3673,7 @@ public class SatelliteManagerTestBase {
                     + "List<SatelliteSubscriberProvisionStatus> null");
             return false;
         }
-        if (pairResult.first.size() > 0) {
+        if (!pairResult.first.isEmpty()) {
             SatelliteSubscriberInfo testSubscriberInfo = null;
             boolean provisioned = false;
             for (SatelliteSubscriberProvisionStatus status : pairResult.first) {
@@ -3630,8 +3685,10 @@ public class SatelliteManagerTestBase {
                 }
             }
             if (testSubscriberInfo == null) {
-                logd("provisionSatelliteForSubId: subId " + subId
-                        + " is not a satellite subscriber");
+                logd(
+                        "provisionSatelliteForSubId: subId "
+                                + subId
+                                + " is not a satellite subscriber");
                 return false;
             }
             if (provisioned) {
@@ -3666,7 +3723,7 @@ public class SatelliteManagerTestBase {
                     + "List<SatelliteSubscriberProvisionStatus> null");
             return false;
         }
-        if (pairResult.first.size() > 0) {
+        if (!pairResult.first.isEmpty()) {
             SatelliteSubscriberInfo testSubscriberInfo = null;
             boolean provisioned = true;
             for (SatelliteSubscriberProvisionStatus status : pairResult.first) {
@@ -3678,8 +3735,10 @@ public class SatelliteManagerTestBase {
                 }
             }
             if (testSubscriberInfo == null) {
-                logd("deprovisionSatelliteForSubId: subId " + subId
-                        + " is not a satellite subscriber");
+                logd(
+                        "deprovisionSatelliteForSubId: subId "
+                                + subId
+                                + " is not a satellite subscriber");
                 return false;
             }
             if (!provisioned) {
@@ -3710,11 +3769,12 @@ public class SatelliteManagerTestBase {
         Pair<List<SatelliteSubscriberProvisionStatus>, Integer> pairResult =
                 requestSatelliteSubscriberProvisionStatus();
         if (pairResult == null) {
-            fail("isSatelliteProvisionedForSubId "
-                    + "List<SatelliteSubscriberProvisionStatus> null");
+            fail(
+                    "isSatelliteProvisionedForSubId "
+                            + "List<SatelliteSubscriberProvisionStatus> null");
             return false;
         }
-        if (pairResult.first.size() > 0) {
+        if (!pairResult.first.isEmpty()) {
             SatelliteSubscriberInfo testSubscriberInfo = null;
             for (SatelliteSubscriberProvisionStatus status : pairResult.first) {
                 SatelliteSubscriberInfo info = status.getSatelliteSubscriberInfo();
@@ -3735,14 +3795,19 @@ public class SatelliteManagerTestBase {
     protected static boolean isActiveSubId(int subId) {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         SubscriptionManager sm = context.getSystemService(SubscriptionManager.class);
-        int[] allSubs = ShellIdentityUtils.invokeMethodWithShellPermissions(
-            sm, SubscriptionManager::getActiveSubscriptionIdList);
-        List<Integer> allSubsList = Arrays.stream(allSubs)
-                .boxed()
-                .collect(Collectors.toList());
-        logd("Number of active subscriptions: " + allSubsList.size() + ", ativce sub ID list: "
-                + allSubsList.stream().map(String::valueOf).collect(Collectors.joining(", "))
-                + ", input subId: " + subId);
+        int[] allSubs =
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        sm, SubscriptionManager::getActiveSubscriptionIdList);
+        List<Integer> allSubsList = Arrays.stream(allSubs).boxed().toList();
+        logd(
+                "Number of active subscriptions: "
+                        + allSubsList.size()
+                        + ", active sub ID list: "
+                        + allSubsList.stream()
+                                .map(String::valueOf)
+                                .collect(Collectors.joining(", "))
+                        + ", input subId: "
+                        + subId);
 
         // Restore satellite permission
         grantSatellitePermission();
@@ -3799,7 +3864,7 @@ public class SatelliteManagerTestBase {
             logd("moveSatelliteToOffState: Moving satellite to off state");
             callback.clearModemStates();
             sMockSatelliteServiceManager.sendOnSatelliteModemStateChanged(
-                SatelliteModemState.SATELLITE_MODEM_STATE_OFF);
+                    SatelliteModemState.SATELLITE_MODEM_STATE_OFF);
             assertTrue(callback.waitUntilModemOff());
             sSatelliteManager.unregisterForModemStateChanged(callback);
         } else {
@@ -3835,12 +3900,15 @@ public class SatelliteManagerTestBase {
 
     protected static void assertSingleSendDatagramStateChanged(
             SatelliteTransmissionUpdateCallbackTest transmissionUpdateCallback,
-            int expectedTransferState, int expectedPendingCount, int expectedErrorCode) {
+            int expectedTransferState,
+            int expectedPendingCount,
+            int expectedErrorCode) {
         assertTrue(transmissionUpdateCallback.waitUntilOnSendDatagramStateChanged(1));
         assertThat(transmissionUpdateCallback.getNumOfSendDatagramStateChanges()).isEqualTo(1);
-        assertThat(transmissionUpdateCallback.getSendDatagramStateChange(0)).isEqualTo(
-                new SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument(
-                        expectedTransferState, expectedPendingCount, expectedErrorCode));
+        assertThat(transmissionUpdateCallback.getSendDatagramStateChange(0))
+                .isEqualTo(
+                        new SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument(
+                                expectedTransferState, expectedPendingCount, expectedErrorCode));
     }
 
     protected static void assertSingleReceiveDatagramStateChanged(
@@ -3860,10 +3928,8 @@ public class SatelliteManagerTestBase {
             logd("isNtnOnlySubscription: subId is invalid");
             return false;
         }
-        return sSubscriptionManager.getBooleanSubscriptionProperty(subId,
-                        SubscriptionManager.IS_ONLY_NTN,
-                        false,
-                        getContext());
+        return sSubscriptionManager.getBooleanSubscriptionProperty(
+                subId, SubscriptionManager.IS_ONLY_NTN, false, getContext());
     }
 
     protected static boolean isEsosSubscription(int subId) {
@@ -3871,15 +3937,15 @@ public class SatelliteManagerTestBase {
             logd("isEsosSubscription: subId is invalid");
             return false;
         }
-        return getConfigForSubId(getContext(), subId,
-                    CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL).getBoolean(
-                    CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, false);
+        return getConfigForSubId(
+                        getContext(), subId, CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL)
+                .getBoolean(CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, false);
     }
 
     protected static long getNumberOfActiveSubscriptions() {
         List<SubscriptionInfo> subscriptionInfoList =
-            ShellIdentityUtils.invokeMethodWithShellPermissions(sSubscriptionManager,
-                    SubscriptionManager::getActiveSubscriptionInfoList);
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        sSubscriptionManager, SubscriptionManager::getActiveSubscriptionInfoList);
         // Restore satellite permission
         grantSatellitePermission();
         return subscriptionInfoList != null ? subscriptionInfoList.size() : 0;
@@ -3964,24 +4030,22 @@ public class SatelliteManagerTestBase {
             logd("NetworkInfo is null");
             return "";
         }
-        StringBuilder sb = new StringBuilder();
-        sb.append("NetworkInfo { ")
-                .append("plmn='")
-                .append(info.plmn)
-                .append("', ")
-                .append("satelliteTechnology=")
-                .append(info.satelliteTechnology)
-                .append(", ")
-                .append("accessNetwork=")
-                .append(info.accessNetwork)
-                .append(", ")
-                .append("arfcns=")
-                .append(java.util.Arrays.toString(info.arfcns))
-                .append(", ")
-                .append("hasSamePriorityAsTn=")
-                .append(info.hasSamePriorityAsTn)
-                .append(" }");
-        return sb.toString();
+        return "NetworkInfo { "
+                + "plmn='"
+                + info.plmn
+                + "', "
+                + "satelliteTechnology="
+                + info.satelliteTechnology
+                + ", "
+                + "accessNetwork="
+                + info.accessNetwork
+                + ", "
+                + "arfcns="
+                + Arrays.toString(info.arfcns)
+                + ", "
+                + "hasSamePriorityAsTn="
+                + info.hasSamePriorityAsTn
+                + " }";
     }
 
     protected static String logNetworkInfoList(

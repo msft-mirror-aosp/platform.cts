@@ -16,6 +16,7 @@
 
 package android.telephony.satellite.cts;
 
+import static android.telephony.CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_MANUAL;
 import static android.telephony.satellite.SatelliteManager.ACTION_SATELLITE_SUBSCRIBER_ID_LIST_CHANGED;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_GEOLOCATION;
 
@@ -27,10 +28,6 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
-
-import static android.telephony.CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC;
-import static android.telephony.CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_MANUAL;
-import static android.telephony.CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_HYBRID;
 
 import android.content.Context;
 import android.content.Intent;
@@ -194,6 +191,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
 
         afterAllTestsBase();
     }
+
     @Before
     public void setUp() throws Exception {
         logd("setUp");
@@ -569,12 +567,16 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
-        assertThrows(SecurityException.class, ()-> sSatelliteManager
-                .registerForModemStateChanged(getContext().getMainExecutor(), callback));
+        assertThrows(
+                SecurityException.class,
+                () ->
+                        sSatelliteManager.registerForModemStateChanged(
+                                getContext().getMainExecutor(), callback));
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
-        assertThrows(SecurityException.class, ()-> sSatelliteManager
-                .unregisterForModemStateChanged(callback));
+        assertThrows(
+                SecurityException.class,
+                () -> sSatelliteManager.unregisterForModemStateChanged(callback));
 
         if (!sIsSatelliteSupported) {
             Log.d(TAG, "Satellite is not supported on the device");
@@ -705,12 +707,16 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         SatelliteDatagramCallbackTest callback = new SatelliteDatagramCallbackTest();
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
-        assertThrows(SecurityException.class, ()-> sSatelliteManager
-                .registerForIncomingDatagram(getContext().getMainExecutor(), callback));
+        assertThrows(
+                SecurityException.class,
+                () ->
+                        sSatelliteManager.registerForIncomingDatagram(
+                                getContext().getMainExecutor(), callback));
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
-        assertThrows(SecurityException.class, ()-> sSatelliteManager
-                .unregisterForIncomingDatagram(callback));
+        assertThrows(
+                SecurityException.class,
+                () -> sSatelliteManager.unregisterForIncomingDatagram(callback));
     }
 
     @Test
@@ -720,9 +726,11 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         LinkedBlockingQueue<Integer> resultListener = new LinkedBlockingQueue<>(1);
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
-        assertThrows(SecurityException.class,
-                ()-> sSatelliteManager.pollPendingDatagrams(
-                        getContext().getMainExecutor(), resultListener::offer));
+        assertThrows(
+                SecurityException.class,
+                () ->
+                        sSatelliteManager.pollPendingDatagrams(
+                                getContext().getMainExecutor(), resultListener::offer));
     }
 
     @Test
@@ -735,10 +743,15 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         SatelliteDatagram datagram = new SatelliteDatagram(mText.getBytes());
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
-        assertThrows(SecurityException.class,
-                ()-> sSatelliteManager.sendDatagram(
-                        SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE, datagram, true,
-                        getContext().getMainExecutor(), resultListener::offer));
+        assertThrows(
+                SecurityException.class,
+                () ->
+                        sSatelliteManager.sendDatagram(
+                                SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE,
+                                datagram,
+                                true,
+                                getContext().getMainExecutor(),
+                                resultListener::offer));
         // TODO: add detailed test
     }
 
@@ -821,8 +834,8 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         if (!shouldTestSatellite()) return;
 
         SelectedNbIotSatelliteSubscriptionCallback callback =
-                selectedSubId -> logd("onSelectedNbIotSatelliteSubscriptionChanged(" +
-                                            selectedSubId + ")");
+                selectedSubId ->
+                        logd("onSelectedNbIotSatelliteSubscriptionChanged(" + selectedSubId + ")");
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
         assertThrows(SecurityException.class,
@@ -835,8 +848,8 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         if (!shouldTestSatellite()) return;
 
         SelectedNbIotSatelliteSubscriptionCallback callback =
-                selectedSubId -> logd("onSelectedNbIotSatelliteSubscriptionChanged(" +
-                                            selectedSubId + ")");
+                selectedSubId ->
+                        logd("onSelectedNbIotSatelliteSubscriptionChanged(" + selectedSubId + ")");
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
         assertThrows(SecurityException.class,
