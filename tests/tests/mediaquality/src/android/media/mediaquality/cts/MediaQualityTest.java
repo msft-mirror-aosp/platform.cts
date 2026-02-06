@@ -910,6 +910,11 @@ public class MediaQualityTest {
         String dummyInputId = "com.example.tvinput/HDMI_DOES_NOT_EXIST";
         PictureProfileHandle handle =
                 mManager.getCurrentPictureProfileHandleForTvInput(dummyInputId);
+
+        Assert.assertEquals(
+                "Should return PictureProfileHandle.NONE for invalid input",
+                PictureProfileHandle.NONE.getId(),
+                handle.getId());
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW_C)
