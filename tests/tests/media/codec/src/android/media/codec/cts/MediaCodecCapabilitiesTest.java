@@ -38,6 +38,7 @@ import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.media.cts.MediaPlayerTestBase;
 import android.net.Uri;
+import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
 import android.util.Range;
@@ -45,6 +46,7 @@ import android.util.Size;
 import android.view.Display;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.ApiTest;
@@ -962,6 +964,7 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
                 "android.media.MediaCodecInfo.EncoderCapabilities#getSupportedLayeringSchemas"
             })
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.CINNAMON_BUN)
     public void testGetSupportedLayeringSchemas() throws IOException {
         for (MediaCodecInfo info : mAllInfos) {
             boolean isEncoder = info.isEncoder();

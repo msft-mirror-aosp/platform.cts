@@ -55,6 +55,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
+import android.util.Range;
 import android.util.Size;
 import android.view.Surface;
 
@@ -97,6 +98,10 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
     // Number of frame (for streaming requests) to be verified with log processing time.
     // Max number of images can be accessed simultaneously from ImageReader.
     private static final int MAX_NUM_IMAGES = 5;
+    // Max number of images that can be accessed simultaneously from a concurrent
+    // MultiResolutionImageReader. This is chosen such that if we double the value,
+    // it goes over the 64 buffer queue slot limit.
+    private static final int MAX_NUM_IMAGES_FOR_BUFFERQUEUE_LIMIT = 33;
     // Capture result timeout
     private static final int WAIT_FOR_RESULT_TIMEOUT_MS = 3000;
     private static final int CAPTURE_TIMEOUT = 1500; //ms
@@ -611,6 +616,133 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
                     .onConfigureFailed(any(CameraCaptureSession.class));
         } finally {
             closeDevice(cameraId);
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MULTI_RESOLUTION_CONCURRENT_READERS)
+    @Test
+    public void testMultiResolutionImageReaderConcurrencyWithBufferQueueLimit() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            if (VERBOSE) {
+                Log.v(
+                        TAG,
+                        "Testing multi-resolution capture with concurrent readers for Camera "
+                                + id
+                                + " with buffer queue limit");
+            }
+            StaticMetadata info = mAllStaticInfo.get(id);
+            CameraCharacteristics c = info.getCharacteristics();
+            MultiResolutionStreamConfigurationMap multiResolutionMap =
+                    c.get(CameraCharacteristics.SCALER_MULTI_RESOLUTION_STREAM_CONFIGURATION_MAP);
+            if (multiResolutionMap == null) {
+                Log.i(TAG, "Camera " + id + " doesn't support multi-resolution capture.");
+                continue;
+            }
+            int[] multiResolutionOutputFormats = multiResolutionMap.getOutputFormats();
+            for (int format : multiResolutionOutputFormats) {
+                if (multiResolutionMap.isConcurrentReadersSupported(format)) {
+                    testMultiResolutionImageReaderConcurrencyWithBufferQueueLimit(
+                            id, info, multiResolutionMap, format);
+                }
+            }
+        }
+    }
+
+    private void testMultiResolutionImageReaderConcurrencyWithBufferQueueLimit(
+            String cameraId,
+            StaticMetadata staticInfo,
+            MultiResolutionStreamConfigurationMap multiResolutionMap,
+            int format)
+            throws Exception {
+        Log.i(
+                TAG,
+                "testMultiResolutionImageReaderConcurrencyWithBufferQueueLimit for camera "
+                        + cameraId);
+        Range<Float> zoomRatioRange = staticInfo.getZoomRatioRangeChecked();
+        List<Float> zoomRatios = new ArrayList<Float>();
+        zoomRatios.add(zoomRatioRange.getLower());
+        zoomRatios.add(zoomRatioRange.getUpper());
+        Collection<MultiResolutionStreamInfo> multiResolutionStreams =
+                multiResolutionMap.getOutputInfo(format);
+
+        try {
+            openDevice(cameraId);
+
+            mMultiResolutionImageReader =
+                    new MultiResolutionImageReader.Builder(
+                                    multiResolutionStreams,
+                                    format,
+                                    MAX_NUM_IMAGES_FOR_BUFFERQUEUE_LIMIT)
+                            .setConcurrentOutputsEnabled(true)
+                            .build();
+            mListener =
+                    new SimpleMultiResolutionImageReaderListener(
+                            mMultiResolutionImageReader,
+                            MAX_NUM_IMAGES_FOR_BUFFERQUEUE_LIMIT * zoomRatios.size(),
+                            /*acquireLatest*/ false);
+            mMultiResolutionImageReader.setOnImageAvailableListener(
+                    mListener, new HandlerExecutor(mHandler));
+
+            Collection<OutputConfiguration> outputConfigs =
+                    OutputConfiguration.createInstancesForMultiResolutionOutput(
+                            mMultiResolutionImageReader);
+            ArrayList<OutputConfiguration> outputConfigsList =
+                    new ArrayList<OutputConfiguration>(outputConfigs);
+
+            // Create session
+            createSessionByConfigs(outputConfigsList);
+            CaptureRequest.Builder captureBuilder =
+                    mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            assertNotNull("Failed to create captureRequest", captureBuilder);
+            captureBuilder.addTarget(mMultiResolutionImageReader.getSurface());
+
+            // Capture images at different zoom ratios
+            SimpleCaptureCallback listener = new SimpleCaptureCallback();
+            List<CaptureRequest> requests = new ArrayList<CaptureRequest>();
+            for (Float zoomRatio : zoomRatios) {
+                captureBuilder.set(CaptureRequest.CONTROL_ZOOM_RATIO, zoomRatio);
+                for (int i = 0; i < MAX_NUM_IMAGES_FOR_BUFFERQUEUE_LIMIT; i++) {
+                    requests.add(captureBuilder.build());
+                }
+            }
+
+            mCameraSession.captureBurst(requests, listener, mHandler);
+
+            // Acquire all captured images while making sure we are not acquiring more
+            // buffers than each individual ImageReader supports.
+            Map<Surface, List<Image>> imgAndStreamInfoMap = new HashMap<Surface, List<Image>>();
+            for (int i = 0; i < MAX_NUM_IMAGES_FOR_BUFFERQUEUE_LIMIT * zoomRatios.size(); i++) {
+                ImageAndMultiResStreamInfo imgAndStreamInfo =
+                        mListener.getAnyImageAndInfoAvailable(CAPTURE_WAIT_TIMEOUT_MS);
+                assertNotNull(imgAndStreamInfo);
+                assertNotNull(imgAndStreamInfo.image);
+
+                if (!imgAndStreamInfoMap.containsKey(imgAndStreamInfo.surface)) {
+                    imgAndStreamInfoMap.put(imgAndStreamInfo.surface, new ArrayList<Image>());
+                }
+                List<Image> receivedImages = imgAndStreamInfoMap.get(imgAndStreamInfo.surface);
+                receivedImages.add(imgAndStreamInfo.image);
+                if (receivedImages.size() == MAX_NUM_IMAGES_FOR_BUFFERQUEUE_LIMIT) {
+                    Image image = receivedImages.removeFirst();
+                    image.close();
+                }
+            }
+
+            // Close all inflight images.
+            for (Surface surface : imgAndStreamInfoMap.keySet()) {
+                List<Image> images = imgAndStreamInfoMap.get(surface);
+                for (Image image : images) {
+                    image.close();
+                }
+            }
+        } finally {
+            closeDevice(cameraId);
+
+            // Close MultiResolutionImageReader
+            if (mMultiResolutionImageReader != null) {
+                mMultiResolutionImageReader.close();
+            }
+            mMultiResolutionImageReader = null;
         }
     }
 

@@ -107,10 +107,7 @@ public class VirtualDeviceViewConfigurationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({
-        Flags.FLAG_VIEWCONFIGURATION_APIS,
-        Flags.FLAG_DEVICE_AWARE_SETTINGS_OVERRIDE
-    })
+    @RequiresFlagsEnabled(Flags.FLAG_VIEWCONFIGURATION_APIS)
     public void getLongPressTimeoutMillis_afterSettingChange_returnsNewValueOnVirtualDevice() {
         verifyNewValueAfterSettingChange(
                 UserHandle.of(UserHandle.myUserId()),
@@ -119,10 +116,7 @@ public class VirtualDeviceViewConfigurationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({
-        Flags.FLAG_VIEWCONFIGURATION_APIS,
-        Flags.FLAG_DEVICE_AWARE_SETTINGS_OVERRIDE
-    })
+    @RequiresFlagsEnabled(Flags.FLAG_VIEWCONFIGURATION_APIS)
     public void getMultiPressTimeoutMillis_afterSettingChange_returnsNewValueOnVirtualDevice() {
         verifyNewValueAfterSettingChange(
                 UserHandle.of(UserHandle.myUserId()),
@@ -182,10 +176,7 @@ public class VirtualDeviceViewConfigurationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({
-        Flags.FLAG_VIEWCONFIGURATION_APIS,
-        Flags.FLAG_DEVICE_AWARE_SETTINGS_OVERRIDE
-    })
+    @RequiresFlagsEnabled(Flags.FLAG_VIEWCONFIGURATION_APIS)
     public void getLongPressTimeoutMillis_customValueOnVirtualDevice() {
         Activity activity =
                 mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);
@@ -208,10 +199,7 @@ public class VirtualDeviceViewConfigurationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({
-        Flags.FLAG_VIEWCONFIGURATION_APIS,
-        Flags.FLAG_DEVICE_AWARE_SETTINGS_OVERRIDE
-    })
+    @RequiresFlagsEnabled(Flags.FLAG_VIEWCONFIGURATION_APIS)
     public void getMultiPressTimeoutMillis_customValueOnVirtualDevice() {
         Activity activity =
                 mRule.startActivityOnDisplaySync(Display.DEFAULT_DISPLAY, Activity.class);

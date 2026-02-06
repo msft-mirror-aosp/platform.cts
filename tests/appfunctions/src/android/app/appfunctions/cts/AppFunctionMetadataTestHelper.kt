@@ -23,6 +23,7 @@ import android.app.appfunctions.AppFunctionName
 import android.app.appfunctions.AppFunctionPackageMetadata
 import android.app.appfunctions.AppFunctionStaticMetadataHelper
 import android.app.appsearch.GenericDocument
+import kotlin.collections.minus
 
 class AppFunctionMetadataTestHelper {
     object LegacySchemaHelperApp {
@@ -122,6 +123,9 @@ class AppFunctionMetadataTestHelper {
 
             val DYNAMIC_CONCAT_STRINGS = AppFunctionName(PACKAGE_NAME, "contextConcatStrings")
 
+            val DYNAMIC_ACTIVITY_CONCAT_STRINGS =
+                AppFunctionName(PACKAGE_NAME, "activityConcatStrings")
+
             val DYNAMIC_LONG_RUNNING = AppFunctionName(PACKAGE_NAME, "contextLongRunning")
 
             val DYNAMIC_OUTPUT_INVALID_ARGUMENT =
@@ -151,6 +155,7 @@ class AppFunctionMetadataTestHelper {
                     DYNAMIC_GET_URIS,
                     GLOBAL_SCOPE,
                     ACTIVITY_SCOPE,
+                    DYNAMIC_ACTIVITY_CONCAT_STRINGS,
                 )
 
             val SERVICE_LEVEL_FUNCTIONS: Set<AppFunctionName> =
@@ -158,7 +163,9 @@ class AppFunctionMetadataTestHelper {
 
             val ALL_FUNCTIONS = APP_LEVEL_FUNCTIONS + SERVICE_LEVEL_FUNCTIONS
 
-            val ALL_GLOBAL_FUNCTIONS = ALL_FUNCTIONS - ACTIVITY_SCOPE
+            val ACTIVITY_SCOPED_FUNCTIONS = setOf(ACTIVITY_SCOPE, DYNAMIC_ACTIVITY_CONCAT_STRINGS)
+
+            val ALL_GLOBAL_FUNCTIONS = ALL_FUNCTIONS - ACTIVITY_SCOPED_FUNCTIONS
         }
 
         object Components {
@@ -310,6 +317,10 @@ class AppFunctionMetadataTestHelper {
             val ADD_ASYNC = AppFunctionName(PACKAGE_NAME, "addAsync")
             val NOT_INVOKE_CALLBACK = AppFunctionName(PACKAGE_NAME, "notInvokeCallback")
             val DYNAMIC_CONCAT_STRINGS = AppFunctionName(PACKAGE_NAME, "contextConcatStrings")
+            val ACTIVITY_SCOPE_CONCAT_STRINGS = AppFunctionName(
+                PACKAGE_NAME,
+                "activityConcatStrings"
+            )
             val RUN_FOREVER = AppFunctionName(PACKAGE_NAME, "runForever")
             val ADD = AppFunctionName(PACKAGE_NAME, "add")
             val ADD_DISABLED_BY_DEFAULT = AppFunctionName(PACKAGE_NAME, "add_disabledByDefault")
@@ -318,6 +329,7 @@ class AppFunctionMetadataTestHelper {
             val LONG_RUNNING_FUNCTION = AppFunctionName(PACKAGE_NAME, "longRunningFunction")
             val NO_SCHEMA = AppFunctionName(PACKAGE_NAME, "noSchema")
             val CONTEXT = AppFunctionName(PACKAGE_NAME, "contextDisabledByDefault")
+            val ACTIVITY_CONCAT_STRINGS = AppFunctionName(PACKAGE_NAME, "activityConcatStrings")
         }
 
         object FunctionMetadata {

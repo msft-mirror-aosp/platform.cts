@@ -24,7 +24,7 @@ import android.app.contextualsearch.flags.Flags
 import android.content.Context
 import android.content.Intent
 import android.contextualsearch.caller.BackgroundCallerActivity
-import android.contextualsearch.caller.CallerActivity
+import android.contextualsearch.caller.ContextualSearchExtras
 import android.contextualsearch.caller.ContextualSearchMessage
 import android.graphics.Bitmap
 import android.graphics.Rect
@@ -44,6 +44,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.UserTest
 import com.android.bedstead.nene.TestApis
+import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.BroadcastMessenger.Receiver
 import com.android.compatibility.common.util.SystemUtil
 import com.google.common.collect.Range
@@ -52,6 +53,7 @@ import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.junit.After
+import org.junit.Assert.assertThrows
 import org.junit.Assume
 import org.junit.Before
 import org.junit.Ignore
@@ -87,7 +89,7 @@ class ContextualSearchManagerTest {
     fun teardown() {
         setTemporaryPackage()
         setTokenDuration()
-        runShellCommand("am stop-app android.contextualsearch.caller")
+        stopApp(CALLER_PACKAGE)
         mWatcher = null
 
         CtsContextualSearchActivity.WATCHER?.instance?.finish()
@@ -101,6 +103,9 @@ class ContextualSearchManagerTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CONFIG_PARAMETERS)
+    @ApiTest(
+        apis = ["android.app.contextualsearch.ContextualSearchManager#isContextualSearchAvailable"]
+    )
     fun testIsContextualSearchAvailable() {
         // The default test package should always be available.
         assertThat(mManager.isContextualSearchAvailable()).isTrue()
@@ -108,6 +113,9 @@ class ContextualSearchManagerTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CONFIG_PARAMETERS)
+    @ApiTest(
+        apis = ["android.app.contextualsearch.ContextualSearchManager#isContextualSearchAvailable"]
+    )
     fun testIsContextualSearchAvailable_contextualSearchActivityNonexistent() {
         setTemporaryPackage("com.nonexistent.package")
         assertThat(mManager.isContextualSearchAvailable()).isFalse()
@@ -115,25 +123,34 @@ class ContextualSearchManagerTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CONFIG_PARAMETERS)
+    @ApiTest(
+        apis = ["android.app.contextualsearch.ContextualSearchManager#isContextualSearchAvailable"]
+    )
     @Ignore("b/432842114: Failing on all branches")
     fun testIsContextualSearchAvailable_contextualSearchActivityDisabled() {
         setTemporaryPackage(TEMPORARY_PACKAGE)
         try {
-            runShellCommand(
-                "pm disable " + "$TEMPORARY_PACKAGE/$TEMPORARY_PACKAGE.CtsContextualSearchActivity"
-            )
+            setActivityEnabled(TEMPORARY_PACKAGE, "CtsContextualSearchActivity", false)
             assertThat(mManager.isContextualSearchAvailable()).isFalse()
         } catch (e: Exception) {
             throw RuntimeException("Failed to disable activity for test", e)
         } finally {
             // Re-enable the activity for subsequent tests
-            runShellCommand(
-                "pm enable " + "$TEMPORARY_PACKAGE/$TEMPORARY_PACKAGE.CtsContextualSearchActivity"
-            )
+            setActivityEnabled(TEMPORARY_PACKAGE, "CtsContextualSearchActivity", true)
         }
     }
 
     @Test
+    @ApiTest(
+        apis =
+            [
+                "android.app.contextualsearch.ContextualSearchManager#startContextualSearch",
+                "android.app.contextualsearch.ContextualSearchConfig#getDisplayId",
+                "android.app.contextualsearch.ContextualSearchConfig#getLaunchFlags",
+                "android.app.contextualsearch.ContextualSearchConfig#getIntentExtras",
+                "android.app.contextualsearch.ContextualSearchConfig#getSourceBounds",
+            ]
+    )
     fun testContextualSearchInvocation() {
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
         await(mWatcher?.created, "Waiting for CtsContextualSearchActivity.onCreate to be called.")
@@ -141,6 +158,20 @@ class ContextualSearchManagerTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CONFIG_PARAMETERS)
+    @ApiTest(
+        apis =
+            [
+                "android.app.contextualsearch.ContextualSearchManager#startContextualSearch",
+                "android.app.contextualsearch.ContextualSearchConfig#getSourceBounds",
+                "android.app.contextualsearch.ContextualSearchConfig#getIntentExtras",
+                "android.app.contextualsearch.ContextualSearchConfig#getLaunchFlags",
+                "android.app.contextualsearch.ContextualSearchConfig#getDisplayId",
+                "android.app.contextualsearch.ContextualSearchConfig.Builder#setSourceBounds",
+                "android.app.contextualsearch.ContextualSearchConfig.Builder#setIntentExtras",
+                "android.app.contextualsearch.ContextualSearchConfig.Builder#setLaunchFlags",
+                "android.app.contextualsearch.ContextualSearchConfig.Builder#build",
+            ]
+    )
     fun testContextualSearchInvocationWithConfig() {
         val bounds = Rect(0, 0, 100, 100)
         val intentExtras = Bundle()
@@ -149,12 +180,232 @@ class ContextualSearchManagerTest {
             ContextualSearchConfig.Builder()
                 .setSourceBounds(bounds)
                 .setIntentExtras(intentExtras)
+                .setLaunchFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
                 .build()
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME, config)
         await(mWatcher?.created, "Waiting for CtsContextualSearchActivity.onCreate to be called.")
 
         assertThat(mWatcher!!.launchIntent!!.sourceBounds).isEqualTo(bounds)
         assertThat(mWatcher!!.launchIntent!!.extras!!.getString("testKey")).isEqualTo("testValue")
+        assertThat(mWatcher!!.launchIntent!!.flags and Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            .isEqualTo(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ON_DEMAND_SCREENSHOT_AND_ASSIST_STATE)
+    @ApiTest(
+        apis =
+            [
+                "android.app.contextualsearch.ContextualSearchManager#startContextualSearch",
+                "android.app.contextualsearch.ContextualSearchConfig#getLaunchFlags",
+                "android.app.contextualsearch.ContextualSearchConfig#getDisplayId",
+                "android.app.contextualsearch.ContextualSearchConfig#getIntentExtras",
+                "android.app.contextualsearch.ContextualSearchConfig#getSourceBounds",
+                "android.app.contextualsearch.ContextualSearchConfig.Builder#setLaunchFlags",
+                "android.app.contextualsearch.ContextualSearchConfig.Builder#build",
+            ]
+    )
+    fun testContextualSearchInvocation_setLaunchFlags() {
+        val config =
+            ContextualSearchConfig.Builder().setLaunchFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP).build()
+        mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME, config)
+        await(mWatcher?.created, "Waiting for CtsContextualSearchActivity.onCreate to be called.")
+
+        assertThat(mWatcher!!.launchIntent!!.flags and Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            .isEqualTo(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        // System always adds FLAG_ACTIVITY_NEW_TASK
+        assertThat(mWatcher!!.launchIntent!!.flags and Intent.FLAG_ACTIVITY_NEW_TASK)
+            .isEqualTo(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ON_DEMAND_SCREENSHOT_AND_ASSIST_STATE)
+    @ApiTest(
+        apis =
+            [
+                "android.app.contextualsearch.ContextualSearchManager#startContextualSearch",
+                "android.app.contextualsearch.ContextualSearchConfig#getSourceBounds",
+                "android.app.contextualsearch.ContextualSearchConfig#getLaunchFlags",
+                "android.app.contextualsearch.ContextualSearchConfig#getDisplayId",
+                "android.app.contextualsearch.ContextualSearchConfig.Builder#setSourceBounds",
+                "android.app.contextualsearch.ContextualSearchConfig.Builder#setLaunchFlags",
+                "android.app.contextualsearch.ContextualSearchConfig.Builder#build",
+            ]
+    )
+    fun testContextualSearchInvocationForForegroundApp() {
+        val bounds = Rect(0, 0, 100, 100)
+        val config =
+            ContextualSearchConfig.Builder()
+                .setSourceBounds(bounds)
+                .setLaunchFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                .build()
+
+        // Test startContextualSearch() from an out of process foreground activity.
+        TestApis.context()
+            .instrumentedContext()
+            .startActivity(
+                Intent().apply {
+                    setClassName(CALLER_PACKAGE, "$CALLER_PACKAGE.CallerActivity")
+                    setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    putExtra(ContextualSearchExtras.EXTRA_CONTEXTUAL_SEARCH_CONFIG, config)
+                    putExtra(ContextualSearchExtras.EXTRA_USE_CONFIG_ONLY_API, true)
+                }
+            )
+        // CallerActivity automatically calls startContextualSearch() upon onCreate(),
+        // which is what we are awaiting here.
+        await(mWatcher?.created, "Waiting for CtsContextualSearchActivity.onCreate to be called.")
+
+        assertThat(mWatcher!!.launchIntent!!.sourceBounds).isEqualTo(bounds)
+        assertThat(mWatcher!!.launchIntent!!.flags and Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            .isEqualTo(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        assertThat(mWatcher!!.launchIntent!!.flags and Intent.FLAG_ACTIVITY_NEW_TASK)
+            .isEqualTo(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ON_DEMAND_SCREENSHOT_AND_ASSIST_STATE)
+    @ApiTest(
+        apis =
+            [
+                "android.app.contextualsearch.ContextualSearchManager#startContextualSearch",
+                "android.app.contextualsearch.ContextualSearchConfig#getSourceBounds",
+                "android.app.contextualsearch.ContextualSearchConfig#getLaunchFlags",
+                "android.app.contextualsearch.ContextualSearchConfig#getDisplayId",
+                "android.app.contextualsearch.ContextualSearchConfig.Builder#setSourceBounds",
+                "android.app.contextualsearch.ContextualSearchConfig.Builder#setLaunchFlags",
+                "android.app.contextualsearch.ContextualSearchConfig.Builder#build",
+            ]
+    )
+    fun testContextualSearchInvocationForForegroundApp_overlayWindow() {
+        val bounds = Rect(0, 0, 100, 100)
+        val config =
+            ContextualSearchConfig.Builder()
+                .setSourceBounds(bounds)
+                .setLaunchFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                .build()
+        val ctx = TestApis.context().instrumentedContext()
+
+        runShellCommand("appops set $CALLER_PACKAGE SYSTEM_ALERT_WINDOW allow")
+
+        // Whitelist the test package to allow starting background services
+        whitelistPackage(TEMPORARY_PACKAGE)
+        // Also whitelist the caller package to be safe
+        whitelistPackage(CALLER_PACKAGE)
+
+        // Small delay to ensure the whitelist is applied
+        SystemClock.sleep(500)
+
+        // Test startContextualSearch() from an out of process service with an overlay window.
+        try {
+            ctx.startService(
+                Intent().apply {
+                    setClassName(CALLER_PACKAGE, "$CALLER_PACKAGE.OverlayService")
+                    putExtra(ContextualSearchExtras.EXTRA_CONTEXTUAL_SEARCH_CONFIG, config)
+                }
+            )
+        } finally {
+            unwhitelistPackage(TEMPORARY_PACKAGE)
+            unwhitelistPackage(CALLER_PACKAGE)
+        }
+
+        // Verify that the caller (OverlayService) received RESULT_EXCEPTION.
+        // TODO(474429707): This should receive RESULT_OK because the window is in the foreground.
+        Receiver<ContextualSearchMessage>(ctx, ContextualSearchMessage.TAG).use {
+            val message: ContextualSearchMessage = it.waitForNextMessage(TEST_LIFECYCLE_TIMEOUT_MS)
+            assertThat(message.result).isEqualTo(ContextualSearchMessage.RESULT_EXCEPTION)
+        }
+
+        // Verify that the contextual search activity was NOT started.
+        assertThat(mWatcher?.created?.count).isEqualTo(1)
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ON_DEMAND_SCREENSHOT_AND_ASSIST_STATE)
+    @ApiTest(
+        apis =
+            [
+                "android.app.contextualsearch.ContextualSearchManager#startContextualSearch",
+                "android.app.contextualsearch.ContextualSearchConfig#getDisplayId",
+                "android.app.contextualsearch.ContextualSearchConfig.Builder#build",
+            ]
+    )
+    fun testContextualSearchInvocationForForegroundApp_invalidDisplayId_throwsException() {
+        val config =
+            ContextualSearchConfig.Builder()
+                // Not setting display ID (defaults to INVALID_DISPLAY)
+                .build()
+        assertThrows(IllegalArgumentException::class.java) {
+            mManager.startContextualSearch(config)
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ON_DEMAND_SCREENSHOT_AND_ASSIST_STATE)
+    @ApiTest(apis = ["android.app.contextualsearch.ContextualSearchManager#startContextualSearch"])
+    fun testContextualSearchInvocationForForegroundApp_nullConfig_throwsException() {
+        assertThrows(NullPointerException::class.java) {
+            val nullConfig: ContextualSearchConfig? = null
+            mManager.startContextualSearch(nullConfig!!)
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ON_DEMAND_SCREENSHOT_AND_ASSIST_STATE)
+    @ApiTest(
+        apis =
+            [
+                "android.app.contextualsearch.ContextualSearchManager#startContextualSearch",
+                "android.app.contextualsearch.ContextualSearchConfig#getSourceBounds",
+                "android.app.contextualsearch.ContextualSearchConfig#getLaunchFlags",
+                "android.app.contextualsearch.ContextualSearchConfig#getDisplayId",
+                "android.app.contextualsearch.ContextualSearchConfig.Builder#setSourceBounds",
+                "android.app.contextualsearch.ContextualSearchConfig.Builder#setLaunchFlags",
+                "android.app.contextualsearch.ContextualSearchConfig.Builder#build",
+            ]
+    )
+    fun testContextualSearchInvocationForForegroundApp_backgroundActivity() {
+        val bounds = Rect(0, 0, 100, 100)
+        val config =
+            ContextualSearchConfig.Builder()
+                .setSourceBounds(bounds)
+                .setLaunchFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                .build()
+
+        val ctx = TestApis.context().instrumentedContext()
+        // Test startContextualSearch() from an out of process background activity.
+        ctx.startActivity(
+            Intent().apply {
+                setClassName(CALLER_PACKAGE, "$CALLER_PACKAGE.BackgroundCallerActivity")
+                setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                putExtra(ContextualSearchExtras.EXTRA_CONTEXTUAL_SEARCH_CONFIG, config)
+                putExtra(ContextualSearchExtras.EXTRA_USE_CONFIG_ONLY_API, true)
+            }
+        )
+        Receiver<ContextualSearchMessage>(ctx, BackgroundCallerActivity.RESUMED_TAG).use {
+            val message = it.waitForNextMessage(TEST_LIFECYCLE_TIMEOUT_MS)
+            Truth.assertWithMessage("Timeout waiting for BackgroundCallerActivity to be resumed.")
+                .that(message)
+                .isNotNull()
+            assertThat((message as ContextualSearchMessage).result)
+                .isEqualTo(ContextualSearchMessage.RESULT_OK)
+        }
+
+        // Start a new activity to push the test activity to the background.
+        ctx.startActivity(
+            Intent(ctx, OverlayActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+        await(OverlayActivity.WATCHER?.resumed, "Waiting for OverlayActivity to be resumed.")
+
+        // BackgroundCallerActivity attempts to startContextualSearch() in onStop().
+
+        // Verify that the caller (BackgroundCallerActivity) received a security exception.
+        Receiver<ContextualSearchMessage>(ctx, ContextualSearchMessage.TAG).use {
+            val message: ContextualSearchMessage = it.waitForNextMessage()
+            assertThat(message.result).isEqualTo(ContextualSearchMessage.RESULT_EXCEPTION)
+        }
+
+        // And verify that the contextual search activity was not started.
+        assertThat(mWatcher?.created?.count).isEqualTo(1)
     }
 
     @Test
@@ -166,6 +417,18 @@ class ContextualSearchManagerTest {
     )
     @EnsureHasProfileOwner(onUser = UserType.INITIAL_USER, isPrimary = true)
     @EnsureHasDeviceOwner
+    @ApiTest(
+        apis =
+            [
+                "android.app.contextualsearch.ContextualSearchManager#startContextualSearch",
+                "android.app.contextualsearch.ContextualSearchManager#EXTRA_ENTRYPOINT",
+                "android.app.contextualsearch.ContextualSearchManager#EXTRA_FLAG_SECURE_FOUND",
+                "android.app.contextualsearch.ContextualSearchManager#EXTRA_SCREENSHOT",
+                "android.app.contextualsearch.ContextualSearchManager#EXTRA_IS_MANAGED_PROFILE_VISIBLE",
+                "android.app.contextualsearch.ContextualSearchManager#EXTRA_VISIBLE_PACKAGE_NAMES",
+                "android.app.contextualsearch.ContextualSearchManager#EXTRA_TOKEN",
+            ]
+    )
     fun testContextualSearchExtras() {
         // Launch an activity for the current user.
         TestApis.activities()
@@ -211,6 +474,16 @@ class ContextualSearchManagerTest {
     }
 
     @Test
+    @ApiTest(
+        apis =
+            [
+                "android.app.contextualsearch.ContextualSearchManager#startContextualSearch",
+                "android.app.contextualsearch.ContextualSearchConfig#getDisplayId",
+                "android.app.contextualsearch.ContextualSearchConfig#getLaunchFlags",
+                "android.app.contextualsearch.ContextualSearchConfig#getIntentExtras",
+                "android.app.contextualsearch.ContextualSearchConfig#getSourceBounds",
+            ]
+    )
     fun testOwnSecureActivityCaptured() {
         context.startActivity(
             Intent(context, OverlayActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -232,6 +505,16 @@ class ContextualSearchManagerTest {
     }
 
     @Test
+    @ApiTest(
+        apis =
+            [
+                "android.app.contextualsearch.ContextualSearchManager#startContextualSearch",
+                "android.app.contextualsearch.ContextualSearchConfig#getDisplayId",
+                "android.app.contextualsearch.ContextualSearchConfig#getLaunchFlags",
+                "android.app.contextualsearch.ContextualSearchConfig#getIntentExtras",
+                "android.app.contextualsearch.ContextualSearchConfig#getSourceBounds",
+            ]
+    )
     fun testOwnSecureOverlayNotCaptured() {
         context.startActivity(
             Intent(context, OverlayActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -254,6 +537,15 @@ class ContextualSearchManagerTest {
 
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_ENABLE_TOKEN_REFRESH)
+    @ApiTest(
+        apis =
+            [
+                "android.app.contextualsearch.CallbackToken#getContextualSearchState",
+                "android.app.contextualsearch.ContextualSearchState#getStructure",
+                "android.app.contextualsearch.ContextualSearchState#getContent",
+                "android.app.contextualsearch.ContextualSearchState#getExtras",
+            ]
+    )
     fun testRequestContextualSearchState() {
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
         await(mWatcher?.created, "Waiting for CtsContextualSearchActivity.onCreate to be called.")
@@ -275,6 +567,15 @@ class ContextualSearchManagerTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_TOKEN_REFRESH)
+    @ApiTest(
+        apis =
+            [
+                "android.app.contextualsearch.CallbackToken#getContextualSearchState",
+                "android.app.contextualsearch.ContextualSearchState#getStructure",
+                "android.app.contextualsearch.ContextualSearchState#getContent",
+                "android.app.contextualsearch.ContextualSearchState#getExtras",
+            ]
+    )
     fun testRequestContextualSearchStateWithTokenRefresh() {
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
         await(mWatcher?.created, "Waiting for CtsContextualSearchActivity.onCreate to be called.")
@@ -309,6 +610,15 @@ class ContextualSearchManagerTest {
     }
 
     @Test
+    @ApiTest(
+        apis =
+            [
+                "android.app.contextualsearch.CallbackToken#getContextualSearchState",
+                "android.app.contextualsearch.ContextualSearchState#getStructure",
+                "android.app.contextualsearch.ContextualSearchState#getContent",
+                "android.app.contextualsearch.ContextualSearchState#getExtras",
+            ]
+    )
     fun testTokenWithinValidDuration() {
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
         await(mWatcher?.created, "Waiting for CtsContextualSearchActivity.onCreate to be called.")
@@ -329,6 +639,7 @@ class ContextualSearchManagerTest {
     }
 
     @Test
+    @ApiTest(apis = ["android.app.contextualsearch.CallbackToken#getContextualSearchState"])
     fun testTokenAfterValidDuration() {
         // The token should expire immediately.
         setTokenDuration(1)
@@ -360,16 +671,23 @@ class ContextualSearchManagerTest {
     @EnsureHasProfileOwner(onUser = UserType.INITIAL_USER, isPrimary = true)
     @EnsureHasDeviceOwner
     @RequiresFlagsEnabled(Flags.FLAG_CONFIG_PARAMETERS)
+    @ApiTest(
+        apis =
+            [
+                "android.app.contextualsearch.ContextualSearchManager#startContextualSearch",
+                "android.app.contextualsearch.ContextualSearchConfig#getDisplayId",
+                "android.app.contextualsearch.ContextualSearchConfig#getLaunchFlags",
+                "android.app.contextualsearch.ContextualSearchConfig#getIntentExtras",
+                "android.app.contextualsearch.ContextualSearchConfig#getSourceBounds",
+            ]
+    )
     fun testContextualSearchFromOutOfProcessForegroundActivity() {
         // Test startContextualSearch() from an out of process foreground activity.
         TestApis.context()
             .instrumentedContext()
             .startActivity(
                 Intent().apply {
-                    setClassName(
-                        "android.contextualsearch.caller",
-                        "android.contextualsearch.caller.CallerActivity",
-                    )
+                    setClassName(CALLER_PACKAGE, "$CALLER_PACKAGE.CallerActivity")
                     setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
             )
@@ -401,6 +719,18 @@ class ContextualSearchManagerTest {
     @EnsureHasProfileOwner(onUser = UserType.INITIAL_USER, isPrimary = true)
     @EnsureHasDeviceOwner
     @RequiresFlagsEnabled(Flags.FLAG_CONFIG_PARAMETERS)
+    @ApiTest(
+        apis =
+            [
+                "android.app.contextualsearch.ContextualSearchManager#startContextualSearch",
+                "android.app.contextualsearch.ContextualSearchConfig#getSourceBounds",
+                "android.app.contextualsearch.ContextualSearchConfig#getIntentExtras",
+                "android.app.contextualsearch.ContextualSearchConfig#getDisplayId",
+                "android.app.contextualsearch.ContextualSearchConfig.Builder#setSourceBounds",
+                "android.app.contextualsearch.ContextualSearchConfig.Builder#setIntentExtras",
+                "android.app.contextualsearch.ContextualSearchConfig.Builder#build",
+            ]
+    )
     fun testContextualSearchFromOutOfProcessForegroundActivityWithConfig() {
         val bounds = Rect(0, 0, 100, 100)
         val intentExtras = Bundle()
@@ -416,12 +746,9 @@ class ContextualSearchManagerTest {
             .instrumentedContext()
             .startActivity(
                 Intent().apply {
-                    setClassName(
-                        "android.contextualsearch.caller",
-                        "android.contextualsearch.caller.CallerActivity",
-                    )
+                    setClassName(CALLER_PACKAGE, "$CALLER_PACKAGE.CallerActivity")
                     setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    putExtra(CallerActivity.EXTRA_CONTEXTUAL_SEARCH_CONFIG, config)
+                    putExtra(ContextualSearchExtras.EXTRA_CONTEXTUAL_SEARCH_CONFIG, config)
                 }
             )
         // CallerActivity automatically calls startContextualSearch() upon onCreate(),
@@ -445,32 +772,39 @@ class ContextualSearchManagerTest {
     @EnsureHasProfileOwner(onUser = UserType.INITIAL_USER, isPrimary = true)
     @EnsureHasDeviceOwner
     @RequiresFlagsEnabled(Flags.FLAG_CONFIG_PARAMETERS)
+    @ApiTest(
+        apis =
+            [
+                "android.app.contextualsearch.ContextualSearchManager#startContextualSearch",
+                "android.app.contextualsearch.ContextualSearchConfig#getDisplayId",
+                "android.app.contextualsearch.ContextualSearchConfig#getLaunchFlags",
+                "android.app.contextualsearch.ContextualSearchConfig#getIntentExtras",
+                "android.app.contextualsearch.ContextualSearchConfig#getSourceBounds",
+            ]
+    )
     fun testContextualSearchFromOutOfProcessActivity_backgroundActivity() {
         val ctx = TestApis.context().instrumentedContext()
         // Test startContextualSearch() from an out of process background activity.
         ctx.startActivity(
-                Intent().apply {
-                    setClassName(
-                        "android.contextualsearch.caller",
-                        "android.contextualsearch.caller.BackgroundCallerActivity"
-                    )
-                    setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-            )
+            Intent().apply {
+                setClassName(CALLER_PACKAGE, "$CALLER_PACKAGE.BackgroundCallerActivity")
+                setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        )
         Receiver<ContextualSearchMessage>(ctx, BackgroundCallerActivity.RESUMED_TAG).use {
             val message = it.waitForNextMessage(TEST_LIFECYCLE_TIMEOUT_MS)
             Truth.assertWithMessage("Timeout waiting for BackgroundCallerActivity to be resumed.")
-                    .that(message).isNotNull()
+                .that(message)
+                .isNotNull()
             assertThat((message as ContextualSearchMessage).result)
-                    .isEqualTo(ContextualSearchMessage.RESULT_OK)
+                .isEqualTo(ContextualSearchMessage.RESULT_OK)
         }
 
-        // Send a home intent to push the activity to the background.
+        // Start a new activity to push the test activity to the background.
         ctx.startActivity(
-                Intent(Intent.ACTION_MAIN)
-                    .addCategory(Intent.CATEGORY_HOME)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            Intent(ctx, OverlayActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         )
+        await(OverlayActivity.WATCHER?.resumed, "Waiting for OverlayActivity to be resumed.")
 
         // BackgroundCallerActivity attempts to startContextualSearch() in onStop().
 
@@ -507,6 +841,7 @@ class ContextualSearchManagerTest {
         private const val TEST_LIFECYCLE_TIMEOUT_MS: Long = 5000
         private val TAG = ContextualSearchManagerTest::class.java.simpleName
         private const val TEMPORARY_PACKAGE = "android.contextualsearch.cts"
+        private const val CALLER_PACKAGE = "android.contextualsearch.caller"
 
         // Copied from ContextualSearchManagerService.
         private const val INTERNAL_ENTRYPOINT_APP = -1
@@ -529,6 +864,27 @@ class ContextualSearchManagerTest {
             } else {
                 runShellCommand("cmd contextual_search set token-duration")
             }
+        }
+
+        private fun whitelistPackage(packageName: String) {
+            runShellCommand("cmd deviceidle whitelist +$packageName")
+        }
+
+        private fun unwhitelistPackage(packageName: String) {
+            runShellCommand("cmd deviceidle whitelist -$packageName")
+        }
+
+        private fun stopApp(packageName: String) {
+            runShellCommand("am stop-app $packageName")
+        }
+
+        private fun setActivityEnabled(
+            packageName: String,
+            activityName: String,
+            enabled: Boolean,
+        ) {
+            val state = if (enabled) "enable" else "disable"
+            runShellCommand("pm $state $packageName/$packageName.$activityName")
         }
 
         private fun runShellCommand(command: String) {

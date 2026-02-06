@@ -34,14 +34,12 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
-import android.companion.virtualdevice.flags.Flags;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.view.WindowManager;
 import android.virtualdevice.cts.applaunch.AppComponents.EmptyActivity;
 import android.virtualdevice.cts.applaunch.AppComponents.SecondActivity;
@@ -187,7 +185,6 @@ public class ActivityManagementTest {
                 eq(mVirtualDisplayId));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_GWPC_SECURE_WINDOW_STATE_TRACKING)
     @Test
     public void windowFlagChanged_notOnTopActivity_shouldNotCallSecureWindowCallbacks() {
         // Set an insecure top activity.
@@ -222,7 +219,6 @@ public class ActivityManagementTest {
                 .onSecureWindowHidden(eq(mVirtualDisplayId));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_GWPC_SECURE_WINDOW_STATE_TRACKING)
     @Test
     public void activityChanged_topActivitySecureStateChanged_shouldCallSecureWindowCallbacks() {
         // Set a secure top activity.
@@ -250,7 +246,6 @@ public class ActivityManagementTest {
                         eq(mContext.getUser()));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_GWPC_SECURE_WINDOW_STATE_TRACKING)
     @Test
     public void activityChanged_topActivitySecureStateSame_shouldNotCallSecureWindowCallbacks() {
         // Set an insecure top activity.

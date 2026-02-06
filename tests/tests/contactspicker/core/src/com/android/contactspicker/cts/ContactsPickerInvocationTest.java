@@ -50,6 +50,7 @@ import java.util.concurrent.TimeUnit;
 
 /** CTS tests for launching the Contacts Picker activity via {@link ACTION_PICK_CONTACTS intent} */
 @RunWith(AndroidJUnit4.class)
+@RequiresFlagsEnabled(android.content.flags.Flags.FLAG_ENABLE_SYSTEM_CONTACTS_PICKER)
 public final class ContactsPickerInvocationTest {
 
     @Rule
@@ -77,7 +78,6 @@ public final class ContactsPickerInvocationTest {
      * Verifies that the Contacts Picker can be launched successfully with valid requested fields.
      */
     @Test
-    @RequiresFlagsEnabled(android.content.flags.Flags.FLAG_ENABLE_SYSTEM_CONTACTS_PICKER)
     public void actionPickContacts_launches() {
         Intent intent = new Intent(ACTION_PICK_CONTACTS);
         ArrayList<String> requestedFields = new ArrayList<>();
@@ -106,7 +106,6 @@ public final class ContactsPickerInvocationTest {
 
     /** Verifies that the Contacts Picker finishes gracefully when no data fields are requested. */
     @Test
-    @RequiresFlagsEnabled(android.content.flags.Flags.FLAG_ENABLE_SYSTEM_CONTACTS_PICKER)
     public void actionPickContacts_noRequestedFields_cancels() {
         Intent intent = new Intent(ACTION_PICK_CONTACTS);
 
@@ -145,7 +144,6 @@ public final class ContactsPickerInvocationTest {
      * requested.
      */
     @Test
-    @RequiresFlagsEnabled(android.content.flags.Flags.FLAG_ENABLE_SYSTEM_CONTACTS_PICKER)
     public void actionPickContacts_emptyRequestedFields_cancels() {
         Intent intent = new Intent(ACTION_PICK_CONTACTS);
         intent.putStringArrayListExtra(
@@ -186,7 +184,6 @@ public final class ContactsPickerInvocationTest {
      * requested.
      */
     @Test
-    @RequiresFlagsEnabled(android.content.flags.Flags.FLAG_ENABLE_SYSTEM_CONTACTS_PICKER)
     public void actionPickContacts_incorrectRequestedFields_cancels() {
         Intent intent = new Intent(ACTION_PICK_CONTACTS);
         ArrayList<String> requestedFields = new ArrayList<>();
@@ -229,7 +226,6 @@ public final class ContactsPickerInvocationTest {
      * {@link Intent.ACTION_PICK} intent.
      */
     @Test
-    @RequiresFlagsEnabled(android.content.flags.Flags.FLAG_ENABLE_SYSTEM_CONTACTS_PICKER)
     public void actionPick_launches() {
         Intent intent = new Intent(Intent.ACTION_PICK);
         intent.setType(ContactsContract.CommonDataKinds.Email.CONTENT_TYPE);

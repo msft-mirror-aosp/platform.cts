@@ -25,7 +25,6 @@ import android.hardware.input.VirtualMouseRelativeEvent
 import android.hardware.input.VirtualMouseScrollEvent
 import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator
 import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator
-import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.view.InputDevice
 import android.view.InputEvent
@@ -183,30 +182,14 @@ class VirtualMouseTest : VirtualDeviceTestCase() {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_HIGH_RESOLUTION_SCROLL)
     @Parameters(method = "allHighResScrollValues")
     fun sendHighResScrollEventX(scroll: Float) {
         verifyScrollX(scroll)
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_HIGH_RESOLUTION_SCROLL)
     @Parameters(method = "allHighResScrollValues")
     fun sendHighResScrollEventY(scroll: Float) {
-        verifyScrollY(scroll)
-    }
-
-    @Test
-    @RequiresFlagsDisabled(Flags.FLAG_HIGH_RESOLUTION_SCROLL)
-    @Parameters(method = "allScrollValues")
-    fun sendScrollEventX(scroll: Float) {
-        verifyScrollX(scroll)
-    }
-
-    @Test
-    @RequiresFlagsDisabled(Flags.FLAG_HIGH_RESOLUTION_SCROLL)
-    @Parameters(method = "allScrollValues")
-    fun sendScrollEventY(scroll: Float) {
         verifyScrollY(scroll)
     }
 

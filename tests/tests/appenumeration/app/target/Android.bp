@@ -216,3 +216,13 @@ android_test_helper_app {
         "general-tests",
     ],
 }
+
+android_test_helper_app {
+    name: "CtsAppEnumerationAppLockSupportedTarget",
+    manifest: "AndroidManifest-appLockActivity.xml",
+    defaults: ["CtsAppEnumerationTargetDefaults"],
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "general-tests",
+    ],
+}

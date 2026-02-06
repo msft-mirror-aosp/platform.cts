@@ -630,6 +630,9 @@
             </intent-filter>
         </receiver>
 
+        <service android:name="android.app.stubs.shared.CommandService"
+             android:exported="true" />
+
     </application>
 
 </manifest>

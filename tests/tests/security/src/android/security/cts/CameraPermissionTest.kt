@@ -57,6 +57,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.AndroidJUnit4
 import com.android.bedstead.nene.TestApis
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
+import com.android.compatibility.common.util.SystemUtil.runShellCommand
 import com.android.cts.install.lib.Install
 import com.android.cts.install.lib.TestApp
 import com.android.cts.install.lib.Uninstall
@@ -68,6 +69,7 @@ import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
 import org.junit.Assume.assumeFalse
 import org.junit.Assume.assumeTrue
 import org.junit.Before
@@ -137,6 +139,7 @@ class CameraPermissionTest {
   private var shouldRestoreAppOpsSettings: Boolean = false
   private val onResumeFuture = CompletableFuture<Intent>()
   private val streamOpenedFuture = CompletableFuture<Intent>()
+  private val backgroundCameraTaskFuture = CompletableFuture<Intent>()
   private var openCameraResultFuture: CompletableFuture<Instrumentation.ActivityResult>? = null
   private var restoreSensorPrivacy: (() -> Unit)? = null
 
@@ -184,6 +187,11 @@ class CameraPermissionTest {
               OPEN_CAMERA_APP.keys.streamOpened -> {
                 streamOpenedFuture.complete(intent)
               }
+
+              OPEN_CAMERA_APP.keys.backgroundCameraOpenFinished -> {
+                Log.v(TAG, "Background camera operation finished ${intent.toString()}");
+                backgroundCameraTaskFuture.complete(intent)
+              }
             }
           }
         }
@@ -192,6 +200,7 @@ class CameraPermissionTest {
         IntentFilter().apply {
           addAction(OPEN_CAMERA_APP.keys.onResume)
           addAction(OPEN_CAMERA_APP.keys.streamOpened)
+          addAction(OPEN_CAMERA_APP.keys.backgroundCameraOpenFinished)
         }
     context.registerReceiver(broadcastReceiver, filter, Context.RECEIVER_EXPORTED)
   }
@@ -224,6 +233,25 @@ class CameraPermissionTest {
   @Test
   fun testConnectDevice_dataDeliveryPermissionChecks_on() {
     testConnectDevice(expectDenial = false)
+  }
+
+  @Test
+  fun testBackgroundCameraOpen(){
+    // Force stop the helper app before each test to ensure a clean state.
+    // This guarantees it's not in the foreground from a previous test.
+    runShellCommand(instrumentation, "am force-stop " + OPEN_CAMERA_APP.packageName)
+    // Give system some time to process force stop
+    Thread.sleep(5000)
+    // Send broadcast not start an activity, so camera
+    // open attempt can truly be in the background.
+    context.sendBroadcast(
+        Intent(OPEN_CAMERA_APP.keys.startInBackground).apply {
+          putExtra(OPEN_CAMERA_APP.keys.shouldStream, false)
+          putExtra(OPEN_CAMERA_APP.keys.shouldRepeat, false)
+          setPackage(OPEN_CAMERA_APP.packageName)
+          addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
+    })
+    assertCameraOpenFailed()
   }
 
   @Test
@@ -811,6 +839,19 @@ class CameraPermissionTest {
           appOpsManager.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_CAMERA, uid, app.packageName)
       assertEquals(mode, currentMode)
     }
+  }
+
+  private fun assertCameraOpenFailed() {
+    val backgroundCameraOpenFailure =
+    try {
+      backgroundCameraTaskFuture
+          .get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
+          .getStringExtra(OPEN_CAMERA_APP.keys.exception)
+    } catch (e: TimeoutException) {
+      Log.e(TAG, "assertCameraOpenFailed: TimeoutException")
+      false
+    }
+    assertNotNull(backgroundCameraOpenFailure)
   }
 
   private fun assertStreamOpened() {

@@ -19,11 +19,12 @@ import android.app.Activity
 import android.app.contextualsearch.ContextualSearchConfig
 import android.app.contextualsearch.ContextualSearchManager
 import android.os.Bundle
+import android.view.Display
 import com.android.compatibility.common.util.BroadcastMessenger
 
 /**
- * This activity is used to test Contextual Search Manager Service interactions with activities
- * from a separate app.
+ * This activity is used to test Contextual Search Manager Service interactions with activities from
+ * a separate app.
  */
 class CallerActivity : Activity() {
 
@@ -32,16 +33,30 @@ class CallerActivity : Activity() {
 
         val manager = getSystemService(ContextualSearchManager::class.java)
         try {
-            val config = intent.getParcelableExtra(
-                EXTRA_CONTEXTUAL_SEARCH_CONFIG,
-                ContextualSearchConfig::class.java
-            )
-            manager.startContextualSearch(this, config)
+            val config =
+                intent.getParcelableExtra(
+                    ContextualSearchExtras.EXTRA_CONTEXTUAL_SEARCH_CONFIG,
+                    ContextualSearchConfig::class.java,
+                )
+            if (intent.getBooleanExtra(ContextualSearchExtras.EXTRA_USE_CONFIG_ONLY_API, false)) {
+                val configWithDisplay =
+                    if (config == null || config.displayId == Display.INVALID_DISPLAY) {
+                        val builder =
+                            if (config != null) ContextualSearchConfig.Builder(config)
+                            else ContextualSearchConfig.Builder()
+                        builder.setDisplayId(display!!.displayId).build()
+                    } else {
+                        config
+                    }
+                manager.startContextualSearch(configWithDisplay)
+            } else {
+                manager.startContextualSearch(this, config)
+            }
         } catch (e: SecurityException) {
             BroadcastMessenger.send(
                 this,
                 ContextualSearchMessage.TAG,
-                ContextualSearchMessage(ContextualSearchMessage.RESULT_EXCEPTION)
+                ContextualSearchMessage(ContextualSearchMessage.RESULT_EXCEPTION),
             )
         } catch (e: Exception) {
             throw RuntimeException("Caught unexpected exception", e)
@@ -51,7 +66,5 @@ class CallerActivity : Activity() {
 
     companion object {
         private val TAG: String = "CallerActivity"
-        const val EXTRA_CONTEXTUAL_SEARCH_CONFIG =
-            "android.contextualsearch.caller.EXTRA_CONTEXTUAL_SEARCH_CONFIG"
     }
 }

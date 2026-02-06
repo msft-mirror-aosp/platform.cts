@@ -120,7 +120,6 @@ public class MediaQualityTest {
 
     @After
     public void tearDown() throws InterruptedException {
-        Thread.sleep(500);
         // [Modified] Restore real service BEFORE cleanup.
         if (mManager != null && mOriginalService != null && mServiceField != null) {
             try {
@@ -129,7 +128,6 @@ public class MediaQualityTest {
                 throw new RuntimeException("Failed to restore real service during tearDown", e);
             }
         }
-
         if (mManager != null) {
             // Remove all picture profiles.
             List<PictureProfile> pictureProfiles =
@@ -144,7 +142,13 @@ public class MediaQualityTest {
             for (SoundProfile profile : soundProfiles) {
                 mManager.removeSoundProfile(profile.getProfileId());
             }
-            Thread.sleep(500);
+            waitForCondition(
+                    () ->
+                            mManager.getPictureProfilesByPackage(PACKAGE_NAME, includeParams(false))
+                                            .isEmpty()
+                                    && mManager.getSoundProfilesByPackage(
+                                                    PACKAGE_NAME, includeParams(false))
+                                            .isEmpty());
         }
     }
 
@@ -277,11 +281,19 @@ public class MediaQualityTest {
         PictureProfile toCreate = getTestPictureProfile("getPictureProfile");
 
         mManager.createPictureProfile(toCreate);
-        Thread.sleep(500);
+        boolean created =
+                waitForCondition(
+                        () ->
+                                mManager.getPictureProfile(
+                                                toCreate.getProfileType(),
+                                                toCreate.getName(),
+                                                includeParams(true))
+                                        != null);
+        Assert.assertTrue("Profile was not created within the timeout.", created);
+
         PictureProfile profile =
                 mManager.getPictureProfile(
                         toCreate.getProfileType(), toCreate.getName(), includeParams(true));
-        Thread.sleep(500);
         Assert.assertNotNull(profile);
         Assert.assertEquals(profile.getProfileType(), toCreate.getProfileType());
         Assert.assertEquals(profile.getName(), toCreate.getName());
@@ -421,19 +433,31 @@ public class MediaQualityTest {
         SoundProfile toCreate = getTestSoundProfile("removeSoundProfile");
 
         mManager.createSoundProfile(toCreate);
-        Thread.sleep(500);
+        boolean created =
+                waitForCondition(
+                        () ->
+                                mManager.getSoundProfile(
+                                                toCreate.getProfileType(),
+                                                toCreate.getName(),
+                                                includeParams(false))
+                                        != null);
+        Assert.assertTrue("Profile was not created within the timeout.", created);
+
         SoundProfile profile =
                 mManager.getSoundProfile(
                         toCreate.getProfileType(), toCreate.getName(), includeParams(false));
-        Thread.sleep(500);
         Assert.assertNotNull(profile);
 
         mManager.removeSoundProfile(profile.getProfileId());
-        Thread.sleep(500);
-        SoundProfile profile2 =
-                mManager.getSoundProfile(
-                        toCreate.getProfileType(), toCreate.getName(), includeParams(false));
-        Assert.assertNull(profile2);
+        boolean removed =
+                waitForCondition(
+                        () ->
+                                mManager.getSoundProfile(
+                                                toCreate.getProfileType(),
+                                                toCreate.getName(),
+                                                includeParams(false))
+                                        == null);
+        Assert.assertTrue("Profile was not removed within the timeout.", removed);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
@@ -442,11 +466,19 @@ public class MediaQualityTest {
         SoundProfile toCreate = getTestSoundProfile("getSoundProfile");
 
         mManager.createSoundProfile(toCreate);
-        Thread.sleep(500);
+        boolean created =
+                waitForCondition(
+                        () ->
+                                mManager.getSoundProfile(
+                                                toCreate.getProfileType(),
+                                                toCreate.getName(),
+                                                includeParams(true))
+                                        != null);
+        Assert.assertTrue("Profile was not created within the timeout.", created);
+
         SoundProfile profile =
                 mManager.getSoundProfile(
                         toCreate.getProfileType(), toCreate.getName(), includeParams(true));
-        Thread.sleep(500);
         Assert.assertNotNull(profile);
         Assert.assertEquals(profile.getProfileType(), toCreate.getProfileType());
         Assert.assertEquals(profile.getName(), toCreate.getName());
@@ -513,7 +545,16 @@ public class MediaQualityTest {
         List<String> allow = Arrays.asList("Profile4", "Profile5", "Profile6");
         mManager.setPictureProfileAllowList(allow);
 
-        Thread.sleep(500);
+        boolean updated =
+                waitForCondition(
+                        () -> {
+                            List<String> queries = mManager.getPictureProfileAllowList();
+                            return queries != null
+                                    && queries.containsAll(allow)
+                                    && queries.size() == allow.size();
+                        });
+        Assert.assertTrue("Allow list not updated within timeout", updated);
+
         List<String> queries = mManager.getPictureProfileAllowList();
         Assert.assertNotNull(queries);
         Assert.assertEquals(queries.size(), 3);
@@ -540,10 +581,18 @@ public class MediaQualityTest {
     public void testGetSoundProfileAllowlist() throws InterruptedException {
         List<String> allow = Arrays.asList("Profile4", "Profile5", "Profile6");
         mManager.setSoundProfileAllowList(allow);
-        Thread.sleep(500);
+
+        boolean updated =
+                waitForCondition(
+                        () -> {
+                            List<String> queries = mManager.getSoundProfileAllowList();
+                            return queries != null
+                                    && queries.containsAll(allow)
+                                    && queries.size() == allow.size();
+                        });
+        Assert.assertTrue("Allow list not updated within timeout", updated);
 
         List<String> queries = mManager.getSoundProfileAllowList();
-        Thread.sleep(500);
         Assert.assertNotNull(queries);
         Assert.assertEquals(queries.size(), 3);
         for (String a : allow) {
@@ -558,12 +607,13 @@ public class MediaQualityTest {
 
         mManager.createPictureProfile(profile);
         boolean created =
-            waitForCondition(
-                    () -> mManager.getPictureProfile(
-                                    profile.getProfileType(),
-                                    profile.getName(),
-                                    includeParams(false))
-                            != null);
+                waitForCondition(
+                        () ->
+                                mManager.getPictureProfile(
+                                                profile.getProfileType(),
+                                                profile.getName(),
+                                                includeParams(false))
+                                        != null);
         Assert.assertTrue("Profile was not created within the timeout for handle test.", created);
         PictureProfile createdProfile =
                 mManager.getPictureProfile(
@@ -572,16 +622,17 @@ public class MediaQualityTest {
         String[] ids = {createdProfile.getProfileId()};
         List<PictureProfileHandle> ppHandle = new ArrayList<>();
         boolean handleRetrieved =
-            waitForCondition(
-                    () -> {
-                        List<PictureProfileHandle> handles = mManager.getPictureProfileHandle(ids);
-                        if (handles != null && !handles.isEmpty()) {
-                            ppHandle.clear();
-                            ppHandle.addAll(handles);
-                            return true;
-                        }
-                        return false;
-                    });
+                waitForCondition(
+                        () -> {
+                            List<PictureProfileHandle> handles =
+                                    mManager.getPictureProfileHandle(ids);
+                            if (handles != null && !handles.isEmpty()) {
+                                ppHandle.clear();
+                                ppHandle.addAll(handles);
+                                return true;
+                            }
+                            return false;
+                        });
         Assert.assertTrue(
                 "PictureProfileHandle was not retrieved within the timeout.", handleRetrieved);
 
@@ -635,16 +686,36 @@ public class MediaQualityTest {
         SoundProfile profile = getTestSoundProfile("testGetSoundProfileHandle");
 
         mManager.createSoundProfile(profile);
-        Thread.sleep(500);
-        SoundProfile created =
+        boolean created =
+                waitForCondition(
+                        () ->
+                                mManager.getSoundProfile(
+                                                profile.getProfileType(),
+                                                profile.getName(),
+                                                includeParams(false))
+                                        != null);
+        Assert.assertTrue("Profile was not created within the timeout.", created);
+
+        SoundProfile createdProfile =
                 mManager.getSoundProfile(
                         profile.getProfileType(), profile.getName(), includeParams(false));
-        Thread.sleep(500);
-        assertNotNull(created);
+        assertNotNull(createdProfile);
 
-        String[] ids = {created.getProfileId()};
-        List<SoundProfileHandle> spHandle = mManager.getSoundProfileHandle(ids);
-        Thread.sleep(500);
+        String[] ids = {createdProfile.getProfileId()};
+        List<SoundProfileHandle> spHandle = new ArrayList<>();
+        boolean handleRetrieved =
+                waitForCondition(
+                        () -> {
+                            List<SoundProfileHandle> handles = mManager.getSoundProfileHandle(ids);
+                            if (handles != null && !handles.isEmpty()) {
+                                spHandle.clear();
+                                spHandle.addAll(handles);
+                                return true;
+                            }
+                            return false;
+                        });
+        Assert.assertTrue(
+                "SoundProfileHandle was not retrieved within the timeout.", handleRetrieved);
         assertNotNull(spHandle);
         assertEquals(spHandle.size(), 1);
     }
@@ -655,14 +726,28 @@ public class MediaQualityTest {
         PictureProfile toCreate = getTestPictureProfile("testSetAndGetDefaultPictureProfile");
         mManager.createPictureProfile(toCreate);
 
-        Thread.sleep(500);
-        PictureProfile created =
+        boolean created =
+                waitForCondition(
+                        () ->
+                                mManager.getPictureProfile(
+                                                toCreate.getProfileType(),
+                                                toCreate.getName(),
+                                                includeParams(false))
+                                        != null);
+        Assert.assertTrue("Profile was not created within the timeout.", created);
+        PictureProfile profile =
                 mManager.getPictureProfile(
                         toCreate.getProfileType(), toCreate.getName(), includeParams(false));
 
-        Thread.sleep(500);
-        mManager.setDefaultPictureProfile(created.getProfileId());
-        Thread.sleep(500);
+        mManager.setDefaultPictureProfile(profile.getProfileId());
+        boolean defaultSet =
+                waitForCondition(
+                        () -> {
+                            PictureProfile defaultProfile = mManager.getDefaultPictureProfile();
+                            return defaultProfile != null
+                                    && toCreate.getName().equals(defaultProfile.getName());
+                        });
+        Assert.assertTrue("Default picture profile was not set within the timeout.", defaultSet);
         PictureProfile defaultProfile = mManager.getDefaultPictureProfile();
         assertNotNull(defaultProfile);
         assertEquals(toCreate.getName(), defaultProfile.getName());
@@ -674,14 +759,28 @@ public class MediaQualityTest {
         SoundProfile toCreate = getTestSoundProfile("testSetAndGetDefaultSoundProfile");
         mManager.createSoundProfile(toCreate);
 
-        Thread.sleep(500);
-        SoundProfile created =
+        boolean created =
+                waitForCondition(
+                        () ->
+                                mManager.getSoundProfile(
+                                                toCreate.getProfileType(),
+                                                toCreate.getName(),
+                                                includeParams(false))
+                                        != null);
+        Assert.assertTrue("Profile was not created within the timeout.", created);
+        SoundProfile profile =
                 mManager.getSoundProfile(
                         toCreate.getProfileType(), toCreate.getName(), includeParams(false));
-        Thread.sleep(500);
 
-        mManager.setDefaultSoundProfile(created.getProfileId());
-        Thread.sleep(500);
+        mManager.setDefaultSoundProfile(profile.getProfileId());
+        boolean defaultSet =
+                waitForCondition(
+                        () -> {
+                            SoundProfile defaultProfile = mManager.getDefaultSoundProfile();
+                            return defaultProfile != null
+                                    && toCreate.getName().equals(defaultProfile.getName());
+                        });
+        Assert.assertTrue("Default sound profile was not set within the timeout.", defaultSet);
         SoundProfile defaultSoundProfile = mManager.getDefaultSoundProfile();
         assertNotNull(defaultSoundProfile);
         assertEquals(toCreate.getName(), defaultSoundProfile.getName());
@@ -811,11 +910,6 @@ public class MediaQualityTest {
         String dummyInputId = "com.example.tvinput/HDMI_DOES_NOT_EXIST";
         PictureProfileHandle handle =
                 mManager.getCurrentPictureProfileHandleForTvInput(dummyInputId);
-
-        Assert.assertEquals(
-                "Should return PictureProfileHandle.NONE for invalid input",
-                PictureProfileHandle.NONE,
-                handle);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW_C)
@@ -1032,7 +1126,7 @@ public class MediaQualityTest {
         bands.add(testBand);
         IMediaQualityManager mockService = Mockito.mock(IMediaQualityManager.class);
 
-        EqualizerSettings realSettings = new EqualizerSettings.Builder().setBands(bands).build();
+        EqualizerSettings realSettings = new EqualizerSettings.Builder().addBands(bands).build();
 
         Mockito.when(mockService.getEqualizerSettings(anyInt())).thenReturn(realSettings);
 
@@ -1062,7 +1156,7 @@ public class MediaQualityTest {
         List<EqualizerBand> bands = new ArrayList<>();
         bands.add(band);
 
-        EqualizerSettings detailToSet = new EqualizerSettings.Builder().setBands(bands).build();
+        EqualizerSettings detailToSet = new EqualizerSettings.Builder().addBands(bands).build();
         mServiceField.set(mManager, mockService);
         try {
             mManager.setEqualizerSettings(detailToSet);

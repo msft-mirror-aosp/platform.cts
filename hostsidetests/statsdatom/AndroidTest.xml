@@ -40,4 +40,10 @@
         <option name="delay-after-commands" value="30000" />
         <option name="teardown-command" value="cmd stats logging-control 1" />
     </target_preparer>
+
+    <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <!-- Allow LmkVictimBackgroundService app to grow without bounds -->
+        <option name="run-command" value="am memory-limiter ignore all" />
+        <option name="teardown-command" value="am memory-limiter ignore none" />
+    </target_preparer>
 </configuration>

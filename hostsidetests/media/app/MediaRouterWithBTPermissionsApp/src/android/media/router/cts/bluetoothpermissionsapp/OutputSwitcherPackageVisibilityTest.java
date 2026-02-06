@@ -26,7 +26,6 @@ import static android.media.cts.MediaRouterTestConstants.SYSTEM_UI_PACKAGE;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import android.Manifest;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
@@ -77,6 +76,7 @@ public class OutputSwitcherPackageVisibilityTest {
         mContext = mInstrumentation.getTargetContext();
         mRouter2 = MediaRouter2.getInstance(mContext);
         mEmptyCallback = new MediaRouter2.RouteCallback() {};
+        MediaRouter2TestUtils.launchScreenOnActivity(mContext);
     }
 
     @After
@@ -84,7 +84,6 @@ public class OutputSwitcherPackageVisibilityTest {
         if (mRouter2 != null) {
             mRouter2.unregisterRouteCallback(mEmptyCallback);
         }
-        mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
         mInstrumentation
                 .getContext()
                 .sendBroadcast(
@@ -95,11 +94,6 @@ public class OutputSwitcherPackageVisibilityTest {
 
     @Test
     public void outputSwitcherPackageRestrictedRouteIsVisible() throws UiObjectNotFoundException {
-        mInstrumentation
-                .getUiAutomation()
-                .adoptShellPermissionIdentity(Manifest.permission.MEDIA_ROUTING_CONTROL);
-        MediaRouter2TestUtils.launchScreenOnActivity(mContext);
-
         RouteDiscoveryPreference discoveryPreference =
                 new RouteDiscoveryPreference.Builder(
                                 List.of(FEATURE_SAMPLE), /* activeScan= */ true)

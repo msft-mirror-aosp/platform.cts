@@ -46,7 +46,6 @@ import android.hardware.camera2.CaptureResult;
 import android.os.Parcel;
 import android.os.ServiceSpecificException;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
@@ -414,5 +413,22 @@ public class VirtualCameraConfigTest {
                         .setLensFacing(LENS_FACING_FRONT)
                         .setCameraCharacteristics(characteristics)
                         .build());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MULTIPLE_INPUT_STREAMS)
+    public void virtualCameraConfig_concurrentStream_buildSucceeds() {
+        VirtualCameraConfig.Builder builder =
+                new VirtualCameraConfig.Builder(CAMERA_NAME)
+                        .addStreamConfig(CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_FORMAT, CAMERA_MAX_FPS)
+                        .setVirtualCameraCallback(mExecutor, mCallback)
+                        .setLensFacing(LENS_FACING_FRONT);
+
+        VirtualCameraConfig config = builder.build();
+        assertThat(config.isConcurrentStreamConfigSupported()).isFalse();
+
+        builder.setConcurrentStreamConfigSupported(true);
+        config = builder.build();
+        assertThat(config.isConcurrentStreamConfigSupported()).isTrue();
     }
 }

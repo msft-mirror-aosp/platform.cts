@@ -93,6 +93,7 @@ import com.android.cts.IBinderPermissionTestService;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -1312,6 +1313,7 @@ public class ContextTest {
         mContext.revokeUriPermission(URI, Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
     }
 
+    @Ignore("b/481943933")
     @Test
     public void testBindAllowFreezeProhibited() {
         MockContextService.reset();

@@ -87,11 +87,10 @@ class TestFileGeneratorTest {
         assertThat(output_file.getTestClass())
             .isEqualTo(
                 """
-                class MyPolicyNameTest : CommonPolicyTests<Int>() {
+                class MyPolicyNameGeneratedTest : CommonPolicyTests<Int>() {
 
                     override val policyIdentifier = PolicyIdentifier.MY_POLICY_NAME
 
-                    // TODO: Add other meaningful valid values here (if any). Remove this TODO before committing.
                     override val validValues =
                         listOf(
                             -1,
@@ -100,7 +99,6 @@ class TestFileGeneratorTest {
                             12345,
                         )
 
-                    // TODO: Add other meaningful invalid values here (if any). Remove this TODO before committing.
                     override val invalidValueTestCases = listOf()
                 }
                 """
@@ -117,11 +115,10 @@ class TestFileGeneratorTest {
         assertThat(output_file.getTestClass())
             .isEqualTo(
                 """
-                class MyLongPolicyTest : CommonPolicyTests<Long>() {
+                class MyLongPolicyGeneratedTest : CommonPolicyTests<Long>() {
 
                     override val policyIdentifier = PolicyIdentifier.MY_LONG_POLICY
 
-                    // TODO: Add other meaningful valid values here (if any). Remove this TODO before committing.
                     override val validValues =
                         listOf(
                             -1L,
@@ -130,7 +127,6 @@ class TestFileGeneratorTest {
                             12345L,
                         )
 
-                    // TODO: Add other meaningful invalid values here (if any). Remove this TODO before committing.
                     override val invalidValueTestCases = listOf()
                 }
                 """
@@ -449,18 +445,16 @@ class TestFileGeneratorTest {
         assertThat(output_file.getTestClass())
             .isEqualTo(
                 """
-                class MyStringPolicyNameTest : CommonPolicyTests<String>() {
+                class MyStringPolicyNameGeneratedTest : CommonPolicyTests<String>() {
 
                     override val policyIdentifier = PolicyIdentifier.MY_STRING_POLICY_NAME
 
-                    // TODO: Add other meaningful valid values here (if any). Remove this TODO before committing.
                     override val validValues =
                         listOf(
                             "",
                             "a-value",
                         )
 
-                    // TODO: Add other meaningful invalid values here (if any). Remove this TODO before committing.
                     override val invalidValueTestCases = listOf()
                 }
                 """
@@ -481,17 +475,15 @@ class TestFileGeneratorTest {
         assertThat(output_file.getTestClass())
             .isEqualTo(
                 """
-                class TheNameTest : CommonPolicyTests<String>() {
+                class TheNameGeneratedTest : CommonPolicyTests<String>() {
 
                     override val policyIdentifier = PolicyIdentifier.THE_NAME
 
-                    // TODO: Add other meaningful valid values here (if any). Remove this TODO before committing.
                     override val validValues =
                         listOf(
                             "a-value",
                         )
 
-                    // TODO: Add other meaningful invalid values here (if any). Remove this TODO before committing.
                     override val invalidValueTestCases =
                         listOf(
                             InvalidValueTestCase("", expectedError="Empty string is not allowed"),
@@ -525,11 +517,10 @@ class TestFileGeneratorTest {
         assertThat(output_file.getTestClass())
             .isEqualTo(
                 """
-                class AnEnumPolicyTest : CommonPolicyTests<Int>() {
+                class AnEnumPolicyGeneratedTest : CommonPolicyTests<Int>() {
 
                     override val policyIdentifier = PolicyIdentifier.AN_ENUM_POLICY
 
-                    // TODO: Add other meaningful valid values here (if any). Remove this TODO before committing.
                     override val validValues =
                         listOf(
                             PolicyIdentifier.ENUM_VALUE_1,
@@ -537,7 +528,6 @@ class TestFileGeneratorTest {
                             com.package.TheClass.ENUM_VALUE_10,
                         )
 
-                    // TODO: Add other meaningful invalid values here (if any). Remove this TODO before committing.
                     override val invalidValueTestCases =
                         listOf(
                             InvalidValueTestCase(0), // Lower than lowest value
@@ -558,18 +548,16 @@ class TestFileGeneratorTest {
         assertThat(output_file.getTestClass())
             .isEqualTo(
                 """
-                class MyBooleanTest : CommonPolicyTests<Boolean>() {
+                class MyBooleanGeneratedTest : CommonPolicyTests<Boolean>() {
 
                     override val policyIdentifier = PolicyIdentifier.MY_BOOLEAN
 
-                    // TODO: Add other meaningful valid values here (if any). Remove this TODO before committing.
                     override val validValues =
                         listOf(
                             true,
                             false,
                         )
 
-                    // TODO: Add other meaningful invalid values here (if any). Remove this TODO before committing.
                     override val invalidValueTestCases = listOf()
                 }
                 """
@@ -595,18 +583,16 @@ class TestFileGeneratorTest {
         assertThat(output_file.getTestClass())
             .isEqualTo(
                 """
-                class MyListPolicyTest : CommonPolicyTests<List<String>>() {
+                class MyListPolicyGeneratedTest : CommonPolicyTests<List<String>>() {
 
                     override val policyIdentifier = PolicyIdentifier.MY_LIST_POLICY
 
-                    // TODO: Add other meaningful valid values here (if any). Remove this TODO before committing.
                     override val validValues =
                         listOf(
                             [],
                             ["a-value"],
                         )
 
-                    // TODO: Add other meaningful invalid values here (if any). Remove this TODO before committing.
                     override val invalidValueTestCases =
                         listOf(
                             InvalidValueTestCase([""], expectedError="Empty string is not allowed"),
@@ -635,17 +621,15 @@ class TestFileGeneratorTest {
         assertThat(output_file.getTestClass())
             .isEqualTo(
                 """
-                class MyListPolicyTest : CommonPolicyTests<List<String>>() {
+                class MyListPolicyGeneratedTest : CommonPolicyTests<List<String>>() {
 
                     override val policyIdentifier = PolicyIdentifier.MY_LIST_POLICY
 
-                    // TODO: Add other meaningful valid values here (if any). Remove this TODO before committing.
                     override val validValues =
                         listOf(
                             ["", "a-value"],
                         )
 
-                    // TODO: Add other meaningful invalid values here (if any). Remove this TODO before committing.
                     override val invalidValueTestCases =
                         listOf(
                             InvalidValueTestCase([], expectedError="Empty list is not allowed"),
@@ -666,8 +650,8 @@ class TestFileGeneratorTest {
                     .setEmptyListAllowed(true)
                     .setEnumMetadata(
                         EnumPolicyMetadata.newBuilder()
-                    .addValue(fullyQualifiedFieldName("ENUM_VALUE_4"), 4)
-                    .addValue(fullyQualifiedFieldName("ENUM_VALUE_7"), 7)
+                            .addValue(fullyQualifiedFieldName("ENUM_VALUE_4"), 4)
+                            .addValue(fullyQualifiedFieldName("ENUM_VALUE_7"), 7)
                     ),
             )
 
@@ -676,18 +660,16 @@ class TestFileGeneratorTest {
         assertThat(output_file.getTestClass())
             .isEqualTo(
                 """
-                class MyListPolicyTest : CommonPolicyTests<List<Int>>() {
+                class MyListPolicyGeneratedTest : CommonPolicyTests<List<Int>>() {
 
                     override val policyIdentifier = PolicyIdentifier.MY_LIST_POLICY
 
-                    // TODO: Add other meaningful valid values here (if any). Remove this TODO before committing.
                     override val validValues =
                         listOf(
                             [],
                             [PolicyIdentifier.ENUM_VALUE_4, PolicyIdentifier.ENUM_VALUE_7],
                         )
 
-                    // TODO: Add other meaningful invalid values here (if any). Remove this TODO before committing.
                     override val invalidValueTestCases =
                         listOf(
                             InvalidValueTestCase([3]), // Lower than lowest value
@@ -837,8 +819,7 @@ class TestFileGeneratorTest {
             .setIdentifier(fullyQualifiedFieldName(identifier))
             .setType(type)
             .setTypeSpecificMetadata(
-                TypeSpecificPolicyMetadata.newBuilder()
-                    .setListMetadata(typeSpecificMetadata)
+                TypeSpecificPolicyMetadata.newBuilder().setListMetadata(typeSpecificMetadata)
             )
             .build()
 }

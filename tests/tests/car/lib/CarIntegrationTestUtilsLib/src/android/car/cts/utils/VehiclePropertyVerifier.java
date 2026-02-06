@@ -3207,7 +3207,7 @@ public class VehiclePropertyVerifier<T> {
     /** The builder class. */
     public static class Builder<T> {
         private final int mPropertyId;
-        private final ImmutableSet<Integer> mAllowedAccessModes;
+        private ImmutableSet<Integer> mAllowedAccessModes;
         private final int mAreaType;
         private final int mChangeMode;
         private final Class<T> mPropertyType;
@@ -3448,6 +3448,25 @@ public class VehiclePropertyVerifier<T> {
         public Builder<T> setSupportedValuesGenerator(
                 SupportedValuesGenerator<T> supportedValuesGenerator) {
             mSupportedValuesGenerator = Optional.of(supportedValuesGenerator);
+            return this;
+        }
+
+        /**
+         * Requires that the property is only allowed to be accessed as READ_WRITE, not READ.
+         *
+         * <p>This is only applicable if the property access is READ_WRITE.
+         */
+        public Builder<T> requireReadWrite() {
+            if (mAllowedAccessModes.contains(
+                    CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE)) {
+                mAllowedAccessModes =
+                        ImmutableSet.of(CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE);
+            } else {
+                throw new IllegalStateException(
+                        "Cannot require READ_WRITE access mode for property: "
+                                + VehiclePropertyIds.toString(mPropertyId)
+                                + " because it is not configured as READ_WRITE.");
+            }
             return this;
         }
 

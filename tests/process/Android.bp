@@ -41,10 +41,6 @@ java_defaults {
     static_libs: [
         "CtsProcessTestCore",
     ],
-    test_suites: [
-        "cts",
-        "general-tests",
-    ],
     sdk_version: "test_current",
 }
 
@@ -55,6 +51,10 @@ android_test {
         "CtsProcessTest_default",
     ],
     manifest: "AndroidManifest_main.xml",
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
     data: [
         ":CtsProcessTestHelper4",
         ":CtsProcessTestHelper1",

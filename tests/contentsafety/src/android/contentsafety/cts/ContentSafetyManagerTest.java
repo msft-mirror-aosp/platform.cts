@@ -115,6 +115,9 @@ public class ContentSafetyManagerTest {
         clearTestableContentSafetyService();
     }
 
+    // ================Tests for Access Denied without Permission on all manager
+    // methods===============
+
     @Test
     @RequireFlagsEnabled(FLAG_ENABLE_CONTENTSAFETY)
     @EnsureDoesNotHavePermission(CHECK_CONTENT_SAFETY)
@@ -201,6 +204,9 @@ public class ContentSafetyManagerTest {
         assertThat(mContentSafetyManager.getRemoteServicePackageName()).isNotEmpty();
     }
 
+    // ================Tests for result callbacks invoked on all manager
+    // methods========================
+
     @Test
     @RequireFlagsEnabled(FLAG_ENABLE_CONTENTSAFETY)
     @EnsureHasPermission(CHECK_CONTENT_SAFETY)
@@ -252,6 +258,129 @@ public class ContentSafetyManagerTest {
                     }
                 });
         assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
+    }
+
+    // ================Tests cancellation signal is executed as expected=====================
+
+    @Test
+    @RequireFlagsEnabled(FLAG_ENABLE_CONTENTSAFETY)
+    @EnsureHasPermission(CHECK_CONTENT_SAFETY)
+    public void cancellationSignalInvokedDuringRequestCheckContent() throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+        CancellationSignal cancellationSignal = new CancellationSignal();
+        File content =
+                File.createTempFile(
+                        "content_safety",
+                        "cancellationSignalSentWhenAttemptingRequestCheckContent");
+        try (ParcelFileDescriptor pfd =
+                ParcelFileDescriptor.open(content, ParcelFileDescriptor.MODE_READ_ONLY)) {
+            Files.writeString(Paths.get(content.getAbsolutePath()), "42");
+            Consumer<Map<Integer, List<Integer>>> checkContentConsumer =
+                    result -> {
+                        assertThat(result)
+                                .containsExactly(
+                                        SENSITIVE_VIDEO, List.of(CONTENT_SAFETY_SUCCESS_SENSITIVE));
+                        cancellationSignal.cancel();
+                        latch.countDown();
+                    };
+            mContentSafetyManager.requestCheckContent(
+                    SENSITIVE_VIDEO,
+                    Map.of(SENSITIVE_VIDEO, List.of(pfd)),
+                    cancellationSignal,
+                    EXECUTOR,
+                    checkContentConsumer);
+        }
+        assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
+    }
+
+    @Test
+    @RequireFlagsEnabled(FLAG_ENABLE_CONTENTSAFETY)
+    @EnsureHasPermission(CHECK_CONTENT_SAFETY)
+    public void cancellationSignalInvokedBeforeRequestCheckContent() throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+        CancellationSignal cancellationSignal = new CancellationSignal();
+        File content =
+                File.createTempFile(
+                        "content_safety",
+                        "cancellationSignalSentWhenAttemptingRequestCheckContent");
+        try (ParcelFileDescriptor pfd =
+                ParcelFileDescriptor.open(content, ParcelFileDescriptor.MODE_READ_ONLY)) {
+            Files.writeString(Paths.get(content.getAbsolutePath()), "42");
+            Consumer<Map<Integer, List<Integer>>> checkContentConsumer =
+                    result -> {
+                        assertThat(result)
+                                .containsExactly(
+                                        SENSITIVE_VIDEO, List.of(CONTENT_SAFETY_SUCCESS_SENSITIVE));
+                        cancellationSignal.cancel();
+                        latch.countDown();
+                    };
+            cancellationSignal.cancel();
+            mContentSafetyManager.requestCheckContent(
+                    SENSITIVE_VIDEO,
+                    Map.of(SENSITIVE_VIDEO, List.of(pfd)),
+                    cancellationSignal,
+                    EXECUTOR,
+                    checkContentConsumer);
+        }
+        assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
+    }
+
+    @Test
+    @RequireFlagsEnabled(FLAG_ENABLE_CONTENTSAFETY)
+    @EnsureHasPermission(CHECK_CONTENT_SAFETY)
+    public void cancellationSignalInvokedDuringRequestIsFeatureEnabled()
+            throws InterruptedException {
+        Log.i(TAG, "Test isFeatureEnabledPass:  started");
+
+        CountDownLatch latch = new CountDownLatch(1);
+        CancellationSignal cancellationSignal = new CancellationSignal();
+        mContentSafetyManager.requestIsFeatureEnabled(
+                SENSITIVE_VIDEO,
+                null,
+                EXECUTOR,
+                new OutcomeReceiver<Boolean, FeatureException>() {
+                    @Override
+                    public void onResult(Boolean result) {
+                        assertThat(result).isTrue();
+                        cancellationSignal.cancel();
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(FeatureException ex) {
+                        assertWithMessage("onFailure: " + ex.toString()).fail();
+                    }
+                });
+        assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
+    }
+
+    @Test
+    @RequireFlagsEnabled(FLAG_ENABLE_CONTENTSAFETY)
+    @EnsureHasPermission(CHECK_CONTENT_SAFETY)
+    public void cancellationSignalInvokedBeforeRequestIsFeatureEnabled()
+            throws InterruptedException {
+        Log.i(TAG, "Test isFeatureEnabledPass:  started");
+
+        CountDownLatch latch = new CountDownLatch(1);
+        CancellationSignal cancellationSignal = new CancellationSignal();
+        cancellationSignal.cancel();
+        mContentSafetyManager.requestIsFeatureEnabled(
+                SENSITIVE_VIDEO,
+                null,
+                EXECUTOR,
+                new OutcomeReceiver<Boolean, FeatureException>() {
+                    @Override
+                    public void onResult(Boolean result) {
+                        assertThat(result).isTrue();
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(FeatureException ex) {
+                        assertWithMessage("onFailure: " + ex.toString()).fail();
+                    }
+                });
+        assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
     }
 
     private void clearTestableContentSafetyService() {

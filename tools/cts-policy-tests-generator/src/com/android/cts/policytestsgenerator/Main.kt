@@ -22,7 +22,7 @@ import com.google.protobuf.TextFormat
 import kotlin.io.path.Path
 import kotlin.io.path.exists
 
-val OUTPUT_DIR = "/cts/tests/devicepolicy/src/android/devicepolicy/cts"
+val OUTPUT_DIR = "/cts/tests/devicepolicy/src/android/devicepolicy/cts/generated"
 
 fun main(args: Array<String>) {
     val arguments: ParsedArguments =
@@ -87,7 +87,8 @@ fun main(args: Array<String>) {
         println("--------------------------------------------------------------------------------")
         println(output)
     } else {
-        val output_file_path = Path("$rootDir/$OUTPUT_DIR/${policyName.toCamelCase()}Test.kt")
+        val output_file_path =
+            Path("$rootDir/$OUTPUT_DIR/${policyName.toCamelCase()}GeneratedTest.kt")
 
         if (output_file_path.exists() && !arguments.override) {
             System.err.println(

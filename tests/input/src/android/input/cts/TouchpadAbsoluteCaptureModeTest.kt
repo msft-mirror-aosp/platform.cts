@@ -877,4 +877,35 @@ class TouchpadAbsoluteCaptureModeTest {
             withButtonState(0),
         ))
     }
+
+    @Test
+    @RequiresFlagsEnabled(
+        com.android.input.flags.Flags.FLAG_CANCEL_TOUCHES_ON_ABSOLUTE_CAPTURE_RELEASE
+    )
+    fun testExitingCaptureCancelsFingers() {
+        val pointer0 = Point(500, 500)
+        val pointer1 = Point(500, 800)
+        touchpad.sendDown(0, pointer0)
+        touchpad.sendDown(1, pointer1)
+        touchpad.sendBtn(BTN_TOOL_DOUBLETAP, true)
+        touchpad.sendBtnTouch(true)
+        touchpad.sync()
+        verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_DOWN))
+        verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_POINTER_DOWN, 1))
+
+        activity.ensurePointerReleased()
+        verifier.assertReceivedMotion(allOf(
+            withMotionAction(MotionEvent.ACTION_CANCEL),
+            withSource(InputDevice.SOURCE_TOUCHPAD),
+            withPointerCount(2),
+
+            withCoordsForPointerIndex(0, pointer0),
+            withRelativeMotionForPointerIndex(0, 0f, 0f),
+            withToolTypeForPointerIndex(0, MotionEvent.TOOL_TYPE_FINGER),
+
+            withCoordsForPointerIndex(1, pointer1),
+            withRelativeMotionForPointerIndex(1, 0f, 0f),
+            withToolTypeForPointerIndex(1, MotionEvent.TOOL_TYPE_FINGER),
+        ))
+    }
 }

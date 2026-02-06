@@ -104,7 +104,12 @@ public class PccBackupAgentTest extends BaseBackupCtsTest {
     }
 
     private void runBackupAndAssertStatus(int expectedStatus) throws Exception {
-        getBackupUtils().executeShellCommandSync("cmd package unstop " + PCC_APP_PACKAGE);
+        getBackupUtils()
+                .executeShellCommandSync(
+                        String.format(
+                                "cmd package unstop --user %d %s",
+                                getBackupUtils().getCurrentUserId(), PCC_APP_PACKAGE));
+
         mBackupManager.requestBackup(new String[] {PCC_APP_PACKAGE}, mBackupObserver, null, 0);
         waitUntilBackupFinished();
 

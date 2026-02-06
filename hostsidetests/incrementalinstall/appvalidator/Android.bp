@@ -26,7 +26,6 @@ android_test_helper_app {
         enabled: false,
     },
     test_suites: [
-        "cts",
         "general-tests",
     ],
     static_libs: [

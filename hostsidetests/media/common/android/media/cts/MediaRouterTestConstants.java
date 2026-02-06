@@ -122,6 +122,8 @@ public final class MediaRouterTestConstants {
 
     public static final String MEDIA_ROUTER2_OSW_PACKAGE_VISIBILITY_ALLOWED_TEST_CLASS =
             "android.media.router.cts.bluetoothpermissionsapp.OutputSwitcherPackageVisibilityTest";
+    public static final String MEDIA_ROUTER2_OSW_DEDUPLICATION_IDS_TEST_CLASS =
+            "android.media.router.cts.bluetoothpermissionsapp.OutputSwitcherDeduplicationIDsTest";
 
     public static final String ROUTE_ID_APP_1_ROUTE_1 = "route_1-1";
     public static final String ROUTE_ID_APP_1_ROUTE_2 = "route_1-2";
@@ -152,6 +154,18 @@ public final class MediaRouterTestConstants {
 
     public static final String ROUTE_ID_OSW_PACKAGE_RESTRICTED_TO_BT_APP =
             "osw_pkg_restricted_to_bt_app";
+    public static final String ROUTE_ID_OSW_DEDUPLICATION_PROVIDER_2 =
+            "route_id_osw_deduplication_provider_2";
+    public static final String ROUTE_ID_OSW_DEDUPLICATION_PROVIDER_3 =
+            "route_id_osw_deduplication_provider_3";
+    public static final String ROUTE_ID_OSW_DEDUPLICATION_SAME_PROVIDER_SYSTEM =
+            "route_id_osw_deduplication_same_provider_system";
+    public static final String ROUTE_ID_OSW_DEDUPLICATION_SAME_PROVIDER_NON_SYSTEM =
+            "route_id_osw_deduplication_same_provider_non_system";
+    public static final String ROUTE_ID_OSW_DIFFERENT_DEDUPLICATION_ID_SAME_NAME_1 =
+            "route_id_osw_different_deduplication_id_same_name_1";
+    public static final String ROUTE_ID_OSW_DIFFERENT_DEDUPLICATION_ID_SAME_NAME_2 =
+            "route_id_osw_different_deduplication_id_same_name_2";
 
     public static final String ROUTE_NAME_1 = "route 1";
     public static final String ROUTE_NAME_2 = "route 2";
@@ -170,6 +184,15 @@ public final class MediaRouterTestConstants {
             "other_package_restricted_route";
     public static final String ROUTE_NAME_OSW_PACKAGE_RESTRICTED_TO_BT_APP =
             "osw_restricted_to_bt_app_route";
+    public static final String ROUTE_NAME_OSW_DEDUPLICATION_PROVIDER_2 = "deduplication_provider_2";
+    public static final String ROUTE_NAME_OSW_DEDUPLICATION_PROVIDER_3 = "deduplication_provider_3";
+    public static final String ROUTE_NAME_OSW_DEDUPLICATION_SAME_PROVIDER_SYSTEM =
+            "route_name_osw_deduplication_same_provider_system";
+    public static final String ROUTE_NAME_OSW_DEDUPLICATION_SAME_PROVIDER_NON_SYSTEM =
+            "route_name_osw_deduplication_same_provider_non_system";
+    public static final String ROUTE_NAME_OSW_DIFFERENT_DEDUPLICATION_ID_SAME_NAME =
+            "route_name_osw_different_deduplication_id_same_name";
+
     public static final String NON_EXISTENT_PACKAGE = "android.media.router.cts.nonexistentpackage";
 
     public static final String ROUTE_DEDUPLICATION_ID_1 = "dedup_id_1";
@@ -194,6 +217,15 @@ public final class MediaRouterTestConstants {
             "android.permission.READ_MEDIA_IMAGES";
     public static final String REQUIRED_PERMISSION_LOCAL_NETWORK =
             "android.permission.ACCESS_LOCAL_NETWORK";
+
+    public static final String OSW_COMMON_DEDUPLICATION_ID_ACROSS_PROVIDER =
+            "osw_common_deduplication_id_across_provider";
+    public static final String OSW_COMMON_DEDUPLICATION_ID_SAME_PROVIDER =
+            "osw_common_deduplication_id_same_provider";
+    public static final String OSW_DIFFERENT_DEDUPLICATION_ID_SAME_NAME_1 =
+            "osw_different_deduplication_id_same_name_1";
+    public static final String OSW_DIFFERENT_DEDUPLICATION_ID_SAME_NAME_2 =
+            "osw_different_deduplication_id_same_name_2";
 
     public static final String SYSTEM_UI_PACKAGE = "com.android.systemui";
 

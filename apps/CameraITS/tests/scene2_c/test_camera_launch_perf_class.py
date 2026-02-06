@@ -55,16 +55,16 @@ class CameraLaunchSPerfClassTest(its_base_test.ItsBaseTest):
 
     launch_ms = cam.measure_camera_launch_ms()
 
+    # Log launch time, so that the corresponding MPC level can be written to
+    # report log. Text must match MPC12_CAMERA_LAUNCH_PATTERN in
+    # ItsTestActivity.java.
+    print(f'camera_launch_time_ms:{launch_ms}')
+
     # Assert launch time if device claims performance class
     if (cam.is_performance_class() and
         launch_ms >= _CAMERA_LAUNCH_S_PERFORMANCE_CLASS_THRESHOLD):
       raise AssertionError(f'camera_launch_time_ms: {launch_ms}, THRESH: '
                            f'{_CAMERA_LAUNCH_S_PERFORMANCE_CLASS_THRESHOLD}')
-
-    # Log launch time, so that the corresponding MPC level can be written to
-    # report log. Text must match MPC12_CAMERA_LAUNCH_PATTERN in
-    # ItsTestActivity.java.
-    print(f'camera_launch_time_ms:{launch_ms}')
 
 if __name__ == '__main__':
   test_runner.main()

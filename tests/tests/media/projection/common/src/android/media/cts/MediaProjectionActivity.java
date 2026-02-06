@@ -248,11 +248,18 @@ public class MediaProjectionActivity extends Activity {
         uiDevice.waitForIdle();
 
         BySelector shareTabSelector = By.res(SHARE_TAB_TEST_TAG);
+        BySelector shareAppSelector = By.res(SHARE_APP_WINDOW_TEST_TAG);
+        BySelector shareEntireSelector = By.res(SHARE_ENTIRE_SCREEN_TEST_TAG);
+
         boolean isNewUiPresent =
-                uiDevice.wait(Until.hasObject(shareTabSelector), PERMISSION_DIALOG_WAIT_MS);
+                uiDevice.wait(Until.hasObject(shareTabSelector), PERMISSION_DIALOG_WAIT_MS)
+                        || uiDevice.wait(
+                                Until.hasObject(shareAppSelector), PERMISSION_DIALOG_WAIT_MS)
+                        || uiDevice.wait(
+                                Until.hasObject(shareEntireSelector), PERMISSION_DIALOG_WAIT_MS);
 
         if (isNewUiPresent) {
-            Log.d(TAG, "Compose permission UI detected via testTag: " + SHARE_TAB_TEST_TAG);
+            Log.d(TAG, "Compose permission UI detected.");
             dismissNewComposePermissionDialog(uiDevice, displayName);
         } else {
             Log.d(TAG, "Old AlertDialog permission UI detected.");
@@ -333,7 +340,7 @@ public class MediaProjectionActivity extends Activity {
 
         // Attempt specific search if name is provided.
         if (displayName != null) {
-            displayToClick = contentList.findObject(By.textContains(displayName));
+            displayToClick = contentList.findObject(By.descContains(displayName));
         }
 
         // Fallback to first clickable if name search failed or was skipped.
@@ -481,7 +488,30 @@ public class MediaProjectionActivity extends Activity {
 
     /** Returns true if the MediaProjection permission dialog is using the new Compose UI. */
     public static boolean isComposeUI(UiDevice device) {
-        return device.hasObject(By.res(SHARE_TAB_TEST_TAG));
+        boolean rroEnabled = false;
+        try {
+            final Context testContext = getInstrumentation().getContext();
+            final Context systemUiContext =
+                    testContext.createPackageContext("com.android.systemui", 0);
+            final Resources systemUiResources = systemUiContext.getResources();
+            final int resId =
+                    systemUiResources.getIdentifier(
+                            "config_enableLargeScreenScreencapture",
+                            "bool",
+                            "com.android.systemui");
+
+            if (resId != 0) {
+                rroEnabled = systemUiResources.getBoolean(resId);
+            } else {
+                Log.w(
+                        TAG,
+                        "Could not find resource 'config_enableLargeScreenScreencapture'. "
+                                + "Assuming false.");
+            }
+        } catch (PackageManager.NameNotFoundException e) {
+            Log.e(TAG, "Could not create context for SystemUI package. Assuming false.", e);
+        }
+        return rroEnabled;
     }
 
     @Override

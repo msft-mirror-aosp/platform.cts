@@ -21,6 +21,7 @@ import static android.media.cts.MediaRouterTestConstants.DEVICE_SIDE_TEST_CLASS_
 import static android.media.cts.MediaRouterTestConstants.DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_APK;
 import static android.media.cts.MediaRouterTestConstants.DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS;
 import static android.media.cts.MediaRouterTestConstants.DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE;
+import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER2_OSW_DEDUPLICATION_IDS_TEST_CLASS;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER2_OSW_PACKAGE_VISIBILITY_ALLOWED_TEST_CLASS;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_1_APK;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_1_PACKAGE;
@@ -387,10 +388,60 @@ public class MediaRouter2HostSideTest extends BaseMediaRouter2HostSideTest {
     @RequiresDevice
     @Test
     public void testOutputSwitcherPackageRestrictedRouteIsVisible() throws Throwable {
+        // Exclude form factors that do not support the System Output Switcher
+        assumeFalse(hasDeviceFeature("android.hardware.type.automotive"));
+        assumeFalse(hasDeviceFeature("android.software.leanback"));
+        assumeFalse(hasDeviceFeature("android.hardware.type.watch"));
+
         runDeviceTests(
                 MEDIA_ROUTER_TEST_PACKAGE,
                 MEDIA_ROUTER2_OSW_PACKAGE_VISIBILITY_ALLOWED_TEST_CLASS,
                 "outputSwitcherPackageRestrictedRouteIsVisible");
+    }
+
+    @AppModeFull
+    @RequiresDevice
+    @Test
+    public void testDeduplication_sameIdAcrossProviders_onlyShowOne() throws Throwable {
+        // Exclude form factors that do not support the System Output Switcher
+        assumeFalse(hasDeviceFeature("android.hardware.type.automotive"));
+        assumeFalse(hasDeviceFeature("android.software.leanback"));
+        assumeFalse(hasDeviceFeature("android.hardware.type.watch"));
+
+        runDeviceTests(
+                MEDIA_ROUTER_TEST_PACKAGE,
+                MEDIA_ROUTER2_OSW_DEDUPLICATION_IDS_TEST_CLASS,
+                "deduplication_sameIdAcrossProviders_onlyShowOne");
+    }
+
+    @AppModeFull
+    @RequiresDevice
+    @Test
+    public void testDeduplication_sameIdSystemAndNonSystem_onlyShowNonSystem() throws Throwable {
+        // Exclude form factors that do not support the System Output Switcher
+        assumeFalse(hasDeviceFeature("android.hardware.type.automotive"));
+        assumeFalse(hasDeviceFeature("android.software.leanback"));
+        assumeFalse(hasDeviceFeature("android.hardware.type.watch"));
+
+        runDeviceTests(
+                MEDIA_ROUTER_TEST_PACKAGE,
+                MEDIA_ROUTER2_OSW_DEDUPLICATION_IDS_TEST_CLASS,
+                "deduplication_sameIdSystemAndNonSystem_onlyShowNonSystem");
+    }
+
+    @AppModeFull
+    @RequiresDevice
+    @Test
+    public void testDeduplication_differentIdsSameName_showBoth() throws Throwable {
+        // Exclude form factors that do not support the System Output Switcher
+        assumeFalse(hasDeviceFeature("android.hardware.type.automotive"));
+        assumeFalse(hasDeviceFeature("android.software.leanback"));
+        assumeFalse(hasDeviceFeature("android.hardware.type.watch"));
+
+        runDeviceTests(
+                MEDIA_ROUTER_TEST_PACKAGE,
+                MEDIA_ROUTER2_OSW_DEDUPLICATION_IDS_TEST_CLASS,
+                "deduplication_differentIdsSameName_showBoth");
     }
 
     @AppModeFull

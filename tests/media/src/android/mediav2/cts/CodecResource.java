@@ -79,8 +79,11 @@ public class CodecResource {
     @NonNull
     @Override
     public String toString() {
-        return String.format(Locale.getDefault(), "Resource id %s, Capacity 0x%x, Available 0x%x",
-                mResourceId, mCapacity, mAvailable);
+        return String.format(Locale.getDefault(), "Resource id : %s, Capacity : %s, Available : %s",
+                mResourceId,
+                mCapacity == CodecResourceUtils.CAPACITY_UNKNOWN ? "UNKNOWN"
+                                                                 : Long.toHexString(mCapacity),
+                Long.toHexString(mAvailable));
     }
 
 }
@@ -90,7 +93,7 @@ public class CodecResource {
  */
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
 class CodecResourceUtils {
-    private static final long CAPACITY_UNKNOWN = -1L;
+    public static final long CAPACITY_UNKNOWN = -1L;
     public static final int RESOURCE_EQ = 0;
     public static final int LHS_RESOURCE_GE = 1;
     public static final int RHS_RESOURCE_GE = 2;
@@ -160,6 +163,9 @@ class CodecResourceUtils {
 
     public static int compareResources(List<CodecResource> lhs, List<CodecResource> rhs,
             StringBuilder errorLogs) {
+        if (errorLogs != null) {
+            errorLogs.setLength(0); // reset logs for current comparison
+        }
         if (lhs.size() != rhs.size()) {
             if (errorLogs != null) {
                 errorLogs.append(String.format(Locale.getDefault(),

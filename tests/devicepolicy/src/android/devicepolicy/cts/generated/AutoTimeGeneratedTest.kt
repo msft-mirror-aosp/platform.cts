@@ -85,7 +85,7 @@ public final class AutoTimePolicy_ScopeParentUser {}
             "android.app.admin.PolicyIdentifier#AUTO_TIME_USER_CHOICE",
         ]
 )
-class AutoTimeTest : CommonPolicyTests<Int>() {
+class AutoTimeGeneratedTest : CommonPolicyTests<Int>() {
 
     override val policyIdentifier = PolicyIdentifier.AUTO_TIME
 

@@ -104,7 +104,7 @@ public final class ScreenCapturePolicy_ScopeParentUser {}
             "android.app.admin.PolicyIdentifier#SCREEN_CAPTURE_DISALLOWED",
         ]
 )
-class ScreenCaptureTest : CommonPolicyTests<Int>() {
+class ScreenCaptureGeneratedTest : CommonPolicyTests<Int>() {
 
     override val policyIdentifier = PolicyIdentifier.SCREEN_CAPTURE
 

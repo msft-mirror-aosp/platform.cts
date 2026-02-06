@@ -113,12 +113,7 @@ class ObserveAppFunctionsTest {
         try {
             val observer = TestClientObserver()
             observation =
-                observeAppFunctions(
-                    AppFunctionSearchSpec.Builder()
-                        .setPackageNames(setOf(UpdatableHelperApp.PACKAGE_NAME))
-                        .build(),
-                    observer,
-                )
+                observeAppFunctions(observer)
 
             installPackage(
                 UpdatableHelperApp.ApkPaths.BASE_APP,
@@ -128,7 +123,6 @@ class ObserveAppFunctionsTest {
             )
 
             assertThat(observer.updatedPackagesHistory).isEmpty()
-            assertThat(observer.updatedFunctionsHistory).isEmpty()
             assertThat(observer.updatedFunctionStatesHistory).isEmpty()
         } finally {
             observation?.cancel()
@@ -146,18 +140,12 @@ class ObserveAppFunctionsTest {
         Manifest.permission.DISCOVER_APP_FUNCTIONS,
         Manifest.permission.QUERY_ALL_PACKAGES,
     )
-    @Ignore("b/479123842 - Enable after fixing redundant onAppFunctionsChanged callbacks")
     fun packageInstalled_withAllPermissions_seesAllUpdates() = doBlocking {
         var observation: AppFunctionObservation? = null
         try {
             val observer = TestClientObserver()
             observation =
-                observeAppFunctions(
-                    AppFunctionSearchSpec.Builder()
-                        .setPackageNames(setOf(UpdatableHelperApp.PACKAGE_NAME))
-                        .build(),
-                    observer,
-                )
+                observeAppFunctions(observer)
 
             assertThat(observer.updatedPackagesHistory).isEmpty()
 
@@ -169,7 +157,6 @@ class ObserveAppFunctionsTest {
             )
 
             assertThat(observer.updatedPackagesHistory).hasSize(1)
-            assertThat(observer.updatedFunctionsHistory).isEmpty()
             assertThat(observer.updatedPackagesHistory.flatten())
                 .containsExactly(UpdatableHelperApp.PACKAGE_NAME)
         } finally {
@@ -188,7 +175,7 @@ class ObserveAppFunctionsTest {
         Manifest.permission.DISCOVER_APP_FUNCTIONS,
     )
     @Ignore("b/479123842 - Enable after fixing redundant onAppFunctionsChanged callbacks")
-    fun packageUpdated_callsOnPackageChanged() = doBlocking {
+    fun packageUpdated_callsOnAppFunctionMetadataChanged() = doBlocking {
         var observation: AppFunctionObservation? = null
         try {
             installPackage(
@@ -199,12 +186,7 @@ class ObserveAppFunctionsTest {
             )
             val observer = TestClientObserver()
             observation =
-                observeAppFunctions(
-                    AppFunctionSearchSpec.Builder()
-                        .setPackageNames(setOf(UpdatableHelperApp.PACKAGE_NAME))
-                        .build(),
-                    observer,
-                )
+                observeAppFunctions(observer)
             assertThat(observer.updatedPackagesHistory).isEmpty()
 
             // Static metadata is updated for UpdatableHelperApp.PACKAGE_NAME.
@@ -217,7 +199,6 @@ class ObserveAppFunctionsTest {
 
             retryAssert {
                 assertThat(observer.updatedPackagesHistory).hasSize(1)
-                assertThat(observer.updatedFunctionsHistory).isEmpty()
                 assertThat(observer.updatedPackagesHistory.flatten())
                     .containsExactly(UpdatableHelperApp.PACKAGE_NAME)
             }
@@ -247,19 +228,13 @@ class ObserveAppFunctionsTest {
             )
             val observer = TestClientObserver()
             observation =
-                observeAppFunctions(
-                    AppFunctionSearchSpec.Builder()
-                        .setPackageNames(setOf(UpdatableHelperApp.PACKAGE_NAME))
-                        .build(),
-                    observer,
-                )
+                observeAppFunctions(observer)
             assertThat(observer.updatedPackagesHistory).isEmpty()
 
             uninstallPackage(UpdatableHelperApp.PACKAGE_NAME, context, checkIndexation = true)
 
-            retryAssert {
+            retryAssert(maxIntervals = 40) {
                 assertThat(observer.updatedPackagesHistory).hasSize(1)
-                assertThat(observer.updatedFunctionsHistory).isEmpty()
                 assertThat(observer.updatedFunctionStatesHistory).isEmpty()
                 assertThat(observer.updatedPackagesHistory.flatten())
                     .containsExactly(UpdatableHelperApp.PACKAGE_NAME)
@@ -283,16 +258,9 @@ class ObserveAppFunctionsTest {
         var observation: AppFunctionObservation? = null
         try {
             val observer = TestClientObserver()
+            // TODO(b/478810311): test with non-root package
             observation =
-                observeAppFunctions(
-                    AppFunctionSearchSpec.Builder()
-                        // TODO(b/478810311): test with non-root package
-                        .setPackageNames(setOf(CtsApp.PACKAGE_NAME))
-                        .build(),
-                    observer,
-                )
-
-            assertThat(observer.updatedFunctionsHistory).isEmpty()
+                observeAppFunctions(observer)
 
             setAppFunctionEnabled(
                 manager,
@@ -323,7 +291,6 @@ class ObserveAppFunctionsTest {
 
             retryAssert {
                 assertThat(observer.updatedPackagesHistory).isEmpty()
-                assertThat(observer.updatedFunctionsHistory).isEmpty()
                 assertThat(observer.updatedFunctionStatesHistory).hasSize(2)
                 assertThat(observer.updatedFunctionStatesHistory.flatten())
                     .containsExactly(
@@ -371,13 +338,7 @@ class ObserveAppFunctionsTest {
 
             val observer = TestClientObserver()
             observation =
-                observeAppFunctions(
-                    AppFunctionSearchSpec.Builder()
-                        .setPackageNames(setOf(CtsApp.PACKAGE_NAME))
-                        .build(),
-                    observer,
-                )
-            assertThat(observer.updatedFunctionsHistory).isEmpty()
+                observeAppFunctions(observer)
 
             setAppFunctionEnabled(
                 manager,
@@ -396,7 +357,6 @@ class ObserveAppFunctionsTest {
 
             retryAssert {
                 assertThat(observer.updatedPackagesHistory).isEmpty()
-                assertThat(observer.updatedFunctionsHistory).isEmpty()
                 assertThat(observer.updatedFunctionStatesHistory).hasSize(1)
                 assertThat(observer.updatedFunctionStatesHistory.flatten())
                     .containsExactly(CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS)
@@ -423,14 +383,9 @@ class ObserveAppFunctionsTest {
     )
     fun registerDynamicFunction_callsOnAppFunctionsChangedIfEnabled() = doBlocking {
         var observation: AppFunctionObservation? = null
-        val searchSpec =
-            AppFunctionSearchSpec.Builder()
-                // TODO(b/478810311): test with non-root package
-                .setFunctionNames(setOf(CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS))
-                .build()
         val observer = TestClientObserver()
-        observation = observeAppFunctions(searchSpec, observer)
-        assertThat(observer.updatedFunctionsHistory).isEmpty()
+        // TODO(b/478810311): test with non-root package
+        observation = observeAppFunctions(observer)
 
         var registration: AppFunctionRegistration? = null
         try {
@@ -444,7 +399,6 @@ class ObserveAppFunctionsTest {
 
             retryAssert {
                 assertThat(observer.updatedPackagesHistory).isEmpty()
-                assertThat(observer.updatedFunctionsHistory).isEmpty()
                 assertThat(observer.updatedFunctionStatesHistory).hasSize(1)
                 assertThat(observer.updatedFunctionStatesHistory.flatten())
                     .containsExactly(CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS)
@@ -479,18 +433,11 @@ class ObserveAppFunctionsTest {
 
             val observer = TestClientObserver()
             observation =
-                observeAppFunctions(
-                    AppFunctionSearchSpec.Builder()
-                        .setPackageNames(setOf(CtsApp.PACKAGE_NAME))
-                        .build(),
-                    observer,
-                )
-            assertThat(observer.updatedFunctionsHistory).isEmpty()
+                observeAppFunctions(observer)
 
             registration.unregister()
             retryAssert {
                 assertThat(observer.updatedPackagesHistory).isEmpty()
-                assertThat(observer.updatedFunctionsHistory).isEmpty()
                 assertThat(observer.updatedFunctionStatesHistory).hasSize(1)
                 assertThat(observer.updatedFunctionStatesHistory.flatten())
                     .containsExactly(CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS)
@@ -535,9 +482,6 @@ class ObserveAppFunctionsTest {
                 "Expected observeAppFunctions to throw a security exception without permission"
             ) {
                 observeAppFunctions(
-                    AppFunctionSearchSpec.Builder()
-                        .setPackageNames(setOf(DynamicSchemaHelperApp.PACKAGE_NAME))
-                        .build(),
                     TestClientObserver(),
                 )
             }
@@ -590,7 +534,7 @@ class ObserveAppFunctionsTest {
 
         val observer = TestClientObserver()
         try {
-            observation = observeAppFunctions(AppFunctionSearchSpec.Builder().build(), observer)
+            observation = observeAppFunctions(observer)
             installExistingPackageAsUser(
                 DynamicSchemaHelperApp.PACKAGE_NAME,
                 secondaryUser,
@@ -606,7 +550,6 @@ class ObserveAppFunctionsTest {
 
             retryAssert {
                 assertThat(observer.updatedPackagesHistory).hasSize(1)
-                assertThat(observer.updatedFunctionsHistory).isEmpty()
                 assertThat(observer.updatedFunctionStatesHistory).isEmpty()
                 assertThat(observer.updatedPackagesHistory.flatten())
                     .containsExactly(DynamicSchemaHelperApp.PACKAGE_NAME)
@@ -631,12 +574,7 @@ class ObserveAppFunctionsTest {
         try {
             val observer = TestClientObserver()
             observation =
-                observeAppFunctions(
-                    AppFunctionSearchSpec.Builder()
-                        .setPackageNames(setOf(UpdatableHelperApp.PACKAGE_NAME))
-                        .build(),
-                    observer,
-                )
+                observeAppFunctions(observer)
             assertThat(observer.updatedPackagesHistory).isEmpty()
 
             observation.cancel()
@@ -648,7 +586,6 @@ class ObserveAppFunctionsTest {
             )
 
             assertThat(observer.updatedPackagesHistory).isEmpty()
-            assertThat(observer.updatedFunctionsHistory).isEmpty()
             assertThat(observer.updatedFunctionStatesHistory).isEmpty()
         } finally {
             observation?.cancel()
@@ -669,16 +606,9 @@ class ObserveAppFunctionsTest {
         var observation: AppFunctionObservation? = null
         try {
             val observer = TestClientObserver()
+            // TODO(b/478810311): test with non-root package
             observation =
-                observeAppFunctions(
-                    AppFunctionSearchSpec.Builder()
-                        // TODO(b/478810311): test with non-root package
-                        .setPackageNames(setOf(CtsApp.PACKAGE_NAME))
-                        .build(),
-                    observer,
-                )
-            assertThat(observer.updatedFunctionsHistory).isEmpty()
-
+                observeAppFunctions(observer)
             observation.cancel()
 
             setAppFunctionEnabled(
@@ -697,7 +627,6 @@ class ObserveAppFunctionsTest {
             }
 
             assertThat(observer.updatedPackagesHistory).isEmpty()
-            assertThat(observer.updatedFunctionsHistory).isEmpty()
             assertThat(observer.updatedFunctionStatesHistory).isEmpty()
         } finally {
             observation?.cancel()
@@ -710,10 +639,9 @@ class ObserveAppFunctionsTest {
     }
 
     private fun observeAppFunctions(
-        searchSpec: AppFunctionSearchSpec,
         observer: TestClientObserver,
     ): AppFunctionObservation {
-        return manager.observeAppFunctions(searchSpec, context.mainExecutor, observer)
+        return manager.observeAppFunctions(context.mainExecutor, observer)
     }
 
     private suspend fun isAppFunctionEnabled(
@@ -731,19 +659,14 @@ class ObserveAppFunctionsTest {
     private fun doBlocking(block: suspend CoroutineScope.() -> Unit) = runBlocking(block = block)
 
     class TestClientObserver : AppFunctionObserver {
-        val updatedPackagesHistory: MutableSet<List<String>> = mutableSetOf()
-        val updatedFunctionsHistory: MutableSet<List<AppFunctionName>> = mutableSetOf()
-        val updatedFunctionStatesHistory: MutableSet<List<AppFunctionName>> = mutableSetOf()
+        val updatedPackagesHistory: MutableSet<Set<String>> = mutableSetOf()
+        val updatedFunctionStatesHistory: MutableSet<Set<AppFunctionName>> = mutableSetOf()
 
-        override fun onAppFunctionsChanged(appFunctions: List<AppFunctionName>) {
-            updatedFunctionsHistory.add(appFunctions)
-        }
-
-        override fun onPackagesChanged(packageNames: List<String>) {
+        override fun onAppFunctionMetadataChanged(packageNames: Set<String>) {
             updatedPackagesHistory.add(packageNames)
         }
 
-        override fun onAppFunctionStatesChanged(appFunctions: List<AppFunctionName>) {
+        override fun onAppFunctionStatesChanged(appFunctions: Set<AppFunctionName>) {
             updatedFunctionStatesHistory.add(appFunctions)
         }
     }

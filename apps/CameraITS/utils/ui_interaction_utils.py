@@ -345,12 +345,37 @@ def jca_ui_zoom(dut, zoom_ratio, log_path):
                   'No need to zoom.',
                   zoom_ratio, current_zoom_ratio)
     return
-  dut.ui(res=UI_DEBUG_OVERLAY_BUTTON_RESOURCE_ID).click()
-  dut.ui(res=UI_DEBUG_OVERLAY_SET_ZOOM_RATIO_BUTTON_RESOURCE_ID).click()
-  dut.ui(
-      res=UI_DEBUG_OVERLAY_SET_ZOOM_RATIO_TEXT_FIELD_RESOURCE_ID
-  ).set_text(str(zoom_ratio))
-  dut.ui(res=UI_DEBUG_OVERLAY_SET_ZOOM_RATIO_SET_BUTTON_RESOURCE_ID).click()
+  # Check if debug overlay set zoom ratio text field already exists
+  # If it does, the dialog is already open and we can skip opening debug overlay
+  text_field = dut.ui(
+      res=UI_DEBUG_OVERLAY_SET_ZOOM_RATIO_TEXT_FIELD_RESOURCE_ID)
+  if not text_field.wait.exists(UI_OBJECT_WAIT_TIME_SECONDS):
+    # Text field doesn't exist, need to open debug overlay first
+    dut.ui(res=UI_DEBUG_OVERLAY_BUTTON_RESOURCE_ID).click()
+    # Wait for debug overlay menu to appear
+    set_zoom_ratio_button = dut.ui(
+        res=UI_DEBUG_OVERLAY_SET_ZOOM_RATIO_BUTTON_RESOURCE_ID)
+    if not set_zoom_ratio_button.wait.exists(
+        UI_OBJECT_WAIT_TIME_SECONDS):
+      dut.take_screenshot(log_path, prefix='cannot_find_set_zoom_ratio_button')
+      logging.debug('JCA UI dump: %s', dut.ui.dump())
+      raise AssertionError('Set Zoom Ratio button not found!')
+    # Click the set zoom ratio button to open the dialog
+    set_zoom_ratio_button.click()
+    # Wait for the text field to appear after opening the dialog
+    if not text_field.wait.exists(UI_OBJECT_WAIT_TIME_SECONDS):
+      dut.take_screenshot(log_path, prefix='cannot_find_text_field')
+      logging.debug('JCA UI dump: %s', dut.ui.dump())
+      raise AssertionError('Text field not found!')
+  text_field.set_text(str(zoom_ratio))
+  set_zoom_ratio_set_button = dut.ui(
+      res=UI_DEBUG_OVERLAY_SET_ZOOM_RATIO_SET_BUTTON_RESOURCE_ID)
+  if not set_zoom_ratio_set_button.wait.exists(UI_OBJECT_WAIT_TIME_SECONDS):
+    dut.take_screenshot(
+        log_path, prefix='cannot_find_set_zoom_ratio_set_button')
+    logging.debug('JCA UI dump: %s', dut.ui.dump())
+    raise AssertionError('Set Zoom Ratio Set button not found!')
+  set_zoom_ratio_set_button.click()
   if not dut.ui(res=UI_ZOOM_RATIO_TEXT_RESOURCE_ID).wait.exists(
       UI_OBJECT_WAIT_TIME_SECONDS
   ):

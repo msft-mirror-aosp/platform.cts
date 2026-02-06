@@ -75,6 +75,7 @@ public class ControlledTestDreamService extends DreamService {
     private ServiceConnection mConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
+            Log.d(TAG, "onServiceConnected: " + name);
             mDreamProxy = IDreamProxy.Stub.asInterface(service);
             try {
                 mDreamProxy.publishDream(mProxy);
@@ -85,19 +86,23 @@ public class ControlledTestDreamService extends DreamService {
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
+            Log.d(TAG, "onServiceDisconnected: " + name);
         }
     };
 
     @Override
     public void onCreate() {
+        Log.d(TAG, "onCreate");
         super.onCreate();
         final Intent intent = new Intent();
         intent.setClass(this, DreamProxyService.class);
-        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+        boolean bound = bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+        Log.d(TAG, "onCreate: bound=" + bound);
     }
 
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
+        Log.d(TAG, "onWindowFocusChanged: " + hasFocus);
         super.onWindowFocusChanged(hasFocus);
         mDreamLifecycleListeners.forEach(
                 listener -> {
@@ -111,6 +116,7 @@ public class ControlledTestDreamService extends DreamService {
 
     @Override
     public void onAttachedToWindow() {
+        Log.d(TAG, "onAttachedToWindow");
         super.onAttachedToWindow();
         mDreamLifecycleListeners.forEach(
                 listener -> {
@@ -145,6 +151,7 @@ public class ControlledTestDreamService extends DreamService {
 
     @Override
     public void onDreamingStarted() {
+        Log.d(TAG, "onDreamingStarted");
         super.onDreamingStarted();
         mDreamLifecycleListeners.forEach(
                 listener -> {
@@ -158,6 +165,7 @@ public class ControlledTestDreamService extends DreamService {
 
     @Override
     public void onWakeUp() {
+        Log.d(TAG, "onWakeUp");
         mDreamLifecycleListeners.forEach(
                 listener -> {
                     try {
@@ -171,6 +179,7 @@ public class ControlledTestDreamService extends DreamService {
 
     @Override
     public void onDreamingStopped() {
+        Log.d(TAG, "onDreamingStopped");
         super.onDreamingStopped();
         mDreamLifecycleListeners.forEach(
                 listener -> {
@@ -184,6 +193,7 @@ public class ControlledTestDreamService extends DreamService {
 
     @Override
     public void onDestroy() {
+        Log.d(TAG, "onDestroy");
         mDreamLifecycleListeners.forEach(
                 listener -> {
                     try {
@@ -197,6 +207,7 @@ public class ControlledTestDreamService extends DreamService {
 
     @Override
     public void onDetachedFromWindow() {
+        Log.d(TAG, "onDetachedFromWindow");
         super.onDetachedFromWindow();
         mDreamLifecycleListeners.forEach(
                 listener -> {

@@ -42,6 +42,7 @@ import android.media.MediaFormat;
 import android.media.MediaRecorder;
 import android.media.MicrophoneDirection;
 import android.media.MicrophoneInfo;
+import android.media.audio.Flags;
 import android.media.cts.AudioHelper;
 import android.media.cts.StreamUtils;
 import android.media.metrics.LogSessionId;
@@ -53,6 +54,9 @@ import android.os.Message;
 import android.os.PersistableBundle;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
@@ -68,6 +72,7 @@ import com.google.common.collect.Range;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -82,6 +87,9 @@ import java.util.function.BiFunction;
 @FrameworkSpecificTest
 @RunWith(AndroidJUnit4.class)
 public class AudioRecordTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private final static String TAG = "AudioRecordTest";
     private static final String REPORT_LOG_NAME = "CtsMediaAudioTestCases";
     private AudioRecord mAudioRecord;
@@ -1039,7 +1047,8 @@ public class AudioRecordTest {
     private AudioRecord createAudioRecord(
             int audioSource, int sampleRateInHz,
             int channelConfig, int audioFormat, int bufferSizeInBytes,
-            boolean auditRecording, boolean isChannelIndex) {
+            boolean auditRecording, boolean isChannelIndex,
+            boolean isAcn, AudioDeviceInfo preferredDevice) {
         final AudioRecord record;
         if (auditRecording) {
             record = new AudioHelper.AudioRecordAudit(
@@ -1054,17 +1063,37 @@ public class AudioRecordTest {
                             .build())
                     .setBufferSizeInBytes(bufferSizeInBytes)
                     .build();
+        } else if (isAcn) {
+            record = new AudioRecord.Builder()
+                    .setAudioFormat(new AudioFormat.Builder()
+                            .setChannelAcnMask(channelConfig)
+                            .setEncoding(audioFormat)
+                            .setSampleRate(sampleRateInHz)
+                            .build())
+                    .setBufferSizeInBytes(bufferSizeInBytes)
+                    .build();
         } else {
             record = new AudioRecord(audioSource, sampleRateInHz, channelConfig,
                     audioFormat, bufferSizeInBytes);
         }
 
+        if (preferredDevice != null) {
+            record.setPreferredDevice(preferredDevice);
+        }
+
         // did we get the AudioRecord we expected?
         final AudioFormat format = record.getFormat();
-        assertEquals(isChannelIndex ? channelConfig : AudioFormat.CHANNEL_INVALID,
-                format.getChannelIndexMask());
-        assertEquals(isChannelIndex ? AudioFormat.CHANNEL_INVALID : channelConfig,
-                format.getChannelMask());
+        if (isAcn) {
+            assertEquals(channelConfig, format.getChannelAcnMask());
+            assertEquals(AudioFormat.CHANNEL_INVALID, format.getChannelIndexMask());
+            assertEquals(AudioFormat.CHANNEL_INVALID, format.getChannelMask());
+        } else {
+            assertEquals(AudioFormat.CHANNEL_INVALID, format.getChannelAcnMask());
+            assertEquals(isChannelIndex ? channelConfig : AudioFormat.CHANNEL_INVALID,
+                    format.getChannelIndexMask());
+            assertEquals(isChannelIndex ? AudioFormat.CHANNEL_INVALID : channelConfig,
+                    format.getChannelMask());
+        }
         assertEquals(audioFormat, format.getEncoding());
         assertEquals(sampleRateInHz, format.getSampleRate());
         final int frameSize =
@@ -1082,12 +1111,40 @@ public class AudioRecordTest {
         final int TEST_TIME_MS = auditRecording ? 10000 : 2000;
         doTest(reportName, localRecord, customHandler, periodsPerSecond, markerPeriodsPerSecond,
                 useByteBuffer, blocking, auditRecording, isChannelIndex,
+                false /*isAcn*/, null /*preferredDevice*/,
                 TEST_SR, TEST_CONF, TEST_FORMAT, TEST_TIME_MS);
     }
+
     private void doTest(String reportName, boolean localRecord, boolean customHandler,
             int periodsPerSecond, int markerPeriodsPerSecond,
             boolean useByteBuffer, boolean blocking,
             final boolean auditRecording, final boolean isChannelIndex,
+            final int TEST_SR, final int TEST_CONF, final int TEST_FORMAT,
+            final int TEST_TIME_MS) throws Exception {
+        doTest(reportName, localRecord, customHandler, periodsPerSecond, markerPeriodsPerSecond,
+                useByteBuffer, blocking, auditRecording, isChannelIndex,
+                false /*isAcn*/, null /*preferredDevice*/,
+                TEST_SR, TEST_CONF, TEST_FORMAT, TEST_TIME_MS);
+    }
+
+    private void doTest(String reportName, boolean localRecord, boolean customHandler,
+            int periodsPerSecond, int markerPeriodsPerSecond,
+            boolean useByteBuffer, boolean blocking,
+            final boolean auditRecording, final boolean isChannelIndex,
+            final boolean isAcn, final AudioDeviceInfo preferredDevice,
+            final int TEST_SR, final int TEST_CONF, final int TEST_FORMAT) throws Exception {
+        final int TEST_TIME_MS = auditRecording ? 10000 : 2000;
+        doTest(reportName, localRecord, customHandler, periodsPerSecond, markerPeriodsPerSecond,
+                useByteBuffer, blocking, auditRecording, isChannelIndex,
+                isAcn, preferredDevice,
+                TEST_SR, TEST_CONF, TEST_FORMAT, TEST_TIME_MS);
+    }
+
+    private void doTest(String reportName, boolean localRecord, boolean customHandler,
+            int periodsPerSecond, int markerPeriodsPerSecond,
+            boolean useByteBuffer, boolean blocking,
+            final boolean auditRecording, final boolean isChannelIndex,
+            final boolean isAcn, final AudioDeviceInfo preferredDevice,
             final int TEST_SR, final int TEST_CONF, final int TEST_FORMAT, final int TEST_TIME_MS)
             throws Exception {
         if (!hasMicrophone()) {
@@ -1097,12 +1154,18 @@ public class AudioRecordTest {
         final int TEST_SOURCE = MediaRecorder.AudioSource.DEFAULT;
         mIsHandleMessageCalled = false;
 
-        // For channelIndex use one frame in bytes for buffer size.
-        // This is adjusted to the minimum buffer size by native code.
-        final int bufferSizeInBytes = isChannelIndex ?
-                (AudioFormat.getBytesPerSample(TEST_FORMAT)
-                        * AudioFormat.channelCountFromInChannelMask(TEST_CONF)) :
-                AudioRecord.getMinBufferSize(TEST_SR, TEST_CONF, TEST_FORMAT);
+        final int bufferSizeInBytes;
+        if (isChannelIndex) {
+            // For channelIndex use one frame in bytes for buffer size.
+            // This is adjusted to the minimum buffer size by native code.
+            bufferSizeInBytes = (AudioFormat.getBytesPerSample(TEST_FORMAT)
+                    * AudioFormat.channelCountFromInChannelMask(TEST_CONF));
+        } else if (isAcn) {
+            bufferSizeInBytes = (AudioFormat.getBytesPerSample(TEST_FORMAT)
+                    * AudioFormat.channelCountFromAcnChannelMask(TEST_CONF));
+        } else {
+            bufferSizeInBytes = AudioRecord.getMinBufferSize(TEST_SR, TEST_CONF, TEST_FORMAT);
+        }
         assertWithMessage("getMinBufferSize() reports nonzero value")
                 .that(bufferSizeInBytes)
                 .isGreaterThan(0);
@@ -1114,7 +1177,8 @@ public class AudioRecordTest {
         if (localRecord) {
             makeSomething = null;
             record = createAudioRecord(TEST_SOURCE, TEST_SR, TEST_CONF,
-                    TEST_FORMAT, bufferSizeInBytes, auditRecording, isChannelIndex);
+                    TEST_FORMAT, bufferSizeInBytes, auditRecording, isChannelIndex,
+                    isAcn, preferredDevice);
         } else {
             makeSomething =
                     new AudioHelper.MakeSomethingAsynchronouslyAndLoop<AudioRecord>(
@@ -1123,7 +1187,7 @@ public class AudioRecordTest {
                                 public AudioRecord makeSomething() {
                                     return createAudioRecord(TEST_SOURCE, TEST_SR, TEST_CONF,
                                             TEST_FORMAT, bufferSizeInBytes, auditRecording,
-                                            isChannelIndex);
+                                            isChannelIndex, isAcn, preferredDevice);
                                 }
                             }
                             );
@@ -1196,7 +1260,12 @@ public class AudioRecordTest {
             // For our tests, we could set test duration by timed sleep or by # frames received.
             // Since we don't know *exactly* when AudioRecord actually begins recording,
             // we end the test by # frames read.
-            final int numChannels =  AudioFormat.channelCountFromInChannelMask(TEST_CONF);
+            final int numChannels;
+            if (isAcn) {
+                numChannels = AudioFormat.channelCountFromAcnChannelMask(TEST_CONF);
+            } else { // channelIndexMask is the same
+                numChannels = AudioFormat.channelCountFromInChannelMask(TEST_CONF);
+            }
             final int bytesPerSample = AudioFormat.getBytesPerSample(TEST_FORMAT);
             final int bytesPerFrame = numChannels * bytesPerSample;
             // careful about integer overflow in the formula below:
@@ -2070,5 +2139,44 @@ public class AudioRecordTest {
                 audioRecord.release();
             }
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_AMBISONICS_SUPPORT_API)
+    public void testAudioRecordAmbisonicsCapture() throws Exception {
+        // Enumerate devices to find one that supports Ambisonics
+        AudioDeviceInfo[] devices = mAudioManager.getDevices(AudioManager.GET_DEVICES_INPUTS);
+        AudioDeviceInfo ambisonicsDevice = null;
+        int targetMask = 0;
+        int targetFormat = AudioFormat.ENCODING_PCM_16BIT;
+        int targetRate = 48000;
+
+        for (AudioDeviceInfo device : devices) {
+            int[] acnMasks = device.getChannelAcnMasks();
+            if (acnMasks.length > 0) {
+                ambisonicsDevice = device;
+                targetMask = acnMasks[0];
+                // Attempt to pick a compatible format and rate from the device
+                int[] encodings = device.getEncodings();
+                if (encodings.length > 0) {
+                    targetFormat = encodings[0];
+                }
+                int[] rates = device.getSampleRates();
+                if (rates.length > 0) {
+                    targetRate = rates[0];
+                }
+                break;
+            }
+        }
+        if (ambisonicsDevice == null) {
+            Log.i(TAG, "No Ambisonics capable device found. Skipping test.");
+            return;
+        }
+        doTest("ambisonics_capture", true /*localRecord*/, false /*customHandler*/,
+                2 /*periodsPerSecond*/, 0 /*markerPeriodsPerSecond*/,
+                false /*useByteBuffer*/, true /*blocking*/,
+                false /*auditRecording*/, false /*isChannelIndex*/,
+                true /*isAcn*/, ambisonicsDevice,
+                targetRate, targetMask, targetFormat);
     }
 }
