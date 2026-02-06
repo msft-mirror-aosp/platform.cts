@@ -74,7 +74,9 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatelliteTestBase {
@@ -643,8 +645,20 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
         List<String> expectedCarrierPlmnList = new ArrayList<>();
         expectedCarrierPlmnList.add("310280");
         expectedCarrierPlmnList.add("311480");
-        enableDefaultSupportedServicesForCarrier(sEsosSubId, expectedCarrierPlmnList);
-        waitForCarrierPlmnListAvailableInTelephony(sEsosSubId, expectedCarrierPlmnList);
+        List<String> allCarrierPlmnList = new ArrayList<>();
+        allCarrierPlmnList.addAll(expectedCarrierPlmnList);
+        allCarrierPlmnList.add("310240");
+        Map<String, List<Integer>> supportedSatelliteTechnologyPerPlmn = new HashMap<>();
+        List<Integer> supportedSatTechList1 = new ArrayList<>();
+        supportedSatTechList1.add(SatelliteManager.NT_RADIO_TECHNOLOGY_NB_IOT_NTN);
+        List<Integer> supportedSatTechList2 = new ArrayList<>();
+        supportedSatTechList2.add(SatelliteManager.NT_RADIO_TECHNOLOGY_NR_NTN);
+        supportedSatelliteTechnologyPerPlmn.put("310280", supportedSatTechList1);
+        supportedSatelliteTechnologyPerPlmn.put("311480", supportedSatTechList1);
+        supportedSatelliteTechnologyPerPlmn.put("310240", supportedSatTechList2);
+        enableDefaultSupportedServicesForCarrier(sEsosSubId, supportedSatelliteTechnologyPerPlmn,
+                CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_HYBRID);
+        waitForCarrierPlmnListAvailableInTelephony(sEsosSubId, allCarrierPlmnList);
 
         final long timeOut = TimeUnit.SECONDS.toMillis(1);
         grantSatellitePermission();
