@@ -40,6 +40,28 @@ specs {
   }
 }
 specs {
+  key: 20
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_20
+    specification:
+      "MUST have camera2 JPEG capture latency < 1000 ms for 1080p resolution "
+      "as measured by the CTS camera PerformanceTest under ITS lighting "
+      "conditions (3000K) for both primary cameras."
+    required_values {
+      key: "front_camera_latency"
+      value {
+        float_value: 1000.0
+      }
+    }
+    required_values {
+      key: "rear_camera_latency"
+      value {
+        float_value: 1000.0
+      }
+    }
+  }
+}
+specs {
   key: 30
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_30

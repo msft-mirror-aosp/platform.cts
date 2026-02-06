@@ -63,6 +63,51 @@ specs {
   }
 }
 specs {
+  key: 20
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_20
+    specification:
+      "MUST support 6 instances of hardware video decoder and hardware video "
+      "encoder sessions (AVC or HEVC) in any codec combination running "
+      "concurrently at 720p@30 fps resolution."
+    required_values {
+      key: "concurrent_fps"
+      value {
+        double_value: 85.5
+      }
+    }
+    required_values {
+      key: "resolution"
+      value {
+        int_value: 720
+      }
+    }
+    variant_specs {
+      key: "AV1"
+      value {
+        required_values {
+          key: "resolution"
+          value {
+            int_value: 720
+          }
+        }
+      }
+    }
+    variant_specs {
+      key: "VP9"
+      value {
+        required_values {
+          key: "resolution"
+          value {
+            int_value: 720
+          }
+        }
+      }
+    }
+    test_config_id: "720p"
+  }
+}
+specs {
   key: 30
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_30
