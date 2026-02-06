@@ -276,11 +276,10 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
         sActiveSubscriptionRequired = false;
         if (!shouldTestSatelliteWithMockService()) return;
 
-        beforeAllCarrierRoamingTestsBase();
         try {
-            MockModemManager.enforceMockModemDeveloperSetting();
+            beforeAllCarrierRoamingTestsBase();
         } catch (Exception e) {
-            sInitError = new AssertionError("enforceMockModemDeveloperSetting failed", e);
+            sInitError = new AssertionError("beforeAllCarrierRoamingTestsBase failed", e);
             return;
         }
 
@@ -288,7 +287,7 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
         try {
             setupMockSatelliteService();
         } catch (AssertionError e) {
-            sInitError = e;
+            sInitError = new AssertionError("setupMockSatelliteService failed", e);
             return;
         }
         sMockSatelliteServiceManager.setSupportedRadioTechnologies(
@@ -313,45 +312,45 @@ public class SatelliteManagerTestOnMockService extends CarrierRoamingSatelliteTe
     @AfterClass
     public static void afterAllTests() throws Exception {
         logd("afterAllTests");
-        if (sInitError != null) return;
         if (!shouldTestSatelliteWithMockService()) return;
+        if (sInitError == null) {
+            grantSatellitePermission();
+            sActiveSubscriptionRequired = false;
+            sMockSatelliteServiceManager.setDatagramControllerBooleanConfig(true,
+                    DatagramController.BOOLEAN_TYPE_WAIT_FOR_DEVICE_ALIGNMENT_IN_DEMO_DATAGRAM, false);
 
-        grantSatellitePermission();
-        sActiveSubscriptionRequired = false;
-        sMockSatelliteServiceManager.setDatagramControllerBooleanConfig(true,
-                DatagramController.BOOLEAN_TYPE_WAIT_FOR_DEVICE_ALIGNMENT_IN_DEMO_DATAGRAM, false);
+            SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+            long registerResult = sSatelliteManager.registerForModemStateChanged(
+                    getContext().getMainExecutor(), callback);
+            assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+            assertTrue(callback.waitUntilResult(1));
 
-        SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
-        long registerResult = sSatelliteManager.registerForModemStateChanged(
-                getContext().getMainExecutor(), callback);
-        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
-        assertTrue(callback.waitUntilResult(1));
+            if (isSatelliteEnabled()) {
+                logd("Disable satellite");
+                // Disable satellite modem to clean up all pending resources and reset telephony states.
+                requestSatelliteEnabled(false);
+                assertTrue(callback.waitUntilModemOff());
+                assertFalse(isSatelliteEnabled());
+            }
 
-        if (isSatelliteEnabled()) {
-            logd("Disable satellite");
-            // Disable satellite modem to clean up all pending resources and reset telephony states.
-            requestSatelliteEnabled(false);
-            assertTrue(callback.waitUntilModemOff());
-            assertFalse(isSatelliteEnabled());
+            assertTrue(sMockSatelliteServiceManager.restoreSatelliteServicePackageName());
+            waitFor(2000);
+            sSatelliteManager.unregisterForModemStateChanged(callback);
+            resetSatelliteAccessControlOverlayConfigs();
+            resetSatelliteAccessForSatelliteSubscriptions();
+            restoreSupportedMsgAppsForSatelliteSubscriptions();
+            restoreDeviceProvisionedState();
+            restoreNtnOnlySubscriptions();
+            assertTrue(sMockSatelliteServiceManager
+                    .setIsSatelliteCommunicationAllowedForCurrentLocationCache("enable"));
+            // Disable CTS mode to accept the requests from SG-APK and real Pointing UI app.
+            assertTrue(sMockSatelliteServiceManager.setCtsMode(false));
+            assertTrue(sMockSatelliteServiceManager.restoreSatellitePointingUiClassName());
+            cleanUpNtnOnlyTestEnvironment(NTN_ONLY_SLOT_ID, NTN_ONLY_SIM_PROFILE_ID);
+            revokeSatellitePermission();
         }
-
-        assertTrue(sMockSatelliteServiceManager.restoreSatelliteServicePackageName());
-        waitFor(2000);
-        sSatelliteManager.unregisterForModemStateChanged(callback);
-        resetSatelliteAccessControlOverlayConfigs();
-        resetSatelliteAccessForSatelliteSubscriptions();
-        restoreSupportedMsgAppsForSatelliteSubscriptions();
-        restoreDeviceProvisionedState();
-        restoreNtnOnlySubscriptions();
-        assertTrue(sMockSatelliteServiceManager
-                .setIsSatelliteCommunicationAllowedForCurrentLocationCache("enable"));
-        // Disable CTS mode to accept the requests from SG-APK and real Pointing UI app.
-        assertTrue(sMockSatelliteServiceManager.setCtsMode(false));
-        assertTrue(sMockSatelliteServiceManager.restoreSatellitePointingUiClassName());
-        cleanUpNtnOnlyTestEnvironment(NTN_ONLY_SLOT_ID, NTN_ONLY_SIM_PROFILE_ID);
         afterAllCarrierRoamingTestsBase();
         sMockSatelliteServiceManager = null;
-        revokeSatellitePermission();
     }
 
     @Before
