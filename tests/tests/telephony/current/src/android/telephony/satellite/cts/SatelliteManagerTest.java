@@ -36,6 +36,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.CancellationSignal;
 import android.os.OutcomeReceiver;
+import android.os.Parcel;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -378,6 +379,52 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         assertThrows(SecurityException.class, () -> sSatelliteManager.requestEnabled(
                 new EnableRequestAttributes.Builder(false).build(),
                 getContext().getMainExecutor(), error::offer));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_UPSELL)
+    public void testEnableRequestAttributes() {
+        EnableRequestAttributes.Builder builder = new EnableRequestAttributes.Builder(true);
+        builder.setConnectType(CARRIER_ROAMING_NTN_CONNECT_MANUAL);
+        builder.setSatelliteEnablementRequestReason(
+                SatelliteManager.SATELLITE_ENABLEMENT_REQUEST_REASON_USER);
+        builder.setPrioritizedScanningRequired(true);
+        builder.setDemoMode(true);
+        builder.setEmergencyMode(true);
+
+        // Throws IllegalStateException as mIsPrioritizedScanningRequired is true but
+        // mConnectType is CARRIER_ROAMING_NTN_CONNECT_MANUAL
+        assertThrows(IllegalStateException.class, builder::build);
+
+        builder.setConnectType(CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC);
+        // Throws IllegalStateException as mIsDemoMode is true but
+        // mConnectType is CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC
+        assertThrows(IllegalStateException.class, builder::build);
+
+        builder.setDemoMode(false);
+        // Throws IllegalStateException as mIsEmergencyMode is true but
+        // mConnectType is CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC
+        assertThrows(IllegalStateException.class, builder::build);
+
+        builder.setEmergencyMode(false);
+        EnableRequestAttributes attributes = builder.build();
+        assertTrue(attributes.isEnabled());
+        assertEquals(CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC, attributes.getConnectType());
+        assertEquals(SatelliteManager.SATELLITE_ENABLEMENT_REQUEST_REASON_USER,
+                attributes.getSatelliteEnablementRequestReason());
+        assertTrue(attributes.isPrioritizedScanningRequired());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_UPSELL)
+    public void testEnableResponse() {
+        int[] requestReasons = {SatelliteManager.SATELLITE_ENABLEMENT_REQUEST_REASON_USER};
+        EnableResponse response = new EnableResponse(true, true, true, requestReasons);
+
+        assertTrue(response.isEnabled());
+        assertTrue(response.isEmergencyMode());
+        assertTrue(response.isDemoMode());
+        assertTrue(Arrays.equals(requestReasons, response.getSatelliteEnablementRequestReasons()));
     }
 
     @Test
