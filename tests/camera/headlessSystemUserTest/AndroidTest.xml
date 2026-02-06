@@ -23,9 +23,6 @@
     <option name="config-descriptor:metadata" key="parameter" value="multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
     <option name="not-shardable" value="true" />
-    <target_preparer class="com.android.tradefed.targetprep.SwitchUserTargetPreparer">
-        <option name="user-type" value="system" />
-    </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
         <option name="test-file-name" value="CtsCameraHeadlessSystemUserTestCases.apk" />
@@ -41,5 +38,6 @@
         <option name="test-timeout" value="60000" />
         <option name="hidden-api-checks" value="false" />
         <option name="isolated-storage" value="false" />
+        <option name="user-id" value="0" />
     </test>
 </configuration>
