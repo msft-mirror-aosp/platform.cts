@@ -1126,7 +1126,7 @@ public class MediaQualityTest {
         bands.add(testBand);
         IMediaQualityManager mockService = Mockito.mock(IMediaQualityManager.class);
 
-        EqualizerSettings realSettings = new EqualizerSettings.Builder().setBands(bands).build();
+        EqualizerSettings realSettings = new EqualizerSettings.Builder().addBands(bands).build();
 
         Mockito.when(mockService.getEqualizerSettings(anyInt())).thenReturn(realSettings);
 
@@ -1156,7 +1156,7 @@ public class MediaQualityTest {
         List<EqualizerBand> bands = new ArrayList<>();
         bands.add(band);
 
-        EqualizerSettings detailToSet = new EqualizerSettings.Builder().setBands(bands).build();
+        EqualizerSettings detailToSet = new EqualizerSettings.Builder().addBands(bands).build();
         mServiceField.set(mManager, mockService);
         try {
             mManager.setEqualizerSettings(detailToSet);
