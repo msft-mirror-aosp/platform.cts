@@ -115,7 +115,11 @@ public class MediaProjectionTests {
         mDevice.waitForIdle();
 
         // Wait for either the new UI or the old UI to appear
-        mDevice.wait(Until.hasObject(By.res(MEDIA_PROJECTION_CONSENT_DIALOG)), TIMEOUT);
+        UiObject2 dialog = mDevice.wait(Until.findObject(By.res(MEDIA_PROJECTION_CONSENT_DIALOG)), TIMEOUT);
+        if (dialog == null) {
+            Log.e(TAG, "Media projection consent dialog not found");
+            return;
+        }
 
         // Dismiss the dialog using the back gesture.
         mDevice.waitForIdle();
@@ -193,6 +197,10 @@ public class MediaProjectionTests {
         // Go to app selector page
         UiObject2 consentDialog = mDevice.wait(
                 Until.findObject(By.res(MEDIA_PROJECTION_CONSENT_DIALOG)), TIMEOUT);
+        if (consentDialog == null) {
+            Log.e(TAG, "Media projection consent dialog not found");
+            return;
+        }
         UiObject2 startRecordingButton =
                 consentDialog.scrollUntil(
                         Direction.DOWN, Until.findObject(By.res(ACCEPT_RESOURCE_ID)));
