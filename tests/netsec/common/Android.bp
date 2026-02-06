@@ -19,7 +19,7 @@ package {
 }
 
 java_library {
-    name: "tests-tests-networksecurityconfig-lib",
+    name: "networksecurity-test-lib",
     srcs: ["src/**/*.java"],
     defaults: ["cts_defaults"],
     libs: [
@@ -31,13 +31,13 @@ java_library {
 }
 
 filegroup {
-    name: "networksecurityconfig-cts-jarjar-rules",
+    name: "networksecurity-cts-jarjar-rules",
     srcs: [
         "jarjar-rules.txt",
     ],
 }
 
 java_defaults {
-    name: "networksecurityconfig-cts-jarjar-defaults",
-    jarjar_rules: ":networksecurityconfig-cts-jarjar-rules",
+    name: "networksecurity-cts-jarjar-defaults",
+    jarjar_rules: ":networksecurity-cts-jarjar-rules",
 }
