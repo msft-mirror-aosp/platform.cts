@@ -20,6 +20,7 @@ import android.Manifest
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunctionAndWait
+import android.app.appfunctions.cts.AppFunctionUtils.runWithInteractionAllowlisted
 import android.app.appfunctions.flags.Flags
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
@@ -31,6 +32,7 @@ import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
+import org.junit.After
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Rule
@@ -45,8 +47,18 @@ class AppFunctionServiceTest {
 
     @Before
     fun setup() {
+        if (Flags.enableAppFunctionPermissionV2()) {
+            AppFunctionUtils.enableAllowlist()
+        }
         context = ApplicationProvider.getApplicationContext()
         manager = context.getSystemService(AppFunctionManager::class.java)
+    }
+
+    @After
+    fun teardown() {
+        if (Flags.enableAppFunctionPermissionV2()) {
+            AppFunctionUtils.disableAllowlist()
+        }
     }
 
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
@@ -69,15 +81,21 @@ class AppFunctionServiceTest {
     @RequireFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
     @Test
     fun callAppFunctionService_doesNotHaveAccessToCallingPackage() = doBlocking {
-        val request = ExecuteAppFunctionRequest.Builder(TEST_PACKAGE_NAME, TEST_FUNCTION_ID).build()
+        runWithInteractionAllowlisted(
+            agentPackageName = CURR_PACKAGE_NAME,
+            appPackageNames = listOf(TEST_PACKAGE_NAME),
+        ) {
+            val request =
+                ExecuteAppFunctionRequest.Builder(TEST_PACKAGE_NAME, TEST_FUNCTION_ID).build()
 
-        val response = executeAppFunctionAndWait(manager, request)
+            val response = executeAppFunctionAndWait(manager, request)
 
-        assertThat(response.exceptionOrNull()).isNull()
-        val result = response.getOrNull()
-        assertThat(result!!.resultDocument.getPropertyString("callingPackage")).isEqualTo("")
-        assertThat(result.resultDocument.getPropertyBoolean("hasCallingPackageSigningInfo"))
-            .isFalse()
+            assertThat(response.exceptionOrNull()).isNull()
+            val result = response.getOrNull()
+            assertThat(result!!.resultDocument.getPropertyString("callingPackage")).isEqualTo("")
+            assertThat(result.resultDocument.getPropertyBoolean("hasCallingPackageSigningInfo"))
+                .isFalse()
+        }
     }
 
     private fun doBlocking(block: suspend CoroutineScope.() -> Unit) = runBlocking(block = block)

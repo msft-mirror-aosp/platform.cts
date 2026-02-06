@@ -28,10 +28,6 @@ import android.app.appfunctions.cts.AppFunctionUtils.getAllRuntimeMetadataPackag
 import android.app.appfunctions.cts.AppFunctionUtils.getAllStaticMetadataPackages
 import android.app.appfunctions.cts.AppFunctionUtils.installExistingPackageAsUser
 import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabled
-import android.app.appfunctions.testutils.CtsTestUtil.assertReadAccessible
-import android.app.appfunctions.testutils.CtsTestUtil.assertReadInaccessible
-import android.app.appfunctions.testutils.CtsTestUtil.assertWriteAccessible
-import android.app.appfunctions.testutils.CtsTestUtil.assertWriteInaccessible
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
 import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver
@@ -41,10 +37,9 @@ import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceive
 import android.app.appsearch.GenericDocument
 import android.content.ContentResolver
 import android.content.Context
-import android.net.Uri
 import android.os.CancellationSignal
 import android.os.UserHandle
-import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.core.os.asOutcomeReceiver
@@ -88,6 +83,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
+@RequiresFlagsDisabled(android.app.appfunctions.flags.Flags.FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
 class AppFunctionManagerTest {
     @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
@@ -149,7 +145,6 @@ class AppFunctionManagerTest {
     @Test
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
-    @Throws(Exception::class)
     fun executeAppFunction_failed_uncaughtClientExceptionMethod() =
         executeAppFunction_failed_uncaughtClientException_nonParam()
 
@@ -158,7 +153,6 @@ class AppFunctionManagerTest {
      * host-side tests). Invoked by the host-side logging tests.
      */
     @Test
-    @Throws(Exception::class)
     fun executeAppFunction_failed_uncaughtClientException_nonParam() = doBlocking {
         val request =
             ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "uncaughtClientException").build()
@@ -178,7 +172,6 @@ class AppFunctionManagerTest {
     @EnsureHasNoDeviceOwner
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
-    @Throws(Exception::class)
     fun executeAppFunction_onlyInvokeCallbackOnce() {
         val parameters: GenericDocument =
             GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
@@ -214,7 +207,6 @@ class AppFunctionManagerTest {
     @EnsureHasNoDeviceOwner
     @EnsureHasAdditionalUser
     @IncludeRunOnPrimaryUser
-    @Throws(Exception::class)
     fun executeAppFunction_crossUser_success() = executeAppFunction_crossUser_success_nonParam()
 
     /**
@@ -224,7 +216,6 @@ class AppFunctionManagerTest {
     @Test
     @EnsureHasNoDeviceOwner
     @EnsureHasAdditionalUser
-    @Throws(Exception::class)
     fun executeAppFunction_crossUser_success_nonParam() = doBlocking {
         runWithShellPermission(
             INTERACT_ACROSS_USERS_FULL_PERMISSION,
@@ -275,7 +266,6 @@ class AppFunctionManagerTest {
     @EnsureHasNoDeviceOwner
     @EnsureHasAdditionalUser
     @IncludeRunOnPrimaryUser
-    @Throws(Exception::class)
     fun executeAppFunction_crossUser_cannotInteractAcrossUser_fail() = doBlocking {
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             assertFailsWith<SecurityException>() {
@@ -312,7 +302,6 @@ class AppFunctionManagerTest {
     @EnsureHasNoDeviceOwner
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
-    @Throws(Exception::class)
     fun executeAppFunction_platformManager_platformAppFunctionService_success() =
         executeAppFunction_platformManager_platformAppFunctionService_success_nonParam()
 
@@ -322,7 +311,6 @@ class AppFunctionManagerTest {
      */
     @Test
     @EnsureHasNoDeviceOwner
-    @Throws(Exception::class)
     fun executeAppFunction_platformManager_platformAppFunctionService_success_nonParam() =
         doBlocking {
             val parameters: GenericDocument =
@@ -353,7 +341,6 @@ class AppFunctionManagerTest {
     @EnsureHasNoDeviceOwner
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
-    @Throws(Exception::class)
     fun executeAppFunction_otherNonExistingTargetPackage() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder("other.package", "add").build()
 
@@ -373,7 +360,6 @@ class AppFunctionManagerTest {
     @EnsureHasNoDeviceOwner
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
-    @Throws(Exception::class)
     fun executeAppFunction_otherExistingTargetPackage() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "someMethod").build()
 
@@ -395,7 +381,6 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    @Throws(Exception::class)
     fun executeAppFunction_throwsException() = executeAppFunction_throwsException_nonParam()
 
     /**
@@ -404,7 +389,6 @@ class AppFunctionManagerTest {
      */
     @Test
     @EnsureHasNoDeviceOwner
-    @Throws(Exception::class)
     fun executeAppFunction_throwsException_nonParam() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "throwException").build()
 
@@ -421,7 +405,6 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    @Throws(Exception::class)
     fun executeAppFunction_onRemoteProcessKilled() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "kill").build()
 
@@ -440,7 +423,6 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    @Throws(Exception::class)
     fun executeAppFunction_success_async() = doBlocking {
         val parameters =
             GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
@@ -470,7 +452,6 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    @Throws(Exception::class)
     fun executeAppFunction_emptyPackage() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder("", "noOp").build()
 
@@ -487,7 +468,6 @@ class AppFunctionManagerTest {
     @RequireRunOnWorkProfile
     @EnsureHasNoDeviceOwner
     @Postsubmit(reason = "new test")
-    @Throws(Exception::class)
     fun executeAppFunction_runInManagedProfileUnrestricted_success() = doBlocking {
         val parameters: GenericDocument =
             GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
@@ -515,7 +495,6 @@ class AppFunctionManagerTest {
     @RequireRunOnWorkProfile
     @EnsureHasNoDeviceOwner
     @PolicyAppliesTest(policy = [AppFunctionsPolicy::class])
-    @Throws(Exception::class)
     fun executeAppFunction_runInManagedProfileRestricted_fail() = doBlocking {
         runWithShellPermission(
             // Permission required to create context as user.
@@ -569,7 +548,6 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    @Throws(Exception::class)
     fun executeAppFunction_crossUser_targetWorkProfileUnrestricted_success() = doBlocking {
         runWithShellPermission(
             INTERACT_ACROSS_USERS_FULL_PERMISSION,
@@ -626,7 +604,6 @@ class AppFunctionManagerTest {
     @Test
     @EnsureHasAdditionalUser
     @PolicyAppliesTest(policy = [AppFunctionsPolicy::class])
-    @Throws(Exception::class)
     fun executeAppFunction_crossUser_targetWorkProfileRestricted_fail() = doBlocking {
         assumeFalse(TestApis.users().instrumented() == sDeviceState.additionalUser())
         runWithShellPermission(
@@ -681,7 +658,6 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    @Throws(Exception::class)
     fun executeAppFunction_disabledByDefault_fail() = doBlocking {
         val request =
             ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add_disabledByDefault").build()
@@ -699,7 +675,6 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    @Throws(Exception::class)
     fun executeAppFunction_disabledInRuntime_fail() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add").build()
         setAppFunctionEnabled(mManager, "add", AppFunctionManager.APP_FUNCTION_STATE_DISABLED)
@@ -717,7 +692,6 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    @Throws(Exception::class)
     fun executeAppFunction_hasManagedProfileRunInPersonalProfile_success() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "noOp").build()
 
@@ -732,7 +706,6 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasDeviceOwner
-    @Throws(Exception::class)
     fun executeAppFunction_deviceOwnerUnrestricted_success() = doBlocking {
         val parameters: GenericDocument =
             GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
@@ -758,7 +731,6 @@ class AppFunctionManagerTest {
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasDeviceOwner
-    @Throws(Exception::class)
     @PolicyAppliesTest(policy = [AppFunctionsPolicy::class])
     fun executeAppFunction_deviceOwnerRestricted_fail() = doBlocking {
         val remoteDpm = sDeviceState.dpc().devicePolicyManager()
@@ -792,7 +764,6 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    @Throws(Exception::class)
     fun executeAppFunction_largeTransactionSuccess() = doBlocking {
         val largeByteArray = ByteArray(1024 * 1024 + 100)
         val parameters: GenericDocument =
@@ -918,7 +889,6 @@ class AppFunctionManagerTest {
         assertThat(blockingQueue).isEmpty()
     }
 
-    @Throws(InterruptedException::class)
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @IncludeRunOnSecondaryUser
@@ -948,7 +918,6 @@ class AppFunctionManagerTest {
     @Test
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @EnsureHasNoDeviceOwner
-    @Throws(Exception::class)
     fun executeAppFunction_largeBytes_success() = doBlocking {
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val fiveMb = 1024 * 1024 * 5
@@ -967,32 +936,6 @@ class AppFunctionManagerTest {
             assertThat(response.isSuccess).isTrue()
             assertThat(response.getOrNull()!!.resultDocument.getPropertyBytes("bytes"))
                 .isEqualTo(largeByteArray)
-            assertServiceDestroyed()
-        }
-    }
-
-    @Test
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
-    @EnsureHasNoDeviceOwner
-    @RequiresFlagsEnabled(android.app.appfunctions.flags.Flags.FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
-    fun executeAppFunction_inDifferentPackage_executeAppFunctionSystemPermission_success() = doBlocking {
-        runWithShellPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM) {
-            val parameters: GenericDocument =
-                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                    .setPropertyLong("a", 1)
-                    .setPropertyLong("b", 2)
-                    .build()
-            val request =
-                ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "add")
-                    .setParameters(parameters)
-                    .build()
-
-            val response = executeAppFunctionAndWait(mManager, request)
-
-            assertThat(response.exceptionOrNull()).isNull()
-            assertThat(response.isSuccess).isTrue()
-            assertThat(response.getOrNull()?.resultDocument?.getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE))
-                .isEqualTo(3)
             assertServiceDestroyed()
         }
     }
@@ -1050,7 +993,6 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    @Throws(Exception::class)
     fun setAppFunctionEnabled_functionDefaultEnabled() = doBlocking {
         val functionUnderTest = "add"
         // Check if the function is enabled
@@ -1087,7 +1029,6 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    @Throws(Exception::class)
     fun setAppFunctionEnabled_functionDefaultDisabled() = doBlocking {
         val functionUnderTest = "add_disabledByDefault"
         // Confirm that the function is disabled
@@ -1124,7 +1065,6 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    @Throws(Exception::class)
     fun setAppFunctionEnabled_functionNotExist() = doBlocking {
         val functionUnderTest = "notExist"
 
@@ -1142,7 +1082,6 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    @Throws(Exception::class)
     fun executeAppFunctionWithoutPermission_processStateIsNotBfgs() = doBlocking {
         val parameters: GenericDocument =
             GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "").build()
@@ -1167,7 +1106,6 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    @Throws(Exception::class)
     fun executeAppFunctionWithPermission_processStateIsBfgs() = doBlocking {
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val parameters: GenericDocument =
@@ -1241,42 +1179,6 @@ class AppFunctionManagerTest {
         }
     }
 
-    @Test
-    @EnsureHasNoDeviceOwner
-    @IncludeRunOnSecondaryUser
-    @IncludeRunOnPrimaryUser
-    @RequiresFlagsEnabled(
-        android.app.appfunctions.flags.Flags.FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2
-    )
-    @Throws(Exception::class)
-    fun executeAppFunction_withPermissionAndAccess_getUris() = doBlocking {
-        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-            val readOnlyUri =
-                Uri.parse(
-                    "content://android.app.appfunctions.cts.helper.provider/read_only_test_file.txt"
-                )
-            val writeOnlyUri =
-                Uri.parse(
-                    "content://android.app.appfunctions.cts.helper.provider/write_only_test_file.txt"
-                )
-            val readWriteUri =
-                Uri.parse(
-                    "content://android.app.appfunctions.cts.helper.provider/read_write_test_file.txt"
-                )
-            val request = ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "getUris").build()
-
-            val response = executeAppFunctionAndWait(mManager, request)
-
-            assertThat(response.getOrThrow()).isNotNull()
-            assertReadAccessible(contentResolver, readOnlyUri)
-            assertReadAccessible(contentResolver, readWriteUri)
-            assertReadInaccessible(contentResolver, writeOnlyUri)
-            assertWriteAccessible(contentResolver, writeOnlyUri)
-            assertWriteAccessible(contentResolver, readWriteUri)
-            assertWriteInaccessible(contentResolver, readOnlyUri)
-        }
-    }
-
     /** Runs a suspend block in a blocking manner */
     private fun doBlocking(block: suspend CoroutineScope.() -> Unit) = runBlocking(block = block)
 
@@ -1306,13 +1208,11 @@ class AppFunctionManagerTest {
     }
 
     /** Verifies that the service is unbound by asserting the service was destroyed. */
-    @Throws(InterruptedException::class)
     private fun assertServiceDestroyed() {
         assertThat(waitForServiceOnDestroy(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)).isTrue()
     }
 
     /** Verifies that the service has never been created. */
-    @Throws(InterruptedException::class)
     private fun assertServiceWasNotCreated() {
         assertThat(waitForServiceOnCreate(SHORT_TIMEOUT_SECOND, TimeUnit.SECONDS)).isFalse()
     }

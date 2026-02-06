@@ -17,12 +17,16 @@
 package android.app.appfunctions.cts
 
 import android.Manifest
+import android.app.appfunctions.AppFunctionException
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.AppFunctionManager.EnabledState
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
 import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunctionAndWait
+import android.app.appfunctions.cts.AppFunctionUtils.runWithInteractionAllowlisted
 import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabled
+import android.app.appfunctions.flags.Flags
+import android.app.appfunctions.flags.Flags.FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2
 import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForOperationCancellation
@@ -34,6 +38,7 @@ import android.os.OutcomeReceiver
 import android.permission.flags.Flags.FLAG_APP_FUNCTION_ACCESS_API_ENABLED
 import android.permission.flags.Flags.FLAG_APP_FUNCTION_ACCESS_SERVICE_ENABLED
 import android.platform.test.annotations.RequiresFlagsDisabled
+import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.core.os.asOutcomeReceiver
@@ -85,9 +90,11 @@ class SidecarManagerTest {
         val manager = context.getSystemService(AppFunctionManager::class.java)
         assumeNotNull(manager)
         mManager = manager
+        if (Flags.enableAppFunctionPermissionV2()) {
+            AppFunctionUtils.enableAllowlist()
+        }
     }
 
-    @Before
     @After
     fun resetEnabledStatus() = doBlocking {
         setAppFunctionEnabled(mManager, "add", AppFunctionManager.APP_FUNCTION_STATE_DEFAULT)
@@ -96,6 +103,9 @@ class SidecarManagerTest {
             "add_disabledByDefault",
             AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
         )
+        if (Flags.enableAppFunctionPermissionV2()) {
+            AppFunctionUtils.disableAllowlist()
+        }
     }
 
     @ApiTest(apis = ["com.android.extensions.appfunctions.AppFunctionManager#executeAppFunction"])
@@ -224,6 +234,7 @@ class SidecarManagerTest {
     @EnsureHasNoDeviceOwner
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
+    @RequiresFlagsDisabled(FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
     @Throws(Exception::class)
     fun executeAppFunction_sidecarManager_sidecarAppFunctionService_success() = doBlocking {
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
@@ -250,11 +261,81 @@ class SidecarManagerTest {
         }
     }
 
+    @ApiTest(apis = ["com.android.extensions.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @RequiresFlagsEnabled(FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
+    @Throws(Exception::class)
+    fun executeAppFunctionAllowlisted_sidecarManager_sidecarAppFunctionService_success() =
+        doBlocking {
+            runWithInteractionAllowlisted(CURRENT_PKG, listOf(TEST_SIDECAR_HELPER_PKG)) {
+                runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+                    val parameters: GenericDocument =
+                        GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                            .setPropertyLong("a", 1)
+                            .setPropertyLong("b", 2)
+                            .build()
+                    val request =
+                        SidecarExecuteAppFunctionRequest.Builder(TEST_SIDECAR_HELPER_PKG, "add")
+                            .setParameters(parameters)
+                            .build()
+
+                    val response = sidecarExecuteFunction(context, request)
+
+                    assertThat(response.isSuccess).isTrue()
+                    assertThat(
+                            response
+                                .getOrNull()!!
+                                .resultDocument
+                                .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
+                        )
+                        .isEqualTo(3)
+                }
+            }
+        }
+
+    @ApiTest(apis = ["com.android.extensions.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @RequiresFlagsEnabled(FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
+    @Throws(Exception::class)
+    fun executeAppFunctionNotAllowlisted_sidecarManager_sidecarAppFunctionService_fail() =
+        doBlocking {
+            runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+                val parameters: GenericDocument =
+                    GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                        .setPropertyLong("a", 1)
+                        .setPropertyLong("b", 2)
+                        .build()
+                val request =
+                    SidecarExecuteAppFunctionRequest.Builder(TEST_SIDECAR_HELPER_PKG, "add")
+                        .setParameters(parameters)
+                        .build()
+
+                val response = sidecarExecuteFunction(context, request)
+
+                assertThat(response.isSuccess).isFalse()
+                assertThat(
+                        (response.exceptionOrNull()
+                                as com.android.extensions.appfunctions.AppFunctionException)
+                            .errorCode
+                    )
+                    .isEqualTo(
+                        com.android.extensions.appfunctions.AppFunctionException.ERROR_DENIED
+                    )
+            }
+        }
+
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
+    @RequiresFlagsDisabled(FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
     @Throws(Exception::class)
     fun executeAppFunction_platformManager_sidecarAppFunctionService_success() = doBlocking {
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
@@ -280,6 +361,69 @@ class SidecarManagerTest {
                 .isEqualTo(3)
         }
     }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @RequiresFlagsEnabled(FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
+    @Throws(Exception::class)
+    fun executeAppFunctionAllowlisted_platformManager_sidecarAppFunctionService_success() =
+        doBlocking {
+            runWithInteractionAllowlisted(CURRENT_PKG, listOf(TEST_SIDECAR_HELPER_PKG)) {
+                runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+                    val parameters: GenericDocument =
+                        GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                            .setPropertyLong("a", 1)
+                            .setPropertyLong("b", 2)
+                            .build()
+                    val request =
+                        ExecuteAppFunctionRequest.Builder(TEST_SIDECAR_HELPER_PKG, "add")
+                            .setParameters(parameters)
+                            .build()
+
+                    val response = executeAppFunctionAndWait(mManager, request)
+
+                    assertThat(response.isSuccess).isTrue()
+                    assertThat(
+                            response
+                                .getOrNull()!!
+                                .resultDocument
+                                .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
+                        )
+                        .isEqualTo(3)
+                }
+            }
+        }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @RequiresFlagsEnabled(FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
+    @Throws(Exception::class)
+    fun executeAppFunctionNotAllowlisted_platformManager_sidecarAppFunctionService_fail() =
+        doBlocking {
+            runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+                val parameters: GenericDocument =
+                    GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                        .setPropertyLong("a", 1)
+                        .setPropertyLong("b", 2)
+                        .build()
+                val request =
+                    ExecuteAppFunctionRequest.Builder(TEST_SIDECAR_HELPER_PKG, "add")
+                        .setParameters(parameters)
+                        .build()
+
+                val response = executeAppFunctionAndWait(mManager, request)
+
+                assertThat(response.isSuccess).isFalse()
+                assertThat((response.exceptionOrNull() as AppFunctionException).errorCode)
+                    .isEqualTo(AppFunctionException.ERROR_DENIED)
+            }
+        }
 
     @ApiTest(apis = ["com.android.extensions.appfunctions.AppFunctionManager#isAppFunctionEnabled"])
     @Test
@@ -311,7 +455,6 @@ class SidecarManagerTest {
         @JvmField @ClassRule @Rule val sDeviceState: DeviceState = DeviceState()
 
         const val TEST_SIDECAR_HELPER_PKG: String = "android.app.appfunctions.cts.helper.sidecar"
-        const val TEST_HELPER_PKG: String = "android.app.appfunctions.cts.helper"
         const val CURRENT_PKG: String = "android.app.appfunctions.cts"
         const val EXECUTE_APP_FUNCTIONS_PERMISSION = Manifest.permission.EXECUTE_APP_FUNCTIONS
         const val LONG_TIMEOUT_SECOND: Long = 5
