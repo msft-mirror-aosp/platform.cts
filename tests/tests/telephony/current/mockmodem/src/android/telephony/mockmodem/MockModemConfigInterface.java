@@ -324,7 +324,7 @@ public interface MockModemConfigInterface {
      * @param logicalSlotId the Id of logical sim slot.
      * @param client for tracking calling client
      * @return int the physical slot ID or SubscriptionManager.INVALID_SIM_SLOT_INDEX if no physical
-     *     slot can be found.
+     * slot can be found.
      */
     int getSimPhysicalSlotId(int logicalSlotId, String client);
 
@@ -404,7 +404,7 @@ public interface MockModemConfigInterface {
      * @param address the phone number to dial.
      * @param uusInfo user to user signaling information.
      * @param cdmaSignalInfoRecord CDMA Signal Information Record as defined in C.S0005 section
-     *     3.7.5.5, null for GSM case.
+     * 3.7.5.5, null for GSM case.
      * @param callControlInfo call control configuration
      * @param client for tracking calling client
      * @return boolean true if the operation succeeds, otherwise false.
@@ -425,4 +425,11 @@ public interface MockModemConfigInterface {
      * @return int number of ongoing calls
      */
     int getNumberOfCalls(int logicalSlotId, String client);
+
+    /**
+     * Sets the SIM Multi-SIM configuration mode (P+E or E+E).
+     *
+     * @param isEnabled true: E+E, false: P+E
+     */
+    void setMultiEsimConfiguration(boolean isEnabled);
 }
