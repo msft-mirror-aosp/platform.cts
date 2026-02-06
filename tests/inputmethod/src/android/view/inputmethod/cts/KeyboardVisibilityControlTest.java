@@ -69,6 +69,7 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.RemoteInput;
+import android.app.WindowConfiguration;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -254,9 +255,15 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 .first;
     }
 
-    private EditText launchTestActivity2(@NonNull String marker) {
+    private EditText launchTestActivity2(@NonNull String marker, boolean forceFullscreen) {
         final AtomicReference<EditText> focusedEditTextRef = new AtomicReference<>();
-        mTestActivity = new TestActivity.Starter().startSync(activity -> {
+
+        final var activityStarter = new TestActivity.Starter();
+        if (forceFullscreen) {
+            activityStarter.asNewTask().withWindowingMode(WINDOWING_MODE_FULLSCREEN);
+        }
+
+        mTestActivity = activityStarter.startSync(activity -> {
             final LinearLayout layout = new LinearLayout(activity);
             layout.setOrientation(LinearLayout.VERTICAL);
 
@@ -713,7 +720,7 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             // Launch the second test activity from the main process.
             final var marker2 = getTestMarker(SECOND_EDIT_TEXT_TAG);
             final var secondActivityBackCallbackInvocationCount = new AtomicInteger();
-            final var editText2 = launchTestActivity2(marker2);
+            final var editText2 = launchTestActivity2(marker2, /* forceFullscreen= */ false);
             final TestActivity testActivity2 = (TestActivity) editText2.getContext();
             testActivity2.getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
                     OnBackInvokedDispatcher.PRIORITY_DEFAULT,
@@ -1943,7 +1950,8 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
             final String marker = getTestMarker();
             // TestActivity2 is identical to TestActivity but doesn't handle any configChanges.
-            final EditText editText = launchTestActivity2(marker);
+            // Forcing fullscreen as only the fullscreen mode windows will get rotation update.
+            final EditText editText = launchTestActivity2(marker, /* forceFullscreen= */ true);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
             notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
