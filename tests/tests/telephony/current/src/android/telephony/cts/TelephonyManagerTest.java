@@ -399,6 +399,9 @@ public class TelephonyManagerTest {
                 "\"com.vzw.hss.myverizon\":{\"carrierIds\":[1839], \"callerSHA256Ids\":"
                     + "[\"AE23A03436DF07B0CD70FE881CDA2EC1D21215D7B7B0CC68E67B67F5DF89526A\"]},");
         cr.append(
+                "\"com.verizon.mips.services\":{\"carrierIds\":[1839],\"callerSHA256Ids\":"
+                    + "[\"FF82050BF6BED1F152AC1A12DC83CACBAD401775161882872C6665FC5E15C8F2\"]},");
+        cr.append(
                 "\"com.google.android.apps.tycho\":{\"carrierIds\":[1989],\"callerSHA256Ids\":"
                     + "[\"B9CFCE1C47A6AC713442718F15EF55B00B3A6D1A6D48CB46249FA8EB51465350\","
                     + "\"4C36AF4A5BDAD97C1F3D8B283416D244496C2AC5EAFE8226079EF6F676FD1859\"]},");
