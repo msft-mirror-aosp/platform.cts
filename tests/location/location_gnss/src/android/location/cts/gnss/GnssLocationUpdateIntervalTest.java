@@ -32,10 +32,13 @@ import android.location.cts.common.TestUtils;
 import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
 
+import com.android.compatibility.common.util.SystemUtil;
+
 import junit.framework.Assert;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Test the {@link Location} update interval.
@@ -112,9 +115,29 @@ public class GnssLocationUpdateIntervalTest extends GnssTestCase {
                         .getPackageManager()
                         .hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
         if (isAutomotive) {
-            // TODO(gracemc): Skip passive location test only when GSR-ISA apps are installed after
-            // getAdasAllowlist() is changed to a system API. Bug 335763768.
-            skipPassive = true;
+            skipPassive = SystemUtil.callWithShellPermissionIdentity(
+                    () -> {
+                        LocationManager locationManager = mTestLocationManager.getLocationManager();
+                        Set<String> packages = locationManager.getAdasAllowlist().getPackages();
+                        if (packages.isEmpty()) {
+                            return false;
+                        }
+
+                        PackageManager pm = getContext().getPackageManager();
+                        for (String packageName : packages) {
+                            try {
+                                pm.getPackageInfo(packageName, 0);
+                                Log.i(TAG, "Skipping test as allowlisted ADAS app is installed: "
+                                        + packageName);
+                                return true; // Found an installed ADAS app, so skip
+                            } catch (PackageManager.NameNotFoundException e) {
+                                // Package not installed, continue checking others
+                            }
+                        }
+                        return false; // No allowlisted apps are installed
+                    },
+                    "android.permission.READ_LOCATION_BYPASS_ALLOWLIST",
+                    "android.permission.QUERY_ALL_PACKAGES");
         }
 
         try {
