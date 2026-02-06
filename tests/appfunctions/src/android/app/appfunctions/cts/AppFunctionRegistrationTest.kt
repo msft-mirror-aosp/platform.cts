@@ -26,7 +26,7 @@ import android.app.appfunctions.RegisterAppFunctionRequest
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.CtsApp
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.DynamicSchemaHelperApp
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.UpdatableHelperApp
-import android.app.appfunctions.cts.AppFunctionUtils.assertFunctionState
+import android.app.appfunctions.cts.AppFunctionUtils.assertFunctionEnabledState
 import android.app.appfunctions.cts.AppFunctionUtils.clearInteractionAllowlist
 import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunction
 import android.app.appfunctions.cts.AppFunctionUtils.installPackage
@@ -221,7 +221,12 @@ class AppFunctionRegistrationTest {
         val service = bindToRegistrationService(CURRENT_PKG)
         assertThat(service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())).isTrue()
 
-        assertFunctionState(CURRENT_PKG, CONCAT_STRINGS_FUNCTION_ID, manager, isEnabled = true)
+        assertFunctionEnabledState(
+            CURRENT_PKG,
+            CONCAT_STRINGS_FUNCTION_ID,
+            manager,
+            isEnabled = true
+        )
 
         assertFailsWith<IllegalStateException>() {
             registerAppFunctions(
@@ -229,7 +234,12 @@ class AppFunctionRegistrationTest {
                 listOf(ConcatStrings(), ConcatStrings()),
             )
         }
-        assertFunctionState(CURRENT_PKG, LONG_RUNNING_FUNCTION_ID, manager, isEnabled = false)
+        assertFunctionEnabledState(
+            CURRENT_PKG,
+            LONG_RUNNING_FUNCTION_ID,
+            manager,
+            isEnabled = false
+        )
 
         assertFailsWith<IllegalStateException>() {
             registerAppFunctions(
@@ -237,7 +247,12 @@ class AppFunctionRegistrationTest {
                 listOf(ConcatStrings(), ConcatStrings()),
             )
         }
-        assertFunctionState(CURRENT_PKG, LONG_RUNNING_FUNCTION_ID, manager, isEnabled = false)
+        assertFunctionEnabledState(
+            CURRENT_PKG,
+            LONG_RUNNING_FUNCTION_ID,
+            manager,
+            isEnabled = false
+        )
     }
 
     @Test
@@ -392,7 +407,12 @@ class AppFunctionRegistrationTest {
 
         staleRegistration.unregister() // This call should be no-op
 
-        assertFunctionState(CURRENT_PKG, CONCAT_STRINGS_FUNCTION_ID, manager, isEnabled = true)
+        assertFunctionEnabledState(
+            CURRENT_PKG,
+            CONCAT_STRINGS_FUNCTION_ID,
+            manager,
+            isEnabled = true
+        )
     }
 
     @Test
@@ -409,7 +429,12 @@ class AppFunctionRegistrationTest {
 
         staleRegistration.unregister() // This call should be no-op
 
-        assertFunctionState(CURRENT_PKG, CONCAT_STRINGS_FUNCTION_ID, manager, isEnabled = true)
+        assertFunctionEnabledState(
+            CURRENT_PKG,
+            CONCAT_STRINGS_FUNCTION_ID,
+            manager,
+            isEnabled = true
+        )
     }
 
     @Test
@@ -424,7 +449,12 @@ class AppFunctionRegistrationTest {
 
         staleRegistration.unregister() // This call should be no-op
 
-        assertFunctionState(CURRENT_PKG, CONCAT_STRINGS_FUNCTION_ID, manager, isEnabled = true)
+        assertFunctionEnabledState(
+            CURRENT_PKG,
+            CONCAT_STRINGS_FUNCTION_ID,
+            manager,
+            isEnabled = true
+        )
     }
 
     @Test

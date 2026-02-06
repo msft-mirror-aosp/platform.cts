@@ -51,7 +51,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 
 object AppFunctionUtils {
 
-    suspend fun assertFunctionState(
+    suspend fun assertFunctionEnabledState(
         packageName: String,
         functionId: String,
         manager: AppFunctionManager,
