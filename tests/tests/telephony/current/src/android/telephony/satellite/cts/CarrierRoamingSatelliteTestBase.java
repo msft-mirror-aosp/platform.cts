@@ -1023,7 +1023,9 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
     }
 
     protected static void enableDefaultSupportedServicesForCarrier(int subId,
-            @NonNull List<String> plmns) throws Exception {
+            @NonNull Map<String, List<Integer>> supportedSatelliteTechnologyPerPlmn,
+            @CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_TYPE int connectType)
+            throws Exception {
         logd(TAG, "enableDefaultSupportedServicesForCarrier subId:" + subId);
         assumeTrue(isActiveSubId(subId));
 
@@ -1033,13 +1035,28 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         };
         PersistableBundle bundle = new PersistableBundle();
         PersistableBundle plmnBundle = new PersistableBundle();
-        for (String plmn : plmns) {
+        PersistableBundle satelliteConfigPerPlmnBundle = new PersistableBundle();
+        for (String plmn : supportedSatelliteTechnologyPerPlmn.keySet()) {
             plmnBundle.putIntArray(plmn, defaultSupportedServices);
+
+            PersistableBundle plmnConfig = new PersistableBundle();
+            List<Integer> supportedTechnology = supportedSatelliteTechnologyPerPlmn.get(plmn);
+            int[] supportedTechnologyArray = supportedTechnology.stream()
+                    .mapToInt(Integer::intValue)
+                    .toArray();
+            plmnConfig.putIntArray(CarrierConfigManager.KEY_SATELLITE_TECHNOLOGY_INT_ARRAY,
+                    supportedTechnologyArray);
+            satelliteConfigPerPlmnBundle.putPersistableBundle(plmn, plmnConfig);
         }
         bundle.putPersistableBundle(
                 CarrierConfigManager.KEY_CARRIER_SUPPORTED_SATELLITE_SERVICES_PER_PROVIDER_BUNDLE,
                 plmnBundle);
+        bundle.putPersistableBundle(
+                CarrierConfigManager.KEY_SATELLITE_CONFIGS_PER_PLMN_BUNDLE,
+                satelliteConfigPerPlmnBundle);
         bundle.putBoolean(CarrierConfigManager.KEY_SATELLITE_ATTACH_SUPPORTED_BOOL, true);
+        bundle.putInt(
+                CarrierConfigManager.KEY_CARRIER_ROAMING_NTN_CONNECT_TYPE_INT, connectType);
         overrideCarrierConfig(subId, bundle);
     }
 
