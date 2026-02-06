@@ -30,6 +30,7 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
+import android.media.AudioDeviceInfo;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioMetadataReadMap;
@@ -2042,7 +2043,8 @@ public class AudioTrackTest {
             String testName, double testFrequency, double testSweep,
             int testStreamType, int testSampleRate, int testChannelMask, int testEncoding,
             int testTransferMode, int testWriteMode,
-            boolean useChannelIndex, boolean useDirect) throws Exception {
+            boolean useChannelIndex, boolean useDirect,
+            boolean useAcnMask, AudioDeviceInfo preferredDevice) throws Exception {
         AudioTrack track = null;
         try {
             AudioFormat.Builder afb = new AudioFormat.Builder()
@@ -2050,6 +2052,8 @@ public class AudioTrackTest {
                     .setSampleRate(testSampleRate);
             if (useChannelIndex) {
                 afb.setChannelIndexMask(testChannelMask);
+            } else if (useAcnMask) {
+                afb.setChannelAcnMask(testChannelMask);
             } else {
                 afb.setChannelMask(testChannelMask);
             }
@@ -2065,6 +2069,10 @@ public class AudioTrackTest {
                     .setTransferMode(testTransferMode)
                     .setBufferSizeInBytes(bufferSize)
                     .build();
+
+            if (preferredDevice != null) {
+                track.setPreferredDevice(preferredDevice);
+            }
 
             assertEquals(testName + ": state",
                     AudioTrack.STATE_INITIALIZED, track.getState());
@@ -2181,7 +2189,8 @@ public class AudioTrackTest {
                             playOnceStreamByteBuffer(TEST_NAME, frequency, TEST_SWEEP,
                                     TEST_STREAM_TYPE, TEST_SR, TEST_CONF, TEST_FORMAT,
                                     TEST_MODE, TEST_WRITE_MODE,
-                                    false /* useChannelIndex */, useDirect != 0);
+                                    false /* useChannelIndex */, useDirect != 0,
+                                    false /* useAcnMask */, null /* preferredDevice */);
 
                             // add a gap to make tones distinct
                             Thread.sleep(100 /* millis */);
@@ -2236,7 +2245,8 @@ public class AudioTrackTest {
                             playOnceStreamByteBuffer(TEST_NAME, frequency, TEST_SWEEP,
                                     TEST_STREAM_TYPE, TEST_SR, TEST_CONF, TEST_FORMAT,
                                     TEST_MODE, TEST_WRITE_MODE,
-                                    true /* useChannelIndex */, useDirect != 0);
+                                    true /* useChannelIndex */, useDirect != 0,
+                                    false /* useAcnMask */, null /* preferredDevice */);
 
                             // add a gap to make tones distinct
                             Thread.sleep(100 /* millis */);
@@ -2245,6 +2255,57 @@ public class AudioTrackTest {
                     }
                 }
             }
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_AMBISONICS_SUPPORT_API)
+    @Test
+    public void testPlayAmbisonicsStreamBuffer() throws Exception {
+        // Find a device that supports Ambisonics (ACN) masks
+        AudioManager audioManager = getContext().getSystemService(AudioManager.class);
+        AudioDeviceInfo[] devices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
+        AudioDeviceInfo ambisonicsDevice = null;
+        int[] targetMasks = null;
+        int targetFormat = AudioFormat.ENCODING_PCM_16BIT;
+        int targetRate = 48000;
+
+        for (AudioDeviceInfo device : devices) {
+            int[] acnMasks = device.getChannelAcnMasks();
+            if (acnMasks.length > 0) {
+                ambisonicsDevice = device;
+                targetMasks = acnMasks;
+                int[] encodings = device.getEncodings();
+                if (encodings.length > 0) {
+                    targetFormat = encodings[0];
+                }
+                int[] rates = device.getSampleRates();
+                if (rates.length > 0) {
+                    targetRate = rates[0];
+                }
+                break;
+            }
+        }
+
+        if (ambisonicsDevice == null) {
+            Log.i(TAG, "No Ambisonics capable output device found. Skipping test.");
+            return;
+        }
+
+        final String TEST_NAME = "testPlayAmbisonicsStreamBuffer";
+        final int TEST_MODE = AudioTrack.MODE_STREAM;
+        final int TEST_STREAM_TYPE = AudioManager.STREAM_MUSIC;
+        final double TEST_SWEEP = 0; // sine wave only
+
+        double frequency = 400; // frequency changes for each test
+        for (int mask : targetMasks) {
+            playOnceStreamByteBuffer(TEST_NAME, frequency, TEST_SWEEP,
+                    TEST_STREAM_TYPE, targetRate, mask, targetFormat,
+                    TEST_MODE, AudioTrack.WRITE_BLOCKING,
+                    false /* useChannelIndex */, true /* useDirect */,
+                    true /* useAcnMask */, ambisonicsDevice);
+            // add a gap to make tones distinct
+            Thread.sleep(100 /* millis */);
+            frequency += 50; // increment test tone frequency
         }
     }
 
@@ -3583,7 +3644,8 @@ public class AudioTrackTest {
                                     TEST_NAME, frequency, TEST_SWEEP,
                                     TEST_STREAM_TYPE, TEST_SR, TEST_CONF, TEST_FORMAT,
                                     TEST_TRANSFER_MODE, TEST_WRITE_MODE,
-                                    true /* useChannelIndex */, useDirect != 0);
+                                    true /* useChannelIndex */, useDirect != 0,
+                                    false /* useAcnMask */, null /* preferredDevice */);
                             frequency += 30; // increment test tone frequency
                         }
                     }
