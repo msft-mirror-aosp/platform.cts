@@ -40,6 +40,28 @@ specs {
   }
 }
 specs {
+  key: 20
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_20
+    specification:
+      "MUST have camera2 startup latency (open camera to first preview frame) "
+      "< 600 ms as measured by the CTS camera PerformanceTest under ITS "
+      "lighting conditions (3000K) for both primary cameras."
+    required_values {
+      key: "front_camera_latency"
+      value {
+        float_value: 600.0
+      }
+    }
+    required_values {
+      key: "rear_camera_latency"
+      value {
+        float_value: 600.0
+      }
+    }
+  }
+}
+specs {
   key: 30
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_30

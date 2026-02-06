@@ -49,6 +49,35 @@ specs {
   }
 }
 specs {
+  key: 20
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_20
+    specification:
+      "MUST have a codec initialization latency of 65 ms or less for a 1080p "
+      "or smaller video encoding session for all hardware video encoders when "
+      "under load. Load here is defined as a concurrent 1080p to 720p "
+      "video-only transcoding session using hardware video codecs together "
+      "with the 1080p audio-video recording initialization."
+    required_values {
+      key: "codec_initialization_latency_ms"
+      value {
+        long_value: 65
+      }
+    }
+    variant_specs {
+      key: "dolby"
+      value {
+        required_values {
+          key: "codec_initialization_latency_ms"
+          value {
+            long_value: 65
+          }
+        }
+      }
+    }
+  }
+}
+specs {
   key: 30
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_30

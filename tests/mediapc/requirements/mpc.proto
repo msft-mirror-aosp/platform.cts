@@ -33,6 +33,7 @@ enum MediaPerformanceClass {
       ;
   MEDIA_PERFORMANCE_CLASS_INVALID = -1;
   MEDIA_PERFORMANCE_CLASS_10 = 10;
+  MEDIA_PERFORMANCE_CLASS_20 = 20;
   // As specified in
   // https://source.android.com/docs/compatibility/11/android-11-cdd#227_handheld_media_performance_class
   MEDIA_PERFORMANCE_CLASS_30 = 30;
