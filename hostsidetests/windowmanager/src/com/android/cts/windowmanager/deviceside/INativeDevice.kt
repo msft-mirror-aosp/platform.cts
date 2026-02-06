@@ -40,7 +40,7 @@ fun INativeDevice.frameworkReboot() {
         if (!monitor.waitForDeviceNotAvailable(DEVICE_NOT_AVAILABLE_TIMEOUT)) {
             CLog.w(
                 "Didn't detect device %s becoming unavailable after framework reboot within " +
-                    "%lms",
+                    "%dms",
                 serialNumber,
                 DEVICE_NOT_AVAILABLE_TIMEOUT
             )
