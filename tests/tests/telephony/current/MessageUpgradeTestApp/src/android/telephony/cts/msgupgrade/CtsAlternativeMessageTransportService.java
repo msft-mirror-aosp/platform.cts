@@ -84,8 +84,9 @@ public class CtsAlternativeMessageTransportService extends AlternativeMessageTra
             Uri uri, MessageUpgradeUtils.MessageState state, MessageType type) {
         if (type == MessageType.SMS) {
             simulateSmsUpdate(uri, state);
+        } else {
+            simulateMmsUpdate(uri, state);
         }
-        // TODO(b/481642941): Implement MMS update simulation
     }
 
     private void simulateSmsUpdate(Uri smsUri, MessageUpgradeUtils.MessageState state) {
@@ -123,6 +124,29 @@ public class CtsAlternativeMessageTransportService extends AlternativeMessageTra
             Log.d(TAG, "Simulated " + state + " for " + smsUri + ". Rows: " + rows);
         } catch (Exception e) {
             Log.e(TAG, "Simulation failed: " + e.getMessage());
+        }
+    }
+
+    private void simulateMmsUpdate(Uri mmsUri, MessageUpgradeUtils.MessageState state) {
+        if (mmsUri == null) return;
+
+        ContentValues values = new ContentValues();
+
+        switch (state) {
+            case MessageUpgradeUtils.MessageState.SENT_AND_DELIVERED ->
+                    values.put(Telephony.Mms.MESSAGE_BOX, Telephony.Mms.MESSAGE_BOX_SENT);
+
+            case MessageUpgradeUtils.MessageState.FAILED_TO_SEND ->
+                    values.put(Telephony.Mms.MESSAGE_BOX, Telephony.Mms.MESSAGE_BOX_FAILED);
+        }
+
+        values.put(Telephony.Mms.DATE, System.currentTimeMillis() / 1000L);
+
+        try {
+            int rows = getContentResolver().update(mmsUri, values, null, null);
+            Log.d(TAG, "Simulated MMS " + state + " for " + mmsUri + ". Rows: " + rows);
+        } catch (Exception e) {
+            Log.e(TAG, "MMS Simulation failed: " + e.getMessage());
         }
     }
 }

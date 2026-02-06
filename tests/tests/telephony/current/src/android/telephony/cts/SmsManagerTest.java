@@ -1284,10 +1284,18 @@ public class SmsManagerTest {
         mMessageUpgradeReceiver.reset();
         mReceivedDataSms = false;
         sMessageId = 0L;
-        mSentIntent = PendingIntent.getBroadcast(mContext, 0, mSendIntent,
-                PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_MUTABLE_UNAUDITED);
-        mDeliveredIntent = PendingIntent.getBroadcast(mContext, 0, mDeliveryIntent,
-                PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_MUTABLE_UNAUDITED);
+        mSentIntent =
+                PendingIntent.getBroadcast(
+                        mContext,
+                        0,
+                        mSendIntent,
+                        PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_MUTABLE_UNAUDITED);
+        mDeliveredIntent =
+                PendingIntent.getBroadcast(
+                        mContext,
+                        0,
+                        mDeliveryIntent,
+                        PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_MUTABLE_UNAUDITED);
     }
 
     /**
