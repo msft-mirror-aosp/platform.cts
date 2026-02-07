@@ -31,6 +31,7 @@ import static android.os.PowerExemptionManager.REASON_UNKNOWN;
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
+import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
@@ -68,6 +69,7 @@ import android.os.SystemClock;
 import android.permission.cts.PermissionUtils;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
@@ -84,6 +86,7 @@ import com.android.compatibility.common.util.AmUtils;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.TestUtils;
 import com.android.compatibility.common.util.UserHelper;
+import com.android.server.am.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -3094,6 +3097,82 @@ public final class ActivityManagerFgsBgStartTest {
             uidWatcher.finish();
             // DEFAULT_MEDIA_SESSION_CALLBACK_FGS_WHILE_IN_USE_TEMP_ALLOW_DURATION_MS = 10000ms
             SystemClock.sleep(10000);
+        }
+    }
+
+    /**
+     * Test a FGS can start from BG if the app is temp allowlisted with reasonCode {@link
+     * PowerExemptionManager#REASON_TILE_ONCLICK}.
+     */
+    @Presubmit
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_FGS_WIU_QS_TILE_CLICKED)
+    public void testTempAllowListReasonCodeTileOnClick() throws Exception {
+        PermissionUtils.grantPermission(PACKAGE_NAME_APP1, android.Manifest.permission.CAMERA);
+        PermissionUtils.grantPermission(PACKAGE_NAME_APP1,
+                android.Manifest.permission.RECORD_AUDIO);
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
+        try {
+            // Enable the FGS background startForeground() restriction.
+            enableFgsRestriction(true, true, null);
+            WaitForBroadcast waiter = createBroadcastWaiter(ACTION_START_FGS_RESULT);
+            final Bundle bundle = new Bundle();
+            bundle.putInt(LocalForegroundService.EXTRA_FOREGROUND_SERVICE_TYPE,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
+                            | ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE);
+            runWithShellPermissionIdentity(
+                    () -> {
+                        final BroadcastOptions options = BroadcastOptions.makeBasic();
+                        options.setTemporaryAppAllowlist(
+                                WAITFOR_MSEC,
+                                PowerExemptionManager
+                                        .TEMPORARY_ALLOW_LIST_TYPE_FOREGROUND_SERVICE_ALLOWED,
+                                PowerExemptionManager.REASON_TILE_ONCLICK,
+                                "");
+                        CommandReceiver.sendCommandWithBroadcastOptions(
+                                mContext,
+                                CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
+                                PACKAGE_NAME_APP1,
+                                PACKAGE_NAME_APP1,
+                                0,
+                                bundle,
+                                options);
+                    });
+            // The FGS should start and get while-in-use capabilities.
+            waiter.doWait(WAITFOR_MSEC);
+            uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+
+            // Explicitly check the capabilities as requested.
+            runWithShellPermissionIdentity(() -> {
+                final ActivityManager am = mContext.getSystemService(ActivityManager.class);
+                final int capability = am.getUidProcessCapabilities(app1Info.uid);
+                final int expectedCapability =
+                        PROCESS_CAPABILITY_FOREGROUND_CAMERA
+                                | PROCESS_CAPABILITY_FOREGROUND_MICROPHONE;
+                assertEquals("While-in-use capabilities should be granted",
+                        expectedCapability, capability & expectedCapability);
+            });
+
+            // Stop the FGS.
+            CommandReceiver.sendCommand(
+                    mContext,
+                    CommandReceiver.COMMAND_STOP_FOREGROUND_SERVICE,
+                    PACKAGE_NAME_APP1,
+                    PACKAGE_NAME_APP1,
+                    0,
+                    null);
+            uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
+        } finally {
+            uid1Watcher.finish();
+            // Sleep to let the temp allowlist expire so it won't affect next test case.
+            SystemClock.sleep(WAITFOR_MSEC);
+            PermissionUtils.revokePermission(PACKAGE_NAME_APP1,
+                    android.Manifest.permission.CAMERA);
+            PermissionUtils.revokePermission(PACKAGE_NAME_APP1,
+                    android.Manifest.permission.RECORD_AUDIO);
         }
     }
 
