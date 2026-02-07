@@ -2036,6 +2036,7 @@ public class TunerTest {
                 assertEquals(Tuner.RESULT_SUCCESS, tunerA.connectFrontendToCiCam(ciCamId));
             } else {
                 assertEquals(Tuner.INVALID_LTS_ID, tunerA.connectFrontendToCiCam(ciCamId));
+                return;
             }
 
             // connect CiCam to Demux
