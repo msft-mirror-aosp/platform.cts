@@ -74,7 +74,9 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatelliteTestBase {
@@ -95,6 +97,7 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
 
     /**
      * Setup before all tests.
+     *
      * @throws Exception exception
      */
     @BeforeClass
@@ -105,11 +108,12 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
 
         beforeAllCarrierRoamingTestsBase();
         setUpManualConnectTestEnvironment(
-            ESOS_SLOT_ID, ESOS_SIM_PROFILE_ID, ESOS_PHONE_NUMBER, true, true, true);
+                ESOS_SLOT_ID, ESOS_SIM_PROFILE_ID, ESOS_PHONE_NUMBER, true, true, true);
     }
 
     /**
      * Cleanup resources after all tests.
+     *
      * @throws Exception exception
      */
     @AfterClass
@@ -167,7 +171,7 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
         if (!shouldTestManualConnectCarrierRoaming()) return;
 
         CarrierRoamingNtnListenerTest carrierRoamingNtnListener =
-            new CarrierRoamingNtnListenerTest();
+                new CarrierRoamingNtnListenerTest();
         ServiceStateListenerTest serviceStateListener = registerServiceStateListener(sEsosSubId);
         adoptShellIdentity();
         boolean originalWifiState = sWifiManager.isWifiEnabled();
@@ -186,14 +190,14 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
 
             // Get NTN eligibility immediately after registering
             sTelephonyManager.registerTelephonyCallback(
-                getContext().getMainExecutor(), carrierRoamingNtnListener);
+                    getContext().getMainExecutor(), carrierRoamingNtnListener);
             assertTrue(carrierRoamingNtnListener.waitForNtnEligible(1));
             assertFalse(carrierRoamingNtnListener.getNtnEligible());
             carrierRoamingNtnListener.clearModeChanges();
 
             // Enable satellite PLMNs to make sure the device is registered to a NTN
-            enableCarrierRoamingSatelliteConfigs(ESOS_SLOT_ID,
-                CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_MANUAL);
+            enableCarrierRoamingSatelliteConfigs(
+                    ESOS_SLOT_ID, CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_MANUAL);
 
             if (originalWifiState) {
                 logd(TAG, "Disabling wifi");
@@ -216,7 +220,7 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
             assertTrue(carrierRoamingNtnListener.getNtnEligible());
         } finally {
             if (originalWifiState) {
-                logd(TAG, "Restroing wifi enabled state");
+                logd(TAG, "Restoring wifi enabled state");
                 sWifiManager.setWifiEnabled(true);
                 sWifiStateReceiver.setWifiExpectedState(true);
                 assertTrue(sWifiStateReceiver.waitUntilWifiStateChanged());
@@ -256,7 +260,7 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
 
         // Set the SMS error code and RIL error code
         sMockModemManager.setSendSmsErrorCode(
-            ESOS_SLOT_ID, RadioError.NETWORK_REJECT, RILConstants.NETWORK_ERR);
+                ESOS_SLOT_ID, RadioError.NETWORK_REJECT, RILConstants.NETWORK_ERR);
         try {
             // Test non-default SMS app
             sendSms(TEST_DEST_ADDR, SmsManager.RESULT_RIL_NETWORK_ERR);
@@ -268,7 +272,7 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
         } finally {
             // Reset the SMS error code and RIL error code
             sMockModemManager.setSendSmsErrorCode(
-                ESOS_SLOT_ID, RadioError.NONE, RILConstants.SUCCESS);
+                    ESOS_SLOT_ID, RadioError.NONE, RILConstants.SUCCESS);
         }
     }
 
@@ -374,8 +378,8 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
     public void testQuerySatelliteEntitlementService_success() throws Exception {
         logd(TAG, "testQuerySatelliteEntitlementService_success");
         if (!shouldTestManualConnectCarrierRoaming()) return;
-        testQuerySatelliteEntitlementService_success(ESOS_SLOT_ID,
-            CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_MANUAL);
+        testQuerySatelliteEntitlementService_success(
+                ESOS_SLOT_ID, CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_MANUAL);
     }
 
     @Test
@@ -389,7 +393,7 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
         int result = requestSatelliteEnabledWithResult(true, TIMEOUT);
         assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
         SatelliteModemEnableRequestAttributes enableAttributes =
-            sMockSatelliteServiceManager.getRequestSatelliteEnabledAttributes();
+                sMockSatelliteServiceManager.getRequestSatelliteEnabledAttributes();
         assertEquals(true, enableAttributes.isEnabled());
         assertEquals(false, enableAttributes.isForDemoMode());
         assertEquals(false, enableAttributes.isForEmergencyMode());
@@ -641,8 +645,20 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
         List<String> expectedCarrierPlmnList = new ArrayList<>();
         expectedCarrierPlmnList.add("310280");
         expectedCarrierPlmnList.add("311480");
-        enableDefaultSupportedServicesForCarrier(sEsosSubId, expectedCarrierPlmnList);
-        waitForCarrierPlmnListAvailableInTelephony(sEsosSubId, expectedCarrierPlmnList);
+        List<String> allCarrierPlmnList = new ArrayList<>();
+        allCarrierPlmnList.addAll(expectedCarrierPlmnList);
+        allCarrierPlmnList.add("310240");
+        Map<String, List<Integer>> supportedSatelliteTechnologyPerPlmn = new HashMap<>();
+        List<Integer> supportedSatTechList1 = new ArrayList<>();
+        supportedSatTechList1.add(SatelliteManager.NT_RADIO_TECHNOLOGY_NB_IOT_NTN);
+        List<Integer> supportedSatTechList2 = new ArrayList<>();
+        supportedSatTechList2.add(SatelliteManager.NT_RADIO_TECHNOLOGY_NR_NTN);
+        supportedSatelliteTechnologyPerPlmn.put("310280", supportedSatTechList1);
+        supportedSatelliteTechnologyPerPlmn.put("311480", supportedSatTechList1);
+        supportedSatelliteTechnologyPerPlmn.put("310240", supportedSatTechList2);
+        enableDefaultSupportedServicesForCarrier(sEsosSubId, supportedSatelliteTechnologyPerPlmn,
+                CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_HYBRID);
+        waitForCarrierPlmnListAvailableInTelephony(sEsosSubId, allCarrierPlmnList);
 
         final long timeOut = TimeUnit.SECONDS.toMillis(1);
         grantSatellitePermission();
@@ -739,14 +755,18 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
 
         logd(TAG, "sendSms: Register callbacks for sending SMS state changes");
         SatelliteTransmissionUpdateCallbackTest transmissionUpdateCallback =
-            startTransmissionUpdates();
+                startTransmissionUpdates();
         SmsMmsBroadcastReceiver sendReceiver = registerSmsMmsBroadcastReceiver(SMS_SEND_ACTION);
         PendingIntent sendPendingIntent = createSendPendingIntent();
 
         try {
-            getSmsManager().sendTextMessage(destAddr, null,
-                String.valueOf(SystemClock.elapsedRealtimeNanos()),
-                sendPendingIntent, null);
+            getSmsManager()
+                    .sendTextMessage(
+                            destAddr,
+                            null,
+                            String.valueOf(SystemClock.elapsedRealtimeNanos()),
+                            sendPendingIntent,
+                            null);
 
             logd(TAG, "sendSms: Datagram transfer state should change from IDLE to "
                     + "WAITING_TO_CONNECT");
@@ -806,9 +826,9 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
 
         // Register callbacks for receiving SMS state changes
         SatelliteTransmissionUpdateCallbackTest transmissionUpdateCallback =
-            startTransmissionUpdates();
+                startTransmissionUpdates();
         SmsMmsBroadcastReceiver receiveReceiver =
-            registerSmsMmsBroadcastReceiver(Telephony.Sms.Intents.SMS_RECEIVED_ACTION);
+                registerSmsMmsBroadcastReceiver(Telephony.Sms.Intents.SMS_RECEIVED_ACTION);
         try {
             // Set device not aligned to satellite
             sSatelliteManager.setDeviceAlignedWithSatellite(false);
@@ -823,18 +843,21 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
             // Set device aligned to satellite
             sSatelliteManager.setDeviceAlignedWithSatellite(true);
 
-            // MT SMS polling should be triggered, and send datagram transfer state should change from
+            // MT SMS polling should be triggered, and send datagram transfer state should change
+            // from
             // IDLE to SENDING, SEND_SUCCESS, and then IDLE
             assertTrue(transmissionUpdateCallback.waitUntilOnSendDatagramStateChanged(3));
             assertThat(transmissionUpdateCallback.getNumOfSendDatagramStateChanges()).isEqualTo(3);
             SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument
-                firstSendDatagramStateChange = transmissionUpdateCallback.getSendDatagramStateChange(0);
+                    firstSendDatagramStateChange =
+                            transmissionUpdateCallback.getSendDatagramStateChange(0);
             assertThat(firstSendDatagramStateChange).isEqualTo(
                     new SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument(
                             SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_SENDING,
                             1, SatelliteManager.SATELLITE_RESULT_SUCCESS));
-            assertEquals(SatelliteManager.DATAGRAM_TYPE_CHECK_PENDING_INCOMING_SMS,
-                firstSendDatagramStateChange.datagramType);
+            assertEquals(
+                    SatelliteManager.DATAGRAM_TYPE_CHECK_PENDING_INCOMING_SMS,
+                    firstSendDatagramStateChange.datagramType);
             assertThat(transmissionUpdateCallback.getSendDatagramStateChange(1)).isEqualTo(
                     new SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument(
                             SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_SEND_SUCCESS,
@@ -847,10 +870,12 @@ public class ManualConnectCarrierRoamingSatelliteTest extends CarrierRoamingSate
             // Trigger incoming SMS
             assertTrue(sMockModemManager.triggerIncomingSms(ESOS_SLOT_ID));
 
-            // Receive datagram transfer state should change from IDLE to RECEIVING, RECEIVE_SUCCESS,
+            // Receive datagram transfer state should change from IDLE to RECEIVING,
+            // RECEIVE_SUCCESS,
             // and then IDLE
             assertTrue(transmissionUpdateCallback.waitUntilOnReceiveDatagramStateChanged(3));
-            assertThat(transmissionUpdateCallback.getNumOfReceiveDatagramStateChanges()).isEqualTo(3);
+            assertThat(transmissionUpdateCallback.getNumOfReceiveDatagramStateChanges())
+                    .isEqualTo(3);
             assertThat(transmissionUpdateCallback.getReceiveDatagramStateChange(0)).isEqualTo(
                     new SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument(
                             SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_RECEIVING,

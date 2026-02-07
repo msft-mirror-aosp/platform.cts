@@ -2,6 +2,11 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
+android_app_certificate {
+    name: "cts-allow-access-target-cert",
+    certificate: "certs/cts-allow-access-target-cert",
+}
+
 android_test_helper_app {
     name: "CtsAllowComponentAccessSourceAllow",
     manifest: "Source_Allow_AndroidManifest.xml",
@@ -60,6 +65,40 @@ android_test_helper_app {
 android_test_helper_app {
     name: "CtsAllowComponentAccessTargetAllow",
     manifest: "Target_Allow_AndroidManifest.xml",
+    srcs: [
+        "src/**/*.java",
+        ":CtsAllowComponentAccessTest_Constants",
+        ":CtsAllowComponentAccessTest_Aidl",
+    ],
+    certificate: ":cts-allow-access-target-cert",
+    sdk_version: "current",
+}
+
+android_test_helper_app {
+    name: "CtsAllowComponentAccessSourceAllowCertPrimary",
+    manifest: "Source_AllowCertPrimary_AndroidManifest.xml",
+    srcs: [
+        "src/**/*.java",
+        ":CtsAllowComponentAccessTest_Constants",
+        ":CtsAllowComponentAccessTest_Aidl",
+    ],
+    sdk_version: "current",
+}
+
+android_test_helper_app {
+    name: "CtsAllowComponentAccessSourceAllowCertAdditional",
+    manifest: "Source_AllowCertAdditional_AndroidManifest.xml",
+    srcs: [
+        "src/**/*.java",
+        ":CtsAllowComponentAccessTest_Constants",
+        ":CtsAllowComponentAccessTest_Aidl",
+    ],
+    sdk_version: "current",
+}
+
+android_test_helper_app {
+    name: "CtsAllowComponentAccessSourceBlockCertWrong",
+    manifest: "Source_BlockCertWrong_AndroidManifest.xml",
     srcs: [
         "src/**/*.java",
         ":CtsAllowComponentAccessTest_Constants",

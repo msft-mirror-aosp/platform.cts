@@ -2144,6 +2144,9 @@ public class AudioRecordTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_AMBISONICS_SUPPORT_API)
     public void testAudioRecordAmbisonicsCapture() throws Exception {
+        if (!hasMicrophone()) {
+            return;
+        }
         // Enumerate devices to find one that supports Ambisonics
         AudioDeviceInfo[] devices = mAudioManager.getDevices(AudioManager.GET_DEVICES_INPUTS);
         AudioDeviceInfo ambisonicsDevice = null;

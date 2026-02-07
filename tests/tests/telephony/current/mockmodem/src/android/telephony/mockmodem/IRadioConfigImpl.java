@@ -34,6 +34,7 @@ import android.os.Message;
 import android.os.RemoteException;
 import android.text.TextUtils;
 import android.util.Log;
+import android.os.SystemProperties;
 
 public class IRadioConfigImpl extends IRadioConfig.Stub {
     private static final String TAG = "MRCFG";
@@ -61,6 +62,15 @@ public class IRadioConfigImpl extends IRadioConfig.Stub {
     private int[] mEnabledLogicalSlots = {};
     private SimTypeInfo[] mSimTypeInfos;
 
+    // TODO(b/477553823): Decouple MockModem slot configuration from physical hardware
+    // properties. Currently relies on ro.telephony.sim_slots.count to initialize slot number.
+    // Future work should allow explicit configuration independent of the underlying device.
+    // This system property is set to 1 for eSIM-only devices.
+    // For other devices, the value is not set (returning default -1).
+    private static final int NUM_SLOTS_PROPERTY = SystemProperties.getInt(
+        "ro.telephony.sim_slots.count", -1);
+    private static final boolean IS_ESIM_ONLY_DEVICE = NUM_SLOTS_PROPERTY == 1;
+
     MockCentralizedNetworkAgent mMockCentralizedNetworkAgent;
 
     private boolean mRebootModemCalled = false; // Flag to track if rebootModem was called
@@ -73,7 +83,15 @@ public class IRadioConfigImpl extends IRadioConfig.Stub {
 
         this.mService = service;
         mMockModemConfigInterface = configInterface;
-        mSlotNum = mService.getNumPhysicalSlots();
+        if (IS_ESIM_ONLY_DEVICE) {
+            mSlotNum = 1;
+            Log.i(mTag, "ro.telephony.sim_slots.count is 1, reporting single slot.");
+        } else {
+            mSlotNum = mService.getNumPhysicalSlots();
+            Log.i(mTag,
+                "ro.telephony.sim_slots.count is " + NUM_SLOTS_PROPERTY + ", reporting " + mSlotNum
+                    + " slots.");
+        }
         mSimSlotStatus = new SimSlotStatus[mSlotNum];
         mCacheUpdateMutex = new Object();
         mHandler = new IRadioConfigHandler();

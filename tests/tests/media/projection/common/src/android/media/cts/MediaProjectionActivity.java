@@ -58,7 +58,7 @@ import java.util.regex.Pattern;
 /** Start this activity to retrieve a MediaProjection through waitForMediaProjection() */
 public class MediaProjectionActivity extends Activity {
     private static final int PERMISSION_CODE = 1;
-    private static final int PERMISSION_DIALOG_WAIT_MS = 1000;
+    private static final int PERMISSION_DIALOG_WAIT_MS = 2000;
     private static final int TIMEOUT_MS = 10000;
     private static final String TAG = "MediaProjectionActivity";
     private static final String SYSTEM_UI_PACKAGE = "com.android.systemui";
@@ -115,6 +115,10 @@ public class MediaProjectionActivity extends Activity {
 
         if (getIntent().hasExtra(EXTRA_SKIP_CONSENT)) {
             mHandleActivityResult = true;
+        }
+
+        if (savedInstanceState != null) {
+            return;
         }
 
         startActivityForResult(createRequestIntent(), PERMISSION_CODE);

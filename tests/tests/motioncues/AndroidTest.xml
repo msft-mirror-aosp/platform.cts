@@ -23,10 +23,8 @@
         <option name="cleanup-apks" value="true" />
         <option name="test-file-name" value="CtsMotionCuesTestCases.apk" />
     </target_preparer>
-    <target_preparer class="com.android.tradefed.targetprep.SwitchUserTargetPreparer" >
-      <option name="user-type" value="SYSTEM" />
-    </target_preparer>
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.motioncues.cts" />
+        <option name="user-id" value="0" />
     </test>
 </configuration>

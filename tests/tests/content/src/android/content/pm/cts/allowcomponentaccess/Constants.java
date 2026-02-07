@@ -31,6 +31,12 @@ public class Constants {
             "com.android.cts.allowcomponentaccess.source_allow";
     public static final String PKG_SOURCE_BLOCK =
             "com.android.cts.allowcomponentaccess.source_block";
+    public static final String PKG_SOURCE_ALLOW_CERT_PRIMARY =
+            "com.android.cts.allowcomponentaccess.source_allow_cert_primary";
+    public static final String PKG_SOURCE_ALLOW_CERT_ADDITIONAL =
+            "com.android.cts.allowcomponentaccess.source_allow_cert_additional";
+    public static final String PKG_SOURCE_BLOCK_CERT_WRONG =
+            "com.android.cts.allowcomponentaccess.source_block_cert_wrong";
 
     // --- Actions ---
     public static final String ACTION_RELAY = "com.android.cts.allowcomponentaccess.ACTION_RELAY";

@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import android.os.SystemProperties;
 
 public class MockSimService {
     /* Support SIM card identify */
@@ -114,30 +115,52 @@ public class MockSimService {
     private static final int DEFAULT_SIM3_LOGICAL_SLOT_ID = -1;
     private static final int DEFAULT_SIM3_UNIVERSAL_PIN_STATE = PinState.DISABLED;
 
+    // Current implementation targets DSDS (Dual SIM Dual Standby) support,
+    // which requires at most 2 ports per slot (e.g. for MEP).
+    private static final int MAX_PORTS = 2;
+
+    // This system property is set to 1 for eSIM-only devices.
+    // For other devices, the value is not set (returning default -1).
+    private static final int NUM_SLOTS_PROPERTY = SystemProperties.getInt(
+        "ro.telephony.sim_slots.count", -1);
+    // TODO(b/477553823): Decouple MockModem slot configuration from physical hardware
+    // properties. Currently relies on ro.telephony.sim_slots.count to initialize slot number.
+    // Future work should allow explicit configuration independent of the underlying device.
+    private static final boolean IS_ESIM_ONLY_DEVICE = NUM_SLOTS_PROPERTY == 1;
+
     private String mTag = "MockSimService";
     private Context mContext;
 
     // SIM Slot status
     private int mPhysicalSlotId;
-    private int mLogicalSlotId;
-    private int mSlotPortId;
-    private boolean mIsSlotPortActive;
+
+    // Default port index
+    private static final int DEFAULT_PORT_INDEX = 0;
+    // To store the Logical Slot ID mapped to each port (index).
+    // Index: Port Index (0 or 1), Value: Logical Slot ID.
+    private int[] mLogicalSlotIds = new int[MAX_PORTS];
+    // To store the Port ID for each port index,Index: Port Index, Value: Port ID.
+    private int[] mSlotPortIds = new int[MAX_PORTS];
+    // To store the active status of each port.
+    // Index: Port Index, Value: true if active, false otherwise
+    private boolean[] mIsSlotPortActives = new boolean[MAX_PORTS];
     private boolean mIsCardPresent;
 
     /* SIM profile info */
     private SimProfileInfo[] mSimProfileInfoList;
 
     // SIM card data
-    private int mSimProfileId;
+    private int[] mSimProfileIds = new int[MAX_PORTS];
     private String mEID;
     private String mATR;
     private int mUniversalPinState;
 
-    private AppStatus[] mSimApp;
-    private ArrayList<SimAppData> mSimAppList;
+    // Per-port data
+    private AppStatus[][] mSimApps = new AppStatus[MAX_PORTS][];
+    private ArrayList<SimAppData>[] mSimAppLists = (ArrayList<SimAppData>[]) new ArrayList[MAX_PORTS];
 
     // Key: AID Value: list of SIM IO (command-respond) data
-    private final Map<String, List<SimIoData>> mSimIoDataMap = new HashMap<>();
+    private final Map<String, List<SimIoData>>[] mSimIoDataMaps = new Map[MAX_PORTS];
 
     // TODO: switch to @AutoValue?
     public static final class SimIoData {
@@ -385,6 +408,17 @@ public class MockSimService {
                 break;
         }
 
+        // Initialize arrays for ports
+        for (int portId = 0; portId < MAX_PORTS; portId++) {
+            mSimProfileIds[portId] = MOCK_SIM_PROFILE_ID_DEFAULT;
+            mLogicalSlotIds[portId] = -1;
+            mSlotPortIds[portId] = portId;
+            mIsSlotPortActives[portId] = false;
+            mSimAppLists[portId] = new ArrayList<>();
+            mSimIoDataMaps[portId] = new HashMap<>();
+            mSimApps[portId] = new AppStatus[0]; // Initialize inner array to empty
+        }
+
         // Initial support SIM profile list
         mSimProfileInfoList = new SimProfileInfo[MOCK_SIM_PROFILE_ID_MAX];
         for (int idx = 0; idx < MOCK_SIM_PROFILE_ID_MAX; idx++) {
@@ -405,11 +439,13 @@ public class MockSimService {
             }
         }
 
-        // Initiate SIM card with default profile
-        initMockSimCard(slotId, simprofile);
+        // Initiate SIM card with default profile for Port 0
+        initMockSimCard(slotId, simprofile, DEFAULT_PORT_INDEX);
     }
 
-    private void initMockSimCard(int slotId, int simProfileId) {
+    private void initMockSimCard(int slotId, int simProfileId, int portIndex) {
+        if (portIndex < DEFAULT_PORT_INDEX || portIndex >= MAX_PORTS) return;
+
         if (slotId > MockModemConfigInterface.MAX_NUM_OF_SIM_SLOT) {
             Log.e(
                     mTag,
@@ -422,52 +458,71 @@ public class MockSimService {
         } else {
             mPhysicalSlotId = slotId;
         }
+
         if (simProfileId >= 0 && simProfileId < MOCK_SIM_PROFILE_ID_MAX) {
-            mSimProfileId = simProfileId;
+            mSimProfileIds[portIndex] = simProfileId;
             Log.i(
                     mTag,
                     "Load SIM profile ID: "
-                            + mSimProfileId
-                            + " into physical slot["
-                            + mPhysicalSlotId
-                            + "]");
+                            + mSimProfileIds[portIndex]
+                            + " into physical slot"
+                            + "[" + mPhysicalSlotId
+                            + "] Port " + portIndex);
         } else {
-            mSimProfileId = MOCK_SIM_PROFILE_ID_DEFAULT;
+            mSimProfileIds[portIndex] = MOCK_SIM_PROFILE_ID_DEFAULT;
             Log.e(
                     mTag,
-                    "SIM Absent on physical slot["
-                            + mPhysicalSlotId
-                            + "]. Not support SIM card ID: "
-                            + mSimProfileId);
+                    "SIM Absent on physical slot"
+                            + "[" + mPhysicalSlotId
+                            + "] Port " + portIndex
+                            + ". Not support SIM card ID: "
+                            + simProfileId);
         }
 
         // Initiate slot status
-        initMockSimSlot();
+        initMockSimSlot(portIndex);
 
         // Load SIM profile data
-        loadMockSimCard();
+        loadMockSimCard(portIndex);
     }
 
-    private void initMockSimSlot() {
+    private void initMockSimSlot(int portIndex) {
+        // We only apply standard hardware defaults (like setting the slot to active)
+        // for the primary port (0). Secondary ports (1) are managed explicitly
+        // by the MEP configuration logic and should start inactive.
+        if (portIndex != DEFAULT_PORT_INDEX) {
+            return;
+        }
         switch (mPhysicalSlotId) {
-            case MOCK_SIM_SLOT_1:
-                mLogicalSlotId = DEFAULT_SIM1_LOGICAL_SLOT_ID;
-                mSlotPortId = DEFAULT_SIM1_PORT_ID;
-                mIsSlotPortActive = DEFAULT_SIM1_PORT_ACTIVE;
-                mIsCardPresent = DEFAULT_SIM1_CARD_PRESENT;
-                break;
-            case MOCK_SIM_SLOT_2:
-                mLogicalSlotId = DEFAULT_SIM2_LOGICAL_SLOT_ID;
-                mSlotPortId = DEFAULT_SIM2_PORT_ID;
-                mIsSlotPortActive = DEFAULT_SIM2_PORT_ACTIVE;
+            case MOCK_SIM_SLOT_1 -> {
+                // Initialize Physical Slot 1. This is typically the pSIM slot.
+                mLogicalSlotIds[0] = DEFAULT_SIM1_LOGICAL_SLOT_ID;
+                mSlotPortIds[0] = DEFAULT_SIM1_PORT_ID;
+                mIsSlotPortActives[0] = DEFAULT_SIM1_PORT_ACTIVE;
+                // If the device is eSIM-only, there is no pSIM.
+                // The single physical slot (Slot 1) acts as the eSIM.
+                // Therefore, we use the default eSIM presence (SIM2) if it's an eSIM-only device.
+                if (IS_ESIM_ONLY_DEVICE) {
+                    mIsCardPresent = DEFAULT_SIM2_CARD_PRESENT;
+                } else {
+                    mIsCardPresent = DEFAULT_SIM1_CARD_PRESENT;
+                }
+                Log.d(mTag, "[initMockSimSlot] mIsCardPresent " + mIsCardPresent);
+            }
+            case MOCK_SIM_SLOT_2 -> {
+                // Initialize Physical Slot 2. This is typically the eSIM slot.
+                mLogicalSlotIds[0] = DEFAULT_SIM2_LOGICAL_SLOT_ID;
+                mSlotPortIds[0] = DEFAULT_SIM2_PORT_ID;
+                mIsSlotPortActives[0] = DEFAULT_SIM2_PORT_ACTIVE;
                 mIsCardPresent = DEFAULT_SIM2_CARD_PRESENT;
-                break;
-            case MOCK_SIM_SLOT_3:
-                mLogicalSlotId = DEFAULT_SIM3_LOGICAL_SLOT_ID;
-                mSlotPortId = DEFAULT_SIM3_PORT_ID;
-                mIsSlotPortActive = DEFAULT_SIM3_PORT_ACTIVE;
+            }
+            case MOCK_SIM_SLOT_3 -> {
+                // Initialize Physical Slot 3 (if applicable).
+                mLogicalSlotIds[0] = DEFAULT_SIM3_LOGICAL_SLOT_ID;
+                mSlotPortIds[0] = DEFAULT_SIM3_PORT_ID;
+                mIsSlotPortActives[0] = DEFAULT_SIM3_PORT_ACTIVE;
                 mIsCardPresent = DEFAULT_SIM3_CARD_PRESENT;
-                break;
+            }
         }
     }
 
@@ -561,14 +616,13 @@ public class MockSimService {
         return facilitylock;
     }
 
-    private int getSimAppDataIndexByAid(String aid) {
-        int idx;
-        for (idx = 0; idx < mSimAppList.size(); idx++) {
-            if (aid.equals(mSimAppList.get(idx).getAid())) {
-                break;
+    private int getSimAppDataIndexByAid(String aid, int portIndex) {
+        for (int idx = 0; idx < mSimAppLists[portIndex].size(); idx++) {
+            if (aid.equals(mSimAppLists[portIndex].get(idx).getAid())) {
+                return idx;
             }
         }
-        return idx;
+        return -1;
     }
 
     private String[] extractImsi(String imsi, int mncDigit) {
@@ -596,8 +650,14 @@ public class MockSimService {
         return result;
     }
 
+    /**
+     * Stores EF (Elementary File) data for a specific SIM application.
+     *
+     * @return true if the EF data was successfully stored; false if the data was invalid,
+     *         the application index was not found, or the EF type is not supported.
+     */
     private boolean storeEfData(
-            String aid, String name, String id, String command, String[] value) {
+            int portIndex, String aid, String name, String id, String command, String[] value) {
         boolean result = true;
 
         if (value == null) {
@@ -605,8 +665,18 @@ public class MockSimService {
             return false;
         }
 
+        int appIdx = getSimAppDataIndexByAid(aid, portIndex);
+        if (appIdx < 0 || appIdx >= mSimAppLists[portIndex].size()) {
+            Log.e(mTag, "Invalid App Index for AID: " + aid);
+            return false;
+        }
+
         switch (name) {
             case "EF_IMSI":
+                // Verify IMSI format (MCC + MNC + MSIN)
+                // value[0] = MCC (Mobile Country Code)
+                // value[1] = MNC (Mobile Network Code)
+                // value[2] = MSIN (Mobile Subscription Identification Number)
                 if (value.length == 3
                         && value[0] != null
                         && value[0].length() == 3
@@ -615,8 +685,8 @@ public class MockSimService {
                         && value[2] != null
                         && value[2].length() > 0
                         && (value[0].length() + value[1].length() + value[2].length() <= 15)) {
-                    mSimAppList
-                            .get(getSimAppDataIndexByAid(aid))
+                    mSimAppLists[portIndex]
+                            .get(appIdx)
                             .setImsi(value[0], value[1], value[2]);
                 } else {
                     result = false;
@@ -626,10 +696,10 @@ public class MockSimService {
             case "EF_ICCID":
                 if (command.length() > 2
                         && Integer.parseInt(command.substring(2), 16) == COMMAND_READ_BINARY) {
-                    mSimAppList.get(getSimAppDataIndexByAid(aid)).setIccid(value[0]);
+                    mSimAppLists[portIndex].get(appIdx).setIccid(value[0]);
                 } else if (command.length() > 2
                         && Integer.parseInt(command.substring(2), 16) == COMMAND_GET_RESPONSE) {
-                    mSimAppList.get(getSimAppDataIndexByAid(aid)).setIccidInfo(value[0]);
+                    mSimAppLists[portIndex].get(appIdx).setIccidInfo(value[0]);
                 } else {
                     Log.e(mTag, "No valid Iccid data found");
                     result = false;
@@ -638,10 +708,10 @@ public class MockSimService {
             case "EF_GID1":
                 if (command.length() > 2
                         && Integer.parseInt(command.substring(2), 16) == COMMAND_READ_BINARY) {
-                    mSimAppList.get(getSimAppDataIndexByAid(aid)).setGid1(value[0]);
+                    mSimAppLists[portIndex].get(appIdx).setGid1(value[0]);
                 } else if (command.length() > 2
                         && Integer.parseInt(command.substring(2), 16) == COMMAND_GET_RESPONSE) {
-                    mSimAppList.get(getSimAppDataIndexByAid(aid)).setGid1Info(value[0]);
+                    mSimAppLists[portIndex].get(appIdx).setGid1Info(value[0]);
                 } else {
                     Log.e(mTag, "No valid GID1 found");
                     result = false;
@@ -655,7 +725,7 @@ public class MockSimService {
         return result;
     }
 
-    private boolean loadSimProfileFromXml() {
+    private boolean loadSimProfileFromXml(int portIndex) {
         boolean result = true;
 
         if (mSimProfileInfoList == null) {
@@ -663,8 +733,10 @@ public class MockSimService {
             return false;
         }
 
+        int profileId = mSimProfileIds[portIndex];
+
         try {
-            String file = mSimProfileInfoList[mSimProfileId].getXmlFile();
+            String file = mSimProfileInfoList[profileId].getXmlFile();
             int event;
             XmlPullParser parser = Xml.newPullParser();
             InputStream input;
@@ -694,8 +766,8 @@ public class MockSimService {
                                             + numofapp
                                             + " atr = "
                                             + mATR);
-                            mSimApp = new AppStatus[numofapp];
-                            if (mSimApp == null) {
+                            mSimApps[portIndex] = new AppStatus[numofapp];
+                            if (mSimApps[portIndex] == null) {
                                 Log.e(mTag, "Create SIM app failed!");
                                 result = false;
                                 break;
@@ -703,28 +775,28 @@ public class MockSimService {
                             mocksim_validation = true;
                         } else if (mocksim_validation
                                 && MOCK_SIM_PROFILE_TAG.equals(parser.getName())
-                                && appidx < mSimApp.length) {
+                                && appidx < mSimApps[portIndex].length) {
                             int id = Integer.parseInt(parser.getAttributeValue(0));
                             int type = convertMockSimAppType(parser.getAttributeValue(1));
-                            mSimApp[appidx] = new AppStatus();
-                            mSimApp[appidx].appType = type;
+                            mSimApps[portIndex][appidx] = new AppStatus();
+                            mSimApps[portIndex][appidx].appType = type;
                             switch (type) {
                                 case AppStatus.APP_TYPE_SIM:
                                 case AppStatus.APP_TYPE_USIM:
-                                    mSimProfileInfoList[mSimProfileId].setGsmAppIndex(id);
+                                    mSimProfileInfoList[profileId].setGsmAppIndex(id);
                                     break;
                                 case AppStatus.APP_TYPE_CSIM:
                                 case AppStatus.APP_TYPE_RUIM:
-                                    mSimProfileInfoList[mSimProfileId].setCdmaAppIndex(id);
+                                    mSimProfileInfoList[profileId].setCdmaAppIndex(id);
                                     break;
                                 case AppStatus.APP_TYPE_ISIM:
-                                    mSimProfileInfoList[mSimProfileId].setImsAppIndex(id);
+                                    mSimProfileInfoList[profileId].setImsAppIndex(id);
                                     break;
                             }
                             Log.d(
                                     mTag,
-                                    "Found ["
-                                            + MOCK_SIM_PROFILE_TAG
+                                    "Found "
+                                            + "[" + MOCK_SIM_PROFILE_TAG
                                             + "]: id = "
                                             + id
                                             + " type = "
@@ -737,7 +809,7 @@ public class MockSimService {
                                 && mocksim_pf_validatiion
                                 && MOCK_PIN_PROFILE_TAG.equals(parser.getName())) {
                             int appstate = convertMockSimAppState(parser.getAttributeValue(0));
-                            mSimApp[appidx].appState = appstate;
+                            mSimApps[portIndex][appidx].appState = appstate;
                             Log.d(
                                     mTag,
                                     "Found "
@@ -752,7 +824,7 @@ public class MockSimService {
                                 && MOCK_PIN1_STATE_TAG.equals(parser.getName())) {
                             String state = parser.nextText();
                             int pin1state = convertMockSimPinState(state);
-                            mSimApp[appidx].pin1 = pin1state;
+                            mSimApps[portIndex][appidx].pin1 = pin1state;
                             Log.d(
                                     mTag,
                                     "Found "
@@ -776,7 +848,7 @@ public class MockSimService {
                                             + " ("
                                             + pin2state
                                             + ")");
-                            mSimApp[appidx].pin2 = pin2state;
+                            mSimApps[portIndex][appidx].pin2 = pin2state;
                         } else if (mocksim_validation
                                 && mocksim_pf_validatiion
                                 && MOCK_FACILITY_LOCK_FD_TAG.equals(parser.getName())) {
@@ -809,7 +881,7 @@ public class MockSimService {
                                 result = false;
                                 break;
                             }
-                            mSimAppList.add(simAppData);
+                            mSimAppLists[portIndex].add(simAppData);
                             Log.d(
                                     mTag,
                                     "Found "
@@ -834,9 +906,9 @@ public class MockSimService {
                             }
                             simAppData.setFdnStatus(fd_lock);
                             simAppData.setPin1State(sc_lock);
-                            mSimAppList.add(simAppData);
+                            mSimAppLists[portIndex].add(simAppData);
                             if (curr_active) {
-                                mSimApp[appidx].aidPtr = aid;
+                                mSimApps[portIndex][appidx].aidPtr = aid;
                             }
                             Log.d(
                                     mTag,
@@ -871,7 +943,7 @@ public class MockSimService {
                                     String imsi = parser.nextText();
                                     value = extractImsi(imsi, mncDigit);
                                     if (value != null
-                                            && storeEfData(adf_aid, name, id, command, value)) {
+                                            && storeEfData(portIndex, adf_aid, name, id, command, value)) {
                                         Log.d(
                                                 mTag,
                                                 "Found "
@@ -892,7 +964,7 @@ public class MockSimService {
                                     value = new String[1];
                                     if (value != null) {
                                         value[0] = parser.nextText();
-                                        if (storeEfData(adf_aid, name, id, command, value)) {
+                                        if (storeEfData(portIndex, adf_aid, name, id, command, value)) {
                                             Log.d(
                                                     mTag,
                                                     "Found "
@@ -916,8 +988,8 @@ public class MockSimService {
                                     "Found " + MOCK_ADFLC_TAG + ", aid=" + aid + ", name=" + name);
                             if (!TextUtils.isEmpty(aid)) {
                                 adflc_aid = aid;
-                                synchronized (mSimIoDataMap) {
-                                    mSimIoDataMap.put(aid, new ArrayList<>());
+                                synchronized (mSimIoDataMaps[portIndex]) {
+                                    mSimIoDataMaps[portIndex].put(aid, new ArrayList<>());
                                 }
                             }
                             mocksim_adflc_validation = true;
@@ -928,8 +1000,8 @@ public class MockSimService {
                             String sw1 = parser.getAttributeValue(2);
                             String sw2 = parser.getAttributeValue(3);
                             String response = parser.nextText();
-                            synchronized (mSimIoDataMap) {
-                                mSimIoDataMap.get(adflc_aid).add(
+                            synchronized (mSimIoDataMaps[portIndex]) {
+                                mSimIoDataMaps[portIndex].get(adflc_aid).add(
                                         new SimIoData(fileid, command, sw1, sw2, response));
                             }
                             Log.d(mTag, "Found " + MOCK_IO_TAG + ": fileid=" + fileid + " command="
@@ -950,8 +1022,8 @@ public class MockSimService {
                         break;
                 }
             }
-            Log.d(mTag, "Totally create " + Math.min(mSimApp.length, appidx) + " SIM profiles");
-            mSimProfileInfoList[mSimProfileId].setNumOfSimApp(appidx);
+            Log.d(mTag, "Totally create " + Math.min(mSimApps[portIndex].length, appidx) + " SIM profiles");
+            mSimProfileInfoList[profileId].setNumOfSimApp(appidx);
             input.close();
         } catch (Exception e) {
             Log.e(mTag, "Exception error: " + e);
@@ -961,86 +1033,137 @@ public class MockSimService {
         return result;
     }
 
-    private boolean loadSimApp() {
+    private boolean loadSimApp(int portIndex) {
         boolean result = true;
 
-        if (mSimAppList == null) {
-            mSimAppList = new ArrayList<SimAppData>();
+        if (mSimAppLists[portIndex] == null) {
+            mSimAppLists[portIndex] = new ArrayList<SimAppData>();
         } else {
-            mSimAppList.clear();
+            mSimAppLists[portIndex].clear();
         }
 
-        if (mSimProfileId == MOCK_SIM_PROFILE_ID_DEFAULT
-                || mSimProfileInfoList[mSimProfileId].getXmlFile().length() == 0) {
+        if (mSimProfileIds[portIndex] == MOCK_SIM_PROFILE_ID_DEFAULT
+                || mSimProfileInfoList[mSimProfileIds[portIndex]].getXmlFile().length() == 0) {
             Log.d(mTag, "SIM absent case");
-            mSimApp = new AppStatus[0];
-            if (mSimApp == null) {
+            mSimApps[portIndex] = new AppStatus[0];
+            if (mSimApps[portIndex] == null) {
                 Log.e(mTag, "Create SIM app failed!");
                 result = false;
             }
         } else {
-            result = loadSimProfileFromXml();
+            result = loadSimProfileFromXml(portIndex);
         }
 
         return result;
     }
 
-    private boolean loadMockSimCard() {
-        if (mSimProfileId != MOCK_SIM_PROFILE_ID_DEFAULT) {
+    /**
+     * Loads the SIM card profile for a specific port.
+     *
+     * <p>This method handles the initialization of card-level properties (ATR, EID, Presence)
+     * and triggers the loading of SIM applications. It supports MEP (Multiple Enabled Profiles)
+     * by checking the state of all ports on the physical slot.
+     *
+     * @param portIndex The index of the port to load (0 or 1).
+     * @return true if the operation is successful, otherwise false.
+     */
+    private boolean loadMockSimCard(int portIndex) {
+        int profileId = mSimProfileIds[portIndex];
+
+        // For MEP (E+E), the card is physically present if at least one profile is active,
+        // even if the specific port being modified is set to "Default" (No Profile).
+        boolean anyProfile = false;
+        for (int id : mSimProfileIds) {
+            if (id != MOCK_SIM_PROFILE_ID_DEFAULT) anyProfile = true;
+        }
+        mIsCardPresent = anyProfile;
+
+        if (profileId != MOCK_SIM_PROFILE_ID_DEFAULT) {
             switch (mPhysicalSlotId) {
-                case MOCK_SIM_SLOT_1: // pSIM
-                    mEID = DEFAULT_SIM1_EID;
-                    break;
-                case MOCK_SIM_SLOT_2: // eSIM
+                case MOCK_SIM_SLOT_1 -> { // pSIM or eSIM
+                    // eSIM-only mode: Physical Slot 0 acts as the eSIM
+                    // These values represent the physical characteristics of the card (EID, ATR)
+                    // and its default state (Present/Absent) when no profiles are active.
+                    if (IS_ESIM_ONLY_DEVICE) {
+                        mEID = DEFAULT_SIM2_EID;
+                        mATR = DEFAULT_SIM2_EID;
+                    } else {
+                        // Standard pSIM: Physical Slot 0 acts as the pSIM (Slot 1).
+                        mEID = DEFAULT_SIM1_EID;
+                    }
+                }
+                case MOCK_SIM_SLOT_2 -> { // eSIM
+                    // Standard eSIM: Physical Slot 1.
                     mATR = DEFAULT_SIM2_ATR;
                     mEID = DEFAULT_SIM2_EID;
-                    break;
-                case MOCK_SIM_SLOT_3: // eSIM
+                }
+                case MOCK_SIM_SLOT_3 -> { // eSIM
+                    // Additional eSIM slot (if supported).
                     mATR = DEFAULT_SIM3_ATR;
                     mEID = DEFAULT_SIM3_EID;
-                    break;
+                }
             }
             mUniversalPinState = PinState.DISABLED;
             mIsCardPresent = true;
         } else {
-            switch (mPhysicalSlotId) {
-                case MOCK_SIM_SLOT_1:
-                    mATR = DEFAULT_SIM1_ATR;
-                    mEID = DEFAULT_SIM1_EID;
-                    mUniversalPinState = DEFAULT_SIM1_UNIVERSAL_PIN_STATE;
-                    mIsCardPresent = DEFAULT_SIM1_CARD_PRESENT;
-                    break;
-                case MOCK_SIM_SLOT_2:
-                    mATR = DEFAULT_SIM2_ATR;
-                    mEID = DEFAULT_SIM2_EID;
-                    mUniversalPinState = DEFAULT_SIM2_UNIVERSAL_PIN_STATE;
-                    mIsCardPresent = DEFAULT_SIM2_CARD_PRESENT;
-                    break;
-                case MOCK_SIM_SLOT_3:
-                    mATR = DEFAULT_SIM3_ATR;
-                    mEID = DEFAULT_SIM3_EID;
-                    mUniversalPinState = DEFAULT_SIM3_UNIVERSAL_PIN_STATE;
-                    mIsCardPresent = DEFAULT_SIM3_CARD_PRESENT;
-                    break;
+            // If defaulting a port, check if entire card is absent/default
+            if (!anyProfile) {
+                switch (mPhysicalSlotId) {
+                    case MOCK_SIM_SLOT_1 -> {
+                        mUniversalPinState = DEFAULT_SIM1_UNIVERSAL_PIN_STATE;
+                        if (IS_ESIM_ONLY_DEVICE) {
+                            mATR = DEFAULT_SIM2_ATR;
+                            mEID = DEFAULT_SIM2_EID;
+                            mIsCardPresent = DEFAULT_SIM2_CARD_PRESENT;
+                        } else {
+                            mATR = DEFAULT_SIM1_ATR;
+                            mEID = DEFAULT_SIM1_EID;
+                            mIsCardPresent = DEFAULT_SIM1_CARD_PRESENT;
+                        }
+                    }
+                    case MOCK_SIM_SLOT_2 -> {
+                        mATR = DEFAULT_SIM2_ATR;
+                        mEID = DEFAULT_SIM2_EID;
+                        mUniversalPinState = DEFAULT_SIM2_UNIVERSAL_PIN_STATE;
+                        mIsCardPresent = DEFAULT_SIM2_CARD_PRESENT;
+                    }
+                    case MOCK_SIM_SLOT_3 -> {
+                        mATR = DEFAULT_SIM3_ATR;
+                        mEID = DEFAULT_SIM3_EID;
+                        mUniversalPinState = DEFAULT_SIM3_UNIVERSAL_PIN_STATE;
+                        mIsCardPresent = DEFAULT_SIM3_CARD_PRESENT;
+                    }
+                }
             }
         }
-        return loadSimApp();
+        Log.i(mTag, "Load SIM profile ID: " + profileId
+            + " into physical slot[" + mPhysicalSlotId + "] Port " + portIndex
+            + " mIsCardPresent: " + mIsCardPresent
+            + "mEID: " + mEID);
+        return loadSimApp(portIndex);
     }
 
-    public boolean loadSimCard(int simprofileid) {
+    public boolean loadSimCard(int simprofileid, int portIndex) {
+        if (portIndex < DEFAULT_PORT_INDEX || portIndex >= MAX_PORTS) return false;
         boolean result = true;
-        if (mSimProfileId >= MOCK_SIM_PROFILE_ID_DEFAULT
-                && mSimProfileId < MOCK_SIM_PROFILE_ID_MAX) {
-            mSimProfileId = simprofileid;
-            result = loadMockSimCard();
+        if (simprofileid >= MOCK_SIM_PROFILE_ID_DEFAULT
+                && simprofileid < MOCK_SIM_PROFILE_ID_MAX) {
+            mSimProfileIds[portIndex] = simprofileid;
+            result = loadMockSimCard(portIndex);
         } else {
             result = false;
         }
         return result;
     }
 
-    public boolean isSlotPortActive() {
-        return mIsSlotPortActive;
+    public boolean isSlotPortActive(int portIndex) {
+        return (portIndex < MAX_PORTS) ? mIsSlotPortActives[portIndex] : false;
+    }
+
+    public void setSlotPortActive(int portIndex, boolean active) {
+        if (portIndex < MAX_PORTS) {
+            mIsSlotPortActives[portIndex] = active;
+        }
     }
 
     public boolean isCardPresent() {
@@ -1048,20 +1171,31 @@ public class MockSimService {
     }
 
     public int getNumOfSimPortInfo() {
-        // TODO: support multiple sim port
-        return DEFAULT_NUM_OF_SIM_PORT_INFO;
+        if (mPhysicalSlotId == MOCK_SIM_SLOT_1) {
+            return (IS_ESIM_ONLY_DEVICE) ? MAX_PORTS : 1;
+        }
+        if (mPhysicalSlotId == MOCK_SIM_SLOT_2 || mPhysicalSlotId == MOCK_SIM_SLOT_3) {
+            return MAX_PORTS;
+        }
+        return 1;
     }
 
     public int getPhysicalSlotId() {
         return mPhysicalSlotId;
     }
 
-    public int getLogicalSlotId() {
-        return mLogicalSlotId;
+    public int getLogicalSlotId(int portIndex) {
+        return (portIndex < MAX_PORTS) ? mLogicalSlotIds[portIndex] : -1;
     }
 
-    public int getSlotPortId() {
-        return mSlotPortId;
+    public void setLogicalSlotId(int portIndex, int logicalId) {
+        if (portIndex < MAX_PORTS) {
+            mLogicalSlotIds[portIndex] = logicalId;
+        }
+    }
+
+    public int getSlotPortId(int portIndex) {
+        return (portIndex < MAX_PORTS) ? mSlotPortIds[portIndex] : -1;
     }
 
     public String getEID() {
@@ -1078,9 +1212,10 @@ public class MockSimService {
         return mATR;
     }
 
-    public boolean setICCID(String iccid) {
+    public boolean setICCID(String iccid, int portIndex) {
+        if (portIndex < DEFAULT_PORT_INDEX || portIndex >= MAX_PORTS) return false;
         boolean result = false;
-        SimAppData activeSimAppData = getActiveSimAppData();
+        SimAppData activeSimAppData = getActiveSimAppData(portIndex);
 
         // TODO: add iccid format check
         if (activeSimAppData != null) {
@@ -1107,9 +1242,9 @@ public class MockSimService {
         return result;
     }
 
-    public String getICCID() {
+    public String getICCID(int portIndex) {
         String iccid = "";
-        SimAppData activeSimAppData = getActiveSimAppData();
+        SimAppData activeSimAppData = getActiveSimAppData(portIndex);
 
         if (activeSimAppData != null) {
             iccid = activeSimAppData.getIccid();
@@ -1122,36 +1257,43 @@ public class MockSimService {
         return mUniversalPinState;
     }
 
-    public int getGsmAppIndex() {
-        return mSimProfileInfoList[mSimProfileId].getGsmAppIndex();
+    public int getGsmAppIndex(int portIndex) {
+        if (portIndex < DEFAULT_PORT_INDEX || portIndex >= MAX_PORTS) return DEFAULT_GSM_APP_IDX;
+        return mSimProfileInfoList[mSimProfileIds[portIndex]].getGsmAppIndex();
     }
 
-    public int getCdmaAppIndex() {
-        return mSimProfileInfoList[mSimProfileId].getCdmaAppIndex();
+    public int getCdmaAppIndex(int portIndex) {
+        if (portIndex < DEFAULT_PORT_INDEX || portIndex >= MAX_PORTS) return DEFAULT_CDMA_APP_IDX;
+        return mSimProfileInfoList[mSimProfileIds[portIndex]].getCdmaAppIndex();
     }
 
-    public int getImsAppIndex() {
-        return mSimProfileInfoList[mSimProfileId].getImsAppIndex();
+    public int getImsAppIndex(int portIndex) {
+        if (portIndex < DEFAULT_PORT_INDEX || portIndex >= MAX_PORTS) return DEFAULT_IMS_APP_IDX;
+        return mSimProfileInfoList[mSimProfileIds[portIndex]].getImsAppIndex();
     }
 
-    public int getNumOfSimApp() {
-        return mSimProfileInfoList[mSimProfileId].getNumOfSimApp();
+    public int getNumOfSimApp(int portIndex) {
+        if (portIndex < DEFAULT_PORT_INDEX || portIndex >= MAX_PORTS) return DEFAULT_NUM_OF_SIM_APP;
+        return mSimProfileInfoList[mSimProfileIds[portIndex]].getNumOfSimApp();
     }
 
-    public AppStatus[] getSimApp() {
-        return mSimApp;
+    public AppStatus[] getSimApp(int portIndex) {
+        if (portIndex < DEFAULT_PORT_INDEX || portIndex >= MAX_PORTS) return new AppStatus[0];
+        return mSimApps[portIndex];
     }
 
-    public ArrayList<SimAppData> getSimAppList() {
-        return mSimAppList;
+    public List<SimAppData> getSimAppList(int portIndex) {
+        if (portIndex < DEFAULT_PORT_INDEX || portIndex >= MAX_PORTS) return new ArrayList<>();
+        return mSimAppLists[portIndex];
     }
 
-    public SimAppData getActiveSimAppData() {
+    public SimAppData getActiveSimAppData(int portIndex) {
+        if (portIndex < DEFAULT_PORT_INDEX || portIndex >= MAX_PORTS) return null;
         SimAppData activeSimAppData = null;
 
-        for (int simAppIdx = 0; simAppIdx < mSimAppList.size(); simAppIdx++) {
-            if (mSimAppList.get(simAppIdx).isCurrentActive()) {
-                activeSimAppData = mSimAppList.get(simAppIdx);
+        for (int simAppIdx = 0; simAppIdx < mSimAppLists[portIndex].size(); simAppIdx++) {
+            if (mSimAppLists[portIndex].get(simAppIdx).isCurrentActive()) {
+                activeSimAppData = mSimAppLists[portIndex].get(simAppIdx);
                 break;
             }
         }
@@ -1159,9 +1301,9 @@ public class MockSimService {
         return activeSimAppData;
     }
 
-    public String getActiveSimAppId() {
+    public String getActiveSimAppId(int portIndex) {
         String aid = "";
-        SimAppData activeSimAppData = getActiveSimAppData();
+        SimAppData activeSimAppData = getActiveSimAppData(portIndex);
 
         if (activeSimAppData != null) {
             aid = activeSimAppData.getAid();
@@ -1170,11 +1312,11 @@ public class MockSimService {
         return aid;
     }
 
-    private boolean setMcc(String mcc) {
+    private boolean setMcc(String mcc, int portIndex) {
         boolean result = false;
 
         if (mcc.length() == 3) {
-            SimAppData activeSimAppData = getActiveSimAppData();
+            SimAppData activeSimAppData = getActiveSimAppData(portIndex);
             if (activeSimAppData != null) {
                 activeSimAppData.setMcc(mcc);
                 result = true;
@@ -1184,11 +1326,11 @@ public class MockSimService {
         return result;
     }
 
-    private boolean setMnc(String mnc) {
+    private boolean setMnc(String mnc, int portIndex) {
         boolean result = false;
 
         if (mnc.length() == 2 || mnc.length() == 3) {
-            SimAppData activeSimAppData = getActiveSimAppData();
+            SimAppData activeSimAppData = getActiveSimAppData(portIndex);
             if (activeSimAppData != null) {
                 activeSimAppData.setMnc(mnc);
                 result = true;
@@ -1198,11 +1340,11 @@ public class MockSimService {
         return result;
     }
 
-    public String getMccMnc() {
+    public String getMccMnc(int portIndex) {
         String mcc;
         String mnc;
         String result = "";
-        SimAppData activeSimAppData = getActiveSimAppData();
+        SimAppData activeSimAppData = getActiveSimAppData(portIndex);
 
         if (activeSimAppData != null) {
             mcc = activeSimAppData.getMcc();
@@ -1219,9 +1361,9 @@ public class MockSimService {
         return result;
     }
 
-    public String getMsin() {
+    public String getMsin(int portIndex) {
         String result = "";
-        SimAppData activeSimAppData = getActiveSimAppData();
+        SimAppData activeSimAppData = getActiveSimAppData(portIndex);
 
         if (activeSimAppData != null) {
             result = activeSimAppData.getMsin();
@@ -1233,14 +1375,14 @@ public class MockSimService {
         return result;
     }
 
-    public boolean setImsi(String mcc, String mnc, String msin) {
+    public boolean setImsi(String mcc, String mnc, String msin, int portIndex) {
         boolean result = false;
 
         if (msin.length() > 0 && (mcc.length() + mnc.length() + msin.length()) <= 15) {
-            SimAppData activeSimAppData = getActiveSimAppData();
+            SimAppData activeSimAppData = getActiveSimAppData(portIndex);
             if (activeSimAppData != null) {
-                setMcc(mcc);
-                setMnc(mnc);
+                setMcc(mcc, portIndex);
+                setMnc(mnc, portIndex);
                 activeSimAppData.setMsin(msin);
                 result = true;
             } else {
@@ -1253,14 +1395,14 @@ public class MockSimService {
         return result;
     }
 
-    public String getImsi() {
+    public String getImsi(int portIndex) {
         String imsi = "";
         String mccmnc;
         String msin;
-        SimAppData activeSimAppData = getActiveSimAppData();
+        SimAppData activeSimAppData = getActiveSimAppData(portIndex);
 
         if (activeSimAppData != null) {
-            mccmnc = getMccMnc();
+            mccmnc = getMccMnc(portIndex);
             msin = activeSimAppData.getMsin();
             if (mccmnc.length() > 0
                     && msin != null
@@ -1274,9 +1416,12 @@ public class MockSimService {
         return imsi;
     }
 
-    public Map<String, List<SimIoData>> getSimIoMap() {
-        synchronized (mSimIoDataMap) {
-            return Collections.unmodifiableMap(mSimIoDataMap);
+    public Map<String, List<SimIoData>> getSimIoMap(int portIndex) {
+        if (portIndex < MAX_PORTS) {
+            synchronized (mSimIoDataMaps[portIndex]) {
+                return Collections.unmodifiableMap(mSimIoDataMaps[portIndex]);
+            }
         }
+        return Collections.emptyMap();
     }
 }

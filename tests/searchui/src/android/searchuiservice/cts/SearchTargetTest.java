@@ -139,10 +139,10 @@ public class SearchTargetTest {
     @RequiresFlagsEnabled(Flags.FLAG_REMOTE_VIEWS)
     @Test
     public void testBuilderRemoteViews() {
-        RemoteViews remoteViews = new RemoteViews(PACKAGE_NAME, REMOTE_LAYOUT_ID);
+        RemoteViews remoteViews = new RemoteViews(getContext().getPackageName(), REMOTE_LAYOUT_ID);
         SearchTarget target =
                 new SearchTarget.Builder(RESULT_CORPUS, LAYOUT_TYPE, ID)
-                        .setPackageName(PACKAGE_NAME)
+                        .setPackageName(remoteViews.getPackage())
                         .setUserHandle(UserHandle.CURRENT)
                         .setRemoteViews(remoteViews)
                         .build();

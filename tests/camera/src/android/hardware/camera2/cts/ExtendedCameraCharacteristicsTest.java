@@ -74,6 +74,7 @@ import android.media.Image;
 import android.media.ImageReader;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.Requirements;
+import android.mediapc.cts.common.Requirements.AtLeastOneCameraRequirement;
 import android.mediapc.cts.common.Requirements.CameraConcurrentRearFrontStreamingRequirement;
 import android.mediapc.cts.common.Requirements.CameraDynamicRange10BitRequirement;
 import android.mediapc.cts.common.Requirements.CameraFaceDetectionRequirement;
@@ -3901,6 +3902,44 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
 
         verifyExtensionForCamera(primaryRearId, true /* isRear */, cameraExtensionReq);
         verifyExtensionForCamera(primaryFrontId, false /* isRear */, cameraExtensionReq);
+
+        pce.submitAndCheck();
+    }
+
+    /**
+     * Check MPC requirement [7.5/H-1-21] MUST have at least one front facing camera or rear facing
+     * camera.
+     */
+    @Test
+    @AppModeFull(reason = "Media Performance class test not applicable to instant apps")
+    @CddTest(requirements = {"2.2.7.2/7.5/H-1-21"})
+    public void atLeastOneCamera() throws Exception {
+        assumeFalse(
+                "Media performance class tests not applicable if shell permission is adopted",
+                mAdoptShellPerm);
+        assumeTrue(
+                "Media performance class tests not applicable when test is restricted "
+                        + "to single camera by specifying camera id override.",
+                mOverrideCameraId == null);
+
+        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        AtLeastOneCameraRequirement atLeastOneCameraReq = Requirements.addR7_5__H_1_21().to(pce);
+
+        String[] cameraIds = getCameraIdsUnderTest();
+        int frontCount = 0;
+        int rearCount = 0;
+        for (String id : cameraIds) {
+            StaticMetadata staticInfo = mAllStaticInfo.get(id);
+            int facing = staticInfo.getLensFacingChecked();
+            if (facing == CameraCharacteristics.LENS_FACING_FRONT) {
+                frontCount++;
+            } else if (facing == CameraCharacteristics.LENS_FACING_BACK) {
+                rearCount++;
+            }
+        }
+        atLeastOneCameraReq.setFrontAndRearCameraCount(frontCount + rearCount);
+        atLeastOneCameraReq.setFrontCameraCount(frontCount);
+        atLeastOneCameraReq.setRearCameraCount(rearCount);
 
         pce.submitAndCheck();
     }

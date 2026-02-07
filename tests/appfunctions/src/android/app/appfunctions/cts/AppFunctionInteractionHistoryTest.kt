@@ -21,10 +21,14 @@ import android.app.AppInteractionAttribution
 import android.app.AppInteractionContract
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.ExecuteAppFunctionRequest
+import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.CtsApp
+import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.LegacySchemaHelperApp
+import android.app.appfunctions.cts.AppFunctionUtils.clearInteractionAllowlist
 import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunctionAndWait
 import android.app.appfunctions.cts.AppFunctionUtils.getAllRuntimeMetadataPackages
 import android.app.appfunctions.cts.AppFunctionUtils.getAllStaticMetadataPackages
-import android.app.appfunctions.flags.Flags.FLAG_ENABLE_APP_INTERACTION_API
+import android.app.appfunctions.cts.AppFunctionUtils.setInteractionAllowlist
+import android.app.appfunctions.flags.Flags
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
 import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver
@@ -51,6 +55,7 @@ import com.android.compatibility.common.util.SystemUtil
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
+import org.junit.After
 import org.junit.Assume.assumeNotNull
 import org.junit.Assume.assumeTrue
 import org.junit.Before
@@ -60,7 +65,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
-@RequiresFlagsEnabled(FLAG_ENABLE_APP_INTERACTION_API)
+@RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_INTERACTION_API)
 class AppFunctionInteractionHistoryTest {
     @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
@@ -76,7 +81,22 @@ class AppFunctionInteractionHistoryTest {
     private val context: Context
         get() = ApplicationProvider.getApplicationContext()
 
-    @Before fun setup() = doBlocking { TestAppFunctionServiceLifecycleReceiver.reset() }
+    @Before
+    fun setup() = doBlocking {
+        TestAppFunctionServiceLifecycleReceiver.reset()
+        if (Flags.enableAppFunctionPermissionV2()) {
+            AppFunctionUtils.enableAllowlist()
+            setInteractionAllowlist(CtsApp.PACKAGE_NAME, listOf(LegacySchemaHelperApp.PACKAGE_NAME))
+        }
+    }
+
+    @After
+    fun teardown() = doBlocking {
+        if (Flags.enableAppFunctionPermissionV2()) {
+            AppFunctionUtils.disableAllowlist()
+            clearInteractionAllowlist()
+        }
+    }
 
     @Test
     @IncludeRunOnSecondaryUser
@@ -89,7 +109,7 @@ class AppFunctionInteractionHistoryTest {
             executeAll(
                 context,
                 listOf(
-                    ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "noOp")
+                    ExecuteAppFunctionRequest.Builder(CtsApp.PACKAGE_NAME, "noOp")
                         .setAttribution(
                             AppInteractionAttribution.Builder(
                                     AppInteractionAttribution.INTERACTION_TYPE_USER_QUERY
@@ -97,7 +117,7 @@ class AppFunctionInteractionHistoryTest {
                                 .build()
                         )
                         .build(),
-                    ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "noOp")
+                    ExecuteAppFunctionRequest.Builder(LegacySchemaHelperApp.PACKAGE_NAME, "noOp")
                         .setAttribution(
                             AppInteractionAttribution.Builder(
                                     AppInteractionAttribution.INTERACTION_TYPE_USER_SCHEDULED
@@ -105,7 +125,7 @@ class AppFunctionInteractionHistoryTest {
                                 .build()
                         )
                         .build(),
-                    ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "noOp")
+                    ExecuteAppFunctionRequest.Builder(LegacySchemaHelperApp.PACKAGE_NAME, "noOp")
                         .setAttribution(
                             AppInteractionAttribution.Builder(
                                     AppInteractionAttribution.INTERACTION_TYPE_OTHER
@@ -125,16 +145,16 @@ class AppFunctionInteractionHistoryTest {
                 expected =
                     arrayOf(
                         InteractionHistory(
-                            agentPackageName = CURRENT_PKG,
-                            targetPackageName = CURRENT_PKG,
+                            agentPackageName = CtsApp.PACKAGE_NAME,
+                            targetPackageName = CtsApp.PACKAGE_NAME,
                             interactionType = AppInteractionAttribution.INTERACTION_TYPE_USER_QUERY,
                             customInteractionType = null,
                             interactionUri = null,
                             accessTime = 0,
                         ),
                         InteractionHistory(
-                            agentPackageName = CURRENT_PKG,
-                            targetPackageName = TEST_HELPER_PKG,
+                            agentPackageName = CtsApp.PACKAGE_NAME,
+                            targetPackageName = LegacySchemaHelperApp.PACKAGE_NAME,
                             interactionType =
                                 AppInteractionAttribution.INTERACTION_TYPE_USER_SCHEDULED,
                             customInteractionType = null,
@@ -142,8 +162,8 @@ class AppFunctionInteractionHistoryTest {
                             accessTime = 0,
                         ),
                         InteractionHistory(
-                            agentPackageName = CURRENT_PKG,
-                            targetPackageName = TEST_HELPER_PKG,
+                            agentPackageName = CtsApp.PACKAGE_NAME,
+                            targetPackageName = LegacySchemaHelperApp.PACKAGE_NAME,
                             interactionType = AppInteractionAttribution.INTERACTION_TYPE_OTHER,
                             customInteractionType = "CUSTOM_TYPE",
                             interactionUri = "content://test.uri",
@@ -169,14 +189,17 @@ class AppFunctionInteractionHistoryTest {
                     "Test requires an additional user different from the primary user.",
                     secondaryUser != TestApis.users().instrumented(),
                 )
-                installExistingPackageAsUser(CURRENT_PKG, secondaryUser)
-                installExistingPackageAsUser(TEST_HELPER_PKG, secondaryUser)
+                installExistingPackageAsUser(CtsApp.PACKAGE_NAME, secondaryUser)
+                installExistingPackageAsUser(LegacySchemaHelperApp.PACKAGE_NAME, secondaryUser)
                 val secondaryContext = context.createContextAsUser(secondaryUser.userHandle(), 0)
                 assertMetadataIndexed(secondaryContext)
                 executeAll(
                     secondaryContext,
                     listOf(
-                        ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "noOp")
+                        ExecuteAppFunctionRequest.Builder(
+                                LegacySchemaHelperApp.PACKAGE_NAME,
+                                "noOp",
+                            )
                             .setAttribution(
                                 AppInteractionAttribution.Builder(
                                         AppInteractionAttribution.INTERACTION_TYPE_OTHER
@@ -203,8 +226,8 @@ class AppFunctionInteractionHistoryTest {
                     expected =
                         arrayOf(
                             InteractionHistory(
-                                agentPackageName = CURRENT_PKG,
-                                targetPackageName = TEST_HELPER_PKG,
+                                agentPackageName = CtsApp.PACKAGE_NAME,
+                                targetPackageName = LegacySchemaHelperApp.PACKAGE_NAME,
                                 interactionType = AppInteractionAttribution.INTERACTION_TYPE_OTHER,
                                 customInteractionType = "CUSTOM_TYPE",
                                 interactionUri = "content://test.uri",
@@ -342,9 +365,9 @@ class AppFunctionInteractionHistoryTest {
         retryAssert {
             runWithShellPermission(EXECUTE_APP_FUNCTION_PERMISSION) {
                 assertThat(getAllStaticMetadataPackages(targetContext))
-                    .containsAtLeast(CURRENT_PKG, TEST_HELPER_PKG)
+                    .containsAtLeast(CtsApp.PACKAGE_NAME, LegacySchemaHelperApp.PACKAGE_NAME)
                 assertThat(getAllRuntimeMetadataPackages(targetContext))
-                    .containsAtLeast(CURRENT_PKG, TEST_HELPER_PKG)
+                    .containsAtLeast(CtsApp.PACKAGE_NAME, LegacySchemaHelperApp.PACKAGE_NAME)
             }
         }
     }
@@ -376,9 +399,6 @@ class AppFunctionInteractionHistoryTest {
 
     private companion object {
         @JvmField @ClassRule @Rule val sDeviceState: DeviceState = DeviceState()
-
-        const val TEST_HELPER_PKG: String = "android.app.appfunctions.cts.helper"
-        const val CURRENT_PKG: String = "android.app.appfunctions.cts"
 
         const val READ_APP_INTERACTION_PERMISSION = Manifest.permission.READ_APP_INTERACTION
         const val EXECUTE_APP_FUNCTION_PERMISSION = Manifest.permission.EXECUTE_APP_FUNCTIONS

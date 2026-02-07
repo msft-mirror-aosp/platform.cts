@@ -273,6 +273,7 @@ public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
     @Test
     public void testSimStateChange() throws Throwable {
         Log.d(TAG, "TelephonyManagerTestOnMockModem#testSimStateChange");
+        assumeTrue("Skip test: Not test on eSIM only device", !IS_ESIM_ONLY_DEVICE);
 
         assumeTrue("Sim hotswap is not capable", isSimHotSwapCapable());
 
@@ -693,12 +694,33 @@ public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
     @Test
     public void testDsdsServiceStateChange() throws Throwable {
         Log.d(TAG, "TelephonyManagerTestOnMockModem#testDsdsServiceStateChange");
-        assumeTrue("Skip test: Not test on single SIM device", sIsMultiSimDevice);
+        verifyDsdsServiceState(false);
+    }
+
+    /**
+     * Validate DSDS Service State Change on E+E (MEP) configuration.
+     * Simulates two profiles active on the same eSIM slot (MEP).
+     */
+    @Test
+    public void testDsdsServiceStateChangeOnEEMode() throws Throwable {
+        Log.d(TAG, "TelephonyManagerTestOnMockModem#testDsdsServiceStateChangeOnEEMode");
+        verifyDsdsServiceState(true);
+    }
+
+    private void verifyDsdsServiceState(boolean isEEMode) throws Throwable {
+        assumeTrue("Skip test: Requires MultiSim device", sIsMultiSimDevice);
 
         int slotId_0 = 0;
         int slotId_1 = 1;
         int subId_0;
         int subId_1;
+
+        // Configure MockModem for E+E Mode
+        if (isEEMode) {
+            assertTrue("Failed to set E+E mode",
+                sMockModemManager.setMultiEsimConfiguration(true));
+            TimeUnit.SECONDS.sleep(2);
+        }
 
         // Insert a SIM
         sMockModemManager.insertSimCard(slotId_0, MOCK_SIM_PROFILE_ID_TWN_CHT);
@@ -725,19 +747,17 @@ public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
                 });
 
         // Enter Service
-        Log.d(TAG, "testDsdsServiceStateChange: Enter Service");
+        Log.d(TAG, "verifyDsdsServiceState: Enter Service");
         sMockModemManager.changeNetworkService(slotId_0, MOCK_SIM_PROFILE_ID_TWN_CHT, true);
         sMockModemManager.changeNetworkService(slotId_1, MOCK_SIM_PROFILE_ID_TWN_FET, true);
 
         // Expect: Home State
         synchronized (mServiceStateChangeLock) {
-            if (mServiceState != ServiceState.STATE_IN_SERVICE) {
-                Log.d(TAG, "Wait for service state change to in service");
-                waitForCondition(
-                        () -> (ServiceState.STATE_IN_SERVICE == mServiceState),
-                        mServiceStateChangeLock,
-                        WAIT_TIME_MS);
-            }
+            Log.d(TAG, "Wait for service state change to in service");
+            waitForCondition(
+                () -> (ServiceState.STATE_IN_SERVICE == mServiceState),
+                mServiceStateChangeLock,
+                WAIT_TIME_MS);
         }
         if (subId_0 > 0) {
             assertEquals(
@@ -758,19 +778,17 @@ public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
             mExpectedRegState = ServiceState.STATE_OUT_OF_SERVICE;
         }
 
-        Log.d(TAG, "testDsdsServiceStateChange: Leave Service");
+        Log.d(TAG, "verifyDsdsServiceState: Leave Service");
         sMockModemManager.changeNetworkService(slotId_0, MOCK_SIM_PROFILE_ID_TWN_CHT, false);
         sMockModemManager.changeNetworkService(slotId_1, MOCK_SIM_PROFILE_ID_TWN_FET, false);
 
-        // Expect: Seaching State
+        // Expect: Searching State
         synchronized (mServiceStateChangeLock) {
-            if (mServiceState != ServiceState.STATE_OUT_OF_SERVICE) {
-                Log.d(TAG, "Wait for service state change to out of service");
-                waitForCondition(
-                        () -> (ServiceState.STATE_OUT_OF_SERVICE == mServiceState),
-                        mServiceStateChangeLock,
-                        WAIT_TIME_MS);
-            }
+            Log.d(TAG, "Wait for service state change to out of service");
+            waitForCondition(
+                () -> (ServiceState.STATE_OUT_OF_SERVICE == mServiceState),
+                mServiceStateChangeLock,
+                WAIT_TIME_MS);
         }
         if (subId_0 > 0) {
             assertEquals(
@@ -790,6 +808,10 @@ public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
         // Remove the SIM
         sMockModemManager.removeSimCard(slotId_0);
         sMockModemManager.removeSimCard(slotId_1);
+
+        if (isEEMode) {
+            sMockModemManager.setMultiEsimConfiguration(false);
+        }
     }
 
     /**

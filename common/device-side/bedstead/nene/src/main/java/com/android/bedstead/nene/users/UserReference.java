@@ -375,9 +375,32 @@ public final class UserReference implements AutoCloseable {
      *
      * <p>If the user is a profile, then this will make the parent the foreground user. It will
      * still return the {@link UserReference} of the profile in that case.
+     *
+     * <p>Default timeout for switch user command is 1 minute
      */
     @CanIgnoreReturnValue
     public UserReference switchTo() {
+        return this.switchTo(1);
+    }
+
+    /**
+     * Make the user the foreground user.
+     *
+     * <p>If the user is a profile, then this will make the parent the foreground user. It will
+     * still return the {@link UserReference} of the profile in that case.
+     *
+     * @param timeoutInMinutes
+     *         timeout to set in minutes. Switching user might be expensive, this value is exposed
+     *         for the reasons whether a device (emulator of physical) during test is under load,
+     *         or latency/high load in CI environment, that can cause timeouts for user switch
+     *         command and increase test flakiness.
+     */
+    @CanIgnoreReturnValue
+    public UserReference switchTo(final int timeoutInMinutes) {
+        if (timeoutInMinutes < 1) {
+            throw new NeneException(String.format("Invalid timeout value: [%s], unable to switch user", timeoutInMinutes));
+        }
+
         UserReference parent = parent();
         if (parent != null) {
             parent.switchTo();
@@ -394,7 +417,7 @@ public final class UserReference implements AutoCloseable {
             ShellCommand.builder("am switch-user")
                     .addOperand(isSdkVersionMinimum_R ? "-w" : "")
                     .addOperand(mId)
-                    .withTimeout(Duration.ofMinutes(1))
+                    .withTimeout(Duration.ofMinutes(timeoutInMinutes))
                     .allowEmptyOutput(true)
                     .validate(String::isEmpty)
                     .execute();

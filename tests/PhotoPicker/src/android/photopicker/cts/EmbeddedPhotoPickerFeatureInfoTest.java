@@ -50,6 +50,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
@@ -513,7 +514,9 @@ public class EmbeddedPhotoPickerFeatureInfoTest {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PHOTOPICKER_SELECTION_PARAMS_API)
     public void testFeatureInfoParceling_withSelectionParams() {
         PhotoPickerSelectionParams selectionParams =
-                new PhotoPickerSelectionParams.Builder().setMinVideoDurationInSeconds(10L).build();
+                new PhotoPickerSelectionParams.Builder()
+                        .setMinVideoDuration(Duration.ofSeconds(10))
+                        .build();
         EmbeddedPhotoPickerFeatureInfo original =
                 new EmbeddedPhotoPickerFeatureInfo.Builder()
                         .setSelectionParams(selectionParams)
@@ -530,8 +533,8 @@ public class EmbeddedPhotoPickerFeatureInfoTest {
 
         Assert.assertNotNull(created.getSelectionParams());
         assertWithMessage("Expected selection params to be preserved after parceling")
-                .that(created.getSelectionParams().getMinVideoDurationInSeconds())
-                .isEqualTo(original.getSelectionParams().getMinVideoDurationInSeconds());
+                .that(created.getSelectionParams().getMinVideoDuration())
+                .isEqualTo(original.getSelectionParams().getMinVideoDuration());
     }
 
     @Test

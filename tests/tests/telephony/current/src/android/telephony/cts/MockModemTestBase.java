@@ -34,6 +34,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.ParcelUuid;
+import android.os.SystemProperties;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.SubscriptionInfo;
@@ -75,6 +76,11 @@ public class MockModemTestBase {
     protected static TelephonyManager sTelephonyManager;
     protected static SubscriptionManager sSubscriptionManager;
     protected static boolean sIsMultiSimDevice;
+    private static final int NUM_SLOTS_PROPERTY = SystemProperties.getInt(
+        "ro.telephony.sim_slots.count", -1);
+    // This system property is set to 1 for eSIM-only devices.
+    // For other devices, the value is not set (returning default -1).
+    protected static boolean IS_ESIM_ONLY_DEVICE = NUM_SLOTS_PROPERTY == 1;
 
     protected static class ActiveDataSubscriptionIdListener extends TelephonyCallback
             implements TelephonyCallback.ActiveDataSubscriptionIdListener {

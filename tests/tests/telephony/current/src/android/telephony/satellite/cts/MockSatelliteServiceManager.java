@@ -266,12 +266,13 @@ class MockSatelliteServiceManager {
 
                 @Override
                 public void onRequestSatelliteEnabled(
-                    android.telephony.satellite.stub.SatelliteModemEnableRequestAttributes
-                        enableAttributes) {
+                        android.telephony.satellite.stub.SatelliteModemEnableRequestAttributes
+                                enableAttributes) {
                     mRequestSatelliteEnabledAttributes =
                             fromHalEnableRequestAttributes(enableAttributes);
-                    logd("onRequestSatelliteEnabled: mRequestSatelliteEnabledAttributes="
-                            + mRequestSatelliteEnabledAttributes);
+                    logd(
+                            "onRequestSatelliteEnabled: mRequestSatelliteEnabledAttributes="
+                                    + mRequestSatelliteEnabledAttributes);
                     try {
                         mRequestSatelliteEnabledSemaphore.release();
                     } catch (Exception ex) {
@@ -644,6 +645,7 @@ class MockSatelliteServiceManager {
         mIsPointingUiOverridden = true;
         return true;
     }
+
     boolean restoreSatellitePointingUiClassName() {
         logd("restoreSatellitePointingUiClassName");
         if (!mIsPointingUiOverridden) {
@@ -1318,7 +1320,8 @@ class MockSatelliteServiceManager {
         }
     }
 
-    @Nullable List<String> getCarrierPlmnList() {
+    @Nullable
+    List<String> getCarrierPlmnList() {
         if (mSatelliteService == null) {
             loge("getCarrierPlmnList: mSatelliteService is null");
             return null;
@@ -1326,7 +1329,8 @@ class MockSatelliteServiceManager {
         return mSatelliteService.getCarrierPlmnList();
     }
 
-    @Nullable List<String> getAllSatellitePlmnList() {
+    @Nullable
+    List<String> getAllSatellitePlmnList() {
         if (mSatelliteService == null) {
             loge("getAllSatellitePlmnList: mSatelliteService is null");
             return null;
@@ -1334,7 +1338,8 @@ class MockSatelliteServiceManager {
         return mSatelliteService.getAllSatellitePlmnList();
     }
 
-    @Nullable Boolean getIsSatelliteEnabledForCarrier() {
+    @Nullable
+    Boolean getIsSatelliteEnabledForCarrier() {
         if (mSatelliteService == null) {
             loge("getIsSatelliteEnabledForCarrier: mSatelliteService is null");
             return null;
@@ -1350,12 +1355,14 @@ class MockSatelliteServiceManager {
         mSatelliteService.clearSatelliteEnabledForCarrier();
     }
 
-    @NonNull List<String> getPlmnListFromOverlayConfig() {
+    @NonNull
+    List<String> getPlmnListFromOverlayConfig() {
         String[] plmnArr = readStringArrayFromOverlayConfig("config_satellite_providers");
         return Arrays.stream(plmnArr).toList();
     }
 
-    @Nullable Boolean getIsEmergency() {
+    @Nullable
+    Boolean getIsEmergency() {
         if (mSatelliteService == null) {
             loge("getIsEmergency: mSatelliteService is null");
             return null;
@@ -1560,7 +1567,8 @@ class MockSatelliteServiceManager {
         }
     }
 
-    @NonNull public String[] readStringArrayFromOverlayConfig(@NonNull String resourceName) {
+    @NonNull
+    public String[] readStringArrayFromOverlayConfig(@NonNull String resourceName) {
         String[] strArray = null;
         try {
             strArray = mInstrumentation.getContext().getResources().getStringArray(
@@ -1612,9 +1620,13 @@ class MockSatelliteServiceManager {
         }
         CountDownLatch latch = new CountDownLatch(1);
         mSatelliteGatewayServiceConn = new TestSatelliteGatewayServiceConnection(latch);
-        mInstrumentation.getContext().bindService(new Intent(mInstrumentation.getContext(),
-                MockSatelliteGatewayService.class), mSatelliteGatewayServiceConn,
-                Context.BIND_AUTO_CREATE);
+        mInstrumentation
+                .getContext()
+                .bindService(
+                        new Intent(
+                                mInstrumentation.getContext(), MockSatelliteGatewayService.class),
+                        mSatelliteGatewayServiceConn,
+                        Context.BIND_AUTO_CREATE);
         try {
             return latch.await(TIMEOUT, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
@@ -1654,7 +1666,7 @@ class MockSatelliteServiceManager {
     }
 
     private boolean setSatellitePointingUiClassName(
-            @Nullable String packageName, @Nullable String className)  {
+            @Nullable String packageName, @Nullable String className) {
         try {
             TelephonyUtils.executeShellCommand(mInstrumentation,
                     SET_SATELLITE_POINTING_UI_CLASS_NAME_CMD + " -p " + packageName
@@ -1681,7 +1693,7 @@ class MockSatelliteServiceManager {
     }
 
     boolean setSatelliteAccessAllowedForSubscriptions(
-        boolean reset, @Nullable String subIdListStr) {
+            boolean reset, @Nullable String subIdListStr) {
         StringBuilder args = new StringBuilder();
         if (reset) {
             args.append(" -r");
@@ -1701,8 +1713,10 @@ class MockSatelliteServiceManager {
         }
     }
 
-    boolean setSatelliteTnScanningSupport(boolean reset, boolean concurrentTnScanningSupported,
-        boolean tnScanningDuringSatelliteSessionAllowed) {
+    boolean setSatelliteTnScanningSupport(
+            boolean reset,
+            boolean concurrentTnScanningSupported,
+            boolean tnScanningDuringSatelliteSessionAllowed) {
         StringBuilder command = new StringBuilder();
         command.append(SET_SATELLITE_TN_SCANNING_SUPPORT_CMD);
         if (reset) {
@@ -1805,9 +1819,11 @@ class MockSatelliteServiceManager {
     }
 
     boolean overrideSatelliteEntilementStatusResponseForCtsTest(
-        @Nullable String overriddenEntilementStatusResponse, boolean throwException) {
-        logd("overrideSatelliteEntilementStatusResponseForCtsTest: "
-            + "overriddenEntilementStatusResponse = " + overriddenEntilementStatusResponse);
+            @Nullable String overriddenEntilementStatusResponse, boolean throwException) {
+        logd(
+                "overrideSatelliteEntilementStatusResponseForCtsTest: "
+                        + "overriddenEntilementStatusResponse = "
+                        + overriddenEntilementStatusResponse);
         StringBuilder command = new StringBuilder();
         command.append(OVERRIDE_SATELLITE_ENTITLEMENT_STATUS_RESPONSE_FOR_CTS_TEST_CMD);
         if (!TextUtils.isEmpty(overriddenEntilementStatusResponse)) {
@@ -1830,9 +1846,11 @@ class MockSatelliteServiceManager {
     }
 
     boolean overrideSatelliteEntilementQueryConditions(
-        boolean ignoreInternetConnection, boolean ignoreRefreshCondition) {
-        logd("overrideSatelliteEntilementQueryConditions: "
-            + "ignoreInternetConnection = " + ignoreInternetConnection);
+            boolean ignoreInternetConnection, boolean ignoreRefreshCondition) {
+        logd(
+                "overrideSatelliteEntilementQueryConditions: "
+                        + "ignoreInternetConnection = "
+                        + ignoreInternetConnection);
         StringBuilder command = new StringBuilder();
         command.append(OVERRIDE_SATELLITE_ENTITLEMENT_QUERY_CONDITIONS_CMD);
         if (ignoreInternetConnection) {
@@ -1854,8 +1872,7 @@ class MockSatelliteServiceManager {
     }
 
     boolean setMaxAllowedDataModeForCtsTest(int maxAllowedDataMode) {
-        logd("setMaxAllowedDataModeForCtsTest: "
-            + "maxAllowedDataMode = " + maxAllowedDataMode);
+        logd("setMaxAllowedDataModeForCtsTest: " + "maxAllowedDataMode = " + maxAllowedDataMode);
         StringBuilder command = new StringBuilder();
         command.append(SET_MAX_ALLOWED_SATELLITE_DATA_MODE_FOR_CTS_TEST_CMD);
         command.append(" -m ");
@@ -2034,15 +2051,16 @@ class MockSatelliteServiceManager {
 
     private static SatelliteModemEnableRequestAttributes fromHalEnableRequestAttributes(
             android.telephony.satellite.stub.SatelliteModemEnableRequestAttributes
-            halEnableRequestAttributes) {
+                    halEnableRequestAttributes) {
         if (halEnableRequestAttributes == null) {
             return null;
         }
         return new SatelliteModemEnableRequestAttributes(
-            halEnableRequestAttributes.isEnabled,
-            halEnableRequestAttributes.isDemoMode,
-            halEnableRequestAttributes.isEmergencyMode,
-            fromHalSatelliteSubscriptionInfo(halEnableRequestAttributes.satelliteSubscriptionInfo));
+                halEnableRequestAttributes.isEnabled,
+                halEnableRequestAttributes.isDemoMode,
+                halEnableRequestAttributes.isEmergencyMode,
+                fromHalSatelliteSubscriptionInfo(
+                        halEnableRequestAttributes.satelliteSubscriptionInfo));
     }
 
     private static SatelliteSubscriptionInfo fromHalSatelliteSubscriptionInfo(

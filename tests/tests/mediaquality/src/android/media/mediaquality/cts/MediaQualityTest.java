@@ -642,8 +642,8 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW_C)
     @Test
-    public void testGetPictureProfileHandleList() throws InterruptedException {
-        PictureProfile profile = getTestPictureProfile("testGetPictureProfileHandleList");
+    public void testGetPictureProfileHandles() throws InterruptedException {
+        PictureProfile profile = getTestPictureProfile("testGetPictureProfileHandles");
 
         mManager.createPictureProfile(profile);
         boolean created =
@@ -665,7 +665,7 @@ public class MediaQualityTest {
                 waitForCondition(
                         () -> {
                             List<PictureProfileHandle> handles =
-                                    mManager.getPictureProfileHandleList(ids);
+                                    mManager.getPictureProfileHandles(ids);
                             if (handles != null && !handles.isEmpty()) {
                                 ppHandle.clear();
                                 ppHandle.addAll(handles);
@@ -682,8 +682,8 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
-    public void testGetSoundProfileHandle() throws InterruptedException {
-        SoundProfile profile = getTestSoundProfile("testGetSoundProfileHandle");
+    public void testGetSoundProfileHandles() throws InterruptedException {
+        SoundProfile profile = getTestSoundProfile("testGetSoundProfileHandles");
 
         mManager.createSoundProfile(profile);
         boolean created =
@@ -706,7 +706,7 @@ public class MediaQualityTest {
         boolean handleRetrieved =
                 waitForCondition(
                         () -> {
-                            List<SoundProfileHandle> handles = mManager.getSoundProfileHandle(ids);
+                            List<SoundProfileHandle> handles = mManager.getSoundProfileHandles(ids);
                             if (handles != null && !handles.isEmpty()) {
                                 spHandle.clear();
                                 spHandle.addAll(handles);
@@ -910,6 +910,11 @@ public class MediaQualityTest {
         String dummyInputId = "com.example.tvinput/HDMI_DOES_NOT_EXIST";
         PictureProfileHandle handle =
                 mManager.getCurrentPictureProfileHandleForTvInput(dummyInputId);
+
+        Assert.assertEquals(
+                "Should return PictureProfileHandle.NONE for invalid input",
+                PictureProfileHandle.NONE.getId(),
+                handle.getId());
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW_C)

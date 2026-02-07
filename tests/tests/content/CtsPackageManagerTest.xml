@@ -237,6 +237,9 @@
         <option name="test-file-name" value="CtsAllowComponentAccessTargetNoTag.apk" />
         <option name="test-file-name" value="CtsAllowComponentAccessTargetBlock.apk" />
         <option name="test-file-name" value="CtsAllowComponentAccessTargetAllow.apk" />
+        <option name="test-file-name" value="CtsAllowComponentAccessSourceAllowCertPrimary.apk" />
+        <option name="test-file-name" value="CtsAllowComponentAccessSourceAllowCertAdditional.apk" />
+        <option name="test-file-name" value="CtsAllowComponentAccessSourceBlockCertWrong.apk" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.AFlagsTargetPreparer" />

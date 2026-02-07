@@ -39,6 +39,12 @@ class AppFunctionMetadataTestHelper {
                 AppFunctionName(PACKAGE_NAME, "addWithRestrictCallersWithExecuteAppFunctionsTrue")
             val GET_URIS = AppFunctionName(PACKAGE_NAME, "getUris")
             val ECHO_BYTES = AppFunctionName(PACKAGE_NAME, "echoBytes")
+            val UNCAUGHT_CLIENT_EXCEPTION = AppFunctionName(PACKAGE_NAME, "uncaughtClientException")
+            val ADD_INVOKE_CALLBACK_TWICE = AppFunctionName(PACKAGE_NAME, "add_invokeCallbackTwice")
+            val KILL = AppFunctionName(PACKAGE_NAME, "kill")
+            val ADD_ASYNC = AppFunctionName(PACKAGE_NAME, "addAsync")
+            val THROW_EXCEPTION = AppFunctionName(PACKAGE_NAME, "throwException")
+            val LONG_RUNNING_FUNCTION = AppFunctionName(PACKAGE_NAME, "longRunningFunction")
 
             val ALL_FUNCTIONS =
                 setOf(
@@ -49,6 +55,12 @@ class AppFunctionMetadataTestHelper {
                     RESTRICT_CALLER_TRUE,
                     GET_URIS,
                     ECHO_BYTES,
+                    UNCAUGHT_CLIENT_EXCEPTION,
+                    ADD_INVOKE_CALLBACK_TWICE,
+                    KILL,
+                    ADD_ASYNC,
+                    THROW_EXCEPTION,
+                    LONG_RUNNING_FUNCTION,
                 )
         }
 

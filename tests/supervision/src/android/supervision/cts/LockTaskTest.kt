@@ -31,6 +31,7 @@ import android.app.admin.DevicePolicyManager.LOCK_TASK_FEATURE_OVERVIEW
 import android.app.admin.DevicePolicyManager.LOCK_TASK_FEATURE_QUICK_SETTINGS
 import android.app.admin.DevicePolicyManager.LOCK_TASK_FEATURE_SYSTEM_INFO
 import android.app.supervision.flags.Flags.FLAG_ENABLE_LOCK_TASK_FEATURE_QUICK_SETTINGS
+import android.app.supervision.flags.Flags.FLAG_ENABLE_SUPERVISION_MANAGER_POLICY_APIS
 import android.permission.flags.Flags.FLAG_ENABLE_SYSTEM_SUPERVISION_ROLE_BEHAVIOR
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
@@ -45,6 +46,7 @@ import org.junit.runner.RunWith
 @RequireFlagsEnabled(
     FLAG_ENABLE_LOCK_TASK_FEATURE_QUICK_SETTINGS,
     FLAG_ENABLE_SYSTEM_SUPERVISION_ROLE_BEHAVIOR,
+    FLAG_ENABLE_SUPERVISION_MANAGER_POLICY_APIS,
 )
 class LockTaskTest : BaseSupervisionTest() {
     @Test

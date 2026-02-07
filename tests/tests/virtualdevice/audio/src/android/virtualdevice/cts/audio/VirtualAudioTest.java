@@ -57,7 +57,6 @@ import android.media.MediaRecorder;
 import android.media.audiopolicy.AudioMix;
 import android.media.audiopolicy.AudioMixingRule;
 import android.media.audiopolicy.AudioPolicy;
-import android.os.SystemClock;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.virtualdevice.cts.common.AudioInjector;
@@ -65,8 +64,10 @@ import android.virtualdevice.cts.common.SignalObserver;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.FeatureUtil;
+import com.android.media.mediatestutils.PermissionUpdateBarrierRule;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -88,7 +89,6 @@ public class VirtualAudioTest {
 
     public static final int SAMPLE_RATE = 44100;
     private static final Duration TIMEOUT = Duration.ofMillis(5000);
-    private static final int AUDIO_PERMISSIONS_PROPAGATION_TIME_MS = 80;
 
     private static final AudioFormat CAPTURE_FORMAT = new AudioFormat.Builder()
             .setSampleRate(SAMPLE_RATE)
@@ -101,9 +101,15 @@ public class VirtualAudioTest {
             .setChannelMask(CHANNEL_IN_MONO)
             .build();
 
-    @Rule
-    public VirtualDeviceRule mVirtualDeviceRule = VirtualDeviceRule.withAdditionalPermissions(
-            MODIFY_AUDIO_ROUTING, CAPTURE_AUDIO_OUTPUT, GRANT_RUNTIME_PERMISSIONS);
+    @Rule(order = 1)
+    public VirtualDeviceRule mVirtualDeviceRule =
+            VirtualDeviceRule.withAdditionalPermissions(
+                    MODIFY_AUDIO_ROUTING, CAPTURE_AUDIO_OUTPUT, GRANT_RUNTIME_PERMISSIONS);
+
+    @Rule(order = 2)
+    public final PermissionUpdateBarrierRule mBarrierRule =
+            new PermissionUpdateBarrierRule(
+                    InstrumentationRegistry.getInstrumentation().getContext());
 
     private VirtualDevice mVirtualDevice;
     private VirtualDisplay mVirtualDisplay;
@@ -128,10 +134,6 @@ public class VirtualAudioTest {
         mVirtualAudioDevice = mVirtualDevice.createVirtualAudioDevice(
                 mVirtualDisplay, Runnable::run, mAudioConfigurationChangeCallback);
         grantRecordAudioPermission(mVirtualDevice.getDeviceId());
-
-        // TODO - b/383048413 - use PermissionUpdateBarrierRule
-        // Account for the intentional delay until the audio permissions are propagated
-        SystemClock.sleep(AUDIO_PERMISSIONS_PROPAGATION_TIME_MS);
     }
 
     @Test
@@ -340,6 +342,8 @@ public class VirtualAudioTest {
                 .createDeviceContext(deviceId);
         deviceContext.getPackageManager().grantRuntimePermission("android.virtualdevice.cts.audio",
                 RECORD_AUDIO, UserHandle.of(deviceContext.getUserId()));
+
+        deviceContext.getSystemService(AudioManager.class).permissionUpdateBarrier();
     }
 
     public static class AudioActivity extends Activity {

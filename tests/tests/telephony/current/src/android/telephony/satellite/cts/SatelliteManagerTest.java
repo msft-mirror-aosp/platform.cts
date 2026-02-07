@@ -16,6 +16,8 @@
 
 package android.telephony.satellite.cts;
 
+import static android.telephony.CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC;
+import static android.telephony.CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_MANUAL;
 import static android.telephony.satellite.SatelliteManager.ACTION_SATELLITE_SUBSCRIBER_ID_LIST_CHANGED;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_GEOLOCATION;
 
@@ -27,10 +29,6 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
-
-import static android.telephony.CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC;
-import static android.telephony.CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_MANUAL;
-import static android.telephony.CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_HYBRID;
 
 import android.content.Context;
 import android.content.Intent;
@@ -193,6 +191,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
 
         afterAllTestsBase();
     }
+
     @Before
     public void setUp() throws Exception {
         logd("setUp");
@@ -382,6 +381,52 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_UPSELL)
+    public void testEnableRequestAttributes() {
+        EnableRequestAttributes.Builder builder = new EnableRequestAttributes.Builder(true);
+        builder.setConnectType(CARRIER_ROAMING_NTN_CONNECT_MANUAL);
+        builder.setSatelliteEnablementRequestReason(
+                SatelliteManager.SATELLITE_ENABLEMENT_REQUEST_REASON_USER);
+        builder.setPrioritizedScanningRequired(true);
+        builder.setDemoMode(true);
+        builder.setEmergencyMode(true);
+
+        // Throws IllegalStateException as mIsPrioritizedScanningRequired is true but
+        // mConnectType is CARRIER_ROAMING_NTN_CONNECT_MANUAL
+        assertThrows(IllegalStateException.class, builder::build);
+
+        builder.setConnectType(CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC);
+        // Throws IllegalStateException as mIsDemoMode is true but
+        // mConnectType is CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC
+        assertThrows(IllegalStateException.class, builder::build);
+
+        builder.setDemoMode(false);
+        // Throws IllegalStateException as mIsEmergencyMode is true but
+        // mConnectType is CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC
+        assertThrows(IllegalStateException.class, builder::build);
+
+        builder.setEmergencyMode(false);
+        EnableRequestAttributes attributes = builder.build();
+        assertTrue(attributes.isEnabled());
+        assertEquals(CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC, attributes.getConnectType());
+        assertEquals(SatelliteManager.SATELLITE_ENABLEMENT_REQUEST_REASON_USER,
+                attributes.getSatelliteEnablementRequestReason());
+        assertTrue(attributes.isPrioritizedScanningRequired());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_UPSELL)
+    public void testEnableResponse() {
+        int[] requestReasons = {SatelliteManager.SATELLITE_ENABLEMENT_REQUEST_REASON_USER};
+        EnableResponse response = new EnableResponse(true, true, true, requestReasons);
+
+        assertTrue(response.isEnabled());
+        assertTrue(response.isEmergencyMode());
+        assertTrue(response.isDemoMode());
+        assertTrue(Arrays.equals(requestReasons, response.getSatelliteEnablementRequestReasons()));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_UPSELL)
     public void testRequestSatelliteEnabledWithEnableRequestAttributes() {
         if (!shouldTestSatellite()) return;
 
@@ -522,12 +567,16 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
-        assertThrows(SecurityException.class, ()-> sSatelliteManager
-                .registerForModemStateChanged(getContext().getMainExecutor(), callback));
+        assertThrows(
+                SecurityException.class,
+                () ->
+                        sSatelliteManager.registerForModemStateChanged(
+                                getContext().getMainExecutor(), callback));
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
-        assertThrows(SecurityException.class, ()-> sSatelliteManager
-                .unregisterForModemStateChanged(callback));
+        assertThrows(
+                SecurityException.class,
+                () -> sSatelliteManager.unregisterForModemStateChanged(callback));
 
         if (!sIsSatelliteSupported) {
             Log.d(TAG, "Satellite is not supported on the device");
@@ -658,12 +707,16 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         SatelliteDatagramCallbackTest callback = new SatelliteDatagramCallbackTest();
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
-        assertThrows(SecurityException.class, ()-> sSatelliteManager
-                .registerForIncomingDatagram(getContext().getMainExecutor(), callback));
+        assertThrows(
+                SecurityException.class,
+                () ->
+                        sSatelliteManager.registerForIncomingDatagram(
+                                getContext().getMainExecutor(), callback));
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
-        assertThrows(SecurityException.class, ()-> sSatelliteManager
-                .unregisterForIncomingDatagram(callback));
+        assertThrows(
+                SecurityException.class,
+                () -> sSatelliteManager.unregisterForIncomingDatagram(callback));
     }
 
     @Test
@@ -673,9 +726,11 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         LinkedBlockingQueue<Integer> resultListener = new LinkedBlockingQueue<>(1);
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
-        assertThrows(SecurityException.class,
-                ()-> sSatelliteManager.pollPendingDatagrams(
-                        getContext().getMainExecutor(), resultListener::offer));
+        assertThrows(
+                SecurityException.class,
+                () ->
+                        sSatelliteManager.pollPendingDatagrams(
+                                getContext().getMainExecutor(), resultListener::offer));
     }
 
     @Test
@@ -688,10 +743,15 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         SatelliteDatagram datagram = new SatelliteDatagram(mText.getBytes());
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
-        assertThrows(SecurityException.class,
-                ()-> sSatelliteManager.sendDatagram(
-                        SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE, datagram, true,
-                        getContext().getMainExecutor(), resultListener::offer));
+        assertThrows(
+                SecurityException.class,
+                () ->
+                        sSatelliteManager.sendDatagram(
+                                SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE,
+                                datagram,
+                                true,
+                                getContext().getMainExecutor(),
+                                resultListener::offer));
         // TODO: add detailed test
     }
 
@@ -774,8 +834,8 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         if (!shouldTestSatellite()) return;
 
         SelectedNbIotSatelliteSubscriptionCallback callback =
-                selectedSubId -> logd("onSelectedNbIotSatelliteSubscriptionChanged(" +
-                                            selectedSubId + ")");
+                selectedSubId ->
+                        logd("onSelectedNbIotSatelliteSubscriptionChanged(" + selectedSubId + ")");
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
         assertThrows(SecurityException.class,
@@ -788,8 +848,8 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         if (!shouldTestSatellite()) return;
 
         SelectedNbIotSatelliteSubscriptionCallback callback =
-                selectedSubId -> logd("onSelectedNbIotSatelliteSubscriptionChanged(" +
-                                            selectedSubId + ")");
+                selectedSubId ->
+                        logd("onSelectedNbIotSatelliteSubscriptionChanged(" + selectedSubId + ")");
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
         assertThrows(SecurityException.class,
