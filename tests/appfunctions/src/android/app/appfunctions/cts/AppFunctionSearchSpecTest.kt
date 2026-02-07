@@ -61,6 +61,7 @@ class AppFunctionSearchSpecTest {
         assertThat(spec.schemaCategory).isEqualTo(schemaCategory)
         assertThat(spec.schemaName).isEqualTo(schemaName)
         assertThat(spec.minSchemaVersion).isEqualTo(minSchemaVersion)
+        assertThat(spec.scopes).containsExactlyElementsIn(scopes).inOrder()
     }
 
     @Test

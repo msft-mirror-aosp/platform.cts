@@ -961,6 +961,7 @@ class SearchAppFunctionsTest {
     ) {
         assertThat(actual.name).isEqualTo(expected.name)
         assertThat(actual.schemaMetadata).isEqualTo(expected.schemaMetadata)
+        assertThat(actual.scope).isEqualTo(expected.scope)
         val clearedActualGd = sanitizeGenericDocument(actual.metadataDocument)
         val expectedGd = sanitizeGenericDocument(expected.metadataDocument)
         assertThat(clearedActualGd).isEqualTo(expectedGd)
