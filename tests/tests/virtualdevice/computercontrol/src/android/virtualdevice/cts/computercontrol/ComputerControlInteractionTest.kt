@@ -18,15 +18,16 @@ package android.virtualdevice.cts.computercontrol
 
 import android.computercontrol.testapp.common.Action
 import android.computercontrol.testapp.common.Constants
+import com.android.compatibility.common.util.PollingCheck
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
-import android.util.Log
 import android.view.WindowManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import com.android.compatibility.common.util.AdoptShellPermissionsRule
 import com.google.common.truth.Truth.assertThat
+import com.google.common.truth.Truth.assertWithMessage
 import org.junit.Assert.assertThrows
 import org.junit.Rule
 import org.junit.Test
@@ -100,12 +101,10 @@ class ComputerControlInteractionTest {
         val x = bounds.width() / 2
         val y = bounds.height() / 2
         testAppAgent.tap(x, y)
-        Log.d(TAG, "Tapped at ($x, $y)")
 
         val tap = testAppAgent.nextAction(Action.Tap::class.java)
         assertThat(tap).isNotNull()
         tap!!
-        Log.d(TAG, "Tap from TestApp: (${tap.x}, ${tap.y})")
         assertThat(tap.x).isEqualTo(x)
         assertThat(tap.y).isEqualTo(y)
     }
@@ -115,12 +114,10 @@ class ComputerControlInteractionTest {
         val x = bounds.width() / 2
         val y = bounds.height() / 2
         testAppAgent.longPress(x, y)
-        Log.d(TAG, "Long pressed at ($x, $y)")
 
         val longPress = testAppAgent.nextAction(Action.LongPress::class.java)
         assertThat(longPress).isNotNull()
         longPress!!
-        Log.d(TAG, "LongPress from TestApp: (${longPress.x}, ${longPress.y})")
         assertThat(longPress.x).isEqualTo(x)
         assertThat(longPress.y).isEqualTo(y)
     }
@@ -130,12 +127,10 @@ class ComputerControlInteractionTest {
         // Test long pressing at the corners and edges of the screen.
         for ((x, y) in edgeCoordinates) {
             testAppAgent.longPress(x, y)
-            Log.d(TAG, "Long pressed at edge: ($x, $y)")
 
             val longPress = testAppAgent.nextAction(Action.LongPress::class.java)
             assertThat(longPress).isNotNull()
             longPress!!
-            Log.d(TAG, "Long press from TestApp: (${longPress.x}, ${longPress.y})")
             assertThat(longPress.x).isEqualTo(x)
             assertThat(longPress.y).isEqualTo(y)
         }
@@ -156,12 +151,10 @@ class ComputerControlInteractionTest {
         val x2 = bounds.width() / 4
         val y2 = bounds.height() / 4
         testAppAgent.swipe(x1, y1, x2, y2)
-        Log.d(TAG, "Swiped from ($x1, $y1) to ($x2, $y2)")
 
         val swipe = testAppAgent.nextAction(Action.Swipe::class.java)
         assertThat(swipe).isNotNull()
         swipe!!
-        Log.d(TAG, "Swipe from TestApp: (${swipe.x1}, ${swipe.y1}) to (${swipe.x2}, ${swipe.y2})")
         assertThat(swipe.x1).isEqualTo(x1)
         assertThat(swipe.y1).isEqualTo(y1)
         assertThat(swipe.x2).isEqualTo(x2)
@@ -193,15 +186,10 @@ class ComputerControlInteractionTest {
         for (coords in testCases) {
             val (x1, y1, x2, y2) = coords
             testAppAgent.swipe(x1, y1, x2, y2)
-            Log.d(TAG, "Swiped from ($x1, $y1) to ($x2, $y2)")
 
             val swipe = testAppAgent.nextAction(Action.Swipe::class.java)
             assertThat(swipe).isNotNull()
             swipe!!
-            Log.d(
-                TAG,
-                "Swipe from TestApp: (${swipe.x1}, ${swipe.y1}) to (${swipe.x2}, ${swipe.y2})"
-            )
             assertThat(swipe.x1).isEqualTo(x1)
             assertThat(swipe.y1).isEqualTo(y1)
             assertThat(swipe.x2).isEqualTo(x2)
@@ -225,10 +213,18 @@ class ComputerControlInteractionTest {
             } +
                 listOf(
                     // From one out-of-bounds point to another, intersecting the screen
-                    arrayOf(outOfBoundsCoordinates[5].first, centerY,
-                            outOfBoundsCoordinates[0].first, centerY), // Horizontal
-                    arrayOf(centerX, outOfBoundsCoordinates[6].second,
-                            centerX, outOfBoundsCoordinates[1].second)  // Vertical
+                    arrayOf(
+                        outOfBoundsCoordinates[5].first,
+                        centerY,
+                        outOfBoundsCoordinates[0].first,
+                        centerY
+                    ), // Horizontal
+                    arrayOf(
+                        centerX,
+                        outOfBoundsCoordinates[6].second,
+                        centerX,
+                        outOfBoundsCoordinates[1].second
+                    ) // Vertical
                 )
 
         for (coords in outOfBoundsTestCases) {
@@ -243,18 +239,14 @@ class ComputerControlInteractionTest {
     fun testPerformAction_GoBack() = launchTestApp().use { testAppAgent ->
         // 1 is the action code for GoBack.
         testAppAgent.performAction(1)
-        Log.d(TAG, "Performed GoBack")
 
         val goBack = testAppAgent.nextAction(Action.GoBack::class.java)
-        Log.d(TAG, "GoBack from TestApp")
         assertThat(goBack).isNotNull()
     }
 
     @Test
     fun testGetDisplaySize() = launchTestApp().use { testAppAgent ->
         val screenSize = testAppAgent.getDisplaySize()
-        Log.d(TAG, "Screen size from agent: ${screenSize.width}x${screenSize.height}")
-        Log.d(TAG, "Screen size from OS: ${bounds.width()}x${bounds.height()}")
         assertThat(screenSize.width).isEqualTo(bounds.width())
         assertThat(screenSize.height).isEqualTo(bounds.height())
     }
@@ -264,12 +256,10 @@ class ComputerControlInteractionTest {
         // Test tapping at the corners and edges of the screen.
         for ((x, y) in edgeCoordinates) {
             testAppAgent.tap(x, y)
-            Log.d(TAG, "Tapped at edge: ($x, $y)")
 
             val tap = testAppAgent.nextAction(Action.Tap::class.java)
             assertThat(tap).isNotNull()
             tap!!
-            Log.d(TAG, "Tap from TestApp: (${tap.x}, ${tap.y})")
             assertThat(tap.x).isEqualTo(x)
             assertThat(tap.y).isEqualTo(y)
         }
@@ -287,7 +277,7 @@ class ComputerControlInteractionTest {
     fun testGetScreenshot() = launchTestApp().use { testAppAgent ->
         val screenshot = testAppAgent.getScreenshot()
         assertThat(screenshot).isNotNull()
-        Log.d(TAG, "Screenshot size: ${screenshot!!.width}x${screenshot.height}")
+        screenshot!!
         assertThat(screenshot.width).isEqualTo(bounds.width())
         assertThat(screenshot.height).isEqualTo(bounds.height())
     }
@@ -299,40 +289,118 @@ class ComputerControlInteractionTest {
         val text2 = "Goodbye World"
         testAppAgent.requestFocus(Constants.TEXT_FIELD_1)
         testAppAgent.insertText(text1)
-        Log.d(TAG, "Inserted text: $text1 in text field 1")
         var insertText1 = testAppAgent.nextAction(Action.TextFieldValueChange::class.java)
         assertThat(insertText1).isNotNull()
         insertText1!!
-        Log.d(TAG, "InsertText from TestApp: ${insertText1.text} in text field 1")
         assertThat(insertText1.textFieldId).isEqualTo(Constants.TEXT_FIELD_1)
         assertThat(insertText1.text).isEqualTo(text1)
 
         // Insert text2 to text field 1 again.
         testAppAgent.insertText(text2)
-        Log.d(TAG, "Inserted text: $text2 in text field 1")
         insertText1 = testAppAgent.nextAction(Action.TextFieldValueChange::class.java)
         assertThat(insertText1).isNotNull()
         insertText1!!
-        Log.d(TAG, "InsertText from TestApp: ${insertText1.text} in text field 1")
         assertThat(insertText1.textFieldId).isEqualTo(Constants.TEXT_FIELD_1)
         assertThat(insertText1.text).isEqualTo(text2)
 
         // Insert text2 to text field 2.
         testAppAgent.requestFocus(Constants.TEXT_FIELD_2)
         testAppAgent.insertText(text2)
-        Log.d(TAG, "Inserted text: $text2")
         val insertText2 = testAppAgent.nextAction(Action.TextFieldValueChange::class.java)
         assertThat(insertText2).isNotNull()
         insertText2!!
-        Log.d(TAG, "InsertText from TestApp: ${insertText2.text}")
         assertThat(insertText2.textFieldId).isEqualTo(Constants.TEXT_FIELD_2)
         assertThat(insertText2.text).isEqualTo(text2)
     }
 
     @Test
+    fun testInsertText_combinations() = launchTestApp(TEST_APP_CLASS_NAME).use { testAppAgent ->
+        val textFieldId = Constants.TEXT_FIELD_1
+        testAppAgent.requestFocus(textFieldId)
+
+        fun assertText(expectedText: String, expectedUncommittedText: String) {
+            val change = testAppAgent.nextAction(Action.TextFieldValueChange::class.java)
+            assertWithMessage(
+                "TextFieldValueChange action was not received within the timeout"
+            )
+                .that(change)
+                .isNotNull()
+            val nonNullChange = change!!
+            assertThat(nonNullChange.textFieldId).isEqualTo(textFieldId)
+            assertThat(nonNullChange.text).isEqualTo(expectedText)
+            if (expectedUncommittedText.isEmpty()) {
+                assertThat(nonNullChange.uncommittedText).isAnyOf(null, "")
+            } else {
+                assertThat(nonNullChange.uncommittedText).isEqualTo(expectedUncommittedText)
+            }
+        }
+        // Initial state is empty.
+
+        // Insert "text1", don't replace, commit.
+        testAppAgent.insertText("text1", replaceExisting = false, commitText = true)
+        assertText("text1", "")
+
+        // Insert "text2" to append, don't replace, commit.
+        testAppAgent.insertText(" text2", replaceExisting = false, commitText = true)
+        assertText("text1 text2", "")
+
+        // Insert " text3" as composing text, don't replace, don't commit.
+        testAppAgent.insertText(
+            " text3", replaceExisting = false, commitText = false, waitForStable = false)
+        assertText("text1 text2 text3", "")
+
+        // Insert " text4" to append to composing text, don't replace, don't commit.
+        testAppAgent.insertText(
+            " text4", replaceExisting = false, commitText = false, waitForStable = false)
+        assertText("text1 text2 text3 text4", "")
+
+        // Commit the composing text by inserting an empty string, then append.
+        testAppAgent.insertText("", replaceExisting = false, commitText = true)
+        assertText("text1 text2 text3 text4", "")
+        testAppAgent.insertText(" text5", replaceExisting = false, commitText = true)
+        assertText("text1 text2 text3 text4 text5", "")
+
+        // Replace all text and commit.
+        testAppAgent.insertText("replaced", replaceExisting = true, commitText = true)
+        assertText("replaced", "")
+
+        // Replace text with composing text, don't commit.
+        testAppAgent.insertText(
+            "new composing", replaceExisting = true, commitText = false, waitForStable = false)
+        assertText("new composing", "")
+
+        // Append to the new composing text, don't commit.
+        testAppAgent.insertText(
+            " more", replaceExisting = false, commitText = false, waitForStable = false)
+        assertText("new composing more", "")
+
+        // Commit the current composing text, then append.
+        testAppAgent.insertText("", replaceExisting = false, commitText = true)
+        assertText("new composing more", "")
+        testAppAgent.insertText(" final", replaceExisting = false, commitText = true)
+        assertText("new composing more final", "")
+
+        // Replace with empty string and commit to clear the text field.
+        testAppAgent.insertText("", replaceExisting = true, commitText = true)
+        assertText("", "")
+    }
+
+    @Test
+    fun testInsertText_noFocus_isNoOp() =
+        launchTestApp(TEST_APP_CLASS_NAME).use { testAppAgent ->
+            // Insert text without focusing on any text field.
+            testAppAgent.insertText("should not appear", replaceExisting = false, commitText = true)
+            testAppAgent.insertText("should not appear", replaceExisting = true, commitText = true)
+            testAppAgent.insertText("should not appear", replaceExisting = false, commitText = false)
+
+            // Expect no text field value change action to be received.
+            val noAction = testAppAgent.nextAction(Action.TextFieldValueChange::class.java)
+            assertThat(noAction).isNull()
+        }
+
+    @Test
     fun testLaunchMultipleTimes() {
         for (i in 1..5) {
-            Log.d(TAG, "Launch iteration $i")
             launchTestApp().use { testAppAgent ->
                 assertThat(testAppAgent).isNotNull()
                 // Perform a simple action to ensure session is usable.
@@ -344,7 +412,6 @@ class ComputerControlInteractionTest {
     }
 
     companion object {
-        private const val TAG = "ComputerControlTest"
         private const val TEST_APP_PACKAGE_NAME = "android.computercontrol.testapp"
         private const val TEST_APP_CLASS_NAME = "android.computercontrol.testapp.app.AppActivity"
     }
