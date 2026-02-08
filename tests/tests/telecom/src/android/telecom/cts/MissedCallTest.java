@@ -87,7 +87,7 @@ public class MissedCallTest extends BaseTelecomTestWithMockServices {
         mShowMissedCallNotificationIntentCounter.waitForCount(1);
         if (Flags.addCallUriForMissedCalls()) {
             Intent intent = (Intent) mShowMissedCallNotificationIntentCounter.getArgs(0)[0];
-            Uri uri = intent.getParcelableExtra(TelecomManager.EXTRA_CALL_LOG_URI);
+            Uri uri = TestUtils.getParcelableExtra(intent, TelecomManager.EXTRA_CALL_LOG_URI, Uri.class);
             assertNotNull(uri);
         }
         if (mRoleManager.isRoleAvailable(RoleManager.ROLE_DIALER)) {

@@ -42,4 +42,12 @@ java_library {
         "compatibility-device-util-axt",
         "androidx.test.uiautomator_uiautomator",
     ],
+    visibility: [
+        "//cts/tests/tests/telecom:__subpackages__",
+        "//cts/tests/tests/telecom-apps:__subpackages__",
+        "//cts/tests/tests/telecom-cuj:__subpackages__",
+        "//cts/tests/tests/telecom2",
+        "//cts/tests/tests/telecom3",
+        "//packages/modules/Telephony:__subpackages__",
+    ],
 }

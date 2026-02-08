@@ -36,4 +36,8 @@ android_test_helper_app {
     test_suites: [
         "general-tests",
     ],
+    visibility: [
+        "//cts/tests/tests/telecom",
+        "//packages/modules/Telephony:__subpackages__",
+    ],
 }

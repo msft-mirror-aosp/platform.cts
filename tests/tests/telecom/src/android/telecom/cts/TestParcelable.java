@@ -94,6 +94,6 @@ public class TestParcelable implements Parcelable {
     }
 
     public static TestParcelable getFromBundle(Bundle b) {
-        return b.getParcelable(TestParcelable.class.getSimpleName(), TestParcelable.class);
+        return TestUtils.getParcelable(b, TestParcelable.class.getSimpleName(), TestParcelable.class);
     }
 }
