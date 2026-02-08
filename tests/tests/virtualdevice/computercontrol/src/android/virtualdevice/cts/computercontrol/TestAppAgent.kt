@@ -96,9 +96,9 @@ class TestAppAgent(private val context: Context, private val session: ComputerCo
         }
         testAppFocusRequester = TestAppFocusRequester(context)
 
-        // TODO: look into how to get rid of this sleep for interaction receiver
-        // binding.
-        Thread.sleep(1000)
+        // Wait for the interaction receiver to be bound by performing a no-op UI interaction.
+        // This is more robust than a fixed sleep.
+        getScreenshot()
     }
 
     fun handOverApplications() {
@@ -133,7 +133,20 @@ class TestAppAgent(private val context: Context, private val session: ComputerCo
     }
 
     fun insertText(text: String) {
-        actAndWaitForStable { session.insertText(text, true, true) }
+        insertText(text, replaceExisting = true, commitText = true)
+    }
+
+    fun insertText(
+        text: String,
+        replaceExisting: Boolean,
+        commitText: Boolean,
+        waitForStable: Boolean = true
+    ) {
+        if (waitForStable) {
+            actAndWaitForStable { session.insertText(text, replaceExisting, commitText) }
+        } else {
+            session.insertText(text, replaceExisting, commitText)
+        }
     }
 
     fun getDisplaySize(): Size {
