@@ -1864,7 +1864,7 @@ class MockSatelliteServiceManager {
                     TelephonyUtils.executeShellCommand(
                             mInstrumentation, command.toString());
             logd("overrideSatelliteEntilementQueryConditions: result = " + result);
-            return true;
+            return "true".equals(result);
         } catch (Exception e) {
             loge("overrideSatelliteEntilementQueryConditions: e=" + e);
             return false;
