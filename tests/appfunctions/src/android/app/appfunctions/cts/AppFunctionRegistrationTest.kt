@@ -28,7 +28,7 @@ import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.DynamicSchemaH
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.UpdatableHelperApp
 import android.app.appfunctions.cts.AppFunctionUtils.assertFunctionState
 import android.app.appfunctions.cts.AppFunctionUtils.clearInteractionAllowlist
-import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunctionAndWait
+import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunction
 import android.app.appfunctions.cts.AppFunctionUtils.installPackage
 import android.app.appfunctions.cts.AppFunctionUtils.isAppFunctionEnabled
 import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabled
@@ -434,7 +434,7 @@ class AppFunctionRegistrationTest {
     fun execute_unregisteredFunction_returnsError() = doBlocking {
         val request = createConcatStringsRequest(CURRENT_PKG)
 
-        val response = executeAppFunctionAndWait(manager, request)
+        val response = manager.executeAppFunction(request)
 
         assertThat(response.isSuccess).isFalse()
         assertThat(response.appFunctionException().errorCode)
@@ -450,7 +450,7 @@ class AppFunctionRegistrationTest {
         service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())
         val request = createConcatStringsRequest(targetPackage = CURRENT_PKG)
 
-        val response = executeAppFunctionAndWait(manager, request)
+        val response = manager.executeAppFunction(request)
 
         assertConcatStringsResponseCorrect(response)
     }
@@ -467,7 +467,7 @@ class AppFunctionRegistrationTest {
             val request =
                 createConcatStringsRequest(targetPackage = DynamicSchemaHelperApp.PACKAGE_NAME)
 
-            val response = executeAppFunctionAndWait(manager, request)
+            val response = manager.executeAppFunction(request)
             assertConcatStringsResponseCorrect(response)
         }
     }
@@ -487,7 +487,7 @@ class AppFunctionRegistrationTest {
                     )
                     .build()
 
-            val response = executeAppFunctionAndWait(manager, request)
+            val response = manager.executeAppFunction(request)
             assertThat(response.isSuccess).isFalse()
             assertThat(response.appFunctionException().errorCode)
                 .isEqualTo(AppFunctionException.ERROR_INVALID_ARGUMENT)
@@ -515,7 +515,7 @@ class AppFunctionRegistrationTest {
             val request =
                 createConcatStringsRequest(targetPackage = DynamicSchemaHelperApp.PACKAGE_NAME)
 
-            val response = executeAppFunctionAndWait(manager, request)
+            val response = manager.executeAppFunction(request)
             assertConcatStringsResponseCorrect(response)
 
             val request2 =
@@ -525,7 +525,7 @@ class AppFunctionRegistrationTest {
                     )
                     .build()
 
-            val response2 = executeAppFunctionAndWait(manager, request2)
+            val response2 = manager.executeAppFunction(request2)
             assertThat(response2.isSuccess).isFalse()
             assertThat(response2.appFunctionException().errorCode)
                 .isEqualTo(AppFunctionException.ERROR_INVALID_ARGUMENT)
@@ -549,7 +549,7 @@ class AppFunctionRegistrationTest {
                 .build()
 
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-            val response = executeAppFunctionAndWait(manager, request)
+            val response = manager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isFalse()
             assertThat(response.appFunctionException().errorCode)
@@ -574,7 +574,7 @@ class AppFunctionRegistrationTest {
                 .build()
 
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-            val response = executeAppFunctionAndWait(manager, request)
+            val response = manager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isFalse()
             assertThat(response.appFunctionException().errorCode)
@@ -626,7 +626,7 @@ class AppFunctionRegistrationTest {
             ExecuteAppFunctionRequest.Builder(CURRENT_PKG, DISABLED_BY_DEFAULT_FUNCTION_ID).build()
 
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-            val response = executeAppFunctionAndWait(manager, request)
+            val response = manager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isFalse()
             assertThat(response.appFunctionException().errorCode)
@@ -644,19 +644,17 @@ class AppFunctionRegistrationTest {
             ExecuteAppFunctionRequest.Builder(CURRENT_PKG, DISABLED_BY_DEFAULT_FUNCTION_ID).build()
 
         try {
-            setAppFunctionEnabled(
-                manager,
+            manager.setAppFunctionEnabled(
                 DISABLED_BY_DEFAULT_FUNCTION_ID,
                 AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
             )
             runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-                val response = executeAppFunctionAndWait(manager, request)
+                val response = manager.executeAppFunction(request)
 
                 assertThat(response.isSuccess).isTrue()
             }
         } finally {
-            setAppFunctionEnabled(
-                manager,
+            manager.setAppFunctionEnabled(
                 DISABLED_BY_DEFAULT_FUNCTION_ID,
                 AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
             )
@@ -668,8 +666,7 @@ class AppFunctionRegistrationTest {
     @IncludeRunOnSecondaryUser
     fun execute_afterRegistrationOfEnabledFunction_success() = doBlocking {
         try {
-            setAppFunctionEnabled(
-                manager,
+            manager.setAppFunctionEnabled(
                 DISABLED_BY_DEFAULT_FUNCTION_ID,
                 AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
             )
@@ -680,13 +677,12 @@ class AppFunctionRegistrationTest {
                 ExecuteAppFunctionRequest.Builder(CURRENT_PKG, DISABLED_BY_DEFAULT_FUNCTION_ID)
                     .build()
             runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-                val response = executeAppFunctionAndWait(manager, request)
+                val response = manager.executeAppFunction(request)
 
                 assertThat(response.isSuccess).isTrue()
             }
         } finally {
-            setAppFunctionEnabled(
-                manager,
+            manager.setAppFunctionEnabled(
                 DISABLED_BY_DEFAULT_FUNCTION_ID,
                 AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
             )
@@ -756,7 +752,7 @@ class AppFunctionRegistrationTest {
             serviceTestRule.unbindService()
             ShellCommand.builder("am force-stop $DynamicSchemaHelperApp.PACKAGE_NAME").execute()
 
-            val response = executeAppFunctionAndWait(manager, request)
+            val response = manager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isFalse()
             assertThat(response.appFunctionException().errorCode)
@@ -780,7 +776,7 @@ class AppFunctionRegistrationTest {
                     )
                     .build()
 
-            val response = executeAppFunctionAndWait(manager, request)
+            val response = manager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isFalse()
             assertThat(response.appFunctionException().errorCode)
@@ -805,7 +801,7 @@ class AppFunctionRegistrationTest {
                     )
                     .build()
 
-            val response = executeAppFunctionAndWait(manager, request)
+            val response = manager.executeAppFunction(request)
             assertThat(response.isSuccess).isTrue()
             assertThat(response.getOrNull()).isNotNull()
             val uris = response.getOrNull()!!.uriGrants
@@ -834,8 +830,7 @@ class AppFunctionRegistrationTest {
 
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val result =
-                isAppFunctionEnabled(
-                    manager,
+                manager.isAppFunctionEnabled(
                     DynamicSchemaHelperApp.PACKAGE_NAME,
                     CONCAT_STRINGS_FUNCTION_ID,
                 )
@@ -857,8 +852,7 @@ class AppFunctionRegistrationTest {
 
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val result =
-                isAppFunctionEnabled(
-                    manager,
+                manager.isAppFunctionEnabled(
                     DynamicSchemaHelperApp.PACKAGE_NAME,
                     CONCAT_STRINGS_FUNCTION_ID,
                 )
@@ -882,8 +876,7 @@ class AppFunctionRegistrationTest {
 
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val result =
-                isAppFunctionEnabled(
-                    manager,
+                manager.isAppFunctionEnabled(
                     DynamicSchemaHelperApp.PACKAGE_NAME,
                     CONCAT_STRINGS_FUNCTION_ID,
                 )
@@ -907,8 +900,7 @@ class AppFunctionRegistrationTest {
 
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val result =
-                isAppFunctionEnabled(
-                    manager,
+                manager.isAppFunctionEnabled(
                     DynamicSchemaHelperApp.PACKAGE_NAME,
                     CONCAT_STRINGS_FUNCTION_ID,
                 )

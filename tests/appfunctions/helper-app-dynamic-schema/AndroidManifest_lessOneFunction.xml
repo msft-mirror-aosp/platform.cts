@@ -15,7 +15,6 @@
   ~ limitations under the License.
   -->
 
-<!-- LINT.IfChange -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="android.app.appfunctions.cts.dynamic.schema" >
     <application android:debuggable="true">
@@ -40,7 +39,7 @@
             </intent-filter>
             <property
                 android:name="android.app.appfunctions.v2"
-                android:value="app_functions_v2.xml" />
+                android:value="app_functions_v2_lessOneFunction.xml" />
         </service>
         <service android:name="android.app.appfunctions.testutils.TestAppFunctionRegistrationService"
             android:exported="true"
@@ -67,4 +66,3 @@
             android:grantUriPermissions="true" />
     </application>
 </manifest>
-    <!-- LINT.ThenChange(//tests/appfunctions/helper-app-dynamic-schema/AndroidManifest_lessOneFunction.xml, //tests/appfunctions/helper-app-dynamic-schema/AndroidManifest_noTopLevelDocs.xml) -->

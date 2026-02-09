@@ -54,6 +54,10 @@
         <option name="push"
             value="CtsAppFunctionsTestHelperDynamicSchema.apk->/data/local/tmp/cts/appfunctions/CtsAppFunctionsTestHelperDynamicSchema.apk" />
         <option name="push"
+            value="CtsAppFunctionsTestHelperDynamicSchemaLessOneFunction.apk->/data/local/tmp/cts/appfunctions/CtsAppFunctionsTestHelperDynamicSchemaLessOneFunction.apk" />
+        <option name="push"
+            value="CtsAppFunctionsTestHelperDynamicSchemaNoTopLevelDocs.apk->/data/local/tmp/cts/appfunctions/CtsAppFunctionsTestHelperDynamicSchemaNoTopLevelDocs.apk" />
+        <option name="push"
             value="CtsAppSearchIndexerTestAppAAppLevelFunctionsReg.apk->/data/local/tmp/cts/appfunctions/CtsAppSearchIndexerTestAppAAppLevelFunctionsReg.apk" />
     </target_preparer>
 
