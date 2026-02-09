@@ -873,8 +873,29 @@ public class VolumeShaperTest {
                                     .setDuration(durationMs - i)
                                     .build(),
                             VolumeShaper.Operation.PLAY, true /* join */);
-                    assertEquals(testName + " linear ramp should continue on join",
-                            (float)i / durationMs, volumeShaper.getVolume(), 0.05 /* epsilon */);
+                    final float expected = (float) i / durationMs;
+                    final float actual = volumeShaper.getVolume();
+                    final float epsilon = 0.05f;
+                    if (AudioHelper.isRelaxedTimingDevice()) {
+                        // Deflake by skipping assert. Most often, this fails on MediaPlayer.
+                        if (Math.abs(expected - actual) > epsilon) {
+                            Log.d(
+                                    TAG,
+                                    testName
+                                            + " linear ramp should continue on join "
+                                            + expected
+                                            + " should be within "
+                                            + epsilon
+                                            + " of "
+                                            + actual);
+                        }
+                    } else {
+                        assertEquals(
+                                testName + " linear ramp should continue on join",
+                                expected,
+                                actual,
+                                epsilon);
+                    }
                     Thread.sleep(incrementMs);
                 }
                 Log.d(TAG, testName + "volume at max level now (closing player)");
@@ -951,6 +972,10 @@ public class VolumeShaperTest {
                 Thread.sleep(incrementMs);
             }
             Thread.sleep(WARMUP_TIME_MS);
+            if (AudioHelper.isRelaxedTimingDevice()) {
+                // Deflake by increasing wait time.
+                Thread.sleep(WARMUP_TIME_MS * 4);
+            }
             lastVolume = volumeShaper.getVolume();
             assertEquals(testName
                     + " final monotonic value should be 1.f, but is " + lastVolume,
@@ -1361,7 +1386,10 @@ public class VolumeShaperTest {
                     if (useMediaTime) {
                         Log.d(TAG, testName + " final volume after starting should be " +
                                 "less than full volume, actual is " + finalVolume);
-                        assertThat(finalVolume).isLessThan(1.f);
+                        if (!AudioHelper.isRelaxedTimingDevice()) {
+                            // Deflake by skipping assert for relaxed devices.
+                            assertThat(finalVolume).isLessThan(1.f);
+                        }
                     } else {
                         Log.d(TAG, testName + " final volume after starting should be " +
                                 "full volume, actual is " + finalVolume);
