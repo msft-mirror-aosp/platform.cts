@@ -90,8 +90,8 @@ class SerialApiTest {
     fun test_getPorts_isEmpty() {
         val ports = mSerialManager!!.getPorts()
 
-        val portNames = ports.map { it.name }.joinToString()
-        assertWithMessage("Expected no ports by default, but got $portNames").that(ports).isEmpty()
+        assertWithMessage("Expected no ports by default, but got ${ports.joinToString()}")
+            .that(ports).isEmpty()
     }
 
     @ApiTest(apis = ["android.hardware.serial.SerialManager#getPorts"])
