@@ -636,6 +636,26 @@ public class SurfaceViewTests extends ActivityTestBase {
     @Test
     @ApiTest(
             apis = {
+                "android.view.BlurRegion#getAlpha",
+                "android.view.BlurRegion#getBlurRadius",
+                "android.view.BlurRegion#setAlpha",
+                "android.view.BlurRegion#setBlurRadius",
+            })
+    @RequiresFlagsEnabled(FLAG_SURFACE_VIEW_SET_BLUR_REGIONS)
+    public void testBlurRegionAttributes() {
+        RectF rect = new RectF(0.0f, 0.0f, TEST_WIDTH, TEST_HEIGHT);
+        float[] cornerRadius = new float[8];
+        Arrays.fill(cornerRadius, 1.0f);
+        BlurRegion blurRegion = new RoundedRectBlurRegion(rect, cornerRadius, 1.0f, 10.0f);
+        blurRegion.setAlpha(0.5f);
+        blurRegion.setBlurRadius(5.0f);
+        Assert.assertEquals(0.5f, blurRegion.getAlpha(), 0.0f);
+        Assert.assertEquals(5.0f, blurRegion.getBlurRadius(), 0.0f);
+    }
+
+    @Test
+    @ApiTest(
+            apis = {
                 "android.view.RoundedRectBlurRegion#RoundedRectBlurRegion",
                 "android.view.RoundedRectBlurRegion#copy",
                 "android.view.RoundedRectBlurRegion#getAlpha",
