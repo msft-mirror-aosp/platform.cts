@@ -69,7 +69,7 @@ public final class ContactsPickerInvocationSdk36Test {
         mUiDevice.pressHome();
     }
 
-    /** Verifies that the Contacts Picker is not launched with ACTION_PICK and targetSdk < 37 */
+    /** Verifies that the Contacts Picker is not launched with ACTION_PICK and targetSdk < 37. */
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_ENABLE_ACTION_PICK_TAKEOVER_IN_DROIDFOOD)
     public void actionPick_doesNotLaunchSystemPicker() throws Exception {

@@ -25,7 +25,7 @@
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
                      android:targetPackage="com.android.contactspicker.cts"
-                     android:label="CTS tests of ContactsPickerSessionContract">
+                     android:label="CTS tests of ContactsPicker">
     </instrumentation>
     <uses-sdk android:minSdkVersion="37" android:targetSdkVersion="37" />
 </manifest>

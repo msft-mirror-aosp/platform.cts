@@ -48,7 +48,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-/** CTS tests for launching the Contacts Picker activity via {@link ACTION_PICK_CONTACTS intent} */
+/** CTS tests for launching the Contacts Picker activity via {@link ACTION_PICK_CONTACTS intent}. */
 @RunWith(AndroidJUnit4.class)
 @RequiresFlagsEnabled(android.content.flags.Flags.FLAG_ENABLE_SYSTEM_CONTACTS_PICKER)
 public final class ContactsPickerInvocationTest {
