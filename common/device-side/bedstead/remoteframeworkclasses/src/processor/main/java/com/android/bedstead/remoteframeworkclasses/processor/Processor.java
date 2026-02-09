@@ -40,6 +40,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -48,6 +49,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Generated;
 import javax.annotation.processing.ProcessingEnvironment;
@@ -529,8 +531,19 @@ public final class Processor extends AbstractProcessor {
 
             methodBuilder.addParameters(parameters);
 
-            List<String> paramNames =
-                    parameters.stream().map(p -> p.name).collect(Collectors.toList());
+            List<String> paramNames = toMutableList(parameters.stream().map(p -> p.name));
+            if (api.isTestApi) {
+                paramNames.add(
+                        0, "mFrameworkClass.getParentProfileInstance(profileOwnerComponentName)");
+            }
+
+            String frameworkClassName;
+            if (api.isTestApi) {
+                frameworkClassName = TEST_APIS_REFLECTION_FILE;
+            } else {
+                frameworkClassName =
+                        "mFrameworkClass.getParentProfileInstance(profileOwnerComponentName)";
+            }
 
             if (signature.equals(PARENT_PROFILE_INSTANCE)) {
                 // Special case, we want to return a RemoteDevicePolicyManager instead
@@ -542,50 +555,17 @@ public final class Processor extends AbstractProcessor {
                         "TestApp does not support calling .getParentProfileInstance() on a parent"
                                 + ".");
             } else if (method.returnType.equals(TypeName.VOID)) {
-                if (api.isTestApi) {
-                    if (paramNames.isEmpty()) {
-                        methodBuilder.addStatement(
-                                "$L.$L(mFrameworkClass.getParentProfileInstance(profileOwnerComponentName))",
-                                TEST_APIS_REFLECTION_FILE,
-                                method.name);
-                    } else {
-                        methodBuilder.addStatement(
-                                "$L.$L(mFrameworkClass.getParentProfileInstance(profileOwnerComponentName),"
-                                    + " $L)",
-                                TEST_APIS_REFLECTION_FILE,
-                                method.name,
-                                String.join(", ", paramNames));
-                    }
-                } else {
-                    methodBuilder.addStatement(
-                            "mFrameworkClass.getParentProfileInstance(profileOwnerComponentName).$L($L)",
-                            method.name,
-                            String.join(", ", paramNames));
-                }
+                methodBuilder.addStatement(
+                        "$L.$L($L)",
+                        frameworkClassName,
+                        method.name,
+                        String.join(", ", paramNames));
             } else {
-                if (api.isTestApi) {
-                    if (paramNames.isEmpty()) {
-                        methodBuilder.addStatement(
-                                "return"
-                                    + " $L.$L(mFrameworkClass.getParentProfileInstance(profileOwnerComponentName))",
-                                TEST_APIS_REFLECTION_FILE,
-                                method.name);
-                    } else {
-                        methodBuilder.addStatement(
-                                "return"
-                                    + " $L.$L(mFrameworkClass.getParentProfileInstance(profileOwnerComponentName),"
-                                    + " $L)",
-                                TEST_APIS_REFLECTION_FILE,
-                                method.name,
-                                String.join(", ", paramNames));
-                    }
-                } else {
-                    methodBuilder.addStatement(
-                            "return mFrameworkClass.getParentProfileInstance"
-                                    + "(profileOwnerComponentName).$L($L)",
-                            method.name,
-                            String.join(", ", paramNames));
-                }
+                methodBuilder.addStatement(
+                        "return $L.$L($L)",
+                        frameworkClassName,
+                        method.name,
+                        String.join(", ", paramNames));
             }
 
             classBuilder.addMethod(methodBuilder.build());
@@ -648,12 +628,18 @@ public final class Processor extends AbstractProcessor {
 
             methodBuilder.addParameters(parameters);
 
-            List<String> paramNames = parameters.stream().map(p -> p.name).toList();
+            List<String> paramNames = toMutableList(parameters.stream().map(p -> p.name));
+            if (api.isTestApi) {
+                paramNames.add(0, "mFrameworkClass");
+            }
 
-            String frameworkClassName = "mFrameworkClass";
-
-            if (method.modifiers.contains(Modifier.STATIC)) {
+            String frameworkClassName;
+            if (api.isTestApi) {
+                frameworkClassName = TEST_APIS_REFLECTION_FILE;
+            } else if (method.modifiers.contains(Modifier.STATIC)) {
                 frameworkClassName = frameworkClass.getQualifiedName().toString();
+            } else {
+                frameworkClassName = "mFrameworkClass";
             }
 
             if (FRAMEWORK_SIGNATURE_RETURN_OVERRIDES.containsKey(signature)) {
@@ -661,51 +647,17 @@ public final class Processor extends AbstractProcessor {
                 // We assume all replacements are null-only
                 methodBuilder.addStatement("return null");
             } else if (method.returnType.equals(TypeName.VOID)) {
-                if (api.isTestApi) {
-                    if (paramNames.isEmpty()) {
-                        methodBuilder.addStatement(
-                                "$L.$L($L)",
-                                TEST_APIS_REFLECTION_FILE,
-                                signature.getName(),
-                                "mFrameworkClass");
-                    } else {
-                        methodBuilder.addStatement(
-                                "$L.$L($L, $L)",
-                                TEST_APIS_REFLECTION_FILE,
-                                signature.getName(),
-                                "mFrameworkClass",
-                                String.join(", ", paramNames));
-                    }
-                } else {
-                    methodBuilder.addStatement(
-                            "$L.$L($L)",
-                            frameworkClassName,
-                            signature.getName(),
-                            String.join(", ", paramNames));
-                }
+                methodBuilder.addStatement(
+                        "$L.$L($L)",
+                        frameworkClassName,
+                        signature.getName(),
+                        String.join(", ", paramNames));
             } else {
-                if (api.isTestApi) {
-                    if (paramNames.isEmpty()) {
-                        methodBuilder.addStatement(
-                                "return $L.$L($L)",
-                                TEST_APIS_REFLECTION_FILE,
-                                signature.getName(),
-                                "mFrameworkClass");
-                    } else {
-                        methodBuilder.addStatement(
-                                "return $L.$L($L, $L)",
-                                TEST_APIS_REFLECTION_FILE,
-                                signature.getName(),
-                                "mFrameworkClass",
-                                String.join(", ", paramNames));
-                    }
-                } else {
-                    methodBuilder.addStatement(
-                            "return $L.$L($L)",
-                            frameworkClassName,
-                            signature.getName(),
-                            String.join(", ", paramNames));
-                }
+                methodBuilder.addStatement(
+                        "return $L.$L($L)",
+                        frameworkClassName,
+                        signature.getName(),
+                        String.join(", ", paramNames));
             }
 
             classBuilder.addMethod(methodBuilder.build());
@@ -948,5 +900,9 @@ public final class Processor extends AbstractProcessor {
         }
 
         return builder.build();
+    }
+
+    private static <T> List<T> toMutableList(Stream<T> stream) {
+        return stream.collect(Collectors.toCollection(ArrayList::new));
     }
 }
