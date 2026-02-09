@@ -252,48 +252,71 @@ public class EmbeddedSCVHService extends Service {
         }
 
         @Override
-        public boolean attachEmbeddedASurfaceControl(SurfaceControl parentSc,
-                InputTransferToken hostToken, int width, int height, boolean transferTouchToHost,
+        public boolean attachEmbeddedASurfaceControl(
+                SurfaceControl parentSc,
+                InputTransferToken hostToken,
+                int width,
+                int height,
+                boolean batched,
+                boolean transferTouchToHost,
                 @Nullable IMotionEventReceiver receiver) {
             CountDownLatch registeredLatch = new CountDownLatch(2);
-            mHandler.post(() -> {
-                mNativeSurfaceControl = nSurfaceControl_create(
-                        nSurfaceControl_fromJava(parentSc));
-                long surfaceTransaction = nSurfaceTransaction_create();
-                nSurfaceTransaction_setVisibility(mNativeSurfaceControl, surfaceTransaction, true);
-                mBuffer = nSurfaceTransaction_setSolidBuffer(mNativeSurfaceControl,
-                        surfaceTransaction,
-                        width, height, Color.RED);
-                nSurfaceTransaction_setOnCommitCallback(surfaceTransaction,
-                        (latchTime, presentTime) -> registeredLatch.countDown());
-                nSurfaceTransaction_apply(surfaceTransaction);
+            mHandler.post(
+                    () -> {
+                        mNativeSurfaceControl =
+                                nSurfaceControl_create(nSurfaceControl_fromJava(parentSc));
+                        long surfaceTransaction = nSurfaceTransaction_create();
+                        nSurfaceTransaction_setVisibility(
+                                mNativeSurfaceControl, surfaceTransaction, true);
+                        mBuffer =
+                                nSurfaceTransaction_setSolidBuffer(
+                                        mNativeSurfaceControl,
+                                        surfaceTransaction,
+                                        width,
+                                        height,
+                                        Color.RED);
+                        nSurfaceTransaction_setOnCommitCallback(
+                                surfaceTransaction,
+                                (latchTime, presentTime) -> registeredLatch.countDown());
+                        nSurfaceTransaction_apply(surfaceTransaction);
 
-                mNativeBatchedInputReceiver = nCreateInputReceiver(true /* batched */,
-                        hostToken, mNativeSurfaceControl, new InputReceiver() {
-                            @Override
-                            public boolean onMotionEvent(MotionEvent motionEvent) {
-                                if (transferTouchToHost && mEmbeddedInputTransferToken != null
-                                        && motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
-                                    mWm.transferTouchGesture(mEmbeddedInputTransferToken,
-                                            hostToken);
-                                }
+                        mNativeBatchedInputReceiver =
+                                nCreateInputReceiver(
+                                        batched,
+                                        hostToken,
+                                        mNativeSurfaceControl,
+                                        new InputReceiver() {
+                                            @Override
+                                            public boolean onMotionEvent(MotionEvent motionEvent) {
+                                                if (transferTouchToHost
+                                                        && mEmbeddedInputTransferToken != null
+                                                        && motionEvent.getAction()
+                                                                == MotionEvent.ACTION_DOWN) {
+                                                    mWm.transferTouchGesture(
+                                                            mEmbeddedInputTransferToken, hostToken);
+                                                }
 
-                                try {
-                                    receiver.onMotionEventReceived(MotionEvent.obtain(motionEvent));
-                                } catch (RemoteException e) {
-                                    Log.e(TAG, "Failed to send motion event to host", e);
-                                }
-                                return false;
-                            }
+                                                try {
+                                                    receiver.onMotionEventReceived(
+                                                            MotionEvent.obtain(motionEvent));
+                                                } catch (RemoteException e) {
+                                                    Log.e(
+                                                            TAG,
+                                                            "Failed to send motion event to host",
+                                                            e);
+                                                }
+                                                return false;
+                                            }
 
-                            @Override
-                            public boolean onKeyEvent(KeyEvent keyEvent) {
-                                return false;
-                            }
-                        });
-                mEmbeddedInputTransferToken = nGetInputTransferToken(mNativeBatchedInputReceiver);
-                registeredLatch.countDown();
-            });
+                                            @Override
+                                            public boolean onKeyEvent(KeyEvent keyEvent) {
+                                                return false;
+                                            }
+                                        });
+                        mEmbeddedInputTransferToken =
+                                nGetInputTransferToken(mNativeBatchedInputReceiver);
+                        registeredLatch.countDown();
+                    });
 
             try {
                 if (!registeredLatch.await(WAIT_TIME_S, TimeUnit.SECONDS)) {
