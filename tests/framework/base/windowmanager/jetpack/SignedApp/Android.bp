@@ -16,7 +16,7 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_test {
+android_test_helper_app {
     name: "CtsWindowManagerJetpackSignedApp",
     certificate: ":ec-p256",
     srcs: [
@@ -34,10 +34,5 @@ android_test {
         "cts_window_jetpack_utils",
     ],
     // resource_dirs is the default value: ["res"]
-    test_suites: [
-        "cts",
-        "vts",
-        "general-tests",
-    ],
     sdk_version: "test_current",
 }
