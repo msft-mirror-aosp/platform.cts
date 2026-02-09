@@ -106,7 +106,8 @@ public class SystemGestureExclusionRectsTest {
     }
 
     /**
-     * Animate a view from X=0 to X=30px and verify that the static exclusion rect follows.
+     * Animate a view from its initial location (x,y) to (x+30,y) and verify that the static
+     * exclusion rect follows.
      */
     @Test
     public void animatingView() throws Throwable {
@@ -126,7 +127,7 @@ public class SystemGestureExclusionRectsTest {
 
             v.setSystemGestureExclusionRects(
                     Lists.newArrayList(new Rect(0, 0, 5, 5)));
-            v.animate().x(30).setListener(new AnimationDoneListener(doneAnimating));
+            v.animate().xBy(30).setListener(new AnimationDoneListener(doneAnimating));
         });
 
         assertTrue("didn't finish animating", doneAnimating.await(3, SECONDS));
