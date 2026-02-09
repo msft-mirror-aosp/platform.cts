@@ -24,7 +24,6 @@ import java.nio.charset.StandardCharsets
 import javax.lang.model.type.TypeKind
 import javax.lang.model.type.TypeMirror
 import javax.lang.model.util.Elements
-import javax.lang.model.util.Types
 
 /** A collection of [MethodSignature] for accessible methods. */
 class Apis private constructor(private val mMethods: Set<MethodSignature>) {
@@ -66,12 +65,12 @@ class Apis private constructor(private val mMethods: Set<MethodSignature>) {
 
         /** Get public and test APIs for a given class name. */
         @JvmStatic
-        fun forClass(className: String, types: Types, elements: Elements): Apis {
+        fun forClass(className: String, elements: Elements): Apis {
             val parents: MutableSet<String> = HashSet()
             findParents(parents, className, elements)
 
             val methods: List<MethodSignature> =
-                parents.flatMap { getMethodsForClass(it, types, elements) }
+                parents.flatMap { getMethodsForClass(it, elements) }
 
             return Apis(methods.toSet())
         }
@@ -101,19 +100,18 @@ class Apis private constructor(private val mMethods: Set<MethodSignature>) {
 
         private fun getMethodsForClass(
             className: String,
-            types: Types,
             elements: Elements,
         ): List<MethodSignature> {
             val clazz = CODEBASE.findClass(className)
 
             if (clazz == null) {
-                println("Failed to find $className")
+                if (!className.equals("java.lang.Object")) {
+                    println("Failed to find $className")
+                }
                 return listOf()
             }
 
-            return clazz.methods().mapNotNull { method ->
-                MethodSignature.forApi(method, types, elements)
-            }
+            return clazz.methods().mapNotNull { method -> MethodSignature.forApi(method, elements) }
         }
     }
 }
