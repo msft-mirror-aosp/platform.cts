@@ -252,11 +252,21 @@ public class ControlledDreamSession {
 
         // Start Dream
         mDreamCoordinator.setActiveDream(mDreamComponent);
-        mDreamCoordinator.startDream();
+
+        boolean connected = false;
+        // The dream might not start immediately if the settings haven't propagated to
+        // PowerManagerService yet, so retry starting the dream.
+        for (int i = 0; i < TIMEOUT_SECONDS; i++) {
+            mDreamCoordinator.startDream();
+            if (dreamConnectLatch.await(1, TimeUnit.SECONDS)) {
+                connected = true;
+                break;
+            }
+        }
 
         // Wait for dream to connect to the DreamController
         assertWithMessage("Timeout waiting for dream to connect to proxy")
-                .that(dreamConnectLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();
+                .that(connected).isTrue();
         mControlledDream.registerLifecycleListener(mLifecycleListener);
         mServiceConnection.getProxy().unregisterListener(dreamConnectListener);
 
