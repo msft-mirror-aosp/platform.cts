@@ -234,6 +234,10 @@ public final class Processor extends AbstractProcessor {
     private static final ClassName NULL_HANDLER_CALLBACK_CLASSNAME =
             ClassName.get("com.android.bedstead.remoteframeworkclasses", "NullParcelableHandler");
 
+    private static final ClassName PARCELABLE_POLICY_IDENTIFIER =
+            ClassName.get(
+                    "com.android.bedstead.remoteframeworkclasses", "ParcelablePolicyIdentifier");
+
     private static final ClassName COMPONENT_NAME_CLASSNAME =
             ClassName.get("android.content", "ComponentName");
 
@@ -275,6 +279,7 @@ public final class Processor extends AbstractProcessor {
         generateWrapper(NULL_PARCELABLE_ACTIVITY_CLASSNAME);
         generateWrapper(NULL_PARCELABLE_ACCOUNT_MANAGER_CALLBACK_CLASSNAME);
         generateWrapper(NULL_HANDLER_CALLBACK_CLASSNAME);
+        generateWrapper(PARCELABLE_POLICY_IDENTIFIER);
     }
 
     private void generateWrapper(ClassName className) {
@@ -321,6 +326,8 @@ public final class Processor extends AbstractProcessor {
                         .stream()
                         .filter(api -> !usesBlocklistedType(api))
                         .filter(api -> !parametersHaveWildcards(api.method))
+                        .map(api -> expandTemplatedMethods(api))
+                        .flatMap(Collection::stream)
                         .sorted(Comparator.comparing(api -> api.method.name))
                         .collect(Collectors.toList());
 
@@ -429,13 +436,14 @@ public final class Processor extends AbstractProcessor {
                                 .addMember(
                                         "parcelableWrappers",
                                         "{$T.class, $T.class, $T.class, $T.class, $T.class,"
-                                                + " $T.class}",
+                                                + " $T.class, $T.class}",
                                         NULL_PARCELABLE_REMOTE_DEVICE_POLICY_MANAGER_CLASSNAME,
                                         NULL_PARCELABLE_REMOTE_CONTENT_RESOLVER_CLASSNAME,
                                         NULL_PARCELABLE_REMOTE_BLUETOOTH_ADAPTER_CLASSNAME,
                                         NULL_PARCELABLE_ACTIVITY_CLASSNAME,
                                         NULL_PARCELABLE_ACCOUNT_MANAGER_CALLBACK_CLASSNAME,
-                                        NULL_HANDLER_CALLBACK_CLASSNAME)
+                                        NULL_HANDLER_CALLBACK_CLASSNAME,
+                                        PARCELABLE_POLICY_IDENTIFIER)
                                 .addMember(
                                         "futureWrappers",
                                         "$T.class",
@@ -488,13 +496,15 @@ public final class Processor extends AbstractProcessor {
                 AnnotationSpec.builder(CrossUser.class)
                         .addMember(
                                 "parcelableWrappers",
-                                "{$T.class, $T.class, $T.class, $T.class, $T.class, $T.class}",
+                                "{$T.class, $T.class, $T.class, $T.class, $T.class, $T.class,"
+                                        + " $T.class}",
                                 NULL_PARCELABLE_REMOTE_DEVICE_POLICY_MANAGER_CLASSNAME,
                                 NULL_PARCELABLE_REMOTE_CONTENT_RESOLVER_CLASSNAME,
                                 NULL_PARCELABLE_REMOTE_BLUETOOTH_ADAPTER_CLASSNAME,
                                 NULL_PARCELABLE_ACTIVITY_CLASSNAME,
                                 NULL_PARCELABLE_ACCOUNT_MANAGER_CALLBACK_CLASSNAME,
-                                NULL_HANDLER_CALLBACK_CLASSNAME)
+                                NULL_HANDLER_CALLBACK_CLASSNAME,
+                                PARCELABLE_POLICY_IDENTIFIER)
                         .build());
 
         classBuilder.addField(
@@ -545,6 +555,11 @@ public final class Processor extends AbstractProcessor {
                         "mFrameworkClass.getParentProfileInstance(profileOwnerComponentName)";
             }
 
+            String methodName = method.name;
+            if (api.originalMethod != null) {
+                methodName = api.originalMethod.name;
+            }
+
             if (signature.equals(PARENT_PROFILE_INSTANCE)) {
                 // Special case, we want to return a RemoteDevicePolicyManager instead
                 methodBuilder.returns(
@@ -556,15 +571,12 @@ public final class Processor extends AbstractProcessor {
                                 + ".");
             } else if (method.returnType.equals(TypeName.VOID)) {
                 methodBuilder.addStatement(
-                        "$L.$L($L)",
-                        frameworkClassName,
-                        method.name,
-                        String.join(", ", paramNames));
+                        "$L.$L($L)", frameworkClassName, methodName, String.join(", ", paramNames));
             } else {
                 methodBuilder.addStatement(
                         "return $L.$L($L)",
                         frameworkClassName,
-                        method.name,
+                        methodName,
                         String.join(", ", paramNames));
             }
 
@@ -642,21 +654,23 @@ public final class Processor extends AbstractProcessor {
                 frameworkClassName = "mFrameworkClass";
             }
 
+            String methodName = method.name;
+            if (api.originalMethod != null) {
+                methodName = api.originalMethod.name;
+            }
+
             if (FRAMEWORK_SIGNATURE_RETURN_OVERRIDES.containsKey(signature)) {
                 methodBuilder.returns(FRAMEWORK_SIGNATURE_RETURN_OVERRIDES.get(signature));
                 // We assume all replacements are null-only
                 methodBuilder.addStatement("return null");
             } else if (method.returnType.equals(TypeName.VOID)) {
                 methodBuilder.addStatement(
-                        "$L.$L($L)",
-                        frameworkClassName,
-                        signature.getName(),
-                        String.join(", ", paramNames));
+                        "$L.$L($L)", frameworkClassName, methodName, String.join(", ", paramNames));
             } else {
                 methodBuilder.addStatement(
                         "return $L.$L($L)",
                         frameworkClassName,
-                        signature.getName(),
+                        methodName,
                         String.join(", ", paramNames));
             }
 
@@ -719,6 +733,27 @@ public final class Processor extends AbstractProcessor {
 
             filteredMethods.add(testApi);
         }
+    }
+
+    /*
+     * If the input method is templated, expand it into multiple type-specific methods.
+     * If not, this simply returns the input method.
+     *
+     * Example:
+     *  Input:
+     *    <T> void setPolicy(PolicyIdentifier<T> key, T value)
+     *  Output:
+     *    void setPolicy_string(PolicyIdentifier<String> key, String value);
+     *    void setPolicy_integer(PolicyIdentifier<Integer> key, Integer value);
+     *    ... and more
+     */
+    private List<Api> expandTemplatedMethods(Api method) {
+        if (method.method.typeVariables.isEmpty()) {
+            // Not a templated method
+            return List.of(method);
+        }
+
+        return new TemplatedMethodExpander(method).expand();
     }
 
     private void writeClassToFile(String packageName, TypeSpec clazz) {
@@ -820,12 +855,22 @@ public final class Processor extends AbstractProcessor {
                         .collect(Collectors.toSet()));
     }
 
-    private static class Api {
-        private final MethodSpec method;
-        private final boolean isTestApi;
+    public static class Api {
+        public final MethodSpec method;
+        // Templated methods get expanded into multiple type-specific methods. In that case, this
+        // points to the original templated method. Otherwise, this will be null.
+        public final MethodSpec originalMethod;
+        public final boolean isTestApi;
 
-        private Api(MethodSpec method, boolean isTestApi) {
+        public Api(MethodSpec method, boolean isTestApi) {
             this.method = method;
+            this.originalMethod = null;
+            this.isTestApi = isTestApi;
+        }
+
+        public Api(MethodSpec method, MethodSpec originalMethod, boolean isTestApi) {
+            this.method = method;
+            this.originalMethod = originalMethod;
             this.isTestApi = isTestApi;
         }
 
@@ -882,10 +927,10 @@ public final class Processor extends AbstractProcessor {
 
     // Convert the {@code ExecutableElement} to a {@code MethodSpec}.
     private MethodSpec toMethodSpec(ExecutableElement element) {
-        var builder = MethodSpec.methodBuilder(element.getSimpleName().toString());
-
-        builder.addModifiers(element.getModifiers());
-        builder.returns(TypeName.get(element.getReturnType()));
+        var builder =
+                MethodSpec.methodBuilder(element.getSimpleName().toString())
+                        .addModifiers(element.getModifiers())
+                        .returns(TypeName.get(element.getReturnType()));
 
         for (TypeParameterElement typeParam : element.getTypeParameters()) {
             builder.addTypeVariable(TypeVariableName.get(typeParam));

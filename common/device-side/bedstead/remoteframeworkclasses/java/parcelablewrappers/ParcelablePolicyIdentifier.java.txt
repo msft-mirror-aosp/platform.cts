@@ -1,0 +1,97 @@
+/*
+ * Copyright (C) 2026 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.bedstead.remoteframeworkclasses;
+
+import android.app.admin.PolicyIdentifier;
+import android.os.Parcel;
+import android.os.Parcelable;
+
+import com.google.android.enterprise.connectedapps.annotations.CustomParcelableWrapper;
+import com.google.android.enterprise.connectedapps.internal.Bundler;
+import com.google.android.enterprise.connectedapps.internal.BundlerType;
+
+import java.lang.reflect.Constructor;
+
+/**
+ * Custom Parcelable to transport a {@link PolicyIdentifier}.
+ */
+@CustomParcelableWrapper(originalType = PolicyIdentifier.class)
+public final class ParcelablePolicyIdentifier<T> implements Parcelable {
+
+    private final String mIdentifier;
+
+    /**
+     * Create a wrapper for a given {@link PolicyIdentifier<T>}.
+     */
+    public static <F> ParcelablePolicyIdentifier of(
+            Bundler bundler, BundlerType type,
+            PolicyIdentifier<F> identifier) {
+
+        return new ParcelablePolicyIdentifier<>(identifier, bundler, type);
+    }
+
+    // Constructor to create the Parcelable from the original object
+    private ParcelablePolicyIdentifier(PolicyIdentifier<T> policyIdentifier, Bundler bundler, BundlerType type) {
+        mIdentifier = policyIdentifier.toString();
+    }
+
+    // Constructor to recreate the Parcelable from a Parcel
+    private ParcelablePolicyIdentifier(Parcel in) {
+        mIdentifier = in.readString();
+    }
+
+    // Method to reconstruct the original PolicyIdentifier object
+    public PolicyIdentifier<T> get() {
+        try {
+            // The PolicyIdentifier constructor is hidden since it is not part of
+            // the public API, so use reflection to invoke it.
+            Constructor<PolicyIdentifier> constructor =
+                PolicyIdentifier.class.getDeclaredConstructor(String.class);
+            constructor.setAccessible(true);
+            return constructor.newInstance(mIdentifier);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Failed to create PolicyIdentifier from parcel", e);
+        }
+    }
+
+    public String getIdentifier() {
+        return mIdentifier;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(mIdentifier);
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    public static final Creator<ParcelablePolicyIdentifier> CREATOR =
+        new Creator<ParcelablePolicyIdentifier>() {
+            @Override
+            public ParcelablePolicyIdentifier createFromParcel(Parcel in) {
+                return new ParcelablePolicyIdentifier(in);
+            }
+
+            @Override
+            public ParcelablePolicyIdentifier[] newArray(int size) {
+                return new ParcelablePolicyIdentifier[size];
+            }
+        };
+}
