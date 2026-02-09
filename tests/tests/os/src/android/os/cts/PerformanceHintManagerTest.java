@@ -24,8 +24,8 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
+import static org.junit.Assume.assumeNotNull;
 
 import android.content.pm.PackageManager;
 import android.os.Flags;
@@ -424,24 +424,6 @@ public class PerformanceHintManagerTest {
     }
 
     @Test
-    public void testNativeCreateAudioPerformanceSession() {
-        assumeMobileDeviceFormFactor();
-        final String resultMessage = nativeTestCreateAudioPerformanceSession();
-        if (!Strings.isNullOrEmpty(resultMessage)) {
-            fail(resultMessage);
-        }
-    }
-
-    @Test
-    public void testNativeCreateAudioPerformanceAndGraphicsPipelineSession() {
-        assumeMobileDeviceFormFactor();
-        final String resultMessage = nativeTestCreateAudioPerformanceAndGraphicsPipelineSession();
-        if (!Strings.isNullOrEmpty(resultMessage)) {
-            fail(resultMessage);
-        }
-    }
-
-    @Test
     public void testNativeSetNativeSurfaces() {
         makeSurfaceControl();
 
@@ -471,11 +453,6 @@ public class PerformanceHintManagerTest {
     private native boolean nativeGetSessionsAreSupported();
     private native String nativeTestCreateHintSession();
     private native String nativeTestCreateGraphicsPipelineSession();
-
-    private native String nativeTestCreateAudioPerformanceSession();
-
-    private native String nativeTestCreateAudioPerformanceAndGraphicsPipelineSession();
-
     private native String nativeTestCreateHintSessionUsingConfig();
     private native String nativeTestGetMaxGraphicsPipelineThreadsCount();
     private native String nativeTestGetPreferredUpdateRateNanos();
