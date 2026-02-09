@@ -66,6 +66,9 @@ android_test {
     ],
     manifest: "src/com/android/cts/pcc/service/nonpccclient/AndroidManifest.xml",
     test_config: "AndroidTest-nonpccclient.xml",
+    data: [
+        ":PccServicePccClientTest",
+    ],
 }
 
 java_library {
