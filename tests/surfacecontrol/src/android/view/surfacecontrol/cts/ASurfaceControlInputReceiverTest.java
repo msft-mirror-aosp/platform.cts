@@ -193,8 +193,7 @@ public class ASurfaceControlInputReceiverTest {
     }
 
     @Test
-    public void testRemoteASurfaceControlReceivesInput()
-            throws InterruptedException {
+    public void testRemoteASurfaceControlReceivesInput() throws InterruptedException {
         RemoteSurfaceControlInputReceiverHelper helper =
                 new RemoteSurfaceControlInputReceiverHelper(
                         mActivity,
@@ -275,9 +274,10 @@ public class ASurfaceControlInputReceiverTest {
         assertMotionEventOnWindowCenter(embeddedVerifier, bounds);
     }
 
-    @Test
-    @TestParameters({"{batched: true}", "{batched: false}"})
-    public void testTransferGestureFromHostToEmbeddedRemote(boolean batched)
+    private void testTransferGestureFromHostToEmbeddedRemoteSetup(
+            boolean batched,
+            LinkedBlockingQueue<InputEvent> embeddedEvents,
+            LinkedBlockingQueue<InputEvent> hostEvents)
             throws InterruptedException, RemoteException {
         RemoteSurfaceControlInputReceiverHelper helper =
                 new RemoteSurfaceControlInputReceiverHelper(
@@ -285,12 +285,6 @@ public class ASurfaceControlInputReceiverTest {
                         false /* zOrderOnTop */,
                         batched,
                         false /* transferTouchToHost */);
-
-        final LinkedBlockingQueue<InputEvent> embeddedEvents = new LinkedBlockingQueue<>();
-        final BlockingQueueEventVerifier embeddedVerifier =
-                new BlockingQueueEventVerifier(embeddedEvents);
-        final LinkedBlockingQueue<InputEvent> hostEvents = new LinkedBlockingQueue<>();
-        final BlockingQueueEventVerifier hostVerifier = new BlockingQueueEventVerifier(hostEvents);
         helper.setup(
                 (v, event) -> {
                     if (event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -310,6 +304,21 @@ public class ASurfaceControlInputReceiverTest {
                         embeddedEvents.add(MotionEvent.obtain(motionEvent));
                     }
                 });
+    }
+
+    @Test
+    @TestParameters({"{batched: true}", "{batched: false}"})
+    public void testTransferGestureFromHostToEmbeddedRemote_tap(boolean batched)
+            throws InterruptedException, RemoteException {
+
+        final LinkedBlockingQueue<InputEvent> embeddedEvents = new LinkedBlockingQueue<>();
+        final BlockingQueueEventVerifier embeddedVerifier =
+                new BlockingQueueEventVerifier(embeddedEvents);
+
+        final LinkedBlockingQueue<InputEvent> hostEvents = new LinkedBlockingQueue<>();
+        final BlockingQueueEventVerifier hostVerifier = new BlockingQueueEventVerifier(hostEvents);
+
+        testTransferGestureFromHostToEmbeddedRemoteSetup(batched, embeddedEvents, hostEvents);
         Rect bounds = new Rect();
         assertWindowAndGetBounds(mActivity.getDisplayId(), bounds);
         final Point coord = new Point(bounds.left + bounds.width() / 2,
@@ -324,12 +333,99 @@ public class ASurfaceControlInputReceiverTest {
 
         pointer.lift();
         assertMotionEventOnWindowCenter(embeddedVerifier, bounds);
+        embeddedVerifier.assertReceivedMotion(
+                withMotionAction(MotionEvent.ACTION_UP), "Failed to receive Up event on embedded");
+    }
+
+    @Test
+    @TestParameters({"{batched: true}", "{batched: false}"})
+    public void testTransferGestureFromHostToEmbeddedRemote_threeActivePointers(boolean batched)
+            throws InterruptedException, RemoteException {
+
+        final LinkedBlockingQueue<InputEvent> embeddedEvents = new LinkedBlockingQueue<>();
+        final BlockingQueueEventVerifier embeddedVerifier =
+                new BlockingQueueEventVerifier(embeddedEvents);
+
+        final LinkedBlockingQueue<InputEvent> hostEvents = new LinkedBlockingQueue<>();
+        final BlockingQueueEventVerifier hostVerifier = new BlockingQueueEventVerifier(hostEvents);
+
+        testTransferGestureFromHostToEmbeddedRemoteSetup(batched, embeddedEvents, hostEvents);
+        Rect bounds = new Rect();
+        assertWindowAndGetBounds(mActivity.getDisplayId(), bounds);
+
+        Point[] startPoints =
+                new Point[] {
+                    new Point(bounds.left + 10, bounds.top + 10),
+                    new Point(bounds.left + 20, bounds.top + 10),
+                    new Point(bounds.left + 30, bounds.top + 10)
+                };
+        Point[] endPoints =
+                new Point[] {
+                    new Point(bounds.left + 10, bounds.top + 50),
+                    new Point(bounds.left + 20, bounds.top + 50),
+                    new Point(bounds.left + 30, bounds.top + 50)
+                };
+
+        UinputTouchDevice.Pointer[] pointers = new UinputTouchDevice.Pointer[3];
+        pointers[0] = mTouchScreen.touchDown(startPoints[0].x, startPoints[0].y);
+        embeddedVerifier.assertReceivedMotion(
+                withMotionAction(MotionEvent.ACTION_DOWN),
+                "Failed to receive DOWN event from multi-drag");
+        hostVerifier.assertReceivedMotion(
+                withMotionAction(MotionEvent.ACTION_DOWN), "Failed to receive DOWN event on host");
+        hostVerifier.assertReceivedMotion(
+                withMotionAction(MotionEvent.ACTION_CANCEL),
+                "Failed to receive CANCEL event on host");
+
+        pointers[1] = mTouchScreen.touchDown(startPoints[1].x, startPoints[1].y);
+        embeddedVerifier.assertReceivedMotion(
+                withMotionAction(MotionEvent.ACTION_POINTER_DOWN, 1),
+                "Failed to receive POINTER_DOWN(1) event from multi-drag");
+
+        pointers[2] = mTouchScreen.touchDown(startPoints[2].x, startPoints[2].y);
+        embeddedVerifier.assertReceivedMotion(
+                withMotionAction(MotionEvent.ACTION_POINTER_DOWN, 2),
+                "Failed to receive POINTER_DOWN(2) event from multi-drag");
+
+        int pointerCount = startPoints.length;
+        int steps = 4;
+        for (int step = 1; step <= steps; step++) {
+            for (int i = 0; i < pointerCount; i++) {
+                int x = startPoints[i].x + (endPoints[i].x - startPoints[i].x) * step / steps;
+                int y = startPoints[i].y + (endPoints[i].y - startPoints[i].y) * step / steps;
+                pointers[i].moveTo(x, y);
+            }
+        }
+
+        for (int i = pointerCount - 1; i >= 0; i--) {
+            pointers[i].lift();
+        }
+
+        // Drain all the moves.
+        while (true) {
+            MotionEvent event =
+                    embeddedVerifier.acceptOptionalMotion(
+                            withMotionAction(MotionEvent.ACTION_MOVE));
+            if (event == null) {
+                break;
+            }
+        }
+
+        embeddedVerifier.assertReceivedMotion(
+                withMotionAction(MotionEvent.ACTION_POINTER_UP, 2),
+                "Failed to receive POINTER_UP(2) from multi-drag");
+        embeddedVerifier.assertReceivedMotion(
+                withMotionAction(MotionEvent.ACTION_POINTER_UP, 1),
+                "Failed to receive POINTER_UP(1) from multi-drag");
+        embeddedVerifier.assertReceivedMotion(
+                withMotionAction(MotionEvent.ACTION_UP), "Failed to receive UP from multi-drag");
     }
 
     @Test
     public void testTransferGestureFromEmbeddedToHost() throws InterruptedException {
-        LocalSurfaceControlInputReceiverHelper helper = new LocalSurfaceControlInputReceiverHelper(
-                mActivity, true /* zOrderOnTop */, false /* batched */);
+        LocalSurfaceControlInputReceiverHelper helper =
+                new LocalSurfaceControlInputReceiverHelper(
+                        mActivity, true /* zOrderOnTop */, false /* batched */);
         final LinkedBlockingQueue<InputEvent> embeddedEvents = new LinkedBlockingQueue<>();
         final BlockingQueueEventVerifier embeddedVerifier =
                 new BlockingQueueEventVerifier(embeddedEvents);
@@ -422,16 +518,18 @@ public class ASurfaceControlInputReceiverTest {
 
     private static void assertWindowAndGetBounds(int displayId, Rect outBounds)
             throws InterruptedException {
-        boolean success = waitForWindowInfos(
-                windowInfos -> {
-                    for (var windowInfo : windowInfos) {
-                        if (getBoundsIfWindowIsVisible(windowInfo, displayId,
-                                sEmbeddedName, outBounds)) {
-                            return true;
-                        }
-                    }
-                    return false;
-                }, Duration.ofSeconds(WAIT_TIME_S));
+        boolean success =
+                waitForWindowInfos(
+                        windowInfos -> {
+                            for (var windowInfo : windowInfos) {
+                                if (getBoundsIfWindowIsVisible(
+                                        windowInfo, displayId, sEmbeddedName, outBounds)) {
+                                    return true;
+                                }
+                            }
+                            return false;
+                        },
+                        Duration.ofSeconds(WAIT_TIME_S));
         assertAndDumpWindowState(TAG, "Failed to find embedded SC on top", success);
     }
 
@@ -463,56 +561,78 @@ public class ASurfaceControlInputReceiverTest {
 
         private InputTransferToken mEmbeddedTransferToken;
 
-        LocalSurfaceControlInputReceiverHelper(Activity activity, boolean zOrderOnTop,
-                boolean batched) {
+        LocalSurfaceControlInputReceiverHelper(
+                Activity activity, boolean zOrderOnTop, boolean batched) {
             mActivity = activity;
             mZOrderOnTop = zOrderOnTop;
             mBatched = batched;
         }
 
-        public void setup(View.OnTouchListener hostTouchListener,
-                InputReceiver inputReceiver) throws InterruptedException {
+        void setup(View.OnTouchListener hostTouchListener, InputReceiver inputReceiver)
+                throws InterruptedException {
             final CountDownLatch drawCompleteLatch = new CountDownLatch(1);
 
             // Place the child z order on top so it gets touch first and can transfer to host
             SurfaceView surfaceView = new SurfaceView(mActivity.getApplicationContext());
             surfaceView.setZOrderOnTop(mZOrderOnTop);
-            surfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
-                @Override
-                public void surfaceCreated(@NonNull SurfaceHolder holder) {
-                    mEmbeddedSc = nSurfaceControl_create(
-                            nSurfaceControl_fromJava(surfaceView.getSurfaceControl()));
-                    long surfaceTransaction = nSurfaceTransaction_create();
-                    nSurfaceTransaction_setVisibility(mEmbeddedSc, surfaceTransaction, true);
-                    mBuffer = nSurfaceTransaction_setSolidBuffer(mEmbeddedSc, surfaceTransaction,
-                            sBounds.width(), sBounds.height(), Color.RED);
-                    nSurfaceTransaction_setOnCommitCallback(surfaceTransaction,
-                            (latchTime, presentTime) -> drawCompleteLatch.countDown());
-                    nSurfaceTransaction_apply(surfaceTransaction);
+            surfaceView
+                    .getHolder()
+                    .addCallback(
+                            new SurfaceHolder.Callback() {
+                                @Override
+                                public void surfaceCreated(@NonNull SurfaceHolder holder) {
+                                    mEmbeddedSc =
+                                            nSurfaceControl_create(
+                                                    nSurfaceControl_fromJava(
+                                                            surfaceView.getSurfaceControl()));
+                                    long surfaceTransaction = nSurfaceTransaction_create();
+                                    nSurfaceTransaction_setVisibility(
+                                            mEmbeddedSc, surfaceTransaction, true);
+                                    mBuffer =
+                                            nSurfaceTransaction_setSolidBuffer(
+                                                    mEmbeddedSc,
+                                                    surfaceTransaction,
+                                                    sBounds.width(),
+                                                    sBounds.height(),
+                                                    Color.RED);
+                                    nSurfaceTransaction_setOnCommitCallback(
+                                            surfaceTransaction,
+                                            (latchTime, presentTime) ->
+                                                    drawCompleteLatch.countDown());
+                                    nSurfaceTransaction_apply(surfaceTransaction);
 
-                    mNativeBatchedInputReceiver = nCreateInputReceiver(mBatched,
-                            surfaceView.getRootSurfaceControl().getInputTransferToken(),
-                            mEmbeddedSc, inputReceiver);
+                                    mNativeBatchedInputReceiver =
+                                            nCreateInputReceiver(
+                                                    mBatched,
+                                                    surfaceView
+                                                            .getRootSurfaceControl()
+                                                            .getInputTransferToken(),
+                                                    mEmbeddedSc,
+                                                    inputReceiver);
 
-                    mEmbeddedTransferToken = nGetInputTransferToken(mNativeBatchedInputReceiver);
-                }
+                                    mEmbeddedTransferToken =
+                                            nGetInputTransferToken(mNativeBatchedInputReceiver);
+                                }
 
-                @Override
-                public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width,
-                        int height) {
-                }
+                                @Override
+                                public void surfaceChanged(
+                                        @NonNull SurfaceHolder holder,
+                                        int format,
+                                        int width,
+                                        int height) {}
 
-                @Override
-                public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
-                    long surfaceTransaction = nSurfaceTransaction_create();
-                    nSurfaceTransaction_reparent(mEmbeddedSc, 0, surfaceTransaction);
-                    nSurfaceTransaction_apply(surfaceTransaction);
-                    nSurfaceControl_release(mEmbeddedSc);
+                                @Override
+                                public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
+                                    long surfaceTransaction = nSurfaceTransaction_create();
+                                    nSurfaceTransaction_reparent(
+                                            mEmbeddedSc, 0, surfaceTransaction);
+                                    nSurfaceTransaction_apply(surfaceTransaction);
+                                    nSurfaceControl_release(mEmbeddedSc);
 
-                    nSurfaceTransaction_releaseBuffer(mBuffer);
-                    nDeleteInputReceiver(mNativeBatchedInputReceiver);
-                }
-            });
+                                    nSurfaceTransaction_releaseBuffer(mBuffer);
+                                    nDeleteInputReceiver(mNativeBatchedInputReceiver);
+                                }
+                            });
 
             mActivity.runOnUiThread(() -> mActivity.setContentView(surfaceView));
 
@@ -543,10 +663,17 @@ public class ASurfaceControlInputReceiverTest {
             mTransferTouchToHost = transferTouchToHost;
         }
 
-        public void setup(View.OnTouchListener hostTouchListener,
+        void setup(
+                View.OnTouchListener hostTouchListener,
                 IMotionEventReceiver.Stub motionEventReceiver)
                 throws InterruptedException {
-            SurfaceView surfaceView = new SurfaceView(mActivity.getApplicationContext());
+            SurfaceView surfaceView =
+                    new SurfaceView(mActivity.getApplicationContext()) {
+                        @Override
+                        public boolean onTouchEvent(MotionEvent event) {
+                            return hostTouchListener.onTouch(this, event);
+                        }
+                    };
             surfaceView.setZOrderOnTop(mZOrderOnTop);
 
             CountDownLatch embeddedServiceReady = new CountDownLatch(1);
@@ -626,7 +753,6 @@ public class ASurfaceControlInputReceiverTest {
 
             assertTrue("Failed to attach ASurfaceControl",
                     surfaceViewCreatedLatch.await(WAIT_TIME_S, TimeUnit.SECONDS));
-            surfaceView.setOnTouchListener(hostTouchListener);
             waitForStableWindowGeometry(Duration.ofSeconds(WAIT_TIME_S));
         }
     }
