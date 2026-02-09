@@ -23,5 +23,7 @@
     <test class="com.android.compatibility.common.tradefed.testtype.JarHostTest" >
         <option name="jar" value="CtsCompilationTestCases.jar" />
         <option name="include-annotation" value="android.compilation.cts.annotation.CtsTestCase" />
+        <option name="exclude-annotation" value="android.platform.test.annotations.RequiresFlagsEnabled" />
+        <option name="exclude-annotation" value="android.platform.test.annotations.RequiresFlagsDisabled" />
     </test>
 </configuration>

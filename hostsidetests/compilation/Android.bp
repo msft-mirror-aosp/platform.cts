@@ -52,6 +52,8 @@ java_defaults {
         "truth",
     ],
     static_libs: [
+        // Test cases with flag checks are excluded from CTS through an option in
+        // CtsCompilationTestCases.xml.
         "android.content.pm.flags-aconfig-java-host",
         "art-aconfig-flags-java-lib-host",
         "flag-junit-host",
