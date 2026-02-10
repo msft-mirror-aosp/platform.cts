@@ -17,6 +17,7 @@
 package com.android.cts.launcherapps.simpleapp;
 
 import android.app.ActivityManager;
+import android.app.AnrWarningResult;
 import android.app.Service;
 import android.content.Intent;
 import android.os.Bundle;
@@ -32,6 +33,7 @@ import android.util.Log;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 
 /** A service which registers listener for ANR warning. */
 public final class AnrWarningListenerService extends Service {
@@ -43,6 +45,7 @@ public final class AnrWarningListenerService extends Service {
 
     private static final int ACTION_NONE = 0;
     private static final int ACTION_ANR = 3;
+    private static final int ACTION_UNREGISTER_ANR_LISTENER = 8;
 
     private static final int WAIT_FOR_SETTLE_DOWN_MS = 2000;
     private static final int ANR_SLEEP_DURATION_MS = 60 * 1000;
@@ -60,6 +63,24 @@ public final class AnrWarningListenerService extends Service {
     private Handler mHandler;
     private Messenger mMessenger;
     private ExecutorService mExecutor;
+    private final Consumer<AnrWarningResult> mAnrWarningResultConsumer =
+            (result) -> {
+                Message msg = Message.obtain();
+                msg.what = CMD_ANR_WARNING_LISTENER;
+                msg.arg1 = Process.myPid();
+                msg.arg2 = Process.myUid();
+
+                Bundle bundle = new Bundle();
+                bundle.putInt(KEY_ANR_ID, result.getAnrId());
+                bundle.putInt(KEY_ANR_TYPE, result.getAnrType());
+                bundle.putLong(KEY_ELAPSED_TIME_MS, result.getConsumedMillis());
+                bundle.putLong(KEY_TIMEOUT_MS, result.getTimeoutMillis());
+                bundle.putString(KEY_ANR_DESCRIPTION, result.getDescription());
+                bundle.putLong(KEY_ANR_TIMESTAMP, System.currentTimeMillis());
+
+                msg.obj = bundle;
+                sendMessageBack(msg);
+            };
 
     @Override
     public void onCreate() {
@@ -98,25 +119,18 @@ public final class AnrWarningListenerService extends Service {
 
     private void registerAnrWarningListener() {
         ActivityManager am = getSystemService(ActivityManager.class);
-        am.registerAnrWarningListener(
-                mExecutor,
-                result -> {
-                    Message msg = Message.obtain();
-                    msg.what = CMD_ANR_WARNING_LISTENER;
-                    msg.arg1 = Process.myPid();
-                    msg.arg2 = Process.myUid();
+        if (am == null) {
+            return;
+        }
+        am.registerAnrWarningListener(mExecutor, mAnrWarningResultConsumer);
+    }
 
-                    Bundle bundle = new Bundle();
-                    bundle.putInt(KEY_ANR_ID, result.getAnrId());
-                    bundle.putInt(KEY_ANR_TYPE, result.getAnrType());
-                    bundle.putLong(KEY_ELAPSED_TIME_MS, result.getConsumedMillis());
-                    bundle.putLong(KEY_TIMEOUT_MS, result.getTimeoutMillis());
-                    bundle.putString(KEY_ANR_DESCRIPTION, result.getDescription());
-                    bundle.putLong(KEY_ANR_TIMESTAMP, System.currentTimeMillis());
-
-                    msg.obj = bundle;
-                    sendMessageBack(msg);
-                });
+    private void unregisterAnrWarningListener() {
+        ActivityManager am = getSystemService(ActivityManager.class);
+        if (am == null) {
+            return;
+        }
+        am.unregisterAnrWarningListener(mAnrWarningResultConsumer);
     }
 
     private void sendMessageBack(Message msg) {
@@ -143,14 +157,21 @@ public final class AnrWarningListenerService extends Service {
             int action = intent.getIntExtra(EXTRA_ACTION, ACTION_NONE);
             switch (action) {
                 case ACTION_ANR:
-                    // Intentional added wait to cause ANR.
-                    SystemClock.sleep(ANR_SLEEP_DURATION_MS);
+                    sleepOnMainThread();
                     break;
+                case ACTION_UNREGISTER_ANR_LISTENER:
+                    unregisterAnrWarningListener();
+                    sleepOnMainThread();
                 case ACTION_NONE:
                 default:
                     break;
             }
         }
+    }
+
+    private void sleepOnMainThread() {
+        // Intentional added wait to cause ANR.
+        SystemClock.sleep(ANR_SLEEP_DURATION_MS);
     }
 
     @Override
