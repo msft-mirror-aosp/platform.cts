@@ -17,11 +17,9 @@
 package com.android.bedstead.harrier;
 
 import static android.os.Build.VERSION.SDK_INT;
-
 import static com.android.bedstead.harrier.AnnotationExecutorUtil.checkFailOrSkip;
 import static com.android.bedstead.nene.utils.StringLinesDiff.DEVICE_POLICY_STANDARD_LINES_DIFFERENCE;
 import static com.android.bedstead.nene.utils.Versions.meetsSdkVersionRequirements;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeFalse;
 
@@ -30,7 +28,6 @@ import android.content.pm.PackageManager;
 import android.os.Binder;
 import android.os.Process;
 import android.util.Log;
-
 import com.android.bedstead.harrier.annotations.AfterClass;
 import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.bedstead.harrier.annotations.FailureMode;
@@ -49,15 +46,7 @@ import com.android.bedstead.nene.utils.FailureDumper;
 import com.android.bedstead.nene.utils.StringLinesDiff;
 import com.android.bedstead.nene.utils.Tags;
 import com.android.eventlib.EventLogs;
-
-import junit.framework.AssertionFailedError;
-
-import org.junit.AssumptionViolatedException;
-import org.junit.runner.Description;
-import org.junit.runners.model.FrameworkMethod;
-import org.junit.runners.model.Statement;
-import org.junit.runners.model.TestClass;
-
+import com.google.common.collect.ImmutableList;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -77,8 +66,13 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-
 import javax.annotation.Nonnull;
+import junit.framework.AssertionFailedError;
+import org.junit.AssumptionViolatedException;
+import org.junit.runner.Description;
+import org.junit.runners.model.FrameworkMethod;
+import org.junit.runners.model.Statement;
+import org.junit.runners.model.TestClass;
 
 /**
  * A Junit rule which exposes methods for efficiently changing and querying device state.
@@ -375,7 +369,7 @@ public final class DeviceState extends HarrierRule {
         checkAnnotations(annotations);
 
         BedsteadJUnit4.resolveRecursiveAnnotations(
-                this, annotations, /* parameterizedAnnotations= */ List.of());
+                this, annotations, /* parameterizedAnnotations= */ ImmutableList.of());
 
         checkAnnotations(annotations);
 
