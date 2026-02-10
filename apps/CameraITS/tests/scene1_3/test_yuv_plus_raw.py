@@ -41,11 +41,11 @@ def convert_and_compare_captures(cap_raw, cap_yuv, props,
   """Helper function to convert and compare RAW and YUV captures.
 
   Args:
-   cap_raw: capture request object with RAW/RAW10/RAW12 format specified
+   cap_raw: capture request object with RAW/RAW10/RAW12/RAW14 format specified
    cap_yuv: capture capture request object with YUV format specified
    props: object from its_session_utils.get_camera_properties().
    log_path_with_name: logging path where artifacts should be stored.
-   raw_fmt: string 'raw', 'raw10', or 'raw12' to include in file name
+   raw_fmt: string 'raw', 'raw10', 'raw12' or 'raw14' to include in file name
 
   Returns:
     string "PASS" if test passed, else message for AssertionError.
@@ -98,7 +98,7 @@ def convert_and_compare_captures(cap_raw, cap_yuv, props,
 class YuvPlusRawTest(its_base_test.ItsBaseTest):
   """Test capturing a single frame as both YUV and various RAW formats.
 
-  Tests RAW, RAW10 and RAW12 as available.
+  Tests RAW, RAW10, RAW12 and RAW14 as available.
   """
 
   def test_yuv_plus_raw(self):
@@ -141,6 +141,10 @@ class YuvPlusRawTest(its_base_test.ItsBaseTest):
         raw_formats.append('raw12')
       else:
         logging.debug('Skipping test_yuv_plus_raw12')
+      if camera_properties_utils.raw14(props):
+        raw_formats.append('raw14')
+      else:
+        logging.debug('Skipping test_yuv_plus_raw14')
 
       for raw_fmt in raw_formats:
         req = capture_request_utils.auto_capture_request(

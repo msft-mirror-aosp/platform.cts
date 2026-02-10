@@ -25,7 +25,6 @@ from PIL import Image
 
 import image_processing_utils
 
-
 class ImageProcessingUtilsTest(unittest.TestCase):
   """Unit tests for this module."""
   _BLUR_LEVEL = 10  # level to see the visible blur in img
@@ -69,6 +68,42 @@ class ImageProcessingUtilsTest(unittest.TestCase):
     self.assertTrue(numpy.array_equal(
         image_processing_utils.unpack_raw10_image(img_raw10),
         img_check))
+
+  def test_unpack_raw14_image(self):
+    """Unit test for unpack_raw14_image.
+
+    RAW14 bit packing format
+            bit 7   bit 6   bit 5   bit 4   bit 3   bit 2   bit 1   bit 0
+    Byte 0: P0[13]  P0[12]  P0[11]  P0[10]  P0[9]   P0[8]   P0[7]   P0[6]
+    Byte 1: P1[13]  P1[12]  P1[11]  P1[10]  P1[9]   P1[8]   P1[7]   P1[6]
+    Byte 2: P2[13]  P2[12]  P2[11]  P2[10]  P2[9]   P2[8]   P2[7]   P2[6]
+    Byte 3: P3[13]  P3[12]  P3[11]  P3[10]  P3[9]   P3[8]   P3[7]   P3[6]
+    Byte 4: P1[1]   P1[0]   P0[5]   P0[4]   P0[3]   P0[2]   P0[1]   P0[0]
+    Byte 5: P2[3]   P2[2]   P2[1]   P2[0]   P1[5]   P1[4]   P1[3]   P1[2]
+    Byte 6: P3[5]   P3[4]   P3[3]   P3[2]   P3[1]   P3[0]   P2[5]   P2[4]
+    """
+    # Test using a random 4x4 14-bit image
+    img_w, img_h = 4, 4
+    check_list = random.sample(range(0, 16384), img_h * img_w)
+    img_check = numpy.array(check_list, dtype='uint16').reshape(img_h, img_w)
+
+    # Manually pack the pixels into RAW14 format
+    img_raw14 = numpy.empty((img_h, img_w * 7 // 4), dtype='uint8')
+    for r in range(img_h):
+      for c in range(0, img_w, 4):
+        p0, p1, p2, p3 = check_list[r*img_w + c : r*img_w + c + 4]
+        b0 = p0 >> 6
+        b1 = p1 >> 6
+        b2 = p2 >> 6
+        b3 = p3 >> 6
+        b4 = ((p1 & 0x03) << 6) | (p0 & 0x3F)
+        b5 = ((p2 & 0x0F) << 4) | ((p1 & 0x3C) >> 2)
+        b6 = ((p3 & 0x3F) << 2) | ((p2 & 0x30) >> 4)
+        img_raw14[r, (c//4)*7 : (c//4)*7 + 7] = [b0, b1, b2, b3, b4, b5, b6]
+
+    # Verify that unpacking retrieves the original values
+    unpacked = image_processing_utils.unpack_raw14_image(img_raw14)
+    self.assertTrue(numpy.array_equal(unpacked, img_check))
 
   def test_compute_image_sharpness(self):
     """Unit test for compute_img_sharpness.

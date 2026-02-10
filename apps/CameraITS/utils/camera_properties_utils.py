@@ -312,6 +312,20 @@ def raw12(props):
   return False
 
 
+def raw14(props):
+  """Returns whether a device supports RAW14 capabilities.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    Boolean. True if device supports RAW14 capabilities.
+  """
+  if capture_request_utils.get_available_output_sizes('raw14', props):
+    return True
+  return False
+
+
 def raw16(props):
   """Returns whether a device supports RAW16 output.
 

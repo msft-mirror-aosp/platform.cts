@@ -312,6 +312,7 @@ public class ItsService extends Service implements SensorEventListener {
     private AtomicInteger mCountRawOrDng = new AtomicInteger();
     private AtomicInteger mCountRaw10 = new AtomicInteger();
     private AtomicInteger mCountRaw12 = new AtomicInteger();
+    private AtomicInteger mCountRaw14 = new AtomicInteger();
     private AtomicInteger mCountJpg = new AtomicInteger();
     private AtomicInteger mCountYuv = new AtomicInteger();
     private AtomicInteger mCountCapRes = new AtomicInteger();
@@ -1383,6 +1384,8 @@ public class ItsService extends Service implements SensorEventListener {
                         }
                     } else if (format == ImageFormat.RAW12) {
                         jsonSurface.put("format", "raw12");
+                    } else if (format == ImageFormat.RAW14) {
+                        jsonSurface.put("format", "raw14");
                     } else if (format == ImageFormat.JPEG) {
                         jsonSurface.put("format", "jpeg");
                     } else if (format == ImageFormat.JPEG_R) {
@@ -2669,6 +2672,9 @@ public class ItsService extends Service implements SensorEventListener {
                     } else if ("raw12".equals(sformat)) {
                         outputFormats[i] = ImageFormat.RAW12;
                         sizes = ItsUtils.getRaw12OutputSizes(cameraCharacteristics);
+                    } else if ("raw14".equals(sformat)) {
+                        outputFormats[i] = ImageFormat.RAW14;
+                        sizes = ItsUtils.getRaw14OutputSizes(cameraCharacteristics);
                     } else if ("dng".equals(sformat)) {
                         outputFormats[i] = ImageFormat.RAW_SENSOR;
                         sizes = ItsUtils.getRaw16OutputSizes(cameraCharacteristics);
@@ -4153,6 +4159,7 @@ public class ItsService extends Service implements SensorEventListener {
             mCountYuv.set(0);
             mCountRaw10.set(0);
             mCountRaw12.set(0);
+            mCountRaw14.set(0);
             mCountCapRes.set(0);
             mCountRaw10QuadBayer.set(0);
             mCountRaw10Stats.set(0);
@@ -4258,6 +4265,7 @@ public class ItsService extends Service implements SensorEventListener {
                 mCountYuv.set(0);
                 mCountRaw10.set(0);
                 mCountRaw12.set(0);
+                mCountRaw14.set(0);
                 mCountCapRes.set(0);
                 mCountRaw10QuadBayer.set(0);
                 mCountRaw10Stats.set(0);
@@ -4436,6 +4444,7 @@ public class ItsService extends Service implements SensorEventListener {
         mCountYuv.set(0);
         mCountRaw10.set(0);
         mCountRaw12.set(0);
+        mCountRaw14.set(0);
         mCountCapRes.set(0);
         mCountRaw10QuadBayer.set(0);
         mCountRaw10Stats.set(0);
@@ -4729,6 +4738,13 @@ public class ItsService extends Service implements SensorEventListener {
                     mCountRaw12.getAndIncrement();
                     mSocketRunnableObj.sendResponseCaptureBuffer("raw12Image" + physicalCameraId,
                         buf);
+                } else if (format == ImageFormat.RAW14) {
+                    Logt.i(TAG, "Received RAW14 capture");
+                    byte[] img = ItsUtils.getDataFromImage(capture, mSocketQueueQuota);
+                    ByteBuffer buf = ByteBuffer.wrap(img);
+                    mCountRaw14.getAndIncrement();
+                    mSocketRunnableObj.sendResponseCaptureBuffer("raw14Image" + physicalCameraId,
+                            buf);
                 } else if (format == ImageFormat.RAW_SENSOR) {
                     Logt.i(TAG, "Received RAW16 capture");
                     int count = mCountRawOrDng.getAndIncrement();

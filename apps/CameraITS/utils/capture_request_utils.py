@@ -34,6 +34,7 @@ FMT_CODE_PRIV = 0x22
 FMT_CODE_RAW = 0x20
 FMT_CODE_RAW10 = 0x25
 FMT_CODE_RAW12 = 0x26
+FMT_CODE_RAW14 = 0x2C
 FMT_CODE_YUV = 0x23  # YUV_420_888
 FMT_CODE_Y8 = 0x20203859
 _MAX_YUV_SIZE = (1920, 1080)
@@ -216,7 +217,7 @@ def get_available_output_sizes(fmt, props, max_size=None, match_ar_size=None):
 
   Args:
    fmt: the output format, as a string in ['jpg', 'yuv', 'raw', 'raw10',
-     'raw12', 'y8'].
+     'raw12', 'raw14', 'y8'].
    props: the object returned from its_session_utils.get_camera_properties().
    max_size: (Optional) A (w,h) tuple.Sizes larger than max_size (either w or h)
      will be discarded.
@@ -231,6 +232,7 @@ def get_available_output_sizes(fmt, props, max_size=None, match_ar_size=None):
       'raw': FMT_CODE_RAW,
       'raw10': FMT_CODE_RAW10,
       'raw12': FMT_CODE_RAW12,
+      'raw14': FMT_CODE_RAW14,
       'yuv': FMT_CODE_YUV,
       'jpg': FMT_CODE_JPEG,
       'jpeg': FMT_CODE_JPEG,
