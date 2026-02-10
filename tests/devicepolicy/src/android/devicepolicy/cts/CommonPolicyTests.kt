@@ -36,8 +36,6 @@ import com.android.compatibility.common.util.MatcherUtils.hasMessageThat
 import com.google.common.truth.Truth.assertThat
 import kotlin.test.assertFailsWith
 import kotlin.test.fail
-import org.junit.ClassRule
-import org.junit.Rule
 import org.junit.Test
 
 /**
@@ -80,6 +78,13 @@ public abstract class CommonPolicyTests<T> {
      * policy to these values fails.
      */
     abstract val invalidValueTestCases: List<InvalidValueTestCase<T>>
+
+    /**
+     * Different test classes are not allowed to share the same {@code DeviceState}
+     * instance, so derived classes must have their own {@code DeviceState} (inside a companion
+     * object) and expose it through this abstact method.
+     */
+    abstract fun getDeviceState(): DeviceState
 
     @Test
     @CanSetPolicyTest(scope = POLICY_SCOPE_USER)
@@ -306,12 +311,8 @@ public abstract class CommonPolicyTests<T> {
 
     // The DevicePolicyManager of the DPC.
     private val dpcDpm: RemoteDevicePolicyManager
-        get() = deviceState.dpc().devicePolicyManager()
+        get() = getDeviceState().dpc().devicePolicyManager()
 
     private val isParentInstance: Boolean
-        get() = deviceState.dpc().isParentInstance
-
-    companion object {
-        @Rule @ClassRule @JvmField val deviceState = DeviceState()
-    }
+        get() = getDeviceState().dpc().isParentInstance
 }
