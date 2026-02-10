@@ -19,18 +19,11 @@ package android.hardware.cts.helpers;
 import android.app.UiAutomation;
 import android.content.Context;
 import android.os.Bundle;
-import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
-import android.app.Activity;
-import androidx.test.rule.ActivityTestRule;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
@@ -53,7 +46,7 @@ public class CameraParameterizedTestCase {
         return mPerfMeasure != null && mPerfMeasure.equals("on");
     }
 
-    @Parameters
+    @Parameters(name = "adoptShellPerm={0}")
     public static Iterable<? extends Object> data() {
         List<Boolean> adoptShellPerm = new ArrayList<Boolean>();
         // Only add adoptShellPerm(true) of camera id is not overridden.
