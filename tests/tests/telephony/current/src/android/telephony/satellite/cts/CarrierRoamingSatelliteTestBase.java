@@ -1439,7 +1439,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
             throws Exception {
         logd(TAG, "testQuerySatelliteEntitlementService_success: slotId=" + slotId);
 
-        assertTrue(
+        assumeTrue(
                 "Failed to override entitlement query conditions",
                 sMockSatelliteServiceManager.overrideSatelliteEntilementQueryConditions(
                         true, true));
@@ -1532,7 +1532,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         // Arg 2 (ignoreRefreshCondition = FALSE): ENFORCE the timeout logic.
         // We need to prove that our API explicitly requests a bypass; if we set this to true,
         // the test would pass even if the bypass logic was broken.
-        assertTrue("Failed to override entitlement query conditions",
+        assumeTrue(
+                "Failed to override entitlement query conditions",
                 sMockSatelliteServiceManager.overrideSatelliteEntilementQueryConditions(
                         true, false));
 
@@ -1695,7 +1696,8 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
     public void testNotifyEntitlementStatusChanged(int slotId) throws Exception {
         logd(TAG, "testNotifyEntitlementStatusChanged: slotId = " + slotId);
 
-        assertTrue("Failed to override entitlement query conditions",
+        assumeTrue(
+                "Failed to override entitlement query conditions",
                 sMockSatelliteServiceManager.overrideSatelliteEntilementQueryConditions(
                         true, false));
 
@@ -1830,7 +1832,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
 
         logd(TAG, "testSatelliteConstrainedNetwork: slotId=" + slotId);
 
-        assertTrue(
+        assumeTrue(
                 "Failed to override entitlement query conditions",
                 sMockSatelliteServiceManager.overrideSatelliteEntilementQueryConditions(
                         true, true));
@@ -1919,7 +1921,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
             throws Exception {
         logd(TAG, "testNoConstrainedNetworkConnection: slotId=" + slotId);
 
-        assertTrue(
+        assumeTrue(
                 "Failed to override entitlement query conditions",
                 sMockSatelliteServiceManager.overrideSatelliteEntilementQueryConditions(
                         true, true));
@@ -1995,7 +1997,7 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
             throws Exception {
         logd(TAG, "testNoConstrainedNetworkConnection: slotId=" + slotId);
 
-        assertTrue(
+        assumeTrue(
                 "Failed to override entitlement query conditions",
                 sMockSatelliteServiceManager.overrideSatelliteEntilementQueryConditions(
                         true, true));

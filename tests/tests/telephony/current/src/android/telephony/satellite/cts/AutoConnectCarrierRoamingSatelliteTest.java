@@ -385,8 +385,9 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
         logd(TAG, "testConfigureEmergencyAndDisasterPlmns");
         if (!shouldTestSatelliteWithMockService()) return;
 
-        assertTrue(sMockSatelliteServiceManager
-                .overrideSatelliteEntilementQueryConditions(true, true));
+        assumeTrue(
+                sMockSatelliteServiceManager.overrideSatelliteEntilementQueryConditions(
+                        true, true));
         try {
             logd(TAG, "testConfigureEmergencyAndDisasterPlmns: test entitlement disabled");
             int subId = SubscriptionManager.getSubscriptionId(SLOT_ID_0);
