@@ -100,6 +100,12 @@ class TestFileGeneratorTest {
                         )
 
                     override val invalidValueTestCases = listOf()
+
+                    override fun getDeviceState() = deviceState
+
+                    companion object {
+                        @Rule @ClassRule @JvmField val deviceState = DeviceState()
+                    }
                 }
                 """
                     .trimIndent()
@@ -128,6 +134,12 @@ class TestFileGeneratorTest {
                         )
 
                     override val invalidValueTestCases = listOf()
+
+                    override fun getDeviceState() = deviceState
+
+                    companion object {
+                        @Rule @ClassRule @JvmField val deviceState = DeviceState()
+                    }
                 }
                 """
                     .trimIndent()
@@ -456,6 +468,12 @@ class TestFileGeneratorTest {
                         )
 
                     override val invalidValueTestCases = listOf()
+
+                    override fun getDeviceState() = deviceState
+
+                    companion object {
+                        @Rule @ClassRule @JvmField val deviceState = DeviceState()
+                    }
                 }
                 """
                     .trimIndent()
@@ -488,6 +506,12 @@ class TestFileGeneratorTest {
                         listOf(
                             InvalidValueTestCase("", expectedError="Empty string is not allowed"),
                         )
+
+                    override fun getDeviceState() = deviceState
+
+                    companion object {
+                        @Rule @ClassRule @JvmField val deviceState = DeviceState()
+                    }
                 }
                 """
                     .trimIndent()
@@ -533,6 +557,12 @@ class TestFileGeneratorTest {
                             InvalidValueTestCase(0), // Lower than lowest value
                             InvalidValueTestCase(11), // Higher than highest value
                         )
+
+                    override fun getDeviceState() = deviceState
+
+                    companion object {
+                        @Rule @ClassRule @JvmField val deviceState = DeviceState()
+                    }
                 }
                 """
                     .trimIndent()
@@ -559,6 +589,12 @@ class TestFileGeneratorTest {
                         )
 
                     override val invalidValueTestCases = listOf()
+
+                    override fun getDeviceState() = deviceState
+
+                    companion object {
+                        @Rule @ClassRule @JvmField val deviceState = DeviceState()
+                    }
                 }
                 """
                     .trimIndent()
@@ -597,6 +633,12 @@ class TestFileGeneratorTest {
                         listOf(
                             InvalidValueTestCase([""], expectedError="Empty string is not allowed"),
                         )
+
+                    override fun getDeviceState() = deviceState
+
+                    companion object {
+                        @Rule @ClassRule @JvmField val deviceState = DeviceState()
+                    }
                 }
                 """
                     .trimIndent()
@@ -634,6 +676,12 @@ class TestFileGeneratorTest {
                         listOf(
                             InvalidValueTestCase([], expectedError="Empty list is not allowed"),
                         )
+
+                    override fun getDeviceState() = deviceState
+
+                    companion object {
+                        @Rule @ClassRule @JvmField val deviceState = DeviceState()
+                    }
                 }
                 """
                     .trimIndent()
@@ -675,6 +723,12 @@ class TestFileGeneratorTest {
                             InvalidValueTestCase([3]), // Lower than lowest value
                             InvalidValueTestCase([8]), // Higher than highest value
                         )
+
+                    override fun getDeviceState() = deviceState
+
+                    companion object {
+                        @Rule @ClassRule @JvmField val deviceState = DeviceState()
+                    }
                 }
                 """
                     .trimIndent()

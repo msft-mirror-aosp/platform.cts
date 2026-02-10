@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,10 @@ import com.android.bedstead.enterprise.annotations.EnterprisePolicy.Permission
 import com.android.bedstead.enterprise.annotations.UsesEnterprisePolicies
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
+import com.android.bedstead.harrier.DeviceState
 import com.android.compatibility.common.util.ApiTest
+import org.junit.ClassRule
+import org.junit.Rule
 import org.junit.runner.RunWith
 
 // Policy definition that runs with POLICY_SCOPE_USER.
@@ -119,4 +122,10 @@ class ScreenCaptureGeneratedTest : CommonPolicyTests<Int>() {
             InvalidValueTestCase(0), // Lower than lowest value
             InvalidValueTestCase(3), // Higher than highest value
         )
+
+    override fun getDeviceState() = deviceState
+
+    companion object {
+        @Rule @ClassRule @JvmField val deviceState = DeviceState()
+    }
 }
