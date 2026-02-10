@@ -70,6 +70,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.net.ConnectivityManager;
 import android.net.NetworkCapabilities;
 import android.os.Looper;
 import android.os.PersistableBundle;
@@ -88,6 +89,7 @@ import android.telephony.satellite.SatelliteManager;
 import com.android.bedstead.nene.utils.UndoableContext;
 import com.android.bedstead.permissions.Permissions;
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.compatibility.common.util.TestThread;
 import com.android.internal.telephony.flags.Flags;
@@ -994,6 +996,25 @@ public class CarrierConfigManagerTest {
         }
 
         final int phoneId = SubscriptionManager.getSlotIndex(subId);
+
+        /* Suppresses the key download request if there is no active default network connection
+         * (e.g. ConnectivityManager.getActiveNetwork() returns null).
+         * This wait ensures the network environment is ready for the test to proceed,
+         * or skip gracefully if the environment remains unready, preventing flaky timeouts
+         * or failure in constrained test environments.
+         */
+
+        final ConnectivityManager cm = getContext().getSystemService(ConnectivityManager.class);
+
+         try {
+
+            PollingCheck.waitFor(500, () -> cm.getActiveNetwork() != null);
+
+        } catch (AssertionError e) {
+            assumeTrue("Skipping test: No active default network connection available within "
+                        + "500 ms. CarrierKeyDownloadManager requires an active network to "
+                        + "initiate download.", false);
+        }
 
         final CountDownLatch latch = new CountDownLatch(1);
         final AtomicReference<String> requestPath = new AtomicReference<>();
