@@ -68,12 +68,21 @@ data class MethodSignature(
 
         @JvmStatic
         fun forHardcoded(
+            returnType: String,
+            name: String,
+            parameterTypes: List<String>,
+        ): MethodSignature {
+            return forHardcoded(Visibility.PUBLIC, returnType, name, parameterTypes, setOf())
+        }
+
+        @JvmStatic
+        fun forHardcoded(
             visibility: Visibility,
             returnType: String,
             name: String,
             parameterTypes: List<String>,
         ): MethodSignature {
-            return MethodSignature(visibility, returnType, name, parameterTypes, setOf())
+            return forHardcoded(visibility, returnType, name, parameterTypes, setOf())
         }
 
         /** Create a [MethodSignature] for the given [ExecutableElement]. */
@@ -124,11 +133,6 @@ data class MethodSignature(
 
         @JvmStatic
         fun forApi(method: MethodItem, elementUtils: Elements): MethodSignature? {
-            // TODO(b/337769574): Add support for generic types.
-            if (method.typeParameterList.isNotEmpty()) {
-                return null
-            }
-
             // TODO(b/337769574): Add support for var args.
             if (method.parameters().any { hasVarArgs(it.type()) }) {
                 return null
