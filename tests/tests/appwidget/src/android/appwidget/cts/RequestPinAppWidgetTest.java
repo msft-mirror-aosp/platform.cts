@@ -72,6 +72,8 @@ public class RequestPinAppWidgetTest extends AppWidgetTestCase {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
+    private static final String FIRST_WIDGET_CLASS =
+            "android.appwidget.cts.provider.FirstAppWidgetProvider";
     private static final String LAUNCHER_CLASS = "android.appwidget.cts.packages.Launcher";
     private static final String ACTION_PIN_RESULT = "android.appwidget.cts.ACTION_PIN_RESULT";
     private static final String APPBAL_PACKAGE = "android.appwidget.cts.appbal";
@@ -200,6 +202,33 @@ public class RequestPinAppWidgetTest extends AppWidgetTestCase {
         try (AutoCloseable withLockScreen = new LockSettingsUtil(context).withLockScreen();
                 AutoCloseable withAppLockEnabled = setAppLock(context)) {
             assertThat(appWidgetManager.isRequestPinAppWidgetSupported()).isFalse();
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresAppLockSupported
+    @RequiresFlagsEnabled({
+        android.security.Flags.FLAG_APP_LOCK_APIS,
+        android.appwidget.flags.Flags.FLAG_APP_LOCK_WIDGET_REMOVAL
+    })
+    @ApiTest(apis = { "android.appwidget.AppWidgetManager#requestPinAppWidget" })
+    public void testRequestPinAppWidget_whenAppLockIsEnabled_returnsFalse() throws Exception {
+        final Context context = getInstrumentation().getContext();
+        final AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
+        final String launcherPkg = "android.appwidget.cts.packages.launcher1";
+        final ComponentName provider = new ComponentName(context.getPackageName(),
+                FIRST_WIDGET_CLASS);
+
+        // Setup a valid launcher and verify pinning is supported before enabling App Lock.
+        setLauncher(launcherPkg + "/" + LAUNCHER_CLASS);
+        assertThat(appWidgetManager.requestPinAppWidget(provider, /* extras= */ null,
+                /* successCallback= */ null)).isTrue();
+
+        try (AutoCloseable withLockScreen = new LockSettingsUtil(context).withLockScreen();
+                AutoCloseable withAppLockEnabled = setAppLock(context)) {
+            assertThat(appWidgetManager.requestPinAppWidget(provider, /* extras= */ null,
+                    /* successCallback= */ null)).isFalse();
         }
     }
 
