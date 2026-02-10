@@ -35,6 +35,7 @@ import android.view.inputmethod.HandwritingGesture;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InsertGesture;
 import android.view.inputmethod.SelectGesture;
+import android.view.textclassifier.TextClassifier;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 
@@ -98,6 +99,7 @@ public class TextViewWithTransformationHandwritingTest {
         FrameLayout container = activity.findViewById(R.id.container);
         EditText editText = new EditText(container.getContext());
 
+        editText.setTextClassifier(TextClassifier.NO_OP);
         // The test font includes the following characters:
         // U+0020 ( ): 10em
         // U+002E (.): 10em
