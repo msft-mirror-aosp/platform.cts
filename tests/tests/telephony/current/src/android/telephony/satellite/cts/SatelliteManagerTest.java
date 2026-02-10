@@ -1377,4 +1377,108 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         }
         assertTrue(containsCtsApp);
     }
+
+    /**
+     * Verifies the enablement and status reporting logic for satellite in automatic mode. This
+     * tests the redirection path from standard enablement to carrier-specific restriction
+     * evaluation and checks the status via the automatic connectType.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_UPSELL)
+    public void testAutomaticSatelliteToggleAndStatus() throws Exception {
+        if (!shouldTestSatellite()) return;
+
+        grantSatellitePermission();
+        try {
+            if (!sIsSatelliteSupported) return;
+
+            LinkedBlockingQueue<Integer> resultQueue = new LinkedBlockingQueue<>(1);
+
+            // 1. Create attributes for User-initiated Enablement in Automatic Mode
+            EnableRequestAttributes enableAttributes =
+                    new EnableRequestAttributes.Builder(true)
+                            .setConnectType(CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC)
+                            .setSatelliteEnablementRequestReason(
+                                    SatelliteManager.SATELLITE_ENABLEMENT_REQUEST_REASON_USER)
+                            .build();
+
+            // Request Enable: triggers PhoneInterfaceManager -> SatelliteController evaluation
+            sSatelliteManager.requestEnabled(
+                    SUB_ID_0, enableAttributes, getContext().getMainExecutor(), resultQueue::offer);
+            Integer errorCode = resultQueue.poll(TIMEOUT, TimeUnit.MILLISECONDS);
+            assertNotNull("Timeout waiting for requestEnabled result", errorCode);
+
+            // If success, verify that the status reflects enablement (no user restriction)
+            if (errorCode == SatelliteManager.SATELLITE_RESULT_SUCCESS) {
+                verifyAutomaticIsEnabledStatus(SUB_ID_0, true);
+            }
+
+            // 2. Create attributes for User-initiated Disablement in Automatic Mode
+            EnableRequestAttributes disableAttributes =
+                    new EnableRequestAttributes.Builder(false)
+                            .setConnectType(CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC)
+                            .setSatelliteEnablementRequestReason(
+                                    SatelliteManager.SATELLITE_ENABLEMENT_REQUEST_REASON_USER)
+                            .build();
+
+            resultQueue.clear();
+            sSatelliteManager.requestEnabled(
+                    SUB_ID_0,
+                    disableAttributes,
+                    getContext().getMainExecutor(),
+                    resultQueue::offer);
+            errorCode = resultQueue.poll(TIMEOUT, TimeUnit.MILLISECONDS);
+            assertNotNull("Timeout waiting for disable request result", errorCode);
+
+            // If disable succeeded, verify that status reflects 'disabled' (restriction added)
+            if (errorCode == SatelliteManager.SATELLITE_RESULT_SUCCESS) {
+                verifyAutomaticIsEnabledStatus(SUB_ID_0, false);
+            }
+        } finally {
+            revokeSatellitePermission();
+        }
+    }
+
+    /** Helper to query enablement status specifically for the Automatic connection type. */
+    private void verifyAutomaticIsEnabledStatus(int subId, boolean expectedEnabled)
+            throws Exception {
+        final AtomicReference<EnableResponse> enableResponse = new AtomicReference<>();
+        final AtomicReference<Integer> statusErrorCode = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        OutcomeReceiver<EnableResponse, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(EnableResponse result) {
+                        enableResponse.set(result);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        statusErrorCode.set(exception.getErrorCode());
+                        latch.countDown();
+                    }
+                };
+
+        // ConnectType automatic triggers the logic that checks carrier restrictions
+        sSatelliteManager.requestIsEnabled(
+                subId,
+                CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC,
+                getContext().getMainExecutor(),
+                receiver);
+
+        assertTrue(
+                "Timeout waiting for requestIsEnabled result",
+                latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+
+        if (statusErrorCode.get() == null) {
+            assertNotNull("EnableResponse should not be null", enableResponse.get());
+            assertEquals(
+                    "Satellite enabled status mismatch in automatic mode",
+                    expectedEnabled,
+                    enableResponse.get().isEnabled());
+        } else {
+            fail("requestIsEnabled failed with error: " + statusErrorCode.get());
+        }
+    }
 }
