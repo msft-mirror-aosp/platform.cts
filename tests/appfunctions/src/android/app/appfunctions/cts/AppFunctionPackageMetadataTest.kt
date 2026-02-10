@@ -43,6 +43,7 @@ class AppFunctionPackageMetadataTest {
                 listOf(
                     GenericDocument.Builder<GenericDocument.Builder<*>>("ns", "id", "schema")
                         .setPropertyString("key", "value")
+                        .setCreationTimestampMillis(0)
                         .build()
                 ),
             )
@@ -71,6 +72,7 @@ class AppFunctionPackageMetadataTest {
                 listOf(
                     GenericDocument.Builder<GenericDocument.Builder<*>>("ns", "id", "schema")
                         .setPropertyString("key", "value")
+                        .setCreationTimestampMillis(0)
                         .build()
                 ),
             )
@@ -101,6 +103,7 @@ class AppFunctionPackageMetadataTest {
                 listOf(
                     GenericDocument.Builder<GenericDocument.Builder<*>>("ns", "id", "schema")
                         .setPropertyString("key", "value")
+                        .setCreationTimestampMillis(0)
                         .build()
                 ),
             )
@@ -110,6 +113,7 @@ class AppFunctionPackageMetadataTest {
                 listOf(
                     GenericDocument.Builder<GenericDocument.Builder<*>>("ns", "id", "schema")
                         .setPropertyString("key", "value")
+                        .setCreationTimestampMillis(0)
                         .build()
                 ),
             )
@@ -119,6 +123,7 @@ class AppFunctionPackageMetadataTest {
                 listOf(
                     GenericDocument.Builder<GenericDocument.Builder<*>>("ns", "id2", "schema")
                         .setPropertyString("key2", "value2")
+                        .setCreationTimestampMillis(0)
                         .build()
                 ),
             )
@@ -150,6 +155,7 @@ class AppFunctionPackageMetadataTest {
                 listOf(
                     GenericDocument.Builder<GenericDocument.Builder<*>>("ns", "id", "schema")
                         .setPropertyString("key", "value")
+                        .setCreationTimestampMillis(0)
                         .build()
                 ),
             )
