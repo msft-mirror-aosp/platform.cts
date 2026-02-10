@@ -36,6 +36,7 @@ android_test {
         "libdexmakerjvmtiagent",
         "libstaticjvmtiagent",
     ],
+    compile_multilib: "both",
     libs: [
         "android.test.runner.stubs.test",
         "android.test.base.stubs.test",
