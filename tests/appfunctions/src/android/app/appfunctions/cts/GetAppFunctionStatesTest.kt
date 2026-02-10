@@ -249,7 +249,7 @@ class GetAppFunctionStatesTest {
         try {
             setAppFunctionEnabledRemote(
                 DynamicSchemaHelperApp.PACKAGE_NAME,
-                functionName.functionId,
+                functionName.functionIdentifier,
                 AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
             )
 
@@ -260,7 +260,7 @@ class GetAppFunctionStatesTest {
         } finally {
             setAppFunctionEnabledRemote(
                 DynamicSchemaHelperApp.PACKAGE_NAME,
-                functionName.functionId,
+                functionName.functionIdentifier,
                 AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
             )
         }
@@ -277,12 +277,12 @@ class GetAppFunctionStatesTest {
         try {
             setAppFunctionEnabledRemote(
                 DynamicSchemaHelperApp.PACKAGE_NAME,
-                functionName.functionId,
+                functionName.functionIdentifier,
                 AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
             )
             setAppFunctionEnabledRemote(
                 DynamicSchemaHelperApp.PACKAGE_NAME,
-                functionName.functionId,
+                functionName.functionIdentifier,
                 AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
             )
 
@@ -293,7 +293,7 @@ class GetAppFunctionStatesTest {
         } finally {
             setAppFunctionEnabledRemote(
                 DynamicSchemaHelperApp.PACKAGE_NAME,
-                functionName.functionId,
+                functionName.functionIdentifier,
                 AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
             )
         }
@@ -375,7 +375,7 @@ class GetAppFunctionStatesTest {
                 .isTrue()
             setAppFunctionEnabledRemote(
                 DynamicSchemaHelperApp.PACKAGE_NAME,
-                functionName.functionId,
+                functionName.functionIdentifier,
                 AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
             )
 
@@ -386,7 +386,7 @@ class GetAppFunctionStatesTest {
         } finally {
             setAppFunctionEnabledRemote(
                 DynamicSchemaHelperApp.PACKAGE_NAME,
-                functionName.functionId,
+                functionName.functionIdentifier,
                 AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
             )
             registrationService.safeUnregister(FunctionType.CONCAT_STRINGS.toString())
@@ -495,27 +495,23 @@ class GetAppFunctionStatesTest {
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#getAppFunctionStates"])
     @EnsureHasNoDeviceOwner
     fun getAppFunctionStates_registerFromActivity_reportsActivityId() = doBlocking {
-        ActivityScenario.launch<DynamicRegistrationActivity>(
-            internalLaunchIntent
-        ).use { scenario ->
+        ActivityScenario.launch<DynamicRegistrationActivity>(internalLaunchIntent).use { scenario ->
             scenario.moveToState(Lifecycle.State.STARTED)
-            scenario.onActivity { activity -> activity.registerAppFunction(
-                ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
-            ) }
+            scenario.onActivity { activity ->
+                activity.registerAppFunction(ACTIVITY_CONCAT_STRINGS_FUNCTION_ID)
+            }
 
             val state =
-                getAppFunctionStates(
-                    listOf(CtsApp.FunctionNames.ACTIVITY_SCOPE_CONCAT_STRINGS)
-                ).single()
+                getAppFunctionStates(listOf(CtsApp.FunctionNames.ACTIVITY_SCOPE_CONCAT_STRINGS))
+                    .single()
             assertThat(state.isEnabled).isTrue()
             assertThat(state.activityIds).isNotNull()
             assertThat(state.activityIds).hasSize(1)
 
             scenario.onActivity { activity -> activity.unregisterAppFunction() }
             val stateUnregistered =
-                getAppFunctionStates(
-                    listOf(CtsApp.FunctionNames.ACTIVITY_SCOPE_CONCAT_STRINGS)
-                ).single()
+                getAppFunctionStates(listOf(CtsApp.FunctionNames.ACTIVITY_SCOPE_CONCAT_STRINGS))
+                    .single()
             assertThat(stateUnregistered.isEnabled).isFalse()
             assertThat(stateUnregistered.activityIds).isNull()
         }
@@ -525,18 +521,15 @@ class GetAppFunctionStatesTest {
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#getAppFunctionStates"])
     @EnsureHasNoDeviceOwner
     fun getAppFunctionStates_registerFromTwoActivities_reportsBothActivityIds() = doBlocking {
-        ActivityScenario.launch<DynamicRegistrationActivity>(
-            internalLaunchIntent
-        ).use { scenario ->
+        ActivityScenario.launch<DynamicRegistrationActivity>(internalLaunchIntent).use { scenario ->
             scenario.moveToState(Lifecycle.State.STARTED)
-            scenario.onActivity { activity -> activity.registerAppFunction(
-                ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
-            ) }
+            scenario.onActivity { activity ->
+                activity.registerAppFunction(ACTIVITY_CONCAT_STRINGS_FUNCTION_ID)
+            }
 
             val stateFirstRegistration =
-                getAppFunctionStates(
-                    listOf(CtsApp.FunctionNames.ACTIVITY_SCOPE_CONCAT_STRINGS)
-                ).single()
+                getAppFunctionStates(listOf(CtsApp.FunctionNames.ACTIVITY_SCOPE_CONCAT_STRINGS))
+                    .single()
             assertThat(stateFirstRegistration.isEnabled).isTrue()
             assertThat(stateFirstRegistration.activityIds).isNotNull()
             assertThat(stateFirstRegistration.activityIds).hasSize(1)
@@ -544,39 +537,33 @@ class GetAppFunctionStatesTest {
 
             scenario.onActivity { activity -> activity.unregisterAppFunction() }
 
-            ActivityScenario.launch<DynamicRegistrationActivity>(
-                internalLaunchIntent
-            ).use { scenario2 ->
+            ActivityScenario.launch<DynamicRegistrationActivity>(internalLaunchIntent).use {
+                scenario2 ->
                 scenario2.moveToState(Lifecycle.State.STARTED)
-                scenario2.onActivity { activity -> activity.registerAppFunction(
-                    ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
-                ) }
+                scenario2.onActivity { activity ->
+                    activity.registerAppFunction(ACTIVITY_CONCAT_STRINGS_FUNCTION_ID)
+                }
 
                 val stateSecondRegistration =
-                    getAppFunctionStates(
-                        listOf(CtsApp.FunctionNames.ACTIVITY_SCOPE_CONCAT_STRINGS)
-                    ).single()
+                    getAppFunctionStates(listOf(CtsApp.FunctionNames.ACTIVITY_SCOPE_CONCAT_STRINGS))
+                        .single()
                 assertThat(stateSecondRegistration.isEnabled).isTrue()
                 assertThat(stateSecondRegistration.activityIds).isNotNull()
                 assertThat(stateSecondRegistration.activityIds).hasSize(1)
                 val secondActivityId = stateSecondRegistration.activityIds!!.first()
                 assertThat(firstActivityId).isNotEqualTo(secondActivityId)
 
-                scenario.onActivity { activity -> activity.registerAppFunction(
-                    ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
-                )
+                scenario.onActivity { activity ->
+                    activity.registerAppFunction(ACTIVITY_CONCAT_STRINGS_FUNCTION_ID)
                 }
                 val stateDoubleRegistration =
-                    getAppFunctionStates(
-                        listOf(CtsApp.FunctionNames.ACTIVITY_SCOPE_CONCAT_STRINGS)
-                    ).single()
+                    getAppFunctionStates(listOf(CtsApp.FunctionNames.ACTIVITY_SCOPE_CONCAT_STRINGS))
+                        .single()
                 assertThat(stateDoubleRegistration.isEnabled).isTrue()
                 assertThat(stateDoubleRegistration.activityIds).isNotNull()
                 assertThat(stateDoubleRegistration.activityIds).hasSize(2)
-                assertThat(stateDoubleRegistration.activityIds).containsExactly(
-                    firstActivityId,
-                    secondActivityId
-                )
+                assertThat(stateDoubleRegistration.activityIds)
+                    .containsExactly(firstActivityId, secondActivityId)
             }
         }
     }
@@ -587,18 +574,20 @@ class GetAppFunctionStatesTest {
     @EnsureHasNoDeviceOwner
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun getAppFunctionState_registerFromSeparateAppActivity_enabledStateIsCorrect() = doBlocking {
-        val intent = Intent().apply {
-            component = ComponentName(
-                DynamicSchemaHelperApp.PACKAGE_NAME,
-                "android.app.appfunctions.testutils.DynamicRegistrationActivity"
-            )
-            action = ACTION_REGISTER_APP_FUNCTION
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            putExtra(
-                DynamicRegistrationActivity.EXTRA_FUNCTION_ID,
-                ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
-            )
-        }
+        val intent =
+            Intent().apply {
+                component =
+                    ComponentName(
+                        DynamicSchemaHelperApp.PACKAGE_NAME,
+                        "android.app.appfunctions.testutils.DynamicRegistrationActivity",
+                    )
+                action = ACTION_REGISTER_APP_FUNCTION
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                putExtra(
+                    DynamicRegistrationActivity.EXTRA_FUNCTION_ID,
+                    ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
+                )
+            }
 
         try {
             TestApis.activities().startActivity(intent)
@@ -606,10 +595,11 @@ class GetAppFunctionStatesTest {
             retryAssert {
                 val state =
                     getAppFunctionStates(
-                        listOf(
-                            DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS
+                            listOf(
+                                DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS
+                            )
                         )
-                    ).single()
+                        .single()
                 assertThat(state.isEnabled).isTrue()
                 assertThat(state.activityIds).isNotNull()
                 assertThat(state.activityIds).hasSize(1)

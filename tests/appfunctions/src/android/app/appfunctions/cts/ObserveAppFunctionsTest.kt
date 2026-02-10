@@ -466,25 +466,25 @@ class ObserveAppFunctionsTest {
             observation = observeAppFunctions(observer)
 
             manager.setAppFunctionEnabled(
-                CtsApp.FunctionNames.ADD_DISABLED_BY_DEFAULT.functionId,
+                CtsApp.FunctionNames.ADD_DISABLED_BY_DEFAULT.functionIdentifier,
                 AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
             )
             manager.setAppFunctionEnabled(
-                CtsApp.FunctionNames.ADD.functionId,
+                CtsApp.FunctionNames.ADD.functionIdentifier,
                 AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
             )
             retryAssert {
                 assertThat(
                         isAppFunctionEnabled(
                             CtsApp.PACKAGE_NAME,
-                            CtsApp.FunctionNames.ADD_DISABLED_BY_DEFAULT.functionId,
+                            CtsApp.FunctionNames.ADD_DISABLED_BY_DEFAULT.functionIdentifier,
                         )
                     )
                     .isTrue()
                 assertThat(
                         isAppFunctionEnabled(
                             CtsApp.PACKAGE_NAME,
-                            CtsApp.FunctionNames.ADD.functionId,
+                            CtsApp.FunctionNames.ADD.functionIdentifier,
                         )
                     )
                     .isFalse()
@@ -503,11 +503,11 @@ class ObserveAppFunctionsTest {
             observation?.cancel()
             // Reset back to default
             manager.setAppFunctionEnabled(
-                CtsApp.FunctionNames.ADD_DISABLED_BY_DEFAULT.functionId,
+                CtsApp.FunctionNames.ADD_DISABLED_BY_DEFAULT.functionIdentifier,
                 AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
             )
             manager.setAppFunctionEnabled(
-                CtsApp.FunctionNames.ADD.functionId,
+                CtsApp.FunctionNames.ADD.functionIdentifier,
                 AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
             )
         }
@@ -529,7 +529,7 @@ class ObserveAppFunctionsTest {
             registration =
                 manager.registerAppFunction(
                     // TODO(b/478810311): test with non-root package
-                    CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS.functionId,
+                    CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS.functionIdentifier,
                     MoreExecutors.directExecutor(),
                 ) { _, _, _ ->
                     throw UnsupportedOperationException("Stub!")
@@ -540,14 +540,14 @@ class ObserveAppFunctionsTest {
             observation = observeAppFunctions(observer)
 
             manager.setAppFunctionEnabled(
-                CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS.functionId,
+                CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS.functionIdentifier,
                 AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
             )
             retryAssert {
                 assertThat(
                         isAppFunctionEnabled(
                             CtsApp.PACKAGE_NAME,
-                            CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS.functionId,
+                            CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS.functionIdentifier,
                         )
                     )
                     .isFalse()
@@ -563,7 +563,7 @@ class ObserveAppFunctionsTest {
             observation?.cancel()
             registration?.unregister()
             manager.setAppFunctionEnabled(
-                CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS.functionId,
+                CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS.functionIdentifier,
                 AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
             )
         }
@@ -588,7 +588,7 @@ class ObserveAppFunctionsTest {
         try {
             registration =
                 manager.registerAppFunction(
-                    CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS.functionId,
+                    CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS.functionIdentifier,
                     MoreExecutors.directExecutor(),
                 ) { _, _, _ ->
                     throw UnsupportedOperationException("Stub!")
@@ -622,7 +622,7 @@ class ObserveAppFunctionsTest {
             registration =
                 manager.registerAppFunction(
                     // TODO(b/478810311): test with non-root package
-                    CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS.functionId,
+                    CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS.functionIdentifier,
                     MoreExecutors.directExecutor(),
                 ) { _, _, _ ->
                     throw UnsupportedOperationException("Stub!")
@@ -809,14 +809,14 @@ class ObserveAppFunctionsTest {
             observation.cancel()
 
             manager.setAppFunctionEnabled(
-                CtsApp.FunctionNames.ADD_DISABLED_BY_DEFAULT.functionId,
+                CtsApp.FunctionNames.ADD_DISABLED_BY_DEFAULT.functionIdentifier,
                 AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
             )
             retryAssert {
                 assertThat(
                         isAppFunctionEnabled(
                             CtsApp.PACKAGE_NAME,
-                            CtsApp.FunctionNames.ADD_DISABLED_BY_DEFAULT.functionId,
+                            CtsApp.FunctionNames.ADD_DISABLED_BY_DEFAULT.functionIdentifier,
                         )
                     )
                     .isTrue()
@@ -827,7 +827,7 @@ class ObserveAppFunctionsTest {
         } finally {
             observation?.cancel()
             manager.setAppFunctionEnabled(
-                CtsApp.FunctionNames.ADD_DISABLED_BY_DEFAULT.functionId,
+                CtsApp.FunctionNames.ADD_DISABLED_BY_DEFAULT.functionIdentifier,
                 AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
             )
         }

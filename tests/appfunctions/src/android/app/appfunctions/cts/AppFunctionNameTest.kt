@@ -50,7 +50,7 @@ class AppFunctionNameTest {
         val name = AppFunctionName(packageName, functionId)
 
         assertThat(name.packageName).isEqualTo(packageName)
-        assertThat(name.functionId).isEqualTo(functionId)
+        assertThat(name.functionIdentifier).isEqualTo(functionId)
     }
 
     @ApiTest(
@@ -68,7 +68,7 @@ class AppFunctionNameTest {
 
         assertThat(restored).isEqualTo(original)
         assertThat(restored.packageName).isEqualTo(original.packageName)
-        assertThat(restored.functionId).isEqualTo(original.functionId)
+        assertThat(restored.functionIdentifier).isEqualTo(original.functionIdentifier)
     }
 
     @ApiTest(

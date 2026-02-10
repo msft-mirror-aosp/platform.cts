@@ -98,7 +98,7 @@ class GetAppFunctionActivityStatesTest {
             scenario.moveToState(Lifecycle.State.STARTED)
             scenario.onActivity { activity ->
                 activity.registerAppFunction(
-                    CtsApp.FunctionNames.ACTIVITY_SCOPE_CONCAT_STRINGS.functionId
+                    CtsApp.FunctionNames.ACTIVITY_SCOPE_CONCAT_STRINGS.functionIdentifier
                 )
             }
             val state =
