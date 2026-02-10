@@ -536,6 +536,38 @@ public class ShortcutManagerRequestPinTest extends ShortcutManagerCtsTestsBase {
         }
     }
 
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresAppLockSupported
+    @RequiresFlagsEnabled({
+        android.security.Flags.FLAG_APP_LOCK_APIS,
+        android.content.pm.Flags.FLAG_APP_LOCK_SHORTCUT_REMOVAL
+    })
+    @ApiTest(apis = { "android.content.pm.ShortcutManager#requestPinShortcut" })
+    public void testRequestPinShortcut_whenAppLockIsEnabled_returnsFalse() throws Exception {
+        // Launcher1 supports request pin shortcut
+        setDefaultLauncher(getInstrumentation(), mLauncherContext1);
+
+        final ShortcutInfo shortcut = makeShortcutBuilder(SHORTCUT_ID).setShortLabel("label1")
+                .setIntent(new Intent(Intent.ACTION_MAIN)).build();
+
+        runWithCallerWithStrictMode(mPackageContext1, () -> {
+            assertThat(getManager().isRequestPinShortcutSupported()).isTrue();
+            assertThat(getManager().updateShortcuts(list(shortcut))).isTrue();
+            assertThat(getManager().requestPinShortcut(shortcut, /* resultIntent= */ null))
+                    .isTrue();
+        });
+
+        try (AutoCloseable withLockScreen = new LockSettingsUtil(getTestContext()).withLockScreen();
+                AutoCloseable withAppLockEnabled = setPackageAppLockEnabledScoped(
+                        mPackageContext1.getPackageName(), getTestContext().getPackageManager())) {
+            runWithCallerWithStrictMode(mPackageContext1, () -> {
+                assertThat(getManager().requestPinShortcut(shortcut, /* resultIntent= */ null))
+                        .isFalse();
+            });
+        }
+    }
+
     /**
      * Enables App Lock for the specified package and returns an {@link AutoCloseable} that
      * automatically disables it upon closing. Using {@link PackageManager#setPackageAppLockEnabled}
