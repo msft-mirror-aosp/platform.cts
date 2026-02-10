@@ -114,6 +114,7 @@ android_test {
         "platform-test-annotations",
         "testng",
         "bedstead",
+        "kotlinx-coroutines-android",
     ],
     jni_libs: [
         "libaudiocts_jni",
