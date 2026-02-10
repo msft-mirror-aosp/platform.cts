@@ -1121,7 +1121,6 @@ public class PaintTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_TYPEFACE_REDESIGN_READONLY)
     public void testSetGetFontVariationOverride() {
         Paint p = new Paint();
         Context context = InstrumentationRegistry.getTargetContext();
@@ -1150,7 +1149,6 @@ public class PaintTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    @RequiresFlagsEnabled(Flags.FLAG_TYPEFACE_REDESIGN_READONLY)
     public void testSetFontVariationOverriderInvalidSyntax() {
         new Paint().setFontVariationOverride("invalid syntax");
     }

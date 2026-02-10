@@ -29,7 +29,6 @@ import android.graphics.fonts.FontFamily;
 import android.graphics.fonts.FontVariationAxis;
 import android.graphics.text.PositionedGlyphs;
 import android.graphics.text.TextRunShaper;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.Layout;
@@ -40,8 +39,6 @@ import android.text.TextPaint;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
-
-import com.android.text.flags.Flags;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -221,7 +218,6 @@ public class TextRunShaperTest {
         assertThat(axes[0].getStyleValue()).isEqualTo(250f);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_TYPEFACE_REDESIGN_READONLY)
     @Test
     public void shapeText_FontCreateFromNative_Override() throws IOException {
         // Setup

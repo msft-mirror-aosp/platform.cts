@@ -23,13 +23,11 @@ import android.graphics.fonts.Font
 import android.graphics.fonts.FontFamily
 import android.graphics.fonts.SystemFonts
 import android.graphics.text.TextRunShaper
-import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.text.Layout
 import android.text.TextPaint
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
-import com.android.text.flags.Flags
 import com.google.common.truth.Truth.assertThat
 import java.io.File
 import kotlin.math.ceil
@@ -85,7 +83,6 @@ class FontVariationSettingsTest {
         assertThat(actual.sameAs(expect)).isFalse()
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_TYPEFACE_REDESIGN_READONLY)
     @Test
     fun testFontVariationSettingsEffectiveMerge() {
         val robotoFlex = findRobotoFlexFont()
