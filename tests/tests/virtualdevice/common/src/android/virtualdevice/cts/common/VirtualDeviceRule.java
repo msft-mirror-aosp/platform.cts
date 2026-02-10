@@ -427,6 +427,41 @@ public class VirtualDeviceRule implements TestRule {
     }
 
     /**
+     * Temporarily assumes the additional given permissions and executes the given supplier. Reverts
+     * the additional permissions currently held after the execution.
+     */
+    public <T> T runWithAdditionalTemporaryPermissions(
+            Supplier<T> supplier, String... permissions) {
+        String[] temporaryPermissions =
+                Stream.concat(Arrays.stream(mPermissions), Arrays.stream(permissions))
+                        .toArray(String[]::new);
+        getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(temporaryPermissions);
+        try {
+            return supplier.get();
+        } finally {
+            // Revert the permissions needed for the test again.
+            acquireNecessaryPermissions();
+        }
+    }
+
+    /**
+     * Temporarily assumes the additional given permissions and executes the given runnable. Reverts
+     * the additional permissions currently held after the execution.
+     */
+    public void runWithAdditionalTemporaryPermissions(Runnable runnable, String... permissions) {
+        String[] temporaryPermissions =
+                Stream.concat(Arrays.stream(mPermissions), Arrays.stream(permissions))
+                        .toArray(String[]::new);
+        getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(temporaryPermissions);
+        try {
+            runnable.run();
+        } finally {
+            // Revert the permissions needed for the test again.
+            acquireNecessaryPermissions();
+        }
+    }
+
+    /**
      * Temporarily drops any permissions and executes the given supplier. Reverts any permissions
      * currently held after the execution.
      */
