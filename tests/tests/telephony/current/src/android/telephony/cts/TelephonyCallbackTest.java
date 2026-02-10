@@ -131,6 +131,7 @@ public class TelephonyCallbackTest {
     private boolean mOnSecurityAlgorithmsChangedCalled;
     private boolean mOnCellularIdentifierDisclosedChangedCalled;
     private boolean mOnDomainSelectionEmergencyModeChangedCalled;
+    private boolean mOnSatellitePurchaseModeChangedCalled;
     @RadioPowerState
     private int mRadioPowerState;
     @SimActivationState
@@ -1874,5 +1875,40 @@ public class TelephonyCallbackTest {
         unRegisterTelephonyCallback(
                 mOnDomainSelectionEmergencyModeChangedCalled,
                 mDomainSelectionEmergencyModeListener);
+    }
+
+    private SatellitePurchaseModeListener mSatellitePurchaseModeListener;
+
+    private class SatellitePurchaseModeListener extends TelephonyCallback
+            implements TelephonyCallback.SatellitePurchaseModeListener {
+        @Override
+        public void onSatellitePurchaseModeChanged(
+                int subId,
+                boolean isEnabled,
+                @TelephonyManager.SatellitePurchaseModeState int purchaseModeState) {
+            synchronized (mLock) {
+                mOnSatellitePurchaseModeChangedCalled = true;
+                mLock.notify();
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_UPSELL_26Q4)
+    public void testOnSatellitePurchaseModeChangedByRegisterTelephonyCallback() throws Throwable {
+        assertFalse(mOnSatellitePurchaseModeChangedCalled);
+
+        mSatellitePurchaseModeListener = new SatellitePurchaseModeListener();
+        registerTelephonyCallback(mSatellitePurchaseModeListener);
+
+        synchronized (mLock) {
+            while (!mOnSatellitePurchaseModeChangedCalled) {
+                mLock.wait(WAIT_TIME);
+            }
+        }
+        assertTrue(mOnSatellitePurchaseModeChangedCalled);
+
+        unRegisterTelephonyCallback(
+                mOnSatellitePurchaseModeChangedCalled, mSatellitePurchaseModeListener);
     }
 }
