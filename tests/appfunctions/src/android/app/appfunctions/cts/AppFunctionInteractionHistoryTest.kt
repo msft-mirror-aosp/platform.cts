@@ -24,7 +24,7 @@ import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.CtsApp
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.LegacySchemaHelperApp
 import android.app.appfunctions.cts.AppFunctionUtils.clearInteractionAllowlist
-import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunctionAndWait
+import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunction
 import android.app.appfunctions.cts.AppFunctionUtils.getAllRuntimeMetadataPackages
 import android.app.appfunctions.cts.AppFunctionUtils.getAllStaticMetadataPackages
 import android.app.appfunctions.cts.AppFunctionUtils.setInteractionAllowlist
@@ -357,7 +357,7 @@ class AppFunctionInteractionHistoryTest {
         assumeNotNull(manager)
 
         for (request in requests) {
-            executeAppFunctionAndWait(manager, request)
+            manager.executeAppFunction(request)
         }
     }
 

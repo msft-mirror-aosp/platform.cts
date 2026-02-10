@@ -24,7 +24,7 @@ import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.CtsApp
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.LegacySchemaHelperApp
-import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunctionAndWait
+import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunction
 import android.app.appfunctions.cts.AppFunctionUtils.getAllRuntimeMetadataPackages
 import android.app.appfunctions.cts.AppFunctionUtils.getAllStaticMetadataPackages
 import android.app.appfunctions.cts.AppFunctionUtils.installExistingPackageAsUser
@@ -160,7 +160,7 @@ class AppFunctionManagerV2Test {
                     )
                     .build()
 
-            val response = executeAppFunctionAndWait(mManager, request)
+            val response = mManager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isFalse()
             assertThat(response.appFunctionException().errorCode)
@@ -265,7 +265,7 @@ class AppFunctionManagerV2Test {
                     .setParameters(parameters)
                     .build()
 
-            val response = executeAppFunctionAndWait(mManager, request)
+            val response = mManager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isFalse()
             assertThat(response.appFunctionException().errorCode)
@@ -282,7 +282,7 @@ class AppFunctionManagerV2Test {
     fun executeAppFunction_otherNonExistingTargetPackage_withoutPermission() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder("other.package", "add").build()
 
-        val response = executeAppFunctionAndWait(mManager, request)
+        val response = mManager.executeAppFunction(request)
 
         assertThat(response.isSuccess).isFalse()
         // Apps without the permission can only invoke functions from themselves.
@@ -306,7 +306,7 @@ class AppFunctionManagerV2Test {
         ) {
             val request = ExecuteAppFunctionRequest.Builder("other.package", "add").build()
 
-            val response = executeAppFunctionAndWait(mManager, request)
+            val response = mManager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isFalse()
             // Apps without the permission can only invoke functions from themselves.
@@ -332,7 +332,7 @@ class AppFunctionManagerV2Test {
                 )
                 .build()
 
-        val response = executeAppFunctionAndWait(mManager, request)
+        val response = mManager.executeAppFunction(request)
 
         assertThat(response.isSuccess).isFalse()
         assertThat(response.appFunctionException().errorCode)
@@ -360,7 +360,7 @@ class AppFunctionManagerV2Test {
                     )
                     .build()
 
-            val response = executeAppFunctionAndWait(mManager, request)
+            val response = mManager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isFalse()
             assertThat(response.appFunctionException().errorCode)
@@ -392,7 +392,7 @@ class AppFunctionManagerV2Test {
                         )
                         .build()
 
-                val response = executeAppFunctionAndWait(mManager, request)
+                val response = mManager.executeAppFunction(request)
 
                 assertThat(response.isSuccess).isFalse()
                 assertThat(response.appFunctionException().errorCode)
@@ -425,7 +425,7 @@ class AppFunctionManagerV2Test {
                     )
                     .build()
 
-            val response = executeAppFunctionAndWait(mManager, request)
+            val response = mManager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isTrue()
         }
@@ -450,7 +450,7 @@ class AppFunctionManagerV2Test {
                         )
                         .build()
 
-                val response = executeAppFunctionAndWait(mManager, request)
+                val response = mManager.executeAppFunction(request)
 
                 assertThat(response.exceptionOrNull()).isNull()
                 assertThat(response.isSuccess).isTrue()
@@ -475,7 +475,7 @@ class AppFunctionManagerV2Test {
                     )
                     .build()
 
-            val response = executeAppFunctionAndWait(mManager, request)
+            val response = mManager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isFalse()
             assertThat(response.appFunctionException().errorCode)
@@ -502,7 +502,7 @@ class AppFunctionManagerV2Test {
                     )
                     .build()
 
-            val response = executeAppFunctionAndWait(mManager, request)
+            val response = mManager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isFalse()
             assertThat(response.appFunctionException().errorCode)
@@ -538,7 +538,7 @@ class AppFunctionManagerV2Test {
                     .setParameters(parameters)
                     .build()
 
-            val response = executeAppFunctionAndWait(mManager, request)
+            val response = mManager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isTrue()
             assertThat(
@@ -561,7 +561,7 @@ class AppFunctionManagerV2Test {
     fun executeAppFunction_emptyPackage() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder("", "noOp").build()
 
-        val response = executeAppFunctionAndWait(mManager, request)
+        val response = mManager.executeAppFunction(request)
 
         assertThat(response.isSuccess).isFalse()
         assertThat(response.appFunctionException().errorCode)
@@ -592,7 +592,7 @@ class AppFunctionManagerV2Test {
                     .setParameters(parameters)
                     .build()
 
-            val response = executeAppFunctionAndWait(mManager, request)
+            val response = mManager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isFalse()
             assertThat(response.appFunctionException().errorCode)
@@ -622,7 +622,7 @@ class AppFunctionManagerV2Test {
                     .setParameters(parameters)
                     .build()
 
-            val response = executeAppFunctionAndWait(mManager, request)
+            val response = mManager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isFalse()
             assertThat(response.appFunctionException().errorCode)
@@ -683,7 +683,7 @@ class AppFunctionManagerV2Test {
                     .setParameters(parameters)
                     .build()
 
-            val response = executeAppFunctionAndWait(mManager, request)
+            val response = mManager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isFalse()
             assertThat(response.appFunctionException().errorCode)
@@ -709,7 +709,7 @@ class AppFunctionManagerV2Test {
                     )
                     .build()
 
-            val response = executeAppFunctionAndWait(mManager, request)
+            val response = mManager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isFalse()
             assertThat(response.appFunctionException().errorCode)
@@ -742,7 +742,7 @@ class AppFunctionManagerV2Test {
                     AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
                 )
 
-                val response = executeAppFunctionAndWait(mManager, request)
+                val response = mManager.executeAppFunction(request)
 
                 assertThat(response.isSuccess).isFalse()
                 assertThat(response.appFunctionException().errorCode)
@@ -785,7 +785,7 @@ class AppFunctionManagerV2Test {
                         .setParameters(parameters)
                         .build()
 
-                val response = executeAppFunctionAndWait(mManager, request)
+                val response = mManager.executeAppFunction(request)
 
                 assertThat(response.isSuccess).isFalse()
                 assertThat(response.appFunctionException().errorCode)
@@ -821,7 +821,7 @@ class AppFunctionManagerV2Test {
                     .setParameters(parameters)
                     .build()
 
-            val response = executeAppFunctionAndWait(mManager, request)
+            val response = mManager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isTrue()
             assertThat(
@@ -862,7 +862,7 @@ class AppFunctionManagerV2Test {
                     .setParameters(parameters)
                     .build()
 
-            val response = executeAppFunctionAndWait(mManager, request)
+            val response = mManager.executeAppFunction(request)
 
             assertThat(response.exceptionOrNull()).isNull()
             assertThat(response.isSuccess).isTrue()
@@ -896,7 +896,7 @@ class AppFunctionManagerV2Test {
                         )
                         .build()
 
-                val response = executeAppFunctionAndWait(mManager, request)
+                val response = mManager.executeAppFunction(request)
 
                 assertThat(response.isSuccess).isFalse()
                 assertThat(response.appFunctionException().errorCode)
@@ -989,7 +989,7 @@ class AppFunctionManagerV2Test {
                     .setParameters(parameters)
                     .build()
 
-            val response = executeAppFunctionAndWait(mManager, request)
+            val response = mManager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isTrue()
             assertThat(response.getOrNull()!!.resultDocument.getPropertyBytes("bytes"))
@@ -1142,7 +1142,7 @@ class AppFunctionManagerV2Test {
                     )
                     .build()
 
-            val response = executeAppFunctionAndWait(mManager, request)
+            val response = mManager.executeAppFunction(request)
 
             assertThat(response.getOrThrow()).isNotNull()
             assertReadAccessible(contentResolver, readOnlyUri)
@@ -1232,16 +1232,14 @@ class AppFunctionManagerV2Test {
             // Check if the function is enabled
             assertThat(isAppFunctionEnabled(CtsApp.PACKAGE_NAME, functionUnderTest)).isTrue()
             // Disable the function
-            setAppFunctionEnabled(
-                mManager,
+            mManager.setAppFunctionEnabled(
                 functionUnderTest,
                 AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
             )
             // Confirm that the function is disabled
             assertThat(isAppFunctionEnabled(CtsApp.PACKAGE_NAME, functionUnderTest)).isFalse()
             // Reset the enabled bit
-            setAppFunctionEnabled(
-                mManager,
+            mManager.setAppFunctionEnabled(
                 functionUnderTest,
                 AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
             )
@@ -1249,16 +1247,14 @@ class AppFunctionManagerV2Test {
             assertThat(isAppFunctionEnabled(CtsApp.PACKAGE_NAME, functionUnderTest)).isTrue()
 
             // Manually set the enabled bit to true
-            setAppFunctionEnabled(
-                mManager,
+            mManager.setAppFunctionEnabled(
                 functionUnderTest,
                 AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
             )
             // Confirm that the function is still enabled
             assertThat(isAppFunctionEnabled(CtsApp.PACKAGE_NAME, functionUnderTest)).isTrue()
         } finally {
-            setAppFunctionEnabled(
-                mManager,
+            mManager.setAppFunctionEnabled(
                 functionUnderTest,
                 AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
             )
@@ -1276,16 +1272,14 @@ class AppFunctionManagerV2Test {
             // Confirm that the function is disabled
             assertThat(isAppFunctionEnabled(CtsApp.PACKAGE_NAME, functionUnderTest)).isFalse()
             // Enable the function
-            setAppFunctionEnabled(
-                mManager,
+            mManager.setAppFunctionEnabled(
                 functionUnderTest,
                 AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
             )
             // Confirm that the function is enabled
             assertThat(isAppFunctionEnabled(CtsApp.PACKAGE_NAME, functionUnderTest)).isTrue()
             // Reset the enabled bit
-            setAppFunctionEnabled(
-                mManager,
+            mManager.setAppFunctionEnabled(
                 functionUnderTest,
                 AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
             )
@@ -1293,16 +1287,14 @@ class AppFunctionManagerV2Test {
             assertThat(isAppFunctionEnabled(CtsApp.PACKAGE_NAME, functionUnderTest)).isFalse()
 
             // Manually set the enabled bit to true
-            setAppFunctionEnabled(
-                mManager,
+            mManager.setAppFunctionEnabled(
                 functionUnderTest,
                 AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
             )
             // Confirm that the function is still enabled
             assertThat(isAppFunctionEnabled(CtsApp.PACKAGE_NAME, functionUnderTest)).isTrue()
         } finally {
-            setAppFunctionEnabled(
-                mManager,
+            mManager.setAppFunctionEnabled(
                 functionUnderTest,
                 AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
             )
@@ -1319,8 +1311,7 @@ class AppFunctionManagerV2Test {
 
         assertFailsWith<IllegalArgumentException>("does not exist") {
             doBlocking {
-                setAppFunctionEnabled(
-                    mManager,
+                mManager.setAppFunctionEnabled(
                     functionUnderTest,
                     AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
                 )

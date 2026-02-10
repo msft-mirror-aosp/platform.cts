@@ -22,7 +22,7 @@ import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.AppFunctionManager.EnabledState
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
-import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunctionAndWait
+import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunction
 import android.app.appfunctions.cts.AppFunctionUtils.runWithInteractionAllowlisted
 import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabled
 import android.app.appfunctions.flags.Flags
@@ -97,9 +97,8 @@ class SidecarManagerTest {
 
     @After
     fun resetEnabledStatus() = doBlocking {
-        setAppFunctionEnabled(mManager, "add", AppFunctionManager.APP_FUNCTION_STATE_DEFAULT)
-        setAppFunctionEnabled(
-            mManager,
+        mManager.setAppFunctionEnabled("add", AppFunctionManager.APP_FUNCTION_STATE_DEFAULT)
+        mManager.setAppFunctionEnabled(
             "add_disabledByDefault",
             AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
         )
@@ -349,7 +348,7 @@ class SidecarManagerTest {
                     .setParameters(parameters)
                     .build()
 
-            val response = executeAppFunctionAndWait(mManager, request)
+            val response = mManager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isTrue()
             assertThat(
@@ -383,7 +382,7 @@ class SidecarManagerTest {
                             .setParameters(parameters)
                             .build()
 
-                    val response = executeAppFunctionAndWait(mManager, request)
+                    val response = mManager.executeAppFunction(request)
 
                     assertThat(response.isSuccess).isTrue()
                     assertThat(
@@ -417,7 +416,7 @@ class SidecarManagerTest {
                         .setParameters(parameters)
                         .build()
 
-                val response = executeAppFunctionAndWait(mManager, request)
+                val response = mManager.executeAppFunction(request)
 
                 assertThat(response.isSuccess).isFalse()
                 assertThat((response.exceptionOrNull() as AppFunctionException).errorCode)

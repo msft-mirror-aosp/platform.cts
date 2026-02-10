@@ -63,6 +63,8 @@ android_test {
         ":CtsAppFunctionsTestHelper",
         ":CtsAppFunctionServiceTestHelper",
         ":CtsAppFunctionsTestHelperDynamicSchema",
+        ":CtsAppFunctionsTestHelperDynamicSchemaLessOneFunction",
+        ":CtsAppFunctionsTestHelperDynamicSchemaNoTopLevelDocs",
         ":CtsAppSearchIndexerTestAppAV1",
         ":CtsAppSearchIndexerTestAppAV2",
         ":CtsAppSearchIndexerTestAppAV3",
@@ -138,6 +140,42 @@ android_test_helper_app {
     ],
     asset_dirs: ["helper-app-dynamic-schema/assets"],
     manifest: "helper-app-dynamic-schema/AndroidManifest.xml",
+    min_sdk_version: "31",
+}
+
+android_test_helper_app {
+    name: "CtsAppFunctionsTestHelperDynamicSchemaLessOneFunction",
+    defaults: ["cts_defaults"],
+    static_libs: [
+        "CtsAppFunctionsTestUtils",
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+        "compatibility-device-util-axt",
+        "testng",
+    ],
+    test_suites: [
+        "general-tests",
+    ],
+    asset_dirs: ["helper-app-dynamic-schema/assets"],
+    manifest: "helper-app-dynamic-schema/AndroidManifest_lessOneFunction.xml",
+    min_sdk_version: "31",
+}
+
+android_test_helper_app {
+    name: "CtsAppFunctionsTestHelperDynamicSchemaNoTopLevelDocs",
+    defaults: ["cts_defaults"],
+    static_libs: [
+        "CtsAppFunctionsTestUtils",
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+        "compatibility-device-util-axt",
+        "testng",
+    ],
+    test_suites: [
+        "general-tests",
+    ],
+    asset_dirs: ["helper-app-dynamic-schema/assets"],
+    manifest: "helper-app-dynamic-schema/AndroidManifest_noTopLevelDocs.xml",
     min_sdk_version: "31",
 }
 

@@ -19,7 +19,7 @@ package android.app.appfunctions.cts
 import android.Manifest
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.ExecuteAppFunctionRequest
-import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunctionAndWait
+import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunction
 import android.app.appfunctions.cts.AppFunctionUtils.runWithInteractionAllowlisted
 import android.app.appfunctions.flags.Flags
 import android.content.Context
@@ -67,7 +67,7 @@ class AppFunctionServiceTest {
     fun callAppFunctionService_hasAccessToCallingPackageInfo() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder(TEST_PACKAGE_NAME, TEST_FUNCTION_ID).build()
 
-        val response = executeAppFunctionAndWait(manager, request)
+        val response = manager.executeAppFunction(request)
 
         assertThat(response.exceptionOrNull()).isNull()
         val result = response.getOrNull()
@@ -88,7 +88,7 @@ class AppFunctionServiceTest {
             val request =
                 ExecuteAppFunctionRequest.Builder(TEST_PACKAGE_NAME, TEST_FUNCTION_ID).build()
 
-            val response = executeAppFunctionAndWait(manager, request)
+            val response = manager.executeAppFunction(request)
 
             assertThat(response.exceptionOrNull()).isNull()
             val result = response.getOrNull()

@@ -178,6 +178,17 @@ class AppFunctionMetadataTestHelper {
             val ACTIVITY_SCOPED_FUNCTIONS = setOf(ACTIVITY_SCOPE, DYNAMIC_ACTIVITY_CONCAT_STRINGS)
 
             val ALL_GLOBAL_FUNCTIONS = ALL_FUNCTIONS - ACTIVITY_SCOPED_FUNCTIONS
+
+            val APK_WITH_ONE_FUNCTION_REMOVED_FUNCTIONS = ALL_FUNCTIONS - HIGH_SCHEMA_VERSION
+        }
+
+        object ApkPaths {
+            const val BASE_APP: String =
+                TEST_APP_ROOT_FOLDER + "CtsAppFunctionsTestHelperDynamicSchema.apk"
+            const val NO_TOP_LEVEL_DOCS: String =
+                TEST_APP_ROOT_FOLDER + "CtsAppFunctionsTestHelperDynamicSchemaNoTopLevelDocs.apk"
+            const val ONE_FUNCTION_REMOVED: String =
+                TEST_APP_ROOT_FOLDER + "CtsAppFunctionsTestHelperDynamicSchemaLessOneFunction.apk"
         }
 
         object Components {
@@ -315,6 +326,9 @@ class AppFunctionMetadataTestHelper {
                     PACKAGE_NAME,
                     listOf(Components.TOP_LEVEL_COMPONENT_2, Components.TOP_LEVEL_COMPONENT_1),
                 )
+
+            val EMPTY_PACKAGE_METADATA =
+                AppFunctionPackageMetadata.create(PACKAGE_NAME, emptyList())
         }
     }
 
@@ -329,10 +343,8 @@ class AppFunctionMetadataTestHelper {
             val ADD_ASYNC = AppFunctionName(PACKAGE_NAME, "addAsync")
             val NOT_INVOKE_CALLBACK = AppFunctionName(PACKAGE_NAME, "notInvokeCallback")
             val DYNAMIC_CONCAT_STRINGS = AppFunctionName(PACKAGE_NAME, "contextConcatStrings")
-            val ACTIVITY_SCOPE_CONCAT_STRINGS = AppFunctionName(
-                PACKAGE_NAME,
-                "activityConcatStrings"
-            )
+            val ACTIVITY_SCOPE_CONCAT_STRINGS =
+                AppFunctionName(PACKAGE_NAME, "activityConcatStrings")
             val RUN_FOREVER = AppFunctionName(PACKAGE_NAME, "runForever")
             val ADD = AppFunctionName(PACKAGE_NAME, "add")
             val ADD_DISABLED_BY_DEFAULT = AppFunctionName(PACKAGE_NAME, "add_disabledByDefault")
@@ -382,8 +394,13 @@ class AppFunctionMetadataTestHelper {
     object UpdatableHelperApp {
         const val PACKAGE_NAME: String = "com.android.cts.appsearch.indexertestapp.a"
 
+        object FunctionNames {
+            val PRINT_1 = AppFunctionName(PACKAGE_NAME, "com.example.utils#print1")
+            val PRINT_2 = AppFunctionName(PACKAGE_NAME, "com.example.utils#print2")
+            val PRINT_3 = AppFunctionName(PACKAGE_NAME, "com.example.utils#print3")
+        }
+
         object ApkPaths {
-            private const val TEST_APP_ROOT_FOLDER: String = "/data/local/tmp/cts/appfunctions/"
             const val BASE_APP: String = TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppAV2.apk"
 
             const val NO_FUNCTIONS: String =
@@ -400,5 +417,7 @@ class AppFunctionMetadataTestHelper {
     companion object {
         private const val TEST_SERVICE_NAME =
             "android.app.appfunctions.testutils.TestAppFunctionService"
+
+        private const val TEST_APP_ROOT_FOLDER: String = "/data/local/tmp/cts/appfunctions/"
     }
 }
