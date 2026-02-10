@@ -53,7 +53,7 @@ class EyeDropperTestActivity : PassFailButtons.Activity() {
         if (requestCode == REQUEST_CODE_EYE_DROPPER && resultCode == RESULT_OK) {
             val color = data?.getIntExtra(Intent.EXTRA_COLOR, Color.BLACK) ?: Color.BLACK
             selectedColorView.setBackgroundColor(color)
-            selectedColorHex.text = String.format("#%08X", color)
+            selectedColorHex.text = String.format("#%06X", color and 0xFFFFFF)
         }
     }
 
