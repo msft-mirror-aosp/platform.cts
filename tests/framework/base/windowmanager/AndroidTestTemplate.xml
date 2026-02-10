@@ -120,6 +120,9 @@
         <option name="teardown-command" value="cmd statusbar low-light clear" />
         <!-- Ensure app compat does not interfere -->
         <option name="run-command" value="wm set-letterbox-style --cornerRadius 0" />
+        <!-- Ensure that the test can write to the /sdcard for metrics reporting -->
+        <option name="run-command" value="appops set android.server.wm.cts MANAGE_EXTERNAL_STORAGE allow" />
+        <option name="teardown-command" value="appops set android.server.wm.cts MANAGE_EXTERNAL_STORAGE default" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest">
@@ -130,6 +133,7 @@
         <!-- DefaultUITraceListener args -->
         <option name="instrumentation-arg" key="skip_test_success_metrics" value="true"/>
         <option name="instrumentation-arg" key="per_class" value="true"/>
+        <option name="isolated-storage" value="false" />
     </test>
 
     <!-- Collect the test artifacts. -->
