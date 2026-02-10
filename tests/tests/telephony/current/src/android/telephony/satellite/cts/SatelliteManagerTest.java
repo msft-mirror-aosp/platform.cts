@@ -422,7 +422,23 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         assertTrue(response.isEnabled());
         assertTrue(response.isEmergencyMode());
         assertTrue(response.isDemoMode());
-        assertTrue(Arrays.equals(requestReasons, response.getSatelliteEnablementRequestReasons()));
+        assertEquals(Arrays.toString(requestReasons), Arrays.toString(response.getSatelliteEnablementRequestReasons()));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_UPSELL)
+    public void testSatelliteEnablementRequestReason() {
+        assertEquals(0, SatelliteManager.SATELLITE_ENABLEMENT_REQUEST_REASON_UNKNOWN);
+        assertEquals(1, SatelliteManager.SATELLITE_ENABLEMENT_REQUEST_REASON_PURCHASE);
+        assertEquals(2, SatelliteManager.SATELLITE_ENABLEMENT_REQUEST_REASON_USER);
+        assertEquals(3, SatelliteManager.SATELLITE_ENABLEMENT_REQUEST_REASON_POWER);
+        assertEquals(4, SatelliteManager.SATELLITE_ENABLEMENT_REQUEST_REASON_CARRIER_CONFIG_UPDATE);
+        assertEquals(5, SatelliteManager.SATELLITE_ENABLEMENT_REQUEST_REASON_ENTITLEMENT);
+    }
+
+    @Test
+    public void testKeyEnableResponse() {
+        assertEquals("enable_response", SatelliteManager.KEY_ENABLE_RESPONSE);
     }
 
     @Test
