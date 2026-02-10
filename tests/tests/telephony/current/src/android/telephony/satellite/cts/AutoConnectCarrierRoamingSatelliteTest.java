@@ -874,6 +874,80 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
     }
 
     @Test
+    @RequiresFlagsEnabled({Flags.FLAG_NR_NTN, Flags.FLAG_SATELLITE_26Q2_APIS})
+    public void testNtnTechnologyResolution_FallbackToCarrierConfigWhenModemTechIsNone()
+            throws Exception {
+        logd(TAG, "testNtnTechnologyResolution_FallbackToCarrierConfigWhenModemTechIsNone");
+        if (!shouldTestSatelliteWithMockService()) return;
+        assumeTrue(
+                "Skipping test: HAL version is lower than 2.4",
+                getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK) >= RADIO_HAL_VERSION_2_4);
+
+        int subId = SubscriptionManager.getSubscriptionId(SLOT_ID_0);
+        String satellitePlmn = sMockModemManager.getSimInfo(SLOT_ID_0, SIM_INFO_TYPE_MCC_MNC);
+
+        logd("Configure CarrierConfig: Set this PLMN to support LTE_DTC technology");
+        PersistableBundle rootBundle = new PersistableBundle();
+        PersistableBundle plmnConfig = new PersistableBundle();
+        plmnConfig.putIntArray(
+                CarrierConfigManager.KEY_SATELLITE_TECHNOLOGY_INT_ARRAY,
+                new int[] {SatelliteManager.NT_RADIO_TECHNOLOGY_LTE_DTC});
+        PersistableBundle plmnBundle = new PersistableBundle();
+        plmnBundle.putPersistableBundle(satellitePlmn, plmnConfig);
+        rootBundle.putPersistableBundle(
+                CarrierConfigManager.KEY_SATELLITE_CONFIGS_PER_PLMN_BUNDLE, plmnBundle);
+        overrideCarrierConfig(subId, rootBundle);
+
+        NtnStateCallback lteDtcCallback = null;
+        NtnStateCallback nbIotCallback = null;
+
+        try {
+            logd(TAG, "Modem reports LTE_DTC from setup(), Verify lteDtcCallback with LTE_DTC");
+            lteDtcCallback =
+                    new NtnStateCallback(true, SatelliteManager.NT_RADIO_TECHNOLOGY_LTE_DTC);
+            sTelephonyManager.registerTelephonyCallback(
+                    getContext().getMainExecutor(), lteDtcCallback);
+            assertTrue("NRI should be LTE_DTC", lteDtcCallback.awaitStateChange(TIMEOUT));
+
+            lteDtcCallback.resetLatch(1);
+            sMockModemManager.setSatelliteTechnology(SLOT_ID_0, SatelliteTechnology.SAT_TECH_NONE);
+            sMockModemManager.changeNetworkService(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT, true);
+
+            assertFalse(
+                    "NRI should be LTE_DTC so service state shouldn't be changed",
+                    lteDtcCallback.awaitStateChange(TIMEOUT));
+
+            sTelephonyManager.unregisterTelephonyCallback(lteDtcCallback);
+            lteDtcCallback = null;
+
+            logd(TAG, "Modem reports SAT_TECH_NB_IOT_NTN, Verify nbIotCallback with NB_IOT_NTN");
+            nbIotCallback =
+                    new NtnStateCallback(true, SatelliteManager.NT_RADIO_TECHNOLOGY_NB_IOT_NTN);
+            sTelephonyManager.registerTelephonyCallback(
+                    getContext().getMainExecutor(), nbIotCallback);
+
+            sMockModemManager.setSatelliteTechnology(
+                    SLOT_ID_0, SatelliteTechnology.SAT_TECH_NB_IOT_NTN);
+            sMockModemManager.changeNetworkService(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT, true);
+
+            assertTrue(
+                    "NRI should preserve modem-reported technology and NOT overwritten",
+                    nbIotCallback.awaitStateChange(TIMEOUT));
+            sTelephonyManager.unregisterTelephonyCallback(nbIotCallback);
+            nbIotCallback = null;
+        } finally {
+            if (lteDtcCallback != null) {
+                sTelephonyManager.unregisterTelephonyCallback(lteDtcCallback);
+            }
+            if (nbIotCallback != null) {
+                sTelephonyManager.unregisterTelephonyCallback(nbIotCallback);
+            }
+            overrideCarrierConfig(subId, null);
+            dropShellIdentity();
+        }
+    }
+
+    @Test
     @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_26Q2_APIS)
     public void testGetCarrierRoamingNtnAvailableServices() {
         logd("testGetCarrierRoamingNtnAvailableServices");
@@ -1007,7 +1081,7 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             implements TelephonyCallback.ServiceStateListener {
         private final boolean mExpectedNtnState;
         private final int mExpectedSatelliteTech;
-        private final CountDownLatch mLatch = new CountDownLatch(1);
+        private volatile CountDownLatch mLatch = new CountDownLatch(1);
 
         /**
          * Constructs a new NtnStateCallback with the expected NTN state and satellite technology.
@@ -1019,6 +1093,11 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
             super();
             mExpectedNtnState = expectedState;
             mExpectedSatelliteTech = satelliteTech;
+        }
+
+        public void resetLatch(int count) {
+            logd(TAG, "NtnStateCallback:resetLatch count=" + count);
+            mLatch = new CountDownLatch(count);
         }
 
         @Override
@@ -1045,8 +1124,9 @@ public class AutoConnectCarrierRoamingSatelliteTest extends CarrierRoamingSatell
                                 + mExpectedSatelliteTech);
 
                 if (sateTechFromNetwork == mExpectedSatelliteTech && isNtn == mExpectedNtnState) {
-                    if (mLatch.getCount() > 0) {
-                        mLatch.countDown();
+                    CountDownLatch currentLatch = mLatch;
+                    if (currentLatch.getCount() > 0) {
+                        currentLatch.countDown();
                     }
                 }
             } else {
