@@ -39,6 +39,27 @@ specs {
   }
 }
 specs {
+  key: 20
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_20
+    specification:
+      "MUST have a tap-to-tone latency of less than 100 milliseconds using the "
+      "OboeTester tap-to-tone test or CTS Verifier tap-to-tone test."
+    required_values {
+      key: "java_latency_ms"
+      value {
+        double_value: 100.0
+      }
+    }
+    required_values {
+      key: "native_latency_ms"
+      value {
+        double_value: 100.0
+      }
+    }
+  }
+}
+specs {
   key: 30
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_30

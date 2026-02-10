@@ -31,6 +31,19 @@ specs {
   }
 }
 specs {
+  key: 20
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_20
+    specification: "MUST ensure a sequential write performance of at least 100 MB/s."
+    required_values {
+      key: "filesystem_io_rate_mbps"
+      value {
+        double_value: 100.0
+      }
+    }
+  }
+}
+specs {
   key: 30
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_30

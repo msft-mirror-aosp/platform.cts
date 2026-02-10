@@ -37,6 +37,25 @@ specs {
   }
 }
 specs {
+  key: 20
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_20
+    specification: "MUST have screen resolution of at least 1080p."
+    required_values {
+      key: "long_resolution_pixels"
+      value {
+        int_value: 1920
+      }
+    }
+    required_values {
+      key: "short_resolution_pixels"
+      value {
+        int_value: 1080
+      }
+    }
+  }
+}
+specs {
   key: 31
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_31
