@@ -21,7 +21,9 @@ import static com.android.cts.pcc.service.common.TestUtils.addTriggerPfd;
 import static com.android.cts.pcc.service.common.TestUtils.getNestedBundleWithDepth100;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import android.app.privatecompute.PccClient;
 import android.content.ComponentName;
@@ -228,6 +230,54 @@ public class PccServiceTest {
 
         IBinder binder = mBinderQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS);
         assertNotNull(binder);
+    }
+
+    @Test
+    public void testPccToPccProviderAccess() {
+        String processName = mContext.getApplicationInfo().processName;
+        int uid = android.os.Process.myUid();
+        java.util.List<android.content.pm.ProviderInfo> providers =
+                mContext.getPackageManager().queryContentProviders(processName, uid, 0);
+        boolean found = false;
+        if (providers != null) {
+            for (android.content.pm.ProviderInfo info : providers) {
+                if ("com.android.cts.pcc.service.pccclient.provider.pcc".equals(info.authority)) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+        assertTrue("PCC to PCC provider access should succeed (provider found in list)", found);
+    }
+
+    @Test
+    public void testPccToNonPccProviderAccess() {
+        String processName = mContext.getApplicationInfo().processName;
+        int uid = android.os.Process.myUid();
+        java.util.List<android.content.pm.ProviderInfo> providers =
+                mContext.getPackageManager().queryContentProviders(processName, uid, 0);
+        if (providers != null) {
+            for (android.content.pm.ProviderInfo info : providers) {
+                assertNotEquals(
+                        "PCC to Non-PCC provider access should fail (provider NOT in list)",
+                        "com.android.cts.pcc.service.pccclient.provider.regular",
+                        info.authority);
+            }
+        }
+    }
+
+    @Test
+    public void testPccToTrustedProviderAccess() {
+        try (android.database.Cursor cursor =
+                mContext.getContentResolver()
+                        .query(
+                                android.provider.Settings.Global.CONTENT_URI,
+                                null,
+                                null,
+                                null,
+                                null)) {
+            assertNotNull("PCC to Trusted provider access should succeed", cursor);
+        }
     }
 
     @After
