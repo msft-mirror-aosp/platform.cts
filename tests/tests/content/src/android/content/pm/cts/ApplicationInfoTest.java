@@ -453,6 +453,89 @@ public class ApplicationInfoTest {
         }
     }
 
+    // This test is required because of unintended sign extension that results from the conversion
+    // of the deprecated int GET_ATTRIBUTIONS flag to a long, which results in accidentally adding
+    // the GET_APP_LOCK_INFO flag (among others).
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(
+            apis = {
+                "android.content.pm.PackageManager#getApplicationInfo",
+                "android.content.pm.PackageManager#GET_APP_LOCK_INFO",
+            })
+    public void
+            testGetApplicationInfo_getAttributionsFlag_withoutPermission_doesNotReturnAppLockInfo()
+                    throws Exception {
+        final Context context = getContext();
+        final PackageManager packageManager = context.getPackageManager();
+
+        try (AutoCloseable withAppLockSupportedApp =
+                installPackageScoped(APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME)) {
+            assertThat(hasLockAppsPermission(context)).isFalse();
+
+            // Without LOCK_APPS, GET_ATTRIBUTIONS should not return App Lock info
+            ApplicationInfo infoWithPermission =
+                    packageManager.getApplicationInfo(
+                            APP_LOCK_SUPPORTED_PACKAGE_NAME, PackageManager.GET_ATTRIBUTIONS);
+            assertThat(infoWithPermission.isAppLockSupported).isFalse();
+            assertThat(infoWithPermission.isAppLockEnabled).isFalse();
+
+            // Without LOCK_APPS, GET_ATTRIBUTIONS with manual long conversion should not return
+            // App Lock info and should not throw a SecurityException
+            infoWithPermission =
+                    packageManager.getApplicationInfo(
+                            APP_LOCK_SUPPORTED_PACKAGE_NAME,
+                            PackageManager.ApplicationInfoFlags.of(
+                                    (long) PackageManager.GET_ATTRIBUTIONS));
+            assertThat(infoWithPermission.isAppLockSupported).isFalse();
+            assertThat(infoWithPermission.isAppLockEnabled).isFalse();
+        }
+    }
+
+    // This test is required because of unintended sign extension that results from the conversion
+    // of the deprecated int GET_ATTRIBUTIONS flag to a long, which results in accidentally adding
+    // the GET_APP_LOCK_INFO flag (among others).
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(
+            apis = {
+                "android.content.pm.PackageManager#getApplicationInfo",
+                "android.content.pm.PackageManager#GET_APP_LOCK_INFO",
+            })
+    public void testGetApplicationInfo_getAttributionsFlag_withPermission_doesNotReturnAppLockInfo()
+            throws Exception {
+        final Context context = getContext();
+        final PackageManager packageManager = context.getPackageManager();
+
+        try (AutoCloseable withAppLockSupportedApp =
+                        installPackageScoped(
+                                APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME);
+                AutoCloseable withLockAppsPermission = setHomeRoleHolderScoped(context)) {
+            assertThat(hasLockAppsPermission(context)).isTrue();
+
+            // Without LOCK_APPS, GET_ATTRIBUTIONS should not return App Lock info
+            ApplicationInfo infoWithPermission =
+                    packageManager.getApplicationInfo(
+                            APP_LOCK_SUPPORTED_PACKAGE_NAME, PackageManager.GET_ATTRIBUTIONS);
+            assertThat(infoWithPermission.isAppLockSupported).isFalse();
+            assertThat(infoWithPermission.isAppLockEnabled).isFalse();
+
+            // Without LOCK_APPS, GET_ATTRIBUTIONS with manual long conversion should not return
+            // App Lock info and should not throw a SecurityException
+            infoWithPermission =
+                    packageManager.getApplicationInfo(
+                            APP_LOCK_SUPPORTED_PACKAGE_NAME,
+                            PackageManager.ApplicationInfoFlags.of(
+                                    (long) PackageManager.GET_ATTRIBUTIONS));
+            assertThat(infoWithPermission.isAppLockSupported).isFalse();
+            assertThat(infoWithPermission.isAppLockEnabled).isFalse();
+        }
+    }
+
     @Test
     @DisabledOnRavenwood(blockedBy = PackageManager.class)
     @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
@@ -473,12 +556,48 @@ public class ApplicationInfoTest {
                 AutoCloseable withLockAppsPermission = setHomeRoleHolderScoped(context)) {
             assertThat(hasLockAppsPermission(context)).isTrue();
 
-            // With LOCK_APPS, GET_APP_LOCK_INFO should return correct info
+            // With LOCK_APPS, combining GET_APP_LOCK_INFO and GET_ATTRIBUTIONS_LONG should
+            // return correct info
             ApplicationInfo infoWithPermission =
                     packageManager.getApplicationInfo(
                             APP_LOCK_SUPPORTED_PACKAGE_NAME,
                             PackageManager.ApplicationInfoFlags.of(
                                     PackageManager.GET_APP_LOCK_INFO));
+            assertThat(infoWithPermission.isAppLockSupported).isTrue();
+            assertThat(infoWithPermission.isAppLockEnabled).isFalse();
+        }
+    }
+
+    // Ensure that App Lock info can be retrieved by using the GET_APP_LOCK_INFO flag if the
+    // GET_ATTRIBUTIONS_LONG flag is present (in contrast to the deprecated GET_ATTRIBUTIONS flag).
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(
+            apis = {
+                "android.content.pm.PackageManager#getApplicationInfo",
+                "android.content.pm.PackageManager#GET_APP_LOCK_INFO",
+            })
+    public void
+            testGetApplicationInfo_getAttributionsLongAndGetAppLockInfoFlags_withPermission_returnsCorrectInfo()
+                    throws Exception {
+        final Context context = getContext();
+        final PackageManager packageManager = context.getPackageManager();
+
+        try (AutoCloseable withAppLockSupportedApp =
+                        installPackageScoped(
+                                APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME);
+                AutoCloseable withLockAppsPermission = setHomeRoleHolderScoped(context)) {
+            assertThat(hasLockAppsPermission(context)).isTrue();
+
+            // With LOCK_APPS, GET_APP_LOCK_INFO should return correct info
+            ApplicationInfo infoWithPermission =
+                    packageManager.getApplicationInfo(
+                            APP_LOCK_SUPPORTED_PACKAGE_NAME,
+                            PackageManager.ApplicationInfoFlags.of(
+                                    PackageManager.GET_ATTRIBUTIONS_LONG
+                                            | PackageManager.GET_APP_LOCK_INFO));
             assertThat(infoWithPermission.isAppLockSupported).isTrue();
             assertThat(infoWithPermission.isAppLockEnabled).isFalse();
         }
@@ -502,7 +621,8 @@ public class ApplicationInfoTest {
             String[] info = packages[i].split("\\.apk=");
             if (info.length != 2) continue; // Package info need include direction and name.
             if (info[0] != null
-                    && (info[0].startsWith(partition + "/") || info[0].startsWith(system + partition + "/"))) {
+                    && (info[0].startsWith(partition + "/")
+                            || info[0].startsWith(system + partition + "/"))) {
                 return info[1]; // Package name.
             }
         }
