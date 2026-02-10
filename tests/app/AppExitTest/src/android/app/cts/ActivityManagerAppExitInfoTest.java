@@ -175,6 +175,7 @@ public final class ActivityManagerAppExitInfoTest {
     private static final int ACTION_KILL = 5;
     private static final int ACTION_ACQUIRE_STABLE_PROVIDER = 6;
     private static final int ACTION_KILL_PROVIDER = 7;
+    private static final int ACTION_UNREGISTER_ANR_LISTENER = 8;
     private static final int EXIT_CODE = 123;
     private static final int CRASH_SIGNAL = OsConstants.SIGSEGV;
 
@@ -988,6 +989,60 @@ public final class ActivityManagerAppExitInfoTest {
             expect.withMessage("ANR Id")
                     .that(info.getAnrInfo().getAnrId())
                     .isEqualTo(mAnrWarningListenerBundle.getInt(KEY_ANR_ID));
+        } finally {
+            monitor.finish();
+        }
+    }
+
+    /**
+     * Validates the ANR warning listener is unregistered correctly.
+     *
+     * <p>This test verifies the flow by performing the following steps:
+     *
+     * <ol>
+     *   <li>It starts a service which in turn registers the ANR warning listener.
+     *   <li>Before the service is unresponsive, it unregisters the ANR warning listener.
+     *   <li>It triggers an ANR by sending an ordered broadcast to the unresponsive service process.
+     *   <li>It then confirms no message is received from the ANR warning listener.
+     * </ol>
+     */
+    @Test
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_INCLUDE_ANR_INFO)
+    public void testUnregisterAnrWarningCallback() {
+        long anrTimeoutMs = getBroadcastAnrTimeout();
+        // Using 3 times the broadcast anr timeout as the test timeout.
+        long broadcastAnrTimeoutMs = anrTimeoutMs * 3;
+
+        // Start a process and block its main thread, unregisters the ANR warning listener before
+        // blocking.
+        startService(ACTION_UNREGISTER_ANR_LISTENER, STUB_ANR_WARNING_SERVICE_NAME, false, false);
+
+        AmMonitor monitor =
+                new AmMonitor(mInstrumentation, new String[] {AmMonitor.WAIT_FOR_CRASHED});
+
+        try {
+            Intent intent =
+                    new Intent()
+                            .setClassName(STUB_PACKAGE_NAME, STUB_RECEIVER_NAME)
+                            .addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
+
+            // This will result an ANR
+            mContext.sendOrderedBroadcast(intent, null);
+
+            // Wait for the early ANR
+            monitor.waitFor(AmMonitor.WAIT_FOR_EARLY_ANR, broadcastAnrTimeoutMs);
+            // Continue, so we could collect ANR traces
+            monitor.sendCommand(AmMonitor.CMD_CONTINUE);
+            // Wait for the ANR
+            monitor.waitFor(AmMonitor.WAIT_FOR_ANR, broadcastAnrTimeoutMs);
+            // Kill it
+            monitor.sendCommand(AmMonitor.CMD_KILL);
+            // Wait the process gone
+            waitForGone(mWatcher);
+
+            // If unregistration was successful, no message was sent from the listener resulting in
+            // the bundle being null still.
+            assertNull(mAnrWarningListenerBundle);
         } finally {
             monitor.finish();
         }
