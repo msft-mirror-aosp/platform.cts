@@ -35,6 +35,7 @@ java_test_host {
     ],
     static_libs: [
         "CompatChangeGatingTestBase",
+        "InteractiveCommon",
     ],
     test_config: "AndroidTest.xml",
 }

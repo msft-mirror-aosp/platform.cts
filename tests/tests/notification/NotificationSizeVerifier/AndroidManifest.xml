@@ -20,7 +20,7 @@
     <uses-permission android:name="android.permission.READ_COMPAT_CHANGE_CONFIG" />
     <uses-permission android:name="android.permission.LOG_COMPAT_CHANGE" />
 
-    <uses-sdk android:minSdkVersion="35" android:targetSdkVersion="35"/>
+    <uses-sdk android:minSdkVersion="36" android:targetSdkVersion="36"/>
 
     <application android:debuggable="true">
         <uses-library android:name="android.test.runner" />

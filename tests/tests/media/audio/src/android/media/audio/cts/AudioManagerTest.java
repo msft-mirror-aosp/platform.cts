@@ -42,6 +42,7 @@ import static android.media.AudioManager.VIBRATE_SETTING_ON;
 import static android.media.AudioManager.VIBRATE_SETTING_ONLY_SILENT;
 import static android.media.AudioManager.VIBRATE_TYPE_NOTIFICATION;
 import static android.media.AudioManager.VIBRATE_TYPE_RINGER;
+import static android.media.AudioTrack.WRITE_NON_BLOCKING;
 import static android.media.audio.Flags.FLAG_SCO_MANAGED_BY_AUDIO;
 import static android.media.audio.cts.AudioTestUtil.resetVolumeIndex;
 import static android.media.audio.cts.AudioVolumeTestRule.INIT_VOL;
@@ -87,10 +88,13 @@ import android.media.AudioDeviceInfo;
 import android.media.AudioFormat;
 import android.media.AudioHalVersionInfo;
 import android.media.AudioManager;
+import android.media.AudioManager.AudioPlaybackCallback;
 import android.media.AudioMixerAttributes;
+import android.media.AudioPlaybackConfiguration;
 import android.media.AudioProfile;
 import android.media.AudioTrack;
 import android.media.BluetoothProfileConnectionInfo;
+import android.media.IVolumeController;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.media.MicrophoneInfo;
@@ -99,6 +103,7 @@ import android.media.audiopolicy.AudioProductStrategy;
 import android.media.audiopolicy.AudioVolumeGroup;
 import android.media.cts.Utils;
 import android.os.Build;
+import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.SystemClock;
 import android.os.Vibrator;
@@ -147,6 +152,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
@@ -203,6 +209,7 @@ public class AudioManagerTest {
     private boolean mHasVibrator;
     private boolean mUseFixedVolume;
     private boolean mIsTelevision;
+    private boolean mIsWatch;
     private boolean mIsSingleVolume;
     private boolean mSkipRingerTests;
     private boolean mSkipAutoVolumeTests = false;
@@ -246,7 +253,7 @@ public class AudioManagerTest {
     public void setUp() throws Exception {
         mContext = getInstrumentation().getContext();
         Utils.enableAppOps(mContext.getPackageName(), APPOPS_OP_STR, getInstrumentation());
-        mAudioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
+        mAudioManager = mContext.getSystemService(AudioManager.class);
         Vibrator vibrator = (Vibrator) mContext.getSystemService(Context.VIBRATOR_SERVICE);
         mNm = (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
         mAppsBypassingDnd = NotificationManager.getService().areChannelsBypassingDnd();
@@ -254,9 +261,14 @@ public class AudioManagerTest {
         mUseFixedVolume = mContext.getResources().getBoolean(
                 Resources.getSystem().getIdentifier("config_useFixedVolume", "bool", "android"));
         PackageManager packageManager = mContext.getPackageManager();
-        mIsTelevision = packageManager != null
-                && (packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
-                        || packageManager.hasSystemFeature(PackageManager.FEATURE_TELEVISION));
+        mIsTelevision =
+                packageManager != null
+                        && (packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
+                                || packageManager.hasSystemFeature(
+                                        PackageManager.FEATURE_TELEVISION));
+        mIsWatch =
+                packageManager != null
+                        && packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH);
         mIsSingleVolume = mContext.getResources().getBoolean(
                 Resources.getSystem().getIdentifier("config_single_volume", "bool", "android"));
         mSkipRingerTests = mUseFixedVolume || mIsTelevision || mIsSingleVolume;
@@ -1251,6 +1263,7 @@ public class AudioManagerTest {
         Flags.FLAG_MANAGE_ASSISTANT_AUDIO_PERMISSION,
         com.android.media.audio.Flags.FLAG_STREAM_ASSISTANT_NOT_ALIASED_TO_MUSIC
     })
+    @CddTest(requirements = {"3.20.1/C-0-1"})
     @Test
     public void testAssistantVolume_withManageAssistantAudio() throws Exception {
         testAssistantVolume(Manifest.permission.MANAGE_ASSISTANT_AUDIO);
@@ -1263,6 +1276,7 @@ public class AudioManagerTest {
                 "AudioManagerTest testAssistantVolume() skipping volume test on automotive",
                 mSkipAutoVolumeTests);
 
+        final int originalMode = mAudioManager.getMode();
         try (PermissionContext ignored = TestApis.permissions().withPermission(permissions)) {
             int originalAssistantVolume = mAudioManager.getStreamVolume(STREAM_ASSISTANT);
             mAudioManager.setStreamVolume(
@@ -1278,11 +1292,267 @@ public class AudioManagerTest {
                             - getVolumeDelta(STREAM_ASSISTANT),
                     "Adjusting default stream should change STREAM_ASSISTANT");
 
-            mAudioManager.setMode(MODE_NORMAL);
+            mAudioManager.setMode(originalMode);
 
             mAudioManager.setStreamVolume(STREAM_ASSISTANT, originalAssistantVolume, 0);
         } finally {
-            mAudioManager.setMode(MODE_NORMAL);
+            mAudioManager.setMode(originalMode);
+        }
+    }
+
+    @RequiresFlagsEnabled(com.android.media.audio.Flags.FLAG_STREAM_ASSISTANT_NOT_ALIASED_TO_MUSIC)
+    @CddTest(requirements = {"3.20.1/C-1-1"})
+    @Test
+    public void testDecoupledStreamAssistant() throws Exception {
+        assumeFalse(
+                "AudioManagerTest testDecoupledStreamAssistant() skipped",
+                mUseFixedVolume || mSkipAutoVolumeTests || mIsWatch || mIsSingleVolume);
+
+        try (PermissionContext ignored =
+                TestApis.permissions()
+                        .withPermission(Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED)) {
+            assertTrue(
+                    "STREAM_ASSISTANT is not an independent stream type",
+                    mAudioManager.getIndependentStreamTypes().contains(STREAM_ASSISTANT));
+        }
+    }
+
+    @RequiresFlagsEnabled(com.android.media.audio.Flags.FLAG_STREAM_ASSISTANT_NOT_ALIASED_TO_MUSIC)
+    @CddTest(requirements = {"3.20.1/C-1-2"})
+    @Test
+    public void testUsageAssistant_controlledByStreamAssistant() throws Exception {
+        assumeFalse(
+                "AudioManagerTest testUsageAssistant_controlledByStreamAssistant() skipped",
+                mUseFixedVolume || mSkipAutoVolumeTests || mIsWatch || mIsSingleVolume);
+
+        try (PermissionContext ignored =
+                TestApis.permissions()
+                        .withPermission(
+                                Manifest.permission.MANAGE_ASSISTANT_AUDIO,
+                                Manifest.permission.MODIFY_AUDIO_ROUTING)) {
+            final int testId = mAudioManager.generateAudioSessionId();
+            final AudioTrack track =
+                    new AudioTrack.Builder()
+                            .setAudioAttributes(
+                                    new AudioAttributes.Builder()
+                                            .setUsage(AudioAttributes.USAGE_ASSISTANT)
+                                            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                                            .setTestId(testId)
+                                            .build())
+                            .setAudioFormat(
+                                    new AudioFormat.Builder()
+                                            .setSampleRate(48000)
+                                            .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                                            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                                            .build())
+                            .build();
+
+            final CompletableFuture<Boolean> playbackConfigChangeFuture = new CompletableFuture<>();
+            final AudioPlaybackCallback callback =
+                    new AudioPlaybackCallback() {
+                        @Override
+                        public void onPlaybackConfigChanged(
+                                List<AudioPlaybackConfiguration> configs) {
+                            for (AudioPlaybackConfiguration config : configs) {
+                                if (config.getAudioAttributes().getTestId() == testId) {
+                                    if (config.isMuted()) {
+                                        playbackConfigChangeFuture.complete(true);
+                                    }
+                                }
+                            }
+                        }
+                    };
+
+            mAudioManager.registerAudioPlaybackCallback(
+                    callback, new Handler(android.os.Looper.getMainLooper()));
+
+            final boolean wasMuted = mAudioManager.isStreamMute(AudioManager.STREAM_ASSISTANT);
+            if (wasMuted) {
+                mAudioManager.adjustStreamVolume(
+                        AudioManager.STREAM_ASSISTANT, AudioManager.ADJUST_UNMUTE, 0);
+            }
+            try {
+                track.play();
+
+                // Write data to keep the track in the playback thread and trigger the mute event
+                byte[] data = new byte[FUTURE_WAIT_SECS * 48000];
+                track.write(data, 0, data.length, WRITE_NON_BLOCKING);
+
+                final Map<Integer, MuteStateTransition> muteAssistantTransition =
+                        Map.of(STREAM_ASSISTANT, new MuteStateTransition(false, true));
+                assertStreamMuteStateChange(
+                        () ->
+                                mAudioManager.adjustStreamVolume(
+                                        STREAM_ASSISTANT, AudioManager.ADJUST_MUTE, 0),
+                        muteAssistantTransition,
+                        "ASSISTANT should be muted");
+                assertTrue(
+                        "AudioPlaybackConfiguration should be muted by STREAM_ASSISTANT",
+                        playbackConfigChangeFuture.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS));
+            } finally {
+                mAudioManager.unregisterAudioPlaybackCallback(callback);
+                track.stop();
+                track.release();
+                mAudioManager.adjustStreamVolume(
+                        AudioManager.STREAM_ASSISTANT,
+                        wasMuted ? AudioManager.ADJUST_MUTE : AudioManager.ADJUST_UNMUTE,
+                        0);
+            }
+        }
+    }
+
+    @RequiresFlagsEnabled(com.android.media.audio.Flags.FLAG_STREAM_ASSISTANT_NOT_ALIASED_TO_MUSIC)
+    @CddTest(requirements = {"3.20.1/C-1-4"})
+    @Test
+    public void testStreamChangeInModeAssistant_noChangeOnStreamAssistant() throws Exception {
+        assumeFalse(
+                "AudioManagerTest testStreamChangeInModeAssistant_noChangeOnStreamAssistant() "
+                        + "skipped",
+                mUseFixedVolume || mSkipAutoVolumeTests || mIsWatch || mIsSingleVolume);
+
+        final int originalMode = mAudioManager.getMode();
+        try (PermissionContext ignored =
+                TestApis.permissions()
+                        .withPermission(
+                                Manifest.permission.MANAGE_ASSISTANT_AUDIO,
+                                Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED)) {
+            mAudioManager.setMode(AudioManager.MODE_ASSISTANT_CONVERSATION);
+
+            try {
+                final int initialAssistantVol =
+                        mAudioManager.getStreamVolume(AudioManager.STREAM_ASSISTANT);
+                for (int stream : mAudioManager.getIndependentStreamTypes()) {
+                    if (stream == AudioManager.STREAM_ASSISTANT
+                            || stream == AudioManager.STREAM_BLUETOOTH_SCO) {
+                        continue;
+                    }
+
+                    final int maxVol = mAudioManager.getStreamMaxVolume(stream);
+                    final int minVol = mAudioManager.getStreamMinVolume(stream);
+                    final int currentVol = mAudioManager.getStreamVolume(stream);
+
+                    int targetVol = (currentVol == maxVol) ? Math.max(minVol, maxVol - 1) : maxVol;
+
+                    mAudioManager.setStreamVolume(stream, targetVol, 0);
+
+                    assertEquals(
+                            "Changing volume of stream "
+                                    + stream
+                                    + " should not affect STREAM_ASSISTANT in Assistant Mode",
+                            initialAssistantVol,
+                            mAudioManager.getStreamVolume(AudioManager.STREAM_ASSISTANT));
+                }
+            } finally {
+                mAudioManager.setMode(originalMode);
+            }
+        }
+    }
+
+    @RequiresFlagsEnabled(com.android.media.audio.Flags.FLAG_STREAM_ASSISTANT_NOT_ALIASED_TO_MUSIC)
+    @CddTest(requirements = {"3.20.1/C-1-5"})
+    @Test
+    public void testModeAssistantVolumeChange_triggersAssistantVolumeChange() throws Exception {
+        assumeFalse(
+                "AudioManagerTest testModeAssistantVolumeChange_triggersAssistantVolumeChange() "
+                        + "skipped",
+                mUseFixedVolume || mSkipAutoVolumeTests || mIsWatch || mIsSingleVolume);
+
+        final int originalMode = mAudioManager.getMode();
+        try (PermissionContext ignored =
+                TestApis.permissions().withPermission(Manifest.permission.MANAGE_ASSISTANT_AUDIO)) {
+            mAudioManager.setMode(AudioManager.MODE_ASSISTANT_CONVERSATION);
+
+            try {
+                final int maxVol = mAudioManager.getStreamMaxVolume(AudioManager.STREAM_ASSISTANT);
+                final int currentVol = mAudioManager.getStreamVolume(AudioManager.STREAM_ASSISTANT);
+
+                // Determine direction to ensure we can change the volume
+                final int direction =
+                        (currentVol >= maxVol)
+                                ? AudioManager.ADJUST_LOWER
+                                : AudioManager.ADJUST_RAISE;
+                final int expectedVol =
+                        (direction == AudioManager.ADJUST_LOWER)
+                                ? currentVol - getVolumeDelta(currentVol)
+                                : currentVol + getVolumeDelta(currentVol);
+
+                assertCallChangesStreamVolume(
+                        () ->
+                                mAudioManager.adjustSuggestedStreamVolume(
+                                        direction, AudioManager.USE_DEFAULT_STREAM_TYPE, 0),
+                        AudioManager.STREAM_ASSISTANT,
+                        expectedVol,
+                        "Adjusting suggested stream in Assistant Mode should change "
+                                + "STREAM_ASSISTANT");
+            } finally {
+                mAudioManager.setMode(originalMode);
+            }
+        }
+    }
+
+    @RequiresFlagsEnabled(com.android.media.audio.Flags.FLAG_STREAM_ASSISTANT_NOT_ALIASED_TO_MUSIC)
+    @CddTest(requirements = {"3.20.1/C-1-6"})
+    @Test
+    public void testAssistantVolChange_triggersUiChange() throws Exception {
+        assumeFalse(
+                "AudioManagerTest testAssistantVolChange_triggersUiChange() skipped",
+                mUseFixedVolume || mSkipAutoVolumeTests || mIsWatch || mIsSingleVolume);
+
+        try (PermissionContext ignored =
+                TestApis.permissions()
+                        .withPermission(
+                                Manifest.permission.STATUS_BAR_SERVICE,
+                                Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED)) {
+            IVolumeController originalController = mAudioManager.getVolumeController();
+            try {
+                final CompletableFuture<Boolean> volumeChangedFuture = new CompletableFuture<>();
+                IVolumeController testController =
+                        new IVolumeController.Stub() {
+                            @Override
+                            public void displaySafeVolumeWarning(int flags)
+                                    throws android.os.RemoteException {}
+
+                            @Override
+                            public void volumeChanged(int streamType, int flags)
+                                    throws android.os.RemoteException {
+                                if (streamType == AudioManager.STREAM_ASSISTANT) {
+                                    volumeChangedFuture.complete(true);
+                                }
+                            }
+
+                            @Override
+                            public void masterMuteChanged(int flags)
+                                    throws android.os.RemoteException {}
+
+                            @Override
+                            public void setLayoutDirection(int layoutDirection)
+                                    throws android.os.RemoteException {}
+
+                            @Override
+                            public void dismiss() throws android.os.RemoteException {}
+
+                            @Override
+                            public void setA11yMode(int mode) throws android.os.RemoteException {}
+
+                            @Override
+                            public void displayCsdWarning(int warning, int displayDurationMs)
+                                    throws android.os.RemoteException {}
+                        };
+
+                mAudioManager.setVolumeController(testController);
+
+                // Adjust volume to trigger the controller
+                mAudioManager.adjustStreamVolume(
+                        AudioManager.STREAM_ASSISTANT,
+                        AudioManager.ADJUST_RAISE,
+                        AudioManager.FLAG_SHOW_UI);
+
+                assertTrue(
+                        "Volume change for STREAM_ASSISTANT should trigger UI",
+                        volumeChangedFuture.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS));
+            } finally {
+                mAudioManager.setVolumeController(originalController);
+            }
         }
     }
 

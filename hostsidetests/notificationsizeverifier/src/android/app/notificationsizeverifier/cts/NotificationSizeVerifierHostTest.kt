@@ -19,6 +19,7 @@ package android.app.notificationsizeverifier.cts
 import android.compat.cts.CompatChangeGatingTestCase
 import com.android.ddmlib.testrunner.RemoteAndroidTestRunner
 import com.android.ddmlib.testrunner.TestResult.TestStatus
+import com.android.interactive.annotations.Interactive
 import com.android.tradefed.log.LogUtil.CLog
 import com.android.tradefed.result.CollectingTestListener
 import com.android.tradefed.util.RunUtil
@@ -109,6 +110,7 @@ class NotificationSizeVerifierHostTest : CompatChangeGatingTestCase() {
     }
 
     private fun runDeviceTest(methodName: String, compatChangeEnabledForTestPkg: Boolean = false) {
+        CLog.i("Starting test %s ...", methodName)
         val userId = device.currentUser
         val enabledChanges: Set<Long> =
             if (compatChangeEnabledForTestPkg) {
@@ -176,34 +178,42 @@ class NotificationSizeVerifierHostTest : CompatChangeGatingTestCase() {
         }
     }
 
+    @Interactive
     fun testBitmapOverLimit_ChangeEnabled() {
         runDeviceTest("bitmapOverLimit_ChangeEnabled", true)
     }
 
+    @Interactive
     fun testBitmapUnderLimit_ChangeEnabled() {
         runDeviceTest("bitmapUnderLimit_ChangeEnabled", true)
     }
 
+    @Interactive
     fun testUriOverLimit_ChangeEnabled() {
         runDeviceTest("uriOverLimit_ChangeEnabled", true)
     }
 
+    @Interactive
     fun testUriUnderLimit_ChangeEnabled() {
         runDeviceTest("uriUnderLimit_ChangeEnabled", true)
     }
 
+    @Interactive
     fun testBitmapOverLimit_ChangeDisabled() {
         runDeviceTest("bitmapOverLimit_ChangeDisabled", false)
     }
 
+    @Interactive
     fun testBitmapUnderLimit_ChangeDisabled() {
         runDeviceTest("bitmapUnderLimit_ChangeDisabled", false)
     }
 
+    @Interactive
     fun testUriOverLimit_ChangeDisabled() {
         runDeviceTest("uriOverLimit_ChangeDisabled", false)
     }
 
+    @Interactive
     fun testUriUnderLimit_ChangeDisabled() {
         runDeviceTest("uriUnderLimit_ChangeDisabled", false)
     }

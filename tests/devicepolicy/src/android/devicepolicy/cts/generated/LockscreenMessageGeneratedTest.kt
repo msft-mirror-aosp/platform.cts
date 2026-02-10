@@ -50,7 +50,7 @@ public final class LockscreenMessagePolicyScopeUser
             Permission(
                 appliedWith =
                     [
-                        "android.permission.MANAGE_DEVICE_POLICY_LOCKSCREEN_INFO",
+                        "android.permission.MANAGE_DEVICE_POLICY_LOCKSCREEN_MESSAGE",
                         "android.permission.MANAGE_DEVICE_POLICY_ACROSS_USERS",
                     ],
                 appliesTo = APPLIES_GLOBALLY,

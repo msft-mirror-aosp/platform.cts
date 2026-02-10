@@ -26,6 +26,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
 import android.Manifest;
 import android.app.Instrumentation;
@@ -49,6 +50,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import com.google.common.collect.ImmutableList;
@@ -83,6 +85,8 @@ public class AudioDeviceVolumeManagerTest {
     private boolean mIsTelevision;
     private boolean mIsSingleVolume;
     private boolean mSkipAdvmTests;
+    private boolean mIsWatch;
+    private boolean mIsAutomotive;
     private Context mContext;
 
     private static final AudioDeviceAttributes BT_DEV = new AudioDeviceAttributes(
@@ -155,6 +159,7 @@ public class AudioDeviceVolumeManagerTest {
                 .adoptShellPermissionIdentity(
                         Manifest.permission.MODIFY_AUDIO_ROUTING,
                         Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED,
+                        Manifest.permission.MANAGE_ASSISTANT_AUDIO,
                         Manifest.permission.STATUS_BAR_SERVICE,
                         Manifest.permission.ACCESS_NOTIFICATION_POLICY);
         mADVmgr = mContext.getSystemService(AudioDeviceVolumeManager.class);
@@ -177,6 +182,12 @@ public class AudioDeviceVolumeManagerTest {
                                 Resources.getSystem()
                                         .getIdentifier("config_single_volume", "bool", "android"));
         mSkipAdvmTests = mUseFixedVolume || mIsTelevision || mIsSingleVolume;
+        mIsWatch =
+                packageManager != null
+                        && packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH);
+        mIsAutomotive =
+                packageManager != null
+                        && packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
 
         final VolumeInfo volMedia = new VolumeInfo.Builder(AudioManager.STREAM_MUSIC).build();
         mPrevVolume.put(BT_DEV, mADVmgr.getDeviceVolume(volMedia, BT_DEV));
@@ -710,6 +721,100 @@ public class AudioDeviceVolumeManagerTest {
                 /* activeDevice= */ false,
                 /* volumeIndexWithoutMute= */ nextVolume.getVolumeIndex(),
                 useVolumeForDevice);
+    }
+
+    @RequiresFlagsEnabled(com.android.media.audio.Flags.FLAG_STREAM_ASSISTANT_NOT_ALIASED_TO_MUSIC)
+    @CddTest(requirements = {"3.20.1/C-1-3"})
+    @Test
+    public void testStreamAssistant_mirrorsA2dpToSco() throws Exception {
+        verifyStreamAssistantMirroring(
+                BT_DEV, BT_SCO_DEV, "Volume on SCO should mirror A2DP for STREAM_ASSISTANT");
+    }
+
+    @RequiresFlagsEnabled(com.android.media.audio.Flags.FLAG_STREAM_ASSISTANT_NOT_ALIASED_TO_MUSIC)
+    @CddTest(requirements = {"3.20.1/C-1-3"})
+    @Test
+    public void testStreamAssistant_mirrorsScoToA2dp() throws Exception {
+        verifyStreamAssistantMirroring(
+                BT_SCO_DEV, BT_DEV, "Volume on A2DP should mirror SCO for STREAM_ASSISTANT");
+    }
+
+    private void verifyStreamAssistantMirroring(
+            AudioDeviceAttributes fromDevice,
+            AudioDeviceAttributes toDevice,
+            String assertMessage) {
+        assumeFalse(
+                "AudioManagerTest verifyStreamAssistantMirroring() skipped",
+                mUseFixedVolume || mIsAutomotive || mIsWatch || mIsSingleVolume);
+
+        final int maxIndex = mAm.getStreamMaxVolume(AudioManager.STREAM_ASSISTANT);
+        final int minIndex = mAm.getStreamMinVolume(AudioManager.STREAM_ASSISTANT);
+        final int targetIndex = (maxIndex + minIndex) / 2;
+
+        final VolumeInfo targetVol =
+                new VolumeInfo.Builder(AudioManager.STREAM_ASSISTANT)
+                        .setVolumeIndex(targetIndex)
+                        .build();
+
+        mADVmgr.setVolumeForDevice(targetVol, fromDevice);
+
+        final VolumeInfo mirroredVol = mADVmgr.getDeviceVolume(targetVol, toDevice);
+        assertEquals(assertMessage, targetIndex, mirroredVol.getVolumeIndex());
+    }
+
+    @RequiresFlagsEnabled(com.android.media.audio.Flags.FLAG_STREAM_ASSISTANT_NOT_ALIASED_TO_MUSIC)
+    @CddTest(requirements = {"3.20.1/C-1-5"})
+    @Test
+    public void testModeAssistantVolumeChange_triggersAssistantVolumeChange() throws Exception {
+        assumeFalse(
+                "AudioManagerTest testModeAssistantVolumeChange_triggersAssistantVolumeChange() "
+                        + "skipped",
+                mUseFixedVolume || mIsAutomotive || mIsWatch || mIsSingleVolume);
+
+        final int originalMode = mAm.getMode();
+        mAm.setMode(AudioManager.MODE_ASSISTANT_CONVERSATION);
+
+        try {
+            final int vcMax = mAm.getStreamMaxVolume(AudioManager.STREAM_VOICE_CALL);
+            final int vcMin = mAm.getStreamMinVolume(AudioManager.STREAM_VOICE_CALL);
+
+            final int astMax = mAm.getStreamMaxVolume(AudioManager.STREAM_ASSISTANT);
+            final int astMin = mAm.getStreamMinVolume(AudioManager.STREAM_ASSISTANT);
+
+            VolumeInfo volInfoMax =
+                    new VolumeInfo.Builder(AudioManager.STREAM_VOICE_CALL)
+                            .setMinVolumeIndex(vcMin)
+                            .setMaxVolumeIndex(vcMax)
+                            .setVolumeIndex(vcMax)
+                            .build();
+            mADVmgr.notifyAbsoluteVolumeChanged(volInfoMax, BT_SCO_DEV);
+
+            final VolumeInfo targetVol =
+                    new VolumeInfo.Builder(AudioManager.STREAM_ASSISTANT).build();
+            final SleepAssertIntEquals checkVol =
+                    new SleepAssertIntEquals(5000 /*maxWaitMs*/, 50 /*periodMs*/, mContext);
+            checkVol.assertEqualsSleep(
+                    astMax /*expected*/,
+                    () -> mADVmgr.getDeviceVolume(targetVol, BT_SCO_DEV).getVolumeIndex(),
+                    "STREAM_ASSISTANT should be at max when VOICE_CALL peripheral reports max"
+                            + " in Assistant Mode");
+
+            VolumeInfo volInfoMin =
+                    new VolumeInfo.Builder(AudioManager.STREAM_VOICE_CALL)
+                            .setMinVolumeIndex(vcMin)
+                            .setMaxVolumeIndex(vcMax)
+                            .setVolumeIndex(vcMin)
+                            .build();
+            mADVmgr.notifyAbsoluteVolumeChanged(volInfoMin, BT_SCO_DEV);
+
+            checkVol.assertEqualsSleep(
+                    astMin /*expected*/,
+                    () -> mADVmgr.getDeviceVolume(targetVol, BT_SCO_DEV).getVolumeIndex(),
+                    "STREAM_ASSISTANT should be at min when VOICE_CALL peripheral reports min"
+                            + " in Assistant Mode");
+        } finally {
+            mAm.setMode(originalMode);
+        }
     }
 
     private void checkIndexVolumeInfoEquals(VolumeInfo expected, VolumeInfo info) {

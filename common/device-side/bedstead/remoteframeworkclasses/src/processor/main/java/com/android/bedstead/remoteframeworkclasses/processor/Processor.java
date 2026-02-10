@@ -40,6 +40,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -135,59 +136,63 @@ public final class Processor extends AbstractProcessor {
             loadList("/apis/type-blocklist.txt");
 
     // TODO(b/436548677): Remove once templates are supported.
-    private static final MethodSignature[] ALLOWLISTED_METHODS =
-            new MethodSignature[] {
-                MethodSignature.forHardcoded(
-                        MethodSignature.Visibility.PUBLIC,
-                        "android.accounts.AccountManagerFuture<V>",
-                        "addAccount",
-                        List.of(
-                                "java.lang.String",
-                                "java.lang.String",
-                                "java.lang.String[]",
-                                "android.os.Bundle",
-                                "android.app.Activity",
-                                "android.accounts.AccountManagerCallback<V>",
-                                "android.os.Handler")),
-                MethodSignature.forHardcoded(
-                        MethodSignature.Visibility.PUBLIC,
-                        "android.accounts.AccountManagerFuture<V>",
-                        "removeAccount",
-                        List.of(
-                                "android.accounts.Account",
-                                "android.app.Activity",
-                                "android.accounts.AccountManagerCallback<V>",
-                                "android.os.Handler")),
-                MethodSignature.forHardcoded(
-                        MethodSignature.Visibility.PUBLIC,
-                        "android.app.admin.DevicePolicyManager",
-                        "getParentProfileInstance",
-                        List.of("android.content.ComponentName")),
-                MethodSignature.forHardcoded(
-                        MethodSignature.Visibility.PUBLIC,
-                        "android.accounts.AccountManagerFuture<V>",
-                        "updateCredentials",
-                        List.of(
-                                "android.accounts.Account",
-                                "java.lang.String",
-                                "android.os.Bundle",
-                                "android.app.Activity",
-                                "android.accounts.AccountManagerCallback<V>",
-                                "android.os.Handler")),
-                MethodSignature.forHardcoded(
-                        MethodSignature.Visibility.PUBLIC,
-                        "android.content.ContentResolver",
-                        "getContentResolver",
-                        List.of()),
-                MethodSignature.forHardcoded(
-                        MethodSignature.Visibility.PUBLIC,
-                        "java.security.PrivateKey",
-                        "getPrivateKey",
-                        List.of("android.content.Context", "java.lang.String"),
-                        Set.of(
-                                "java.lang.InterruptedException",
-                                "android.security.KeyChainException"))
-            };
+    private static final Set<MethodSignature> ALLOWLISTED_METHODS =
+            Set.of(
+                    MethodSignature.forHardcoded(
+                            MethodSignature.Visibility.PUBLIC,
+                            "android.accounts.AccountManagerFuture<android.os.Bundle>",
+                            "addAccount",
+                            List.of(
+                                    "java.lang.String",
+                                    "java.lang.String",
+                                    "java.lang.String[]",
+                                    "android.os.Bundle",
+                                    "android.app.Activity",
+                                    "android.accounts.AccountManagerCallback<android.os.Bundle>",
+                                    "android.os.Handler")),
+                    MethodSignature.forHardcoded(
+                            MethodSignature.Visibility.PUBLIC,
+                            "android.accounts.AccountManagerFuture<android.os.Bundle>",
+                            "removeAccount",
+                            List.of(
+                                    "android.accounts.Account",
+                                    "android.app.Activity",
+                                    "android.accounts.AccountManagerCallback<android.os.Bundle>",
+                                    "android.os.Handler")),
+                    MethodSignature.forHardcoded(
+                            MethodSignature.Visibility.PUBLIC,
+                            "android.app.admin.DevicePolicyManager",
+                            "getParentProfileInstance",
+                            List.of("android.content.ComponentName")),
+                    MethodSignature.forHardcoded(
+                            MethodSignature.Visibility.PUBLIC,
+                            "android.accounts.AccountManagerFuture<android.os.Bundle>",
+                            "updateCredentials",
+                            List.of(
+                                    "android.accounts.Account",
+                                    "java.lang.String",
+                                    "android.os.Bundle",
+                                    "android.app.Activity",
+                                    "android.accounts.AccountManagerCallback<android.os.Bundle>",
+                                    "android.os.Handler")),
+                    MethodSignature.forHardcoded(
+                            MethodSignature.Visibility.PUBLIC,
+                            "android.content.ContentResolver",
+                            "getContentResolver",
+                            List.of()),
+                    MethodSignature.forHardcoded(
+                            MethodSignature.Visibility.PUBLIC,
+                            "java.security.PrivateKey",
+                            "getPrivateKey",
+                            List.of("android.content.Context", "java.lang.String"),
+                            Set.of(
+                                    "java.lang.InterruptedException",
+                                    "android.security.KeyChainException")),
+                    MethodSignature.forHardcoded(
+                            MethodSignature.Visibility.PUBLIC,
+                            "java.lang.String",
+                            "getSystemServiceName",
+                            List.of("java.lang.Class<?>")));
 
     /** A set of all classes listed in test-current.txt. */
     static final ImmutableSet<ClassSignature> CLASSES_LISTED_IN_TEST_CURRENT_FILE =
@@ -250,12 +255,9 @@ public final class Processor extends AbstractProcessor {
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         if (!roundEnv.getElementsAnnotatedWith(RemoteFrameworkClasses.class).isEmpty()) {
-            Set<MethodSignature> allowListedMethods =
-                    new HashSet<>(Arrays.asList(ALLOWLISTED_METHODS));
-
             for (String systemService : FRAMEWORK_CLASSES) {
                 TypeElement typeElement = mElementUtils.getTypeElement(systemService);
-                generateRemoteSystemService(typeElement, allowListedMethods);
+                generateRemoteSystemService(typeElement);
             }
 
             generateWrappers();
@@ -306,20 +308,19 @@ public final class Processor extends AbstractProcessor {
         }
     }
 
-    private void generateRemoteSystemService(
-            TypeElement frameworkClass, Set<MethodSignature> allowListedMethods) {
-        Set<Api> apis =
+    private void generateRemoteSystemService(TypeElement frameworkClass) {
+        List<Api> apis =
                 filterMethods(
                                 frameworkClass,
                                 getMethods(frameworkClass),
                                 Apis.forClass(
                                         frameworkClass.getQualifiedName().toString(),
-                                        processingEnv.getTypeUtils(),
                                         mElementUtils))
                         .stream()
-                        .filter(api -> !usesBlocklistedType(api, allowListedMethods))
+                        .filter(api -> !usesBlocklistedType(api))
                         .filter(api -> !parametersHaveWildcards(api.method))
-                        .collect(Collectors.toSet());
+                        .sorted(Comparator.comparing(api -> api.method.name))
+                        .collect(Collectors.toList());
 
         generateFrameworkInterface(frameworkClass, apis);
         generateFrameworkImpl(frameworkClass, apis);
@@ -335,10 +336,8 @@ public final class Processor extends AbstractProcessor {
     }
 
     private boolean parametersHaveWildcards(MethodSpec method) {
-        // getSystemServiceName returns a Class<?> which still works
-        // with @CrossUser and is used.
-        if (method.name.equals("getSystemServiceName")) {
-            return false;
+        if (ALLOWLISTED_METHODS.contains(MethodSignature.forMethodSpec(method))) {
+            return false; // Special case hacked in methods
         }
 
         for (ParameterSpec parameter : method.parameters) {
@@ -369,9 +368,10 @@ public final class Processor extends AbstractProcessor {
         return false;
     }
 
-    private boolean usesBlocklistedType(Api api, Set<MethodSignature> allowListedMethods) {
+    private boolean usesBlocklistedType(Api api) {
         MethodSpec method = api.method;
-        if (allowListedMethods.contains(MethodSignature.forMethodSpec(method))) {
+
+        if (ALLOWLISTED_METHODS.contains(MethodSignature.forMethodSpec(method))) {
             return false; // Special case hacked in methods
         }
 
@@ -399,7 +399,7 @@ public final class Processor extends AbstractProcessor {
         return false;
     }
 
-    private void generateFrameworkInterface(TypeElement frameworkClass, Set<Api> apis) {
+    private void generateFrameworkInterface(TypeElement frameworkClass, List<Api> apis) {
         String packageName = frameworkClass.getEnclosingElement().toString();
         ClassName className =
                 ClassName.get(packageName, "Remote" + frameworkClass.getSimpleName().toString());
@@ -475,7 +475,7 @@ public final class Processor extends AbstractProcessor {
         writeClassToFile(packageName, classBuilder.build());
     }
 
-    private void generateDpmParent(TypeElement frameworkClass, Set<Api> apis) {
+    private void generateDpmParent(TypeElement frameworkClass, List<Api> apis) {
         String packageName = frameworkClass.getEnclosingElement().toString();
         ClassName className =
                 ClassName.get(packageName, "Remote" + frameworkClass.getSimpleName() + "Parent");
@@ -537,11 +537,6 @@ public final class Processor extends AbstractProcessor {
                 methodBuilder.returns(
                         ClassName.get("android.app.admin", "RemoteDevicePolicyManager"));
                 methodBuilder.addStatement(
-                        "mFrameworkClass.getParentProfileInstance(profileOwnerComponentName).$L"
-                                + "($L)",
-                        method.name,
-                        String.join(", ", paramNames));
-                methodBuilder.addStatement(
                         "throw new $T($S)",
                         UnsupportedOperationException.class,
                         "TestApp does not support calling .getParentProfileInstance() on a parent"
@@ -599,7 +594,7 @@ public final class Processor extends AbstractProcessor {
         writeClassToFile(packageName, classBuilder.build());
     }
 
-    private void generateFrameworkImpl(TypeElement frameworkClass, Set<Api> apis) {
+    private void generateFrameworkImpl(TypeElement frameworkClass, List<Api> apis) {
         String packageName = frameworkClass.getEnclosingElement().toString();
         ClassName interfaceClassName =
                 ClassName.get(packageName, "Remote" + frameworkClass.getSimpleName().toString());
@@ -663,17 +658,6 @@ public final class Processor extends AbstractProcessor {
 
             if (FRAMEWORK_SIGNATURE_RETURN_OVERRIDES.containsKey(signature)) {
                 methodBuilder.returns(FRAMEWORK_SIGNATURE_RETURN_OVERRIDES.get(signature));
-
-                ClassName iClassName = FRAMEWORK_SIGNATURE_RETURN_OVERRIDES.get(signature);
-                ClassName implClassName =
-                        ClassName.get(iClassName.packageName(), iClassName.simpleName() + "Impl");
-
-                methodBuilder.addStatement(
-                        "$1T ret = new $1T($2L.$3L($4L))",
-                        implClassName,
-                        frameworkClassName,
-                        signature.getName(),
-                        String.join(", ", paramNames));
                 // We assume all replacements are null-only
                 methodBuilder.addStatement("return null");
             } else if (method.returnType.equals(TypeName.VOID)) {
@@ -837,7 +821,6 @@ public final class Processor extends AbstractProcessor {
     }
 
     private void getMethods(Map<String, ExecutableElement> methods, TypeElement interfaceClass) {
-
         interfaceClass.getEnclosedElements().stream()
                 .filter(e -> e instanceof ExecutableElement)
                 .map(e -> (ExecutableElement) e)
