@@ -93,7 +93,6 @@ import com.android.cts.IBinderPermissionTestService;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -1313,18 +1312,20 @@ public class ContextTest {
         mContext.revokeUriPermission(URI, Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
     }
 
-    @Ignore("b/481943933")
     @Test
     public void testBindAllowFreezeProhibited() {
-        MockContextService.reset();
-        assertThrows(
-                "No SecurityException while using BIND_ALLOW_FREEZE with bindService",
-                SecurityException.class,
-                () ->
-                        mContext.bindService(
-                                new Intent(mContext, MockContextService.class),
-                                new TestConnection(),
-                                Context.BindServiceFlags.of(Context.BIND_ALLOW_FREEZE)));
+        bindBinderPermissionTestService();
+        try {
+            final Intent intent = new Intent(mContext, MockContextService.class);
+            assertThrows(
+                    "No SecurityException while using BIND_ALLOW_FREEZE with bindService",
+                    SecurityException.class,
+                    () ->
+                            mBinderPermissionTestService.doBindServiceExpectingFailure(
+                                    intent, Context.BIND_ALLOW_FREEZE));
+        } finally {
+            mContext.unbindService(mBinderPermissionTestConnection);
+        }
     }
 
     @Test
