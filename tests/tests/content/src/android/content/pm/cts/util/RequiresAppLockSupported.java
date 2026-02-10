@@ -24,6 +24,14 @@ import java.lang.annotation.Target;
 /**
  * Annotation for a test that should only be run on devices that support App Lock. Tests with this
  * annotation will be skipped on devices that do not support the feature (i.e. TV, Watch & Auto).
+ * <p>For this annotation to work, the calling class must declare an {@link AppLockSupportRule}
+ * as a {@code @Rule}.
+ *
+ * <p>Example usage:
+ * <pre>
+ * &#64;Rule
+ * public final AppLockSupportRule mAppLockSupportRule = new AppLockSupportRule();
+ * </pre>
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.TYPE})
