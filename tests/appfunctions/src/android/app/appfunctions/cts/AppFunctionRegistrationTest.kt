@@ -283,7 +283,7 @@ class AppFunctionRegistrationTest {
     @Throws(Exception::class)
     fun register_serviceLevelFunction_reportsInvalidArgumentError() {
         assertFailsWith<IllegalArgumentException>() {
-            registerAppFunction(CtsApp.FunctionNames.ADD.functionId, ConcatStrings())
+            registerAppFunction(CtsApp.FunctionNames.ADD.functionIdentifier, ConcatStrings())
         }
     }
 
