@@ -24,6 +24,8 @@ java_test_host {
         "compatibility-host-util",
         "cts-host-utils",
         "cts-media-videoquality-bdrate-lib",
+        "codecdb-host-result-reporter",
+        "guava",
     ],
     libs: [
         "cts-tradefed",
