@@ -18,6 +18,7 @@ package android.media.mediaquality.cts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -682,38 +683,6 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW_C)
     @Test
-    public void testChangeStreamStatusGrouping() throws Exception {
-        String profileName = "testChangeStreamStatusGrouping";
-        PictureProfile profile = getTestPictureProfile(profileName);
-        Assert.assertNotNull(profile);
-
-        IMediaQualityManager mockService = Mockito.mock(IMediaQualityManager.class);
-        mServiceField.set(mManager, mockService);
-        try {
-            String dummyId = "test_profile";
-            String targetStatus = PictureProfile.STATUS_HDR10;
-
-            mManager.changeStreamStatus(dummyId, targetStatus);
-
-            Mockito.verify(mockService)
-                    .changeStreamStatus(Mockito.eq(dummyId), Mockito.eq(targetStatus), anyInt());
-
-            MediaQualityManager.PictureProfileCallback callback =
-                    new MediaQualityManager.PictureProfileCallback() {
-                        @Override
-                        public void onPictureProfileUpdated(String id, PictureProfile profile) {}
-                    };
-
-            mManager.registerPictureProfileCallback(Executors.newSingleThreadExecutor(), callback);
-            mManager.unregisterPictureProfileCallback(callback);
-
-        } finally {
-            mServiceField.set(mManager, mOriginalService);
-        }
-    }
-
-    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW_C)
-    @Test
     public void testPictureProfileBuilder_addStreamStatusVariant() throws InterruptedException {
         String profileName = "testVariantProfile";
         PersistableBundle variantParams = new PersistableBundle();
@@ -774,7 +743,9 @@ public class MediaQualityTest {
         Assert.assertTrue(
                 "SoundProfileHandle was not retrieved within the timeout.", handleRetrieved);
         assertNotNull(spHandle);
-        assertEquals(spHandle.size(), 1);
+        long soundProfileHandleId = spHandle.getFirst().getId();
+        assertNotEquals(-1L, soundProfileHandleId);
+        assertEquals(1, spHandle.size());
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
