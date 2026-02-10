@@ -25,6 +25,7 @@ import com.android.bedstead.settings.SettingsPreferenceMetadataParameter.Compani
 import com.android.bedstead.settings.SettingsPreferenceMetadataParameter.Companion.PREFERENCE_FILTER_READ_PERMISSIONS_NOT_EMPTY
 import com.android.bedstead.settings.SettingsPreferenceMetadataParameter.Companion.PREFERENCE_FILTER_WRITE_PERMISSIONS_NOT_EMPTY
 import com.android.bedstead.settings.appfunctions.AppFunctionsComponent
+import com.android.bedstead.settings.appfunctions.DeviceStateItemsParameter
 import com.android.bedstead.settings.appfunctions.PerScreenDeviceStatesParameter
 import org.junit.runners.model.FrameworkMethod
 
@@ -47,6 +48,11 @@ class SettingsParameterizedTestWithArgumentGenerator(
             is SettingsPreferenceMetadataParameter -> annotation.logic(frameworkMethod)
             is PerScreenDeviceStatesParameter -> appFunctionsComponent
                 .perScreenDeviceStatesParameter(
+                    annotation,
+                    frameworkMethod
+                )
+            is DeviceStateItemsParameter -> appFunctionsComponent
+                .deviceStateItemsParameter(
                     annotation,
                     frameworkMethod
                 )
