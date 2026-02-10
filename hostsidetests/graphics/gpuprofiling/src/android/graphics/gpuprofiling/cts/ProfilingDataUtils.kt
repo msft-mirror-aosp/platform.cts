@@ -63,11 +63,11 @@ class GpuCounters(trace: Trace) {
     var counterDescriptorError: String = ""
 
     init {
-        val clockSnapshots = trace.getTraceClockSnapshots()
+        val clockSnapshots = ClockSnapshots(trace)
 
         var mutableCounterSpecs: MutableMap<Int, GpuCounterSpec> = mutableMapOf()
         var mutableCounterValues: MutableMap<Int, MutableList<GpuCounterValue>> = mutableMapOf()
-        var mutableCounterEventTimes: MutableList<Long> = mutableListOf()
+        var mutableCounterEventTimes: MutableSet<Long> = mutableSetOf()
 
         for (packet in trace.packetList) {
             if (!packet.hasGpuCounterEvent()) continue
@@ -103,8 +103,7 @@ class GpuCounters(trace: Trace) {
         counterValues = mutableCounterValues.mapValues {
             list -> list.value.sortedBy { it.timestamp }.toList()
         }
-        mutableCounterEventTimes.sort()
-        eventTimestampsNs = mutableCounterEventTimes
+        eventTimestampsNs = mutableCounterEventTimes.toList().sorted()
     }
 }
 
@@ -112,11 +111,11 @@ fun Trace.deviceSupportsRayTracing(): Boolean? {
     for (packet in packetList) {
         if (!packet.hasFtraceEvents()) continue
 
-        val eventBundle = packet.getFtraceEvents()
+        val eventBundle = packet.ftraceEvents
         for (event in eventBundle.eventList) {
             if (!event.hasPrint()) continue
 
-            val ftraceBufItems = event.getPrint().getBuf().trim().split("|")
+            val ftraceBufItems = event.print.buf.trim().split("|")
             // Ray tracing is reported via Atrace, with 1 meaning it's supported and 0 meaning not.
             if (ftraceBufItems.contains(RAYTRACING_SUPPORT_EVENT)) {
                 return when (ftraceBufItems.last()) {
