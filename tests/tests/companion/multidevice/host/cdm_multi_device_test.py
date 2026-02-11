@@ -188,7 +188,7 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
 
         # Set local metadata _before_ transports are attached
         user_id = self.primary.adb.current_user_id
-        shell_command = f'cmd companiondevice set-local-metadata {0} A lorem ipsum'.format(user_id)
+        shell_command = f'cmd companiondevice set-local-metadata {user_id} A lorem ipsum'
         self.primary.adb.shell(shell_command)
 
         # Attach transports
@@ -205,7 +205,7 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         asserts.assert_equal('ipsum', metadata.get('lorem'), 'Received incorrect metadata.')
 
         # Set local metadata _after_ transports are attached
-        shell_command = f'cmd companiondevice set-local-metadata {0} B version 1'.format(user_id)
+        shell_command = f'cmd companiondevice set-local-metadata {user_id} B version 1'
         self.primary.adb.shell(shell_command)
 
         # Assert that updated metadata is broadcasted
