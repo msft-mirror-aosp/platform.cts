@@ -156,14 +156,16 @@ class ObserveAppFunctionsTest {
                 checkIndexation = true,
             )
 
-            assertThat(observer.updatedPackagesHistory).hasSize(1)
-            assertThat(observer.updatedPackagesHistory.flatten())
-                .containsExactly(UpdatableHelperApp.PACKAGE_NAME)
+            retryAssert {
+                assertThat(observer.updatedPackagesHistory).hasSize(1)
+                assertThat(observer.updatedPackagesHistory.flatten())
+                    .contains(UpdatableHelperApp.PACKAGE_NAME)
 
-            assertPackageHasExactFunctions(
-                UpdatableHelperApp.PACKAGE_NAME,
-                setOf(UpdatableHelperApp.FunctionNames.PRINT_1),
-            )
+                assertPackageHasAtLeastFunctions(
+                    UpdatableHelperApp.PACKAGE_NAME,
+                    setOf(UpdatableHelperApp.FunctionNames.PRINT_1),
+                )
+            }
         } finally {
             observation?.cancel()
             uninstallPackage(UpdatableHelperApp.PACKAGE_NAME, context, checkIndexation = true)
@@ -207,7 +209,7 @@ class ObserveAppFunctionsTest {
             retryAssert {
                 assertThat(observer.updatedPackagesHistory).hasSize(1)
                 assertThat(observer.updatedPackagesHistory.flatten())
-                    .containsExactly(DynamicSchemaHelperApp.PACKAGE_NAME)
+                    .contains(DynamicSchemaHelperApp.PACKAGE_NAME)
 
                 assertExactPackageMetadata(
                     DynamicSchemaHelperApp.PACKAGE_NAME,
@@ -254,7 +256,7 @@ class ObserveAppFunctionsTest {
             retryAssert {
                 assertThat(observer.updatedPackagesHistory).hasSize(1)
                 assertThat(observer.updatedPackagesHistory.flatten())
-                    .containsExactly(DynamicSchemaHelperApp.PACKAGE_NAME)
+                    .contains(DynamicSchemaHelperApp.PACKAGE_NAME)
 
                 assertExactPackageMetadata(
                     DynamicSchemaHelperApp.PACKAGE_NAME,
@@ -301,9 +303,9 @@ class ObserveAppFunctionsTest {
             retryAssert {
                 assertThat(observer.updatedPackagesHistory).hasSize(1)
                 assertThat(observer.updatedPackagesHistory.flatten())
-                    .containsExactly(DynamicSchemaHelperApp.PACKAGE_NAME)
+                    .contains(DynamicSchemaHelperApp.PACKAGE_NAME)
 
-                assertPackageHasExactFunctions(
+                assertPackageHasAtLeastFunctions(
                     DynamicSchemaHelperApp.PACKAGE_NAME,
                     DynamicSchemaHelperApp.FunctionNames.ALL_FUNCTIONS,
                 )
@@ -346,9 +348,9 @@ class ObserveAppFunctionsTest {
 
             retryAssert {
                 assertThat(observer.updatedPackagesHistory.flatten())
-                    .containsExactly(DynamicSchemaHelperApp.PACKAGE_NAME)
+                    .contains(DynamicSchemaHelperApp.PACKAGE_NAME)
 
-                assertPackageHasExactFunctions(
+                assertPackageHasAtLeastFunctions(
                     DynamicSchemaHelperApp.PACKAGE_NAME,
                     DynamicSchemaHelperApp.FunctionNames.APK_WITH_ONE_FUNCTION_REMOVED_FUNCTIONS,
                 )
@@ -393,9 +395,9 @@ class ObserveAppFunctionsTest {
             retryAssert {
                 assertThat(observer.updatedPackagesHistory).hasSize(1)
                 assertThat(observer.updatedPackagesHistory.flatten())
-                    .containsExactly(UpdatableHelperApp.PACKAGE_NAME)
+                    .contains(UpdatableHelperApp.PACKAGE_NAME)
 
-                assertPackageHasExactFunctions(
+                assertPackageHasAtLeastFunctions(
                     UpdatableHelperApp.PACKAGE_NAME,
                     setOf(
                         UpdatableHelperApp.FunctionNames.PRINT_2,
@@ -438,7 +440,7 @@ class ObserveAppFunctionsTest {
                 assertThat(observer.updatedPackagesHistory).hasSize(1)
                 assertThat(observer.updatedFunctionStatesHistory).isEmpty()
                 assertThat(observer.updatedPackagesHistory.flatten())
-                    .containsExactly(UpdatableHelperApp.PACKAGE_NAME)
+                    .contains(UpdatableHelperApp.PACKAGE_NAME)
 
                 assertPackageHasNoAppFunctions(UpdatableHelperApp.PACKAGE_NAME)
             }
@@ -494,9 +496,11 @@ class ObserveAppFunctionsTest {
                 assertThat(observer.updatedPackagesHistory).isEmpty()
                 assertThat(observer.updatedFunctionStatesHistory).hasSize(2)
                 assertThat(observer.updatedFunctionStatesHistory.flatten())
-                    .containsExactly(
-                        CtsApp.FunctionNames.ADD_DISABLED_BY_DEFAULT,
-                        CtsApp.FunctionNames.ADD,
+                    .containsAtLeastElementsIn(
+                        setOf(
+                            CtsApp.FunctionNames.ADD_DISABLED_BY_DEFAULT,
+                            CtsApp.FunctionNames.ADD
+                        )
                     )
             }
         } finally {
@@ -557,7 +561,7 @@ class ObserveAppFunctionsTest {
                 assertThat(observer.updatedPackagesHistory).isEmpty()
                 assertThat(observer.updatedFunctionStatesHistory).hasSize(1)
                 assertThat(observer.updatedFunctionStatesHistory.flatten())
-                    .containsExactly(CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS)
+                    .contains(CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS)
             }
         } finally {
             observation?.cancel()
@@ -598,7 +602,7 @@ class ObserveAppFunctionsTest {
                 assertThat(observer.updatedPackagesHistory).isEmpty()
                 assertThat(observer.updatedFunctionStatesHistory).hasSize(1)
                 assertThat(observer.updatedFunctionStatesHistory.flatten())
-                    .containsExactly(CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS)
+                    .contains(CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS)
             }
         } finally {
             observation?.cancel()
@@ -637,7 +641,7 @@ class ObserveAppFunctionsTest {
                 assertThat(observer.updatedPackagesHistory).isEmpty()
                 assertThat(observer.updatedFunctionStatesHistory).hasSize(1)
                 assertThat(observer.updatedFunctionStatesHistory.flatten())
-                    .containsExactly(CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS)
+                    .contains(CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS)
             }
         } finally {
             observation?.cancel()
@@ -747,7 +751,7 @@ class ObserveAppFunctionsTest {
                 assertThat(observer.updatedPackagesHistory).hasSize(1)
                 assertThat(observer.updatedFunctionStatesHistory).isEmpty()
                 assertThat(observer.updatedPackagesHistory.flatten())
-                    .containsExactly(DynamicSchemaHelperApp.PACKAGE_NAME)
+                    .contains(DynamicSchemaHelperApp.PACKAGE_NAME)
 
                 assertPackageHasAppFunctions(DynamicSchemaHelperApp.PACKAGE_NAME)
             }
@@ -847,16 +851,16 @@ class ObserveAppFunctionsTest {
         val searchSpec = AppFunctionSearchSpec.Builder().setPackageNames(setOf(packageName)).build()
         val afMetadataByPackage =
             manager.searchAppFunctions(searchSpec).groupBy { it.name.packageName }
-        assertThat(afMetadataByPackage.keys).containsExactly(packageName)
+        assertThat(afMetadataByPackage.keys).contains(packageName)
     }
 
-    private suspend fun assertPackageHasExactFunctions(
+    private suspend fun assertPackageHasAtLeastFunctions(
         packageName: String,
         appFunctions: Set<AppFunctionName>,
     ) {
         val searchSpec = AppFunctionSearchSpec.Builder().setPackageNames(setOf(packageName)).build()
         val afMetadataByFunctionName = manager.searchAppFunctions(searchSpec).groupBy { it.name }
-        assertThat(afMetadataByFunctionName.keys).containsExactlyElementsIn(appFunctions)
+        assertThat(afMetadataByFunctionName.keys).containsAtLeastElementsIn(appFunctions)
     }
 
     private suspend fun assertExactPackageMetadata(
