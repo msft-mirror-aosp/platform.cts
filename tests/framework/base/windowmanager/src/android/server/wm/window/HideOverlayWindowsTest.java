@@ -272,6 +272,7 @@ public class HideOverlayWindowsTest extends ActivityManagerTestBase {
         }, Manifest.permission.SYSTEM_ALERT_WINDOW);
 
         launchActivityInFullscreen(HIDE_OVERLAY_WINDOWS_ACTIVITY);
+
         setHideOverlayWindowsAndWaitForPong(false);
         mWmState.waitAndAssertWindowSurfaceShown(windowName, true);
 
@@ -364,44 +365,56 @@ public class HideOverlayWindowsTest extends ActivityManagerTestBase {
 
     public static class BaseSystemWindowActivity extends Activity {
 
+        String mWindowName;
+        Rect mActivityBounds;
         TextView mTextView;
         TextView mSubWindow;
+        final ViewTreeObserver.OnGlobalLayoutListener mGlobalLayoutListener =
+                new ViewTreeObserver.OnGlobalLayoutListener() {
+                    @Override
+                    public void onGlobalLayout() {
+                        // Remove the listener to avoid multiple calls
+                        getWindow()
+                                .getDecorView()
+                                .getViewTreeObserver()
+                                .removeOnGlobalLayoutListener(this);
+                        getWindow().getDecorView().getBoundsOnScreen(mActivityBounds, true);
+
+                        WindowManager.LayoutParams params =
+                                new WindowManager.LayoutParams(
+                                        TYPE_APPLICATION_OVERLAY,
+                                        WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
+                        params.x = mActivityBounds.left;
+                        params.y = mActivityBounds.top;
+                        params.width = (mActivityBounds.right - mActivityBounds.left) / 3;
+                        params.height = (mActivityBounds.bottom - mActivityBounds.top) / 3;
+                        params.gravity = TOP | LEFT;
+                        params.setTitle(mWindowName);
+                        params.setSystemApplicationOverlay(
+                                getIntent()
+                                        .getBooleanExtra(SYSTEM_APPLICATION_OVERLAY_EXTRA, false));
+
+                        mTextView = new TextView(BaseSystemWindowActivity.this);
+                        mTextView.setText(mWindowName + "   type=" + TYPE_APPLICATION_OVERLAY);
+                        mTextView.setBackgroundColor(Color.GREEN);
+
+                        getWindowManager().addView(mTextView, params);
+                    }
+                };
 
         @Override
         protected void onCreate(@Nullable Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
-            String windowName = getIntent().getStringExtra(WINDOW_NAME_EXTRA);
-
-            Rect activityBounds = new Rect();
-            getWindow().getDecorView().getViewTreeObserver().addOnGlobalLayoutListener(
-                    new ViewTreeObserver.OnGlobalLayoutListener() {
-                        @Override
-                        public void onGlobalLayout() {
-                            // Remove the listener to avoid multiple calls
-                            getWindow().getDecorView().getViewTreeObserver()
-                                    .removeOnGlobalLayoutListener(this);
-                            getWindow().getDecorView().getBoundsOnScreen(activityBounds, true);
-
-                            WindowManager.LayoutParams params =
-                                    new WindowManager.LayoutParams(TYPE_APPLICATION_OVERLAY,
-                                            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
-                            params.x = activityBounds.left;
-                            params.y = activityBounds.top;
-                            params.width = (activityBounds.right - activityBounds.left) / 3;
-                            params.height = (activityBounds.bottom - activityBounds.top) / 3;
-                            params.gravity = TOP | LEFT;
-                            params.setTitle(windowName);
-                            params.setSystemApplicationOverlay(
-                                    getIntent().getBooleanExtra(SYSTEM_APPLICATION_OVERLAY_EXTRA,
-                                            false));
-
-                            mTextView = new TextView(BaseSystemWindowActivity.this);
-                            mTextView.setText(windowName + "   type=" + TYPE_APPLICATION_OVERLAY);
-                            mTextView.setBackgroundColor(Color.GREEN);
-
-                            getWindowManager().addView(mTextView, params);
-                        }
-                    });
+            mWindowName = getIntent().getStringExtra(WINDOW_NAME_EXTRA);
+            mActivityBounds = new Rect();
+            getWindow()
+                    .getDecorView()
+                    .getViewTreeObserver()
+                    .removeOnGlobalLayoutListener(mGlobalLayoutListener);
+            getWindow()
+                    .getDecorView()
+                    .getViewTreeObserver()
+                    .addOnGlobalLayoutListener(mGlobalLayoutListener);
         }
 
         @Override
@@ -431,10 +444,18 @@ public class HideOverlayWindowsTest extends ActivityManagerTestBase {
         @Override
         protected void onDestroy() {
             super.onDestroy();
+            if (getWindow() != null) {
+                getWindow()
+                        .getDecorView()
+                        .getViewTreeObserver()
+                        .removeOnGlobalLayoutListener(mGlobalLayoutListener);
+            }
             if (mSubWindow != null) {
                 getWindowManager().removeView(mSubWindow);
             }
-            getWindowManager().removeView(mTextView);
+            if (mTextView != null) {
+                getWindowManager().removeView(mTextView);
+            }
         }
     }
 
