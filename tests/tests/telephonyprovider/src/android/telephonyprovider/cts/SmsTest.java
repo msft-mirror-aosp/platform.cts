@@ -17,6 +17,9 @@
 package android.telephonyprovider.cts;
 
 import static android.Manifest.permission.RECEIVE_SENSITIVE_NOTIFICATIONS;
+import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
+import static android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED;
+import static android.content.pm.PackageManager.DONT_KILL_APP;
 import static android.provider.Telephony.Sms.CONTAINS_OTP;
 import static android.provider.Telephony.Sms.OTP_SUBTYPE_SMS_RETRIEVER_OTP;
 import static android.provider.Telephony.Sms.OTP_SUBTYPE_WEB_OTP;
@@ -74,6 +77,10 @@ import android.provider.Telephony.ReadRestriction;
 import android.telephony.SmsManager;
 import android.telephony.SubscriptionManager;
 import android.telephony.cts.util.DefaultSmsAppHelper;
+import android.telephonyprovider.TelephonyProviderActivity;
+import android.telephonyprovider.TelephonyProviderService;
+import android.telephonyprovider.TelephonyProviderSmsDeliverReceiver;
+import android.telephonyprovider.TelephonyProviderWapPushDeliverReceiver;
 import android.util.Log;
 
 import androidx.test.filters.SmallTest;
@@ -130,10 +137,17 @@ public class SmsTest {
 
     @BeforeClass
     public static void ensureDefaultSmsApp() {
+        changeSmsAppComponentsState(getInstrumentation().getContext(), true);
         DefaultSmsAppHelper.ensureDefaultSmsApp();
     }
 
+    private static void stopBeingDefaultSmsApp() {
+        changeSmsAppComponentsState(getInstrumentation().getContext(), false);
+        DefaultSmsAppHelper.stopBeingDefaultSmsApp();
+    }
+
     @AfterClass
+    // This cleanup method is invoked by other methods and also by the JUnit framework.
     public static void cleanup() {
         ContentResolver contentResolver = getInstrumentation().getContext().getContentResolver();
         contentResolver.delete(Telephony.Sms.CONTENT_URI, null, null);
@@ -141,7 +155,10 @@ public class SmsTest {
     }
 
     @AfterClass
-    public static void stopBeingDefaultSmsApp() {
+    // This cleanup method is intended to be invoked only by the JUnit framework, not by other
+    // methods.
+    public static void restoreSmsAppConfiguration() {
+        changeSmsAppComponentsState(getInstrumentation().getContext(), true);
         DefaultSmsAppHelper.stopBeingDefaultSmsApp();
     }
 
@@ -162,6 +179,23 @@ public class SmsTest {
             }
         };
         mActivityManager = mContext.getSystemService(ActivityManager.class);
+    }
+
+    private static void changeSmsAppComponentsState(Context context, boolean enabled) {
+        logd("changeSmsAppComponentsState: enabled=" + enabled);
+        PackageManager packageManager = context.getPackageManager();
+        int state = enabled ? COMPONENT_ENABLED_STATE_ENABLED : COMPONENT_ENABLED_STATE_DISABLED;
+        List<Class<?>> components =
+                List.of(
+                        TelephonyProviderSmsDeliverReceiver.class,
+                        TelephonyProviderWapPushDeliverReceiver.class,
+                        TelephonyProviderService.class,
+                        TelephonyProviderActivity.class);
+        for (Class<?> component : components) {
+            logd("changeSmsAppComponentsState: component=" + component.getSimpleName());
+            packageManager.setComponentEnabledSetting(
+                    new ComponentName(context, component), state, DONT_KILL_APP);
+        }
     }
 
     /**
@@ -636,11 +670,8 @@ public class SmsTest {
         Uri rawUri = Uri.withAppendedPath(Telephony.Sms.CONTENT_URI, "raw");
         try {
             stopBeingDefaultSmsApp();
-            SystemUtil.eventually(
-                    () -> {
-                        Cursor cursor = mContentResolver.query(rawUri, null, null, null);
-                        assertThat(cursor).isNull();
-                    });
+            Cursor cursor = mContentResolver.query(rawUri, null, null, null);
+            assertThat(cursor).isNull();
         } finally {
             ensureDefaultSmsApp();
         }
@@ -726,9 +757,9 @@ public class SmsTest {
         try {
             stopBeingDefaultSmsApp();
             // Message should be inaccessible when querying directly, or by conversation ID
-            SystemUtil.eventually(() -> assertSmsPresence(inserted, message, /* canRead */ false));
+            assertSmsPresence(inserted, message, /* canRead */ false);
             Uri threadUri = Uri.parse(Telephony.Sms.CONTENT_URI + "/conversations");
-            SystemUtil.eventually(() -> assertSmsPresence(threadUri, message, /* canRead */ false));
+            assertSmsPresence(threadUri, message, /* canRead */ false);
         } finally {
             ensureDefaultSmsApp();
         }
