@@ -18,6 +18,7 @@ package com.android.cts.pcc.featuretests;
 
 import static android.app.privatecompute.flags.Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -25,7 +26,9 @@ import static org.junit.Assert.assertTrue;
 import android.app.privatecompute.MigrationException;
 import android.app.privatecompute.MigrationRequestResult;
 import android.app.privatecompute.PccSandboxManager;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.os.OutcomeReceiver;
 import android.os.PersistableBundle;
 import android.os.Process;
@@ -132,6 +135,9 @@ public class PccSandboxManagerTest {
                 new OutcomeReceiver<MigrationRequestResult, MigrationException>() {
                     @Override
                     public void onResult(MigrationRequestResult result) {
+                        PersistableBundle extras = result.getExtras();
+                        assertNotNull("Extras should not be null", extras);
+                        assertEquals("test_value", extras.getString("test_key"));
                         if (result.getStatus()
                                 == MigrationRequestResult.MIGRATION_REQUEST_ACCEPTED) {
                             resultLatch.countDown();
@@ -148,6 +154,44 @@ public class PccSandboxManagerTest {
         assertTrue(
                 "Migration result should have been received",
                 resultLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testStartNonPccProcessForDataMigration_serviceConnectionFailed() throws Exception {
+        ComponentName componentName = new ComponentName(mContext, MigrationTestService.class);
+        int originalState = mContext.getPackageManager().getComponentEnabledSetting(componentName);
+        mContext.getPackageManager()
+                .setComponentEnabledSetting(
+                        componentName,
+                        PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                        PackageManager.DONT_KILL_APP);
+
+        try {
+            CountDownLatch errorLatch = new CountDownLatch(1);
+            final int[] errorCode = new int[1];
+            mPccSandboxManager.startNonPccProcessForDataMigration(
+                    mContext.getMainExecutor(),
+                    new OutcomeReceiver<MigrationRequestResult, MigrationException>() {
+                        @Override
+                        public void onResult(MigrationRequestResult result) {}
+
+                        @Override
+                        public void onError(MigrationException error) {
+                            errorCode[0] = error.getErrorCode();
+                            errorLatch.countDown();
+                        }
+                    });
+
+            assertTrue("Should receive an error", errorLatch.await(5, TimeUnit.SECONDS));
+            assertEquals(
+                    "Received unexpected error code",
+                    MigrationException.ERROR_INVOCATION_FAILED,
+                    errorCode[0]);
+        } finally {
+            mContext.getPackageManager()
+                    .setComponentEnabledSetting(
+                            componentName, originalState, PackageManager.DONT_KILL_APP);
+        }
     }
 
     @Test
