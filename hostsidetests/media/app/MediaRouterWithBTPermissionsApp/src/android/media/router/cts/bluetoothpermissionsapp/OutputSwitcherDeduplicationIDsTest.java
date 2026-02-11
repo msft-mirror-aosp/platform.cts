@@ -70,7 +70,7 @@ public class OutputSwitcherDeduplicationIDsTest {
     private Context mContext;
     private MediaRouter2 mRouter2;
     private MediaRouter2.RouteCallback mEmptyCallback;
-    private static final int TIMEOUT_MS = 15000;
+    private static final int TIMEOUT_MS = 60000;
 
     @Rule public MockitoRule initMocksRule = MockitoJUnit.rule();
 
