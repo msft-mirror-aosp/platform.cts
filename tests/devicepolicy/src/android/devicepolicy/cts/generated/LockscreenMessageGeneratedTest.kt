@@ -101,11 +101,6 @@ class LockscreenMessageGeneratedTest : CommonPolicyTests<String>() {
         listOf(
             InvalidValueTestCase("", expectedError="Empty string is not allowed"),
         )
-
-    override fun scopeDevice_setValueToDefault_accepted() {
-        // TODO: b/476973331 - Support nullable strings in Bedstead.
-    }
-
     override fun getDeviceState() = deviceState
 
     companion object {
