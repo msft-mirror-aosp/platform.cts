@@ -272,39 +272,40 @@ public abstract class CommonPolicyTests<T> {
         assertThat(getPolicy(scope)).isEqualTo(value)
     }
 
-    // This uses the derived classes of the `PolicyMetadata` to get the value type.
+    // Invokes `DPM.setPolicy`.
+    // Implementation note: This uses the derived classes of the `PolicyMetadata` to get the value type.
     // We need this since the type of `T` is not available due to type erasure.
-    // TODO: 454277430 - Not needed once we can call DPM.setPolicy/DPM.getPolicy.
     @Suppress("UNCHECKED_CAST")
     protected fun setPolicy(scope: Int, value: T?) {
-        if (value == null) {
-            dpcDpm.clearPolicy(policyIdentifier.getId(), scope)
-            return
-        }
-
         when (GeneratedPolicyMetadata.getPolicyMetadata(policyIdentifier)) {
             is IntegerPolicyMetadata,
             is EnumPolicyMetadata ->
-                dpcDpm.setIntegerPolicy(policyIdentifier.getId(), scope, value as Int)
+                dpcDpm.setPolicy_integer(
+                    policyIdentifier as PolicyIdentifier<Int>,
+                    scope,
+                    value as Int?,
+                )
             is StringPolicyMetadata ->
-                dpcDpm.setStringPolicy(policyIdentifier.getId(), scope, value as String)
+                dpcDpm.setPolicy_string(
+                    policyIdentifier as PolicyIdentifier<String>,
+                    scope,
+                    value as String?,
+                )
             else -> throw IllegalArgumentException("Unsupported type")
         }
     }
 
-    // This uses the derived classes of the `PolicyMetadata` to get the value type.
+    // Invokes `DPM.getPolicy` and returns the result.
+    // Implementation note: This uses the derived classes of the `PolicyMetadata` to get the value type.
     // We need this since the type of `T` is not available due to type erasure.
-    // TODO: 454277430 - Not needed once we can call DPM.setPolicy/DPM.getPolicy.
     @Suppress("UNCHECKED_CAST")
     protected fun getPolicy(scope: Int): T? {
         return when (GeneratedPolicyMetadata.getPolicyMetadata(policyIdentifier)) {
             is IntegerPolicyMetadata,
-            is EnumPolicyMetadata -> {
-                val result = dpcDpm.getIntegerPolicy(policyIdentifier.getId(), scope)
-                return if (result == -1) null else result as T
-            }
+            is EnumPolicyMetadata ->
+                dpcDpm.getPolicy_integer(policyIdentifier as PolicyIdentifier<Int>, scope) as T?
             is StringPolicyMetadata ->
-                return dpcDpm.getStringPolicy(policyIdentifier.getId(), scope) as T?
+                dpcDpm.getPolicy_string(policyIdentifier as PolicyIdentifier<String>, scope) as T?
             else -> throw IllegalArgumentException("Unsupported type")
         }
     }

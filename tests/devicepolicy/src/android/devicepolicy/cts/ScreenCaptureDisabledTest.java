@@ -23,6 +23,7 @@ import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 import static org.testng.Assert.assertThrows;
 
 import android.app.UiAutomation;
@@ -609,25 +610,15 @@ public final class ScreenCaptureDisabledTest {
             return;
         }
 
-        var policyIdentifier = PolicyIdentifier.SCREEN_CAPTURE.getId();
+        var policyIdentifier = PolicyIdentifier.SCREEN_CAPTURE;
         var dpm = dpc(sDeviceState).devicePolicyManager();
 
-        if (inputValue == null) {
-            dpm.clearPolicy(policyIdentifier, scope);
-            int returnedValue = dpm.getIntegerPolicy(policyIdentifier, scope);
-            int resolvedValue = dpm.getIntegerResolvedPerUserPolicy(policyIdentifier);
+        dpm.setPolicy_integer(policyIdentifier, scope, inputValue);
+        Integer returnedValue = dpm.getPolicy_integer(policyIdentifier, scope);
+        Integer resolvedValue = dpm.getResolvedPerUserPolicy_integer(policyIdentifier);
 
-            // Bedstead doesn't support Integer values, so it returns -1 instead of null.
-            assertThat(returnedValue).isEqualTo(-1);
-            assertThat(resolvedValue).isEqualTo(-1);
-        } else {
-            dpm.setIntegerPolicy(policyIdentifier, scope, inputValue);
-            int returnedValue = dpm.getIntegerPolicy(policyIdentifier, scope);
-            int resolvedValue = dpm.getIntegerResolvedPerUserPolicy(policyIdentifier);
-
-            assertThat(returnedValue).isEqualTo(inputValue);
-            assertThat(resolvedValue).isEqualTo(inputValue);
-        }
+        assertWithMessage("Comparing with getPolicy").that(returnedValue).isEqualTo(inputValue);
+        assertWithMessage("Comparing with resolved value").that(resolvedValue).isEqualTo(inputValue);
     }
 
     private boolean isParentInstance() {
