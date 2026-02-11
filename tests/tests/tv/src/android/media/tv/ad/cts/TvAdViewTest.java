@@ -161,9 +161,19 @@ public class TvAdViewTest {
     public void testSetZOrderMediaOverlay() throws Throwable {
         // Verifying the z-order from app is not possible. Here we just check if calling APIs does
         // not lead to any break.
-        mTvAdView.setZOrderMediaOverlay(true);
+        runTestOnUiThread(
+                new Runnable() {
+                    public void run() {
+                        mTvAdView.setZOrderMediaOverlay(true);
+                    }
+                });
         mInstrumentation.waitForIdleSync();
-        mTvAdView.setZOrderMediaOverlay(false);
+        runTestOnUiThread(
+                new Runnable() {
+                    public void run() {
+                        mTvAdView.setZOrderMediaOverlay(false);
+                    }
+                });
         mInstrumentation.waitForIdleSync();
     }
 
@@ -172,9 +182,19 @@ public class TvAdViewTest {
     public void testSetZOrderOnTop() throws Throwable {
         // Verifying the z-order from app is not possible. Here we just check if calling APIs does
         // not lead to any break.
-        mTvAdView.setZOrderOnTop(true);
+        runTestOnUiThread(
+                new Runnable() {
+                    public void run() {
+                        mTvAdView.setZOrderOnTop(true);
+                    }
+                });
         mInstrumentation.waitForIdleSync();
-        mTvAdView.setZOrderOnTop(false);
+        runTestOnUiThread(
+                new Runnable() {
+                    public void run() {
+                        mTvAdView.setZOrderOnTop(false);
+                    }
+                });
         mInstrumentation.waitForIdleSync();
     }
 }
