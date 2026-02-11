@@ -220,7 +220,7 @@ public class TestNotificationAssistant extends NotificationAssistantService {
     }
 
     @Override
-    public void onSystemAdjustmentsRequest(List<Adjustment> adjustments) {
+    public void onSystemAdjustmentsReceived(List<Adjustment> adjustments) {
         mSystemAdjustments.addAll(adjustments);
         if (mSystemAdjustmentsLatch != null) {
             mSystemAdjustmentsLatch.countDown();
