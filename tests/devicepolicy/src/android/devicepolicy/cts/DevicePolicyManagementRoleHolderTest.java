@@ -37,7 +37,7 @@ import static org.junit.Assert.assertThrows;
 
 import android.app.admin.DevicePolicyManager;
 import android.app.admin.ManagedProfileProvisioningParams;
-import android.app.admin.MultiUserDeviceProvisioningParams;
+import android.app.admin.MultiuserManagedDeviceProvisioningParams;
 import android.app.admin.ProvisioningException;
 import android.app.role.RoleManager;
 import android.content.ComponentName;
@@ -521,18 +521,16 @@ public class DevicePolicyManagementRoleHolderTest {
         android.app.admin.flags.Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING
     })
     public void testOnlyDevicePolicyManagementRoleHolder_shouldAllowBypassing_true() {
-        ComponentName dmrhComponent =
-                getDeviceAdminComponentName(dpmRoleHolder(sDeviceState).testApp());
-
+        Package dmrhPackage = dpmRoleHolder(sDeviceState).pkg();
         try (var ignored =
                 TestApis.devicePolicy()
                         .setDevicePolicyManagementRoleHolder(
-                                dpmRoleHolder(sDeviceState).pkg(), TestApis.users().initial())) {
-            provisionMultiUserDevice(dmrhComponent);
+                                dmrhPackage, TestApis.users().initial())) {
+            provisionMultiuserManagedDevice(dmrhPackage.packageName());
 
             assertAllowsBypassingRoleQualification(/* expected */ true);
         } finally {
-            TestApis.devicePolicy().clearMultiUserDeviceManagement(dmrhComponent);
+            TestApis.devicePolicy().clearMultiuserDeviceManagement(dmrhPackage.packageName());
         }
     }
 
@@ -542,9 +540,9 @@ public class DevicePolicyManagementRoleHolderTest {
      *
      * <p>We cannot use the default DMRH (clouddpc) for provisioning the multi-user device, as
      *
-     * <p>{@code clearMultiUserDeviceManagement} will fail. To avoid this, we set a test-only DMRH
-     * on the headless system user. This way, clouddpc is set as DMRH on user 10, and the test-only
-     * DMRH is set on user 0.
+     * <p>{@code clearMultiuserDeviceManagement} will fail. To avoid this, we set a test-only
+     * DMRH on the headless system user. This way, clouddpc is set as DMRH on user 10, and the
+     * test-only DMRH is set on user 0.
      */
     @Test
     @EnsureHasNoDpc
@@ -565,25 +563,22 @@ public class DevicePolicyManagementRoleHolderTest {
         android.app.admin.flags.Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING
     })
     public void nonTestOnlyDevicePolicyManagementRoleHolder_shouldAllowBypassing_false() {
-        ComponentName dmrhComponent =
-                getDeviceAdminComponentName(dpmRoleHolder(sDeviceState).testApp());
+        String dmrhPackageName = dpmRoleHolder(sDeviceState).pkg().packageName();
 
         try {
-            provisionMultiUserDevice(dmrhComponent);
+            provisionMultiuserManagedDevice(dmrhPackageName);
             assertAllowsBypassingRoleQualification(/* expected */ false);
         } finally {
-            TestApis.devicePolicy().clearMultiUserDeviceManagement(dmrhComponent);
+            TestApis.devicePolicy().clearMultiuserDeviceManagement(dmrhPackageName);
         }
     }
 
-    private static void provisionMultiUserDevice(ComponentName dmrhComponent) {
+    private static void provisionMultiuserManagedDevice(String dmrhPackageName) {
         withIncompleteSetupOnAllUsers(
                 () -> {
-                    MultiUserDeviceProvisioningParams params =
-                            new MultiUserDeviceProvisioningParams.Builder(dmrhComponent).build();
-
+                    var params = new MultiuserManagedDeviceProvisioningParams.Builder(dmrhPackageName).build();
                     try {
-                        sDevicePolicyManager.provisionMultiUserDevice(params);
+                        sDevicePolicyManager.provisionMultiuserManagedDevice(params);
                     } catch (ProvisioningException e) {
                         throw new RuntimeException(e);
                     }
