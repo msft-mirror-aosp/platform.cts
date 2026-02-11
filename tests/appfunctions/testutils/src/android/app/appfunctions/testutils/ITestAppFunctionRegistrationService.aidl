@@ -7,24 +7,24 @@ interface ITestAppFunctionRegistrationService {
     /**
      * Registers an app function from the service's process. FunctionId is taken from the
      * AppFunction class.
-     * @param functionType The type of the app function as in {@link FunctionType}
+     * @param functionId The id of the app function.
      * @return true if the registration was successful
      */
-    boolean registerAppFunction(String functionType);
+    boolean registerAppFunction(String functionId);
 
     /**
      * Registers one or several app functions from the service's process. FunctionIds are taken
      * from the AppFunction class.
-     * @param functionTypes The types of the app function as in {@link FunctionType}
+     * @param functionIds The ids of the app functions.
      * @return true if the registration was successful
      */
-    boolean registerAppFunctions(in List<String> functionTypes);
+    boolean registerAppFunctions(in List<String> functionIds);
 
     /**
      * Unregisters previously registered app function. FunctionId is taken from the
      * AppFunction class.
-     * @param functionType The type of the app function as in {@link FunctionType}
+     * @param functionId The id of the app function.
      * @return true if the unregistration was successful
      */
-    boolean unregisterAppFunction(String functionType);
+    boolean unregisterAppFunction(String functionId);
 }

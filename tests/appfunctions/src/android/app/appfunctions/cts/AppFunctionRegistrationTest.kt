@@ -46,7 +46,6 @@ import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
 import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
 import android.app.appfunctions.testutils.DisabledByDefault
 import android.app.appfunctions.testutils.DisabledByDefault.Companion.DISABLED_BY_DEFAULT_FUNCTION_ID
-import android.app.appfunctions.testutils.FunctionType
 import android.app.appfunctions.testutils.GetUris.Companion.GET_URIS_FUNCTION_ID
 import android.app.appfunctions.testutils.ITestAppFunctionRegistrationService
 import android.app.appfunctions.testutils.LongRunning
@@ -186,7 +185,7 @@ class AppFunctionRegistrationTest {
     fun register_theSameIdTwiceDifferentProcesses_fail() {
         val service = bindToRegistrationService(CURRENT_PKG)
 
-        service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())
+        service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)
 
         assertFailsWith<IllegalStateException>() { registerConcatStringsAppFunction() }
     }
@@ -221,7 +220,7 @@ class AppFunctionRegistrationTest {
     @Throws(Exception::class)
     fun register_theSameIdTwiceDifferentProcesses_failAllBatchRegistration() = doBlocking {
         val service = bindToRegistrationService(CURRENT_PKG)
-        assertThat(service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())).isTrue()
+        assertThat(service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)).isTrue()
 
         assertFunctionEnabledState(
             CURRENT_PKG,
@@ -268,7 +267,7 @@ class AppFunctionRegistrationTest {
         )
 
         val service = bindToRegistrationService(CURRENT_PKG)
-        assertThat(service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())).isFalse()
+        assertThat(service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)).isFalse()
     }
 
     @Test
@@ -334,7 +333,7 @@ class AppFunctionRegistrationTest {
             )
             val service = bindToRegistrationService(UpdatableHelperApp.PACKAGE_NAME)
             retryAssert {
-                assertThat(service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString()))
+                assertThat(service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID))
                     .isEqualTo(true)
             }
         } finally {
@@ -362,7 +361,7 @@ class AppFunctionRegistrationTest {
             )
             val service = bindToRegistrationService(UpdatableHelperApp.PACKAGE_NAME)
             retryAssert {
-                assertThat(service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString()))
+                assertThat(service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID))
                     .isEqualTo(true)
             }
         } finally {
@@ -390,7 +389,7 @@ class AppFunctionRegistrationTest {
             )
             val service = bindToRegistrationService(UpdatableHelperApp.PACKAGE_NAME)
             retryAssert {
-                assertThat(service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString()))
+                assertThat(service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID))
                     .isEqualTo(true)
             }
         } finally {
@@ -447,7 +446,7 @@ class AppFunctionRegistrationTest {
         val staleRegistration = registerConcatStringsAppFunction()
         staleRegistration.unregister()
         val service = bindToRegistrationService(CURRENT_PKG)
-        service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())
+        service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)
 
         staleRegistration.unregister() // This call should be no-op
 
@@ -479,7 +478,7 @@ class AppFunctionRegistrationTest {
     @Throws(Exception::class)
     fun execute_functionFromTheSamePackageDifferentProcess_success() = doBlocking {
         val service = bindToRegistrationService(CURRENT_PKG)
-        service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())
+        service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)
         val request = createConcatStringsRequest(targetPackage = CURRENT_PKG)
 
         val response = manager.executeAppFunction(request)
@@ -493,7 +492,7 @@ class AppFunctionRegistrationTest {
     @Throws(Exception::class)
     fun execute_functionFromDifferentPackage_success() = doBlocking {
         val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
-        service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())
+        service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)
 
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val request =
@@ -510,7 +509,7 @@ class AppFunctionRegistrationTest {
     @Throws(Exception::class)
     fun execute_outputsInvalidArgumentException_propagatesToCaller() = doBlocking {
         val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
-        service.registerAppFunction(FunctionType.OUTPUT_INVALID_ARGUMENT_EXCEPTION.toString())
+        service.registerAppFunction(OUTPUT_INVALID_ARGUMENT_EXCEPTION_FUNCTION_ID)
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val request =
                 ExecuteAppFunctionRequest.Builder(
@@ -536,9 +535,9 @@ class AppFunctionRegistrationTest {
         val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
         assertThat(
                 service.registerAppFunctions(
-                    listOf<String>(
-                        FunctionType.OUTPUT_INVALID_ARGUMENT_EXCEPTION.toString(),
-                        FunctionType.CONCAT_STRINGS.toString(),
+                    listOf(
+                        OUTPUT_INVALID_ARGUMENT_EXCEPTION_FUNCTION_ID,
+                        CONCAT_STRINGS_FUNCTION_ID,
                     )
                 )
             )
@@ -572,7 +571,7 @@ class AppFunctionRegistrationTest {
     @Throws(Exception::class)
     fun execute_throwsUnknownException_reportsAppError() = doBlocking {
         val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
-        service.registerAppFunction(FunctionType.THROW_UNKNOWN_EXCEPTION.toString())
+        service.registerAppFunction(THROW_UNKNOWN_EXCEPTION_FUNCTION_ID)
         val request =
             ExecuteAppFunctionRequest.Builder(
                     DynamicSchemaHelperApp.PACKAGE_NAME,
@@ -597,7 +596,7 @@ class AppFunctionRegistrationTest {
     @Throws(Exception::class)
     fun execute_throwsInvalidArgument_convertsToAppFunctionException() = doBlocking {
         val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
-        service.registerAppFunction(FunctionType.THROW_INVALID_ARGUMENT_EXCEPTION.toString())
+        service.registerAppFunction(THROW_INVALID_ARGUMENT_FUNCTION_ID)
         val request =
             ExecuteAppFunctionRequest.Builder(
                     DynamicSchemaHelperApp.PACKAGE_NAME,
@@ -622,7 +621,7 @@ class AppFunctionRegistrationTest {
     @Throws(Exception::class)
     fun execute_sendCancellationSignal_cancelled() {
         val service = bindToRegistrationService(CURRENT_PKG)
-        service.registerAppFunction(FunctionType.LONG_RUNNING.toString())
+        service.registerAppFunction(LONG_RUNNING_FUNCTION_ID)
         val request =
             ExecuteAppFunctionRequest.Builder(CURRENT_PKG, LONG_RUNNING_FUNCTION_ID).build()
         val cancellationSignal = CancellationSignal()
@@ -653,7 +652,7 @@ class AppFunctionRegistrationTest {
     @IncludeRunOnSecondaryUser
     fun execute_disabledByDefaultFunction_throwsDisabledException() = doBlocking {
         val service = bindToRegistrationService(CURRENT_PKG)
-        service.registerAppFunction(FunctionType.DISABLED_BY_DEFAULT.toString())
+        service.registerAppFunction(DISABLED_BY_DEFAULT_FUNCTION_ID)
         val request =
             ExecuteAppFunctionRequest.Builder(CURRENT_PKG, DISABLED_BY_DEFAULT_FUNCTION_ID).build()
 
@@ -671,7 +670,7 @@ class AppFunctionRegistrationTest {
     @IncludeRunOnSecondaryUser
     fun execute_afterEnablingDisabledByDefaultFunction_success() = doBlocking {
         val service = bindToRegistrationService(CURRENT_PKG)
-        service.registerAppFunction(FunctionType.DISABLED_BY_DEFAULT.toString())
+        service.registerAppFunction(DISABLED_BY_DEFAULT_FUNCTION_ID)
         val request =
             ExecuteAppFunctionRequest.Builder(CURRENT_PKG, DISABLED_BY_DEFAULT_FUNCTION_ID).build()
 
@@ -704,7 +703,7 @@ class AppFunctionRegistrationTest {
             )
 
             val service = bindToRegistrationService(CURRENT_PKG)
-            service.registerAppFunction(FunctionType.DISABLED_BY_DEFAULT.toString())
+            service.registerAppFunction(DISABLED_BY_DEFAULT_FUNCTION_ID)
             val request =
                 ExecuteAppFunctionRequest.Builder(CURRENT_PKG, DISABLED_BY_DEFAULT_FUNCTION_ID)
                     .build()
@@ -776,7 +775,7 @@ class AppFunctionRegistrationTest {
     @Throws(Exception::class)
     fun register_registrationProcessDied_functionIsDisabled() = doBlocking {
         val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
-        service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())
+        service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)
 
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val request =
@@ -798,7 +797,7 @@ class AppFunctionRegistrationTest {
     @Throws(Exception::class)
     fun execute_toolProviderProcessStopped_reportsAppError() = doBlocking {
         val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
-        service.registerAppFunction(FunctionType.STOP_PROCESS.toString())
+        service.registerAppFunction(STOP_PROCESS_FUNCTION_ID)
 
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val request =
@@ -824,7 +823,7 @@ class AppFunctionRegistrationTest {
     )
     fun execute_getUrisFunction_hasAccessToReturnedUris() = doBlocking {
         val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
-        service.registerAppFunction(FunctionType.GET_URIS.toString())
+        service.registerAppFunction(GET_URIS_FUNCTION_ID)
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val request =
                 ExecuteAppFunctionRequest.Builder(
@@ -904,7 +903,7 @@ class AppFunctionRegistrationTest {
             CONCAT_STRINGS_FUNCTION_ID,
             AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
         )
-        assertThat(service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())).isTrue()
+        assertThat(service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)).isTrue()
 
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val result =
@@ -928,7 +927,7 @@ class AppFunctionRegistrationTest {
             CONCAT_STRINGS_FUNCTION_ID,
             AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
         )
-        assertThat(service.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())).isTrue()
+        assertThat(service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)).isTrue()
 
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val result =
@@ -949,7 +948,7 @@ class AppFunctionRegistrationTest {
     @RequiresFlagsEnabled(android.app.appfunctions.flags.Flags.FLAG_ENABLE_APP_INTERACTION_API)
     fun execute_withAttribution_attributionNotPropagated() = doBlocking {
         val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
-        service.registerAppFunction(FunctionType.CHECK_ATTRIBUTION.toString())
+        service.registerAppFunction(CHECK_ATTRIBUTION_FUNCTION_ID)
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val attribution =
                 AppInteractionAttribution.Builder(AppInteractionAttribution.INTERACTION_TYPE_USER_QUERY)
