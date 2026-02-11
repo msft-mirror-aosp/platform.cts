@@ -18,6 +18,27 @@ id: "5.6/H-1-1"
 name: "Tap to Tone Latency"
 description: "Tap to tone latency"
 specs {
+  key: 1
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_1
+    specification:
+      "MUST have a tap-to-tone latency of less than 110 milliseconds using the "
+      "OboeTester tap-to-tone test or CTS Verifier tap-to-tone test."
+    required_values {
+      key: "java_latency_ms"
+      value {
+        double_value: 140.0
+      }
+    }
+    required_values {
+      key: "native_latency_ms"
+      value {
+        double_value: 280.0
+      }
+    }
+  }
+}
+specs {
   key: 10
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_10
