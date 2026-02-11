@@ -609,9 +609,12 @@ public class ImsServiceTest {
                 TestImsService.LATCH_CREATE_RCS));
 
         // Change the supported feature to MMTEL
-        sServiceConnector.getCarrierService().getImsServiceCompat().onUpdateSupportedImsFeatures(
-                new ImsFeatureConfiguration.Builder()
-                .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL).build());
+        assertTrue(ImsUtils.retryUntilTrue(() -> {
+            sServiceConnector.getCarrierService().getImsServiceCompat().onUpdateSupportedImsFeatures(
+                    new ImsFeatureConfiguration.Builder()
+                    .addFeature(sTestSlot, ImsFeature.FEATURE_MMTEL).build());
+            return true;
+        }));
 
         // createMmTelFeature should be called.
         assertTrue("Timed out waiting for MMTEL feature creation",
@@ -6464,17 +6467,17 @@ public class ImsServiceTest {
         // phone number is through the SubscriptionManager. Before calling the
         // SubscriptionManager#getPhoneNumber, a guard time is required for telephony.
         // currently no better way of knowing that telephony has processed this command.
-        Thread.sleep(TEST_OPERATION_TIME_MS);
-
         try {
             automan.adoptShellPermissionIdentity();
             SubscriptionManager sm = (SubscriptionManager) getContext()
                     .getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
-            String phoneNumber = sm.getPhoneNumber(sTestSub,
-                    SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
 
-            // verify Ims phone number
-            assertEquals("+447539447777", phoneNumber);
+            assertTrue("Failed to verify Ims phone number",
+                    ImsUtils.retryUntilTrue(() -> {
+                        String phoneNumber = sm.getPhoneNumber(sTestSub,
+                                SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
+                        return "+447539447777".equals(phoneNumber);
+                    }, 5000, 10));
         } finally {
             automan.dropShellPermissionIdentity();
         }
@@ -6542,19 +6545,17 @@ public class ImsServiceTest {
         // phone number is through the SubscriptionManager. Before calling the
         // SubscriptionManager#getPhoneNumber, a guard time is required for telephony.
         // currently no better way of knowing that telephony has processed this command.
-        Thread.sleep(TEST_OPERATION_TIME_MS);
-
         try {
             automan.adoptShellPermissionIdentity();
             SubscriptionManager sm = (SubscriptionManager) getContext()
                     .getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
-            String phoneNumber = sm.getPhoneNumber(sTestSub,
-                    SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
 
-            // verify Ims phone number
-            assertTrue(
-                    "Failed to verify phone number in non-global format",
-                    "447539447777".equals(phoneNumber) || "+447539447777".equals(phoneNumber));
+            assertTrue("Failed to verify phone number in non-global format",
+                    ImsUtils.retryUntilTrue(() -> {
+                        String phoneNumber = sm.getPhoneNumber(sTestSub,
+                                SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
+                        return "447539447777".equals(phoneNumber) || "+447539447777".equals(phoneNumber);
+                    }, 5000, 10));
         } finally {
             automan.dropShellPermissionIdentity();
         }
@@ -6629,18 +6630,17 @@ public class ImsServiceTest {
         // phone number is through the SubscriptionManager. Before calling the
         // SubscriptionManager#getPhoneNumber, a guard time is required for telephony.
         // Currently no better way of knowing that telephony has processed this command.
-        Thread.sleep(TEST_OPERATION_TIME_MS);
-
         SubscriptionManager sm = (SubscriptionManager) getContext()
                 .getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
         try {
             automan.adoptShellPermissionIdentity();
 
-            String phoneNumber = sm.getPhoneNumber(sTestSub,
-                    SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
-
-            // Verify Ims phone number
-            assertEquals("+447539447777", phoneNumber);
+            assertTrue("Failed to verify Ims phone number",
+                    ImsUtils.retryUntilTrue(() -> {
+                        String phoneNumber = sm.getPhoneNumber(sTestSub,
+                                SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
+                        return "+447539447777".equals(phoneNumber);
+                    }, 5000, 10));
         } finally {
             automan.dropShellPermissionIdentity();
         }
@@ -6657,16 +6657,15 @@ public class ImsServiceTest {
         // phone number is through the SubscriptionManager. Before calling the
         // SubscriptionManager#getPhoneNumber, a guard time is required for telephony.
         // Currently no better way of knowing that telephony has processed this command.
-        Thread.sleep(TEST_OPERATION_TIME_MS);
-
         try {
             automan.adoptShellPermissionIdentity();
 
-            String phoneNumber = sm.getPhoneNumber(sTestSub,
-                    SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
-
-            // verify Ims phone number
-            assertEquals("", phoneNumber);
+            assertTrue("Failed to verify Ims phone number",
+                    ImsUtils.retryUntilTrue(() -> {
+                        String phoneNumber = sm.getPhoneNumber(sTestSub,
+                                SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
+                        return "".equals(phoneNumber);
+                    }, 5000, 10));
         } finally {
             automan.dropShellPermissionIdentity();
         }
