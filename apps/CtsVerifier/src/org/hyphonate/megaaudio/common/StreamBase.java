@@ -421,7 +421,11 @@ public abstract class StreamBase {
                 AudioFormat.CHANNEL_OUT_MONO,
                 AudioFormat.CHANNEL_OUT_STEREO,
                 AudioFormat.CHANNEL_OUT_STEREO | AudioFormat.CHANNEL_OUT_FRONT_CENTER,
-                AudioFormat.CHANNEL_OUT_QUAD
+                AudioFormat.CHANNEL_OUT_QUAD,
+                AudioFormat.CHANNEL_OUT_QUAD | AudioFormat.CHANNEL_OUT_FRONT_CENTER,
+                AudioFormat.CHANNEL_OUT_5POINT1,
+                AudioFormat.CHANNEL_OUT_5POINT1 | AudioFormat.CHANNEL_OUT_BACK_CENTER,
+                AudioFormat.CHANNEL_OUT_7POINT1_SURROUND
             };
 
     /**
@@ -431,6 +435,6 @@ public abstract class StreamBase {
      * note: This mapping is not well defined, but may be needed to get a fast path in the Java API
      */
     public static int channelCountToOutPositionMask(int chanCount) {
-        return chanCount <= 4 ? sOutMasks[chanCount] : AudioFormat.CHANNEL_OUT_STEREO;
+        return chanCount <= 8 ? sOutMasks[chanCount] : AudioFormat.CHANNEL_OUT_STEREO;
     }
 }
