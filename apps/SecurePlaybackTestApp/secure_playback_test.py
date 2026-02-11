@@ -195,7 +195,9 @@ class SecurePlaybackTest(secure_playback_base_test.SecurePlaybackBaseTest):
     )
     if len(code_set) != _EXPECTED_NUMBER_OF_CODES:
       raise AssertionError(
-          f'Expected {_EXPECTED_NUMBER_OF_CODES} codes, got {len(code_set)}'
+          f'Expected {_EXPECTED_NUMBER_OF_CODES} codes, got {len(code_set)}. '
+          'Please re-run the test and verify that the PAT is correctly aligned '
+          'throughout the entire test.'
       )
     dropped_frames = processed_json_data[
         'video_analysis']['metrics']['dropped_frames']
