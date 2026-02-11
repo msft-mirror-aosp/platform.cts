@@ -21,7 +21,7 @@ import static org.junit.Assert.assertNull;
 
 import android.app.privatecompute.flags.Flags;
 import android.content.Context;
-import android.os.storage.FilesManager;
+import android.os.storage.FileManager;
 import android.os.storage.operations.FileOperationEnqueueResult;
 import android.os.storage.operations.FileOperationRequest;
 import android.os.storage.operations.sources.AppDataFileSource;
@@ -44,30 +44,30 @@ import java.io.File;
 @RunWith(AndroidJUnit4.class)
 @SmallTest
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT)
-public class FilesManagerTest {
+public class FileManagerTest {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Context mContext;
-    private FilesManager mFilesManager;
+    private FileManager mFileManager;
 
     @Before
     public void setUp() {
         mContext = InstrumentationRegistry.getTargetContext();
-        mFilesManager = mContext.getSystemService(FilesManager.class);
+        mFileManager = mContext.getSystemService(FileManager.class);
     }
 
     @Test
-    public void testFilesManagerExists() {
-        assertNotNull("FilesManager should be available when flag is enabled", mFilesManager);
+    public void testFileManagerExists() {
+        assertNotNull("FileManager should be available when flag is enabled", mFileManager);
     }
 
     @Test
     public void testConstants() {
-        assertNotNull(FilesManager.ACTION_FILE_OPERATION_COMPLETED);
-        assertNotNull(FilesManager.EXTRA_REQUEST_ID);
-        assertNotNull(FilesManager.EXTRA_RESULT);
+        assertNotNull(FileManager.ACTION_FILE_OPERATION_COMPLETED);
+        assertNotNull(FileManager.EXTRA_REQUEST_ID);
+        assertNotNull(FileManager.EXTRA_RESULT);
     }
 
     @Test
@@ -84,7 +84,7 @@ public class FilesManagerTest {
                         .build();
 
         try {
-            FileOperationEnqueueResult result = mFilesManager.enqueueOperation(request);
+            FileOperationEnqueueResult result = mFileManager.enqueueOperation(request);
             assertNotNull(result);
         } catch (RuntimeException e) {
             // It's possible the service throws if not fully implemented or permission denied,
@@ -101,14 +101,14 @@ public class FilesManagerTest {
 
     @Test
     public void testFetchResult_unknownId() {
-        assertNull(mFilesManager.fetchResult("non_existent_id"));
+        assertNull(mFileManager.fetchResult("non_existent_id"));
     }
 
     @Test
     public void testRegisterAndUnregisterCompletionListener() {
         String requestId = "test_request_id";
         // These calls should not throw exceptions
-        mFilesManager.registerCompletionListener(requestId);
-        mFilesManager.unregisterCompletionListener(requestId);
+        mFileManager.registerCompletionListener(requestId);
+        mFileManager.unregisterCompletionListener(requestId);
     }
 }
