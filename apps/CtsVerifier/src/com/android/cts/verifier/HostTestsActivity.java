@@ -88,6 +88,8 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
         new HostTestCategory("SystemUI Tests")
                 .addTest("CtsSysuiInteractiveTestCases", "CtsSysuiInteractiveTestCases"),
         new HostTestCategory("USB Tests").addTest("CtsUsbTypecTestCases", "CtsUsbTypecTestCases"),
+        new HostTestCategory("Automotive Interactive Tests")
+                .addTest("CtsCarInteractiveTestCases", "CtsCarInteractiveTestCases"),
     };
 
     // List of test categories that will be excluded on Automotive.

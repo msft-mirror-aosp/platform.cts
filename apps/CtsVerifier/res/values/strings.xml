@@ -8043,6 +8043,7 @@ You should be prompted to select credentials; choose the ones you just installed
         <item>CtsNotificationSizeVerifierHostTest</item>
         <item>CtsSysuiInteractiveTestCases</item>
         <item>CtsUsbTypecTestCases</item>
+        <item>CtsCarInteractiveTestCases</item>
     </string-array>
 
     <!-- Strings for Audio Workload Test. -->
