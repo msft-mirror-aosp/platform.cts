@@ -18,6 +18,7 @@ package android.app.appfunctions.cts
 
 import android.Manifest
 import android.app.admin.DevicePolicyManager.APP_FUNCTIONS_DISABLED
+import android.app.AppInteractionAttribution
 import android.app.appfunctions.AppFunctionException
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.ExecuteAppFunctionRequest
@@ -1333,6 +1334,39 @@ class AppFunctionManagerV2Test {
                 )
             }
         }
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_INTERACTION_API)
+    fun executeAppFunction_withAttribution_attributionNotPropagated() = doBlocking {
+            val attribution =
+            AppInteractionAttribution.Builder(
+                AppInteractionAttribution.INTERACTION_TYPE_USER_QUERY
+            ).build()
+        val request =
+            ExecuteAppFunctionRequest.Builder(
+                CtsApp.PACKAGE_NAME,
+                CtsApp.FunctionNames.CHECK_ATTRIBUTION.functionIdentifier,
+            )
+                .setAttribution(attribution)
+                .build()
+
+        val response = mManager.executeAppFunction(request)
+
+        assertThat(response.exceptionOrNull()).isNull()
+        assertThat(
+                response
+                    .getOrNull()!!
+                    .resultDocument
+                    .getPropertyBoolean(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
+            )
+            .isFalse()
+        assertServiceDestroyed()
     }
 
     /** Runs a suspend block in a blocking manner */

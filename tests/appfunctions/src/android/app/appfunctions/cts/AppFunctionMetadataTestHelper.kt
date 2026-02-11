@@ -154,6 +154,7 @@ class AppFunctionMetadataTestHelper {
 
             val GLOBAL_SCOPE = AppFunctionName(PACKAGE_NAME, "appFunctionGlobalScope")
             val ACTIVITY_SCOPE = AppFunctionName(PACKAGE_NAME, "appFunctionActivityScope")
+            val CONTEXT_CHECK_ATTRIBUTION = AppFunctionName(PACKAGE_NAME, "contextCheckAttribution")
 
             val APP_LEVEL_FUNCTIONS: Set<AppFunctionName> =
                 setOf(
@@ -168,6 +169,7 @@ class AppFunctionMetadataTestHelper {
                     GLOBAL_SCOPE,
                     ACTIVITY_SCOPE,
                     DYNAMIC_ACTIVITY_CONCAT_STRINGS,
+                    CONTEXT_CHECK_ATTRIBUTION,
                 )
 
             val SERVICE_LEVEL_FUNCTIONS: Set<AppFunctionName> =
@@ -354,6 +356,7 @@ class AppFunctionMetadataTestHelper {
             val NO_SCHEMA = AppFunctionName(PACKAGE_NAME, "noSchema")
             val CONTEXT = AppFunctionName(PACKAGE_NAME, "contextDisabledByDefault")
             val ACTIVITY_CONCAT_STRINGS = AppFunctionName(PACKAGE_NAME, "activityConcatStrings")
+            val CHECK_ATTRIBUTION = AppFunctionName(PACKAGE_NAME, "checkAttribution")
         }
 
         object FunctionMetadata {
