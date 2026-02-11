@@ -18,6 +18,25 @@ id: "7.1.1.1/H-2-1"
 name: "Screen Resolution"
 description: "- Screen resolution"
 specs {
+  key: 1
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_1
+    specification: "MUST have screen resolution of at least QVGA (320 x 240)."
+    required_values {
+      key: "long_resolution_pixels"
+      value {
+        int_value: 320
+      }
+    }
+    required_values {
+      key: "short_resolution_pixels"
+      value {
+        int_value: 240
+      }
+    }
+  }
+}
+specs {
   key: 10
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_10
