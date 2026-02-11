@@ -22,7 +22,18 @@ import com.google.protobuf.TextFormat
 import kotlin.io.path.Path
 import kotlin.io.path.exists
 
-val OUTPUT_DIR = "/cts/tests/devicepolicy/src/android/devicepolicy/cts/generated"
+val ANDROID_BUILD_TOP = System.getenv("ANDROID_BUILD_TOP")
+val ANDROID_HOST_OUT = System.getenv("ANDROID_HOST_OUT")
+
+// Lunch doesn't provide a variable that points to the out directory itself,
+// only a bunch that point to other subdirectories in there than the one we need. :/
+val BUILD_OUTPUT_DIR = "$ANDROID_HOST_OUT/../../"
+val TEST_OUTPUT_DIR =
+    "$ANDROID_BUILD_TOP/cts/tests/devicepolicy/src/android/devicepolicy/cts/generated"
+
+// `ktfmt` is present in the aosp checkout
+val KTFMT_JAR = "$ANDROID_BUILD_TOP/prebuilts/build-tools/common/framework/ktfmt.jar"
+val KTFMT_COMMAND = arrayOf("java", "-jar", KTFMT_JAR, "--kotlinlang-style")
 
 fun main(args: Array<String>) {
     val arguments: ParsedArguments =
@@ -41,17 +52,12 @@ fun main(args: Array<String>) {
         System.exit(0)
     }
 
-    val rootDir = System.getenv("ANDROID_BUILD_TOP")
-    val hostOutDir = System.getenv("ANDROID_HOST_OUT")
-    if (rootDir == null || hostOutDir == null) {
+    if (ANDROID_BUILD_TOP == null || ANDROID_HOST_OUT == null) {
         System.err.println("Error: 'lunch' is required before running this tool.")
         System.exit(2)
     }
-    // Lunch doesn't provide a variable that points to the out directory itself,
-    // only a bunch that point to other subdirectories in there than the one we need. :/
-    val outDir = hostOutDir + "/../../"
 
-    val textProto = readTextProto(outDir)
+    val textProto = readTextProto(BUILD_OUTPUT_DIR)
     if (textProto == null) {
         System.err.println(
             "Error: policies.textproto not found. " +
@@ -66,7 +72,11 @@ fun main(args: Array<String>) {
         if (arguments.stdout) {
             Printer.ToStdOut()
         } else {
-            Printer.ToFile(outputDir = "$rootDir/$OUTPUT_DIR/", allowOverride = arguments.override)
+            Printer.ToFile(
+                outputDir = TEST_OUTPUT_DIR,
+                allowOverride = arguments.override,
+                format = arguments.format,
+            )
         }
 
     if (arguments.all) {
@@ -138,7 +148,7 @@ sealed interface Printer {
         }
     }
 
-    class ToFile(val outputDir: String, val allowOverride: Boolean) : Printer {
+    class ToFile(val outputDir: String, val allowOverride: Boolean, val format: Boolean) : Printer {
         override fun print(policyName: String, content: String) {
             val output_file_path = Path("$outputDir/${policyName.toCamelCase()}GeneratedTest.kt")
 
@@ -152,6 +162,15 @@ sealed interface Printer {
 
             output_file_path.toFile().writeText(content)
             System.out.println("Wrote CTS tests to ${output_file_path}")
+
+            if (format) {
+                val process =
+                    ProcessBuilder(*KTFMT_COMMAND, output_file_path.toString())
+                        .redirectOutput(ProcessBuilder.Redirect.INHERIT)
+                        .redirectError(ProcessBuilder.Redirect.INHERIT)
+                        .start()
+                process.waitFor()
+            }
         }
     }
 }

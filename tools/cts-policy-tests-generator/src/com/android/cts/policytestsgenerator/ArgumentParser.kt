@@ -21,6 +21,7 @@ public data class ParsedArguments(
     val help: Boolean,
     val stdout: Boolean,
     val all: Boolean,
+    val format: Boolean,
     val policies: List<String>,
 )
 
@@ -30,6 +31,7 @@ object ArgumentParser {
         var help = false
         var stdout = false
         var all = false
+        var format = true
         val policies = mutableListOf<String>()
         val remainingArguments = ArrayDeque(commandlineArguments.toList())
 
@@ -53,6 +55,10 @@ object ArgumentParser {
                 "--all" -> {
                     all = true
                 }
+                "--no-format",
+                "-F" -> {
+                    format = false
+                }
                 else -> {
                     if (arg.startsWith("-")) {
                         throw IllegalArgumentException("Unknown argument $arg")
@@ -68,6 +74,7 @@ object ArgumentParser {
             stdout = stdout,
             policies = policies,
             all = all,
+            format = format,
         )
     }
 
@@ -82,6 +89,7 @@ object ArgumentParser {
                     -o/--override: Allows overriding a pre-existing output file.
                     -s/--stdout: Prints to stdout instead.
                     -a/--all: Generate CTS tests for all policies.
+                    -F/--no-format: Do not format generated output file.
                     -h/--help: Print this help.
                """
             .trimIndent()
