@@ -22,12 +22,12 @@ android_test {
     name: "CtsNetSecConfigEncryptedClientHelloTestCases",
     defaults: [
         "cts_defaults",
-        "networksecurityconfig-cts-jarjar-defaults",
+        "networksecurity-cts-jarjar-defaults",
     ],
     static_libs: [
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
-        "tests-tests-networksecurityconfig-lib",
+        "networksecurity-test-lib",
         "android.security.flags-aconfig-java",
     ],
     libs: [

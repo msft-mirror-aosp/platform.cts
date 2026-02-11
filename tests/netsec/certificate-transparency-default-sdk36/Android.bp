@@ -21,12 +21,12 @@ android_test {
     name: "CtsNetSecConfigCertificateTransparencySdk36DefaultTestCases",
     defaults: [
         "cts_defaults",
-        "networksecurityconfig-cts-jarjar-defaults",
+        "networksecurity-cts-jarjar-defaults",
     ],
     static_libs: [
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
-        "tests-tests-networksecurityconfig-lib",
+        "networksecurity-test-lib",
     ],
     libs: [
         "org.apache.http.legacy.stubs.test",
