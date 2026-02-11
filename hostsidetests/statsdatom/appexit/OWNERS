@@ -1,2 +1,3 @@
-# Bug component: 316234
+# Bug component: 158088
+include platform/frameworks/base:/PERFORMANCE_OWNERS
 include platform/frameworks/base:/services/core/java/com/android/server/am/OWNERS
