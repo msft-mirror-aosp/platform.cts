@@ -31,7 +31,6 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.personalcontext.Flags;
 import android.service.personalcontext.embedded.InsightSurfaceClient;
-import android.service.personalcontext.hint.BundleHint;
 import android.view.Display;
 import android.view.View;
 
@@ -58,7 +57,6 @@ public class InsightSurfaceClientTest {
     @Mock private Resources mResources;
     private final Configuration mConfiguration = new Configuration();
     @Mock private InsightSurfaceClient.InsightReceiver mInsightReceiver;
-    private final BundleHint mHint = new BundleHint.Builder().build();
 
     @Before
     public void setup() {
@@ -87,7 +85,6 @@ public class InsightSurfaceClientTest {
                 "android.service.personalcontext.embedded.InsightSurfaceClient.Builder"
                         + "#setThemeResourceName",
                 "android.service.personalcontext.embedded.InsightSurfaceClient.Builder#addReceiver",
-                "android.service.personalcontext.embedded.InsightSurfaceClient.Builder#addHint",
                 "android.service.personalcontext.embedded.InsightSurfaceClient.Builder#build",
                 "android.service.personalcontext.embedded.InsightSurfaceClient#getMeasureSpecWidth",
                 "android.service.personalcontext.embedded.InsightSurfaceClient"
@@ -99,7 +96,6 @@ public class InsightSurfaceClientTest {
                 "android.service.personalcontext.embedded.InsightSurfaceClient#shouldBlur",
                 "android.service.personalcontext.embedded.InsightSurfaceClient"
                         + "#getThemeResourceName",
-                "android.service.personalcontext.embedded.InsightSurfaceClient#getHints",
                 "android.service.personalcontext.embedded.InsightSurfaceClient#getReceivers",
             })
     @Test
@@ -122,7 +118,6 @@ public class InsightSurfaceClientTest {
                         .setShouldBlur(shouldBlur)
                         .setThemeResourceName(themeResourceName)
                         .addReceiver(mInsightReceiver)
-                        .addHint(mHint)
                         .build();
 
         assertThat(client.getMeasureSpecWidth()).isEqualTo(widthMeasureSpec);
@@ -132,7 +127,6 @@ public class InsightSurfaceClientTest {
         assertThat(client.isNestedScrollAxisLocked()).isEqualTo(isNestedScrollAxisLocked);
         assertThat(client.shouldBlur()).isEqualTo(shouldBlur);
         assertThat(client.getThemeResourceName()).isEqualTo(themeResourceName);
-        assertThat(client.getHints()).contains(mHint);
         assertThat(client.getReceivers()).contains(mInsightReceiver);
     }
 }
