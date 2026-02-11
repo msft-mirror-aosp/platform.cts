@@ -7759,6 +7759,16 @@ public class TelephonyManagerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_AUTO_SIM_PIN_MANAGEMENT)
+    public void testSimAutoPinManagementException() {
+        TelephonyManager.SimAutoPinManagementException exception =
+                new TelephonyManager.SimAutoPinManagementException(
+                        TelephonyManager.SIM_PIN_ENROLLMENT_RESULT_FAILED_WRONG_PIN);
+        assertEquals(TelephonyManager.SIM_PIN_ENROLLMENT_RESULT_FAILED_WRONG_PIN,
+                exception.getErrorCode());
+    }
+
+    @Test
     public void testSetOperatorBrandOverride_withModifyPhoneStatePermission() {
         if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
             return;

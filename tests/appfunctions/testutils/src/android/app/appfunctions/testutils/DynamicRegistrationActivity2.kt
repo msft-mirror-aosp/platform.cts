@@ -17,25 +17,40 @@
 package android.app.appfunctions.testutils
 
 import android.app.Activity
+import android.app.appfunctions.AppFunction
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.AppFunctionRegistration
+import android.app.appfunctions.ExecuteAppFunctionResponse
+import android.app.appfunctions.testutils.DynamicRegistrationActivity.Companion.ACTION_REGISTER_APP_FUNCTION
+import android.app.appfunctions.testutils.DynamicRegistrationActivity.Companion.EXTRA_FUNCTION_ID
+import android.app.appsearch.GenericDocument
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
-import java.util.UUID
 
-/** An activity that registers an AppFunction based on Intent actions. */
-class DynamicRegistrationActivity : Activity() {
+/**
+ * Test activity which has same functionality as {@link DynamicRegistrationActivity} but registers
+ * different implementation of the App Function. Used for activity-scoped multiregistration tests.
+ */
+class DynamicRegistrationActivity2 : Activity() {
+
     private lateinit var manager: AppFunctionManager
     private var registration: AppFunctionRegistration? = null
-    private lateinit var instanceId: String
-
-    val isRegistered: Boolean
-        get() = registration != null
+    private val testAppFunction = AppFunction { request, cancellationSignal, callback ->
+        val result: GenericDocument =
+            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                .setPropertyString(
+                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE,
+                    CUSTOM_PREFIX +
+                            request.parameters.getPropertyString("prefix") +
+                            request.parameters.getPropertyString("suffix"),
+                )
+                .build()
+        callback.onResult(ExecuteAppFunctionResponse(result))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        instanceId = UUID.randomUUID().toString()
         manager = getSystemService(AppFunctionManager::class.java)
         logDebugMessage("onCreate")
         handleIntent(intent)
@@ -61,7 +76,7 @@ class DynamicRegistrationActivity : Activity() {
             registration = manager.registerAppFunction(
                 functionId,
                 mainExecutor,
-                ConcatStrings()
+                testAppFunction
             )
             logDebugMessage("successfully registered a function.")
         } catch (e: Exception) {
@@ -70,14 +85,8 @@ class DynamicRegistrationActivity : Activity() {
         }
     }
 
-    fun unregisterAppFunction() {
-        if (registration != null) {
-            registration!!.unregister()
-            registration = null
-            logDebugMessage("successfully unregistered a function.")
-        } else {
-            logDebugMessage("couldn't unregister a function, not registered.")
-        }
+     fun logDebugMessage(message: String) {
+        Log.d("DynamicActivity2", message)
     }
 
     override fun onDestroy() {
@@ -89,12 +98,7 @@ class DynamicRegistrationActivity : Activity() {
         }
     }
 
-    fun logDebugMessage(message: String) {
-        Log.d("DynamicActivity", "[$instanceId] " + message)
-    }
-
     companion object {
-        const val ACTION_REGISTER_APP_FUNCTION = "android.cts.appfunctions.REGISTER_APP_FUNCTION"
-        const val EXTRA_FUNCTION_ID = "FUNCTION_ID"
+        const val CUSTOM_PREFIX = "Activity2"
     }
 }

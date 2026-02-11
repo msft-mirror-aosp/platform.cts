@@ -32,6 +32,7 @@ import com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.types.OptionalBoolean;
 import com.google.auto.value.AutoAnnotation;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.lang.annotation.Annotation;
@@ -107,7 +108,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
      * @param parameterizedAnnotations The class of the parameterized annotations to expand, if any
      */
     public void resolveRecursiveAnnotations(
-            List<Annotation> annotations, List<Annotation> parameterizedAnnotations) {
+            List<Annotation> annotations, ImmutableList<Annotation> parameterizedAnnotations) {
         resolveRecursiveAnnotations(getHarrierRule(), annotations, parameterizedAnnotations);
     }
 
@@ -119,7 +120,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     public static void resolveRecursiveAnnotations(
             HarrierRule harrierRule,
             List<Annotation> annotations,
-            List<Annotation> parameterizedAnnotations) {
+            ImmutableList<Annotation> parameterizedAnnotations) {
         int index = 0;
         while (index < annotations.size()) {
             Annotation annotation = annotations.get(index);
@@ -204,7 +205,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     static List<Annotation> getReplacementAnnotations(
             HarrierRule harrierRule,
             Annotation annotation,
-            List<Annotation> parameterizedAnnotations) {
+            ImmutableList<Annotation> parameterizedAnnotations) {
         BiFunction<HarrierRule, Annotation, Stream<Annotation>> specialReplaceFunction =
                 ANNOTATION_REPLACEMENTS.get(annotation.annotationType());
 
@@ -428,7 +429,8 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         for (Parameter parameter : method.getMethod().getParameters()) {
             List<Annotation> annotations =
                     new ArrayList<>(Arrays.asList(parameter.getAnnotations()));
-            resolveRecursiveAnnotations(annotations, /* parameterizedAnnotations= */ List.of());
+            resolveRecursiveAnnotations(
+                    annotations, /* parameterizedAnnotations= */ ImmutableList.of());
 
             boolean hasParameterised = false;
 

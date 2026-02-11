@@ -134,6 +134,7 @@ import android.content.pm.SigningInfoException;
 import android.content.pm.SuspendDialogInfo;
 import android.content.pm.cts.PackageManagerShellCommandInstallTest.PackageBroadcastReceiver;
 import android.content.pm.cts.util.AbandonAllPackageSessionsRule;
+import android.content.pm.cts.util.AppLockSupportRule;
 import android.content.pm.cts.util.RequiresAppLockSupported;
 import android.content.res.Configuration;
 import android.content.res.Resources;
@@ -374,6 +375,9 @@ public class PackageManagerTest {
 
     @Rule
     public final Expect expect = Expect.create();
+
+    @Rule
+    public final AppLockSupportRule mAppLockSupportRule = new AppLockSupportRule();
 
     private UiDevice mUiDevice;
 

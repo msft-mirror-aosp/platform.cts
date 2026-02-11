@@ -35,6 +35,21 @@ specs {
   }
 }
 specs {
+  key: 20
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_20
+    specification:
+      "MUST have at least 5.12 GiB available to the kernel as reported by "
+      "android.app.ActivityManager.MemoryInfo."
+    required_values {
+      key: "physical_memory_mb"
+      value {
+        long_value: 5120
+      }
+    }
+  }
+}
+specs {
   key: 31
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_31

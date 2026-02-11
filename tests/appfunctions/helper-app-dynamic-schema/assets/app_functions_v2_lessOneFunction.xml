@@ -13,8 +13,6 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-
-<!-- LINT.IfChange -->
 <appfunctions>
     <appfunction>
         <id>appFunctionEnabledByDefault</id>
@@ -35,14 +33,6 @@
         <function_id>appFunctionDisabledByDefault_noSchema</function_id>
         <enabled_by_default>false</enabled_by_default>
     </appfunction>
-    <appfunction>
-        <id>appFunctionWithHighSchemaVersion</id>
-        <function_id>appFunctionWithHighSchemaVersion</function_id>
-        <schemaCategory>myUtils</schemaCategory>
-        <schemaVersion>7</schemaVersion>
-        <schemaName>testSchema</schemaName>
-        <enabled_by_default>true</enabled_by_default>
-    </appfunction>
     <CustomTopLevelComponent1>
         <id>testTopLevelComponentId</id>
         <customStringProperty>testValue</customStringProperty>
@@ -57,4 +47,3 @@
         </nestedDocumentProperty>
     </CustomTopLevelComponent2>
 </appfunctions>
-    <!-- LINT.ThenChange(//tests/appfunctions/helper-app-dynamic-schema/assets/app_functions_v2_lessOneFunction.xml, //tests/appfunctions/helper-app-dynamic-schema/assets/app_functions_v2_noTopLevelDocs.xml) -->

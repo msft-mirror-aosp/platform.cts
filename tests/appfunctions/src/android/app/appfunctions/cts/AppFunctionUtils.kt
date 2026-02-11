@@ -19,13 +19,17 @@ import android.Manifest
 import android.app.appfunctions.AppFunctionException
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.AppFunctionManager.EnabledState
+import android.app.appfunctions.AppFunctionMetadata
+import android.app.appfunctions.AppFunctionPackageMetadata
 import android.app.appfunctions.AppFunctionRuntimeMetadata
+import android.app.appfunctions.AppFunctionSearchSpec
 import android.app.appfunctions.AppFunctionStaticMetadataHelper
 import android.app.appfunctions.AppFunctionStaticMetadataHelper.APP_FUNCTION_STATIC_NAMESPACE
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
 import android.app.appfunctions.cts.AppFunctionRegistrationTest.Companion.EXECUTE_APP_FUNCTIONS_PERMISSION
 import android.app.appfunctions.cts.AppSearchUtils.collectAllSearchResults
+import android.app.appfunctions.cts.AppSearchUtils.sanitizeGenericDocument
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
 import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
 import android.app.appsearch.GenericDocument
@@ -36,6 +40,7 @@ import android.app.appsearch.testutil.GlobalSearchSessionShimImpl
 import android.content.Context
 import android.os.CancellationSignal
 import android.os.OutcomeReceiver
+import androidx.core.os.asOutcomeReceiver
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.utils.ShellCommand
 import com.android.compatibility.common.util.SystemUtil
@@ -46,14 +51,14 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 
 object AppFunctionUtils {
 
-    suspend fun assertFunctionState(
+    suspend fun assertFunctionEnabledState(
         packageName: String,
         functionId: String,
         manager: AppFunctionManager,
         isEnabled: Boolean,
     ) {
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-            val result = isAppFunctionEnabled(manager, packageName, functionId)
+            val result = manager.isAppFunctionEnabled(packageName, functionId)
 
             assertThat(result.exceptionOrNull()).isNull()
             if (isEnabled) {
@@ -65,13 +70,12 @@ object AppFunctionUtils {
     }
 
     /** Checks if target AppFunction is enable or not. */
-    suspend fun isAppFunctionEnabled(
-        manager: AppFunctionManager,
+    suspend fun AppFunctionManager.isAppFunctionEnabled(
         packageName: String,
         functionIdentifier: String,
     ): Result<Boolean> {
         return suspendCancellableCoroutine { cont ->
-            manager.isAppFunctionEnabled(
+            isAppFunctionEnabled(
                 functionIdentifier,
                 packageName,
                 Runnable::run,
@@ -89,14 +93,13 @@ object AppFunctionUtils {
     }
 
     /** Executes an app function and waits for the response. */
-    suspend fun executeAppFunctionAndWait(
-        manager: AppFunctionManager,
-        request: ExecuteAppFunctionRequest,
+    suspend fun AppFunctionManager.executeAppFunction(
+        request: ExecuteAppFunctionRequest
     ): Result<ExecuteAppFunctionResponse> {
         return suspendCancellableCoroutine { continuation ->
             val cancellationSignal = CancellationSignal()
             continuation.invokeOnCancellation { cancellationSignal.cancel() }
-            manager.executeAppFunction(
+            executeAppFunction(
                 request,
                 Runnable::run,
                 cancellationSignal,
@@ -113,13 +116,19 @@ object AppFunctionUtils {
         }
     }
 
+    /** Searches for [AppFunctionMetadata] that follow match given search spec. */
+    suspend fun AppFunctionManager.searchAppFunctions(
+        searchSpec: AppFunctionSearchSpec
+    ): List<AppFunctionMetadata> = suspendCancellableCoroutine { continuation ->
+        searchAppFunctions(searchSpec, Runnable::run, continuation.asOutcomeReceiver())
+    }
+
     /** Sets the enabled state of an app function. */
-    suspend fun setAppFunctionEnabled(
-        manager: AppFunctionManager,
+    suspend fun AppFunctionManager.setAppFunctionEnabled(
         functionIdentifier: String,
         @EnabledState state: Int,
     ): Unit = suspendCancellableCoroutine { continuation ->
-        manager.setAppFunctionEnabled(
+        setAppFunctionEnabled(
             functionIdentifier,
             state,
             Runnable::run,
@@ -290,6 +299,29 @@ object AppFunctionUtils {
         } finally {
             clearInteractionAllowlist()
         }
+    }
+
+    fun assertAppFunctionMetadataEquals(
+        actual: AppFunctionMetadata,
+        expected: AppFunctionMetadata,
+    ) {
+        assertThat(actual.name).isEqualTo(expected.name)
+        assertThat(actual.schemaMetadata).isEqualTo(expected.schemaMetadata)
+        assertThat(actual.scope).isEqualTo(expected.scope)
+        val clearedActualGd = sanitizeGenericDocument(actual.metadataDocument)
+        val expectedGd = sanitizeGenericDocument(expected.metadataDocument)
+        assertThat(clearedActualGd).isEqualTo(expectedGd)
+        assertAppFunctionPackageMetadataEquals(actual.packageMetadata, expected.packageMetadata)
+    }
+
+    fun assertAppFunctionPackageMetadataEquals(
+        actual: AppFunctionPackageMetadata,
+        expected: AppFunctionPackageMetadata,
+    ) {
+        assertThat(actual.packageName).isEqualTo(expected.packageName)
+        val clearedActualGd = sanitizeGenericDocument(actual.metadataDocument)
+        val expectedGd = sanitizeGenericDocument(expected.metadataDocument)
+        assertThat(clearedActualGd).isEqualTo(expectedGd)
     }
 
     private fun searchStaticMetadata(context: Context? = null): List<GenericDocument> {

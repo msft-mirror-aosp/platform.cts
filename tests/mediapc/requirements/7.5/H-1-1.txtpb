@@ -17,57 +17,6 @@
 id: "7.5/H-1-1"
 name: "Primary Rear Camera Resolution and Frame Rate"
 description: "Primary rear camera resolution and frame rate"
-comment:
-  "The fps requirements are slightly less than the nominal frame rate. "
-  "For example 29.9 fps is used instead of 30 fps."
-
-specs {
-  key: 10
-  value {
-    mpc: MEDIA_PERFORMANCE_CLASS_10
-    specification:
-      "IF a rear facing camera is present, the primary rear facing camera "
-      "MUST have a resolution of at least 5 megapixels supporting video  "
-      "capture at 720p@30fps. The primary rear-facing camera is the "
-      "rear-facing camera with the lowest camera ID."
-    required_values {
-      key: "primary_camera_available"
-      value {
-        bool_value: true
-      }
-    }
-    required_values {
-      key: "primary_camera_resolution"
-      value {
-        long_value: 5000000
-      }
-    }
-    required_values {
-      key: "primary_camera_720p_video_fps"
-      value {
-        double_value: 29.9  # A little bit less than 30
-      }
-    }
-    required_values {
-      key: "primary_camera_720p_video_size_req_satisfied"
-      value {
-        bool_value: true
-      }
-    }
-    variant_specs {
-      key: "no_rear_camera"
-      value {
-        required_values {
-          key: "primary_camera_available"
-          value {
-            bool_value: false
-          }
-        }
-      }
-    }
-    test_config_id: "optional_rear_camera"
-  }
-}
 specs {
   key: 30
   value {
@@ -399,18 +348,5 @@ test_configs {
   value {
     description: "Default test config"
     proto_field_number: 50
-  }
-}
-test_configs {
-  key: "optional_rear_camera"
-  value {
-    description: "Optional rear camera"
-    proto_field_number: 97
-  }
-}
-variants: {
-  key: "no_rear_camera"
-  value: {
-    description: "When the device has no rear camera"
   }
 }

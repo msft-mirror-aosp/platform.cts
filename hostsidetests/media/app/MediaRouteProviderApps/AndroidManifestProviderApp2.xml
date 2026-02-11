@@ -20,7 +20,7 @@
           android:versionCode="1"
           android:versionName="1.0">
 
-    <application android:testOnly="true">
+    <application android:testOnly="true" android:debuggable="true">
         <service android:name="android.media.router.cts.FakeMediaRoute2ProviderService2"
                  android:exported="true">
             <intent-filter>

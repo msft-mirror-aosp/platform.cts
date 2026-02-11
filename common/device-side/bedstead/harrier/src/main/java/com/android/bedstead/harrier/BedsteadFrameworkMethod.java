@@ -18,23 +18,21 @@ package com.android.bedstead.harrier;
 
 import com.android.bedstead.harrier.annotations.meta.RequireRunOnAnnotation;
 import com.android.bedstead.nene.types.OptionalBoolean;
-
 import com.google.common.base.Equivalence;
-
-import org.junit.runners.model.FrameworkMethod;
-
+import com.google.common.collect.ImmutableList;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.junit.runners.model.FrameworkMethod;
 
 /** {@link FrameworkMethod} subclass which allows modifying the test name and annotations. */
 public final class BedsteadFrameworkMethod extends FrameworkMethod {
 
     private final BedsteadJUnit4 mBedsteadJUnit4;
-    private final List<Annotation> mParameterizedAnnotations;
+    private final ImmutableList<Annotation> mParameterizedAnnotations;
     private final Map<Class<? extends Annotation>, Annotation> mAnnotationsMap = new HashMap<>();
     private final Equivalence<Iterable<Annotation>> equivalence =
             Equivalence.equals().pairwise(); // For element-wise comparison
@@ -51,12 +49,12 @@ public final class BedsteadFrameworkMethod extends FrameworkMethod {
             List<Annotation> parameterizedAnnotations) {
         super(method);
         mBedsteadJUnit4 = bedsteadJUnit4;
-        mParameterizedAnnotations = parameterizedAnnotations;
+        mParameterizedAnnotations = ImmutableList.copyOf(parameterizedAnnotations);
 
         calculateAnnotations();
     }
 
-    public List<Annotation> getParameterizedAnnotations() {
+    public ImmutableList<Annotation> getParameterizedAnnotations() {
         return mParameterizedAnnotations;
     }
 
@@ -70,7 +68,8 @@ public final class BedsteadFrameworkMethod extends FrameworkMethod {
                         getMethod().getAnnotations(),
                         mBedsteadJUnit4.getRuntimeClassAnnotations()));
 
-        mBedsteadJUnit4.resolveRecursiveAnnotations(annotations, mParameterizedAnnotations);
+        mBedsteadJUnit4.resolveRecursiveAnnotations(
+                annotations, mParameterizedAnnotations);
 
         boolean hasRequireRunOnAnnotation =
                 annotations.stream()
@@ -88,7 +87,7 @@ public final class BedsteadFrameworkMethod extends FrameworkMethod {
                             mBedsteadJUnit4.getHarrierRule(),
                             BedsteadJUnit4.requireRunOnInitialUser(
                                     /* switchToUser= */ OptionalBoolean.ANY),
-                            /* parameterizedAnnotations= */ List.of()));
+                            /* parameterizedAnnotations= */ ImmutableList.of()));
         }
 
         mAnnotations = annotations.toArray(new Annotation[0]);

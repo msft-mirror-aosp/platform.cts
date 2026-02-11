@@ -48,6 +48,7 @@ import android.media.MediaMetadata;
 import android.media.MediaSession2;
 import android.media.Rating;
 import android.media.VolumeProvider;
+import android.media.cts.ResourceReleaser;
 import android.media.cts.Utils;
 import android.media.session.MediaController;
 import android.media.session.MediaSession;
@@ -74,8 +75,10 @@ import androidx.test.core.app.ApplicationProvider;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.UserTest;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.media.mediasession.flags.Flags;
 
@@ -84,6 +87,7 @@ import com.google.common.collect.ImmutableList;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -119,6 +123,7 @@ public class MediaSessionTest {
     private static final boolean SUPPORTS_MULTIPLE_USERS = UserManager.supportsMultipleUsers();
 
     private AudioManager mAudioManager;
+    private MediaSessionManager mSessionManager;
     private Handler mHandler = new Handler(Looper.getMainLooper());
     private Object mWaitLock = new Object();
     private MediaControllerCallback mCallback = new MediaControllerCallback();
@@ -126,6 +131,10 @@ public class MediaSessionTest {
     private RemoteUserInfo mKeyDispatcherInfo;
     private Context mContext;
     private Optional<Integer> mCloneProfileId = Optional.empty();
+
+    @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
+
+    @Rule public final ResourceReleaser mResourceReleaser = new ResourceReleaser();
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -142,6 +151,7 @@ public class MediaSessionTest {
     public void setUp() {
         mContext = getContext();
         mAudioManager = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
+        mSessionManager = mContext.getSystemService(MediaSessionManager.class);
         mSession = new MediaSession(getContext(), TEST_SESSION_TAG);
         mKeyDispatcherInfo = new MediaSessionManager.RemoteUserInfo(
                 getContext().getPackageName(), Process.myPid(), Process.myUid());
@@ -952,6 +962,18 @@ public class MediaSessionTest {
         }
     }
 
+    private void simulateVolumeKeyEvent(int keycode) {
+        long downTime = System.currentTimeMillis();
+        mSessionManager.dispatchVolumeKeyEvent(
+                new KeyEvent(downTime, downTime, KeyEvent.ACTION_DOWN, keycode, /* repeat= */ 0),
+                AudioManager.USE_DEFAULT_STREAM_TYPE,
+                false);
+        mSessionManager.dispatchVolumeKeyEvent(
+                new KeyEvent(downTime, downTime, KeyEvent.ACTION_UP, keycode, /* repeat= */ 0),
+                AudioManager.USE_DEFAULT_STREAM_TYPE,
+                false);
+    }
+
     // This uses public APIs to dispatch key events, so sessions would consider this as
     // 'media key event from this application'.
     private void simulateMediaKeyInput(int keyCode) {
@@ -1275,8 +1297,8 @@ public class MediaSessionTest {
         boolean hasGcTestSessions = true;
         while (hasGcTestSessions && SystemClock.elapsedRealtime() < timeoutTimeMs) {
             List<MediaController> activeSessions =
-                    new MediaSessionManager(mContext)
-                            .getActiveSessions(new ComponentName(mContext, MediaSessionTest.class));
+                    mSessionManager.getActiveSessions(
+                            new ComponentName(mContext, MediaSessionTest.class));
             hasGcTestSessions =
                     activeSessions.stream()
                             .anyMatch(controller -> controller.getTag().startsWith("gc_test_"));
@@ -1294,6 +1316,75 @@ public class MediaSessionTest {
         assertThat(limit.getWidth()).isAtMost(4096);
         assertThat(limit.getHeight()).isGreaterThan(0);
         assertThat(limit.getHeight()).isAtMost(4096);
+    }
+
+    @Test
+    @EnsureHasPermission(Manifest.permission.MEDIA_CONTENT_CONTROL)
+    public void volumeAdjustmentKeyPress_reachesRemoteMediaSession() throws Exception {
+        int volume = 10;
+        int maxVolume = 20;
+        CountDownLatch mediaSessionReadyLatch = new CountDownLatch(1);
+        MediaSessionManager.OnActiveSessionsChangedListener activeSessionsChangedListener =
+                controllers -> {
+                    for (MediaController controller : controllers) {
+                        if (controller.getTag().equals(TEST_SESSION_TAG)) {
+                            mediaSessionReadyLatch.countDown();
+                            return;
+                        }
+                    }
+                };
+        // This listener confirms the system has registered the session before we dispatch volume
+        // adjustment events. This way we avoid a race condition where the system hasn't yet
+        // registered the session and the dispatched volume adjustment events would not get to our
+        // volume provider.
+        mSessionManager.addOnActiveSessionsChangedListener(
+                activeSessionsChangedListener, /* notificationListener= */ null, mHandler);
+        mResourceReleaser.add(
+                () ->
+                        mSessionManager.removeOnActiveSessionsChangedListener(
+                                activeSessionsChangedListener));
+        CountDownLatch volumeAdjustedLatch = new CountDownLatch(1);
+        VolumeProvider volumeProvider =
+                new VolumeProvider(
+                        VolumeProvider.VOLUME_CONTROL_RELATIVE,
+                        maxVolume,
+                        volume,
+                        /* volumeControlId= */ null) {
+                    @Override
+                    public void onAdjustVolume(int direction) {
+                        super.onAdjustVolume(direction);
+                        setCurrentVolume(getCurrentVolume() + direction);
+                        volumeAdjustedLatch.countDown();
+                    }
+
+                    @Override
+                    public void onSetVolumeTo(int volume) {
+                        super.onSetVolumeTo(volume);
+                        setCurrentVolume(volume);
+                        volumeAdjustedLatch.countDown();
+                    }
+                };
+        mSession.setPlaybackToRemote(volumeProvider);
+        int originalVolume = volumeProvider.getCurrentVolume();
+        // Necessary to get to the top of the priority stack.
+        PlaybackState playbackState =
+                new PlaybackState.Builder()
+                        .setState(
+                                PlaybackState.STATE_PLAYING,
+                                /* position= */ 0L,
+                                /* playbackSpeed= */ 0.0f)
+                        .build();
+        mSession.setPlaybackState(playbackState);
+        // Necessary for us to get the volume adjustment event.
+        mSession.setCallback(new MediaSession.Callback() {}, mHandler);
+        mSession.setActive(true);
+        assertThat(mediaSessionReadyLatch.await(TIME_OUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+
+        simulateVolumeKeyEvent(KeyEvent.KEYCODE_VOLUME_DOWN);
+
+        assertThat(volumeAdjustedLatch.await(TIME_OUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+        assertThat(originalVolume).isEqualTo(volume);
+        assertThat(volumeProvider.getCurrentVolume()).isEqualTo(volume - 1);
     }
 
     /**

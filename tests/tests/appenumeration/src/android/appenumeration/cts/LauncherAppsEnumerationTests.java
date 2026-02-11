@@ -76,6 +76,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.LauncherApps;
 import android.content.pm.PackageInstaller;
 import android.content.pm.PackageManager;
+import android.content.pm.cts.util.AppLockSupportRule;
 import android.content.pm.cts.util.RequiresAppLockSupported;
 import android.os.Bundle;
 import android.os.Process;
@@ -107,6 +108,9 @@ import java.util.concurrent.TimeUnit;
 public class LauncherAppsEnumerationTests extends AppEnumerationTestsBase {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Rule
+    public final AppLockSupportRule mAppLockSupportRule = new AppLockSupportRule();
 
     @LargeTest
     @Test

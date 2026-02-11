@@ -1029,7 +1029,10 @@ public class VirtualCameraTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_STABLE_STREAM_ID)
+    @RequiresFlagsEnabled({
+        Flags.FLAG_VIRTUAL_CAMERA_STABLE_STREAM_ID,
+        Flags.FLAG_CAMERA_MULTIPLE_INPUT_STREAMS,
+    })
     public void virtualCamera_streamId_matchesCreationOrder() throws Exception {
         setupVirtualDeviceCameraManager();
 

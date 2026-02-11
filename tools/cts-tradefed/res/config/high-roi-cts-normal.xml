@@ -1513,15 +1513,6 @@
     <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.lights.cts.tests.LightsManagerTest#testControlSingleLight"/>
     <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.lights.cts.tests.LightsManagerTest#testRequestValidation_onlyEffectsOnRequest"/>
     <option name="compatibility:include-filter" value="CtsHardwareTestCases android.hardware.lights.cts.tests.LightsManagerTest#testRequestValidation_rejectEffectsOnStaticLights"/>
-    <!-- CtsHealthConnectHostTestCases -->
-    <option name="compatibility:include-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.logging.HealthConnectDailyLogsStatsTests#testDatabaseStats"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.logging.HealthConnectDailyLogsStatsTests#testIsUserActive_deleteRecord_userNotMonthlyActive"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.logging.HealthConnectDailyLogsStatsTests#testIsUserActive_readRecord_userMonthlyActiveBetween7To30days"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.logging.HealthConnectDailyLogsStatsTests#testIsUserActive_readRecord_userMonthlyActiveNextDay"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.logging.HealthConnectDailyLogsStatsTests#testIsUserActive_readRecord_userNotMonthlyActiveAfter30Days"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.logging.HealthConnectDailyLogsStatsTests#testPermissionStats"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.logging.HealthConnectDailyLogsStatsTests#testPhrUsageStats"/>
-    <option name="compatibility:include-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.logging.HealthConnectUiLogsTests#testImpressionsAndInteractionsSent"/>
     <!-- CtsHealthFitnessDeviceTestCases -->
     <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.GetActivityDatesTest#testActivityDates"/>
     <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.GetActivityDatesTest#testGetActivityDates_onUpdate"/>

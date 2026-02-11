@@ -8020,7 +8020,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
 
     @RequiresFlagsEnabled(Flags.FLAG_REFRESH_MAC_RANDOMIZATION_API)
     @Test
-    public void testRefreshMacRandomization() {
+    public void testRefreshMacRandomization() throws Exception {
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         assertThrows(SecurityException.class, () -> sWifiManager.refreshMacRandomization(0));
         TestActionListener actionListener = new TestActionListener(mLock);
@@ -8035,7 +8035,10 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             newNetworkId = sWifiManager.addNetwork(newOpenNetwork);
             sWifiManager.refreshMacRandomization(newNetworkId);
         } finally {
-            sWifiManager.forget(newNetworkId, actionListener);
+            final int networkId = newNetworkId;
+            PollingCheck.check(
+                    "Network " + newNetworkId + " not removed", TEST_WAIT_DURATION_MS,
+                    () -> sWifiManager.removeNetwork(networkId));
             uiAutomation.dropShellPermissionIdentity();
         }
     }

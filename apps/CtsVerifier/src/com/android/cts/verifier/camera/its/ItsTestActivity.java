@@ -92,6 +92,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -232,6 +233,8 @@ public class ItsTestActivity extends DialogTestListActivity {
             Pattern.compile("test_preview_stabilization_fov_.*");
     private static final String PERF_METRICS_KEY_PREFIX_PREVIEW_STABILIZATION_FOV =
             "preview_stabilization_fov";
+
+    private static final int TIME_TO_SET_RESULTS = 3;
 
     private final ResultReceiver mResultsReceiver = new ResultReceiver();
     private final BroadcastReceiver mCommandReceiver = new BroadcastReceiver() {
@@ -641,6 +644,10 @@ public class ItsTestActivity extends DialogTestListActivity {
                     ItsTestActivity.this.getReportLog().setSummary(
                             summary.toString(), 1.0, ResultType.NEUTRAL, ResultUnit.NONE);
                 }
+
+                // The result settings are asynchronous, wait before other operations. Otherwise,
+                // the exported test_result.xml file may be empty.
+                sleep(TIME_TO_SET_RESULTS);
 
                 // Display current progress
                 StringBuilder progress = new StringBuilder();
@@ -1606,6 +1613,14 @@ public class ItsTestActivity extends DialogTestListActivity {
             startActivityForResult(takeVideoIntent, REQUEST_VIDEO_CAPTURE);
         } catch (ActivityNotFoundException e) {
             Logt.e(TAG, "Error starting video capture intent activity: " + e);
+        }
+    }
+
+    private void sleep(int seconds) {
+        try {
+            TimeUnit.SECONDS.sleep(seconds);
+        } catch (InterruptedException e) {
+            Log.e(TAG, "Error in thread sleep", e);
         }
     }
 }

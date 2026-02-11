@@ -23,7 +23,7 @@ import android.app.appfunctions.AppFunctionException
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
-import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunctionAndWait
+import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunction
 import android.app.appfunctions.cts.AppFunctionUtils.getAllRuntimeMetadataPackages
 import android.app.appfunctions.cts.AppFunctionUtils.getAllStaticMetadataPackages
 import android.app.appfunctions.cts.AppFunctionUtils.installExistingPackageAsUser
@@ -126,9 +126,8 @@ class AppFunctionManagerTest {
     @Before
     @After
     fun resetEnabledStatus() = doBlocking {
-        setAppFunctionEnabled(mManager, "add", AppFunctionManager.APP_FUNCTION_STATE_DEFAULT)
-        setAppFunctionEnabled(
-            mManager,
+        mManager.setAppFunctionEnabled("add", AppFunctionManager.APP_FUNCTION_STATE_DEFAULT)
+        mManager.setAppFunctionEnabled(
             "add_disabledByDefault",
             AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
         )
@@ -157,7 +156,7 @@ class AppFunctionManagerTest {
         val request =
             ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "uncaughtClientException").build()
 
-        val response = executeAppFunctionAndWait(mManager, request)
+        val response = mManager.executeAppFunction(request)
 
         assertThat(response.isSuccess).isFalse()
         assertThat(response.appFunctionException().errorCode)
@@ -255,7 +254,7 @@ class AppFunctionManagerTest {
                     .setParameters(parameters)
                     .build()
 
-            val response = executeAppFunctionAndWait(mManager, request)
+            val response = mManager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isTrue()
         }
@@ -323,7 +322,7 @@ class AppFunctionManagerTest {
                     .setParameters(parameters)
                     .build()
 
-            val response = executeAppFunctionAndWait(mManager, request)
+            val response = mManager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isTrue()
             assertThat(
@@ -344,7 +343,7 @@ class AppFunctionManagerTest {
     fun executeAppFunction_otherNonExistingTargetPackage() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder("other.package", "add").build()
 
-        val response = executeAppFunctionAndWait(mManager, request)
+        val response = mManager.executeAppFunction(request)
 
         assertThat(response.isSuccess).isFalse()
         // Apps without the permission can only invoke functions from themselves.
@@ -363,7 +362,7 @@ class AppFunctionManagerTest {
     fun executeAppFunction_otherExistingTargetPackage() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "someMethod").build()
 
-        val response = executeAppFunctionAndWait(mManager, request)
+        val response = mManager.executeAppFunction(request)
 
         assertThat(response.isSuccess).isFalse()
         assertThat(response.appFunctionException().errorCode)
@@ -392,7 +391,7 @@ class AppFunctionManagerTest {
     fun executeAppFunction_throwsException_nonParam() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "throwException").build()
 
-        val response = executeAppFunctionAndWait(mManager, request)
+        val response = mManager.executeAppFunction(request)
 
         assertThat(response.isSuccess).isFalse()
         assertThat(response.appFunctionException().errorCode)
@@ -408,7 +407,7 @@ class AppFunctionManagerTest {
     fun executeAppFunction_onRemoteProcessKilled() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "kill").build()
 
-        val response = executeAppFunctionAndWait(mManager, request)
+        val response = mManager.executeAppFunction(request)
 
         assertThat(response.isSuccess).isFalse()
         assertThat(response.appFunctionException().errorCode)
@@ -434,7 +433,7 @@ class AppFunctionManagerTest {
                 .setParameters(parameters)
                 .build()
 
-        val response = executeAppFunctionAndWait(mManager, request)
+        val response = mManager.executeAppFunction(request)
 
         assertThat(response.isSuccess).isTrue()
         assertThat(
@@ -455,7 +454,7 @@ class AppFunctionManagerTest {
     fun executeAppFunction_emptyPackage() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder("", "noOp").build()
 
-        val response = executeAppFunctionAndWait(mManager, request)
+        val response = mManager.executeAppFunction(request)
 
         assertThat(response.isSuccess).isFalse()
         assertThat(response.appFunctionException().errorCode)
@@ -477,7 +476,7 @@ class AppFunctionManagerTest {
         val request =
             ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add").setParameters(parameters).build()
 
-        val response = executeAppFunctionAndWait(mManager, request)
+        val response = mManager.executeAppFunction(request)
 
         assertThat(response.isSuccess).isTrue()
         assertThat(
@@ -531,7 +530,7 @@ class AppFunctionManagerTest {
                         .getSystemService(AppFunctionManager::class.java)
                 val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add").build()
 
-                val response = executeAppFunctionAndWait(mManager, request)
+                val response = mManager.executeAppFunction(request)
 
                 assertThat(response.isSuccess).isFalse()
                 assertThat(response.appFunctionException().errorCode)
@@ -587,7 +586,7 @@ class AppFunctionManagerTest {
                     .setParameters(parameters)
                     .build()
 
-            val response = executeAppFunctionAndWait(mManager, request)
+            val response = mManager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isTrue()
             assertThat(
@@ -642,7 +641,7 @@ class AppFunctionManagerTest {
                         .getSystemService(AppFunctionManager::class.java)
                 val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add").build()
 
-                val response = executeAppFunctionAndWait(mManager, request)
+                val response = mManager.executeAppFunction(request)
 
                 assertThat(response.isSuccess).isFalse()
                 assertThat(response.appFunctionException().errorCode)
@@ -662,7 +661,7 @@ class AppFunctionManagerTest {
         val request =
             ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add_disabledByDefault").build()
 
-        val response = executeAppFunctionAndWait(mManager, request)
+        val response = mManager.executeAppFunction(request)
 
         assertThat(response.isSuccess).isFalse()
         assertThat(response.appFunctionException().errorCode)
@@ -677,9 +676,9 @@ class AppFunctionManagerTest {
     @EnsureHasNoDeviceOwner
     fun executeAppFunction_disabledInRuntime_fail() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add").build()
-        setAppFunctionEnabled(mManager, "add", AppFunctionManager.APP_FUNCTION_STATE_DISABLED)
+        mManager.setAppFunctionEnabled("add", AppFunctionManager.APP_FUNCTION_STATE_DISABLED)
 
-        val response = executeAppFunctionAndWait(mManager, request)
+        val response = mManager.executeAppFunction(request)
 
         assertThat(response.isSuccess).isFalse()
         assertThat(response.appFunctionException().errorCode)
@@ -695,7 +694,7 @@ class AppFunctionManagerTest {
     fun executeAppFunction_hasManagedProfileRunInPersonalProfile_success() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "noOp").build()
 
-        val response = executeAppFunctionAndWait(mManager, request)
+        val response = mManager.executeAppFunction(request)
 
         assertThat(response.isSuccess).isTrue()
         assertServiceDestroyed()
@@ -715,7 +714,7 @@ class AppFunctionManagerTest {
         val request =
             ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add").setParameters(parameters).build()
 
-        val response = executeAppFunctionAndWait(mManager, request)
+        val response = mManager.executeAppFunction(request)
 
         assertThat(response.isSuccess).isTrue()
         assertThat(
@@ -748,7 +747,7 @@ class AppFunctionManagerTest {
                     .setParameters(parameters)
                     .build()
 
-            val response = executeAppFunctionAndWait(mManager, request)
+            val response = mManager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isFalse()
             assertThat(response.appFunctionException().errorCode)
@@ -776,7 +775,7 @@ class AppFunctionManagerTest {
         val request =
             ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add").setParameters(parameters).build()
 
-        val response = executeAppFunctionAndWait(mManager, request)
+        val response = mManager.executeAppFunction(request)
 
         assertThat(response.isSuccess).isTrue()
         assertThat(
@@ -810,7 +809,7 @@ class AppFunctionManagerTest {
                         .setParameters(parameters)
                         .build()
 
-                val response = executeAppFunctionAndWait(mManager, request)
+                val response = mManager.executeAppFunction(request)
 
                 assertThat(response.isSuccess).isTrue()
                 assertThat(
@@ -834,7 +833,7 @@ class AppFunctionManagerTest {
                 val request =
                     ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "random_function").build()
 
-                val response = executeAppFunctionAndWait(mManager, request)
+                val response = mManager.executeAppFunction(request)
 
                 assertThat(response.isSuccess).isFalse()
                 assertThat(response.appFunctionException().errorCode)
@@ -855,7 +854,7 @@ class AppFunctionManagerTest {
                 val request =
                     ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "random_function").build()
 
-                val response = executeAppFunctionAndWait(mManager, request)
+                val response = mManager.executeAppFunction(request)
 
                 assertThat(response.isSuccess).isFalse()
                 assertThat(response.appFunctionException().errorCode)
@@ -931,7 +930,7 @@ class AppFunctionManagerTest {
                     .setParameters(parameters)
                     .build()
 
-            val response = executeAppFunctionAndWait(mManager, request)
+            val response = mManager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isTrue()
             assertThat(response.getOrNull()!!.resultDocument.getPropertyBytes("bytes"))
@@ -998,16 +997,14 @@ class AppFunctionManagerTest {
         // Check if the function is enabled
         assertThat(isAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isTrue()
         // Disable the function
-        setAppFunctionEnabled(
-            mManager,
+        mManager.setAppFunctionEnabled(
             functionUnderTest,
             AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
         )
         // Confirm that the function is disabled
         assertThat(isAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isFalse()
         // Reset the enabled bit
-        setAppFunctionEnabled(
-            mManager,
+        mManager.setAppFunctionEnabled(
             functionUnderTest,
             AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
         )
@@ -1015,8 +1012,7 @@ class AppFunctionManagerTest {
         assertThat(isAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isTrue()
 
         // Manually set the enabled bit to true
-        setAppFunctionEnabled(
-            mManager,
+        mManager.setAppFunctionEnabled(
             functionUnderTest,
             AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
         )
@@ -1034,16 +1030,14 @@ class AppFunctionManagerTest {
         // Confirm that the function is disabled
         assertThat(isAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isFalse()
         // Enable the function
-        setAppFunctionEnabled(
-            mManager,
+        mManager.setAppFunctionEnabled(
             functionUnderTest,
             AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
         )
         // Confirm that the function is enabled
         assertThat(isAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isTrue()
         // Reset the enabled bit
-        setAppFunctionEnabled(
-            mManager,
+        mManager.setAppFunctionEnabled(
             functionUnderTest,
             AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
         )
@@ -1051,8 +1045,7 @@ class AppFunctionManagerTest {
         assertThat(isAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isFalse()
 
         // Manually set the enabled bit to true
-        setAppFunctionEnabled(
-            mManager,
+        mManager.setAppFunctionEnabled(
             functionUnderTest,
             AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
         )
@@ -1069,8 +1062,7 @@ class AppFunctionManagerTest {
         val functionUnderTest = "notExist"
 
         assertFailsWith<IllegalArgumentException>("does not exist") {
-            setAppFunctionEnabled(
-                mManager,
+            mManager.setAppFunctionEnabled(
                 functionUnderTest,
                 AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
             )
