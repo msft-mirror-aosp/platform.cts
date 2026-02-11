@@ -40,5 +40,6 @@ android_test {
         "mts-conscrypt",
         "general-tests",
     ],
+    min_sdk_version: "36",
     sdk_version: "test_current",
 }

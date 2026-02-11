@@ -19,15 +19,17 @@ package android.security.net.config.cts;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import android.os.Build;
 import android.security.NetworkSecurityPolicy;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SdkSuppress;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
 public class CertificateTransparencyTest {
 
     private final NetworkSecurityPolicy mInstance = NetworkSecurityPolicy.getInstance();
