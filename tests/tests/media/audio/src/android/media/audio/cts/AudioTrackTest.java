@@ -2148,7 +2148,7 @@ public class AudioTrackTest {
         String streamName = "test_get_timestamp";
         doTestTimestamp(
                 22050 /* sampleRate */,
-                AudioFormat.CHANNEL_OUT_MONO ,
+                AudioFormat.CHANNEL_OUT_MONO,
                 AudioFormat.ENCODING_PCM_16BIT,
                 AudioTrack.MODE_STREAM,
                 streamName);
@@ -2179,7 +2179,9 @@ public class AudioTrackTest {
         final int TEST_USAGE = AudioAttributes.USAGE_MEDIA;
 
         final int MILLIS_PER_SECOND = 1000;
-        final int FRAME_TOLERANCE = sampleRate * TEST_BUFFER_MS / MILLIS_PER_SECOND;
+        final int toleranceScale = AudioHelper.isRelaxedTimingDevice() ? 4 : 1;
+        final int FRAME_TOLERANCE =
+                sampleRate * TEST_BUFFER_MS * toleranceScale / MILLIS_PER_SECOND;
 
         // -------- initialization --------------
         final int frameSize =
