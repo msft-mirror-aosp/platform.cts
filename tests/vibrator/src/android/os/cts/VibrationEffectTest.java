@@ -17,7 +17,6 @@
 package android.os.cts;
 
 import static android.os.vibrator.Flags.FLAG_NORMALIZED_PWLE_EFFECTS;
-import static android.os.vibrator.Flags.FLAG_VENDOR_VIBRATION_EFFECTS;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -81,6 +80,8 @@ public class VibrationEffectTest {
                     .addPrimitive(VibrationEffect.Composition.PRIMITIVE_SLOW_RISE, 0.8f)
                     .addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK, 0.5f, /* delay= */ 10)
                     .compose();
+    private static final VibrationEffect TEST_VENDOR =
+            VibrationEffect.createVendorEffect(createTestVendorData());
 
     @Rule(order = 0)
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -89,8 +90,7 @@ public class VibrationEffectTest {
     public final AdoptShellPermissionsRule mAdoptShellPermissionsRule =
             new AdoptShellPermissionsRule(
                     InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-                    getRequiredPrivilegedPermissions());
-
+                    new String[] {android.Manifest.permission.VIBRATE_VENDOR_EFFECTS});
 
     @Test
     public void testCreateOneShot() {
@@ -413,14 +413,12 @@ public class VibrationEffectTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VENDOR_VIBRATION_EFFECTS)
     public void testParcelingVendorEffect() {
-        VibrationEffect vendorEffect = VibrationEffect.createVendorEffect(createTestVendorData());
         Parcel p = Parcel.obtain();
-        vendorEffect.writeToParcel(p, 0);
+        TEST_VENDOR.writeToParcel(p, 0);
         p.setDataPosition(0);
         VibrationEffect parceledEffect = VibrationEffect.CREATOR.createFromParcel(p);
-        assertThat(parceledEffect).isEqualTo(vendorEffect);
+        assertThat(parceledEffect).isEqualTo(TEST_VENDOR);
     }
 
     @Test
@@ -429,9 +427,7 @@ public class VibrationEffectTest {
         TEST_WAVEFORM.describeContents();
         TEST_PREBAKED.describeContents();
         TEST_COMPOSED.describeContents();
-        if (Flags.vendorVibrationEffects()) {
-            VibrationEffect.createVendorEffect(createTestVendorData()).describeContents();
-        }
+        TEST_VENDOR.describeContents();
     }
 
     @Test
@@ -1301,7 +1297,6 @@ public class VibrationEffectTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VENDOR_VIBRATION_EFFECTS)
     public void testCreateVendorEffect() {
         PersistableBundle vendorData = createTestVendorData();
         VibrationEffect.VendorEffect effect =
@@ -1311,13 +1306,11 @@ public class VibrationEffectTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    @RequiresFlagsEnabled(FLAG_VENDOR_VIBRATION_EFFECTS)
     public void testCreateVendorEffectEmptyBundleFails() {
         VibrationEffect.createVendorEffect(new PersistableBundle());
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VENDOR_VIBRATION_EFFECTS)
     public void testVendorEffectEquals() {
         VibrationEffect effect = VibrationEffect.createVendorEffect(createTestVendorData());
         VibrationEffect otherEffect = VibrationEffect.createVendorEffect(createTestVendorData());
@@ -1332,9 +1325,7 @@ public class VibrationEffectTest {
         TEST_WAVEFORM.toString();
         TEST_PREBAKED.toString();
         TEST_COMPOSED.toString();
-        if (Flags.vendorVibrationEffects()) {
-            VibrationEffect.createVendorEffect(createTestVendorData()).toString();
-        }
+        TEST_VENDOR.toString();
     }
 
     private long[] getTimings(VibrationEffect effect) {
@@ -1481,15 +1472,6 @@ public class VibrationEffectTest {
         vendorData.putLongArray("amplitudes", new long[] { 0, 255, 128 });
         vendorData.putString("label", "vibration");
         return vendorData;
-    }
-
-    private static String[] getRequiredPrivilegedPermissions() {
-        if (Flags.vendorVibrationEffects()) {
-            return new String[]{
-                    android.Manifest.permission.VIBRATE_VENDOR_EFFECTS,
-            };
-        }
-        return null;
     }
 
     private static VibrationEffect getTestWaveformEnvelope() {

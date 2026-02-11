@@ -24,7 +24,6 @@ import static android.os.VibrationEffect.Composition.PRIMITIVE_SPIN;
 import static android.os.VibrationEffect.Composition.PRIMITIVE_TICK;
 import static android.os.VibrationEffect.EFFECT_CLICK;
 import static android.os.vibrator.Flags.FLAG_NORMALIZED_PWLE_EFFECTS;
-import static android.os.vibrator.Flags.FLAG_VENDOR_VIBRATION_EFFECTS;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -1343,7 +1342,6 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VENDOR_VIBRATION_EFFECTS)
     public void testParseVendorEffect_withFeatureFlagEnabled_isSuccessful() throws Exception {
         PersistableBundle vendorData = new PersistableBundle();
         vendorData.putInt("id", 1);
@@ -1359,7 +1357,6 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VENDOR_VIBRATION_EFFECTS)
     public void testParseInvalidVendorEffect_withFeatureFlagEnabled_fails() {
         assertFailedParse("<vibration-effect><vendor-effect/></vibration-effect>");
         assertFailedParse("<vibration-effect><vendor-effect>  </vendor-effect></vibration-effect>");
@@ -1370,20 +1367,6 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(FLAG_VENDOR_VIBRATION_EFFECTS)
-    public void testParseVendorEffect_withFeatureFlagDisabled_fails() throws IOException {
-        PersistableBundle vendorData = new PersistableBundle();
-        vendorData.putInt("id", 1);
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        vendorData.writeToStream(outputStream);
-        String text = Base64.getEncoder().encodeToString(outputStream.toByteArray());
-
-        assertFailedParse(
-                "<vibration-effect><vendor-effect>" + text + "</vendor-effect></vibration-effect>");
-    }
-
-    @Test
-    @RequiresFlagsEnabled(FLAG_VENDOR_VIBRATION_EFFECTS)
     public void testSerializeVendorEffect_withFeatureFlagEnabled_isSuccessful() throws Exception {
         PersistableBundle vendorData = new PersistableBundle();
         vendorData.putInt("id", 1);
