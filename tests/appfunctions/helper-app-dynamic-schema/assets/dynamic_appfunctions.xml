@@ -75,4 +75,10 @@
         <scope>activity</scope>
         <enabled_by_default>true</enabled_by_default>
     </appfunction>
+    <appfunction>
+        <id>contextCheckAttribution</id>
+        <function_id>contextCheckAttribution</function_id>
+        <enabled_by_default>true</enabled_by_default>
+        <scope>global</scope>
+    </appfunction>
 </appfunctions>

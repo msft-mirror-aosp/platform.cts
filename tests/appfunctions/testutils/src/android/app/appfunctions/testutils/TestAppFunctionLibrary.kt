@@ -41,6 +41,7 @@ enum class FunctionType {
     STOP_PROCESS,
     DISABLED_BY_DEFAULT,
     GET_URIS,
+    CHECK_ATTRIBUTION,
     ACTIVITY_CONCAT_STRINGS
 }
 
@@ -55,6 +56,7 @@ object TestAppFunctionFactory {
             FunctionType.STOP_PROCESS -> StopProcess()
             FunctionType.DISABLED_BY_DEFAULT -> DisabledByDefault()
             FunctionType.GET_URIS -> GetUris()
+            FunctionType.CHECK_ATTRIBUTION -> CheckAttribution()
             FunctionType.ACTIVITY_CONCAT_STRINGS -> ConcatStrings()
         }
     }
@@ -72,6 +74,7 @@ object TestAppFunctionFactory {
             FunctionType.STOP_PROCESS -> StopProcess.STOP_PROCESS_FUNCTION_ID
             FunctionType.DISABLED_BY_DEFAULT -> DisabledByDefault.DISABLED_BY_DEFAULT_FUNCTION_ID
             FunctionType.GET_URIS -> GetUris.GET_URIS_FUNCTION_ID
+            FunctionType.CHECK_ATTRIBUTION -> CheckAttribution.CHECK_ATTRIBUTION_FUNCTION_ID
             FunctionType.ACTIVITY_CONCAT_STRINGS ->
                 ConcatStrings.ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
         }
@@ -237,5 +240,27 @@ class StopProcess() : AppFunction {
 
     companion object {
         const val STOP_PROCESS_FUNCTION_ID = "contextStopProcess"
+    }
+}
+
+class CheckAttribution : AppFunction {
+    override fun onExecuteAppFunction(
+        request: ExecuteAppFunctionRequest,
+        cancellationSignal: CancellationSignal,
+        callback: OutcomeReceiver<ExecuteAppFunctionResponse?, AppFunctionException?>,
+    ) {
+        val hasAttribution = request.attribution != null
+        val result: GenericDocument =
+            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                .setPropertyBoolean(
+                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE,
+                    hasAttribution
+                )
+                .build()
+        callback.onResult(ExecuteAppFunctionResponse(result))
+    }
+
+    companion object {
+        const val CHECK_ATTRIBUTION_FUNCTION_ID = "contextCheckAttribution"
     }
 }
