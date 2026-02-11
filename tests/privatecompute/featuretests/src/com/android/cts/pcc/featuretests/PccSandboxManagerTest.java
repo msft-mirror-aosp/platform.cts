@@ -29,6 +29,7 @@ import android.content.Context;
 import android.os.OutcomeReceiver;
 import android.os.PersistableBundle;
 import android.os.Process;
+import android.os.UserHandle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -80,9 +81,11 @@ public class PccSandboxManagerTest {
 
     @Test
     public void testIsPrivateComputeServicesUid_forSystemUid_returnsFalse() {
+        int currentUserId = UserHandle.myUserId();
+        int systemUidForUser = UserHandle.getUid(currentUserId, Process.SYSTEM_UID);
         assertFalse(
                 "PCC UID should not be a PCS process",
-                mPccSandboxManager.isPrivateComputeServicesUid(Process.SYSTEM_UID));
+                mPccSandboxManager.isPrivateComputeServicesUid(systemUidForUser));
     }
 
     @Test
@@ -191,19 +194,23 @@ public class PccSandboxManagerTest {
     @Test
     public void testIsPccTrustedSystemComponent_forSystemUid_returnsTrue() {
         // System UID is always trusted
+        int currentUserId = UserHandle.myUserId();
+        int systemUidForUser = UserHandle.getUid(currentUserId, Process.SYSTEM_UID);
         boolean isTrusted =
-                mPccSandboxManager.isPccTrustedSystemComponent(Process.SYSTEM_UID, "android");
+                mPccSandboxManager.isPccTrustedSystemComponent(systemUidForUser, "android");
         assertTrue("System UID should be trusted", isTrusted);
     }
 
     @Test
     public void testIsPccTrustedSystemComponent_forBluetoothUid_returnsTrue() {
         // Bluetooth UID is always trusted
-        String[] packages = mContext.getPackageManager().getPackagesForUid(Process.BLUETOOTH_UID);
+        int currentUserId = UserHandle.myUserId();
+        int bluetoothUidForUser = UserHandle.getUid(currentUserId, Process.BLUETOOTH_UID);
+        String[] packages = mContext.getPackageManager().getPackagesForUid(bluetoothUidForUser);
         if (packages != null && packages.length > 0) {
             boolean isTrusted =
                     mPccSandboxManager.isPccTrustedSystemComponent(
-                            Process.BLUETOOTH_UID, packages[0]);
+                            bluetoothUidForUser, packages[0]);
             assertTrue("Bluetooth UID should be trusted", isTrusted);
         }
     }
@@ -211,10 +218,12 @@ public class PccSandboxManagerTest {
     @Test
     public void testIsPccTrustedSystemComponent_forPhoneUid_returnsTrue() {
         // Phone UID is always trusted
-        String[] packages = mContext.getPackageManager().getPackagesForUid(Process.PHONE_UID);
+        int currentUserId = UserHandle.myUserId();
+        int phoneUidForUser = UserHandle.getUid(currentUserId, Process.PHONE_UID);
+        String[] packages = mContext.getPackageManager().getPackagesForUid(phoneUidForUser);
         if (packages != null && packages.length > 0) {
             boolean isTrusted =
-                    mPccSandboxManager.isPccTrustedSystemComponent(Process.PHONE_UID, packages[0]);
+                    mPccSandboxManager.isPccTrustedSystemComponent(phoneUidForUser, packages[0]);
             assertTrue("Phone UID should be trusted", isTrusted);
         }
     }
