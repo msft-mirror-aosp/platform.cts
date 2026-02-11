@@ -380,10 +380,16 @@ public final class CameraDeviceInfo extends DeviceInfo {
                 mStore.startGroup(protoName);
             }
 
+            List<Integer> concurrentFormats = new ArrayList<Integer>();
+
             mStore.startArray("availableMultiResolutionConfigurations");
             int[] fmts = map.getOutputFormats();
             if (fmts != null) {
                 for (int fi = 0; fi < Array.getLength(fmts); fi++) {
+                    if (Flags.multiResolutionConcurrentReaders()
+                            && map.isConcurrentReadersSupported(fmts[fi])) {
+                        concurrentFormats.add(fmts[fi]);
+                    }
                     Collection<MultiResolutionStreamInfo> streamInfo = map.getOutputInfo(fmts[fi]);
                     if (streamInfo != null) {
                         for (MultiResolutionStreamInfo oneStream : streamInfo) {
@@ -418,6 +424,12 @@ public final class CameraDeviceInfo extends DeviceInfo {
                 }
             }
             mStore.endArray();
+
+            // Available concurrent MultiResolutionImageReader formats
+            mStore.addArrayResult(
+                    "availableMultiResolutionConcurrentFormats",
+                    concurrentFormats.stream().mapToInt(Integer::intValue).toArray());
+
             mStore.endGroup();
         }
 
