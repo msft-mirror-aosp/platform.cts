@@ -745,7 +745,7 @@ public class AudioDeviceVolumeManagerTest {
             String assertMessage) {
         assumeFalse(
                 "AudioManagerTest verifyStreamAssistantMirroring() skipped",
-                mUseFixedVolume || mIsAutomotive || mIsWatch || mIsSingleVolume);
+                mSkipAdvmTests || mIsAutomotive || mIsWatch);
 
         final int maxIndex = mAm.getStreamMaxVolume(AudioManager.STREAM_ASSISTANT);
         final int minIndex = mAm.getStreamMinVolume(AudioManager.STREAM_ASSISTANT);
@@ -769,7 +769,7 @@ public class AudioDeviceVolumeManagerTest {
         assumeFalse(
                 "AudioManagerTest testModeAssistantVolumeChange_triggersAssistantVolumeChange() "
                         + "skipped",
-                mUseFixedVolume || mIsAutomotive || mIsWatch || mIsSingleVolume);
+                mSkipAdvmTests || mIsAutomotive || mIsWatch);
 
         final int originalMode = mAm.getMode();
         mAm.setMode(AudioManager.MODE_ASSISTANT_CONVERSATION);

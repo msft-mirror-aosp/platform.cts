@@ -213,6 +213,7 @@ public class AudioManagerTest {
     private boolean mIsSingleVolume;
     private boolean mSkipRingerTests;
     private boolean mSkipAutoVolumeTests = false;
+    private boolean mSkipAssistantDealiasedTests = false;
     // From N onwards, ringer mode adjustments that toggle DND are not allowed unless
     // package has DND access. Many tests in this package toggle DND access in order
     // to get device out of the DND state for the test to proceed correctly.
@@ -278,6 +279,7 @@ public class AudioManagerTest {
             // volume SDK APIs are no-ops
             mSkipAutoVolumeTests = true;
         }
+        mSkipAssistantDealiasedTests = mSkipRingerTests || mIsWatch;
 
         mUserHelper = new UserHelper(mContext);
 
@@ -1306,7 +1308,7 @@ public class AudioManagerTest {
     public void testDecoupledStreamAssistant() throws Exception {
         assumeFalse(
                 "AudioManagerTest testDecoupledStreamAssistant() skipped",
-                mUseFixedVolume || mSkipAutoVolumeTests || mIsWatch || mIsSingleVolume);
+                mSkipAssistantDealiasedTests);
 
         try (PermissionContext ignored =
                 TestApis.permissions()
@@ -1408,7 +1410,7 @@ public class AudioManagerTest {
         assumeFalse(
                 "AudioManagerTest testStreamChangeInModeAssistant_noChangeOnStreamAssistant() "
                         + "skipped",
-                mUseFixedVolume || mSkipAutoVolumeTests || mIsWatch || mIsSingleVolume);
+                mSkipAssistantDealiasedTests);
 
         final int originalMode = mAudioManager.getMode();
         try (PermissionContext ignored =
@@ -1455,7 +1457,7 @@ public class AudioManagerTest {
         assumeFalse(
                 "AudioManagerTest testModeAssistantVolumeChange_triggersAssistantVolumeChange() "
                         + "skipped",
-                mUseFixedVolume || mSkipAutoVolumeTests || mIsWatch || mIsSingleVolume);
+                mSkipAssistantDealiasedTests);
 
         final int originalMode = mAudioManager.getMode();
         try (PermissionContext ignored =
@@ -1496,7 +1498,7 @@ public class AudioManagerTest {
     public void testAssistantVolChange_triggersUiChange() throws Exception {
         assumeFalse(
                 "AudioManagerTest testAssistantVolChange_triggersUiChange() skipped",
-                mUseFixedVolume || mSkipAutoVolumeTests || mIsWatch || mIsSingleVolume);
+                mSkipAssistantDealiasedTests);
 
         try (PermissionContext ignored =
                 TestApis.permissions()
