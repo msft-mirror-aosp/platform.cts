@@ -165,9 +165,9 @@ class TestFileGeneratorTest {
                 """
                 @EnterprisePolicy(
                     dpc = [],
-                    permissions = []
+                    permissions = [],
                 )
-                public final class MyPolicyNamePolicy_ScopeUser {}
+                public final class MyPolicyNamePolicy_ScopeUser
                 """
                     .trimIndent()
             )
@@ -192,9 +192,9 @@ class TestFileGeneratorTest {
                 """
                 @EnterprisePolicy(
                     dpc = [],
-                    permissions = []
+                    permissions = [],
                 )
-                public final class MyPolicyNamePolicy_ScopeParentUser {}
+                public final class MyPolicyNamePolicy_ScopeParentUser
                 """
                     .trimIndent()
             )
@@ -219,9 +219,9 @@ class TestFileGeneratorTest {
                 """
                 @EnterprisePolicy(
                     dpc = [],
-                    permissions = []
+                    permissions = [],
                 )
-                public final class MyPolicyNamePolicy_ScopeDevice {}
+                public final class MyPolicyNamePolicy_ScopeDevice
                 """
                     .trimIndent()
             )
@@ -269,9 +269,9 @@ class TestFileGeneratorTest {
                                     ],
                                 appliesTo = APPLIES_TO_OWN_USER,
                             ),
-                        ]
+                        ],
                 )
-                public final class MyPolicyNamePolicy_ScopeUser {}
+                public final class MyPolicyNamePolicy_ScopeUser
                 """
                     .trimIndent()
             )
@@ -310,9 +310,9 @@ class TestFileGeneratorTest {
                                     ],
                                 appliesTo = APPLIES_GLOBALLY,
                             ),
-                        ]
+                        ],
                 )
-                public final class TestingDeviceScopePolicy_ScopeDevice {}
+                public final class TestingDeviceScopePolicy_ScopeDevice
                 """
                     .trimIndent()
             )
@@ -350,9 +350,9 @@ class TestFileGeneratorTest {
                                     ],
                                 appliesTo = APPLIES_GLOBALLY,
                             ),
-                        ]
+                        ],
                 )
-                public final class TestingDeviceScopePolicy_ScopeDevice {}
+                public final class TestingDeviceScopePolicy_ScopeDevice
                 """
                     .trimIndent()
             )
@@ -396,9 +396,9 @@ class TestFileGeneratorTest {
                                     ],
                                 appliesTo = APPLIES_GLOBALLY,
                             ),
-                        ]
+                        ],
                 )
-                public final class TestingDeviceScopePolicy_ScopeDevice {}
+                public final class TestingDeviceScopePolicy_ScopeDevice
                 """
                     .trimIndent()
             )
@@ -436,9 +436,9 @@ class TestFileGeneratorTest {
                                     ],
                                 appliesTo = APPLIES_TO_PARENT,
                             ),
-                        ]
+                        ],
                 )
-                public final class TestingParentUserScopePolicy_ScopeParentUser {}
+                public final class TestingParentUserScopePolicy_ScopeParentUser
                 """
                     .trimIndent()
             )
@@ -752,7 +752,7 @@ class TestFileGeneratorTest {
         val regex =
             ("// Policy definition that runs with ${scope}" + // first line
                     ".*?" + // body
-                    "class .*Policy_Scope${scopeString} \\{\\}" // last line
+                    "public final class [^\n]*Policy_Scope${scopeString}" // last line
                 )
                 .toRegex(RegexOption.DOT_MATCHES_ALL)
 
