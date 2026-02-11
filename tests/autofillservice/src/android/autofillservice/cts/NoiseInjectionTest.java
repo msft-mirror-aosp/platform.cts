@@ -29,6 +29,7 @@ import android.autofillservice.cts.testcore.CannedFillResponse;
 import android.autofillservice.cts.testcore.Helper;
 import android.autofillservice.cts.testcore.InstrumentedAutoFillService;
 import android.content.Context;
+import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.service.autofill.Flags;
@@ -218,7 +219,10 @@ public class NoiseInjectionTest extends AutoFillServiceTestCase.ManualActivityLa
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_STRING_REBUILD_API)
+    @RequiresFlagsEnabled({
+        Flags.FLAG_STRING_REBUILD_API,
+        Flags.FLAG_STRING_REBUILD_PERSISTENT_MASTERSEED
+    })
     public void testSensitiveText_randomNoiseInjected() throws Exception {
         enableService();
 
@@ -254,12 +258,14 @@ public class NoiseInjectionTest extends AutoFillServiceTestCase.ManualActivityLa
         final String masterSeed = afm.getNoiseInjectionMasterSeed();
 
         // Calculate the seed used in the Platform with the same master seed.
+        final int userId = UserHandle.myUserId();
         final long seed =
                 hashInputs(
                         masterSeed,
                         structure.getActivityComponent().getPackageName(),
                         structure.getActivityComponent().getClassName(),
-                        usernameLabelNode.getAutofillId());
+                        usernameLabelNode.getAutofillId(),
+                        userId);
 
         // Recompute the noise with the same implementation as the Platform to verify the coin
         // flipping probabilities, etc.
@@ -380,10 +386,16 @@ public class NoiseInjectionTest extends AutoFillServiceTestCase.ManualActivityLa
     }
 
     private long hashInputs(
-            String masterSeed, String packageName, String className, AutofillId autofillId)
+            String masterSeed,
+            String packageName,
+            String className,
+            AutofillId autofillId,
+            int userId)
             throws NoSuchAlgorithmException {
         String combined =
                 masterSeed
+                        + "|"
+                        + userId
                         + "|"
                         + packageName
                         + "|"
