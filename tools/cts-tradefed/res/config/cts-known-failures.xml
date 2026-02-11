@@ -450,9 +450,6 @@
     <!-- b/456618211-->
     <option name="compatibility:exclude-filter" value="CtsMediaPlayerTestCases android.media.player.cts.MediaPlayerTest#testSetNextMediaPlayer" />
 
-    <!-- b/459709696 -->
-    <option name="compatibility:exclude-filter" value="CtsNpuManagerMoblyTestCases"/>
-
     <!-- b/458397192 -->
     <option name="compatibility:exclude-filter" value="CtsWifiNonUpdatableTestCases android.net.wifi.sharedconnectivity.cts.app.SharedConnectivityManagerTest#bindToServiceFails_userUnlocked_callsOnRegisterCallbackFailed"/>
     <option name="compatibility:exclude-filter" value="CtsWifiNonUpdatableTestCases android.net.wifi.sharedconnectivity.cts.app.SharedConnectivityManagerTest#bindToServiceFails_userUnlocked_failedManyTimes_callsOnRegisterCallbackFailed"/>
