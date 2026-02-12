@@ -49,6 +49,7 @@ import android.app.Instrumentation;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.NotificationRule;
 import android.app.PendingIntent;
 import android.app.Person;
 import android.app.StatusBarManager;
@@ -1617,6 +1618,17 @@ public class NotificationAssistantServiceTest {
                 // Ensure the adjustment is allowed before we tear down the test.
                 cleanupLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
             }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_NM_CONTEXTUAL_DISPLAY_LAUNCH)
+    public void testGetNotificationRules() throws Exception {
+        try (PermissionContext permission =
+                     TestApis.permissions()
+                             .withPermission(android.Manifest.permission.STATUS_BAR_SERVICE)) {
+            List<NotificationRule> rules = mNotificationManager.getNotificationRules();
+            assertThat(rules).isNotEmpty();
         }
     }
 }
