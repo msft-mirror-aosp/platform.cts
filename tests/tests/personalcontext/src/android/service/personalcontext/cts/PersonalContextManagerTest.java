@@ -21,26 +21,18 @@ import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.test
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
 
 import android.app.Instrumentation;
-import android.content.ComponentName;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.service.autofill.FillEventHistory;
 import android.service.personalcontext.Flags;
 import android.service.personalcontext.PersonalContextManager;
 import android.service.personalcontext.RenderToken;
-import android.service.personalcontext.hint.AutofillInlineRequestHint;
 import android.service.personalcontext.hint.BundleHint;
 import android.service.personalcontext.hint.ContextHint;
 import android.service.personalcontext.hint.ContextHintWithSignature;
 import android.util.Size;
-import android.view.autofill.AutofillId;
-import android.view.autofill.AutofillValue;
-import android.view.inputmethod.InlineSuggestionsRequest;
 import android.widget.inline.InlinePresentationSpec;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -60,10 +52,8 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -81,7 +71,6 @@ public class PersonalContextManagerTest {
 
     private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
 
-    @Mock private AutofillInlineRequestHint.AugmentedAutofillProxy mAugmentedAutofillProxy;
     private AutoCloseable mMockCloseable;
 
     private PersonalContextManager mPersonalContextManager;
@@ -191,49 +180,6 @@ public class PersonalContextManagerTest {
     @Test
     public void testSetEnabledNoPermissions() {
         assertThrows(SecurityException.class, () -> mPersonalContextManager.setEnabled(true));
-    }
-
-    @Test
-    public void testGetFocusedViewNode() {
-        AutofillId focusedId = new AutofillId(3);
-        final AutofillInlineRequestHint hint = getAutofillHint(focusedId);
-
-        mPersonalContextManager.getFocusedViewNode(hint);
-
-        verify(mAugmentedAutofillProxy).getFocusedViewNode(eq(focusedId));
-    }
-
-    @Test
-    public void testGetViewCoordinates() {
-        AutofillId focusedId = new AutofillId(3);
-        final AutofillInlineRequestHint hint = getAutofillHint(focusedId);
-
-        mPersonalContextManager.getViewCoordinates(hint);
-
-        verify(mAugmentedAutofillProxy).getViewCoordinates(eq(focusedId));
-    }
-
-    private AutofillInlineRequestHint getAutofillHint(AutofillId focusedId) {
-        final int sessionId = 6;
-        final int taskId = 7;
-        final Instant requestTimestamp = Instant.ofEpochSecond(500);
-        final ComponentName activityComponent = new ComponentName("test_package", "class");
-        final AutofillValue autofillValue = AutofillValue.forText("test");
-        final InlineSuggestionsRequest inlineSuggestionsRequest =
-                new InlineSuggestionsRequest.Builder(List.of(INLINE_PRESENTATION_SPEC)).build();
-        final FillEventHistory fillEventHistory = new FillEventHistory(sessionId, null);
-
-        return new AutofillInlineRequestHint.Builder()
-                .setSessionId(sessionId)
-                .setTaskId(taskId)
-                .setRequestTimestamp(requestTimestamp)
-                .setActivityComponent(activityComponent)
-                .setFocusedId(focusedId)
-                .setAutofillValue(autofillValue)
-                .setInlineSuggestionsRequest(inlineSuggestionsRequest)
-                .setAugmentedAutofillProxy(mAugmentedAutofillProxy)
-                .setFillEventHistory(fillEventHistory)
-                .build();
     }
 
     @ApiTest(
