@@ -16,8 +16,6 @@
 
 package android.os.cts;
 
-import static android.os.vibrator.Flags.FLAG_VENDOR_VIBRATION_EFFECTS;
-
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -34,9 +32,6 @@ import android.os.VibratorManager;
 import android.os.cts.vibrator.VibratorStateHelper;
 import android.os.cts.vibrator.VibratorStateListener;
 import android.os.vibrator.VendorVibrationSession;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 
 import androidx.annotation.NonNull;
@@ -61,12 +56,8 @@ import java.util.concurrent.Executors;
  * Tests for {@link VendorVibrationSession} and callbacks.
  */
 @RunWith(Parameterized.class)
-@RequiresFlagsEnabled(FLAG_VENDOR_VIBRATION_EFFECTS)
 public class VendorVibrationSessionTest {
     @Rule(order = 0)
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
-    @Rule(order = 1)
     public final AdoptShellPermissionsRule mAdoptShellPermissionsRule =
             new AdoptShellPermissionsRule(
                     InstrumentationRegistry.getInstrumentation().getUiAutomation(),
