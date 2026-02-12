@@ -16,6 +16,7 @@
 
 package android.view.inputmethod.cts;
 
+import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 import static android.view.inputmethod.Flags.FLAG_ENFORCE_DEVICE_POLICY_IME;
 import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.expectImeVisible;
 import static android.view.inputmethod.cts.util.TestUtils.runOnMainSync;
@@ -71,7 +72,8 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
-    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+
+    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(10) * HW_TIMEOUT_MULTIPLIER;
 
     private static final String FEATURE_TV_OPERATOR_TIER = "com.google.android.tv.operator_tier";
 
