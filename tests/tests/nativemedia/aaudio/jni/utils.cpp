@@ -549,6 +549,22 @@ int getVersionCodeFullBaklava() {
     return kVersionCodeFullBaklava;
 }
 
+int getMediaPerformanceClass() {
+    static int kMediaPerformanceClass =
+            (int)callJavaStaticIntFunction(nullptr /*env*/,
+                                           "android/nativemedia/aaudio/AAudioTests",
+                                           "getMediaPerformanceClass", "()I");
+    return kMediaPerformanceClass;
+}
+
+int getSpeakerDeviceId() {
+    static int kSpeakerDeviceId =
+            (int)callJavaStaticIntFunction(nullptr /*env*/,
+                                           "android/nativemedia/aaudio/AAudioTests",
+                                           "getSpeakerDeviceId", "()I");
+    return kSpeakerDeviceId;
+}
+
 void permissionBarrier() {
     __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, "%s start", __func__);
     callJavaStaticVoidFunction(nullptr /*env*/, "android/nativemedia/aaudio/AAudioTests",

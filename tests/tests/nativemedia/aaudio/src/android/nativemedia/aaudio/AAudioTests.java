@@ -139,4 +139,18 @@ public class AAudioTests {
     static int getOutChannelCountMax() {
         return AudioSystem.OUT_CHANNEL_COUNT_MAX;
     }
+
+    static int getMediaPerformanceClass() {
+        return Build.VERSION.MEDIA_PERFORMANCE_CLASS;
+    }
+
+    static int getSpeakerDeviceId() {
+        AudioDeviceInfo[] devices = AudioManager.getDevicesStatic(AudioManager.GET_DEVICES_OUTPUTS);
+        for (AudioDeviceInfo device : devices) {
+            if (device.getType() == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER) {
+                return device.getId();
+            }
+        }
+        return 0; // Corresponds to AAUDIO_UNSPECIFIED
+    }
 }
