@@ -15,8 +15,6 @@
 -->
 <configuration description="Run high ROI CTS normal tests.">
     <include name="cts-automated"/>
-    <!-- AdsPersonalizationStatusTest -->
-    <option name="compatibility:include-filter" value="AdsPersonalizationStatusTest com.android.adservices.tests.adspersonalizationstatus.AdsPersonalizationStatusTest#testValidTestCaseFixtures"/>
     <!-- CtsAbiOverrideHostTestCases[instant] -->
     <option name="compatibility:include-filter" value="CtsAbiOverrideHostTestCases[instant] android.abioverride.cts.AbiOverrideTest#testAbiIs32bit"/>
     <!-- CtsAccelerationTestCases -->
