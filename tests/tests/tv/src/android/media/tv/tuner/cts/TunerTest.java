@@ -165,6 +165,7 @@ public class TunerTest {
             "/product/etc/tuner_cts_config_V1.xml";
     private static final String VENDOR_TUNER_CTS_CONFIGURATION_FILE =
             "/vendor/etc/tuner_cts_config_V1.xml";
+    private static final byte[] DISEQC_MESSAGE_PING = new byte[] {(byte) 0xE2, 0x10, 0x00};
 
     private static TunerCtsConfiguration sTunerCtsConfiguration;
 
@@ -411,27 +412,28 @@ public class TunerTest {
         public static final int INVALID_LNB_EVENT = -1;
         private static final int TIMEOUT_MS = 500;
         private final ConditionVariable mDMCV = new ConditionVariable();
-        private boolean mOnDiseqcMessageCalled = false;
+        private boolean mCallbackCalled = false;
 
-        // will not test this as there is no good way to trigger this
         @Override
-        public void onEvent(int lnbEventType) {}
-
-        // will test this instead
-        @Override
-        public void onDiseqcMessage(byte[] diseqcMessage) {
-            mOnDiseqcMessageCalled = true;
+        public void onEvent(int lnbEventType) {
+            mCallbackCalled = true;
             mDMCV.open();
         }
 
-        public void resetOnDiseqcMessageCalled() {
-            mOnDiseqcMessageCalled = false;
+        @Override
+        public void onDiseqcMessage(byte[] diseqcMessage) {
+            mCallbackCalled = true;
+            mDMCV.open();
+        }
+
+        public void reset() {
+            mCallbackCalled = false;
             mDMCV.close();
         }
 
-        public boolean getOnDiseqcMessageCalled() {
+        public boolean getCallbackCalled() {
             mDMCV.block(TIMEOUT_MS);
-            return mOnDiseqcMessageCalled;
+            return mCallbackCalled;
         }
     }
 
@@ -1077,7 +1079,7 @@ public class TunerTest {
         assertEquals(lnb.setTone(Lnb.TONE_NONE), Tuner.RESULT_SUCCESS);
         assertEquals(
                 lnb.setSatellitePosition(Lnb.POSITION_A), Tuner.RESULT_SUCCESS);
-        lnb.sendDiseqcMessage(new byte[] {1, 2});
+        lnb.sendDiseqcMessage(DISEQC_MESSAGE_PING);
         lnb.close();
     }
 
@@ -1094,9 +1096,9 @@ public class TunerTest {
         assertEquals(lnb.setTone(Lnb.TONE_NONE), Tuner.RESULT_SUCCESS);
         assertEquals(
                 lnb.setSatellitePosition(Lnb.POSITION_A), Tuner.RESULT_SUCCESS);
-        lnb.sendDiseqcMessage(new byte[] {1, 2});
-        assertTrue(lnbCB1.getOnDiseqcMessageCalled());
-        lnbCB1.resetOnDiseqcMessageCalled();
+        lnb.sendDiseqcMessage(DISEQC_MESSAGE_PING);
+        assertTrue(lnbCB1.getCallbackCalled());
+        lnbCB1.reset();
 
         List<Integer> ids = mTuner.getFrontendIds();
         // We don't accept a device connect to LNB but no frontend.
@@ -1117,21 +1119,21 @@ public class TunerTest {
             lnb.addCallback(getExecutor(), lnbCB2);
 
             // check callback
-            lnb.sendDiseqcMessage(new byte[] {1, 2});
-            assertTrue(lnbCB1.getOnDiseqcMessageCalled());
-            lnbCB1.resetOnDiseqcMessageCalled();
-            assertTrue(lnbCB2.getOnDiseqcMessageCalled());
-            lnbCB2.resetOnDiseqcMessageCalled();
+            lnb.sendDiseqcMessage(DISEQC_MESSAGE_PING);
+            assertTrue(lnbCB1.getCallbackCalled());
+            lnbCB1.reset();
+            assertTrue(lnbCB2.getCallbackCalled());
+            lnbCB2.reset();
 
             // remove sharee the sharee (should succeed)
             assertTrue(lnb.removeCallback(lnbCB2));
 
             // check callback (only the original owner gets callback
-            lnb.sendDiseqcMessage(new byte[] {1, 2});
-            assertTrue(lnbCB1.getOnDiseqcMessageCalled());
-            lnbCB1.resetOnDiseqcMessageCalled();
-            assertFalse(lnbCB2.getOnDiseqcMessageCalled());
-            lnbCB2.resetOnDiseqcMessageCalled();
+            lnb.sendDiseqcMessage(DISEQC_MESSAGE_PING);
+            assertTrue(lnbCB1.getCallbackCalled());
+            lnbCB1.reset();
+            assertFalse(lnbCB2.getCallbackCalled());
+            lnbCB2.reset();
         }
     }
 
@@ -2036,6 +2038,7 @@ public class TunerTest {
                 assertEquals(Tuner.RESULT_SUCCESS, tunerA.connectFrontendToCiCam(ciCamId));
             } else {
                 assertEquals(Tuner.INVALID_LTS_ID, tunerA.connectFrontendToCiCam(ciCamId));
+                return;
             }
 
             // connect CiCam to Demux
@@ -2093,9 +2096,9 @@ public class TunerTest {
             assumeTrue(lnbA != null);
             lnbA.setVoltage(Lnb.VOLTAGE_5V);
             lnbA.setTone(Lnb.TONE_CONTINUOUS);
-            lnbA.sendDiseqcMessage(new byte[] {1, 2});
-            assertTrue(lnbCB1.getOnDiseqcMessageCalled());
-            lnbCB1.resetOnDiseqcMessageCalled();
+            lnbA.sendDiseqcMessage(DISEQC_MESSAGE_PING);
+            assertTrue(lnbCB1.getCallbackCalled());
+            lnbCB1.reset();
 
             // Create another tuner and share from tunerB
             tunerB.shareFrontendFromTuner(tunerA);
@@ -2103,30 +2106,30 @@ public class TunerTest {
             // add sharee and check the callback
             TunerTestLnbCallback lnbCB2 = new TunerTestLnbCallback();
             lnbA.addCallback(getExecutor(), lnbCB2);
-            lnbA.sendDiseqcMessage(new byte[] {1, 2});
-            assertTrue(lnbCB1.getOnDiseqcMessageCalled());
-            lnbCB1.resetOnDiseqcMessageCalled();
-            assertTrue(lnbCB2.getOnDiseqcMessageCalled());
-            lnbCB2.resetOnDiseqcMessageCalled();
+            lnbA.sendDiseqcMessage(DISEQC_MESSAGE_PING);
+            assertTrue(lnbCB1.getCallbackCalled());
+            lnbCB1.reset();
+            assertTrue(lnbCB2.getCallbackCalled());
+            lnbCB2.reset();
 
             // transfer owner and check callback
             assertEquals(Tuner.RESULT_SUCCESS, tunerA.transferOwner(tunerB));
-            lnbA.sendDiseqcMessage(new byte[] {1, 2});
-            assertTrue(lnbCB1.getOnDiseqcMessageCalled());
-            lnbCB1.resetOnDiseqcMessageCalled();
-            assertTrue(lnbCB2.getOnDiseqcMessageCalled());
-            lnbCB2.resetOnDiseqcMessageCalled();
+            lnbA.sendDiseqcMessage(DISEQC_MESSAGE_PING);
+            assertTrue(lnbCB1.getCallbackCalled());
+            lnbCB1.reset();
+            assertTrue(lnbCB2.getCallbackCalled());
+            lnbCB2.reset();
 
             // remove the owner callback (just for testing)
             assertTrue(lnbA.removeCallback(lnbCB2));
 
             // remove sharee and check callback
             assertTrue(lnbA.removeCallback(lnbCB1));
-            lnbA.sendDiseqcMessage(new byte[] {1, 2});
-            assertFalse(lnbCB1.getOnDiseqcMessageCalled());
-            lnbCB1.resetOnDiseqcMessageCalled();
-            assertFalse(lnbCB2.getOnDiseqcMessageCalled());
-            lnbCB2.resetOnDiseqcMessageCalled();
+            lnbA.sendDiseqcMessage(DISEQC_MESSAGE_PING);
+            assertFalse(lnbCB1.getCallbackCalled());
+            lnbCB1.reset();
+            assertFalse(lnbCB2.getCallbackCalled());
+            lnbCB2.reset();
 
             // close the original owner
             tunerA.close();
