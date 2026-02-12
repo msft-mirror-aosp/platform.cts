@@ -31,6 +31,7 @@ import android.view.ViewGroup.LayoutParams;
 import android.webkit.WebView;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -40,7 +41,6 @@ import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
 import com.android.cts.verifier.audio.audiolib.AudioSystemFlags;
 import com.android.cts.verifier.audio.audiolib.WaveScopeView;
 
-// MegaAudio
 import org.hyphonate.megaaudio.common.BuilderBase;
 import org.hyphonate.megaaudio.duplex.DuplexAudioManager;
 import org.hyphonate.megaaudio.player.AudioSourceProvider;
@@ -60,15 +60,20 @@ class AudioLoopbackCalibrationDialog extends Dialog
 
     private DuplexAudioManager mDuplexAudioManager;
 
-    private AudioSourceProvider mLeftSineSourceProvider;
-    private AudioSourceProvider mRightSineSourceProvider;
-
     private AudioSinkProvider mAudioSinkProvider;
     private AppCallback mAudioCallbackHandler;
 
     private boolean mPlaying;
+    private int mInputChannels = 2;
+    private int mOutputChannels = 2;
+    private int mOutputChannelMask = 0;
     private int mNumDisplayChannels;
     private WaveScopeView mWaveView = null;
+
+    public void setOutputChannelMask(int mask) {
+        mOutputChannelMask = mask;
+        mOutputChannels = Integer.bitCount(mask);
+    }
 
     Spinner mInputsSpinner;
     Spinner mOutputsSpinner;
@@ -80,20 +85,21 @@ class AudioLoopbackCalibrationDialog extends Dialog
     AudioDeviceInfo mSelectedOutputDevice;
 
     AudioLoopbackCalibrationDialog(Context context) {
+        this(context, 2, 2);
+    }
+
+    AudioLoopbackCalibrationDialog(Context context, int inputChannels, int outputChannels) {
         super(context);
 
         mContext = context;
+        mInputChannels = inputChannels;
+        mOutputChannels = outputChannels;
 
         mAudioManager = context.getSystemService(AudioManager.class);
 
         mAudioCallbackHandler = this;
 
-        mLeftSineSourceProvider = new SparseChannelAudioSourceProvider(
-                SparseChannelAudioSourceProvider.CHANNELMASK_LEFT);
-        mRightSineSourceProvider = new SparseChannelAudioSourceProvider(
-                SparseChannelAudioSourceProvider.CHANNELMASK_RIGHT);
-        mAudioSinkProvider =
-                new AppCallbackAudioSinkProvider(mAudioCallbackHandler);
+        mAudioSinkProvider = new AppCallbackAudioSinkProvider(mAudioCallbackHandler);
 
         mDuplexAudioManager = new DuplexAudioManager(null, null);
     }
@@ -114,8 +120,54 @@ class AudioLoopbackCalibrationDialog extends Dialog
         mWaveView.setDisplayLimits(true);
         mWaveView.setDisplayZero(true);
 
-        findViewById(R.id.audio_calibration_left).setOnClickListener(this);
-        findViewById(R.id.audio_calibration_right).setOnClickListener(this);
+        LinearLayout processLayout = findViewById(R.id.audio_calibration_process);
+        // Remove Left and Right buttons to replace with dynamic ones
+        View leftButton = findViewById(R.id.audio_calibration_left);
+        leftButton.setVisibility(View.GONE);
+        View rightButton = findViewById(R.id.audio_calibration_right);
+        rightButton.setVisibility(View.GONE);
+
+        int insertIndex = processLayout.indexOfChild(leftButton);
+        if (mOutputChannelMask != 0) {
+            int[] orderedMaskBits = AudioLoopbackUtilitiesHandler.getOrderedMaskBits();
+            for (int maskBit : orderedMaskBits) {
+                if ((mOutputChannelMask & maskBit) != 0) {
+                    Button btn = new Button(mContext);
+                    btn.setText(AudioLoopbackUtilitiesHandler.getLabelForMaskBit(maskBit));
+                    final int channelIndex = Integer.bitCount(mOutputChannelMask & (maskBit - 1));
+                    btn.setOnClickListener(v -> startAudio(channelIndex));
+                    processLayout.addView(
+                            btn,
+                            insertIndex++,
+                            new LinearLayout.LayoutParams(/* width= */ 0, LayoutParams.MATCH_PARENT,
+                                    /* weight= */ 1.0f));
+                }
+            }
+        } else {
+            for (int i = 0; i < mOutputChannels; i++) {
+                Button btn = new Button(mContext);
+                String label;
+                if (mOutputChannels == 1) {
+                    label = "Mono";
+                } else if (mOutputChannels == 2) {
+                    label =
+                            i == 0
+                                    ? mContext.getString(R.string.audio_general_left)
+                                    : mContext.getString(R.string.audio_general_right);
+                } else {
+                    label = "Channel" + (i + 1);
+                }
+                btn.setText(label);
+                final int channelIndex = i;
+                btn.setOnClickListener(v -> startAudio(channelIndex));
+                processLayout.addView(
+                        btn,
+                        insertIndex++,
+                        new LinearLayout.LayoutParams(/* width= */ 0, LayoutParams.MATCH_PARENT,
+                                /* weight= */ 1.0f));
+            }
+        }
+
         findViewById(R.id.audio_calibration_stop).setOnClickListener(this);
         findViewById(R.id.audio_calibration_done).setOnClickListener(this);
 
@@ -188,20 +240,24 @@ class AudioLoopbackCalibrationDialog extends Dialog
     private static final int CHANNEL_LEFT = 0;
     private static final int CHANNEL_RIGHT = 1;
 
-    void startAudio(int channel) {
+    void startAudio(int channelIndex) {
         stopAudio();
 
-        AudioSourceProvider sourceProvider =
-                channel == CHANNEL_LEFT ? mLeftSineSourceProvider : mRightSineSourceProvider;
+        int mask = 1 << channelIndex;
+        AudioSourceProvider sourceProvider = new SparseChannelAudioSourceProvider(mask);
 
         // Player
         mDuplexAudioManager.setSources(sourceProvider, mAudioSinkProvider);
         mDuplexAudioManager.setPlayerRouteDevice(mSelectedOutputDevice);
-        mDuplexAudioManager.setNumPlayerChannels(2);
+        if (mOutputChannelMask != 0) {
+            mDuplexAudioManager.setPlayerChannelMask(mOutputChannelMask);
+        } else {
+            mDuplexAudioManager.setNumPlayerChannels(mOutputChannels);
+        }
 
         // Recorder
         mDuplexAudioManager.setRecorderRouteDevice(mSelectedInputDevice);
-        mNumDisplayChannels = 2;
+        mNumDisplayChannels = mInputChannels;
         if (mSelectedInputDevice != null && AudioDeviceUtils.isMicDevice(mSelectedInputDevice)) {
             mNumDisplayChannels = 1;
         }
@@ -242,11 +298,7 @@ class AudioLoopbackCalibrationDialog extends Dialog
     // OnClickListener
     //
     public void onClick(View v) {
-        if (v.getId() == R.id.audio_calibration_left) {
-            startAudio(CHANNEL_LEFT);
-        } else if (v.getId() == R.id.audio_calibration_right) {
-            startAudio(CHANNEL_RIGHT);
-        } else if (v.getId() == R.id.audio_calibration_stop) {
+        if (v.getId() == R.id.audio_calibration_stop) {
             stopAudio();
         } else if (v.getId() == R.id.audio_calibration_done) {
             dismiss();
