@@ -58,6 +58,7 @@
                         android:id="@+id/audio_datapaths_start"
                         style="?android:attr/buttonBarButtonStyle"/>
                 </LinearLayout>
+
             </LinearLayout>
 
             <LinearLayout
@@ -95,6 +96,38 @@
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
+
+        <!-- Navigation Controls (Manual Mode) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginStart="10dp"
+            android:id="@+id/audio_datapaths_navigation"
+            android:visibility="gone"
+            style="?android:attr/buttonBarStyle">
+             <Button
+                android:text="@string/audio_general_prev"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:id="@+id/audio_datapaths_prev"
+                style="?android:attr/buttonBarButtonStyle"/>
+            <Button
+                android:text="@string/audio_general_next"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:id="@+id/audio_datapaths_next"
+                style="?android:attr/buttonBarButtonStyle"/>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/audio_datapaths_current_test"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:padding="5dp"
+            android:gravity="center_horizontal" />
 
         <com.android.cts.verifier.audio.audiolib.WaveScopeView
             android:id="@+id/uap_recordWaveView"

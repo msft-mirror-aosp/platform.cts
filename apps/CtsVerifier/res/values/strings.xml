@@ -5804,6 +5804,8 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_general_info">Info</string>
     <string name="audio_general_ok">Ok</string>
     <string name="audio_general_start">Start</string>
+    <string name="audio_general_prev">Prev</string>
+    <string name="audio_general_next">Next</string>
     <string name="audio_general_stop">Stop</string>
     <string name="audio_general_done">Done</string>
     <string name="audio_general_close">Close</string>
