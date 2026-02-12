@@ -25,6 +25,7 @@ public class ZygotePreload implements android.app.ZygotePreload {
     static final String TAG = "SeccompDeviceTest";
 
     static volatile boolean sResult = false;
+    static volatile boolean sResultSafesetid = false;
     static volatile int sStartOfIsolatedRange = -1;
 
     static private boolean testSetResUidGidBlocked(int rid, int eid, int sid,
@@ -66,6 +67,10 @@ public class ZygotePreload implements android.app.ZygotePreload {
 
     static synchronized public boolean getSeccomptestResult() {
         return sResult;
+    }
+
+    public static synchronized boolean getSeccomptestResultSafesetid() {
+        return sResultSafesetid;
     }
 
     static synchronized public int getStartOfIsolatedRange() {
@@ -112,6 +117,11 @@ public class ZygotePreload implements android.app.ZygotePreload {
                     regularIsolatedEnd);
         }
 
+        doSeccomptest(result);
+        doSeccomptestSafesetid(result);
+    }
+
+    private void doSeccomptest(boolean result) {
         // Test all ranges of app zygote UIDs; we don't know here which
         // isolated UID is assigned to our process, so we will test all ranges,
         // and verify only one is allowed; then have the caller verify that
@@ -156,5 +166,44 @@ public class ZygotePreload implements android.app.ZygotePreload {
 
         // Store result
         sResult = result;
+    }
+
+    private void doSeccomptestSafesetid(boolean result) {
+        // When safesetid is used for UID policy, the UID range allowed by seccomp is the
+        // entire app zygote isolated range.
+        // Within that range, only a single UID is allowed by safesetid, but this test is checking
+        // the bounds allowed by seccomp - not the UIDs allowed by safesetid.
+        final int isolatedUserStart =
+                UserHandle.getUid(UserHandle.myUserId(), Process.FIRST_APP_ZYGOTE_ISOLATED_UID);
+        final int isolatedUserEnd =
+                UserHandle.getUid(UserHandle.myUserId(), Process.LAST_APP_ZYGOTE_ISOLATED_UID);
+
+        // The entire range is allowed by seccomp. Pick one UID in the range to test.
+        result &= testSetResUidGidAllowed(isolatedUserStart, isolatedUserStart, isolatedUserStart);
+        result &= testSetResUidGidAllowed(isolatedUserEnd, isolatedUserEnd, isolatedUserEnd);
+
+        // Test boundaries
+        result &=
+                testSetResUidGidBlocked(
+                        isolatedUserStart - 1, isolatedUserStart - 1, isolatedUserStart - 1);
+        result &=
+                testSetResUidGidBlocked(
+                        isolatedUserEnd + 1, isolatedUserEnd + 1, isolatedUserEnd + 1);
+
+        // Mixed allowed with disallowed UIDs
+        result &= testSetResUidGidBlocked(isolatedUserStart, 0, 0);
+        result &= testSetResUidGidBlocked(isolatedUserStart, 0, isolatedUserStart);
+        result &= testSetResUidGidBlocked(isolatedUserStart, isolatedUserStart, 0);
+        result &= testSetResUidGidBlocked(0, isolatedUserStart, 0);
+        result &= testSetResUidGidBlocked(0, isolatedUserStart, isolatedUserStart);
+        result &= testSetResUidGidBlocked(0, 0, isolatedUserStart);
+
+        result &=
+                testSetResUidGidBlocked(
+                        Process.LAST_APP_ZYGOTE_ISOLATED_UID + 1,
+                        Process.LAST_APP_ZYGOTE_ISOLATED_UID + 1,
+                        Process.LAST_APP_ZYGOTE_ISOLATED_UID + 1);
+
+        sResultSafesetid = result;
     }
 }
