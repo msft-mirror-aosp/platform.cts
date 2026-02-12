@@ -106,10 +106,6 @@ extern "C" void native_service_onDestroy(ANativeService* _Nonnull service) {
     auto itr = gBindingMap.find(service);
     ASSERT_VOID(itr != gBindingMap.end());
 
-    for (auto& binding : itr->second) {
-        AIBinder_decStrong(binding.second.mWrapper->asBinder().get());
-    }
-
     gBindingMap.erase(itr);
 }
 
@@ -131,7 +127,9 @@ extern "C" AIBinder* native_service_onBind(ANativeService* _Nonnull service, uin
         wrapper = ndk::SharedRefBase::make<NativeServiceWrapper>();
         gBindingMap[service].emplace(bindToken, ServiceBinding(bindToken, action, wrapper));
     }
-    AIBinder_incStrong(wrapper->asBinder().get());
+
+    auto binder = wrapper->asBinder();
+    AIBinder_incStrong(binder.get());
 
     ASSERT(action != nullptr, nullptr);
     auto actionStr = std::string(action);
@@ -146,7 +144,7 @@ extern "C" AIBinder* native_service_onBind(ANativeService* _Nonnull service, uin
                nullptr);
     }
 
-    return wrapper->asBinder().get();
+    return binder.get();
 }
 
 extern "C" void native_service_onRebind(ANativeService* _Nonnull service, uint64_t bindToken) {
@@ -186,8 +184,6 @@ extern "C" bool native_service_onUnbind(ANativeService* _Nonnull service, uint64
 
     auto wrapper = bindingItr->second.mWrapper;
     wrapper->doUnbind();
-    // Don't call `AIBinder_decStrong` here since the IBinder is cached in the AMS and may be
-    // reused.
 
     ALOGI("native_service_onUnbind – res %d", res);
     return res;
