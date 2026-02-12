@@ -6466,6 +6466,19 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_aec_no_aec_support">No AEC Support.</string>
     <string name="audio_aec_no_aec_pass">AEC is not supported on this device. Test may pass.</string>
 
+    <!-- Audio Playback Parameters Test -->
+    <string name="audio_playback_params_test">Audio Playback Parameters Test</string>
+    <string name="audio_playback_params_info">
+        This test checks that audio playback parameters are working correctly.
+        Please ensure that the device has speaker and microphone available as it runs in loopback mode.
+
+        Press "Test" to start. The test will:
+        1. Play a sound at 1.0x speed and record it via the loopback (control).
+        2. Play a sound at 2.0x speed and record it via the loopback.
+        3. Play the recording from step 2 back at 0.5x speed and record it again.
+        4. Analyze the recordings to ensure the final recording matches the control sound.
+    </string>
+
     <!-- Audio Connection Test -->
     <string name="audio_disconnect_test">Audio Stream Disconnect Test</string>
     <string name="audio_disconnect_info">
