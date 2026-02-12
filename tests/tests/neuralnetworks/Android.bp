@@ -68,6 +68,6 @@ cc_test {
         },
     },
     sdk_version: "current",
-    stl: "libc++",
+    stl: "c++_static",
     min_sdk_version: "30",
 }
