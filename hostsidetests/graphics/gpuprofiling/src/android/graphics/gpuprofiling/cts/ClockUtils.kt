@@ -29,20 +29,62 @@ import perfetto.protos.PerfettoTrace.ClockSnapshot
 import perfetto.protos.PerfettoTrace.Trace
 import perfetto.protos.PerfettoTrace.TracePacket
 
-fun Trace.getTraceClockSnapshots(): List<Map<Int, Long>> {
-    val packetList: List<TracePacket> = this.packetList
-    val snapshots: MutableList<Map<Int, Long>> = ArrayList()
-    for (packet in packetList) {
-        if (!packet.hasClockSnapshot()) continue
+val BOOTTIME = BuiltinClock.BUILTIN_CLOCK_BOOTTIME.number
 
-        val snapshot: ClockSnapshot = packet.clockSnapshot
-        val snapshotMap: MutableMap<Int, Long> = HashMap()
-        for (clock in snapshot.clocksList) {
-            snapshotMap[clock.clockId] = clock.timestamp
+class ClockSnapshots(trace: Trace) {
+    private val sortedClockSnapshots: Map<Int, List<Map<Int, Long>>>
+
+    init {
+        val packetList: List<TracePacket> = trace.packetList
+        val snapshots: MutableList<Map<Int, Long>> = ArrayList()
+        for (packet in packetList) {
+            if (!packet.hasClockSnapshot()) continue
+
+            val snapshot: ClockSnapshot = packet.clockSnapshot
+            val snapshotMap: MutableMap<Int, Long> = HashMap()
+            for (clock in snapshot.clocksList) {
+                snapshotMap[clock.clockId] = clock.timestamp
+            }
+            snapshots.add(snapshotMap)
         }
-        snapshots.add(snapshotMap)
+        // We only support single-hop conversion and only to BOOTTIME. Prep data here to speed up.
+        val mutableSortedSnapshots: MutableMap<Int, List<Map<Int, Long>>> = mutableMapOf()
+        val snapshotsWithBoottime = snapshots.filter { it.containsKey(BOOTTIME) }
+        val allClockIds = snapshots.flatMap { it.keys }.toSet()
+        for (clockId in allClockIds) {
+            mutableSortedSnapshots[clockId] = snapshotsWithBoottime
+                .filter { it.containsKey(clockId) }
+                .sortedBy { it[clockId] }
+        }
+        sortedClockSnapshots = mutableSortedSnapshots
     }
-    return snapshots
+
+    fun convertTimestamp(
+        timestamp: Long,
+        sourceClockId: Int
+    ): Long {
+        val relevantSnapshots = sortedClockSnapshots[sourceClockId] ?: emptyList()
+
+        if (relevantSnapshots.isEmpty()) {
+            throw IllegalArgumentException(
+                "Need at least one snapshot with both clocks"
+            )
+        }
+
+        // Assume that source clock is monotonic with BOOTTIME. If it isn't, a definitive conversion
+        // is not possible.
+        val searchResult = relevantSnapshots.binarySearch { it[sourceClockId]!!.compareTo(
+            timestamp
+        ) }
+        if (searchResult >= 0) return relevantSnapshots[searchResult][BOOTTIME]!!
+
+        // Use the snapshot immediately preceding the timestamp
+        val index = (searchResult.inv() - 1).coerceAtLeast(0)
+        val snapshot = relevantSnapshots[index]
+
+        // Apply the constant offset from that snapshot.
+        return timestamp + (snapshot[BOOTTIME]!! - snapshot[sourceClockId]!!)
+    }
 }
 
 fun Trace.getAllDataSourcesStartedNs(): Long {
@@ -58,40 +100,12 @@ fun Trace.getAllDataSourcesStartedNs(): Long {
     return 0
 }
 
-fun TracePacket.getTimestampNs(clockSnapshots: List<Map<Int, Long>>): Long {
+fun TracePacket.getTimestampNs(clockSnapshots: ClockSnapshots): Long {
     if (!this.hasTimestampClockId()) {
         return this.timestamp
     }
-    return convertTimestamp(
+    return clockSnapshots.convertTimestamp(
         timestamp,
-        this.timestampClockId,
-        clockSnapshots
+        this.timestampClockId
     )
-}
-
-private fun convertTimestamp(
-    timestamp: Long,
-    sourceClockId: Int,
-    clockSnapshots: List<Map<Int, Long>>
-): Long {
-    val destClockId = BuiltinClock.BUILTIN_CLOCK_BOOTTIME.number
-    val relevantSnapshots = clockSnapshots.filter {
-        it.containsKey(sourceClockId) && it.containsKey(destClockId)
-    }.distinctBy { it[sourceClockId] }.sortedBy { it[sourceClockId] }
-
-    if (relevantSnapshots.isEmpty()) {
-        throw IllegalArgumentException(
-            "Need at least one snapshot with both clocks"
-        )
-    }
-
-    val searchResult = relevantSnapshots.map { it[sourceClockId]!! }.binarySearch(timestamp)
-    if (searchResult >= 0) return relevantSnapshots[searchResult][destClockId]!!
-
-    // Use the snapshot immediately preceding the timestamp
-    val index = (searchResult.inv() - 1).coerceAtLeast(0)
-    val snapshot = relevantSnapshots[index]
-
-    // Apply the constant offset from that snapshot.
-    return timestamp + (snapshot[destClockId]!! - snapshot[sourceClockId]!!)
 }

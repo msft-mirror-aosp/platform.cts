@@ -18,6 +18,7 @@ package android.app.appfunctions.cts
 
 import android.Manifest
 import android.app.admin.DevicePolicyManager.APP_FUNCTIONS_DISABLED
+import android.app.AppInteractionAttribution
 import android.app.appfunctions.AppFunctionException
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.ExecuteAppFunctionRequest
@@ -156,7 +157,8 @@ class AppFunctionManagerV2Test {
             val request =
                 ExecuteAppFunctionRequest.Builder(
                         LegacySchemaHelperApp.PACKAGE_NAME,
-                        LegacySchemaHelperApp.FunctionNames.UNCAUGHT_CLIENT_EXCEPTION.functionId,
+                        LegacySchemaHelperApp.FunctionNames.UNCAUGHT_CLIENT_EXCEPTION
+                            .functionIdentifier,
                     )
                     .build()
 
@@ -190,7 +192,8 @@ class AppFunctionManagerV2Test {
             val request =
                 ExecuteAppFunctionRequest.Builder(
                         LegacySchemaHelperApp.PACKAGE_NAME,
-                        LegacySchemaHelperApp.FunctionNames.ADD_INVOKE_CALLBACK_TWICE.functionId,
+                        LegacySchemaHelperApp.FunctionNames.ADD_INVOKE_CALLBACK_TWICE
+                            .functionIdentifier,
                     )
                     .setParameters(parameters)
                     .build()
@@ -260,7 +263,8 @@ class AppFunctionManagerV2Test {
             val request =
                 ExecuteAppFunctionRequest.Builder(
                         LegacySchemaHelperApp.PACKAGE_NAME,
-                        LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT.functionId,
+                        LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT
+                            .functionIdentifier,
                     )
                     .setParameters(parameters)
                     .build()
@@ -328,7 +332,7 @@ class AppFunctionManagerV2Test {
         val request =
             ExecuteAppFunctionRequest.Builder(
                     LegacySchemaHelperApp.PACKAGE_NAME,
-                    LegacySchemaHelperApp.FunctionNames.NO_OP.functionId,
+                    LegacySchemaHelperApp.FunctionNames.NO_OP.functionIdentifier,
                 )
                 .build()
 
@@ -356,7 +360,7 @@ class AppFunctionManagerV2Test {
             val request =
                 ExecuteAppFunctionRequest.Builder(
                         LegacySchemaHelperApp.PACKAGE_NAME,
-                        LegacySchemaHelperApp.FunctionNames.NO_OP.functionId,
+                        LegacySchemaHelperApp.FunctionNames.NO_OP.functionIdentifier,
                     )
                     .build()
 
@@ -388,7 +392,7 @@ class AppFunctionManagerV2Test {
                 val request =
                     ExecuteAppFunctionRequest.Builder(
                             LegacySchemaHelperApp.PACKAGE_NAME,
-                            LegacySchemaHelperApp.FunctionNames.NO_OP.functionId,
+                            LegacySchemaHelperApp.FunctionNames.NO_OP.functionIdentifier,
                         )
                         .build()
 
@@ -421,7 +425,7 @@ class AppFunctionManagerV2Test {
             val request =
                 ExecuteAppFunctionRequest.Builder(
                         LegacySchemaHelperApp.PACKAGE_NAME,
-                        LegacySchemaHelperApp.FunctionNames.NO_OP.functionId,
+                        LegacySchemaHelperApp.FunctionNames.NO_OP.functionIdentifier,
                     )
                     .build()
 
@@ -446,7 +450,7 @@ class AppFunctionManagerV2Test {
                 val request =
                     ExecuteAppFunctionRequest.Builder(
                             LegacySchemaHelperApp.PACKAGE_NAME,
-                            LegacySchemaHelperApp.FunctionNames.NO_OP.functionId,
+                            LegacySchemaHelperApp.FunctionNames.NO_OP.functionIdentifier,
                         )
                         .build()
 
@@ -471,7 +475,7 @@ class AppFunctionManagerV2Test {
             val request =
                 ExecuteAppFunctionRequest.Builder(
                         LegacySchemaHelperApp.PACKAGE_NAME,
-                        LegacySchemaHelperApp.FunctionNames.THROW_EXCEPTION.functionId,
+                        LegacySchemaHelperApp.FunctionNames.THROW_EXCEPTION.functionIdentifier,
                     )
                     .build()
 
@@ -498,7 +502,7 @@ class AppFunctionManagerV2Test {
             val request =
                 ExecuteAppFunctionRequest.Builder(
                         LegacySchemaHelperApp.PACKAGE_NAME,
-                        LegacySchemaHelperApp.FunctionNames.KILL.functionId,
+                        LegacySchemaHelperApp.FunctionNames.KILL.functionIdentifier,
                     )
                     .build()
 
@@ -533,7 +537,7 @@ class AppFunctionManagerV2Test {
             val request =
                 ExecuteAppFunctionRequest.Builder(
                         LegacySchemaHelperApp.PACKAGE_NAME,
-                        LegacySchemaHelperApp.FunctionNames.ADD_ASYNC.functionId,
+                        LegacySchemaHelperApp.FunctionNames.ADD_ASYNC.functionIdentifier,
                     )
                     .setParameters(parameters)
                     .build()
@@ -587,7 +591,8 @@ class AppFunctionManagerV2Test {
             val request =
                 ExecuteAppFunctionRequest.Builder(
                         LegacySchemaHelperApp.PACKAGE_NAME,
-                        LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT.functionId,
+                        LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT
+                            .functionIdentifier,
                     )
                     .setParameters(parameters)
                     .build()
@@ -617,7 +622,8 @@ class AppFunctionManagerV2Test {
             val request =
                 ExecuteAppFunctionRequest.Builder(
                         LegacySchemaHelperApp.PACKAGE_NAME,
-                        LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT.functionId,
+                        LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT
+                            .functionIdentifier,
                     )
                     .setParameters(parameters)
                     .build()
@@ -678,7 +684,8 @@ class AppFunctionManagerV2Test {
             val request =
                 ExecuteAppFunctionRequest.Builder(
                         LegacySchemaHelperApp.PACKAGE_NAME,
-                        LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT.functionId,
+                        LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT
+                            .functionIdentifier,
                     )
                     .setParameters(parameters)
                     .build()
@@ -705,7 +712,8 @@ class AppFunctionManagerV2Test {
             val request =
                 ExecuteAppFunctionRequest.Builder(
                         LegacySchemaHelperApp.PACKAGE_NAME,
-                        LegacySchemaHelperApp.FunctionNames.ADD_DISABLED_BY_DEFAULT.functionId,
+                        LegacySchemaHelperApp.FunctionNames.ADD_DISABLED_BY_DEFAULT
+                            .functionIdentifier,
                     )
                     .build()
 
@@ -733,12 +741,13 @@ class AppFunctionManagerV2Test {
                 val request =
                     ExecuteAppFunctionRequest.Builder(
                             LegacySchemaHelperApp.PACKAGE_NAME,
-                            LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT.functionId,
+                            LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT
+                                .functionIdentifier,
                         )
                         .build()
                 setAppFunctionEnabledRemote(
                     LegacySchemaHelperApp.PACKAGE_NAME,
-                    LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT.functionId,
+                    LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT.functionIdentifier,
                     AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
                 )
 
@@ -751,7 +760,7 @@ class AppFunctionManagerV2Test {
             } finally {
                 setAppFunctionEnabledRemote(
                     LegacySchemaHelperApp.PACKAGE_NAME,
-                    LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT.functionId,
+                    LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT.functionIdentifier,
                     AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
                 )
             }
@@ -780,7 +789,8 @@ class AppFunctionManagerV2Test {
                 val request =
                     ExecuteAppFunctionRequest.Builder(
                             LegacySchemaHelperApp.PACKAGE_NAME,
-                            LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT.functionId,
+                            LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT
+                                .functionIdentifier,
                         )
                         .setParameters(parameters)
                         .build()
@@ -816,7 +826,8 @@ class AppFunctionManagerV2Test {
             val request =
                 ExecuteAppFunctionRequest.Builder(
                         LegacySchemaHelperApp.PACKAGE_NAME,
-                        LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT.functionId,
+                        LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT
+                            .functionIdentifier,
                     )
                     .setParameters(parameters)
                     .build()
@@ -857,7 +868,8 @@ class AppFunctionManagerV2Test {
             val request =
                 ExecuteAppFunctionRequest.Builder(
                         LegacySchemaHelperApp.PACKAGE_NAME,
-                        LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT.functionId,
+                        LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT
+                            .functionIdentifier,
                     )
                     .setParameters(parameters)
                     .build()
@@ -918,7 +930,7 @@ class AppFunctionManagerV2Test {
         val request =
             ExecuteAppFunctionRequest.Builder(
                     CtsApp.PACKAGE_NAME,
-                    CtsApp.FunctionNames.LONG_RUNNING_FUNCTION.functionId,
+                    CtsApp.FunctionNames.LONG_RUNNING_FUNCTION.functionIdentifier,
                 )
                 .setParameters(parameters)
                 .build()
@@ -948,7 +960,7 @@ class AppFunctionManagerV2Test {
         val request =
             ExecuteAppFunctionRequest.Builder(
                     CtsApp.PACKAGE_NAME,
-                    CtsApp.FunctionNames.NOT_INVOKE_CALLBACK.functionId,
+                    CtsApp.FunctionNames.NOT_INVOKE_CALLBACK.functionIdentifier,
                 )
                 .setParameters(parameters)
                 .build()
@@ -984,7 +996,7 @@ class AppFunctionManagerV2Test {
             val request =
                 ExecuteAppFunctionRequest.Builder(
                         LegacySchemaHelperApp.PACKAGE_NAME,
-                        LegacySchemaHelperApp.FunctionNames.ECHO_BYTES.functionId,
+                        LegacySchemaHelperApp.FunctionNames.ECHO_BYTES.functionIdentifier,
                     )
                     .setParameters(parameters)
                     .build()
@@ -1009,7 +1021,7 @@ class AppFunctionManagerV2Test {
         val request =
             ExecuteAppFunctionRequest.Builder(
                     CtsApp.PACKAGE_NAME,
-                    CtsApp.FunctionNames.RUN_FOREVER.functionId,
+                    CtsApp.FunctionNames.RUN_FOREVER.functionIdentifier,
                 )
                 .setParameters(parameters)
                 .build()
@@ -1037,7 +1049,7 @@ class AppFunctionManagerV2Test {
         val request =
             ExecuteAppFunctionRequest.Builder(
                     CtsApp.PACKAGE_NAME,
-                    CtsApp.FunctionNames.RUN_FOREVER.functionId,
+                    CtsApp.FunctionNames.RUN_FOREVER.functionIdentifier,
                 )
                 .setParameters(parameters)
                 .build()
@@ -1138,7 +1150,7 @@ class AppFunctionManagerV2Test {
             val request =
                 ExecuteAppFunctionRequest.Builder(
                         LegacySchemaHelperApp.PACKAGE_NAME,
-                        LegacySchemaHelperApp.FunctionNames.GET_URIS.functionId,
+                        LegacySchemaHelperApp.FunctionNames.GET_URIS.functionIdentifier,
                     )
                     .build()
 
@@ -1160,7 +1172,12 @@ class AppFunctionManagerV2Test {
     @IncludeRunOnPrimaryUser
     @EnsureDoesNotHavePermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun isSelfAppFunctionEnabled_withoutPermission() = doBlocking {
-        assertThat(isAppFunctionEnabled(CtsApp.PACKAGE_NAME, CtsApp.FunctionNames.ADD.functionId))
+        assertThat(
+                isAppFunctionEnabled(
+                    CtsApp.PACKAGE_NAME,
+                    CtsApp.FunctionNames.ADD.functionIdentifier,
+                )
+            )
             .isTrue()
     }
 
@@ -1174,7 +1191,7 @@ class AppFunctionManagerV2Test {
             doBlocking {
                 isAppFunctionEnabled(
                     LegacySchemaHelperApp.PACKAGE_NAME,
-                    LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT.functionId,
+                    LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT.functionIdentifier,
                 )
             }
         }
@@ -1189,7 +1206,7 @@ class AppFunctionManagerV2Test {
         assertThat(
                 isAppFunctionEnabled(
                     LegacySchemaHelperApp.PACKAGE_NAME,
-                    LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT.functionId,
+                    LegacySchemaHelperApp.FunctionNames.ADD_ENABLED_BY_DEFAULT.functionIdentifier,
                 )
             )
             .isTrue()
@@ -1205,7 +1222,7 @@ class AppFunctionManagerV2Test {
         assertThat(
                 isAppFunctionEnabled(
                     LegacySchemaHelperApp.PACKAGE_NAME,
-                    LegacySchemaHelperApp.FunctionNames.ADD_DISABLED_BY_DEFAULT.functionId,
+                    LegacySchemaHelperApp.FunctionNames.ADD_DISABLED_BY_DEFAULT.functionIdentifier,
                 )
             )
             .isFalse()
@@ -1317,6 +1334,39 @@ class AppFunctionManagerV2Test {
                 )
             }
         }
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_INTERACTION_API)
+    fun executeAppFunction_withAttribution_attributionNotPropagated() = doBlocking {
+            val attribution =
+            AppInteractionAttribution.Builder(
+                AppInteractionAttribution.INTERACTION_TYPE_USER_QUERY
+            ).build()
+        val request =
+            ExecuteAppFunctionRequest.Builder(
+                CtsApp.PACKAGE_NAME,
+                CtsApp.FunctionNames.CHECK_ATTRIBUTION.functionIdentifier,
+            )
+                .setAttribution(attribution)
+                .build()
+
+        val response = mManager.executeAppFunction(request)
+
+        assertThat(response.exceptionOrNull()).isNull()
+        assertThat(
+                response
+                    .getOrNull()!!
+                    .resultDocument
+                    .getPropertyBoolean(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
+            )
+            .isFalse()
+        assertServiceDestroyed()
     }
 
     /** Runs a suspend block in a blocking manner */

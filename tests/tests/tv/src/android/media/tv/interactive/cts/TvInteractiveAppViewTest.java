@@ -268,9 +268,15 @@ public class TvInteractiveAppViewTest {
     public void testSetZOrderOnTop() throws Throwable {
         // Verifying the z-order from app is not possible. Here we just check if calling APIs does
         // not lead to any break.
-        mTvInteractiveAppView.setZOrderOnTop(true);
+        mInstrumentation.runOnMainSync(
+                () -> {
+                    mTvInteractiveAppView.setZOrderOnTop(true);
+                });
         mInstrumentation.waitForIdleSync();
-        mTvInteractiveAppView.setZOrderOnTop(false);
+        mInstrumentation.runOnMainSync(
+                () -> {
+                    mTvInteractiveAppView.setZOrderOnTop(false);
+                });
         mInstrumentation.waitForIdleSync();
     }
 

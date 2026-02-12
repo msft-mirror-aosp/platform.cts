@@ -30,13 +30,14 @@ import static android.graphics.gpuprofiling.cts.RenderStagesChecksKt.checkRender
 import static android.graphics.gpuprofiling.cts.RenderStagesChecksKt.checkRenderStagesNotEmpty;
 import static android.graphics.gpuprofiling.cts.RenderStagesChecksKt.checkRenderStagesValidity;
 
+import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assume.assumeFalse;
 
-import static java.lang.Math.abs;
 import static java.util.Collections.emptySet;
 
 import com.android.tradefed.log.Log;
@@ -442,8 +443,9 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
 
         errorCollector.checkThat(
                 "Most common sampling rate too different from expected: ",
-                abs(mostCommonRateBucket - expectedNanos),
-                is(lessThan((long) (0.5 * expectedNanos))));
+                mostCommonRateBucket,
+                both(greaterThan((long) (0.5 * expectedNanos)))
+                        .and(lessThan((long) (1.5 * expectedNanos))));
     }
 
     private static String getSummaryDescriptionOfIdsInTrace(

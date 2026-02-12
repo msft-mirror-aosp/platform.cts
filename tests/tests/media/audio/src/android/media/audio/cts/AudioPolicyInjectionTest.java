@@ -306,15 +306,15 @@ public class AudioPolicyInjectionTest {
     }
 
     /**
-     * Tests that a recording from a mix configured to inject silence on starve records silence even
+     * Tests that a recording from a mix configured to be persistent records silence even
      * without a source AudioTrack.
      */
     @Test
     @RequiresFlagsEnabled(FLAG_DAP_INJECTION_STARVE_MANAGEMENT)
-    public void testInjectSilenceOnStarveNoSourceAudioTrack() {
+    public void testPersistentMixNoSourceAudioTrack() {
         int sessionId = mAudioManager.generateAudioSessionId();
         setupInjectionWithMixRules(
-                true /* silenceOnStarve */,
+                true /* isPersistent */,
                 MixRule.createRule(RULE_MATCH_AUDIO_SESSION_ID, sessionId));
 
         verifySilenceRecording(sessionId);
@@ -323,15 +323,15 @@ public class AudioPolicyInjectionTest {
     }
 
     /**
-     * Tests that a recording from a mix configured to inject silence on starve records silence even
+     * Tests that a recording from a mix configured to be persistent records silence even
      * with a source AudioTrack that underruns.
      */
     @Test
     @RequiresFlagsEnabled(FLAG_DAP_INJECTION_STARVE_MANAGEMENT)
-    public void testInjectSilenceOnStarveUnderrunSourceAudioTrack() {
+    public void testPersistentMixUnderrunSourceAudioTrack() {
         int sessionId = mAudioManager.generateAudioSessionId();
         setupInjectionWithMixRules(
-                true /* silenceOnStarve */,
+                true /* isPersistent */,
                 MixRule.createRule(RULE_MATCH_AUDIO_SESSION_ID, sessionId));
 
         mInjectionTrack.play();
@@ -342,15 +342,15 @@ public class AudioPolicyInjectionTest {
     }
 
     /**
-     * Tests that a recording from a mix configured to inject silence on starve records silence from
+     * Tests that a recording from a mix configured to be persistent records silence from
      * a source AudioTrack that starts while the recording is in progress.
      */
     @Test
     @RequiresFlagsEnabled(FLAG_DAP_INJECTION_STARVE_MANAGEMENT)
-    public void testInjectSilenceOnStarveInProgressSourceAudioTrack() {
+    public void testPersistentMixInProgressSourceAudioTrack() {
         int sessionId = mAudioManager.generateAudioSessionId();
         setupInjectionWithMixRules(
-                true /* silenceOnStarve */,
+                true /* isPersistent */,
                 MixRule.createRule(RULE_MATCH_AUDIO_SESSION_ID, sessionId));
 
         AudioRecord loopbackRecord = buildAudioRecordForSessionId(sessionId);
@@ -368,15 +368,15 @@ public class AudioPolicyInjectionTest {
     }
 
     /**
-     * Tests that a recording from a mix configured to inject silence on starve records silence from
+     * Tests that a recording from a mix configured to be persistent records silence from
      * a source AudioTrack that stops while the recording is in progress.
      */
     @Test
     @RequiresFlagsEnabled(FLAG_DAP_INJECTION_STARVE_MANAGEMENT)
-    public void testInjectSilenceOnStarveStopSourceAudioTrack() {
+    public void testPersistentMixStopSourceAudioTrack() {
         int sessionId = mAudioManager.generateAudioSessionId();
         setupInjectionWithMixRules(
-                true /* silenceOnStarve */,
+                true /* isPersistent */,
                 MixRule.createRule(RULE_MATCH_AUDIO_SESSION_ID, sessionId));
 
         mInjectionTrack.play();
@@ -401,15 +401,15 @@ public class AudioPolicyInjectionTest {
     }
 
     /**
-     * Tests that multiple recordings from a mix configured to inject silence on starve record
+     * Tests that multiple recordings from a mix configured to be persistent record
      * silence from a source AudioTrack that underruns.
      */
     @Test
     @RequiresFlagsEnabled(FLAG_DAP_INJECTION_STARVE_MANAGEMENT)
-    public void testInjectSilenceOnStarveMultipleRecordings() {
+    public void testPersistentMixMultipleRecordings() {
         int sessionId = mAudioManager.generateAudioSessionId();
         setupInjectionWithMixRules(
-                true /* silenceOnStarve */,
+                true /* isPersistent */,
                 MixRule.createRule(RULE_MATCH_AUDIO_SESSION_ID, sessionId));
 
         mInjectionTrack.play();
@@ -430,13 +430,13 @@ public class AudioPolicyInjectionTest {
         loopbackRecord2.release();
     }
 
-    /** Tests regular capture from a mix with inject silence on starve. */
+    /** Tests regular capture from a mix that is persistent. */
     @Test
     @RequiresFlagsEnabled(FLAG_DAP_INJECTION_STARVE_MANAGEMENT)
-    public void testInjectSilenceOnStarveRegularCapture() {
+    public void testPersistentMixRegularCapture() {
         int sessionId = mAudioManager.generateAudioSessionId();
         setupInjectionWithMixRules(
-                true /* silenceOnStarve */,
+                true /* isPersistent */,
                 MixRule.createRule(RULE_MATCH_AUDIO_SESSION_ID, sessionId));
 
         mVoiceRecord = buildAudioRecordForSessionId(sessionId);
@@ -484,7 +484,7 @@ public class AudioPolicyInjectionTest {
         setupInjectionWithMixRules(false, mixRules);
     }
 
-    private void setupInjectionWithMixRules(boolean silenceOnStarve, MixRule... mixRules) {
+    private void setupInjectionWithMixRules(boolean isPersistent, MixRule... mixRules) {
         AudioMixingRule.Builder mixingRuleBuilder =
                 new AudioMixingRule.Builder().setTargetMixRole(MIX_ROLE_INJECTOR);
         for (MixRule mixRule : mixRules) {
@@ -495,9 +495,9 @@ public class AudioPolicyInjectionTest {
                         .setFormat(FORMAT_VOICE_INJECTION)
                         .setRouteFlags(AudioMix.ROUTE_FLAG_LOOP_BACK);
 
-        if (silenceOnStarve) {
-            Log.i(TAG, "Set silence injection on starvation for the AudioMix");
-            audioMixBuilder.setInjectSilenceOnStarvation(true);
+        if (isPersistent) {
+            Log.i(TAG, "Set persistent for the AudioMix");
+            audioMixBuilder.setPersistent(true);
         }
 
         AudioMix audioMix = audioMixBuilder.build();

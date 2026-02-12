@@ -253,6 +253,22 @@ public class PccServiceTest {
                 () -> mContext.bindService(intent, mConnection, Context.BIND_AUTO_CREATE));
     }
 
+    @Test
+    public void testNonPccToPccProviderAccess() {
+        String processName = mContext.getApplicationInfo().processName;
+        int uid = android.os.Process.myUid();
+        java.util.List<android.content.pm.ProviderInfo> providers =
+                mContext.getPackageManager().queryContentProviders(processName, uid, 0);
+        if (providers != null) {
+            for (android.content.pm.ProviderInfo info : providers) {
+                if ("com.android.cts.pcc.service.pccclient.provider.pcc".equals(info.authority)) {
+                    throw new AssertionError(
+                            "Non-PCC to PCC provider access should fail (provider NOT in list)");
+                }
+            }
+        }
+    }
+
     @After
     public void tearDown() {
         if (mConnection != null) {

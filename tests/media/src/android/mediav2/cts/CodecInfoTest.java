@@ -65,6 +65,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.util.Range;
+import android.util.Size;
 
 import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
@@ -356,7 +357,16 @@ public class CodecInfoTest {
 
     /**
      * Components advertising support for compression technologies that were introduced since 2003
-     * must support a minimum resolution of 128x96.
+     * must support a minimum resolution as indicated below:
+     *
+     * <ul>
+     *   <li>AVC: Decoder (128x96, or 96x128), Encoder (160x128, or 160x160)
+     *   <li>VP8: Decoder (128x96, or 96x128), Encoder (160x128, or 160x160)
+     *   <li>HEVC: Decoder (128x96, or 96x128), Encoder (160x128, or 160x160)
+     *   <li>VP9: Decoder (128x96, or 96x128), Encoder (160x128, or 160x160)
+     *   <li>AV1: Decoder (128x96, or 96x128), Encoder (256x256)
+     *   <li>VVC: Decoder (128x96, or 96x128)
+     * </ul>
      */
     @VsrTest(requirements = {"VSR-4.2.1-002"})
     @Test
@@ -368,6 +378,19 @@ public class CodecInfoTest {
                 BOARD_FIRST_SDK_IS_AT_LEAST_202604);
         MediaCodecInfo.VideoCapabilities vCaps =
                 mCodecInfo.getCapabilitiesForType(mMediaType).getVideoCapabilities();
-        assertTrue(mCodecName + " does not support size 128x96", vCaps.isSizeSupported(128, 96));
+        Size[] minVideoSize = null;
+        if (mCodecInfo.isEncoder()) {
+            if (mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_AV1)) {
+                minVideoSize = new Size[] {new Size(256, 256)};
+            } else {
+                minVideoSize = new Size[] {new Size(160, 128), new Size(160, 160)};
+            }
+        } else {
+            minVideoSize = new Size[] {new Size(128, 96), new Size(96, 128)};
+        }
+        for (Size videoSize : minVideoSize) {
+            assertTrue(String.format("%s does not support video size %s", mCodecName, videoSize),
+                    vCaps.isSizeSupported(videoSize.getWidth(), videoSize.getHeight()));
+        }
     }
 }

@@ -131,4 +131,10 @@
         <id>noSchema</id>
         <enabled_by_default>true</enabled_by_default>
     </appfunction>
+    <appfunction>
+        <function_id>checkAttribution</function_id>
+        <id>checkAttribution</id>
+        <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
+        <enabled_by_default>true</enabled_by_default>
+    </appfunction>
 </appfunctions>

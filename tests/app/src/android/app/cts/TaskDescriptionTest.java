@@ -16,11 +16,6 @@
 
 package android.app.cts;
 
-import static android.content.Context.ACTIVITY_SERVICE;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 import android.app.Activity;
@@ -47,6 +42,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.BooleanSupplier;
 
 /**
@@ -213,58 +209,82 @@ public class TaskDescriptionTest {
             int backgroundColor,
             int statusBarColor,
             int navigationBarColor) {
-        final ActivityManager am = (ActivityManager) activity.getSystemService(ACTIVITY_SERVICE);
-        List<RecentTaskInfo> recentsTasks = am.getRecentTasks(1 /* maxNum */, 0 /* flags */);
-        if (!recentsTasks.isEmpty()) {
-            final RecentTaskInfo info = recentsTasks.get(0);
-            if (activity.getTaskId() == info.id) {
-                final TaskDescription td = info.taskDescription;
-                assertNotNull(td);
-                if (bitmap != null) {
-                    // TaskPersister at the worst case scenario waits 3 secs (PRE_TASK_DELAY_MS) to
-                    // write the image to disk if its write time has ended
-                    waitFor("TaskDescription's icon is null", () -> td.getIcon() != null);
-                    waitFor("TaskDescription's icon filename is null",
-                            () -> td.getIconFilename() != null);
-                } else {
-                    waitFor("TaskDescription's icon is not null", () -> td.getIcon() == null);
-                    waitFor("TaskDescription's icon filename is not null",
-                            () -> td.getIconFilename() == null);
-                }
-
-                if (badgeResId != TEST_NO_DATA) {
-                    final Icon badge = td.getBadge();
-                    assertNotNull(badge);
-                    assertEquals(badgeResId, badge.getResId());
-                }
-
-                assertEquals(resId, td.getIconResource());
-                assertEquals(label, td.getLabel());
-                if (primaryColor != NULL_COLOR) {
-                    assertEquals(primaryColor, td.getPrimaryColor());
-                }
-                if (backgroundColor != NULL_COLOR) {
-                    assertEquals(backgroundColor, td.getBackgroundColor());
-                }
-                if (statusBarColor != NULL_COLOR) {
-                    assertEquals(statusBarColor, td.getStatusBarColor());
-                }
-                if (navigationBarColor != NULL_COLOR) {
-                    assertEquals(navigationBarColor, td.getNavigationBarColor());
-                }
-                return;
+        final String[] lastError = { null };
+        final ActivityManager am = activity.getSystemService(ActivityManager.class);
+        waitFor(() -> {
+            final List<RecentTaskInfo> recentsTasks =
+                    am.getRecentTasks(1 /* maxNum */, 0 /* flags */);
+            if (recentsTasks.isEmpty()) {
+                fail("Recent tasks list is empty");
             }
-        }
-        fail("Did not find activity (id=" + activity.getTaskId() + ") in recent tasks list");
+            final int taskId = activity.getTaskId();
+            final RecentTaskInfo info = recentsTasks.get(0);
+            if (taskId != info.taskId) {
+                fail(info.taskId + " does not match expected Activity taskId=" + taskId);
+            }
+            final TaskDescription td = info.taskDescription;
+            if (td == null) {
+                lastError[0] = "TaskDescription is null for task " + taskId;
+                return false;
+            }
+            lastError[0] = checkTaskDescription(td, label, resId, bitmap, badgeResId,
+                    primaryColor, backgroundColor, statusBarColor, navigationBarColor);
+            return lastError[0] == null;
+        }, lastError);
     }
 
-    private void waitFor(String message, BooleanSupplier waitCondition) {
+    /** Returns an error message if an unexpected attribute is found; otherwise, returns null. */
+    private String checkTaskDescription(TaskDescription td, String label, int resId, Bitmap bitmap,
+            int badgeResId, int primaryColor, int backgroundColor, int statusBarColor,
+            int navigationBarColor) {
+        if (bitmap != null) {
+            if (td.getIcon() == null) return "Icon is null";
+            if (td.getIconFilename() == null) return "Icon filename is null";
+        } else {
+            if (td.getIcon() != null) return "Icon should be null";
+            if (td.getIconFilename() != null) return "Icon filename should be null";
+        }
+        if (badgeResId != TEST_NO_DATA) {
+            final Icon badge = td.getBadge();
+            if (badge == null) return "Badge is null";
+            if (badgeResId != badge.getResId()) {
+                return "Badge resId mismatch: expected " + badgeResId
+                        + " but was " + badge.getResId();
+            }
+        }
+        if (!Objects.equals(label, td.getLabel())) {
+            return "Label mismatch: expected [" + label + "] but was [" + td.getLabel() + "]";
+        }
+        if (resId != td.getIconResource()) {
+            return "IconResource mismatch: expected " + resId + " but was " + td.getIconResource();
+        }
+        if (primaryColor != NULL_COLOR && primaryColor != td.getPrimaryColor()) {
+            return "PrimaryColor mismatch: expected " + Integer.toHexString(primaryColor)
+                    + " but was " + Integer.toHexString(td.getPrimaryColor());
+        }
+        if (backgroundColor != NULL_COLOR && backgroundColor != td.getBackgroundColor()) {
+            return "BackgroundColor mismatch: expected " + Integer.toHexString(backgroundColor)
+                    + " but was " + Integer.toHexString(td.getBackgroundColor());
+        }
+        if (statusBarColor != NULL_COLOR && statusBarColor != td.getStatusBarColor()) {
+            return "StatusBarColor mismatch: expected " + Integer.toHexString(statusBarColor)
+                    + " but was " + Integer.toHexString(td.getStatusBarColor());
+        }
+        if (navigationBarColor != NULL_COLOR && navigationBarColor != td.getNavigationBarColor()) {
+            return "NavigationBarColor mismatch: expected "
+                    + Integer.toHexString(navigationBarColor)
+                    + " but was " + Integer.toHexString(td.getNavigationBarColor());
+        }
+        return null;
+    }
+
+    private void waitFor(BooleanSupplier waitCondition, String[] error) {
         for (int retry = 0; retry < WAIT_RETRIES; retry++) {
             if (waitCondition.getAsBoolean()) {
                 return;
             }
             SystemClock.sleep(WAIT_TIMEOUT_MS);
         }
-        fail(message);
+        fail("TaskDescription verification failed: " + error[0]);
     }
 }

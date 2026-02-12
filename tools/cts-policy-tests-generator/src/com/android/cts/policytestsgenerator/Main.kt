@@ -41,17 +41,11 @@ fun main(args: Array<String>) {
         System.exit(0)
     }
 
-    if (arguments.policies.size != 1) {
-        System.err.println("Error: Must specify exactly one policy name")
-        System.out.println(ArgumentParser.help())
-        System.exit(2)
-    }
-
     val rootDir = System.getenv("ANDROID_BUILD_TOP")
     val hostOutDir = System.getenv("ANDROID_HOST_OUT")
     if (rootDir == null || hostOutDir == null) {
         System.err.println("Error: 'lunch' is required before running this tool.")
-        System.exit(3)
+        System.exit(2)
     }
     // Lunch doesn't provide a variable that points to the out directory itself,
     // only a bunch that point to other subdirectories in there than the one we need. :/
@@ -63,44 +57,58 @@ fun main(args: Array<String>) {
             "Error: policies.textproto not found. " +
                 "Try compiling the framework-minus-apex target."
         )
-        System.exit(4)
+        System.exit(3)
     }
 
-    val policyName = arguments.policies.get(0)!!
     val policies = parsePolicies(textProto!!)
 
+    val printer =
+        if (arguments.stdout) {
+            Printer.ToStdOut()
+        } else {
+            Printer.ToFile(outputDir = "$rootDir/$OUTPUT_DIR/", allowOverride = arguments.override)
+        }
+
+    if (arguments.all) {
+        if (arguments.policies.size != 0) {
+            System.err.println("Error: Cannot both specify a policy name and '-a'")
+            System.out.println(ArgumentParser.help())
+            System.exit(4)
+        }
+
+        policies.keys.forEach { p -> generateTestsForPolicy(p, policies, printer) }
+    } else {
+        if (arguments.policies.size != 1) {
+            System.err.println("Error: Must specify exactly one policy name")
+            System.out.println(ArgumentParser.help())
+            System.exit(5)
+        }
+
+        val policyName = arguments.policies.get(0)!!
+        generateTestsForPolicy(policyName, policies, printer)
+    }
+
+    System.exit(0)
+}
+
+private fun generateTestsForPolicy(
+    policyName: String,
+    policies: Map<String, PolicyMetadata>,
+    printer: Printer,
+) {
     if (!policies.containsKey(policyName)) {
         System.err.println("Policy not found: \"$policyName\"")
         System.err.println(
             "Try compiling the framework-minus-apex target if you recently added the policy."
         )
         System.err.println("Available policies:\n    ${policies.keys.joinToString(", \n    ")}")
-        System.exit(5)
+        System.exit(6)
     }
 
     val metadata = policies[policyName]!!
     val output = TestFileGenerator(metadata).generate()
 
-    if (arguments.stdout) {
-        println("--------------------------------------------------------------------------------")
-        println("--- ${policyName}")
-        println("--------------------------------------------------------------------------------")
-        println(output)
-    } else {
-        val output_file_path =
-            Path("$rootDir/$OUTPUT_DIR/${policyName.toCamelCase()}GeneratedTest.kt")
-
-        if (output_file_path.exists() && !arguments.override) {
-            System.err.println(
-                "Error: Output file ${output_file_path} exists. Use '--override' if you want to override it."
-            )
-            System.exit(6)
-        }
-
-        output_file_path.toFile().writeText(output)
-        System.out.println("Wrote CTS tests to ${output_file_path}")
-    }
-    System.exit(0)
+    printer.print(policyName, output)
 }
 
 private fun readTextProto(outDir: String): String? {
@@ -115,4 +123,35 @@ private fun readTextProto(outDir: String): String? {
 private fun parsePolicies(textproto: String): Map<String, PolicyMetadata> {
     val policies = TextFormat.parse(textproto, PolicyMetadataList::class.java)
     return policies.policyMetadataList.associateBy { it.identifier.fieldName }
+}
+
+sealed interface Printer {
+
+    fun print(policyName: String, content: String)
+
+    class ToStdOut : Printer {
+        override fun print(policyName: String, content: String) {
+            println("-----------------------------------------------------------------------------")
+            println("--- ${policyName}")
+            println("-----------------------------------------------------------------------------")
+            println(content)
+        }
+    }
+
+    class ToFile(val outputDir: String, val allowOverride: Boolean) : Printer {
+        override fun print(policyName: String, content: String) {
+            val output_file_path = Path("$outputDir/${policyName.toCamelCase()}GeneratedTest.kt")
+
+            if (output_file_path.exists() && !allowOverride) {
+                System.err.println(
+                    "Error: Output file ${output_file_path} exists. " +
+                        "Use '--override' if you want to override it."
+                )
+                System.exit(7)
+            }
+
+            output_file_path.toFile().writeText(content)
+            System.out.println("Wrote CTS tests to ${output_file_path}")
+        }
+    }
 }

@@ -740,7 +740,7 @@ class ProvisioningTest {
     )
     @RequireRunOnSystemUser(switchedToUser = TRUE)
     @RequireResourcesBooleanValue(
-        configName = "config_enableMultiUserManagement",
+        configName = "config_enableMultiuserManagement",
         requiredValue = true
     )
     @Test
@@ -787,7 +787,7 @@ class ProvisioningTest {
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING)
     @RequireHeadlessSystemUserMode(reason = "Device must be in headless system user mode")
     @RequireResourcesBooleanValue(
-        configName = "config_enableMultiUserManagement",
+        configName = "config_enableMultiuserManagement",
         requiredValue = true
     )
     @RequireRunOnSystemUser
@@ -818,7 +818,7 @@ class ProvisioningTest {
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING)
     @RequireNotHeadlessSystemUserMode(reason = "Testing non-HSUM functionality")
     @RequireResourcesBooleanValue(
-        configName = "config_enableMultiUserManagement",
+        configName = "config_enableMultiuserManagement",
         requiredValue = true
     )
     @Test
@@ -850,7 +850,7 @@ class ProvisioningTest {
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING)
     @RequireHeadlessSystemUserMode(reason = "Multi-user user provisioning requires HSUM")
     @RequireResourcesBooleanValue(
-        configName = "config_enableMultiUserManagement",
+        configName = "config_enableMultiuserManagement",
         requiredValue = true
     )
     @RequireRunOnInitialUser
@@ -883,7 +883,7 @@ class ProvisioningTest {
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING)
     @RequireHeadlessSystemUserMode(reason = "Multi-user user provisioning requires HSUM")
     @RequireResourcesBooleanValue(
-        configName = "config_enableMultiUserManagement",
+        configName = "config_enableMultiuserManagement",
         requiredValue = true
     )
     @RequireRunOnInitialUser
@@ -918,7 +918,7 @@ class ProvisioningTest {
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING)
     @RequireHeadlessSystemUserMode(reason = "Multi-user user provisioning requires HSUM")
     @RequireResourcesBooleanValue(
-        configName = "config_enableMultiUserManagement",
+        configName = "config_enableMultiuserManagement",
         requiredValue = true
     )
     @RequireRunOnInitialUser
@@ -954,7 +954,7 @@ class ProvisioningTest {
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING)
     @RequireHeadlessSystemUserMode(reason = "Multi-user user provisioning requires HSUM")
     @RequireResourcesBooleanValue(
-        configName = "config_enableMultiUserManagement",
+        configName = "config_enableMultiuserManagement",
         requiredValue = true
     )
     @RequireRunOnInitialUser
@@ -1018,7 +1018,7 @@ class ProvisioningTest {
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_USER_PROVISIONING)
     @RequireHeadlessSystemUserMode(reason = "Multi-user user provisioning requires HSUM")
     @RequireResourcesBooleanValue(
-        configName = "config_enableMultiUserManagement",
+        configName = "config_enableMultiuserManagement",
         requiredValue = true
     )
     @RequireRunOnInitialUser
@@ -1335,7 +1335,7 @@ class ProvisioningTest {
     )
     @RequireRunOnSystemUser(switchedToUser = TRUE)
     @RequireResourcesBooleanValue(
-        configName = "config_enableMultiUserManagement",
+        configName = "config_enableMultiuserManagement",
         requiredValue = true
     )
     @Test
@@ -1360,7 +1360,7 @@ class ProvisioningTest {
     @RequireHeadlessSystemUserMode(reason = "Multi-user device provisioning requires HSUM")
     @RequireRunOnSecondaryUser
     @RequireResourcesBooleanValue(
-        configName = "config_enableMultiUserManagement",
+        configName = "config_enableMultiuserManagement",
         requiredValue = true
     )
     @Test
@@ -1385,7 +1385,7 @@ class ProvisioningTest {
     @RequireNotHeadlessSystemUserMode(reason = "Device must not be in headless system user mode")
     @RequireRunOnSystemUser()
     @RequireResourcesBooleanValue(
-        configName = "config_enableMultiUserManagement",
+        configName = "config_enableMultiuserManagement",
         requiredValue = true
     )
     @Test
@@ -1413,7 +1413,7 @@ class ProvisioningTest {
     )
     @RequireRunOnSystemUser(switchedToUser = TRUE)
     @RequireResourcesBooleanValue(
-        configName = "config_enableMultiUserManagement",
+        configName = "config_enableMultiuserManagement",
         requiredValue = true
     )
     @Test
@@ -1442,7 +1442,7 @@ class ProvisioningTest {
     )
     @RequireRunOnSystemUser(switchedToUser = TRUE)
     @RequireResourcesBooleanValue(
-        configName = "config_enableMultiUserManagement",
+        configName = "config_enableMultiuserManagement",
         requiredValue = true
     )
     @Test

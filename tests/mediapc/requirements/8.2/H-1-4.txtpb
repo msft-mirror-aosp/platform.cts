@@ -18,6 +18,19 @@ id: "8.2/H-1-4"
 name: "Random Read"
 description: "- Random read"
 specs {
+  key: 1
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_1
+    specification: "MUST ensure a random read performance of at least 15 MB/s."
+    required_values {
+      key: "filesystem_io_rate_mbps"
+      value {
+        double_value: 15.0
+      }
+    }
+  }
+}
+specs {
   key: 10
   value {
     mpc: MEDIA_PERFORMANCE_CLASS_10

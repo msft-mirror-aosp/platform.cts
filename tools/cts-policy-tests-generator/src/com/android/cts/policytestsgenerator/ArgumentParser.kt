@@ -20,6 +20,7 @@ public data class ParsedArguments(
     val override: Boolean,
     val help: Boolean,
     val stdout: Boolean,
+    val all: Boolean,
     val policies: List<String>,
 )
 
@@ -28,6 +29,7 @@ object ArgumentParser {
         var override = false
         var help = false
         var stdout = false
+        var all = false
         val policies = mutableListOf<String>()
         val remainingArguments = ArrayDeque(commandlineArguments.toList())
 
@@ -47,6 +49,10 @@ object ArgumentParser {
                 "--stdout" -> {
                     stdout = true
                 }
+                "-a",
+                "--all" -> {
+                    all = true
+                }
                 else -> {
                     if (arg.startsWith("-")) {
                         throw IllegalArgumentException("Unknown argument $arg")
@@ -61,6 +67,7 @@ object ArgumentParser {
             help = help,
             stdout = stdout,
             policies = policies,
+            all = all,
         )
     }
 
@@ -69,14 +76,14 @@ object ArgumentParser {
                   Usage: $SCRIPT_NAME [--override] POLICY_NAME
 
                   Generates the CTS tests for the given policy.
-                  The tests will be written to
-                  cts/tests/devicepolicy/src/android/devicepolicy/cts/{PolicyName}Test.kt .
+                  The tests will be written to cts/tests/devicepolicy/src/android/devicepolicy/cts/generated/{PolicyName}GeneratedTest.kt .
 
                   Arguments:
                     -o/--override: Allows overriding a pre-existing output file.
                     -s/--stdout: Prints to stdout instead.
+                    -a/--all: Generate CTS tests for all policies.
                     -h/--help: Print this help.
                """
-                   .trimIndent()
+            .trimIndent()
     }
 }

@@ -36,7 +36,10 @@ public class MigrationTestService extends DataMigrationToPccService {
     @Override
     public void onMigrationRequested(Consumer<MigrationRequestResult> callback) {
         sLatch.countDown();
-        callback.accept(new MigrationRequestResult(sResponseStatus, new PersistableBundle()));
+        PersistableBundle extras = new PersistableBundle();
+        extras.putString("test_key", "test_value");
+        MigrationRequestResult result = new MigrationRequestResult(sResponseStatus, extras);
+        callback.accept(result);
     }
 
     /** Waits for the migration request to be received. */

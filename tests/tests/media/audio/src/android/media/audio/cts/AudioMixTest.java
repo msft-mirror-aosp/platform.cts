@@ -28,9 +28,7 @@ import static android.media.audiopolicy.AudioMixingRule.RULE_MATCH_AUDIO_SESSION
 import static android.media.audiopolicy.AudioMixingRule.RULE_MATCH_UID;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
@@ -169,25 +167,25 @@ public class AudioMixTest {
 
     @RequiresFlagsEnabled(FLAG_DAP_INJECTION_STARVE_MANAGEMENT)
     @Test
-    public void testEqualsInjectSilence() {
+    public void testEqualsPersistent() {
         // TODO move this test to testEquals() test once flag is removed
         final EqualsTester equalsTester = new EqualsTester();
 
         final AudioAttributes camcorderAttr = new AudioAttributes.Builder()
                 .setCapturePreset(MediaRecorder.AudioSource.CAMCORDER)
                 .build();
-        final boolean injectSilenceOnStarvation = true;
+        final boolean isPersistent = true;
         final AudioMix recordAudioMixWithCamcorderPreset = new AudioMix.Builder(
                 new AudioMixingRule.Builder()
                         .addRule(camcorderAttr, RULE_MATCH_ATTRIBUTE_CAPTURE_PRESET)
                         .build())
                 .setFormat(OUTPUT_FORMAT_MONO_16KHZ_PCM)
                 .setRouteFlags(AudioMix.ROUTE_FLAG_LOOP_BACK)
-                .setInjectSilenceOnStarvation(injectSilenceOnStarvation)
+                .setPersistent(isPersistent)
                 .build();
         assertEquals(OUTPUT_FORMAT_MONO_16KHZ_PCM, recordAudioMixWithCamcorderPreset.getFormat());
-        assertEquals(injectSilenceOnStarvation,
-                recordAudioMixWithCamcorderPreset.isInjectingSilenceOnStarvation());
+        assertEquals(isPersistent,
+                recordAudioMixWithCamcorderPreset.isPersistent());
         equalsTester.addEqualityGroup(recordAudioMixWithCamcorderPreset,
                 writeToAndFromParcel(recordAudioMixWithCamcorderPreset));
 
@@ -304,63 +302,7 @@ public class AudioMixTest {
                 .setDevice(AudioSystem.DEVICE_OUT_SPEAKER, /*address=*/"").build());
     }
 
-    @RequiresFlagsEnabled(FLAG_DAP_INJECTION_STARVE_MANAGEMENT)
-    @Test
-    public void testSetInjectSilenceOnStarvation() {
-        // can set setInjectSilenceOnStarvation on a recorders/injector loopback mix
-        final AudioMix mixTrue =
-                new AudioMix.Builder(
-                                new AudioMixingRule.Builder()
-                                        .setTargetMixRole(MIX_ROLE_INJECTOR)
-                                        .addMixRule(RULE_MATCH_UID, 42)
-                                        .build())
-                        .setFormat(OUTPUT_FORMAT_MONO_16KHZ_PCM)
-                        .setRouteFlags(AudioMix.ROUTE_FLAG_LOOP_BACK)
-                        .setInjectSilenceOnStarvation(true)
-                        .build();
-        assertTrue(mixTrue.isInjectingSilenceOnStarvation());
 
-        // injectSilenceOnStarvation on a recorders/injector loopback mix is false by default
-        final AudioMix mixDefault =
-                new AudioMix.Builder(
-                                new AudioMixingRule.Builder()
-                                        .setTargetMixRole(MIX_ROLE_INJECTOR)
-                                        .addMixRule(RULE_MATCH_UID, 42)
-                                        .build())
-                        .setFormat(OUTPUT_FORMAT_MONO_16KHZ_PCM)
-                        .setRouteFlags(AudioMix.ROUTE_FLAG_LOOP_BACK)
-                        .build();
-        assertFalse(mixDefault.isInjectingSilenceOnStarvation());
-
-        // can not set setInjectSilenceOnStarvation on a players mix
-        assertThrows(
-                IllegalArgumentException.class,
-                () ->
-                        new AudioMix.Builder(
-                                        new AudioMixingRule.Builder()
-                                                .setTargetMixRole(MIX_ROLE_PLAYERS)
-                                                .addMixRule(RULE_MATCH_UID, 42)
-                                                .build())
-                                .setFormat(OUTPUT_FORMAT_MONO_16KHZ_PCM)
-                                .setRouteFlags(AudioMix.ROUTE_FLAG_LOOP_BACK)
-                                .setInjectSilenceOnStarvation(true)
-                                .build());
-
-        // can not set setInjectSilenceOnStarvation on a recorders/injector render mix
-        assertThrows(
-                IllegalArgumentException.class,
-                () ->
-                        new AudioMix.Builder(
-                                        new AudioMixingRule.Builder()
-                                                .setTargetMixRole(MIX_ROLE_INJECTOR)
-                                                .addMixRule(RULE_MATCH_UID, 42)
-                                                .build())
-                                .setFormat(OUTPUT_FORMAT_MONO_16KHZ_PCM)
-                                .setRouteFlags(AudioMix.ROUTE_FLAG_RENDER)
-                                .setDevice(AudioSystem.DEVICE_OUT_SPEAKER, /* address= */ "")
-                                .setInjectSilenceOnStarvation(true)
-                                .build());
-    }
 
     private static AudioMix writeToAndFromParcel(AudioMix audioMix) {
         AudioPolicyConfig apc = new AudioPolicyConfig(new ArrayList<>(List.of(audioMix)));

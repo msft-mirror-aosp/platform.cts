@@ -31,7 +31,9 @@ import android.app.appfunctions.cts.AppFunctionUtils.clearInteractionAllowlist
 import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunction
 import android.app.appfunctions.cts.AppFunctionUtils.installPackage
 import android.app.appfunctions.cts.AppFunctionUtils.isAppFunctionEnabled
+import android.app.AppInteractionAttribution
 import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabled
+import android.app.appfunctions.testutils.CheckAttribution.Companion.CHECK_ATTRIBUTION_FUNCTION_ID
 import android.app.appfunctions.cts.AppFunctionUtils.setInteractionAllowlist
 import android.app.appfunctions.testutils.ConcatStrings
 import android.app.appfunctions.testutils.ConcatStrings.Companion.ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
@@ -283,7 +285,7 @@ class AppFunctionRegistrationTest {
     @Throws(Exception::class)
     fun register_serviceLevelFunction_reportsInvalidArgumentError() {
         assertFailsWith<IllegalArgumentException>() {
-            registerAppFunction(CtsApp.FunctionNames.ADD.functionId, ConcatStrings())
+            registerAppFunction(CtsApp.FunctionNames.ADD.functionIdentifier, ConcatStrings())
         }
     }
 
@@ -937,6 +939,39 @@ class AppFunctionRegistrationTest {
 
             assertThat(result.exceptionOrNull()).isNull()
             assertThat(result.getOrThrow()).isTrue()
+        }
+    }
+
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    @RequiresFlagsEnabled(android.app.appfunctions.flags.Flags.FLAG_ENABLE_APP_INTERACTION_API)
+    fun execute_withAttribution_attributionNotPropagated() = doBlocking {
+        val service = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
+        service.registerAppFunction(FunctionType.CHECK_ATTRIBUTION.toString())
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val attribution =
+                AppInteractionAttribution.Builder(AppInteractionAttribution.INTERACTION_TYPE_USER_QUERY)
+                    .build()
+            val request =
+                ExecuteAppFunctionRequest.Builder(
+                        DynamicSchemaHelperApp.PACKAGE_NAME,
+                        CHECK_ATTRIBUTION_FUNCTION_ID,
+                    )
+                    .setAttribution(attribution)
+                    .build()
+
+            val response = manager.executeAppFunction(request)
+
+            assertThat(response.isSuccess).isTrue()
+            assertThat(
+                    response
+                        .getOrNull()!!
+                        .resultDocument
+                        .getPropertyBoolean(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
+                )
+                .isFalse()
         }
     }
 

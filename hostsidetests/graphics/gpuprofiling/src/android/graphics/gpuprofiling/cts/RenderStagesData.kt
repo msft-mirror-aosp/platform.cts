@@ -33,7 +33,7 @@ class RenderStagesData(trace: Trace) {
     val appQueueSubmits: List<AppQueueSubmitEvent>
 
     init {
-        val clockSnapshots = trace.getTraceClockSnapshots()
+        val clockSnapshots = ClockSnapshots(trace)
         val allDataSourcesStartedNs = trace.getAllDataSourcesStartedNs()
 
         val mutableRenderStages: MutableList<RenderStageEvent> = mutableListOf()
@@ -78,7 +78,8 @@ class RenderStagesData(trace: Trace) {
                 }
             }
         }
-        renderStages = mutableRenderStages.filter { it.timestamp > allDataSourcesStartedNs }
+        renderStages = mutableRenderStages.filter {
+            it.timestamp > allDataSourcesStartedNs }.sortedBy { it.timestamp }.toList()
         queueSubmits = mutableQueueSubmits.filter {
             it.timestamp > allDataSourcesStartedNs }.sortedBy { it.timestamp }.toList()
         appQueueSubmits = mutableAppQueueSubmitStarts.keys.intersect(mutableAppQueueSubmitEnds.keys)

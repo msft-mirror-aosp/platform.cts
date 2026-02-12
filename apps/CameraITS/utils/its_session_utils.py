@@ -1544,6 +1544,7 @@ class ItsSession(object):
         'raw': [],
         'raw10': [],
         'raw12': [],
+        'raw14': [],
         'rawStats': [],
         'dng': [],
         'jpeg': [],
@@ -1951,7 +1952,7 @@ class ItsSession(object):
       * width: the width of the captured image.
       * height: the height of the captured image.
       * format: image the format, in [
-                        "yuv","jpeg","raw","raw10","raw12","rawStats","dng"].
+                        "yuv","jpeg","raw","raw10","raw12","raw14","rawStats","dng"].
       * metadata: the capture result object (Python dictionary).
     """
     cmd = {}
@@ -1987,7 +1988,7 @@ class ItsSession(object):
 
     The out_surfaces field can specify the width(s), height(s), and
     format(s) of the captured image. The formats may be "yuv", "jpeg",
-    "dng", "raw", "raw10", "raw12", "rawStats" or "y8". The default is a
+    "dng", "raw", "raw10", "raw12", "raw14", "rawStats" or "y8". The default is a
     YUV420 frame ("yuv") corresponding to a full sensor frame.
 
     1. Optionally the out_surfaces field can specify physical camera id(s) if
@@ -2119,7 +2120,7 @@ class ItsSession(object):
       * width: the width of the captured image.
       * height: the height of the captured image.
       * format: image the format, in [
-                        "yuv","jpeg","raw","raw10","raw12","rawStats","dng"].
+                        "yuv","jpeg","raw","raw10","raw12","raw14","rawStats","dng"].
       * metadata: the capture result object (Python dictionary).
     """
     cmd = {}
@@ -2192,6 +2193,7 @@ class ItsSession(object):
             'raw': [],
             'raw10': [],
             'raw12': [],
+            'raw14': [],
             'rawStats': [],
             'dng': [],
             'jpeg': [],
@@ -2262,6 +2264,7 @@ class ItsSession(object):
     raw_formats += 1 if 'raw' in formats else 0
     raw_formats += 1 if 'raw10' in formats else 0
     raw_formats += 1 if 'raw12' in formats else 0
+    raw_formats += 1 if 'raw14' in formats else 0
     raw_formats += 1 if 'rawStats' in formats else 0
     raw_formats += 1 if 'rawQuadBayer' in formats else 0
     raw_formats += 1 if 'rawQuadBayerStats' in formats else 0

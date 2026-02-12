@@ -58,7 +58,9 @@
  * It is an error if the value is not listed here.
  */}}
 {{- define "VersionCode" -}}
-    {{- if eq . 10 -}}
+    {{- if eq . 1 -}}
+    1
+    {{- else if eq . 10 -}}
     10
     {{- else if eq . 20 -}}
     20

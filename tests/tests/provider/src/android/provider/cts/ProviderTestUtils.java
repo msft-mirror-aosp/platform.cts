@@ -50,6 +50,10 @@ public class ProviderTestUtils {
         String cmd = "appops set %s %s %s";
         executeShellCommand(String.format(cmd, packageName, "WRITE_SMS", mode), uiAutomation);
         executeShellCommand(String.format(cmd, packageName, "READ_SMS", mode), uiAutomation);
+        executeShellCommand(String.format(cmd, packageName, "READ_RESTRICTED_MESSAGES", mode),
+            uiAutomation);
+        executeShellCommand(String.format(cmd, packageName, "WRITE_RESTRICTED_MESSAGES", mode),
+            uiAutomation);
     }
 
     public static String executeShellCommand(String command) throws IOException {

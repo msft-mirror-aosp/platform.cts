@@ -151,6 +151,12 @@ public class TestAppFunctionService extends AppFunctionService {
                     callback.onResult(echoBytes(request));
                     break;
                 }
+            case "checkAttribution":
+                {
+                    ExecuteAppFunctionResponse result = checkAttribution(request);
+                    callback.onResult(result);
+                    break;
+                }
             default:
                 callback.onError(
                         new AppFunctionException(
@@ -212,6 +218,16 @@ public class TestAppFunctionService extends AppFunctionService {
                         .setPropertyBoolean(
                                 "TEST_PROPERTY_HAS_CALLER_VISIBILITY",
                                 verifyPackageInfo(callingPackageSigningInfo))
+                        .build();
+        return new ExecuteAppFunctionResponse(result);
+    }
+
+    private ExecuteAppFunctionResponse checkAttribution(ExecuteAppFunctionRequest request) {
+        boolean hasAttribution = request.getAttribution() != null;
+        GenericDocument result =
+                new GenericDocument.Builder<>("", "", "")
+                        .setPropertyBoolean(
+                                ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE, hasAttribution)
                         .build();
         return new ExecuteAppFunctionResponse(result);
     }

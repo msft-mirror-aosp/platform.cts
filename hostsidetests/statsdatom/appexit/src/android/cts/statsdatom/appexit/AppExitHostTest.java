@@ -16,7 +16,6 @@
 
 package android.cts.statsdatom.appexit;
 
-import com.android.tradefed.util.RunUtil;
 import static android.app.AppExitReasonCode.REASON_OTHER;
 import static android.app.AppExitReasonCode.REASON_PERMISSION_CHANGE;
 import static android.app.AppExitSubReasonCode.SUBREASON_ISOLATED_NOT_NEEDED;
@@ -35,9 +34,9 @@ import com.android.os.AtomsProto;
 import com.android.os.StatsLog;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
-import com.android.tradefed.testtype.DeviceTestCase;
 import com.android.tradefed.testtype.IBuildReceiver;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
+import com.android.tradefed.util.RunUtil;
 
 import org.junit.After;
 import org.junit.Before;
@@ -99,14 +98,18 @@ public class AppExitHostTest extends BaseHostJUnit4Test implements IBuildReceive
     public void testLogStatsdPermChanged() throws Exception {
         final String helperPackage = HELPER_PKG2;
         final int expectedUid = getAppUid(helperPackage);
-        performLogStatsdTest("testPermissionChange", helperPackage, 1, appDied -> {
-            assertThat(appDied.getUid()).isEqualTo(expectedUid);
-            assertThat(appDied.getProcessName()).isEqualTo("");
-            assertThat(appDied.getReason()).isEqualTo(REASON_PERMISSION_CHANGE);
-            assertThat(appDied.getImportance()).isEqualTo(IMPORTANCE_CACHED);
-            assertThat(appDied.getPss()).isAtLeast(0);
-            assertThat(appDied.getRss()).isAtLeast(0);
-        });
+        performLogStatsdTest(
+                "testPermissionChange",
+                helperPackage,
+                1,
+                appDied -> {
+                    assertThat(appDied.getUid()).isEqualTo(expectedUid);
+                    assertThat(appDied.getProcessName()).isEqualTo(helperPackage);
+                    assertThat(appDied.getReason()).isEqualTo(REASON_PERMISSION_CHANGE);
+                    assertThat(appDied.getImportance()).isEqualTo(IMPORTANCE_CACHED);
+                    assertThat(appDied.getPss()).isAtLeast(0);
+                    assertThat(appDied.getRss()).isAtLeast(0);
+                });
     }
 
     @Test

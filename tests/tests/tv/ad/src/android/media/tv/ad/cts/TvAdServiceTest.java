@@ -310,13 +310,23 @@ public class TvAdServiceTest {
     }
 
     @Test
-    public void testOnLayout() {
-        mTvAdView.onLayout(true, 1, 10, 5, 20);
+    public void testOnLayout() throws Throwable {
+        runTestOnUiThread(
+                new Runnable() {
+                    public void run() {
+                        mTvAdView.onLayout(true, 1, 10, 5, 20);
+                    }
+                });
     }
 
     @Test
-    public void testOnVisibilityChanged() {
-        mTvAdView.onVisibilityChanged(mTvAdView, View.VISIBLE);
+    public void testOnVisibilityChanged() throws Throwable {
+        runTestOnUiThread(
+                new Runnable() {
+                    public void run() {
+                        mTvAdView.onVisibilityChanged(mTvAdView, View.VISIBLE);
+                    }
+                });
     }
 
     @Test
