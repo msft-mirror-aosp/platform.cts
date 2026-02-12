@@ -1,6 +1,26 @@
+# MediaRouter tests
+# component: 137631
+per-file src/android/media/router/cts/*.java,src/android/media/router/cts/*.kt=file:platform/frameworks/av:/media/janitors/better_together_OWNERS
+
+# MediaSession tests
+# component: 1611131
+per-file src/android/media/session/cts/*.java,src/android/media/session/cts/*.kt=file:platform/frameworks/av:/media/janitors/media_solutions_OWNERS
+
+# Mediametrics tests
+# component: 1051309
+per-file src/android/media/metrics/cts/*.java,src/android/media/metrics/cts/*.kt=file:platform/frameworks/av:/media/janitors/media_reliability_OWNERS
+
+# Audio tests
+# component: 48436
+per-file src/android/media/audio/cts/*.java,src/android/media/audio/cts/*.kt=file:platform/frameworks/av:/media/janitors/audio_OWNERS
+
+# MediaExtractor tests
+# component: 817235
+per-file src/android/media/cts/*.java,src/android/media/cts/*.kt=file:platform/frameworks/av:/media/janitors/media_solutions_OWNERS
+
 # Bug component: 1344
 include platform/frameworks/av:/media/OWNERS
-# go/android-fwk-media-solutions for info on areas of ownership.
 include platform/frameworks/av:/media/janitors/media_solutions_OWNERS
-# For MediaRouter-related components
 include platform/frameworks/av:/media/janitors/better_together_OWNERS
+include platform/frameworks/av:/media/janitors/media_reliability_OWNERS
+include platform/frameworks/av:/media/janitors/audio_OWNERS
