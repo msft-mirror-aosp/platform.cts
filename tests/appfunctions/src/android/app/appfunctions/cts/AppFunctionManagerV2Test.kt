@@ -770,6 +770,7 @@ class AppFunctionManagerV2Test {
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasDeviceOwner
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @PolicyAppliesTest(policy = [AppFunctionsPolicy::class])
     fun executeAppFunction_deviceOwnerRestricted_fail() = doBlocking {
         val remoteDpm = sDeviceState.dpc().devicePolicyManager()
