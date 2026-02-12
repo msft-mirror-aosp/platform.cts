@@ -21,6 +21,7 @@ import static android.Manifest.permission.START_ACTIVITIES_FROM_BACKGROUND;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityManager;
 import android.app.Instrumentation;
@@ -135,6 +136,8 @@ public class CtsNfcResolverDeviceTest {
         PackageManager pm = mContext.getPackageManager();
         assertNotNull(mActivityManager);
         assertNotNull(pm);
+
+        assumeTrue(pm.hasSystemFeature(PackageManager.FEATURE_NFC));
 
         // Load in string to match against
         mAppLabel = mContext.getString(R.string.test_app_label);
