@@ -218,7 +218,13 @@ class ObserveAppFunctionsTest {
             }
         } finally {
             observation?.cancel()
-            uninstallPackage(DynamicSchemaHelperApp.PACKAGE_NAME, context, checkIndexation = true)
+            // Reinstall base app to restore state for subsequent tests
+            installPackage(
+                DynamicSchemaHelperApp.ApkPaths.BASE_APP,
+                DynamicSchemaHelperApp.PACKAGE_NAME,
+                context,
+                checkIndexation = true,
+            )
         }
     }
 
@@ -265,7 +271,13 @@ class ObserveAppFunctionsTest {
             }
         } finally {
             observation?.cancel()
-            uninstallPackage(DynamicSchemaHelperApp.PACKAGE_NAME, context, checkIndexation = true)
+            // Reinstall base app to restore state for subsequent tests
+            installPackage(
+                DynamicSchemaHelperApp.ApkPaths.BASE_APP,
+                DynamicSchemaHelperApp.PACKAGE_NAME,
+                context,
+                checkIndexation = true,
+            )
         }
     }
 
@@ -312,7 +324,13 @@ class ObserveAppFunctionsTest {
             }
         } finally {
             observation?.cancel()
-            uninstallPackage(DynamicSchemaHelperApp.PACKAGE_NAME, context, checkIndexation = true)
+            // Reinstall base app to restore state for subsequent tests
+            installPackage(
+                DynamicSchemaHelperApp.ApkPaths.BASE_APP,
+                DynamicSchemaHelperApp.PACKAGE_NAME,
+                context,
+                checkIndexation = true,
+            )
         }
     }
 
@@ -357,7 +375,13 @@ class ObserveAppFunctionsTest {
             }
         } finally {
             observation?.cancel()
-            uninstallPackage(DynamicSchemaHelperApp.PACKAGE_NAME, context, checkIndexation = true)
+            // Reinstall base app to restore state for subsequent tests
+            installPackage(
+                DynamicSchemaHelperApp.ApkPaths.BASE_APP,
+                DynamicSchemaHelperApp.PACKAGE_NAME,
+                context,
+                checkIndexation = true,
+            )
         }
     }
 
