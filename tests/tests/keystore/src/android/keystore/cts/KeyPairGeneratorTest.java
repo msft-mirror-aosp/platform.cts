@@ -426,8 +426,7 @@ public class KeyPairGeneratorTest {
                         KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1};
         String[] digests =
                 new String[] {KeyProperties.DIGEST_SHA256, KeyProperties.DIGEST_SHA1};
-        @KeyProperties.PurposeEnum int purposes =
-                KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_ENCRYPT;
+        int purposes = KeyProperties.PURPOSE_SIGN;
         KeyPairGenerator generator = getGenerator(algorithm);
         generator.initialize(getWorkingSpec(purposes)
                 .setBlockModes(blockModes)
