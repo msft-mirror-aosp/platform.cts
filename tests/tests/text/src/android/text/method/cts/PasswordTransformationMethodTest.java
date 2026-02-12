@@ -248,12 +248,8 @@ public class PasswordTransformationMethodTest {
     private void savePasswordPref() {
         try {
             if (areSplitSettingsEnabled()) {
-                mTouchPasswordPrefBackUp =
-                        ShowSecretsSetting.shouldShowTouchInputForUser(
-                                mActivity.getContentResolver(), mUserHelper.getUser());
-                mPhysicalPasswordPrefBackUp =
-                        ShowSecretsSetting.shouldShowPhysicalInputForUser(
-                                mActivity.getContentResolver(), mUserHelper.getUser());
+                mTouchPasswordPrefBackUp = ShowSecretsSetting.shouldShowTouchInput(mActivity);
+                mPhysicalPasswordPrefBackUp = ShowSecretsSetting.shouldShowPhysicalInput(mActivity);
             } else {
                 mPasswordPrefBackUp =
                         System.getInt(mActivity.getContentResolver(), System.TEXT_SHOW_PASSWORD);
@@ -269,14 +265,10 @@ public class PasswordTransformationMethodTest {
             if (areSplitSettingsEnabled()) {
                 SystemUtil.runWithShellPermissionIdentity(
                         () -> {
-                            ShowSecretsSetting.setShouldShowTouchInputForUser(
-                                    mActivity.getContentResolver(),
-                                    mTouchPasswordPrefBackUp,
-                                    mUserHelper.getUser());
-                            ShowSecretsSetting.setShouldShowPhysicalInputForUser(
-                                    mActivity.getContentResolver(),
-                                    mPhysicalPasswordPrefBackUp,
-                                    mUserHelper.getUser());
+                            ShowSecretsSetting.setShouldShowTouchInput(
+                                    mActivity, mTouchPasswordPrefBackUp);
+                            ShowSecretsSetting.setShouldShowPhysicalInput(
+                                    mActivity, mPhysicalPasswordPrefBackUp);
                         },
                         Manifest.permission.WRITE_SECURE_SETTINGS);
             }
@@ -290,8 +282,7 @@ public class PasswordTransformationMethodTest {
         if (areSplitSettingsEnabled()) {
             SystemUtil.runWithShellPermissionIdentity(
                     () -> {
-                        ShowSecretsSetting.setShouldShowTouchInputForUser(
-                                mActivity.getContentResolver(), on, mUserHelper.getUser());
+                        ShowSecretsSetting.setShouldShowTouchInput(mActivity, on);
                     },
                     Manifest.permission.WRITE_SECURE_SETTINGS);
         } else {
