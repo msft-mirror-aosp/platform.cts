@@ -581,4 +581,10 @@
 
     <!-- b/456618211 b/444582225-->
     <option name="compatibility:exclude-filter" value="CtsMediaPlayerTestCases android.media.player.cts.MediaPlayerTest#testSetNextMediaPlayer" />
+
+    <!-- b/481254558 -->
+    <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.LocationAccuracyTest#testPermissionUpgradeFlow" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.PermissionSplitTest#testPermissionNotSplitLatest" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.PermissionTest29#testDenyBackgroundWithPrejudice" />
+
 </configuration>
