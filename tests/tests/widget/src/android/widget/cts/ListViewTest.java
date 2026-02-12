@@ -17,7 +17,9 @@
 package android.widget.cts;
 
 import static android.widget.cts.util.StretchEdgeUtil.fling;
+import static android.widget.flags.Flags.FLAG_LIST_VIEW_COUNT_FOR_ACCESSIBILITY;
 
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -52,6 +54,9 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Parcelable;
 import android.os.SystemClock;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.AttributeSet;
 import android.util.Pair;
 import android.util.SparseArray;
@@ -63,6 +68,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.accessibility.AccessibilityNodeInfo.CollectionInfo;
 import android.view.animation.LayoutAnimationController;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
@@ -104,7 +111,9 @@ import org.xmlpull.v1.XmlPullParser;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -155,6 +164,10 @@ public class ListViewTest {
     @Rule(order = 1)
     public ActivityTestRule<ListViewCtsActivity> mActivityRule =
             new ActivityTestRule<>(ListViewCtsActivity.class);
+
+    @Rule(order = 2)
+    public CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();;
 
     @Before
     public void setup() {
@@ -1771,10 +1784,57 @@ public class ListViewTest {
         verify(overscrollFooterDrawable, atLeastOnce()).draw(any(Canvas.class));
     }
 
+    @Test
+    @RequiresFlagsEnabled(FLAG_LIST_VIEW_COUNT_FOR_ACCESSIBILITY)
+    public void testAccessibilityInfo_listViewCount() throws Throwable {
+        WidgetTestUtils.runOnMainAndDrawSync(
+                mActivityRule,
+                mListView,
+                () -> {
+                    mListView.setAdapter(mAdapterColors);
+                });
+
+        AccessibilityNodeInfo ani = mListView.createAccessibilityNodeInfo();
+
+        final CollectionInfo collectionInfo = ani.getCollectionInfo();
+        assertThat(ani.getClassName().toString()).isEqualTo(ListView.class.getName());
+        assertThat(collectionInfo.getRowCount()).isEqualTo(mColorList.length);
+        assertThat(collectionInfo.getItemCount()).isEqualTo(mColorList.length);
+        assertThat(collectionInfo.getColumnCount()).isEqualTo(1);
+        assertThat(collectionInfo.getImportantForAccessibilityItemCount())
+                .isEqualTo(CollectionInfo.UNDEFINED);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_LIST_VIEW_COUNT_FOR_ACCESSIBILITY)
+    public void testAccessibilityInfo_listViewCountWithTwoItemsDisabled() throws Throwable {
+        mAdapterColors.markColorAsUnavailable(Color.CYAN);
+        mAdapterColors.markColorAsUnavailable(Color.RED);
+        WidgetTestUtils.runOnMainAndDrawSync(
+                mActivityRule,
+                mListView,
+                () -> {
+                    mListView.setAdapter(mAdapterColors);
+                });
+
+        AccessibilityNodeInfo ani = mListView.createAccessibilityNodeInfo();
+
+        // Item counts are not provided when disabled items are present. This avoids screen reader
+        // announcements with confusing counts and "gaps" among the items. For example, advancing
+        // from item "3 of 8" to item "5 of 8" in a menu with 6 selections and 2 separators.
+        final CollectionInfo collectionInfo = ani.getCollectionInfo();
+        assertThat(collectionInfo.getRowCount()).isEqualTo(CollectionInfo.UNDEFINED);
+        assertThat(collectionInfo.getItemCount()).isEqualTo(CollectionInfo.UNDEFINED);
+        assertThat(collectionInfo.getColumnCount()).isEqualTo(CollectionInfo.UNDEFINED);
+        assertThat(collectionInfo.getImportantForAccessibilityItemCount())
+                .isEqualTo(CollectionInfo.UNDEFINED);
+    }
+
     private static class ColorAdapter extends BaseAdapter {
         private int[] mColors;
         private Context mContext;
         private int mPositionOffset;
+        private Set<Integer> mUnavailableColorsSet = new HashSet<>();
 
         ColorAdapter(Context context, int[] colors) {
             mContext = context;
@@ -1799,6 +1859,20 @@ public class ListViewTest {
         @Override
         public boolean hasStableIds() {
             return true;
+        }
+
+        @Override
+        public boolean isEnabled(int position) {
+            return !mUnavailableColorsSet.contains(mColors[position]);
+        }
+
+        @Override
+        public boolean areAllItemsEnabled() {
+            return mUnavailableColorsSet.isEmpty();
+        }
+
+        private void markColorAsUnavailable(int color) {
+            mUnavailableColorsSet.add(color);
         }
 
         @NonNull
