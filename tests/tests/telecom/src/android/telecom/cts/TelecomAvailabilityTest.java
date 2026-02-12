@@ -202,6 +202,12 @@ public class TelecomAvailabilityTest extends InstrumentationTestCase {
             return;
         }
 
+        // Per CDD, television devices are not required to have the Telecom feature; no other form
+        // factors are exempt.
+        if (mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEVISION)) {
+            return;
+        }
+
         // Broadly, a device which has audio input and output is a call capable device, regardless
         // of how the audio is connected to a remote endpoint.
         boolean hasAudioInputAndOutput = mPackageManager.hasSystemFeature(
