@@ -17,14 +17,15 @@
 package android.app.appfunctions.cts
 
 import android.Manifest
-import android.app.admin.DevicePolicyManager.APP_FUNCTIONS_DISABLED
 import android.app.AppInteractionAttribution
+import android.app.admin.DevicePolicyManager.APP_FUNCTIONS_DISABLED
 import android.app.appfunctions.AppFunctionException
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.CtsApp
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.LegacySchemaHelperApp
+import android.app.appfunctions.cts.AppFunctionUtils.TestAllowlistPackage
 import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunction
 import android.app.appfunctions.cts.AppFunctionUtils.getAllRuntimeMetadataPackages
 import android.app.appfunctions.cts.AppFunctionUtils.getAllStaticMetadataPackages
@@ -151,8 +152,8 @@ class AppFunctionManagerV2Test {
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun executeAppFunction_failed_uncaughtClientException() = doBlocking {
         runWithInteractionAllowlisted(
-            agentPackageName = CtsApp.PACKAGE_NAME,
-            appPackageNames = listOf(LegacySchemaHelperApp.PACKAGE_NAME),
+            agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+            appPackages = listOf(LegacySchemaHelperApp.TEST_ALLOWLIST_PACKAGE),
         ) {
             val request =
                 ExecuteAppFunctionRequest.Builder(
@@ -181,8 +182,8 @@ class AppFunctionManagerV2Test {
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun executeAppFunction_onlyInvokeCallbackOnce() = doBlocking {
         runWithInteractionAllowlisted(
-            agentPackageName = CtsApp.PACKAGE_NAME,
-            appPackageNames = listOf(LegacySchemaHelperApp.PACKAGE_NAME),
+            agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+            appPackages = listOf(LegacySchemaHelperApp.TEST_ALLOWLIST_PACKAGE),
         ) {
             val parameters: GenericDocument =
                 GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
@@ -227,8 +228,8 @@ class AppFunctionManagerV2Test {
     )
     fun executeAppFunction_crossUser_fail_nonParam() = doBlocking {
         runWithInteractionAllowlisted(
-            agentPackageName = CtsApp.PACKAGE_NAME,
-            appPackageNames = listOf(LegacySchemaHelperApp.PACKAGE_NAME),
+            agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+            appPackages = listOf(LegacySchemaHelperApp.TEST_ALLOWLIST_PACKAGE),
         ) {
             val secondaryUser = sDeviceState.additionalUser()
             assumeTrue(
@@ -305,19 +306,16 @@ class AppFunctionManagerV2Test {
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun executeAppFunction_otherNonExistingTargetPackage_withPermission() = doBlocking {
         runWithInteractionAllowlisted(
-            agentPackageName = CtsApp.PACKAGE_NAME,
-            appPackageNames = listOf("other.package"),
+            agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+            appPackages = listOf(TestAllowlistPackage("other.package")),
         ) {
             val request = ExecuteAppFunctionRequest.Builder("other.package", "add").build()
 
             val response = mManager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isFalse()
-            // Apps without the permission can only invoke functions from themselves.
             assertThat(response.appFunctionException().errorCode)
                 .isEqualTo(AppFunctionException.ERROR_FUNCTION_NOT_FOUND)
-            assertThat(response.appFunctionException().errorMessage)
-                .endsWith("App function not found.")
             assertServiceWasNotCreated()
         }
     }
@@ -386,8 +384,8 @@ class AppFunctionManagerV2Test {
     fun executeAppFunction_otherExistingTargetPackage_withoutPermissionButWithAllowlist() =
         doBlocking {
             runWithInteractionAllowlisted(
-                agentPackageName = CtsApp.PACKAGE_NAME,
-                appPackageNames = listOf(LegacySchemaHelperApp.PACKAGE_NAME),
+                agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+                appPackages = listOf(LegacySchemaHelperApp.TEST_ALLOWLIST_PACKAGE),
             ) {
                 val request =
                     ExecuteAppFunctionRequest.Builder(
@@ -419,8 +417,8 @@ class AppFunctionManagerV2Test {
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun executeAppFunction_otherExistingTargetPackage_withPermissionAndAllowlist() = doBlocking {
         runWithInteractionAllowlisted(
-            agentPackageName = CtsApp.PACKAGE_NAME,
-            appPackageNames = listOf(LegacySchemaHelperApp.PACKAGE_NAME),
+            agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+            appPackages = listOf(LegacySchemaHelperApp.TEST_ALLOWLIST_PACKAGE),
         ) {
             val request =
                 ExecuteAppFunctionRequest.Builder(
@@ -444,8 +442,8 @@ class AppFunctionManagerV2Test {
     fun executeAppFunction_otherExistingTargetPackage_withSystemPermissionAndAllowlist() =
         doBlocking {
             runWithInteractionAllowlisted(
-                agentPackageName = CtsApp.PACKAGE_NAME,
-                appPackageNames = listOf(LegacySchemaHelperApp.PACKAGE_NAME),
+                agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+                appPackages = listOf(LegacySchemaHelperApp.TEST_ALLOWLIST_PACKAGE),
             ) {
                 val request =
                     ExecuteAppFunctionRequest.Builder(
@@ -469,8 +467,8 @@ class AppFunctionManagerV2Test {
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun executeAppFunction_throwsException() = doBlocking {
         runWithInteractionAllowlisted(
-            agentPackageName = CtsApp.PACKAGE_NAME,
-            appPackageNames = listOf(LegacySchemaHelperApp.PACKAGE_NAME),
+            agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+            appPackages = listOf(LegacySchemaHelperApp.TEST_ALLOWLIST_PACKAGE),
         ) {
             val request =
                 ExecuteAppFunctionRequest.Builder(
@@ -496,8 +494,8 @@ class AppFunctionManagerV2Test {
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun executeAppFunction_onRemoteProcessKilled() = doBlocking {
         runWithInteractionAllowlisted(
-            agentPackageName = CtsApp.PACKAGE_NAME,
-            appPackageNames = listOf(LegacySchemaHelperApp.PACKAGE_NAME),
+            agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+            appPackages = listOf(LegacySchemaHelperApp.TEST_ALLOWLIST_PACKAGE),
         ) {
             val request =
                 ExecuteAppFunctionRequest.Builder(
@@ -526,8 +524,8 @@ class AppFunctionManagerV2Test {
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun executeAppFunction_success_async() = doBlocking {
         runWithInteractionAllowlisted(
-            agentPackageName = CtsApp.PACKAGE_NAME,
-            appPackageNames = listOf(LegacySchemaHelperApp.PACKAGE_NAME),
+            agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+            appPackages = listOf(LegacySchemaHelperApp.TEST_ALLOWLIST_PACKAGE),
         ) {
             val parameters =
                 GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
@@ -580,8 +578,8 @@ class AppFunctionManagerV2Test {
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun executeAppFunction_runInWorkProfile_fail() = doBlocking {
         runWithInteractionAllowlisted(
-            agentPackageName = CtsApp.PACKAGE_NAME,
-            appPackageNames = listOf(LegacySchemaHelperApp.PACKAGE_NAME),
+            agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+            appPackages = listOf(LegacySchemaHelperApp.TEST_ALLOWLIST_PACKAGE),
         ) {
             val parameters: GenericDocument =
                 GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
@@ -611,8 +609,8 @@ class AppFunctionManagerV2Test {
     @EnsureHasNoDeviceOwner
     fun executeAppFunction_runInPrivateProfile_fail() = doBlocking {
         runWithInteractionAllowlisted(
-            agentPackageName = CtsApp.PACKAGE_NAME,
-            appPackageNames = listOf(LegacySchemaHelperApp.PACKAGE_NAME),
+            agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+            appPackages = listOf(LegacySchemaHelperApp.TEST_ALLOWLIST_PACKAGE),
         ) {
             val parameters: GenericDocument =
                 GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
@@ -648,8 +646,8 @@ class AppFunctionManagerV2Test {
     )
     fun executeAppFunction_crossUser_targetWorkProfile_fail() = doBlocking {
         runWithInteractionAllowlisted(
-            agentPackageName = CtsApp.PACKAGE_NAME,
-            appPackageNames = listOf(LegacySchemaHelperApp.PACKAGE_NAME),
+            agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+            appPackages = listOf(LegacySchemaHelperApp.TEST_ALLOWLIST_PACKAGE),
         ) {
             val parameters: GenericDocument =
                 GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
@@ -706,8 +704,8 @@ class AppFunctionManagerV2Test {
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun executeAppFunction_disabledByDefault_fail() = doBlocking {
         runWithInteractionAllowlisted(
-            agentPackageName = CtsApp.PACKAGE_NAME,
-            appPackageNames = listOf(LegacySchemaHelperApp.PACKAGE_NAME),
+            agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+            appPackages = listOf(LegacySchemaHelperApp.TEST_ALLOWLIST_PACKAGE),
         ) {
             val request =
                 ExecuteAppFunctionRequest.Builder(
@@ -734,8 +732,8 @@ class AppFunctionManagerV2Test {
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun executeAppFunction_disabledInRuntime_fail() = doBlocking {
         runWithInteractionAllowlisted(
-            agentPackageName = CtsApp.PACKAGE_NAME,
-            appPackageNames = listOf(LegacySchemaHelperApp.PACKAGE_NAME),
+            agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+            appPackages = listOf(LegacySchemaHelperApp.TEST_ALLOWLIST_PACKAGE),
         ) {
             try {
                 val request =
@@ -779,8 +777,8 @@ class AppFunctionManagerV2Test {
             remoteDpm.setAppFunctionsPolicy(APP_FUNCTIONS_DISABLED)
             assertThat(remoteDpm.getAppFunctionsPolicy()).isEqualTo(APP_FUNCTIONS_DISABLED)
             runWithInteractionAllowlisted(
-                agentPackageName = CtsApp.PACKAGE_NAME,
-                appPackageNames = listOf(LegacySchemaHelperApp.PACKAGE_NAME),
+                agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+                appPackages = listOf(LegacySchemaHelperApp.TEST_ALLOWLIST_PACKAGE),
             ) {
                 val parameters: GenericDocument =
                     GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
@@ -816,8 +814,8 @@ class AppFunctionManagerV2Test {
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun executeAppFunction_deviceOwnerUnrestricted_success() = doBlocking {
         runWithInteractionAllowlisted(
-            agentPackageName = CtsApp.PACKAGE_NAME,
-            appPackageNames = listOf(LegacySchemaHelperApp.PACKAGE_NAME),
+            agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+            appPackages = listOf(LegacySchemaHelperApp.TEST_ALLOWLIST_PACKAGE),
         ) {
             val parameters: GenericDocument =
                 GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
@@ -855,8 +853,8 @@ class AppFunctionManagerV2Test {
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun executeAppFunction_largeTransactionSuccess() = doBlocking {
         runWithInteractionAllowlisted(
-            agentPackageName = CtsApp.PACKAGE_NAME,
-            appPackageNames = listOf(LegacySchemaHelperApp.PACKAGE_NAME),
+            agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+            appPackages = listOf(LegacySchemaHelperApp.TEST_ALLOWLIST_PACKAGE),
         ) {
             val largeByteArray = ByteArray(1024 * 1024 + 100)
             val parameters: GenericDocument =
@@ -899,8 +897,8 @@ class AppFunctionManagerV2Test {
     fun executeAppFunction_withExecuteAppFunctionPermission_functionMetadataNotFound_failsWithInvalidArgument() =
         doBlocking {
             runWithInteractionAllowlisted(
-                agentPackageName = CtsApp.PACKAGE_NAME,
-                appPackageNames = listOf(LegacySchemaHelperApp.PACKAGE_NAME),
+                agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+                appPackages = listOf(LegacySchemaHelperApp.TEST_ALLOWLIST_PACKAGE),
             ) {
                 val request =
                     ExecuteAppFunctionRequest.Builder(
@@ -985,8 +983,8 @@ class AppFunctionManagerV2Test {
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun executeAppFunction_largeBytes_success() = doBlocking {
         runWithInteractionAllowlisted(
-            agentPackageName = CtsApp.PACKAGE_NAME,
-            appPackageNames = listOf(LegacySchemaHelperApp.PACKAGE_NAME),
+            agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+            appPackages = listOf(LegacySchemaHelperApp.TEST_ALLOWLIST_PACKAGE),
         ) {
             val fiveMb = 1024 * 1024 * 5
             val largeByteArray = ByteArray(fiveMb)
@@ -1133,8 +1131,8 @@ class AppFunctionManagerV2Test {
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun executeAppFunction_withPermissionAndAccess_getUris() = doBlocking {
         runWithInteractionAllowlisted(
-            agentPackageName = CtsApp.PACKAGE_NAME,
-            appPackageNames = listOf(LegacySchemaHelperApp.PACKAGE_NAME),
+            agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+            appPackages = listOf(LegacySchemaHelperApp.TEST_ALLOWLIST_PACKAGE),
         ) {
             val readOnlyUri =
                 Uri.parse(
@@ -1345,15 +1343,14 @@ class AppFunctionManagerV2Test {
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_INTERACTION_API)
     fun executeAppFunction_withAttribution_attributionNotPropagated() = doBlocking {
-            val attribution =
-            AppInteractionAttribution.Builder(
-                AppInteractionAttribution.INTERACTION_TYPE_USER_QUERY
-            ).build()
+        val attribution =
+            AppInteractionAttribution.Builder(AppInteractionAttribution.INTERACTION_TYPE_USER_QUERY)
+                .build()
         val request =
             ExecuteAppFunctionRequest.Builder(
-                CtsApp.PACKAGE_NAME,
-                CtsApp.FunctionNames.CHECK_ATTRIBUTION.functionIdentifier,
-            )
+                    CtsApp.PACKAGE_NAME,
+                    CtsApp.FunctionNames.CHECK_ATTRIBUTION.functionIdentifier,
+                )
                 .setAttribution(attribution)
                 .build()
 

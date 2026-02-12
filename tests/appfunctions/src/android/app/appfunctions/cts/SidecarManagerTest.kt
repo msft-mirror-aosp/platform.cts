@@ -22,6 +22,8 @@ import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.AppFunctionManager.EnabledState
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
+import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.CtsApp
+import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.SideCarTestHelper
 import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunction
 import android.app.appfunctions.cts.AppFunctionUtils.runWithInteractionAllowlisted
 import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabled
@@ -269,7 +271,10 @@ class SidecarManagerTest {
     @Throws(Exception::class)
     fun executeAppFunctionAllowlisted_sidecarManager_sidecarAppFunctionService_success() =
         doBlocking {
-            runWithInteractionAllowlisted(CURRENT_PKG, listOf(TEST_SIDECAR_HELPER_PKG)) {
+            runWithInteractionAllowlisted(
+                agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+                appPackages = listOf(SideCarTestHelper.TEST_ALLOWLIST_PACKAGE),
+            ) {
                 runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
                     val parameters: GenericDocument =
                         GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
@@ -370,7 +375,10 @@ class SidecarManagerTest {
     @Throws(Exception::class)
     fun executeAppFunctionAllowlisted_platformManager_sidecarAppFunctionService_success() =
         doBlocking {
-            runWithInteractionAllowlisted(CURRENT_PKG, listOf(TEST_SIDECAR_HELPER_PKG)) {
+            runWithInteractionAllowlisted(
+                agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+                appPackages = listOf(SideCarTestHelper.TEST_ALLOWLIST_PACKAGE),
+            ) {
                 runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
                     val parameters: GenericDocument =
                         GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
