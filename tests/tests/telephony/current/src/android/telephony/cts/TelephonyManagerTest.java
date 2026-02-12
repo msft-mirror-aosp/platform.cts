@@ -420,17 +420,16 @@ public class TelephonyManagerTest {
                     + "[\"c9133e8168f97573c8c567f46777dff74ade0c015ecf2c5e91be3e4e76ddcae2\"]},");
         cr.append(
                 "\"com.tmobile.tmte\": {\"carrierIds\": [1],\"callerSHA256Ids\":"
-                    + "[\"3D:1A:4B:EF:6E:E7:AF:7D:34:D1:20:E7:B1:AA:C0:DD:24:55:85:DE:62:37:CF:10:"
-                    + "0F:68:33:3A:FA:CF:F5:62\"]},");
+                    + "[\"8D286D2E50C50EDD4D8426F73558EC5B023CF8B0D3401A8D2569EB380CDF79BC\","
+                    + "\"3D1A4BEF6EE7AF7D34D120E7B1AAC0DD245585DE6237CF100F68333AFACFF562\","
+                    + "\"92B5F8117FBD9BD5738FF168A4FA12CBE284BE834EDE1A7BB44DD8455BA15920\"]},");
         cr.append(
                 "\"com.tmobile.tuesdays\": {\"carrierIds\": [1],\"callerSHA256Ids\":"
-                    + "[\"3D:1A:4B:EF:6E:E7:AF:7D:34:D1:20:E7:B1:AA:C0:DD:24:55:85:DE:62:37:CF:10:"
-                    + "0F:68:33:3A:FA:CF:F5:62\",\"92:B5:F8:11:7F:BD:9B:D5:73:8F:F1:68:A4:FA:12:CB:"
-                    + "E2:84:BE:83:4E:DE:1A:7B:B4:4D:D8:45:5B:A1:59:20\"]},");
+                    + "[\"3D1A4BEF6EE7AF7D34D120E7B1AAC0DD245585DE6237CF100F68333AFACFF562\","
+                    + "\"92B5F8117FBD9BD5738FF168A4FA12CBE284BE834EDE1A7BB44DD8455BA15920\"]},");
         cr.append(
-                "\"com.tmobile.pr.mytmobile\": {\"carrierIds\": [1],\"callerSHA256Ids\":[\"92:B5:"
-                    + "F8:11:7F:BD:9B:D5:73:8F:F1:68:A4:FA:12:CB:E2:84:BE:83:4E:DE:1A:7B:B4:4D:D8:"
-                    + "45:5B:A1:59:20\"]}");
+                "\"com.tmobile.pr.mytmobile\": {\"carrierIds\": [1],\"callerSHA256Ids\":"
+                    + "[\"92B5F8117FBD9BD5738FF168A4FA12CBE284BE834EDE1A7BB44DD8455BA15920\"]}");
         cr.append('}');
         return cr.toString();
     }
