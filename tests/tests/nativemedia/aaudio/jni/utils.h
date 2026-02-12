@@ -307,6 +307,10 @@ int getSdkVersionFull();
 
 int getVersionCodeFullBaklava();
 
+int getMediaPerformanceClass();
+
+int getSpeakerDeviceId();
+
 void permissionBarrier();
 
 class AAudioTestEnvironment : public ::testing::Environment {
