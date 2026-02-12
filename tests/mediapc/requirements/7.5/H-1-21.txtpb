@@ -30,6 +30,19 @@ specs {
     }
   }
 }
+specs {
+  key: 20
+  value {
+    mpc: MEDIA_PERFORMANCE_CLASS_20
+    specification: "MUST have at least one front facing camera or rear facing camera."
+    required_values {
+      key: "front_and_rear_camera_count"
+      value {
+        int_value: 1
+      }
+    }
+  }
+}
 measurements {
   key: "front_camera_count"
   value {
