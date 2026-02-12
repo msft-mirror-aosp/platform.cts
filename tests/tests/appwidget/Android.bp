@@ -48,6 +48,10 @@ android_test {
         "kotlin-test",
         "kotlinx_coroutines_test",
         "platformprotosnano",
+        "android.security.flags-aconfig-java-host",
+        "CtsContentPackageManagerUtils",
+        "ravenwood-junit",
+        "sts-device-util",
     ],
     libs: ["android.test.base.stubs.test"],
     // Tag this module as a cts test artifact
