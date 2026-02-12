@@ -293,7 +293,10 @@ public class KeyguardLockedTests extends KeyguardTestBase {
     @Test
     public void testKeyguardStaysLocked_afterWrongCredentials() {
         mLockScreenSession =
-                createManagedLockScreenSession().setLockCredential().gotoKeyguard().unlock();
+                createManagedLockScreenSession()
+                        .setLockCredential()
+                        .gotoKeyguard()
+                        .requestKeyguardDismissal();
         assertTrue("Keyguard is not secure", mKeyguardManager.isKeyguardSecure());
         assertKeyguardLocked("after setting credential");
 
@@ -336,7 +339,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
                             + "ms after first wrong guess, "
                             + (attemptTriggerTime - timeAfterFifthGuess)
                             + "ms after fifth wrong guess.");
-            mLockScreenSession.unlock().enterLockCredentialAndConfirm();
+            mLockScreenSession.unlock();
             // The above action may wait before entering credentials, so record right after the
             // guess to avoid false negatives near the pass/fail boundary.
             attemptFinishedTime = SystemClock.elapsedRealtime();
