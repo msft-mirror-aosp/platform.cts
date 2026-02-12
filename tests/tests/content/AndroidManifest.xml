@@ -321,7 +321,8 @@
 
         <uses-library android:name="android.test.runner"/>
 
-        <service android:name="android.content.cts.MockContextService"/>
+        <service android:name="android.content.cts.MockContextService"
+                 android:exported="true"/>
         <activity android:name=".content.ContextCtsActivity"
                   android:label="ContextCtsActivity"
                   android:exported="true">
