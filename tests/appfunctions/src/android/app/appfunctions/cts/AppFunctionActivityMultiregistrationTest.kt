@@ -40,12 +40,14 @@ import android.content.Intent
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import android.app.appfunctions.flags.Flags
 import androidx.core.os.asOutcomeReceiver
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.nene.TestApis
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.CoroutineScope
@@ -468,6 +470,142 @@ class AppFunctionActivityMultiregistrationTest {
         )
     }
 
+    @Test
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
+    fun getAppFunctionActivityState_withExecutePermission_returnsAllRegisteredFunctions() = doBlocking {
+        val (localActivityId, externalActivityId) = startLocalAndExternalActivities()
+
+        val activityStates =
+            getAppFunctionActivityStates(setOf(localActivityId, externalActivityId))
+
+        assertActivityStates(
+            activityStates,
+            localActivityId,
+            listOf(AppFunctionMetadataTestHelper.CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS),
+        )
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
+    @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM)
+    fun getAppFunctionActivityState_withExecuteSystemPermission_returnsAllRegisteredFunctions() =
+        doBlocking {
+            val (localActivityId, externalActivityId) = startLocalAndExternalActivities()
+
+            val activityStates =
+                getAppFunctionActivityStates(setOf(localActivityId, externalActivityId))
+
+            assertActivityStates(
+                activityStates,
+                localActivityId,
+                listOf(AppFunctionMetadataTestHelper.CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS),
+            )
+            assertActivityStates(
+                activityStates,
+                externalActivityId,
+                listOf(DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS)
+            )
+        }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
+    @EnsureHasPermission(Manifest.permission.DISCOVER_APP_FUNCTIONS)
+    fun getAppFunctionActivityState_discoverPermission_returnsAllRegisteredFunctions() =
+        doBlocking {
+            val (localActivityId, externalActivityId) = startLocalAndExternalActivities()
+
+            val activityStates =
+                getAppFunctionActivityStates(setOf(localActivityId, externalActivityId))
+
+            assertActivityStates(
+                activityStates,
+                localActivityId,
+                listOf(AppFunctionMetadataTestHelper.CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS)
+            )
+            assertActivityStates(
+                activityStates,
+                externalActivityId,
+                listOf(DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS)
+            )
+        }
+
+    @Test
+    @EnsureDoesNotHavePermission(
+        Manifest.permission.EXECUTE_APP_FUNCTIONS,
+        Manifest.permission.EXECUTE_APP_FUNCTIONS_SYSTEM,
+        Manifest.permission.DISCOVER_APP_FUNCTIONS,
+    )
+    fun getAppFunctionActivityState_withNoPermission_returnsOnlyLocalRegisteredFunctions() =
+        doBlocking {
+            val (localActivityId, externalActivityId) = startLocalAndExternalActivities()
+            val activityStates =
+                getAppFunctionActivityStates(setOf(localActivityId, externalActivityId))
+
+            assertActivityStates(
+                activityStates,
+                localActivityId,
+                listOf(AppFunctionMetadataTestHelper.CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS)
+            )
+            assertActivityStatesDoesNotContainActivityId(activityStates, externalActivityId)
+        }
+
+    private fun assertActivityStates(
+        activityStates: List<AppFunctionActivityState>,
+        expectedActivityId: AppFunctionActivityId,
+        expectedFunctionNames: List<AppFunctionName>,
+    ) {
+        val activityState = activityStates.single { it.activityId == expectedActivityId }
+
+        assertThat(activityState.functionNames).containsExactlyElementsIn(expectedFunctionNames);
+    }
+
+    private fun assertActivityStatesDoesNotContainActivityId(
+        activityStates: List<AppFunctionActivityState>,
+        activityId: AppFunctionActivityId,
+
+    ) {
+        assertThat(activityStates.any { it.activityId == activityId }).isFalse()
+    }
+
+    private suspend fun startLocalAndExternalActivities(): RegisteredActivityIds {
+        // Have to temporarily grant EXECUTE_APP_FUNCTIONS permission to be able to get the
+        // external activity ids.
+        TestApis.permissions().withPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS).use {
+            val localScenario =
+                ActivityScenario.launch<DynamicRegistrationActivity>(internalLaunchIntent)
+            localScenario.moveToState(Lifecycle.State.STARTED)
+            localScenario.onActivity { activity ->
+                activity.registerAppFunction(ACTIVITY_CONCAT_STRINGS_FUNCTION_ID)
+            }
+
+            val localActivityIds =
+                awaitRegisteredActivityIds(
+                    AppFunctionMetadataTestHelper.CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS,
+                    numRegistrations = 1,
+                )
+
+            TestApis.activities()
+                .startActivity(
+                    getExternalRegistrationIntent(
+                        DynamicSchemaHelperApp.PACKAGE_NAME,
+                        REGISTRATION_ACTIVITY,
+                        ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
+                    )
+                )
+
+            val externalActivityIds =
+                awaitRegisteredActivityIds(
+                    DynamicSchemaHelperApp.FunctionNames.DYNAMIC_ACTIVITY_CONCAT_STRINGS,
+                    numRegistrations = 1,
+                )
+
+            return RegisteredActivityIds(
+                    localActivityId = localActivityIds.first(),
+                    externalActivityId = externalActivityIds.first(),
+                )
+        }
+    }
+
     private fun getExternalRegistrationIntent(
         packageName: String,
         activityName: String,
@@ -527,6 +665,11 @@ class AppFunctionActivityMultiregistrationTest {
         exceptionOrNull() as AppFunctionException
 
     private fun doBlocking(block: suspend CoroutineScope.() -> Unit) = runBlocking(block = block)
+
+    private data class RegisteredActivityIds(
+        val localActivityId: AppFunctionActivityId,
+        val externalActivityId: AppFunctionActivityId,
+    )
 
     companion object {
         const val REGISTRATION_ACTIVITY =
