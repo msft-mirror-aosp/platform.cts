@@ -237,6 +237,7 @@ android_test {
         "android.app.privatecompute.flags-aconfig-java",
         "flag-junit",
         "androidx.test.rules",
+        "sts-device-util",
     ],
     srcs: [
         "src/android/content/pm/**/*.java",
@@ -263,6 +264,7 @@ android_test {
         ":CtsIntentResolutionTestApp",
         ":CtsContentNoApplicationTestApp",
         ":CtsContentShellTestApp",
+        ":CtsHeadlessApp",
         ":CtsTargetSdk23TestApp",
         ":CtsTargetSdk24TestApp",
         ":CtsQueryPackagesTestApp",
@@ -472,6 +474,7 @@ android_ravenwood_test {
         "androidx.test.rules",
         "androidx.test.uiautomator_uiautomator",
         "compatibility-device-util-axt-ravenwood",
+        "sts-device-util",
     ],
     srcs: [
         "src/android/content/cts/util/XmlUtils.java",
