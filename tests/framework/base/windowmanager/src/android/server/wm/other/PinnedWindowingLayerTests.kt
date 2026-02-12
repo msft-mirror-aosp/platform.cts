@@ -18,21 +18,30 @@ package android.server.wm.other
 
 import android.app.ActivityManager.AppTask
 import android.app.AppOpsManager
+import android.app.InfeasibleActivityOptionsException
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Rect
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.server.wm.ActivityLauncher.KEY_NEW_TASK
 import android.server.wm.CliIntentExtra.extraBool
 import android.server.wm.StateLogger.logAlways
+import android.server.wm.WindowManagerState.dpToPx
 import android.server.wm.WindowingLayerTestBase
 import android.server.wm.app.Components.PINNED_WINDOWING_LAYER_ACTIVITY
 import android.server.wm.app.Components.PinnedWindowingLayerActivity.ACTION_ACTIVITY_FINISHED
+import android.server.wm.app.Components.PinnedWindowingLayerActivity.ACTION_RELAUNCH_AS_RESIZABLE
+import android.server.wm.app.Components.PinnedWindowingLayerActivity.ACTION_RELAUNCH_AS_RESIZABLE_RESULT
 import android.server.wm.app.Components.PinnedWindowingLayerActivity.ACTION_REQUEST_WINDOWING_LAYER
 import android.server.wm.app.Components.PinnedWindowingLayerActivity.ACTION_REQUEST_WINDOWING_LAYER_RESULT
-import android.server.wm.app.Components.PinnedWindowingLayerActivity.EXTRA_EXCEPTION_CLASS
+import android.server.wm.app.Components.PinnedWindowingLayerActivity.ACTION_REQUEST_TASK_MOVE
+import android.server.wm.app.Components.PinnedWindowingLayerActivity.ACTION_TASK_MOVE_RESULT
+import android.server.wm.app.Components.PinnedWindowingLayerActivity.EXTRA_BOUNDS
+import android.server.wm.app.Components.PinnedWindowingLayerActivity.EXTRA_EXCEPTION
 import android.server.wm.app.Components.PinnedWindowingLayerActivity.EXTRA_RESULT_DETAILS
 import android.server.wm.app.Components.PinnedWindowingLayerActivity.EXTRA_RESULT_SUCCESS
 import android.server.wm.app.Components.PinnedWindowingLayerActivity.EXTRA_WINDOWING_LAYER_TYPE
@@ -127,7 +136,7 @@ class PinnedWindowingLayerTests : WindowingLayerTestBase() {
         val result = requestWindowingLayer(AppTask.WINDOWING_LAYER_PINNED)
 
         assertFalse(result.success)
-        assertEquals("java.lang.SecurityException", result.errorClass)
+        assertTrue(result.error is SecurityException)
     }
 
     /**
@@ -166,12 +175,54 @@ class PinnedWindowingLayerTests : WindowingLayerTestBase() {
         val result = requestWindowingLayer(AppTask.WINDOWING_LAYER_PINNED)
 
         assertFalse(result.success)
-        assertNull(result.errorClass)
+        assertNull(result.error)
         waitAndAssertResumedAndFocusedActivityOnDisplay(
             TEST_ACTIVITY,
             mainDisplayId,
             "Test activity should still be focused after the rejected pinning request",
         )
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+        Flags.FLAG_ENABLE_REQUIRE_MOVABLE_TASK_API,
+        Flags.FLAG_ENABLE_WINDOW_REPOSITIONING_API,
+    )
+    fun pinnedLayer_moveTaskTo_cannotBeMovedBySubsequentResizes() = runBlocking {
+        runPinnedLayerResizableTestSuite {
+            val initialBounds = getTaskBounds(PINNED_WINDOWING_LAYER_ACTIVITY)
+            val display = mWmState.getDisplay(mainDisplayId)
+
+            // Expand by 50dp each axis via left top corner
+            var bounds = Rect(initialBounds)
+            var changeByPx = dpToPx(50f, display.dpi)
+            bounds.let {
+                it.left -= changeByPx
+                it.top -= changeByPx
+            }
+            requestMoveTaskTo(bounds)
+
+            // Shrink by 70dp via right bottom corner
+            bounds = getTaskBounds(PINNED_WINDOWING_LAYER_ACTIVITY)
+            changeByPx = dpToPx(70f, display.dpi)
+            bounds.let {
+                it.right -= changeByPx
+                it.bottom -= changeByPx
+            }
+            requestMoveTaskTo(bounds)
+
+            // Expand by 20dp via top left corner
+            bounds = getTaskBounds(PINNED_WINDOWING_LAYER_ACTIVITY)
+            changeByPx = dpToPx(20f, display.dpi)
+            bounds.let {
+                it.left -= changeByPx
+                it.top -= changeByPx
+            }
+            requestMoveTaskTo(bounds)
+
+            val finalBounds = getTaskBounds(PINNED_WINDOWING_LAYER_ACTIVITY)
+            assertEquals(initialBounds, finalBounds)
+        }
     }
 
     private fun launchTestActivity() {
@@ -191,12 +242,25 @@ class PinnedWindowingLayerTests : WindowingLayerTestBase() {
         )
     }
 
+    private suspend fun requestMoveTaskTo(bounds: Rect) {
+        logAlways("Sending ACTION_REQUEST_TASK_MOVE intent with bounds=$bounds")
+        val intent = Intent(ACTION_REQUEST_TASK_MOVE)
+        intent.putExtra(EXTRA_BOUNDS, bounds)
+        mContext.sendBroadcast(intent)
+
+        val response = checkNotNull(awaitBroadcast(ACTION_TASK_MOVE_RESULT)) {
+            "Did not receive a broadcast with task move result."
+        }
+        val error = response.getParcelableExtra(EXTRA_EXCEPTION, Exception::class.java)
+        assertNull(error, "Failed to move task with error: ${error}")
+    }
+
     /** Requests the pinned layer and assumes it is supported by veryfying the result. */
     private fun assumeRequestingPinnedLayerIsSupportedWithSuccessfulResult() = runBlocking {
         val result = requestWindowingLayer(AppTask.WINDOWING_LAYER_PINNED)
         assertNull(
-            result.errorClass,
-            "Request failed with an error (class=${result.errorClass}). " +
+            result.error,
+            "Request failed with an error=${result.error}). " +
                 "If pinned layer is not supported, the request must return a REJECTED code " +
                 "via #onSuccess callback, as the request itself was valid.",
         )
@@ -209,6 +273,66 @@ class PinnedWindowingLayerTests : WindowingLayerTestBase() {
             result.layer,
             "requestWindowingLayer returned the wrong layer, details?: ${result.details}",
         )
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+            PINNED_WINDOWING_LAYER_ACTIVITY,
+            mainDisplayId,
+            "Test activity should be resumed and focused after requesting pinned layer",
+        )
+    }
+
+    /**
+     * Runs the provided test body with the test activity in a pinned windowing layer as a resizable
+     * task (programmatically).
+     *
+     * Sets up the test case by placing the movable task in the center of the display with a size of
+     * 300dp x 300dp. This size is chosen to be safely within typical display (min 440dp) and
+     * minimum task size constraints (min 220dp) so the test can resize the task in various ways
+     * while staying within the bounds of the display.
+     *
+     * @param testBody Actual test logic to be executed within the configured pinned, movable task
+     *   environment.
+     */
+    private suspend fun runPinnedLayerResizableTestSuite(testBody: suspend () -> Unit) {
+        launchTestActivity()
+        try {
+            grantBrowserRole() // The moveTaskTo API is limited to apps with the browser role.
+            assumeRelaunchTestActivityAsResizableTask()
+            assumeRequestingPinnedLayerIsSupportedWithSuccessfulResult()
+            val display = mWmState.getDisplay(mainDisplayId)
+            val sizePx = dpToPx(300f, display.dpi)
+            val left = display.bounds.centerX() - sizePx / 2
+            val top = display.bounds.centerY() - sizePx / 2
+            resizeActivityTask(
+                PINNED_WINDOWING_LAYER_ACTIVITY,
+                left,
+                top,
+                left + sizePx,
+                top + sizePx,
+            )
+            mWmState.computeState(PINNED_WINDOWING_LAYER_ACTIVITY)
+            testBody()
+        } finally {
+            revokeBrowserRole()
+        }
+    }
+
+    private suspend fun assumeRelaunchTestActivityAsResizableTask() {
+        logAlways("Sending ACTION_RELAUNCH_AS_RESIZABLE intent")
+        mContext.sendBroadcast(Intent(ACTION_RELAUNCH_AS_RESIZABLE))
+
+        val response = awaitBroadcast(ACTION_RELAUNCH_AS_RESIZABLE_RESULT)
+        assertNotNull(response, "Did not receive a broadcast with relaunch as resizable result.")
+        val error = response!!.getParcelableExtra(EXTRA_EXCEPTION, Exception::class.java)
+        assumeFalse(
+            "Task movability is not supported on this display/config",
+            error is InfeasibleActivityOptionsException,
+        )
+        assertNull(error, "Failed to relaunch activity as resizable task with error: ${error}")
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+            PINNED_WINDOWING_LAYER_ACTIVITY,
+            mainDisplayId,
+            "Test activity should be relaunched and focused after requesting resizable task",
+        )
     }
 
     private fun assertSuccess(actualResult: WindowingLayerResult, expectedLayer: Int) {
@@ -217,6 +341,13 @@ class PinnedWindowingLayerTests : WindowingLayerTestBase() {
             "requestWindowingLayer failed, details: ${actualResult.details}",
         )
         assertEquals(expectedLayer, actualResult.layer, "Returned wrong layer")
+    }
+
+    private fun getTaskBounds(activity: ComponentName): Rect {
+        mWmState.computeState(activity)
+        val task = mWmState.getTaskByActivity(activity)
+        assertNotNull(task, "Task not found for activity: $activity")
+        return Rect(task!!.bounds)
     }
 
     private inner class PipAppOpSession(private val context: Context) : AutoCloseable {
@@ -256,7 +387,7 @@ class PinnedWindowingLayerTests : WindowingLayerTestBase() {
         val success: Boolean,
         val layer: Int,
         val details: String?,
-        val errorClass: String?,
+        val error: Exception?,
     ) {
         companion object {
             fun parse(intent: Intent): WindowingLayerResult {
@@ -264,7 +395,7 @@ class PinnedWindowingLayerTests : WindowingLayerTestBase() {
                     intent.getBooleanExtra(EXTRA_RESULT_SUCCESS, false),
                     intent.getIntExtra(EXTRA_WINDOWING_LAYER_TYPE, -1),
                     intent.getStringExtra(EXTRA_RESULT_DETAILS),
-                    intent.getStringExtra(EXTRA_EXCEPTION_CLASS),
+                    intent.getParcelableExtra(EXTRA_EXCEPTION, Exception::class.java),
                 )
             }
         }
