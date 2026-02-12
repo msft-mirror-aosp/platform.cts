@@ -24,7 +24,6 @@
 #include <unistd.h>
 
 #include <cerrno>
-#include <cstdio>
 #include <map>
 #include <mutex>
 
@@ -67,7 +66,9 @@ AIBinder* ANativeService_GTest_OnBindCallback(ANativeService* _Nonnull service,
                                               char const* _Nullable /*data*/) {
     ALOGI("ANativeService_GTest_OnBindCallback called.");
     std::lock_guard<std::mutex> lock(gGtestServiceMapMutex);
-    return gGtestServiceMap.at(service)->asBinder().get();
+    ndk::SpAIBinder binder = gGtestServiceMap.at(service)->asBinder();
+    AIBinder_incStrong(binder.get());
+    return binder.get();
 }
 
 bool ANativeService_GTest_OnUnbindCallback(ANativeService* _Nonnull service,
@@ -76,8 +77,6 @@ bool ANativeService_GTest_OnUnbindCallback(ANativeService* _Nonnull service,
     std::lock_guard<std::mutex> lock(gGtestServiceMapMutex);
     auto it = gGtestServiceMap.find(service);
     if (it != gGtestServiceMap.end()) {
-        // Decrement strong ref count as the service is no longer in use.
-        AIBinder_decStrong(it->second->asBinder().get());
         gGtestServiceMap.erase(it);
     }
     return false;
@@ -91,8 +90,6 @@ extern "C" void native_gtest_runner_service_createService(ANativeService* _Nonnu
     std::shared_ptr<android::cts::GTestNativeService> native_service =
             ndk::SharedRefBase::make<android::cts::GTestNativeService>();
     gGtestServiceMap[service] = native_service;
-    // Increment strong ref count to ensure the binder object lives as long as the service.
-    AIBinder_incStrong(native_service->asBinder().get());
 
     ANativeService_setOnBindCallback(service, ANativeService_GTest_OnBindCallback);
     ANativeService_setOnUnbindCallback(service, ANativeService_GTest_OnUnbindCallback);
