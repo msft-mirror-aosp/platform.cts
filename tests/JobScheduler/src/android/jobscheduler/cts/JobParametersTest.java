@@ -64,7 +64,9 @@ public class JobParametersTest extends BaseJobSchedulerTest {
     @Override
     @After
     public void tearDown() throws Exception {
-        mNetworkingHelper.tearDown();
+        if (mNetworkingHelper != null) {
+            mNetworkingHelper.tearDown();
+        }
         super.tearDown();
     }
 

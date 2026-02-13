@@ -87,7 +87,9 @@ public final class NotificationTest extends BaseJobSchedulerTest {
     public void tearDown() throws Exception {
         mJobScheduler.cancel(JOB_ID);
         mNotificationManager.cancelAll();
-        mNetworkingHelper.tearDown();
+        if (mNetworkingHelper != null) {
+            mNetworkingHelper.tearDown();
+        }
 
         // The super method should be called at the end.
         super.tearDown();
