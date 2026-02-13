@@ -35,7 +35,6 @@ import android.car.hardware.property.CarInternalErrorException;
 import android.car.hardware.property.CarPropertyManager;
 import android.car.hardware.property.PropertyAccessDeniedSecurityException;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresDevice;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.SparseArray;
 
@@ -53,7 +52,6 @@ import java.util.Arrays;
 import java.util.List;
 
 @SmallTest
-@RequiresDevice
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "Instant apps cannot get car related permissions.")
 public final class CarPropertyValueTest extends AbstractCarTestCase {

@@ -35,7 +35,6 @@ import android.car.hardware.CarPropertyConfig;
 import android.car.hardware.property.AreaIdConfig;
 import android.car.hardware.property.CarPropertyManager;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresDevice;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -54,7 +53,6 @@ import java.util.Arrays;
 import java.util.List;
 
 @SmallTest
-@RequiresDevice
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "Instant apps cannot get car related permissions.")
 public final class CarPropertyConfigTest extends AbstractCarTestCase {

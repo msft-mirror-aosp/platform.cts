@@ -30,7 +30,6 @@ import android.bluetooth.BluetoothProfile;
 import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.content.Context;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresDevice;
 import android.sysprop.BluetoothProperties;
 import android.util.Log;
 
@@ -61,7 +60,6 @@ import org.mockito.junit.MockitoRule;
                 "No Bluetooth support on visible background users currently, so skipping tests for"
                         + " secondary_user_on_secondary_display.")
 @SmallTest
-@RequiresDevice
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "Instant Apps cannot get Bluetooth related permissions")
 public final class CarBluetoothTest extends AbstractCarTestCase {

@@ -24,7 +24,6 @@ import android.car.Car;
 import android.car.drivingstate.CarUxRestrictions;
 import android.car.drivingstate.CarUxRestrictionsManager;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresDevice;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
@@ -34,7 +33,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @SmallTest
-@RequiresDevice
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "Test relies on other server to connect to.")
 public final class CarUxRestrictionsManagerTest extends AbstractCarTestCase {
