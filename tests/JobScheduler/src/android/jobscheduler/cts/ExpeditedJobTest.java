@@ -76,7 +76,9 @@ public class ExpeditedJobTest {
     public void tearDown() throws Exception {
         mTestAppInterface.cleanup();
         AppOpsUtils.reset(TEST_APP_PACKAGE);
-        mNetworkingHelper.tearDown();
+        if (mNetworkingHelper != null) {
+            mNetworkingHelper.tearDown();
+        }
     }
 
     @Test

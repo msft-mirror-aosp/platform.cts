@@ -632,15 +632,14 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
 
     @Test
     public void testPendingJobReason_connectivity() throws Exception {
-        final NetworkingHelper networkingHelper =
-                new NetworkingHelper(getInstrumentation(), getContext());
+        try (NetworkingHelper networkingHelper =
+                new NetworkingHelper(getInstrumentation(), getContext())) {
 
-        if (networkingHelper.hasEthernetConnection()) {
-            // Can't test while there's an active ethernet connection.
-            return;
-        }
+            if (networkingHelper.hasEthernetConnection()) {
+                // Can't test while there's an active ethernet connection.
+                return;
+            }
 
-        try {
             networkingHelper.setAllNetworksEnabled(false);
             JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                     .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
@@ -649,23 +648,20 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
             mJobScheduler.schedule(jobInfo);
             assertThat(mJobScheduler.getPendingJobReason(JOB_ID))
                     .isEqualTo(JobScheduler.PENDING_JOB_REASON_CONSTRAINT_CONNECTIVITY);
-        } finally {
-            networkingHelper.tearDown();
         }
     }
 
     @RequiresFlagsEnabled(android.app.job.Flags.FLAG_GET_PENDING_JOB_REASONS_API)
     @Test
     public void testPendingJobReasons_connectivity() throws Exception {
-        final NetworkingHelper networkingHelper =
-                new NetworkingHelper(getInstrumentation(), getContext());
+        try (NetworkingHelper networkingHelper =
+                new NetworkingHelper(getInstrumentation(), getContext())) {
 
-        if (networkingHelper.hasEthernetConnection()) {
-            // Can't test while there's an active ethernet connection.
-            return;
-        }
+            if (networkingHelper.hasEthernetConnection()) {
+                // Can't test while there's an active ethernet connection.
+                return;
+            }
 
-        try {
             networkingHelper.setAllNetworksEnabled(false);
             JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                     .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
@@ -674,8 +670,6 @@ public final class JobSchedulingTest extends BaseJobSchedulerTest {
 
             assertThat(mJobScheduler.getPendingJobReasons(JOB_ID))
                     .isEqualTo(new int[] {JobScheduler.PENDING_JOB_REASON_CONSTRAINT_CONNECTIVITY});
-        } finally {
-            networkingHelper.tearDown();
         }
     }
 
