@@ -28,6 +28,12 @@
         <scope>activity</scope>
     </appfunction>
     <appfunction>
+        <function_id>activityDisabledByDefault</function_id>
+        <id>activityDisabledByDefault</id>
+        <enabled_by_default>false</enabled_by_default>
+        <scope>activity</scope>
+    </appfunction>
+    <appfunction>
         <function_id>contextLongRunning</function_id>
         <id>contextLongRunning</id>
         <enabled_by_default>true</enabled_by_default>

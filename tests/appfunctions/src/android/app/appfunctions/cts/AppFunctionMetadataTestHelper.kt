@@ -138,6 +138,9 @@ class AppFunctionMetadataTestHelper {
             val DYNAMIC_ACTIVITY_CONCAT_STRINGS =
                 AppFunctionName(PACKAGE_NAME, "activityConcatStrings")
 
+            val DYNAMIC_ACTIVITY_DISABLED_BY_DEFAULT =
+                AppFunctionName(PACKAGE_NAME, "activityDisabledByDefault")
+
             val DYNAMIC_LONG_RUNNING = AppFunctionName(PACKAGE_NAME, "contextLongRunning")
 
             val DYNAMIC_OUTPUT_INVALID_ARGUMENT =
@@ -158,6 +161,9 @@ class AppFunctionMetadataTestHelper {
 
             val APP_LEVEL_FUNCTIONS: Set<AppFunctionName> =
                 setOf(
+                    DYNAMIC_ACTIVITY_CONCAT_STRINGS,
+                    DYNAMIC_ACTIVITY_DISABLED_BY_DEFAULT,
+                    ACTIVITY_SCOPE,
                     DYNAMIC_CONCAT_STRINGS,
                     DYNAMIC_LONG_RUNNING,
                     DYNAMIC_OUTPUT_INVALID_ARGUMENT,
@@ -167,8 +173,6 @@ class AppFunctionMetadataTestHelper {
                     DYNAMIC_STOP_PROCESS,
                     DYNAMIC_GET_URIS,
                     GLOBAL_SCOPE,
-                    ACTIVITY_SCOPE,
-                    DYNAMIC_ACTIVITY_CONCAT_STRINGS,
                     CONTEXT_CHECK_ATTRIBUTION,
                 )
 
@@ -177,7 +181,12 @@ class AppFunctionMetadataTestHelper {
 
             val ALL_FUNCTIONS = APP_LEVEL_FUNCTIONS + SERVICE_LEVEL_FUNCTIONS
 
-            val ACTIVITY_SCOPED_FUNCTIONS = setOf(ACTIVITY_SCOPE, DYNAMIC_ACTIVITY_CONCAT_STRINGS)
+            val ACTIVITY_SCOPED_FUNCTIONS =
+                setOf(
+                    ACTIVITY_SCOPE,
+                    DYNAMIC_ACTIVITY_CONCAT_STRINGS,
+                    DYNAMIC_ACTIVITY_DISABLED_BY_DEFAULT,
+                )
 
             val ALL_GLOBAL_FUNCTIONS = ALL_FUNCTIONS - ACTIVITY_SCOPED_FUNCTIONS
 
