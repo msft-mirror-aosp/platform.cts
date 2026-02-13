@@ -125,15 +125,15 @@ public class AutofillInlineRequestHintTest {
         final FillEventHistory fillEventHistory = new FillEventHistory(sessionId, bundle);
 
         final AutofillInlineRequestHint hint =
-                new AutofillInlineRequestHint.Builder()
-                        .setSessionId(sessionId)
-                        .setTaskId(taskId)
-                        .setRequestTimestamp(requestTimestamp)
-                        .setActivityComponent(activityComponent)
-                        .setFocusedId(focusedId)
-                        .setAutofillValue(autofillValue)
-                        .setInlineSuggestionsRequest(inlineSuggestionsRequest)
-                        .setAugmentedAutofillManagerClient(new Binder())
+                new AutofillInlineRequestHint.Builder(
+                                sessionId,
+                                taskId,
+                                requestTimestamp,
+                                activityComponent,
+                                focusedId,
+                                autofillValue,
+                                inlineSuggestionsRequest,
+                                new Binder())
                         .setFillEventHistory(fillEventHistory)
                         .build();
 
