@@ -47,6 +47,8 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.concurrent.Executor;
+
 /** Build/Install/Run: atest CtsPersonalContextTestCases:InsightSurfaceClientTest */
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PERSONAL_CONTEXT_SERVICE)
 @RunWith(AndroidJUnit4.class)
@@ -57,7 +59,9 @@ public class InsightSurfaceClientTest {
     @Mock private Context mContext;
     @Mock private Resources mResources;
     private final Configuration mConfiguration = new Configuration();
+    @Mock private InsightSurfaceClient.ClientCallback mClientCallbacks;
     @Mock private InsightSurfaceClient.InsightReceiver mInsightReceiver;
+    private final Executor mExecutor = Runnable::run;
     private final BundleHint mHint = new BundleHint.Builder().build();
 
     @Before
@@ -114,7 +118,7 @@ public class InsightSurfaceClientTest {
         final boolean shouldBlur = true;
         final String themeResourceName = "theme";
         final InsightSurfaceClient client =
-                new InsightSurfaceClient.Builder(mContext)
+                new InsightSurfaceClient.Builder(mContext, mExecutor, mClientCallbacks)
                         .setMeasureSpecs(widthMeasureSpec, heightMeasureSpec)
                         .setBackgroundColor(backgroundColor)
                         .setNestedScrollAxes(nestedScrollAxes)
