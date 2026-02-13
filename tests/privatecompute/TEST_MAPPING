@@ -1,4 +1,12 @@
 {
+  "presubmit": [
+    {
+      "name": "CtsPccProcessTests"
+    },
+    {
+      "name": "CtsPccFeatureTests"
+    }
+  ],
   "imports": [
     {
       "path": "frameworks/base/services/core/java/com/android/server/privatecompute/TEST_MAPPING"

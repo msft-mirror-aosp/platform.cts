@@ -21,7 +21,11 @@
 
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <option name="run-command" value="cmd pcc_sandbox add-allowed-package com.example.pcc.host.test" />
+        <option name="run-command" value="cmd pcc_sandbox add-allowed-package android.cts.pcc.host.backupapp" />
+        <option name="run-command" value="cmd pcc_sandbox add-allowed-package android.cts.pcc.host.backupappmalformed" />
         <option name="teardown-command" value="cmd pcc_sandbox remove-allowed-package com.example.pcc.host.test" />
+        <option name="teardown-command" value="cmd pcc_sandbox remove-allowed-package android.cts.pcc.host.backupapp" />
+        <option name="teardown-command" value="cmd pcc_sandbox remove-allowed-package android.cts.pcc.host.backupappmalformed" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.HostTest" >
