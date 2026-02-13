@@ -462,7 +462,10 @@ public class VideoCodecTest extends VideoCodecTestBase {
             boolean dynamicBitrateLayeringChange,
             boolean useNdk)
             throws Exception {
-        int encodeSeconds = dynamicBitrateLayeringChange ? 30 : 15;
+        // In L1T3 encoding, the encoder has to separately keep track of the bitrate for 3 different
+        // layers (or 4 different frames in 0212 pattern). Allow a longer time for temporal layer
+        // test to adjust to the bitrate.
+        int encodeSeconds = dynamicBitrateLayeringChange ? 72 : 36;
         String[] layeringSchemas = getSupportedLayeringSchemas(codecName, codecMimeType);
         assumeTrue("Temporal layer encoding may not be supported", layeringSchemas.length > 0);
         for (String schema : layeringSchemas) {
