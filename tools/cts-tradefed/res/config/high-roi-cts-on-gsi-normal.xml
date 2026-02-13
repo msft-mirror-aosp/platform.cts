@@ -15,8 +15,6 @@
 -->
 <configuration description="Run high ROI CTS-ON-GSI normal tests.">
     <include name="cts-on-gsi"/>
-    <!-- AdsPersonalizationStatusTest -->
-    <option name="compatibility:include-filter" value="AdsPersonalizationStatusTest com.android.adservices.tests.adspersonalizationstatus.AdsPersonalizationStatusTest#testValidTestCaseFixtures"/>
     <!-- CtsActivityRecognitionTestCases -->
     <option name="compatibility:include-filter" value="CtsActivityRecognitionTestCases android.activityrecognition.cts.RenouncedPermissionsTest#testActivityRecognitionAttributionTagBlaming"/>
     <!-- CtsAdIdEndToEndTest -->

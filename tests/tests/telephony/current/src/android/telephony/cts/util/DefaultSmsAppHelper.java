@@ -92,37 +92,53 @@ public class DefaultSmsAppHelper {
 
     public static void stopBeingDefaultSmsApp() {
         Log.d(TAG, "stopBeingDefaultSmsApp");
+        Context context = ApplicationProvider.getApplicationContext();
+        String packageName = context.getPackageName();
+        removeDefaultSmsAppRole(packageName);
+    }
+
+    /**
+     * Removes the specified package from being the default SMS app role holder.
+     *
+     * @param packageName The package name to remove from the SMS role.
+     */
+    public static void removeDefaultSmsAppRole(@NonNull String packageName) {
+        Log.d(TAG, "removeDefaultSmsAppRole: packageName=" + packageName);
         if (!hasSms()) {
-            Log.d(TAG, "stopBeingDefaultSmsApp: does not have sms feature.");
+            Log.d(TAG, "removeDefaultSmsAppRole: does not have sms feature.");
             return;
         }
 
         Context context = ApplicationProvider.getApplicationContext();
-        String packageName = context.getPackageName();
         RoleManager roleManager = context.getSystemService(RoleManager.class);
         Executor executor = context.getMainExecutor();
         UserHandle user = Process.myUserHandle();
         LinkedBlockingQueue<Boolean> queue = new LinkedBlockingQueue<>(1);
-        Log.d(TAG, "stopBeingDefaultSmsApp: user=" + user.getIdentifier()
-                + " packageName=" + packageName);
+        Log.d(
+                TAG,
+                "removeDefaultSmsAppRole: user="
+                        + user.getIdentifier()
+                        + " packageName="
+                        + packageName);
 
-        runWithShellPermissionIdentity(() -> {
-            roleManager.removeRoleHolderAsUser(
-                    RoleManager.ROLE_SMS,
-                    packageName,
-                    RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP,
-                    user,
-                    executor,
-                    successful -> {
-                        Log.d(TAG, "stopBeingDefaultSmsApp: successful=" + successful);
-                        try {
-                            queue.put(successful);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                            throw new RuntimeException(e.getMessage());
-                        }
-                    });
-        });
+        runWithShellPermissionIdentity(
+                () -> {
+                    roleManager.removeRoleHolderAsUser(
+                            RoleManager.ROLE_SMS,
+                            packageName,
+                            RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP,
+                            user,
+                            executor,
+                            successful -> {
+                                Log.d(TAG, "removeDefaultSmsAppRole: successful=" + successful);
+                                try {
+                                    queue.put(successful);
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                    throw new RuntimeException(e.getMessage());
+                                }
+                            });
+                });
 
         boolean result;
         try {
@@ -132,7 +148,7 @@ public class DefaultSmsAppHelper {
             throw new RuntimeException(e.getMessage());
         }
 
-        Log.d(TAG, "stopBeingDefaultSmsApp: result=" + result);
+        Log.d(TAG, "removeDefaultSmsAppRole: result=" + result);
         assertTrue(result);
     }
 

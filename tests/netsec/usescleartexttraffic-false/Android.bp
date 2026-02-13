@@ -23,7 +23,7 @@ android_test {
     static_libs: [
         "androidx.test.ext.junit",
         "ctstestrunner-axt",
-        "tests-tests-networksecurityconfig-lib",
+        "networksecurity-test-lib",
     ],
     libs: [
         "org.apache.http.legacy.stubs",

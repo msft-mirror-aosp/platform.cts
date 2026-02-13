@@ -40,7 +40,6 @@ import android.graphics.text.PositionedGlyphs;
 import android.graphics.text.TextRunShaper;
 import android.os.SharedMemory;
 import android.platform.test.annotations.DisabledOnRavenwood;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.system.ErrnoException;
@@ -50,8 +49,6 @@ import android.util.ArrayMap;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
-
-import com.android.text.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -1071,7 +1068,6 @@ public class TypefaceTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_TYPEFACE_REDESIGN_READONLY)
     @Test
     public void testEffectiveWeight() {
         assertWeight(400, Typeface.SANS_SERIF);
@@ -1096,7 +1092,6 @@ public class TypefaceTest {
                 Typeface.create(Typeface.create("sans-serif-black", Typeface.NORMAL), 400, false));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_TYPEFACE_REDESIGN_READONLY)
     @Test
     public void testEffectiveWeight_customFont() {
         assumeTrue(ROBOTO.exists() && ROBOTO.canRead());

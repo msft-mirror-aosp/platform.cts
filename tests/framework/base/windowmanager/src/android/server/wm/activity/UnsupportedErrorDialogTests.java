@@ -160,10 +160,10 @@ public class UnsupportedErrorDialogTests extends ActivityManagerTestBase {
         // leave the settings at their defaults
         // launch non responsive app
         executeShellCommand(getAmStartCmd(Components.UNRESPONSIVE_ACTIVITY) + " --ei "
-                + Components.UnresponsiveActivity.EXTRA_ON_CREATE_DELAY_MS + " 30000");
+                + Components.UnresponsiveActivity.EXTRA_ON_KEYDOWN_DELAY_MS + " 30000");
         // wait for app to be focused
-        mWmState.waitAndAssertAppFocus(Components.UNRESPONSIVE_ACTIVITY.getPackageName(),
-                2_000 /* waitTime */);
+        waitAndAssertResumedAndFocusedActivityOnDisplay(Components.UNRESPONSIVE_ACTIVITY,
+                getMainDisplayId(), "Activity must be top resumed");
         // queue up enough key events to trigger an ANR
         for (int i = 0; i < 20; i++) {
             injectKey(KeyEvent.KEYCODE_TAB, false /* longPress */, false /* sync */);
@@ -194,6 +194,7 @@ public class UnsupportedErrorDialogTests extends ActivityManagerTestBase {
     }
 
     private void ensureActivityNotFocused(ComponentName activity) {
+        mWmState.waitForActivityRemoved(activity);
         mWmState.computeState();
         mWmState.assertNotFocusedActivity("The activity should not be focused", activity);
     }

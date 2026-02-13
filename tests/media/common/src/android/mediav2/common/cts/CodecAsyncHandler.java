@@ -52,6 +52,7 @@ public class CodecAsyncHandler extends MediaCodec.Callback {
     private MediaFormat mOutFormat;
     private boolean mSignalledOutFormatChangedSubSession;
     protected volatile boolean mSignalledError;
+    protected RuntimeException mException;
     private String mErrorMsg;
     private int mMinExpectedMetricsFlushCount;
     private int mActualMetricsFlushCount;
@@ -61,6 +62,7 @@ public class CodecAsyncHandler extends MediaCodec.Callback {
         mCbOutputQueue = new LinkedList<>();
         mOutFormat = null;
         mSignalledError = false;
+        mException = null;
         mSignalledOutFormatChangedSubSession = false;
         mErrorMsg = "";
         mMinExpectedMetricsFlushCount = 0;
@@ -83,6 +85,7 @@ public class CodecAsyncHandler extends MediaCodec.Callback {
         mSignalledOutFormatChangedSubSession = false;
         mErrorMsg = "";
         mSignalledError = false;
+        mException = null;
         mMinExpectedMetricsFlushCount = 0;
         mActualMetricsFlushCount = 0;
     }
@@ -119,6 +122,7 @@ public class CodecAsyncHandler extends MediaCodec.Callback {
         mLock.lock();
         try {
             mSignalledError = true;
+            mException = e;
             mCondition.signalAll();
         } finally {
             mLock.unlock();
@@ -133,6 +137,7 @@ public class CodecAsyncHandler extends MediaCodec.Callback {
         mLock.lock();
         try {
             mSignalledError = true;
+            mException = e;
             mCondition.signalAll();
         } finally {
             mLock.unlock();
@@ -271,6 +276,10 @@ public class CodecAsyncHandler extends MediaCodec.Callback {
 
     public boolean hasSeenError() {
         return mSignalledError;
+    }
+
+    public RuntimeException getErrorException() {
+        return mException;
     }
 
     public String getErrMsg() {

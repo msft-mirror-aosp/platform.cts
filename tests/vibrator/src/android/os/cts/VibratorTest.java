@@ -17,7 +17,6 @@
 package android.os.cts;
 
 import static android.os.vibrator.Flags.FLAG_NORMALIZED_PWLE_EFFECTS;
-import static android.os.vibrator.Flags.FLAG_VENDOR_VIBRATION_EFFECTS;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -82,7 +81,11 @@ public class VibratorTest {
     public final AdoptShellPermissionsRule mAdoptShellPermissionsRule =
             new AdoptShellPermissionsRule(
                     InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-                    getRequiredPrivilegedPermissions());
+                    new String[] {
+                        android.Manifest.permission.ACCESS_VIBRATOR_STATE,
+                        android.Manifest.permission.VIBRATE_VENDOR_EFFECTS,
+                        android.Manifest.permission.WRITE_SETTINGS,
+                    });
 
     /**
      *  Provides the vibrator accessed with the given vibrator ID, at the time of test running.
@@ -355,7 +358,6 @@ public class VibratorTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VENDOR_VIBRATION_EFFECTS)
     public void testVibrateVendorEffect() {
         PersistableBundle vendorData = new PersistableBundle();
         vendorData.putInt("id", 1);
@@ -440,7 +442,6 @@ public class VibratorTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_VENDOR_VIBRATION_EFFECTS)
     @ApiTest(apis = "android.os.Vibrator#areVendorEffectsSupported")
     public void testVibratorVendorEffectsAreSupported() {
         // Just make sure it doesn't crash when this is called;
@@ -815,20 +816,6 @@ public class VibratorTest {
         VibratorStateListener listener = new VibratorStateListener();
         mStateListenersCreated.add(listener);
         return listener;
-    }
-
-    private static String[] getRequiredPrivilegedPermissions() {
-        if (Flags.vendorVibrationEffects()) {
-            return new String[]{
-                    android.Manifest.permission.ACCESS_VIBRATOR_STATE,
-                    android.Manifest.permission.VIBRATE_VENDOR_EFFECTS,
-                    android.Manifest.permission.WRITE_SETTINGS,
-            };
-        }
-        return new String[] {
-            android.Manifest.permission.ACCESS_VIBRATOR_STATE,
-            android.Manifest.permission.WRITE_SETTINGS,
-        };
     }
 
     private static List<Integer> getVibrationUsages() {

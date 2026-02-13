@@ -541,7 +541,7 @@ public class MediaRoute2InfoTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DEVICE_MANUFACTURER_AND_MODEL_INFO)
     @Test
-    public void testManufacturerAndModelInfo_withEmptyValues() {
+    public void testManufacturerAndModelInfo_withNullValues() {
         MediaRoute2Info original =
                 new MediaRoute2Info.Builder(TEST_ID, TEST_NAME)
                         .addFeature(TEST_ROUTE_TYPE_0)
@@ -555,12 +555,12 @@ public class MediaRoute2InfoTest {
                 parcel.readParcelable(/* loader= */ null, MediaRoute2Info.class);
         parcel.recycle();
 
-        assertThat(original.getDeviceManufacturer()).isEmpty();
-        assertThat(original.getDeviceModel()).isEmpty();
-        assertThat(copy.getDeviceManufacturer()).isEmpty();
-        assertThat(copy.getDeviceModel()).isEmpty();
-        assertThat(fromParcel.getDeviceManufacturer()).isEmpty();
-        assertThat(fromParcel.getDeviceModel()).isEmpty();
+        assertThat(original.getDeviceManufacturer()).isNull();
+        assertThat(original.getDeviceModel()).isNull();
+        assertThat(copy.getDeviceManufacturer()).isNull();
+        assertThat(copy.getDeviceModel()).isNull();
+        assertThat(fromParcel.getDeviceManufacturer()).isNull();
+        assertThat(fromParcel.getDeviceModel()).isNull();
         assertThat(original).isEqualTo(copy);
         assertThat(original).isEqualTo(fromParcel);
         assertThat(original.hashCode()).isEqualTo(copy.hashCode());

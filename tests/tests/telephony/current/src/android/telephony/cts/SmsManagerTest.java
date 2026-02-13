@@ -22,6 +22,8 @@ import static android.Manifest.permission.MANAGE_PROFILE_AND_DEVICE_OWNERS;
 import static android.Manifest.permission.MANAGE_ROLE_HOLDERS;
 import static android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE;
 import static android.Manifest.permission.RECEIVE_SENSITIVE_NOTIFICATIONS;
+import static android.service.messaging.AlternativeMessageTransportService.UPGRADE_STATUS_ACCEPTED;
+import static android.service.messaging.AlternativeMessageTransportService.UPGRADE_STATUS_REJECTED;
 
 import static androidx.test.InstrumentationRegistry.getContext;
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
@@ -122,6 +124,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Tests for {@link android.telephony.SmsManager}.
@@ -134,11 +137,19 @@ public class SmsManagerTest {
 
     private static final String TAG = "SmsManagerTest";
     private static final String LONG_TEXT =
-        "This is a very long text. This text should be broken into three " +
-        "separate messages.This is a very long text. This text should be broken into " +
-        "three separate messages.This is a very long text. This text should be broken " +
-        "into three separate messages.This is a very long text. This text should be " +
-        "broken into three separate messages.";;
+            "This is a very long text. This text should be broken into three separate messages.This"
+                    + " is a very long text. This text should be broken into three separate"
+                    + " messages.This is a very long text. This text should be broken into three"
+                    + " separate messages.This is a very long text. This text should be broken into"
+                    + " three separate messages.";
+    private static final String TEXT_UPGRADE_ACCEPTED =
+            "TEST_UPGRADE:delay=1000;status=" + UPGRADE_STATUS_ACCEPTED;
+    private static final String TEXT_UPGRADE_REJECTED =
+            "TEST_UPGRADE:delay=1000;status=" + UPGRADE_STATUS_REJECTED;
+    private static final String LONG_TEXT_UPGRADE_ACCEPTED =
+            TEXT_UPGRADE_ACCEPTED + ";text=" + LONG_TEXT;
+    private static final String LONG_TEXT_UPGRADE_REJECTED =
+            TEXT_UPGRADE_REJECTED + ";text=" + LONG_TEXT;
     private static final String LONG_TEXT_WITH_32BIT_CHARS =
         "Long dkkshsh jdjsusj kbsksbdf jfkhcu hhdiwoqiwyrygrvn?*?*!\";:'/,."
         + "__?9#9292736&4;\"$+$+((]\\[\\℅©℅™^®°¥°¥=¢£}}£∆~¶~÷|√×."
@@ -152,10 +163,15 @@ public class SmsManagerTest {
             "CTS_SMS_DELIVERY_ACTION_DEFAULT_APP";
     public static final String LEGACY_SMS_APP = "android.telephony.cts.sms23";
     public static final String MODERN_SMS_APP = "android.telephony.cts.sms";
+    public static final String MESSAGE_UPGRADE_APP = "android.telephony.cts.msgupgrade";
     private static final String SMS_RETRIEVER_APP = "android.telephony.cts.smsretriever";
     private static final String SMS_RETRIEVER_ACTION = "CTS_SMS_RETRIEVER_ACTION";
     private static final String FINANCIAL_SMS_APP = "android.telephony.cts.financialsms";
     private static final String OTP_SMS_TEXT = "Your one time code is 11111";
+    private static final String ACTION_MESSAGE_UPGRADE_RECEIVED =
+            "android.telephony.cts.msgupgrade.ACTION_MESSAGE_UPGRADE_RECEIVED";
+    private static final String EXTRA_UPGRADE_STATUS =
+            "android.telephony.cts.msgupgrade.EXTRA_UPGRADE_STATUS";
 
     private static final int SYSTEM_APP_FLAGS =
             PackageManager.MATCH_SYSTEM_ONLY
@@ -179,6 +195,7 @@ public class SmsManagerTest {
     private SmsBroadcastReceiver mSmsDeliverReceiver;
     private SmsBroadcastReceiver mSmsReceivedReceiver;
     private SmsBroadcastReceiver mSmsRetrieverReceiver;
+    private MessageUpgradeBroadcastReceiver mMessageUpgradeReceiver;
     private PendingIntent mSentIntent;
     private PendingIntent mDeliveredIntent;
     private Intent mSendIntent;
@@ -198,6 +215,7 @@ public class SmsManagerTest {
     private static List<String> sSmsOtpReadingRoles;
 
     private static final int TIME_OUT = 1000 * 60 * 10;
+    private static final int SHORT_TIME_OUT = 1000 * 5; // 5 seconds
     private static final int NO_CALLS_TIMEOUT_MILLIS = 1000; // 1 second
     private static final List<String> TRUSTED_SMS_PERMISSIONS =
             List.of(
@@ -252,6 +270,7 @@ public class SmsManagerTest {
         IntentFilter smsReceivedIntentFilter =
                 new IntentFilter(Telephony.Sms.Intents.SMS_RECEIVED_ACTION);
         IntentFilter smsRetrieverIntentFilter = new IntentFilter(SMS_RETRIEVER_ACTION);
+        IntentFilter messageUpgradeIntentFilter = new IntentFilter(ACTION_MESSAGE_UPGRADE_RECEIVED);
         dataSmsReceivedIntentFilter.addDataScheme("sms");
         dataSmsReceivedIntentFilter.addDataAuthority("localhost", "19989");
 
@@ -261,6 +280,8 @@ public class SmsManagerTest {
         mSmsDeliverReceiver = new SmsBroadcastReceiver(SMS_DELIVER_DEFAULT_APP_ACTION);
         mSmsReceivedReceiver = new SmsBroadcastReceiver(Telephony.Sms.Intents.SMS_RECEIVED_ACTION);
         mSmsRetrieverReceiver = new SmsBroadcastReceiver(SMS_RETRIEVER_ACTION);
+        mMessageUpgradeReceiver =
+                new MessageUpgradeBroadcastReceiver(ACTION_MESSAGE_UPGRADE_RECEIVED);
 
         mContext.registerReceiver(mSendReceiver, sendIntentFilter,
                 Context.RECEIVER_EXPORTED_UNAUDITED);
@@ -272,6 +293,10 @@ public class SmsManagerTest {
                 Context.RECEIVER_EXPORTED_UNAUDITED);
         mContext.registerReceiver(mSmsReceivedReceiver, smsReceivedIntentFilter);
         mContext.registerReceiver(mSmsRetrieverReceiver, smsRetrieverIntentFilter,
+                Context.RECEIVER_EXPORTED_UNAUDITED);
+        mContext.registerReceiver(
+                mMessageUpgradeReceiver,
+                messageUpgradeIntentFilter,
                 Context.RECEIVER_EXPORTED_UNAUDITED);
 
         mOriginalDefaultSmsApp = DefaultSmsAppHelper.getDefaultSmsApp(getContext());
@@ -306,6 +331,9 @@ public class SmsManagerTest {
         }
         if (mSmsRetrieverReceiver != null) {
             mContext.unregisterReceiver(mSmsRetrieverReceiver);
+        }
+        if (mMessageUpgradeReceiver != null) {
+            mContext.unregisterReceiver(mMessageUpgradeReceiver);
         }
         if (!TextUtils.isEmpty(mOriginalDefaultSmsApp)) {
             assertTrue(DefaultSmsAppHelper.setDefaultSmsApp(getContext(), mOriginalDefaultSmsApp));
@@ -525,45 +553,142 @@ public class SmsManagerTest {
     @Test
     @RequiresFlagsEnabled(FLAG_MESSAGE_PROMOTION)
     public void testSendStoredTextMessage() throws Exception {
-        init();
-        Uri messageUri = insertTextMessage(mText);
         SmsManager smsManager = mContext.getSystemService(SmsManager.class);
         assertNotNull("smsManager cannot be null", smsManager);
+
+        // Test upgrade non supported
+        testSendStoredTextMessage_UpgradeNotSupported(smsManager);
+
+        // Test upgrade supported, message promoted
+        testSendStoredTextMessage_UpgradeSupported(
+                smsManager, TEXT_UPGRADE_ACCEPTED, UPGRADE_STATUS_ACCEPTED);
+
+        // Test upgrade supported, message not promoted
+        testSendStoredTextMessage_UpgradeSupported(
+                smsManager, TEXT_UPGRADE_REJECTED, UPGRADE_STATUS_REJECTED);
+    }
+
+    private void testSendStoredTextMessage_UpgradeNotSupported(SmsManager smsManager)
+            throws Exception {
+        Log.d(TAG, "Upgrade NOT supported");
+        init();
+        Uri messageUri = insertTextMessage(mText);
+
         smsManager.sendStoredTextMessage(messageUri, mSentIntent, mDeliveredIntent);
+
         assertTrue("Could not send SMS. Check signal.", mSendReceiver.waitForCalls(1, TIME_OUT));
         if (mDeliveryReportSupported) {
+            assertTrue(mDeliveryReceiver.waitForCalls(1, TIME_OUT));
+        }
+    }
+
+    private void testSendStoredTextMessage_UpgradeSupported(
+            SmsManager smsManager, String messageText, int expectedUpgradeStatus) throws Exception {
+        Log.d(TAG, "Upgrade supported");
+        init();
+        Uri messageUri = insertTextMessage(messageText);
+        try {
+            DefaultSmsAppHelper.setDefaultSmsApp(mContext, MESSAGE_UPGRADE_APP);
+
+            smsManager.sendStoredTextMessage(messageUri, mSentIntent, mDeliveredIntent);
+
             assertTrue(
-                    "SMS message delivery notification not received. Check signal.",
-                    mDeliveryReceiver.waitForCalls(1, TIME_OUT));
+                    "Message upgrade broadcast not received.",
+                    mMessageUpgradeReceiver.waitForUpgrade(SHORT_TIME_OUT));
+            assertEquals(
+                    "Incorrect message upgrade received: " + mMessageUpgradeReceiver.mUpgradeStatus,
+                    expectedUpgradeStatus,
+                    mMessageUpgradeReceiver.mUpgradeStatus.get());
+
+            if (expectedUpgradeStatus == UPGRADE_STATUS_REJECTED) {
+                assertTrue(
+                        "Could not send SMS. Check signal.",
+                        mSendReceiver.waitForCalls(1, TIME_OUT));
+                if (mDeliveryReportSupported) {
+                    assertTrue(mDeliveryReceiver.waitForCalls(1, TIME_OUT));
+                }
+            }
+        } finally {
+            DefaultSmsAppHelper.removeDefaultSmsAppRole(MESSAGE_UPGRADE_APP);
         }
     }
 
     @Test
     @RequiresFlagsEnabled(FLAG_MESSAGE_PROMOTION)
     public void testSendStoredMultipartTextMessage() throws Exception {
-        init();
-        Uri messageUri = insertTextMessage(LONG_TEXT);
-        List<String> parts = divideMessage(LONG_TEXT);
-        List<PendingIntent> sentIntents = new ArrayList<>();
-        List<PendingIntent> deliveryIntents = new ArrayList<>();
-        for (int i = 0; i < parts.size(); i++) {
-            sentIntents.add(
-                    PendingIntent.getBroadcast(
-                            mContext, 0, mSendIntent, PendingIntent.FLAG_MUTABLE_UNAUDITED));
-            deliveryIntents.add(
-                    PendingIntent.getBroadcast(
-                            mContext, 0, mDeliveryIntent, PendingIntent.FLAG_MUTABLE_UNAUDITED));
-        }
         SmsManager smsManager = mContext.getSystemService(SmsManager.class);
         assertNotNull("smsManager cannot be null", smsManager);
+
+        // Test upgrade not supported
+        testSendStoredMultipartTextMessage_UpgradeNotSupported(smsManager);
+
+        // Test upgrade supported, message promoted
+        testSendStoredMultipartTextMessage_UpgradeSupported(
+                smsManager, LONG_TEXT_UPGRADE_ACCEPTED, UPGRADE_STATUS_ACCEPTED);
+
+        // Test upgrade supported, message not promoted
+        testSendStoredMultipartTextMessage_UpgradeSupported(
+                smsManager, LONG_TEXT_UPGRADE_REJECTED, UPGRADE_STATUS_REJECTED);
+    }
+
+    private List<PendingIntent> createIntents(int count, Intent baseIntent, int flags) {
+        List<PendingIntent> intents = new ArrayList<>();
+
+        for (int i = 0; i < count; i++) {
+            intents.add(PendingIntent.getBroadcast(mContext, 0, baseIntent, flags));
+        }
+        return intents;
+    }
+
+    private void testSendStoredMultipartTextMessage_UpgradeNotSupported(SmsManager smsManager)
+            throws Exception {
+        Log.d(TAG, "Upgrade NOT supported");
+        Uri messageUri = insertTextMessage(LONG_TEXT);
+        init();
+        List<String> parts = divideMessage(LONG_TEXT);
+        List<PendingIntent> sentIntents =
+                createIntents(parts.size(), mSendIntent, PendingIntent.FLAG_MUTABLE_UNAUDITED);
+        List<PendingIntent> deliveryIntents =
+                createIntents(parts.size(), mDeliveryIntent, PendingIntent.FLAG_MUTABLE_UNAUDITED);
+
         smsManager.sendStoredMultipartTextMessage(messageUri, sentIntents, deliveryIntents);
+
         assertTrue(
                 "Could not send multi part SMS. Check signal.",
                 mSendReceiver.waitForCalls(parts.size(), TIME_OUT));
-        if (mDeliveryReportSupported) {
+    }
+
+    private void testSendStoredMultipartTextMessage_UpgradeSupported(
+            SmsManager smsManager, String messageText, int expectedUpgradeStatus) throws Exception {
+        Log.d(TAG, "Upgrade supported");
+        Uri messageUri = insertTextMessage(messageText);
+        init();
+        List<String> parts = divideMessage(messageText);
+        List<PendingIntent> sentIntents =
+                createIntents(parts.size(), mSendIntent, PendingIntent.FLAG_MUTABLE_UNAUDITED);
+        List<PendingIntent> deliveryIntents =
+                createIntents(parts.size(), mDeliveryIntent, PendingIntent.FLAG_MUTABLE_UNAUDITED);
+
+        try {
+            DefaultSmsAppHelper.setDefaultSmsApp(mContext, MESSAGE_UPGRADE_APP);
+
+            smsManager.sendStoredMultipartTextMessage(messageUri, sentIntents, deliveryIntents);
+
             assertTrue(
-                    "Multi part SMS message delivery notification not received. Check signal.",
-                    mDeliveryReceiver.waitForCalls(parts.size(), TIME_OUT));
+                    "Message upgrade broadcast not received.",
+                    mMessageUpgradeReceiver.waitForUpgrade(SHORT_TIME_OUT));
+            assertEquals(
+                    "Incorrect message upgrade received: " + mMessageUpgradeReceiver.mUpgradeStatus,
+                    expectedUpgradeStatus,
+                    mMessageUpgradeReceiver.mUpgradeStatus.get());
+
+            if (expectedUpgradeStatus == UPGRADE_STATUS_REJECTED) {
+                assertTrue(
+                        "Could not send SMS. Check signal.",
+                        mSendReceiver.waitForCalls(parts.size(), TIME_OUT));
+            }
+        } finally {
+            DefaultSmsAppHelper.removeDefaultSmsAppRole(MESSAGE_UPGRADE_APP);
         }
     }
 
@@ -1030,6 +1155,7 @@ public class SmsManagerTest {
         mSmsDeliverReceiver.reset();
         mSmsReceivedReceiver.reset();
         mSmsRetrieverReceiver.reset();
+        mMessageUpgradeReceiver.reset();
         mReceivedDataSms = false;
         sMessageId = 0L;
         mSentIntent = PendingIntent.getBroadcast(mContext, 0, mSendIntent,
@@ -1650,7 +1776,14 @@ public class SmsManagerTest {
             if (mAction.equals(Telephony.Sms.Intents.SMS_RECEIVED_ACTION)) {
                 sMessageId = intent.getLongExtra("messageId", 0L);
             }
-            Log.i(TAG, "onReceive " + intent.getAction() + ", mAction " + mAction);
+            Log.i(
+                    TAG,
+                    "onReceive "
+                            + intent.getAction()
+                            + ", mAction "
+                            + mAction
+                            + ", mCalls "
+                            + mCalls);
             if (intent.getAction().equals(mAction)) {
                 synchronized (mLock) {
                     mCalls += 1;
@@ -1681,6 +1814,41 @@ public class SmsManagerTest {
                 }
                 return true;  // success
             }
+        }
+    }
+
+    private static class MessageUpgradeBroadcastReceiver extends BroadcastReceiver {
+        private static final String EXTRA_MESSAGE_URI = "message_uri";
+        private CountDownLatch mLatch = new CountDownLatch(1);
+        private final String mAction;
+        private final AtomicInteger mUpgradeStatus = new AtomicInteger(-1);
+
+        MessageUpgradeBroadcastReceiver(String action) {
+            mAction = action;
+        }
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (mAction.equals(action)) {
+                int status = intent.getIntExtra(EXTRA_UPGRADE_STATUS, -1);
+                Log.i(TAG, "onReceive: " + action + ", status: " + status);
+                mUpgradeStatus.set(status);
+                mLatch.countDown();
+            }
+        }
+
+        private boolean waitForUpgrade(long timeoutMs) {
+            try {
+                return mLatch.await(timeoutMs, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                Log.e(TAG, "Interrupted while waiting for upgrade", e);
+                return false;
+            }
+        }
+
+        private void reset() {
+            mLatch = new CountDownLatch(1);
         }
     }
 

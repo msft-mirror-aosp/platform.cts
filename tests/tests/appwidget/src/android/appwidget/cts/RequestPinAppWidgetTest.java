@@ -19,11 +19,14 @@ package android.appwidget.cts;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.server.wm.UiDeviceUtils.pressHomeButton;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import android.Manifest;
 import android.app.ActivityManager;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
@@ -33,16 +36,26 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.LauncherApps;
+import android.content.pm.PackageManager;
+import android.content.pm.cts.util.AppLockSupportRule;
+import android.content.pm.cts.util.RequiresAppLockSupported;
 import android.os.Bundle;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.DisabledOnRavenwood;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.WindowManagerStateHelper;
 import android.util.Log;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.sts.common.LockSettingsUtil;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -53,7 +66,14 @@ import java.util.concurrent.TimeUnit;
 
 @AppModeFull(reason = "Instant apps cannot provide or host app widgets")
 public class RequestPinAppWidgetTest extends AppWidgetTestCase {
+    @Rule
+    public final AppLockSupportRule mAppLockSupportRule = new AppLockSupportRule();
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    private static final String FIRST_WIDGET_CLASS =
+            "android.appwidget.cts.provider.FirstAppWidgetProvider";
     private static final String LAUNCHER_CLASS = "android.appwidget.cts.packages.Launcher";
     private static final String ACTION_PIN_RESULT = "android.appwidget.cts.ACTION_PIN_RESULT";
     private static final String APPBAL_PACKAGE = "android.appwidget.cts.appbal";
@@ -159,6 +179,81 @@ public class RequestPinAppWidgetTest extends AppWidgetTestCase {
     @Test
     public void testIsRequestPinAppWidgetSupported_launcher3() throws Exception {
         verifyIsRequestPinAppWidgetSupported("android.appwidget.cts.packages.launcher3", false);
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresAppLockSupported
+    @RequiresFlagsEnabled({
+        android.security.Flags.FLAG_APP_LOCK_APIS,
+        android.appwidget.flags.Flags.FLAG_APP_LOCK_WIDGET_REMOVAL
+    })
+    @ApiTest(apis = { "android.appwidget.AppWidgetManager#isRequestPinAppWidgetSupported" })
+    public void testIsRequestPinAppWidgetSupported_whenAppLockIsEnabled_returnsFalse() throws
+            Exception {
+        final Context context = getInstrumentation().getContext();
+        final AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
+        final String launcherPkg = "android.appwidget.cts.packages.launcher1";
+
+        // Setup a valid launcher and verify pinning is supported before enabling App Lock.
+        setLauncher(launcherPkg + "/" + LAUNCHER_CLASS);
+        assertThat(appWidgetManager.isRequestPinAppWidgetSupported()).isTrue();
+
+        try (AutoCloseable withLockScreen = new LockSettingsUtil(context).withLockScreen();
+                AutoCloseable withAppLockEnabled = setAppLock(context)) {
+            assertThat(appWidgetManager.isRequestPinAppWidgetSupported()).isFalse();
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresAppLockSupported
+    @RequiresFlagsEnabled({
+        android.security.Flags.FLAG_APP_LOCK_APIS,
+        android.appwidget.flags.Flags.FLAG_APP_LOCK_WIDGET_REMOVAL
+    })
+    @ApiTest(apis = { "android.appwidget.AppWidgetManager#requestPinAppWidget" })
+    public void testRequestPinAppWidget_whenAppLockIsEnabled_returnsFalse() throws Exception {
+        final Context context = getInstrumentation().getContext();
+        final AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
+        final String launcherPkg = "android.appwidget.cts.packages.launcher1";
+        final ComponentName provider = new ComponentName(context.getPackageName(),
+                FIRST_WIDGET_CLASS);
+
+        // Setup a valid launcher and verify pinning is supported before enabling App Lock.
+        setLauncher(launcherPkg + "/" + LAUNCHER_CLASS);
+        assertThat(appWidgetManager.requestPinAppWidget(provider, /* extras= */ null,
+                /* successCallback= */ null)).isTrue();
+
+        try (AutoCloseable withLockScreen = new LockSettingsUtil(context).withLockScreen();
+                AutoCloseable withAppLockEnabled = setAppLock(context)) {
+            assertThat(appWidgetManager.requestPinAppWidget(provider, /* extras= */ null,
+                    /* successCallback= */ null)).isFalse();
+        }
+    }
+
+    /**
+     * Enables App Lock for the current package and returns an {@link AutoCloseable} that reverts
+     * the state when closed.
+     */
+    private AutoCloseable setAppLock(Context context) {
+        final String packageName = context.getPackageName();
+        final PackageManager packageManager = context.getPackageManager();
+
+        // Enable App Lock.
+        setAppLockState(packageManager, packageName, /* state= */ true);
+
+        // Disable App Lock.
+        return () -> setAppLockState(packageManager, packageName, /* state= */ false);
+    }
+
+    /** Helper method to set the App Lock state. */
+    private void setAppLockState(PackageManager packageManager, String packageName, boolean state) {
+        SystemUtil.runWithShellPermissionIdentity(() -> {
+            final boolean isAppLockStateChanged =
+                    packageManager.setPackageAppLockEnabled(packageName, state);
+            assertThat(isAppLockStateChanged).isTrue();
+        }, Manifest.permission.TEST_LOCK_APPS);
     }
 
     private String getDefaultLauncher() throws Exception {

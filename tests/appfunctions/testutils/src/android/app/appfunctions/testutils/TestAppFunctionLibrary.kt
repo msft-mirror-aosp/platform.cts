@@ -20,7 +20,6 @@ import android.app.appfunctions.AppFunction
 import android.app.appfunctions.AppFunctionException
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
-import android.app.appfunctions.testutils.TestAppFunctionFactory.buildEmptyGenericDocument
 import android.app.appfunctions.testutils.TestContentProvider.Companion.getExecuteResponseWithUris
 import android.app.appsearch.GenericDocument
 import android.content.Context
@@ -32,59 +31,6 @@ import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import kotlin.system.exitProcess
 
-enum class FunctionType {
-    CONCAT_STRINGS,
-    LONG_RUNNING,
-    OUTPUT_INVALID_ARGUMENT_EXCEPTION,
-    THROW_UNKNOWN_EXCEPTION,
-    THROW_INVALID_ARGUMENT_EXCEPTION,
-    STOP_PROCESS,
-    DISABLED_BY_DEFAULT,
-    GET_URIS,
-    CHECK_ATTRIBUTION,
-    ACTIVITY_CONCAT_STRINGS
-}
-
-object TestAppFunctionFactory {
-    fun createAppFunction(type: FunctionType, context: Context): AppFunction {
-        return when (type) {
-            FunctionType.CONCAT_STRINGS -> ConcatStrings()
-            FunctionType.LONG_RUNNING -> LongRunning(context)
-            FunctionType.OUTPUT_INVALID_ARGUMENT_EXCEPTION -> OutputInvalidArgumentException()
-            FunctionType.THROW_UNKNOWN_EXCEPTION -> ThrowUnknownException()
-            FunctionType.THROW_INVALID_ARGUMENT_EXCEPTION -> ThrowInvalidArgumentException()
-            FunctionType.STOP_PROCESS -> StopProcess()
-            FunctionType.DISABLED_BY_DEFAULT -> DisabledByDefault()
-            FunctionType.GET_URIS -> GetUris()
-            FunctionType.CHECK_ATTRIBUTION -> CheckAttribution()
-            FunctionType.ACTIVITY_CONCAT_STRINGS -> ConcatStrings()
-        }
-    }
-
-    fun getFunctionId(type: FunctionType): String {
-        return when (type) {
-            FunctionType.CONCAT_STRINGS -> ConcatStrings.CONCAT_STRINGS_FUNCTION_ID
-            FunctionType.LONG_RUNNING -> LongRunning.LONG_RUNNING_FUNCTION_ID
-            FunctionType.OUTPUT_INVALID_ARGUMENT_EXCEPTION ->
-                OutputInvalidArgumentException.OUTPUT_INVALID_ARGUMENT_EXCEPTION_FUNCTION_ID
-            FunctionType.THROW_UNKNOWN_EXCEPTION ->
-                ThrowUnknownException.THROW_UNKNOWN_EXCEPTION_FUNCTION_ID
-            FunctionType.THROW_INVALID_ARGUMENT_EXCEPTION ->
-                ThrowInvalidArgumentException.THROW_INVALID_ARGUMENT_FUNCTION_ID
-            FunctionType.STOP_PROCESS -> StopProcess.STOP_PROCESS_FUNCTION_ID
-            FunctionType.DISABLED_BY_DEFAULT -> DisabledByDefault.DISABLED_BY_DEFAULT_FUNCTION_ID
-            FunctionType.GET_URIS -> GetUris.GET_URIS_FUNCTION_ID
-            FunctionType.CHECK_ATTRIBUTION -> CheckAttribution.CHECK_ATTRIBUTION_FUNCTION_ID
-            FunctionType.ACTIVITY_CONCAT_STRINGS ->
-                ConcatStrings.ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
-        }
-    }
-
-    fun buildEmptyGenericDocument(): GenericDocument {
-        return GenericDocument.Builder<GenericDocument.Builder<*>>("namespace", "id", "schemaType")
-            .build()
-    }
-}
 
 class LongRunning(private val context: Context) : AppFunction {
     private var cancellableFuture: Future<*>? = null
@@ -106,7 +52,11 @@ class LongRunning(private val context: Context) : AppFunction {
                 // Simulate a long-running operation.
                 Thread.sleep(5000)
 
-                val response = ExecuteAppFunctionResponse(buildEmptyGenericDocument())
+                val response = ExecuteAppFunctionResponse(
+                    GenericDocument.Builder<GenericDocument.Builder<*>>(
+                        "namespace", "id", "schemaType"
+                    ).build()
+                )
                 callback.onResult(response)
             } catch (e: InterruptedException) {
                 Log.d("LongRunning", "Operation Interrupted")
@@ -205,7 +155,13 @@ class DisabledByDefault() : AppFunction {
         cancellationSignal: CancellationSignal,
         callback: OutcomeReceiver<ExecuteAppFunctionResponse?, AppFunctionException?>,
     ) {
-        callback.onResult(ExecuteAppFunctionResponse(buildEmptyGenericDocument()))
+        callback.onResult(
+            ExecuteAppFunctionResponse(
+                GenericDocument.Builder<GenericDocument.Builder<*>>(
+                    "namespace", "id", "schemaType"
+                ).build()
+            )
+        )
     }
 
     companion object {

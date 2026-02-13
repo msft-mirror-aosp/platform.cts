@@ -176,6 +176,7 @@ public class SearchMediaServiceTest {
     }
 
     @Test
+    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_MEDIA_PROCESSING, Flags.FLAG_ENABLE_MEDIA_SEARCH})
     public void testDefaultService_searchSortedByRelevance() throws Exception {
         String servicePackageName =
                 MediaStore.getPackageForSearchMediaService(mContext.getContentResolver());
@@ -216,6 +217,7 @@ public class SearchMediaServiceTest {
     }
 
     @Test
+    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_MEDIA_PROCESSING, Flags.FLAG_ENABLE_MEDIA_SEARCH})
     public void testDefaultService_searchSortedByTime() throws Exception {
         String servicePackageName =
                 MediaStore.getPackageForSearchMediaService(mContext.getContentResolver());

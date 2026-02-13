@@ -27,11 +27,11 @@ import android.app.appfunctions.cts.AppFunctionUtils.installExistingPackageAsUse
 import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabledRemote
 import android.app.appfunctions.flags.Flags
 import android.app.appfunctions.testutils.ConcatStrings.Companion.ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
+import android.app.appfunctions.testutils.ConcatStrings.Companion.CONCAT_STRINGS_FUNCTION_ID
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
 import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
 import android.app.appfunctions.testutils.DynamicRegistrationActivity
 import android.app.appfunctions.testutils.DynamicRegistrationActivity.Companion.ACTION_REGISTER_APP_FUNCTION
-import android.app.appfunctions.testutils.FunctionType
 import android.app.appfunctions.testutils.ITestAppFunctionRegistrationService
 import android.app.appfunctions.testutils.TestAppFunctionRegistrationService
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver
@@ -309,7 +309,7 @@ class GetAppFunctionStatesTest {
         val registrationService = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
         try {
             assertThat(
-                    registrationService.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())
+                    registrationService.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)
                 )
                 .isTrue()
 
@@ -322,7 +322,7 @@ class GetAppFunctionStatesTest {
             assertThat(results[0].isEnabled).isTrue()
             assertThat(results[0].activityIds).isNull()
         } finally {
-            registrationService.safeUnregister(FunctionType.CONCAT_STRINGS.toString())
+            registrationService.safeUnregister(CONCAT_STRINGS_FUNCTION_ID)
         }
     }
 
@@ -336,12 +336,12 @@ class GetAppFunctionStatesTest {
         val registrationService = bindToRegistrationService(DynamicSchemaHelperApp.PACKAGE_NAME)
         try {
             assertThat(
-                    registrationService.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())
+                    registrationService.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)
                 )
                 .isTrue()
             assertThat(
                     registrationService.unregisterAppFunction(
-                        FunctionType.CONCAT_STRINGS.toString()
+                        CONCAT_STRINGS_FUNCTION_ID
                     )
                 )
                 .isTrue()
@@ -355,7 +355,7 @@ class GetAppFunctionStatesTest {
             assertThat(results[0].isEnabled).isFalse()
             assertThat(results[0].activityIds).isNull()
         } finally {
-            registrationService.safeUnregister(FunctionType.CONCAT_STRINGS.toString())
+            registrationService.safeUnregister(CONCAT_STRINGS_FUNCTION_ID)
         }
     }
 
@@ -370,7 +370,7 @@ class GetAppFunctionStatesTest {
         val functionName = DynamicSchemaHelperApp.FunctionNames.DYNAMIC_CONCAT_STRINGS
         try {
             assertThat(
-                    registrationService.registerAppFunction(FunctionType.CONCAT_STRINGS.toString())
+                    registrationService.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)
                 )
                 .isTrue()
             setAppFunctionEnabledRemote(
@@ -389,7 +389,7 @@ class GetAppFunctionStatesTest {
                 functionName.functionIdentifier,
                 AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
             )
-            registrationService.safeUnregister(FunctionType.CONCAT_STRINGS.toString())
+            registrationService.safeUnregister(CONCAT_STRINGS_FUNCTION_ID)
         }
     }
 

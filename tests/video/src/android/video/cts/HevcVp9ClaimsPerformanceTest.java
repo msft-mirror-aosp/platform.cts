@@ -16,11 +16,13 @@
 
 package android.video.cts;
 
+import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
+
 import static org.junit.Assert.assertTrue;
 
 import android.media.MediaFormat;
 import android.mediav2.common.cts.CodecTestBase;
-import android.mediav2.common.cts.CodecTestBase.ComponentClass;
+import android.mediav2.common.cts.CodecTestBase.SupportClass;
 
 import androidx.test.filters.SmallTest;
 
@@ -32,6 +34,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -65,17 +68,16 @@ import java.util.List;
 public class HevcVp9ClaimsPerformanceTest {
     private final List<VideoCodecClaimsPerformanceTestBase> mBaseInstances = new ArrayList<>();
 
-    public HevcVp9ClaimsPerformanceTest(List<String> mediaTypes, int width, int height,
-            int fps, boolean isEncoder, ComponentClass componentClass, boolean isSecure,
-            String allTestParams) {
+    public HevcVp9ClaimsPerformanceTest(List<String> mediaTypes, int width, int height, int fps,
+            boolean isEncoder, SupportClass supportRequirements,
+            @SuppressWarnings("unused") String label, String allTestParams) {
         for (String mediaType : mediaTypes) {
-            mBaseInstances.add(
-                    new VideoCodecClaimsPerformanceTestBase(mediaType, width, height, fps,
-                            isEncoder, componentClass, isSecure, allTestParams));
+            mBaseInstances.add(new VideoCodecClaimsPerformanceTestBase(mediaType, width, height,
+                    fps, isEncoder, supportRequirements, allTestParams));
         }
     }
 
-    @Parameterized.Parameters(name = "{index}_{0}_{1}_{2}_{3}_{4}_{6}")
+    @Parameterized.Parameters(name = "{index}_{0}_{1}_{2}_{3}_{6}")
     public static Collection<Object[]> input() {
         final boolean isDispHtAtleastUHD = CodecTestBase.MAX_DISPLAY_HEIGHT_LAND >= 2160;
         final boolean isDispHtAtleastFHD = CodecTestBase.MAX_DISPLAY_HEIGHT_LAND >= 1080;
@@ -88,35 +90,36 @@ public class HevcVp9ClaimsPerformanceTest {
         // hevc, vp9
         // 5.3.5/C-2-1, 5.3.7/C-3-1
         if (isDispHtAtleastHD) {
-            argsList.add(new Object[]{new ArrayList<>(Arrays.asList(MediaFormat.MIMETYPE_VIDEO_HEVC,
-                    MediaFormat.MIMETYPE_VIDEO_VP9)), 1280, 720, 30, false, ComponentClass.ALL});
+            argsList.add(
+                    new Object[] {new ArrayList<>(Arrays.asList(MediaFormat.MIMETYPE_VIDEO_HEVC,
+                                          MediaFormat.MIMETYPE_VIDEO_VP9)),
+                            1280, 720, 30, false, CODEC_OPTIONAL});
         }
         if (isDispHtAtleastFHD) {
             argsList.add(new Object[]{new ArrayList<>(Arrays.asList(MediaFormat.MIMETYPE_VIDEO_HEVC,
-                    MediaFormat.MIMETYPE_VIDEO_VP9)), 1920, 1080, 30, false, ComponentClass.ALL});
+                    MediaFormat.MIMETYPE_VIDEO_VP9)), 1920, 1080, 30, false, CODEC_OPTIONAL});
             if (MediaUtils.isTv()) {
                 argsList.add(new Object[]{new ArrayList<>(
                         Arrays.asList(MediaFormat.MIMETYPE_VIDEO_HEVC,
                                 MediaFormat.MIMETYPE_VIDEO_VP9)), 1920, 1080, 60, false,
-                        ComponentClass.HARDWARE});
+                        CODEC_OPTIONAL});
             }
         }
         if (isDispHtAtleastUHD) {
-            argsList.add(new Object[]{new ArrayList<>(Arrays.asList(MediaFormat.MIMETYPE_VIDEO_HEVC,
-                    MediaFormat.MIMETYPE_VIDEO_VP9)), 3840, 2160, 60, false, ComponentClass.ALL});
+            argsList.add(
+                    new Object[] {new ArrayList<>(Arrays.asList(MediaFormat.MIMETYPE_VIDEO_HEVC,
+                                          MediaFormat.MIMETYPE_VIDEO_VP9)),
+                            3840, 2160, 60, false, CODEC_OPTIONAL});
         }
 
         final List<Object[]> updatedArgsList = new ArrayList<>();
-        boolean[] boolStates = {true, false};
         for (Object[] arg : argsList) {
-            for (boolean isSecure : boolStates) {
-                int argLength = arg.length;
-                Object[] argUpdate = new Object[argLength + 2];
-                System.arraycopy(arg, 0, argUpdate, 0, argLength);
-                argUpdate[argLength] = isSecure;
-                argUpdate[argLength + 1] = CodecTestBase.paramToString(argUpdate);
-                updatedArgsList.add(argUpdate);
-            }
+            int argLength = arg.length;
+            Object[] argUpdate = new Object[argLength + 2];
+            System.arraycopy(arg, 0, argUpdate, 0, argLength);
+            argUpdate[argLength] = (boolean) arg[argLength - 2] ? "encode" : "decode";
+            argUpdate[argLength + 1] = CodecTestBase.paramToString(argUpdate);
+            updatedArgsList.add(argUpdate);
         }
         return updatedArgsList;
     }
@@ -127,13 +130,13 @@ public class HevcVp9ClaimsPerformanceTest {
     @CddTest(requirements = {"5.3.5/C-2-1", "5.3.7/C-3-1"})
     @SmallTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
-    public void testDeviceClaimsPerformanceSupported() {
+    public void testDeviceClaimsPerformanceSupported() throws IOException {
         boolean result = false;
-        StringBuilder testConfig = new StringBuilder();
         for (VideoCodecClaimsPerformanceTestBase baseInstance : mBaseInstances) {
             result |= baseInstance.deviceClaimsPerformanceSupported();
-            testConfig.append(baseInstance.mTestConfig);
         }
-        assertTrue(testConfig.toString(), result);
+        assertTrue("Device implementations must support at least one of H.265 or VP9 decoding\n"
+                        + mBaseInstances.get(0).mTestConfig,
+                result);
     }
 }

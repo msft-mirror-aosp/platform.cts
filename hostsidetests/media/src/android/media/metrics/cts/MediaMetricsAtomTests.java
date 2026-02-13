@@ -30,6 +30,7 @@ import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
 import android.os.statsd.media.MediaEditingExtensionAtoms;
+import android.os.statsd.media.MediaProcessingExtensionAtoms;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.host.HostFlagsValueProvider;
@@ -80,6 +81,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
     private static final String FEATURE_MICROPHONE = "android.hardware.microphone";
     private static final String FEATURE_MIDI = "android.software.midi";
     private static final int MAX_BUFFER_CAPACITY = 30 * 1024 * 1024; // 30M
+    private static final int MEDIA_PROCESSING_EVENT_REPORTED_FIELD_NUMBER = 1279;
 
     @BeforeClassWithInfo
     public static void installApp(TestInformation testInfo)
@@ -1060,6 +1062,85 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
         assertThat(result.getDeviceDisconnected()).isFalse();
         assertThat(result.getTotalInputBytes()).isGreaterThan(0);
         assertThat(result.getTotalOutputBytes()).isGreaterThan(0);
+    }
+
+    @Test
+    public void testMediaProcessingEvent_valid() throws Exception {
+        ConfigUtils.uploadConfigForPushedAtom(
+                getDevice(), TEST_PKG, MEDIA_PROCESSING_EVENT_REPORTED_FIELD_NUMBER);
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        MediaProcessingExtensionAtoms.registerAllExtensions(registry);
+        LogSessionIdListener listener = new LogSessionIdListener();
+
+        DeviceUtils.runDeviceTests(
+                getDevice(),
+                TEST_PKG,
+                "android.media.metrics.cts.MediaMetricsAtomHostSideTests",
+                "testMediaProcessingEvent_valid",
+                listener);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+        String logSessionId = listener.getLogSessionId();
+
+        List<StatsLog.EventMetricData> data =
+                ReportUtils.getEventMetricDataList(getDevice(), registry);
+        assertThat(data).hasSize(1);
+        MediaProcessingExtensionAtoms.MediaProcessingEventReported atom =
+                data.get(0)
+                        .getAtom()
+                        .getExtension(MediaProcessingExtensionAtoms.mediaProcessingEventReported);
+
+        assertThat(atom.getLogSessionId()).isEqualTo(logSessionId);
+        assertThat(atom.getUid()).isEqualTo(DeviceUtils.getAppUid(getDevice(), TEST_PKG));
+        assertThat(atom.getProcessorName()).isEqualTo("test.processor");
+        assertThat(atom.getEvent().toString()).isEqualTo("EVENT_INITIALIZE");
+        assertThat(atom.getStatus().toString()).isEqualTo("NO_ERROR");
+        assertThat(atom.getComponentsList()).containsExactly(
+                android.media.processing.Enums.Component.COMPONENT_AUDIO_SPEED_ADJUSTMENT);
+        assertThat(atom.getComponentScopesList()).containsExactly(0);
+        assertThat(atom.getFlags()).isEqualTo(123L);
+        assertThat(atom.getMetricsList()).containsExactly(
+                android.media.processing.Enums.Metric.METRIC_AUDIO_SPEED_ADJUSTMENT_FACTOR);
+        assertThat(atom.getMetricValuesList()).containsExactly(15000L);
+    }
+
+    @Test
+    public void testMediaProcessingEvent_invalid_missingComponents() throws Exception {
+        ConfigUtils.uploadConfigForPushedAtom(
+                getDevice(), TEST_PKG, MEDIA_PROCESSING_EVENT_REPORTED_FIELD_NUMBER);
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        MediaProcessingExtensionAtoms.registerAllExtensions(registry);
+
+        DeviceUtils.runDeviceTests(
+                getDevice(),
+                TEST_PKG,
+                "android.media.metrics.cts.MediaMetricsAtomHostSideTests",
+                "testMediaProcessingEvent_invalid_missingComponents",
+                new LogSessionIdListener());
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+
+        List<StatsLog.EventMetricData> data =
+                ReportUtils.getEventMetricDataList(getDevice(), registry);
+        assertThat(data).isEmpty();
+    }
+
+    @Test
+    public void testMediaProcessingEvent_invalid_metricsMismatch() throws Exception {
+        ConfigUtils.uploadConfigForPushedAtom(
+                getDevice(), TEST_PKG, MEDIA_PROCESSING_EVENT_REPORTED_FIELD_NUMBER);
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        MediaProcessingExtensionAtoms.registerAllExtensions(registry);
+
+        DeviceUtils.runDeviceTests(
+                getDevice(),
+                TEST_PKG,
+                "android.media.metrics.cts.MediaMetricsAtomHostSideTests",
+                "testMediaProcessingEvent_invalid_metricsMismatch",
+                new LogSessionIdListener());
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+
+        List<StatsLog.EventMetricData> data =
+                ReportUtils.getEventMetricDataList(getDevice(), registry);
+        assertThat(data).isEmpty();
     }
 
     private static <T> List<T> toMyAtoms(List<StatsLog.EventMetricData> data,

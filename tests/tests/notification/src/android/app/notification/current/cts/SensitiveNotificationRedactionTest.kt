@@ -35,6 +35,7 @@ import android.app.role.RoleManager
 import android.app.stubs.R
 import android.app.stubs.shared.NotificationHelper.SEARCH_TYPE
 import android.companion.CompanionDeviceManager
+import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
@@ -54,6 +55,7 @@ import android.service.notification.Adjustment.KEY_RANKING_SCORE
 import android.service.notification.Flags
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import android.util.Log
 import androidx.test.runner.AndroidJUnit4
 import com.android.compatibility.common.util.CddTest
 import com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity
@@ -63,6 +65,7 @@ import com.android.compatibility.common.util.UserHelper
 import com.google.common.truth.Truth.assertWithMessage
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
+import org.junit.After
 import org.junit.Assert
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -99,12 +102,75 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
         )
         PermissionUtils.grantPermission(STUB_PACKAGE_NAME, POST_NOTIFICATIONS)
 
+        disableRoleFallbackAndRemoveSmsRole()
+
         setUpNotifListener()
         mAssistant = mNotificationHelper.enableAssistant(mContext.packageName)
         mAssistant.mMarkSensitiveContent = true
         mAssistant.mSmartReplies =
             ArrayList<CharSequence>(listOf(OTP_MESSAGE_BASIC as CharSequence))
         mAssistant.mSmartActions = ArrayList<Notification.Action>(listOf(createAction()))
+    }
+
+    @After
+    fun tearDown() {
+        setSmsComponentsEnabled(true)
+    }
+
+    /**
+     * Ensure the test package does not hold the SMS role, which would bypass redaction.
+     * On some devices (like Wear), the system auto-assigns the SMS role to this package
+     * as a fallback. This flags the listener as "trusted" and bypasses redaction.
+     * To stop this, we disable the components that make it qualify for the role.
+     */
+    private fun disableRoleFallbackAndRemoveSmsRole() {
+        setSmsComponentsEnabled(false)
+        removeSmsRole(STUB_PACKAGE_NAME)
+    }
+
+    private fun setSmsComponentsEnabled(enabled: Boolean) {
+        val state = if (enabled) {
+            PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+        } else {
+            PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+        }
+        val pm = mContext.packageManager
+        val components = listOf(
+            "android.app.stubs.shared.SmsActivity",
+            "android.app.stubs.shared.SmsService",
+            "android.app.stubs.shared.SmsReceiver",
+            "android.app.stubs.shared.SmsReceiver2"
+        )
+        for (component in components) {
+            try {
+                pm.setComponentEnabledSetting(
+                    ComponentName(STUB_PACKAGE_NAME, component),
+                    state,
+                    PackageManager.DONT_KILL_APP
+                )
+                Log.d(TAG, "Set $component enabled state to $state")
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to set $component state to $state", e)
+            }
+        }
+    }
+
+    private fun removeSmsRole(packageName: String) {
+        val latch = CountDownLatch(1)
+        Log.d(TAG, "Attempting to remove $packageName from SMS role")
+        runWithShellPermissionIdentity {
+            mRoleManager.removeRoleHolderAsUser(
+                RoleManager.ROLE_SMS,
+                packageName,
+                0,
+                Process.myUserHandle(),
+                Executors.newSingleThreadExecutor()
+            ) { success ->
+                Log.d(TAG, "Removed $packageName from SMS role: $success")
+                latch.countDown()
+            }
+        }
+        latch.await()
     }
 
     fun sendNotification(
@@ -465,6 +531,7 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
             "Expected a notification assistant to be present",
             mPreviousEnabledAssistant != null
         )
+        setSmsComponentsEnabled(true)
         mNotificationHelper.disableAssistant(STUB_PACKAGE_NAME)
         val existingSmsApp = callWithShellPermissionIdentity {
             Telephony.Sms.getDefaultSmsPackage(mContext)
@@ -549,6 +616,7 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
             "Expected a notification assistant to be present",
             mPreviousEnabledAssistant != null
         )
+        setSmsComponentsEnabled(true)
         mNotificationHelper.disableAssistant(STUB_PACKAGE_NAME)
         val existingSmsApp = callWithShellPermissionIdentity {
             Telephony.Sms.getDefaultSmsPackage(mContext)
@@ -642,6 +710,7 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
     }
 
     companion object {
+        private val TAG = SensitiveNotificationRedactionTest::class.java.simpleName
         private const val OTP_CODE = "123645"
         private const val OTP_MESSAGE_BASIC = "your one time code is 123645"
         private const val PERSON_NAME = "Alan Smithee"

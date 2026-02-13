@@ -41,12 +41,17 @@ android_test {
     static_libs: [
         "androidx.test.rules",
         "androidx.test.ext.junit",
+        "com.android.input.flags-aconfig-java-export",
         "compatibility-device-util-axt",
+        "cts-input-lib",
         "platform-test-annotations",
     ],
     srcs: ["src/**/*.java"],
     // Tag this module as a cts test artifact
-    test_suites: ["cts"],
-    // sdk_version: "system_current",
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+    test_config: "AndroidTest.xml",
     sdk_version: "test_current",
 }

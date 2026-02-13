@@ -17,11 +17,10 @@
 package android.app.appfunctions.testutils
 
 import android.app.Service
+import android.app.appfunctions.AppFunction
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.AppFunctionRegistration
 import android.app.appfunctions.RegisterAppFunctionRequest
-import android.app.appfunctions.testutils.TestAppFunctionFactory.createAppFunction
-import android.app.appfunctions.testutils.TestAppFunctionFactory.getFunctionId
 import android.content.Intent
 import android.os.IBinder
 import android.util.Log
@@ -34,11 +33,9 @@ class TestAppFunctionRegistrationService : Service() {
 
     private val binder =
         object : ITestAppFunctionRegistrationService.Stub() {
-            override fun registerAppFunction(functionType: String): Boolean {
-                val functionType = FunctionType.valueOf(functionType)
-                val functionId = getFunctionId(functionType)
+            override fun registerAppFunction(functionId: String): Boolean {
                 val function =
-                    createAppFunction(functionType, this@TestAppFunctionRegistrationService)
+                    createAppFunctionFromId(functionId, this@TestAppFunctionRegistrationService)
                 try {
                     val registration =
                         manager.registerAppFunction(functionId, mainExecutor, function)
@@ -50,23 +47,26 @@ class TestAppFunctionRegistrationService : Service() {
                 return true
             }
 
-            override fun registerAppFunctions(functionTypes: List<String>): Boolean {
+            override fun registerAppFunctions(functionIds: List<String>): Boolean {
                 val requests: MutableList<RegisterAppFunctionRequest> = mutableListOf()
-                for (functionType in functionTypes) {
-                    val functionType = FunctionType.valueOf(functionType)
-                    requests.add(RegisterAppFunctionRequest(
-                        getFunctionId(functionType),
-                        mainExecutor,
-                        createAppFunction(functionType, this@TestAppFunctionRegistrationService)
-                    ))
+                for (functionId in functionIds) {
+                    requests.add(
+                        RegisterAppFunctionRequest(
+                            functionId,
+                            mainExecutor,
+                            createAppFunctionFromId(
+                                functionId,
+                                this@TestAppFunctionRegistrationService
+                            )
+                        )
+                    )
                 }
                 val registrationId = requests.joinToString(",") { it.functionIdentifier }
                 registrations[registrationId] = manager.registerAppFunctions(requests)
                 return true
             }
 
-            override fun unregisterAppFunction(functionType: String): Boolean {
-                val functionId = getFunctionId(FunctionType.valueOf(functionType))
+            override fun unregisterAppFunction(functionId: String): Boolean {
                 if (!registrations.containsKey(functionId)) {
                     throw IllegalStateException(
                         "Callback for function id $functionId not registered"
@@ -86,6 +86,24 @@ class TestAppFunctionRegistrationService : Service() {
     override fun onCreate() {
         super.onCreate()
         manager = getSystemService(AppFunctionManager::class.java)
+    }
+
+    private fun createAppFunctionFromId(functionId: String, context: Service): AppFunction {
+        return when (functionId) {
+            ConcatStrings.CONCAT_STRINGS_FUNCTION_ID -> ConcatStrings()
+            LongRunning.LONG_RUNNING_FUNCTION_ID -> LongRunning(context)
+            OutputInvalidArgumentException.OUTPUT_INVALID_ARGUMENT_EXCEPTION_FUNCTION_ID ->
+                OutputInvalidArgumentException()
+            ThrowUnknownException.THROW_UNKNOWN_EXCEPTION_FUNCTION_ID -> ThrowUnknownException()
+            ThrowInvalidArgumentException.THROW_INVALID_ARGUMENT_FUNCTION_ID ->
+                ThrowInvalidArgumentException()
+            StopProcess.STOP_PROCESS_FUNCTION_ID -> StopProcess()
+            DisabledByDefault.DISABLED_BY_DEFAULT_FUNCTION_ID -> DisabledByDefault()
+            GetUris.GET_URIS_FUNCTION_ID -> GetUris()
+            ConcatStrings.ACTIVITY_CONCAT_STRINGS_FUNCTION_ID -> ConcatStrings()
+            CheckAttribution.CHECK_ATTRIBUTION_FUNCTION_ID -> CheckAttribution()
+            else -> throw IllegalArgumentException("Unknown function id $functionId")
+        }
     }
 
     override fun onBind(intent: Intent): IBinder {

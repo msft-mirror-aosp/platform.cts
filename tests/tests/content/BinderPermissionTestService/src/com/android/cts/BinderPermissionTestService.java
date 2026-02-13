@@ -17,34 +17,53 @@
 package com.android.cts;
 
 import android.app.Service;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.IBinder;
 
 public final class BinderPermissionTestService extends Service {
 
     private static final String TEST_NOT_ALLOWED_MESSAGE = "Test: you're not allowed to do this.";
 
-    private final IBinder mBinder = new IBinderPermissionTestService.Stub() {
-        @Override
-        public void doEnforceCallingPermission(String permission) {
-            enforceCallingPermission(permission, TEST_NOT_ALLOWED_MESSAGE);
-        }
+    private final IBinder mBinder =
+            new IBinderPermissionTestService.Stub() {
+                @Override
+                public void doEnforceCallingPermission(String permission) {
+                    enforceCallingPermission(permission, TEST_NOT_ALLOWED_MESSAGE);
+                }
 
-        @Override
-        public int doCheckCallingPermission(String permission) {
-            return checkCallingPermission(permission);
-        }
+                @Override
+                public int doCheckCallingPermission(String permission) {
+                    return checkCallingPermission(permission);
+                }
 
-        @Override
-        public void doEnforceCallingOrSelfPermission(String permission) {
-            enforceCallingOrSelfPermission(permission, TEST_NOT_ALLOWED_MESSAGE);
-        }
+                @Override
+                public void doEnforceCallingOrSelfPermission(String permission) {
+                    enforceCallingOrSelfPermission(permission, TEST_NOT_ALLOWED_MESSAGE);
+                }
 
-        @Override
-        public int doCheckCallingOrSelfPermission(String permission) {
-            return checkCallingOrSelfPermission(permission);
-        }
-    };
+                @Override
+                public int doCheckCallingOrSelfPermission(String permission) {
+                    return checkCallingOrSelfPermission(permission);
+                }
+
+                @Override
+                public void doBindServiceExpectingFailure(Intent intent, long flags) {
+                    bindService(
+                            intent,
+                            new ServiceConnection() {
+                                @Override
+                                public void onServiceConnected(
+                                        ComponentName name, IBinder service) {}
+
+                                @Override
+                                public void onServiceDisconnected(ComponentName name) {}
+                            },
+                            Context.BindServiceFlags.of(flags));
+                }
+            };
 
     @Override
     public IBinder onBind(Intent intent) {

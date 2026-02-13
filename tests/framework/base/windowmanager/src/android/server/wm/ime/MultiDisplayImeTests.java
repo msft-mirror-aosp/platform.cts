@@ -103,7 +103,7 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final long NOT_EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
-    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(10) * HW_TIMEOUT_MULTIPLIER;
     private static final long PENDING_REQUESTS_TIMEOUT = TimeUnit.SECONDS.toMillis(3);
 
     @Before
@@ -136,7 +136,7 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
             assertWithMessage("Window geometry should become stable")
                     .that(
                             CtsWindowInfoUtils.waitForStableWindowGeometry(
-                                    Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                                    Duration.ofMillis(TIMEOUT)))
                     .isTrue();
             assertWithMessage("Activity1 window should be visible")
                     .that(
@@ -163,7 +163,7 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
             assertWithMessage("Window geometry should become stable")
                     .that(
                             CtsWindowInfoUtils.waitForStableWindowGeometry(
-                                    Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                                    Duration.ofMillis(TIMEOUT)))
                     .isTrue();
             assertWithMessage("Activity2 window should be visible")
                     .that(
@@ -203,7 +203,7 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
             assertWithMessage("Window geometry should become stable")
                     .that(
                             CtsWindowInfoUtils.waitForStableWindowGeometry(
-                                    Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                                    Duration.ofMillis(TIMEOUT)))
                     .isTrue();
             assertWithMessage("Activity window should be visible")
                     .that(
@@ -242,7 +242,7 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
             assertWithMessage("Window geometry should become stable")
                     .that(
                             CtsWindowInfoUtils.waitForStableWindowGeometry(
-                                    Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                                    Duration.ofMillis(TIMEOUT)))
                     .isTrue();
             assertWithMessage("Activity window should be visible")
                     .that(
@@ -299,7 +299,7 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
                 assertWithMessage("Window geometry should become stable")
                         .that(
                                 CtsWindowInfoUtils.waitForStableWindowGeometry(
-                                        Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                                        Duration.ofMillis(TIMEOUT)))
                         .isTrue();
                 assertWithMessage("Activity1 window should be visible")
                         .that(
@@ -311,7 +311,7 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
                 assertWithMessage("Window geometry should become stable")
                         .that(
                                 CtsWindowInfoUtils.waitForStableWindowGeometry(
-                                        Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                                        Duration.ofMillis(TIMEOUT)))
                         .isTrue();
                 assertWithMessage("Activity2 window should be visible")
                         .that(
@@ -386,7 +386,7 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
             assertWithMessage("Window geometry should become stable")
                     .that(
                             CtsWindowInfoUtils.waitForStableWindowGeometry(
-                                    Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                                    Duration.ofMillis(TIMEOUT)))
                     .isTrue();
             assertWithMessage("Activity window should be visible")
                     .that(
@@ -444,7 +444,7 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
             assertWithMessage("Window geometry should become stable")
                     .that(
                             CtsWindowInfoUtils.waitForStableWindowGeometry(
-                                    Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                                    Duration.ofMillis(TIMEOUT)))
                     .isTrue();
             assertWithMessage("Activity window should be visible")
                     .that(
@@ -487,7 +487,7 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
             assertWithMessage("Window geometry should become stable")
                     .that(
                             CtsWindowInfoUtils.waitForStableWindowGeometry(
-                                    Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                                    Duration.ofMillis(TIMEOUT)))
                     .isTrue();
             assertWithMessage("Activity window should be visible")
                     .that(
@@ -532,7 +532,7 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
             assertWithMessage("Window geometry should become stable")
                     .that(
                             CtsWindowInfoUtils.waitForStableWindowGeometry(
-                                    Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                                    Duration.ofMillis(TIMEOUT)))
                     .isTrue();
             assertWithMessage("Regular activity window should be visible")
                     .that(
@@ -556,7 +556,7 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
                 assertWithMessage("Window geometry should become stable")
                         .that(
                                 CtsWindowInfoUtils.waitForStableWindowGeometry(
-                                        Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                                        Duration.ofMillis(TIMEOUT)))
                         .isTrue();
                 assertWithMessage("Activity window should be visible")
                         .that(
@@ -647,7 +647,7 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
             assertWithMessage("Window geometry should become stable")
                     .that(
                             CtsWindowInfoUtils.waitForStableWindowGeometry(
-                                    Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                                    Duration.ofMillis(TIMEOUT)))
                     .isTrue();
             assertWithMessage("Activity2 window should be visible")
                     .that(
@@ -679,7 +679,7 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
                     assertWithMessage("Window geometry should become stable")
                             .that(
                                     CtsWindowInfoUtils.waitForStableWindowGeometry(
-                                            Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                                            Duration.ofMillis(TIMEOUT)))
                             .isTrue();
                     assertWithMessage("Activity1 window should be visible")
                             .that(
@@ -743,8 +743,7 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
                         assertWithMessage("Window geometry should become stable")
                                 .that(
                                         CtsWindowInfoUtils.waitForStableWindowGeometry(
-                                                Duration.ofSeconds(
-                                                        HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                                                Duration.ofMillis(TIMEOUT)))
                                 .isTrue();
                         assertWithMessage("Activity1 window should be visible")
                                 .that(
@@ -843,7 +842,7 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
             assertWithMessage("Window geometry should become stable")
                     .that(
                             CtsWindowInfoUtils.waitForStableWindowGeometry(
-                                    Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                                    Duration.ofMillis(TIMEOUT)))
                     .isTrue();
             assertWithMessage("Activity window should be visible")
                     .that(
@@ -873,7 +872,7 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
             assertWithMessage("Window geometry should become stable")
                     .that(
                             CtsWindowInfoUtils.waitForStableWindowGeometry(
-                                    Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * TIMEOUT)))
+                                    Duration.ofMillis(TIMEOUT)))
                     .isTrue();
             assertWithMessage("Activity window should be visible")
                     .that(

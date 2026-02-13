@@ -42,6 +42,8 @@ public class SeccompHostJUnit4DeviceTest extends BaseHostJUnit4Test {
     private static final String TEST_CTS_SYSCALL_BLOCKED = "testCTSSyscallBlocked";
     private static final String TEST_CTS_SYSCALL_ALLOWED = "testCTSSyscallAllowed";
     private static final String TEST_CTS_SYSCALL_APP_ZYGOTE = "testAppZygoteSyscalls";
+    private static final String TEST_CTS_SYSCALL_APP_ZYGOTE_SAFESETID =
+            "testAppZygoteSyscallsSafesetid";
 
     @Before
     public void setUp() throws Exception {
@@ -59,6 +61,15 @@ public class SeccompHostJUnit4DeviceTest extends BaseHostJUnit4Test {
 
     @Test
     public void testAppZygoteSyscalls() throws Exception {
+        testAppZygoteSyscallsImpl(TEST_CTS_SYSCALL_APP_ZYGOTE);
+    }
+
+    @Test
+    public void testAppZygoteSyscallsSafesetid() throws Exception {
+        testAppZygoteSyscallsImpl(TEST_CTS_SYSCALL_APP_ZYGOTE_SAFESETID);
+    }
+
+    private void testAppZygoteSyscallsImpl(String testName) throws Exception {
         // To speed up this test, the app zygote preload code repeatedly forks and
         // tries to execute a system call that is either allowed or denied by seccomp;
         // the resulting crashes will not bring down the app zygote itself, but the
@@ -68,7 +79,7 @@ public class SeccompHostJUnit4DeviceTest extends BaseHostJUnit4Test {
         // Extend the timeout for the test.
         try {
             getDevice().executeShellCommand("am set-app-zygote-preload-timeout 500000");
-            Assert.assertTrue(runDeviceTests(TEST_PKG, TEST_CLASS, TEST_CTS_SYSCALL_APP_ZYGOTE));
+            Assert.assertTrue(runDeviceTests(TEST_PKG, TEST_CLASS, testName));
         } finally {
             getDevice().executeShellCommand("am set-app-zygote-preload-timeout 15000");
         }

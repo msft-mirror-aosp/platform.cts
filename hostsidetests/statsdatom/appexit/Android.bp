@@ -18,7 +18,7 @@ package {
 
 java_test_host {
     name: "CtsAppExitAtomHostTestCases",
-    team: "trendy_team_orchestration_frameworks",
+    team: "trendy_team_system_performance",
     defaults: ["CtsStatsdAtomHostTest_defaults"],
     srcs: ["src/**/*.java"],
     device_common_data: [

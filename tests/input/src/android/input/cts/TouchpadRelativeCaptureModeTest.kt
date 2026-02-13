@@ -142,14 +142,9 @@ class TouchpadRelativeCaptureModeTest {
     @Test
     fun testClickAndDrag() {
         val pointer = Point(500, 500)
-        // We have to put a finger down on the touchpad first, as by default the Gestures library
-        // discards button presses unless there's a finger on the pad. This prevents false clicks
-        // from case flexing, for example.
         touchpad.sendDown(0, pointer)
         touchpad.sendBtnTouch(true)
         touchpad.sendBtn(BTN_TOOL_FINGER, true)
-        touchpad.sync()
-        Thread.sleep(5)
         touchpad.sendBtn(BTN_LEFT, true)
         touchpad.sync()
 

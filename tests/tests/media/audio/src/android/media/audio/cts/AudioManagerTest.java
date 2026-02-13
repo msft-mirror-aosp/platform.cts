@@ -213,6 +213,7 @@ public class AudioManagerTest {
     private boolean mIsSingleVolume;
     private boolean mSkipRingerTests;
     private boolean mSkipAutoVolumeTests = false;
+    private boolean mSkipAssistantDealiasedTests = false;
     // From N onwards, ringer mode adjustments that toggle DND are not allowed unless
     // package has DND access. Many tests in this package toggle DND access in order
     // to get device out of the DND state for the test to proceed correctly.
@@ -278,6 +279,7 @@ public class AudioManagerTest {
             // volume SDK APIs are no-ops
             mSkipAutoVolumeTests = true;
         }
+        mSkipAssistantDealiasedTests = mSkipRingerTests || mIsWatch;
 
         mUserHelper = new UserHelper(mContext);
 
@@ -1306,7 +1308,7 @@ public class AudioManagerTest {
     public void testDecoupledStreamAssistant() throws Exception {
         assumeFalse(
                 "AudioManagerTest testDecoupledStreamAssistant() skipped",
-                mUseFixedVolume || mSkipAutoVolumeTests || mIsWatch || mIsSingleVolume);
+                mSkipAssistantDealiasedTests);
 
         try (PermissionContext ignored =
                 TestApis.permissions()
@@ -1330,35 +1332,53 @@ public class AudioManagerTest {
                         .withPermission(
                                 Manifest.permission.MANAGE_ASSISTANT_AUDIO,
                                 Manifest.permission.MODIFY_AUDIO_ROUTING)) {
-            final int testId = mAudioManager.generateAudioSessionId();
-            final AudioTrack track =
-                    new AudioTrack.Builder()
-                            .setAudioAttributes(
-                                    new AudioAttributes.Builder()
-                                            .setUsage(AudioAttributes.USAGE_ASSISTANT)
-                                            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                                            .setTestId(testId)
-                                            .build())
-                            .setAudioFormat(
-                                    new AudioFormat.Builder()
-                                            .setSampleRate(48000)
-                                            .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-                                            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                                            .build())
-                            .build();
+            final int[] contentTypes =
+                    new int[] {
+                        AudioAttributes.CONTENT_TYPE_UNKNOWN,
+                        AudioAttributes.CONTENT_TYPE_SPEECH,
+                        AudioAttributes.CONTENT_TYPE_MUSIC,
+                        AudioAttributes.CONTENT_TYPE_MOVIE,
+                        AudioAttributes.CONTENT_TYPE_SONIFICATION
+                    };
+            final List<AudioTrack> tracks = new ArrayList<>();
+            final Set<Integer> mutedTracksId = new HashSet<>();
 
-            final CompletableFuture<Boolean> playbackConfigChangeFuture = new CompletableFuture<>();
+            for (int contentType : contentTypes) {
+                int testId = mAudioManager.generateAudioSessionId();
+                mutedTracksId.add(testId);
+
+                AudioTrack track =
+                        new AudioTrack.Builder()
+                                .setAudioAttributes(
+                                        new AudioAttributes.Builder()
+                                                .setUsage(AudioAttributes.USAGE_ASSISTANT)
+                                                .setContentType(contentType)
+                                                .setTestId(testId)
+                                                .build())
+                                .setAudioFormat(
+                                        new AudioFormat.Builder()
+                                                .setSampleRate(48000)
+                                                .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                                                .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                                                .build())
+                                .build();
+                tracks.add(track);
+            }
+
+            final CompletableFuture<Boolean> allMutedFuture = new CompletableFuture<>();
             final AudioPlaybackCallback callback =
                     new AudioPlaybackCallback() {
                         @Override
-                        public void onPlaybackConfigChanged(
+                        public synchronized void onPlaybackConfigChanged(
                                 List<AudioPlaybackConfiguration> configs) {
                             for (AudioPlaybackConfiguration config : configs) {
-                                if (config.getAudioAttributes().getTestId() == testId) {
-                                    if (config.isMuted()) {
-                                        playbackConfigChangeFuture.complete(true);
-                                    }
+                                int id = (int) config.getAudioAttributes().getTestId();
+                                if (mutedTracksId.contains(id) && config.isMuted()) {
+                                    mutedTracksId.remove(id);
                                 }
+                            }
+                            if (mutedTracksId.isEmpty()) {
+                                allMutedFuture.complete(true);
                             }
                         }
                     };
@@ -1372,11 +1392,14 @@ public class AudioManagerTest {
                         AudioManager.STREAM_ASSISTANT, AudioManager.ADJUST_UNMUTE, 0);
             }
             try {
-                track.play();
-
-                // Write data to keep the track in the playback thread and trigger the mute event
                 byte[] data = new byte[FUTURE_WAIT_SECS * 48000];
-                track.write(data, 0, data.length, WRITE_NON_BLOCKING);
+
+                for (AudioTrack track : tracks) {
+                    track.play();
+                    // Write data to keep the track in the playback thread and trigger the mute
+                    // event
+                    track.write(data, 0, data.length, WRITE_NON_BLOCKING);
+                }
 
                 final Map<Integer, MuteStateTransition> muteAssistantTransition =
                         Map.of(STREAM_ASSISTANT, new MuteStateTransition(false, true));
@@ -1388,11 +1411,13 @@ public class AudioManagerTest {
                         "ASSISTANT should be muted");
                 assertTrue(
                         "AudioPlaybackConfiguration should be muted by STREAM_ASSISTANT",
-                        playbackConfigChangeFuture.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS));
+                        allMutedFuture.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS));
             } finally {
                 mAudioManager.unregisterAudioPlaybackCallback(callback);
-                track.stop();
-                track.release();
+                for (AudioTrack track : tracks) {
+                    track.stop();
+                    track.release();
+                }
                 mAudioManager.adjustStreamVolume(
                         AudioManager.STREAM_ASSISTANT,
                         wasMuted ? AudioManager.ADJUST_MUTE : AudioManager.ADJUST_UNMUTE,
@@ -1408,7 +1433,7 @@ public class AudioManagerTest {
         assumeFalse(
                 "AudioManagerTest testStreamChangeInModeAssistant_noChangeOnStreamAssistant() "
                         + "skipped",
-                mUseFixedVolume || mSkipAutoVolumeTests || mIsWatch || mIsSingleVolume);
+                mSkipAssistantDealiasedTests);
 
         final int originalMode = mAudioManager.getMode();
         try (PermissionContext ignored =
@@ -1455,7 +1480,7 @@ public class AudioManagerTest {
         assumeFalse(
                 "AudioManagerTest testModeAssistantVolumeChange_triggersAssistantVolumeChange() "
                         + "skipped",
-                mUseFixedVolume || mSkipAutoVolumeTests || mIsWatch || mIsSingleVolume);
+                mSkipAssistantDealiasedTests);
 
         final int originalMode = mAudioManager.getMode();
         try (PermissionContext ignored =
@@ -1496,7 +1521,7 @@ public class AudioManagerTest {
     public void testAssistantVolChange_triggersUiChange() throws Exception {
         assumeFalse(
                 "AudioManagerTest testAssistantVolChange_triggersUiChange() skipped",
-                mUseFixedVolume || mSkipAutoVolumeTests || mIsWatch || mIsSingleVolume);
+                mSkipAssistantDealiasedTests);
 
         try (PermissionContext ignored =
                 TestApis.permissions()

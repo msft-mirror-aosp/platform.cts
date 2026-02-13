@@ -35,9 +35,6 @@ import static android.mediav2.cts.VideoDecoderAvailabilityTest.estimateVideoSize
 import static android.mediav2.cts.VideoDecoderAvailabilityTest.getMaxPixelsProcessedPerSec;
 import static android.mediav2.cts.VideoDecoderAvailabilityTest.updateOperatingMode;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
@@ -120,7 +117,7 @@ class CodecEncoderGLSurface extends CodecTestBase {
         // aligning color bands to 2 is done because, during chroma subsampling of rgb24 to yuv420p,
         // simple skipping alternate samples or bilinear filter would have same effect.
         mColorBarWidth = (barWidth % 2 == 0) ? barWidth : barWidth + 1;
-        assertTrue(mColorBarWidth >= 16);
+        Assert.assertTrue(mColorBarWidth >= 16);
     }
 
     @After
@@ -229,7 +226,7 @@ class CodecEncoderGLSurface extends CodecTestBase {
             mLatency = mCodec.getInputFormat().getInteger(MediaFormat.KEY_LATENCY);
         }
         mInpSurface = mCodec.createInputSurface();
-        assertTrue("Surface is not valid \n", mInpSurface.isValid());
+        Assert.assertTrue("Surface is not valid \n", mInpSurface.isValid());
         mEGLWindowInpSurface = new InputSurface(mInpSurface, false, false);
     }
 
@@ -237,11 +234,11 @@ class CodecEncoderGLSurface extends CodecTestBase {
     protected void validateTestState() {
         super.validateTestState();
         if (!mOutputBuff.isPtsStrictlyIncreasing(mPrevOutputPts)) {
-            fail("Output timestamps are not strictly increasing \n" + mTestConfig + mTestEnv
-                    + mOutputBuff.getErrMsg());
+            Assert.fail("Output timestamps are not strictly increasing \n" + mTestConfig
+                    + mTestEnv + mOutputBuff.getErrMsg());
         }
         if (!mOutputBuff.isOutPtsListIdenticalToInpPtsList(true)) {
-            fail("Input pts list and Output pts list are not identical \n" + mTestConfig
+            Assert.fail("Input pts list and Output pts list are not identical \n" + mTestConfig
                     + mTestEnv + mOutputBuff.getErrMsg());
         }
     }
@@ -300,6 +297,10 @@ class CodecEncoderGLSurface extends CodecTestBase {
 
     public void waitOnResourceChange(int currResourceChangeCbCount) throws InterruptedException {
         ((CodecAsyncHandlerResource) mAsyncHandle).waitOnResourceChange(currResourceChangeCbCount);
+    }
+
+    public Pair<Boolean, RuntimeException> getCodecErrState() {
+        return Pair.create(mAsyncHandle.hasSeenError(), mAsyncHandle.getErrorException());
     }
 
     public void updateOpMode(int priority, int operatingRate) {
@@ -563,6 +564,16 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
                     codec.doWork(10);
                     int cbCount = codec.getResourceChangeCbCount();
                     codec.waitOnResourceChange(cbCount);
+                    // In some components it is observed that the actual resources required for
+                    // the current configuration is not computed at start but deferred till first
+                    // enqueueInput. So start() call might succeed but after queueing inputs,
+                    // CodecException.ERROR_INSUFFICIENT_RESOURCE could be raised and
+                    // communicated to the client via onError callback. So check for error before
+                    // proceeding.
+                    Pair<Boolean, RuntimeException> errState = codec.getCodecErrState();
+                    if (errState.first) {
+                        throw errState.second;
+                    }
                     codecs.add(codec);
                     numInstances++;
                     codec = null;

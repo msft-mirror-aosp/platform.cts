@@ -745,27 +745,22 @@ class ProvisioningTest {
     )
     @Test
     @ApiTest(
-        apis = ["android.app.admin.DevicePolicyManager#provisionMultiUserDevice",
+        apis = ["android.app.admin.DevicePolicyManager#provisionMultiuserManagedDevice",
         "android.app.admin.DevicePolicyManager#isDeviceManaged",
-        "android.app.admin.DevicePolicyManager#MultiUserDeviceProvisioningParams"]
+        "android.app.admin.DevicePolicyManager#MultiuserManagedDeviceProvisioningParams"]
     )
-    fun provisionMultiUserManagementDevice_marksDeviceManaged() {
-        val dmrh = deviceState.dpmRoleHolder()
-        val dmrhComponent = ComponentName(
-                   dmrh.packageName(),
-            dmrh.packageName() + ".DeviceAdminReceiver"
-        )
+    fun provisionMultiuserManagedDevice_marksDeviceManaged() {
+        val dmrhPackageName = deviceState.dpmRoleHolder().packageName()
         try {
             withIncompleteSetupOnAllUsers {
-                val params = MultiUserDeviceProvisioningParams.Builder(dmrhComponent)
-                        // Needed to keep the android.devicepolicy.cts package.
-                        .setLeaveAllSystemAppsEnabled(true)
-                        .build()
-                localDevicePolicyManager.provisionMultiUserDevice(params)
+                val params =
+                    MultiuserManagedDeviceProvisioningParams.Builder(dmrhPackageName).build()
+                localDevicePolicyManager.provisionMultiuserManagedDevice(params)
                 assertThat(localDevicePolicyManager.isDeviceManaged()).isTrue()
             }
         } finally {
-            TestApis.devicePolicy().clearMultiUserDeviceManagement(dmrhComponent)
+            TestApis.devicePolicy()
+                .clearMultiuserDeviceManagement(dmrhPackageName)
         }
     }
 

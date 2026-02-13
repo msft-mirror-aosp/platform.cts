@@ -31,6 +31,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import android.app.Dialog;
 import android.app.Instrumentation;
 import android.app.Presentation;
 import android.content.Context;
@@ -48,6 +49,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.cts.R;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -103,6 +107,9 @@ public class WindowTest {
     // for testing setLocalFocus
     private ProjectedPresentation mPresentation;
     private VirtualDisplay mVirtualDisplay;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Rule
     public ActivityTestRule<WindowCtsActivity> mActivityRule =
@@ -730,6 +737,44 @@ public class WindowTest {
                 mPresentation.button1.getWidth() / 2,
                 mPresentation.button1.getY() + mPresentation.button1.getHeight() / 2);
         assertTrue(waitingSemaphore.tryAcquire(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.window.flags.Flags.FLAG_SUPPORT_CUSTOM_DIM_COLOR)
+    public void testAccessDimColor() {
+        mWindow = new MockWindow(mActivity);
+        mWindow.setCallback(mWindowCallback);
+
+        assertEquals(Color.pack(Color.BLACK), mWindow.getAttributes().dimColor);
+
+        long customColor = Color.pack(Color.BLUE);
+        mWindow.setDimColor(customColor);
+        assertEquals(customColor, mWindow.getAttributes().dimColor);
+        verify(mWindowCallback, times(1)).onWindowAttributesChanged(mWindow.getAttributes());
+
+        mWindow.setDimColor(Color.pack(Color.RED));
+        assertEquals(Color.pack(Color.RED), mWindow.getAttributes().dimColor);
+        verify(mWindowCallback, times(2)).onWindowAttributesChanged(mWindow.getAttributes());
+    }
+
+    @Test
+    @UiThreadTest
+    @RequiresFlagsEnabled(com.android.window.flags.Flags.FLAG_SUPPORT_CUSTOM_DIM_COLOR)
+    public void testDimColorFromTheme() throws Throwable {
+        final Context themedContext =
+                new ContextThemeWrapper(mActivity, R.style.CustomDimColorTheme);
+
+        Dialog dialog = new Dialog(themedContext);
+        dialog.show();
+
+        try {
+            assertEquals(
+                    "Window dimColor does not match the theme attribute",
+                    Color.pack(Color.RED),
+                    dialog.getWindow().getAttributes().dimColor);
+        } finally {
+            dialog.dismiss();
+        }
     }
 
     private void checkPresentationButtonFocus(final boolean button1Focused,

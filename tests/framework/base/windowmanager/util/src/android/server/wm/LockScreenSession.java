@@ -175,11 +175,11 @@ public class LockScreenSession implements AutoCloseable {
     /**
      * Enters and confirms a wrong lock credential.
      *
-     * @param suffix a non-negative integer used as a suffix for the wrong credential. The same
+     * @param prefix a non-negative integer used as a prefix for the wrong credential. The same
      *     value used twice will result in a duplicate wrong credential confirmed.
      */
-    public LockScreenSession enterWrongCredentialAndConfirm(int suffix) {
-        return enterLockCredentialAndConfirm(LOCK_CREDENTIAL + suffix);
+    public LockScreenSession enterWrongCredentialAndConfirm(int prefix) {
+        return enterLockCredentialAndConfirm(prefix + LOCK_CREDENTIAL);
     }
 
     /** Enters a credential. */

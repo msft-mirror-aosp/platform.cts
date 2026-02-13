@@ -22,10 +22,15 @@ import android.cts.host.utils.DeviceJUnit4ClassRunnerWithParameters;
 import android.cts.host.utils.DeviceJUnit4Parameterized;
 import android.platform.test.annotations.AppModeFull;
 
+import android.media.cts.codecdb.CodecDbResultReporter;
+import android.media.cts.codecdb.VideoEncoderConfig;
+import android.media.cts.codecdb.VideoEncoderResult;
+
 import com.android.compatibility.common.util.CddTest;
 import com.android.ddmlib.IDevice;
 import com.android.ddmlib.testrunner.RemoteAndroidTestRunner;
 import com.android.ddmlib.testrunner.TestResult.TestStatus;
+import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.config.Option;
 import com.android.tradefed.config.OptionClass;
 import com.android.tradefed.device.DeviceNotAvailableException;
@@ -35,13 +40,20 @@ import com.android.tradefed.result.CollectingTestListener;
 import com.android.tradefed.result.TestDescription;
 import com.android.tradefed.result.TestResult;
 import com.android.tradefed.result.TestRunResult;
+import com.android.tradefed.testtype.IAbi;
+import com.android.tradefed.testtype.IAbiReceiver;
+import com.android.tradefed.testtype.IBuildReceiver;
 import com.android.tradefed.testtype.IDeviceTest;
+
+import com.google.common.collect.ImmutableList;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Assume;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.UseParametersRunnerFactory;
@@ -82,7 +94,7 @@ import javax.annotation.Nullable;
 @RunWith(DeviceJUnit4Parameterized.class)
 @UseParametersRunnerFactory(DeviceJUnit4ClassRunnerWithParameters.RunnerFactory.class)
 @OptionClass(alias = "pc-veq-test")
-public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
+public class CtsVideoEncodingQualityHostTest implements IDeviceTest, IAbiReceiver, IBuildReceiver {
     private static final String RES_VER = "2.0";
     private static final String RES_URL =
             "https://dl.google.com/android/xts/cts/hostsidetests/mediapc/videoencodingquality/CtsVideoEncodingQualityHostTestCases-"
@@ -119,6 +131,21 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
     // local variables related to host-side of the test
     private final String mJsonName;
     private ITestDevice mDevice;
+    private IBuildInfo mBuildInfo;
+    private IAbi mAbi;
+
+    @Rule
+    public TestName mTestName = new TestName();
+
+    @Override
+    public void setBuild(IBuildInfo buildInfo) {
+        mBuildInfo = buildInfo;
+    }
+
+    @Override
+    public void setAbi(IAbi abi) {
+        mAbi = abi;
+    }
 
     @Option(
             name = "force-to-run",
@@ -474,6 +501,10 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
             }
 
             // Second loop to read results and write to all_vmafs.txt
+            ImmutableList.Builder<Long> targetBitratesBuilder = ImmutableList.builder();
+            ImmutableList.Builder<Double> actualBitratesBuilder = ImmutableList.builder();
+            ImmutableList.Builder<Double> vmafScoresBuilder = ImmutableList.builder();
+
             try (FileWriter writer =
                     new FileWriter(outHostPath.getPath() + "/" + "all_vmafs.txt")) {
                 for (int i = 0; i < codecConfigs.length(); i++) {
@@ -482,6 +513,7 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
                     outputName = outputName.substring(0, outputName.lastIndexOf("."));
                     String outputVmafPath = outDir + "/" + outputName + ".txt";
 
+                    double vmafValue = 0;
                     String vmafLine = "";
                     try (BufferedReader reader =
                             new BufferedReader(
@@ -492,7 +524,9 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
                         while ((line = reader.readLine()) != null) {
                             if (line.contains(token)) {
                                 line = line.substring(line.indexOf(token));
-                                vmafLine = "VMAF score = " + line.substring(token.length());
+                                String vmafStr = line.substring(token.length()).trim();
+                                vmafValue = Double.parseDouble(vmafStr);
+                                vmafLine = "VMAF score = " + vmafValue;
                                 LogUtil.CLog.i(vmafLine);
                                 break;
                             }
@@ -513,7 +547,46 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
                     long totalBits_kbps = totalBits / 1000;
                     long bitrate_kbps = totalBits_kbps / clipDuration;
                     writer.write("Bitrate kbps = " + bitrate_kbps + "\n");
+
+                    targetBitratesBuilder.add(codecConfig.optLong("BitRate", 0));
+                    actualBitratesBuilder.add((double) bitrate_kbps);
+                    vmafScoresBuilder.add(vmafValue);
                 }
+            }
+
+            // Report to CodecDB
+            if (mBuildInfo != null && mAbi != null) {
+                String strippedRefName = refFileName.replaceFirst("^AVICON-MOBILE-", "")
+                        .replaceFirst("\\.[^.]+$", "");
+                String codec = obj.optString("TestMediaType", "video/avc");
+                int width = obj.optInt("Width", 0);
+                int height = obj.optInt("Height", 0);
+
+                JSONObject firstConfig = codecConfigs.getJSONObject(0);
+                int maxBFrames = firstConfig.optInt("MaxBFrames", 0);
+                int profile = firstConfig.optInt("Profile", 0);
+                int level = firstConfig.optInt("Level", 0);
+
+                VideoEncoderConfig config = VideoEncoderConfig.builder()
+                        .setReference(strippedRefName)
+                        .addBitrates(targetBitratesBuilder.build())
+                        .setCodec(codec)
+                        .setMaxBFrames(maxBFrames)
+                        .setProfile(profile)
+                        .setLevel(level)
+                        .setOutputWidth(width)
+                        .setOutputHeight(height)
+                        .build();
+
+                VideoEncoderResult resultData = VideoEncoderResult.builder()
+                        .addBitrates(actualBitratesBuilder.build())
+                        .addVmafs(vmafScoresBuilder.build())
+                        .build();
+
+                CodecDbResultReporter reporter = CodecDbResultReporter.create(
+                        mBuildInfo, mAbi.getName(),
+                        this.getClass().getName() + "#" + mTestName.getMethodName(), RES_VER);
+                reporter.reportResult(config, resultData);
             }
         } catch (IOException e) {
             throw new AssertionError("Unexpected IOException", e);

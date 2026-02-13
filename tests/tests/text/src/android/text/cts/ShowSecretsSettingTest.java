@@ -17,14 +17,13 @@
 package android.content.cts;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 import android.Manifest;
 import android.content.ContentResolver;
 import android.content.Context;
-import android.os.UserHandle;
+import android.os.Looper;
 import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -46,6 +45,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 @DisabledOnRavenwood(
@@ -59,16 +61,15 @@ public class ShowSecretsSettingTest {
 
     private static final String TEXT_SHOW_PASSWORD_TOUCH = "show_password_touch";
     private static final String TEXT_SHOW_PASSWORD_PHYSICAL = "show_password_physical";
-    private UserHelper mUserHelper;
     private ContentResolver mContentResolver;
+    private Context mContext;
     private String mOriginalTouchValue;
     private String mOriginalPhysicalValue;
 
     @Before
     public void setup() {
-        Context context = ApplicationProvider.getApplicationContext();
-        mContentResolver = context.getContentResolver();
-        mUserHelper = new UserHelper(context);
+        mContext = ApplicationProvider.getApplicationContext();
+        mContentResolver = mContext.getContentResolver();
         mOriginalTouchValue = Secure.getString(mContentResolver, TEXT_SHOW_PASSWORD_TOUCH);
         mOriginalPhysicalValue = Secure.getString(mContentResolver, TEXT_SHOW_PASSWORD_PHYSICAL);
     }
@@ -95,38 +96,35 @@ public class ShowSecretsSettingTest {
                 },
                 Manifest.permission.WRITE_SECURE_SETTINGS);
 
-        assertEquals(
-                true,
-                ShowSecretsSetting.shouldShowTouchInputForUser(
-                        mContentResolver, mUserHelper.getUser()));
-        assertEquals(
-                false,
-                ShowSecretsSetting.shouldShowPhysicalInputForUser(
-                        mContentResolver, mUserHelper.getUser()));
+        assertEquals(true, ShowSecretsSetting.shouldShowTouchInput(mContext));
+        assertEquals(false, ShowSecretsSetting.shouldShowPhysicalInput(mContext));
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SPLIT_SHOW_PASSWORDS_TO_TOUCH_AND_PHYSICAL)
     public void testNullParamHandling() {
-        for (UserHandle user : new UserHandle[] {mUserHelper.getUser(), null}) {
-            for (ContentResolver cr : new ContentResolver[] {mContentResolver, null}) {
-                if (user != null && cr != null) {
-                    continue;
-                }
-                assertThrows(
-                        NullPointerException.class,
-                        () -> ShowSecretsSetting.shouldShowTouchInputForUser(cr, user));
-                assertThrows(
-                        NullPointerException.class,
-                        () -> ShowSecretsSetting.shouldShowPhysicalInputForUser(cr, user));
-                assertThrows(
-                        NullPointerException.class,
-                        () -> ShowSecretsSetting.setShouldShowTouchInputForUser(cr, true, user));
-                assertThrows(
-                        NullPointerException.class,
-                        () -> ShowSecretsSetting.setShouldShowPhysicalInputForUser(cr, true, user));
-            }
-        }
+        assertThrows(
+                NullPointerException.class, () -> ShowSecretsSetting.shouldShowTouchInput(null));
+        assertThrows(
+                NullPointerException.class, () -> ShowSecretsSetting.shouldShowPhysicalInput(null));
+        assertThrows(
+                NullPointerException.class,
+                () -> ShowSecretsSetting.setShouldShowTouchInput(null, true));
+        assertThrows(
+                NullPointerException.class,
+                () -> ShowSecretsSetting.setShouldShowPhysicalInput(null, true));
+        assertThrows(
+                NullPointerException.class,
+                () -> ShowSecretsSetting.registerCallback(null, () -> {}));
+        assertThrows(
+                NullPointerException.class,
+                () -> ShowSecretsSetting.registerCallback(mContext, null));
+        assertThrows(
+                NullPointerException.class,
+                () -> ShowSecretsSetting.registerCallback(mContext, null, () -> {}));
+        assertThrows(
+                NullPointerException.class,
+                () -> ShowSecretsSetting.registerCallback(mContext, Runnable::run, null));
     }
 
     @Test
@@ -134,26 +132,14 @@ public class ShowSecretsSettingTest {
     public void testSettingWithPermission() {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    boolean val =
-                            ShowSecretsSetting.shouldShowPhysicalInputForUser(
-                                    mContentResolver, mUserHelper.getUser());
+                    boolean val = ShowSecretsSetting.shouldShowPhysicalInput(mContext);
 
-                    ShowSecretsSetting.setShouldShowPhysicalInputForUser(
-                            mContentResolver, !val, mUserHelper.getUser());
-                    assertEquals(
-                            !val,
-                            ShowSecretsSetting.shouldShowPhysicalInputForUser(
-                                    mContentResolver, mUserHelper.getUser()));
+                    ShowSecretsSetting.setShouldShowPhysicalInput(mContext, !val);
+                    assertEquals(!val, ShowSecretsSetting.shouldShowPhysicalInput(mContext));
 
-                    val =
-                            ShowSecretsSetting.shouldShowTouchInputForUser(
-                                    mContentResolver, mUserHelper.getUser());
-                    ShowSecretsSetting.setShouldShowTouchInputForUser(
-                            mContentResolver, !val, mUserHelper.getUser());
-                    assertEquals(
-                            !val,
-                            ShowSecretsSetting.shouldShowTouchInputForUser(
-                                    mContentResolver, mUserHelper.getUser()));
+                    val = ShowSecretsSetting.shouldShowTouchInput(mContext);
+                    ShowSecretsSetting.setShouldShowTouchInput(mContext, !val);
+                    assertEquals(!val, ShowSecretsSetting.shouldShowTouchInput(mContext));
                 },
                 Manifest.permission.WRITE_SECURE_SETTINGS);
     }
@@ -163,21 +149,58 @@ public class ShowSecretsSettingTest {
     public void testSettingWithoutPermission() {
         assertThrows(
                 SecurityException.class,
-                () ->
-                        ShowSecretsSetting.setShouldShowTouchInputForUser(
-                                mContentResolver, true, mUserHelper.getUser()));
+                () -> ShowSecretsSetting.setShouldShowTouchInput(mContext, true));
         assertThrows(
                 SecurityException.class,
-                () ->
-                        ShowSecretsSetting.setShouldShowPhysicalInputForUser(
-                                mContentResolver, true, mUserHelper.getUser()));
+                () -> ShowSecretsSetting.setShouldShowPhysicalInput(mContext, true));
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SPLIT_SHOW_PASSWORDS_TO_TOUCH_AND_PHYSICAL)
-    public void testUrisNotNull() {
-        assertNotNull(ShowSecretsSetting.getTouchUri());
-        assertNotNull(ShowSecretsSetting.getPhysicalUri());
-        assertNotEquals(ShowSecretsSetting.getPhysicalUri(), ShowSecretsSetting.getTouchUri());
+    public void testCallback_onExecutor() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+
+        Runnable unregister =
+                ShowSecretsSetting.registerCallback(mContext, Runnable::run, latch::countDown);
+
+        try {
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> {
+                        boolean current = ShowSecretsSetting.shouldShowTouchInput(mContext);
+                        ShowSecretsSetting.setShouldShowTouchInput(mContext, !current);
+                    },
+                    Manifest.permission.WRITE_SECURE_SETTINGS);
+
+            assertTrue("Callback should be called", latch.await(1, TimeUnit.SECONDS));
+        } finally {
+            unregister.run();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SPLIT_SHOW_PASSWORDS_TO_TOUCH_AND_PHYSICAL)
+    public void testCallback_onMainLooper() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+        Runnable callback =
+                () -> {
+                    if (Looper.myLooper() == Looper.getMainLooper()) {
+                        latch.countDown();
+                    }
+                };
+
+        Runnable unregister = ShowSecretsSetting.registerCallback(mContext, callback);
+
+        try {
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> {
+                        boolean current = ShowSecretsSetting.shouldShowTouchInput(mContext);
+                        ShowSecretsSetting.setShouldShowTouchInput(mContext, !current);
+                    },
+                    Manifest.permission.WRITE_SECURE_SETTINGS);
+
+            assertTrue("Callback should be called on MainLooper", latch.await(1, TimeUnit.SECONDS));
+        } finally {
+            unregister.run();
+        }
     }
 }

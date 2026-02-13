@@ -23,6 +23,7 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.Process;
 import android.os.RemoteException;
+import android.os.UserHandle;
 import android.util.Log;
 
 public class IsolatedService extends Service {
@@ -31,6 +32,9 @@ public class IsolatedService extends Service {
     static final int MSG_GET_SECCOMP_RESULT = 1;
 
     static final int MSG_SECCOMP_RESULT = 2;
+
+    static final int MSG_GET_SECCOMP_RESULT_SAFESETID = 3;
+
     final Messenger mMessenger = new Messenger(new ServiceHandler());
 
     @Override
@@ -61,6 +65,35 @@ public class IsolatedService extends Service {
                     } catch (RemoteException e) {
                         Log.e(TAG, "Failed to send seccomp test result", e);
                     }
+                    break;
+                case (MSG_GET_SECCOMP_RESULT_SAFESETID):
+                    result = ZygotePreload.getSeccomptestResultSafesetid() ? 1 : 0;
+                    if (result != 0) {
+                        // Verify that my UID falls within the global isolated range
+                        int rangeBegin =
+                                UserHandle.getUid(
+                                        UserHandle.myUserId(),
+                                        Process.FIRST_APP_ZYGOTE_ISOLATED_UID);
+                        int rangeEnd =
+                                UserHandle.getUid(
+                                        UserHandle.myUserId(),
+                                        Process.LAST_APP_ZYGOTE_ISOLATED_UID);
+                        if (Process.myUid() < rangeBegin || Process.myUid() > rangeEnd) {
+                            Log.e(
+                                    TAG,
+                                    "Isolated UID "
+                                            + Process.myUid()
+                                            + " is outside the global range of app-zygote isolated"
+                                            + " UIDs");
+                            result = 0;
+                        }
+                    }
+                    try {
+                        msg.replyTo.send(Message.obtain(null, MSG_SECCOMP_RESULT, result, 0));
+                    } catch (RemoteException e) {
+                        Log.e(TAG, "Failed to send seccomp test result", e);
+                    }
+
                     break;
                 default:
                     super.handleMessage(msg);

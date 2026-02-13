@@ -15,6 +15,8 @@
  */
 package com.android.cts;
 
+import android.content.Intent;
+
 interface IBinderPermissionTestService {
     // Methods that, when called, invoke one of the permission check methods
     // to check the caller's permissions.
@@ -22,4 +24,5 @@ interface IBinderPermissionTestService {
     int doCheckCallingPermission(String permission);
     void doEnforceCallingOrSelfPermission(String permission);
     int doCheckCallingOrSelfPermission(String permission);
+    void doBindServiceExpectingFailure(in Intent intent, long flags);
 }

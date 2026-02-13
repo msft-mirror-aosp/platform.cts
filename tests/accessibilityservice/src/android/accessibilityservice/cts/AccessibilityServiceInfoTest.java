@@ -31,6 +31,8 @@ import android.app.UiAutomation;
 import android.os.Parcel;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.InputDevice;
@@ -232,8 +234,36 @@ public class AccessibilityServiceInfoTest extends StsExtraBusinessLogicTestCase 
     }
 
     @Test
+    @RequiresFlagsEnabled(
+            com.android.server.accessibility.Flags
+                    .FLAG_RESET_MOTION_EVENT_SOURCES_ON_DENIED_PERMISSION)
     @AsbSecurityTest(cveBugId = {419110583})
-    public void testSetObservedMotionEventSources_withoutPermission_doesNotSet() {
+    public void testSetObservedMotionEventSources_withoutPermission_flagEnabled_doesNotSet() {
+        try {
+            final int requestedSource = InputDevice.SOURCE_TOUCHSCREEN;
+            final InstrumentedAccessibilityService service =
+                    InstrumentedAccessibilityService.enableService(
+                            InstrumentedAccessibilityService.class);
+            final AccessibilityServiceInfo info = service.getServiceInfo();
+
+            info.setMotionEventSources(requestedSource);
+            info.setObservedMotionEventSources(requestedSource);
+            service.setServiceInfo(info);
+
+            AccessibilityServiceInfo updatedInfo = service.getServiceInfo();
+            assertThat(updatedInfo.getMotionEventSources()).isEqualTo(0);
+            assertThat(updatedInfo.getObservedMotionEventSources()).isEqualTo(0);
+        } finally {
+            InstrumentedAccessibilityService.disableAllServices();
+        }
+    }
+
+    @Test
+    @RequiresFlagsDisabled(
+            com.android.server.accessibility.Flags
+                    .FLAG_RESET_MOTION_EVENT_SOURCES_ON_DENIED_PERMISSION)
+    @AsbSecurityTest(cveBugId = {419110583})
+    public void testSetObservedMotionEventSources_withoutPermission_flagDisabled_doesNotSet() {
         try {
             final int requestedSource = InputDevice.SOURCE_TOUCHSCREEN;
             final InstrumentedAccessibilityService service =

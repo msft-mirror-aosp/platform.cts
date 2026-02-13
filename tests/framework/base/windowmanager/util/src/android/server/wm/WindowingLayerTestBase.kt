@@ -20,11 +20,12 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.server.wm.ActivityManagerTestBase
-import android.server.wm.BuildUtils
+import android.os.UserHandle
 import android.server.wm.StateLogger.logAlways
 import android.server.wm.app.Components
 import android.server.wm.app.Components.PinnedWindowingLayerActivity.ACTION_ACTIVITY_FINISHED
+import android.server.wm.app.Components.PinnedWindowingLayerActivity.ACTION_RELAUNCH_AS_RESIZABLE_RESULT
+import android.server.wm.app.Components.PinnedWindowingLayerActivity.ACTION_TASK_MOVE_RESULT
 import android.server.wm.app.Components.PinnedWindowingLayerActivity.ACTION_REQUEST_WINDOWING_LAYER_RESULT
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.channels.Channel
@@ -41,6 +42,8 @@ public abstract class WindowingLayerTestBase : ActivityManagerTestBase() {
     private val broadcastIntentFilter =
         IntentFilter().apply {
             addAction(ACTION_REQUEST_WINDOWING_LAYER_RESULT)
+            addAction(ACTION_RELAUNCH_AS_RESIZABLE_RESULT)
+            addAction(ACTION_TASK_MOVE_RESULT)
             addAction(ACTION_ACTIVITY_FINISHED)
         }
     private val broadcastReceiver: BroadcastReceiver =
@@ -70,7 +73,33 @@ public abstract class WindowingLayerTestBase : ActivityManagerTestBase() {
     }
 
     suspend fun awaitBroadcast(action: String): Intent? {
+        if (!broadcastIntentFilter.hasAction(action)) {
+            throw IllegalArgumentException(
+                "Action '$action' is not registered in the broadcast filter. " +
+                    "Please check your test setup."
+            )
+        }
         return withTimeoutOrNull(TIMEOUT_MS) { getBroadcastChannel(action).receive() }
+    }
+
+    fun grantBrowserRole() {
+        logAlways("Granting browser role")
+        ShellCommandHelper.executeShellCommand(
+            "cmd role add-role-holder --user " +
+                UserHandle.myUserId() +
+                " android.app.role.BROWSER " +
+                Components.getPackageName()
+        )
+    }
+
+    fun revokeBrowserRole() {
+        logAlways("Revoking browser role")
+        ShellCommandHelper.executeShellCommand(
+            "cmd role remove-role-holder --user " +
+                UserHandle.myUserId() +
+                " android.app.role.BROWSER " +
+                Components.getPackageName()
+        )
     }
 
     private fun getBroadcastChannel(action: String): Channel<Intent> {

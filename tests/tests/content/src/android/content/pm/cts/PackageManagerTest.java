@@ -63,10 +63,19 @@ import static android.content.pm.PackageManager.MATCH_UNINSTALLED_PACKAGES;
 import static android.content.pm.PackageManager.SYSTEM_APP_STATE_HIDDEN_UNTIL_INSTALLED_HIDDEN;
 import static android.content.pm.cts.PackageManagerShellCommandIncrementalTest.parsePackageDump;
 import static android.content.pm.cts.util.PackageTestUtils.APP_LOCK_SUPPORTED_APK;
+import static android.content.pm.cts.util.PackageTestUtils.APP_LOCK_SUPPORTED_APP_LABEL;
 import static android.content.pm.cts.util.PackageTestUtils.APP_LOCK_SUPPORTED_PACKAGE_NAME;
+import static android.content.pm.cts.util.PackageTestUtils.HEADLESS_APK;
+import static android.content.pm.cts.util.PackageTestUtils.HEADLESS_APP_PACKAGE_NAME;
+import static android.content.pm.cts.util.PackageTestUtils.clearLskfScoped;
+import static android.content.pm.cts.util.PackageTestUtils.createSupervisedUserScoped;
+import static android.content.pm.cts.util.PackageTestUtils.getSystemResourceName;
 import static android.content.pm.cts.util.PackageTestUtils.hasLockAppsPermission;
 import static android.content.pm.cts.util.PackageTestUtils.installPackageScoped;
+import static android.content.pm.cts.util.PackageTestUtils.launchPendingIntentWithBgStart;
 import static android.content.pm.cts.util.PackageTestUtils.setHomeRoleHolderScoped;
+import static android.content.pm.cts.util.PackageTestUtils.setLskfScoped;
+import static android.content.pm.cts.util.PackageTestUtils.waitForUiObject;
 import static android.os.UserHandle.CURRENT;
 import static android.os.UserHandle.USER_CURRENT;
 
@@ -135,6 +144,7 @@ import android.content.pm.SuspendDialogInfo;
 import android.content.pm.cts.PackageManagerShellCommandInstallTest.PackageBroadcastReceiver;
 import android.content.pm.cts.util.AbandonAllPackageSessionsRule;
 import android.content.pm.cts.util.AppLockSupportRule;
+import android.content.pm.cts.util.PackageTestUtils.ScopedSupervisedUser;
 import android.content.pm.cts.util.RequiresAppLockSupported;
 import android.content.res.Configuration;
 import android.content.res.Resources;
@@ -165,6 +175,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ServiceTestRule;
+import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.ApiTest;
@@ -295,6 +306,10 @@ public class PackageManagerTest {
             EMPTY_APP_PACKAGE_NAME + ".longusespermission";
     private static final String SETTINGS_PROVIDER_PACKAGE_NAME = "com.android.providers.settings";
     private static final String SHELL_PACKAGE_NAME = "com.android.shell";
+    private static final String APP_LOCK_DIALOG_TITLE_RES = getSystemResourceName(
+                "app_lock_dialog_title");
+    private static final String APP_LOCK_EDU_DIALOG_TITLE_RES = getSystemResourceName(
+                "app_lock_edu_dialog_title");
     private static final String CTS_TARGET_SDK_23_PACKAGE_NAME =
             "android.content.cts.emptytestapp.sdk23";
     private static final String CTS_TARGET_SDK_24_PACKAGE_NAME =
@@ -333,6 +348,7 @@ public class PackageManagerTest {
             + "CtsContentMockLauncherTestApp.apk";
     private static final String NON_EXISTENT_PACKAGE_NAME = "android.content.cts.nonexistent.pkg";
     private static final String INVALID_PACKAGE_NAME = "@null_invalid#name";
+    private static final String SYSTEM_PACKAGE_NAME = "android";
     private static final String STUB_PACKAGE_APK = SAMPLE_APK_BASE
             + "CtsSyncAccountAccessStubs.apk";
     private static final String STUB_PACKAGE_SPLIT =
@@ -4358,6 +4374,24 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
         }
     }
 
+   // TODO(b/483637043): Implement
+   // testGetEnableAppLockIntentForPackage_managedProfile_returnsNull().
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(apis = {"android.content.pm.PackageManager#getEnableAppLockIntentForPackage"})
+    public void testGetEnableAppLockIntentForPackage_withPermission_returnsIntent() throws
+            Exception {
+        try (AutoCloseable homeRole = setHomeRoleHolderScoped(mContext)) {
+            assertThat(hasLockAppsPermission(mContext)).isTrue();
+
+            assertThat(mPackageManager.getEnableAppLockIntentForPackage(mContext.getPackageName(),
+                        /* enabled= */ true)).isNotNull();
+        }
+    }
+
     @Test
     @DisabledOnRavenwood(blockedBy = PackageManager.class)
     @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
@@ -4377,6 +4411,301 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
                                     APP_LOCK_SUPPORTED_PACKAGE_NAME, /* enabled= */ true);
 
             assertThat(pendingIntent).isNotNull();
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(apis = {"android.content.pm.PackageManager#getEnableAppLockIntentForPackage"})
+    public void testGetEnableAppLockIntentForPackage_nonExistentPackage_returnsNull() throws
+                Exception {
+        try (AutoCloseable homeRole = setHomeRoleHolderScoped(mContext)) {
+            assertThat(hasLockAppsPermission(mContext)).isTrue();
+
+            assertThat(mPackageManager.getEnableAppLockIntentForPackage(NON_EXISTENT_PACKAGE_NAME,
+                        /* enabled= */ true)).isNull();
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(apis = {"android.content.pm.PackageManager#getEnableAppLockIntentForPackage"})
+    public void testGetEnableAppLockIntentForPackage_headlessPackage_returnsNull() throws
+                Exception {
+        try (AutoCloseable withHeadlessAppInstalled =
+                installPackageScoped(HEADLESS_APK, HEADLESS_APP_PACKAGE_NAME)) {
+            try (AutoCloseable homeRole = setHomeRoleHolderScoped(mContext)) {
+                assertThat(hasLockAppsPermission(mContext)).isTrue();
+
+                assertThat(mPackageManager.getEnableAppLockIntentForPackage(
+                        HEADLESS_APP_PACKAGE_NAME, /* enabled= */ true)).isNull();
+            }
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(apis = {"android.content.pm.PackageManager#getEnableAppLockIntentForPackage"})
+    public void testGetEnableAppLockIntentForPackage_validSampleApp_returnsIntent() throws
+                Exception {
+        try (AutoCloseable withSampleAppInstalled =
+                installPackageScoped(APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME)) {
+            try (AutoCloseable homeRole = setHomeRoleHolderScoped(mContext)) {
+                assertThat(hasLockAppsPermission(mContext)).isTrue();
+
+                assertThat(mPackageManager.getEnableAppLockIntentForPackage(
+                        APP_LOCK_SUPPORTED_PACKAGE_NAME, /* enabled= */ true)).isNotNull();
+            }
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(apis = {"android.content.pm.PackageManager#getEnableAppLockIntentForPackage"})
+    public void testGetEnableAppLockIntentForPackage_invalidEnabledState_returnsNull() throws
+                Exception {
+        try (AutoCloseable installedApp =
+                installPackageScoped(APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME)) {
+            try (AutoCloseable homeRole = setHomeRoleHolderScoped(mContext)) {
+                assertThat(hasLockAppsPermission(mContext)).isTrue();
+
+                assertThat(mPackageManager.getEnableAppLockIntentForPackage(
+                        APP_LOCK_SUPPORTED_PACKAGE_NAME, /* enabled= */ true)).isNotNull();
+
+                assertThat(mPackageManager.getEnableAppLockIntentForPackage(
+                        APP_LOCK_SUPPORTED_PACKAGE_NAME, /* enabled= */ false)).isNull();
+            }
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(apis = {"android.content.pm.PackageManager#getEnableAppLockIntentForPackage"})
+    public void testGetEnableAppLockIntentForPackage_exemptPackage_returnsNull() throws
+            Exception {
+        final ResolveInfo resolveInfo = mPackageManager.resolveActivity(
+                new Intent(Settings.ACTION_SETTINGS), PackageManager.ResolveInfoFlags.of(0));
+        assertThat(resolveInfo).isNotNull();
+
+        final String settingsPackageName = resolveInfo.activityInfo.packageName;
+        assertThat(settingsPackageName).isNotNull();
+
+        try (AutoCloseable homeRole = setHomeRoleHolderScoped(mContext)) {
+            assertThat(hasLockAppsPermission(mContext)).isTrue();
+
+            assertThat(mPackageManager.getEnableAppLockIntentForPackage(settingsPackageName,
+                    /* enabled= */ true)).isNull();
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(apis = {"android.content.pm.PackageManager#getEnableAppLockIntentForPackage"})
+    public void testGetEnableAppLockIntentForPackage_supervisedUser_returnsNull() throws
+            Exception {
+        try (AutoCloseable roleContext = setHomeRoleHolderScoped(mContext)) {
+            try (ScopedSupervisedUser supervisedUser = createSupervisedUserScoped(mContext)) {
+                try (AutoCloseable targetApp = installPackageScoped(
+                        APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME)) {
+
+                    assertThat(mPackageManager.getEnableAppLockIntentForPackage(
+                            APP_LOCK_SUPPORTED_PACKAGE_NAME, /* enabled= */ true)).isNull();
+                }
+            }
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(apis = {"android.content.pm.PackageManager#getEnableAppLockIntentForPackage"})
+    public void testGetEnableAppLockIntentForPackage_validIntent_IsImmutable() throws
+            Exception {
+        try (AutoCloseable homeRole = setHomeRoleHolderScoped(mContext)) {
+            final PendingIntent pendingIntent = mPackageManager.getEnableAppLockIntentForPackage(
+                    mContext.getPackageName(), /* enabled= */ true);
+
+            assertThat(pendingIntent).isNotNull();
+            assertThat(pendingIntent.isImmutable()).isTrue();
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(apis = {"android.content.pm.PackageManager#getEnableAppLockIntentForPackage"})
+    public void testGetEnableAppLockIntentForPackage_validIntent_resolvesToSystemComponent() throws
+            Exception {
+        try (AutoCloseable homeRole = setHomeRoleHolderScoped(mContext)) {
+            final PendingIntent pendingIntent = mPackageManager.getEnableAppLockIntentForPackage(
+                    mContext.getPackageName(), /* enabled= */ true);
+            final Intent intent = SystemUtil.runWithShellPermissionIdentity(
+                    pendingIntent::getIntent, Manifest.permission.GET_INTENT_SENDER_INTENT);
+            final ResolveInfo resolveInfo = mPackageManager.resolveActivity(intent, /* flags= */ 0);
+
+            assertThat(resolveInfo).isNotNull();
+            assertThat(resolveInfo.activityInfo.packageName).isEqualTo(SYSTEM_PACKAGE_NAME);
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(apis = {"android.content.pm.PackageManager#getEnableAppLockIntentForPackage"})
+    public void testGetEnableAppLockIntentForPackage_validIntent_verifyPackageAndEnabledExtras()
+            throws Exception {
+        try (AutoCloseable homeRole = setHomeRoleHolderScoped(mContext)) {
+            final String targetPkg = mContext.getPackageName();
+            final PendingIntent pendingIntent = mPackageManager.getEnableAppLockIntentForPackage(
+                    targetPkg, /* enabled= */ true);
+            final Intent intent = SystemUtil.runWithShellPermissionIdentity(
+                    pendingIntent::getIntent, Manifest.permission.GET_INTENT_SENDER_INTENT);
+
+            assertThat(intent.getStringExtra(Intent.EXTRA_PACKAGE_NAME)).isEqualTo(targetPkg);
+            assertThat(intent.getBooleanExtra(PackageManager.EXTRA_APP_LOCK_NEW_STATE, false))
+                    .isTrue();
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(apis = {"android.content.pm.PackageManager#getEnableAppLockIntentForPackage"})
+    public void testGetEnableAppLockIntentForPackage_lskfNotSet_showsLskfSetupUi() throws
+            Exception {
+        try (AutoCloseable homeRole = setHomeRoleHolderScoped(mContext)) {
+            try (AutoCloseable noLock = clearLskfScoped()) {
+                final PendingIntent pendingIntent = mPackageManager
+                        .getEnableAppLockIntentForPackage(mContext.getPackageName(),
+                        /* enabled= */ true);
+
+                try (AutoCloseable pendingIntentLaunched = launchPendingIntentWithBgStart(mUiDevice,
+                        pendingIntent)) {
+                    assertThat(waitForUiObject(mUiDevice, By.res(APP_LOCK_DIALOG_TITLE_RES)))
+                            .isTrue();
+                }
+            }
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(apis = {"android.content.pm.PackageManager#getEnableAppLockIntentForPackage"})
+    public void testGetEnableAppLockIntentForPackage_lskfSet_showsUserEducationUi() throws
+            Exception {
+        try (AutoCloseable homeRole = setHomeRoleHolderScoped(mContext)) {
+            try (AutoCloseable lock = setLskfScoped()) {
+                final PendingIntent pendingIntent = mPackageManager
+                        .getEnableAppLockIntentForPackage(mContext.getPackageName(),
+                        /* enabled= */ true);
+
+                try (AutoCloseable pendingIntentLaunched = launchPendingIntentWithBgStart(mUiDevice,
+                        pendingIntent)) {
+                    assertThat(waitForUiObject(mUiDevice, By.res(APP_LOCK_EDU_DIALOG_TITLE_RES)))
+                            .isTrue();
+                }
+            }
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(apis = {"android.content.pm.PackageManager#getEnableAppLockIntentForPackage"})
+    public void testGetEnableAppLockIntentForPackage_userEducation_verifyTargetPackageDisplayed()
+            throws Exception {
+        try (AutoCloseable homeRole = setHomeRoleHolderScoped(mContext)) {
+            try (AutoCloseable lock = setLskfScoped()) {
+                final String targetPkg = mContext.getPackageName();
+                final PendingIntent pendingIntent = mPackageManager
+                        .getEnableAppLockIntentForPackage(targetPkg, /* enabled= */ true);
+                final String appLabel = mPackageManager.getApplicationLabel(mPackageManager
+                        .getApplicationInfo(targetPkg, /* flags= */ 0)).toString();
+
+                try (AutoCloseable pendingIntentLaunched = launchPendingIntentWithBgStart(mUiDevice,
+                        pendingIntent)) {
+                    assertThat(waitForUiObject(mUiDevice, By.res(APP_LOCK_EDU_DIALOG_TITLE_RES)
+                            .textContains(appLabel))).isTrue();
+                }
+            }
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(apis = {"android.content.pm.PackageManager#getEnableAppLockIntentForPackage"})
+    public void testGetEnableAppLockIntentForPackage_multipleApps_showsCorrectContextForEach()
+            throws Exception {
+        try (AutoCloseable homeRole = setHomeRoleHolderScoped(mContext)) {
+            try (AutoCloseable lock = setLskfScoped()) {
+                try (AutoCloseable withAppLockSupportedApp = installPackageScoped(
+                        APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME)) {
+                    final String callerAppLabel = mPackageManager.getApplicationLabel(
+                            mContext.getApplicationInfo()).toString();
+                    final PendingIntent firstIntent = mPackageManager
+                            .getEnableAppLockIntentForPackage(APP_LOCK_SUPPORTED_PACKAGE_NAME,
+                            /* enabled= */ true);
+
+                    try (AutoCloseable pendingIntentLaunched = launchPendingIntentWithBgStart(
+                            mUiDevice, firstIntent)) {
+                        assertThat(waitForUiObject(mUiDevice, By.res(APP_LOCK_EDU_DIALOG_TITLE_RES)
+                                .textContains(APP_LOCK_SUPPORTED_APP_LABEL))).isTrue();
+                    }
+
+                    final PendingIntent secondIntent = mPackageManager
+                            .getEnableAppLockIntentForPackage(mContext.getPackageName(),
+                            /* enabled= */ true);
+
+                    try (AutoCloseable pendingIntentLaunched = launchPendingIntentWithBgStart(
+                            mUiDevice, secondIntent)) {
+                        assertThat(waitForUiObject(mUiDevice, By.res(APP_LOCK_EDU_DIALOG_TITLE_RES)
+                                .textContains(callerAppLabel))).isTrue();
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @RequiresAppLockSupported
+    @ApiTest(apis = {"android.content.pm.PackageManager#getEnableAppLockIntentForPackage"})
+    public void testGetEnableAppLockIntentForPackage_appUninstalled_intentBecomesInvalid()
+            throws Exception {
+        try (AutoCloseable homeRole = setHomeRoleHolderScoped(mContext)) {
+            try (AutoCloseable withAppLockSupportedApp = installPackageScoped(
+                    APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME)) {
+                final PendingIntent pendingIntent = mPackageManager
+                        .getEnableAppLockIntentForPackage(APP_LOCK_SUPPORTED_PACKAGE_NAME,
+                        /* enabled= */ true);
+
+                assertThat(pendingIntent).isNotNull();
+            }
+
+            assertThat(mPackageManager.getEnableAppLockIntentForPackage(
+                        APP_LOCK_SUPPORTED_PACKAGE_NAME, /* enabled= */ true)).isNull();
         }
     }
 }

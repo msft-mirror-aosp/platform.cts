@@ -224,4 +224,21 @@ public abstract class NativeServiceTestBase {
         verify(mockListener1, timeout(TIMEOUT_MS)).onUnbind();
         verify(mockListener2, timeout(TIMEOUT_MS)).onUnbind();
     }
+
+    @Test
+    public void testCallAfterUnbind() throws InterruptedException, RemoteException {
+        Intent intent = createServiceIntent(TEST_ACTION_UTF8);
+        INativeServiceListener mockListener = mock(INativeServiceListener.class);
+        NativeServiceTestConnection conn = new NativeServiceTestConnection(mockListener, 1);
+
+        assertTrue(mContext.bindService(intent, conn, Context.BIND_AUTO_CREATE));
+        verify(mockListener, timeout(TIMEOUT_MS)).onRegister();
+        INativeServiceWrapper service = conn.getService();
+
+        mContext.unbindService(conn);
+        verify(mockListener, timeout(TIMEOUT_MS)).onUnbind();
+
+        // This call should succeed because the client's reference keeps the remote object alive.
+        service.getParentPid();
+    }
 }

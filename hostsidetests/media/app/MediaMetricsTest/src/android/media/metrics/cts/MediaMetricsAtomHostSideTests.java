@@ -725,4 +725,70 @@ public class MediaMetricsAtomHostSideTests {
         b.putString(LOG_SESSION_ID_KEY, stringId);
         SendToInstrumentation.sendBundle(InstrumentationRegistry.getInstrumentation(), b);
     }
+
+    @Test
+    public void testMediaProcessingEvent_valid() throws Exception {
+        turnOnForTesting();
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        MediaMetricsManager manager = context.getSystemService(MediaMetricsManager.class);
+        try (BundleSession s = manager.createBundleSession()) {
+            PersistableBundle b = new PersistableBundle();
+            b.putInt(BundleSession.KEY_STATSD_ATOM, 1279); // MediaProcessingEventReported
+            b.putString("mediaprocessingevent-processor-name", "test.processor");
+            b.putInt("mediaprocessingevent-event", 1); // EVENT_INITIALIZE
+            b.putInt("mediaprocessingevent-status", 1); // STATUS_SUCCEEDED
+            b.putIntArray("mediaprocessingevent-components", new int[] {1}); // COMPONENT_AUDIO_SPEED_ADJUSTMENT
+            b.putIntArray("mediaprocessingevent-component-scopes", new int[] {0});
+            b.putLong("mediaprocessingevent-flags", 123L);
+            b.putIntArray("mediaprocessingevent-metrics", new int[] {1}); // METRIC_AUDIO_SPEED_ADJUSTMENT_FACTOR
+            b.putLongArray("mediaprocessingevent-metric-values", new long[] {15000L}); // 1.5x speed
+            s.reportBundleMetrics(b);
+            writeSessionIdToFile(s.getSessionId().getStringId());
+        }
+        resetProperties();
+    }
+
+    @Test
+    public void testMediaProcessingEvent_invalid_missingComponents() throws Exception {
+        turnOnForTesting();
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        MediaMetricsManager manager = context.getSystemService(MediaMetricsManager.class);
+        try (BundleSession s = manager.createBundleSession()) {
+            PersistableBundle b = new PersistableBundle();
+            b.putInt(BundleSession.KEY_STATSD_ATOM, 1279); // MediaProcessingEventReported
+            b.putString("mediaprocessingevent-processor-name", "test.processor");
+            b.putInt("mediaprocessingevent-event", 1); // EVENT_INITIALIZE
+            b.putInt("mediaprocessingevent-status", 1); // STATUS_SUCCEEDED
+            // Missing components array.
+            b.putIntArray("mediaprocessingevent-component-scopes", new int[] {0});
+            b.putLong("mediaprocessingevent-flags", 123L);
+            b.putIntArray("mediaprocessingevent-metrics", new int[] {1});
+            b.putLongArray("mediaprocessingevent-metric-values", new long[] {15000L});
+            s.reportBundleMetrics(b);
+            writeSessionIdToFile(s.getSessionId().getStringId());
+        }
+        resetProperties();
+    }
+
+    @Test
+    public void testMediaProcessingEvent_invalid_metricsMismatch() throws Exception {
+        turnOnForTesting();
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        MediaMetricsManager manager = context.getSystemService(MediaMetricsManager.class);
+        try (BundleSession s = manager.createBundleSession()) {
+            PersistableBundle b = new PersistableBundle();
+            b.putInt(BundleSession.KEY_STATSD_ATOM, 1279); // MediaProcessingEventReported
+            b.putString("mediaprocessingevent-processor-name", "test.processor");
+            b.putInt("mediaprocessingevent-event", 1); // EVENT_INITIALIZE
+            b.putInt("mediaprocessingevent-status", 1); // NO_ERROR
+            b.putIntArray("mediaprocessingevent-components", new int[] {1});
+            b.putIntArray("mediaprocessingevent-component-scopes", new int[] {0});
+            b.putLong("mediaprocessingevent-flags", 123L);
+            b.putIntArray("mediaprocessingevent-metrics", new int[] {1});
+            b.putLongArray("mediaprocessingevent-metric-values", new long[] {15000L, 99L}); // Mismatch
+            s.reportBundleMetrics(b);
+            writeSessionIdToFile(s.getSessionId().getStringId());
+        }
+        resetProperties();
+    }
 }

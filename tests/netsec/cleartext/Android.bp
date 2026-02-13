@@ -25,7 +25,7 @@ android_test {
         "ctstestrunner-axt",
         "androidx.test.rules",
         "compatibility-device-util-axt",
-        "tests-tests-networksecurityconfig-lib",
+        "networksecurity-test-lib",
     ],
     libs: [
         "org.apache.http.legacy.stubs.test",

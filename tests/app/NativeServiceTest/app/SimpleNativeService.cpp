@@ -43,21 +43,17 @@ std::shared_ptr<SimpleNativeService> gService;
 
 extern "C" AIBinder* onBind(ANativeService* _Nonnull /* service */, uint64_t /* bindToken */,
                             char const* _Nullable /* action */, char const* _Nullable /* data */) {
-    return gService->asBinder().get();
+    ndk::SpAIBinder binder = gService->asBinder();
+    AIBinder_incStrong(binder.get());
+    return binder.get();
 }
 
 extern "C" void onDestroy(ANativeService* _Nonnull /* service */) {
-    AIBinder_decStrong(gService->asBinder().get());
     gService = nullptr;
 }
 
 extern "C" void ANativeService_onCreate(ANativeService* service) {
     gService = ndk::SharedRefBase::make<SimpleNativeService>();
-    // Increment the strong count on the binder object to ensure it stays alive
-    // for the full lifecycle of the ANativeService, even if all clients unbind
-    // (because the IBinder is cached in AMS and may be reused).
-    // The count is decremented in onDestroy.
-    AIBinder_incStrong(gService->asBinder().get());
 
     ANativeService_setOnBindCallback(service, onBind);
     ANativeService_setOnDestroyCallback(service, onDestroy);
