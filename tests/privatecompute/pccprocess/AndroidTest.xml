@@ -38,6 +38,13 @@
         <option name="test-file-name" value="PccQueryableByProvider.apk" />
     </target_preparer>
 
+    <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <option name="run-command" value="cmd pcc_sandbox add-allowed-package com.android.cts.pcc.processes" />
+        <option name="run-command" value="cmd pcc_sandbox add-allowed-package com.android.cts.pcc.appops" />
+        <option name="teardown-command" value="cmd pcc_sandbox remove-allowed-package com.android.cts.pcc.processes" />
+        <option name="teardown-command" value="cmd pcc_sandbox remove-allowed-package com.android.cts.pcc.appops" />
+    </target_preparer>
+
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="com.android.cts.pcc.processes" />
         <option name="runner" value="androidx.test.runner.AndroidJUnitRunner" />
