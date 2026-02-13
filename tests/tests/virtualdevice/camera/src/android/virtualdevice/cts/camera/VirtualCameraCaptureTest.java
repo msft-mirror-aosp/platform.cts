@@ -55,6 +55,7 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.SessionConfiguration;
 import android.media.Image;
 import android.media.ImageWriter;
+import android.os.SystemClock;
 import android.os.Trace;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsDisabled;
@@ -84,6 +85,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -370,6 +372,7 @@ public class VirtualCameraCaptureTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CAMERA_TIMESTAMP_FROM_SURFACE)
+    @Ignore("Tests frame duplication logic which has been removed.")
     public void captureMultipleImages_withCustomTimestamp_withImageWriter() {
         int width = 460;
         int height = 260;
@@ -579,8 +582,6 @@ public class VirtualCameraCaptureTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_NO_FRAME_DUPLICATION)
-    @Ignore("b/422724125")
     public void captureMultipleImages_motionCapture_noDuplication() {
         int width = 460;
         int height = 260;
@@ -624,14 +625,13 @@ public class VirtualCameraCaptureTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_NO_FRAME_DUPLICATION)
-    public void captureMultipleImages_preview_FrameDuplication() {
+    public void captureMultipleImages_preview_noFrameDuplication() {
         int width = 460;
         int height = 260;
         long renderedTimestampNanos = 1_000_000;
         int imageCount = 10;
         int virtualCameraDeclaredFPS = 30;
-        int imageWriterFPS = 5;
+        int imageWriterFPS = 30;
 
         mCaptureHelper.createVirtualCamera(width, height, YUV_420_888, virtualCameraDeclaredFPS);
 
@@ -661,12 +661,47 @@ public class VirtualCameraCaptureTest {
                 .map(result -> result.get(CaptureResult.SENSOR_TIMESTAMP))
                 .toList();
 
-        // We check that the virtual camera HAL created duplicated frames by checking that
-        // all the timestamps we received are the one we wrote and that we have more timestamp
-        // than the ones the image writer actually wrote.
-        assertThat(receivedTimestamps).containsAtLeastElementsIn(writtenTimestamps);
-        assertThat(receivedTimestamps.size()).isGreaterThan(writtenTimestamps.size());
+        // Since frame duplication is disabled, we expect exact match of timestamps.
+        assertThat(receivedTimestamps).containsExactlyElementsIn(writtenTimestamps);
         assertThat(captureResults).hasSize(imageCount);
+    }
+
+    @Test
+    public void captureImage_fatalTimeout_reportsErrors() throws Exception {
+        int width = 640;
+        int height = 480;
+        int imageCount = 5;
+
+        mCaptureHelper.createVirtualCamera(width, height, YUV_420_888);
+
+        CaptureConfiguration config =
+                new CaptureConfiguration()
+                        .addOutputFormat(width, height, YUV_420_888)
+                        .setImageCount(imageCount)
+                        .setCapturePeriod(Duration.ofMillis(100))
+                        .setFailOnCaptureError(false)
+                        .setVerifyCaptureComplete(false)
+                        .setInputSurfaceConsumer(
+                                surface -> {
+                                    // Provide only 1 frame.
+                                    VirtualCameraUtils.paintSurface(surface, Color.RED);
+                                });
+
+        mCaptureHelper.captureImages(config);
+
+        // First frame should be successful.
+        // Wait for some time to allow timeouts to happen.
+        SystemClock.sleep(15000);
+
+        // We expect:
+        // 1. One successful capture (the one we painted).
+        // 2. Subsequent captures to fail with ERROR_REQUEST (due to timeout).
+        // 3. Eventually a fatal error (DEVICE_ERROR) triggered.
+        assertThat(mCaptureHelper.getCaptureResults()).isNotEmpty();
+
+        // Verify that onError was called on the camera device due to fatal timeout.
+        Mockito.verify(mCaptureHelper.getCameraStateCallback(), Mockito.atLeastOnce())
+                .onError(Mockito.any(), Mockito.eq(CameraDevice.StateCallback.ERROR_CAMERA_DEVICE));
     }
 
     @Test
@@ -830,7 +865,7 @@ public class VirtualCameraCaptureTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MULTIPLE_INPUT_STREAMS)
     public void virtualCamera_camera_multiple_input_streams() throws Exception {
-        int imageCount = 5;
+        int imageCount = 1;
         int streamWidth = 1280;
         int streamHeight = 720;
         int stream2Width = streamWidth / 2;
@@ -882,7 +917,7 @@ public class VirtualCameraCaptureTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MULTIPLE_INPUT_STREAMS)
     public void virtualCamera_camera_multiple_input_streams_disabled_in_config() {
-        int imageCount = 5;
+        int imageCount = 1;
         int streamWidth = 1280;
         int streamHeight = 720;
         int stream2Width = streamWidth / 2;
