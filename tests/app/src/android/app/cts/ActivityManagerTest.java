@@ -2370,39 +2370,77 @@ public final class ActivityManagerTest {
         final ApplicationInfo appInfo =
                 mTargetContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
         final int uid = appInfo.uid;
-        final WatchUidRunner watcher = new WatchUidRunner(mInstrumentation, uid, WAITFOR_MSEC);
-        try (AutoCloseable unused =
-                     CtsAppTestUtils.allowBackgroundActivityLaunch(PACKAGE_NAME_APP1)) {
-            // Start an activity to make sure the process is running.
-            CommandReceiver.sendCommand(mTargetContext, CommandReceiver.COMMAND_START_ACTIVITY,
-                    PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
-            watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_TOP, null);
+        final WatchUidRunner watcher =
+                new WatchUidRunner(mInstrumentation, uid, WAITFOR_PROCSTAT_TIMEOUT_MSEC);
+
+        final CountDownLatch frozenLatch = new CountDownLatch(1);
+        final CountDownLatch unfrozenLatch = new CountDownLatch(1);
+        final ActivityManager.UidFrozenStateChangedCallback callback =
+                (uids, frozenStates) -> {
+                    for (int i = 0; i < uids.length; i++) {
+                        if (uids[i] == uid) {
+                            if (frozenStates[i] == UID_FROZEN_STATE_FROZEN) {
+                                frozenLatch.countDown();
+                            } else {
+                                unfrozenLatch.countDown();
+                            }
+                        }
+                    }
+                };
+        runWithShellPermissionIdentity(
+                () ->
+                        mActivityManager.registerUidFrozenStateChangedCallback(
+                                mTargetContext.getMainExecutor(), callback));
+
+        try {
+            // Start a foreground service to make sure the process is running.
+            runShellCommand(mInstrumentation, "cmd deviceidle whitelist +" + PACKAGE_NAME_APP1);
+            CommandReceiver.sendCommand(
+                    /* context= */ mTargetContext,
+                    /* command= */ CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
+                    /* sourcePackage= */ PACKAGE_NAME_APP1,
+                    /* targetPackage= */ PACKAGE_NAME_APP1,
+                    /* flags= */ 0,
+                    /* extras= */ null);
+            watcher.waitFor(
+                    /* cmd= */ WatchUidRunner.CMD_PROCSTATE,
+                    /* procState= */ WatchUidRunner.STATE_FG_SERVICE,
+                    /* capability= */ null);
+
+            // Wait for the broadcast to be idle.
+            // If we try to freeze the process while it's still working, it can get killed due to
+            // excessive binder traffic.
+            AmUtils.waitForBroadcastIdle();
 
             // Freeze the process.
             runShellCommand(mInstrumentation, "am freeze " + PACKAGE_NAME_APP1);
+
             // Wait for the state to propagate.
-            SystemUtil.eventually(
-                    () -> {
-                        int[] frozenState = mActivityManager.getUidFrozenState(new int[]{uid});
-                        assertThat(frozenState).isNotNull();
-                        assertThat(frozenState.length).isEqualTo(1);
-                        assertThat(frozenState[0]).isEqualTo(UID_FROZEN_STATE_FROZEN);
-                    });
+            assertWithMessage("Failed to wait for UID to be frozen")
+                    .that(frozenLatch.await(WAITFOR_PROCSTAT_TIMEOUT_MSEC, TimeUnit.MILLISECONDS))
+                    .isTrue();
+
+            // Verify the state is frozen.
+            final int[] uids = {uid};
+            int[] frozenState = mActivityManager.getUidFrozenState(uids);
+            assertThat(frozenState).asList().containsExactly(UID_FROZEN_STATE_FROZEN);
 
             // Unfreeze the process.
             runShellCommand(mInstrumentation, "am unfreeze " + PACKAGE_NAME_APP1);
+
             // Wait for the state to propagate.
-            SystemUtil.eventually(
-                    () -> {
-                        int[] frozenState = mActivityManager.getUidFrozenState(new int[]{uid});
-                        assertThat(frozenState).isNotNull();
-                        assertThat(frozenState.length).isEqualTo(1);
-                        assertThat(frozenState[0]).isEqualTo(UID_FROZEN_STATE_UNFROZEN);
-                    });
+            assertWithMessage("Failed to wait for UID to be unfrozen")
+                    .that(unfrozenLatch.await(WAITFOR_PROCSTAT_TIMEOUT_MSEC, TimeUnit.MILLISECONDS))
+                    .isTrue();
+            frozenState = mActivityManager.getUidFrozenState(uids);
+            assertThat(frozenState).asList().containsExactly(UID_FROZEN_STATE_UNFROZEN);
         } finally {
+            runWithShellPermissionIdentity(
+                    () -> mActivityManager.unregisterUidFrozenStateChangedCallback(callback));
+            runShellCommand(mInstrumentation, "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);
             watcher.finish();
-            PermissionUtils.revokePermission(STUB_PACKAGE_NAME,
-                    Manifest.permission.PACKAGE_USAGE_STATS);
+            PermissionUtils.revokePermission(
+                    STUB_PACKAGE_NAME, Manifest.permission.PACKAGE_USAGE_STATS);
             runWithShellPermissionIdentity(
                     () -> mActivityManager.forceStopPackage(PACKAGE_NAME_APP1));
         }
