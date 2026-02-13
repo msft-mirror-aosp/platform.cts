@@ -28,6 +28,15 @@
             value="aflags list | grep 'android.app.privatecompute.flags.enable_pcc_framework_support' | awk '{print $2}' | grep 'enabled'" />
     </object>
 
+    <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <option name="run-command" value="cmd pcc_sandbox add-allowed-package com.android.cts.pcc.processes" />
+        <option name="run-command" value="cmd pcc_sandbox add-allowed-package com.android.cts.pcc.appops" />
+        <option name="run-command" value="cmd pcc_sandbox add-allowed-package com.android.cts.pcc.checkingvisibilityapp" />
+        <option name="teardown-command" value="cmd pcc_sandbox remove-allowed-package com.android.cts.pcc.processes" />
+        <option name="teardown-command" value="cmd pcc_sandbox remove-allowed-package com.android.cts.pcc.appops" />
+        <option name="teardown-command" value="cmd pcc_sandbox remove-allowed-package com.android.cts.pcc.checkingvisibilityapp" />
+    </target_preparer>
+
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
         <option name="test-file-name" value="CtsPccProcessTests.apk" />
@@ -36,13 +45,6 @@
         <option name="test-file-name" value="PccQueryableByPackage.apk" />
         <option name="test-file-name" value="PccQueryableByIntentFilter.apk" />
         <option name="test-file-name" value="PccQueryableByProvider.apk" />
-    </target_preparer>
-
-    <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
-        <option name="run-command" value="cmd pcc_sandbox add-allowed-package com.android.cts.pcc.processes" />
-        <option name="run-command" value="cmd pcc_sandbox add-allowed-package com.android.cts.pcc.appops" />
-        <option name="teardown-command" value="cmd pcc_sandbox remove-allowed-package com.android.cts.pcc.processes" />
-        <option name="teardown-command" value="cmd pcc_sandbox remove-allowed-package com.android.cts.pcc.appops" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
