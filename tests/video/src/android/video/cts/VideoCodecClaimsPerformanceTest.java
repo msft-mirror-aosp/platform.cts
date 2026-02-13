@@ -117,6 +117,8 @@ public class VideoCodecClaimsPerformanceTest extends VideoCodecClaimsPerformance
         // 5.3.4/C-1-2
         argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_AVC, 320, 240, 30, false, CODEC_ANY});
         argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_AVC, 720, 480, 30, false, CODEC_ANY});
+        argsList.add(
+                new Object[] {MediaFormat.MIMETYPE_VIDEO_AVC, 1280, 720, 30, false, CODEC_ANY});
         // 5.3.4/C-2-1
         argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_AVC, 1280, 720, 60, false,
                 isDispHtAtleastHD ? CODEC_ANY : CODEC_OPTIONAL});
