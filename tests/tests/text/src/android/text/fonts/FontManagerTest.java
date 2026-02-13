@@ -35,8 +35,8 @@ import android.graphics.fonts.FontStyle;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.FontConfig;
 import android.text.TextUtils;
 
@@ -339,6 +339,21 @@ public class FontManagerTest {
             fail("SecurityException is expected.");
         } catch (SecurityException e) {
             // pass
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.text.flags.Flags.FLAG_INSERT_FONT_FAMILY)
+    @ApiTest(apis = {"android.text.FontConfig.FontFamily#getPriority"})
+    public void fontManager_FontFamily_getPriority() {
+        FontConfig config = getFontConfig();
+        for (FontConfig.FontFamily family : config.getFontFamilies()) {
+            assertThat(family.getPriority()).isAtLeast(-1);
+        }
+        for (FontConfig.NamedFamilyList namedFamilyList : config.getNamedFamilyLists()) {
+            for (FontConfig.FontFamily family : namedFamilyList.getFamilies()) {
+                assertThat(family.getPriority()).isAtLeast(-1);
+            }
         }
     }
 
