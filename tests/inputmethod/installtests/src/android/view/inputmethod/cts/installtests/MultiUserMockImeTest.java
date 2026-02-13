@@ -113,7 +113,10 @@ public final class MultiUserMockImeTest {
 
     private static final long NOT_EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(5);
 
-    private static final long MOCKIME_CRASH_TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+    // TODO(b/484894997): Revert this timeout back to 5 seconds after Bedstead user removal
+    //  logic is fixed to reliably wait for full removal.
+    private static final long MOCKIME_CRASH_TIMEOUT = TimeUnit.SECONDS.toMillis(30)
+            * BuildUtils.HW_TIMEOUT_MULTIPLIER;
 
     @ClassRule
     @Rule
