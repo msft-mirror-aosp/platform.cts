@@ -28,14 +28,27 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Telephony;
+import android.provider.Telephony.Threads;
 import android.telephony.cts.util.DefaultSmsAppHelper;
+import com.android.internal.telephony.flags.Flags;
 
 import androidx.test.filters.SmallTest;
+
+import java.util.Set;
+import java.util.HashSet;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
 @SmallTest
@@ -47,6 +60,9 @@ public class ThreadsTest {
 
     private Context mContext;
     private ContentResolver mContentResolver;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @BeforeClass
     public static void ensureDefaultSmsApp() {
@@ -67,6 +83,96 @@ public class ThreadsTest {
         cleanup();
         mContext = getInstrumentation().getContext();
         mContentResolver = mContext.getContentResolver();
+    }
+
+   @Test
+   @RequiresFlagsEnabled(Flags.FLAG_SECURE_ACCESS_TO_RESTRICTED_RCS_MESSAGES)
+   public void testThreadRestriction() {
+       Set<Uri> restrictedMmsUris = new HashSet<>();
+       Set<Uri> unrestrictedMmsUris = new HashSet<>();
+       // Non-empty, unrestricted thread.
+       String address1 = "+19998880001";
+       long threadId1 = Threads.getOrCreateThreadId(mContext, address1);
+       restrictedMmsUris.add(saveMmsToTelephony(threadId1, /* isRestricted= */ true));
+       unrestrictedMmsUris.add(saveMmsToTelephony(threadId1, /* isRestricted= */ false));
+
+       // Non-empty, restricted thread.
+       String address2 = "+19998880002";
+       long threadId2 = Threads.getOrCreateThreadId(mContext, address2);
+       restrictedMmsUris.add(saveMmsToTelephony(threadId2, /* isRestricted= */ true));
+       restrictedMmsUris.add(saveMmsToTelephony(threadId2, /* isRestricted= */ true));
+
+       // Non-empty, unrestricted group thread.
+       String address3_1 = "+19998880003";
+       String address3_2 = "+19998880004";
+       long threadId3 = Threads.getOrCreateThreadId(mContext, Set.of(address3_1, address3_2));
+       unrestrictedMmsUris.add(saveMmsToTelephony(threadId3, /* isRestricted= */ false));
+       restrictedMmsUris.add(saveMmsToTelephony(threadId3, /* isRestricted= */ true));
+
+       // Non-empty, restricted group thread.
+       String address4_1 = "+19998880005";
+       String address4_2 = "+19998880006";
+       long threadId4 = Threads.getOrCreateThreadId(mContext, Set.of(address3_2, address4_1,
+            address4_2));
+       restrictedMmsUris.add(saveMmsToTelephony(threadId4, /* isRestricted= */ true));
+       restrictedMmsUris.add(saveMmsToTelephony(threadId4, /* isRestricted= */ true));
+
+       Set<Long> unrestrictedThreadIds = Set.of(threadId1, threadId3);
+       Set<Long> restrictedThreadIds = Set.of(threadId2, threadId4);
+       Set<Long> allThreadIds = Stream.concat(unrestrictedThreadIds.stream(),
+            restrictedThreadIds.stream()).collect(Collectors.toSet());
+       Set<String> allAddresses = Set.of(
+            address1, address2, address3_1, address3_2, address4_1, address4_2);
+       Set<String> unrestrictedAddresses = Set.of(address1, address3_1, address3_2);
+
+       // Query all threads, messages, and canonical addresses as DMA.
+       {
+            assertMms(unrestrictedMmsUris, /* isVisible= */ true);
+            assertMms(restrictedMmsUris, /* isVisible= */ true);
+            assertVisibleThreadIds(allThreadIds);
+            assertVisibleAddresses(allAddresses);
+       }
+       // Query only unrestricted threads, messages, and canonical addresses as non-DMA.
+       {
+           try {
+               DefaultSmsAppHelper.stopBeingDefaultSmsApp();
+               assertMms(unrestrictedMmsUris, /* isVisible= */ true);
+               assertMms(restrictedMmsUris, /* isVisible= */ false);
+               assertVisibleAddresses(unrestrictedAddresses);
+               assertVisibleThreadIds(unrestrictedThreadIds);
+            } finally {
+                DefaultSmsAppHelper.ensureDefaultSmsApp();
+            }
+       }
+   }
+
+   private void assertVisibleThreadIds(Set<Long> visibleThreadIds) {
+        Cursor cursor = mContentResolver.query(
+            Telephony.Threads.CONTENT_URI.buildUpon().appendQueryParameter("simple", "true").build(),
+            null, null, null);
+        assertThat(cursor.getCount()).isEqualTo(visibleThreadIds.size());
+        while (cursor.moveToNext()) {
+            assertThat(visibleThreadIds).contains(
+                cursor.getLong(cursor.getColumnIndex(Telephony.Threads._ID)));
+        }
+    }
+
+    private void assertVisibleAddresses(Set<String> visibleAddresses) {
+        Cursor cursor = mContentResolver.query(
+            Uri.parse("content://mms-sms/canonical-addresses"),
+            null, null, null);
+        assertThat(cursor.getCount()).isEqualTo(visibleAddresses.size());
+        while (cursor.moveToNext()) {
+            assertThat(visibleAddresses).contains(
+                cursor.getString(cursor.getColumnIndex(Telephony.CanonicalAddressesColumns.ADDRESS)));
+        }
+    }
+
+    private void assertMms(Set<Uri> visibleMmsUris, boolean isVisible) {
+        for (Uri uri : visibleMmsUris) {
+            Cursor cursor = mContentResolver.query(uri, null, null, null);
+            assertThat(cursor.getCount()).isEqualTo(isVisible ? 1 : 0);
+        }
     }
 
     @Test
@@ -135,5 +241,16 @@ public class ThreadsTest {
         contentValues.put(Telephony.Sms.BODY, body);
 
         return mContext.getContentResolver().insert(Telephony.Sms.Inbox.CONTENT_URI, contentValues);
+    }
+
+    private Uri saveMmsToTelephony(long threadId, boolean isRestricted) {
+        final ContentValues mmsValues = new ContentValues();
+        mmsValues.put(Telephony.Mms.TEXT_ONLY, 1);
+        mmsValues.put(Telephony.Mms.MESSAGE_TYPE, Telephony.Sms.MESSAGE_TYPE_SENT);
+        mmsValues.put(Telephony.Mms.SUBJECT, "subject");
+        mmsValues.put(Telephony.ReadRestriction.RESTRICTED, isRestricted);
+        mmsValues.put(Telephony.Mms.THREAD_ID, threadId);
+
+        return mContext.getContentResolver().insert(Telephony.Mms.CONTENT_URI, mmsValues);
     }
 }
