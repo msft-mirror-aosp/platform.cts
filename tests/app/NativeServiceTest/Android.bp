@@ -84,6 +84,7 @@ android_test {
     name: "CtsNativeServiceTest",
     defaults: ["cts_defaults"],
     team: "trendy_team_system_performance",
+    compile_multilib: "both",
     dex_preopt: {
         enabled: false,
     },
