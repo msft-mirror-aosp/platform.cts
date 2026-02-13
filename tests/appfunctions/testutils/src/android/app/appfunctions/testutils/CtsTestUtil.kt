@@ -36,6 +36,27 @@ object CtsTestUtil {
         @Throws(Throwable::class) suspend fun run()
     }
 
+    /**
+     * Retries an assertion with a delay between attempts. If the assertion
+     * fails, the test will continue.
+     */
+    suspend fun safeRetryAssert(
+        checkInterval: Long = RETRY_CHECK_INTERVAL_MILLIS,
+        maxIntervals: Long = RETRY_MAX_INTERVALS,
+        runnable: ThrowRunnable,
+    ) {
+        var lastError: Throwable? = null
+        for (attempt in 0 until maxIntervals) {
+            try {
+                runnable.run()
+                return
+            } catch (e: Throwable) {
+                lastError = e
+                delay(checkInterval)
+            }
+        }
+    }
+
     /** Retries an assertion with a delay between attempts. */
     @Throws(Throwable::class)
     suspend fun retryAssert(
