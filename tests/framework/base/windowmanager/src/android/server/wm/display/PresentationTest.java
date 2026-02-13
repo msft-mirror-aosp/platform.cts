@@ -96,6 +96,15 @@ public class PresentationTest extends MultiDisplayTestBase {
     @RequiresFlagsDisabled(Flags.FLAG_ENABLE_PRESENTATION_FOR_CONNECTED_DISPLAYS)
     @Test
     public void testPresentationFollowsDisplayFlag() {
+        // TODO(b/485015685): Re-enable the test once proper API is in place.
+        // In a Multi-User Multi-Display (MUMD) environment, a test running as a passenger
+        // user may not have permission to launch activities on displays assigned to other
+        // users.
+        // For now, test is skipped as there is no clean way to filter display based on
+        // user visibility due to lack of API.
+        assumeFalse(
+                "Not currently supported in MUMD devices due to user to display association",
+                isVisibleBackgroundUserSupported());
         for (Display display : mDm.getDisplays()) {
             launchPresentationActivity(getMainDisplayId(), display.getDisplayId());
             if ((display.getFlags() & Display.FLAG_PRESENTATION) != Display.FLAG_PRESENTATION) {
