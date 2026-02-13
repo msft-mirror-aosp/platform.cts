@@ -22,7 +22,8 @@ import java.net.URISyntaxException
  * A human readable representation of AppFunction's PerScreenDeviceStates.
  */
 data class PerScreenDeviceStates(
-    val intentUri: String?
+    val intentUri: String?,
+    val deviceStateItems: List<DeviceStateItem>
 ) {
 
     /**
@@ -35,3 +36,23 @@ data class PerScreenDeviceStates(
         }
     }
 }
+
+/**
+ * A human readable representation of AppFunction's DeviceStateItem.
+ */
+data class DeviceStateItem(
+    val key: String,
+    val jsonValue: String?,
+    val name: LocalizedString?,
+    val purpose: String?
+) {
+    override fun toString() = key
+}
+
+/**
+ * A human readable representation of AppFunction's LocalizedString.
+ */
+data class LocalizedString(
+    val english: String,
+    val localized: String
+)
