@@ -86,7 +86,10 @@ public class SearchEventTest {
     @Test
     public void testBasics() {
         // Only run for non-watch devices
-        if (mActivity.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+        if (mActivity.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)
+                || mActivity
+                        .getPackageManager()
+                        .hasSystemFeature(PackageManager.FEATURE_LEANBACK)) {
             return;
         }
         mInstrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_SEARCH);
