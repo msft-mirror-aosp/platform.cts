@@ -63,6 +63,7 @@
 
         <!-- It's not exporeted, but should still be launchable. -->
         <activity android:name="android.content.pm.cts.shortcutmanager.ShortcutLaunchedActivity"
+             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|uiMode"
              android:exported="false"/>
     </application>
 
