@@ -17,6 +17,8 @@ package android.app.cts
 
 import android.app.stubs.R
 import android.app.stubs.ToolbarActivity
+import android.server.wm.WindowManagerStateHelper
+import android.view.Display
 import android.view.KeyEvent
 import android.view.Window
 import androidx.test.ext.junit.rules.ActivityScenarioRule
@@ -112,7 +114,13 @@ public class ToolbarActionBarTest {
         fun pressHome() {
             // Press HOME key so that any UI that is showing, such as notification shade,
             // will be hidden.
-            InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_HOME)
+            val instrumentation = InstrumentationRegistry.getInstrumentation()
+            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_HOME)
+            // Wait for the Home transition to complete and the system to settle.
+            val wmState = WindowManagerStateHelper()
+            wmState.waitForHomeActivityVisible()
+            val displayId = instrumentation.targetContext.displayId
+            wmState.waitForAppTransitionIdleOnDisplay(displayId)
         }
     }
 }
