@@ -38,6 +38,7 @@ import android.media.AudioDeviceAttributes;
 import android.media.AudioDeviceInfo;
 import android.media.AudioDeviceVolumeManager;
 import android.media.AudioManager;
+import android.media.AudioSystem;
 import android.media.VolumeInfo;
 import android.media.audio.cts.AudioTestUtil.SleepAssertIntEquals;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -98,6 +99,9 @@ public class AudioDeviceVolumeManagerTest {
     private static final AudioDeviceAttributes BT_SCO_DEV =
             new AudioDeviceAttributes(
                     AudioDeviceAttributes.ROLE_OUTPUT, AudioDeviceInfo.TYPE_BLUETOOTH_SCO, "bla");
+
+    private static final AudioDeviceAttributes BT_SCO_HS_DEV =
+            new AudioDeviceAttributes(AudioSystem.DEVICE_OUT_BLUETOOTH_SCO_HEADSET, "bla");
 
     private static final AudioDeviceAttributes SPEAKER_DEV =
             new AudioDeviceAttributes(
@@ -737,6 +741,16 @@ public class AudioDeviceVolumeManagerTest {
     public void testStreamAssistant_mirrorsScoToA2dp() throws Exception {
         verifyStreamAssistantMirroring(
                 BT_SCO_DEV, BT_DEV, "Volume on A2DP should mirror SCO for STREAM_ASSISTANT");
+    }
+
+    @RequiresFlagsEnabled(com.android.media.audio.Flags.FLAG_STREAM_ASSISTANT_NOT_ALIASED_TO_MUSIC)
+    @CddTest(requirements = {"3.20.1/C-1-3"})
+    @Test
+    public void testStreamAssistant_mirrorsScoToScoHs() throws Exception {
+        verifyStreamAssistantMirroring(
+                BT_SCO_DEV,
+                BT_SCO_HS_DEV,
+                "Volume on SCO_HS should mirror SCO for STREAM_ASSISTANT");
     }
 
     private void verifyStreamAssistantMirroring(
