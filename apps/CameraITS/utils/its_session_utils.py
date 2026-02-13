@@ -15,11 +15,13 @@
 """
 
 import collections
+import enum
 import fnmatch
 import glob
 import json
 import logging
 import math
+import operator
 import os
 import re
 import socket
@@ -112,6 +114,8 @@ JPG_SCENES = ('scene_wide_gamut',)
 NOT_YET_MANDATED_MESSAGE = 'Not yet mandated test'
 MARGINAL_PASSING_MESSAGE = '***Marginally passing test***'
 MARGINAL_PASS_FACTOR = 0.90
+MARGINAL_PASS_FACTOR_FLASH = 1.1  # Flash tests passes when above threshold
+MARGINAL_PASS_THRESHOLD = 0.1  # 10% marginal pass threshold
 RESULT_OK_STATUS = '-1'
 
 _FLASH_MODE_OFF = 0
@@ -149,6 +153,12 @@ _DST_SCENE_DIR = '/sdcard/Download/'
 _BIT_HLG10 = 0x01  # bit 1 for feature mask
 _BIT_STABILIZATION = 0x02  # bit 2 for feature mask
 _CAMERA_RESTART_DELAY_SEC = 10
+
+
+class TestPassingStatus(enum.Enum):
+  PASS = 'PASS'
+  MARGINAL = 'MARGINAL'
+  FAIL = 'FAIL'
 
 
 def validate_tablet(tablet_name, brightness, device_id):
@@ -3510,6 +3520,7 @@ def define_raw_stats_fmt_exposure(props, img_stats_grid):
           'gridWidth': aa_width // img_stats_grid,
           'gridHeight': aa_height // img_stats_grid}
 
+
 def verify_tablet_display_wide_gamut(tablet):
   """Verify if the tablet supports display wide gamut image and in the right color mode."""
   # The command to get the SurfaceFlinger dump
@@ -3517,24 +3528,92 @@ def verify_tablet_display_wide_gamut(tablet):
   output = tablet.adb.shell(command)
 
   if output is None:
-      raise error_util.CameraItsError('Failed to fetch color mode info from device')
+    raise error_util.CameraItsError('Failed to fetch color mode info from device')
   lines = output.decode('utf-8').strip().split('\n')
   # The output is lines of color mode related message, we go through each line to verify
   # wide color support and current color mode
   for line in lines:
-      # Search for wide color support
-      wide_color_support_match = re.search(r'Device supports wide color:\s*(.+)', line.strip())
-      if wide_color_support_match:
-          wide_color_support = wide_color_support_match.group(1).strip()
-          if wide_color_support != '1':
-              raise error_util.CameraItsError('Device does not support wide gamut')
+    # Search for wide color support
+    wide_color_support_match = re.search(r'Device supports wide color:\s*(.+)', line.strip())
+    if wide_color_support_match:
+      wide_color_support = wide_color_support_match.group(1).strip()
+      if wide_color_support != '1':
+        raise error_util.CameraItsError('Device does not support wide gamut')
 
-      # Search for current color mode
-      current_color_mode_match = re.search(r'Current color mode:\s*(.+)', line.strip())
-      if current_color_mode_match:
-          current_color_mode = current_color_mode_match.group(1).strip().lower()
-          if 'p3' not in current_color_mode:
-              raise error_util.CameraItsError('Device current color mode is not in wide gamut')
-          else:
-              return
+    # Search for current color mode
+    current_color_mode_match = re.search(r'Current color mode:\s*(.+)', line.strip())
+    if current_color_mode_match:
+      current_color_mode = current_color_mode_match.group(1).strip().lower()
+      if 'p3' not in current_color_mode:
+        raise error_util.CameraItsError('Device current color mode is not in wide gamut')
+      else:
+        return
   raise error_util.CameraItsError('Device does not have color mode info')
+
+
+def check_threshold_with_marginal_pass(
+    value, threshold, operation, marginal_factor, message_context):
+  """Checks value against threshold with a marginal pass logic.
+
+  Args:
+    value: The mean value to be checked.
+    threshold: The optimal value to check against.
+    operation: The operator to be used for the check.
+    marginal_factor: The marginal factor to be used for the check.
+    message_context: The context of the message to be logged.
+  Returns:
+    A tuple of (TestPassingStatus, message)
+  Raises:
+    AssertionError: If the value is not within the threshold.
+  """
+
+  # FAIL case
+  if not operation(value, threshold):
+    msg = (
+        f'{message_context} FAILED: {value:.2f}. Value is outside {threshold}')
+    return TestPassingStatus.FAIL, msg
+
+  # Determine marginal_threshold for greater than and less than cases
+  if operation in (operator.gt, operator.ge):
+    marginal_threshold = threshold * (1 + marginal_factor)
+  else:
+    marginal_threshold = threshold * (1 - marginal_factor)
+  # PASS* case
+  if not operation(value, marginal_threshold):
+    msg = (f'{message_context} is MARGINAL: {value:.2f} '
+           f'(Limit: {threshold}, Marginal Limit: {marginal_threshold:.2f})')
+    return TestPassingStatus.MARGINAL, msg
+
+  # PASS Case
+  else:
+    return TestPassingStatus.PASS, None
+
+
+def check_close_threshold_with_marginal_pass(
+    value, threshold, abs_tol, marginal_factor, context):
+  """Checks if value is within abs_tol of threshold with a marginal pass logic.
+
+  Args:
+    value: The value to be checked.
+    threshold: The threshold value for the check.
+    abs_tol: The absolute tolerance for the check.
+    marginal_factor: The marginal factor for the check.
+    context: The context of the check.
+
+  Returns:
+    A tuple of (TestPassingStatus, message)
+  """
+
+  diff = abs(value - threshold)
+  # FAIL case
+  if diff > abs_tol:
+    return (TestPassingStatus.FAIL,
+            f'{context} FAILED: {value:.3f} (Expected {threshold} ± {abs_tol})')
+  # MARGINAL case
+  marginal_threshold = abs_tol * (1 - marginal_factor)
+  if diff >= marginal_threshold:
+    return (TestPassingStatus.MARGINAL,
+            f'{context} is marginal: {value:.3f} '
+            f'(Limit: {abs_tol}, Diff: {diff:.4f})')
+  # PASS case
+  return TestPassingStatus.PASS, None
