@@ -307,6 +307,47 @@ class SidecarManagerTest {
     @IncludeRunOnPrimaryUser
     @RequiresFlagsEnabled(FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
     @Throws(Exception::class)
+    fun executeAppFunctionAllowlisted_sidecarManager_sidecarAppFunctionService_legacyFunctionId_success() =
+        doBlocking {
+            runWithInteractionAllowlisted(
+                agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+                appPackages = listOf(SideCarTestHelper.TEST_ALLOWLIST_PACKAGE),
+            ) {
+                runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+                    val parameters: GenericDocument =
+                        GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                            .setPropertyLong("a", 1)
+                            .setPropertyLong("b", 2)
+                            .build()
+                    val request =
+                        SidecarExecuteAppFunctionRequest.Builder(
+                                TEST_SIDECAR_HELPER_PKG,
+                                "add_legacyFunctionId",
+                            )
+                            .setParameters(parameters)
+                            .build()
+
+                    val response = sidecarExecuteFunction(context, request)
+
+                    assertThat(response.isSuccess).isTrue()
+                    assertThat(
+                            response
+                                .getOrNull()!!
+                                .resultDocument
+                                .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
+                        )
+                        .isEqualTo(3)
+                }
+            }
+        }
+
+    @ApiTest(apis = ["com.android.extensions.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @RequiresFlagsEnabled(FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
+    @Throws(Exception::class)
     fun executeAppFunctionNotAllowlisted_sidecarManager_sidecarAppFunctionService_fail() =
         doBlocking {
             runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
@@ -387,6 +428,47 @@ class SidecarManagerTest {
                             .build()
                     val request =
                         ExecuteAppFunctionRequest.Builder(TEST_SIDECAR_HELPER_PKG, "add")
+                            .setParameters(parameters)
+                            .build()
+
+                    val response = mManager.executeAppFunction(request)
+
+                    assertThat(response.isSuccess).isTrue()
+                    assertThat(
+                            response
+                                .getOrNull()!!
+                                .resultDocument
+                                .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
+                        )
+                        .isEqualTo(3)
+                }
+            }
+        }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @RequiresFlagsEnabled(FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
+    @Throws(Exception::class)
+    fun executeAppFunctionAllowlisted_platformManager_sidecarAppFunctionService_legacyFunctionId_success() =
+        doBlocking {
+            runWithInteractionAllowlisted(
+                agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+                appPackages = listOf(SideCarTestHelper.TEST_ALLOWLIST_PACKAGE),
+            ) {
+                runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+                    val parameters: GenericDocument =
+                        GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                            .setPropertyLong("a", 1)
+                            .setPropertyLong("b", 2)
+                            .build()
+                    val request =
+                        ExecuteAppFunctionRequest.Builder(
+                                TEST_SIDECAR_HELPER_PKG,
+                                "add_legacyFunctionId",
+                            )
                             .setParameters(parameters)
                             .build()
 

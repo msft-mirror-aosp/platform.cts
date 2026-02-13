@@ -58,7 +58,9 @@ public class TestSidecarAppFunctionService extends AppFunctionService {
                     cancelOperation();
                 });
         switch (request.getFunctionIdentifier()) {
-            case "add": {
+            case "add":
+            case "add_legacyFunctionId":
+                {
                     ExecuteAppFunctionResponse result = add(request);
                     callback.onResult(result);
                     break;
@@ -66,36 +68,39 @@ public class TestSidecarAppFunctionService extends AppFunctionService {
             case "noOp":
                 {
                     ExecuteAppFunctionResponse result = noop(callingPackage);
-                callback.onResult(result);
-                break;
-            }
-            case "longRunningFunction": {
-                mCancellableFuture =
-                        mExecutor.submit(
-                                () -> {
-                                    try {
-                                        Thread.sleep(2000);
-                                    } catch (InterruptedException e) {
-                                        callback.onError(
-                                                new AppFunctionException(
-                                                        AppFunctionException.ERROR_CANCELLED,
-                                                        "Operation Interrupted",
-                                                        /* extras= */ null));
+                    callback.onResult(result);
+                    break;
+                }
+            case "longRunningFunction":
+                {
+                    mCancellableFuture =
+                            mExecutor.submit(
+                                    () -> {
+                                        try {
+                                            Thread.sleep(2000);
+                                        } catch (InterruptedException e) {
+                                            callback.onError(
+                                                    new AppFunctionException(
+                                                            AppFunctionException.ERROR_CANCELLED,
+                                                            "Operation Interrupted",
+                                                            /* extras= */ null));
+                                            return null;
+                                        }
+                                        callback.onResult(
+                                                new ExecuteAppFunctionResponse(
+                                                        new GenericDocument.Builder<>("", "", "")
+                                                                .build()));
                                         return null;
-                                    }
-                                    callback.onResult(
-                                            new ExecuteAppFunctionResponse(
-                                                    new GenericDocument.Builder<>("", "", "")
-                                                            .build()));
-                                    return null;
-                                });
-                break;
-            }
+                                    });
+                    break;
+                }
             default:
                 callback.onError(
                         new AppFunctionException(
                                 AppFunctionException.ERROR_APP_UNKNOWN_ERROR,
-                                /* errorMessage= */ null,
+                                /* errorMessage= */ String.format(
+                                        "Unknown function id \"%s\"",
+                                        request.getFunctionIdentifier()),
                                 /* extras= */ null));
         }
     }
