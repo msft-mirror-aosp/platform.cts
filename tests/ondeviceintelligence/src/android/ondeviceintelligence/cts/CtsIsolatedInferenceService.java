@@ -418,6 +418,7 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
             @NonNull EmbeddingRequest request,
             @Nullable CancellationSignal cancellationSignal,
             @NonNull OutcomeReceiver<EmbeddingResponse, OnDeviceIntelligenceException> callback) {
+        Log.i(TAG, "onGenerateEmbeddings called");
         callback.onResult(getSampleEmbeddingResponse());
     }
 
