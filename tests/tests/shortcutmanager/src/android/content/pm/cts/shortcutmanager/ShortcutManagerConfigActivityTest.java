@@ -15,8 +15,15 @@
  */
 package android.content.pm.cts.shortcutmanager;
 
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.*;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 
@@ -31,6 +38,10 @@ import android.content.pm.LauncherApps.PinItemRequest;
 import android.content.pm.ShortcutInfo;
 
 import androidx.test.filters.SmallTest;
+import androidx.test.runner.AndroidJUnit4;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -38,6 +49,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * Tests for various APIs related to starting shortcut config activity.
  */
 @SmallTest
+@RunWith(AndroidJUnit4.class)
 public class ShortcutManagerConfigActivityTest extends ShortcutManagerCtsTestsBase {
 
     private static final String SHORTCUT_ID = "s12345";
@@ -45,6 +57,7 @@ public class ShortcutManagerConfigActivityTest extends ShortcutManagerCtsTestsBa
     private static final String CONFIG_ACTIVITY_NAME =
             "android.content.pm.cts.shortcutmanager.main_shortcut_config";
 
+    @Test
     public void testGetShortcutConfigActivityList() throws Exception {
         setDefaultLauncher(getInstrumentation(), mLauncherContext1);
 
@@ -64,6 +77,7 @@ public class ShortcutManagerConfigActivityTest extends ShortcutManagerCtsTestsBa
         });
     }
 
+    @Test
     public void testIntentSenderNotCreatedForWrongActivity() throws Throwable {
         setDefaultLauncher(getInstrumentation(), mLauncherContext1);
         runWithCallerWithStrictMode(mLauncherContext1, () -> {
@@ -80,6 +94,7 @@ public class ShortcutManagerConfigActivityTest extends ShortcutManagerCtsTestsBa
         });
     }
 
+    @Test
     public void testCorrectIntentSenderCreated() throws Throwable {
         setDefaultLauncher(getInstrumentation(), mLauncherContext1);
         final AtomicReference<IntentSender> sender = new AtomicReference<>();
@@ -108,6 +123,7 @@ public class ShortcutManagerConfigActivityTest extends ShortcutManagerCtsTestsBa
         activity.finish();
     }
 
+    @Test
     public void testCreateShortcutResultIntent_defaultLauncher() throws Exception {
         setDefaultLauncher(getInstrumentation(), mLauncherContext1);
         PinItemRequest request = getShortcutRequestForPackage1();
@@ -117,6 +133,7 @@ public class ShortcutManagerConfigActivityTest extends ShortcutManagerCtsTestsBa
         });
     }
 
+    @Test
     public void testCreateShortcutResultIntent_defaultChanges() throws Exception {
         setDefaultLauncher(getInstrumentation(), mLauncherContext1);
         PinItemRequest request = getShortcutRequestForPackage1();
@@ -129,6 +146,7 @@ public class ShortcutManagerConfigActivityTest extends ShortcutManagerCtsTestsBa
         });
     }
 
+    @Test
     public void testCreateShortcutResultIntent_noDefault() throws Exception {
         setDefaultLauncher(getInstrumentation(), mLauncherContext4);
         PinItemRequest request = getShortcutRequestForPackage1();

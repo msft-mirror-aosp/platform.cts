@@ -19,14 +19,21 @@ import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.concatResult;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.list;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import android.content.pm.ShortcutManager;
 import android.test.MoreAsserts;
 import android.util.Log;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.filters.Suppress;
+import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -38,6 +45,7 @@ import java.util.ArrayList;
 
 @CddTest(requirement="3.8.1/C-4-1")
 @SmallTest
+@RunWith(AndroidJUnit4.class)
 public class ShortcutManagerNegativeTest extends ShortcutManagerCtsTestsBase {
     private static final String TAG = "ShortcutNegativeCTS";
 
@@ -106,6 +114,7 @@ public class ShortcutManagerNegativeTest extends ShortcutManagerCtsTestsBase {
     /**
      * Make sure the internal AIDL methods are protected.
      */
+    @Test
     public void testDirectAidlCalls() throws IllegalAccessException {
         checkAidlCall("resetThrottling", "Caller must be");
 
@@ -132,6 +141,7 @@ public class ShortcutManagerNegativeTest extends ShortcutManagerCtsTestsBase {
      * Make sure cmd shortcut can't be called.
      */
     @Suppress // calling "cmd shortcut" from this UID seems to hang now.
+    @Test
     public void testCommand() throws Exception {
         runWithCaller(mPackageContext1, () -> {
             assertTrue(getManager().setDynamicShortcuts(list(
@@ -152,6 +162,7 @@ public class ShortcutManagerNegativeTest extends ShortcutManagerCtsTestsBase {
     /**
      * Make sure AIDL methods can't be called for other users.
      */
+    @Test
     public void testUserIdSpoofing() throws IllegalAccessException {
         checkAidlCall("getDynamicShortcuts", "Invalid userId",
                 mPackageContext1.getPackageName(), /* userId*/ 10);

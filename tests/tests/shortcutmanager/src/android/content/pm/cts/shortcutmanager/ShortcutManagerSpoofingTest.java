@@ -15,6 +15,8 @@
  */
 package android.content.pm.cts.shortcutmanager;
 
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.assertCallbackNotReceived;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.assertCallbackReceived;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.assertWith;
@@ -25,6 +27,9 @@ import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.setDefaultLauncher;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.waitUntil;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import android.content.pm.LauncherApps;
@@ -33,15 +38,21 @@ import android.os.Handler;
 import android.os.Looper;
 
 import androidx.test.filters.SmallTest;
+import androidx.test.runner.AndroidJUnit4;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * Make sure switching between mPackageContext1..3 and mLauncherContext1..3 will work as intended.
  */
 @SmallTest
+@RunWith(AndroidJUnit4.class)
 public class ShortcutManagerSpoofingTest extends ShortcutManagerCtsTestsBase {
     /**
      * Create shortcuts from different packages and make sure they're really different.
      */
+    @Test
     public void testSpoofingPublisher() {
         runWithCaller(mPackageContext1, () -> {
             ShortcutInfo s1 = makeShortcut("s1", "title1");
@@ -79,6 +90,7 @@ public class ShortcutManagerSpoofingTest extends ShortcutManagerCtsTestsBase {
         });
     }
 
+    @Test
     public void testSpoofingLauncher() {
         final LauncherApps.Callback c0_1 = mock(LauncherApps.Callback.class);
         final LauncherApps.Callback c0_2 = mock(LauncherApps.Callback.class);

@@ -15,10 +15,15 @@
  */
 package android.content.pm.cts.shortcutmanager;
 
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.assertWith;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.list;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.retryUntil;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.setDefaultLauncher;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
 import android.content.pm.LauncherApps;
@@ -30,9 +35,13 @@ import android.util.Log;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.filters.Suppress;
+import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.ShortcutListAsserter;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,6 +53,7 @@ import java.util.function.Predicate;
 
 @CddTest(requirement="3.8.1/C-2-3")
 @SmallTest
+@RunWith(AndroidJUnit4.class)
 public class ShortcutManagerLauncherCallbackTest extends ShortcutManagerCtsTestsBase {
 
     private static class MyCallback extends LauncherApps.Callback {
@@ -133,6 +143,7 @@ public class ShortcutManagerLauncherCallbackTest extends ShortcutManagerCtsTests
         }
     }
 
+    @Test
     public void testRegisterAndUnRegister() {
         final MyCallback c = new MyCallback();
         final Handler handler = new Handler(Looper.getMainLooper());
@@ -142,6 +153,7 @@ public class ShortcutManagerLauncherCallbackTest extends ShortcutManagerCtsTests
 
     // TODO: b/288276271
     @Suppress
+    @Test
     public void testCallbacks() {
         final MyCallback c = new MyCallback(mPackageContext1.getPackageName());
 

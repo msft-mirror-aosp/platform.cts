@@ -21,10 +21,14 @@ import static android.content.pm.LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC;
 import static android.content.pm.LauncherApps.ShortcutQuery.FLAG_MATCH_MANIFEST;
 import static android.content.pm.LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED;
 
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.assertWith;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.list;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.retryUntil;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.setDefaultLauncher;
+
+import static org.junit.Assert.assertTrue;
 
 import android.content.Intent;
 import android.content.LocusId;
@@ -36,13 +40,18 @@ import android.graphics.BitmapFactory;
 import android.graphics.drawable.Icon;
 
 import androidx.test.filters.SmallTest;
+import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.SystemUtil;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.util.List;
 
 @SmallTest
+@RunWith(AndroidJUnit4.class)
 public class ShortcutManagerLauncherApiTest extends ShortcutManagerCtsTestsBase {
     @Override
     protected String getOverrideConfig() {
@@ -52,6 +61,7 @@ public class ShortcutManagerLauncherApiTest extends ShortcutManagerCtsTestsBase 
                 + "icon_quality=100";
     }
 
+    @Test
     public void testPinShortcuts() {
         runWithCallerWithStrictMode(mPackageContext1, () -> {
             enableManifestActivity("Launcher_manifest_1", true);
@@ -148,6 +158,7 @@ public class ShortcutManagerLauncherApiTest extends ShortcutManagerCtsTestsBase 
         });
     }
 
+    @Test
     public void testGetShortcuts() throws Exception {
 
         testPinShortcuts();
@@ -341,6 +352,7 @@ public class ShortcutManagerLauncherApiTest extends ShortcutManagerCtsTestsBase 
         });
     }
 
+    @Test
     public void testGetShortcutIcon() throws Exception {
         final Icon icon1 = Icon.createWithBitmap(BitmapFactory.decodeResource(
                 getTestContext().getResources(), R.drawable.black_16x64));
@@ -390,7 +402,9 @@ public class ShortcutManagerLauncherApiTest extends ShortcutManagerCtsTestsBase 
         assertIconDimensions(icon5, getIconAsLauncher(
                 mLauncherContext1, mPackageContext1.getPackageName(), "ms21", false));
     }
+
     @CddTest(requirement="3.8.1/C-1-2")
+    @Test
     public void testGetShortcutIconAdaptive() throws Exception {
         final Icon icon1 = Icon.createWithAdaptiveBitmap(BitmapFactory.decodeResource(
             getTestContext().getResources(), R.drawable.black_16x64));

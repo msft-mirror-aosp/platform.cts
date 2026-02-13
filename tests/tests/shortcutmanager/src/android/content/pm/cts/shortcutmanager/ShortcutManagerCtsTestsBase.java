@@ -15,7 +15,13 @@
  */
 package android.content.pm.cts.shortcutmanager;
 
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.*;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import android.app.Activity;
 import android.app.ActivityManager;
@@ -39,12 +45,16 @@ import android.os.StrictMode;
 import android.os.StrictMode.ThreadPolicy;
 import android.os.UserHandle;
 import android.provider.DeviceConfig;
-import android.test.InstrumentationTestCase;
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
+import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.SystemUtil;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -52,7 +62,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
-public abstract class ShortcutManagerCtsTestsBase extends InstrumentationTestCase {
+@RunWith(AndroidJUnit4.class)
+public abstract class ShortcutManagerCtsTestsBase {
     protected static final String TAG = "ShortcutCTS";
 
     private static final boolean DUMPSYS_IN_TEARDOWN = false; // DO NOT SUBMIT WITH true
@@ -124,10 +135,8 @@ public abstract class ShortcutManagerCtsTestsBase extends InstrumentationTestCas
     private static class ShortcutActivity extends Activity {
     }
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-
+    @Before
+    public void setUp() throws Exception {
         mUserId = getTestContext().getUserId();
         mUserHandle = android.os.Process.myUserHandle();
 
@@ -185,8 +194,8 @@ public abstract class ShortcutManagerCtsTestsBase extends InstrumentationTestCas
         mMaxShortcuts = getManager().getMaxShortcutCountPerActivity();
     }
 
-    @Override
-    protected void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         if (DUMPSYS_IN_TEARDOWN) {
             dumpsysShortcut(getInstrumentation());
         }
@@ -198,8 +207,6 @@ public abstract class ShortcutManagerCtsTestsBase extends InstrumentationTestCas
         if (!TextUtils.isEmpty(mOriginalLauncher)) {
             setDefaultLauncher(getInstrumentation(), mOriginalLauncher);
         }
-
-        super.tearDown();
     }
 
     protected Context getTestContext() {
@@ -338,6 +345,10 @@ public abstract class ShortcutManagerCtsTestsBase extends InstrumentationTestCas
 
     protected void runWithCallerWithNoStrictMode(Context callerContext, Runnable r) {
         runWithCaller(callerContext, () -> runWithNoStrictMode(r));
+    }
+
+    protected void runTestOnUiThread(Runnable r) {
+        getInstrumentation().runOnMainSync(r);
     }
 
     public static Bundle makeBundle(Object... keysAndValues) {

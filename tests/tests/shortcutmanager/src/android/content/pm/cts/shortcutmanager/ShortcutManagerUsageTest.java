@@ -15,9 +15,14 @@
  */
 package android.content.pm.cts.shortcutmanager;
 
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.appOps;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.list;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.retryUntil;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import android.app.AppOpsManager;
 import android.app.usage.UsageEvents;
@@ -27,15 +32,20 @@ import android.content.Context;
 import android.content.pm.cts.shortcutmanager.common.Constants;
 
 import androidx.test.filters.SmallTest;
+import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.ShellIdentityUtils;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
 @CddTest(requirement="3.8.1/C-4-1")
 @SmallTest
+@RunWith(AndroidJUnit4.class)
 public class ShortcutManagerUsageTest extends ShortcutManagerCtsTestsBase {
     private static final String APPOPS_SET_SHELL_COMMAND = "appops set {0} " +
             AppOpsManager.OPSTR_GET_USAGE_STATS + " {1}";
@@ -49,7 +59,7 @@ public class ShortcutManagerUsageTest extends ShortcutManagerCtsTestsBase {
     private UsageStatsManager mUsageStatsManager;
 
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
 
         appOps(getInstrumentation(), getTestContext().getPackageName(),
@@ -59,7 +69,7 @@ public class ShortcutManagerUsageTest extends ShortcutManagerCtsTestsBase {
     }
 
     @Override
-    protected void tearDown() throws Exception {
+    public void tearDown() throws Exception {
         appOps(getInstrumentation(), getTestContext().getPackageName(),
                 AppOpsManager.OPSTR_GET_USAGE_STATS, "deny");
 
@@ -86,6 +96,7 @@ public class ShortcutManagerUsageTest extends ShortcutManagerCtsTestsBase {
         return false;
     }
 
+    @Test
     public void testReportShortcutUsed() throws InterruptedException {
 
         runWithCallerWithStrictMode(mPackageContext1, () -> {
@@ -145,6 +156,7 @@ public class ShortcutManagerUsageTest extends ShortcutManagerCtsTestsBase {
                 mPackageContext1.getPackageName(), idNonexistance));
     }
 
+    @Test
     public void testShortcutInvocationEventIsVisible() {
         final String id1 = generateRandomId("id1");
         final String id2 = generateRandomId("id2");
@@ -162,6 +174,7 @@ public class ShortcutManagerUsageTest extends ShortcutManagerCtsTestsBase {
                 "SHORTCUT_INVOCATION event was not reported.");
     }
 
+    @Test
     public void testShortcutInvocationEventIsNotVisible() {
         final String id1 = generateRandomId("id1");
         final String id2 = generateRandomId("id2");

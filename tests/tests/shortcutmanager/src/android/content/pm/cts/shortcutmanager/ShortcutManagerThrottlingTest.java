@@ -15,8 +15,9 @@
  */
 package android.content.pm.cts.shortcutmanager;
 
-
 import static android.content.pm.cts.shortcutmanager.common.Constants.INLINE_REPLY_REMOTE_INPUT_CAPTION;
+
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.resetAllThrottling;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.runCommandForNoOutput;
@@ -31,12 +32,16 @@ import android.view.KeyEvent;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.filters.Suppress;
+import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.CddTest;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * The actual test is implemented in the CtsShortcutManagerThrottlingTest module.
@@ -45,6 +50,7 @@ import com.android.compatibility.common.util.CddTest;
  */
 @CddTest(requirement="3.8.1/C-4-1")
 @SmallTest
+@RunWith(AndroidJUnit4.class)
 public class ShortcutManagerThrottlingTest extends ShortcutManagerCtsTestsBase {
 
     private static final int UI_TIMEOUT = 5000;
@@ -64,7 +70,7 @@ public class ShortcutManagerThrottlingTest extends ShortcutManagerCtsTestsBase {
     }
 
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
 
         PermissionUtils.grantPermission(TARGET_PACKAGE, Manifest.permission.POST_NOTIFICATIONS);
@@ -77,19 +83,22 @@ public class ShortcutManagerThrottlingTest extends ShortcutManagerCtsTestsBase {
     }
 
     @Override
-    protected void tearDown() throws Exception {
+    public void tearDown() throws Exception {
         PermissionUtils.revokePermission(TARGET_PACKAGE, Manifest.permission.POST_NOTIFICATIONS);
         super.tearDown();
     }
 
+    @Test
     public void testSetDynamicShortcuts() throws InterruptedException {
         callTest(Constants.TEST_SET_DYNAMIC_SHORTCUTS);
     }
 
+    @Test
     public void testAddDynamicShortcuts() throws InterruptedException {
         callTest(Constants.TEST_ADD_DYNAMIC_SHORTCUTS);
     }
 
+    @Test
     public void testUpdateShortcuts() throws InterruptedException {
         callTest(Constants.TEST_UPDATE_SHORTCUTS);
     }
@@ -101,6 +110,7 @@ public class ShortcutManagerThrottlingTest extends ShortcutManagerCtsTestsBase {
     }
      */
 
+    @Test
     public void testActivityUnthrottled() throws InterruptedException {
         callTest(Constants.TEST_ACTIVITY_UNTHROTTLED);
     }
@@ -116,6 +126,7 @@ public class ShortcutManagerThrottlingTest extends ShortcutManagerCtsTestsBase {
      * Flakey and may not work on OEM devices, so disabled.
      */
     @Suppress
+    @Test
     public void testInlineReply() throws Exception {
         clearNotifications();
 

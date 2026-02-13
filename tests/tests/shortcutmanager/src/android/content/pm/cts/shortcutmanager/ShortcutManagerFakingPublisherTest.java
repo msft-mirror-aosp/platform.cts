@@ -15,9 +15,14 @@
  */
 package android.content.pm.cts.shortcutmanager;
 
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.assertExpectException;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.list;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.runCommand;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -26,13 +31,17 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.ShortcutInfo;
 import android.platform.test.annotations.AsbSecurityTest;
 
-import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
+import androidx.test.runner.AndroidJUnit4;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * CTS for b/109824443.
  */
 @SmallTest
+@RunWith(AndroidJUnit4.class)
 public class ShortcutManagerFakingPublisherTest extends ShortcutManagerCtsTestsBase {
     private static final String ANOTHER_PACKAGE =
             "android.content.pm.cts.shortcutmanager.packages.package4";
@@ -55,6 +64,7 @@ public class ShortcutManagerFakingPublisherTest extends ShortcutManagerCtsTestsB
     }
 
     @AsbSecurityTest(cveBugId = 109824443)
+    @Test
     public void testSpoofingPublisher() {
         final Context myContext = getTestContext();
         final Context anotherContext;
@@ -161,7 +171,7 @@ public class ShortcutManagerFakingPublisherTest extends ShortcutManagerCtsTestsB
     }
 
     private void assertInvalidShortcutNotCreated() {
-        for (String s : runCommand(InstrumentationRegistry.getInstrumentation(),
+        for (String s : runCommand(getInstrumentation(),
                 "dumpsys shortcut")) {
             assertFalse("dumpsys shortcut contained invalid ID", s.contains(INVALID_ID));
         }
