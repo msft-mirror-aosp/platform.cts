@@ -5996,6 +5996,13 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="usbwarning_paragraph_2">If the test does not pass with this adapter,
         you should obtain a Google-supplied USB-C to 3.5mm Adapter and Loopback Adapter.</string>
 
+    <string name="usbwarning_message_caption_for_multiple_interfaces">USB Interface Warning</string>
+    <string name="usbwarning_message_heading_for_multiple_interfaces">Multiple USB Audio Adapter Detected</string>
+    <string name="usbwarning_paragraph_for_multiple_interfaces">
+        Multiple USB audio adapters are connected. The test will only
+        use one. Please connect only one USB audio adapter.
+    </string>
+
     <!-- Immersive Audio Test -->
     <string name="immersive_audio_test">Immersive Audio Test</string>
     <string name="immersive_audio_test_info">This test verifies that the Immersive Audio Test has

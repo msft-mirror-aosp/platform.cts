@@ -16,6 +16,10 @@
 
 package com.android.cts.verifier.audio.audiolib;
 
+import com.google.common.collect.ImmutableSet;
+
+import android.annotation.NonNull;
+import android.annotation.Nullable;
 import android.content.Context;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
@@ -261,30 +265,77 @@ public class AudioDeviceUtils {
         return SUPPORTSDEVICE_UNDETERMINED;
     }
 
-    //
-    // USB Device Support
-    //
-    private static final int USB_VENDORID_GOOGLE = 0x18D1;
-    private static final int USB_PRODUCTID_GOOGLE_ADAPTER_A = 0x5025;
-    private static final int USB_PRODUCTID_GOOGLE_ADAPTER_B = 0x5034;
-    private static final int USB_VENDORID_XUMEE = 0x0BDA;
-    private static final int USB_PRODUCTID_XUMEE_ADAPTER = 0x4BE2;
-    private static final int USB_VENDORID_MOSHI = 0x282B;
-    private static final int USB_PRODUCTID_MOSHI_ADAPTER = 0x0033;
-    private static final int USB_VENDORID_ANKER = 0x0572;
-    private static final int USB_PRODUCTID_ANKER_ADAPTER = 0x1B08;
-    // This is the difference in round-trip latency over USB compared to the Google adapter.
-    // Measured using OboeTester.
-    private static final double USB_LATENCY_OFFSET_ANKER_MILLIS = 3.23; // higher than Google
-    private static final int USB_VENDORID_REALTEK_ALC5686 = 0x0BDA;
-    private static final int USB_PRODUCTID_REALTEK_ALC5686_ADAPTER = 0x4BD1;
+    /**
+     * Supported USB Device information
+     * A USB device that is known to work with the test suite, and any latency offset.
+     */
+    private static class ValidUsbDevice {
+        final String name;
+        final int vendorId;
+        final int productId;
+        final double latencyOffsetMills;
+
+        ValidUsbDevice(String name, int vendorId, int productId, double latencyOffsetMills) {
+            this.name = name;
+            this.vendorId = vendorId;
+            this.productId = productId;
+            this.latencyOffsetMills = latencyOffsetMills;
+        }
+
+        ValidUsbDevice(String name, int vendorId, int productId) {
+            this(name, vendorId, productId, 0.0);
+        }
+
+        private boolean matches(UsbDevice usbDevice) {
+            return usbDevice.getVendorId() == vendorId
+                    && usbDevice.getProductId() == productId;
+        }
+
+        private static final Set<ValidUsbDevice> VALID_USB_DEVICES =
+                ImmutableSet.of(
+                    new ValidUsbDevice("Google_Adapter_001", 0x18D1, 0x5025),
+                    new ValidUsbDevice("Google_Adapter_002", 0x18D1, 0x5034),
+                    new ValidUsbDevice("Xumee_Adapter_001", 0x0BDA, 0x4BE2),
+                    new ValidUsbDevice("Xumee_Adapter_002", 0x3302, 0x56c5),
+                    new ValidUsbDevice("Moshi_Adapter_001", 0x282B, 0x0033),
+                    new ValidUsbDevice("Anker_Adapter_001", 0x0572, 0x1B08, 3.23),
+                    new ValidUsbDevice("Realtek_ALC5686_Adapter_001", 0x0BDA, 0x4BD1)
+                );
+        /**
+         * @param usbDevice The USB device to check.
+         * @return the ValidUsbDevice if it is known to work with the test suite, or null if it is not.
+         */
+        @Nullable static final ValidUsbDevice getValidatedUsbDevice(@NonNull UsbDevice usbDevice) {
+            for (ValidUsbDevice validUsbDevice : VALID_USB_DEVICES) {
+                if (validUsbDevice.matches(usbDevice)) {
+                    if (LOG) {
+                        Log.d(TAG, "Found valid USB device: " + validUsbDevice.name
+                                + " vendorId: " + String.format("0x%04x", validUsbDevice.vendorId)
+                                + " productId: "
+                                + String.format("0x%04x", validUsbDevice.productId)
+                                + " latencyOffsetMills: " + validUsbDevice.latencyOffsetMills);
+                    }
+                    return validUsbDevice;
+                }
+            }
+            if (LOG) {
+                Log.d(TAG, "USB device not found in valid USB devices list: "
+                        + String.format("0x%04x", usbDevice.getVendorId())
+                        + " "
+                        + String.format("0x%04x", usbDevice.getProductId()));
+            }
+            return null;
+        }
+    }
+
+
 
     /**
      * Returns the UsbDevice corresponding to any connected USB peripheral.
      * @param context The Application Context.
      * @return the UsbDevice corresponding to any connected USB peripheral.
      */
-    public static UsbDevice getConnectedUsbDevice(Context context) {
+    public static UsbDevice[] getConnectedUsbDevice(Context context) {
         UsbManager usbManager = context.getSystemService(UsbManager.class);
 
         if (usbManager == null) {
@@ -294,47 +345,10 @@ public class AudioDeviceUtils {
             Collection<UsbDevice> devices = deviceList.values();
             UsbDevice[] deviceArray = new UsbDevice[1];
             deviceArray = (UsbDevice[]) devices.toArray(deviceArray);
-            return deviceArray[0];
+            return deviceArray;
         }
 
         return null;
-    }
-
-    /**
-     * Determines if the specified UsbDevice is a validated USB Audio headset adapter.
-     * Valid adapters have low latency and no echo cancellation.
-     * @param usbDevice the device to test.
-     * @return true if the specified UsbDevice is a valid USB Audio headset adapter.
-     */
-    public static boolean isUsbHeadsetValidForTest(UsbDevice usbDevice) {
-        if (usbDevice != null) {
-            final int vId = usbDevice.getVendorId();
-            final int pId = usbDevice.getProductId();
-            if (vId == USB_VENDORID_GOOGLE && (pId == USB_PRODUCTID_GOOGLE_ADAPTER_A
-                                               || pId == USB_PRODUCTID_GOOGLE_ADAPTER_B)) {
-                return true;
-            }
-            if (vId == USB_VENDORID_XUMEE && pId == USB_PRODUCTID_XUMEE_ADAPTER) return true;
-            if (vId == USB_VENDORID_MOSHI && pId == USB_PRODUCTID_MOSHI_ADAPTER) return true;
-            if (vId == USB_VENDORID_ANKER && pId == USB_PRODUCTID_ANKER_ADAPTER) return true;
-            if (vId == USB_VENDORID_REALTEK_ALC5686
-                    && pId == USB_PRODUCTID_REALTEK_ALC5686_ADAPTER) return true;
-        }
-        return false;
-    }
-
-    /**
-     * Get latency added by the USB adapter relative to the Google Adapter in msec.
-     * @param usbDevice the USB device that may have a latency offset
-     * @return latency dfiference in msec
-     */
-    public static double getUsbLatencyOffsetMillis(UsbDevice usbDevice) {
-        if (usbDevice.getVendorId() == USB_VENDORID_ANKER
-                && usbDevice.getProductId() == USB_PRODUCTID_ANKER_ADAPTER) {
-            return USB_LATENCY_OFFSET_ANKER_MILLIS;
-        } else {
-            return 0.0;
-        }
     }
 
     public static class UsbDeviceReport {
@@ -371,14 +385,30 @@ public class AudioDeviceUtils {
         UsbDeviceReport report = new UsbDeviceReport();
         if (inputUsbHeadset != null && outputUsbHeadset != null) {
             // Now see if it is a compatible USB adapter
-            UsbDevice usbDevice = AudioDeviceUtils.getConnectedUsbDevice(context);
-            if (usbDevice != null) {
-                if (AudioDeviceUtils.isUsbHeadsetValidForTest(usbDevice)) {
-                    report.isValid = true;
-                    report.latencyOffset = getUsbLatencyOffsetMillis(usbDevice);
-                } else {
+            UsbDevice[] usbDevices = AudioDeviceUtils.getConnectedUsbDevice(context);
+            ValidUsbDevice validUsbDeviceBeingUsed = null;
+            int numValidUsbDevices = 0;
+            if (usbDevices == null) {
+                Log.d(TAG, "No USB device found");
+            }else{
+                for (UsbDevice usbDevice : usbDevices) {
+                    ValidUsbDevice validatedUsbDevice = ValidUsbDevice.getValidatedUsbDevice(usbDevice);
+                    if (validatedUsbDevice != null) {
+                        validUsbDeviceBeingUsed = validatedUsbDevice;
+                        numValidUsbDevices++;
+                    }
+                }
+                if (validUsbDeviceBeingUsed == null) {
                     UsbDeviceWarningDialog warningDialog = new UsbDeviceWarningDialog(context);
                     warningDialog.show();
+                } else {
+                    if (numValidUsbDevices > 1) {
+                        UsbMultipleDeviceWarningDialog warningDialog =
+                                new UsbMultipleDeviceWarningDialog(context);
+                        warningDialog.show();
+                    }
+                    report.isValid = true;
+                    report.latencyOffset = validUsbDeviceBeingUsed.latencyOffsetMills;
                 }
             }
         }
