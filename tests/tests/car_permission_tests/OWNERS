@@ -8,13 +8,13 @@ per-file src/com/android/car/cluster/* = bkchoi@google.com
 per-file src/com/android/car/input/* = kanant@google.com
 
 # OccupantZone
-per-file src/com/android/car/CarOccupantZoneManagerPermissionTest.java = xiangw@google.com, ericjeong@google.com
+per-file src/com/android/car/CarOccupantZoneManagerPermissionTest.java = xiangw@google.com
 
 # Power
-per-file src/com/android/car/power/* = ericjeong@google.com
+per-file src/com/android/car/power/* = pdunaj@google.com
 
 # Watchdog
-per-file src/com/android/car/watchdog/* = lakshmana@google.com
+per-file src/com/android/car/watchdog/* = jahdiel@google.com
 
 # Property
 per-file src/android/car/cts/permissiontest/hardware/property/* = file:platform/hardware/interfaces:/automotive/vehicle/OWNERS
