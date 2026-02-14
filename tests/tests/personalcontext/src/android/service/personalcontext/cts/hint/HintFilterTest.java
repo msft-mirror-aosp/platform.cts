@@ -24,6 +24,7 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.personalcontext.Flags;
 import android.service.personalcontext.hint.BundleHint;
 import android.service.personalcontext.hint.ContextHintWithSignature;
+import android.service.personalcontext.hint.HintFilter;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
@@ -82,10 +83,10 @@ public class HintFilterTest {
         ContextHintWithSignature hintC = makeHint(HINT_CLASS_C);
 
         final Set<ContextHintWithSignature> interestedHintSet =
-                new android.service.personalcontext.hint.HintFilter.Builder()
-                        .addHintType(HINT_CLASS_A, true)
-                        .addHintType(HINT_CLASS_B, true)
-                        .addHintType(HINT_CLASS_C, true)
+                new HintFilter.Builder()
+                        .addBundleHintTypeName(HINT_CLASS_A, HintFilter.FILTER_TYPE_REQUIRED)
+                        .addBundleHintTypeName(HINT_CLASS_B, HintFilter.FILTER_TYPE_REQUIRED)
+                        .addBundleHintTypeName(HINT_CLASS_C, HintFilter.FILTER_TYPE_REQUIRED)
                         .build()
                         .getInterestedHintClusters(
                                 Set.of(hintA, hintB, hintC), Collections.emptySet());
@@ -106,9 +107,9 @@ public class HintFilterTest {
         ContextHintWithSignature hintC = makeHint(HINT_CLASS_C);
 
         final Set<ContextHintWithSignature> interestedHintSet =
-                new android.service.personalcontext.hint.HintFilter.Builder()
-                        .addHintType(HINT_CLASS_A, true)
-                        .addHintType(HINT_CLASS_B, true)
+                new HintFilter.Builder()
+                        .addBundleHintTypeName(HINT_CLASS_A, HintFilter.FILTER_TYPE_REQUIRED)
+                        .addBundleHintTypeName(HINT_CLASS_B, HintFilter.FILTER_TYPE_REQUIRED)
                         .build()
                         .getInterestedHintClusters(
                                 Set.of(hintA, hintB, hintC), Collections.emptySet());
@@ -129,12 +130,12 @@ public class HintFilterTest {
         ContextHintWithSignature hintC = makeHint(HINT_CLASS_C);
 
         final Set<ContextHintWithSignature> interestedHintSet =
-                new android.service.personalcontext.hint.HintFilter.Builder()
-                        .addHintType(HINT_CLASS_A, true)
-                        .addHintType(HINT_CLASS_B, true)
-                        .addHintType(HINT_CLASS_C, true)
-                        .addHintType(HINT_CLASS_D, true)
-                        .addHintType(HINT_CLASS_E, true)
+                new HintFilter.Builder()
+                        .addBundleHintTypeName(HINT_CLASS_A, HintFilter.FILTER_TYPE_REQUIRED)
+                        .addBundleHintTypeName(HINT_CLASS_B, HintFilter.FILTER_TYPE_REQUIRED)
+                        .addBundleHintTypeName(HINT_CLASS_C, HintFilter.FILTER_TYPE_REQUIRED)
+                        .addBundleHintTypeName(HINT_CLASS_D, HintFilter.FILTER_TYPE_REQUIRED)
+                        .addBundleHintTypeName(HINT_CLASS_E, HintFilter.FILTER_TYPE_REQUIRED)
                         .build()
                         .getInterestedHintClusters(
                                 Set.of(hintA, hintB, hintC), Collections.emptySet());
@@ -155,9 +156,9 @@ public class HintFilterTest {
         ContextHintWithSignature hintC = makeHint(HINT_CLASS_C);
 
         final Set<ContextHintWithSignature> interestedHintSet =
-                new android.service.personalcontext.hint.HintFilter.Builder()
-                        .addHintType(HINT_CLASS_D, true)
-                        .addHintType(HINT_CLASS_E, true)
+                new HintFilter.Builder()
+                        .addBundleHintTypeName(HINT_CLASS_D, HintFilter.FILTER_TYPE_REQUIRED)
+                        .addBundleHintTypeName(HINT_CLASS_E, HintFilter.FILTER_TYPE_REQUIRED)
                         .build()
                         .getInterestedHintClusters(
                                 Set.of(hintA, hintB, hintC), Collections.emptySet());
@@ -178,9 +179,9 @@ public class HintFilterTest {
         ContextHintWithSignature hintC = makeHint(HINT_CLASS_C);
 
         final Set<ContextHintWithSignature> interestedHintSet =
-                new android.service.personalcontext.hint.HintFilter.Builder()
-                        .addHintType(HINT_CLASS_A, false)
-                        .addHintType(HINT_CLASS_D, false)
+                new HintFilter.Builder()
+                        .addBundleHintTypeName(HINT_CLASS_A, HintFilter.FILTER_TYPE_ALLOWED)
+                        .addBundleHintTypeName(HINT_CLASS_D, HintFilter.FILTER_TYPE_ALLOWED)
                         .build()
                         .getInterestedHintClusters(
                                 Set.of(hintA, hintB, hintC), Collections.emptySet());
@@ -201,10 +202,10 @@ public class HintFilterTest {
         ContextHintWithSignature hintC = makeHint(HINT_CLASS_C);
 
         final Set<ContextHintWithSignature> interestedHintSet =
-                new android.service.personalcontext.hint.HintFilter.Builder()
-                        .addHintType(HINT_CLASS_A, false)
-                        .addHintType(HINT_CLASS_B, false)
-                        .addHintType(HINT_CLASS_C, false)
+                new HintFilter.Builder()
+                        .addBundleHintTypeName(HINT_CLASS_A, HintFilter.FILTER_TYPE_ALLOWED)
+                        .addBundleHintTypeName(HINT_CLASS_B, HintFilter.FILTER_TYPE_ALLOWED)
+                        .addBundleHintTypeName(HINT_CLASS_C, HintFilter.FILTER_TYPE_ALLOWED)
                         .build()
                         .getInterestedHintClusters(
                                 Set.of(hintA, hintB, hintC), Collections.emptySet());
@@ -225,9 +226,9 @@ public class HintFilterTest {
         ContextHintWithSignature hintC = makeHint(HINT_CLASS_C);
 
         final Set<ContextHintWithSignature> interestedHintSet =
-                new android.service.personalcontext.hint.HintFilter.Builder()
-                        .addHintType(HINT_CLASS_A, false)
-                        .addHintType(HINT_CLASS_B, false)
+                new HintFilter.Builder()
+                        .addBundleHintTypeName(HINT_CLASS_A, HintFilter.FILTER_TYPE_ALLOWED)
+                        .addBundleHintTypeName(HINT_CLASS_B, HintFilter.FILTER_TYPE_ALLOWED)
                         .build()
                         .getInterestedHintClusters(
                                 Set.of(hintA, hintB, hintC), Collections.emptySet());

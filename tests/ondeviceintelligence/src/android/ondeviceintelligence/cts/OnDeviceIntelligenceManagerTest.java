@@ -42,6 +42,7 @@ import android.app.ondeviceintelligence.Content;
 import android.app.ondeviceintelligence.DownloadCallback;
 import android.app.ondeviceintelligence.Feature;
 import android.app.ondeviceintelligence.InferenceInfo;
+import android.app.ondeviceintelligence.ModelDownloadCallback;
 import android.app.ondeviceintelligence.OnDeviceIntelligenceException;
 import android.app.ondeviceintelligence.OnDeviceIntelligenceManager;
 import android.app.ondeviceintelligence.Part;
@@ -52,10 +53,13 @@ import android.app.ondeviceintelligence.TokenInfo;
 import android.app.ondeviceintelligence.embedding.EmbeddingModel;
 import android.app.ondeviceintelligence.embedding.EmbeddingRequest;
 import android.app.ondeviceintelligence.embedding.EmbeddingResponse;
+import android.app.ondeviceintelligence.embedding.EmbeddingVector;
 import android.app.ondeviceintelligence.imagedescription.ImageDescriptionModel;
 import android.app.ondeviceintelligence.imagedescription.ImageDescriptionCallback;
 import android.app.ondeviceintelligence.imagedescription.ImageDescriptionRequest;
 import android.app.ondeviceintelligence.imagedescription.ImageDescriptionResponse;
+import android.app.ondeviceintelligence.imagedescription.ImageDescriptionResponse.ImageDescription;
+import android.graphics.Bitmap;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -112,8 +116,6 @@ import java.util.function.Consumer;
 
 /**
  * Test the OnDeviceIntelligenceManager API. Run with "atest OnDeviceIntelligenceManagerTest".
- *
- * TODO:b/458658574 - Add coverage tests for the new APIs.
  * TODO:b/458658574 - Please consider using Bedstead permissions APIs.
  * .
  */
@@ -132,6 +134,9 @@ public class OnDeviceIntelligenceManagerTest {
     public static final String TOKEN_INFO_PARAMS_KEY = "tokenInfo_params_key";
     public static final String TEST_OD_NAMESPACE = "test_od_namespace";
     public static final String ID_FILTER_KEY = "id_filter";
+    private static final String DOWNLOAD_STATUS_STARTED = "Started";
+    private static final String DOWNLOAD_STATUS_PROGRESS = "Progress";
+    private static final String DOWNLOAD_STATUS_COMPLETED = "Completed";
 
 
     private static final String TAG = OnDeviceIntelligenceManagerTest.class.getSimpleName();
@@ -143,6 +148,12 @@ public class OnDeviceIntelligenceManagerTest {
     public static final String CTS_INFERENCE_SERVICE_NAME =
             CTS_PACKAGE_NAME + "/"
                     + android.ondeviceintelligence.cts.CtsIsolatedInferenceService.class.getCanonicalName();
+    public static final String CTS_DEFAULT_INTELLIGENCE_SERVICE_NAME =
+            CTS_PACKAGE_NAME + "/"
+                    + android.ondeviceintelligence.cts.CtsDefaultIntelligenceService.class.getCanonicalName();
+    public static final String CTS_DEFAULT_INFERENCE_SERVICE_NAME =
+            CTS_PACKAGE_NAME + "/"
+                    + android.ondeviceintelligence.cts.CtsDefaultInferenceService.class.getCanonicalName();
     private static final int TEMPORARY_SERVICE_DURATION = 20000;
     public static final String NAMESPACE_ON_DEVICE_INTELLIGENCE = "ondeviceintelligence";
     public static final String KEY_SERVICE_ENABLED = "service_enabled";
@@ -161,7 +172,7 @@ public class OnDeviceIntelligenceManagerTest {
     public static final int REQUEST_TYPE_TRIGGER_MODEL_LOAD = 1011;
     public static final int REQUEST_TYPE_TRIGGER_MODEL_UNLOAD = 1012;
 
-    private static final Executor EXECUTOR = Executors.newCachedThreadPool();
+    private static final Executor EXECUTOR = Executors.newSingleThreadExecutor();
     private static final String MODEL_LOADED_BROADCAST_ACTION =
             "android.service.ondeviceintelligence.MODEL_LOADED";
 
@@ -1566,7 +1577,7 @@ public class OnDeviceIntelligenceManagerTest {
                 new OutcomeReceiver<>() {
                     @Override
                     public void onResult(List<EmbeddingModel> result) {
-                        assertThat(result).hasSize(1);
+                        assertThat(result).hasSize(2);
                         assertThat(result.get(0).getModelSignature()).isEqualTo(
                                 "test-embedding-model");
                         statusLatch.countDown();
@@ -1985,6 +1996,276 @@ public class OnDeviceIntelligenceManagerTest {
         assertThat(statusLatch.await(5, SECONDS)).isTrue();
     }
 
+    @Test
+    @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_26Q2)
+    public void testDefaultServiceMethods() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        Manifest.permission.USE_ON_DEVICE_INTELLIGENCE,
+                        Manifest.permission.WRITE_DEVICE_CONFIG,
+                        "android.permission.WRITE_ALLOWLISTED_DEVICE_CONFIG",
+                        "android.permission.READ_DEVICE_CONFIG",
+                        "android.permission.MONITOR_DEVICE_CONFIG_ACCESS");
+
+        // Bind to default services
+        setTestableOnDeviceIntelligenceServiceNames(
+                new String[] {
+                    CTS_DEFAULT_INTELLIGENCE_SERVICE_NAME, CTS_DEFAULT_INFERENCE_SERVICE_NAME
+                });
+
+        // Verify getFeature succeeds
+        CountDownLatch featureLatch = new CountDownLatch(1);
+        mOnDeviceIntelligenceManager.getFeature(
+                1,
+                EXECUTOR,
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(Feature result) {
+                        featureLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        fail("Should not fail: " + error);
+                    }
+                });
+        assertThat(featureLatch.await(2, SECONDS)).isTrue();
+
+        // Verify listFeatures returns empty
+        CountDownLatch listLatch = new CountDownLatch(1);
+        mOnDeviceIntelligenceManager.listFeatures(
+                EXECUTOR,
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(List<Feature> result) {
+                        assertThat(result).isEmpty();
+                        listLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        fail("Should not fail: " + error);
+                    }
+                });
+        assertThat(listLatch.await(2, SECONDS)).isTrue();
+
+        // Verify optional method (listEmbeddingModels) fails
+        CountDownLatch errorLatch = new CountDownLatch(1);
+        mOnDeviceIntelligenceManager.listEmbeddingModels(
+                EXECUTOR,
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(List<EmbeddingModel> result) {
+                        fail("Should have failed");
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        errorLatch.countDown();
+                    }
+                });
+        assertThat(errorLatch.await(2, SECONDS)).isTrue();
+
+        // Restore services
+        bindToTestableOnDeviceIntelligenceServices();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_26Q2)
+    public void testEmbeddingModel_getStatus() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        // Use CtsIntelligenceService which is already bound in setUp()
+        CountDownLatch latch = new CountDownLatch(1);
+        mOnDeviceIntelligenceManager.listEmbeddingModels(
+                EXECUTOR,
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(List<EmbeddingModel> result) {
+                        EmbeddingModel model = result.get(0);
+                        model.getStatus(
+                                EXECUTOR,
+                                new OutcomeReceiver<>() {
+                                    @Override
+                                    public void onResult(Integer status) {
+                                        // CtsIntelligenceService.getSampleFeature(3) ->
+                                        // FeatureDetails status = 3 (AVAILABLE)
+                                        // Assuming FeatureDetails.FEATURE_STATUS_AVAILABLE = 3
+                                        assertThat(status).isEqualTo(3);
+                                        latch.countDown();
+                                    }
+
+                                    @Override
+                                    public void onError(OnDeviceIntelligenceException error) {
+                                        fail("getStatus failed: " + error);
+                                    }
+                                });
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        fail("listEmbeddingModels failed");
+                    }
+                });
+        assertThat(latch.await(5, SECONDS)).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_26Q2)
+    public void testModelDownload() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch latch = new CountDownLatch(1);
+        List<String> events =
+                java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+        mOnDeviceIntelligenceManager.listEmbeddingModels(
+                EXECUTOR,
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(List<EmbeddingModel> result) {
+                        // Get the model with ID 3 (which behaves successfully)
+                        EmbeddingModel model =
+                                result.stream()
+                                        .filter(m -> m.getModelSignature()
+                                                                .equals("test-embedding-model"))
+                                        .findFirst()
+                                        .orElseThrow();
+
+                        model.download(
+                                null,
+                                EXECUTOR,
+                                new ModelDownloadCallback() {
+                                    @Override
+                                    public void onDownloadCompleted() {
+                                        events.add(DOWNLOAD_STATUS_COMPLETED);
+                                        latch.countDown();
+                                    }
+
+                                    @Override
+                                    public void onDownloadFailed(int status, String msg) {
+                                        fail("Download failed: " + status + " " + msg);
+                                    }
+
+                                    @Override
+                                    public void onDownloadProgress(long totalBytes) {
+                                        events.add(DOWNLOAD_STATUS_PROGRESS);
+                                    }
+
+                                    @Override
+                                    public void onDownloadStarted(long bytes) {
+                                        events.add(DOWNLOAD_STATUS_STARTED);
+                                    }
+                                });
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        fail("listEmbeddingModels failed");
+                    }
+                });
+        assertThat(latch.await(5, SECONDS)).isTrue();
+        assertThat(events)
+                .containsExactly(
+                        DOWNLOAD_STATUS_STARTED,
+                        DOWNLOAD_STATUS_PROGRESS,
+                        DOWNLOAD_STATUS_PROGRESS,
+                        DOWNLOAD_STATUS_COMPLETED);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_26Q2)
+    public void testModelDownload_failure() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch latch = new CountDownLatch(1);
+        mOnDeviceIntelligenceManager.listEmbeddingModels(
+                EXECUTOR,
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(List<EmbeddingModel> result) {
+                        // Get the model with ID 2 (which fails)
+                        EmbeddingModel model =
+                                result.stream()
+                                        .filter(
+                                                m -> m.getModelSignature()
+                                                            .equals(
+                                                                "test-embedding-model-failure"))
+                                        .findFirst()
+                                        .orElseThrow();
+
+                        model.download(
+                                null,
+                                EXECUTOR,
+                                new ModelDownloadCallback() {
+                                    @Override
+                                    public void onDownloadCompleted() {
+                                        fail("Download completed unexpectedly");
+                                    }
+
+                                    @Override
+                                    public void onDownloadFailed(int status, String msg) {
+                                        assertThat(status).isEqualTo(1);
+                                        latch.countDown();
+                                    }
+
+                                    @Override
+                                    public void onDownloadProgress(long totalBytes) {}
+
+                                    @Override
+                                    public void onDownloadStarted(long bytes) {}
+                                });
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        fail("listEmbeddingModels failed");
+                    }
+                });
+        assertThat(latch.await(2, SECONDS)).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_26Q2)
+    public void testImageDescriptionModel_getStatus() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch latch = new CountDownLatch(1);
+        mOnDeviceIntelligenceManager.listImageDescriptionModels(
+                EXECUTOR,
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(List<ImageDescriptionModel> result) {
+                        ImageDescriptionModel model = result.get(0);
+                        model.getStatus(
+                                EXECUTOR,
+                                new OutcomeReceiver<>() {
+                                    @Override
+                                    public void onResult(Integer status) {
+                                        // ID 4 maps to default status -> MODEL_STATUS_UNAVAILABLE
+                                        // (0)
+                                        assertThat(status).isEqualTo(0);
+                                        latch.countDown();
+                                    }
+
+                                    @Override
+                                    public void onError(OnDeviceIntelligenceException error) {
+                                        fail("getStatus failed: " + error);
+                                    }
+                                });
+                    }
+
+                    @Override
+                    public void onError(OnDeviceIntelligenceException error) {
+                        fail("listImageDescriptionModels failed");
+                    }
+                });
+        assertThat(latch.await(5, SECONDS)).isTrue();
+    }
     public static void clearTestableOnDeviceIntelligenceService() {
         runShellCommand("cmd on_device_intelligence set-temporary-services");
     }

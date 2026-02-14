@@ -31,6 +31,17 @@
             android:isolatedProcess="true"
             android:exported="true">
         </service>
+        <service
+            android:name=".CtsDefaultIntelligenceService"
+            android:permission="android.permission.BIND_ON_DEVICE_INTELLIGENCE_SERVICE"
+            android:exported="true">
+        </service>
+        <service
+            android:name=".CtsDefaultInferenceService"
+            android:permission="android.permission.BIND_ON_DEVICE_SANDBOXED_INFERENCE_SERVICE"
+            android:isolatedProcess="true"
+            android:exported="true">
+        </service>
     </application>
 
     <uses-permission android:name="android.permission.USE_ON_DEVICE_INTELLIGENCE" />

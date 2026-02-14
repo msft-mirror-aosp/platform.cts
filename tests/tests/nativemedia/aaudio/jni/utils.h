@@ -73,6 +73,7 @@ const static std::set<AAudio_DeviceType> ALL_VALID_OUTPUT_DEVICES = {
         AAUDIO_DEVICE_BLE_SPEAKER,
         AAUDIO_DEVICE_BLE_BROADCAST,
         AAUDIO_DEVICE_BLE_HEARING_AID,
+        AAUDIO_DEVICE_BLE_CENTRAL,
 };
 const static std::set<AAudio_DeviceType> ALL_VALID_INPUT_DEVICES = {
         AAUDIO_DEVICE_BUILTIN_MIC,

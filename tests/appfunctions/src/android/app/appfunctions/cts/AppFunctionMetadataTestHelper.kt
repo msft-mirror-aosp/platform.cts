@@ -357,6 +357,28 @@ class AppFunctionMetadataTestHelper {
             val CONTEXT = AppFunctionName(PACKAGE_NAME, "contextDisabledByDefault")
             val ACTIVITY_CONCAT_STRINGS = AppFunctionName(PACKAGE_NAME, "activityConcatStrings")
             val CHECK_ATTRIBUTION = AppFunctionName(PACKAGE_NAME, "checkAttribution")
+
+            val ALL_FUNCTIONS =
+                setOf(
+                    THROW_EXCEPTION,
+                    UNCAUGHT_CLIENT_EXCEPTION,
+                    ADD_INVOKE_CALLBACK_TWICE,
+                    DYNAMIC_LONG_RUNNING,
+                    ADD_ASYNC,
+                    NOT_INVOKE_CALLBACK,
+                    DYNAMIC_CONCAT_STRINGS,
+                    ACTIVITY_SCOPE_CONCAT_STRINGS,
+                    RUN_FOREVER,
+                    ADD,
+                    ADD_DISABLED_BY_DEFAULT,
+                    NO_OP,
+                    KILL,
+                    LONG_RUNNING_FUNCTION,
+                    NO_SCHEMA,
+                    CONTEXT,
+                    ACTIVITY_CONCAT_STRINGS,
+                    CHECK_ATTRIBUTION,
+                )
         }
 
         object FunctionMetadata {

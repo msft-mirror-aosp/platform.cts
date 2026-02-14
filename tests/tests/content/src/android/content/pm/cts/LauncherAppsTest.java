@@ -17,6 +17,11 @@
 package android.content.pm.cts;
 
 import static android.content.pm.Flags.FLAG_ARCHIVING;
+import static android.content.pm.cts.util.PackageTestUtils.APP_LOCK_SUPPORTED_APK;
+import static android.content.pm.cts.util.PackageTestUtils.APP_LOCK_SUPPORTED_PACKAGE_NAME;
+import static android.content.pm.cts.util.PackageTestUtils.clearHomeRoleHolderScoped;
+import static android.content.pm.cts.util.PackageTestUtils.hasLockAppsPermission;
+import static android.content.pm.cts.util.PackageTestUtils.installPackageScoped;
 
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.getDefaultLauncher;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.setDefaultLauncher;
@@ -41,6 +46,7 @@ import android.content.IIntentSender;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.IntentSender;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.LauncherActivityInfo;
 import android.content.pm.LauncherApps;
 import android.content.pm.LauncherApps.ArchiveCompatibilityParams;
@@ -48,6 +54,8 @@ import android.content.pm.LauncherUserInfo;
 import android.content.pm.PackageInstaller;
 import android.content.pm.PackageManager;
 import android.content.pm.ShortcutInfo;
+import android.content.pm.cts.util.AppLockSupportRule;
+import android.content.pm.cts.util.RequiresAppLockSupported;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
@@ -58,6 +66,7 @@ import android.os.Process;
 import android.os.RemoteException;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -67,6 +76,7 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
@@ -100,6 +110,9 @@ public class LauncherAppsTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Rule
+    public final AppLockSupportRule mAppLockSupportRule = new AppLockSupportRule();
 
     private static final String PACKAGE_NAME = "android.content.cts";
     private static final String FULL_CLASS_NAME = "android.content.pm.cts.LauncherMockActivity";
@@ -143,6 +156,10 @@ public class LauncherAppsTest {
             "android.content.cts.mocklauncherapp.invisiblelabels";
     private static final String INVISIBLE_LABELS_APK_PATH =
             SAMPLE_APK_BASE + "CtsContentMockLauncherInvisibleLabelsTestApp.apk";
+    private static final String APP_LOCK_SUPPORTED_ACTIVITY_NAME = APP_LOCK_SUPPORTED_PACKAGE_NAME
+            + ".MainActivity";
+    private static final ComponentName APP_LOCK_SUPPORTED_COMPONENT_NAME =
+            new ComponentName(APP_LOCK_SUPPORTED_PACKAGE_NAME, APP_LOCK_SUPPORTED_ACTIVITY_NAME);
 
     @Before
     public void setUp() throws Exception {
@@ -745,6 +762,104 @@ public class LauncherAppsTest {
         assertThat(sUnarchiveReceiverPackageName.get()).isEqualTo(ARCHIVE_PACKAGE_NAME);
 
         mContext.unregisterReceiver(unarchiveReceiver);
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresAppLockSupported
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @ApiTest(apis = { "android.content.pm.LauncherApps#getApplicationInfo" })
+    public void testGetApplicationInfo_withLockAppsPermission_returnsCorrectApplicationInfo()
+            throws Exception {
+        try (AutoCloseable withAppLockSupportedApp = installPackageScoped(
+                APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME)) {
+            assertThat(hasLockAppsPermission(mContext)).isTrue();
+            final ApplicationInfo applicationInfo = mLauncherApps.getApplicationInfo(
+                    APP_LOCK_SUPPORTED_PACKAGE_NAME, /* flags= */ 0,
+                    USER_HANDLE);
+
+            assertThat(applicationInfo.isAppLockSupported).isTrue();
+            assertThat(applicationInfo.isAppLockEnabled).isFalse();
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresAppLockSupported
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @ApiTest(apis = { "android.content.pm.LauncherApps#getApplicationInfo" })
+    public void testGetApplicationInfo_withoutLockAppsPermission_doesNotSupportAppLock()
+            throws Exception {
+        try (AutoCloseable withAppLockSupportedApp = installPackageScoped(
+                APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME);
+                AutoCloseable withoutLockAppsPermission = clearHomeRoleHolderScoped(mContext)) {
+            assertThat(hasLockAppsPermission(mContext)).isFalse();
+
+            final ApplicationInfo applicationInfo = mLauncherApps.getApplicationInfo(
+                    APP_LOCK_SUPPORTED_PACKAGE_NAME, /* flags= */ 0, USER_HANDLE);
+            assertThat(applicationInfo.isAppLockSupported).isFalse();
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresAppLockSupported
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @ApiTest(apis = { "android.content.pm.LauncherApps#getActivityList" })
+    public void testGetActivityList_withLockAppsPermission_returnsCorrectLauncherActivityInfo()
+            throws Exception {
+        try (AutoCloseable withAppLockSupportedApp = installPackageScoped(
+                APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME)) {
+            assertThat(hasLockAppsPermission(mContext)).isTrue();
+            final List<LauncherActivityInfo> activities =
+                    mLauncherApps.getActivityList(APP_LOCK_SUPPORTED_PACKAGE_NAME, USER_HANDLE);
+
+            assertThat(activities).hasSize(1);
+            final LauncherActivityInfo launcherActivityInfo = activities.get(0);
+            assertThat(launcherActivityInfo.getApplicationInfo().isAppLockSupported).isTrue();
+            assertThat(launcherActivityInfo.getApplicationInfo().isAppLockEnabled).isFalse();
+        }
+    }
+
+    // TODO(b/484203600): Implement
+    // testGetActivityList_withoutLockAppsPermission_doesNotSupportAppLock
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresAppLockSupported
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @ApiTest(apis = { "android.content.pm.LauncherApps#resolveActivity" })
+    public void testResolveActivity_withLockAppsPermission_returnsCorrectLauncherActivityInfo()
+            throws Exception {
+        try (AutoCloseable withAppLockSupportedApp = installPackageScoped(
+                APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME)) {
+            assertThat(hasLockAppsPermission(mContext)).isTrue();
+            final LauncherActivityInfo launcherActivityInfo = mLauncherApps.resolveActivity(
+                    new Intent().setComponent(APP_LOCK_SUPPORTED_COMPONENT_NAME), USER_HANDLE);
+
+            assertThat(launcherActivityInfo).isNotNull();
+            assertThat(launcherActivityInfo.getApplicationInfo().isAppLockSupported).isTrue();
+            assertThat(launcherActivityInfo.getApplicationInfo().isAppLockEnabled).isFalse();
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresAppLockSupported
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
+    @ApiTest(apis = { "android.content.pm.LauncherApps#resolveActivity" })
+    public void testResolveActivity_withoutLockAppsPermission_doesNotSupportAppLock()
+            throws Exception {
+        try (AutoCloseable withAppLockSupportedApp = installPackageScoped(
+                APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME);
+                AutoCloseable withoutLockAppsPermission = clearHomeRoleHolderScoped(mContext)) {
+            assertThat(hasLockAppsPermission(mContext)).isFalse();
+            final LauncherActivityInfo launcherActivityInfo = mLauncherApps.resolveActivity(
+                    new Intent().setComponent(APP_LOCK_SUPPORTED_COMPONENT_NAME), USER_HANDLE);
+
+            assertThat(launcherActivityInfo).isNotNull();
+            assertThat(launcherActivityInfo.getApplicationInfo().isAppLockSupported).isFalse();
+        }
     }
 
     private void registerDefaultObserver() {

@@ -26,20 +26,26 @@ import static android.virtualdevice.cts.camera.util.VirtualCameraUtils.grantCame
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import android.annotation.SuppressLint;
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.VirtualDeviceParams;
 import android.companion.virtual.camera.VirtualCameraCallback;
+import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CaptureRequest;
 import android.media.ImageReader;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.virtualdevice.cts.camera.util.VirtualCameraCaptureHelper;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
@@ -62,6 +68,7 @@ import java.util.List;
 
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
 @RunWith(AndroidJUnit4.class)
+@SuppressLint("MissingCheckFlagsRule") // TODO: b/463342925 - remove once fixed
 public class VirtualCameraServiceTest {
 
     private static final long TIMEOUT_MILLIS = 5000L;
@@ -74,19 +81,20 @@ public class VirtualCameraServiceTest {
     @Mock private VirtualCameraCallback mVirtualCameraCallback;
 
     private AutoCloseable mMockitoSession;
+    private VirtualDeviceManager.VirtualDevice mVirtualDevice;
 
     @Before
     public void setUp() {
         mMockitoSession = MockitoAnnotations.openMocks(this);
-        VirtualDeviceManager.VirtualDevice virtualDevice =
+        mVirtualDevice =
                 mRule.createManagedVirtualDevice(
                         new VirtualDeviceParams.Builder()
                                 .setDevicePolicy(POLICY_TYPE_CAMERA, DEVICE_POLICY_CUSTOM)
                                 .build());
         Context virtualDeviceContext =
-                getApplicationContext().createDeviceContext(virtualDevice.getDeviceId());
-        mCaptureHelper.setUp(virtualDevice, virtualDeviceContext);
-        grantCameraPermission(virtualDevice.getDeviceId());
+                getApplicationContext().createDeviceContext(mVirtualDevice.getDeviceId());
+        mCaptureHelper.setUp(mVirtualDevice, virtualDeviceContext);
+        grantCameraPermission(mVirtualDevice.getDeviceId());
     }
 
     @After
@@ -104,7 +112,6 @@ public class VirtualCameraServiceTest {
                 VirtualCameraCaptureHelper.createBuilderWithDefaults("TestCamera"),
                 mVirtualCameraCallback);
 
-        // Create reader and session
         try (ImageReader reader =
                 ImageReader.newInstance(CAMERA_WIDTH, CAMERA_HEIGHT, YUV_420_888, 2)) {
             mCaptureHelper.createCaptureSession(List.of(reader));
@@ -126,6 +133,43 @@ public class VirtualCameraServiceTest {
 
             // Verify onStreamClosed is called
             verify(mVirtualCameraCallback, timeout(TIMEOUT_MILLIS)).onStreamClosed(anyInt());
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_CAMERA_STREAM_CLOSE_DEVICE_CLOSE)
+    public void virtualCameraService_CameraClosed_notifiesStreamClosed() throws Exception {
+        int streamId = 0;
+
+        mCaptureHelper.createVirtualCamera(
+                VirtualCameraCaptureHelper.createBuilderWithDefaults("TestCamera"),
+                mVirtualCameraCallback);
+
+        try (ImageReader reader =
+                ImageReader.newInstance(CAMERA_WIDTH, CAMERA_HEIGHT, YUV_420_888, 2)) {
+            mCaptureHelper.createCaptureSession(List.of(reader));
+
+            CameraDevice cameraDevice = mCaptureHelper.getOrOpenCameraDevice();
+            CaptureRequest.Builder request =
+                    cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            request.addTarget(reader.getSurface());
+
+            // Start repeating request
+            mCaptureHelper.getCameraSession().setRepeatingRequest(request.build(), null, null);
+
+            // Wait for stream configured
+            verify(mVirtualCameraCallback, timeout(TIMEOUT_MILLIS))
+                    .onStreamConfigured(eq(streamId), any(), anyInt(), anyInt(), anyInt());
+
+            assertThat(mCaptureHelper.getVirtualCameraCallback().getConfiguredStreamCount())
+                    .isEqualTo(1);
+
+            mVirtualDevice.close();
+
+            verify(mVirtualCameraCallback, timeout(TIMEOUT_MILLIS)).onStreamClosed(eq(streamId));
+
+            assertThat(mCaptureHelper.getVirtualCameraCallback().getConfiguredStreamCount())
+                    .isEqualTo(streamId);
         }
     }
 

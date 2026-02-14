@@ -95,7 +95,11 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
         }
     }
 
+    /**
+     * Returns a sample EmbeddingModel to be used for success cases.
+     */
     public static EmbeddingModel getSampleEmbeddingModel() {
+        // TODO:b/481305902 - Replace feature ids with named constants.
         return new EmbeddingModel(
                 getSampleFeature(3),
                 "test-embedding-model",
@@ -105,6 +109,23 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
                 LocaleList.getEmptyLocaleList());
     }
 
+    /**
+     * Returns a sample EmbeddingModel that is expected to fail.
+     */
+    public static EmbeddingModel getSampleEmbeddingModelFailure() {
+        // TODO:b/481305902 - Replace feature ids with named constants.
+        return new EmbeddingModel(
+                getSampleFeature(2),
+                "test-embedding-model-failure",
+                /* embeddingDimension= */ 128,
+                List.of(EmbeddingModel.MODALITY_TEXT),
+                /* maxTokenLimit= */ 1024,
+                LocaleList.getEmptyLocaleList());
+    }
+
+    /**
+     * Returns a sample ImageDescriptionModel.
+     */
     public static ImageDescriptionModel getSampleImageDescriptionModel() {
         return new ImageDescriptionModel(
                 getSampleFeature(4),
@@ -175,11 +196,23 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
             @Nullable CancellationSignal cancellationSignal,
             @NonNull DownloadCallback downloadCallback) {
         Log.w(TAG, "Received onDownloadFeature call from: " + callerUid);
+        // TODO:b/481305902 - Replace feature ids with named constants.
         if (feature.getId() == 3) {
-            return; // don't invoke any callback
+            mAsyncRequestExecutor.execute(() -> {
+                try {
+                    downloadCallback.onDownloadStarted(100);
+                    downloadCallback.onDownloadProgress(50);
+                    downloadCallback.onDownloadProgress(100);
+                    downloadCallback.onDownloadCompleted(PersistableBundle.EMPTY);
+                } catch (Exception e) {
+                    Log.e(TAG, "Download failed", e);
+                }
+            });
+            return;
         }
         if (feature.getId() == 2) {
-            downloadCallback.onDownloadFailed(1, "error message", PersistableBundle.EMPTY);
+            mAsyncRequestExecutor.execute(() ->
+                    downloadCallback.onDownloadFailed(1, "error message", PersistableBundle.EMPTY));
             return;
         }
         downloadCallback.onDownloadStarted(100);
@@ -249,6 +282,7 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
                             callback) {
         List<EmbeddingModel> list = new ArrayList<>();
         list.add(getSampleEmbeddingModel());
+        list.add(getSampleEmbeddingModelFailure());
         callback.onResult(list);
     }
 

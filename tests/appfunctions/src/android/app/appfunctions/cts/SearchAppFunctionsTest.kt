@@ -136,24 +136,7 @@ class SearchAppFunctionsTest {
                 manager.searchAppFunctions(searchSpec).associateBy { it.name }
 
             assertThat(resultAppFunctionsByName.keys)
-                .containsExactly(
-                    CtsApp.FunctionNames.THROW_EXCEPTION,
-                    CtsApp.FunctionNames.UNCAUGHT_CLIENT_EXCEPTION,
-                    CtsApp.FunctionNames.ADD_INVOKE_CALLBACK_TWICE,
-                    CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS,
-                    CtsApp.FunctionNames.DYNAMIC_LONG_RUNNING,
-                    CtsApp.FunctionNames.ADD_ASYNC,
-                    CtsApp.FunctionNames.NOT_INVOKE_CALLBACK,
-                    CtsApp.FunctionNames.RUN_FOREVER,
-                    CtsApp.FunctionNames.ADD,
-                    CtsApp.FunctionNames.ADD_DISABLED_BY_DEFAULT,
-                    CtsApp.FunctionNames.NO_OP,
-                    CtsApp.FunctionNames.KILL,
-                    CtsApp.FunctionNames.LONG_RUNNING_FUNCTION,
-                    CtsApp.FunctionNames.NO_SCHEMA,
-                    CtsApp.FunctionNames.CONTEXT,
-                    CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS,
-                )
+                .containsExactlyElementsIn(CtsApp.FunctionNames.ALL_FUNCTIONS)
         } finally {
             uninstallPackage(UpdatableHelperApp.PACKAGE_NAME, context, checkIndexation = true)
         }
@@ -188,24 +171,7 @@ class SearchAppFunctionsTest {
                     manager.searchAppFunctions(searchSpec).associateBy { it.name }
 
                 assertThat(resultAppFunctionsByName.keys)
-                    .containsExactly(
-                        CtsApp.FunctionNames.THROW_EXCEPTION,
-                        CtsApp.FunctionNames.UNCAUGHT_CLIENT_EXCEPTION,
-                        CtsApp.FunctionNames.ADD_INVOKE_CALLBACK_TWICE,
-                        CtsApp.FunctionNames.DYNAMIC_LONG_RUNNING,
-                        CtsApp.FunctionNames.ADD_ASYNC,
-                        CtsApp.FunctionNames.NOT_INVOKE_CALLBACK,
-                        CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS,
-                        CtsApp.FunctionNames.RUN_FOREVER,
-                        CtsApp.FunctionNames.ADD,
-                        CtsApp.FunctionNames.ADD_DISABLED_BY_DEFAULT,
-                        CtsApp.FunctionNames.NO_OP,
-                        CtsApp.FunctionNames.KILL,
-                        CtsApp.FunctionNames.LONG_RUNNING_FUNCTION,
-                        CtsApp.FunctionNames.NO_SCHEMA,
-                        CtsApp.FunctionNames.CONTEXT,
-                        CtsApp.FunctionNames.ACTIVITY_CONCAT_STRINGS,
-                    )
+                    .containsExactlyElementsIn(CtsApp.FunctionNames.ALL_FUNCTIONS)
             } finally {
                 uninstallPackage(UpdatableHelperApp.PACKAGE_NAME, context, checkIndexation = true)
             }

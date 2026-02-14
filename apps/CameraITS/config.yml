@@ -69,7 +69,7 @@ TestBeds:
     TestParams:
       chart_distance: 30
       rotator_cntl: gen2_rotator   # gen2 rig specific. "None" if gen2 rig not available
-      rotator_ch: <controller-channel>
+      rotator_ch: 0  # Do not change this unless you know how to change motor channels
       camera: <camera-id>
       foldable_device: "False"  # "True" if testing foldable device
       tablet_device: "False"  # "True" if testing tablet device
