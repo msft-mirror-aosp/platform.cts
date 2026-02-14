@@ -166,19 +166,14 @@ class TestResultsReport {
             if (shouldShownInReport(item) && !activeCategories.contains(item.category)) {
                 activeCategories.add(item.category);
                 IModuleResult moduleResult = result.getOrCreateModule(getModuleId(item.category));
-                // Initialize as 'done', will be updated based on individual test results
                 moduleResult.setDone(true);
             }
         }
 
-        // Populate test results and update module 'done' status.
+        // Populate test results.
         for (TestListItem item : allItems) {
             if (activeCategories.contains(item.category)) {
                 IModuleResult moduleResult = result.getOrCreateModule(getModuleId(item.category));
-                // A module is considered 'done' only if all its constituent tests have passed.
-                boolean isPassed =
-                        mAdapter.getTestResult(item.testName) == TestResult.TEST_RESULT_PASSED;
-                moduleResult.setDone(moduleResult.isDone() && isPassed);
                 if (shouldShownInReport(item)) {
                     createCaseResult(moduleResult, item);
                 }
