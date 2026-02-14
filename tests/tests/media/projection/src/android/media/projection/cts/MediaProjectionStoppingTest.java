@@ -21,7 +21,6 @@ import static com.android.compatibility.common.util.SystemUtil.runWithShellPermi
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -32,6 +31,7 @@ import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionConfig;
 import android.os.HandlerThread;
 import android.os.UserHandle;
+import android.platform.test.annotations.AppModeFull;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.LockScreenSession;
@@ -60,6 +60,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <p>Run with: atest CtsMediaProjectionTestCases:MediaProjectionStoppingTest
  */
 @FrameworkSpecificTest
+@AppModeFull(reason = "Cannot get KeyguardManager in instant app mode")
 public class MediaProjectionStoppingTest {
     @Rule public MediaProjectionRule mMediaProjectionRule = new MediaProjectionRule();
 
@@ -154,11 +155,6 @@ public class MediaProjectionStoppingTest {
     @Test
     public void mediaProjectionOnConnectedDisplay_connectedDisplayRemoved_sessionStops()
             throws Exception {
-        assumeFalse(
-                InstrumentationRegistry.getInstrumentation()
-                        .getTargetContext()
-                        .getPackageManager()
-                        .isInstantApp());
         List<Integer> displays = mConnectedDisplayTestRule.setupTestDisplays(1);
 
         HandlerThread handlerThread = new HandlerThread("VirtualDisplayHandlerForTest");
@@ -191,11 +187,6 @@ public class MediaProjectionStoppingTest {
     @Test
     public void mediaProjectionOnDefaultDisplay_connectedDisplayRemoved_sessionContinues()
             throws Exception {
-        assumeFalse(
-                InstrumentationRegistry.getInstrumentation()
-                        .getTargetContext()
-                        .getPackageManager()
-                        .isInstantApp());
         mConnectedDisplayTestRule.setupTestDisplays(1);
 
         HandlerThread handlerThread = new HandlerThread("VirtualDisplayHandlerForTest");

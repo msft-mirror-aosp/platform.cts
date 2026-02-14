@@ -116,7 +116,9 @@ public final class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         BatteryUtils.resetBatterySaver();
 
         // Ensure that we leave WiFi in its previous state.
-        mNetworkingHelper.tearDown();
+        if (mNetworkingHelper != null) {
+            mNetworkingHelper.tearDown();
+        }
 
         super.tearDown();
     }

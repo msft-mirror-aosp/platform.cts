@@ -42,8 +42,10 @@
 
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <option name="run-command" value="am compat enable ALLOW_TEST_API_ACCESS android.voiceinteraction.service" />
+        <option name="run-command" value="cmd pcc_sandbox add-allowed-package android.voiceinteraction.cts" />
         <option name="teardown-command" value="rm -rf /data/user/0/android.voiceinteraction.cts/files/*"/>
         <option name="teardown-command" value="am compat reset ALLOW_TEST_API_ACCESS android.voiceinteraction.service" />
+        <option name="teardown-command" value="cmd pcc_sandbox remove-allowed-package android.voiceinteraction.cts" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >

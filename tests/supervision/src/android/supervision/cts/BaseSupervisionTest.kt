@@ -28,11 +28,12 @@ import android.os.UserHandle
 import android.os.UserManager
 import android.platform.test.annotations.AppModeFull
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.testapp.TestAppInstance
 import com.android.bedstead.testapp.TestAppProvider
 import com.android.compatibility.common.util.SystemUtil.runShellCommand
-import com.android.compatibility.common.util.supervision.withSystemSupervisionRoleHeld
+import com.android.compatibility.common.util.supervision.withSupervisionRoleHeld
 import com.google.common.truth.Truth.assertThat
 
 /** Base class for supervision CTS tests. */
@@ -41,7 +42,9 @@ open class BaseSupervisionTest {
 
     fun setSupervisionEnabled(enabled: Boolean) {
         callWithShellPermissionIdentity(BYPASS_ROLE_QUALIFICATION, QUERY_USERS) {
-            supervisionManager.setSupervisionEnabled(enabled)
+            if (supervisionManager.isSupervisionEnabled() != enabled) {
+                supervisionManager.setSupervisionEnabled(enabled)
+            }
             assertThat(supervisionManager.isSupervisionEnabled()).isEqualTo(enabled)
         }
     }
@@ -83,40 +86,56 @@ open class BaseSupervisionTest {
         }
     }
 
-    fun withSupervisionApp(
-        enableSupervision: Boolean = false,
-        action: (app: TestAppInstance) -> Unit,
+    /**
+     * Installs and sets up the specified [count] of supervision apps to execute the given [action].
+     *
+     * Once the [action] completes (or fails), all installed apps are automatically uninstalled
+     * to ensure a clean test environment.
+     *
+     * @param count The number of supervision apps to install.
+     * @param action The block of code to execute, receiving the list of [TestAppInstance]s.
+     */
+    fun withSupervisionApps(
+        count: Int = 1,
+        action: (List<TestAppInstance>) -> Unit
     ) {
         val testAppProvider = TestAppProvider()
-        val testApp =
-            checkNotNull(testAppProvider.query().whereLabel().isEqualTo("SupervisionApp").get()) {
-                "Supervision TestApp not found."
-            }
-        val app =
-            checkNotNull(testApp.install(TestApis.users().instrumented())) {
-                "Failed to install Supervision TestApp."
-            }
+        val apps = installSupervisionApps(testAppProvider, "SupervisionApp", count)
+        val packageNames = apps.map { it.packageName() }
 
         try {
             callWithShellPermissionIdentity(
                 BYPASS_ROLE_QUALIFICATION,
                 MANAGE_ROLE_HOLDERS,
                 QUERY_USERS,
-                OBSERVE_ROLE_HOLDERS,
+                OBSERVE_ROLE_HOLDERS
             ) {
-                withSystemSupervisionRoleHeld(app.packageName()) {
-                    setSupervisionEnabled(enableSupervision)
-                    action(app)
+                withSupervisionRoleHeld(packageNames) {
+                    action(apps)
                 }
             }
         } finally {
+            apps.forEach { it.uninstall() }
             setSupervisionEnabled(false)
-            app.uninstall()
+        }
+    }
+
+    fun installSupervisionApps(testAppProvider: TestAppProvider, appLabel: String, count: Int):
+            List<TestAppInstance> {
+        val testApps = testAppProvider.query().whereLabel().isEqualTo(appLabel).all.take(count)
+        check(testApps.size == count) {
+            "Could not find ${count} app(s) with label ${appLabel}"
+        }
+        return testApps.map {
+            checkNotNull(it.install(TestApis.users().instrumented())) {
+                "Failed to install ${it.packageName()}."
+            }
         }
     }
 
     companion object {
         val context: Context = TestApis.context().instrumentedContext()
+        val deviceState = DeviceState()
         val supervisionManager = context.getSystemService(SupervisionManager::class.java)!!
         val userManager = context.getSystemService(UserManager::class.java)!!
         val roleManager = context.getSystemService(RoleManager::class.java)!!

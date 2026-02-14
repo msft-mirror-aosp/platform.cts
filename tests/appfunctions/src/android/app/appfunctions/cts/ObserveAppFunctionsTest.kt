@@ -35,6 +35,7 @@ import android.app.appfunctions.cts.AppFunctionUtils.uninstallPackage
 import android.app.appfunctions.cts.AppFunctionUtils.uninstallPackageAsUser
 import android.app.appfunctions.flags.Flags
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
+import android.app.appfunctions.testutils.CtsTestUtil.safeRetryAssert
 import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver
 import android.content.Context
@@ -111,9 +112,9 @@ class ObserveAppFunctionsTest {
         Manifest.permission.DISCOVER_APP_FUNCTIONS,
     )
     fun packageInstalled_noExecuteOrReadPermission_doNotSeeUpdates() = doBlocking {
+        val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
         try {
-            val observer = TestClientObserver()
             observation = observeAppFunctions(observer)
 
             installPackage(
@@ -126,8 +127,8 @@ class ObserveAppFunctionsTest {
             assertThat(observer.updatedPackagesHistory).isEmpty()
             assertThat(observer.updatedFunctionStatesHistory).isEmpty()
         } finally {
+            awaitApkUninstall(context, UpdatableHelperApp.PACKAGE_NAME, observer)
             observation?.cancel()
-            uninstallPackage(UpdatableHelperApp.PACKAGE_NAME, context, checkIndexation = true)
         }
     }
 
@@ -142,9 +143,9 @@ class ObserveAppFunctionsTest {
         Manifest.permission.QUERY_ALL_PACKAGES,
     )
     fun packageInstalled_withAllPermissions_seesAllUpdates() = doBlocking {
+        val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
         try {
-            val observer = TestClientObserver()
             observation = observeAppFunctions(observer)
 
             assertThat(observer.updatedPackagesHistory).isEmpty()
@@ -167,8 +168,8 @@ class ObserveAppFunctionsTest {
                 )
             }
         } finally {
+            awaitApkUninstall(context, UpdatableHelperApp.PACKAGE_NAME, observer)
             observation?.cancel()
-            uninstallPackage(UpdatableHelperApp.PACKAGE_NAME, context, checkIndexation = true)
         }
     }
 
@@ -185,6 +186,7 @@ class ObserveAppFunctionsTest {
     fun packageUpdated_callsOnAppFunctionMetadataChanged() = doBlocking {}
 
     fun packageUpdated_topLevelDocumentsAdded_callsOnPackageChanged() = doBlocking {
+        val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
         try {
             installPackage(
@@ -193,7 +195,6 @@ class ObserveAppFunctionsTest {
                 context,
                 checkIndexation = true,
             )
-            val observer = TestClientObserver()
             observation = observeAppFunctions(observer)
             assertThat(observer.updatedPackagesHistory).isEmpty()
 
@@ -217,14 +218,13 @@ class ObserveAppFunctionsTest {
                 )
             }
         } finally {
-            observation?.cancel()
-            // Reinstall base app to restore state for subsequent tests
-            installPackage(
+            awaitApkReinstall(
+                context,
                 DynamicSchemaHelperApp.ApkPaths.BASE_APP,
                 DynamicSchemaHelperApp.PACKAGE_NAME,
-                context,
-                checkIndexation = true,
+                observer,
             )
+            observation?.cancel()
         }
     }
 
@@ -238,6 +238,7 @@ class ObserveAppFunctionsTest {
         Manifest.permission.DISCOVER_APP_FUNCTIONS,
     )
     fun packageUpdated_topLevelDocumentsRemoved_callsOnPackageChanged() = doBlocking {
+        val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
         try {
             installPackage(
@@ -246,7 +247,6 @@ class ObserveAppFunctionsTest {
                 context,
                 checkIndexation = true,
             )
-            val observer = TestClientObserver()
             observation = observeAppFunctions(observer)
             assertThat(observer.updatedPackagesHistory).isEmpty()
 
@@ -270,14 +270,13 @@ class ObserveAppFunctionsTest {
                 )
             }
         } finally {
-            observation?.cancel()
-            // Reinstall base app to restore state for subsequent tests
-            installPackage(
+            awaitApkReinstall(
+                context,
                 DynamicSchemaHelperApp.ApkPaths.BASE_APP,
                 DynamicSchemaHelperApp.PACKAGE_NAME,
-                context,
-                checkIndexation = true,
+                observer,
             )
+            observation?.cancel()
         }
     }
 
@@ -291,6 +290,7 @@ class ObserveAppFunctionsTest {
         Manifest.permission.DISCOVER_APP_FUNCTIONS,
     )
     fun packageUpdated_functionAdded_callsOnAppFunctionsChanged() = doBlocking {
+        val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
         try {
             uninstallPackage(DynamicSchemaHelperApp.PACKAGE_NAME, context, checkIndexation = true)
@@ -300,7 +300,6 @@ class ObserveAppFunctionsTest {
                 context,
                 checkIndexation = true,
             )
-            val observer = TestClientObserver()
             observation = observeAppFunctions(observer)
             assertThat(observer.updatedPackagesHistory).isEmpty()
 
@@ -323,14 +322,13 @@ class ObserveAppFunctionsTest {
                 )
             }
         } finally {
-            observation?.cancel()
-            // Reinstall base app to restore state for subsequent tests
-            installPackage(
+            awaitApkReinstall(
+                context,
                 DynamicSchemaHelperApp.ApkPaths.BASE_APP,
                 DynamicSchemaHelperApp.PACKAGE_NAME,
-                context,
-                checkIndexation = true,
+                observer,
             )
+            observation?.cancel()
         }
     }
 
@@ -344,6 +342,7 @@ class ObserveAppFunctionsTest {
         Manifest.permission.DISCOVER_APP_FUNCTIONS,
     )
     fun packageUpdated_functionRemoved_callsOnAppFunctionsChanged() = doBlocking {
+        val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
         try {
             installPackage(
@@ -352,7 +351,6 @@ class ObserveAppFunctionsTest {
                 context,
                 checkIndexation = true,
             )
-            val observer = TestClientObserver()
             observation = observeAppFunctions(observer)
             assertThat(observer.updatedPackagesHistory).isEmpty()
 
@@ -374,14 +372,13 @@ class ObserveAppFunctionsTest {
                 )
             }
         } finally {
-            observation?.cancel()
-            // Reinstall base app to restore state for subsequent tests
-            installPackage(
+            awaitApkReinstall(
+                context,
                 DynamicSchemaHelperApp.ApkPaths.BASE_APP,
                 DynamicSchemaHelperApp.PACKAGE_NAME,
-                context,
-                checkIndexation = true,
+                observer,
             )
+            observation?.cancel()
         }
     }
 
@@ -396,6 +393,7 @@ class ObserveAppFunctionsTest {
     )
     @Ignore("b/479123842 - Enable after fixing redundant onAppFunctionsChanged callbacks")
     fun packageUpdated_changedSchema_callsOnPackageChanged() = doBlocking {
+        val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
         try {
             installPackage(
@@ -404,7 +402,6 @@ class ObserveAppFunctionsTest {
                 context,
                 checkIndexation = false, // No functions to index
             )
-            val observer = TestClientObserver()
             observation = observeAppFunctions(observer)
             assertThat(observer.updatedPackagesHistory).isEmpty()
 
@@ -430,8 +427,8 @@ class ObserveAppFunctionsTest {
                 )
             }
         } finally {
+            awaitApkUninstall(context, UpdatableHelperApp.PACKAGE_NAME, observer)
             observation?.cancel()
-            uninstallPackage(UpdatableHelperApp.PACKAGE_NAME, context, checkIndexation = true)
         }
     }
 
@@ -445,6 +442,7 @@ class ObserveAppFunctionsTest {
         Manifest.permission.DISCOVER_APP_FUNCTIONS,
     )
     fun packageUninstalled_callsOnPackageChanged() = doBlocking {
+        val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
         try {
             installPackage(
@@ -453,7 +451,6 @@ class ObserveAppFunctionsTest {
                 context,
                 checkIndexation = true,
             )
-            val observer = TestClientObserver()
 
             observation = observeAppFunctions(observer)
             assertThat(observer.updatedPackagesHistory).isEmpty()
@@ -469,8 +466,8 @@ class ObserveAppFunctionsTest {
                 assertPackageHasNoAppFunctions(UpdatableHelperApp.PACKAGE_NAME)
             }
         } finally {
+            awaitApkUninstall(context, UpdatableHelperApp.PACKAGE_NAME, observer)
             observation?.cancel()
-            uninstallPackage(UpdatableHelperApp.PACKAGE_NAME, context, checkIndexation = true)
         }
     }
 
@@ -780,8 +777,8 @@ class ObserveAppFunctionsTest {
                 assertPackageHasAppFunctions(DynamicSchemaHelperApp.PACKAGE_NAME)
             }
         } finally {
+            awaitApkUninstall(context, UpdatableHelperApp.PACKAGE_NAME, observer)
             observation?.cancel()
-            uninstallPackage(UpdatableHelperApp.PACKAGE_NAME, context, checkIndexation = true)
         }
     }
 
@@ -795,10 +792,9 @@ class ObserveAppFunctionsTest {
         Manifest.permission.DISCOVER_APP_FUNCTIONS,
     )
     fun packageInstalled_afterObservationCancelled_doesNotNotify() = doBlocking {
+        val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
         try {
-            val observer = TestClientObserver()
-
             observation = observeAppFunctions(observer)
             assertThat(observer.updatedPackagesHistory).isEmpty()
 
@@ -813,8 +809,8 @@ class ObserveAppFunctionsTest {
             assertThat(observer.updatedPackagesHistory).isEmpty()
             assertThat(observer.updatedFunctionStatesHistory).isEmpty()
         } finally {
+            awaitApkUninstall(context, UpdatableHelperApp.PACKAGE_NAME, observer)
             observation?.cancel()
-            uninstallPackage(UpdatableHelperApp.PACKAGE_NAME, context, checkIndexation = true)
         }
     }
 
@@ -911,11 +907,59 @@ class ObserveAppFunctionsTest {
         )
     }
 
+    private suspend fun awaitApkUninstall(
+        context: Context,
+        packageName: String,
+        observer: TestClientObserver,
+    ) {
+        observer.clearHistory()
+        uninstallPackage(
+            packageName,
+            context,
+            checkIndexation = true,
+        )
+        // Ensure that the test only finish when the debounced callback is
+        // triggered. To avoid affecting other tests.
+        safeRetryAssert {
+            assertThat(observer.updatedPackagesHistory).hasSize(1)
+            assertThat(observer.updatedFunctionStatesHistory).isEmpty()
+            assertThat(observer.updatedPackagesHistory.flatten()).contains(packageName)
+        }
+    }
+
+    private suspend fun awaitApkReinstall(
+        context: Context,
+        apkPath: String,
+        packageName: String,
+        observer: TestClientObserver,
+    ) {
+        observer.clearHistory()
+        // Reinstall base app to restore state for subsequent tests
+        installPackage(
+            apkPath,
+            packageName,
+            context,
+            checkIndexation = true,
+        )
+        // Ensure that the test only finish when the debounced callback is
+        // triggered. To avoid affecting other tests.
+        safeRetryAssert {
+            assertThat(observer.updatedPackagesHistory).hasSize(1)
+            assertThat(observer.updatedFunctionStatesHistory).isEmpty()
+            assertThat(observer.updatedPackagesHistory.flatten()).contains(packageName)
+        }
+    }
+
     private fun doBlocking(block: suspend CoroutineScope.() -> Unit) = runBlocking(block = block)
 
     class TestClientObserver : AppFunctionObserver {
         val updatedPackagesHistory: MutableSet<Set<String>> = mutableSetOf()
         val updatedFunctionStatesHistory: MutableSet<Set<AppFunctionName>> = mutableSetOf()
+
+        fun clearHistory() {
+            updatedPackagesHistory.clear()
+            updatedFunctionStatesHistory.clear()
+        }
 
         override fun onAppFunctionMetadataChanged(packageNames: Set<String>) {
             updatedPackagesHistory.add(packageNames)

@@ -19,7 +19,6 @@ package android.supervision.cts
 import android.app.supervision.flags.Flags
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
-import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser
 import com.android.compatibility.common.util.ApiTest
 import com.android.eventlib.EventLogs
 import com.android.eventlib.truth.EventLogsSubject.assertThat
@@ -44,9 +43,8 @@ class SupervisionAppServiceTest : BaseSupervisionTest() {
                 "android.app.supervision.SupervisionAppService#onSupervisionDisabled",
             ]
     )
-    @EnsureHasNoAdditionalUser
-    fun testSupervisionAppService_withSystemSupervisionRoleHeld() {
-        withSupervisionApp { app ->
+    fun testSupervisionAppService_withSupervisionApp() {
+        withSupervisionApps(count = 1) { (app) ->
             val events = app.events()
 
             setSupervisionEnabled(true)

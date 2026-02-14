@@ -57,6 +57,9 @@ open class EventLibSupervisionAppService : SupervisionAppService() {
     }
 
     override fun onSupervisionDisabled() {
+        synchronized(mLock) {
+            waitOnUnbind = true
+        }
         SupervisionAppServiceOnSupervisionDisabledEvent.logger(this, getClassName()).log()
         super.onSupervisionDisabled()
     }
@@ -68,9 +71,6 @@ open class EventLibSupervisionAppService : SupervisionAppService() {
 
     override fun onServiceBound(intent: Intent?) {
         ServiceBoundEvent.logger(this, getClassName(), intent).log()
-        synchronized(mLock) {
-            waitOnUnbind = true
-        }
     }
 
     override fun dump(fd: FileDescriptor?, writer: PrintWriter, args: Array<String?>) {

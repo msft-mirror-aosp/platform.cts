@@ -30,10 +30,33 @@ class AppFunctionsComponent {
         annotation: PerScreenDeviceStatesParameter,
         frameworkMethod: FrameworkMethod
     ): List<FrameworkMethod> {
-        return annotation.functionIdentifiers.flatMap {
-            AppFunctionDeviceStateParser(annotation.packageName, it).getAllPerScreenDeviceStates()
-        }.map {
-            FrameworkMethodWithParameter(frameworkMethod, it, it.toString())
+        return allPerScreenDeviceStates(
+            annotation.functionIdentifiers,
+            annotation.packageName
+        ).map {
+            FrameworkMethodWithParameter(frameworkMethod, it)
         }
+    }
+
+    /**
+     * Contains logic to handle [DeviceStateItemsParameter].
+     */
+    fun deviceStateItemsParameter(
+        annotation: DeviceStateItemsParameter,
+        frameworkMethod: FrameworkMethod
+    ): List<FrameworkMethod> {
+        return allPerScreenDeviceStates(
+            annotation.functionIdentifiers,
+            annotation.packageName
+        ).flatMap { it.deviceStateItems }.map {
+            FrameworkMethodWithParameter(frameworkMethod, it)
+        }
+    }
+
+    private fun allPerScreenDeviceStates(
+        functionIdentifiers: Array<String>,
+        packageName: String
+    ): List<PerScreenDeviceStates> = functionIdentifiers.flatMap {
+        AppFunctionDeviceStateParser(packageName, it).getAllPerScreenDeviceStates()
     }
 }

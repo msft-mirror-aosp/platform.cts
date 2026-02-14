@@ -19,6 +19,11 @@
 
     <target_preparer class="com.android.tradefed.targetprep.RootTargetPreparer"/>
 
+    <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <option name="run-command" value="cmd pcc_sandbox add-allowed-package com.example.pcc.host.test" />
+        <option name="teardown-command" value="cmd pcc_sandbox remove-allowed-package com.example.pcc.host.test" />
+    </target_preparer>
+
     <test class="com.android.tradefed.testtype.HostTest" >
         <option name="class" value="com.android.tests.privatecompute.host.PccStorageHostTest" />
         <option name="class" value="com.android.tests.privatecompute.host.PccBackupHostTest" />

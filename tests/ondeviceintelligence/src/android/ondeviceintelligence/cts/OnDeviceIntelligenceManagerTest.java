@@ -89,6 +89,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule;
 
+import java.io.IOException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -1669,25 +1670,29 @@ public class OnDeviceIntelligenceManagerTest {
                     @Override
                     public void onResult(List<EmbeddingModel> result) {
                         EmbeddingModel model = result.get(0);
-                        model.generateEmbeddings(
-                                new EmbeddingRequest(
-                                        List.of(new Content(List.of(Part.createText("test text"))))),
-                                null,
-                                EXECUTOR,
-                                new OutcomeReceiver<EmbeddingResponse, OnDeviceIntelligenceException>() {
-                                    @Override
-                                    public void onResult(EmbeddingResponse result) {
-                                        assertThat(result.getEmbeddings()).hasSize(1);
-                                        assertThat(result.getEmbeddings().get(0).getVector())
-                                                .isEqualTo(new float[] {0.1f, 0.2f, 0.3f});
-                                        statusLatch.countDown();
-                                    }
+                        try (EmbeddingRequest request = new EmbeddingRequest(
+                                List.of(new Content(List.of(Part.createText("test text")))))) {
+                            model.generateEmbeddings(
+                                    request,
+                                    null,
+                                    EXECUTOR,
+                                    new OutcomeReceiver<EmbeddingResponse, OnDeviceIntelligenceException>() {
+                                        @Override
+                                        public void onResult(EmbeddingResponse result) {
+                                            assertThat(result.getEmbeddings()).hasSize(1);
+                                            assertThat(result.getEmbeddings().get(0).getVector())
+                                                    .isEqualTo(new float[] {0.1f, 0.2f, 0.3f});
+                                            statusLatch.countDown();
+                                        }
 
-                                    @Override
-                                    public void onError(OnDeviceIntelligenceException error) {
-                                        fail("onError called: " + error);
-                                    }
-                                });
+                                        @Override
+                                        public void onError(OnDeviceIntelligenceException error) {
+                                            fail("onError called: " + error);
+                                        }
+                                    });
+                        } catch (IOException e) {
+                            fail("Error closing EmbeddingRequest: " + e);
+                        }
                     }
 
                     @Override
@@ -1714,29 +1719,36 @@ public class OnDeviceIntelligenceManagerTest {
                         android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(100,
                                 100,
                                 android.graphics.Bitmap.Config.ARGB_8888);
-                        model.generateImageDescription(
-                                new ImageDescriptionRequest(bitmap, /* prompt= */
-                                        null, java.util.Locale.US),
-                                /* cancellationSignal= */ null,
-                                EXECUTOR,
-                                new ImageDescriptionCallback() {
-                                    @Override
-                                    public void onNewText(@NonNull String text) {
-                                    }
+                        try (ImageDescriptionRequest request = new ImageDescriptionRequest(bitmap,
+                                /* prompt= */
+                                null, java.util.Locale.US)) {
+                            model.generateImageDescription(
+                                    request,
+                                    /* cancellationSignal= */ null,
+                                    EXECUTOR,
+                                    new ImageDescriptionCallback() {
+                                        @Override
+                                        public void onNewText(@NonNull String text) {
+                                        }
 
-                                    @Override
-                                    public void onResult(ImageDescriptionResponse result) {
-                                        assertThat(result.getImageDescriptions().get(0)
-                                                .getDescription().toString())
-                                                .isEqualTo("test-description");
-                                        statusLatch.countDown();
-                                    }
+                                        @Override
+                                        public void onResult(ImageDescriptionResponse result) {
+                                            assertThat(result.getImageDescriptions().get(0)
+                                                    .getDescription().toString())
+                                                    .isEqualTo("test-description");
+                                            statusLatch.countDown();
+                                        }
 
-                                    @Override
-                                    public void onError(@NonNull OnDeviceIntelligenceException error) {
-                                        fail("onError called: " + error);
-                                    }
-                                });
+                                        @Override
+                                        public void onError(@NonNull OnDeviceIntelligenceException error) {
+                                            fail("onError called: " + error);
+                                        }
+                                    });
+                        } catch (IOException e) {
+                            fail("Error closing ImageDescriptionRequest: " + e);
+                        } finally {
+                            bitmap.recycle();
+                        }
                     }
 
                     @Override
@@ -1768,24 +1780,28 @@ public class OnDeviceIntelligenceManagerTest {
                         }
                         String largeText = sb.toString();
 
-                        model.generateEmbeddings(
-                                new EmbeddingRequest(
-                                        List.of(new Content(List.of(Part.createText(largeText))))),
-                                null,
-                                EXECUTOR,
-                                new OutcomeReceiver<EmbeddingResponse, OnDeviceIntelligenceException>() {
-                                    @Override
-                                    public void onResult(EmbeddingResponse result) {
-                                        fail("Should have failed with REQUEST_TOO_LARGE");
-                                    }
+                        try (EmbeddingRequest request = new EmbeddingRequest(
+                                List.of(new Content(List.of(Part.createText(largeText)))))) {
+                            model.generateEmbeddings(
+                                    request,
+                                    null,
+                                    EXECUTOR,
+                                    new OutcomeReceiver<EmbeddingResponse, OnDeviceIntelligenceException>() {
+                                        @Override
+                                        public void onResult(EmbeddingResponse result) {
+                                            fail("Should have failed with REQUEST_TOO_LARGE");
+                                        }
 
-                                    @Override
-                                    public void onError(OnDeviceIntelligenceException error) {
-                                        assertThat(error.getErrorCode()).isEqualTo(
-                                                OnDeviceIntelligenceException.PROCESSING_ERROR_REQUEST_TOO_LARGE);
-                                        statusLatch.countDown();
-                                    }
-                                });
+                                        @Override
+                                        public void onError(OnDeviceIntelligenceException error) {
+                                            assertThat(error.getErrorCode()).isEqualTo(
+                                                    OnDeviceIntelligenceException.PROCESSING_ERROR_REQUEST_TOO_LARGE);
+                                            statusLatch.countDown();
+                                        }
+                                    });
+                        } catch (IOException e) {
+                            fail("Error closing EmbeddingRequest: " + e);
+                        }
                     }
 
                     @Override
@@ -1820,27 +1836,34 @@ public class OnDeviceIntelligenceManagerTest {
                                 100,
                                 android.graphics.Bitmap.Config.ARGB_8888);
 
-                        model.generateImageDescription(
-                                new ImageDescriptionRequest(bitmap, largeText),
-                                null,
-                                EXECUTOR,
-                                new ImageDescriptionCallback() {
-                                    @Override
-                                    public void onNewText(@NonNull String text) {
-                                    }
+                        try (ImageDescriptionRequest request = new ImageDescriptionRequest(bitmap,
+                                largeText)) {
+                            model.generateImageDescription(
+                                    request,
+                                    null,
+                                    EXECUTOR,
+                                    new ImageDescriptionCallback() {
+                                        @Override
+                                        public void onNewText(@NonNull String text) {
+                                        }
 
-                                    @Override
-                                    public void onResult(ImageDescriptionResponse result) {
-                                        fail("Should have failed with REQUEST_TOO_LARGE");
-                                    }
+                                        @Override
+                                        public void onResult(ImageDescriptionResponse result) {
+                                            fail("Should have failed with REQUEST_TOO_LARGE");
+                                        }
 
-                                    @Override
-                                    public void onError(@NonNull OnDeviceIntelligenceException error) {
-                                        assertThat(error.getErrorCode()).isEqualTo(
-                                                OnDeviceIntelligenceException.PROCESSING_ERROR_REQUEST_TOO_LARGE);
-                                        statusLatch.countDown();
-                                    }
-                                });
+                                        @Override
+                                        public void onError(@NonNull OnDeviceIntelligenceException error) {
+                                            assertThat(error.getErrorCode()).isEqualTo(
+                                                    OnDeviceIntelligenceException.PROCESSING_ERROR_REQUEST_TOO_LARGE);
+                                            statusLatch.countDown();
+                                        }
+                                    });
+                        } catch (IOException e) {
+                            fail("Error closing ImageDescriptionRequest: " + e);
+                        } finally {
+                            bitmap.recycle();
+                        }
                     }
 
                     @Override
@@ -1868,24 +1891,28 @@ public class OnDeviceIntelligenceManagerTest {
                     @Override
                     public void onResult(List<EmbeddingModel> result) {
                         EmbeddingModel model = result.get(0);
-                        model.generateEmbeddings(
-                                new EmbeddingRequest(
-                                        List.of(new Content(List.of(Part.createText("test"))))),
-                                null,
-                                EXECUTOR,
-                                new OutcomeReceiver<EmbeddingResponse, OnDeviceIntelligenceException>() {
-                                    @Override
-                                    public void onResult(EmbeddingResponse result) {
-                                        fail("Should have failed with SERVICE_NOT_CONFIGURED");
-                                    }
+                        try (EmbeddingRequest request = new EmbeddingRequest(
+                                List.of(new Content(List.of(Part.createText("test")))))) {
+                            model.generateEmbeddings(
+                                    request,
+                                    null,
+                                    EXECUTOR,
+                                    new OutcomeReceiver<EmbeddingResponse, OnDeviceIntelligenceException>() {
+                                        @Override
+                                        public void onResult(EmbeddingResponse result) {
+                                            fail("Should have failed with SERVICE_NOT_CONFIGURED");
+                                        }
 
-                                    @Override
-                                    public void onError(OnDeviceIntelligenceException error) {
-                                        assertThat(error.getErrorCode()).isEqualTo(
-                                                OnDeviceIntelligenceException.PROCESSING_ERROR_SERVICE_NOT_CONFIGURED);
-                                        statusLatch.countDown();
-                                    }
-                                });
+                                        @Override
+                                        public void onError(OnDeviceIntelligenceException error) {
+                                            assertThat(error.getErrorCode()).isEqualTo(
+                                                    OnDeviceIntelligenceException.PROCESSING_ERROR_SERVICE_NOT_CONFIGURED);
+                                            statusLatch.countDown();
+                                        }
+                                    });
+                        } catch (IOException e) {
+                            fail("Error closing EmbeddingRequest: " + e);
+                        }
                     }
 
                     @Override
@@ -1918,27 +1945,34 @@ public class OnDeviceIntelligenceManagerTest {
                         android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(100,
                                 100,
                                 android.graphics.Bitmap.Config.ARGB_8888);
-                        model.generateImageDescription(
-                                new ImageDescriptionRequest(bitmap, null),
-                                null,
-                                EXECUTOR,
-                                new ImageDescriptionCallback() {
-                                    @Override
-                                    public void onNewText(@NonNull String text) {
-                                    }
+                        try (ImageDescriptionRequest request = new ImageDescriptionRequest(bitmap,
+                                null)) {
+                            model.generateImageDescription(
+                                    request,
+                                    null,
+                                    EXECUTOR,
+                                    new ImageDescriptionCallback() {
+                                        @Override
+                                        public void onNewText(@NonNull String text) {
+                                        }
 
-                                    @Override
-                                    public void onResult(ImageDescriptionResponse result) {
-                                        fail("Should have failed with SERVICE_NOT_CONFIGURED");
-                                    }
+                                        @Override
+                                        public void onResult(ImageDescriptionResponse result) {
+                                            fail("Should have failed with SERVICE_NOT_CONFIGURED");
+                                        }
 
-                                    @Override
-                                    public void onError(@NonNull OnDeviceIntelligenceException error) {
-                                        assertThat(error.getErrorCode()).isEqualTo(
-                                                OnDeviceIntelligenceException.PROCESSING_ERROR_SERVICE_NOT_CONFIGURED);
-                                        statusLatch.countDown();
-                                    }
-                                });
+                                        @Override
+                                        public void onError(@NonNull OnDeviceIntelligenceException error) {
+                                            assertThat(error.getErrorCode()).isEqualTo(
+                                                    OnDeviceIntelligenceException.PROCESSING_ERROR_SERVICE_NOT_CONFIGURED);
+                                            statusLatch.countDown();
+                                        }
+                                    });
+                        } catch (IOException e) {
+                            fail("Error closing ImageDescriptionRequest: " + e);
+                        } finally {
+                            bitmap.recycle();
+                        }
                     }
 
                     @Override

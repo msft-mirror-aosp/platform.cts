@@ -18,6 +18,7 @@ package com.android.bedstead.settings.appfunctions
 import android.Manifest
 import android.app.appfunctions.AppFunctionException
 import android.app.appfunctions.AppFunctionManager
+import android.app.appfunctions.AppFunctionService
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
 import android.app.appsearch.GenericDocument
@@ -49,8 +50,7 @@ class AppFunctionDeviceStateParser(
      * @return all PerScreenDeviceStates from the document
      */
     fun getAllPerScreenDeviceStates(): List<PerScreenDeviceStates> {
-        val document = getGenericDocument() ?: return emptyList()
-        return parseDeviceStateResult(document)
+        return getGenericDocument()?.asDeviceStateResult() ?: return emptyList()
     }
 
     private fun getGenericDocument(): GenericDocument? {
@@ -77,20 +77,33 @@ class AppFunctionDeviceStateParser(
         }
     }
 
-    private fun parseDeviceStateResult(document: GenericDocument): List<PerScreenDeviceStates> {
-        val states = document.getPropertyDocumentArray(
+    private fun GenericDocument.asDeviceStateResult(): List<PerScreenDeviceStates> {
+        val states = getPropertyDocumentArray(
             "androidAppfunctionsReturnValue.perScreenDeviceStates"
         ) ?: arrayOf()
         return states.filter { it.schemaType == PER_SCREEN_DEVICE_STATES_SCHEMA }.map {
-            parsePerScreenDeviceStates(it)
+            it.asPerScreenDeviceStates()
         }
     }
 
-    private fun parsePerScreenDeviceStates(document: GenericDocument): PerScreenDeviceStates {
-        val deviceStateItems = document.getPropertyDocumentArray("deviceStateItems") ?: arrayOf()
-        val intentUri = document.getPropertyString("intentUri")
-        return PerScreenDeviceStates(intentUri)
-    }
+    private fun GenericDocument.asPerScreenDeviceStates() = PerScreenDeviceStates(
+        intentUri = getPropertyString("intentUri"),
+        deviceStateItems = getPropertyDocumentArray("deviceStateItems")?.map {
+            it.asDeviceStateItem()
+        } ?: emptyList()
+    )
+
+    private fun GenericDocument.asDeviceStateItem() = DeviceStateItem(
+        key = getPropertyString("key")!!,
+        jsonValue = getPropertyString("jsonValue"),
+        name = getPropertyDocument("name")?.asLocalizedString(),
+        purpose = getPropertyString("purpose")
+    )
+
+    private fun GenericDocument.asLocalizedString() = LocalizedString(
+        english = getPropertyString("english")!!,
+        localized = getPropertyString("localized")!!,
+    )
 
     companion object {
         internal const val LOG_TAG = "DeviceStateParser"
