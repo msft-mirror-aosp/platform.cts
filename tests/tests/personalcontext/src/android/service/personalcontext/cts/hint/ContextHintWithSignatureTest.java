@@ -29,7 +29,6 @@ import android.service.personalcontext.hint.BundleHint;
 import android.service.personalcontext.hint.ContextHint;
 import android.service.personalcontext.hint.ContextHintWithSignature;
 import android.service.personalcontext.hint.ContextHintWithSignatureWrapper;
-import android.text.TextUtils;
 import android.util.ArraySet;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -52,6 +51,8 @@ import javax.crypto.spec.SecretKeySpec;
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PERSONAL_CONTEXT_SERVICE)
 @RunWith(AndroidJUnit4.class)
 public class ContextHintWithSignatureTest {
+    private static final String SYSTEM_PACKAGE = "android";
+
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
@@ -89,9 +90,8 @@ public class ContextHintWithSignatureTest {
 
         assertThat(remainingHints.size()).isEqualTo(attributionHints.size());
         for (ContextHintWithSignature targetHint : attributionHints) {
-            assertThat(targetHint.getOriginatingPackage()).isNull();
+            assertThat(targetHint.getOriginatingPackage()).isEqualTo(SYSTEM_PACKAGE);
             final ContextHint targetContextHint = targetHint.getContextHint();
-            TextUtils.isEmpty(targetHint.getOriginatingPackage());
             final Optional<ContextHint> foundHint =
                     remainingHints.stream()
                             .filter(hint -> targetContextHint.getHintId().equals(hint.getHintId()))
@@ -204,7 +204,7 @@ public class ContextHintWithSignatureTest {
         assertThat(signedHint.isSignatureValid(key)).isTrue();
         assertThat(signedHint.getContextHint().getHintId()).isEqualTo(hint.getHintId());
         assertThat(signedHint.getRenderTokens()).containsExactly(renderToken);
-        assertThat(signedHint.getOriginatingPackage()).isNull();
+        assertThat(signedHint.getOriginatingPackage()).isEqualTo(SYSTEM_PACKAGE);
 
         checkPresence(signedHint, List.of(attributedHint1, attributedHint2));
     }

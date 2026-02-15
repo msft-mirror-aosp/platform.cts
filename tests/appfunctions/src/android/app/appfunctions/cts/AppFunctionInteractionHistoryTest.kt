@@ -63,6 +63,7 @@ import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
 
 @RunWith(BedsteadJUnit4::class)
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_INTERACTION_API)
@@ -88,6 +89,7 @@ class AppFunctionInteractionHistoryTest {
             AppFunctionUtils.enableAllowlist()
             setInteractionAllowlist(CtsApp.PACKAGE_NAME, listOf(LegacySchemaHelperApp.PACKAGE_NAME))
         }
+        installApkAsUser(TestApis.users().instrumented(), LegacySchemaHelperApp.APK_PATH)
     }
 
     @After
@@ -238,6 +240,59 @@ class AppFunctionInteractionHistoryTest {
             }
         }
 
+    @Test
+    fun uninstallTargetPackage_shouldDeleteInteractionHistory() = doBlocking {
+        runWithShellPermission(READ_APP_INTERACTION_PERMISSION) {
+            installApkAsUser(TestApis.users().instrumented(), LegacySchemaHelperApp.APK_PATH)
+            val testStartTime = System.currentTimeMillis()
+            assertMetadataIndexed(context)
+            executeAll(
+                context,
+                listOf(
+                    ExecuteAppFunctionRequest.Builder(LegacySchemaHelperApp.PACKAGE_NAME, "noOp")
+                        .setAttribution(
+                            AppInteractionAttribution.Builder(
+                                    AppInteractionAttribution.INTERACTION_TYPE_USER_QUERY
+                                )
+                                .build()
+                        )
+                        .build()
+                ),
+            )
+            assertInteractionHistoryContainsExactly(
+                after = testStartTime,
+                currentContext = context,
+                targetContext = context,
+                expected =
+                    arrayOf(
+                        InteractionHistory(
+                            agentPackageName = CtsApp.PACKAGE_NAME,
+                            targetPackageName = LegacySchemaHelperApp.PACKAGE_NAME,
+                            interactionType = AppInteractionAttribution.INTERACTION_TYPE_USER_QUERY,
+                            customInteractionType = null,
+                            interactionUri = null,
+                            accessTime = 0,
+                        )
+                    ),
+            )
+
+            TestApis.packages()
+                .find(LegacySchemaHelperApp.PACKAGE_NAME)
+                .uninstall(TestApis.users().instrumented())
+
+            retryAssert {
+                val accessHistories =
+                    context.contentResolver.queryAllInteractionHistoryAfter(
+                        context.getAppInteractionHistoryUri(),
+                        timestamp = testStartTime,
+                    )
+                val helperHistories =
+                    accessHistories?.filter { it.targetPackageName == CtsApp.PACKAGE_NAME }
+                assertThat(helperHistories).isEmpty()
+            }
+        }
+    }
+
     private fun ContentResolver.queryAllInteractionHistoryAfter(
         uri: Uri,
         timestamp: Long,
@@ -373,9 +428,11 @@ class AppFunctionInteractionHistoryTest {
     }
 
     private fun installExistingPackageAsUser(packageName: String, user: UserReference) {
-        val userId = user.id()
-        assertThat(SystemUtil.runShellCommand("pm install-existing --user $userId $packageName"))
-            .isEqualTo("Package $packageName installed for user: $userId\n")
+        TestApis.packages().find(packageName).installExisting(user)
+    }
+
+    private fun installApkAsUser(user: UserReference, apkPath: String) {
+        TestApis.packages().install(user, File(apkPath))
     }
 
     private suspend fun assertInteractionHistoryContainsExactly(

@@ -28,6 +28,7 @@ import kotlin.collections.minus
 class AppFunctionMetadataTestHelper {
     object LegacySchemaHelperApp {
         const val PACKAGE_NAME = "android.app.appfunctions.cts.helper"
+        const val APK_PATH = TEST_APP_ROOT_FOLDER + "CtsAppFunctionTestHelper.apk"
 
         object FunctionNames {
             val ADD_ENABLED_BY_DEFAULT = AppFunctionName(PACKAGE_NAME, "add")
