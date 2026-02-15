@@ -474,18 +474,18 @@ public class ContentCaptureConversationHintTest {
                         + "#setContentCaptureData",
                 "android.service.personalcontext.hint.ChatMessageContentCaptureData#getAutofillId",
                 "android.service.personalcontext.hint.ChatMessageContentCaptureData"
-                        + "#getRawParsedDateString",
+                        + "#getRawDateString",
                 "android.service.personalcontext.hint.ChatMessageContentCaptureData"
-                        + "#getRawParsedTimeString",
+                        + "#getRawTimeString",
                 "android.service.personalcontext.hint.ChatMessageContentCaptureData#equals",
                 "android.service.personalcontext.hint.ChatMessageContentCaptureData.Builder"
                         + "#Builder",
                 "android.service.personalcontext.hint.ChatMessageContentCaptureData.Builder"
                         + "#setAutofillId",
                 "android.service.personalcontext.hint.ChatMessageContentCaptureData.Builder"
-                        + "#setRawParsedDateString",
+                        + "#setRawDateString",
                 "android.service.personalcontext.hint.ChatMessageContentCaptureData.Builder"
-                        + "#setRawParsedTimeString",
+                        + "#setRawTimeString",
                 "android.service.personalcontext.hint.ChatMessageContentCaptureData.Builder"
                         + "#build",
                 "android.service.personalcontext.hint.ConversationData#getChatMessages",
@@ -530,8 +530,8 @@ public class ContentCaptureConversationHintTest {
 
         ChatMessageContentCaptureData contentCaptureData =
                 new ChatMessageContentCaptureData.Builder()
-                        .setRawParsedTimeString("12:00 PM")
-                        .setRawParsedDateString("Today")
+                        .setRawTimeString("12:00 PM")
+                        .setRawDateString("Today")
                         .setAutofillId(chatMessageAutofillId)
                         .build();
 
@@ -552,10 +552,10 @@ public class ContentCaptureConversationHintTest {
                 .isEqualTo(chatMessageContentDescription);
 
         assertThat(chatMessageData.getContentCaptureData()).isEqualTo(contentCaptureData);
-        assertThat(chatMessageData.getContentCaptureData().getRawParsedTimeString())
-                .isEqualTo(contentCaptureData.getRawParsedTimeString());
-        assertThat(chatMessageData.getContentCaptureData().getRawParsedDateString())
-                .isEqualTo(contentCaptureData.getRawParsedDateString());
+        assertThat(chatMessageData.getContentCaptureData().getRawTimeString())
+                .isEqualTo(contentCaptureData.getRawTimeString());
+        assertThat(chatMessageData.getContentCaptureData().getRawDateString())
+                .isEqualTo(contentCaptureData.getRawDateString());
         assertThat(chatMessageData.getContentCaptureData().getAutofillId())
                 .isEqualTo(chatMessageAutofillId);
 
