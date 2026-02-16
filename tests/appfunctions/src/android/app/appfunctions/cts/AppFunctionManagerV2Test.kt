@@ -49,6 +49,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.CancellationSignal
 import android.os.UserHandle
+import android.os.UserManager
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -773,6 +774,11 @@ class AppFunctionManagerV2Test {
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @PolicyAppliesTest(policy = [AppFunctionsPolicy::class])
     fun executeAppFunction_deviceOwnerRestricted_fail() = doBlocking {
+        // Skip the test when it is running on a secondary profile which is not
+        // allowed regardless of the policy.
+        assumeTrue(
+            !context.getSystemService(UserManager::class.java)
+                .isProfile(context.userId))
         val remoteDpm = sDeviceState.dpc().devicePolicyManager()
         val originalPolicy = remoteDpm.getAppFunctionsPolicy()
         try {
