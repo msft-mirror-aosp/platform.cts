@@ -72,7 +72,6 @@ public class ContentCaptureConversationHintTest {
                         .setText("text")
                         .setAuthor("author")
                         .setReferenceTime(mReferenceTime)
-                        .setContentDescription(CONTENT_DESCRIPTION)
                         .build();
     }
 
@@ -115,7 +114,7 @@ public class ContentCaptureConversationHintTest {
 
         final ConversationEnterEvent outputEnterEvent = (ConversationEnterEvent) outputEvent;
         assertThat(outputEnterEvent.getConversationSessionId()).isEqualTo(CONVERSATION_SESSION_ID);
-        assertThat(outputEnterEvent.getConversationEnterTimestamp()).isEqualTo(enterTimestamp);
+        assertThat(outputEnterEvent.getTimestamp()).isEqualTo(enterTimestamp);
         assertThat(outputEnterEvent.getClientEventTimestamp()).isEqualTo(clientEventTimestamp);
     }
 
@@ -455,7 +454,6 @@ public class ContentCaptureConversationHintTest {
     @ApiTest(
             apis = {
                 "android.service.personalcontext.hint.ChatMessageData#getAuthor",
-                "android.service.personalcontext.hint.ChatMessageData#getContentDescription",
                 "android.service.personalcontext.hint.ChatMessageData#getReferenceTime",
                 "android.service.personalcontext.hint.ChatMessageData#getText",
                 "android.service.personalcontext.hint.ChatMessageData#getContentCaptureData",
@@ -466,8 +464,6 @@ public class ContentCaptureConversationHintTest {
                 "android.service.personalcontext.hint.ChatMessageData.Builder#Builder",
                 "android.service.personalcontext.hint.ChatMessageData.Builder#build",
                 "android.service.personalcontext.hint.ChatMessageData.Builder#setAuthor",
-                "android.service.personalcontext.hint.ChatMessageData"
-                        + ".Builder#setContentDescription",
                 "android.service.personalcontext.hint.ChatMessageData.Builder#setReferenceTime",
                 "android.service.personalcontext.hint.ChatMessageData.Builder#setText",
                 "android.service.personalcontext.hint.ChatMessageData.Builder"
@@ -526,7 +522,6 @@ public class ContentCaptureConversationHintTest {
     public void testConversationData_getters() {
         final Instant chatMessageReferenceTime = mReferenceTime;
         final AutofillId chatMessageAutofillId = new AutofillId(2);
-        final String chatMessageContentDescription = "chat message content description";
 
         ChatMessageContentCaptureData contentCaptureData =
                 new ChatMessageContentCaptureData.Builder()
@@ -542,14 +537,11 @@ public class ContentCaptureConversationHintTest {
                         .setAuthor("author")
                         .setReferenceTime(chatMessageReferenceTime)
                         .setContentCaptureData(contentCaptureData)
-                        .setContentDescription(chatMessageContentDescription)
                         .build();
         assertThat(chatMessageData.getText()).isEqualTo("text");
         assertThat(chatMessageData.getAuthor()).isEqualTo("author");
         assertThat(chatMessageData.getReferenceTime()).isEqualTo(chatMessageReferenceTime);
         assertThat(chatMessageData.isOutgoingMessage()).isTrue();
-        assertThat(chatMessageData.getContentDescription())
-                .isEqualTo(chatMessageContentDescription);
 
         assertThat(chatMessageData.getContentCaptureData()).isEqualTo(contentCaptureData);
         assertThat(chatMessageData.getContentCaptureData().getRawParsedTimeString())
@@ -568,7 +560,6 @@ public class ContentCaptureConversationHintTest {
                         .setAuthor("author")
                         .setReferenceTime(chatMessageReferenceTime)
                         .setContentCaptureData(contentCaptureData)
-                        .setContentDescription(chatMessageContentDescription)
                         .build();
         assertThat(chatMessageData).isEqualTo(chatMessageData2);
         assertThat(chatMessageData.hashCode()).isEqualTo(chatMessageData2.hashCode());
