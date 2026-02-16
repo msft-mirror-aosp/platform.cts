@@ -38,6 +38,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.UiDeviceUtils;
 import android.support.test.uiautomator.UiDevice;
+import android.sysprop.SurfaceFlingerProperties;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Display;
@@ -311,6 +312,8 @@ public class DisplayEventTest extends TestBase {
     }
 
     private void switchRefreshRate() {
+        assumeTrue("SKIPPED due to frame rate override disabled",
+                    SurfaceFlingerProperties.enable_frame_rate_override().orElse(true));
         flushDisplayEventsQueue();
         mActivityRule
                 .getScenario()
