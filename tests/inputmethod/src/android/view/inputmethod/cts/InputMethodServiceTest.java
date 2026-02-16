@@ -87,6 +87,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.TextAppearanceInfo;
 import android.view.inputmethod.cts.disapproveime.DisapproveInputMethodService;
 import android.view.inputmethod.cts.util.EndToEndImeTestBase;
+import android.view.inputmethod.cts.util.SecureSettingsUtils.ImeSwitcherButtonInNavbarSettingSession;
 import android.view.inputmethod.cts.util.TestActivity;
 import android.view.inputmethod.cts.util.TestActivity2;
 import android.view.inputmethod.cts.util.TestUtils;
@@ -1303,11 +1304,19 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
         assumeFalse("Device is not configured to hide the navigation bar for IME",
                 isHideNavBarForKeyboard());
 
+        // Enable flag-protected setting when available.
+        ImeSwitcherButtonInNavbarSettingSession settingSession = null;
+        if (Flags.imeSwitcherButtonInNavbarSetting()) {
+            settingSession = new ImeSwitcherButtonInNavbarSettingSession();
+        }
+
+        // TODO (b/481928626): improve closeable navigation mode variable handling.
         try (var ignored = mGestureNavSwitchHelper.withGestureNavigationMode();
-                var imeSession = MockImeSession.create(
-                        InstrumentationRegistry.getInstrumentation().getContext(),
-                        InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-                     new ImeSettings.Builder())) {
+                var imeSession =
+                        MockImeSession.create(
+                                InstrumentationRegistry.getInstrumentation().getContext(),
+                                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                                new ImeSettings.Builder())) {
             final var stream = imeSession.openEventStream();
 
             assumeTrue("IME Switcher button should be shown at the start of the test",
@@ -1355,6 +1364,10 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
             assertWithMessage("Custom IME Switcher requested hidden when IME nav bar visible")
                     .that(requestedVisibleNavShown.getArguments().getBoolean("visible"))
                     .isFalse();
+        } finally {
+            if (settingSession != null) {
+                settingSession.close();
+            }
         }
     }
 
@@ -1373,11 +1386,19 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
         assumeFalse("Device is not configured to hide the navigation bar for IME",
                 isHideNavBarForKeyboard());
 
+        // Enable flag-protected setting when available.
+        ImeSwitcherButtonInNavbarSettingSession settingSession = null;
+        if (Flags.imeSwitcherButtonInNavbarSetting()) {
+            settingSession = new ImeSwitcherButtonInNavbarSettingSession();
+        }
+
+        // TODO (b/481928626): improve closeable navigation mode variable handling.
         try (var ignored = mGestureNavSwitchHelper.withThreeButtonNavigationMode();
-                var imeSession = MockImeSession.create(
-                        InstrumentationRegistry.getInstrumentation().getContext(),
-                        InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-                        new ImeSettings.Builder())) {
+                var imeSession =
+                        MockImeSession.create(
+                                InstrumentationRegistry.getInstrumentation().getContext(),
+                                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                                new ImeSettings.Builder())) {
             final var stream = imeSession.openEventStream();
 
             assumeTrue("IME Switcher button should be shown at the start of the test",
@@ -1395,6 +1416,10 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
             expectCommand(stream, imeSession.callSetImeCaptionBarVisible(true), TIMEOUT);
             notExpectEvent(stream, eventMatcher("onCustomImeSwitcherButtonRequestedVisible"),
                     EXPECTED_TIMEOUT);
+        } finally {
+            if (settingSession != null) {
+                settingSession.close();
+            }
         }
     }
 
@@ -1417,11 +1442,19 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
         assumeTrue("Device is configured to hide the navigation bar for IME",
                 isHideNavBarForKeyboard());
 
+        // Enable flag-protected setting when available.
+        ImeSwitcherButtonInNavbarSettingSession settingSession = null;
+        if (Flags.imeSwitcherButtonInNavbarSetting()) {
+            settingSession = new ImeSwitcherButtonInNavbarSettingSession();
+        }
+
+        // TODO (b/481928626): improve closeable navigation mode variable handling.
         try (var ignored = mGestureNavSwitchHelper.withGestureNavigationMode();
-                var imeSession = MockImeSession.create(
-                        InstrumentationRegistry.getInstrumentation().getContext(),
-                        InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-                        new ImeSettings.Builder())) {
+                var imeSession =
+                        MockImeSession.create(
+                                InstrumentationRegistry.getInstrumentation().getContext(),
+                                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                                new ImeSettings.Builder())) {
             final var stream = imeSession.openEventStream();
 
             assumeTrue("IME Switcher button should be shown at the start of the test",
@@ -1446,6 +1479,66 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
             assertWithMessage("Custom IME Switcher requested visible when switching"
                     + " back to gesture nav")
                     .that(requestedVisibleGestureNav.getArguments().getBoolean("visible"))
+                    .isFalse();
+        } finally {
+            if (settingSession != null) {
+                settingSession.close();
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_BUTTON_IN_NAVBAR_SETTING)
+    public void testImeSwitcherInNavbarEnabledSetting() throws Exception {
+        assumeTrue(
+                "Device must support the navigation bar",
+                mGestureNavSwitchHelper.hasNavigationBar());
+        assertTrue(
+                "Three button navigation mode overlay should be installed",
+                mGestureNavSwitchHelper.hasThreeButtonNavOverlay());
+        assumeFalse(
+                "Device is not configured to hide the navigation bar for IME",
+                isHideNavBarForKeyboard());
+
+        try (var ignored = mGestureNavSwitchHelper.withThreeButtonNavigationMode();
+                var imeSession =
+                        MockImeSession.create(
+                                InstrumentationRegistry.getInstrumentation().getContext(),
+                                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                                new ImeSettings.Builder());
+                var settingSession = new ImeSwitcherButtonInNavbarSettingSession()) {
+
+            final var stream = imeSession.openEventStream();
+
+            assumeTrue(
+                    "IME Switcher button should be shown at the start of the test",
+                    imeSession.shouldShowImeSwitcherButtonForTest());
+
+            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE, /* autoRequestFocus */ true);
+            expectEvent(stream, eventMatcher("onStartInput"), TIMEOUT);
+
+            // Set setting to 0 (Disabled) -> Custom button should be visible (true)
+            settingSession.set(ImeSwitcherButtonInNavbarSettingSession.DISABLED);
+
+            var requestedVisible =
+                    expectEvent(
+                            stream,
+                            eventMatcher("onCustomImeSwitcherButtonRequestedVisible"),
+                            TIMEOUT);
+            assertWithMessage("Custom IME Switcher requested visible when setting disabled")
+                    .that(requestedVisible.getArguments().getBoolean("visible"))
+                    .isTrue();
+
+            // Set setting to 1 (Enabled) -> Custom button should be hidden (false)
+            settingSession.set(ImeSwitcherButtonInNavbarSettingSession.ENABLED);
+
+            var requestedHidden =
+                    expectEvent(
+                            stream,
+                            eventMatcher("onCustomImeSwitcherButtonRequestedVisible"),
+                            TIMEOUT);
+            assertWithMessage("Custom IME Switcher requested hidden when setting enabled")
+                    .that(requestedHidden.getArguments().getBoolean("visible"))
                     .isFalse();
         }
     }

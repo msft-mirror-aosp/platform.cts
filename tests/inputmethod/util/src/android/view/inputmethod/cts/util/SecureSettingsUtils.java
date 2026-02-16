@@ -22,6 +22,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.UserHandle;
 import android.provider.Settings;
+import android.server.wm.settings.SettingsSession;
 import android.text.TextUtils;
 import android.view.inputmethod.InputMethodSubtype;
 
@@ -154,5 +155,26 @@ public final class SecureSettingsUtils {
         return SystemUtil.runWithShellPermissionIdentity(
                 () -> Settings.Secure.getString(getContentResolverForUser(context, userId), name),
                 Manifest.permission.INTERACT_ACROSS_USERS_FULL);
+    }
+
+    /**
+     * Session class to manage the "ime_switcher_in_navbar_enabled" Secure Setting for IME tests.
+     *
+     * <p>The session sets the value to {@link #ENABLED} by default.
+     */
+    public static final class ImeSwitcherButtonInNavbarSettingSession
+            extends SettingsSession<Integer> {
+
+        public static final int DISABLED = 0;
+        public static final int ENABLED = 1;
+
+        public ImeSwitcherButtonInNavbarSettingSession() {
+            super(
+                    Settings.Secure.getUriFor("ime_switcher_in_navbar_enabled"),
+                    Settings.Secure::getInt,
+                    Settings.Secure::putInt);
+
+            set(ENABLED);
+        }
     }
 }
