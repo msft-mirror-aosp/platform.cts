@@ -38,6 +38,7 @@ java_test_host {
         "platformprotos",
         "flag-junit-host",
         "android.multiuser.flags-aconfig-java-host",
+        "backup_flags_lib_host",
         // NOTE: -axt below is needed by BackupPreparer, while the non-axt version above
         // is needed by ProtoUtils. Ideally one should be enough, but that would require
         // fixing these libs
@@ -73,6 +74,9 @@ java_test_host {
         ":FullBackupOnlyFalseWithAgentApp",
         ":FullBackupOnlyTrueWithAgentApp",
         ":NonDebuggableApp",
+        ":DelayedRestoreApp",
+        ":DelayedFullRestoreApp",
+        ":DelayedRestoreDependencyApp",
     ],
     per_testcase_directory: true,
 }
@@ -82,4 +86,11 @@ test_module_config_host {
     base: "CtsBackupHostTestCases",
     test_suites: ["general-tests"],
     include_filters: ["android.cts.backup.OtherSoundsSettingsHostSideTest"],
+}
+
+java_aconfig_library {
+    name: "backup_flags_lib_host",
+    aconfig_declarations: "backup_flags",
+    defaults: ["framework-minus-apex-aconfig-java-defaults"],
+    host_supported: true,
 }
