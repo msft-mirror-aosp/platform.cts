@@ -16,8 +16,12 @@
 package com.android.bedstead.enterprise
 
 import android.content.ComponentName;
+import android.os.UserHandle
 import android.util.Log
+import com.android.bedstead.nene.utils.ShellCommand
+
 import com.android.bedstead.accounts.AccountsComponent
+import com.android.bedstead.enterprise.annotations.EnsureBackupNotActive
 import com.android.bedstead.enterprise.annotations.EnsureHasDelegate
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceController
 import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder
@@ -338,6 +342,18 @@ class EnterpriseComponent(locator: BedsteadServiceLocator) : DeviceStateComponen
                 RemoteDevicePolicyManagerRoleHolder.sTestApp.pkg(), users().system()
             )
         }
+    }
+
+    /**
+     * See [EnsureBackupNotActive]
+     */
+    fun ensureBackupNotActive(onUser: UserType) {
+        val user = userTypeResolver.toUser(onUser)
+        ShellCommand.builder("bmgr")
+            .addOption("--user", user.id())
+            .addOperand("activate false")
+            .validate { it: String -> it.contains("deactivated") }
+            .execute()
     }
 
     /**
