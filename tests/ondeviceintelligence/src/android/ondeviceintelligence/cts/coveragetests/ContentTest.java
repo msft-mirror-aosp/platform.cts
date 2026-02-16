@@ -19,11 +19,10 @@ package android.ondeviceintelligence.cts.coveragetests;
 import static android.app.ondeviceintelligence.flags.Flags.FLAG_ON_DEVICE_INTELLIGENCE_26Q2;
 
 import static com.google.common.truth.Truth.assertThat;
-
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import android.app.ondeviceintelligence.Content;
 import android.app.ondeviceintelligence.Part;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -36,64 +35,32 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.List;
+
 @RunWith(AndroidJUnit4.class)
-public class PartTest {
+public class ContentTest {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
     @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_26Q2)
-    public void testPartMethods() {
-        // Test TYPE_TEXT
-        Part textPart = Part.createText("test text");
-        assertThat(textPart.getType()).isEqualTo(1); // Part.TYPE_TEXT
-        assertThat(textPart.getText()).isEqualTo("test text");
-        assertThat(textPart.getBlob()).isNull();
-        assertThat(textPart.getImage()).isNull();
-
-        // Test TYPE_IMAGE
-        android.graphics.Bitmap bitmap =
-                android.graphics.Bitmap.createBitmap(
-                        10, 10, android.graphics.Bitmap.Config.ARGB_8888);
-        Part imagePart = Part.createImage(bitmap);
-        assertThat(imagePart.getType()).isEqualTo(2); // Part.TYPE_IMAGE
-        assertThat(imagePart.getImage()).isEqualTo(bitmap);
-        assertThat(imagePart.getText()).isNull();
-        assertThat(imagePart.getBlob()).isNull();
-
-        // Test TYPE_AUDIO (using createBlob)
-        ParcelFileDescriptor[] pipe = null;
-        try {
-            pipe = ParcelFileDescriptor.createPipe();
-            Part audioPart = Part.createBlob(pipe[0], 3); // Part.TYPE_AUDIO
-            assertThat(audioPart.getType()).isEqualTo(3);
-            assertThat(audioPart.getBlob()).isEqualTo(pipe[0]);
-            assertThat(audioPart.getText()).isNull();
-            assertThat(audioPart.getImage()).isNull();
-        } catch (java.io.IOException e) {
-            fail("Failed to create pipe: " + e);
-        } finally {
-            try {
-                if (pipe != null) {
-                    pipe[0].close();
-                    pipe[1].close();
-                }
-            } catch (java.io.IOException e) {
-                // ignore
-            }
-        }
+    public void testContentMethods() {
+        Part part = Part.createText("test");
+        Content content = new Content(List.of(part));
+        assertThat(content.getParts()).containsExactly(part);
     }
 
     @Test
     @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_26Q2)
-    public void testPartClose() throws Exception {
+    public void testContentClose() throws Exception {
         ParcelFileDescriptor mockPfd = mock(ParcelFileDescriptor.class);
         Part part = Part.createBlob(mockPfd, 3);
+        Content content = new Content(List.of(part));
         try {
-            part.close();
+            content.close();
         } catch (Exception e) {
-            // Ignore
+            // Expected if close fails
         }
         verify(mockPfd).close();
     }

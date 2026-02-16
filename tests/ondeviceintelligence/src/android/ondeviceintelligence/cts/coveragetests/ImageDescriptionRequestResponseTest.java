@@ -60,6 +60,33 @@ public class ImageDescriptionRequestResponseTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_26Q2)
+    public void testImageDescriptionRequestClose() {
+        android.graphics.Bitmap bitmap =
+                android.graphics.Bitmap.createBitmap(
+                        10, 10, android.graphics.Bitmap.Config.ARGB_8888);
+        ImageDescriptionRequest request =
+                new ImageDescriptionRequest(bitmap, "prompt", java.util.Locale.US);
+
+        // Get the internal shared bitmap that should be cleaned up
+        android.graphics.Bitmap internalBitmap = request.getContent().getParts().get(0).getImage();
+        assertThat(internalBitmap).isNotNull();
+        assertThat(internalBitmap).isNotEqualTo(bitmap); // It should be a new shared copy
+        assertThat(internalBitmap.isRecycled()).isFalse();
+
+        try {
+            request.close();
+        } catch (java.io.IOException e) {
+            // ignore
+        }
+        // Verify internal bitmap is recycled
+        assertThat(internalBitmap.isRecycled()).isTrue();
+
+        // Original bitmap should still be valid
+        assertThat(bitmap.isRecycled()).isFalse();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_26Q2)
     public void testImageDescriptionResponse() {
         ImageDescription desc = new ImageDescription("desc", 0.9f);
         assertThat(desc.getDescription().toString()).isEqualTo("desc");
