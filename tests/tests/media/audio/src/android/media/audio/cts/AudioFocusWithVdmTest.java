@@ -253,7 +253,8 @@ public class AudioFocusWithVdmTest {
 
             // with separate audio environments created with the MODIFY_AUDIO_ROUTING permission,
             // the second VDM context playback also notifies the first VDM player of focus lost
-            if (hasPermission) {
+            // if (desktop) multi focus is not enabled
+            if (hasPermission && !mMultiFocusEnabled) {
                 assertThat(vdmDevicePlayback1.getLastFocusChange().isPresent()).isTrue();
                 assertThat(vdmDevicePlayback1.getLastFocusChange().get())
                         .isEqualTo(AUDIOFOCUS_LOSS);
@@ -338,8 +339,9 @@ public class AudioFocusWithVdmTest {
 
         // Closing the first virtual device will trigger the cleanup path for the first audio
         // focus environment and lose audio focus for the first virtual playback if it was created,
-        // which only happens when having the permission
-        if (hasPermission) {
+        // which only happens when having the permission and is not already (desktop) multi focus
+        // enabled
+        if (hasPermission && !mMultiFocusEnabled) {
             assertThat(vdmPlayback.getLastFocusChange().isPresent()).isTrue();
             assertThat(vdmPlayback.getLastFocusChange().get()).isEqualTo(AUDIOFOCUS_LOSS);
         }
