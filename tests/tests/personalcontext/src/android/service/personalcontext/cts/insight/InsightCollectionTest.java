@@ -136,7 +136,7 @@ public class InsightCollectionTest {
     public void testIterator() {
         final ActionableInsight actionableInsight =
                 new ActionableInsight.Builder(
-                                new InsightActionDetails.Builder().build(),
+                                new InsightActionDetails.Builder().setIntent(new Intent()).build(),
                                 new InsightDisplayDetails.Builder("title").build())
                         .build();
         final DisplayInsight displayInsight =
