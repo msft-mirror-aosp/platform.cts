@@ -28,7 +28,6 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.personalcontext.Flags;
 import android.service.personalcontext.embedded.InsightSurfaceClientUpdate;
-import android.service.personalcontext.hint.BundleHint;
 import android.view.View;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -63,8 +62,6 @@ public class InsightSurfaceClientUpdateTest {
                 "android.service.personalcontext.embedded.InsightSurfaceClientUpdate.Builder"
                         + "#setThemeResourceName",
                 "android.service.personalcontext.embedded.InsightSurfaceClientUpdate.Builder"
-                        + "#addHint",
-                "android.service.personalcontext.embedded.InsightSurfaceClientUpdate.Builder"
                         + "#build",
                 "android.service.personalcontext.embedded.InsightSurfaceClientUpdate"
                         + "#getMeasureSpecWidth",
@@ -79,7 +76,6 @@ public class InsightSurfaceClientUpdateTest {
                 "android.service.personalcontext.embedded.InsightSurfaceClientUpdate"
                         + "#getThemeResourceName",
                 "android.service.personalcontext.embedded.InsightSurfaceClientUpdate#shouldBlur",
-                "android.service.personalcontext.embedded.InsightSurfaceClientUpdate#getHints",
                 "android.service.personalcontext.embedded.InsightSurfaceClientUpdate#hasUpdate",
             })
     @Test
@@ -92,7 +88,6 @@ public class InsightSurfaceClientUpdateTest {
         final boolean shouldBlur = true;
         final String themeResourceName = "theme";
         final Configuration configuration = new Configuration();
-        final BundleHint hint = new BundleHint.Builder().build();
 
         final InsightSurfaceClientUpdate update =
                 new InsightSurfaceClientUpdate.Builder()
@@ -104,7 +99,6 @@ public class InsightSurfaceClientUpdateTest {
                         .setShouldBlur(shouldBlur)
                         .setThemeResourceName(themeResourceName)
                         .setConfiguration(configuration)
-                        .addHint(hint)
                         .build();
 
         assertThat(update.hasUpdate(InsightSurfaceClientUpdate.KEY_MEASURE_SPEC_WIDTH)).isTrue();
@@ -115,7 +109,6 @@ public class InsightSurfaceClientUpdateTest {
                 .isTrue();
         assertThat(update.hasUpdate(InsightSurfaceClientUpdate.KEY_THEME_RESOURCE_NAME)).isTrue();
         assertThat(update.hasUpdate(InsightSurfaceClientUpdate.KEY_CONFIGURATION)).isTrue();
-        assertThat(update.hasUpdate(InsightSurfaceClientUpdate.KEY_HINTS)).isTrue();
 
         assertThat(update.getMeasureSpecWidth()).isEqualTo(measureSpecWidth);
         assertThat(update.getMeasureSpecHeight()).isEqualTo(measureSpecHeight);
@@ -124,7 +117,6 @@ public class InsightSurfaceClientUpdateTest {
         assertThat(update.shouldBlur()).isEqualTo(shouldBlur);
         assertThat(update.getThemeResourceName()).isEqualTo(themeResourceName);
         assertThat(update.getBackgroundColor()).isEqualTo(backgroundColor);
-        assertThat(update.getHints()).contains(hint);
     }
 
     @ApiTest(
@@ -144,7 +136,6 @@ public class InsightSurfaceClientUpdateTest {
                 "android.service.personalcontext.embedded.InsightSurfaceClientUpdate#shouldBlur",
                 "android.service.personalcontext.embedded.InsightSurfaceClientUpdate"
                         + "#getThemeResourceName",
-                "android.service.personalcontext.embedded.InsightSurfaceClientUpdate#getHints",
                 "android.service.personalcontext.embedded.InsightSurfaceClientUpdate#hasUpdate",
             })
     @Test
@@ -159,7 +150,6 @@ public class InsightSurfaceClientUpdateTest {
         assertThat(update.hasUpdate(InsightSurfaceClientUpdate.KEY_SHOULD_BLUR)).isFalse();
         assertThat(update.hasUpdate(InsightSurfaceClientUpdate.KEY_THEME_RESOURCE_NAME)).isFalse();
         assertThat(update.hasUpdate(InsightSurfaceClientUpdate.KEY_CONFIGURATION)).isFalse();
-        assertThat(update.hasUpdate(InsightSurfaceClientUpdate.KEY_HINTS)).isFalse();
 
         assertThat(update.getMeasureSpecWidth()).isEqualTo(View.MeasureSpec.UNSPECIFIED);
         assertThat(update.getMeasureSpecHeight()).isEqualTo(View.MeasureSpec.UNSPECIFIED);
@@ -168,6 +158,5 @@ public class InsightSurfaceClientUpdateTest {
         assertThat(update.shouldBlur()).isEqualTo(false);
         assertThat(update.getThemeResourceName()).isNull();
         assertThat(update.getBackgroundColor()).isNull();
-        assertThat(update.getHints()).isEmpty();
     }
 }
