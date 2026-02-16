@@ -362,6 +362,9 @@
         <service android:name="android.security.cts.CVE_2024_34734.PocService"
           android:foregroundServiceType="microphone" />
 
+        <activity android:name="android.security.cts.BUG_449181366$EditorActivity"
+            android:windowSoftInputMode="stateVisible" />
+
         <activity android:name="android.security.cts.BUG_406243581.EmptyActivity"
              android:exported="true" />
     </application>
