@@ -20,15 +20,22 @@ import static com.google.common.truth.TruthJUnit.assume;
 
 import static org.junit.Assert.fail;
 
+import android.app.Activity;
+import android.app.Instrumentation;
 import android.content.ComponentName;
 import android.content.Context;
+import android.os.Bundle;
+import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
 
+import androidx.annotation.NonNull;
+import androidx.test.core.app.ActivityScenario;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
@@ -42,6 +49,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @RunWith(AndroidJUnit4.class)
 public class BUG_449181366 extends StsExtraBusinessLogicTestCase {
@@ -59,9 +67,12 @@ public class BUG_449181366 extends StsExtraBusinessLogicTestCase {
             ComponentName.createRelative(LARGE_IME_PKG, ".Method1");
     private static final String ADDED_SUBTYPE_NAME = "Additional Type";
 
-    private static final Duration TIMEOUT = Duration.ofSeconds(10);
+    private static final long HW_TIMEOUT_MULTIPLIER =
+            SystemProperties.getInt("ro.hw_timeout_multiplier", 1);
+    private static final Duration TIMEOUT = Duration.ofSeconds(15 * HW_TIMEOUT_MULTIPLIER);
 
-    private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
+    private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
+    private final Context mContext = mInstrumentation.getTargetContext();
     private String mInitiallyEnabledInputMethods;
 
     @Before
@@ -108,20 +119,24 @@ public class BUG_449181366 extends StsExtraBusinessLogicTestCase {
                     () -> imm.getCurrentInputMethodInfo().getComponent().equals(IME1),
                     "InputMethod must be enabled");
 
-            PollingCheck.waitFor(
-                    TIMEOUT.toMillis(),
-                    () ->
-                            imm
-                                    .getEnabledInputMethodSubtypeList(
-                                            imm.getCurrentInputMethodInfo(),
-                                            /* allowsImplicitlyEnabledSubtypes= */ false)
-                                    .stream()
-                                    .anyMatch(
-                                            subtype ->
-                                                    TextUtils.equals(
-                                                            ADDED_SUBTYPE_NAME,
-                                                            subtype.getNameOverride())),
-                    "Valid subtype must be exposed as expected");
+            // Start an activity with a focused editor to make sure the IME process is started
+            // even if config_preventImeStartupUnlessTextEditor is true.
+            try (var scenario = ActivityScenario.launch(EditorActivity.class)) {
+                PollingCheck.waitFor(
+                        TIMEOUT.toMillis(),
+                        () -> {
+                            AtomicBoolean focused = new AtomicBoolean(false);
+                            scenario.onActivity(act -> focused.set(act.hasWindowFocus()));
+                            return focused.get();
+                        },
+                        "EditorActivity must be focused");
+
+                var imi = imm.getCurrentInputMethodInfo();
+                PollingCheck.waitFor(
+                        TIMEOUT.toMillis(),
+                        () -> containsAdditionalSubtype(imm, imi, ADDED_SUBTYPE_NAME),
+                        "Valid subtype must be exposed.");
+            }
         } catch (Exception e) {
             if (e instanceof android.os.DeadSystemRuntimeException) {
                 fail("The device is vulnerable to b/449181366.");
@@ -132,6 +147,16 @@ public class BUG_449181366 extends StsExtraBusinessLogicTestCase {
             // Following STS guideline, this should just be an assumption failure.
             assume().that(e).isNull();
         }
+    }
+
+    private static boolean containsAdditionalSubtype(
+            InputMethodManager imm, InputMethodInfo imi, String expectedSubtypeName) {
+        return imm
+                .getEnabledInputMethodSubtypeList(imi, /* allowsImplicitlyEnabledSubtypes= */ false)
+                .stream()
+                .anyMatch(
+                        subtype ->
+                                TextUtils.equals(expectedSubtypeName, subtype.getNameOverride()));
     }
 
     private static void installTestApp() {
@@ -165,5 +190,15 @@ public class BUG_449181366 extends StsExtraBusinessLogicTestCase {
     private static void enableAndSetIme(String imeId) {
         SystemUtil.runShellCommand("ime enable --user " + UserHandle.myUserId() + " " + imeId);
         SystemUtil.runShellCommand("ime set --user " + UserHandle.myUserId() + " " + imeId);
+    }
+
+    public static class EditorActivity extends Activity {
+        @Override
+        protected void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+            final var editText = new EditText(this);
+            setContentView(editText);
+            editText.requestFocus();
+        }
     }
 }
