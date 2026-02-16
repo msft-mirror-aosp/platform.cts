@@ -20,6 +20,7 @@ import static com.google.common.truth.TruthJUnit.assume;
 
 import android.platform.test.annotations.AsbSecurityTest;
 
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.sts.common.UserUtils.SecondaryUser;
 import com.android.sts.common.tradefed.testtype.NonRootSecurityTestCase;
 import com.android.tradefed.device.ITestDevice;
@@ -36,8 +37,13 @@ public class CVE_2025_26430 extends NonRootSecurityTestCase {
     @AsbSecurityTest(cveBugId = 372895305)
     public void testPocCVE_2025_26430() {
         try {
-            // Check if the device supports multiple users or not
+            // Skip the test if the device under test is a TV.
             final ITestDevice device = getDevice();
+            if (FeatureUtil.isTV(device)) {
+                return;
+            }
+
+            // Check if the device supports multiple users or not.
             assume().withMessage("This device does not support multiple users")
                     .that(device.isMultiUserSupported())
                     .isTrue();
