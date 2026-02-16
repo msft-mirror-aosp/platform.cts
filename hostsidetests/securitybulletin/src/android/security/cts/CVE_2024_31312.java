@@ -16,7 +16,6 @@
 
 package android.security.cts;
 
-import static com.android.sts.common.CommandUtil.runAndCheck;
 import static com.android.sts.common.SystemUtil.withSetting;
 
 import static org.junit.Assume.assumeNoException;
@@ -54,13 +53,6 @@ public class CVE_2024_31312 extends NonRootSecurityTestCase {
             }
         } catch (Exception e) {
             assumeNoException(e);
-        } finally {
-            try {
-                // To exit the test gracefully
-                runAndCheck(device, "input keyevent KEYCODE_POWER");
-            } catch (Exception e) {
-                // Ignore all exceptions
-            }
         }
     }
 }
