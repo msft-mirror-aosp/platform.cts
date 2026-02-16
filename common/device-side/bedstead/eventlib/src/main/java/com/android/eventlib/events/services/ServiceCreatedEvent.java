@@ -87,7 +87,6 @@ public class ServiceCreatedEvent extends Event {
     /** {@link EventLogger} for {@link ServiceCreatedEvent}. */
     public static final class ServiceCreatedEventLogger extends EventLogger<ServiceCreatedEvent> {
 
-        // TODO(b/214187100) Use ServiceInfo here instead of a String to identify the service.
         private ServiceCreatedEventLogger(Service service,
                 String serviceName) {
             super(service, new ServiceCreatedEvent());
