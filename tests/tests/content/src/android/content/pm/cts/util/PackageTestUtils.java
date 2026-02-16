@@ -41,7 +41,6 @@ import com.android.compatibility.common.util.SystemUtil;
 
 import com.google.common.util.concurrent.SettableFuture;
 
-import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 
 public final class PackageTestUtils {
@@ -59,8 +58,9 @@ public final class PackageTestUtils {
     public static final String APP_LOCK_SUPPORTED_APP_LABEL = "CtsAppLockSupportedTestApp";
     public static final String APP_LOCK_SUPPORTED_PACKAGE_NAME =
             "android.content.cts.applocksupportedtestapp";
-    public static final String HEADLESS_APK = SAMPLE_APK_BASE + "CtsHeadlessApp.apk";
-    public static final String HEADLESS_APP_PACKAGE_NAME = "com.android.cts.headlessapp";
+    public static final String EMPTY_TEST_APP_APK = SAMPLE_APK_BASE + "CtsEmptyTestApp.apk";
+    public static final String EMPTY_TEST_APP_PACKAGE_NAME =
+            "android.packageinstaller.emptytestapp.cts";
 
     /**
      * Installs a package for the duration of the {@link AutoCloseable}, and uninstalls it afterward
@@ -159,29 +159,6 @@ public final class PackageTestUtils {
         SystemUtil.runShellCommand("am start-user -w " + user.getIdentifier());
 
         return new ScopedSupervisedUser(user);
-    }
-
-    /**
-     * Creates a managed profile of type {@link UserManager#USER_TYPE_PROFILE_MANAGED} for the
-     * duration of the {@link AutoCloseable}, and removes it afterward.
-     *
-     * @param context the {@link Context} of the test.
-     * @return a {@link ScopedManagedProfile} that allows retrieving the user and closing it.
-     */
-    public static ScopedManagedProfile createManagedProfileScoped(Context context) {
-        final UserManager userManager = context.getSystemService(UserManager.class);
-        final UserHandle user = SystemUtil.runWithShellPermissionIdentity(() -> {
-            return userManager.createProfile("Managed", UserManager.USER_TYPE_PROFILE_MANAGED,
-                    new HashSet<>());
-        });
-
-        if (user == null) {
-            throw new IllegalStateException("Failed to create managed profile");
-        }
-
-        SystemUtil.runShellCommand("am start-user -w " + user.getIdentifier());
-
-        return new ScopedManagedProfile(user);
     }
 
     /**
@@ -366,23 +343,6 @@ public final class PackageTestUtils {
         @Override
         public void close() {
             SystemUtil.runShellCommand("cmd supervision disable 0");
-            SystemUtil.runShellCommand("pm remove-user " + mUser.getIdentifier());
-        }
-    }
-
-    public static class ScopedManagedProfile implements AutoCloseable {
-        private final UserHandle mUser;
-
-        ScopedManagedProfile(UserHandle user) {
-            mUser = user;
-        }
-
-        public UserHandle getUser() {
-            return mUser;
-        }
-
-        @Override
-        public void close() {
             SystemUtil.runShellCommand("pm remove-user " + mUser.getIdentifier());
         }
     }
