@@ -15,10 +15,12 @@
  */
 package android.app.notification.current.cts
 
+import android.Manifest
 import android.Manifest.permission.POST_NOTIFICATIONS
 import android.Manifest.permission.RECEIVE_SENSITIVE_NOTIFICATIONS
 import android.app.AppOpsManager
 import android.app.Notification
+import android.app.Notification.BubbleMetadata
 import android.app.Notification.CATEGORY_MESSAGE
 import android.app.Notification.EXTRA_MESSAGES
 import android.app.Notification.EXTRA_SUB_TEXT
@@ -39,6 +41,8 @@ import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.content.pm.ShortcutInfo
+import android.content.pm.ShortcutManager
 import android.graphics.drawable.Icon
 import android.net.MacAddress
 import android.os.Bundle
@@ -48,20 +52,31 @@ import android.permission.cts.PermissionUtils
 import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import android.provider.Settings
 import android.provider.Telephony
+import android.security.Flags.FLAG_APP_LOCK_APIS
+import android.security.Flags.FLAG_APP_LOCK_CORE
 import android.service.notification.Adjustment
 import android.service.notification.Adjustment.KEY_IMPORTANCE
 import android.service.notification.Adjustment.KEY_RANKING_SCORE
 import android.service.notification.Flags
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import android.util.ArraySet
 import android.util.Log
+import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.AndroidJUnit4
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiSelector
+import com.android.bedstead.nene.TestApis
 import com.android.compatibility.common.util.CddTest
 import com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity
 import com.android.compatibility.common.util.SystemUtil.runShellCommand
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.compatibility.common.util.UserHelper
+import com.android.sts.common.LockSettingsUtil
+import com.android.sts.common.SystemUtil.poll
+import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
@@ -179,8 +194,10 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
         subtext: String = OTP_MESSAGE_BASIC,
         category: String = CATEGORY_MESSAGE,
         actions: List<Notification.Action>? = null,
+        people: List<Person>? = null,
         style: Notification.Style? = null,
         extras: Bundle? = null,
+        fullScreenIntent: PendingIntent? = null,
         tag: String = groupKey
     ) {
         val intent = Intent(Intent.ACTION_MAIN)
@@ -200,8 +217,15 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
         nb.setLargeIcon(Icon.createWithResource(mContext, R.drawable.black))
         nb.setContentIntent(createTestPendingIntent())
         nb.setGroup(groupKey)
+
+        if (fullScreenIntent != null) {
+            nb.setFullScreenIntent(fullScreenIntent, true)
+        }
         if (actions != null) {
             nb.setActions(*actions.toTypedArray())
+        }
+        if (people != null) {
+            people.forEach { nb.addPerson(it) }
         }
         if (style != null) {
             nb.setStyle(style)
@@ -241,6 +265,223 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
         assertWithMessage("Expected to find a notification with tag $tag")
                 .that(sbn).isNotNull()
         return sbn!!
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_APP_LOCK_CORE, FLAG_APP_LOCK_APIS)
+    fun testAppLock_onAppLockEnabled_notificationRepostedAsRedacted() {
+        LockSettingsUtil(mContext).withLockScreen().use {
+            mAssistant.mMarkSensitiveContent = false
+            buildAndSendNotification()
+
+            assertNotificationUnredacted(waitForNotification())
+            mListener.resetData()
+
+            setAppLockEnabledState().use {
+                assertNotificationRedacted(waitForNotification())
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_APP_LOCK_CORE, FLAG_APP_LOCK_APIS)
+    fun testAppLock_onAppLockDisabled_notificationRepostedAsUnredacted() {
+        mAssistant.mMarkSensitiveContent = false
+        LockSettingsUtil(mContext).withLockScreen().use {
+            setAppLockEnabledState().use {
+                buildAndSendNotification()
+
+                assertNotificationRedacted(waitForNotification())
+                mListener.resetData()
+            }
+            assertNotificationUnredacted(waitForNotification())
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_APP_LOCK_CORE, FLAG_APP_LOCK_APIS)
+    fun testAppLock_onAppUnlocked_notificationRepostedAsUnredacted() {
+        mAssistant.mMarkSensitiveContent = false
+
+        LockSettingsUtil(mContext).withLockScreen().use {
+            setAppLockEnabledState().use {
+            buildAndSendNotification()
+
+            assertNotificationRedacted(waitForNotification())
+            mListener.resetData()
+            unlockAppViaPin()
+
+            assertNotificationUnredacted(waitForNotification())
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_APP_LOCK_CORE, FLAG_APP_LOCK_APIS)
+    fun testAppLock_onAppRelocked_notificationRepostedAsRedacted() {
+        mAssistant.mMarkSensitiveContent = false
+
+        LockSettingsUtil(mContext).withLockScreen().use {
+            setAppLockEnabledState().use {
+                buildAndSendNotification()
+                waitForNotification()
+                mListener.resetData()
+                unlockAppViaPin()
+
+                assertNotificationUnredacted(waitForNotification())
+                mListener.resetData()
+                UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressHome()
+                poll {
+                    mNotificationHelper.findPostedNotification(groupKey, NOTIFICATION_ID,
+                            SEARCH_TYPE.POSTED) != null
+                }
+
+                assertNotificationRedacted(waitForNotification())
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_APP_LOCK_CORE, FLAG_APP_LOCK_APIS)
+    fun testAppLock_callStyleNotification_alwaysPostedAsUnredacted() {
+        val caller = "Test Caller"
+        mAssistant.mMarkSensitiveContent = false
+
+        LockSettingsUtil(mContext).withLockScreen().use {
+            setAppLockEnabledState().use {
+                val person = Person.Builder().setName(caller).build()
+                val intent = createTestPendingIntent()
+                val callStyle = Notification.CallStyle.forIncomingCall(person, intent, intent)
+                sendNotification( title = caller, style = callStyle, fullScreenIntent = intent)
+
+                val sbn = waitForNotification()
+                assertCommonUnredactedFeatures(sbn, hasPeople = false)
+
+                val extras = sbn.notification.extras
+                val actualTitle = extras.getCharSequence(EXTRA_TITLE)?.toString()
+                val template = extras.getString(Notification.EXTRA_TEMPLATE)
+
+                assertWithMessage("CallStyle title must never be redacted regardless of lock state")
+                        .that(actualTitle).isEqualTo(caller)
+                assertWithMessage("CallStyle template must be preserved")
+                        .that(template).isEqualTo(Notification.CallStyle::class.java.name)
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_APP_LOCK_CORE, FLAG_APP_LOCK_APIS)
+    fun testAppLock_messagingStyleNotification_notBubbled_messagesAreFullyRedacted() {
+        mAssistant.mMarkSensitiveContent = false
+
+        LockSettingsUtil(mContext).withLockScreen().use {
+            val notificationBuilder = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+                .setContentTitle(NOTIFICATION_TITLE)
+                .setSmallIcon(R.drawable.black)
+                .setCategory(Notification.CATEGORY_MESSAGE)
+                .setStyle(getMessagingStyle())
+
+            mNotificationManager.notify(groupKey, NOTIFICATION_ID, notificationBuilder.build())
+            waitForNotification()
+            mListener.resetData()
+
+            setAppLockEnabledState().use {
+                val sbn = waitForNotification()
+                val extras = sbn.notification.extras
+
+                assertNotificationRedacted(sbn)
+                assertThat(extras.getString(Notification.EXTRA_TEMPLATE)).isNull()
+                assertThat(extras.getParcelableArray(EXTRA_MESSAGES, Parcelable::class.java))
+                        .isNull()
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_APP_LOCK_CORE, FLAG_APP_LOCK_APIS)
+    fun testAppLock_messagingStyleNotification_bubbled_messagesAndSenderAreRedacted() {
+        // TODO(b/492535797): Add a check for the android.content.pm.app_lock_shortcut_removal flag
+        mAssistant.mMarkSensitiveContent = false
+
+        LockSettingsUtil(mContext).withLockScreen().use {
+            allowAllNotificationsToBubble()
+            createShortcut()
+
+            val notificationBuilder = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+                .setContentTitle(NOTIFICATION_TITLE)
+                .setSmallIcon(R.drawable.black)
+                .setCategory(Notification.CATEGORY_MESSAGE)
+                .setShortcutId(NOTIFICATION_SHORTCUT_ID)
+                .setStyle(getMessagingStyle())
+                .setBubbleMetadata(getDefaultBubbleMetadata())
+                .setFlag(Notification.FLAG_BUBBLE, true)
+            mNotificationManager.notify(groupKey, NOTIFICATION_ID, notificationBuilder.build())
+
+            // Verify notification posted successfully as a bubble.
+            val statusBarNotification = waitForNotification()
+            val hasBubbleFlag =
+                    (statusBarNotification.notification.flags and Notification.FLAG_BUBBLE) != 0
+
+            assertThat(hasBubbleFlag).isTrue()
+            mListener.resetData()
+
+            setAppLockEnabledState().use {
+                val sbn = waitForNotification()
+
+                assertCommonRedactionFeatures(sbn)
+
+                val extras = sbn.notification.extras
+                val messagesArray =
+                        extras.getParcelableArray(EXTRA_MESSAGES, Parcelable::class.java)
+                val postedMessages = Message.getMessagesFromBundleArray(messagesArray)
+                assertThat(messagesArray).isNotNull()
+
+                val title = extras.getCharSequence(EXTRA_TITLE)?.toString()
+                val subtext = extras.getCharSequence(EXTRA_SUB_TEXT)?.toString()
+                assertWithMessage("Title should be redacted").that(title).isEmpty()
+                assertWithMessage("Subtext should be removed").that(subtext).isNull()
+
+                val template = extras.getString(Notification.EXTRA_TEMPLATE)
+                assertThat(template).isEqualTo(Notification.MessagingStyle::class.java.name)
+
+                val messageText = postedMessages[0].text?.toString()
+                assertThat(messageText).matches("New (notification|message)")
+
+                val senderName = postedMessages[0].senderPerson?.name?.toString() ?: ""
+                assertWithMessage("Sender name should be redacted").that(senderName).isEmpty()
+
+                val bubbleMetadata = sbn.notification.bubbleMetadata
+                assertWithMessage("Bubble metadata should be preserved")
+                        .that(bubbleMetadata).isNotNull()
+                assertWithMessage("Bubble icon should remain the same")
+                        .that(bubbleMetadata?.icon).isNotNull()
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_APP_LOCK_CORE, FLAG_APP_LOCK_APIS)
+    fun testAppLock_assistantGetsUnredactedNotificationWhenLocked() {
+        mAssistant.mMarkSensitiveContent = false
+        LockSettingsUtil(mContext).withLockScreen().use {
+            setAppLockEnabledState().use {
+                buildAndSendNotification()
+
+                assertNotificationRedacted(waitForNotification())
+
+                var assistantSbn: StatusBarNotification? = null
+                poll {
+                    assistantSbn = mAssistant.activeNotifications?.find {
+                        it.tag == groupKey && it.id == NOTIFICATION_ID
+                    }
+                    assistantSbn != null
+                }
+
+                assertWithMessage("Assistant should receive the unredacted notification")
+                        .that(assistantSbn).isNotNull()
+                assertNotificationUnredacted(assistantSbn!!)
+            }
+        }
     }
 
     @Test
@@ -716,12 +957,211 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
                 .that(text).doesNotContain(OTP_CODE)
     }
 
+    private fun setAppLockState(state: Boolean) {
+        runWithShellPermissionIdentity({
+            val isAppLockStateChanged =
+                mContext.packageManager.setPackageAppLockEnabled(mContext.packageName, state)
+
+            assertWithMessage("App lock state change should be successful")
+                .that(isAppLockStateChanged).isTrue()
+        }, Manifest.permission.TEST_LOCK_APPS)
+    }
+
+    private fun setAppLockEnabledState(): AutoCloseable {
+        setAppLockState(true)
+        return AutoCloseable { setAppLockState(false) }
+    }
+
+    private fun unlockAppViaPin() {
+        val launchIntent = mContext.packageManager.getLaunchIntentForPackage(mContext.packageName)
+        launchIntent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        TestApis.activities().startActivity(launchIntent)
+
+        val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        device.waitForIdle()
+        val pin = TEST_PIN
+        for (digit in pin) {
+            val button = device.findObject(UiSelector().text(digit.toString()))
+            assertWithMessage("PIN digit button '$digit' not found on screen").that(
+                    button.waitForExists(UI_WAIT_TIMEOUT_MS)).isTrue()
+
+            button.click()
+        }
+        device.pressEnter()
+        device.waitForIdle()
+    }
+
+    private fun buildAndSendNotification() {
+        val action = Notification.Action.Builder(null, ACTION_TITLE, createTestPendingIntent())
+                .build()
+        sendNotification(
+            title = NOTIFICATION_TITLE,
+            text = NOTIFICATION_TEXT,
+            subtext = NOTIFICATION_SUBTEXT,
+            actions = listOf(action),
+            people = listOf(Person.Builder().setName(PERSON_NAME).build())
+        )
+    }
+
+    private fun assertNotificationRedacted(statusBarNotification: StatusBarNotification) {
+        assertCommonRedactionFeatures(statusBarNotification)
+
+        val extras = statusBarNotification.notification.extras
+        val title = extras.getCharSequence(EXTRA_TITLE)?.toString()
+        val text = extras.getCharSequence(EXTRA_TEXT)?.toString()
+        val subtext = extras.getCharSequence(EXTRA_SUB_TEXT)?.toString()
+        val appLabel = mContext.packageManager
+                .getApplicationLabel(mContext.applicationInfo).toString()
+
+        assertWithMessage("Title should be redacted").that(title).isEqualTo(appLabel)
+        assertWithMessage("Text should be redacted").that(text)
+                .matches("New (notification|message)")
+        assertWithMessage("Subtext should be removed").that(subtext).isNull()
+    }
+
+    private fun assertNotificationUnredacted(statusBarNotification: StatusBarNotification) {
+        assertCommonUnredactedFeatures(statusBarNotification)
+
+        val extras = statusBarNotification.notification.extras
+        val notification = statusBarNotification.notification
+        val actions = notification.actions
+        val people = extras.getParcelableArrayList(Notification.EXTRA_PEOPLE_LIST,
+                Person::class.java)
+
+        assertWithMessage("Title should be unredacted")
+                .that(extras.getCharSequence(EXTRA_TITLE)?.toString()).isEqualTo(NOTIFICATION_TITLE)
+        assertWithMessage("Text should be unredacted")
+                .that(extras.getCharSequence(EXTRA_TEXT)?.toString()).isEqualTo(NOTIFICATION_TEXT)
+        assertWithMessage("Subtext should be present")
+                .that(extras.getCharSequence(EXTRA_SUB_TEXT)?.toString())
+                        .isEqualTo(NOTIFICATION_SUBTEXT)
+        assertWithMessage("Action title should match expected value").that(
+                actions!![0].title.toString()).isEqualTo(ACTION_TITLE)
+        assertWithMessage("Person name should match expected value").that(people!![0].name)
+                .isEqualTo(PERSON_NAME)
+    }
+
+    private fun allowAllNotificationsToBubble() {
+        val userId = mContext.user.identifier
+        val pkg = mContext.packageName
+
+        runShellCommand("cmd notification set_bubbles $pkg 1 $userId")
+        runShellCommand(
+            "cmd notification set_bubbles_channel $pkg $NOTIFICATION_CHANNEL_ID true $userId"
+        )
+        runWithShellPermissionIdentity {
+            Settings.Secure.putInt(
+                mContext.contentResolver,
+                Settings.Secure.NOTIFICATION_BUBBLES,
+                1
+            )
+        }
+        poll {
+            mNotificationManager.areBubblesAllowed()
+        }
+    }
+
+    fun createShortcut() {
+        val person = Person.Builder()
+            .setBot(false)
+            .setIcon(Icon.createWithResource(mContext, R.drawable.black))
+            .setName(BUBBLE_SENDER_NAME)
+            .setImportant(true)
+            .build()
+
+        val categorySet = ArraySet<String>()
+        categorySet.add("com.android.app.notification.current.cts.SHORTCUT_CATEGORY")
+        val testContext = InstrumentationRegistry.getInstrumentation().context
+        val shortcutIntent = Intent().apply {
+            action = Intent.ACTION_VIEW
+            component = ComponentName(testContext, AppLockDummyActivity::class.java)
+        }
+
+        val shortcut = ShortcutInfo.Builder(mContext, NOTIFICATION_SHORTCUT_ID)
+            .setShortLabel(NOTIFICATION_SHORTCUT_ID)
+            .setIcon(Icon.createWithResource(mContext, R.drawable.black))
+            .setIntent(shortcutIntent)
+            .setPerson(person)
+            .setCategories(categorySet)
+            .setLongLived(true)
+            .build()
+
+        val shortcutManager = mContext.getSystemService(ShortcutManager::class.java)
+        shortcutManager.addDynamicShortcuts(listOf(shortcut))
+    }
+
+    private fun getDefaultBubbleMetadata(): Notification.BubbleMetadata {
+        val testContext = InstrumentationRegistry.getInstrumentation().context
+        val intent = Intent().apply {
+            action = Intent.ACTION_MAIN
+            component = ComponentName(testContext, AppLockDummyActivity::class.java)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            mContext,
+            /* requestCode= */ 0,
+            intent,
+            PendingIntent.FLAG_MUTABLE
+        )
+
+        return Notification.BubbleMetadata.Builder(
+            pendingIntent,
+            Icon.createWithResource(mContext, R.drawable.black)
+        ).build()
+    }
+
+    private fun getMessagingStyle(): Notification.MessagingStyle {
+        val notificationSender = Person.Builder()
+            .setName(BUBBLE_SENDER_NAME)
+            .setImportant(true)
+            .build()
+        val notificationReceiver = Person.Builder().setName(BUBBLE_RECEIVER_NAME).build()
+
+        return Notification.MessagingStyle(notificationReceiver)
+            .setConversationTitle(NOTIFICATION_TITLE)
+            .addMessage(NOTIFICATION_TEXT, System.currentTimeMillis() - 300000, notificationSender)
+    }
+
+    private fun assertCommonRedactionFeatures(sbn: StatusBarNotification) {
+        val extras = sbn.notification.extras
+        val people = extras.getParcelableArrayList(Notification.EXTRA_PEOPLE_LIST, Person::class.java)
+
+        assertWithMessage("Actions should be removed").that(sbn.notification.actions).isNull()
+        assertWithMessage("People should be removed").that(people).isNull()
+    }
+
+    private fun assertCommonUnredactedFeatures(sbn: StatusBarNotification, hasPeople: Boolean = true) {
+        val extras = sbn.notification.extras
+        val actions = sbn.notification.actions
+
+        assertWithMessage("Actions list should be present").that(actions).isNotNull()
+        assertWithMessage("Actions list should not be empty").that(actions!!).asList().isNotEmpty()
+
+        if (hasPeople) {
+            val people = extras.getParcelableArrayList(Notification.EXTRA_PEOPLE_LIST, Person::class.java)
+            assertWithMessage("People list should be present").that(people).isNotNull()
+            assertWithMessage("People list should not be empty").that(people!!).isNotEmpty()
+        }
+    }
+
     companion object {
         private val TAG = SensitiveNotificationRedactionTest::class.java.simpleName
+        private const val BUBBLE_SENDER_NAME = "Test Notification Sender"
+        private const val BUBBLE_RECEIVER_NAME = "Test Notification Receiver"
         private const val OTP_CODE = "123645"
         private const val OTP_MESSAGE_BASIC = "your one time code is 123645"
         private const val PERSON_NAME = "Alan Smithee"
         private const val NOTIFICATION_ID = 42
+        private const val NOTIFICATION_TITLE = "Test Notification Title"
+        private const val NOTIFICATION_TEXT = "Test Notification Content"
+        private const val NOTIFICATION_SUBTEXT = "Test Notification Subtext"
+        private const val ACTION_TITLE = "Test Action"
         private const val SHORT_SLEEP_TIME_MS: Long = 100
+        private const val NOTIFICATION_SHORTCUT_ID = "TestNotificationShortcut"
+        private const val TEST_PIN = "1234"
+        private const val UI_WAIT_TIMEOUT_MS: Long = 5000
     }
 }
