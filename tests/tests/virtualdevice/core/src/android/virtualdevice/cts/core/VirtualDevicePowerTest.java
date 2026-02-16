@@ -29,7 +29,6 @@ import static org.mockito.Mockito.verify;
 import android.app.Activity;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
-import android.companion.virtualdevice.flags.Flags;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -40,7 +39,6 @@ import android.hardware.display.VirtualDisplayConfig;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.Settings;
 import android.server.wm.UiDeviceUtils;
 import android.util.Log;
@@ -233,7 +231,6 @@ public class VirtualDevicePowerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
     public void goToSleepAndWakeUp_turnsOffAndOnVirtualDisplay() {
         createVirtualDeviceAndDisplay();
 
@@ -288,7 +285,6 @@ public class VirtualDevicePowerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
     public void turnScreenOn_turnsOnVirtualDisplay() {
         createVirtualDeviceAndDisplay();
 
@@ -313,7 +309,6 @@ public class VirtualDevicePowerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
     public void turnScreenOnWithoutShowWhenLocked_turnsOnAlwaysUnlockedVirtualDisplay() {
         createVirtualDeviceAndDisplay(new VirtualDeviceParams.Builder()
                 .setLockState(VirtualDeviceParams.LOCK_STATE_ALWAYS_UNLOCKED)
@@ -339,7 +334,6 @@ public class VirtualDevicePowerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
     public void customSleepTimeout_goesToSleep() {
         assumeScreenOffSupported();
 
@@ -357,7 +351,6 @@ public class VirtualDevicePowerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
     public void customBrightness_dimTimeoutTriggersCallback() {
         assumeScreenOffSupported();
 
@@ -384,7 +377,6 @@ public class VirtualDevicePowerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
     public void customDefaultBrightness_windowManagerOverrideRequestTriggersCallback() {
         createVirtualDeviceAndDisplay(VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder()
                 .setBrightnessListener(mContext.getMainExecutor(), mBrightnessListener)
