@@ -26,7 +26,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * dalvik.vm.* and pm.dexopt.* system property collector.
+ * dalvik.vm.*, media.* and pm.dexopt.* system property collector.
  */
 public class RuntimeDeviceInfo extends DeviceInfo {
 
@@ -56,13 +56,15 @@ public class RuntimeDeviceInfo extends DeviceInfo {
     }
 
     private void parseProps(String stdout, HostInfoStore store) throws Exception {
-        Pattern pattern = Pattern.compile("\\[((?:pm.dexopt|dalvik.vm)\\..+)\\]: \\[(.+)\\]");
+        Pattern pattern = Pattern.compile("\\[((?:dalvik.vm|media|pm.dexopt)\\..+)\\]: \\[(.+)\\]");
         if (stdout == null) stdout = "";
         boolean hasMatched = false;
         try (Scanner scanner = new Scanner(stdout)) {
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine();
-                if (!line.startsWith("[dalvik.vm.")  && !line.startsWith("[pm.dexopt.")) {
+                if (!line.startsWith("[dalvik.vm.")
+                        && !line.startsWith("[media.")
+                        && !line.startsWith("[pm.dexopt.")) {
                     continue;
                 }
                 Matcher matcher = pattern.matcher(line);
