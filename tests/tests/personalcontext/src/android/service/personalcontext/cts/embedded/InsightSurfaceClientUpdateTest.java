@@ -22,6 +22,7 @@ import static android.view.View.SCROLL_AXIS_NONE;
 import static com.google.common.truth.Truth.assertThat;
 
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.graphics.Color;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -60,7 +61,7 @@ public class InsightSurfaceClientUpdateTest {
                 "android.service.personalcontext.embedded.InsightSurfaceClientUpdate.Builder"
                         + "#setShouldBlur",
                 "android.service.personalcontext.embedded.InsightSurfaceClientUpdate.Builder"
-                        + "#setThemeResourceName",
+                        + "#setThemeResourceId",
                 "android.service.personalcontext.embedded.InsightSurfaceClientUpdate.Builder"
                         + "#build",
                 "android.service.personalcontext.embedded.InsightSurfaceClientUpdate"
@@ -74,7 +75,7 @@ public class InsightSurfaceClientUpdateTest {
                 "android.service.personalcontext.embedded.InsightSurfaceClientUpdate"
                         + "#isNestedScrollAxisLocked",
                 "android.service.personalcontext.embedded.InsightSurfaceClientUpdate"
-                        + "#getThemeResourceName",
+                        + "#getThemeResourceId",
                 "android.service.personalcontext.embedded.InsightSurfaceClientUpdate#shouldBlur",
                 "android.service.personalcontext.embedded.InsightSurfaceClientUpdate#hasUpdate",
             })
@@ -86,7 +87,7 @@ public class InsightSurfaceClientUpdateTest {
         final int nestedScrollAxes = SCROLL_AXIS_HORIZONTAL;
         final boolean nestedScrollAxisLocked = true;
         final boolean shouldBlur = true;
-        final String themeResourceName = "theme";
+        final int themeResourceId = 7;
         final Configuration configuration = new Configuration();
 
         final InsightSurfaceClientUpdate update =
@@ -97,7 +98,7 @@ public class InsightSurfaceClientUpdateTest {
                         .setNestedScrollAxes(nestedScrollAxes)
                         .setNestedScrollAxisLocked(nestedScrollAxisLocked)
                         .setShouldBlur(shouldBlur)
-                        .setThemeResourceName(themeResourceName)
+                        .setThemeResourceId(themeResourceId)
                         .setConfiguration(configuration)
                         .build();
 
@@ -115,7 +116,7 @@ public class InsightSurfaceClientUpdateTest {
         assertThat(update.getNestedScrollAxes()).isEqualTo(nestedScrollAxes);
         assertThat(update.isNestedScrollAxisLocked()).isEqualTo(nestedScrollAxisLocked);
         assertThat(update.shouldBlur()).isEqualTo(shouldBlur);
-        assertThat(update.getThemeResourceName()).isEqualTo(themeResourceName);
+        assertThat(update.getThemeResourceId()).isEqualTo(themeResourceId);
         assertThat(update.getBackgroundColor()).isEqualTo(backgroundColor);
     }
 
@@ -135,7 +136,7 @@ public class InsightSurfaceClientUpdateTest {
                         + "#isNestedScrollAxisLocked",
                 "android.service.personalcontext.embedded.InsightSurfaceClientUpdate#shouldBlur",
                 "android.service.personalcontext.embedded.InsightSurfaceClientUpdate"
-                        + "#getThemeResourceName",
+                        + "#getThemeResourceId",
                 "android.service.personalcontext.embedded.InsightSurfaceClientUpdate#hasUpdate",
             })
     @Test
@@ -156,7 +157,7 @@ public class InsightSurfaceClientUpdateTest {
         assertThat(update.getNestedScrollAxes()).isEqualTo(SCROLL_AXIS_NONE);
         assertThat(update.isNestedScrollAxisLocked()).isEqualTo(false);
         assertThat(update.shouldBlur()).isEqualTo(false);
-        assertThat(update.getThemeResourceName()).isNull();
+        assertThat(update.getThemeResourceId()).isEqualTo(Resources.ID_NULL);
         assertThat(update.getBackgroundColor()).isNull();
     }
 }
