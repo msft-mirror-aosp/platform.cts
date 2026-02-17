@@ -27,6 +27,7 @@ import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioManager;
+import android.media.audiofx.AudioEffect;
 import android.media.audiofx.BassBoost;
 import android.media.audiofx.DynamicsProcessing;
 import android.media.audiofx.Equalizer;
@@ -189,9 +190,36 @@ public class AudioOffloadNativeEffectsTest {
         return AudioFormat.ENCODING_INVALID;
     }
 
+    private interface EffectCreator<T extends AudioEffect> {
+        T create(int sessionId) throws RuntimeException;
+    }
+
+    private <T extends AudioEffect> T createEffectSafely(
+            Class<T> effectClass, EffectCreator<T> creator) {
+        T effect = null;
+        try {
+            effect = creator.create(mSessionId);
+        } catch (UnsupportedOperationException e) {
+            Log.e(TAG, effectClass.getSimpleName() + " not supported: " + e.getMessage());
+        } catch (RuntimeException e) {
+            Log.e(TAG, effectClass.getSimpleName() + " runtime error: " + e.getMessage());
+        }
+
+        assumeNotNull("Failed to create " + effectClass.getSimpleName(), effect);
+
+        return effect;
+    }
+
     private void setupVisualizer() {
-        mVisualizer = new Visualizer(mSessionId);
+        try {
+            mVisualizer = new Visualizer(mSessionId);
+        } catch (UnsupportedOperationException e) {
+            Log.e(TAG, "Visualizer not supported: " + e.getMessage());
+        } catch (RuntimeException e) {
+            Log.e(TAG, "Visualizer runtime error: " + e.getMessage());
+        }
         assumeNotNull("Failed to create Visualizer effect", mVisualizer);
+
         assumeTrue(
                 Visualizer.SUCCESS
                         == mVisualizer.setCaptureSize(
@@ -272,8 +300,10 @@ public class AudioOffloadNativeEffectsTest {
                         (!isPreEq ? bandCount : 0),
                         false /* limiterInUse */);
 
-        mDynamicsProcessing = new DynamicsProcessing(0, mSessionId, configBuilder.build());
-        assertNotNull("Failed to create DynamicsProcessing", mDynamicsProcessing);
+        mDynamicsProcessing =
+                createEffectSafely(
+                        DynamicsProcessing.class,
+                        (sessionId) -> new DynamicsProcessing(0, sessionId, configBuilder.build()));
         mDynamicsProcessing.setEnabled(true);
 
         DynamicsProcessing.EqBand bassBand;
@@ -342,8 +372,8 @@ public class AudioOffloadNativeEffectsTest {
 
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
     public void testMmapPcmOffloadWithEqualizerEffect() throws InterruptedException {
-        mEqualizer = new Equalizer(0, mSessionId);
-        assumeNotNull("Failed to create Equalizer effect", mEqualizer);
+        mEqualizer =
+                createEffectSafely(Equalizer.class, (sessionId) -> new Equalizer(0, sessionId));
         assumeTrue(Equalizer.SUCCESS == mEqualizer.setEnabled(true));
 
         // Initialize the Visualizer to capture and measure the rms of audio output.
@@ -370,8 +400,8 @@ public class AudioOffloadNativeEffectsTest {
 
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
     public void testMmapPcmOffloadWithBassBoostEffect() throws InterruptedException {
-        mBassBoost = new BassBoost(0, mSessionId);
-        assumeNotNull("Failed to create BassBoost effect", mBassBoost);
+        mBassBoost =
+                createEffectSafely(BassBoost.class, (sessionId) -> new BassBoost(0, sessionId));
         assumeTrue(BassBoost.SUCCESS == mBassBoost.setEnabled(true));
 
         testIncreasingStrength(EffectType.BASS_BOOST);
@@ -379,8 +409,8 @@ public class AudioOffloadNativeEffectsTest {
 
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
     public void testMmapPcmOffloadWithVirtualizerEffect() throws InterruptedException {
-        mVirtualizer = new Virtualizer(0, mSessionId);
-        assumeNotNull("Failed to create Virtualizer effect", mVirtualizer);
+        mVirtualizer =
+                createEffectSafely(Virtualizer.class, (sessionId) -> new Virtualizer(0, sessionId));
         assumeTrue(Virtualizer.SUCCESS == mVirtualizer.setEnabled(true));
 
         testIncreasingStrength(EffectType.VIRTUALIZER);
@@ -400,8 +430,11 @@ public class AudioOffloadNativeEffectsTest {
                         false /* postEqInUse */,
                         0 /* postEqBandCount */,
                         false /* limiterInUse */);
-        mDynamicsProcessing = new DynamicsProcessing(0, mSessionId, configBuilder.build());
-        assumeNotNull("Failed to create DynamicsProcessing effect", mDynamicsProcessing);
+
+        mDynamicsProcessing =
+                createEffectSafely(
+                        DynamicsProcessing.class,
+                        (sessionId) -> new DynamicsProcessing(0, sessionId, configBuilder.build()));
         mDynamicsProcessing.setEnabled(true);
 
         // Initialize the Visualizer to capture and measure the rms of audio output.

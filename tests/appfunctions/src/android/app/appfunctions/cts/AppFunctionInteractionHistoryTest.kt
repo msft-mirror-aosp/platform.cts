@@ -51,8 +51,8 @@ import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.users.UserReference
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule
-import com.android.compatibility.common.util.SystemUtil
 import com.google.common.truth.Truth.assertThat
+import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -63,7 +63,6 @@ import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.File
 
 @RunWith(BedsteadJUnit4::class)
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_INTERACTION_API)
@@ -89,7 +88,6 @@ class AppFunctionInteractionHistoryTest {
             AppFunctionUtils.enableAllowlist()
             setInteractionAllowlist(CtsApp.PACKAGE_NAME, listOf(LegacySchemaHelperApp.PACKAGE_NAME))
         }
-        installApkAsUser(TestApis.users().instrumented(), LegacySchemaHelperApp.APK_PATH)
     }
 
     @After
@@ -280,15 +278,21 @@ class AppFunctionInteractionHistoryTest {
                 .find(LegacySchemaHelperApp.PACKAGE_NAME)
                 .uninstall(TestApis.users().instrumented())
 
-            retryAssert {
-                val accessHistories =
-                    context.contentResolver.queryAllInteractionHistoryAfter(
-                        context.getAppInteractionHistoryUri(),
-                        timestamp = testStartTime,
-                    )
-                val helperHistories =
-                    accessHistories?.filter { it.targetPackageName == CtsApp.PACKAGE_NAME }
-                assertThat(helperHistories).isEmpty()
+            try {
+                retryAssert {
+                    val accessHistories =
+                        context.contentResolver.queryAllInteractionHistoryAfter(
+                            context.getAppInteractionHistoryUri(),
+                            timestamp = testStartTime,
+                        )
+                    val helperHistories =
+                        accessHistories?.filter { it.targetPackageName == CtsApp.PACKAGE_NAME }
+                    assertThat(helperHistories).isEmpty()
+                }
+            }
+            // Reinstall the package to avoid breaking the next test.
+            finally {
+                installApkAsUser(TestApis.users().instrumented(), LegacySchemaHelperApp.APK_PATH)
             }
         }
     }

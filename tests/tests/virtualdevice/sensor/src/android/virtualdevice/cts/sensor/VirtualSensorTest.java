@@ -298,7 +298,6 @@ public class VirtualSensorTest {
         assertThat(sensor.isWakeUpSensor()).isFalse();
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
     @Test
     public void getDefaultSensor_wakeUpSensor() {
         mVirtualSensor = setUpVirtualSensor(

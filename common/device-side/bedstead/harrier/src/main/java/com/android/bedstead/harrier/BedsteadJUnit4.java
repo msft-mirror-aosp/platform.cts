@@ -34,6 +34,7 @@ import com.android.bedstead.nene.types.OptionalBoolean;
 import com.google.auto.value.AutoAnnotation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
@@ -92,15 +93,16 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     }
 
     // These are annotations which are not included indirectly
-    private static final Set<String> sIgnoredAnnotationPackages = new HashSet<>();
+    private static final ImmutableSet<String> sIgnoredAnnotationPackages = ImmutableSet.of(
+        "java.lang.annotation",
+        "com.android.bedstead.harrier.annotations.meta",
+        "org.junit"
+    );
 
-    static {
-        sIgnoredAnnotationPackages.add("java.lang.annotation");
-        sIgnoredAnnotationPackages.add("com.android.bedstead.harrier.annotations.meta");
-        sIgnoredAnnotationPackages.add("kotlin.*");
-        sIgnoredAnnotationPackages.add("org.junit");
-        sIgnoredAnnotationPackages.add("com.android.networkstack.kotlin.*");
-    }
+    private static final ImmutableList<String> sIgnoredAnnotationPrefixes = ImmutableList.of(
+        "kotlin",
+        "com.android.networkstack.kotlin"
+    );
 
     /**
      * Resolves annotations recursively.
@@ -264,13 +266,12 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
         String annotationPackage = annotation.annotationType().getPackage().getName();
 
-        for (String ignoredPackage : sIgnoredAnnotationPackages) {
-            if (ignoredPackage.endsWith(".*")) {
-                if (annotationPackage.startsWith(
-                        ignoredPackage.substring(0, ignoredPackage.length() - 2))) {
-                    return true;
-                }
-            } else if (annotationPackage.equals(ignoredPackage)) {
+        if (sIgnoredAnnotationPackages.contains(annotationPackage)) {
+            return true;
+        }
+
+        for (String ignoredPrefix : sIgnoredAnnotationPrefixes) {
+            if (annotationPackage.startsWith(ignoredPrefix)) {
                 return true;
             }
         }

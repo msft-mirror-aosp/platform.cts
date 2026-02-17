@@ -76,6 +76,8 @@ public class VirtualDeviceParamsTest {
     private static final int RECORDING_SESSION_ID = 77;
     private static final ComponentName COMPONENT_NAME = new ComponentName("test", ".Activity1");
     private static final ComponentName COMPONENT_NAME_2 = new ComponentName("test", ".Activity2");
+    private static final Duration DIM_DURATION = Duration.ofMinutes(2);
+    private static final Duration SCREEN_OFF_TIMEOUT = Duration.ofMinutes(5);
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -95,28 +97,33 @@ public class VirtualDeviceParamsTest {
 
     @Test
     public void parcelable_shouldRecreateSuccessfully() {
-        VirtualDeviceParams originalParams = new VirtualDeviceParams.Builder()
-                .setLockState(VirtualDeviceParams.LOCK_STATE_ALWAYS_UNLOCKED)
-                .setUsersWithMatchingAccounts(Set.of(UserHandle.of(123), UserHandle.of(456)))
-                .setDevicePolicy(POLICY_TYPE_SENSORS, DEVICE_POLICY_CUSTOM)
-                .setDevicePolicy(POLICY_TYPE_AUDIO, DEVICE_POLICY_CUSTOM)
-                .setDevicePolicy(POLICY_TYPE_RECENTS, DEVICE_POLICY_CUSTOM)
-                .setDevicePolicy(POLICY_TYPE_CLIPBOARD, DEVICE_POLICY_CUSTOM)
-                .setAudioPlaybackSessionId(PLAYBACK_SESSION_ID)
-                .setAudioRecordingSessionId(RECORDING_SESSION_ID)
-                .addVirtualSensorConfig(
-                        new VirtualSensorConfig.Builder(TYPE_ACCELEROMETER, SENSOR_NAME)
-                                .setVendor(SENSOR_VENDOR)
-                                .setDirectChannelTypesSupported(
-                                        SensorDirectChannel.TYPE_MEMORY_FILE)
-                                .setHighestDirectReportRateLevel(SensorDirectChannel.RATE_NORMAL)
-                                .build())
-                .setVirtualSensorCallback(mExecutor, mVirtualSensorCallback)
-                .setVirtualSensorDirectChannelCallback(
-                        mExecutor, mVirtualSensorDirectChannelCallback)
-                .setInputMethodComponent(COMPONENT_NAME)
-                .setHomeComponent(COMPONENT_NAME_2)
-                .build();
+        VirtualDeviceParams originalParams =
+                new VirtualDeviceParams.Builder()
+                        .setLockState(VirtualDeviceParams.LOCK_STATE_ALWAYS_UNLOCKED)
+                        .setUsersWithMatchingAccounts(
+                                Set.of(UserHandle.of(123), UserHandle.of(456)))
+                        .setDevicePolicy(POLICY_TYPE_SENSORS, DEVICE_POLICY_CUSTOM)
+                        .setDevicePolicy(POLICY_TYPE_AUDIO, DEVICE_POLICY_CUSTOM)
+                        .setDevicePolicy(POLICY_TYPE_RECENTS, DEVICE_POLICY_CUSTOM)
+                        .setDevicePolicy(POLICY_TYPE_CLIPBOARD, DEVICE_POLICY_CUSTOM)
+                        .setAudioPlaybackSessionId(PLAYBACK_SESSION_ID)
+                        .setAudioRecordingSessionId(RECORDING_SESSION_ID)
+                        .addVirtualSensorConfig(
+                                new VirtualSensorConfig.Builder(TYPE_ACCELEROMETER, SENSOR_NAME)
+                                        .setVendor(SENSOR_VENDOR)
+                                        .setDirectChannelTypesSupported(
+                                                SensorDirectChannel.TYPE_MEMORY_FILE)
+                                        .setHighestDirectReportRateLevel(
+                                                SensorDirectChannel.RATE_NORMAL)
+                                        .build())
+                        .setVirtualSensorCallback(mExecutor, mVirtualSensorCallback)
+                        .setVirtualSensorDirectChannelCallback(
+                                mExecutor, mVirtualSensorDirectChannelCallback)
+                        .setInputMethodComponent(COMPONENT_NAME)
+                        .setHomeComponent(COMPONENT_NAME_2)
+                        .setDimDuration(DIM_DURATION)
+                        .setScreenOffTimeout(SCREEN_OFF_TIMEOUT)
+                        .build();
         Parcel parcel = Parcel.obtain();
         originalParams.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
@@ -135,6 +142,8 @@ public class VirtualDeviceParamsTest {
         assertThat(params.getAudioRecordingSessionId()).isEqualTo(RECORDING_SESSION_ID);
         assertThat(params.getInputMethodComponent()).isEqualTo(COMPONENT_NAME);
         assertThat(params.getHomeComponent()).isEqualTo(COMPONENT_NAME_2);
+        assertThat(params.getDimDuration()).isEqualTo(DIM_DURATION);
+        assertThat(params.getScreenOffTimeout()).isEqualTo(SCREEN_OFF_TIMEOUT);
 
         List<VirtualSensorConfig> sensorConfigs = params.getVirtualSensorConfigs();
         assertThat(sensorConfigs).hasSize(1);
@@ -142,26 +151,6 @@ public class VirtualDeviceParamsTest {
         assertThat(sensorConfig.getType()).isEqualTo(TYPE_ACCELEROMETER);
         assertThat(sensorConfig.getName()).isEqualTo(SENSOR_NAME);
         assertThat(sensorConfig.getVendor()).isEqualTo(SENSOR_VENDOR);
-    }
-
-    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
-    @Test
-    public void customTimeouts_parcelable_shouldRecreateSuccessfully() {
-        final Duration dimDuration = Duration.ofMinutes(2);
-        final Duration screenOffTimeout = Duration.ofMinutes(5);
-        VirtualDeviceParams originalParams = new VirtualDeviceParams.Builder()
-                .setDimDuration(dimDuration)
-                .setScreenOffTimeout(screenOffTimeout)
-                .build();
-
-        Parcel parcel = Parcel.obtain();
-        originalParams.writeToParcel(parcel, 0);
-        parcel.setDataPosition(0);
-
-        VirtualDeviceParams params = VirtualDeviceParams.CREATOR.createFromParcel(parcel);
-        assertThat(params).isEqualTo(originalParams);
-        assertThat(params.getDimDuration()).isEqualTo(dimDuration);
-        assertThat(params.getScreenOffTimeout()).isEqualTo(screenOffTimeout);
     }
 
     @Test
@@ -595,7 +584,6 @@ public class VirtualDeviceParamsTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
     public void invalidTimeouts_throwsException() {
         assertThrows(NullPointerException.class, () ->
                 new VirtualDeviceParams.Builder().setScreenOffTimeout(null));

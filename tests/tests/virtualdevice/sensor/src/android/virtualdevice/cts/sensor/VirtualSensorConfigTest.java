@@ -89,7 +89,6 @@ public class VirtualSensorConfigTest {
         assertThat(recreatedConfig.getFlags()).isEqualTo(0x400 | RATE_VERY_FAST << 7);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
     @Test
     public void parcelAndUnparcel_wakeUpSensor() {
         final VirtualSensorConfig originalConfig =
@@ -177,7 +176,6 @@ public class VirtualSensorConfigTest {
                         .build());
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
     @Test
     public void setReportingMode_invalidValue_throwsException() {
         assertThrows(
@@ -205,10 +203,7 @@ public class VirtualSensorConfigTest {
         assertThat(config.getMinDelay()).isEqualTo(0);
         assertThat(config.getMaxDelay()).isEqualTo(0);
         assertThat(config.getFlags()).isEqualTo(0);
-
-        if (Flags.deviceAwareDisplayPower()) {
-            assertThat(config.isWakeUpSensor()).isFalse();
-            assertThat(config.getReportingMode()).isEqualTo(Sensor.REPORTING_MODE_CONTINUOUS);
-        }
+        assertThat(config.isWakeUpSensor()).isFalse();
+        assertThat(config.getReportingMode()).isEqualTo(Sensor.REPORTING_MODE_CONTINUOUS);
     }
 }
