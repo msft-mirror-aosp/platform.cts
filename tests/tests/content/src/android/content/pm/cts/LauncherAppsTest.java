@@ -16,12 +16,16 @@
 
 package android.content.pm.cts;
 
+import static android.Manifest.permission.TEST_LOCK_APPS;
 import static android.content.pm.Flags.FLAG_ARCHIVING;
 import static android.content.pm.cts.util.PackageTestUtils.APP_LOCK_SUPPORTED_APK;
 import static android.content.pm.cts.util.PackageTestUtils.APP_LOCK_SUPPORTED_PACKAGE_NAME;
 import static android.content.pm.cts.util.PackageTestUtils.clearHomeRoleHolderScoped;
 import static android.content.pm.cts.util.PackageTestUtils.hasLockAppsPermission;
 import static android.content.pm.cts.util.PackageTestUtils.installPackageScoped;
+import static android.content.pm.cts.util.PackageTestUtils.setLskfScoped;
+import static android.content.pm.Flags.FLAG_APP_LOCK_SHORTCUT_REMOVAL;
+import static android.security.Flags.FLAG_APP_LOCK_APIS;
 
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.getDefaultLauncher;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.setDefaultLauncher;
@@ -860,6 +864,102 @@ public class LauncherAppsTest {
             assertThat(launcherActivityInfo).isNotNull();
             assertThat(launcherActivityInfo.getApplicationInfo().isAppLockSupported).isFalse();
         }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresAppLockSupported
+    @RequiresFlagsEnabled({FLAG_APP_LOCK_APIS, FLAG_APP_LOCK_SHORTCUT_REMOVAL})
+    @ApiTest(apis = { "android.content.pm.LauncherApps#getShortcutConfigActivityList" })
+    public void testGetShortcutConfigActivityList_forAppLockEnabledPackage_returnsEmpty()
+            throws Exception {
+        try (AutoCloseable withAppLockSupportedAppInstalled = installPackageScoped(
+                APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME);
+                AutoCloseable withLskf = setLskfScoped();
+                AutoCloseable withAppLockEnabledApp = setPackageAppLockEnabledScoped(
+                        APP_LOCK_SUPPORTED_PACKAGE_NAME, mContext.getPackageManager())) {
+            List<LauncherActivityInfo> activities = mLauncherApps.getShortcutConfigActivityList(
+                    APP_LOCK_SUPPORTED_PACKAGE_NAME, UserHandle.of(mContext.getUserId()));
+
+            assertThat(activities).isEmpty();
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresAppLockSupported
+    @RequiresFlagsEnabled({FLAG_APP_LOCK_APIS, FLAG_APP_LOCK_SHORTCUT_REMOVAL})
+    @ApiTest(apis = { "android.content.pm.LauncherApps#getShortcutConfigActivityList" })
+    public void testGetShortcutConfigActivityList_forAppLockDisabledPackage_returnsNonEmpty()
+            throws Exception {
+        try (AutoCloseable withAppLockSupportedAppInstalled = installPackageScoped(
+                APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME)) {
+            List<LauncherActivityInfo> activities = mLauncherApps.getShortcutConfigActivityList(
+                    APP_LOCK_SUPPORTED_PACKAGE_NAME, UserHandle.of(mContext.getUserId()));
+
+            assertThat(activities).isNotEmpty();
+        }
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
+    @RequiresAppLockSupported
+    @RequiresFlagsEnabled({FLAG_APP_LOCK_APIS, FLAG_APP_LOCK_SHORTCUT_REMOVAL})
+    @ApiTest(apis = { "android.content.pm.LauncherApps#getShortcutConfigActivityList" })
+    public void testGetShortcutConfigActivityList_behaviorChangesWithAppLockState()
+            throws Exception {
+        try (AutoCloseable withAppLockSupportedAppInstalled = installPackageScoped(
+                APP_LOCK_SUPPORTED_APK, APP_LOCK_SUPPORTED_PACKAGE_NAME)) {
+            UserHandle userHandle = UserHandle.of(mContext.getUserId());
+
+            // App Lock disabled: list should be non-empty
+            assertThat(mLauncherApps.getShortcutConfigActivityList(APP_LOCK_SUPPORTED_PACKAGE_NAME,
+                    userHandle)).isNotEmpty();
+
+            try (AutoCloseable withLskf = setLskfScoped();
+                    AutoCloseable withAppLockEnabledApp = setPackageAppLockEnabledScoped(
+                            APP_LOCK_SUPPORTED_PACKAGE_NAME, mContext.getPackageManager())) {
+                // App Lock enabled: list should be empty
+                assertThat(mLauncherApps.getShortcutConfigActivityList(
+                        APP_LOCK_SUPPORTED_PACKAGE_NAME, userHandle)).isEmpty();
+            }
+
+            // App Lock disabled again: list should be non-empty
+            assertThat(mLauncherApps.getShortcutConfigActivityList(APP_LOCK_SUPPORTED_PACKAGE_NAME,
+                    userHandle)).isNotEmpty();
+        }
+    }
+
+    /**
+     * Enables App Lock for the specified package and returns an {@link AutoCloseable} that
+     * automatically disables it upon closing. Using {@link PackageManager#setPackageAppLockEnabled}
+     * requires either {@link TEST_LOCK_APPS} or {@link android.Manifest.permission#LOCK_APPS}
+     * permission. This method uses {@link TEST_LOCK_APPS} by adopting shell permission identity.
+     *
+     * <p>This method asserts that the operation to enable App Lock is successful. The returned
+     * {@link AutoCloseable} also asserts that the operation to disable App Lock is successful
+     * when closed.
+     *
+     * <p><b>Preconditions:</b>
+     * <ul>
+     *   <li>A screen lock must be set up on the device. See {@link setLskfScoped}</li>
+     *   <li>The package must support the App Lock feature.</li>
+     * </ul>
+     *
+     * @param packageName the name of the package for which App Lock should be enabled.
+     * @param pm the {@link PackageManager} instance to use for the operation.
+     * @return an {@link AutoCloseable} that disables App Lock for the package when closed.
+     */
+    private AutoCloseable setPackageAppLockEnabledScoped(String packageName, PackageManager pm) {
+        SystemUtil.runWithShellPermissionIdentity(() -> {
+            assertThat(pm.setPackageAppLockEnabled(packageName, /* enabled= */ true)).isTrue();
+        }, TEST_LOCK_APPS);
+
+        return () -> {
+            SystemUtil.runWithShellPermissionIdentity(() -> {
+                assertThat(pm.setPackageAppLockEnabled(packageName, /* enabled= */ false)).isTrue();
+            }, TEST_LOCK_APPS);
+        };
     }
 
     private void registerDefaultObserver() {
