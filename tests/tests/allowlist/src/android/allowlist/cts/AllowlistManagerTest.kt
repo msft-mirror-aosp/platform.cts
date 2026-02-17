@@ -70,7 +70,7 @@ class AllowlistManagerTest {
     fun testQueryAllowlist_withoutPermission_throwsException() {
         val data = Bundle().apply {
             putParcelableArrayList(
-                AllowlistManager.REQUEST_DATA_FILTER_PACKAGES,
+                AllowlistManager.REQUEST_KEY_FILTER_PACKAGES,
                 arrayListOf(testPackage1)
             )
         }
@@ -89,7 +89,7 @@ class AllowlistManagerTest {
         runWithShellPermissionIdentity {
             val data = Bundle().apply {
                 putParcelableArrayList(
-                    AllowlistManager.REQUEST_DATA_FILTER_PACKAGES,
+                    AllowlistManager.REQUEST_KEY_FILTER_PACKAGES,
                     arrayListOf(testPackage1)
                 )
             }
@@ -105,7 +105,7 @@ class AllowlistManagerTest {
             assertThat(response).isNotNull()
             assertThat(response!!.status).isEqualTo(AllowlistManager.RESPONSE_STATUS_SUCCESS)
             val returnedPackages = response.data.getParcelableArrayList<SignedPackage>(
-                AllowlistManager.RESPONSE_DATA_ALLOWED_PACKAGES,
+                AllowlistManager.RESPONSE_KEY_ALLOWED_PACKAGES,
                 SignedPackage::class.java
             )
             assertThat(returnedPackages).containsExactly(testPackage1)
@@ -120,12 +120,12 @@ class AllowlistManagerTest {
         runWithShellPermissionIdentity {
             val data = Bundle().apply {
                 putParcelableArrayList(
-                    AllowlistManager.REQUEST_DATA_FILTER_PACKAGES,
+                    AllowlistManager.REQUEST_KEY_FILTER_PACKAGES,
                     arrayListOf(testPackage1, testPackage2)
                 )
 
                 putParcelableArrayList(
-                    AllowlistManager.REQUEST_DATA_FILTER_TARGETS,
+                    AllowlistManager.REQUEST_KEY_FILTER_TARGETS,
                     arrayListOf(testTarget1)
                 )
             }
@@ -143,7 +143,7 @@ class AllowlistManagerTest {
 
             val allowedAgentsAndTargets =
                 response.data.getParcelable(
-                    AllowlistManager.RESPONSE_DATA_ALLOWED_PACKAGE_MULTI_MAP,
+                    AllowlistManager.RESPONSE_KEY_ALLOWED_PACKAGE_MULTI_MAP,
                     SignedPackageMultiMap::class.java
                 )?.map
 
@@ -162,7 +162,7 @@ class AllowlistManagerTest {
     fun testQueryAllowlist_filterInstalledPackages_success() {
         runWithShellPermissionIdentity {
             val data = Bundle().apply {
-                putBoolean(AllowlistManager.REQUEST_DATA_INSTALLED_PACKAGES_ONLY, true)
+                putBoolean(AllowlistManager.REQUEST_KEY_INSTALLED_PACKAGES_ONLY, true)
             }
             val request = AllowlistRequest(AllowlistManager.ALLOWLIST_ID_TEST, data)
             val latch = CountDownLatch(1)
@@ -176,7 +176,7 @@ class AllowlistManagerTest {
             assertThat(response).isNotNull()
             assertThat(response!!.status).isEqualTo(AllowlistManager.RESPONSE_STATUS_SUCCESS)
             val returnedPackages = response.data.getParcelableArrayList<SignedPackage>(
-                AllowlistManager.RESPONSE_DATA_ALLOWED_PACKAGES,
+                AllowlistManager.RESPONSE_KEY_ALLOWED_PACKAGES,
                 SignedPackage::class.java
             )
             assertThat(returnedPackages).isEmpty()
@@ -214,7 +214,7 @@ class AllowlistManagerTest {
             val latch = CountDownLatch(1)
             val request = AllowlistRequest(AllowlistManager.ALLOWLIST_ID_TEST, Bundle().apply {
                 putParcelableArrayList(
-                    AllowlistManager.REQUEST_DATA_FILTER_PACKAGES,
+                    AllowlistManager.REQUEST_KEY_FILTER_PACKAGES,
                     arrayListOf(testPackage1)
                 )
             })
@@ -247,7 +247,7 @@ class AllowlistManagerTest {
             val latch = CountDownLatch(1)
             val request = AllowlistRequest(AllowlistManager.ALLOWLIST_ID_TEST, Bundle().apply {
                 putParcelableArrayList(
-                    AllowlistManager.REQUEST_DATA_FILTER_PACKAGES,
+                    AllowlistManager.REQUEST_KEY_FILTER_PACKAGES,
                     arrayListOf(testPackage1)
                 )
             })
