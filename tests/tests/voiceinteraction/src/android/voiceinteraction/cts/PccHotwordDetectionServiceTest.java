@@ -87,8 +87,9 @@ public class PccHotwordDetectionServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(
-            android.app.privatecompute.flags.Flags.FLAG_ADOPT_PCC_FRAMEWORK_FOR_HOTWORD_DETECTION)
+    @RequiresFlagsEnabled({
+            android.app.privatecompute.flags.Flags.FLAG_ADOPT_PCC_FRAMEWORK_FOR_HOTWORD_DETECTION,
+            android.app.privatecompute.flags.Flags.FLAG_ENABLE_PCC_FRAMEWORK_SUPPORT})
     public void testHotwordDetectionService_isRunningInPcc() throws Throwable {
         mService.createAlwaysOnHotwordDetector();
         mService.waitSandboxedDetectionServiceInitializedCalledOrException();
