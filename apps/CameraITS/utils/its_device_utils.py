@@ -17,7 +17,9 @@ import logging
 import os
 import subprocess
 
-ITS_TEST_ACTIVITY = 'com.android.cts.verifier/.camera.its.ItsTestActivity'
+ITS_TEST_ACTIVITY = 'com.android.cts.verifier/.camera.its.ItsDefaultTestActivity'
+ITS_FEATURE_COMBINATION_ACTIVITY = \
+    'com.android.cts.verifier/.camera.its.FeatureCombinationTestActivity'
 CTS_VERIFIER_PKG = 'com.android.cts.verifier'
 SYSTEM_USER = '0'
 
@@ -79,10 +81,20 @@ def start_its_test_activity(device_id):
   Args:
     device_id: str; ID of the device.
   """
+  start_its_test_activity_with_name(device_id, ITS_TEST_ACTIVITY)
+
+
+def start_its_test_activity_with_name(device_id, activity_name):
+  """Starts the specified test activity, waking the device if necessary.
+
+  Args:
+    device_id: str; ID of the device.
+    activity_name: str; name of the activity
+  """
   run(f'adb -s {device_id} shell input keyevent KEYCODE_WAKEUP')
   run(f'adb -s {device_id} shell input keyevent KEYCODE_MENU')
   run(f'adb -s {device_id} shell am start -n '
-      f'{ITS_TEST_ACTIVITY} --activity-brought-to-front '
+      f'{activity_name} --activity-brought-to-front '
       '--activity-reorder-to-front')
 
 

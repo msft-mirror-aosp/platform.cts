@@ -97,11 +97,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Test for Camera features that require that the camera be aimed at a specific test scene.
- * This test activity requires a USB connection to a computer, and a corresponding host-side run of
- * the python scripts found in the CameraITS directory.
+ * Abstract test activity class for camera features that require that the camera be aimed at a
+ * specific test scene. This test activity requires a USB connection to a computer, and a
+ * corresponding host-side run of the python scripts found in the CameraITS directory.
  */
-public class ItsTestActivity extends DialogTestListActivity {
+public abstract class ItsTestActivity extends DialogTestListActivity {
     private static final String TAG = "ItsTestActivity";
     private static final String EXTRA_CAMERA_ID = "camera.its.extra.CAMERA_ID";
     private static final String EXTRA_RESULTS = "camera.its.extra.RESULTS";
@@ -282,6 +282,21 @@ public class ItsTestActivity extends DialogTestListActivity {
     private static final int TYPE_REPEAT_INT32 = 2;
     private static final int TYPE_BOOLEAN = 3;
 
+    protected abstract List<String> getSceneIds();
+
+    protected abstract List<String> getHiddenPhysicalCameraSceneIds();
+
+    // Scenes
+    private List<String> mSceneIds;
+    private List<String> mHiddenPhysicalCameraSceneIds;
+
+    protected ItsTestActivity(int layoutId, int titleId, int infoId, int buttonId) {
+        super(layoutId, titleId, infoId, buttonId);
+        this.mSceneIds = Collections.unmodifiableList(getSceneIds());
+        this.mHiddenPhysicalCameraSceneIds =
+                Collections.unmodifiableList(getHiddenPhysicalCameraSceneIds());
+    }
+
     private static final ImmutableMap<String, Integer> mPerfMetricsTypeMap =
             ImmutableMap.<String, Integer>builder()
                     .put("camera_id", TYPE_STRING)
@@ -337,50 +352,6 @@ public class ItsTestActivity extends DialogTestListActivity {
     // to catch type mismatch.
     private static volatile Object sUnused;
 
-    // Scenes
-    private static final List<String> mSceneIds =
-            List.of(
-                    "scene0",
-                    "scene1_1",
-                    "scene1_2",
-                    "scene1_3",
-                    "scene2_a",
-                    "scene2_b",
-                    "scene2_c",
-                    "scene2_d",
-                    "scene2_e",
-                    "scene2_f",
-                    "scene2_g",
-                    "scene3",
-                    "scene4",
-                    "scene5",
-                    "scene6",
-                    "scene8",
-                    "scene9",
-                    "scene_extensions/scene_hdr",
-                    "scene_extensions/scene_low_light",
-                    "scene_tele/scene6_tele",
-                    "scene_tele/scene7_tele",
-                    "scene_video",
-                    "sensor_fusion",
-                    "feature_combination",
-                    "scene_flash",
-                    "scene_ip",
-                    "scene_gen2_chart",
-                    "scene_wide_gamut");
-
-    // This must match scenes of SUB_CAMERA_TESTS in tools/run_all_tests.py
-    private static final List<String> mHiddenPhysicalCameraSceneIds = List.of(
-            "scene0",
-            "scene1_1",
-            "scene1_2",
-            "scene1_3",
-            "scene2_a",
-            "scene4",
-            "scene_tele/scene6_tele",
-            "scene_tele/scene7_tele",
-            "scene_video",
-            "sensor_fusion");
 
     // TODO: cache the following in saved bundle
     private Set<ResultKey> mAllScenes = null;
