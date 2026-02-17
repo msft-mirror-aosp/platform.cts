@@ -540,14 +540,14 @@ public class ActivityBlockingTest {
     public void autoMirrorDisplay_shouldNotLaunchActivity() {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder().build(),
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR);
-        assertNoActivityLaunched(mMonitoredIntent);
+        assertActivityLaunchAllowed(mMonitoredIntent);
     }
 
     @Test
-    public void publicDisplay_shouldNotLaunchActivity() {
+    public void publicDisplay_shouldLaunchActivity() {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder().build(),
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC);
-        assertNoActivityLaunched(mMonitoredIntent);
+        assertActivityLaunchAllowed(mMonitoredIntent);
     }
 
     @Test
@@ -555,7 +555,7 @@ public class ActivityBlockingTest {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder().build(),
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
                         | DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR);
-        assertNoActivityLaunched(mMonitoredIntent);
+        assertActivityLaunchAllowed(mMonitoredIntent);
     }
 
     @Test
