@@ -18,7 +18,7 @@ package {
 
 android_test {
     name: "CtsAppFunctionTestCases",
-    team: "trendy_team_system_intelligence",
+    team: "trendy_team_app_function",
     defaults: ["cts_defaults"],
     libs: [
         "com.android.extensions.appfunctions.stubs",
