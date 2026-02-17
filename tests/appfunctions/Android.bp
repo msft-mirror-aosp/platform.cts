@@ -122,6 +122,7 @@ android_test_helper_app {
     test_suites: [
         "general-tests",
     ],
+    asset_dirs: ["helper-app/assets"],
     manifest: "helper-app/AndroidManifest_sidecar.xml",
 }
 

@@ -15,7 +15,7 @@
   -->
 <appfunctions>
     <appfunction>
-        <function_id>add</function_id>
+        <function_id>add_legacyFunctionId</function_id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts.helper</schema_name>
         <schema_version>1</schema_version>
         <schema_category>utils</schema_category>
@@ -24,7 +24,16 @@
         <restrict_callers_with_execute_app_functions>true</restrict_callers_with_execute_app_functions>
     </appfunction>
     <appfunction>
-        <function_id>add_disabledByDefault</function_id>
+        <id>add</id>
+        <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts.helper</schema_name>
+        <schema_version>1</schema_version>
+        <schema_category>utils</schema_category>
+        <enabled_by_default>true</enabled_by_default>
+        <display_name_string_res>10</display_name_string_res>
+        <restrict_callers_with_execute_app_functions>true</restrict_callers_with_execute_app_functions>
+    </appfunction>
+    <appfunction>
+        <id>add_disabledByDefault</id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts.helper</schema_name>
         <schema_version>1</schema_version>
         <schema_category>utils</schema_category>
@@ -33,7 +42,7 @@
         <restrict_callers_with_execute_app_functions>true</restrict_callers_with_execute_app_functions>
     </appfunction>
     <appfunction>
-        <function_id>noOp</function_id>
+        <id>noOp</id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts.helper</schema_name>
         <schema_version>1</schema_version>
         <schema_category>utils</schema_category>
@@ -42,7 +51,7 @@
         <restrict_callers_with_execute_app_functions>false</restrict_callers_with_execute_app_functions>
     </appfunction>
     <appfunction>
-        <function_id>addWithRestrictCallersWithExecuteAppFunctionsFalse</function_id>
+        <id>addWithRestrictCallersWithExecuteAppFunctionsFalse</id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts.helper</schema_name>
         <schema_version>1</schema_version>
         <enabled_by_default>true</enabled_by_default>
@@ -50,7 +59,7 @@
         <restrict_callers_with_execute_app_functions>false</restrict_callers_with_execute_app_functions>
     </appfunction>
     <appfunction>
-        <function_id>addWithRestrictCallersWithExecuteAppFunctionsTrue</function_id>
+        <id>addWithRestrictCallersWithExecuteAppFunctionsTrue</id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts.helper</schema_name>
         <schema_version>1</schema_version>
         <schema_category>utils</schema_category>
@@ -58,7 +67,7 @@
         <restrict_callers_with_execute_app_functions>true</restrict_callers_with_execute_app_functions>
     </appfunction>
     <appfunction>
-        <function_id>getUris</function_id>
+        <id>getUris</id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts.helper</schema_name>
         <schema_version>1</schema_version>
         <schema_category>utils</schema_category>
@@ -66,7 +75,7 @@
         <restrict_callers_with_execute_app_functions>true</restrict_callers_with_execute_app_functions>
     </appfunction>
     <appfunction>
-        <function_id>echoBytes</function_id>
+        <id>echoBytes</id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts.helper</schema_name>
         <schema_version>1</schema_version>
         <schema_category>utils</schema_category>
@@ -75,7 +84,6 @@
         <restrict_callers_with_execute_app_functions>true</restrict_callers_with_execute_app_functions>
     </appfunction>
     <appfunction>
-        <function_id>add_invokeCallbackTwice</function_id>
         <id>add_invokeCallbackTwice</id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
         <schema_version>1</schema_version>
@@ -86,7 +94,6 @@
         </restrict_callers_with_execute_app_functions>
     </appfunction>
     <appfunction>
-        <function_id>addAsync</function_id>
         <id>addAsync</id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
         <schema_version>1</schema_version>
@@ -97,7 +104,6 @@
         </restrict_callers_with_execute_app_functions>
     </appfunction>
     <appfunction>
-        <function_id>kill</function_id>
         <id>kill</id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
         <schema_version>1</schema_version>
@@ -108,7 +114,6 @@
         </restrict_callers_with_execute_app_functions>
     </appfunction>
     <appfunction>
-        <function_id>uncaughtClientException</function_id>
         <id>uncaughtClientException</id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
         <schema_version>1</schema_version>
@@ -119,7 +124,6 @@
         </restrict_callers_with_execute_app_functions>
     </appfunction>
     <appfunction>
-        <function_id>throwException</function_id>
         <id>throwException</id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
         <schema_version>1</schema_version>
@@ -130,7 +134,6 @@
         </restrict_callers_with_execute_app_functions>
     </appfunction>
     <appfunction>
-        <function_id>longRunningFunction</function_id>
         <id>longRunningFunction</id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
         <enabled_by_default>true</enabled_by_default>

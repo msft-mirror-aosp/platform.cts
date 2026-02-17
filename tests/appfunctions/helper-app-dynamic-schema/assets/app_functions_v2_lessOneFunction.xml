@@ -16,7 +16,6 @@
 <appfunctions>
     <appfunction>
         <id>appFunctionEnabledByDefault</id>
-        <function_id>appFunctionEnabledByDefault</function_id>
         <enabled_by_default>true</enabled_by_default>
         <schemaCategory>myUtils</schemaCategory>
         <schemaVersion>1</schemaVersion>
@@ -30,7 +29,6 @@
     </appfunction>
     <appfunction>
         <id>appFunctionDisabledByDefault_noSchema</id>
-        <function_id>appFunctionDisabledByDefault_noSchema</function_id>
         <enabled_by_default>false</enabled_by_default>
     </appfunction>
     <CustomTopLevelComponent1>
