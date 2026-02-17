@@ -37,7 +37,6 @@ import android.hardware.biometrics.EnumerationResultEnum;
 import android.hardware.biometrics.ModalityEnum;
 import android.hardware.biometrics.SessionTypeEnum;
 import android.hardware.biometrics.UnenrollReasonEnum;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 
 import com.android.compatibility.common.util.NonApiTest;
 import com.android.os.AtomsProto;
@@ -317,7 +316,6 @@ public class BiometricsAtomsTests extends BiometricDeviceTestCase {
         }
     }
 
-    @RequiresFlagsDisabled("com.android.systemui.scene_container")
     @NonApiTest(
             exemptionReasons = {},
             justification = "METRIC")

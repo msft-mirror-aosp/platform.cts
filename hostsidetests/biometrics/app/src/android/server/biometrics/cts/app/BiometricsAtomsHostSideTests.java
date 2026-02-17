@@ -24,7 +24,6 @@ import static android.server.biometrics.cts.FingerprintHostsideConstants.FACE_AU
 import static android.server.biometrics.cts.FingerprintHostsideConstants.FACE_ENROLL_ACQUIRED_MESSAGES;
 import static android.server.biometrics.cts.FingerprintHostsideConstants.FINGERPRINT_AUTH_ACQUIRED_MESSAGES;
 import static android.server.biometrics.cts.FingerprintHostsideConstants.FINGERPRINT_ENROLL_ACQUIRED_MESSAGES;
-import static android.server.wm.UiDeviceUtils.pressMenuButton;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 
@@ -40,15 +39,11 @@ import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.biometrics.BiometricTestSession;
 import android.hardware.biometrics.SensorProperties;
 import android.os.CancellationSignal;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.security.authenticationpolicy.AuthenticationPolicyManager;
 import android.security.authenticationpolicy.DisableSecureLockDeviceParams;
 import android.security.authenticationpolicy.EnableSecureLockDeviceParams;
 import android.server.biometrics.util.SensorStates;
 import android.server.biometrics.util.Utils;
-import android.server.wm.Condition;
 import android.server.wm.LockScreenSession;
 import android.server.wm.UiDeviceUtils;
 import android.server.wm.WindowManagerStateHelper;
@@ -63,11 +58,11 @@ import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.server.biometrics.nano.SensorStateProto;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -78,12 +73,11 @@ import java.util.stream.Collectors;
 
 @RunWith(AndroidJUnit4.class)
 public class BiometricsAtomsHostSideTests {
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String TAG = "BiometricsAtomsHostSideTests";
 
     private static final long WAIT_MS = 2000;
+    private static final long TIMEOUT = 5_000;
     private static final String VIEW_BIOMETRIC_PROMPT_ID = "biometric_scrollview";
     private static final String VIEW_BIOMETRIC_PROMPT_CONFIRM_ID = "button_confirm";
     private static final String SECURE_LOCK_DEVICE_BIOMETRIC_AUTH_ID =
@@ -272,7 +266,6 @@ public class BiometricsAtomsHostSideTests {
         mInstrumentation.waitForIdleSync();
     }
 
-    @RequiresFlagsDisabled("com.android.systemui.scene_container")
     @Test
     public void testSecureLockDeviceStateChanged() throws Exception {
         assumeTrue(
@@ -289,12 +282,9 @@ public class BiometricsAtomsHostSideTests {
         final SensorProperties prop = strongFingerprintSensorProperties.getFirst();
         int sensorId = prop.getSensorId();
 
-        // Need to manually close session because lockScreenSession resets shell permission identity
-        BiometricTestSession session = null;
-        try (LockScreenSession lockScreenSession =
-                new LockScreenSession(mInstrumentation, new WindowManagerStateHelper())) {
-            session = mBiometricManager.createTestSession(sensorId);
-
+        try (BiometricTestSession session = mBiometricManager.createTestSession(sensorId);
+                LockScreenSession lockScreenSession =
+                        new LockScreenSession(mInstrumentation, new WindowManagerStateHelper())) {
             lockScreenSession.setLockCredential();
 
             // Enroll a strong biometric, which is required to enable the feature.
@@ -302,7 +292,6 @@ public class BiometricsAtomsHostSideTests {
             Utils.waitForBusySensor(sensorId);
             session.finishEnroll(mUserId);
             Utils.waitForIdleService();
-            mInstrumentation.waitForIdleSync();
 
             assumeTrue(
                     "Device must support secure lock device",
@@ -333,22 +322,13 @@ public class BiometricsAtomsHostSideTests {
             // Set test mode to false to require two-factor authentication to disable
             mAuthenticationPolicyManager.setSecureLockDeviceTestStatus(false);
 
-            Utils.waitForIdleService();
-            mInstrumentation.waitForIdleSync();
-
-            lockScreenSession.gotoKeyguard();
-            // Show bouncer by pressing the Menu button
-            pressMenuButton();
-            mDevice.waitForIdle();
-
             // Test SecureLockDeviceStateChanged.SecureLockDeviceEventType.
             // DISABLED_TWO_FACTOR_AUTHENTICATION
             // Successful primary authentication for first step of two-factor authentication:
-            lockScreenSession.enterLockCredentialAndConfirm();
+            lockScreenSession.unlock();
 
-            Condition.waitFor(
-                    "strong auth flags were not updated after primary auth during "
-                            + "secure lock device",
+            PollingCheck.waitFor(
+                    TIMEOUT,
                     () -> {
                         try {
                             String dumpsysOutput =
@@ -361,54 +341,45 @@ public class BiometricsAtomsHostSideTests {
                             Log.e(TAG, "Failed to check strong auth flags via dumpsys", e);
                             return false;
                         }
-                    });
+                    },
+                    "strong auth flags were not updated after primary auth during "
+                            + "secure lock device");
 
             // Re-introduce permissions reset by the previous lock session call
             mInstrumentation
                     .getUiAutomation()
                     .adoptShellPermissionIdentity(TEST_BIOMETRIC, MANAGE_SECURE_LOCK_DEVICE);
 
-            Utils.waitForBusySensor(sensorId);
             // Wait for second-factor biometric auth
             mDevice.wait(
                     Until.hasObject(getBySelector(SECURE_LOCK_DEVICE_BIOMETRIC_AUTH_ID)), WAIT_MS);
+            Utils.waitForBusySensor(sensorId);
 
-            for (int code : getAcquiredCodesForAuthenticate(sensorId)) {
-                session.notifyAcquired(mUserId, code);
-                mInstrumentation.waitForIdleSync();
-            }
-
+            // Successful biometric authentication to complete two-factor authentication
             session.acceptAuthentication(mUserId);
-            Utils.waitForIdleService();
 
             UiDeviceUtils.pressWakeupButton();
-            UiDeviceUtils.pressUnlockButton();
+            UiDeviceUtils.pressEnterButton();
 
             mDevice.wait(Until.gone(getBySelector(SECURE_LOCK_DEVICE_BIOMETRIC_AUTH_ID)), WAIT_MS);
 
             // Poll to wait for the asynchronous state change to complete.
-            Condition.waitFor(
+            PollingCheck.waitFor(
+                    TIMEOUT,
+                    () -> !mAuthenticationPolicyManager.isSecureLockDeviceEnabled(),
                     "Secure lock device was not disabled after successful two factor "
-                            + "credential and strong biometric authentication",
-                    () -> !mAuthenticationPolicyManager.isSecureLockDeviceEnabled());
+                            + "credential and strong biometric authentication");
         } finally {
             // Re-introduce permissions in case of errors
             mInstrumentation
                     .getUiAutomation()
                     .adoptShellPermissionIdentity(TEST_BIOMETRIC, MANAGE_SECURE_LOCK_DEVICE);
-            // Prevents SecurityException when closing session in case permissions are dropped by
-            // LockScreenSession permission changes during test
-            if (session != null) {
-                session.close();
-            }
             if (mAuthenticationPolicyManager.isSecureLockDeviceEnabled()) {
                 mAuthenticationPolicyManager.disableSecureLockDevice(
                         new DisableSecureLockDeviceParams("Disabling for test cleanup"));
             }
             mAuthenticationPolicyManager.setSecureLockDeviceTestStatus(false);
-
         }
-        mInstrumentation.waitForIdleSync();
     }
 
     private BySelector getBySelector(String id) {
