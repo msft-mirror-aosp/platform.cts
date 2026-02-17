@@ -84,6 +84,7 @@ public class EmbeddedSCVHService extends Service {
     private WindowManager mWm;
 
     private InputTransferToken mEmbeddedInputTransferToken;
+    private InputTransferToken mHostInputTransferToken;
 
     @Override
     public void onCreate() {
@@ -263,6 +264,7 @@ public class EmbeddedSCVHService extends Service {
             CountDownLatch registeredLatch = new CountDownLatch(2);
             mHandler.post(
                     () -> {
+                        mHostInputTransferToken = hostToken;
                         mNativeSurfaceControl =
                                 nSurfaceControl_create(nSurfaceControl_fromJava(parentSc));
                         long surfaceTransaction = nSurfaceTransaction_create();
@@ -327,6 +329,15 @@ public class EmbeddedSCVHService extends Service {
                 return false;
             }
             return true;
+        }
+
+        @Override
+        public void transferInputFromEmbeddedToHost() {
+            mHandler.post(
+                    () -> {
+                        mWm.transferTouchGesture(
+                                mEmbeddedInputTransferToken, mHostInputTransferToken);
+                    });
         }
 
         @Override
