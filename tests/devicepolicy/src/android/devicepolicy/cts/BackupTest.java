@@ -50,6 +50,7 @@ import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
+import com.android.bedstead.enterprise.annotations.EnsureBackupNotActive;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.ClassRule;
@@ -136,7 +137,7 @@ public final class BackupTest {
     @PolicyDoesNotApplyTest(policy = BackupAppliesToParent.class)
     @Postsubmit(reason = "new test")
     @EnsureHasPermission(BACKUP)
-    @Ignore("b/477541808")
+    @EnsureBackupNotActive
     public void setBackupServiceEnabled_doesNotApply_doesNotSetBackupServiceEnabled() {
         try {
             dpc(sDeviceState).devicePolicyManager().setBackupServiceEnabled(
