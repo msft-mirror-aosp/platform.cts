@@ -76,6 +76,7 @@
         <option name="test-file-name" value="CtsDeviceDeskResourcesApp.apk" />
         <option name="test-file-name" value="CtsDeviceDisplaySizeApp.apk" />
         <option name="test-file-name" value="CtsDeviceKeyboardResourcesApp.apk" />
+        <option name="test-file-name" value="CtsDeviceNavigationResourcesApp.apk" />
         <option name="test-file-name" value="CtsDevicePrereleaseSdkApp.apk" />
         <option name="test-file-name" value="CtsDeviceProfileableApp.apk" />
         <option name="test-file-name" value="CtsMockInputMethod.apk" />
