@@ -18,6 +18,8 @@
     android:versionCode="1">
 
     <uses-sdk android:minSdkVersion="34" android:targetSdkVersion="36" />
+    <!-- Required to start PCC_FOREGROUND_SERVICE to test forceStop functionality -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <application>
 
@@ -27,6 +29,15 @@
             android:privateComputeCore="true">
             <intent-filter>
                 <action android:name="com.example.pccapp.TEST_PCC_SERVICE" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".services.PccForegroundService"
+            android:exported="true"
+            android:privateComputeCore="true">
+            <intent-filter>
+                <action android:name="com.example.pccapp.TEST_PCC_FOREGROUND_SERVICE" />
             </intent-filter>
         </service>
     </application>
