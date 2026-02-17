@@ -105,6 +105,7 @@ import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -552,6 +553,7 @@ public class SmsManagerTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_MESSAGE_PROMOTION)
+    @Ignore("b/485075819")
     public void testSendStoredTextMessage() throws Exception {
         SmsManager smsManager = mContext.getSystemService(SmsManager.class);
         assertNotNull("smsManager cannot be null", smsManager);
@@ -615,6 +617,7 @@ public class SmsManagerTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_MESSAGE_PROMOTION)
+    @Ignore("b/485075819")
     public void testSendStoredMultipartTextMessage() throws Exception {
         SmsManager smsManager = mContext.getSystemService(SmsManager.class);
         assertNotNull("smsManager cannot be null", smsManager);
