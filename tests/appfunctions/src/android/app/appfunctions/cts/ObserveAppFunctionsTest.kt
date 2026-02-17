@@ -515,7 +515,7 @@ class ObserveAppFunctionsTest {
 
             retryAssert {
                 assertThat(observer.updatedPackagesHistory).isEmpty()
-                assertThat(observer.updatedFunctionStatesHistory).hasSize(2)
+                assertThat(observer.updatedFunctionStatesHistory).hasSize(1)
                 assertThat(observer.updatedFunctionStatesHistory.flatten())
                     .containsAtLeastElementsIn(
                         setOf(
