@@ -16,6 +16,7 @@
 package org.hyphonate.megaaudio.common;
 
 import android.media.AudioDeviceInfo;
+import android.media.AudioFormat;
 import android.media.AudioTrack;
 
 /**
@@ -67,12 +68,21 @@ public abstract class BuilderBase {
     protected int mChannelCount = 2;
     protected int mChannelMask = 0;
 
+    protected int mEncoding = 2; // This is the oboe value, which is corresponding to PCM_FLOAT.
+
+    // Keep the value the same as AudioFormat in external/oboe/include/oboe/Definitions.h
+    public static final int ENCODING_PCM_I16 = 1;
+    public static final int ENCODING_PCM_FLOAT = 2;
+
     // Performance Mode Constants
     public static final int PERFORMANCE_MODE_NONE = 10; // AAUDIO_PERFORMANCE_MODE_NONE
     public static final int
             PERFORMANCE_MODE_POWERSAVING = 11;  // AAUDIO_PERFORMANCE_MODE_POWER_SAVING,
     public static final int
             PERFORMANCE_MODE_LOWLATENCY = 12;   // AAUDIO_PERFORMANCE_MODE_LOW_LATENCY
+    // AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED
+    public static final int PERFORMANCE_MODE_POWER_SAVING_OFFLOADED = 13;
+
     /**
      * The performance mode for the created stream. It can be any one of the constants above.
      */
@@ -170,6 +180,34 @@ public abstract class BuilderBase {
      */
     public int getChannelMask() {
         return mChannelMask;
+    }
+
+    /**
+     * Sets the encoding for the created stream.
+     *
+     * @param encoding One of the AudioFormat.ENCODING_ constants.
+     * @return this BuilderBase (for cascaded calls)
+     */
+    public BuilderBase setEncoding(int encoding) {
+        mEncoding = encoding;
+        return this;
+    }
+
+    /**
+     * @return The current encoding for audio I/O.
+     */
+    public int getEncoding() {
+        return mEncoding;
+    }
+
+    /**
+     * @return the encoding for Java builder.
+     */
+    public int getEncodingForJava() {
+        return switch (mEncoding) {
+            case ENCODING_PCM_I16 -> AudioFormat.ENCODING_PCM_16BIT;
+            default -> AudioFormat.ENCODING_PCM_FLOAT;
+        };
     }
 
     /**

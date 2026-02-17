@@ -61,20 +61,6 @@ public:
     //
 
     /**
-     * Build the stream.
-     *
-     * @param channelCount The number of channels in the stream.
-     * @param channelMask  The Channel mask for the stream.
-     * @param sampleRate The sample rate.
-     * @param performanceMode A performance mode constant.
-     * @param sharingMode A sharing mode constant.
-     * @param routeDeviceId The ID of the device to route the stream to/from.
-     * @return A Result code indicating the outcome of the call.
-     */
-    virtual Result buildStream(int32_t channelCount, int32_t channelMask, int32_t sampleRate,
-                       int32_t performanceMode, int32_t sharingMode, int32_t routeDeviceId) = 0;
-
-    /**
      * Opens the stream. I.e. puts it in a state ready to be started.
      * @return  A Result code indicating the outcome of the call.
      */

@@ -187,3 +187,7 @@ bool OboeStream::isMMap() {
     return OboeExtensions::isMMapUsed(mAudioStream.get());
 }
 
+int32_t OboeStream::getBufferCapacityInFrames() {
+    return mAudioStream != nullptr ? mAudioStream->getBufferCapacityInFrames() : -1;
+}
+

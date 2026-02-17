@@ -48,6 +48,8 @@ public:
 
     bool isMMap();
 
+    int32_t getBufferCapacityInFrames();
+
 protected:
     OboeStream(int32_t subtype) : mSubtype(subtype), mStreamStarted(false) {}
 

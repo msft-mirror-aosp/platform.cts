@@ -249,6 +249,13 @@ Java_org_hyphonate_megaaudio_recorder_OboeRecorder_isMMapN(
     return oboeRecorder->isMMap();
 }
 
+JNIEXPORT jint JNICALL
+Java_org_hyphonate_megaaudio_recorder_OboeRecorder_getBufferCapacityN(
+        JNIEnv *env, jobject thiz, jlong native_recorder) {
+    auto oboeRecorder = reinterpret_cast<OboeRecorder*>(native_recorder);
+    return oboeRecorder->getBufferCapacityInFrames();
+}
+
 JNIEXPORT jint JNICALL Java_org_hyphonate_megaaudio_recorder_OboeRecorder_getStreamStateN(
         JNIEnv *env, jobject thiz, jlong native_recorder) {
     auto oboeRecorder = reinterpret_cast<OboeRecorder*>(native_recorder);

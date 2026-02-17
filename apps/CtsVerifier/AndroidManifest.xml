@@ -5499,6 +5499,18 @@
             <meta-data android:name="CddTest" android:value="5.10/C-1-2,C-1-5|5.6/H-1-3" />
         </activity>
 
+        <activity android:name=".audio.AudioMmapOffloadTestActivity"
+            android:exported="true"
+            android:label="@string/audio_mmap_offload_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_audio" />
+            <meta-data android:name="test_required_features" android:value="android.hardware.audio.output" />
+            <meta-data android:name="CddTest" android:value="5.5.4/C-1-1,C-1-2" />
+        </activity>
+
         <activity android:name=".audio.AudioMultichannelMixdownActivity"
             android:exported="true"
             android:label="@string/audio_multichannel_mixdown_test">
