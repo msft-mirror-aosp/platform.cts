@@ -15,13 +15,20 @@
  */
 package com.android.bedstead.harrier
 
+import com.android.bedstead.harrier.BedsteadAnnotationGenerator.isParameterizedAnnotation
+import com.android.bedstead.harrier.BedsteadAnnotationGenerator.maybeReplaceUsingParameterizedTestGenerator
+import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestGenerator
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation
 import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation
+import com.android.bedstead.harrier.annotations.meta.RequireRunOnAnnotation
 import com.android.bedstead.harrier.annotations.parameterized.IncludeNone
+import com.android.bedstead.nene.types.OptionalBoolean
+import com.google.auto.value.AutoAnnotation
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableSet
 import com.google.errorprone.annotations.CanIgnoreReturnValue
+import java.lang.reflect.Method
 
 /** This class exposes a number of annotation-related helper methods. */
 object BedsteadAnnotationGenerator {
@@ -39,6 +46,11 @@ object BedsteadAnnotationGenerator {
         ImmutableList.of("kotlin", "com.android.networkstack.kotlin")
 
     private val mLocator: BedsteadServiceLocator = BedsteadServiceLocator()
+
+    @AutoAnnotation
+    private fun requireRunOnInitialUser(switchedToUser: OptionalBoolean?): RequireRunOnInitialUser {
+        return AutoAnnotation_BedsteadAnnotationGenerator_requireRunOnInitialUser(switchedToUser)
+    }
 
     /**
      * Returns whether a given annotation is a parameterized annotation.
@@ -110,12 +122,30 @@ object BedsteadAnnotationGenerator {
         return IGNORED_ANNOTATION_PREFIXES.stream().anyMatch { annotationPackage.startsWith(it) }
     }
 
+    private fun createRunOnAnnotationsIfNeeded(annotations: List<Annotation>): List<Annotation> {
+        val hasRequireRunOnAnnotation =
+            annotations.any {
+                (it.annotationClass.java.getDeclaredAnnotation(
+                    RequireRunOnAnnotation::class.java
+                ) != null)
+            }
+
+        return if (hasRequireRunOnAnnotation) {
+            listOf()
+        } else {
+            BedsteadJUnit4.getReplacementAnnotations(
+                requireRunOnInitialUser(OptionalBoolean.ANY),
+                ImmutableList.of(),
+            )
+        }
+    }
+
     /**
      * Replace the given annotation using the related [ParameterizedTestGenerator].
      *
      * To be used before general annotation processing.
      */
-    fun maybeReplaceUsingParameterizedTestGenerator(
+    private fun maybeReplaceUsingParameterizedTestGenerator(
         annotation: Annotation,
         classAnnotations: List<Annotation>,
     ): List<Annotation>? {
@@ -129,6 +159,22 @@ object BedsteadAnnotationGenerator {
                 generator.generateReplacementAnnotations(annotation, classAnnotations)
             return replacementAnnotations.sortedByPriority()
         }
+    }
+
+    /**
+     * Replace all given annotations using the related [ParameterizedTestGenerator]. Keep those that
+     * don't have a generator.
+     */
+    private fun maybeReplaceUsingParameterizedTestGenerator(
+        sourceAnnotations: Array<Annotation>,
+        classAnnotations: List<Annotation>,
+    ): List<Annotation> {
+        return sourceAnnotations
+            .flatMap {
+                maybeReplaceUsingParameterizedTestGenerator(it, classAnnotations) ?: listOf(it)
+            }
+            .toList()
+            .sortedByPriority()
     }
 
     /**
@@ -158,5 +204,58 @@ object BedsteadAnnotationGenerator {
         }
 
         return parameterizedAnnotations
+    }
+
+    /**
+     * Creates a list of annotations for the given [Method] that will be used during test execution.
+     *
+     * The steps to generate the list are:
+     * 1. Extract all class and method-level annotations.
+     * 2. Run them through [maybeReplaceUsingParameterizedTestGenerator] to generate bedstead
+     *    replacements.
+     * 3. Run them all through [BedsteadJUnit4.resolveRecursiveAnnotations] to resolve recursive
+     *    annotations.
+     * 4. Ensure that at least one [RequireRunOnAnnotation] is present.
+     */
+    private fun calculateAnnotationsForMethod(
+        method: Method,
+        runtimeClassAnnotations: List<Annotation>,
+        parameterizedAnnotations: ImmutableList<Annotation>,
+    ): ImmutableList<Annotation> {
+        val resultAnnotations: MutableList<Annotation> = ArrayList()
+
+        resultAnnotations.addAll(
+            maybeReplaceUsingParameterizedTestGenerator(
+                method.declaringClass.annotations,
+                runtimeClassAnnotations,
+            )
+        )
+        resultAnnotations.addAll(
+            maybeReplaceUsingParameterizedTestGenerator(method.annotations, runtimeClassAnnotations)
+        )
+
+        BedsteadJUnit4.resolveRecursiveAnnotations(resultAnnotations, parameterizedAnnotations)
+
+        resultAnnotations.addAll(createRunOnAnnotationsIfNeeded(resultAnnotations))
+
+        return ImmutableList.copyOf(resultAnnotations)
+    }
+
+    /** Construct a [BedsteadFrameworkMethod] for the given [Method] and parameterization. */
+    @JvmOverloads
+    fun constructFrameworkMethod(
+        method: Method,
+        runtimeClassAnnotations: List<Annotation>,
+        parameterizedAnnotations: ImmutableList<Annotation> = ImmutableList.of(),
+    ): BedsteadFrameworkMethod {
+        return BedsteadFrameworkMethod(
+            method,
+            calculateAnnotationsForMethod(
+                method,
+                runtimeClassAnnotations,
+                parameterizedAnnotations,
+            ),
+            parameterizedAnnotations,
+        )
     }
 }
