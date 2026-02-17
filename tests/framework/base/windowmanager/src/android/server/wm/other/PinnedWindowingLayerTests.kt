@@ -192,10 +192,12 @@ class PinnedWindowingLayerTests : WindowingLayerTestBase() {
         runPinnedLayerResizableTestSuite {
             val initialBounds = getTaskBounds(PINNED_WINDOWING_LAYER_ACTIVITY)
             val display = mWmState.getDisplay(mainDisplayId)
+            // establishing "base pixel unit" to avoid dp to px rounding issue
+            val pxPer10Dp = dpToPx(10f, display.dpi).toInt()
 
             // Expand by 50dp each axis via left top corner
             var bounds = Rect(initialBounds)
-            var changeByPx = dpToPx(50f, display.dpi)
+            var changeByPx = pxPer10Dp * 5
             bounds.let {
                 it.left -= changeByPx
                 it.top -= changeByPx
@@ -204,7 +206,7 @@ class PinnedWindowingLayerTests : WindowingLayerTestBase() {
 
             // Shrink by 70dp via right bottom corner
             bounds = getTaskBounds(PINNED_WINDOWING_LAYER_ACTIVITY)
-            changeByPx = dpToPx(70f, display.dpi)
+            changeByPx = pxPer10Dp * 7
             bounds.let {
                 it.right -= changeByPx
                 it.bottom -= changeByPx
@@ -213,7 +215,7 @@ class PinnedWindowingLayerTests : WindowingLayerTestBase() {
 
             // Expand by 20dp via top left corner
             bounds = getTaskBounds(PINNED_WINDOWING_LAYER_ACTIVITY)
-            changeByPx = dpToPx(20f, display.dpi)
+            changeByPx = pxPer10Dp * 2
             bounds.let {
                 it.left -= changeByPx
                 it.top -= changeByPx
