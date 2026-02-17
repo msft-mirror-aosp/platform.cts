@@ -15,8 +15,7 @@
   -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="android.cts.backup.delayedfullrestoreapp"
-    android:sharedUserId="android.uid.system">
+    package="android.cts.backup.delayedfullrestoreapp">
 
     <uses-permission android:name="android.permission.SCHEDULE_DELAYED_RESTORE" />
 
