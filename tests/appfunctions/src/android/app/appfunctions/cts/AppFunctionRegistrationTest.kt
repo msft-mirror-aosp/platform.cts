@@ -16,6 +16,7 @@
 package android.app.appfunctions.cts
 
 import android.Manifest
+import android.app.AppInteractionAttribution
 import android.app.appfunctions.AppFunction
 import android.app.appfunctions.AppFunctionException
 import android.app.appfunctions.AppFunctionManager
@@ -31,10 +32,9 @@ import android.app.appfunctions.cts.AppFunctionUtils.clearInteractionAllowlist
 import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunction
 import android.app.appfunctions.cts.AppFunctionUtils.installPackage
 import android.app.appfunctions.cts.AppFunctionUtils.isAppFunctionEnabled
-import android.app.AppInteractionAttribution
 import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabled
-import android.app.appfunctions.testutils.CheckAttribution.Companion.CHECK_ATTRIBUTION_FUNCTION_ID
 import android.app.appfunctions.cts.AppFunctionUtils.setInteractionAllowlist
+import android.app.appfunctions.testutils.CheckAttribution.Companion.CHECK_ATTRIBUTION_FUNCTION_ID
 import android.app.appfunctions.testutils.ConcatStrings
 import android.app.appfunctions.testutils.ConcatStrings.Companion.ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
 import android.app.appfunctions.testutils.ConcatStrings.Companion.CONCAT_STRINGS_FUNCTION_ID
@@ -134,8 +134,8 @@ class AppFunctionRegistrationTest {
         if (android.app.appfunctions.flags.Flags.enableAppFunctionPermissionV2()) {
             AppFunctionUtils.enableAllowlist()
             setInteractionAllowlist(
-                CtsApp.PACKAGE_NAME,
-                listOf(DynamicSchemaHelperApp.PACKAGE_NAME),
+                CtsApp.TEST_ALLOWLIST_PACKAGE,
+                listOf(DynamicSchemaHelperApp.TEST_ALLOWLIST_PACKAGE),
             )
         }
     }
@@ -226,7 +226,7 @@ class AppFunctionRegistrationTest {
             CURRENT_PKG,
             CONCAT_STRINGS_FUNCTION_ID,
             manager,
-            isEnabled = true
+            isEnabled = true,
         )
 
         assertFailsWith<IllegalStateException>() {
@@ -239,7 +239,7 @@ class AppFunctionRegistrationTest {
             CURRENT_PKG,
             LONG_RUNNING_FUNCTION_ID,
             manager,
-            isEnabled = false
+            isEnabled = false,
         )
 
         assertFailsWith<IllegalStateException>() {
@@ -252,7 +252,7 @@ class AppFunctionRegistrationTest {
             CURRENT_PKG,
             LONG_RUNNING_FUNCTION_ID,
             manager,
-            isEnabled = false
+            isEnabled = false,
         )
     }
 
@@ -333,8 +333,7 @@ class AppFunctionRegistrationTest {
             )
             val service = bindToRegistrationService(UpdatableHelperApp.PACKAGE_NAME)
             retryAssert {
-                assertThat(service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID))
-                    .isEqualTo(true)
+                assertThat(service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)).isEqualTo(true)
             }
         } finally {
             uninstallPackage(UpdatableHelperApp.PACKAGE_NAME)
@@ -361,8 +360,7 @@ class AppFunctionRegistrationTest {
             )
             val service = bindToRegistrationService(UpdatableHelperApp.PACKAGE_NAME)
             retryAssert {
-                assertThat(service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID))
-                    .isEqualTo(true)
+                assertThat(service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)).isEqualTo(true)
             }
         } finally {
             uninstallPackage(UpdatableHelperApp.PACKAGE_NAME)
@@ -389,8 +387,7 @@ class AppFunctionRegistrationTest {
             )
             val service = bindToRegistrationService(UpdatableHelperApp.PACKAGE_NAME)
             retryAssert {
-                assertThat(service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID))
-                    .isEqualTo(true)
+                assertThat(service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)).isEqualTo(true)
             }
         } finally {
             uninstallPackage(UpdatableHelperApp.PACKAGE_NAME)
@@ -412,7 +409,7 @@ class AppFunctionRegistrationTest {
             CURRENT_PKG,
             CONCAT_STRINGS_FUNCTION_ID,
             manager,
-            isEnabled = true
+            isEnabled = true,
         )
     }
 
@@ -434,7 +431,7 @@ class AppFunctionRegistrationTest {
             CURRENT_PKG,
             CONCAT_STRINGS_FUNCTION_ID,
             manager,
-            isEnabled = true
+            isEnabled = true,
         )
     }
 
@@ -454,7 +451,7 @@ class AppFunctionRegistrationTest {
             CURRENT_PKG,
             CONCAT_STRINGS_FUNCTION_ID,
             manager,
-            isEnabled = true
+            isEnabled = true,
         )
     }
 
@@ -941,7 +938,6 @@ class AppFunctionRegistrationTest {
         }
     }
 
-
     @Test
     @IncludeRunOnPrimaryUser
     @IncludeRunOnSecondaryUser
@@ -951,7 +947,9 @@ class AppFunctionRegistrationTest {
         service.registerAppFunction(CHECK_ATTRIBUTION_FUNCTION_ID)
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val attribution =
-                AppInteractionAttribution.Builder(AppInteractionAttribution.INTERACTION_TYPE_USER_QUERY)
+                AppInteractionAttribution.Builder(
+                        AppInteractionAttribution.INTERACTION_TYPE_USER_QUERY
+                    )
                     .build()
             val request =
                 ExecuteAppFunctionRequest.Builder(

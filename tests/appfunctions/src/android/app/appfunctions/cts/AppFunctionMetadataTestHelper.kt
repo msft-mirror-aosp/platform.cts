@@ -22,6 +22,7 @@ import android.app.appfunctions.AppFunctionMetadata.PROPERTY_SCHEMA_VERSION
 import android.app.appfunctions.AppFunctionName
 import android.app.appfunctions.AppFunctionPackageMetadata
 import android.app.appfunctions.AppFunctionStaticMetadataHelper
+import android.app.appfunctions.cts.AppFunctionUtils.TestAllowlistPackage
 import android.app.appsearch.GenericDocument
 import kotlin.collections.minus
 
@@ -29,6 +30,9 @@ class AppFunctionMetadataTestHelper {
     object LegacySchemaHelperApp {
         const val PACKAGE_NAME = "android.app.appfunctions.cts.helper"
         const val APK_PATH = TEST_APP_ROOT_FOLDER + "CtsAppFunctionTestHelper.apk"
+        const val CERTIFICATE = "a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc"
+
+        val TEST_ALLOWLIST_PACKAGE = TestAllowlistPackage(PACKAGE_NAME, CERTIFICATE)
 
         object FunctionNames {
             val ADD_ENABLED_BY_DEFAULT = AppFunctionName(PACKAGE_NAME, "add")
@@ -126,6 +130,9 @@ class AppFunctionMetadataTestHelper {
 
     object DynamicSchemaHelperApp {
         const val PACKAGE_NAME = "android.app.appfunctions.cts.dynamic.schema"
+        const val CERTIFICATE = "a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc"
+
+        val TEST_ALLOWLIST_PACKAGE = TestAllowlistPackage(PACKAGE_NAME, CERTIFICATE)
 
         object FunctionNames {
             val ENABLED_BY_DEFAULT = AppFunctionName(PACKAGE_NAME, "appFunctionEnabledByDefault")
@@ -337,6 +344,8 @@ class AppFunctionMetadataTestHelper {
 
     object CtsApp {
         const val PACKAGE_NAME = "android.app.appfunctions.cts"
+        const val CERTIFICATE = "a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc"
+        val TEST_ALLOWLIST_PACKAGE = TestAllowlistPackage(PACKAGE_NAME, CERTIFICATE)
 
         object FunctionNames {
             val THROW_EXCEPTION = AppFunctionName(PACKAGE_NAME, "throwException")
@@ -438,6 +447,22 @@ class AppFunctionMetadataTestHelper {
             const val DYNAMIC_ONLY_FUNCTIONS =
                 TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppAAppLevelFunctionsReg.apk"
         }
+    }
+
+    object ServiceHelperApp {
+        const val PACKAGE_NAME = "android.app.appfunctions.cts.service.helper"
+        const val CERTIFICATE = "a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc"
+        val TEST_ALLOWLIST_PACKAGE = TestAllowlistPackage(PACKAGE_NAME, CERTIFICATE)
+
+        object FunctionNames {
+            val TEST_FUNCTION = AppFunctionName(PACKAGE_NAME, "test")
+        }
+    }
+
+    object SideCarTestHelper {
+        const val PACKAGE_NAME = "android.app.appfunctions.cts.helper.sidecar"
+        const val CERTIFICATE = "a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc"
+        val TEST_ALLOWLIST_PACKAGE = TestAllowlistPackage(PACKAGE_NAME, CERTIFICATE)
     }
 
     companion object {

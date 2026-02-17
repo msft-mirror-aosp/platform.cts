@@ -269,11 +269,17 @@ object AppFunctionUtils {
     }
 
     /** Sets interaction allowlist. */
-    fun setInteractionAllowlist(agentPackageName: String, appPackageNames: List<String>) {
+    fun setInteractionAllowlist(
+        agentPackage: TestAllowlistPackage,
+        appPackages: List<TestAllowlistPackage>,
+    ) {
         assertThat(
                 ShellCommand.builder("cmd app_function set-test-allowlist-entry")
-                    .addOption("--agent-package", agentPackageName)
-                    .addOption("--app-packages", appPackageNames.joinToString(separator = ","))
+                    .addOption("--agent-package", agentPackage.format())
+                    .addOption(
+                        "--app-packages",
+                        appPackages.joinToString(separator = ",") { it.format() },
+                    )
                     .execute()
             )
             .isEqualTo("Set test allowlist entry\n")
@@ -284,20 +290,35 @@ object AppFunctionUtils {
         ShellCommand.builder("cmd app_function clear-test-allowlist").execute()
     }
 
-    /**
-     * Runs [runnable] with interaction between [agentPackageName] and [appPackageNames]
-     * allowlisted.
-     */
+    /** Runs [runnable] with interaction between [agentPackage] and [appPackages] allowlisted. */
     suspend fun runWithInteractionAllowlisted(
-        agentPackageName: String,
-        appPackageNames: List<String>,
+        agentPackage: TestAllowlistPackage,
+        appPackages: List<TestAllowlistPackage>,
         runnable: suspend () -> Unit,
     ) {
-        setInteractionAllowlist(agentPackageName, appPackageNames)
+        setInteractionAllowlist(agentPackage, appPackages)
         try {
             runnable.invoke()
         } finally {
             clearInteractionAllowlist()
+        }
+    }
+
+    /**
+     * The package that can be used to add to AppFunction allowlist.
+     *
+     * To retrieve the certificate for a test APK,
+     * 1. Run `m <BuildTarget>` (e.g., `m CtsAppFunctionsTestHelper`)
+     * 2. Look up the APK file from output directory
+     * 3. Run `apksigner verify --print-certs <APK file name>` to get SHA-256 digest.
+     */
+    data class TestAllowlistPackage(val packageName: String, val certificate: String? = null) {
+        internal fun format(): String {
+            return if (certificate == null) {
+                packageName
+            } else {
+                "$packageName:$certificate"
+            }
         }
     }
 

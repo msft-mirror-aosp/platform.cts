@@ -86,7 +86,10 @@ class AppFunctionInteractionHistoryTest {
         TestAppFunctionServiceLifecycleReceiver.reset()
         if (Flags.enableAppFunctionPermissionV2()) {
             AppFunctionUtils.enableAllowlist()
-            setInteractionAllowlist(CtsApp.PACKAGE_NAME, listOf(LegacySchemaHelperApp.PACKAGE_NAME))
+            setInteractionAllowlist(
+                CtsApp.TEST_ALLOWLIST_PACKAGE,
+                listOf(LegacySchemaHelperApp.TEST_ALLOWLIST_PACKAGE),
+            )
         }
     }
 
