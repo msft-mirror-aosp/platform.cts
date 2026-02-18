@@ -75,8 +75,10 @@
         <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$TranslucentCallbackTrackingActivity"
              android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
 
+        <!-- The "android:configChanges:screenSize|density"below is to prevent activity recreation
+             during tests on AAOS builds. -->
         <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$ShowWhenLockedCallbackTrackingActivity"
-                  android:configChanges="keyboard|keyboardHidden|navigation" />
+                  android:configChanges="screenSize|density|keyboard|keyboardHidden|navigation" />
 
         <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$SecondProcessCallbackTrackingActivity"
              android:process=":SecondProcess"
