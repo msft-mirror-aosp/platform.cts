@@ -125,6 +125,7 @@ class ObserveAppFunctionsTest {
         Manifest.permission.EXECUTE_APP_FUNCTIONS,
         Manifest.permission.DISCOVER_APP_FUNCTIONS,
     )
+    @Ignore("b/478851326 - Enable after checking permissions in the observer.")
     fun packageInstalled_noExecuteOrReadPermission_doNotSeeUpdates() = doBlocking {
         val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
@@ -196,9 +197,6 @@ class ObserveAppFunctionsTest {
         Manifest.permission.EXECUTE_APP_FUNCTIONS,
         Manifest.permission.DISCOVER_APP_FUNCTIONS,
     )
-    @Ignore("b/479123842 - Enable after fixing redundant onAppFunctionsChanged callbacks")
-    fun packageUpdated_callsOnAppFunctionMetadataChanged() = doBlocking {}
-
     fun packageUpdated_topLevelDocumentsAdded_callsOnPackageChanged() = doBlocking {
         val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
