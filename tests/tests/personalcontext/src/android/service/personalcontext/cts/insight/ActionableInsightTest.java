@@ -18,6 +18,7 @@ package android.service.personalcontext.cts.insight;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.content.Intent;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -79,7 +80,7 @@ public class ActionableInsightTest {
                         .build();
         final ActionableInsight insight =
                 new ActionableInsight.Builder(
-                                new InsightActionDetails.Builder().build(),
+                                new InsightActionDetails.Builder().setIntent(new Intent()).build(),
                                 new InsightDisplayDetails.Builder("test").build())
                         .addOriginHint(originHint)
                         .build();
