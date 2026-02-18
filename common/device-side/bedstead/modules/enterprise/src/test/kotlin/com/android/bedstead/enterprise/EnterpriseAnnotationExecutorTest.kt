@@ -24,6 +24,7 @@ import android.os.Build
 import android.os.Bundle
 import com.android.bedstead.enterprise.annotations.DEFAULT_DPC_KEY
 import com.android.bedstead.enterprise.annotations.DEFAULT_KEY
+import com.android.bedstead.enterprise.annotations.EnsureBackupNotActive
 import com.android.bedstead.enterprise.annotations.EnsureHasDelegate
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceAdmin
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceController
@@ -43,6 +44,7 @@ import com.android.bedstead.enterprise.annotations.EnsureTestAppInstalledAsPrima
 import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest
 import com.android.bedstead.enterprise.annotations.MostRestrictiveCoexistenceTest
 import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnAffiliatedDeviceOwnerSecondaryUser
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnBackgroundDeviceOwnerUser
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideManagedProfileUsingParentInstance
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfileUsingParentInstance
@@ -911,6 +913,16 @@ class EnterpriseAnnotationExecutorTest {
     @Test
     fun additionalQueryParameters_ensureTestAppInstalled_isRespected() {
         assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(28)
+    }
+
+    @Test
+    @IncludeRunOnSecondaryUserInDifferentProfileGroupToProfileOwnerProfile
+    @EnsureBackupNotActive(onUser = UserType.INSTRUMENTED_USER)
+    fun ensureBackupNotActive_secondaryUser_backupIsInactive() {
+        assertThat(
+            sDeviceState.dpc().devicePolicyManager()
+                .isBackupServiceEnabled(sDeviceState.dpc().componentName())
+        ).isFalse()
     }
 
     companion object {

@@ -16,7 +16,10 @@
 
 package com.android.bedstead.harrier;
 
+import android.util.Log;
+
 import androidx.annotation.Nullable;
+
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestGenerator;
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestWithArgumentGenerator;
@@ -31,11 +34,23 @@ import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser;
 import com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.types.OptionalBoolean;
+
 import com.google.auto.value.AutoAnnotation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
+import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runner.notification.RunNotifier;
+import org.junit.runners.BlockJUnit4ClassRunner;
+import org.junit.runners.model.FrameworkMethod;
+import org.junit.runners.model.InitializationError;
+import org.junit.runners.model.Statement;
+import org.junit.runners.model.TestClass;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Parameter;
@@ -50,15 +65,6 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runner.notification.RunNotifier;
-import org.junit.runners.BlockJUnit4ClassRunner;
-import org.junit.runners.model.FrameworkMethod;
-import org.junit.runners.model.InitializationError;
-import org.junit.runners.model.Statement;
-import org.junit.runners.model.TestClass;
 
 /**
  * A JUnit test runner for use with Bedstead.
@@ -283,6 +289,23 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         super(testClass);
     }
 
+    private static void dumpFullTestDetails(List<FrameworkMethod> frameworkMethods) {
+        Log.i(LOG_TAG, "==== Begin Test dump ====");
+        for (FrameworkMethod method : frameworkMethods) {
+            Log.i(LOG_TAG, method.getName());
+            Log.i(LOG_TAG, "Annotations: " + method.getAnnotations().length);
+            for (Annotation annotation : method.getAnnotations()) {
+                if (annotation.annotationType().getTypeName().equals("kotlin.Metadata")) {
+                    Log.i(LOG_TAG, " @kotlin.Metadata");
+                } else {
+                    Log.i(LOG_TAG, " " + annotation.toString());
+                }
+            }
+            Log.i(LOG_TAG, "");
+        }
+        Log.i(LOG_TAG, "==== End Test dump ====");
+    }
+
     private static List<FrameworkMethod> getBasicTests(TestClass testClass) {
         return testClass.getAnnotatedMethods().stream().filter(
                 method -> method.getAnnotation(Test.class) != null
@@ -369,6 +392,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         // to cut this out (this method only seems to be called once)
         List<FrameworkMethod> basicTests = getBasicTests(getTestClass());
         List<FrameworkMethod> modifiedTests = new ArrayList<>();
+        long startTime = System.currentTimeMillis();
 
         for (FrameworkMethod m : basicTests) {
             Set<Annotation> parameterizedAnnotations =
@@ -411,6 +435,17 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         modifiedTests =
                 FrameworkMethodSorter.sort(generateGeneralParameterizationMethods(modifiedTests));
 
+        if (isDebug()) {
+            dumpFullTestDetails(modifiedTests);
+        }
+
+        Log.i(
+                LOG_TAG,
+                "computeTestMethod for class "
+                        + getTestClass().getName()
+                        + " took "
+                        + (System.currentTimeMillis() - startTime)
+                        + "ms");
         return modifiedTests;
     }
 

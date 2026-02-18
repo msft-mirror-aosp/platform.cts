@@ -65,8 +65,8 @@ import static android.content.pm.cts.PackageManagerShellCommandIncrementalTest.p
 import static android.content.pm.cts.util.PackageTestUtils.APP_LOCK_SUPPORTED_APK;
 import static android.content.pm.cts.util.PackageTestUtils.APP_LOCK_SUPPORTED_APP_LABEL;
 import static android.content.pm.cts.util.PackageTestUtils.APP_LOCK_SUPPORTED_PACKAGE_NAME;
-import static android.content.pm.cts.util.PackageTestUtils.HEADLESS_APK;
-import static android.content.pm.cts.util.PackageTestUtils.HEADLESS_APP_PACKAGE_NAME;
+import static android.content.pm.cts.util.PackageTestUtils.EMPTY_TEST_APP_APK;
+import static android.content.pm.cts.util.PackageTestUtils.EMPTY_TEST_APP_PACKAGE_NAME;
 import static android.content.pm.cts.util.PackageTestUtils.clearLskfScoped;
 import static android.content.pm.cts.util.PackageTestUtils.createSupervisedUserScoped;
 import static android.content.pm.cts.util.PackageTestUtils.getSystemResourceName;
@@ -4437,12 +4437,12 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
     public void testGetEnableAppLockIntentForPackage_headlessPackage_returnsNull() throws
                 Exception {
         try (AutoCloseable withHeadlessAppInstalled =
-                installPackageScoped(HEADLESS_APK, HEADLESS_APP_PACKAGE_NAME)) {
+                installPackageScoped(EMPTY_TEST_APP_APK, EMPTY_TEST_APP_PACKAGE_NAME)) {
             try (AutoCloseable homeRole = setHomeRoleHolderScoped(mContext)) {
                 assertThat(hasLockAppsPermission(mContext)).isTrue();
 
                 assertThat(mPackageManager.getEnableAppLockIntentForPackage(
-                        HEADLESS_APP_PACKAGE_NAME, /* enabled= */ true)).isNull();
+                        EMPTY_TEST_APP_PACKAGE_NAME, /* enabled= */ true)).isNull();
             }
         }
     }

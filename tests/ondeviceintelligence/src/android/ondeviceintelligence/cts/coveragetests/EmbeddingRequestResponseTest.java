@@ -19,11 +19,14 @@ package android.ondeviceintelligence.cts.coveragetests;
 import static android.app.ondeviceintelligence.flags.Flags.FLAG_ON_DEVICE_INTELLIGENCE_26Q2;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import android.app.ondeviceintelligence.Content;
 import android.app.ondeviceintelligence.Part;
 import android.app.ondeviceintelligence.embedding.EmbeddingRequest;
 import android.app.ondeviceintelligence.embedding.EmbeddingVector;
+import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -61,5 +64,20 @@ public class EmbeddingRequestResponseTest {
 
         EmbeddingVector vector2 = new EmbeddingVector(new float[] {1.0f}, new int[] {1});
         assertThat(vector2.getShape()).isEqualTo(new int[] {1});
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ON_DEVICE_INTELLIGENCE_26Q2)
+    public void testEmbeddingRequestClose() throws Exception {
+        ParcelFileDescriptor mockPfd = mock(ParcelFileDescriptor.class);
+        Part part = Part.createBlob(mockPfd, 3);
+        Content content = new Content(List.of(part));
+        EmbeddingRequest request = new EmbeddingRequest(List.of(content));
+        try {
+            request.close();
+        } catch (Exception e) {
+            // ignore
+        }
+        verify(mockPfd).close();
     }
 }

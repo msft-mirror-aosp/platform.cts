@@ -22,6 +22,7 @@ import android.app.appfunctions.AppFunctionMetadata.PROPERTY_SCHEMA_VERSION
 import android.app.appfunctions.AppFunctionName
 import android.app.appfunctions.AppFunctionPackageMetadata
 import android.app.appfunctions.AppFunctionStaticMetadataHelper
+import android.app.appfunctions.cts.AppFunctionUtils.TestAllowlistPackage
 import android.app.appsearch.GenericDocument
 import kotlin.collections.minus
 
@@ -29,6 +30,9 @@ class AppFunctionMetadataTestHelper {
     object LegacySchemaHelperApp {
         const val PACKAGE_NAME = "android.app.appfunctions.cts.helper"
         const val APK_PATH = TEST_APP_ROOT_FOLDER + "CtsAppFunctionTestHelper.apk"
+        const val CERTIFICATE = "a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc"
+
+        val TEST_ALLOWLIST_PACKAGE = TestAllowlistPackage(PACKAGE_NAME, CERTIFICATE)
 
         object FunctionNames {
             val ADD_ENABLED_BY_DEFAULT = AppFunctionName(PACKAGE_NAME, "add")
@@ -126,6 +130,9 @@ class AppFunctionMetadataTestHelper {
 
     object DynamicSchemaHelperApp {
         const val PACKAGE_NAME = "android.app.appfunctions.cts.dynamic.schema"
+        const val CERTIFICATE = "a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc"
+
+        val TEST_ALLOWLIST_PACKAGE = TestAllowlistPackage(PACKAGE_NAME, CERTIFICATE)
 
         object FunctionNames {
             val ENABLED_BY_DEFAULT = AppFunctionName(PACKAGE_NAME, "appFunctionEnabledByDefault")
@@ -138,6 +145,9 @@ class AppFunctionMetadataTestHelper {
 
             val DYNAMIC_ACTIVITY_CONCAT_STRINGS =
                 AppFunctionName(PACKAGE_NAME, "activityConcatStrings")
+
+            val DYNAMIC_ACTIVITY_DISABLED_BY_DEFAULT =
+                AppFunctionName(PACKAGE_NAME, "activityDisabledByDefault")
 
             val DYNAMIC_LONG_RUNNING = AppFunctionName(PACKAGE_NAME, "contextLongRunning")
 
@@ -159,6 +169,9 @@ class AppFunctionMetadataTestHelper {
 
             val APP_LEVEL_FUNCTIONS: Set<AppFunctionName> =
                 setOf(
+                    DYNAMIC_ACTIVITY_CONCAT_STRINGS,
+                    DYNAMIC_ACTIVITY_DISABLED_BY_DEFAULT,
+                    ACTIVITY_SCOPE,
                     DYNAMIC_CONCAT_STRINGS,
                     DYNAMIC_LONG_RUNNING,
                     DYNAMIC_OUTPUT_INVALID_ARGUMENT,
@@ -168,8 +181,6 @@ class AppFunctionMetadataTestHelper {
                     DYNAMIC_STOP_PROCESS,
                     DYNAMIC_GET_URIS,
                     GLOBAL_SCOPE,
-                    ACTIVITY_SCOPE,
-                    DYNAMIC_ACTIVITY_CONCAT_STRINGS,
                     CONTEXT_CHECK_ATTRIBUTION,
                 )
 
@@ -178,7 +189,12 @@ class AppFunctionMetadataTestHelper {
 
             val ALL_FUNCTIONS = APP_LEVEL_FUNCTIONS + SERVICE_LEVEL_FUNCTIONS
 
-            val ACTIVITY_SCOPED_FUNCTIONS = setOf(ACTIVITY_SCOPE, DYNAMIC_ACTIVITY_CONCAT_STRINGS)
+            val ACTIVITY_SCOPED_FUNCTIONS =
+                setOf(
+                    ACTIVITY_SCOPE,
+                    DYNAMIC_ACTIVITY_CONCAT_STRINGS,
+                    DYNAMIC_ACTIVITY_DISABLED_BY_DEFAULT,
+                )
 
             val ALL_GLOBAL_FUNCTIONS = ALL_FUNCTIONS - ACTIVITY_SCOPED_FUNCTIONS
 
@@ -337,6 +353,8 @@ class AppFunctionMetadataTestHelper {
 
     object CtsApp {
         const val PACKAGE_NAME = "android.app.appfunctions.cts"
+        const val CERTIFICATE = "a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc"
+        val TEST_ALLOWLIST_PACKAGE = TestAllowlistPackage(PACKAGE_NAME, CERTIFICATE)
 
         object FunctionNames {
             val THROW_EXCEPTION = AppFunctionName(PACKAGE_NAME, "throwException")
@@ -438,6 +456,22 @@ class AppFunctionMetadataTestHelper {
             const val DYNAMIC_ONLY_FUNCTIONS =
                 TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppAAppLevelFunctionsReg.apk"
         }
+    }
+
+    object ServiceHelperApp {
+        const val PACKAGE_NAME = "android.app.appfunctions.cts.service.helper"
+        const val CERTIFICATE = "a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc"
+        val TEST_ALLOWLIST_PACKAGE = TestAllowlistPackage(PACKAGE_NAME, CERTIFICATE)
+
+        object FunctionNames {
+            val TEST_FUNCTION = AppFunctionName(PACKAGE_NAME, "test")
+        }
+    }
+
+    object SideCarTestHelper {
+        const val PACKAGE_NAME = "android.app.appfunctions.cts.helper.sidecar"
+        const val CERTIFICATE = "a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc"
+        val TEST_ALLOWLIST_PACKAGE = TestAllowlistPackage(PACKAGE_NAME, CERTIFICATE)
     }
 
     companion object {

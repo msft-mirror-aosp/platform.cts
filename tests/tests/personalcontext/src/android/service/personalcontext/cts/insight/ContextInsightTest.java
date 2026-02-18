@@ -109,7 +109,6 @@ public class ContextInsightTest {
 
         final BundleInsight insight =
                 new BundleInsight.Builder()
-                        .setOriginatingComponentId(mUnderstander.getComponentIdProvider())
                         .addOriginHint(signedHint)
                         .addToken(tokenA)
                         .addToken(tokenB)
@@ -145,7 +144,6 @@ public class ContextInsightTest {
 
         final BundleInsight insight =
                 new BundleInsight.Builder()
-                        .setOriginatingComponentId(mUnderstander.getComponentIdProvider())
                         .setDataBundle(data)
                         .build();
 

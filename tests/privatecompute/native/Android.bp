@@ -1,0 +1,24 @@
+cc_test {
+    name: "CtsPccSandboxManagerNativeTest",
+    defaults: ["cts_defaults"],
+    team: "trendy_team_private_compute_core",
+    srcs: [
+        "PccSandboxManagerNativeTest.cpp",
+        ":pcc_sandbox_manager_native_aidl",
+    ],
+    aidl: {
+        include_dirs: [
+            "frameworks/base/core/java",
+            "frameworks/native/aidl/binder",
+        ],
+    },
+    shared_libs: [
+        "libbinder",
+        "libutils",
+    ],
+    static_libs: [
+        "libgtest",
+        "libgmock",
+    ],
+    test_suites: ["cts"],
+}

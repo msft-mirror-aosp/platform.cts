@@ -238,6 +238,7 @@ android_test {
         "flag-junit",
         "androidx.test.rules",
         "sts-device-util",
+        "bedstead-enterprise",
     ],
     srcs: [
         "src/android/content/pm/**/*.java",
@@ -264,7 +265,7 @@ android_test {
         ":CtsIntentResolutionTestApp",
         ":CtsContentNoApplicationTestApp",
         ":CtsContentShellTestApp",
-        ":CtsHeadlessApp",
+        ":CtsEmptyTestApp",
         ":CtsTargetSdk23TestApp",
         ":CtsTargetSdk24TestApp",
         ":CtsQueryPackagesTestApp",
@@ -475,7 +476,11 @@ android_ravenwood_test {
         "androidx.test.uiautomator_uiautomator",
         "compatibility-device-util-axt-ravenwood",
         "sts-device-util",
+        "bedstead-enterprise",
     ],
+    ravenizer: {
+        strip_mockito: true,
+    },
     srcs: [
         "src/android/content/cts/util/XmlUtils.java",
         "src/android/content/cts/ClipboardManagerTest.java",
@@ -531,7 +536,11 @@ android_ravenwood_test {
         "services.core",
         "CtsContentUtils",
         "flag-junit",
+        "bedstead-enterprise",
     ],
+    ravenizer: {
+        strip_mockito: true,
+    },
     platform_apis: true,
     auto_gen_config: true,
 }

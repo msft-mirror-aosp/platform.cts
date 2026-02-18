@@ -19,6 +19,8 @@ package android.app.appfunctions.cts
 import android.Manifest
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.ExecuteAppFunctionRequest
+import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.CtsApp
+import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.ServiceHelperApp
 import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunction
 import android.app.appfunctions.cts.AppFunctionUtils.runWithInteractionAllowlisted
 import android.app.appfunctions.flags.Flags
@@ -65,14 +67,19 @@ class AppFunctionServiceTest {
     @RequireFlagsDisabled(Flags.FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
     @Test
     fun callAppFunctionService_hasAccessToCallingPackageInfo() = doBlocking {
-        val request = ExecuteAppFunctionRequest.Builder(TEST_PACKAGE_NAME, TEST_FUNCTION_ID).build()
+        val request =
+            ExecuteAppFunctionRequest.Builder(
+                    ServiceHelperApp.PACKAGE_NAME,
+                    ServiceHelperApp.FunctionNames.TEST_FUNCTION.functionIdentifier,
+                )
+                .build()
 
         val response = manager.executeAppFunction(request)
 
         assertThat(response.exceptionOrNull()).isNull()
         val result = response.getOrNull()
         assertThat(result!!.resultDocument.getPropertyString("callingPackage"))
-            .isEqualTo(CURR_PACKAGE_NAME)
+            .isEqualTo(CtsApp.PACKAGE_NAME)
         assertThat(result.resultDocument.getPropertyBoolean("hasCallingPackageSigningInfo"))
             .isTrue()
     }
@@ -82,11 +89,15 @@ class AppFunctionServiceTest {
     @Test
     fun callAppFunctionService_doesNotHaveAccessToCallingPackage() = doBlocking {
         runWithInteractionAllowlisted(
-            agentPackageName = CURR_PACKAGE_NAME,
-            appPackageNames = listOf(TEST_PACKAGE_NAME),
+            agentPackage = CtsApp.TEST_ALLOWLIST_PACKAGE,
+            appPackages = listOf(ServiceHelperApp.TEST_ALLOWLIST_PACKAGE),
         ) {
             val request =
-                ExecuteAppFunctionRequest.Builder(TEST_PACKAGE_NAME, TEST_FUNCTION_ID).build()
+                ExecuteAppFunctionRequest.Builder(
+                        ServiceHelperApp.PACKAGE_NAME,
+                        ServiceHelperApp.FunctionNames.TEST_FUNCTION.functionIdentifier,
+                    )
+                    .build()
 
             val response = manager.executeAppFunction(request)
 
@@ -102,9 +113,5 @@ class AppFunctionServiceTest {
 
     private companion object {
         @JvmField @ClassRule @Rule val sDeviceState: DeviceState = DeviceState()
-
-        const val CURR_PACKAGE_NAME = "android.app.appfunctions.cts"
-        const val TEST_PACKAGE_NAME = "android.app.appfunctions.cts.service.helper"
-        const val TEST_FUNCTION_ID = "test"
     }
 }

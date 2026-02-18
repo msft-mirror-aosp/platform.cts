@@ -23,14 +23,15 @@ import static android.content.pm.ApplicationInfo.CATEGORY_UNDEFINED;
 import static android.content.pm.ApplicationInfo.FLAG_SUPPORTS_RTL;
 import static android.content.pm.cts.util.PackageTestUtils.APP_LOCK_SUPPORTED_APK;
 import static android.content.pm.cts.util.PackageTestUtils.APP_LOCK_SUPPORTED_PACKAGE_NAME;
-import static android.content.pm.cts.util.PackageTestUtils.HEADLESS_APK;
-import static android.content.pm.cts.util.PackageTestUtils.HEADLESS_APP_PACKAGE_NAME;
-import static android.content.pm.cts.util.PackageTestUtils.createManagedProfileScoped;
+import static android.content.pm.cts.util.PackageTestUtils.EMPTY_TEST_APP_APK;
+import static android.content.pm.cts.util.PackageTestUtils.EMPTY_TEST_APP_PACKAGE_NAME;
 import static android.content.pm.cts.util.PackageTestUtils.createSupervisedUserScoped;
 import static android.content.pm.cts.util.PackageTestUtils.hasLockAppsPermission;
 import static android.content.pm.cts.util.PackageTestUtils.installPackageScopedForUser;
 import static android.content.pm.cts.util.PackageTestUtils.installPackageScoped;
 import static android.content.pm.cts.util.PackageTestUtils.setHomeRoleHolderScoped;
+
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -54,7 +55,6 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.ResolveInfo;
 import android.content.pm.cts.util.AppLockSupportRule;
-import android.content.pm.cts.util.PackageTestUtils.ScopedManagedProfile;
 import android.content.pm.cts.util.PackageTestUtils.ScopedSupervisedUser;
 import android.content.pm.cts.util.RequiresAppLockSupported;
 import android.os.Build;
@@ -73,10 +73,13 @@ import android.util.StringBuilderPrinter;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.harrier.DeviceState;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.sts.common.LockSettingsUtil;
 
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -92,6 +95,10 @@ public class ApplicationInfoTest {
 
     @Rule
     public final AppLockSupportRule mAppLockSupportRule = new AppLockSupportRule();
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     private static final String SYNC_ACCOUNT_ACCESS_STUB_PACKAGE_NAME = "com.android.cts.stub";
     private static final String DIRECT_BOOT_UNAWARE_PACKAGE_NAME =
@@ -514,13 +521,13 @@ public class ApplicationInfoTest {
         final PackageManager packageManager = context.getPackageManager();
 
         try (AutoCloseable withHeadlessApp =
-                        installPackageScoped(HEADLESS_APK, HEADLESS_APP_PACKAGE_NAME);
+                        installPackageScoped(EMPTY_TEST_APP_APK, EMPTY_TEST_APP_PACKAGE_NAME);
                 AutoCloseable withLockAppsPermission = setHomeRoleHolderScoped(context)) {
             assertThat(hasLockAppsPermission(context)).isTrue();
 
             final ApplicationInfo info =
                     packageManager.getApplicationInfo(
-                            HEADLESS_APP_PACKAGE_NAME,
+                            EMPTY_TEST_APP_PACKAGE_NAME,
                             PackageManager.ApplicationInfoFlags.of(
                                     PackageManager.GET_APP_LOCK_INFO));
 
@@ -774,6 +781,7 @@ public class ApplicationInfoTest {
     }
 
     @Test
+    @EnsureHasWorkProfile
     @DisabledOnRavenwood(blockedBy = PackageManager.class)
     @RequiresFlagsEnabled(android.security.Flags.FLAG_APP_LOCK_APIS)
     @RequiresAppLockSupported
@@ -785,20 +793,19 @@ public class ApplicationInfoTest {
             throws Exception {
         final Context context = getContext();
         final PackageManager packageManager = context.getPackageManager();
+        final UserHandle managedProfile = workProfile(sDeviceState).userHandle();
 
         try (AutoCloseable roleContext = setHomeRoleHolderScoped(context)) {
-            try (ScopedManagedProfile managedProfile = createManagedProfileScoped(context)) {
-                try (AutoCloseable targetApp = installPackageScopedForUser(APP_LOCK_SUPPORTED_APK,
-                        APP_LOCK_SUPPORTED_PACKAGE_NAME, managedProfile.getUser())) {
+            try (AutoCloseable targetApp = installPackageScopedForUser(APP_LOCK_SUPPORTED_APK,
+                    APP_LOCK_SUPPORTED_PACKAGE_NAME, managedProfile)) {
                     final ApplicationInfo infoWithPermission =
                             packageManager.getApplicationInfoAsUser(
                                     APP_LOCK_SUPPORTED_PACKAGE_NAME,
                                     PackageManager.ApplicationInfoFlags.of(
                                             PackageManager.GET_APP_LOCK_INFO),
-                                                managedProfile.getUser().getIdentifier());
+                                                managedProfile.getIdentifier());
 
                     assertThat(infoWithPermission.isAppLockSupported).isFalse();
-                }
             }
         }
     }
