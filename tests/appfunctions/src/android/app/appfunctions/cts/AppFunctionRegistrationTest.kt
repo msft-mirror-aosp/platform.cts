@@ -46,6 +46,7 @@ import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
 import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
 import android.app.appfunctions.testutils.DisabledByDefault
 import android.app.appfunctions.testutils.DisabledByDefault.Companion.DISABLED_BY_DEFAULT_FUNCTION_ID
+import android.app.appfunctions.testutils.DynamicRegistrationActivity
 import android.app.appfunctions.testutils.GetUris.Companion.GET_URIS_FUNCTION_ID
 import android.app.appfunctions.testutils.ITestAppFunctionRegistrationService
 import android.app.appfunctions.testutils.LongRunning
@@ -71,7 +72,9 @@ import android.os.OutcomeReceiver
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.rule.ServiceTestRule
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnPrimaryUser
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSecondaryUser
@@ -104,13 +107,18 @@ class AppFunctionRegistrationTest {
     @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
     @get:Rule val serviceTestRule = ServiceTestRule()
 
+    @get:Rule val activityScenarioRule =
+        ActivityScenarioRule(DynamicRegistrationActivity::class.java)
+
     private val context: Context
         get() = ApplicationProvider.getApplicationContext()
 
     private val contentResolver: ContentResolver
         get() = context.contentResolver
 
-    private lateinit var manager: AppFunctionManager
+    private lateinit var activityAppFunctionManager: AppFunctionManager
+
+    private lateinit var appContextAppFunctionManager: AppFunctionManager
 
     private val registrations = mutableListOf<AppFunctionRegistration>()
 
@@ -120,9 +128,15 @@ class AppFunctionRegistrationTest {
 
     @Before
     fun setup() = doBlocking {
-        val manager = context.getSystemService(AppFunctionManager::class.java)
-        assumeNotNull(manager)
-        this@AppFunctionRegistrationTest.manager = manager
+        activityScenarioRule.scenario.moveToState(Lifecycle.State.CREATED)
+        activityScenarioRule.scenario.onActivity { activity ->
+            this@AppFunctionRegistrationTest.activityAppFunctionManager =
+                activity.manager
+        }
+        val appAppFunctionManager = context.getSystemService(AppFunctionManager::class.java)
+        assumeNotNull(appAppFunctionManager)
+        this@AppFunctionRegistrationTest.appContextAppFunctionManager = appAppFunctionManager
+
         uninstallPackage(UpdatableHelperApp.PACKAGE_NAME)
 
         setAppFunctionEnabled(
@@ -153,6 +167,8 @@ class AppFunctionRegistrationTest {
             AppFunctionUtils.disableAllowlist()
             clearInteractionAllowlist()
         }
+
+        activityScenarioRule.scenario.moveToState(Lifecycle.State.DESTROYED)
     }
 
     @Test
@@ -166,7 +182,11 @@ class AppFunctionRegistrationTest {
     @IncludeRunOnPrimaryUser
     @IncludeRunOnSecondaryUser
     fun register_disabledByDefaultFunction_success() {
-        registerAppFunction(DISABLED_BY_DEFAULT_FUNCTION_ID, DisabledByDefault())
+        registerAppFunction(
+            DISABLED_BY_DEFAULT_FUNCTION_ID,
+            DisabledByDefault(),
+            activityAppFunctionManager,
+        )
     }
 
     @Test
@@ -198,6 +218,7 @@ class AppFunctionRegistrationTest {
         registerAppFunctions(
             listOf(CONCAT_STRINGS_FUNCTION_ID, DISABLED_BY_DEFAULT_FUNCTION_ID),
             listOf(ConcatStrings(), ConcatStrings()),
+            activityAppFunctionManager,
         )
     }
 
@@ -210,6 +231,7 @@ class AppFunctionRegistrationTest {
             registerAppFunctions(
                 listOf(CONCAT_STRINGS_FUNCTION_ID, CONCAT_STRINGS_FUNCTION_ID),
                 listOf(ConcatStrings(), ConcatStrings()),
+                activityAppFunctionManager,
             )
         }
     }
@@ -225,7 +247,7 @@ class AppFunctionRegistrationTest {
         assertFunctionEnabledState(
             CURRENT_PKG,
             CONCAT_STRINGS_FUNCTION_ID,
-            manager,
+            appContextAppFunctionManager,
             isEnabled = true,
         )
 
@@ -233,12 +255,13 @@ class AppFunctionRegistrationTest {
             registerAppFunctions(
                 listOf(LONG_RUNNING_FUNCTION_ID, CONCAT_STRINGS_FUNCTION_ID),
                 listOf(ConcatStrings(), ConcatStrings()),
+                activityAppFunctionManager,
             )
         }
         assertFunctionEnabledState(
             CURRENT_PKG,
             LONG_RUNNING_FUNCTION_ID,
-            manager,
+            appContextAppFunctionManager,
             isEnabled = false,
         )
 
@@ -246,12 +269,13 @@ class AppFunctionRegistrationTest {
             registerAppFunctions(
                 listOf(CONCAT_STRINGS_FUNCTION_ID, LONG_RUNNING_FUNCTION_ID),
                 listOf(ConcatStrings(), ConcatStrings()),
+                activityAppFunctionManager,
             )
         }
         assertFunctionEnabledState(
             CURRENT_PKG,
             LONG_RUNNING_FUNCTION_ID,
-            manager,
+            appContextAppFunctionManager,
             isEnabled = false,
         )
     }
@@ -264,6 +288,7 @@ class AppFunctionRegistrationTest {
         registerAppFunctions(
             listOf(CONCAT_STRINGS_FUNCTION_ID, DISABLED_BY_DEFAULT_FUNCTION_ID),
             listOf(ConcatStrings(), ConcatStrings()),
+            activityAppFunctionManager,
         )
 
         val service = bindToRegistrationService(CURRENT_PKG)
@@ -275,7 +300,9 @@ class AppFunctionRegistrationTest {
     @IncludeRunOnSecondaryUser
     @Throws(Exception::class)
     fun register_emptyBatch_reportsInvalidArgumentError() {
-        assertFailsWith<IllegalArgumentException>() { registerAppFunctions(listOf(), listOf()) }
+        assertFailsWith<IllegalArgumentException>() {
+            registerAppFunctions(listOf(), listOf(), activityAppFunctionManager)
+        }
     }
 
     @Test
@@ -284,7 +311,11 @@ class AppFunctionRegistrationTest {
     @Throws(Exception::class)
     fun register_serviceLevelFunction_reportsInvalidArgumentError() {
         assertFailsWith<IllegalArgumentException>() {
-            registerAppFunction(CtsApp.FunctionNames.ADD.functionIdentifier, ConcatStrings())
+            registerAppFunction(
+                CtsApp.FunctionNames.ADD.functionIdentifier,
+                ConcatStrings(),
+                activityAppFunctionManager,
+            )
         }
     }
 
@@ -294,7 +325,7 @@ class AppFunctionRegistrationTest {
     @Throws(Exception::class)
     fun register_unknownFunction_reportsInvalidArgumentError() {
         assertFailsWith<IllegalArgumentException>() {
-            registerAppFunction("unknownFunctionId", ConcatStrings())
+            registerAppFunction("unknownFunctionId", ConcatStrings(), activityAppFunctionManager)
         }
     }
 
@@ -302,9 +333,27 @@ class AppFunctionRegistrationTest {
     @IncludeRunOnPrimaryUser
     @IncludeRunOnSecondaryUser
     @Throws(Exception::class)
-    fun register_activityScopedFunction_fails() {
-        assertFailsWith<IllegalArgumentException>() {
-            registerAppFunction(ACTIVITY_CONCAT_STRINGS_FUNCTION_ID, ConcatStrings())
+    fun register_activityScopedFunctionFromAppContext_fails() {
+        assertFailsWith<IllegalStateException>() {
+            appContextAppFunctionManager.registerAppFunction(
+                ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
+                testRegistrationExecutor,
+                ConcatStrings(),
+            )
+        }
+    }
+
+    @Test
+    @IncludeRunOnPrimaryUser
+    @IncludeRunOnSecondaryUser
+    @Throws(Exception::class)
+    fun register_globalScopedFunctionFromAppContext_fails() {
+        assertFailsWith<IllegalStateException>() {
+            appContextAppFunctionManager.registerAppFunction(
+                CONCAT_STRINGS_FUNCTION_ID,
+                testRegistrationExecutor,
+                ConcatStrings(),
+            )
         }
     }
 
@@ -408,7 +457,7 @@ class AppFunctionRegistrationTest {
         assertFunctionEnabledState(
             CURRENT_PKG,
             CONCAT_STRINGS_FUNCTION_ID,
-            manager,
+            appContextAppFunctionManager,
             isEnabled = true,
         )
     }
@@ -420,17 +469,25 @@ class AppFunctionRegistrationTest {
     fun unregister_callTwice_shouldNotAffectActiveRegistrationWithSameIdAndFunction() = doBlocking {
         val function = ConcatStrings()
         val staleRegistration =
-            registerAppFunction(function = function, functionId = CONCAT_STRINGS_FUNCTION_ID)
+            registerAppFunction(
+                functionId = CONCAT_STRINGS_FUNCTION_ID,
+                function = function,
+                manager = activityAppFunctionManager,
+            )
         staleRegistration.unregister()
         val activeRegistration =
-            registerAppFunction(function = function, functionId = CONCAT_STRINGS_FUNCTION_ID)
+            registerAppFunction(
+                functionId = CONCAT_STRINGS_FUNCTION_ID,
+                function = function,
+                manager = activityAppFunctionManager,
+            )
 
         staleRegistration.unregister() // This call should be no-op
 
         assertFunctionEnabledState(
             CURRENT_PKG,
             CONCAT_STRINGS_FUNCTION_ID,
-            manager,
+            appContextAppFunctionManager,
             isEnabled = true,
         )
     }
@@ -450,7 +507,7 @@ class AppFunctionRegistrationTest {
         assertFunctionEnabledState(
             CURRENT_PKG,
             CONCAT_STRINGS_FUNCTION_ID,
-            manager,
+            appContextAppFunctionManager,
             isEnabled = true,
         )
     }
@@ -462,7 +519,7 @@ class AppFunctionRegistrationTest {
     fun execute_unregisteredFunction_returnsError() = doBlocking {
         val request = createConcatStringsRequest(CURRENT_PKG)
 
-        val response = manager.executeAppFunction(request)
+        val response = appContextAppFunctionManager.executeAppFunction(request)
 
         assertThat(response.isSuccess).isFalse()
         assertThat(response.appFunctionException().errorCode)
@@ -478,7 +535,7 @@ class AppFunctionRegistrationTest {
         service.registerAppFunction(CONCAT_STRINGS_FUNCTION_ID)
         val request = createConcatStringsRequest(targetPackage = CURRENT_PKG)
 
-        val response = manager.executeAppFunction(request)
+        val response = appContextAppFunctionManager.executeAppFunction(request)
 
         assertConcatStringsResponseCorrect(response)
     }
@@ -495,7 +552,7 @@ class AppFunctionRegistrationTest {
             val request =
                 createConcatStringsRequest(targetPackage = DynamicSchemaHelperApp.PACKAGE_NAME)
 
-            val response = manager.executeAppFunction(request)
+            val response = appContextAppFunctionManager.executeAppFunction(request)
             assertConcatStringsResponseCorrect(response)
         }
     }
@@ -515,7 +572,7 @@ class AppFunctionRegistrationTest {
                     )
                     .build()
 
-            val response = manager.executeAppFunction(request)
+            val response = appContextAppFunctionManager.executeAppFunction(request)
             assertThat(response.isSuccess).isFalse()
             assertThat(response.appFunctionException().errorCode)
                 .isEqualTo(AppFunctionException.ERROR_INVALID_ARGUMENT)
@@ -543,7 +600,7 @@ class AppFunctionRegistrationTest {
             val request =
                 createConcatStringsRequest(targetPackage = DynamicSchemaHelperApp.PACKAGE_NAME)
 
-            val response = manager.executeAppFunction(request)
+            val response = appContextAppFunctionManager.executeAppFunction(request)
             assertConcatStringsResponseCorrect(response)
 
             val request2 =
@@ -553,7 +610,7 @@ class AppFunctionRegistrationTest {
                     )
                     .build()
 
-            val response2 = manager.executeAppFunction(request2)
+            val response2 = appContextAppFunctionManager.executeAppFunction(request2)
             assertThat(response2.isSuccess).isFalse()
             assertThat(response2.appFunctionException().errorCode)
                 .isEqualTo(AppFunctionException.ERROR_INVALID_ARGUMENT)
@@ -577,7 +634,7 @@ class AppFunctionRegistrationTest {
                 .build()
 
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-            val response = manager.executeAppFunction(request)
+            val response = appContextAppFunctionManager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isFalse()
             assertThat(response.appFunctionException().errorCode)
@@ -602,7 +659,7 @@ class AppFunctionRegistrationTest {
                 .build()
 
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-            val response = manager.executeAppFunction(request)
+            val response = appContextAppFunctionManager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isFalse()
             assertThat(response.appFunctionException().errorCode)
@@ -626,7 +683,7 @@ class AppFunctionRegistrationTest {
         val exceptionQueue = LinkedBlockingQueue<AppFunctionException>()
         val latch = CountDownLatch(1)
 
-        manager.executeAppFunction(
+        appContextAppFunctionManager.executeAppFunction(
             request,
             executionExecutor,
             cancellationSignal,
@@ -654,7 +711,7 @@ class AppFunctionRegistrationTest {
             ExecuteAppFunctionRequest.Builder(CURRENT_PKG, DISABLED_BY_DEFAULT_FUNCTION_ID).build()
 
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-            val response = manager.executeAppFunction(request)
+            val response = appContextAppFunctionManager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isFalse()
             assertThat(response.appFunctionException().errorCode)
@@ -672,17 +729,17 @@ class AppFunctionRegistrationTest {
             ExecuteAppFunctionRequest.Builder(CURRENT_PKG, DISABLED_BY_DEFAULT_FUNCTION_ID).build()
 
         try {
-            manager.setAppFunctionEnabled(
+            appContextAppFunctionManager.setAppFunctionEnabled(
                 DISABLED_BY_DEFAULT_FUNCTION_ID,
                 AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
             )
             runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-                val response = manager.executeAppFunction(request)
+                val response = appContextAppFunctionManager.executeAppFunction(request)
 
                 assertThat(response.isSuccess).isTrue()
             }
         } finally {
-            manager.setAppFunctionEnabled(
+            appContextAppFunctionManager.setAppFunctionEnabled(
                 DISABLED_BY_DEFAULT_FUNCTION_ID,
                 AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
             )
@@ -694,7 +751,7 @@ class AppFunctionRegistrationTest {
     @IncludeRunOnSecondaryUser
     fun execute_afterRegistrationOfEnabledFunction_success() = doBlocking {
         try {
-            manager.setAppFunctionEnabled(
+            appContextAppFunctionManager.setAppFunctionEnabled(
                 DISABLED_BY_DEFAULT_FUNCTION_ID,
                 AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
             )
@@ -705,12 +762,12 @@ class AppFunctionRegistrationTest {
                 ExecuteAppFunctionRequest.Builder(CURRENT_PKG, DISABLED_BY_DEFAULT_FUNCTION_ID)
                     .build()
             runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-                val response = manager.executeAppFunction(request)
+                val response = appContextAppFunctionManager.executeAppFunction(request)
 
                 assertThat(response.isSuccess).isTrue()
             }
         } finally {
-            manager.setAppFunctionEnabled(
+            appContextAppFunctionManager.setAppFunctionEnabled(
                 DISABLED_BY_DEFAULT_FUNCTION_ID,
                 AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
             )
@@ -727,19 +784,22 @@ class AppFunctionRegistrationTest {
         val emptyDocument = GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "").build()
 
         val registration =
-            registerAppFunction(LONG_RUNNING_FUNCTION_ID) { request, cancelSignal, outcomeReceiver
-                ->
-                executionStartedLatch.countDown()
-                executionFinishLatch.await(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)
-                outcomeReceiver.onResult(ExecuteAppFunctionResponse(emptyDocument))
-            }
+            registerAppFunction(
+                LONG_RUNNING_FUNCTION_ID,
+                { request, cancelSignal, outcomeReceiver ->
+                    executionStartedLatch.countDown()
+                    executionFinishLatch.await(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)
+                    outcomeReceiver.onResult(ExecuteAppFunctionResponse(emptyDocument))
+                },
+                activityAppFunctionManager,
+            )
         val request =
             ExecuteAppFunctionRequest.Builder(CURRENT_PKG, LONG_RUNNING_FUNCTION_ID).build()
         val blockingQueue = LinkedBlockingQueue<ExecuteAppFunctionResponse>()
         val exceptionQueue = LinkedBlockingQueue<AppFunctionException>()
         val onResultLatch = CountDownLatch(1)
 
-        manager.executeAppFunction(
+        appContextAppFunctionManager.executeAppFunction(
             request,
             executionExecutor,
             CancellationSignal(),
@@ -753,7 +813,11 @@ class AppFunctionRegistrationTest {
 
         // While the function is "running" (awaiting), unregister it and register a new one.
         registration.unregister()
-        registerAppFunction(LONG_RUNNING_FUNCTION_ID, LongRunning(context))
+        registerAppFunction(
+            LONG_RUNNING_FUNCTION_ID,
+            LongRunning(context),
+            activityAppFunctionManager,
+        )
 
         // Allow the original function to complete.
         executionFinishLatch.countDown()
@@ -780,7 +844,7 @@ class AppFunctionRegistrationTest {
             serviceTestRule.unbindService()
             ShellCommand.builder("am force-stop $DynamicSchemaHelperApp.PACKAGE_NAME").execute()
 
-            val response = manager.executeAppFunction(request)
+            val response = appContextAppFunctionManager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isFalse()
             assertThat(response.appFunctionException().errorCode)
@@ -804,7 +868,7 @@ class AppFunctionRegistrationTest {
                     )
                     .build()
 
-            val response = manager.executeAppFunction(request)
+            val response = appContextAppFunctionManager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isFalse()
             assertThat(response.appFunctionException().errorCode)
@@ -829,7 +893,7 @@ class AppFunctionRegistrationTest {
                     )
                     .build()
 
-            val response = manager.executeAppFunction(request)
+            val response = appContextAppFunctionManager.executeAppFunction(request)
             assertThat(response.isSuccess).isTrue()
             assertThat(response.getOrNull()).isNotNull()
             val uris = response.getOrNull()!!.uriGrants
@@ -858,7 +922,7 @@ class AppFunctionRegistrationTest {
 
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val result =
-                manager.isAppFunctionEnabled(
+                appContextAppFunctionManager.isAppFunctionEnabled(
                     DynamicSchemaHelperApp.PACKAGE_NAME,
                     CONCAT_STRINGS_FUNCTION_ID,
                 )
@@ -880,7 +944,7 @@ class AppFunctionRegistrationTest {
 
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val result =
-                manager.isAppFunctionEnabled(
+                appContextAppFunctionManager.isAppFunctionEnabled(
                     DynamicSchemaHelperApp.PACKAGE_NAME,
                     CONCAT_STRINGS_FUNCTION_ID,
                 )
@@ -904,7 +968,7 @@ class AppFunctionRegistrationTest {
 
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val result =
-                manager.isAppFunctionEnabled(
+                appContextAppFunctionManager.isAppFunctionEnabled(
                     DynamicSchemaHelperApp.PACKAGE_NAME,
                     CONCAT_STRINGS_FUNCTION_ID,
                 )
@@ -928,7 +992,7 @@ class AppFunctionRegistrationTest {
 
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val result =
-                manager.isAppFunctionEnabled(
+                appContextAppFunctionManager.isAppFunctionEnabled(
                     DynamicSchemaHelperApp.PACKAGE_NAME,
                     CONCAT_STRINGS_FUNCTION_ID,
                 )
@@ -948,8 +1012,8 @@ class AppFunctionRegistrationTest {
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val attribution =
                 AppInteractionAttribution.Builder(
-                        AppInteractionAttribution.INTERACTION_TYPE_USER_QUERY
-                    )
+                    AppInteractionAttribution.INTERACTION_TYPE_USER_QUERY
+                )
                     .build()
             val request =
                 ExecuteAppFunctionRequest.Builder(
@@ -959,7 +1023,7 @@ class AppFunctionRegistrationTest {
                     .setAttribution(attribution)
                     .build()
 
-            val response = manager.executeAppFunction(request)
+            val response = appContextAppFunctionManager.executeAppFunction(request)
 
             assertThat(response.isSuccess).isTrue()
             assertThat(
@@ -975,9 +1039,14 @@ class AppFunctionRegistrationTest {
     private fun registerAppFunction(
         functionId: String,
         function: AppFunction,
+        manager: AppFunctionManager
     ): AppFunctionRegistration {
         val registration =
-            manager.registerAppFunction(functionId, testRegistrationExecutor, function)
+            manager.registerAppFunction(
+                functionId,
+                testRegistrationExecutor,
+                function,
+            )
         registrations.add(registration)
         return registration
     }
@@ -985,6 +1054,7 @@ class AppFunctionRegistrationTest {
     private fun registerAppFunctions(
         functionIds: List<String>,
         functions: List<AppFunction>,
+        manager: AppFunctionManager
     ): AppFunctionRegistration {
         val requests =
             functionIds.zip(functions).map { (id, function) ->
@@ -996,7 +1066,11 @@ class AppFunctionRegistrationTest {
     }
 
     private fun registerConcatStringsAppFunction(): AppFunctionRegistration {
-        return registerAppFunction(CONCAT_STRINGS_FUNCTION_ID, ConcatStrings())
+        return registerAppFunction(
+            CONCAT_STRINGS_FUNCTION_ID,
+            ConcatStrings(),
+            activityAppFunctionManager,
+        )
     }
 
     /** Creates an OutcomeReceiver for testing purposes. */
