@@ -15,7 +15,6 @@
  */
 package android.security.cts;
 
-import static org.junit.Assert.assertThrows;
 
 import android.os.Parcel;
 import android.platform.test.annotations.AsbSecurityTest;
@@ -24,10 +23,10 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
 
-import java.io.FileDescriptor;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.io.FileDescriptor;
 
 @RunWith(AndroidJUnit4.class)
 public class BinderAcquireObjectTest extends StsExtraBusinessLogicTestCase {
@@ -41,11 +40,21 @@ public class BinderAcquireObjectTest extends StsExtraBusinessLogicTestCase {
         p2.writeInt(8);
 
         p1.setDataPosition(8);
+        int oldFdNum = p1.readInt();
+        p1.setDataPosition(8);
 
-        assertThrows(
-                Exception.class,
-                () -> {
-                    p1.appendFrom(p2, 0, p2.dataSize());
-                });
+        boolean thrown = false;
+        try {
+            p1.appendFrom(p2, 0, p2.dataSize());
+        } catch (Exception e) {
+            thrown = true;
+        }
+        if (!thrown) {
+            // without the patch we need to fix up the FD number because
+            // it was overwritten and will not close correctly
+            p1.setDataPosition(8);
+            p1.writeInt(oldFdNum);
+        }
+        assert (thrown);
     }
 }
