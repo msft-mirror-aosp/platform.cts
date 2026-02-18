@@ -1688,7 +1688,12 @@ class ItsSession(object):
         out_surface,
         reuse_session=True
     )
-    return image_processing_utils.convert_capture_to_rgb_image(cap)
+    img = image_processing_utils.convert_capture_to_rgb_image(cap)
+    sensor_orientation = self.props['android.sensor.orientation']
+    logging.debug('Sensor orientation: %d', sensor_orientation)
+    if sensor_orientation != 0:
+      return numpy.rot90(img, k=-sensor_orientation // 90)
+    return img
 
   def do_jca_capture(
       self, dut, log_path, flash_mode_desc, lens_facing, zoom_ratio=1.0,
