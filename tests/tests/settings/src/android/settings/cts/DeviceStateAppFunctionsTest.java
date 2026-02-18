@@ -213,6 +213,7 @@ public class DeviceStateAppFunctionsTest {
 
         String responseString = response.getResultDocument().toString();
         assertThat(responseString).contains(VALID_METADATA_RESPONSE_OUTPUT);
+        assertThat(responseString).contains("itemizationTypes");
         assertThat(responseString).doesNotContain(testApp(sDeviceState).packageName());
     }
 
