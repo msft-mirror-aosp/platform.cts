@@ -24,15 +24,11 @@ import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityOptions;
 import android.app.WindowConfiguration;
-import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Insets;
 import android.graphics.PixelFormat;
 import android.hardware.display.DisplayManager;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerStateHelper;
@@ -45,7 +41,6 @@ import android.view.WindowManager;
 
 import com.android.compatibility.common.util.SystemUtil;
 
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
@@ -57,16 +52,12 @@ import java.util.concurrent.TimeUnit;
  * Build/Install/Run:
  *     atest CtsWindowManagerDeviceInsets:InsetsParamsTest
  */
-@RequiresFlagsEnabled(Flags.FLAG_STATUS_BAR_AND_INSETS)
 public class InsetsParamsTest extends MultiDisplayTestBase {
 
     private static final String INSET_PROVIDER_NAME = "android.server.wm.insets.INSET_PROVIDER";
     private static final int STATUS_BAR_HEIGHT = 80;
     private static final Insets PROVIDED_INSETS = Insets.of(0, STATUS_BAR_HEIGHT, 0, 0);
     private static final int PROVIDED_INSETS_TYPE = WindowInsets.Type.statusBars();
-
-    @Rule
-    public CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
     public void testInsetsParams_withoutInsetsSize() {
