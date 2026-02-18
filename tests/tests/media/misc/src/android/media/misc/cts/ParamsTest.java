@@ -256,7 +256,7 @@ public class ParamsTest extends AndroidTestCase {
         // test good values
         PlaybackParams p = new PlaybackParams();
         float lastValue = 2.f; /* some initial value to avoid compile error */
-        for (float f : new float[] { 0.f, .1f, 9999.f }) {
+        for (float f : new float[] { .1f, 9999.f }) {
             PlaybackParams q = p.setPitch(f); // verify both initial set and update
             assertSame(p, q);
             try { fail("got " + p.getAudioFallbackMode()); } catch (IllegalStateException e) {}
@@ -268,7 +268,8 @@ public class ParamsTest extends AndroidTestCase {
 
         // test bad values - these should have no effect
         boolean update = true;
-        for (float f : new float[] { -.0001f, -1.f }) {
+        for (float f : new float[] { -.0001f, -1.f , 0.0f, Float.NaN, Float.POSITIVE_INFINITY,
+                Float.NEGATIVE_INFINITY }) {
             try {
                 p.setPitch(f);
                 fail("set tolerance to " + f);
@@ -293,14 +294,30 @@ public class ParamsTest extends AndroidTestCase {
     public void testPlaybackParamsSpeed() {
         // setting this cannot fail
         PlaybackParams p = new PlaybackParams();
-        for (float f : new float[] { 0.f, .0001f, 30.f, 300.f, -.0001f, -1.f, -300.f }) {
+        for (float f : new float[] { .001f, 30.f, 300.f, -.0001f, -1.f, -300.f }) {
             PlaybackParams q = p.setSpeed(f);
             assertSame(p, q);
             try { fail("got " + p.getAudioFallbackMode()); } catch (IllegalStateException e) {}
             try { fail("got " + p.getAudioStretchMode());  } catch (IllegalStateException e) {}
             try { fail("got " + p.getPitch());             } catch (IllegalStateException e) {}
-            assertEquals(f, p.getSpeed(), FLOAT_TOLERANCE);
+            if (f > 0) {
+                // only positive speeds are expected to be successfully set
+                assertEquals(f, p.getSpeed(), FLOAT_TOLERANCE);
+            }
         }
+    }
+
+    public void testPlaybackParamsSpeedChecks() {
+        PlaybackParams p = new PlaybackParams();
+        // speed must be in (0, Inf)
+        p.setSpeed(0.0f);
+        try { fail("got " + p.getSpeed());} catch (IllegalStateException e) {}
+        p.setSpeed(Float.POSITIVE_INFINITY);
+        try { fail("got " + p.getSpeed());} catch (IllegalStateException e) {}
+        p.setSpeed(Float.NEGATIVE_INFINITY);
+        try { fail("got " + p.getSpeed());} catch (IllegalStateException e) {}
+        p.setSpeed(Float.NaN);
+        try { fail("got " + p.getSpeed());} catch (IllegalStateException e) {}
     }
 
     public void testPlaybackParamsMultipleSettings() {
