@@ -122,11 +122,22 @@ public class VulkanFeaturesTest {
     // that level.
     private static final Map<Integer, String[]> DEQP_EXTENSIONS_MAP = new ArrayMap<>();
     static {
-        // TODO: determine the full set of new extensions for this level.
         DEQP_EXTENSIONS_MAP.put(
                 DEQP_LEVEL_FOR_C,
                 new String[] {
-                    "VK_KHR_maintenance8"});
+                    "VK_KHR_copy_memory_indirect",
+                    "VK_KHR_depth_clamp_zero_one",
+                    "VK_KHR_maintenance10",
+                    "VK_KHR_maintenance8",
+                    "VK_KHR_maintenance9",
+                    "VK_KHR_robustness2",
+                    "VK_KHR_shader_bfloat16",
+                    "VK_KHR_shader_fma",
+                    "VK_KHR_shader_untyped_pointers",
+                    "VK_KHR_unified_image_layouts",
+                    "VK_KHR_video_decode_vp9",
+                    "VK_KHR_video_encode_intra_refresh",
+                    "VK_KHR_video_maintenance2"});
         DEQP_EXTENSIONS_MAP.put(
                 DEQP_LEVEL_FOR_B,
                 new String[] {
