@@ -98,6 +98,7 @@ class VirtualDeviceMirrorDisplayTest : InputTestCase() {
                 .setFlags(
                     DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
                             or DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR
+                            or DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
                 )
         )!!
         mRule.assumeActivityLaunchSupported(mVirtualDisplay.display.displayId)
