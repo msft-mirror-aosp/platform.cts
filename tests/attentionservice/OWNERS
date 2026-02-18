@@ -1,4 +1,2 @@
 # Bug component: 557553
-aarli@google.com
-asalo@google.com
-eejiang@google.com
+include platform/frameworks/base:/core/java/android/attention/OWNERS
