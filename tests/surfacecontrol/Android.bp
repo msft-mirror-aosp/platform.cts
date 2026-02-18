@@ -54,7 +54,10 @@ java_defaults {
         "surfaceflinger_flags_java_lib",
         "ravenwood-junit",
         "bedstead-enterprise",
+        "TestParameterInjector",
     ],
+
+    javacflags: ["-parameters"],
 }
 
 android_test {

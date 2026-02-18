@@ -80,9 +80,13 @@ import com.android.cts.input.BlockingQueueEventVerifier;
 import com.android.cts.input.FailOnTestThreadRule;
 import com.android.cts.input.inputeventmatchers.InputEventMatchersKt;
 
+import com.google.testing.junit.testparameterinjector.TestParameterInjector;
+import com.google.testing.junit.testparameterinjector.TestParameters;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
@@ -90,6 +94,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 @Presubmit
+@RunWith(TestParameterInjector.class)
 public class ASurfaceControlInputReceiverTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -245,18 +250,8 @@ public class ASurfaceControlInputReceiverTest {
     }
 
     @Test
-    public void testTransferGestureFromHostToEmbeddedRemoteBatched()
-            throws InterruptedException, RemoteException {
-        testTransferGestureFromHostToEmbeddedRemote(true /* batched */);
-    }
-
-    @Test
-    public void testTransferGestureFromHostToEmbeddedRemoteUnbatched()
-            throws InterruptedException, RemoteException {
-        testTransferGestureFromHostToEmbeddedRemote(false /* batched */);
-    }
-
-    private void testTransferGestureFromHostToEmbeddedRemote(boolean batched)
+    @TestParameters({"{batched: true}", "{batched: false}"})
+    public void testTransferGestureFromHostToEmbeddedRemote(boolean batched)
             throws InterruptedException, RemoteException {
         RemoteSurfaceControlInputReceiverHelper helper =
                 new RemoteSurfaceControlInputReceiverHelper(
