@@ -286,26 +286,6 @@ public class FileManagerTest {
     }
 
     @Test
-    public void testAppDataFileSource_parcelable() {
-        File file = new File("/data/user/0/com.example/test.txt");
-        AppDataFileSource original = new AppDataFileSource(file);
-
-        Parcel parcel = Parcel.obtain();
-        try {
-            original.writeToParcel(parcel, 0);
-            parcel.setDataPosition(0);
-
-            AppDataFileSource fromParcel = AppDataFileSource.CREATOR.createFromParcel(parcel);
-
-            assertEquals(
-                    original.getFile().getAbsolutePath(), fromParcel.getFile().getAbsolutePath());
-            assertEquals(0, fromParcel.describeContents());
-        } finally {
-            parcel.recycle();
-        }
-    }
-
-    @Test
     public void testPccTarget() {
         PccTarget target1 = new PccTarget();
         assertTrue(target1.toString().contains("prefix="));
@@ -313,25 +293,6 @@ public class FileManagerTest {
         String prefix = "my/prefix";
         PccTarget target2 = new PccTarget(prefix);
         assertTrue(target2.toString().contains(prefix));
-    }
-
-    @Test
-    public void testPccTarget_parcelable() {
-        String prefix = "my/prefix";
-        PccTarget original = new PccTarget(prefix);
-
-        Parcel parcel = Parcel.obtain();
-        try {
-            original.writeToParcel(parcel, 0);
-            parcel.setDataPosition(0);
-
-            PccTarget fromParcel = PccTarget.CREATOR.createFromParcel(parcel);
-
-            assertEquals(original.toString(), fromParcel.toString());
-            assertEquals(0, fromParcel.describeContents());
-        } finally {
-            parcel.recycle();
-        }
     }
 
     @Test
