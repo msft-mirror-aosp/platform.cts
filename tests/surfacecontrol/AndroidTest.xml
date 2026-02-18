@@ -15,7 +15,6 @@
 -->
 <configuration description="Config for SurfaceControl related CTS tests">
     <option name="test-suite-tag" value="cts" />
-    <option name="test-suite-tag" value="gts" />
     <option name="config-descriptor:metadata" key="component" value="framework" />
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="multi_abi" />
@@ -35,7 +34,6 @@
         <option name="run-command" value="input keyevent KEYCODE_HOME" />
     </target_preparer>
     <!-- Ensure the module only runs on the latest SDK -->
-    <object type="module_controller" class="com.android.tradefed.testtype.suite.module.Sdk36ModuleController" />
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.view.surfacecontrol.cts" />
         <option name="runtime-hint" value="6m47s" />
