@@ -71,6 +71,7 @@ android_test {
         ":CtsAppSearchIndexerTestAppBV1",
         ":CtsAppSearchIndexerTestAppAAppLevelFunctionsReg",
     ],
+    certificate: ":cts-appsearch-helper-cert-a",
 }
 
 android_test_helper_app {
@@ -88,6 +89,7 @@ android_test_helper_app {
     ],
     asset_dirs: ["helper-app/assets"],
     manifest: "helper-app/AndroidManifest.xml",
+    certificate: ":cts-appsearch-helper-cert-a",
 }
 
 android_test_helper_app {
@@ -102,7 +104,7 @@ android_test_helper_app {
     test_suites: [
         "general-tests",
     ],
-
+    certificate: ":cts-appsearch-helper-cert-a",
     manifest: "helper-agent-app/AndroidManifest.xml",
 }
 
@@ -123,6 +125,7 @@ android_test_helper_app {
         "general-tests",
     ],
     asset_dirs: ["helper-app/assets"],
+    certificate: ":cts-appsearch-helper-cert-a",
     manifest: "helper-app/AndroidManifest_sidecar.xml",
 }
 
@@ -141,6 +144,7 @@ android_test_helper_app {
     ],
     asset_dirs: ["helper-app-dynamic-schema/assets"],
     manifest: "helper-app-dynamic-schema/AndroidManifest.xml",
+    certificate: ":cts-appsearch-helper-cert-a",
     min_sdk_version: "31",
 }
 
@@ -159,6 +163,7 @@ android_test_helper_app {
     ],
     asset_dirs: ["helper-app-dynamic-schema/assets"],
     manifest: "helper-app-dynamic-schema/AndroidManifest_lessOneFunction.xml",
+    certificate: ":cts-appsearch-helper-cert-a",
     min_sdk_version: "31",
 }
 
@@ -177,6 +182,7 @@ android_test_helper_app {
     ],
     asset_dirs: ["helper-app-dynamic-schema/assets"],
     manifest: "helper-app-dynamic-schema/AndroidManifest_noTopLevelDocs.xml",
+    certificate: ":cts-appsearch-helper-cert-a",
     min_sdk_version: "31",
 }
 
@@ -217,5 +223,6 @@ android_test_helper_app {
     ],
     asset_dirs: ["service-test-helper/assets"],
     manifest: "service-test-helper/AndroidManifest.xml",
+    certificate: ":cts-appsearch-helper-cert-a",
     min_sdk_version: "31",
 }
