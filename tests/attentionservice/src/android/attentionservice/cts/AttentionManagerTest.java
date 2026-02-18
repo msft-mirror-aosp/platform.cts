@@ -25,7 +25,6 @@ import static org.junit.Assume.assumeTrue;
 import android.app.Instrumentation;
 import android.attention.AttentionManager;
 import android.attention.InteractionInfo;
-import android.attention.InteractionListener;
 import android.content.Context;
 import android.hardware.display.DisplayManager;
 import android.os.SystemClock;
@@ -34,7 +33,6 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.Display;
 
-import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -56,6 +54,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ATTENTION_SERVICE_APIS)
 @RunWith(AndroidJUnit4.class)
@@ -70,12 +69,12 @@ public class AttentionManagerTest {
     private Context mContext;
     private Instrumentation mInstrumentation;
 
-    private static class BlockingInteractionListener implements InteractionListener {
+    private static class BlockingInteractionListener implements Consumer<InteractionInfo> {
         private final LinkedBlockingQueue<InteractionInfo> mInteractions =
                 new LinkedBlockingQueue<>();
 
         @Override
-        public void onInteraction(@NonNull InteractionInfo interactionInfo) {
+        public void accept(InteractionInfo interactionInfo) {
             mInteractions.offer(interactionInfo);
         }
 
@@ -88,17 +87,17 @@ public class AttentionManagerTest {
     private void registerListener(
             int interactionTypes,
             Executor executor,
-            InteractionListener listener,
+            Consumer<InteractionInfo> listener,
             Duration debounceTime) {
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity();
-        mAttentionManager.registerInteractionListener(
+        mAttentionManager.setInteractionListener(
                 interactionTypes, debounceTime, executor, listener);
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
     }
 
     private void unregisterListener() {
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity();
-        mAttentionManager.unregisterInteractionListener();
+        mAttentionManager.clearInteractionListener();
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
     }
 
@@ -115,13 +114,13 @@ public class AttentionManagerTest {
 
     @ApiTest(
             apis = {
-                "android.attention.AttentionManager#registerInteractionListener",
-                "android.attention.AttentionManager#unregisterInteractionListener",
+                "android.attention.AttentionManager#setInteractionListener",
+                "android.attention.AttentionManager#clearInteractionListener",
             })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ATTENTION_SERVICE_APIS)
     @Test
     public void testRegisterAndUnregisterListener() {
-        final InteractionListener listener = (interactionInfo) -> {};
+        final Consumer<InteractionInfo> listener = interactionInfo -> {};
         final Executor executor = Executors.newSingleThreadExecutor();
 
         registerListener(
@@ -131,7 +130,7 @@ public class AttentionManagerTest {
 
     @ApiTest(
             apis = {
-                "android.attention.AttentionManager#unregisterInteractionListener",
+                "android.attention.AttentionManager#clearInteractionListener",
             })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ATTENTION_SERVICE_APIS)
     @Test
@@ -142,12 +141,12 @@ public class AttentionManagerTest {
 
     @ApiTest(
             apis = {
-                "android.attention.AttentionManager#registerInteractionListener",
+                "android.attention.AttentionManager#setInteractionListener",
             })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ATTENTION_SERVICE_APIS)
     @Test
     public void testRegisterListenerWithInvalidDebounce() {
-        final InteractionListener listener = (interactionInfo) -> {};
+        final Consumer<InteractionInfo> listener = interactionInfo -> {};
         final Executor executor = Executors.newSingleThreadExecutor();
 
         // Registering a listener with debounce time less than 500ms should throw an exception.
@@ -163,12 +162,12 @@ public class AttentionManagerTest {
 
     @ApiTest(
             apis = {
-                "android.attention.AttentionManager#registerInteractionListener",
+                "android.attention.AttentionManager#setInteractionListener",
             })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ATTENTION_SERVICE_APIS)
     @Test
     public void testRegisterListenerWithNullExecutor() {
-        final InteractionListener listener = (interactionInfo) -> {};
+        final Consumer<InteractionInfo> listener = interactionInfo -> {};
         assertThrows(
                 NullPointerException.class,
                 () ->
@@ -181,7 +180,7 @@ public class AttentionManagerTest {
 
     @ApiTest(
             apis = {
-                "android.attention.AttentionManager#registerInteractionListener",
+                "android.attention.AttentionManager#setInteractionListener",
             })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ATTENTION_SERVICE_APIS)
     @Test
@@ -199,8 +198,8 @@ public class AttentionManagerTest {
 
     @ApiTest(
             apis = {
-                "android.attention.AttentionManager#registerInteractionListener",
-                "android.attention.AttentionManager#unregisterInteractionListener",
+                "android.attention.AttentionManager#setInteractionListener",
+                "android.attention.AttentionManager#clearInteractionListener",
                 "android.attention.InteractionInfo#getInteractionTimeMillis",
                 "android.attention.InteractionInfo#getInteractionTypes",
             })
@@ -249,8 +248,8 @@ public class AttentionManagerTest {
 
     @ApiTest(
             apis = {
-                "android.attention.AttentionManager#registerInteractionListener",
-                "android.attention.AttentionManager#unregisterInteractionListener",
+                "android.attention.AttentionManager#setInteractionListener",
+                "android.attention.AttentionManager#clearInteractionListener",
                 "android.attention.InteractionInfo#getInteractionTimeMillis",
                 "android.attention.InteractionInfo#getInteractionTypes",
             })
@@ -305,8 +304,8 @@ public class AttentionManagerTest {
 
     @ApiTest(
             apis = {
-                "android.attention.AttentionManager#registerInteractionListener",
-                "android.attention.AttentionManager#unregisterInteractionListener",
+                "android.attention.AttentionManager#setInteractionListener",
+                "android.attention.AttentionManager#clearInteractionListener",
                 "android.attention.InteractionInfo#getInteractionTimeMillis",
                 "android.attention.InteractionInfo#getInteractionTypes",
             })
@@ -353,8 +352,8 @@ public class AttentionManagerTest {
 
     @ApiTest(
             apis = {
-                "android.attention.AttentionManager#registerInteractionListener",
-                "android.attention.AttentionManager#unregisterInteractionListener",
+                "android.attention.AttentionManager#setInteractionListener",
+                "android.attention.AttentionManager#clearInteractionListener",
                 "android.attention.InteractionInfo#getInteractionTimeMillis",
                 "android.attention.InteractionInfo#getInteractionTypes",
             })
