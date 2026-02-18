@@ -553,7 +553,6 @@ public class SmsManagerTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_MESSAGE_PROMOTION)
-    @Ignore("b/485075819")
     public void testSendStoredTextMessage() throws Exception {
         SmsManager smsManager = mContext.getSystemService(SmsManager.class);
         assertNotNull("smsManager cannot be null", smsManager);
@@ -617,7 +616,6 @@ public class SmsManagerTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_MESSAGE_PROMOTION)
-    @Ignore("b/485075819")
     public void testSendStoredMultipartTextMessage() throws Exception {
         SmsManager smsManager = mContext.getSystemService(SmsManager.class);
         assertNotNull("smsManager cannot be null", smsManager);
