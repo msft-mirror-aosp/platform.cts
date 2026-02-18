@@ -108,6 +108,7 @@ public class VulkanFeaturesTest {
 
     private static final int API_LEVEL_BEFORE_ANDROID_HARDWARE_BUFFER_REQ = 28;
 
+    private static final int DEQP_LEVEL_FOR_C = 0x7EA0301;
     private static final int DEQP_LEVEL_FOR_B = 0x7E90301;
     private static final int DEQP_LEVEL_FOR_V = 0x7E80301;
     private static final int DEQP_LEVEL_FOR_U = 0x7E70301;
@@ -121,6 +122,11 @@ public class VulkanFeaturesTest {
     // that level.
     private static final Map<Integer, String[]> DEQP_EXTENSIONS_MAP = new ArrayMap<>();
     static {
+        // TODO: determine the full set of new extensions for this level.
+        DEQP_EXTENSIONS_MAP.put(
+                DEQP_LEVEL_FOR_C,
+                new String[] {
+                    "VK_KHR_maintenance8"});
         DEQP_EXTENSIONS_MAP.put(
                 DEQP_LEVEL_FOR_B,
                 new String[] {
