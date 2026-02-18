@@ -82,13 +82,11 @@ TABLET_ALLOWLIST = (
     'gta9p',  # Samsung Galaxy Tab A9+ 5G
     'gts10fewifi',  # Samsung Galaxy Tab S10 FE
     'gts10fe',  # Samsung Galaxy Tab S10 FE 5G
-    'gts10p',   # Samsung Galaxy Tab S10+
     'dpd2221',  # Vivo Pad2
     'nabu',  # Xiaomi Pad 5
     'nabu_tw',  # Xiaomi Pad 5
     'xun',  # Xiaomi Redmi Pad SE
     'yunluo',  # Xiaomi Redmi Pad
-    'tb520fu',  # Lenovo Yoga Tab plus
 )
 TABLET_DEFAULT_BRIGHTNESS = 192  # 8-bit tablet 75% brightness
 TABLET_LEGACY_BRIGHTNESS = 96
