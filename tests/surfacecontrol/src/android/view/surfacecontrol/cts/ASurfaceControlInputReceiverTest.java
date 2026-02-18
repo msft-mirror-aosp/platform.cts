@@ -228,21 +228,29 @@ public class ASurfaceControlInputReceiverTest {
         LocalSurfaceControlInputReceiverHelper helper = new LocalSurfaceControlInputReceiverHelper(
                 mActivity, false /* zOrderOnTop */, true /* batched */);
 
-        final LinkedBlockingQueue<InputEvent> events = new LinkedBlockingQueue<>();
-        final BlockingQueueEventVerifier verifier = new BlockingQueueEventVerifier(events);
-        CountDownLatch hostReceivedTouchLatch = new CountDownLatch(1);
+        final LinkedBlockingQueue<InputEvent> embeddedEvents = new LinkedBlockingQueue<>();
+        final BlockingQueueEventVerifier embeddedVerifier =
+                new BlockingQueueEventVerifier(embeddedEvents);
+
+        final LinkedBlockingQueue<InputEvent> hostEvents = new LinkedBlockingQueue<>();
+        final BlockingQueueEventVerifier hostVerifier = new BlockingQueueEventVerifier(hostEvents);
         helper.setup(
                 (v, event) -> {
-                    mWm.transferTouchGesture(
-                            mActivity.getWindow().getRootSurfaceControl().getInputTransferToken(),
-                            helper.mEmbeddedTransferToken);
-                    hostReceivedTouchLatch.countDown();
-                    return false;
+                    if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                        mWm.transferTouchGesture(
+                                mActivity
+                                        .getWindow()
+                                        .getRootSurfaceControl()
+                                        .getInputTransferToken(),
+                                helper.mEmbeddedTransferToken);
+                    }
+                    hostEvents.add(MotionEvent.obtain(event));
+                    return true;
                 },
                 new InputReceiver() {
                     @Override
                     public boolean onMotionEvent(MotionEvent motionEvent) {
-                        events.add(MotionEvent.obtain(motionEvent));
+                        embeddedEvents.add(MotionEvent.obtain(motionEvent));
                         return false;
                     }
 
@@ -257,10 +265,14 @@ public class ASurfaceControlInputReceiverTest {
                 new Point(bounds.left + bounds.width() / 2, bounds.top + bounds.height() / 2);
         UinputTouchDevice.Pointer pointer = mTouchScreen.touchDown(coord);
 
-        assertTrue("Failed to receive touch event on host",
-                hostReceivedTouchLatch.await(WAIT_TIME_S, TimeUnit.SECONDS));
+        hostVerifier.assertReceivedMotion(
+                withMotionAction(MotionEvent.ACTION_DOWN), "Failed to receive DOWN event on host");
+        hostVerifier.assertReceivedMotion(
+                withMotionAction(MotionEvent.ACTION_CANCEL),
+                "Failed to receive CANCEL event on host");
+
         pointer.lift();
-        assertMotionEventOnWindowCenter(verifier, bounds);
+        assertMotionEventOnWindowCenter(embeddedVerifier, bounds);
     }
 
     @Test
@@ -274,9 +286,11 @@ public class ASurfaceControlInputReceiverTest {
                         batched,
                         false /* transferTouchToHost */);
 
-        final LinkedBlockingQueue<InputEvent> events = new LinkedBlockingQueue<>();
-        final BlockingQueueEventVerifier verifier = new BlockingQueueEventVerifier(events);
-        CountDownLatch hostReceivedTouchLatch = new CountDownLatch(1);
+        final LinkedBlockingQueue<InputEvent> embeddedEvents = new LinkedBlockingQueue<>();
+        final BlockingQueueEventVerifier embeddedVerifier =
+                new BlockingQueueEventVerifier(embeddedEvents);
+        final LinkedBlockingQueue<InputEvent> hostEvents = new LinkedBlockingQueue<>();
+        final BlockingQueueEventVerifier hostVerifier = new BlockingQueueEventVerifier(hostEvents);
         helper.setup(
                 (v, event) -> {
                     if (event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -286,14 +300,14 @@ public class ASurfaceControlInputReceiverTest {
                                         .getRootSurfaceControl()
                                         .getInputTransferToken(),
                                 helper.mEmbeddedTransferToken);
-                        hostReceivedTouchLatch.countDown();
                     }
-                    return false;
+                    hostEvents.add(MotionEvent.obtain(event));
+                    return true;
                 },
                 new IMotionEventReceiver.Stub() {
                     @Override
                     public void onMotionEventReceived(MotionEvent motionEvent) {
-                        events.add(MotionEvent.obtain(motionEvent));
+                        embeddedEvents.add(MotionEvent.obtain(motionEvent));
                     }
                 });
         Rect bounds = new Rect();
@@ -302,22 +316,28 @@ public class ASurfaceControlInputReceiverTest {
                 bounds.top + bounds.height() / 2);
         UinputTouchDevice.Pointer pointer = mTouchScreen.touchDown(coord);
 
-        assertTrue("Failed to receive touch event on host",
-                hostReceivedTouchLatch.await(WAIT_TIME_S, TimeUnit.SECONDS));
+        hostVerifier.assertReceivedMotion(
+                withMotionAction(MotionEvent.ACTION_DOWN), "Failed to receive DOWN event on host");
+        hostVerifier.assertReceivedMotion(
+                withMotionAction(MotionEvent.ACTION_CANCEL),
+                "Failed to receive CANCEL event on host");
+
         pointer.lift();
-        assertMotionEventOnWindowCenter(verifier, bounds);
+        assertMotionEventOnWindowCenter(embeddedVerifier, bounds);
     }
 
     @Test
     public void testTransferGestureFromEmbeddedToHost() throws InterruptedException {
         LocalSurfaceControlInputReceiverHelper helper = new LocalSurfaceControlInputReceiverHelper(
                 mActivity, true /* zOrderOnTop */, false /* batched */);
-        final LinkedBlockingQueue<InputEvent> events = new LinkedBlockingQueue<>();
-        final BlockingQueueEventVerifier verifier = new BlockingQueueEventVerifier(events);
-        CountDownLatch embeddedReceivedTouch = new CountDownLatch(1);
+        final LinkedBlockingQueue<InputEvent> embeddedEvents = new LinkedBlockingQueue<>();
+        final BlockingQueueEventVerifier embeddedVerifier =
+                new BlockingQueueEventVerifier(embeddedEvents);
+        final LinkedBlockingQueue<InputEvent> hostEvents = new LinkedBlockingQueue<>();
+        final BlockingQueueEventVerifier hostVerifier = new BlockingQueueEventVerifier(hostEvents);
         helper.setup(
                 (v, event) -> {
-                    events.add(MotionEvent.obtain(event));
+                    hostEvents.add(MotionEvent.obtain(event));
                     return false;
                 },
                 new InputReceiver() {
@@ -330,8 +350,8 @@ public class ASurfaceControlInputReceiverTest {
                                             .getWindow()
                                             .getRootSurfaceControl()
                                             .getInputTransferToken());
-                            embeddedReceivedTouch.countDown();
                         }
+                        embeddedEvents.add(MotionEvent.obtain(motionEvent));
                         return false;
                     }
 
@@ -346,10 +366,15 @@ public class ASurfaceControlInputReceiverTest {
                 bounds.top + bounds.height() / 2);
         UinputTouchDevice.Pointer pointer = mTouchScreen.touchDown(coord);
 
-        assertTrue("Failed to receive touch event on embedded",
-                embeddedReceivedTouch.await(WAIT_TIME_S, TimeUnit.SECONDS));
+        embeddedVerifier.assertReceivedMotion(
+                withMotionAction(MotionEvent.ACTION_DOWN),
+                "Failed to receive DOWN event on embedded");
+        embeddedVerifier.assertReceivedMotion(
+                withMotionAction(MotionEvent.ACTION_CANCEL),
+                "Failed to receive CANCEL event on embedded");
+
         pointer.lift();
-        assertMotionEventOnWindowCenter(verifier, bounds);
+        assertMotionEventOnWindowCenter(hostVerifier, bounds);
     }
 
     @Test
@@ -362,18 +387,20 @@ public class ASurfaceControlInputReceiverTest {
                         true /* batched */,
                         true /* transferTouchToHost */);
 
-        final LinkedBlockingQueue<InputEvent> events = new LinkedBlockingQueue<>();
-        final BlockingQueueEventVerifier verifier = new BlockingQueueEventVerifier(events);
-        CountDownLatch embeddedReceivedTouch = new CountDownLatch(1);
+        final LinkedBlockingQueue<InputEvent> embeddedEvents = new LinkedBlockingQueue<>();
+        final BlockingQueueEventVerifier embeddedVerifier =
+                new BlockingQueueEventVerifier(embeddedEvents);
+        final LinkedBlockingQueue<InputEvent> hostEvents = new LinkedBlockingQueue<>();
+        final BlockingQueueEventVerifier hostVerifier = new BlockingQueueEventVerifier(hostEvents);
         helper.setup(
                 (v, event) -> {
-                    events.add(MotionEvent.obtain(event));
+                    hostEvents.add(MotionEvent.obtain(event));
                     return false;
                 },
                 new IMotionEventReceiver.Stub() {
                     @Override
                     public void onMotionEventReceived(MotionEvent motionEvent) {
-                        embeddedReceivedTouch.countDown();
+                        embeddedEvents.add(MotionEvent.obtain(motionEvent));
                     }
                 });
         Rect bounds = new Rect();
@@ -382,10 +409,15 @@ public class ASurfaceControlInputReceiverTest {
                 bounds.top + bounds.height() / 2);
         UinputTouchDevice.Pointer pointer = mTouchScreen.touchDown(coord);
 
-        assertTrue("Failed to receive touch event on embedded",
-                embeddedReceivedTouch.await(WAIT_TIME_S, TimeUnit.SECONDS));
+        embeddedVerifier.assertReceivedMotion(
+                withMotionAction(MotionEvent.ACTION_DOWN),
+                "Failed to receive DOWN event on embedded");
+        embeddedVerifier.assertReceivedMotion(
+                withMotionAction(MotionEvent.ACTION_CANCEL),
+                "Failed to receive CANCEL event on embedded");
+
         pointer.lift();
-        assertMotionEventOnWindowCenter(verifier, bounds);
+        assertMotionEventOnWindowCenter(hostVerifier, bounds);
     }
 
     private static void assertWindowAndGetBounds(int displayId, Rect outBounds)
