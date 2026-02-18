@@ -19,6 +19,7 @@ package android.keystore.cts;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
@@ -173,15 +174,10 @@ public class Curve25519Test {
         signer.initSign(kp.getPrivate());
         signer.update(data);
         byte[] sigBytes = signer.sign();
-        assertThat(sigBytes.length).isEqualTo(64);
-        EdECPublicKey publicKey = (EdECPublicKey) kp.getPublic();
-        android.util.Log.i("Curve25519Test", "Manually validate: Payload "
-                + Base64.getEncoder().encodeToString(data) + " encoded key: "
-                + Base64.getEncoder().encodeToString(kp.getPublic().getEncoded())
-                + " signature: " + Base64.getEncoder().encodeToString(sigBytes));
 
-        //TODO: Verify signature over the data when Conscrypt supports validating Ed25519
-        // signatures.
+        signer.initVerify(kp.getPublic());
+        signer.update(data);
+        assertTrue(signer.verify(sigBytes));
     }
 
     @Test
