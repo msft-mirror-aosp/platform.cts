@@ -107,7 +107,9 @@ public final class BedsteadFrameworkMethod extends FrameworkMethod {
         var annotations = new ArrayList<Annotation>();
         for (Annotation annotation : sourceAnnotations) {
             var replacements =
-                    BedsteadJUnit4.generateReplacementAnnotations(annotation, classAnnotations);
+                    BedsteadAnnotationGenerator.INSTANCE
+                            .maybeReplaceUsingParameterizedTestGenerator(
+                                    annotation, classAnnotations);
             if (replacements == null) {
                 annotations.add(annotation);
             } else {
