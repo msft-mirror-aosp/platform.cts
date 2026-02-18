@@ -29,8 +29,6 @@ public final class AppExitInfoConstants {
 
     public static final String STUB_PACKAGE_NAME = "com.android.cts.launcherapps.simpleapp";
     public static final String HELPER_APK2 = "CtsSimpleApp.apk";
-
-    public static final long APP_EXIT_INFO_STATSD_LOG_DEBOUNCE_MSEC = 15_000;
     public static final String PERM_PACKAGE_USAGE_STATS = "android.permission.PACKAGE_USAGE_STATS";
     public static final String PERM_READ_LOGS = "android.permission.READ_LOGS";
     public static final int EXIT_CODE = 123;
