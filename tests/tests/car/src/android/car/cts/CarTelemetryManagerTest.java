@@ -29,7 +29,6 @@ import android.car.telemetry.CarTelemetryManager;
 import android.car.telemetry.TelemetryProto;
 import android.os.PersistableBundle;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresDevice;
 import android.util.ArrayMap;
 
 import androidx.annotation.NonNull;
@@ -48,7 +47,6 @@ import org.junit.runner.RunWith;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 
-@RequiresDevice
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "Instant Apps cannot get car related permissions")
 public final class CarTelemetryManagerTest extends AbstractCarTestCase {

@@ -54,7 +54,6 @@ import android.car.hardware.property.VehicleVendorPermission;
 import android.os.Build;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresDevice;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.ArraySet;
@@ -100,7 +99,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 @LargeTest
-@RequiresDevice
 @RunWith(TestParameterInjector.class)
 @AppModeFull(reason = "Instant apps cannot get car related permissions.")
 public final class CarPropertyManagerTest extends AbstractCarTestCase {

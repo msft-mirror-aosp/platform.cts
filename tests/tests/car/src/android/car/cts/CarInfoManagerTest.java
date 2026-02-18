@@ -25,7 +25,6 @@ import android.car.FuelType;
 import android.car.PortLocationType;
 import android.car.VehicleAreaSeat;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresDevice;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
@@ -38,7 +37,6 @@ import java.util.Arrays;
 import java.util.List;
 
 @SmallTest
-@RequiresDevice
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "Instant apps cannot get car related permissions.")
 public final class CarInfoManagerTest extends AbstractCarTestCase {

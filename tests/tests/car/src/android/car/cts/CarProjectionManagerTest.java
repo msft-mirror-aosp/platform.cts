@@ -36,7 +36,6 @@ import android.car.CarProjectionManager;
 import android.car.feature.Flags;
 import android.car.test.PermissionsCheckerRule.EnsureHasPermission;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresDevice;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 
@@ -52,7 +51,6 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
@@ -66,7 +64,6 @@ import java.time.Duration;
             + " background users currently, so skipping tests for"
             + " secondary_user_on_secondary_display.")
 @SmallTest
-@RequiresDevice
 @AppModeFull(reason = "Instant Apps cannot get Bluetooth related permissions")
 public final class CarProjectionManagerTest extends AbstractCarTestCase {
     @ClassRule
