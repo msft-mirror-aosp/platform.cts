@@ -25,7 +25,6 @@ import com.android.bedstead.harrier.annotations.UsesParameterizedTestGenerator;
 import com.android.bedstead.harrier.annotations.UsesParameterizedTestWithArgumentGenerator;
 import com.android.bedstead.harrier.annotations.meta.BedsteadTest;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
-import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeNone;
 import com.android.bedstead.harrier.exceptions.RestartTestException;
 import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser;
@@ -138,34 +137,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         }
     }
 
-    private static boolean isParameterizedAnnotation(Annotation annotation) {
-        if (annotation instanceof DynamicParameterizedAnnotation) {
-            return true;
-        }
-
-        return annotation.annotationType().getAnnotation(ParameterizedAnnotation.class) != null;
-    }
-
-    private static boolean isAnnotationClassParameterizedAnnotation(Annotation annotation) {
-        return annotation.annotationType() != null
-                && annotation.annotationType().getAnnotation(ParameterizedAnnotation.class) != null;
-    }
-
-    private static Annotation[] getIndirectAnnotations(Annotation annotation) {
-        if (annotation instanceof DynamicParameterizedAnnotation) {
-            return ((DynamicParameterizedAnnotation) annotation).annotations();
-        }
-        return annotation.annotationType().getAnnotations();
-    }
-
-    private static boolean isRepeatingAnnotation(Annotation annotation) {
-        if (annotation instanceof DynamicParameterizedAnnotation) {
-            return false;
-        }
-
-        return annotation.annotationType().getAnnotation(RepeatingAnnotation.class) != null;
-    }
-
     private HarrierRule mHarrierRule;
 
     private static final ImmutableMap<
@@ -225,7 +196,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
         List<Annotation> replacementAnnotations = new ArrayList<>();
 
-        if (isRepeatingAnnotation(annotation)) {
+        if (BedsteadAnnotationGenerator.INSTANCE.isRepeatingAnnotation(annotation)) {
             try {
                 Annotation[] annotations =
                         (Annotation[])
@@ -237,12 +208,13 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
             }
         }
 
-        if (isParameterizedAnnotation(annotation)
+        if (BedsteadAnnotationGenerator.INSTANCE.isParameterizedAnnotation(annotation)
                 && !parameterizedAnnotations.contains(annotation)) {
             return replacementAnnotations;
         }
 
-        for (Annotation indirectAnnotation : getIndirectAnnotations(annotation)) {
+        for (Annotation indirectAnnotation :
+                BedsteadAnnotationGenerator.INSTANCE.getIndirectAnnotations(annotation)) {
             if (shouldSkipAnnotation(annotation)) {
                 continue;
             }
@@ -334,7 +306,8 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
             Set<Annotation> parameterizedAnnotations) {
         Map<String, List<Annotation>> annotationsPerScope = new HashMap<>();
         for (Annotation annotation : parameterizedAnnotations) {
-            if (isAnnotationClassParameterizedAnnotation(annotation)
+            if (BedsteadAnnotationGenerator.INSTANCE.isAnnotationClassParameterizedAnnotation(
+                            annotation)
                     && !shouldSkipAnnotation(annotation)) {
                 ParameterizedAnnotation parameterizedAnnotation =
                         annotation.annotationType().getAnnotation(ParameterizedAnnotation.class);
@@ -409,7 +382,8 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
             // DynamicParameterizedAnnotation}.
             for (Annotation annotation : parameterizedAnnotations) {
                 if (shouldSkipAnnotation(annotation)
-                        || isAnnotationClassParameterizedAnnotation(annotation)) {
+                        || BedsteadAnnotationGenerator.INSTANCE
+                                .isAnnotationClassParameterizedAnnotation(annotation)) {
                     // Special case - does not generate a run
                     continue;
                 }
@@ -523,7 +497,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
                 parameterizedAnnotations.addAll(replacements);
             }
 
-            if (isParameterizedAnnotation(annotation)) {
+            if (BedsteadAnnotationGenerator.INSTANCE.isParameterizedAnnotation(annotation)) {
                 parameterizedAnnotations.add(annotation);
             }
         }
