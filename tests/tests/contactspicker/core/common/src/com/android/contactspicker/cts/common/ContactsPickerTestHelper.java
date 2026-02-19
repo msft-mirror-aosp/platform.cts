@@ -14,17 +14,24 @@
  * limitations under the License.
  */
 
-package com.android.contactspicker.cts;
+package com.android.contactspicker.cts.common;
+
+import static com.google.common.truth.Truth.assertThat;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.ContentProviderOperation;
 import android.content.ContentProviderResult;
 import android.content.ContentResolver;
 import android.content.ContentUris;
+import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.SystemClock;
+import android.os.UserHandle;
 import android.provider.ContactsContract;
 import android.provider.ContactsContract.CommonDataKinds.Email;
 import android.provider.ContactsContract.CommonDataKinds.Event;
@@ -90,8 +97,19 @@ public class ContactsPickerTestHelper {
     }
 
     /** Removes the test contacts identified by their raw contact IDs. */
-    public static void removeTestContacts(ContentResolver resolver, List<Long> rawContactIds) {
-        try (var p = TestApis.permissions().withPermission(Manifest.permission.WRITE_CONTACTS)) {
+    public static void removeTestContacts(
+            Context context, List<Long> rawContactIds, UserHandle removeAsUser) {
+        List<String> perms = new ArrayList<>();
+        perms.add(Manifest.permission.WRITE_CONTACTS);
+        if (context.getUser().getIdentifier() != removeAsUser.getIdentifier()) {
+            perms.add(Manifest.permission.INTERACT_ACROSS_USERS);
+        }
+
+        try (var p = TestApis.permissions().withPermission(perms.toArray(new String[0]))) {
+            ContentResolver resolver = context.getContentResolver();
+            if (context.getUser().getIdentifier() != removeAsUser.getIdentifier()) {
+                resolver = context.createContextAsUser(removeAsUser, 0).getContentResolver();
+            }
             for (Long rawContactId : rawContactIds) {
                 resolver.delete(
                         RawContacts.CONTENT_URI,
@@ -103,7 +121,7 @@ public class ContactsPickerTestHelper {
 
     /** Creates a contact with multiple data rows based on the provided mimeType to value map. */
     public static ContactCreationResult createContact(
-            ContentResolver resolver, Map<String, Object> mimeTypeToValue) {
+            Context context, Map<String, Object> mimeTypeToValue, UserHandle createAsUser) {
         ArrayList<ContentProviderOperation> ops = new ArrayList<>();
         int rawContactInsertIndex = ops.size();
 
@@ -158,7 +176,17 @@ public class ContactsPickerTestHelper {
             ops.add(builder.build());
         }
 
-        try (var p = TestApis.permissions().withPermission(Manifest.permission.WRITE_CONTACTS)) {
+        List<String> perms = new ArrayList<>();
+        perms.add(Manifest.permission.WRITE_CONTACTS);
+        if (context.getUser().getIdentifier() != createAsUser.getIdentifier()) {
+            perms.add(Manifest.permission.INTERACT_ACROSS_USERS);
+        }
+
+        try (var p = TestApis.permissions().withPermission(perms.toArray(new String[0]))) {
+            ContentResolver resolver = context.getContentResolver();
+            if (context.getUser().getIdentifier() != createAsUser.getIdentifier()) {
+                resolver = context.createContextAsUser(createAsUser, 0).getContentResolver();
+            }
             ContentProviderResult[] results = resolver.applyBatch(ContactsContract.AUTHORITY, ops);
             long rawContactId = -1;
             Map<String, Long> mimeToId = new HashMap<>();
@@ -321,14 +349,67 @@ public class ContactsPickerTestHelper {
     /** Wait for picker ui to come up. */
     public static void waitForPickerUi(UiDevice uiDevice) {
         // Wait for the Search icon text to confirm UI is ready
+        waitForPickerUi(uiDevice, ELEMENT_DISPLAY_TIMEOUT_MS);
+    }
+
+    /** Wait for picker ui to come up, with a provided timeout. */
+    public static void waitForPickerUi(UiDevice uiDevice, int timeout) {
+        // Wait for the Search icon text to confirm UI is ready
         boolean isShown =
-                uiDevice.wait(
-                        Until.hasObject(By.text(SEARCH_BUTTON_CONTENT_DESC)),
-                        ELEMENT_DISPLAY_TIMEOUT_MS);
+                uiDevice.wait(Until.hasObject(By.text(SEARCH_BUTTON_CONTENT_DESC)), timeout);
         if (!isShown) {
             throw new AssertionError("Contacts Picker UI ('Search' text) did not appear.");
         }
         // Wait for any contact loading animations to clear.
         uiDevice.waitForIdle();
+    }
+
+    /**
+     * Verify that the uri returned matches expected authority and provides the expected dataIds,
+     * when queried.
+     */
+    public static void verifyUriReturned(
+            Context context,
+            int resultCode,
+            Intent resultData,
+            String expectedAuthority,
+            List<Long> expectedDataIds) {
+        assertThat(resultCode).isEqualTo(Activity.RESULT_OK);
+        assertThat(resultData).isNotNull();
+        Uri retUri = resultData.getData();
+        assertThat(retUri).isNotNull();
+        assertThat(retUri.getAuthority()).contains(expectedAuthority);
+
+        // Query the URI to verify it contains the correct Data Id(s)
+        try (Cursor cursor =
+                context.getContentResolver()
+                        .query(
+                                retUri,
+                                new String[] {ContactsContract.Data._ID},
+                                null,
+                                null,
+                                null)) {
+            assertThat(cursor).isNotNull();
+            assertThat(cursor.getCount()).isEqualTo(expectedDataIds.size());
+            List<Long> actualDataIds = new ArrayList<>();
+            while (cursor.moveToNext()) {
+                actualDataIds.add(cursor.getLong(0));
+            }
+            assertThat(actualDataIds).containsExactlyElementsIn(expectedDataIds);
+        }
+    }
+
+    /** A data class to hold the mapping of MimeType to Data ID for a single contact. */
+    public static class ContactDataIds {
+        private final Map<String, Long> mMimeTypeToDataId;
+
+        public ContactDataIds(Map<String, Long> mimeTypeToDataId) {
+            this.mMimeTypeToDataId = mimeTypeToDataId;
+        }
+
+        /** Returns the dataId corresponding to the mimeType provided. */
+        public Long get(String mimeType) {
+            return mMimeTypeToDataId.get(mimeType);
+        }
     }
 }

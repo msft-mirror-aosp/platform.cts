@@ -21,6 +21,9 @@
     <!-- Instant apps can't access the system providers. -->
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
+    <option name="config-descriptor:metadata" key="parameter" value="run_on_work_profile" />
+    <option name="config-descriptor:metadata" key="parameter" value="run_on_private_profile" />
+    <option name="config-descriptor:metadata" key="parameter" value="run_on_clone_profile" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
 
@@ -51,6 +54,6 @@
         <option name="runner" value="androidx.test.runner.AndroidJUnitRunner" />
         <option name="package" value="com.android.contactspicker.cts" />
         <!-- TODO(b/478807884): Adjust the hint value as tests evolve. -->
-        <option name="runtime-hint" value="10m00s" />
+        <option name="runtime-hint" value="15m00s" />
     </test>
 </configuration>
