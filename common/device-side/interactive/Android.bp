@@ -20,11 +20,11 @@ android_library {
         "common/src/main/java/**/*.kt",
     ],
     manifest: "common/src/main/AndroidManifest.xml",
-    sdk_version: "current",
+    sdk_version: "system_current",
     min_sdk_version: "29",
     platform_apis: true,
     static_libs: [
-        "HarrierCommonAndroid",
+        "HarrierInternal",
     ],
 }
 

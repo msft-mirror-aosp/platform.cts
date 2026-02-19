@@ -9,10 +9,10 @@ android_library {
         "src/main/kotlin/**/*.kt",
     ],
     static_libs: [
-        "HarrierCommonAndroid",
+        "HarrierInternal",
         "truth",
     ],
-    sdk_version: "current",
+    sdk_version: "system_current",
     manifest: "src/main/AndroidManifest.xml",
     min_sdk_version: "29",
 }

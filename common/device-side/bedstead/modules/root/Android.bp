@@ -13,11 +13,11 @@ java_library {
     name: "bedstead-root-annotations",
     srcs: [":bedstead-root-annotations-srcs"],
     static_libs: [
-        "HarrierCommonAndroid",
+        "HarrierInternal",
         "auto_value_annotations",
     ],
 
-    sdk_version: "current",
+    sdk_version: "system_current",
 
     plugins: ["auto_annotation_plugin"],
 }
