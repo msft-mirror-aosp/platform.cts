@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts
 
+import android.app.admin.DevicePolicyManager
 import android.app.admin.DevicePolicyManager.POLICY_SCOPE_DEVICE
 import android.app.admin.PolicyIdentifier
 import android.app.admin.RemoteDevicePolicyManager
@@ -39,7 +40,11 @@ import org.junit.Rule
 import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
-@RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING, Flags.FLAG_POLICY_STREAMLINING_TESTS)
+@RequireFlagsEnabled(
+    Flags.FLAG_POLICY_STREAMLINING,
+    Flags.FLAG_POLICY_STREAMLINING_TESTS,
+    Flags.FLAG_POLICY_STREAMLINING_AUTO_TIME,
+)
 @UsesEnterprisePolicies(
     scopeUser = AutoTimePolicy_ScopeUser::class,
     scopeDevice = AutoTimePolicy_ScopeDevice::class,
@@ -87,7 +92,6 @@ class AutoTimeTest {
     annotation class AutoTimePolicyDisabled
 
     @Test
-    @RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING_AUTO_TIME)
     @CanSetPolicyTest(scope = POLICY_SCOPE_DEVICE)
     fun scopeDevice_setPolicy_enabledValues_shouldSetGlobalSetting(
         @AutoTimePolicyEnabled policyValue: Int
@@ -100,12 +104,10 @@ class AutoTimeTest {
 
         setPolicy(POLICY_SCOPE_DEVICE, policyValue)
 
-        assertThat(TestApis.settings().global().getInt(Settings.Global.AUTO_TIME, 0))
-            .isEqualTo(1)
+        assertThat(TestApis.settings().global().getInt(Settings.Global.AUTO_TIME, 0)).isEqualTo(1)
     }
 
     @Test
-    @RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING_AUTO_TIME)
     @CanSetPolicyTest(scope = POLICY_SCOPE_DEVICE)
     fun scopeDevice_setPolicy_disabledValues_shouldSetGlobalSetting(
         @AutoTimePolicyDisabled policyValue: Int
@@ -118,18 +120,40 @@ class AutoTimeTest {
 
         setPolicy(POLICY_SCOPE_DEVICE, policyValue)
 
-        assertThat(TestApis.settings().global().getInt(Settings.Global.AUTO_TIME, 1))
-            .isEqualTo(0)
+        assertThat(TestApis.settings().global().getInt(Settings.Global.AUTO_TIME, 1)).isEqualTo(0)
     }
 
     @Test
-    @RequireFlagsEnabled(Flags.FLAG_POLICY_STREAMLINING_AUTO_TIME)
     @CanSetPolicyTest(scope = POLICY_SCOPE_DEVICE)
     fun scopeDevice_setPolicy_userChoice_shouldNotChangeGlobalSetting() {
         setPolicy(POLICY_SCOPE_DEVICE, PolicyIdentifier.AUTO_TIME_USER_CHOICE)
 
         assertThat(TestApis.settings().global().getInt(Settings.Global.AUTO_TIME, 0))
             .isEqualTo(originalSetting)
+    }
+
+    @Test
+    @RequireFlagsEnabled(Flags.FLAG_SET_AUTO_TIME_ENABLED_COEXISTENCE)
+    @ApiTest(apis = ["android.app.manager.DevicePolicyManager#getAutoTimePolicy"])
+    @CanSetPolicyTest(scope = POLICY_SCOPE_DEVICE)
+    fun getAutoTimePolicy_newDisabledEnumValues_returnsOldAutoTimeDisabledValue(
+        @AutoTimePolicyDisabled disabledPolicyValue: Int
+    ) {
+        setPolicy(POLICY_SCOPE_DEVICE, disabledPolicyValue)
+
+        assertThat(dpcDPM.getAutoTimePolicy()).isEqualTo(DevicePolicyManager.AUTO_TIME_DISABLED)
+    }
+
+    @Test
+    @RequireFlagsEnabled(Flags.FLAG_SET_AUTO_TIME_ENABLED_COEXISTENCE)
+    @ApiTest(apis = ["android.app.manager.DevicePolicyManager#getAutoTimePolicy"])
+    @CanSetPolicyTest(scope = POLICY_SCOPE_DEVICE)
+    fun getAutoTimePolicy_newEnabledEnumValues_returnsOldAutoTimeEnabledValue(
+        @AutoTimePolicyEnabled enabledPolicyValue: Int
+    ) {
+        setPolicy(POLICY_SCOPE_DEVICE, enabledPolicyValue)
+
+        assertThat(dpcDPM.getAutoTimePolicy()).isEqualTo(DevicePolicyManager.AUTO_TIME_ENABLED)
     }
 
     fun setPolicy(scope: Int, policy: Int) {
