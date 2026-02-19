@@ -25,7 +25,6 @@ import static org.junit.Assume.assumeTrue;
 import android.content.pm.FeatureInfo;
 import android.content.pm.PackageManager;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.ArrayMap;
@@ -101,6 +100,13 @@ public class VulkanFeaturesTest {
 
     private static final String VK_KHR_INCREMENTAL_PRESENT = "VK_KHR_incremental_present";
     private static final int VK_KHR_INCREMENTAL_PRESENT_SPEC_VERSION = 1;
+
+    private static final String VK_EXT_PRESENT_MODE_FIFO_LATEST_READY =
+            "VK_EXT_present_mode_fifo_latest_ready";
+    private static final int VK_EXT_PRESENT_MODE_FIFO_LATEST_READY_SPEC_VERSION = 1;
+
+    private static final String VK_KHR_PRESENT_WAIT2 = "VK_KHR_present_wait2";
+    private static final int VK_KHR_PRESENT_WAIT2_SPEC_VERSION = 1;
 
     private static final int VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT = 0x8;
     private static final int VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT = 0x10;
@@ -455,33 +461,43 @@ public class VulkanFeaturesTest {
     @CddTest(requirements = {"7.1.4.2/C-3-1"})
     @Test
     public void testVulkan1_1Requirements() throws JSONException {
-        if (mVulkanHardwareVersion == null || mVulkanHardwareVersion.version < VULKAN_1_1
-                || !PropertyUtil.isVendorApiLevelNewerThan(
-                        API_LEVEL_BEFORE_ANDROID_HARDWARE_BUFFER_REQ)) {
+        if (mVulkanHardwareVersion == null || mVulkanHardwareVersion.version < VULKAN_1_1) {
             return;
         }
-        assertTrue("Devices with Vulkan 1.1 must support sampler YCbCr conversion",
-                mBestDevice.getJSONObject("samplerYcbcrConversionFeatures")
-                           .getInt("samplerYcbcrConversion") != 0);
+        assertTrue(
+                "Devices with Vulkan 1.1 must support sampler YCbCr conversion",
+                mBestDevice
+                                .getJSONObject("samplerYcbcrConversionFeatures")
+                                .getInt("samplerYcbcrConversion")
+                        != 0);
 
         if (hasOnlyCpuDevice()) {
             return;
         }
-        assertTrue("Devices with Vulkan 1.1 must support " +
-                VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME +
-                " (version >= " + VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_SPEC_VERSION +
-                ")",
-                hasDeviceExtension(mBestDevice,
-                    VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME,
-                    VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_SPEC_VERSION));
-        assertTrue("Devices with Vulkan 1.1 must support SYNC_FD external semaphores",
-                hasHandleType(mBestDevice.getJSONArray("externalSemaphoreProperties"),
-                    VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT,
-                    "externalSemaphoreFeatures", 0x3 /* importable + exportable */));
-        assertTrue("Devices with Vulkan 1.1 must support SYNC_FD external fences",
-                hasHandleType(mBestDevice.getJSONArray("externalFenceProperties"),
-                    VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT,
-                    "externalFenceFeatures", 0x3 /* importable + exportable */));
+        assertTrue(
+                "Devices with Vulkan 1.1 or higher must support "
+                        + VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME
+                        + " (version >= "
+                        + VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_SPEC_VERSION
+                        + ")",
+                hasDeviceExtension(
+                        mBestDevice,
+                        VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME,
+                        VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_SPEC_VERSION));
+        assertTrue(
+                "Devices with Vulkan 1.1 or higher must support SYNC_FD external semaphores",
+                hasHandleType(
+                        mBestDevice.getJSONArray("externalSemaphoreProperties"),
+                        VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT,
+                        "externalSemaphoreFeatures",
+                        0x3 /* importable + exportable */));
+        assertTrue(
+                "Devices with Vulkan 1.1 or higher must support SYNC_FD external fences",
+                hasHandleType(
+                        mBestDevice.getJSONArray("externalFenceProperties"),
+                        VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT,
+                        "externalFenceFeatures",
+                        0x3 /* importable + exportable */));
     }
 
     @CddTest(requirements = {"7.1.4.2/C-1-7", "3.3.1/C-0-12"})
@@ -498,6 +514,14 @@ public class VulkanFeaturesTest {
         assertVulkanDeviceExtension(VK_KHR_MAINTENANCE1, VK_KHR_MAINTENANCE1_SPEC_VERSION);
         if (Flags.presentId2Khr()) {
             assertVulkanDeviceExtension(VK_KHR_PRESENT_ID2, VK_KHR_PRESENT_ID2_SPEC_VERSION);
+        }
+        if (Flags.presentModeFifoLatestReadyExt2()) {
+            assertVulkanDeviceExtension(
+                    VK_EXT_PRESENT_MODE_FIFO_LATEST_READY,
+                    VK_EXT_PRESENT_MODE_FIFO_LATEST_READY_SPEC_VERSION);
+        }
+        if (Flags.vkKhrPresentWait2Gpu()) {
+            assertVulkanDeviceExtension(VK_KHR_PRESENT_WAIT2, VK_KHR_PRESENT_WAIT2_SPEC_VERSION);
         }
     }
 
@@ -607,6 +631,18 @@ public class VulkanFeaturesTest {
             assertEquals("This device must support the ABP 2021.", "",
                     nativeGetABPCpuOnlySupport());
         }
+    }
+
+    @CddTest(requirements = {"7.1.4.2/H-2-1"})
+    @Test
+    public void testVulkan1_1RequiredOnHandheld() {
+        assumeTrue("Skipping because not a handheld device", isHandheld());
+        assertNotNull(
+                "Vulkan is required on handheld devices, but is not supported.",
+                mVulkanHardwareVersion);
+        assertTrue(
+                "Handheld devices MUST support Vulkan 1.1 or higher.",
+                mVulkanHardwareVersion.version >= VULKAN_1_1);
     }
 
     private JSONObject getBestDevice() throws JSONException {
