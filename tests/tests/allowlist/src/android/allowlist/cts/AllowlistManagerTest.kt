@@ -200,6 +200,14 @@ class AllowlistManagerTest {
 
     @ApiTest(apis = ["android.allowlist.AllowlistManager#removeOnAllowlistChangedListener"])
     @Test
+    fun testRemoveOnAllowlistChangedListener_unregisteredListener_noOp() {
+        runWithShellPermissionIdentity {
+            allowlistManager.removeOnAllowlistChangedListener(emptyListener)
+        }
+    }
+
+    @ApiTest(apis = ["android.allowlist.AllowlistManager#removeOnAllowlistChangedListener"])
+    @Test
     fun testRemoveOnAllowlistChangedListener_withoutPermission_throwsException() {
         assertThrows(SecurityException::class.java) {
             allowlistManager.removeOnAllowlistChangedListener(emptyListener)
