@@ -17,6 +17,7 @@ import unittest
 import unittest.mock
 
 import numpy
+import operator
 
 import image_processing_utils
 import its_session_utils
@@ -90,6 +91,67 @@ class ItsSessionUtilsTests(unittest.TestCase):
                                         state='OFF',
                                         tablet_state='OFF')
 
+  def test_check_threshold_with_marginal_pass(self):
+    threshold = 100
+    marginal_factor = 0.1  # 10%
+    context = 'Brightness'
+
+    # Test PASS (operator.gt)
+    status, msg = its_session_utils.check_threshold_with_marginal_pass(
+        115, threshold, operator.gt, marginal_factor, context)
+    self.assertEqual(status, its_session_utils.TestPassingStatus.PASS)
+    self.assertIsNone(msg)
+
+    # Test MARGINAL (operator.gt) -> 100 * (1 + 0.1) = 110
+    status, msg = its_session_utils.check_threshold_with_marginal_pass(
+        105, threshold, operator.gt, marginal_factor, context)
+    self.assertEqual(status, its_session_utils.TestPassingStatus.MARGINAL)
+    self.assertIn('MARGINAL', msg)
+
+    # Test FAIL (operator.gt)
+    status, msg = its_session_utils.check_threshold_with_marginal_pass(
+        85, threshold, operator.gt, marginal_factor, context)
+    self.assertEqual(status, its_session_utils.TestPassingStatus.FAIL)
+    self.assertIn('FAILED', msg)
+
+    # Test PASS (operator.lt)
+    status, msg = its_session_utils.check_threshold_with_marginal_pass(
+        85, threshold, operator.lt, marginal_factor, context)
+    self.assertEqual(status, its_session_utils.TestPassingStatus.PASS)
+
+    # Test MARGINAL (operator.lt) -> 100 * (1 - 0.1) = 90
+    status, msg = its_session_utils.check_threshold_with_marginal_pass(
+        95, threshold, operator.lt, marginal_factor, context)
+    self.assertEqual(status, its_session_utils.TestPassingStatus.MARGINAL)
+
+  def test_check_close_threshold_with_marginal_pass(self):
+    threshold = 10.0
+    abs_tol = 1.0
+    marginal_factor = 0.2  # 20% of tolerance
+    context = 'Focus'
+    # Marginal boundary: abs_tol * (1 - 0.2) = 0.8 diff
+
+    # Test PASS (diff < 0.8)
+    status, msg = its_session_utils.check_close_threshold_with_marginal_pass(
+        10.5, threshold, abs_tol, marginal_factor, context)
+    self.assertEqual(status, its_session_utils.TestPassingStatus.PASS)
+
+    # Test MARGINAL (diff between 0.8 and 1.0)
+    status, msg = its_session_utils.check_close_threshold_with_marginal_pass(
+        10.9, threshold, abs_tol, marginal_factor, context)
+    self.assertEqual(status, its_session_utils.TestPassingStatus.MARGINAL)
+    self.assertIn('marginal', msg)
+
+    # Test FAIL (diff > 1.0)
+    status, msg = its_session_utils.check_close_threshold_with_marginal_pass(
+        11.1, threshold, abs_tol, marginal_factor, context)
+    self.assertEqual(status, its_session_utils.TestPassingStatus.FAIL)
+    self.assertIn('FAILED', msg)
+
+    # Test PASS (negative diff)
+    status, msg = its_session_utils.check_close_threshold_with_marginal_pass(
+        9.3, threshold, abs_tol, marginal_factor, context)
+    self.assertEqual(status, its_session_utils.TestPassingStatus.PASS)
 
 if __name__ == '__main__':
   unittest.main()

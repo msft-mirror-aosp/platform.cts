@@ -104,6 +104,7 @@ class AutoFlashTest(its_base_test.UiAutomatorItsBaseTest):
       # TODO: b/462784889 - use do_jca_captures_across_zoom_ratios()
       zoom_ratios_physical_id = {}
       failed_zoom_ratios = {}
+      marginal_pass_zoom_ratios = {}
       for zoom_ratio in zoom_ratios:
         # take capture with no flash as baseline
         cap = cam.do_jca_capture(
@@ -174,6 +175,17 @@ class AutoFlashTest(its_base_test.UiAutomatorItsBaseTest):
         mean_delta = flash_mean - no_flash_mean
         if mean_delta <= _MEAN_DELTA_ATOL:
           failed_zoom_ratios[zoom_ratio] = mean_delta
+        elif mean_delta <= (
+            _MEAN_DELTA_ATOL * its_session_utils.MARGINAL_PASS_FACTOR_FLASH):
+          marginal_pass_zoom_ratios[zoom_ratio] = mean_delta
+
+      if marginal_pass_zoom_ratios:
+        marginal_pass_message = (
+            f'{its_session_utils.MARGINAL_PASSING_MESSAGE}\n')
+        for ratio, delta in marginal_pass_zoom_ratios.items():
+          marginal_pass_message += (
+              f'Ratio: {ratio} | Mean FLASH-OFF: {delta:.3f}\n')
+        logging.warning(marginal_pass_message)
 
       if failed_zoom_ratios:
         error_message = f'ATOL: {_MEAN_DELTA_ATOL}:\n'

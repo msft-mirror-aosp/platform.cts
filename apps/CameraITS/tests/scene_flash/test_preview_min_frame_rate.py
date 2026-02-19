@@ -15,7 +15,6 @@
 
 
 import logging
-import math
 import os.path
 
 from mobly import test_runner
@@ -51,7 +50,7 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
     super().setup_class()
     # establish connection with lighting controller
     self.use_gen2 = (self.lighting_cntl ==
-                gen2_rig_controller_utils.DEFAULT_GEN2_LIGHTS_NAME)
+                     gen2_rig_controller_utils.DEFAULT_GEN2_LIGHTS_NAME)
     self.lighting_control_port = lighting_control_utils.lighting_control(
         self.lighting_cntl, self.lighting_ch, self.use_gen2)
 
@@ -144,24 +143,43 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
           self.log_path, preview_file_name)
       preview_frame_rate = video_processing_utils.get_avg_frame_rate(
           preview_file_name_with_path)
+
       errors = []
-      if not math.isclose(
-          preview_frame_rate, ae_target_fps_range[0], abs_tol=_FPS_ATOL):
-        errors.append(
-            f'Preview frame rate was {preview_frame_rate:.3f}. '
-            f'Expected to be {ae_target_fps_range[0]}, ATOL: {_FPS_ATOL}.'
-        )
+      marginal_pass = []
+      status, msg = its_session_utils.check_close_threshold_with_marginal_pass(
+          preview_frame_rate,
+          ae_target_fps_range[0],
+          _FPS_ATOL,
+          its_session_utils.MARGINAL_PASS_THRESHOLD,
+          'Preview FPS')
+      if status == its_session_utils.TestPassingStatus.FAIL:
+        errors.append(msg)
+      elif status == its_session_utils.TestPassingStatus.MARGINAL:
+        marginal_pass.append(msg)
+
       frame_deltas = np.array(video_processing_utils.get_frame_deltas(
           preview_file_name_with_path))
       frame_delta_avg = np.average(frame_deltas)
       frame_delta_var = np.var(frame_deltas)
       logging.debug('Delta avg: %.4f, delta var: %.4f',
                     frame_delta_avg, frame_delta_var)
+      marginal_pass_delta = (
+          _MAX_VAR_FRAME_DELTA * its_session_utils.MARGINAL_PASS_FACTOR)
       if frame_delta_var > _MAX_VAR_FRAME_DELTA:
         errors.append(
             f'Preview frame delta variance {frame_delta_var:.3f} too large, '
             f'maximum allowed: {_MAX_VAR_FRAME_DELTA}.'
         )
+      elif frame_delta_var >= marginal_pass_delta:
+        marginal_pass.append(
+            f'Preview frame delta variance {frame_delta_var:.3f} is approaching'
+            f' the limit of {_MAX_VAR_FRAME_DELTA}.'
+            f' (Marginal threshold: {marginal_pass_delta:.3f})'
+        )
+      if marginal_pass:
+        logging.warning(its_session_utils.MARGINAL_PASSING_MESSAGE)
+        for msg in marginal_pass:
+          logging.warning(msg)
       if errors:
         raise AssertionError('\n'.join(errors))
 
@@ -175,9 +193,20 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
           opencv_processing_utils.convert_to_y(last_image, 'RGB')
       )
       logging.debug('Last frame y avg: %.4f', y_avg)
-      if not math.isclose(y_avg, 0, abs_tol=_DARKNESS_ATOL):
-        raise AssertionError(f'Last frame y average: {y_avg}, expected: 0, '
-                             f'ATOL: {_DARKNESS_ATOL}')
+      status_y, msg_y = (
+          its_session_utils.check_close_threshold_with_marginal_pass(
+              value=y_avg,
+              threshold=0,
+              abs_tol=_DARKNESS_ATOL,
+              marginal_factor=its_session_utils.MARGINAL_PASS_THRESHOLD,
+              context='Last frame brightness'
+              )
+          )
+      if status_y == its_session_utils.TestPassingStatus.MARGINAL:
+        logging.warning(its_session_utils.MARGINAL_PASSING_MESSAGE)
+        logging.warning(msg_y)
+      elif status_y == its_session_utils.TestPassingStatus.FAIL:
+        raise AssertionError(msg_y)
 
 if __name__ == '__main__':
   test_runner.main()
