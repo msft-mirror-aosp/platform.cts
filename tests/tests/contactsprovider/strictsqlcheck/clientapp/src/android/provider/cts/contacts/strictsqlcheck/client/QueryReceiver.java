@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 The Android Open Source Project
+ * Copyright (C) 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.provider.cts.contacts.sessionprovider.client;
+package android.provider.cts.contacts.strictsqlcheck.client;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -37,11 +37,9 @@ public class QueryReceiver extends BroadcastReceiver {
             return;
         }
 
-        // If the grant is valid, this succeeds. If not, it throws a SecurityException. If the query
-        // or selection arguments are malformed, IllegalArgumentException is thrown.
         try (Cursor cursor =
                 context.getContentResolver().query(targetUri, null, selection, null, null)) {
-            if (cursor != null && cursor.moveToFirst()) {
+            if (cursor != null) {
                 setResultCode(Activity.RESULT_OK);
             } else {
                 setResultCode(Activity.RESULT_CANCELED);

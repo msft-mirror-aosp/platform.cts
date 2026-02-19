@@ -91,6 +91,8 @@ public class ContactsPickerSessionProviderTest {
 
     private final ArrayList<Long> mCreatedRawContactIds = new ArrayList<>();
 
+    private static final int RESULT_ILLEGAL_ARGUMENT_EXCEPTION = Activity.RESULT_FIRST_USER + 1;
+
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
@@ -655,6 +657,84 @@ public class ContactsPickerSessionProviderTest {
                 TestApis.permissions().withPermission(PERMISSION_MANAGE_CONTACTS_PICKER_SESSION)) {
 
             assertNull(mResolver.call(BASE_URI, "invalidMethodName", null, null));
+        }
+    }
+
+    @Test
+    public void testQuery_withUriPermission_subQuery_throwsException() throws Exception {
+        long dataId;
+        try (PermissionContext withPermission =
+                TestApis.permissions()
+                        .withPermission(
+                                android.Manifest.permission.WRITE_CONTACTS,
+                                android.Manifest.permission.READ_CONTACTS)) {
+            dataId = createContact("Test User Grant Sub Query");
+
+            try (Cursor cursor =
+                    mResolver.query(
+                            Data.CONTENT_URI,
+                            null,
+                            Data._ID + "=?",
+                            new String[] {String.valueOf(dataId)},
+                            null)) {
+                assertNotNull(cursor);
+                assertTrue(cursor.moveToFirst());
+            }
+        }
+        Uri sessionUri;
+        try (PermissionContext withPermission =
+                TestApis.permissions().withPermission(PERMISSION_MANAGE_CONTACTS_PICKER_SESSION)) {
+            PackageManager pm = mContext.getPackageManager();
+            ApplicationInfo ai = pm.getApplicationInfo(SESSION_CLIENT_APP, 0);
+
+            ContentValues values = new ContentValues();
+            values.put(KEY_CONTACT_DATA_IDS, String.valueOf(dataId));
+            values.put(KEY_SESSION_REQUESTER_UID, ai.uid);
+
+            sessionUri = mResolver.insert(SESSIONS_URI, values);
+            assertNotNull(sessionUri);
+
+            mContext.grantUriPermission(
+                    SESSION_CLIENT_APP, sessionUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        }
+
+        try (PermissionContext withoutPermission =
+                TestApis.permissions()
+                        .withoutPermission(PERMISSION_MANAGE_CONTACTS_PICKER_SESSION)) {
+
+            final CountDownLatch latch = new CountDownLatch(1);
+            final int[] clientAppResult = new int[1];
+
+            Intent queryIntent = new Intent(ACTION_QUERY);
+            queryIntent.setPackage(SESSION_CLIENT_APP);
+            queryIntent.putExtra("target_uri", sessionUri);
+            queryIntent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+
+            // A subquery in projection should trigger an IllegalArgumentException
+            String selectionWithSubquery = "(SELECT 1) > 0";
+            queryIntent.putExtra("selection", selectionWithSubquery);
+
+            mContext.sendOrderedBroadcast(
+                    queryIntent,
+                    null,
+                    new BroadcastReceiver() {
+                        @Override
+                        public void onReceive(Context context, Intent intent) {
+                            clientAppResult[0] = getResultCode();
+                            latch.countDown();
+                        }
+                    },
+                    null,
+                    Activity.RESULT_CANCELED,
+                    null,
+                    null);
+
+            boolean received = latch.await(10, TimeUnit.SECONDS);
+            assertTrue("Timed out waiting for Client App", received);
+            assertEquals(
+                    "Expected IllegalArgumentException due to strict SQL check on projection",
+                    RESULT_ILLEGAL_ARGUMENT_EXCEPTION,
+                    clientAppResult[0]);
         }
     }
 
