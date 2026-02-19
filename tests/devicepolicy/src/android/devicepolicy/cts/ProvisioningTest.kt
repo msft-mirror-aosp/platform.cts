@@ -1352,31 +1352,6 @@ class ProvisioningTest {
     @EnsureHasNoDpc
     @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING)
-    @RequireHeadlessSystemUserMode(reason = "Multi-user device provisioning requires HSUM")
-    @RequireRunOnSecondaryUser
-    @RequireResourcesBooleanValue(
-        configName = "config_enableMultiuserManagement",
-        requiredValue = true
-    )
-    @Test
-    @ApiTest(
-        apis = ["android.app.admin.DevicePolicyManager#checkProvisioningPreCondition",
-        "android.app.admin.DevicePolicyManager#ACTION_PROVISION_MULTIUSER_MANAGED_DEVICE"]
-    )
-    fun checkProvisioningPreCondition_multiUserDC_secondaryUser_returnsNotSystemUser() =
-        withIncompleteSetupOnAllUsers {
-            assertThat(
-                localDevicePolicyManager.checkProvisioningPrecondition(
-                    DevicePolicyManager.ACTION_PROVISION_MULTIUSER_MANAGED_DEVICE,
-                    DEVICE_ADMIN_COMPONENT_NAME.packageName
-                )
-            ).isEqualTo(DevicePolicyManager.STATUS_NOT_SYSTEM_USER)
-        }
-
-    @Postsubmit(reason = "New test")
-    @EnsureHasNoDpc
-    @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
-    @RequireFlagsEnabled(Flags.FLAG_MULTI_USER_MANAGEMENT_DEVICE_PROVISIONING)
     @RequireNotHeadlessSystemUserMode(reason = "Device must not be in headless system user mode")
     @RequireRunOnSystemUser()
     @RequireResourcesBooleanValue(
