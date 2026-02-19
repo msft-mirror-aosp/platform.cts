@@ -82,6 +82,7 @@ public class WifiBuildCompat {
     }
 
     public static boolean isAtLeastC() {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN;
+        return Build.VERSION.CODENAME.equals("CinnamonBun")
+                ||Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN;
     }
 }
