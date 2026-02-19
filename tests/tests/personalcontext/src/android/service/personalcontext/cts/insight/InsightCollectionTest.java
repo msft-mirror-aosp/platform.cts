@@ -18,8 +18,8 @@ package android.service.personalcontext.cts.insight;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.app.PendingIntent;
 import android.content.Intent;
-import android.net.Uri;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -31,6 +31,7 @@ import android.service.personalcontext.insight.InsightActionDetails;
 import android.service.personalcontext.insight.InsightCollection;
 import android.service.personalcontext.insight.InsightDisplayDetails;
 
+import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
@@ -49,6 +50,14 @@ public class InsightCollectionTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
+    private static PendingIntent createFakePendingIntent() {
+        return PendingIntent.getBroadcast(
+                InstrumentationRegistry.getTargetContext(),
+                0,
+                new Intent(),
+                PendingIntent.FLAG_IMMUTABLE);
+    }
+
     @ApiTest(
             apis = {
                 "android.service.personalcontext.insight.InsightCollection.Builder#build",
@@ -62,7 +71,7 @@ public class InsightCollectionTest {
     public void testInsightCollection_bundleUnbundle_sameInsightType() {
         final InsightActionDetails actionDetails1 =
                 new InsightActionDetails.Builder()
-                        .setIntent(new Intent(Intent.ACTION_VIEW, Uri.parse("content://test1")))
+                        .setPendingIntent(createFakePendingIntent())
                         .build();
         final InsightDisplayDetails displayDetails1 =
                 new InsightDisplayDetails.Builder("title1")
@@ -73,7 +82,7 @@ public class InsightCollectionTest {
 
         final InsightActionDetails actionDetails2 =
                 new InsightActionDetails.Builder()
-                        .setIntent(new Intent(Intent.ACTION_VIEW, Uri.parse("content://test2")))
+                        .setPendingIntent(createFakePendingIntent())
                         .build();
         final InsightDisplayDetails displayDetails2 =
                 new InsightDisplayDetails.Builder("title2")
@@ -104,7 +113,7 @@ public class InsightCollectionTest {
     public void testInsightCollection_bundleUnbundle_differentInsightTypes() {
         final InsightActionDetails actionDetails =
                 new InsightActionDetails.Builder()
-                        .setIntent(new Intent(Intent.ACTION_VIEW, Uri.parse("content://test")))
+                        .setPendingIntent(createFakePendingIntent())
                         .build();
         final InsightDisplayDetails displayDetails =
                 new InsightDisplayDetails.Builder("title")
@@ -136,7 +145,9 @@ public class InsightCollectionTest {
     public void testIterator() {
         final ActionableInsight actionableInsight =
                 new ActionableInsight.Builder(
-                                new InsightActionDetails.Builder().setIntent(new Intent()).build(),
+                                new InsightActionDetails.Builder()
+                                        .setPendingIntent(createFakePendingIntent())
+                                        .build(),
                                 new InsightDisplayDetails.Builder("title").build())
                         .build();
         final DisplayInsight displayInsight =

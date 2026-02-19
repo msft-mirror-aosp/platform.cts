@@ -18,6 +18,8 @@ package android.service.personalcontext.cts.insight;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -31,6 +33,7 @@ import android.service.personalcontext.insight.InsightActionDetails;
 import android.service.personalcontext.insight.InsightDisplayDetails;
 import android.service.personalcontext.insight.interaction.ReturnHintReport;
 
+import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
@@ -78,9 +81,17 @@ public class ActionableInsightTest {
                                 new BundleHint.Builder().build(), generateSignedHintKey())
                         .addRenderTokens(List.of(renderToken))
                         .build();
+        final Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         final ActionableInsight insight =
                 new ActionableInsight.Builder(
-                                new InsightActionDetails.Builder().setIntent(new Intent()).build(),
+                                new InsightActionDetails.Builder()
+                                        .setPendingIntent(
+                                                PendingIntent.getActivity(
+                                                        /* context= */ context,
+                                                        /* requestCode= */ 0,
+                                                        /* intent= */ new Intent("test"),
+                                                        /* flags= */ PendingIntent.FLAG_IMMUTABLE))
+                                        .build(),
                                 new InsightDisplayDetails.Builder("test").build())
                         .addOriginHint(originHint)
                         .build();
