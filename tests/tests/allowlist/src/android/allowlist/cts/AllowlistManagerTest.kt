@@ -24,6 +24,7 @@ import android.os.allowlist.AllowlistManager
 import android.os.allowlist.AllowlistRequest
 import android.os.allowlist.AllowlistResponse
 import android.os.allowlist.SignedPackageMultiMap
+import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -46,6 +47,7 @@ import org.junit.Test
  * they do not involve the real AllowlistProviderService, only a test one built into the system.
  */
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_PERMISSION_V2)
+@AppModeFull(reason = "AllowlistManager cannot be accessed by instant apps")
 @SuppressLint("MissingPermission")
 class AllowlistManagerTest {
 
