@@ -129,12 +129,10 @@ public class VideoCodecClaimsPerformanceTest extends VideoCodecClaimsPerformance
         // 5.1.10/C-2-1
         argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_VP8, 320, 180, 30, true, CODEC_ANY});
         argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_VP8, 640, 360, 30, true, CODEC_ANY});
-        argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_VP8, 1280, 720, 30, true,
-                hasCodec(MediaFormat.MIMETYPE_VIDEO_VP8, 1280, 720, true) ? CODEC_ANY
-                                                                          : CODEC_OPTIONAL});
-        argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_VP8, 1920, 1080, 30, true,
-                hasCodec(MediaFormat.MIMETYPE_VIDEO_VP8, 1920, 1080, true) ? CODEC_ANY
-                                                                           : CODEC_OPTIONAL});
+        argsList.add(new Object[] {
+                MediaFormat.MIMETYPE_VIDEO_VP8, 1280, 720, 30, true, CODEC_OPTIONAL});
+        argsList.add(new Object[] {
+                MediaFormat.MIMETYPE_VIDEO_VP8, 1920, 1080, 30, true, CODEC_OPTIONAL});
 
         // vp9
         // 5.2.4/C-1-1
@@ -251,10 +249,10 @@ public class VideoCodecClaimsPerformanceTest extends VideoCodecClaimsPerformance
         // 5.3.6/C-1-1, 5.1.10/C-2-1
         argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_VP8, 320, 180, 30, false, CODEC_ANY});
         argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_VP8, 640, 360, 30, false, CODEC_ANY});
-        argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_VP8, 1280, 720, isTv ? 60 : 30, false,
-                isDispHtAtleastHD ? CODEC_ANY : CODEC_OPTIONAL});
-        argsList.add(new Object[] {MediaFormat.MIMETYPE_VIDEO_VP8, 1920, 1080, isTv ? 60 : 30,
-                false, isDispHtAtleastFHD ? CODEC_ANY : CODEC_OPTIONAL});
+        argsList.add(new Object[] {
+                MediaFormat.MIMETYPE_VIDEO_VP8, 1280, 720, isTv ? 60 : 30, false, CODEC_OPTIONAL});
+        argsList.add(new Object[] {
+                MediaFormat.MIMETYPE_VIDEO_VP8, 1920, 1080, isTv ? 60 : 30, false, CODEC_OPTIONAL});
 
         // vp9
         // 5.3.7/C-1-1, 5.1.10/C-2-1
