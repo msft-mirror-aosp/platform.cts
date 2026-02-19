@@ -70,7 +70,7 @@ public class ActionableInsightTest {
             })
     @Test
     public void testReturnHintReporter() throws GeneralSecurityException {
-        final RenderToken renderToken = new RenderToken(UUID.randomUUID());
+        final RenderToken renderToken = new RenderToken(UUID.randomUUID(), null);
 
         final ContextHintWithSignature originHint =
                 new ContextHintWithSignature.Builder(

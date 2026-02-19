@@ -20,6 +20,7 @@ import subprocess
 import time
 
 import cv2
+import capture_request_utils
 import image_processing_utils
 import ip_chart_extraction_utils as ce
 import ip_chart_pattern_detector as pd
@@ -593,17 +594,32 @@ def setup_gen2_rig_with_cam(self, cam):
     self: ItsBaseTest object; used for lighting and motor control.
     cam: its_session_utils.ItsSession camera object.
   """
+  # Configure and setup gen2 rig
   logging.debug('Setting up gen2 rig')
-  self.motor_channel = int(self.rotator_ch)
-  lights_channel = int(self.lighting_ch)
-  lights_port = find_serial_port(self.lighting_cntl)
-  if lights_port:
-    sensor_fusion_utils.establish_serial_comm(lights_port)
-    set_lighting_state(lights_port, lights_channel, 'ON')
-  self.motor_port = find_serial_port(self.rotator_cntl)
-  if self.motor_port:
-    configure_rotator(self.motor_port, self.motor_channel)
-    rotate(self.motor_port, self.motor_channel)
-    rotate_to_orthogonal_position(
-        cam, self.log_path, self.motor_port, self.motor_channel)
+  if self.lighting_cntl == 'None':
+    logging.debug('Gen2 rig lights is not available.')
+    self.lighting_port = None
+    self.lighting_channel = None
+  else:
+    lights_channel = int(self.lighting_ch)
+    lights_port = find_serial_port(self.lighting_cntl)
+    if lights_port:
+      sensor_fusion_utils.establish_serial_comm(lights_port)
+      set_lighting_state(lights_port, lights_channel, 'ON')
+      logging.debug('Successfully configured and turned ON the gen2 rig lights.')
+
+  if self.rotator_cntl == 'None':
+    logging.debug('Gen2 rig motor is not available.')
+    self.motor_port = None
+    self.motor_channel = None
+  else:
+    self.motor_channel = int(self.rotator_ch)
+    self.motor_port = find_serial_port(
+        self.rotator_cntl)
+    if self.motor_port:
+      configure_rotator(self.motor_port, self.motor_channel)
+      rotate(self.motor_port, self.motor_channel)
+      logging.debug('Successfully configured and rotated the gen2 rig.')
+      rotate_to_orthogonal_position(
+            cam, self.log_path, self.motor_port, self.motor_channel)
 

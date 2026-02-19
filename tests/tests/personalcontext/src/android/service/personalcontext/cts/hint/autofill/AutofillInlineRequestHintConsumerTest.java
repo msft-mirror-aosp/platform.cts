@@ -81,15 +81,15 @@ public class AutofillInlineRequestHintConsumerTest {
                 new InlineSuggestionsRequest.Builder(List.of(inlinePresentationSpec)).build();
 
         final AutofillInlineRequestHint hint =
-                new AutofillInlineRequestHint.Builder()
-                        .setSessionId(sessionId)
-                        .setTaskId(taskId)
-                        .setRequestTimestamp(requestTimestamp)
-                        .setActivityComponent(activityComponent)
-                        .setFocusedId(focusedId)
-                        .setAutofillValue(autofillValue)
-                        .setInlineSuggestionsRequest(request)
-                        .setAugmentedAutofillProxy(mProxy)
+                new AutofillInlineRequestHint.Builder(
+                                sessionId,
+                                taskId,
+                                requestTimestamp,
+                                activityComponent,
+                                focusedId,
+                                autofillValue,
+                                request,
+                                mProxy)
                         .build();
 
         final AutofillInlineRequestHintConsumer consumer =

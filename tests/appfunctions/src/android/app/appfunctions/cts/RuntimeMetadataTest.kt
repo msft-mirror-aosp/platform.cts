@@ -59,8 +59,7 @@ import org.junit.runner.RunWith
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER)
 class RuntimeMetadataTest {
 
-    @get:Rule
-    val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+    @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     private val context: Context
         get() = ApplicationProvider.getApplicationContext()
@@ -131,13 +130,43 @@ class RuntimeMetadataTest {
     @Test
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DYNAMIC_APP_FUNCTIONS)
+    fun installPackageWithAppFunction_runtimeMetadataExist_noFunctionIdProperty() =
+        doBlockingWithPermissions(Manifest.permission.EXECUTE_APP_FUNCTIONS) {
+            installPackage(AppFunctionMetadataTestHelper.LegacySchemaHelperApp.APK_PATH)
+
+            retryAssert {
+                assertThat(
+                        queryStaticAppFunctionNames(
+                            AppFunctionMetadataTestHelper.LegacySchemaHelperApp.PACKAGE_NAME
+                        )
+                    )
+                    .containsExactlyElementsIn(
+                        AppFunctionMetadataTestHelper.LegacySchemaHelperApp.FunctionNames
+                            .ALL_FUNCTIONS
+                    )
+                assertThat(
+                        queryRuntimeAppFunctionNames(
+                            AppFunctionMetadataTestHelper.LegacySchemaHelperApp.PACKAGE_NAME
+                        )
+                    )
+                    .containsExactlyElementsIn(
+                        AppFunctionMetadataTestHelper.LegacySchemaHelperApp.FunctionNames
+                            .ALL_FUNCTIONS
+                    )
+            }
+        }
+
+    @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     fun installPackageWithAppFunction_runtimeMetadataExist_whenCallerHasPermission() =
         doBlockingWithPermissions(Manifest.permission.EXECUTE_APP_FUNCTIONS) {
             installPackage(TEST_APP_A_V2_PATH)
 
             retryAssert {
-                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG))
-                    .containsExactly(AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print1"))
+                assertThat(queryRuntimeAppFunctionNames(TEST_APP_A_PKG))
+                    .containsExactly(AppFunctionName(TEST_APP_A_PKG, "com.example.utils#print1"))
             }
         }
 
@@ -148,9 +177,7 @@ class RuntimeMetadataTest {
         doBlockingWithPermissions {
             installPackage(TEST_APP_A_V2_PATH)
 
-            retryAssert {
-                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG)).isEmpty()
-            }
+            retryAssert { assertThat(queryRuntimeAppFunctionNames(TEST_APP_A_PKG)).isEmpty() }
         }
 
     @Test
@@ -162,8 +189,8 @@ class RuntimeMetadataTest {
             installPackage(TEST_APP_A_V2_PATH)
 
             retryAssert {
-                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG))
-                    .containsExactly(AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print1"))
+                assertThat(queryRuntimeAppFunctionNames(TEST_APP_A_PKG))
+                    .containsExactly(AppFunctionName(TEST_APP_A_PKG, "com.example.utils#print1"))
             }
         }
 
@@ -176,11 +203,8 @@ class RuntimeMetadataTest {
             installPackage(TEST_APP_A_V2_PATH)
 
             retryAssert {
-                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG))
-                    .containsExactly(AppFunctionInfo(
-                        TEST_APP_A_PKG,
-                        "com.example.utils#print1"
-                    ))
+                assertThat(queryRuntimeAppFunctionNames(TEST_APP_A_PKG))
+                    .containsExactly(AppFunctionName(TEST_APP_A_PKG, "com.example.utils#print1"))
             }
         }
 
@@ -191,17 +215,17 @@ class RuntimeMetadataTest {
         doBlockingWithPermissions(Manifest.permission.EXECUTE_APP_FUNCTIONS) {
             installPackage(TEST_APP_A_V2_PATH)
             retryAssert {
-                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG))
-                    .containsExactly(AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print1"))
+                assertThat(queryRuntimeAppFunctionNames(TEST_APP_A_PKG))
+                    .containsExactly(AppFunctionName(TEST_APP_A_PKG, "com.example.utils#print1"))
             }
 
             installPackage(TEST_APP_A_V3_PATH)
 
             retryAssert {
-                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG))
+                assertThat(queryRuntimeAppFunctionNames(TEST_APP_A_PKG))
                     .containsExactly(
-                        AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print2"),
-                        AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print3"),
+                        AppFunctionName(TEST_APP_A_PKG, "com.example.utils#print2"),
+                        AppFunctionName(TEST_APP_A_PKG, "com.example.utils#print3"),
                     )
             }
         }
@@ -213,13 +237,13 @@ class RuntimeMetadataTest {
         doBlockingWithPermissions(Manifest.permission.EXECUTE_APP_FUNCTIONS) {
             installPackage(TEST_APP_A_V2_PATH)
             retryAssert {
-                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG))
-                    .containsExactly(AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print1"))
+                assertThat(queryRuntimeAppFunctionNames(TEST_APP_A_PKG))
+                    .containsExactly(AppFunctionName(TEST_APP_A_PKG, "com.example.utils#print1"))
             }
 
             uninstallPackage(TEST_APP_A_PKG)
 
-            retryAssert { assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG)).isEmpty() }
+            retryAssert { assertThat(queryRuntimeAppFunctionNames(TEST_APP_A_PKG)).isEmpty() }
         }
 
     @Test
@@ -231,10 +255,10 @@ class RuntimeMetadataTest {
             installPackage(TEST_APP_B_V1_PATH)
 
             retryAssert {
-                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG))
-                    .containsExactly(AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print1"))
-                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_B_PKG))
-                    .containsExactly(AppFunctionInfo(TEST_APP_B_PKG, "com.example.utils#print5"))
+                assertThat(queryRuntimeAppFunctionNames(TEST_APP_A_PKG))
+                    .containsExactly(AppFunctionName(TEST_APP_A_PKG, "com.example.utils#print1"))
+                assertThat(queryRuntimeAppFunctionNames(TEST_APP_B_PKG))
+                    .containsExactly(AppFunctionName(TEST_APP_B_PKG, "com.example.utils#print5"))
             }
         }
 
@@ -246,22 +270,22 @@ class RuntimeMetadataTest {
             installPackage(TEST_APP_A_V2_PATH)
             installPackage(TEST_APP_B_V1_PATH)
             retryAssert {
-                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG))
-                    .containsExactly(AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print1"))
-                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_B_PKG))
-                    .containsExactly(AppFunctionInfo(TEST_APP_B_PKG, "com.example.utils#print5"))
+                assertThat(queryRuntimeAppFunctionNames(TEST_APP_A_PKG))
+                    .containsExactly(AppFunctionName(TEST_APP_A_PKG, "com.example.utils#print1"))
+                assertThat(queryRuntimeAppFunctionNames(TEST_APP_B_PKG))
+                    .containsExactly(AppFunctionName(TEST_APP_B_PKG, "com.example.utils#print5"))
             }
 
             installPackage(TEST_APP_A_V3_PATH)
 
             retryAssert {
-                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG))
+                assertThat(queryRuntimeAppFunctionNames(TEST_APP_A_PKG))
                     .containsExactly(
-                        AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print2"),
-                        AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print3"),
+                        AppFunctionName(TEST_APP_A_PKG, "com.example.utils#print2"),
+                        AppFunctionName(TEST_APP_A_PKG, "com.example.utils#print3"),
                     )
-                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_B_PKG))
-                    .containsExactly(AppFunctionInfo(TEST_APP_B_PKG, "com.example.utils#print5"))
+                assertThat(queryRuntimeAppFunctionNames(TEST_APP_B_PKG))
+                    .containsExactly(AppFunctionName(TEST_APP_B_PKG, "com.example.utils#print5"))
             }
         }
 
@@ -273,18 +297,18 @@ class RuntimeMetadataTest {
             installPackage(TEST_APP_A_V2_PATH)
             installPackage(TEST_APP_B_V1_PATH)
             retryAssert {
-                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG))
-                    .containsExactly(AppFunctionInfo(TEST_APP_A_PKG, "com.example.utils#print1"))
-                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_B_PKG))
-                    .containsExactly(AppFunctionInfo(TEST_APP_B_PKG, "com.example.utils#print5"))
+                assertThat(queryRuntimeAppFunctionNames(TEST_APP_A_PKG))
+                    .containsExactly(AppFunctionName(TEST_APP_A_PKG, "com.example.utils#print1"))
+                assertThat(queryRuntimeAppFunctionNames(TEST_APP_B_PKG))
+                    .containsExactly(AppFunctionName(TEST_APP_B_PKG, "com.example.utils#print5"))
             }
 
             uninstallPackage(TEST_APP_A_PKG)
 
             retryAssert {
-                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG)).isEmpty()
-                assertThat(queryRuntimeAppFunctionInfos(TEST_APP_B_PKG))
-                    .containsExactly(AppFunctionInfo(TEST_APP_B_PKG, "com.example.utils#print5"))
+                assertThat(queryRuntimeAppFunctionNames(TEST_APP_A_PKG)).isEmpty()
+                assertThat(queryRuntimeAppFunctionNames(TEST_APP_B_PKG))
+                    .containsExactly(AppFunctionName(TEST_APP_B_PKG, "com.example.utils#print5"))
             }
         }
 
@@ -297,19 +321,19 @@ class RuntimeMetadataTest {
 
             installPackage(TEST_APP_A_V2_PATH)
 
-            retryAssert { assertThat(queryRuntimeAppFunctionInfos(TEST_APP_A_PKG).isEmpty()) }
+            retryAssert { assertThat(queryRuntimeAppFunctionNames(TEST_APP_A_PKG).isEmpty()) }
         }
 
     private fun installPackage(path: String) {
         assertThat(
-            SystemUtil.runShellCommand(
-                java.lang.String.format(
-                    "pm install -r -i %s -t -g %s",
-                    context.packageName,
-                    path,
+                SystemUtil.runShellCommand(
+                    java.lang.String.format(
+                        "pm install -r -i %s -t -g %s",
+                        context.packageName,
+                        path,
+                    )
                 )
             )
-        )
             .isEqualTo("Success\n")
     }
 
@@ -321,6 +345,28 @@ class RuntimeMetadataTest {
         SystemUtil.runShellCommand(
             "device_config delete machine_learning allowlisted_app_functions_agents"
         )
+    }
+
+    private fun queryAppFunctionStaticMetadata(packageName: String): List<GenericDocument> {
+        val globalSearchSession: GlobalSearchSessionShim =
+            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync().get()
+
+        val searchResults: SearchResultsShim =
+            globalSearchSession.search(
+                String.format(
+                    "%s:\"%s\"",
+                    PROPERTY_PACKAGE_NAME,
+                    packageName
+                ),
+                SearchSpec.Builder()
+                    .addFilterNamespaces(
+                        AppFunctionStaticMetadataHelper.APP_FUNCTION_STATIC_NAMESPACE
+                    )
+                    .addFilterSchemas(AppFunctionStaticMetadataHelper.STATIC_SCHEMA_TYPE)
+                    .setVerbatimSearchEnabled(true)
+                    .build(),
+            )
+        return collectAllSearchResults(searchResults)
     }
 
     private fun queryAppFunctionStaticMetadata(
@@ -367,22 +413,26 @@ class RuntimeMetadataTest {
         return collectAllSearchResults(searchResults)
     }
 
-    private fun queryRuntimeAppFunctionInfos(packageName: String): List<AppFunctionInfo> {
-        return queryAppFunctionRuntimeMetadata(packageName).map {
-            AppFunctionInfo(
+    private fun queryStaticAppFunctionNames(packageName: String): List<AppFunctionName> {
+        return queryAppFunctionStaticMetadata(packageName).map {
+            AppFunctionName(
                 it.getPropertyString(PROPERTY_PACKAGE_NAME)!!,
                 it.getPropertyString(PROPERTY_FUNCTION_ID)!!,
             )
         }
     }
 
-    data class AppFunctionInfo(val packageName: String, val functionId: String)
+    private fun queryRuntimeAppFunctionNames(packageName: String): List<AppFunctionName> {
+        return queryAppFunctionRuntimeMetadata(packageName).map {
+            AppFunctionName(
+                it.getPropertyString(PROPERTY_PACKAGE_NAME)!!,
+                it.getPropertyString(PROPERTY_FUNCTION_ID)!!,
+            )
+        }
+    }
 
     private companion object {
-        @JvmField
-        @ClassRule
-        @Rule
-        val sDeviceState: DeviceState = DeviceState()
+        @JvmField @ClassRule @Rule val sDeviceState: DeviceState = DeviceState()
 
         const val TEST_APP_ROOT_FOLDER: String = "/data/local/tmp/cts/appfunctions/"
         const val TEST_APP_A_V2_PATH: String =

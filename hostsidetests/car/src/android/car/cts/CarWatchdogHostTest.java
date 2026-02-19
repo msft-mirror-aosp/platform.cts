@@ -115,6 +115,9 @@ public class CarWatchdogHostTest extends CarHostJUnit4TestCase {
     private static final String RESOURCE_OVERUSE_KILL_CMD =
             String.format("cmd car_service watchdog-resource-overuse-kill %s", WATCHDOG_TEST_PKG);
 
+    /** The command to wait for car_service to be ready. */
+    private static final String WAIT_FOR_CAR_SERVICE_CMD = "cmd -w car_service";
+
     /** The command to get I/O overuse foreground bytes threshold in the adb shell. */
     private static final String GET_IO_OVERUSE_FOREGROUND_BYTES_CMD =
             "cmd car_service watchdog-io-get-3p-foreground-bytes";
@@ -193,7 +196,8 @@ public class CarWatchdogHostTest extends CarHostJUnit4TestCase {
                             List.of(
                                     "Successfully stopped custom perf collection",
                                     "Failed to stop custom perf collection: No custom collection "
-                                            + "is running"));
+                                            + "is running"),
+                    WAIT_FOR_CAR_SERVICE_CMD, List.of("Car service commands:"));
 
     // System event performance data collections are extended for at least 30 seconds after
     // receiving the corresponding system event completion notification. During these periods
@@ -571,6 +575,7 @@ public class CarWatchdogHostTest extends CarHostJUnit4TestCase {
         getDevice().executeShellCommand(WATCHDOG_SHUTDOWN_ENTER_CMD);
         getDevice().reboot();
         getDevice().waitForDeviceAvailable(DEVICE_RESPONSE_TIMEOUT_MS);
+        executeAndCheckCommand(WAIT_FOR_CAR_SERVICE_CMD);
     }
 
     private String executeAndCheckCommand(String command, Object... args) throws Exception {

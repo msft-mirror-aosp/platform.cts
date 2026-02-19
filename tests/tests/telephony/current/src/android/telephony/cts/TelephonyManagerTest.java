@@ -429,7 +429,15 @@ public class TelephonyManagerTest {
                     + "\"92B5F8117FBD9BD5738FF168A4FA12CBE284BE834EDE1A7BB44DD8455BA15920\"]},");
         cr.append(
                 "\"com.tmobile.pr.mytmobile\": {\"carrierIds\": [1],\"callerSHA256Ids\":"
-                    + "[\"92B5F8117FBD9BD5738FF168A4FA12CBE284BE834EDE1A7BB44DD8455BA15920\"]}");
+                    + "[\"92B5F8117FBD9BD5738FF168A4FA12CBE284BE834EDE1A7BB44DD8455BA15920\"]},");
+        cr.append(
+                "\"com.dish.wireless.carrierapp\": {\"carrierIds\": [2518,2519,2525],"
+                    + "\"callerSHA256Ids\":"
+                    + "[\"2035bae39454dc27713a7a7b16c233a1a81a64a7434272234ea583939f48f6ac\"]},");
+        cr.append(
+                "\"com.dish.wireless.boostone\": {\"carrierIds\": [2518,2519,2525],"
+                    + "\"callerSHA256Ids\":"
+                    + "[\"2035bae39454dc27713a7a7b16c233a1a81a64a7434272234ea583939f48f6ac\"]}");
         cr.append('}');
         return cr.toString();
     }

@@ -142,6 +142,14 @@ public class SearchMediaServiceTest {
 
     @Test
     public void testSearchWithoutIndexingNewData() throws Exception {
+        String servicePackageName =
+                MediaStore.getPackageForSearchMediaService(mContext.getContentResolver());
+        if (DEFAULT_SEARCH_SERVICE_PACKAGE_NAME.equals(servicePackageName)
+                || DEFAULT_SEARCH_SERVICE_PACKAGE_NAME.isEmpty()) {
+            // default search service is only enabled if media processing flag is enabled
+            assumeTrue(Flags.enableMediaProcessing());
+        }
+
         Bundle extras = new Bundle();
         extras.putLong(EXTRA_SEARCH_RESULTS_PAGE_SIZE, 20);
         extras.putString(EXTRA_SEARCH_RESULTS_SORT_ORDER, EXTRA_SORT_BY_TIME);

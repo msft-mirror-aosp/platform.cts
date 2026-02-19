@@ -26,6 +26,7 @@ import static android.mediav2.common.cts.CodecTestBase.isHardwareAcceleratedCode
 import static android.mediav2.common.cts.CodecTestBase.selectCodecs;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
@@ -150,7 +151,9 @@ public class VideoCodecClaimsPerformanceTestBase {
             }
             if (pps != null && pps.size() > 0) {
                 PerformancePoint PPReq = new PerformancePoint(mWidth, mHeight, mFps);
+                PerformancePoint PPMinReq = new PerformancePoint(mWidth, mHeight, 1);
                 boolean covers = false;
+                boolean coversMin = false;
                 for (PerformancePoint pp : pps) {
                     if (pp.covers(PPReq)) {
                         covers = true;
@@ -158,12 +161,19 @@ public class VideoCodecClaimsPerformanceTestBase {
                         if (isSecure) secureCodecCoversTarget = true;
                         break;
                     }
+                    if (pp.covers(PPMinReq)) {
+                        coversMin = true;
+                    }
                 }
                 if (!covers) {
                     msg.append(String.format(
                             "codec: %s and for media type: %s, width %d, height %d, fps %d not "
                             + "covered by any hardware performance point\n",
                             codecName, mMediaType, mWidth, mHeight, mFps));
+                    assertTrue(String.format("codec: %s and for media type: %s supports video "
+                                             + "size: %dx%d, but no performance point covers %s",
+                                       codecName, mMediaType, mWidth, mHeight, PPMinReq),
+                            coversMin);
                 }
             }
             if (isHw) continue; // for hw codecs, achievableFrameRatesFor() is not relevant

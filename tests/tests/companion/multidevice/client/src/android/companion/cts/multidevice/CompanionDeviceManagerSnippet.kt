@@ -201,9 +201,7 @@ class CompanionDeviceManagerSnippet : Snippet {
 
     @Rpc(description = "Wait for a BT classic device to connect to a test service.")
     fun isAssociationBtConnected(associationId: Int): Boolean {
-        return PrimaryCompanionService.connectedBtBondDevices.stream().anyMatch {
-            it.id == associationId
-        }
+        return PrimaryCompanionService.associationIdsForBtBondDevices.contains(associationId)
     }
 
     @Rpc(description = "Attach client socket.")

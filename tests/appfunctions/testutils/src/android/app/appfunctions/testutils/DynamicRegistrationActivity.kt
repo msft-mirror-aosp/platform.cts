@@ -26,7 +26,7 @@ import java.util.UUID
 
 /** An activity that registers an AppFunction based on Intent actions. */
 class DynamicRegistrationActivity : Activity() {
-    private lateinit var manager: AppFunctionManager
+    lateinit var manager: AppFunctionManager
     private var registration: AppFunctionRegistration? = null
     private lateinit var instanceId: String
 
@@ -37,20 +37,18 @@ class DynamicRegistrationActivity : Activity() {
         super.onCreate(savedInstanceState)
         instanceId = UUID.randomUUID().toString()
         manager = getSystemService(AppFunctionManager::class.java)
-        logDebugMessage("onCreate")
         handleIntent(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        logDebugMessage("onNewIntent")
         handleIntent(intent)
     }
 
     fun handleIntent(intent: Intent) {
-        logDebugMessage("handleIntent")
         val action = intent.action
         if (action == ACTION_REGISTER_APP_FUNCTION) {
+            logDebugMessage("handle registration intent")
             val functionId = intent.getStringExtra(EXTRA_FUNCTION_ID)!!
             registerAppFunction(functionId)
         }

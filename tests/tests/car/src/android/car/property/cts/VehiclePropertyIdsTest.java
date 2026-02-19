@@ -23,7 +23,6 @@ import static com.google.common.truth.Truth.assertThat;
 import android.car.VehiclePropertyIds;
 import android.car.cts.AbstractCarLessTestCase;
 import android.car.cts.utils.VehiclePropertyUtils;
-import android.platform.test.annotations.RequiresDevice;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -38,7 +37,6 @@ import org.junit.runner.RunWith;
 import java.util.List;
 
 @SmallTest
-@RequiresDevice
 @RunWith(AndroidJUnit4.class)
 public class VehiclePropertyIdsTest extends AbstractCarLessTestCase {
     @Rule

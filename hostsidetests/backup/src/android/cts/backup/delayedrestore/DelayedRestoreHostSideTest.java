@@ -72,6 +72,9 @@ public class DelayedRestoreHostSideTest extends BaseBackupHostSideTest {
         clearPackageData(KV_APP);
         installPackage(FULL_APK);
         clearPackageData(FULL_APP);
+
+        getDevice().executeShellCommand("pm grant " + KV_APP + " android.permission.SCHEDULE_DELAYED_RESTORE");
+        getDevice().executeShellCommand("pm grant " + FULL_APP + " android.permission.SCHEDULE_DELAYED_RESTORE");
     }
 
     @After

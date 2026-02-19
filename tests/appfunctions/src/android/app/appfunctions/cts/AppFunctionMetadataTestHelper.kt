@@ -35,6 +35,7 @@ class AppFunctionMetadataTestHelper {
         val TEST_ALLOWLIST_PACKAGE = TestAllowlistPackage(PACKAGE_NAME, CERTIFICATE)
 
         object FunctionNames {
+            val ADD_LEGACY_FUNCTION_ID = AppFunctionName(PACKAGE_NAME, "add_legacyFunctionId")
             val ADD_ENABLED_BY_DEFAULT = AppFunctionName(PACKAGE_NAME, "add")
             val ADD_DISABLED_BY_DEFAULT = AppFunctionName(PACKAGE_NAME, "add_disabledByDefault")
             val NO_OP = AppFunctionName(PACKAGE_NAME, "noOp")
@@ -53,6 +54,7 @@ class AppFunctionMetadataTestHelper {
 
             val ALL_FUNCTIONS =
                 setOf(
+                    ADD_LEGACY_FUNCTION_ID,
                     ADD_ENABLED_BY_DEFAULT,
                     ADD_DISABLED_BY_DEFAULT,
                     NO_OP,
@@ -255,7 +257,6 @@ class AppFunctionMetadataTestHelper {
                                 "packageName",
                                 "android.app.appfunctions.cts.dynamic.schema",
                             )
-                            .setPropertyString("functionId", "appFunctionEnabledByDefault")
                             .setPropertyBoolean(
                                 AppFunctionStaticMetadataHelper.STATIC_PROPERTY_ENABLED_BY_DEFAULT,
                                 true,
@@ -297,10 +298,6 @@ class AppFunctionMetadataTestHelper {
                                 false,
                             )
                             .setPropertyString(
-                                "functionId",
-                                "appFunctionDisabledByDefault_noSchema",
-                            )
-                            .setPropertyString(
                                 "packageName",
                                 "android.app.appfunctions.cts.dynamic.schema",
                             )
@@ -319,7 +316,6 @@ class AppFunctionMetadataTestHelper {
                                 "AppFunctionStaticMetadata-android.app.appfunctions.cts" +
                                     ".dynamic.schema",
                             )
-                            .setPropertyString("functionId", "appFunctionWithHighSchemaVersion")
                             .setPropertyString(
                                 "packageName",
                                 "android.app.appfunctions.cts.dynamic.schema",
@@ -408,7 +404,6 @@ class AppFunctionMetadataTestHelper {
                                 "$PACKAGE_NAME/add",
                                 "AppFunctionStaticMetadata-android.app.appfunctions.cts",
                             )
-                            .setPropertyString("functionId", "add")
                             .setPropertyString("packageName", "android.app.appfunctions.cts")
                             .setPropertyBoolean(
                                 AppFunctionStaticMetadataHelper.STATIC_PROPERTY_ENABLED_BY_DEFAULT,

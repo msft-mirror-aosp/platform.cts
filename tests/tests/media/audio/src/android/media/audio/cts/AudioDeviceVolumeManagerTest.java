@@ -754,9 +754,8 @@ public class AudioDeviceVolumeManagerTest {
     }
 
     private void verifyStreamAssistantMirroring(
-            AudioDeviceAttributes fromDevice,
-            AudioDeviceAttributes toDevice,
-            String assertMessage) {
+            AudioDeviceAttributes fromDevice, AudioDeviceAttributes toDevice, String assertMessage)
+            throws Exception {
         assumeFalse(
                 "AudioManagerTest verifyStreamAssistantMirroring() skipped",
                 mSkipAdvmTests || mIsAutomotive || mIsWatch);
@@ -772,8 +771,12 @@ public class AudioDeviceVolumeManagerTest {
 
         mADVmgr.setVolumeForDevice(targetVol, fromDevice);
 
-        final VolumeInfo mirroredVol = mADVmgr.getDeviceVolume(targetVol, toDevice);
-        assertEquals(assertMessage, targetIndex, mirroredVol.getVolumeIndex());
+        final SleepAssertIntEquals checkVol =
+                new SleepAssertIntEquals(5000 /*maxWaitMs*/, 50 /*periodMs*/, mContext);
+        checkVol.assertEqualsSleep(
+                targetIndex /*expected*/,
+                () -> mADVmgr.getDeviceVolume(targetVol, toDevice).getVolumeIndex(),
+                assertMessage);
     }
 
     @RequiresFlagsEnabled(com.android.media.audio.Flags.FLAG_STREAM_ASSISTANT_NOT_ALIASED_TO_MUSIC)

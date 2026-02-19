@@ -37,13 +37,16 @@ import android.app.appfunctions.flags.Flags
 import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
 import android.app.appfunctions.testutils.CtsTestUtil.safeRetryAssert
 import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
+import android.app.appfunctions.testutils.DynamicRegistrationActivity
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver
 import android.content.Context
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.core.os.asOutcomeReceiver
+import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.rules.ActivityScenarioRule
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnPrimaryUser
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSecondaryUser
@@ -83,13 +86,24 @@ import org.junit.runner.RunWith
 class ObserveAppFunctionsTest {
     @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
+    @get:Rule val activityScenarioRule =
+        ActivityScenarioRule(DynamicRegistrationActivity::class.java)
+
     private val context: Context
         get() = ApplicationProvider.getApplicationContext()
 
     private lateinit var manager: AppFunctionManager
 
+    private lateinit var activityAppFunctionManager: AppFunctionManager
+
     @Before
     fun setup() = doBlocking {
+        activityScenarioRule.scenario.moveToState(Lifecycle.State.CREATED)
+        activityScenarioRule.scenario.onActivity { activity ->
+            this@ObserveAppFunctionsTest.activityAppFunctionManager =
+                activity.manager
+        }
+
         uninstallPackage(UpdatableHelperApp.PACKAGE_NAME, context, checkIndexation = true)
 
         TestAppFunctionServiceLifecycleReceiver.reset()
@@ -111,6 +125,7 @@ class ObserveAppFunctionsTest {
         Manifest.permission.EXECUTE_APP_FUNCTIONS,
         Manifest.permission.DISCOVER_APP_FUNCTIONS,
     )
+    @Ignore("b/478851326 - Enable after checking permissions in the observer.")
     fun packageInstalled_noExecuteOrReadPermission_doNotSeeUpdates() = doBlocking {
         val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
@@ -182,9 +197,6 @@ class ObserveAppFunctionsTest {
         Manifest.permission.EXECUTE_APP_FUNCTIONS,
         Manifest.permission.DISCOVER_APP_FUNCTIONS,
     )
-    @Ignore("b/479123842 - Enable after fixing redundant onAppFunctionsChanged callbacks")
-    fun packageUpdated_callsOnAppFunctionMetadataChanged() = doBlocking {}
-
     fun packageUpdated_topLevelDocumentsAdded_callsOnPackageChanged() = doBlocking {
         val observer = TestClientObserver()
         var observation: AppFunctionObservation? = null
@@ -515,7 +527,7 @@ class ObserveAppFunctionsTest {
 
             retryAssert {
                 assertThat(observer.updatedPackagesHistory).isEmpty()
-                assertThat(observer.updatedFunctionStatesHistory).hasSize(2)
+                assertThat(observer.updatedFunctionStatesHistory).hasSize(1)
                 assertThat(observer.updatedFunctionStatesHistory.flatten())
                     .containsAtLeastElementsIn(
                         setOf(
@@ -552,7 +564,7 @@ class ObserveAppFunctionsTest {
         var registration: AppFunctionRegistration? = null
         try {
             registration =
-                manager.registerAppFunction(
+                activityAppFunctionManager.registerAppFunction(
                     // TODO(b/478810311): test with non-root package
                     CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS.functionIdentifier,
                     MoreExecutors.directExecutor(),
@@ -612,7 +624,7 @@ class ObserveAppFunctionsTest {
         var registration: AppFunctionRegistration? = null
         try {
             registration =
-                manager.registerAppFunction(
+                activityAppFunctionManager.registerAppFunction(
                     CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS.functionIdentifier,
                     MoreExecutors.directExecutor(),
                 ) { _, _, _ ->
@@ -645,7 +657,7 @@ class ObserveAppFunctionsTest {
         var registration: AppFunctionRegistration? = null
         try {
             registration =
-                manager.registerAppFunction(
+                activityAppFunctionManager.registerAppFunction(
                     // TODO(b/478810311): test with non-root package
                     CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS.functionIdentifier,
                     MoreExecutors.directExecutor(),

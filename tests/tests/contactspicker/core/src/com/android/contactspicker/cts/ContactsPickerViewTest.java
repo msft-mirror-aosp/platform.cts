@@ -20,11 +20,7 @@ import static android.provider.ContactsPickerSessionContract.ACTION_PICK_CONTACT
 import static android.provider.ContactsPickerSessionContract.EXTRA_PICK_CONTACTS_MATCH_ALL_DATA_FIELDS;
 import static android.provider.ContactsPickerSessionContract.EXTRA_PICK_CONTACTS_REQUESTED_DATA_FIELDS;
 
-import android.content.ContentProviderOperation;
-import android.content.ContentResolver;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.os.SystemClock;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -41,21 +37,13 @@ import android.provider.ContactsContract.CommonDataKinds.Relation;
 import android.provider.ContactsContract.CommonDataKinds.StructuredName;
 import android.provider.ContactsContract.CommonDataKinds.StructuredPostal;
 import android.provider.ContactsContract.CommonDataKinds.Website;
-import android.provider.ContactsContract.Data;
-import android.provider.ContactsContract.RawContacts;
-import android.support.test.uiautomator.By;
 import android.support.test.uiautomator.UiDevice;
-import android.support.test.uiautomator.UiObject2;
-import android.support.test.uiautomator.Until;
-import android.util.Log;
-import android.widget.EditText;
 
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.bedstead.nene.TestApis;
-
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -63,13 +51,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * CTS tests for verifying the Contacts Picker API behavior by ensuring the correct contacts are
@@ -87,13 +73,7 @@ public class ContactsPickerViewTest {
     private UiDevice mUiDevice;
     private static final List<Long> sCreatedRawContactIds = new ArrayList<>();
     private static final List<Long> sCreatedDataIds = new ArrayList<>();
-
-    private static final int ELEMENT_DISPLAY_TIMEOUT_MS = 2000;
-    private static final int ELEMENT_NOT_DISPLAY_TIMEOUT_MS = 1000;
-    private static final int TIMEOUT_MS = 2000;
     private static final int CP2_IDLE_MS = 2000;
-    private static final int POLL_INTERVAL_MS = 200;
-    private static final int POLL_TIMEOUT_MS = 5000;
 
     // Test Contact Names
     private static final String CONTACT_NAME = "Contact Name";
@@ -130,19 +110,31 @@ public class ContactsPickerViewTest {
         // Setup test contacts
         createTestContacts();
         // Wait for CP2 to process the newly created contacts.
-        waitForContactsToBeCreated();
+        ContactsPickerTestHelper.waitForContactsToBeCreated(
+                InstrumentationRegistry.getInstrumentation().getContext().getContentResolver(),
+                sCreatedDataIds);
     }
 
     @AfterClass
     public static void tearDownClass() {
-        // Setup test contacts
-        removeTestContacts();
+        // Remove test contacts
+        ContactsPickerTestHelper.removeTestContacts(
+                InstrumentationRegistry.getInstrumentation().getContext().getContentResolver(),
+                sCreatedRawContactIds);
+        sCreatedRawContactIds.clear();
+        sCreatedDataIds.clear();
         // Give CP2 a bit of time to settle.
         SystemClock.sleep(CP2_IDLE_MS);
     }
 
     @Before
     public void setUp() {
+        mUiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+        mUiDevice.pressHome();
+    }
+
+    @After
+    public void tearDown() {
         mUiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         mUiDevice.pressHome();
     }
@@ -155,7 +147,9 @@ public class ContactsPickerViewTest {
         launchPickerAndVerify(
                 Collections.singletonList(StructuredName.CONTENT_ITEM_TYPE),
                 false,
-                () -> verifyContactsDisplayed(expectedSubsetShown, true));
+                () ->
+                        ContactsPickerTestHelper.verifyContactsDisplayed(
+                                mUiDevice, expectedSubsetShown, true));
     }
 
     @Test
@@ -167,8 +161,10 @@ public class ContactsPickerViewTest {
                 Collections.singletonList(Phone.CONTENT_ITEM_TYPE),
                 false,
                 () -> {
-                    verifyContactsDisplayed(expectedSubsetShown, true);
-                    verifyContactsDisplayed(expectedNotShown, false);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedSubsetShown, true);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedNotShown, false);
                 });
     }
 
@@ -181,8 +177,10 @@ public class ContactsPickerViewTest {
                 Collections.singletonList(Email.CONTENT_ITEM_TYPE),
                 false,
                 () -> {
-                    verifyContactsDisplayed(expectedSubsetShown, true);
-                    verifyContactsDisplayed(expectedNotShown, false);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedSubsetShown, true);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedNotShown, false);
                 });
     }
 
@@ -195,8 +193,10 @@ public class ContactsPickerViewTest {
                 Collections.singletonList(StructuredPostal.CONTENT_ITEM_TYPE),
                 false,
                 () -> {
-                    verifyContactsDisplayed(expectedSubsetShown, true);
-                    verifyContactsDisplayed(expectedNotShown, false);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedSubsetShown, true);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedNotShown, false);
                 });
     }
 
@@ -209,8 +209,10 @@ public class ContactsPickerViewTest {
                 Collections.singletonList(Organization.CONTENT_ITEM_TYPE),
                 false,
                 () -> {
-                    verifyContactsDisplayed(expectedSubsetShown, true);
-                    verifyContactsDisplayed(expectedNotShown, false);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedSubsetShown, true);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedNotShown, false);
                 });
     }
 
@@ -223,8 +225,10 @@ public class ContactsPickerViewTest {
                 Collections.singletonList(Relation.CONTENT_ITEM_TYPE),
                 false,
                 () -> {
-                    verifyContactsDisplayed(expectedSubsetShown, true);
-                    verifyContactsDisplayed(expectedNotShown, false);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedSubsetShown, true);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedNotShown, false);
                 });
     }
 
@@ -237,8 +241,10 @@ public class ContactsPickerViewTest {
                 Collections.singletonList(Event.CONTENT_ITEM_TYPE),
                 false,
                 () -> {
-                    verifyContactsDisplayed(expectedSubsetShown, true);
-                    verifyContactsDisplayed(expectedNotShown, false);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedSubsetShown, true);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedNotShown, false);
                 });
     }
 
@@ -251,8 +257,10 @@ public class ContactsPickerViewTest {
                 Collections.singletonList(Photo.CONTENT_ITEM_TYPE),
                 false,
                 () -> {
-                    verifyContactsDisplayed(expectedSubsetShown, true);
-                    verifyContactsDisplayed(expectedNotShown, false);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedSubsetShown, true);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedNotShown, false);
                 });
     }
 
@@ -265,8 +273,10 @@ public class ContactsPickerViewTest {
                 Collections.singletonList(GroupMembership.CONTENT_ITEM_TYPE),
                 false,
                 () -> {
-                    verifyContactsDisplayed(expectedSubsetShown, true);
-                    verifyContactsDisplayed(expectedNotShown, false);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedSubsetShown, true);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedNotShown, false);
                 });
     }
 
@@ -279,8 +289,10 @@ public class ContactsPickerViewTest {
                 Collections.singletonList(Website.CONTENT_ITEM_TYPE),
                 false,
                 () -> {
-                    verifyContactsDisplayed(expectedSubsetShown, true);
-                    verifyContactsDisplayed(expectedNotShown, false);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedSubsetShown, true);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedNotShown, false);
                 });
     }
 
@@ -293,8 +305,10 @@ public class ContactsPickerViewTest {
                 Collections.singletonList(Nickname.CONTENT_ITEM_TYPE),
                 false,
                 () -> {
-                    verifyContactsDisplayed(expectedSubsetShown, true);
-                    verifyContactsDisplayed(expectedNotShown, false);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedSubsetShown, true);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedNotShown, false);
                 });
     }
 
@@ -307,8 +321,10 @@ public class ContactsPickerViewTest {
                 List.of(Phone.CONTENT_ITEM_TYPE, Email.CONTENT_ITEM_TYPE),
                 false,
                 () -> {
-                    verifyContactsDisplayed(expectedSubsetShown, true);
-                    verifyContactsDisplayed(expectedNotShown, false);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedSubsetShown, true);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedNotShown, false);
                 });
     }
 
@@ -321,8 +337,10 @@ public class ContactsPickerViewTest {
                 List.of(Phone.CONTENT_ITEM_TYPE, StructuredPostal.CONTENT_ITEM_TYPE),
                 true,
                 () -> {
-                    verifyContactsDisplayed(expectedSubsetShown, true);
-                    verifyContactsDisplayed(expectedNotShown, false);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedSubsetShown, true);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedNotShown, false);
                 });
     }
 
@@ -334,8 +352,10 @@ public class ContactsPickerViewTest {
         launchPickerAndVerifyForActionPick(
                 ContactsContract.CommonDataKinds.Email.CONTENT_TYPE,
                 () -> {
-                    verifyContactsDisplayed(expectedSubsetShown, true);
-                    verifyContactsDisplayed(expectedNotShown, false);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedSubsetShown, true);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedNotShown, false);
                 });
     }
 
@@ -347,8 +367,10 @@ public class ContactsPickerViewTest {
         launchPickerAndVerifyForActionPick(
                 ContactsContract.CommonDataKinds.Phone.CONTENT_TYPE,
                 () -> {
-                    verifyContactsDisplayed(expectedSubsetShown, true);
-                    verifyContactsDisplayed(expectedNotShown, false);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedSubsetShown, true);
+                    ContactsPickerTestHelper.verifyContactsDisplayed(
+                            mUiDevice, expectedNotShown, false);
                 });
     }
 
@@ -364,26 +386,12 @@ public class ContactsPickerViewTest {
 
         launchPickerAndVerifyForActionPick(
                 ContactsContract.Contacts.CONTENT_TYPE,
-                () -> verifyContactsDisplayed(expectedSubsetShown, true));
+                () ->
+                        ContactsPickerTestHelper.verifyContactsDisplayed(
+                                mUiDevice, expectedSubsetShown, true));
     }
 
     /** Subsection: Setup for contacts removal and creation for this test. */
-    private static void removeTestContacts() {
-        ContentResolver contentResolver =
-                InstrumentationRegistry.getInstrumentation().getContext().getContentResolver();
-        try (var p =
-                TestApis.permissions().withPermission(android.Manifest.permission.WRITE_CONTACTS)) {
-            for (Long rawContactId : sCreatedRawContactIds) {
-                contentResolver.delete(
-                        RawContacts.CONTENT_URI,
-                        RawContacts._ID + " = ?",
-                        new String[] {String.valueOf(rawContactId)});
-            }
-            sCreatedRawContactIds.clear();
-            sCreatedDataIds.clear();
-        }
-    }
-
     private static void createTestContacts() {
         // 0. Only Name
         Map<String, Object> contactName = new HashMap<>();
@@ -429,7 +437,7 @@ public class ContactsPickerViewTest {
         // 7. Photo
         Map<String, Object> contactPhoto = new HashMap<>();
         contactPhoto.put(StructuredName.CONTENT_ITEM_TYPE, CONTACT_PHOTO);
-        contactPhoto.put(Photo.CONTENT_ITEM_TYPE, getDummyColorBytes());
+        contactPhoto.put(Photo.CONTENT_ITEM_TYPE, ContactsPickerTestHelper.getDummyColorBytes());
         createContactHelper(contactPhoto);
 
         // 8. Group
@@ -460,191 +468,16 @@ public class ContactsPickerViewTest {
     }
 
     private static void createContactHelper(Map<String, Object> mimeTypeToValue) {
-        ArrayList<ContentProviderOperation> ops = new ArrayList<>();
-        int rawContactInsertIndex = ops.size();
-
-        ops.add(
-                ContentProviderOperation.newInsert(RawContacts.CONTENT_URI)
-                        .withValue(RawContacts.ACCOUNT_TYPE, null)
-                        .withValue(RawContacts.ACCOUNT_NAME, null)
-                        .build());
-
-        for (Map.Entry<String, Object> entry : mimeTypeToValue.entrySet()) {
-            String mimeType = entry.getKey();
-            Object value = entry.getValue();
-
-            ContentProviderOperation.Builder builder =
-                    ContentProviderOperation.newInsert(Data.CONTENT_URI)
-                            .withValueBackReference(Data.RAW_CONTACT_ID, rawContactInsertIndex)
-                            .withValue(Data.MIMETYPE, mimeType);
-
-            switch (mimeType) {
-                case StructuredName.CONTENT_ITEM_TYPE -> {
-                    builder.withValue(StructuredName.DISPLAY_NAME, value);
-                    builder.withValue(StructuredName.GIVEN_NAME, value);
-                }
-                case Phone.CONTENT_ITEM_TYPE -> {
-                    builder.withValue(Phone.NUMBER, value);
-                    builder.withValue(Phone.TYPE, Phone.TYPE_MOBILE);
-                }
-                case Email.CONTENT_ITEM_TYPE -> {
-                    builder.withValue(Email.ADDRESS, value);
-                    builder.withValue(Email.TYPE, Email.TYPE_HOME);
-                }
-                case StructuredPostal.CONTENT_ITEM_TYPE -> {
-                    builder.withValue(StructuredPostal.FORMATTED_ADDRESS, value);
-                    builder.withValue(StructuredPostal.TYPE, StructuredPostal.TYPE_HOME);
-                }
-                case Organization.CONTENT_ITEM_TYPE ->
-                        builder.withValue(Organization.COMPANY, value);
-                case Relation.CONTENT_ITEM_TYPE -> {
-                    builder.withValue(Relation.NAME, value);
-                    builder.withValue(Relation.TYPE, Relation.TYPE_ASSISTANT);
-                }
-                case Event.CONTENT_ITEM_TYPE -> builder.withValue(Event.START_DATE, value);
-                case Website.CONTENT_ITEM_TYPE -> builder.withValue(Website.URL, value);
-                case Nickname.CONTENT_ITEM_TYPE -> builder.withValue(Nickname.NAME, value);
-                case GroupMembership.CONTENT_ITEM_TYPE ->
-                        builder.withValue(GroupMembership.GROUP_ROW_ID, value);
-                case Photo.CONTENT_ITEM_TYPE -> builder.withValue(Photo.PHOTO, value);
-                default -> builder.withValue(Data.DATA1, value);
-            }
-            ops.add(builder.build());
+        ContactsPickerTestHelper.ContactCreationResult result =
+                ContactsPickerTestHelper.createContact(
+                        InstrumentationRegistry.getInstrumentation()
+                                .getContext()
+                                .getContentResolver(),
+                        mimeTypeToValue);
+        if (result.rawContactId != -1) {
+            sCreatedRawContactIds.add(result.rawContactId);
         }
-
-        ContentResolver resolver =
-                InstrumentationRegistry.getInstrumentation().getContext().getContentResolver();
-        try (var p =
-                TestApis.permissions().withPermission(android.Manifest.permission.WRITE_CONTACTS)) {
-            android.content.ContentProviderResult[] results =
-                    resolver.applyBatch(ContactsContract.AUTHORITY, ops);
-            if (results.length > 0 && results[0].uri != null) {
-                sCreatedRawContactIds.add(android.content.ContentUris.parseId(results[0].uri));
-            }
-            for (int i = 1; i < results.length; i++) {
-                if (results[i].uri != null) {
-                    sCreatedDataIds.add(android.content.ContentUris.parseId(results[i].uri));
-                }
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to create contact", e);
-        }
-    }
-
-    // Creates a byte[] array representing a contact thumbnail
-    private static byte[] getDummyColorBytes() {
-        Bitmap bitmap = Bitmap.createBitmap(20, 20, Bitmap.Config.ARGB_8888);
-        bitmap.eraseColor(Color.RED);
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 80, stream);
-        return stream.toByteArray();
-    }
-
-    private static void waitForContactsToBeCreated() {
-        long startTime = SystemClock.elapsedRealtime();
-        ContentResolver resolver =
-                InstrumentationRegistry.getInstrumentation().getContext().getContentResolver();
-
-        while (SystemClock.elapsedRealtime() - startTime < POLL_TIMEOUT_MS) {
-            try (var p =
-                    TestApis.permissions()
-                            .withPermission(android.Manifest.permission.READ_CONTACTS)) {
-                String selection =
-                        Data._ID
-                                + " IN ("
-                                + sCreatedDataIds.stream()
-                                        .map(String::valueOf)
-                                        .collect(Collectors.joining(","))
-                                + ")";
-                try (android.database.Cursor cursor =
-                        resolver.query(
-                                Data.CONTENT_URI, new String[] {Data._ID}, selection, null, null)) {
-                    if (cursor != null && cursor.getCount() == sCreatedDataIds.size()) {
-                        Log.i(TAG, "All data rows created: " + cursor.getCount());
-                        return;
-                    }
-                }
-            }
-            SystemClock.sleep(POLL_INTERVAL_MS);
-        }
-        Log.w(TAG, "Timed out waiting for data rows to be created. Proceeding anyway.");
-    }
-
-    /**
-     * Subsection: Contacts verification strategy To verify a contact is found, we try to assert its
-     * presence in contact list, if not found we try to find it via search. To verify a contact is
-     * not found, we assert that it is not present in contact list, and not found via search
-     */
-    private void verifyContactsDisplayed(List<String> displayNames, boolean shouldBeFound) {
-        for (String name : displayNames) {
-            int timeout;
-            if (shouldBeFound) {
-                timeout = ELEMENT_DISPLAY_TIMEOUT_MS;
-                Log.i(TAG, "Verifying contact to be shown: " + name);
-            } else {
-                timeout = ELEMENT_NOT_DISPLAY_TIMEOUT_MS;
-                Log.i(TAG, "Verifying contact NOT to be shown: " + name);
-            }
-
-            // Try to find in contact list first using desc
-            boolean found = mUiDevice.wait(Until.hasObject(By.descContains(name)), timeout);
-
-            if (found) {
-                Log.i(TAG, "Contact found on screen: " + name);
-                if (!shouldBeFound) {
-                    throw new AssertionError(
-                            "Contact '"
-                                    + name
-                                    + "' should NOT be visible but was found on screen.");
-                }
-            } else {
-                // Try to find via search
-                verifyContactWithSearch(name, shouldBeFound);
-            }
-        }
-    }
-
-    private void verifyContactWithSearch(String name, boolean shouldBeFound) {
-        // Try to find EditText first
-        UiObject2 searchInput =
-                mUiDevice.wait(
-                        Until.findObject(By.clazz(EditText.class)), ELEMENT_DISPLAY_TIMEOUT_MS);
-
-        if (searchInput == null) {
-            // Wait for "Search" text (placeholder/hint)
-            UiObject2 searchBar =
-                    mUiDevice.wait(Until.findObject(By.desc("Search")), ELEMENT_DISPLAY_TIMEOUT_MS);
-            if (searchBar != null) {
-                searchBar.click();
-                searchInput =
-                        mUiDevice.wait(
-                                Until.findObject(By.clazz(EditText.class)),
-                                ELEMENT_DISPLAY_TIMEOUT_MS);
-            }
-        }
-
-        if (searchInput == null) {
-            throw new AssertionError("Search input field not found.");
-        }
-
-        // Set text
-        searchInput.setText(name);
-        Log.i(TAG, "Search set to: " + name);
-
-        long timeout = shouldBeFound ? ELEMENT_DISPLAY_TIMEOUT_MS : ELEMENT_NOT_DISPLAY_TIMEOUT_MS;
-        boolean found = mUiDevice.wait(Until.hasObject(By.descContains(name)), timeout);
-        Log.i(TAG, "Search found: " + found);
-
-        if (shouldBeFound && !found) {
-            throw new AssertionError("Contact '" + name + "' not found in search results.");
-        } else if (!shouldBeFound && found) {
-            throw new AssertionError(
-                    "Contact '" + name + "' should NOT be found in search results but was found.");
-        }
-
-        // Go back to the contact list view.
-        mUiDevice.pressBack();
-        mUiDevice.waitForIdle();
+        sCreatedDataIds.addAll(result.mimeTypeToDataId.values());
     }
 
     /**
@@ -673,15 +506,8 @@ public class ContactsPickerViewTest {
         try (ActivityScenario<TestActivity> scenario =
                 ActivityScenario.launch(TestActivity.class)) {
             scenario.onActivity(activity -> activity.startActivityForResult(intent, 1));
-            // Wait for the Search icon text to confirm UI is ready
-            boolean isShown = mUiDevice.wait(Until.hasObject(By.text("Search")), TIMEOUT_MS);
-            if (!isShown) {
-                throw new AssertionError("Contacts Picker UI ('Search' text) did not appear.");
-            }
-            // Wait for any contact loading animations to clear.
-            mUiDevice.waitForIdle();
-
             // Execute verification while the activity is still live
+            ContactsPickerTestHelper.waitForPickerUi(mUiDevice);
             verificationBlock.run();
         }
     }

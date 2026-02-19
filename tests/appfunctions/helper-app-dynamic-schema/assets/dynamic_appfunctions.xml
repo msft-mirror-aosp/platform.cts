@@ -16,19 +16,16 @@
 
 <appfunctions>
     <appfunction>
-        <function_id>contextConcatStrings</function_id>
         <id>contextConcatStrings</id>
         <enabled_by_default>true</enabled_by_default>
         <scope>global</scope>
     </appfunction>
     <appfunction>
-        <function_id>activityConcatStrings</function_id>
         <id>activityConcatStrings</id>
         <enabled_by_default>true</enabled_by_default>
         <scope>activity</scope>
     </appfunction>
     <appfunction>
-        <function_id>activityDisabledByDefault</function_id>
         <id>activityDisabledByDefault</id>
         <enabled_by_default>false</enabled_by_default>
         <scope>activity</scope>
@@ -41,43 +38,36 @@
     </appfunction>
     <appfunction>
         <id>contextOutputInvalidArgument</id>
-        <function_id>contextOutputInvalidArgument</function_id>
         <enabled_by_default>true</enabled_by_default>
         <scope>global</scope>
     </appfunction>
     <appfunction>
         <id>contextThrowUnknownException</id>
-        <function_id>contextThrowUnknownException</function_id>
         <enabled_by_default>true</enabled_by_default>
         <scope>global</scope>
     </appfunction>
     <appfunction>
         <id>contextThrowInvalidArgument</id>
-        <function_id>contextThrowInvalidArgument</function_id>
         <enabled_by_default>true</enabled_by_default>
         <scope>global</scope>
     </appfunction>
     <appfunction>
         <id>contextStopProcess</id>
-        <function_id>contextStopProcess</function_id>
         <enabled_by_default>true</enabled_by_default>
         <scope>global</scope>
     </appfunction>
     <appfunction>
         <id>contextGetUris</id>
-        <function_id>contextGetUris</function_id>
         <enabled_by_default>true</enabled_by_default>
         <scope>global</scope>
     </appfunction>
     <appfunction>
         <id>appFunctionGlobalScope</id>
-        <function_id>appFunctionGlobalScope</function_id>
         <scope>global</scope>
         <enabled_by_default>true</enabled_by_default>
     </appfunction>
     <appfunction>
         <id>appFunctionActivityScope</id>
-        <function_id>appFunctionActivityScope</function_id>
         <scope>activity</scope>
         <enabled_by_default>true</enabled_by_default>
     </appfunction>

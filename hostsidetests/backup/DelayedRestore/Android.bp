@@ -21,7 +21,6 @@ android_test_helper_app {
     defaults: ["cts_defaults"],
     srcs: ["DelayedRestoreApp/src/**/*.java"],
     manifest: "DelayedRestoreApp/AndroidManifest.xml",
-    certificate: "platform",
     sdk_version: "system_current",
     static_libs: [
         "androidx.test.rules",
@@ -38,7 +37,6 @@ android_test_helper_app {
     defaults: ["cts_defaults"],
     srcs: ["DelayedFullRestoreApp/src/**/*.java"],
     manifest: "DelayedFullRestoreApp/AndroidManifest.xml",
-    certificate: "platform",
     sdk_version: "system_current",
     static_libs: [
         "androidx.test.rules",
