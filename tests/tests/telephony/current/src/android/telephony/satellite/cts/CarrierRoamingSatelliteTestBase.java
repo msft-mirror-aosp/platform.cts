@@ -272,6 +272,18 @@ public class CarrierRoamingSatelliteTestBase extends SatelliteManagerTestBase {
         sMockSatelliteServiceManager.clearSatelliteEnabledForCarrier();
     }
 
+    protected void clearCarrierRoamingEventsInMockServiceManagers() {
+        // MockModemManager states
+        sMockModemManager.clearEventOnSetSatellitePlmn();
+        sMockModemManager.clearEventOnSetSatelliteEnabledForCarrier();
+        sMockModemManager.clearEventOnSatelliteEnabledForCarrierStateChanged();
+
+        // MockSatelliteServiceManager states
+        sMockSatelliteServiceManager.clearEventOnSetSatellitePlmn();
+        sMockSatelliteServiceManager.clearEventOnSetSatelliteEnabledForCarrier();
+        sMockSatelliteServiceManager.clearEventOnSatelliteEnabledForCarrierStateChanged();
+    }
+
     protected static class ServiceStateListenerTest extends TelephonyCallback
             implements TelephonyCallback.ServiceStateListener {
 
