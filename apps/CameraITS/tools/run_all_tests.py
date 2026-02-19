@@ -278,8 +278,39 @@ def report_result(device_id, camera_id, tablet_name, results):
    results: a dictionary contains all ITS scenes as key and result/summary of
             current ITS run. See test_report_result unit test for an example.
   """
+
+  results_feature_combination = {}
+  results_other = {}
+
+  for scene, result in results.items():
+    if scene.startswith("feature_combination"):
+      results_feature_combination[scene] = result
+    else:
+      results_other[scene] = result
+
+  if results_feature_combination:
+    report_result_subset(device_id, camera_id,
+                         tablet_name, results_feature_combination,
+                         its_device_utils.ITS_FEATURE_COMBINATION_ACTIVITY)
+
+  if results_other:
+    report_result_subset(device_id, camera_id, tablet_name,
+                         results_other, its_device_utils.ITS_TEST_ACTIVITY)
+
+def report_result_subset(device_id, camera_id, tablet_name, results, activity_name):
+  """Sends a pass/fail result to the device, via an intent.
+
+  Args:
+   device_id: The ID string of the device to report the results to.
+   camera_id: The ID string of the camera for which to report pass/fail.
+   tablet_name: The tablet name to identify model and build.
+   results: a dictionary contains all ITS scenes as key and result/summary of
+            current ITS run. See test_report_result unit test for an example.
+   activity_name: The name of the activity corresponding to the results
+  """
+
   adb = f'adb -s {device_id}'
-  its_device_utils.start_its_test_activity(device_id)
+  its_device_utils.start_its_test_activity_with_name(device_id, activity_name)
   time.sleep(ACTIVITY_START_WAIT)
 
   # Validate/process results argument
