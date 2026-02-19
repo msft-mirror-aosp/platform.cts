@@ -3132,6 +3132,7 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
         assertEquals("Success\n", SystemUtil.runShellCommand(
                 String.format("pm install -r -i %s -t -g %s", mContext.getPackageName(),
                         HELLO_WORLD_APK)));
+        assertThat(mPackageManager.getPackageInfo(HELLO_WORLD_PACKAGE_NAME, 0)).isNotNull();
 
         // When we use the shell command to archive the app without the userId, the
         // system checks the installer info for all users. Check the test app is installed
