@@ -68,9 +68,11 @@ class DynamicRegistrationActivity : Activity() {
         }
     }
 
-    fun unregisterAppFunction() {
+    fun unregisterAppFunction(numTimes: Int = 1) {
         if (registration != null) {
-            registration!!.unregister()
+            for (i in 0 until numTimes) {
+                registration!!.unregister()
+            }
             registration = null
             logDebugMessage("successfully unregistered a function.")
         } else {

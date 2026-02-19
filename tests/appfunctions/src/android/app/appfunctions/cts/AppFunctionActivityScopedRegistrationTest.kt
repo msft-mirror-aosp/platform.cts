@@ -237,6 +237,41 @@ class AppFunctionActivityScopedRegistrationTest {
     }
 
     @Test
+    fun unregister_callTwice_doesntAffectActiveRegistration() = doBlocking {
+        ActivityScenario.launch<DynamicRegistrationActivity>(
+            internalLaunchIntent
+        ).use { scenario ->
+            scenario.moveToState(Lifecycle.State.STARTED)
+            scenario.onActivity { activity -> activity.registerAppFunction(
+                ACTIVITY_CONCAT_STRINGS_FUNCTION_ID
+            ) }
+            assertFunctionEnabledState(
+                CtsApp.PACKAGE_NAME,
+                ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
+                manager,
+                isEnabled = true
+            )
+
+            ActivityScenario.launch<DynamicRegistrationActivity>(
+                internalLaunchIntent
+            ).use { scenario2 ->
+                scenario2.moveToState(Lifecycle.State.STARTED)
+                scenario2.onActivity { activity -> activity.registerAppFunction(
+                    ACTIVITY_CONCAT_STRINGS_FUNCTION_ID)
+                }
+                scenario2.onActivity { activity -> assertThat(activity.isRegistered).isTrue() }
+                scenario2.onActivity { activity -> activity.unregisterAppFunction(numTimes = 2) }
+                assertFunctionEnabledState(
+                    CtsApp.PACKAGE_NAME,
+                    ACTIVITY_CONCAT_STRINGS_FUNCTION_ID,
+                    manager,
+                    isEnabled = true
+                )
+            }
+        }
+    }
+
+    @Test
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     fun execute_globalDynamicFunction_withActivityId_fail() = doBlocking {
         withRegisteredActivityId(
