@@ -559,62 +559,6 @@ class ObserveAppFunctionsTest {
         Manifest.permission.EXECUTE_APP_FUNCTIONS,
         Manifest.permission.DISCOVER_APP_FUNCTIONS,
     )
-    fun changeDynamicFunctionEnabledState_callsOnAppFunctionsChangedIfRegistered() = doBlocking {
-        var observation: AppFunctionObservation? = null
-        var registration: AppFunctionRegistration? = null
-        try {
-            registration =
-                activityAppFunctionManager.registerAppFunction(
-                    // TODO(b/478810311): test with non-root package
-                    CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS.functionIdentifier,
-                    MoreExecutors.directExecutor(),
-                ) { _, _, _ ->
-                    throw UnsupportedOperationException("Stub!")
-                }
-
-            val observer = TestClientObserver()
-
-            observation = observeAppFunctions(observer)
-
-            manager.setAppFunctionEnabled(
-                CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS.functionIdentifier,
-                AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
-            )
-            retryAssert {
-                assertThat(
-                        isAppFunctionEnabled(
-                            CtsApp.PACKAGE_NAME,
-                            CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS.functionIdentifier,
-                        )
-                    )
-                    .isFalse()
-            }
-
-            retryAssert {
-                assertThat(observer.updatedPackagesHistory).isEmpty()
-                assertThat(observer.updatedFunctionStatesHistory).hasSize(1)
-                assertThat(observer.updatedFunctionStatesHistory.flatten())
-                    .contains(CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS)
-            }
-        } finally {
-            observation?.cancel()
-            registration?.unregister()
-            manager.setAppFunctionEnabled(
-                CtsApp.FunctionNames.DYNAMIC_CONCAT_STRINGS.functionIdentifier,
-                AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
-            )
-        }
-    }
-
-    @Test
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#observeAppFunctions"])
-    @IncludeRunOnSecondaryUser
-    @IncludeRunOnPrimaryUser
-    @EnsureHasNoDeviceOwner
-    @EnsureHasPermission(
-        Manifest.permission.EXECUTE_APP_FUNCTIONS,
-        Manifest.permission.DISCOVER_APP_FUNCTIONS,
-    )
     fun registerDynamicFunction_callsOnAppFunctionsChangedIfEnabled() = doBlocking {
         var observation: AppFunctionObservation? = null
         val observer = TestClientObserver()

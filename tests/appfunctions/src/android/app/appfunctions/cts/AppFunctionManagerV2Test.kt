@@ -24,6 +24,7 @@ import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.CtsApp
+import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.DynamicSchemaHelperApp
 import android.app.appfunctions.cts.AppFunctionMetadataTestHelper.LegacySchemaHelperApp
 import android.app.appfunctions.cts.AppFunctionUtils.TestAllowlistPackage
 import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunction
@@ -774,9 +775,7 @@ class AppFunctionManagerV2Test {
     fun executeAppFunction_deviceOwnerRestricted_fail() = doBlocking {
         // Skip the test when it is running on a secondary profile which is not
         // allowed regardless of the policy.
-        assumeTrue(
-            !context.getSystemService(UserManager::class.java)
-                .isProfile(context.userId))
+        assumeTrue(!context.getSystemService(UserManager::class.java).isProfile(context.userId))
         val remoteDpm = sDeviceState.dpc().devicePolicyManager()
         val originalPolicy = remoteDpm.getAppFunctionsPolicy()
         try {
@@ -1335,6 +1334,23 @@ class AppFunctionManagerV2Test {
             doBlocking {
                 mManager.setAppFunctionEnabled(
                     functionUnderTest,
+                    AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
+                )
+            }
+        }
+    }
+
+    @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    fun setAppFunctionEnabled_dynamicAppFunction_throws() {
+        assertFailsWith<IllegalArgumentException>(
+            "setAppFunctionEnabled does not support dynamic functions"
+        ) {
+            doBlocking {
+                mManager.setAppFunctionEnabled(
+                    DynamicSchemaHelperApp.FunctionNames.DYNAMIC_CONCAT_STRINGS.functionIdentifier,
                     AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
                 )
             }
