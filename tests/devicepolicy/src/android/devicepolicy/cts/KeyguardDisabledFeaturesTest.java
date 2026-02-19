@@ -16,6 +16,8 @@
 
 package android.devicepolicy.cts;
 
+import static android.content.pm.PackageManager.FEATURE_DEVICE_ADMIN;
+
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -33,6 +35,7 @@ import com.android.bedstead.enterprise.annotations.PolicyArgument;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.enterprise.policies.KeyguardDisabledFeatures;
 import com.android.bedstead.enterprise.policies.KeyguardDisabledFeaturesForOrgOwnedParentProfileOwner;
+import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.nene.TestApis;
 
 import org.junit.ClassRule;
@@ -40,6 +43,7 @@ import org.junit.Rule;
 import org.junit.runner.RunWith;
 
 @RunWith(BedsteadJUnit4.class)
+@RequireFeature(FEATURE_DEVICE_ADMIN)
 public final class KeyguardDisabledFeaturesTest {
     @ClassRule @Rule
     public static final DeviceState sDeviceState = new DeviceState();

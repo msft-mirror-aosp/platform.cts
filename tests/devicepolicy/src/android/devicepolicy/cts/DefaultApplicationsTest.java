@@ -21,7 +21,10 @@ import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
 import static org.testng.Assert.assertThrows;
+
+import android.app.role.RoleManager;
 
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
@@ -58,6 +61,9 @@ public final class DefaultApplicationsTest {
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_DEFAULT_APPS")
     public void addUserRestriction_disallowConfigDefaultApps_isSet() {
+        // `addUserRestriction` only verifies if the DPM role holder has the permission.
+        assumeFalse(dpc(sDeviceState).pkg().isRoleHolder(RoleManager.ROLE_SYSTEM_SUPERVISION));
+
         try {
             dpc(sDeviceState).devicePolicyManager().addUserRestriction(
                     dpc(sDeviceState).componentName(), DISALLOW_CONFIG_DEFAULT_APPS);
@@ -75,6 +81,9 @@ public final class DefaultApplicationsTest {
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_DEFAULT_APPS")
     public void clearUserRestriction_disallowConfigDefaultApps_isNotSet() {
+        // `addUserRestriction` only verifies if the DPM role holder has the permission.
+        assumeFalse(dpc(sDeviceState).pkg().isRoleHolder(RoleManager.ROLE_SYSTEM_SUPERVISION));
+
         try {
             dpc(sDeviceState).devicePolicyManager().addUserRestriction(
                     dpc(sDeviceState).componentName(),

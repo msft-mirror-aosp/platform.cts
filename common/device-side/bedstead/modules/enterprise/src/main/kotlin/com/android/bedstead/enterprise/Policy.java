@@ -16,6 +16,7 @@
 
 package com.android.bedstead.enterprise;
 
+import static com.android.bedstead.enterprise.annotations.EnsureHasSystemSupervisionRoleHolderKt.ensureHasSystemSupervisionRoleHolder;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_AFFILIATED_PROFILE_OWNER;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_AFFILIATED_PROFILE_OWNER_PROFILE;
 import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_AFFILIATED_PROFILE_OWNER_USER;
@@ -81,6 +82,8 @@ import static com.android.bedstead.testapp.TestAppQueryBuilder.queryBuilder;
 import static com.android.bedstead.testapps.TestAppsComponent.DELEGATE_KEY;
 import static com.android.xts.root.annotations.RequireRootInstrumentationKt.requireRootInstrumentation;
 
+import android.app.role.RoleManager;
+
 import com.android.bedstead.enterprise.annotations.EnsureHasDelegate;
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDelegate;
 import com.android.bedstead.enterprise.annotations.EnsureTestAppInstalledAsPrimaryDPC;
@@ -108,9 +111,12 @@ import com.android.bedstead.harrier.annotations.EnsureTestAppHasPermission;
 import com.android.bedstead.harrier.annotations.FailureMode;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeNone;
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.CommonPermissions;
 import com.android.queryable.annotations.Query;
 
 import com.google.auto.value.AutoAnnotation;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
@@ -275,6 +281,38 @@ public final class Policy {
                     | APPLIED_BY_DEVICE_CONTROLLER;
     private static final Map<Function<EnterprisePolicy, Set<Annotation>>, Set<Integer>>
             ANNOTATIONS_MAP = calculateAnnotationsMap(STATE_ANNOTATIONS);
+
+    // The following is a set of permissions grantable by the SystemSupervsion role.
+    private static final List<String> SYSTEM_SUPERVISION_ROLE_PERMISSIONS = ImmutableList.of(
+            CommonPermissions.ACCESS_INSTANT_APPS,
+            CommonPermissions.KILL_UID,
+            CommonPermissions.MANAGE_DEFAULT_APPLICATIONS,
+            CommonPermissions.SUSPEND_APPS,
+            CommonPermissions.SYSTEM_APPLICATION_OVERLAY,
+            CommonPermissions.MANAGE_APP_OPS_MODES,
+            CommonPermissions.MANAGE_DEVICE_POLICY_ACCOUNT_MANAGEMENT,
+            CommonPermissions.MANAGE_DEVICE_POLICY_APP_RESTRICTIONS,
+            CommonPermissions.MANAGE_DEVICE_POLICY_APPS_CONTROL,
+            CommonPermissions.MANAGE_DEVICE_POLICY_DEBUGGING_FEATURES,
+            CommonPermissions.MANAGE_DEVICE_POLICY_DISPLAY,
+            CommonPermissions.MANAGE_DEVICE_POLICY_FACTORY_RESET,
+            CommonPermissions.MANAGE_DEVICE_POLICY_FUN,
+            CommonPermissions.MANAGE_DEVICE_POLICY_INSTALL_UNKNOWN_SOURCES,
+            CommonPermissions.MANAGE_DEVICE_POLICY_KEYGUARD,
+            CommonPermissions.MANAGE_DEVICE_POLICY_LOCATION,
+            CommonPermissions.MANAGE_DEVICE_POLICY_LOCK,
+            CommonPermissions.MANAGE_DEVICE_POLICY_LOCK_CREDENTIALS,
+            CommonPermissions.MANAGE_DEVICE_POLICY_LOCK_TASK,
+            CommonPermissions.MANAGE_DEVICE_POLICY_MODIFY_USERS,
+            CommonPermissions.MANAGE_DEVICE_POLICY_PACKAGE_STATE,
+            CommonPermissions.MANAGE_DEVICE_POLICY_RESET_PASSWORD,
+            CommonPermissions.MANAGE_DEVICE_POLICY_RUNTIME_PERMISSIONS,
+            CommonPermissions.MANAGE_DEVICE_POLICY_SAFE_BOOT,
+            CommonPermissions.MANAGE_DEVICE_POLICY_TIME,
+            CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS,
+            CommonPermissions.MANAGE_DEVICE_POLICY_CAMERA,
+            CommonPermissions.MANAGE_DEVICE_POLICY_PROFILES
+    );
 
     private Policy() {
 
@@ -938,22 +976,38 @@ public final class Policy {
      */
     private static Annotation generateParameterizedPermissionAnnotation(Permission permission) {
         // TODO(b/219750042): Currently we only test that permissions apply to the current user
-        Annotation[] replacementPermissionAnnotations =
-                new Annotation[] {
-                    ensureTestAppInstalledAsPrimaryDPC(
-                            DELEGATE_KEY,
-                            queryBuilder()
-                                    .wherePackageName()
-                                    .isEqualTo(DELEGATE_PACKAGE_NAME)
-                                    .toAnnotation(),
-                            INSTRUMENTED_USER),
+        List<Annotation> replacementPermissionAnnotations = new ArrayList<>();
+        replacementPermissionAnnotations.add(ensureTestAppInstalledAsPrimaryDPC(
+                DELEGATE_KEY,
+                queryBuilder()
+                        .wherePackageName()
+                        .isEqualTo(DELEGATE_PACKAGE_NAME)
+                        .toAnnotation(),
+                INSTRUMENTED_USER));
+
+        // Check if the set of permissions are grantable by the Supervision role, if not
+        // attempt to use Root+Shell to grant the permissions.
+        final var isSystemSupervisionPermission =
+                new HashSet<>(SYSTEM_SUPERVISION_ROLE_PERMISSIONS).containsAll(
+                        List.of(permission.appliedWith()));
+        // Check if the Supervision role holder is already present, if so do not attempt to assign
+        // the role to this test instance.
+        final var systemSupervisionRoleHolder = TestApis.roles().getRoleHolders(
+                RoleManager.ROLE_SYSTEM_SUPERVISION);
+        if (isSystemSupervisionPermission && systemSupervisionRoleHolder.isEmpty()) {
+            replacementPermissionAnnotations.add(
+                    ensureHasSystemSupervisionRoleHolder(UserType.INSTRUMENTED_USER, true));
+        } else {
+            replacementPermissionAnnotations.addAll(Arrays.asList(
                     ensureTestAppHasPermission(
                             DELEGATE_KEY, permission.appliedWith(), FailureMode.SKIP),
-                    requireRootInstrumentation("Use of device policy permission", FailureMode.SKIP)
-                };
+                    requireRootInstrumentation("Use of device policy permission",
+                            FailureMode.SKIP)));
+        }
+
         return new DynamicParameterizedAnnotation(
                 formatPermissionsForTestName(Arrays.asList(permission.appliedWith())),
-                replacementPermissionAnnotations);
+                replacementPermissionAnnotations.toArray(new Annotation[0]));
     }
 
     private static String formatPermissionsForTestName(List<String> permissions) {
