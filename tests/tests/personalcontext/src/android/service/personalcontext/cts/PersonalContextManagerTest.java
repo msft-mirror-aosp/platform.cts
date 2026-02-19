@@ -22,6 +22,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 
+import android.Manifest;
 import android.app.Instrumentation;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -42,6 +43,7 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.testapp.TestAppInstance;
 import com.android.compatibility.common.util.ApiTest;
@@ -146,11 +148,15 @@ public class PersonalContextManagerTest {
                 "android.service.personalcontext.PersonalContextManager#isEnabled",
                 "android.service.personalcontext.PersonalContextManager#setEnabled",
             })
+    @EnsureHasPermission(
+            value = {
+                Manifest.permission.PERSONAL_CONTEXT_WRITE_SETTINGS,
+                Manifest.permission.PERSONAL_CONTEXT_READ_SETTINGS,
+            })
     @Test
     public void testIsEnabled() {
         try (PermissionContext ignored =
                 TestApis.permissions()
-                        .withPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS)
                         .withPermission(android.Manifest.permission.INTERACT_ACROSS_USERS)) {
             mPersonalContextManager.setEnabled(true);
             assertThat(mPersonalContextManager.isEnabled()).isTrue();
@@ -162,11 +168,15 @@ public class PersonalContextManagerTest {
                 "android.service.personalcontext.PersonalContextManager#isEnabled",
                 "android.service.personalcontext.PersonalContextManager#setEnabled",
             })
+    @EnsureHasPermission(
+            value = {
+                Manifest.permission.PERSONAL_CONTEXT_WRITE_SETTINGS,
+                Manifest.permission.PERSONAL_CONTEXT_READ_SETTINGS,
+            })
     @Test
     public void testIsDisabled() {
         try (PermissionContext ignored =
                 TestApis.permissions()
-                        .withPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS)
                         .withPermission(android.Manifest.permission.INTERACT_ACROSS_USERS)) {
             mPersonalContextManager.setEnabled(false);
             assertThat(mPersonalContextManager.isEnabled()).isFalse();
@@ -177,6 +187,8 @@ public class PersonalContextManagerTest {
             apis = {
                 "android.service.personalcontext.PersonalContextManager#setEnabled",
             })
+    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_PERSONAL_CONTEXT_PERMISSIONS)
+    @EnsureDoesNotHavePermission(Manifest.permission.PERSONAL_CONTEXT_WRITE_SETTINGS)
     @Test
     public void testSetEnabledNoPermissions() {
         assertThrows(SecurityException.class, () -> mPersonalContextManager.setEnabled(true));
