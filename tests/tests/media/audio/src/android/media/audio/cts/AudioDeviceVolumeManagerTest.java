@@ -786,7 +786,7 @@ public class AudioDeviceVolumeManagerTest {
                 mSkipAdvmTests || mIsAutomotive || mIsWatch);
 
         final int originalMode = mAm.getMode();
-        mAm.setMode(AudioManager.MODE_ASSISTANT_CONVERSATION);
+        setModeAndWaitForHandler(AudioManager.MODE_ASSISTANT_CONVERSATION);
 
         try {
             final int vcMax = mAm.getStreamMaxVolume(AudioManager.STREAM_VOICE_CALL);
@@ -827,8 +827,13 @@ public class AudioDeviceVolumeManagerTest {
                     "STREAM_ASSISTANT should be at min when VOICE_CALL peripheral reports min"
                             + " in Assistant Mode");
         } finally {
-            mAm.setMode(originalMode);
+            setModeAndWaitForHandler(originalMode);
         }
+    }
+
+    private void setModeAndWaitForHandler(int mode) {
+        mAm.setMode(mode);
+        mAm.waitForAudioHandlerBarrier();
     }
 
     private void checkIndexVolumeInfoEquals(VolumeInfo expected, VolumeInfo info) {

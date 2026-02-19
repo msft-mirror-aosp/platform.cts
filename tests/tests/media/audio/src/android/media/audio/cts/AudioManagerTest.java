@@ -1283,7 +1283,7 @@ public class AudioManagerTest {
             int originalAssistantVolume = mAudioManager.getStreamVolume(STREAM_ASSISTANT);
             mAudioManager.setStreamVolume(
                     STREAM_ASSISTANT, mAudioManager.getStreamMaxVolume(STREAM_ASSISTANT), 0);
-            mAudioManager.setMode(MODE_ASSISTANT_CONVERSATION);
+            setModeAndWaitForHandler(MODE_ASSISTANT_CONVERSATION);
 
             assertCallChangesStreamVolume(
                     () ->
@@ -1294,11 +1294,10 @@ public class AudioManagerTest {
                             - getVolumeDelta(STREAM_ASSISTANT),
                     "Adjusting default stream should change STREAM_ASSISTANT");
 
-            mAudioManager.setMode(originalMode);
-
+            setModeAndWaitForHandler(originalMode);
             mAudioManager.setStreamVolume(STREAM_ASSISTANT, originalAssistantVolume, 0);
         } finally {
-            mAudioManager.setMode(originalMode);
+            setModeAndWaitForHandler(originalMode);
         }
     }
 
@@ -1441,7 +1440,7 @@ public class AudioManagerTest {
                         .withPermission(
                                 Manifest.permission.MANAGE_ASSISTANT_AUDIO,
                                 Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED)) {
-            mAudioManager.setMode(AudioManager.MODE_ASSISTANT_CONVERSATION);
+            setModeAndWaitForHandler(MODE_ASSISTANT_CONVERSATION);
 
             try {
                 final int initialAssistantVol =
@@ -1468,7 +1467,7 @@ public class AudioManagerTest {
                             mAudioManager.getStreamVolume(AudioManager.STREAM_ASSISTANT));
                 }
             } finally {
-                mAudioManager.setMode(originalMode);
+                setModeAndWaitForHandler(originalMode);
             }
         }
     }
@@ -1485,7 +1484,7 @@ public class AudioManagerTest {
         final int originalMode = mAudioManager.getMode();
         try (PermissionContext ignored =
                 TestApis.permissions().withPermission(Manifest.permission.MANAGE_ASSISTANT_AUDIO)) {
-            mAudioManager.setMode(AudioManager.MODE_ASSISTANT_CONVERSATION);
+            setModeAndWaitForHandler(MODE_ASSISTANT_CONVERSATION);
 
             try {
                 final int maxVol = mAudioManager.getStreamMaxVolume(AudioManager.STREAM_ASSISTANT);
@@ -1510,7 +1509,7 @@ public class AudioManagerTest {
                         "Adjusting suggested stream in Assistant Mode should change "
                                 + "STREAM_ASSISTANT");
             } finally {
-                mAudioManager.setMode(originalMode);
+                setModeAndWaitForHandler(originalMode);
             }
         }
     }
@@ -3829,6 +3828,11 @@ public class AudioManagerTest {
             Thread.sleep(REPEATED_CHECK_POLL_PERIOD_MS);
         }
         assertTrue(errorString, result);
+    }
+
+    private void setModeAndWaitForHandler(int mode) {
+        mAudioManager.setMode(mode);
+        mAudioManager.waitForAudioHandlerBarrier();
     }
 
     private boolean isAutomotive() {
