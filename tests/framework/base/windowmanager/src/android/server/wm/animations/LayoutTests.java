@@ -16,7 +16,6 @@
 
 package android.server.wm.animations;
 
-import static android.provider.Settings.Global.WINDOW_ANIMATION_SCALE;
 import static android.view.View.SYSTEM_UI_FLAG_FULLSCREEN;
 import static android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
 import static android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
@@ -33,24 +32,25 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
-import android.content.ContentResolver;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
 import android.provider.Settings;
 import android.server.wm.WindowManagerTestBase;
+import android.server.wm.settings.SettingsSession;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowInsets.Type;
 import android.view.WindowManager.LayoutParams;
 
-import com.android.compatibility.common.util.PollingCheck;
-import com.android.compatibility.common.util.SystemUtil;
+import androidx.annotation.NonNull;
 
-import org.junit.After;
-import org.junit.Before;
+import com.android.compatibility.common.util.PollingCheck;
+
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 import java.util.ArrayList;
 
@@ -64,52 +64,26 @@ import java.util.ArrayList;
 public class LayoutTests extends WindowManagerTestBase {
     private static final long TIMEOUT_RECEIVE_KEY = 100; // milliseconds
     private static final long TIMEOUT_SYSTEM_UI_VISIBILITY_CHANGE = 1000;
+    private static final long TIMEOUT_LAYOUT_CHANGE = 3000;
     private static final int SYSTEM_UI_FLAG_HIDE_ALL =
             SYSTEM_UI_FLAG_FULLSCREEN | SYSTEM_UI_FLAG_HIDE_NAVIGATION;
 
-    private float mWindowAnimationScale;
-
-    @Before
-    public void setup() {
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> {
-                    // The layout will be performed at the end of the animation of hiding
-                    // status/navigation
-                    // bar, which will recover the possible issue, so we disable the animation
-                    // during the
-                    // test.
-                    final ContentResolver resolver =
-                            getInstrumentation().getContext().getContentResolver();
-                    mWindowAnimationScale =
-                            Settings.Global.getFloat(resolver, WINDOW_ANIMATION_SCALE, 1f);
-                    Settings.Global.putFloat(resolver, WINDOW_ANIMATION_SCALE, 0);
-                });
-    }
-
-    @After
-    public void tearDown() {
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> {
-                    // Restore the animation we disabled previously.
-                    Settings.Global.putFloat(
-                            getInstrumentation().getContext().getContentResolver(),
-                            WINDOW_ANIMATION_SCALE,
-                            mWindowAnimationScale);
-                });
-    }
+    @ClassRule
+    public static final TestRule sWindowAnimationRule = SettingsSession.overrideForTest(
+            Settings.Global.getUriFor(Settings.Global.WINDOW_ANIMATION_SCALE),
+            Settings.Global::getFloat,
+            Settings.Global::putFloat,
+            0.0f);
 
     @Test
-    public void testLayoutAfterRemovingFocus() throws InterruptedException {
+    public void testLayoutAfterRemovingFocus() throws Exception {
         final TestActivity activity = startActivity(TestActivity.class);
 
         // Get the visible frame of the main activity before adding any window.
         final Rect visibleFrame = new Rect();
-        getInstrumentation()
-                .runOnMainSync(
-                        () ->
-                                activity.getWindow()
-                                        .getDecorView()
-                                        .getWindowVisibleDisplayFrame(visibleFrame));
+        getInstrumentation().runOnMainSync(
+                () -> activity.getWindow().getDecorView().getWindowVisibleDisplayFrame(
+                        visibleFrame));
         assertFalse("Visible frame must not be empty.", visibleFrame.isEmpty());
 
         doTestLayoutAfterRemovingFocus(activity, visibleFrame, SYSTEM_UI_FLAG_FULLSCREEN);
@@ -117,17 +91,14 @@ public class LayoutTests extends WindowManagerTestBase {
         doTestLayoutAfterRemovingFocus(activity, visibleFrame, SYSTEM_UI_FLAG_HIDE_ALL);
     }
 
-    private void doTestLayoutAfterRemovingFocus(
-            TestActivity activity, Rect visibleFrameBeforeAddingWindow, int systemUiFlags)
-            throws InterruptedException {
+    private void doTestLayoutAfterRemovingFocus(@NonNull TestActivity activity,
+            Rect visibleFrameBeforeAddingWindow, int systemUiFlags) throws Exception {
         // Add a window which can affect the global layout.
-        getInstrumentation()
-                .runOnMainSync(
-                        () -> {
-                            final View view = new View(activity);
-                            view.setSystemUiVisibility(systemUiFlags);
-                            activity.addWindow(view, new LayoutParams());
-                        });
+        getInstrumentation().runOnMainSync(() -> {
+            final View view = new View(activity);
+            view.setSystemUiVisibility(systemUiFlags);
+            activity.addWindow(view, new LayoutParams());
+        });
 
         // Wait for the global layout triggered by adding window.
         activity.waitForGlobalLayout();
@@ -144,19 +115,15 @@ public class LayoutTests extends WindowManagerTestBase {
         // Wait for the activity to get the focus before getting the visible frame.
         activity.waitAndAssertWindowFocusState(true);
 
-        // Get the visible frame of the main activity after removing the window we added.
-        final Rect visibleFrameAfterRemovingWindow = new Rect();
-        getInstrumentation()
-                .runOnMainSync(
-                        () ->
-                                activity.getWindow()
-                                        .getDecorView()
-                                        .getWindowVisibleDisplayFrame(
-                                                visibleFrameAfterRemovingWindow));
-
         // Test whether the visible frame after removing window is the same as one before adding
         // window. If not, it shows that the layout after removing window has a problem.
-        assertEquals(visibleFrameBeforeAddingWindow, visibleFrameAfterRemovingWindow);
+        final Rect visibleFrameAfterRemovingWindow = new Rect();
+        PollingCheck.check("Visible frame must match baseline", TIMEOUT_LAYOUT_CHANGE, () -> {
+            getInstrumentation().runOnMainSync(
+                    () -> activity.getWindow().getDecorView().getWindowVisibleDisplayFrame(
+                            visibleFrameAfterRemovingWindow));
+            return visibleFrameBeforeAddingWindow.equals(visibleFrameAfterRemovingWindow);
+        });
     }
 
     @Test
