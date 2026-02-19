@@ -21,6 +21,8 @@ import static android.content.pm.PackageManager.FEATURE_SECURE_LOCK_SCREEN;
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
 import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_AUTOMOTIVE;
+import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_LEANBACK;
+import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_WATCH;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApp;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -67,7 +69,6 @@ import org.junit.runner.RunWith;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /** For testing device state related app function capabilities. */
@@ -86,6 +87,9 @@ public class DeviceStateAppFunctionsTest {
     @Test
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasWorkProfile
+    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
+    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
+    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureTestAppInstalled(onUser = WORK_PROFILE)
     @EnsureHasNoDeviceOwner
     @EnsureUnlocked
@@ -103,6 +107,9 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @Test
+    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
+    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
+    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasWorkProfile
     @EnsureTestAppInstalled(onUser = WORK_PROFILE)
@@ -122,6 +129,9 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @Test
+    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
+    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
+    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasWorkProfile
     @EnsureTestAppInstalled(onUser = WORK_PROFILE)
@@ -141,6 +151,9 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @Test
+    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
+    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
+    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasWorkProfile
     @EnsureTestAppInstalled(onUser = WORK_PROFILE)
@@ -160,6 +173,9 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @Test
+    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
+    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
+    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasWorkProfile
     @EnsureTestAppInstalled(onUser = WORK_PROFILE)
@@ -179,6 +195,9 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @Test
+    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
+    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
+    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasWorkProfile
     @EnsureTestAppInstalled(onUser = WORK_PROFILE)
@@ -198,6 +217,9 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @Test
+    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
+    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
+    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasWorkProfile
     @EnsureTestAppInstalled(onUser = WORK_PROFILE)
@@ -217,6 +239,8 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
+    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
+    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -242,6 +266,8 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
+    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
+    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -281,6 +307,8 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
+    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
+    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -308,6 +336,8 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
+    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
+    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -348,6 +378,8 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
+    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
+    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -373,6 +405,8 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
+    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
+    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -398,6 +432,9 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @Postsubmit(reason = "New test")
+    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
+    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
+    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @Test
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasNoDeviceOwner
@@ -411,6 +448,8 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
+    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
+    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -436,6 +475,8 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
+    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
+    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -461,6 +502,9 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @Postsubmit(reason = "New test")
+    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
+    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
+    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @Test
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureHasNoDeviceOwner
@@ -474,6 +518,8 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
+    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
+    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -506,6 +552,8 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
+    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
+    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -542,6 +590,9 @@ public class DeviceStateAppFunctionsTest {
 
     @Postsubmit(reason = "New test")
     @Test
+    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
+    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
+    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureUnlocked
     @EnsurePasswordNotSet
@@ -565,6 +616,8 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
+    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
+    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -602,6 +655,8 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
+    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
+    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -639,6 +694,9 @@ public class DeviceStateAppFunctionsTest {
 
     @Postsubmit(reason = "New test")
     @Test
+    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
+    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
+    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureUnlocked
     @EnsurePasswordNotSet
@@ -663,6 +721,8 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
+    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
+    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -700,6 +760,8 @@ public class DeviceStateAppFunctionsTest {
     }
 
     @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
+    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
+    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureScreenIsOn
     @EnsurePasswordSet
     @EnsureHasDeviceOwner
@@ -738,6 +800,9 @@ public class DeviceStateAppFunctionsTest {
 
     @Postsubmit(reason = "New test")
     @Test
+    @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
+    @RequireDoesNotHaveFeature(FEATURE_LEANBACK)
+    @RequireDoesNotHaveFeature(FEATURE_WATCH)
     @EnsureHasPermission(Manifest.permission.EXECUTE_APP_FUNCTIONS)
     @EnsureUnlocked
     @EnsurePasswordNotSet
