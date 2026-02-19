@@ -57,7 +57,6 @@ public class ContentCaptureConversationHintTest {
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String CONVERSATION_SESSION_ID = "session_id";
-    private static final String CONTENT_DESCRIPTION = "content description";
     private Instant mReferenceTime;
     private Instant mClientEventTimestamp;
     private ChatMessageData mChatMessageData;
@@ -241,7 +240,7 @@ public class ContentCaptureConversationHintTest {
                 "android.service.personalcontext.hint.ContentCaptureConversationEvent"
                         + "#getClientEventTimestamp",
                 "android.service.personalcontext.hint.ContentCaptureConversationEvent"
-                        + ".ConversationProcessingEvent#getStartProcessingTimestamp",
+                        + ".ConversationProcessingEvent#getTimestamp",
                 "android.service.personalcontext.hint.ContentCaptureConversationEvent"
                         + ".ConversationProcessingEvent#getMessageAutofillId",
                 "android.service.personalcontext.hint.ContentCaptureConversationEvent"
@@ -271,8 +270,7 @@ public class ContentCaptureConversationHintTest {
 
         final ConversationProcessingEvent outputProcessingEvent =
                 (ConversationProcessingEvent) outputEvent;
-        assertThat(outputProcessingEvent.getStartProcessingTimestamp())
-                .isEqualTo(processingTimestamp);
+        assertThat(outputProcessingEvent.getTimestamp()).isEqualTo(processingTimestamp);
         assertThat(outputProcessingEvent.getMessageAutofillId()).isEqualTo(messageAutofillId);
         assertThat(outputProcessingEvent.getConversationSessionId())
                 .isEqualTo(CONVERSATION_SESSION_ID);
